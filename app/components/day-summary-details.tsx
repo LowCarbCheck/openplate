@@ -422,7 +422,7 @@ export function SuggestionsDisclosure({
             visitor gets the state change without the spin. */}
         <ChevronDown
           className={cn(
-            'h-4 w-4 shrink-0 text-primary motion-safe:transition-transform motion-safe:duration-200',
+            'h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200',
             isOpen && 'rotate-180',
           )}
           aria-hidden="true"

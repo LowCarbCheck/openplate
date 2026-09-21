@@ -68,7 +68,7 @@ function InsightsDoorCard({
           <CardTitle className="min-w-0 hyphens-auto break-words text-sm font-medium leading-tight">
             {t(DOOR_LABEL_KEY[tab])}
           </CardTitle>
-          <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </CardContent>
       </Card>
     </Link>

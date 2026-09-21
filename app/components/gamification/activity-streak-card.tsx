@@ -70,7 +70,7 @@ export function ActivityStreakCard({
       <Card className="transition-colors hover:border-primary/40">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Flame className="h-5 w-5 text-primary" aria-hidden="true" /> {t('trends.streak.title')}
+            <Flame className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> {t('trends.streak.title')}
           </CardTitle>
           <CardDescription>{describeStreak(streak, t)}</CardDescription>
         </CardHeader>
@@ -78,7 +78,7 @@ export function ActivityStreakCard({
           {/* The whole card is the link, so this row is an affordance and not a
               second anchor: a nested one would be invalid markup, the same
               reason `StreakGridCard` draws its grid read-only. */}
-          <span className="flex items-center gap-1 text-sm font-medium text-primary">
+          <span className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
             {t('awards.title')}
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </span>

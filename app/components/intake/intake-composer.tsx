@@ -207,18 +207,29 @@ function ComposerStrip({
           square. Do not name that class in a comment, `intake-composer.test.ts`
           counts the literal and a mention makes it three. */}
       <div className="flex w-full items-center gap-1 rounded-lg border border-primary/25 bg-card/80 p-1.5 shadow-sm transition-shadow focus-within:border-primary/60 focus-within:shadow-md">
+        {/* `min-w-0` is load-bearing (M243 spec 05b). The label's own box is an
+            ellipsis box, but this link is the flex item, and a flex item's
+            automatic minimum is its CONTENT's minimum, so the German "Essen
+            eintragen" held the link at 170 px and pushed the camera key 9 px
+            past the hero card on a 320 px phone. Shrinking the link is what
+            lets the ellipsis do its job. */}
         <Link
           to={describeTo}
-          className="flex min-h-11 flex-1 items-center gap-2.5 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
         >
-          <Keyboard className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          {/* The two quiet keys take the label's own ink, not the brand colour
+              (M243 spec 05b, the teal budget). The strip already spends the
+              accent once, on the filled camera key, and three teal marks in
+              one 44 px row left nothing to say which of the three is the
+              offer. The hover still lights up, so the affordance is intact. */}
+          <Keyboard className="size-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{label ?? t('launcher.sheetTitle')}</span>
         </Link>
         <span className="h-6 w-px shrink-0 bg-border" aria-hidden="true" />
         <Link
           to={buildIntakeHref(describeTo, { speak: true })}
           aria-label={t('launcher.speak')}
-          className="flex size-11 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10 active:bg-primary/15 motion-safe:active:scale-95"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground active:bg-primary/15 motion-safe:active:scale-95"
         >
           <Mic className="size-5" aria-hidden="true" />
         </Link>

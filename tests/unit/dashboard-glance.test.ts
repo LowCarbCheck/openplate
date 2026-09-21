@@ -249,7 +249,19 @@ describe('the week glance tile draws the budget ridge', () => {
     // title and content give the wrapping link its accessible name.
     assert.ok(!header.includes('to="/trends?tab=overview"'), 'the header no longer carries its own link to /trends');
     assert.doesNotMatch(header, /aria-label/, 'the arrow carries no aria-label; the tile title names the link');
-    assert.match(header, /<span className="shrink-0 text-primary">/, 'the arrow sits in a plain span, not a link');
+    // THE ELEMENT, NOT ITS COLOUR. This used to pin `text-primary`, which made a colour decision
+    // a structural claim: the teal budget (M243 spec 05b) muted this arrow, because a decorative
+    // chevron on a tile that is already a link spends the accent on nothing. What matters here is
+    // still that the arrow is a plain span and not a second anchor.
+    const plainSpanArrow = /<span className="shrink-0 [^"]*">\s*<ArrowRight\b/u;
+    assert.match(header, plainSpanArrow, 'the arrow sits in a plain span, not a link');
+    // CONTROL: the same reader must refuse an anchor in that position, or it would pass a header
+    // that had quietly grown its second link back.
+    assert.doesNotMatch(
+      '<a className="shrink-0 text-muted-foreground">\n<ArrowRight className="h-5 w-5" />',
+      plainSpanArrow,
+      'CONTROL: an anchor around the arrow must not satisfy the plain-span claim',
+    );
 
     // Control: the tile still has exactly ONE link to /trends in total, the
     // wrapping one, so the header link was replaced, not merely duplicated.

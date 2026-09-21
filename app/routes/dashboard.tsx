@@ -598,7 +598,7 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
       <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
           <CardTitle className="text-base">{t('dashboard.week.title')}</CardTitle>
-          <span className="shrink-0 text-primary">
+          <span className="shrink-0 text-muted-foreground">
             <ArrowRight className="h-5 w-5" aria-hidden="true" />
           </span>
         </CardHeader>

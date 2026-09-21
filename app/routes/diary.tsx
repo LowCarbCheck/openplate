@@ -1977,7 +1977,7 @@ function LogEntryCard({ log, justAdded, time }: { log: LocalFoodLog; justAdded: 
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{log.name}</span>
               {justAdded && (
-                <Badge variant="outline" className="border-primary/50 text-primary">
+                <Badge variant="outline" className="text-muted-foreground">
                   {t('diary.entry.justAdded')}
                 </Badge>
               )}
@@ -2656,19 +2656,24 @@ function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: st
   );
 }
 
-/** Returning-after-a-gap empty state: a warm fresh start, no backfill prompts, no guilt. */
+/**
+ * Returning-after-a-gap empty state: a warm fresh start, no backfill prompts, no guilt.
+ *
+ * A ROW, like its first-ever sibling above (M243 spec 05b). It was the last
+ * centred poster left on this screen: an 18 px heading over a centred sentence
+ * over a centred composer. Same words, same composer, at the sizes a data row
+ * states a label and a caption at, with the composer inline from `sm`.
+ */
 function WelcomeBackEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: string }) {
   const { t } = useTranslation();
   return (
-    <Card>
-      <CardContent className="space-y-4 p-6 text-center">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">{t('diary.empty.welcomeBack.title')}</h3>
-          <p className="text-sm text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
+    <Card data-slot="diary-empty-welcome-back">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        <div className="min-w-0 space-y-0.5 sm:flex-1">
+          <p className="text-sm font-semibold text-foreground">{t('diary.empty.welcomeBack.title')}</p>
+          <p className="text-xs text-muted-foreground">{t('diary.empty.welcomeBack.subtitle')}</p>
         </div>
-        <div className="flex flex-col items-center">
-          <IntakeComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
-        </div>
+        <IntakeComposer describeTo={describeTo} scanTo={scanTo} className="sm:w-72 sm:shrink-0" />
       </CardContent>
     </Card>
   );

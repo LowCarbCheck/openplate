@@ -137,6 +137,56 @@ export const RADIUS_TIER_CLASS = {
 export const LIST_ROW_PADDING_PX = 12;
 
 /**
+ * THE TEAL BUDGET (M243 spec 05b): how many things on a screen may be painted in `--primary`.
+ *
+ * WHY A CEILING AND NOT A RULE. "Use the accent sparingly" has never stopped a single teal icon
+ * from being added, because no one addition is the one that breaks the page. These are the
+ * numbers each screen MEASURED on the build that shipped, frozen exactly, so the next feature
+ * that wants the brand colour has to take it away from something else or move a line here on
+ * purpose. LowCarbCheck spends its accent about three times a page; openplate spends more, and
+ * what it spends it on is listed beside each number so a reader can judge whether it is earned.
+ *
+ * WHAT A NUMBER COUNTS. One ELEMENT inside `main` whose own text colour, background colour or a
+ * border it actually draws resolves to the token, at any alpha above zero.
+ * `tests/e2e/lcc-lineage-teal-budget.spec.ts` holds the reader, the three rules that keep it from
+ * double counting, and the injection control that proves one more element breaks the ceiling.
+ *
+ * EVERY SCREEN PAYS TWO before it draws anything of its own: the wordmark in the header, and the
+ * raised launcher in the bottom bar. `/settings` is exactly those two, which is the floor.
+ *
+ * A LINK WITH A TRAILING ICON COSTS TWO, because it paints two teal marks. That is not an
+ * accident of the reader, it is what a person sees, and it is why the dashboard's two hand-off
+ * links account for four of its twelve.
+ *
+ * WHAT THE BUDGET IS SPENT ON TODAY, after the decoration sweep that came with these numbers:
+ *
+ * | Screen       | Ceiling | What spends it                                                        |
+ * | ------------ | ------- | --------------------------------------------------------------------- |
+ * | `/settings`  |       2 | the wordmark, the launcher                                              |
+ * | `/trends`    |       4 | the two, the active tab, "Log weight"                                   |
+ * | `/add`       |       5 | the two, the "Set up AI" link, the active tab's icon and its label      |
+ * | `/diary`     |       9 | the two, the active tab (two), the camera key, two links, two status dots |
+ * | `/dashboard` |      12 | the two, the camera key, two hand-off links (four), the award mark, and four data marks: the status dot, an adherence cell, the streak legend dot and a ridge bar |
+ *
+ * The dashboard is the one screen far above LowCarbCheck's three, and every one of its twelve
+ * carries meaning: four are the traffic-light language this app is built on (DESIGN.md section 3),
+ * four are two links, and the rest are the chrome every screen pays. The decoration that used to
+ * sit beside them is gone: the composer's microphone and keyboard keys, four card-title icons, a
+ * disclosure chevron, the glance tile's arrow and the "Just added" badge are all muted now, and
+ * the chips on the review, add and settings screens are `bg-muted` (decision 3).
+ */
+export const TEAL_BUDGET_CEILING = {
+  '/diary': 9,
+  '/dashboard': 12,
+  '/trends': 4,
+  '/settings': 2,
+  '/add': 5,
+} as const;
+
+/** A screen the teal budget is frozen for. */
+export type TealBudgetScreen = keyof typeof TEAL_BUDGET_CEILING;
+
+/**
  * A computed `font-family` stack that STARTS with `name`, written the way the browser writes
  * it: a family with a space is quoted (`"Victor Mono Variable", ...`) and a one-word family is
  * not (`Fraunces, serif`), so the quotes are optional here and the name must end at a comma or

@@ -81,7 +81,7 @@ export function StreakGridCard({
             </>
           : <>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Flame className="h-5 w-5 text-primary" aria-hidden="true" /> {t('trends.streak.title')}
+                <Flame className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> {t('trends.streak.title')}
               </CardTitle>
               <CardDescription>{describeStreak(streak, t)}</CardDescription>
             </>
