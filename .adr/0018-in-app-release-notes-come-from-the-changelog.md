@@ -43,7 +43,7 @@ application, translated into all six languages, in a `releases` i18n namespace
 generated from `CHANGELOG.md` at release time. The person is told once after an
 update, and nothing is ever fetched to tell them.**
 
-Four parts are worth defending separately.
+Five parts are worth defending separately.
 
 1. **Generated, not fetched.** `pnpm release-catalog`
    (`scripts/sync-release-catalog.ts`) writes
@@ -66,6 +66,17 @@ Four parts are worth defending separately.
 4. **Added, Changed and Fixed, never Docs.** `Docs` records a change to a
    document. Telling somebody holding the app about a corrected sentence in
    `docs/sync.md` spends their attention on work they cannot see.
+5. **A device with no acknowledgement is told this build's notes, or
+   nothing (M242/10).** A device that finished setup before this build but has
+   no stored acknowledgement has no baseline. It may be new to this update, or
+   it may have read every note already, after a browser reset for example. So
+   it is shown the notes of the build it runs and no older ones. When that
+   build has no entry, because it changed only docs, the device is recorded
+   silently and told nothing. Showing the newest older entry instead was
+   weighed and rejected: it spends the reader's attention on the least certain
+   guess, a release they may have read months ago. A device that does hold an
+   older acknowledgement is not affected and is shown every entry after it.
+   Decided on 2026-09-21, when the follow-up was closed.
 
 ## Alternatives Considered
 

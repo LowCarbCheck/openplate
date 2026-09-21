@@ -299,7 +299,11 @@ function isEstablishedDevice({ onboardedAt, builtAt }: { onboardedAt: number | n
  *    finished onboarding BEFORE this bundle was built it has been using the app
  *    across an update and simply never had the flag, so it is shown this build's
  *    own notes, and only those: there is no baseline, so "everything since" is
- *    unanswerable. Anything else is a new device, which is stamped silently.
+ *    unanswerable. When this build has no entry of its own, and a release of
+ *    only Docs bullets has none (ADR-0018), there is nothing to tell, so the
+ *    device is recorded silently and deliberately not shown an older release,
+ *    which with no baseline it may have read already (M242/10). Anything else
+ *    is a new device, which is stamped silently.
  *
  * @param inputs - the build, the device and the shipped releases.
  * @returns nothing to do, record silently, or show these releases.
