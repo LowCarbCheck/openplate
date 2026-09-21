@@ -17,6 +17,9 @@ import { loader } from '../../app/routes/redirects/legacy-scan';
 async function redirectFrom(url: string): Promise<Response> {
   const request = new Request(url);
   try {
+    // SAFETY: `Route.LoaderArgs` also carries `params` and `context`, typed by
+    // the generated route module; this loader destructures only `request`,
+    // and the fixture is a real `Request` for a real URL.
     await loader({ request } as Parameters<typeof loader>[0]);
   } catch (thrown) {
     assert.ok(thrown instanceof Response, 'expected the loader to throw a Response');
