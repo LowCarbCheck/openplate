@@ -1770,6 +1770,23 @@ export function formatMacroBreakdownLine(summary: DaySummary, t: Translate, lang
  * was made of, and one collapsed offer of foods that would close the day's
  * dominant gap. `buildDayBudgetRows` owns which rows exist and every word in
  * them, so nothing about the day is decided here.
+ *
+ * THE TWO MIDDLE BLOCKS ASK DIFFERENT QUESTIONS, and keeping them that way is
+ * this function's one real composition rule. `DayBudgetRows` states AMOUNTS
+ * against what the person set. `WhatYouAte` states the day's SHAPE: the ratio
+ * bar and the four shares under it, plus the facts no row carries.
+ *
+ * A design audit found the rule broken. `buildDayBudgetRows` pushes a protein,
+ * a fat and a fiber row for every account, unconditionally, and "What you ate"
+ * printed those same three gram figures again a few hundred pixels below, as
+ * bare numbers with no goal beside them. The reader met two similar dark blocks
+ * saying almost the same thing. The fix was to take the repeat out of the lower
+ * block rather than to weaken either one: see `MacroBreakdown`.
+ *
+ * `kcalLine` below is the same rule, and it is the older half of it: the
+ * absolute calorie figure is withheld exactly when a calorie budget row is
+ * carrying it. A new figure added to this card belongs in ONE of the two
+ * blocks, never in both.
  */
 function DaySummaryCard({
   summary,

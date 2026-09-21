@@ -596,7 +596,8 @@
     "macroRatio": {
       "empty": "Aucun macro enregistré pour le moment",
       "label": "Ratio de macros : {{ratio}}",
-      "segment": "{{percent}}% {{macro}}"
+      "segment": "{{percent}}% {{macro}}",
+      "share": "{{percent}}%"
     },
     "macros": {
       "breakdownLine": "Glucides {{carbs}} g · Fibres {{fiber}} g · Protéines {{protein}} g · Lipides {{fat}} g · {{kcal}} calories",

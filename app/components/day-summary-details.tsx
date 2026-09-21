@@ -8,7 +8,8 @@
  *    `KcalBudgetChip` and `ProteinChip`, and renders nothing at all for a
  *    person whose style asks for no grade.
  * 2. `WhatYouAte`, the composition block: the macro ratio bar, the four macro
- *    figures, the calorie line the caller passes in, and the footnotes.
+ *    SHARES, the calorie line the caller passes in, and the footnotes. It
+ *    states no figure the budget rows already carry; see `MacroBreakdown`.
  * 3. `SuggestionsDisclosure`, the card's one collapsed offer, naming the foods
  *    that would close the day's dominant gap.
  *
@@ -44,8 +45,10 @@ import type {
 import { describeSuggestion, rankFoodSuggestions } from '#app/lib/food-suggestions';
 import type { FoodSuggestion } from '#app/lib/food-suggestions';
 import { SUGGESTION_FOODS } from '#app/data/suggestion-foods';
-import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
+import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { MacroRatioBar } from '#app/components/macro-ratio-bar';
+import { computeMacroRatioPercentages } from '#app/lib/macro-ratio';
+import type { MacroRatioGrams } from '#app/lib/macro-ratio';
 import { SectionEyebrow } from '#app/components/typography';
 import {
   DATA_ROW_CLASS,
@@ -458,9 +461,40 @@ const MACRO_DOT_CLASS = {
 } satisfies Record<'carbs' | 'fiber' | 'protein' | 'fat', string>;
 
 /**
- * The day's four macro figures, each on the shared data-row recipe
+ * The day's four macro SHARES, each on the shared data-row recipe
  * (`#app/components/list-row`), two to a line on a phone and four across from
  * `sm` (M129/01, restyled in M243 spec 05a).
+ *
+ * THE FIGURE IS A PERCENTAGE, NOT A GRAM COUNT, and that is the reason this
+ * block can sit under the budget rows at all.
+ *
+ * It stated grams until a design audit read the card cold and asked why two
+ * dark blocks a few hundred pixels apart said almost the same thing. They did:
+ * `buildDayBudgetRows` pushes a protein, a fat and a fiber row for EVERY
+ * account, unconditionally, so all three gram figures were already on screen
+ * with a goal beside them, and these cells printed the same numbers again with
+ * nothing beside them. Fat was verbatim: both sides ran the day's fat through
+ * `formatMacroNumberIn`, so "18 g" appeared twice. Protein and fiber were the
+ * same quantity at two precisions, whole grams in the row's caption against one
+ * decimal here, which is worse than a repeat: it invites the reader to check
+ * the two against each other and find them disagree.
+ *
+ * A share is the one thing about the day no row states. It also makes these
+ * cells an HONEST legend for the bar directly above: a cell now reports the
+ * same quantity its segment's width encodes, where a gram figure reported a
+ * different one. The rounding is `Math.round`, the rounding
+ * `summarizeRatioForLabel` already applies, so the bar's visually hidden
+ * sentence and these four cells never read differently.
+ *
+ * This is the same rule `WhatYouAte`'s `kcalLine` has followed since the
+ * recomposition, now applied to the macros as well: a figure a budget row
+ * already frames as an answer is not repeated here as a bare fact.
+ *
+ * NO GRAM FIGURE IS LOST BY IT. Net carbs, protein, fat and fiber each have a
+ * row. Gross carbohydrate is the one number that was only ever here, and the
+ * footnote under these cells is its definition: it is net carbs plus fiber plus
+ * any sugar alcohols, and it is the one macro figure this app sets no goal
+ * against.
  *
  * TWO DEVIATIONS FROM THE RECIPE, both because the cell is a half-width column
  * rather than a full-width row:
@@ -477,19 +511,28 @@ const MACRO_DOT_CLASS = {
  * Colour still isn't the sole encoding: every cell is named in words, the cells
  * are in a fixed order matching the ratio bar's segment order, and the colour
  * is the dot rather than the text colour of the figure itself.
+ *
+ * @param grams - the day's macro grams, the SAME object the bar above is given, so the legend and the segments can never be computed from different figures.
  */
-function MacroBreakdown({ summary }: { summary: DaySummary }) {
-  const { t, i18n } = useTranslation();
+function MacroBreakdown({ grams }: { grams: MacroRatioGrams }) {
+  const { t } = useTranslation();
+  // Nothing logged means there is no ratio to state, and the bar above draws
+  // its empty track for the same reason. "0 %" would be a claim about the day
+  // rather than an admission about it, so the cells borrow the catalog's own
+  // word for a macro figure it does not have.
+  const percentages = computeMacroRatioPercentages(grams);
   return (
-    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl data-slot="macro-breakdown" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {MACRO_BREAKDOWN_FIGURES.map(({ key, labelKey }) => (
         <div key={key} className={cn(DATA_ROW_CLASS, 'min-w-0 flex-wrap gap-x-1.5 gap-y-0 p-2')}>
           <span className={cn(DATA_ROW_DOT_CLASS, 'size-2.5', MACRO_DOT_CLASS[key])} aria-hidden="true" />
           <dt className={cn(DATA_ROW_LABEL_CLASS, 'min-w-0 break-words text-[11px] uppercase tracking-[0.08em]')}>
             {t(labelKey)}
           </dt>
-          <dd className={cn(DATA_ROW_VALUE_CLASS, 'text-foreground')}>
-            {formatMeasureIn(i18n.language, summary[key], 'g')}
+          <dd data-slot="macro-share" className={cn(DATA_ROW_VALUE_CLASS, 'text-foreground')}>
+            {percentages === null ?
+              t('diary.macros.unknown')
+            : t('diary.macroRatio.share', { percent: Math.round(percentages[key]) })}
           </dd>
         </div>
       ))}
@@ -498,15 +541,20 @@ function MacroBreakdown({ summary }: { summary: DaySummary }) {
 }
 
 /**
- * What the day was made of: the ratio bar, the four macro figures, and the
+ * What the day was made of: the ratio bar, the four macro shares, and the
  * footnotes that qualify them.
  *
- * This is the FACTS half of the card, and it sits under the budget rows on
- * purpose. "12 g protein to go" is an answer; "Protein 46 g" is a fact, and a
- * novice needs the answer first. `kcalLine` is passed in rather than derived
- * here because it depends on the caller's goals: a card that already carries a
- * calorie budget row passes null, since repeating the same figure two ways is
- * the clutter this recomposition removed.
+ * This is the COMPOSITION half of the card, and it sits under the budget rows
+ * on purpose. The rows answer "how much, against what I set"; this answers
+ * "what shape was the day", which is the one question about a day that no row
+ * asks. Keeping the two questions apart is what stops the card reading as two
+ * blocks of the same numbers (see `MacroBreakdown` for the audit that found it
+ * doing exactly that).
+ *
+ * NOTHING HERE MAY RESTATE A BUDGET ROW'S FIGURE. `kcalLine` is passed in
+ * rather than derived here for that reason: a card that already carries a
+ * calorie budget row passes null. `MacroBreakdown` follows the same rule by
+ * construction, since a share is not a figure any row states.
  */
 export function WhatYouAte({
   summary,
@@ -519,14 +567,20 @@ export function WhatYouAte({
   kcalLine: ReactNode;
 }) {
   const { t } = useTranslation();
+  // ONE object, read by the bar and by the cells under it. Built here rather
+  // than twice, so a segment's width and the figure naming it cannot be
+  // computed from different numbers.
+  const grams: MacroRatioGrams = {
+    carbs: summary.carbs,
+    protein: summary.protein,
+    fat: summary.fat,
+    fiber: summary.fiber,
+  };
   return (
     <div className="space-y-3">
       <SectionEyebrow as="h4">{t('diary.drilldown.whatYouAte')}</SectionEyebrow>
-      <MacroRatioBar
-        grams={{ carbs: summary.carbs, protein: summary.protein, fat: summary.fat, fiber: summary.fiber }}
-        className="h-2.5"
-      />
-      <MacroBreakdown summary={summary} />
+      <MacroRatioBar grams={grams} className="h-2.5" />
+      <MacroBreakdown grams={grams} />
       <div className="space-y-1">
         {kcalLine}
         <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsDefinition')}</p>

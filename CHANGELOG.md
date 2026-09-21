@@ -18,6 +18,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **Add, Scan and Describe now nest under one address, /add.** /add is now the database search, at /add/search. /scan, the camera and the photo review, is now /add/photo. /describe, the message composer, is now /add/describe. The old addresses still work, each one redirects to its new home, so a bookmark, a home screen shortcut, or an installed app's stale link all keep working.
+- **"What you ate" on the diary now states each macro as a share of the day, not a second gram figure.** The rows at the top of the day card already say how much protein, fat and fiber you ate and how that sits against your goal. The block under them repeated those same grams a second time with nothing beside them, so the card read as two blocks saying almost the same thing. Those four cells now give each macro's share of the day, the same percentages the coloured bar directly above them draws, so the rows answer how much and the block answers what shape the day had. No figure was lost: every gram count still has its own row.
 
 ## [0.38.0] - 2026-09-21
 

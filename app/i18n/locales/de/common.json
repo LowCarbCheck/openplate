@@ -596,7 +596,8 @@
     "macroRatio": {
       "empty": "Noch keine Makros eingetragen",
       "label": "Makro-Verhältnis: {{ratio}}",
-      "segment": "{{percent}} % {{macro}}"
+      "segment": "{{percent}} % {{macro}}",
+      "share": "{{percent}} %"
     },
     "macros": {
       "breakdownLine": "Kohlenhydrate {{carbs}} g · Ballaststoffe {{fiber}} g · Eiweiß {{protein}} g · Fett {{fat}} g · {{kcal}} Kalorien",

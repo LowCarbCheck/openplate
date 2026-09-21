@@ -596,7 +596,8 @@
     "macroRatio": {
       "empty": "Aún no hay macros registrados",
       "label": "Proporción de macros: {{ratio}}",
-      "segment": "{{percent}}% {{macro}}"
+      "segment": "{{percent}}% {{macro}}",
+      "share": "{{percent}}%"
     },
     "macros": {
       "breakdownLine": "Carbohidratos {{carbs}} g · Fibra {{fiber}} g · Proteína {{protein}} g · Grasa {{fat}} g · {{kcal}} calorías",
