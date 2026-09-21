@@ -47,3 +47,26 @@ test('APP_SHELL still precaches the core navigation targets', () => {
     assert.ok(shell.includes(path), `expected APP_SHELL to include ${path}`);
   }
 });
+
+// ADR-0019, the one redirect the ADR says must keep forwarding its query
+// string indefinitely: an installed app's OLD service worker keeps sending a
+// shared photo to whatever this exact source said at the time it was
+// installed, until the device updates. Source-text, not a live ServiceWorker
+// + caches mock, per the ADR's own "don't over-build this" note.
+test('handleShareTarget redirects a received photo to /add/photo?shared=1', () => {
+  const source = readFileSync(SW_PATH, 'utf-8');
+  assert.match(
+    source,
+    /Response\.redirect\(new URL\('\/add\/photo\?shared=1', self\.location\.origin\)\.toString\(\), 303\)/,
+    'expected the successful-receive branch to redirect to /add/photo?shared=1',
+  );
+});
+
+test('handleShareTarget falls back to a bare /add/photo when nothing was received', () => {
+  const source = readFileSync(SW_PATH, 'utf-8');
+  assert.match(
+    source,
+    /Response\.redirect\(new URL\('\/add\/photo', self\.location\.origin\)\.toString\(\), 303\)/,
+    'expected the fallback branch to redirect to /add/photo',
+  );
+});
