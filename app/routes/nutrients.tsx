@@ -39,7 +39,7 @@
  * every row simply reports "no published reference" — which is the same state a
  * nutrient with no published DRV is in anyway.
  *
- * Exactly ONE brand-filled hero card (DESIGN.md §2): the window summary at the
+ * Exactly ONE hero panel (DESIGN.md §2): the window summary at the
  * top. Everything below it is plain `bg-card`.
  */
 import type { ReactElement } from 'react';
@@ -544,8 +544,8 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* The screen's single brand-filled hero (DESIGN.md §2 — one per screen). */}
-      <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
+      {/* The screen's single hero panel (DESIGN.md §2, one per screen). */}
+      <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
         <CardContent className="space-y-5 p-5 sm:p-6">
           <div className="space-y-1.5">
             <SectionEyebrow>{t('nutrients.hero.eyebrow')}</SectionEyebrow>

@@ -154,13 +154,14 @@ export function WeeklyRecapCard({
   const proteinFloor = goals.proteinFloor;
   const { t, i18n } = useTranslation();
   return (
-    // Brand hero surface (M129/01) — trends' equivalent of the diary's totals
-    // card: the one card on this page worth visually leading with, and it
-    // uses the exact same treatment as that card (`surface-brand` + the
-    // brand-tinted border + a real shadow) so "this is the hero" means one
-    // consistent thing across the app rather than a different flat tint per
-    // page.
-    <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
+    // The hero panel (M129/01, reworked in M243/04), trends' equivalent of
+    // the diary's totals card: the one card on this page worth leading with.
+    // It takes exactly the treatment that card takes, `surface-brand` and the
+    // hero radius over an ordinary card hairline, so "this is the hero" means
+    // one consistent thing across the app rather than a different tint per
+    // page. The graph paper inside the panel is what marks it; the fill and
+    // the border are an ordinary card's.
+    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg">{t('trends.recap.title')}</CardTitle>
       </CardHeader>

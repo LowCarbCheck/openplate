@@ -441,37 +441,64 @@
 
 @layer components {
   /*
-   * M129 soul pass — the two branded surface treatments. Both are pure
-   * gradients over whatever background the element already has, expressed
-   * entirely in terms of the `--primary` token (no color literals): swapping
-   * the brand hue in the token block above re-tints them for free, and both
-   * themes get the same treatment because `--primary` itself is themed.
+   * The three surfaces that mark a hero, an empty panel and the landing
+   * backdrop. All three keep their names and the one-hero rule keeps its
+   * force; what changed in M243 spec 04 is that none of them paints the brand
+   * hue any more. M129 made each one a directional wash of the brand token,
+   * and seven screens then read as "a tinted card on a tinted page". The brand
+   * colour is a rationed ACCENT now (DESIGN.md section 6: the active tab, the
+   * one primary action, the links), never a surface, so these three are drawn
+   * from `--card`, `--border` and `--muted` instead. Every value is still a
+   * token and never a literal, so a retune of the palette moves all three.
    */
 
-  /* Hero card wash: brightest at the top-left corner, where the ring sits,
-     fading out across the card. A flat `bg-primary/10` (the first pass) reads
-     as a uniformly muddy panel; a directional wash gives the card a light
-     source and makes the ring feel like the thing the card is built around. */
+  /*
+   * The hero: a flat panel with graph paper drawn inside it, after
+   * lowcarbcheck.org's own hero. The paper is what makes the hero the hero now
+   * that the fill is an ordinary card fill, and nothing else in the app wears
+   * it, which `tests/e2e/lcc-lineage-hero.spec.ts` reads as "the only element
+   * with a grid background image on the screen".
+   *
+   * THE ALPHA AND THE SCOPE, DECIDED BY LOOKING (2026-09-21, the four renders
+   * under `.tracker/M243-lcc-lineage-restyle/renders/`). WHOLE PANEL, and the
+   * same seven tenths the page grid uses below, which is the number the tests
+   * read as `GRID_LINE_ALPHA`.
+   *
+   * Three tenths was tried first, on the worry that the paper would sit behind
+   * the 12 px caption under each figure. At three tenths the paper is not
+   * there: the panel reads as a plain white card in light and a plain dark one
+   * in dark, and the hero loses the only device that still tells it apart from
+   * every other card. At seven tenths it reads in both themes and nothing
+   * competes with a digit, because what keeps the paper off the small text is
+   * not the alpha, it is the CONTENT: the data rows, the composer and the
+   * inner cards all carry a fill of their own, so the paper is visible in the
+   * hero's top band and in the gaps, which is where lowcarbcheck.org's own
+   * hero shows it. Scoping it to a band was considered and dropped: it needs a
+   * mask, and a mask on the panel masks the panel's children too.
+   */
   .surface-brand {
-    background-image: linear-gradient(
-      140deg,
-      hsl(var(--primary) / 0.18) 0%,
-      hsl(var(--primary) / 0.07) 45%,
-      hsl(var(--primary) / 0.02) 100%
-    );
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.7) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.7) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: -1px -1px;
   }
 
-  /* Quieter sibling for secondary branded panels (landing preview card, empty
-     states) — same direction, roughly a third of the strength. */
+  /* The placeholder panel (an empty state, the landing preview), paired with
+     `border-dashed` at every call site. A quiet step of the muted token, so it
+     reads as "nothing here yet" rather than as a card that failed to load. */
   .surface-brand-soft {
-    background-image: linear-gradient(140deg, hsl(var(--primary) / 0.09) 0%, hsl(var(--primary) / 0.015) 70%);
+    background-color: hsl(var(--muted) / 0.4);
   }
 
-  /* Landing hero backdrop: a soft elliptical brand glow behind the whole
+  /* Landing hero backdrop: a soft elliptical glow behind the whole
      composition, so the page has depth behind the wordmark instead of being
-     flat black/flat white with a card dropped on it. */
+     flat black/flat white with a card dropped on it. Muted, not branded: the
+     wordmark and the one call to action are what the eye should find. */
   .brand-glow {
-    background-image: radial-gradient(60% 55% at 50% 38%, hsl(var(--primary) / 0.2) 0%, transparent 72%);
+    background-image: radial-gradient(60% 55% at 50% 38%, hsl(var(--muted)) 0%, transparent 72%);
   }
 
   /* Long-form reading stays in Inter. The body face is Victor Mono, and a

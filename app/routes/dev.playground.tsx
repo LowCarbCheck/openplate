@@ -83,7 +83,7 @@ export default function DevPlayground(): ReactElement {
             Concept C (ghost of yesterday) stacked above concept A (composer strip), inside the real hero card shell.
           </p>
           <div className="mx-auto max-w-sm">
-            <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
+            <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
               <CardContent className="space-y-3 p-5 sm:p-6">
                 <RepeatYesterdayGhost offer={SAMPLE_OFFER} />
                 <IntakeComposer describeTo="/describe" />

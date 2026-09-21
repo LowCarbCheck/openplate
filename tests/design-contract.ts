@@ -72,7 +72,16 @@ export const BOTTOM_BAR_HEIGHT_PX = 57;
 /** The default card title size, `text-base`. Callers may still override it. */
 export const CARD_TITLE_PX = 16;
 
-/** The page grid's cell, and the alpha its hairlines are drawn at. */
+/**
+ * The graph paper's cell, and the alpha its hairlines are drawn at.
+ *
+ * ONE ALPHA FOR BOTH PLACES the paper is drawn: the page grid (`.surface-grid`) and the hero
+ * panel (`.surface-brand`, M243 spec 04). A lower alpha inside the hero was tried at three tenths
+ * and the paper simply vanished in both themes, so the hero reads the same number. What keeps the
+ * paper off the hero's small text is the panel's content, which carries fills of its own, not a
+ * weaker line. `tests/unit/lcc-lineage-foundation.test.ts` reads it out of `app.css`;
+ * `tests/e2e/lcc-lineage-hero.spec.ts` reads what a browser paints on the hero.
+ */
 export const GRID_CELL_PX = 28;
 export const GRID_LINE_ALPHA = 0.7;
 

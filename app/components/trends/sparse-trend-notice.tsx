@@ -7,7 +7,10 @@
  * this panel, which says the true thing and counts what the user actually has.
  *
  * Uses the established empty-state pattern (DESIGN.md §2): `surface-brand-soft`
- * + `border-dashed`, a muted `PlateGlyph`, one plain sentence. No CTA button —
+ * + `border-dashed` on an ordinary hairline, a muted `PlateGlyph`, one plain
+ * sentence. The dashes are what say "placeholder"; the edge is the same colour
+ * every other card draws, because a panel with nothing in it is the last thing
+ * on the screen that should be wearing the brand. No CTA button:
  * the fix is "log more days", which every other surface on this page already
  * offers; a second "Add food" button here would just be noise.
  */
@@ -28,7 +31,7 @@ export function SparseTrendNotice({ loggedDays }: { loggedDays: number }) {
   const logged = loggedDays <= 0 ? t('trends.sparse.countNone') : `${loggedDays}`;
 
   return (
-    <div className="surface-brand-soft flex flex-col items-center gap-3 rounded-lg border border-dashed border-primary/30 px-4 py-8 text-center">
+    <div className="surface-brand-soft flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-8 text-center">
       <PlateGlyph className="h-12 w-12 text-primary/40" />
       <p className="text-sm font-medium">{t('trends.sparse.headline', { logged })}</p>
       <p className="max-w-xs text-xs text-muted-foreground">{t('trends.sparse.body', { days: MIN_TREND_DAYS })}</p>

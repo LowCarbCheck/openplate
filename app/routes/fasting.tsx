@@ -542,10 +542,10 @@ function formatFastMoment(atMs: number, { timezone, language }: { timezone: stri
   return `${formatDayLabel(dayKey, language)} ${formatClockTime(atMs, { timezone, language })}`;
 }
 
-/** The one brand-filled card on this screen, whichever state it is in. */
+/** The one hero panel on this screen, whichever state it is in. */
 function HeroCard({ children }: { children: ReactElement }): ReactElement {
   return (
-    <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
+    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
       <CardContent className="space-y-5 p-5 sm:p-6">{children}</CardContent>
     </Card>
   );
