@@ -18,6 +18,9 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **Add, Scan and Describe now nest under one address, /add.** /add is now the database search, at /add/search. /scan, the camera and the photo review, is now /add/photo. /describe, the message composer, is now /add/describe. The old addresses still work, each one redirects to its new home, so a bookmark, a home screen shortcut, or an installed app's stale link all keep working.
+- **The AI settings page keeps its explanations folded away until you ask for them.** The page ended with about ten paragraphs of grey text, all open, which pushed the Save button off the bottom of a phone. The two reference blocks, what this is for and what to try when a scan fails, are now closed panels that open when you tap their heading. Nothing was removed, and the setup steps, the provider choice, the models and the key field are all still where they were.
+- **Your usual meals now stand out from the list of recently logged foods.** The chips under "Your usual breakfast" were drawn in the same card surface as the rows under them, so the one tap that saves you a search looked lighter than the list it sits above. Those chips are now filled, and a food's calories moved onto the same line as its badges, so a recent food is two lines instead of three and the whole list is shorter. How often you logged a food now reads as a small filled figure instead of the quietest grey on the row.
+- **Your record tells a three day streak from a hundred day one at a glance.** Every row on the record page looked the same whatever it stood for. The two streak families are ladders, so each of their rows now prints the number of days it asks for, down the left of the title. The badges for trying a function have no day count and print none.
 
 ## [0.38.0] - 2026-09-21
 

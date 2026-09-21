@@ -11,6 +11,22 @@
  * "over goal", and an award that has not arrived yet is not any of those
  * things, it is simply quiet.
  *
+ * ── A TIER IS A NUMBER, SO IT IS DRAWN AS ONE ────────────────────────────
+ *
+ * The streak and on-plan families are LADDERS: 3, 7, 14, 30, 100 days. Their
+ * rows used to be identical in every respect but the title, so "three days" and
+ * "a hundred days" were the same object on the screen and the only way to tell
+ * the near goal from the far one was to read five sentences. The catalog
+ * already carries the number (`AwardDefinition.threshold`), so the row prints
+ * it in a fixed, right-aligned, `tabular-nums` column and the family reads as
+ * the ladder it is at a glance.
+ *
+ * It is a FIGURE and not a size, a weight or a hue, for the reason above: five
+ * escalating treatments would be five decisions about how loud a hundred days
+ * is allowed to be, and a number needs none. An explorer award has no
+ * threshold, so it prints nothing and its family keeps the shape it had, which
+ * is also what separates "you tried a thing" from "you kept at it".
+ *
  * ── THE NOTE IS ONLY SHOWN ONCE IT IS TRUE ───────────────────────────────
  *
  * Every note in the catalog is written in the past tense ("You logged your
@@ -69,12 +85,33 @@ export function AwardTile({
     // The badge drops UNDER the title below 400px. Beside it, a 147px German
     // date badge left the title and its note about 120px to wrap into while
     // the space under the badge stayed empty.
-    <div className="flex flex-col gap-1.5 py-3 min-[400px]:flex-row min-[400px]:items-start min-[400px]:justify-between min-[400px]:gap-3">
-      <div className="min-w-0 space-y-0.5">
-        <p className={cn('text-sm font-medium', isEarned ? 'text-foreground' : 'text-muted-foreground')}>
-          {t(award.titleKey)}
-        </p>
-        {isEarned && <p className="text-xs text-muted-foreground">{t(award.noteKey)}</p>}
+    <div
+      data-slot="award-tile"
+      data-earned={isEarned ? 'yes' : 'no'}
+      className="flex flex-col gap-1.5 py-3 min-[400px]:flex-row min-[400px]:items-start min-[400px]:justify-between min-[400px]:gap-3"
+    >
+      {/* The numeral and the words stay a ROW at every width. The wrapper above
+          turns into a column under 400px so the date badge can drop, and
+          without this the tier figure would drop with it and sit on its own
+          line above the title. */}
+      <div className="flex min-w-0 items-baseline gap-3">
+        {award.threshold !== undefined && (
+          <span
+            data-slot="award-threshold"
+            className={cn(
+              'w-7 shrink-0 text-right text-sm tabular-nums',
+              isEarned ? 'font-semibold text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            {award.threshold}
+          </span>
+        )}
+        <div className="min-w-0 space-y-0.5">
+          <p className={cn('text-sm font-medium', isEarned ? 'text-foreground' : 'text-muted-foreground')}>
+            {t(award.titleKey)}
+          </p>
+          {isEarned && <p className="text-xs text-muted-foreground">{t(award.noteKey)}</p>}
+        </div>
       </div>
       <Badge variant={isEarned ? 'default' : 'outline'} className="w-fit">
         {isEarned ? t('awards.earnedOn', { date: earnedDateLabel(earnedOnDay, i18n.language) }) : t('awards.notYet')}

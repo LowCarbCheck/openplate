@@ -154,6 +154,100 @@ test('the usual is offered at the slot it is eaten at, and not at the others', a
   await expectPhoneLayout(page);
 });
 
+/**
+ * The two halves of `/add/search` must not be drawn in the same material.
+ *
+ * WHAT THIS IS ABOUT. The screen offers "your usual breakfast" as a row of
+ * chips, and under it the foods you logged recently as a list of rows. Those
+ * are two different invitations: one says "start here", the other says
+ * "everything else". They used to share a surface exactly, `border-border
+ * bg-card` on both, and the recent rows were three lines tall while the chips
+ * were one, so the thing a person reaches for every morning was the lighter
+ * object on the page.
+ *
+ * WHAT GOES RED WITHOUT THE FIX. All three reads below: the two backgrounds
+ * resolved to the same rgb, the chip drew a hairline, and the row's text column
+ * held three blocks instead of two.
+ *
+ * WHY COMPUTED COLOUR AND NOT A CLASS NAME. `bg-card` and `bg-accent` are both
+ * tokens and both change with the theme; what a person sees is the resolved
+ * value, and that is what a class-name check cannot read.
+ */
+test('the usual shelf is drawn heavier than the recently logged list', async ({ page }) => {
+  await completeOnboarding(page);
+
+  const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+
+  // TWICE, on two past days: two days make it a habit (so it is offered as a
+  // usual), and more than one log makes the recent row print its own count.
+  for (const day of [shiftDay(today, -2), shiftDay(today, -1)]) {
+    await logFoodManually(page, {
+      name: BREAKFAST_NAME,
+      grams: PORTION_GRAMS,
+      carbs: PORTION_CARBS,
+      mealType: 'breakfast',
+      date: day,
+    });
+  }
+
+  await freezeAt(page, today, '08:00');
+  await page.goto('/add/search');
+
+  const pill = page.locator('[data-slot="usual-at-slot"] [data-slot="usual-offer"] button').first();
+  const row = page.locator('[data-slot="search-result-row"]').first();
+  await expect(pill, 'the habit must be offered').toBeVisible();
+  await expect(row, 'the same food must also be in the recent list').toBeVisible();
+
+  const surfaces = await pill.evaluate((chip, rowSelector) => {
+    const listRow = document.querySelector(rowSelector);
+    if (listRow === null) throw new Error('no search result row to compare against');
+    const chipStyle = getComputedStyle(chip);
+    const rowStyle = getComputedStyle(listRow);
+    return {
+      chip: {
+        background: chipStyle.backgroundColor,
+        borderWidth: Number.parseFloat(chipStyle.borderTopWidth),
+        borderStyle: chipStyle.borderTopStyle,
+      },
+      row: {
+        background: rowStyle.backgroundColor,
+        borderWidth: Number.parseFloat(rowStyle.borderTopWidth),
+        borderStyle: rowStyle.borderTopStyle,
+      },
+    };
+  }, '[data-slot="search-result-row"]');
+
+  // NON-VACUITY: a reader that came back with two empty strings would satisfy
+  // an inequality and say nothing.
+  expect(surfaces.chip.background, 'the chip must resolve a real fill').toMatch(/^rgb/u);
+  expect(surfaces.row.background, 'the row must resolve a real fill').toMatch(/^rgb/u);
+  expect(surfaces.chip.background, 'the shelf and the list must not share a surface').not.toBe(surfaces.row.background);
+  // The chip is a solid block, the row is a hairline box. Two ways of being a
+  // surface, so the eye ranks them without reading either.
+  expect(surfaces.chip.borderWidth === 0 || surfaces.chip.borderStyle === 'none').toBe(true);
+  expect(surfaces.row.borderWidth, 'the list row keeps its hairline').toBeGreaterThan(0);
+
+  // THE ROW IS TWO BLOCKS. The per-100g footnote moved into the facts line, so
+  // a name over a facts line is the whole row; it used to be a third line.
+  const facts = row.locator('[data-slot="search-result-facts"]');
+  await expect(facts).toHaveCount(1);
+  expect(
+    await facts.evaluate((element) => element.parentElement?.childElementCount ?? -1),
+    'a result row is a name and a facts line, nothing else',
+  ).toBe(2);
+
+  // HOW OFTEN, READABLE. The food was logged on two days, so the count is
+  // printed, and it is a filled chip rather than the quietest grey on the row.
+  const count = row.locator('[data-slot="logged-count"]');
+  await expect(count, 'a food logged more than once says so').toHaveCount(1);
+  expect(
+    await count.evaluate((element) => getComputedStyle(element).backgroundColor),
+    'the count chip must be filled, not bare text',
+  ).not.toMatch(/rgba\(0, 0, 0, 0\)|transparent/u);
+
+  await expectPhoneLayout(page);
+});
+
 test('the confirm dialog scales the portion before logging it', async ({ page }) => {
   await completeOnboarding(page);
 

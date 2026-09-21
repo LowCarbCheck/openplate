@@ -46,7 +46,6 @@ import type { UsualAtSlotOffer } from '#app/lib/local-store';
 import { LOG_USUAL_INTENT } from '#app/lib/usual-at-slot';
 import { SectionEyebrow } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
-import { CHIP_NEUTRAL } from '#app/components/list-row';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,11 +133,19 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
           {/* 44 px, the app's tap floor (M243 spec 05b). It was 40, and it only
               ever showed up as a failure when the clock happened to land in the
               same meal window as a habit, which is a flake the floor removes. */}
+          {/* A FILLED CHIP, not a hairline one. It was `border-border bg-card`,
+              which is the exact surface `LIST_ROW_CLASS` gives every recently
+              logged food on the same screen, so "the thing you reach for every
+              morning" was drawn in the same material as "something you logged
+              once three weeks ago" and had less of it. `bg-accent` is one step
+              off the page in both themes (lighter than the card in dark, darker
+              in light), so the shelf reads as raised without spending any of
+              this screen's frozen teal budget (`tests/design-contract.ts`). */}
           <button
             type="button"
             disabled={isLogging}
             className={cn(
-              'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60',
+              'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent/70 disabled:opacity-60',
               isLogging && 'pulse-soft',
             )}
           >
@@ -152,9 +159,16 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
                 so a second line costs the layout nothing. */}
             <span className="min-w-0 break-words">{offer.name}</span>
             {/* Only a bundle says how many rows it writes. For a single food the
-                count is always one, and printing it would be noise. */}
+                count is always one, and printing it would be noise. This is the
+                ONE difference between the two chip shapes, together with the
+                leading glyph, and it is deliberate: a saved meal writes several
+                diary rows and a repeated food writes one, which is the fact a
+                person needs before they tap. Plain text rather than
+                `CHIP_NEUTRAL`: the pill itself is `bg-accent` now, and
+                `bg-muted` sits two percent of lightness away from it, so the
+                chip would have been a chip nobody could see. */}
             {isBundle && (
-              <span className={cn(CHIP_NEUTRAL, 'text-xs tabular-nums')}>
+              <span className="shrink-0 text-xs font-normal tabular-nums text-muted-foreground">
                 {t('usual.itemCount', { count: offer.itemCount })}
               </span>
             )}
