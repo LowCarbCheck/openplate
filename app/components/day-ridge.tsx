@@ -178,7 +178,13 @@ export function DayRidge({
       >
         {captionFor(ridge, t)}
       </p>
-      <div className="relative flex items-end gap-[3px]" style={{ height: DRAW_HEIGHT_PX }}>
+      {/* The plot itself, named so a layout spec can freeze its drawn height:
+          `lcc-lineage-screens.spec.ts` asserts the restyle moved no chart. */}
+      <div
+        data-slot="day-ridge-plot"
+        className="relative flex items-end gap-[3px]"
+        style={{ height: DRAW_HEIGHT_PX }}
+      >
         {/* The 100 percent line. Absent entirely when there is no goal to draw it for. */}
         {ridge.metric !== null && (
           <span aria-hidden="true" className="absolute inset-x-0 h-px bg-border" style={{ bottom: RULE_HEIGHT_PX }} />

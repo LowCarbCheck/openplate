@@ -1874,36 +1874,46 @@ function DaySummaryCard({
       </p>
     );
 
-  // Brand hero surface (M129/01, recomposed in the soul pass): this is the
-  // diary's single most-looked-at card, so it gets the directional teal wash
-  // (`surface-brand`, see app.css) plus a brand-tinted border and a real
-  // shadow, where every other card on the page is plain `bg-card`.
+  // The hero panel (M129/01, reworked in M243/04): this is the diary's single
+  // most-looked-at card, so it wears `.surface-brand`, which since M243/04 is
+  // an ordinary card fill with graph paper drawn inside it (see app.css). The
+  // paper and the hero radius are the whole device; the fill, the hairline and
+  // the shadow are every other card's.
   // The celebration pulse rides on the hero card's own edge — no extra
   // element, no layout shift, and gated behind `motion-safe:` so a
   // reduced-motion visitor simply doesn't get it (see app.css).
   const heroCardClass = cn(
-    'surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md',
+    'surface-brand overflow-hidden rounded-2xl shadow-sm',
     celebrating && 'motion-safe:animate-celebrate',
   );
 
   return (
     <Card className={heroCardClass}>
-      <CardContent className="space-y-5 p-5 sm:p-6">
+      {/* `p-4 space-y-4` rather than `p-5 space-y-5` (M243 spec 05a): the hero
+          filled about four fifths of the phone, and the graph paper it now
+          draws is only worth drawing if some of the page shows beside it. */}
+      <CardContent className="space-y-4 p-4 sm:p-5">
         {/* No eyebrow here: the date navigation directly above already names
             the day this card describes. */}
         {/* The card itself only renders once the day has an entry, so the
             verdict is already withheld until something is logged. A style with
             no lens is withheld always: `DayVerdictChip` renders nothing. */}
         <DayVerdictChip verdict={verdict} />
-        <div className="space-y-3">
+        <div className="space-y-1">
           <DayBudgetRows rows={rows} animatedHeadlines={animatedHeadlines} />
+          {/* `inline-flex min-h-11` rather than `inline-block` (M243 spec
+              05a): 16 px of ink is not a target a thumb can hit, so the words
+              keep their size and sit centred in a 44 px box. */}
           {!hasAnyGoal && (
-            <Link to="/settings/nutrition" className="inline-block text-xs text-primary underline-offset-4 hover:underline">
+            <Link
+              to="/settings/nutrition"
+              className="inline-flex min-h-11 items-center text-xs text-primary underline-offset-4 hover:underline"
+            >
               {t('diary.drilldown.setTargets')}
             </Link>
           )}
         </div>
-        <div className="border-t border-primary/15 pt-4">
+        <div className="border-t pt-4">
           <WhatYouAte summary={summary} caveat={getSummaryCaveat(summary, t)} kcalLine={kcalLine} />
         </div>
         <SuggestionsDisclosure gaps={gaps} addBase={addBase} dateKey={date} loggedFoodNames={loggedFoodNames} />
@@ -2340,7 +2350,14 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
         {chip.carbStatus && (
           <span className={cn('h-2 w-2 shrink-0 rounded-full', carbStatusDotClass[chip.carbStatus])} />
         )}
-        <span className="truncate">+ {chip.name}</span>
+        {/* WRAPS, NEVER CLIPS (M243 spec 08 sweep, fixed in spec 05a). The
+            name used to `truncate`, which was invisible while the body face
+            was Inter and lost the last two words of a 35 character food name
+            in Victor Mono at 360 px, in every language. A pill may be two
+            lines tall; a food nobody can read is worse. `break-words` only
+            breaks inside a word when the word alone cannot fit a line, so an
+            ordinary name still breaks at its spaces. */}
+        <span className="min-w-0 break-words text-left">+ {chip.name}</span>
       </button>
     </logFetcher.Form>
   );
@@ -2585,19 +2602,27 @@ function CopyEntryPicker({
  * screen never assumes the first case silently (M117/08 item 2, counsel End
  * User review): it names the alternative plainly and links both ways out, so
  * a blank diary never reads as a bug.
+ *
+ * A ROW, NOT A POSTER (M243 spec 05a). It was a centred column: a 18 px title
+ * over a centred sentence over a centred composer, which is the template empty
+ * state every product ships and which says "this screen is broken" more than
+ * it says "there is no figure yet". The words are unchanged and sit left, at
+ * the size of a data row's label and caption, and the composer is inline
+ * beside them from `sm` and directly under them on a phone, where a full-width
+ * strip is the only honest shape for it.
  */
 function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: string }) {
   const { t } = useTranslation();
   const syncServerUrl = useSyncServerUrl();
   return (
-    <Card>
-      <CardContent className="space-y-4 p-6 text-center">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">{t('diary.empty.firstEver.title')}</h3>
-          <p className="text-sm text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <IntakeComposer describeTo={describeTo} scanTo={scanTo} className="sm:max-w-72" />
+    <Card data-slot="diary-empty-first-ever">
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="min-w-0 space-y-0.5 sm:flex-1">
+            <p className="text-sm font-semibold text-foreground">{t('diary.empty.firstEver.title')}</p>
+            <p className="text-xs text-muted-foreground">{t('diary.empty.firstEver.subtitle')}</p>
+          </div>
+          <IntakeComposer describeTo={describeTo} scanTo={scanTo} className="sm:w-72 sm:shrink-0" />
         </div>
         {/*
           `Trans` rather than three sentence fragments glued around two links:
@@ -2612,7 +2637,7 @@ function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: st
           sentence would leave a dangling "or" in both languages, so the
           sync-free instance gets its own, complete sentence.
         */}
-        <p className="border-t pt-4 text-xs text-muted-foreground">
+        <p className="border-t pt-3 text-xs text-muted-foreground">
           <Trans
             i18nKey={syncServerUrl === null ? 'diary.empty.firstEver.noDataBackupOnly' : 'diary.empty.firstEver.noData'}
             components={{
@@ -2656,9 +2681,10 @@ function OrdinaryEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: str
     // The empty day is the one screen with nothing to look at, so it carries
     // the brand mark at a size and opacity where it actually READS (the first
     // pass drew it at `/20`, which — as a filled blob — was an illegible
-    // smudge). Dashed brand border + soft wash mark it as a placeholder
-    // surface rather than a card that failed to load.
-    <Card className="surface-brand-soft border-dashed border-primary/30">
+    // smudge). A dashed hairline over the soft panel marks it as a placeholder
+    // surface rather than a card that failed to load; the dashes say that, not
+    // the colour of the edge (M243/04).
+    <Card className="surface-brand-soft border-dashed border-border">
       <CardContent className="flex flex-col items-center gap-5 px-6 py-10 text-center">
         <PlateGlyph className="h-16 w-16 text-primary/60" />
         <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>

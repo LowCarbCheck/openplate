@@ -5,12 +5,15 @@
  * Presentational only: every string and every number arrives already
  * formatted from `#app/lib/day-budget-rows`, which is where the wording is
  * pinned by a unit test. This file owns three things and nothing else: the
- * colour swatch per metric, the meter, and the accessible reading of a row.
+ * colour of the status dot per metric, the meter, and the accessible reading
+ * of a row. The row's SHAPE is the shared data-row recipe in
+ * `#app/components/list-row`, so a budget row and a macro figure are visibly
+ * the same kind of object.
  *
  * Two rules are load-bearing:
  *
  * 1. **Colour never carries meaning alone.** Every row states its metric in
- *    words; the swatch and the meter fill are the only coloured elements, and
+ *    words; the status dot and the meter fill are the only coloured elements, and
  *    the headline text stays `text-foreground` unless the day is over a
  *    ceiling (amber, never destructive) or a floor is reached (brand, with a
  *    check mark beside it, so the state survives greyscale).
@@ -23,10 +26,16 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { Check } from 'lucide-react';
 import type { AnimatedHeadlines, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
+import {
+  DATA_ROW_CLASS,
+  DATA_ROW_DOT_CLASS,
+  DATA_ROW_LABEL_CLASS,
+  DATA_ROW_VALUE_CLASS,
+} from '#app/components/list-row';
 import { cn } from '#app/lib/utils';
 
 /**
- * The swatch and meter fill per metric. Net carbs and calories are the two
+ * The status dot and meter fill per metric. Net carbs and calories are the two
  * BUDGETS and share the brand colour, as their rings did; protein, fat and
  * fiber take the same macro tokens the ratio bar and the macro grid use, so a
  * row and its slice of that bar are visibly the same thing.
@@ -60,11 +69,12 @@ const ROW_TRACK_CLASS = {
  * the mobile audit measured at 10 CSS px and called unreadable; the tag also
  * used to sit INSIDE the label cell, where a German or Turkish label pushed it
  * on to a second line and made the row 22 px taller on some days than on
- * others. It has its own cell on the sub-line row now, so a row is the same
- * height whether it carries a tag or not.
+ * others. It has its own cell on the sub-line row now, named rather than left
+ * to auto-placement, so a row is the same height whether it carries a tag or
+ * not.
  */
 const REFERENCE_TAG_CLASS =
-  'col-start-1 min-w-0 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground';
+  'col-start-1 row-start-2 min-w-0 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground';
 
 /**
  * The tag beside a reference row's label.
@@ -108,21 +118,28 @@ function headlineFor(row: DayBudgetRow, animated: AnimatedHeadlines | null): str
 }
 
 /**
- * One row, as a two column grid with three grid rows. Top row: the label side
- * (swatch, label) on the left, the headline value right-aligned on the right.
- * Middle row: the meter track, spanning BOTH columns. Bottom row: the optional
- * reference tag on the left, the sub-line under the value on the right, so the
- * number and its caption share one right edge in every row.
+ * One row, on the shared data-row recipe (`#app/components/list-row`): a label,
+ * a figure and a status dot on a quiet filled row, which is the signature shape
+ * of lowcarbcheck.org's own data pages (M243 spec 05a).
  *
- * THE TRACK SPANS BOTH COLUMNS because the right column is `auto`: it sizes to
- * the headline, so "1,240" and "34 g" gave their rows tracks of different
- * lengths (the mobile audit measured 143, 164, 154, 143 and 154 px in one
- * five-row card). A full-width track is the same length in every row whatever
- * the number beside it says.
+ * THREE COLUMNS AND TWO GRID ROWS, not the recipe's plain flex line. The recipe
+ * describes a row that states one figure; a budget row states a figure AND how
+ * far through its budget the day is, so the caption and the optional reference
+ * tag get a second line under it. Column 1 is the label and the tag, column 2
+ * the figure and its caption, column 3 the dot, which spans both lines and
+ * closes the row exactly as it does in `CarbCheck.tsx`.
  *
- * A row with no target draws NO track, only the empty first cell: an empty
- * meter would read as a goal sitting at zero percent, which is a different and
- * wrong statement. Its sub-line says "no target set" in words instead.
+ * THE METER IS THE ROW'S FOOT, not a line of its own. It used to be a third
+ * grid row, 8 px of track plus two gaps, on all five rows of a card that
+ * already filled four fifths of the phone. Drawn as a fill along the bottom
+ * edge of the row it costs no height at all, and `inset-x-0` keeps it the same
+ * length in every row whatever the number beside it says: sizing it to a column
+ * gave the rows tracks of 143, 164, 154, 143 and 154 px in one card, which the
+ * mobile audit caught and `mobile-diary.spec.ts` now pins.
+ *
+ * A row with no target draws NO track: an empty one would read as a goal
+ * sitting at zero percent, which is a different and wrong statement. Its
+ * caption says "no target set" in words instead.
  */
 function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHeadlines | null }) {
   const { t } = useTranslation();
@@ -137,20 +154,23 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
   const subline = row.progressText ?? noTargetText;
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2.5 first:pt-0 last:pb-0">
+    <li
+      className={cn(
+        DATA_ROW_CLASS,
+        'relative grid grid-cols-[minmax(0,1fr)_auto_auto] gap-y-0.5 overflow-hidden p-2',
+      )}
+    >
       {/*
         A German label beside the reference tag overflowed at a large font: it
-        lost its tail to an ellipsis, or collapsed to nothing. The tag has moved
-        to the sub-line row, so the cell holds the swatch and the word alone and
-        the word itself wraps rather than being clipped.
+        lost its tail to an ellipsis, or collapsed to nothing. The tag has its
+        own cell on the second line, so the label owns the width of column 1
+        and the word itself wraps rather than being clipped.
       */}
-      <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-        <span className={cn('h-2 w-2 shrink-0 rounded-full', fillClass)} aria-hidden="true" />
-        <span className="min-w-0 break-words">{row.label}</span>
-      </span>
+      <span className={cn(DATA_ROW_LABEL_CLASS, 'col-start-1 row-start-1 min-w-0 break-words')}>{row.label}</span>
       <span
         className={cn(
-          'flex shrink-0 items-center gap-1.5 justify-self-end text-right text-base font-semibold leading-tight tracking-tight tabular-nums min-[400px]:text-xl sm:text-2xl',
+          DATA_ROW_VALUE_CLASS,
+          'col-start-2 row-start-1 flex shrink-0 items-center gap-1.5 text-right leading-tight',
           // Over-goal is amber and only amber: the day describes the food,
           // never the person (DESIGN.md §2b).
           isOver ? 'text-accent-amber'
@@ -159,16 +179,26 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
         )}
       >
         {headlineFor(row, animated)}
-        {isMet && <Check className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />}
+        {isMet && <Check className="h-4 w-4 shrink-0" aria-hidden="true" />}
       </span>
+      {/*
+        The dot closes the row and spans both lines, so it stays centred
+        against the pair. It carries the metric's own colour, and amber once
+        the day is over, which is never the only cue: the label names the
+        metric and the caption states the figures.
+      */}
+      <span
+        className={cn(DATA_ROW_DOT_CLASS, 'col-start-3 row-span-2 row-start-1 self-center', fillClass)}
+        aria-hidden="true"
+      />
 
       {row.fraction !== null && (
         <div
           data-slot="budget-track"
-          className={cn('col-span-2 col-start-1 h-2 self-center overflow-hidden rounded-full', ROW_TRACK_CLASS[row.key])}
+          className={cn('absolute inset-x-0 bottom-0 h-1.5 overflow-hidden', ROW_TRACK_CLASS[row.key])}
         >
           <div
-            className={cn('h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500', fillClass)}
+            className={cn('h-full motion-safe:transition-[width] motion-safe:duration-500', fillClass)}
             style={{ width: `${row.fraction * 100}%` }}
           />
         </div>
@@ -189,7 +219,7 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
       <span
         data-slot="budget-subline"
         aria-hidden={subline === null ? true : undefined}
-        className="col-start-2 justify-self-end text-right text-xs text-muted-foreground tabular-nums"
+        className="col-start-2 row-start-2 justify-self-end text-right text-xs text-muted-foreground tabular-nums"
       >
         {subline ?? '\u00a0'}
       </span>
@@ -216,6 +246,11 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
 /**
  * The day's budget rows.
  *
+ * A STACK OF FILLED ROWS, not a divided list. The rows were hairline-separated
+ * while they sat on the hero's own fill; each one carries the data-row recipe's
+ * quiet fill now, and a divider between two filled blocks draws nothing anyone
+ * can see. The separation is the gap.
+ *
  * @param rows - the rows to draw, already in display order.
  * @param animatedHeadlines - tweened headlines for the two budget rows, or null where the caller does not animate (the dashboard does not).
  */
@@ -227,7 +262,7 @@ export function DayBudgetRows({
   animatedHeadlines?: AnimatedHeadlines | null;
 }) {
   return (
-    <ul className="divide-y divide-border/50">
+    <ul className="space-y-1">
       {rows.map((row) => (
         <BudgetRow key={row.key} row={row} animated={animatedHeadlines} />
       ))}

@@ -51,14 +51,14 @@ export function MacroRatioBar({ grams, className }: { grams: MacroRatioGrams; cl
 
   if (!percentages) {
     return (
-      <div className={cn('h-2 w-full rounded-full bg-muted', className)}>
+      <div data-slot="macro-ratio-bar" className={cn('h-2 w-full rounded-full bg-muted', className)}>
         <span className="sr-only">{t('diary.macroRatio.empty')}</span>
       </div>
     );
   }
 
   return (
-    <div className={cn('flex h-2 w-full overflow-hidden rounded-full bg-muted', className)}>
+    <div data-slot="macro-ratio-bar" className={cn('flex h-2 w-full overflow-hidden rounded-full bg-muted', className)}>
       {/* The ratio in words: the segments themselves are pure geometry, so the
           accessible reading lives in this visually-hidden sentence rather than
           an `aria-label` (which would need a `role="img"` to be honoured). */}

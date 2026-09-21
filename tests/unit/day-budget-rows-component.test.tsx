@@ -99,6 +99,14 @@ function hasLeftBorder(markup: string): boolean {
   return /border-l-(?!0)/.test(markup);
 }
 
+/** The class list of the `<li>` itself, never of anything inside it. */
+function rowClass(markup: string): string {
+  const match = /^<li class="([^"]*)"/.exec(markup);
+  const classList = match?.[1];
+  if (classList === undefined) throw new Error('expected a row carrying a class list');
+  return classList;
+}
+
 /** The markup of the two row kinds, plus the page they came from. */
 interface BothRowKinds {
   /** The net-carb row, which has a ceiling. */
@@ -169,14 +177,38 @@ describe('a budget row is one grid, whether or not it has a target', () => {
     assert.ok(!(countProgressElements(targetRow) === 0), 'CONTROL: swapped rows must fail the sentence claim');
   });
 
-  it('separates rows with a hairline and no left border of any weight', () => {
+  /**
+   * M243 spec 05a: the rows are separate filled blocks on the shared data-row
+   * recipe, so the separator is the GAP. They were hairline-divided while they
+   * sat on the hero's own fill, and a `divide-y` between two filled blocks
+   * draws a line nobody can see.
+   *
+   * The left-rule ban is unchanged and is the older half of this claim: a
+   * thick left border is the slop pattern this card was redrawn to remove, and
+   * a data row has no border at all.
+   */
+  it('gives every row the shared data-row surface and no left border of any weight', () => {
     const html = render(buildRows());
-    assert.match(html, /divide-y divide-border\/50/);
+    const rows = rowMarkup(html);
+    assert.equal(rows.length, 5, 'the day fixture draws all five rows');
+    assert.ok(
+      rows.every((row) => classTokens(rowClass(row)).includes('bg-muted/40')),
+      'every row must carry the data row fill from `DATA_ROW_CLASS`',
+    );
+    assert.ok(!html.includes('divide-y'), 'filled blocks separate by their gap, not by an invisible hairline');
     assert.ok(!hasLeftBorder(html), 'no element may carry a left border');
 
-    // CONTROL: the same check over markup with a left border added fails.
-    const broken = html.replace('<ul class="', '<ul class="border-l-4 ');
-    assert.ok(hasLeftBorder(broken), 'CONTROL: an injected border-l-4 must fail this check');
+    // CONTROL 1: the same reader over markup with a left border added fails.
+    const withRule = html.replace('<ul class="', '<ul class="border-l-4 ');
+    assert.ok(hasLeftBorder(withRule), 'CONTROL: an injected border-l-4 must fail this check');
+
+    // CONTROL 2: markup with one row stripped of the fill fails the surface
+    // claim, so "every row" is not a claim that passes on any markup at all.
+    const stripped = rowMarkup(html.replace('bg-muted/40', 'bg-transparent'));
+    assert.ok(
+      !stripped.every((row) => classTokens(rowClass(row)).includes('bg-muted/40')),
+      'CONTROL: a row that lost the data row fill must fail this check',
+    );
   });
 });
 

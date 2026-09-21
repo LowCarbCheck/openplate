@@ -47,6 +47,12 @@ import { SUGGESTION_FOODS } from '#app/data/suggestion-foods';
 import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
 import { MacroRatioBar } from '#app/components/macro-ratio-bar';
 import { SectionEyebrow } from '#app/components/typography';
+import {
+  DATA_ROW_CLASS,
+  DATA_ROW_DOT_CLASS,
+  DATA_ROW_LABEL_CLASS,
+  DATA_ROW_VALUE_CLASS,
+} from '#app/components/list-row';
 import { cn } from '#app/lib/utils';
 
 /** How many suggestions the disclosure offers. Enough to feel like a choice, few enough to scan standing up. */
@@ -443,7 +449,7 @@ const MACRO_BREAKDOWN_FIGURES: { key: 'carbs' | 'fiber' | 'protein' | 'fat'; lab
   { key: 'fat', labelKey: 'diary.macros.fat' },
 ];
 
-/** Swatch per macro, in the same token family as the ratio-bar segment above it, so a figure and its slice of the bar are visibly the same thing. */
+/** Status dot per macro, in the same token family as the ratio-bar segment above it, so a figure and its slice of the bar are visibly the same thing. */
 const MACRO_DOT_CLASS = {
   carbs: 'bg-macro-carbs',
   fiber: 'bg-macro-fiber',
@@ -452,24 +458,37 @@ const MACRO_DOT_CLASS = {
 } satisfies Record<'carbs' | 'fiber' | 'protein' | 'fat', string>;
 
 /**
- * The day's four macro figures as a grid of labelled cells (M129/01).
+ * The day's four macro figures, each on the shared data-row recipe
+ * (`#app/components/list-row`), two to a line on a phone and four across from
+ * `sm` (M129/01, restyled in M243 spec 05a).
  *
- * Color still isn't the sole encoding: every cell is named in words, the cells
- * are in a fixed order matching the ratio bar's segment order, and the color
- * appears as a small round swatch beside the label rather than as the text
- * color of the figure itself.
+ * TWO DEVIATIONS FROM THE RECIPE, both because the cell is a half-width column
+ * rather than a full-width row:
+ *
+ * 1. **The dot is 10 px, not the recipe's 16.** A 16 px dot beside an 11 px
+ *    label reads as the loudest thing in the block, and the same swatch sizes
+ *    the ratio-bar legend directly above it.
+ * 2. **The cell WRAPS instead of clipping.** The label and the figure sit on
+ *    one line where they fit and the figure drops under the label where they
+ *    do not. "Kohlenhydrate" beside "12.4 g" needs 157 px in the body face and
+ *    a cell at a 360 px phone is 142, so a one-line cell would have to
+ *    truncate a word, which is what the M243 clip sweep exists to stop.
+ *
+ * Colour still isn't the sole encoding: every cell is named in words, the cells
+ * are in a fixed order matching the ratio bar's segment order, and the colour
+ * is the dot rather than the text colour of the figure itself.
  */
 function MacroBreakdown({ summary }: { summary: DaySummary }) {
   const { t, i18n } = useTranslation();
   return (
-    <dl className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {MACRO_BREAKDOWN_FIGURES.map(({ key, labelKey }) => (
-        <div key={key} className="min-w-0">
-          <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-            <span className={cn('h-2 w-2 shrink-0 rounded-full', MACRO_DOT_CLASS[key])} aria-hidden="true" />
-            <span className="truncate">{t(labelKey)}</span>
+        <div key={key} className={cn(DATA_ROW_CLASS, 'min-w-0 flex-wrap gap-x-1.5 gap-y-0 p-2')}>
+          <span className={cn(DATA_ROW_DOT_CLASS, 'size-2.5', MACRO_DOT_CLASS[key])} aria-hidden="true" />
+          <dt className={cn(DATA_ROW_LABEL_CLASS, 'min-w-0 break-words text-[11px] uppercase tracking-[0.08em]')}>
+            {t(labelKey)}
           </dt>
-          <dd className="text-sm font-semibold leading-tight text-foreground tabular-nums">
+          <dd className={cn(DATA_ROW_VALUE_CLASS, 'text-foreground')}>
             {formatMeasureIn(i18n.language, summary[key], 'g')}
           </dd>
         </div>
@@ -516,11 +535,17 @@ export function WhatYouAte({
       {/*
         The door into the Nutrition tab (M239/06): this block already states
         today's macros, and the tab draws the honest chart of them over time.
+
+        `inline-flex min-h-11` rather than `inline-block` (M243 spec 05a): the
+        ink is 16 px of text, and 16 px is not a target a thumb can hit. The
+        box is 44 px and the words sit centred in it, so the link gained a
+        target without gaining a size. It was one of the four entries frozen in
+        `tests/e2e/lcc-lineage-tap-targets.spec.ts`, and its entry is gone.
       */}
       <Link
         to="/trends?tab=nutrition"
         data-slot="day-summary-insights-link"
-        className="inline-block text-xs text-primary underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 items-center text-xs text-primary underline-offset-4 hover:underline"
       >
         {t('trends.overview.openInsights', { name: t('trends.title') })}
       </Link>

@@ -31,6 +31,7 @@ import i18next from '../../app/i18n/i18n';
 import { withI18n } from './trends-i18n-harness';
 import { MemoryRouter } from 'react-router';
 import { DayBudgetRows } from '../../app/components/day-budget-rows';
+import { DATA_ROW_DOT_CLASS } from '../../app/components/list-row';
 import {
   buildDayBudgetRows,
   formatBudgetHeadline,
@@ -455,11 +456,25 @@ describe('DayBudgetRows rendering', () => {
     assert.ok(!html.includes('destructive'), 'over-goal must never use the destructive token');
   });
 
-  it('cues colour with a round swatch, never a thick left rule', () => {
+  /**
+   * The colour cue is the data row's own status dot (M243 spec 05a): the
+   * shared `DATA_ROW_DOT_CLASS` recipe, one per row, at the end of the row.
+   * It was an 8 px swatch in front of the label; the recipe is read from
+   * `#app/components/list-row` here rather than retyped, so the day the ladder
+   * moves this test moves with it instead of failing for the wrong reason.
+   */
+  it('cues colour with the shared status dot, never a thick left rule', () => {
     const html = render(buildRows(DAY, BOTH_GOALS));
-    assert.match(html, /h-2 w-2 shrink-0 rounded-full/);
+    const dots = html.match(new RegExp(DATA_ROW_DOT_CLASS, 'g'))?.length ?? 0;
+    assert.equal(dots, 5, 'every row carries exactly one status dot on the shared recipe');
     assert.ok(!html.includes('border-l-2'), 'the left-rule accent is what this redesign removed');
     assert.ok(!html.includes('border-l-4'));
+
+    // CONTROL: the recipe is a real class list, and the reader counts it
+    // rather than matching anything round. Markup with the dots renamed
+    // reports none, so a row that quietly lost its dot cannot pass.
+    const withoutDots = html.replaceAll(DATA_ROW_DOT_CLASS, 'size-4 shrink-0 rounded-none');
+    assert.equal(withoutDots.match(new RegExp(DATA_ROW_DOT_CLASS, 'g'))?.length ?? 0, 0);
   });
 
   it('reports the real, unclamped figures to assistive tech', () => {

@@ -26,11 +26,20 @@
  * bottom bar sit beside it. Those are the shell's, and the specs that own the shell measure them
  * (`mobile-shell.spec.ts`, `lcc-lineage-update-ribbon.spec.ts`), so they are left out here.
  *
- * ── FOUR KNOWN TARGETS ARE UNDER THE FLOOR AT M243, AND ARE FROZEN, NOT FIXED ──
+ * ── THE FROZEN SET, AND WHAT M243 SPEC 05a TOOK OFF IT ──
  * The first run of this check found four targets whose DRAWN box is under 44 px: three real ones (two
  * `inline-block text-xs` links and a `text-sm` text button, 16 to 20 px tall) and "Save as meal",
  * which draws 28 px and buys its 44 from an `after:` box. None was caused by the new face and none
- * is in a file spec 08 may edit, so they are named in `KNOWN_UNDER_FLOOR` with what each one is. The list is a FROZEN SET, like the colour literals in
+ * was in a file spec 08 could edit, so all four were named in `KNOWN_UNDER_FLOOR` with what each one is.
+ *
+ * TWO HAVE SINCE BEEN FIXED and their entries are gone: "Set your own targets" and "Open Insights"
+ * are `inline-flex min-h-11` now, so the words kept their size and the box reached the floor
+ * (M243 spec 05a, which owns `/diary`). The two that remain are there for a reason a reader can
+ * check: "Save as meal" DOES reach 44 px, by an `after:` box that a drawn-box reader cannot see and
+ * that `mobile-diary.spec.ts` proves by hit test instead; and "Add manually" lives on `/add`, which
+ * spec 05b owns.
+ *
+ * The list is a FROZEN SET, like the colour literals in
  * `brand-colors.test.ts`: it fails in both directions. A NEW small target fails the check, and an
  * entry that no longer matches a small target fails it too, which is how a fix gets noticed and
  * the entry deleted. It is the operator's list to work down.
@@ -86,16 +95,6 @@ interface KnownSmallTarget {
  * by its words, so the same entry matches in English, German and Turkish.
  */
 const KNOWN_UNDER_FLOOR: readonly KnownSmallTarget[] = [
-  {
-    route: '/diary',
-    selector: 'a[href="/settings/nutrition"]',
-    reason: '"Set your own targets" is an `inline-block text-xs` link under the hero, 16 px tall. The diary sweep in mobile-diary.spec.ts does not read it.',
-  },
-  {
-    route: '/diary',
-    selector: '[data-slot="day-summary-insights-link"]',
-    reason: '"Open Insights" is an `inline-block text-xs` link at the foot of the day summary, 16 px tall.',
-  },
   {
     route: '/diary',
     selector: '[data-slot="save-meal-trigger"]',

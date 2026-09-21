@@ -481,12 +481,18 @@ function TodayHeroCard({
     </div>
   );
 
-  // The page's single `.surface-brand` (DESIGN.md §2, one hero per screen) ,
-  // the two glance tiles below are plain `bg-card`.
+  // The page's single `.surface-brand` (DESIGN.md §2, one hero per screen),
+  // the two glance tiles below are plain `bg-card`. What marks the hero is the
+  // graph paper `.surface-brand` draws inside the panel and the hero radius,
+  // not a fill or a border of its own: those are an ordinary card's since
+  // M243/04.
   return (
-    <Card className="surface-brand overflow-hidden rounded-2xl border-primary/30 shadow-md">
-      <CardContent className="space-y-5 p-5 sm:p-6">
-        <div className="space-y-2.5">
+    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+      {/* `p-4 space-y-4` rather than `p-5 space-y-5` (M243 spec 05a): the hero
+          filled about four fifths of the phone, and the graph paper it now
+          draws is only worth drawing if some of the page shows beside it. */}
+      <CardContent className="space-y-4 p-4 sm:p-5">
+        <div className="space-y-2">
           <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
           {/*
             On an untouched plate the carb-impact chip resolves to "Low carb
