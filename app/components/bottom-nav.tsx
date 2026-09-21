@@ -63,7 +63,10 @@ function FlatTab({ tab }: { tab: NavigationItem }) {
  * the camera inside its own gesture rather than travelling to `/scan` first.
  * The geometry is unchanged, and so are the two clearances that depend on it
  * (`app-wrapper.tsx`'s `6rem` of bottom page padding, and `/scan`'s sticky
- * action bar's extra bottom padding).
+ * action bar's extra bottom padding). M243 spec 03 took the teal halo off that
+ * circle and moved nothing: `tests/e2e/lcc-lineage-shell.spec.ts` freezes all
+ * four values of its rect beside this bar's own height, so the next change to
+ * either fails instead of quietly eating a clearance.
  */
 export function BottomNav() {
   return (

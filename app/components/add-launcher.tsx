@@ -153,11 +153,24 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
             isActive ? 'font-semibold text-primary' : 'font-medium text-muted-foreground hover:text-foreground',
           )}
         >
+          {/* THE GEOMETRY STAYS, THE GLOW GOES (M243/03). The circle used to sit
+              in a teal halo, a large one when active and a medium one at rest,
+              both drawn in the brand colour at a fifth and at two fifths alpha,
+              which was the one piece of chrome in the app that painted light in
+              the brand colour. Do not name those classes here: the milestone
+              verifies their absence with a grep over this file. Nothing
+              else in this app, and nothing in lowcarbcheck, rests heavier than
+              `shadow-sm`. The active state keeps its lift through the scale, not
+              through a bigger halo. The size, the offset and the ring are
+              untouched on purpose: three clearances are measured off this box
+              (`bottom-nav.tsx`'s `h-14`, `app-wrapper`'s `6rem` of bottom page
+              padding and `/scan`'s sticky action bar), and
+              `lcc-lineage-shell.spec.ts` freezes all four of its rect values. */}
           <span
             className={cn(
-              '-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground ring-4 ring-background',
+              '-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm ring-4 ring-background',
               'motion-safe:transition-all motion-safe:duration-200',
-              isActive ? 'shadow-lg shadow-primary/40 motion-safe:scale-105' : 'shadow-md shadow-primary/20',
+              isActive && 'motion-safe:scale-105',
             )}
           >
             <tab.icon className="h-6 w-6" aria-hidden="true" />
