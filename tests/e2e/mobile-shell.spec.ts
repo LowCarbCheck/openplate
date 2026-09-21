@@ -373,10 +373,10 @@ test('every public footer link is a 44px target at 360px, in en, de and tr', asy
     await page.goto('/terms');
 
     const links = page.locator('footer nav a');
-    // THE CONTROL AGAINST A VACUOUS PASS: six links, counted, so a footer that
+    // THE CONTROL AGAINST A VACUOUS PASS: eight links, counted, so a footer that
     // failed to render offers nothing to measure and fails here instead of
     // passing an empty list of heights.
-    await expect(links, `${locale}: the footer must draw its six links`).toHaveCount(6);
+    await expect(links, `${locale}: the footer must draw its eight links`).toHaveCount(8);
 
     const heights = await heightsOf(links);
     for (const height of heights) {
