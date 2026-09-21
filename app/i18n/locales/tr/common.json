@@ -596,7 +596,8 @@
     "macroRatio": {
       "empty": "Henüz bir makro kaydedilmedi",
       "label": "Makro oranı: {{ratio}}",
-      "segment": "{{percent}}% {{macro}}"
+      "segment": "{{percent}}% {{macro}}",
+      "share": "{{percent}}%"
     },
     "macros": {
       "breakdownLine": "Karbonhidrat {{carbs}} g · Lif {{fiber}} g · Protein {{protein}} g · Yağ {{fat}} g · {{kcal}} kalori",
