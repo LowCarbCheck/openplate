@@ -307,6 +307,7 @@
   "chrome": {
     "back": "Geri",
     "buildStamp": "Sürüm {{label}}",
+    "cancelContract": "Sözleşmeleri buradan feshet",
     "deviceMenuLabel": "Bu cihaz, menüyü aç",
     "footerTagline": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, verilerini cihazında tutan bir beslenme takipçisi",
     "footerTaglineManaged": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, yalnızca senin okuyabildiğin bir beslenme takipçisi",
@@ -340,7 +341,8 @@
       "releaseAvailable": "openplate {{version}} hazır",
       "reload": "Yeniden yükle",
       "view": "Neler değişti"
-    }
+    },
+    "withdrawContract": "Sözleşmeden cay"
   },
   "clinicianLink": {
     "copied": "Kopyalandı",
@@ -1328,7 +1330,11 @@
     "pantry": "Kiler · openplate",
     "recipes": "Tarifler · openplate",
     "awards": "Kayıtların · openplate",
-    "whatsNew": "Yenilikler · openplate"
+    "whatsNew": "Yenilikler · openplate",
+    "kuendigung": "Bir sözleşmeyi feshet · openplate",
+    "kuendigungBestaetigt": "Fesih onaylandı · openplate",
+    "widerrufen": "Bir sözleşmeden cay · openplate",
+    "widerrufenBestaetigt": "Cayma onaylandı · openplate"
   },
   "nav": {
     "add": "Ekle",

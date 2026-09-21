@@ -68,7 +68,7 @@
     "s4aPaymentHeading": "4a. Piani, prezzi e pagamento",
     "s4aPaymentPrice": "openplate Plus costa {{price}} al mese. Ogni prezzo indicato è un prezzo finale e include l'imposta tedesca sul valore aggiunto. Non si applicano costi aggiuntivi.",
     "s4aPaymentTrial": "Un nuovo account include una prova gratuita di {{trialDays}} giorni. Al termine della prova, le scansioni dei piatti si interrompono finché non acquista un piano. Il resto di openplate continua a funzionare. Il Suo diario rimane sul Suo dispositivo e il Suo account continua la sincronizzazione.",
-    "s4aPaymentRenewal": "Un piano a pagamento si rinnova mensilmente fino alla Sua disdetta. Può annullare l'iscrizione in qualsiasi momento nella pagina del piano all'interno dell'app. La disdetta ha effetto al termine del periodo di fatturazione a pagamento in corso, e Lei mantiene l'accesso fino a tale data.",
+    "s4aPaymentRenewal": "Un piano a pagamento si rinnova mensilmente fino alla Sua disdetta. Può recedere in qualsiasi momento sulla pagina pubblica denominata \"Verträge hier kündigen\", senza effettuare l'accesso. La disdetta ha effetto al termine del Suo periodo di fatturazione a pagamento in corso, e Lei mantiene l'accesso fino a tale data.",
     "s4aPaymentFailed": "Se un pagamento non va a buon fine, l'accesso alle funzionalità di IA cessa alla scadenza del periodo a pagamento. Il Suo diario alimentare rimane intatto.",
     "s4aPaymentWithdrawal": "In qualità di consumatore, Lei ha quattordici giorni per recedere dal contratto. Le nostre istruzioni sul recesso e il modulo di recesso tipo sono disponibili nella <withdrawal>pagina di recesso</withdrawal>, dove può salvare o stampare entrambi.",
     "s4aPaymentWithdrawalLoss": "Al momento dell'acquisto di un piano, Lei richiede espressamente l'inizio dell'esecuzione del servizio prima della scadenza del periodo di recesso e prende atto che perderà il diritto di recesso una volta che avremo eseguito integralmente il contratto. Registriamo entrambe le dichiarazioni insieme al Suo ordine.",
@@ -170,6 +170,8 @@
     "rightBody1": "Lei ha il diritto di recedere dal presente contratto entro quattordici giorni senza fornire alcuna motivazione.",
     "rightBody2": "Il periodo di recesso è di quattordici giorni a decorrere dal giorno della conclusione del contratto.",
     "rightBody3": "Per esercitare il diritto di recesso, deve informarci ({{operator}}) della Sua decisione di recedere dal presente contratto tramite una dichiarazione inequivocabile, ad esempio una lettera inviata per posta o un'e-mail. A tal fine può utilizzare il modulo di recesso tipo allegato, ma non è obbligatorio.",
+    "rightBody3a": "Può inoltre esercitare il Suo diritto di recesso online all'indirizzo https://app.openplate.de/widerrufen. Se utilizza questa funzione online, Le invieremo senza indugio una conferma di ricezione su un supporto durevole (ad esempio tramite e-mail), indicante il contenuto della dichiarazione di recesso nonché la data e l'ora di ricezione.",
+    "rightBody3b": "Può inoltre compilare e trasmettere elettronicamente il modulo tipo di recesso, o qualsiasi altra dichiarazione esplicita, sul nostro sito web all'indirizzo https://app.openplate.de/widerrufen. Se utilizza questa opzione, Le invieremo senza indugio una conferma di ricezione di tale recesso (ad esempio tramite e-mail).",
     "rightBody4": "Per rispettare il termine di recesso, è sufficiente inviare la comunicazione relativa all'esercizio del diritto di recesso prima della scadenza del periodo di recesso.",
     "consequencesHeading": "Effetti del recesso",
     "consequencesBody1": "Se recede dal presente contratto, Le rimborseremo tutti i pagamenti che abbiamo ricevuto da Lei, compresi i costi di consegna (ad eccezione dei costi supplementari derivanti dalla Sua scelta di un tipo di consegna diverso dal tipo meno costoso di consegna standard da noi offerto), senza indebito ritardo e in ogni caso non oltre quattordici giorni dal giorno in cui siamo informati della Sua decisione di recedere dal presente contratto. Eseguiremo tale rimborso utilizzando lo stesso mezzo di pagamento da Lei utilizzato per la transazione iniziale, a meno che non abbia espressamente concordato diversamente; in ogni caso, non dovrà sostenere alcun costo quale conseguenza di tale rimborso.",
@@ -184,5 +186,51 @@
     "formField6": "Firma del consumatore/dei consumatori (solo se il presente modulo è notificato su carta)",
     "formField7": "Data",
     "formFootnote": "(*) Cancellare la dicitura non pertinente."
+  },
+  "declarations": {
+    "cancel": {
+      "title": "Verträge hier kündigen",
+      "intro": "Disdica un contratto stipulato con noi. Riceverà una conferma immediata con la data e l'ora di ricezione.",
+      "terminationTypeLabel": "Tipo di disdetta",
+      "terminationTypeOrdentlich": "Disdetta ordinaria",
+      "terminationTypeAusserordentlich": "Disdetta straordinaria",
+      "reasonLabel": "Motivo della disdetta straordinaria",
+      "nameLabel": "Nome",
+      "emailLabel": "Indirizzo e-mail",
+      "contractReferenceLabel": "Numero cliente o contratto (facoltativo)",
+      "timingLabel": "Quando deve avere effetto la disdetta",
+      "timingEarliest": "Alla prima data utile",
+      "timingOnDate": "In una data specifica",
+      "requestedDateLabel": "Data richiesta (facoltativo)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "title": "Vertrag widerrufen",
+      "intro": "Receda da un contratto stipulato con noi. Riceverà una conferma immediata con la data e l'ora di ricezione.",
+      "nameLabel": "Nome",
+      "emailLabel": "Indirizzo e-mail",
+      "contractReferenceLabel": "Numero cliente o contratto (facoltativo)",
+      "requestedDateLabel": "Data di stipula del contratto (facoltativo)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "cancelTitle": "Disdetta confermata",
+      "withdrawTitle": "Recesso confermato",
+      "receiptIdLabel": "Ricevuta n.: {{receiptId}}",
+      "kindCancel": "Tipo: Disdetta",
+      "kindWithdraw": "Tipo: Recesso",
+      "addressLabel": "Inviato a: {{email}}",
+      "receivedAtLabel": "Ricevuto il: {{instant}}",
+      "mailNotice": "Le abbiamo inviato questa conferma anche tramite email.",
+      "print": "Stampa la conferma"
+    },
+    "errors": {
+      "nameRequired": "Inserisca il Suo nome.",
+      "emailInvalid": "Questo dato non sembra un indirizzo email valido.",
+      "reasonRequired": "Indichi il motivo del recesso straordinario.",
+      "invalid": "Non è stato possibile elaborare uno dei campi. Controlli i dati inseriti e riprovi.",
+      "rateLimited": "Troppe richieste. Riprovi tra qualche minuto.",
+      "unreachable": "Non è stato possibile accettare questa dichiarazione per via telematica in questo momento. Utilizzi l'indirizzo postale indicato nei crediti legali."
+    }
   }
 }

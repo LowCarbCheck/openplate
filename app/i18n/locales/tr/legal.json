@@ -68,7 +68,7 @@
     "s4aPaymentHeading": "4a. Planlar, fiyatlar ve ödeme",
     "s4aPaymentPrice": "openplate Plus aylık {{price}} tutarındadır. Belirtilen her fiyat nihai fiyattır ve Almanya katma değer vergisini içerir. Ek ücret uygulanmaz.",
     "s4aPaymentTrial": "Yeni bir hesap {{trialDays}} günlük ücretsiz deneme içerir. Deneme süresi bittiğinde, siz bir plan satın alana kadar tabak taraması durur. openplate uygulamasının geri kalanı çalışmaya devam eder. Günlüğünüz cihazınızda kalır ve hesabınız eşitlemeye devam eder.",
-    "s4aPaymentRenewal": "Ücretli bir plan, siz iptal edene kadar aylık olarak yenilenir. Uygulamadaki plan sayfasından istediğiniz zaman iptal edebilirsiniz. İptal, mevcut ücretli fatura döneminizin sonunda yürürlüğe girer ve bu tarihe kadar erişiminizi korursunuz.",
+    "s4aPaymentRenewal": "Ücretli bir plan, siz iptal edene kadar her ay yenilenir. Giriş yapmadan, \"Verträge hier kündigen\" adlı herkese açık sayfadan istediğiniz zaman iptal edebilirsiniz. İptal, mevcut ücretli fatura döneminizin sonunda yürürlüğe girer ve bu tarihe kadar erişiminizi korursunuz.",
     "s4aPaymentFailed": "Bir ödeme başarısız olursa, ücretli döneminizin süresi dolduğunda yapay zeka özelliklerine erişim sona erer. Yemek günlüğünüz olduğu gibi kalır.",
     "s4aPaymentWithdrawal": "Tüketici olarak sözleşmeden caymak için on dört gününüz vardır. Cayma talimatımız ve örnek cayma formumuz, her ikisini de kaydedebileceğiniz veya yazdırabileceğiniz <withdrawal>cayma sayfasında</withdrawal> mevcuttur.",
     "s4aPaymentWithdrawalLoss": "Bir plan satın aldığınızda, cayma süresi dolmadan önce hizmeti başlatmamızı açıkça talep edersiniz ve sözleşmeyi tam olarak ifa ettiğimizde cayma hakkınızı kaybedeceğinizi kabul edersiniz. Her iki beyanı da siparişinizle birlikte kaydederiz.",
@@ -170,6 +170,8 @@
     "rightBody1": "On dört gün içinde herhangi bir gerekçe göstermeksizin bu sözleşmeden cayma hakkına sahipsiniz.",
     "rightBody2": "Cayma süresi, sözleşmenin akdedildiği günden itibaren on dört gündür.",
     "rightBody3": "Cayma hakkınızı kullanmak için, bu sözleşmeden cayma kararınızı açık bir beyanla, örneğin posta yoluyla gönderilen bir mektup veya bir e-posta ile bize ({{operator}}) bildirmelisiniz. Ekli örnek cayma formunu kullanabilirsiniz, ancak bu zorunlu değildir.",
+    "rightBody3a": "Cayma hakkınızı https://app.openplate.de/widerrufen adresinden çevrim içi olarak da kullanabilirsiniz. Bu çevrim içi işlevi kullanırsanız, cayma bildiriminin içeriğini ve alındığı tarih ile saati belirten bir alındı teyidini kalıcı bir veri saklayıcısı üzerinde (örneğin e-posta ile) gecikmeksizin size göndeririz.",
+    "rightBody3b": "Örnek cayma formunu veya diğer herhangi bir açık beyanı https://app.openplate.de/widerrufen adresindeki web sitemiz üzerinden elektronik olarak da doldurup gönderebilirsiniz. Bu seçeneği kullanırsanız, bu tür bir caymanın alındığına dair bir onayı gecikmeksizin (örneğin e-posta ile) size göndeririz.",
     "rightBody4": "Cayma süresine uymak için, cayma hakkınızı kullandığınıza dair bildirimi cayma süresi dolmadan önce göndermeniz yeterlidir.",
     "consequencesHeading": "Caymanın sonuçları",
     "consequencesBody1": "Bu sözleşmeden caymanız durumunda, sizden tahsil edilen tüm ödemeleri, tarafımızca sunulan en ucuz standart teslimat türü dışındaki bir teslimat türünü seçmenizden kaynaklanan ek masraflar hariç olmak üzere teslimat masrafları da dahil, bu sözleşmeden cayma kararınızın bize bildirildiği günden itibaren gecikmeksizin ve her hâlükarda en geç on dört gün içinde tarafınıza iade edeceğiz. Açıkça aksi kararlaştırılmadıkça, bu geri ödemeyi ilk işlemde kullandığınız ödeme aracıyla gerçekleştireceğiz; her hâlükarda, bu geri ödeme nedeniyle sizden herhangi bir ücret alınmayacaktır.",
@@ -184,5 +186,51 @@
     "formField6": "Tüketicinin/tüketicilerin imzası (yalnızca bu form kağıt üzerinde bildirildiğinde)",
     "formField7": "Tarih",
     "formFootnote": "(*) Uygun olmayanın üstünü çizin."
+  },
+  "declarations": {
+    "cancel": {
+      "title": "Verträge hier kündigen",
+      "intro": "Bizimle olan bir sözleşmeyi feshedin. Bildirimi aldığımız tarih ve saati içeren anında bir onay alacaksınız.",
+      "terminationTypeLabel": "Fesih türü",
+      "terminationTypeOrdentlich": "Olağan fesih",
+      "terminationTypeAusserordentlich": "Olağanüstü fesih",
+      "reasonLabel": "Olağanüstü fesih gerekçesi",
+      "nameLabel": "Ad",
+      "emailLabel": "E-posta adresi",
+      "contractReferenceLabel": "Müşteri numarası veya sözleşme (isteğe bağlı)",
+      "timingLabel": "Feshin yürürlüğe gireceği zaman",
+      "timingEarliest": "Mümkün olan en erken tarihte",
+      "timingOnDate": "Belirli bir tarihte",
+      "requestedDateLabel": "Talep edilen tarih (isteğe bağlı)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "title": "Vertrag widerrufen",
+      "intro": "Bizimle yaptığınız bir sözleşmeden cayın. Bildirimi aldığımız tarih ve saati içeren anında bir onay alacaksınız.",
+      "nameLabel": "Ad",
+      "emailLabel": "E-posta adresi",
+      "contractReferenceLabel": "Müşteri numarası veya sözleşme (isteğe bağlı)",
+      "requestedDateLabel": "Sözleşmenin yapıldığı tarih (isteğe bağlı)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "cancelTitle": "Fesih onaylandı",
+      "withdrawTitle": "Cayma onaylandı",
+      "receiptIdLabel": "Makbuz no.: {{receiptId}}",
+      "kindCancel": "Tür: Fesih",
+      "kindWithdraw": "Tür: Cayma",
+      "addressLabel": "Gönderilen adres: {{email}}",
+      "receivedAtLabel": "Alınma zamanı: {{instant}}",
+      "mailNotice": "Bu onayı size e-posta ile de gönderdik.",
+      "print": "Onayı yazdır"
+    },
+    "errors": {
+      "nameRequired": "Adınızı girin.",
+      "emailInvalid": "Bu bir e-posta adresi gibi görünmüyor.",
+      "reasonRequired": "Olağanüstü fesih nedenini belirtin.",
+      "invalid": "Alanlardan biri işlenemedi. Girdilerinizi kontrol edin ve tekrar deneyin.",
+      "rateLimited": "Çok fazla istek var. Birkaç dakika içinde tekrar deneyin.",
+      "unreachable": "Bu bildirimi şu anda elektronik olarak kabul edemedik. Lütfen künyede belirtilen posta adresini kullanın."
+    }
   }
 }

@@ -119,11 +119,21 @@ describe('/withdrawal, the German model text', () => {
     assert.ok(text.includes('günstigste Standardlieferung gewählt haben)'));
   });
 
-  it('inserts no online withdrawal function, which is an unanswered owner question', () => {
-    // Gestaltungshinweis 3. Announcing a button that does not exist is worse
-    // than not offering one, so the paragraph is absent until the owner decides.
+  it('inserts the online withdrawal function Gestaltungshinweis 3 requires, naming /widerrufen (M214/09)', () => {
+    // § 356a BGB has required this function since 2026-06-19, so the owner
+    // question is answered: rightBody3a and rightBody3b are both present, and
+    // each names the online function by its URL.
     const text = plainText(render('de'));
-    assert.equal(text.includes('Sie können Ihr Widerrufsrecht auch online'), false);
+    assert.ok(text.includes('Sie können Ihr Widerrufsrecht auch online'), 'rightBody3a (Hinweis 3, first sentence) is missing');
+    assert.ok(
+      text.includes('Sie können das Muster-Widerrufsformular oder eine andere eindeutige Erklärung auch auf unserer Webseite'),
+      'rightBody3b (Hinweis 3, second sentence) is missing',
+    );
+    assert.equal(
+      [...text.matchAll(/https:\/\/app\.openplate\.de\/widerrufen/g)].length,
+      2,
+      'both Hinweis 3 sentences must name /widerrufen',
+    );
   });
 });
 

@@ -307,6 +307,7 @@
   "chrome": {
     "back": "Retour",
     "buildStamp": "Version {{label}}",
+    "cancelContract": "Résilier des contrats ici",
     "deviceMenuLabel": "Cet appareil, ouvrir le menu",
     "footerTagline": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire qui reste sur ton appareil",
     "footerTaglineManaged": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire que tu es le seul à pouvoir lire",
@@ -340,7 +341,8 @@
       "releaseAvailable": "openplate {{version}} est disponible",
       "reload": "Recharger",
       "view": "Modifications apportées"
-    }
+    },
+    "withdrawContract": "Rétracter un contrat"
   },
   "clinicianLink": {
     "copied": "Copié",
@@ -1328,7 +1330,11 @@
     "pantry": "Garde-manger · openplate",
     "recipes": "Recettes · openplate",
     "awards": "Ton historique · openplate",
-    "whatsNew": "Nouveautés · openplate"
+    "whatsNew": "Nouveautés · openplate",
+    "kuendigung": "Résilier un contrat · openplate",
+    "kuendigungBestaetigt": "Résiliation confirmée · openplate",
+    "widerrufen": "Se rétracter d'un contrat · openplate",
+    "widerrufenBestaetigt": "Rétractation confirmée · openplate"
   },
   "nav": {
     "add": "Ajouter",

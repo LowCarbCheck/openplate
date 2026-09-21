@@ -68,7 +68,7 @@
     "s4aPaymentHeading": "4a. Formules, tarifs et paiement",
     "s4aPaymentPrice": "openplate Plus coûte {{price}} par mois. Chaque prix indiqué est un prix final et inclut la taxe sur la valeur ajoutée allemande. Aucun frais supplémentaire ne s'applique.",
     "s4aPaymentTrial": "Un nouveau compte inclut un essai gratuit de {{trialDays}} jours. À la fin de la période d'essai, les scans de plat s'arrêtent jusqu'à l'achat d'une formule. Le reste de openplate continue de fonctionner. Votre journal reste sur votre appareil, et votre compte continue de se synchroniser.",
-    "s4aPaymentRenewal": "Une formule payante se renouvelle mensuellement jusqu'à votre résiliation. Vous pouvez résilier à tout moment depuis la page de la formule dans l'application. La résiliation prend effet à la fin de votre période de facturation payée en cours, et vous conservez l'accès jusqu'à cette date.",
+    "s4aPaymentRenewal": "Un abonnement payant se renouvelle chaque mois jusqu'à ce que vous le résiliiez. Vous pouvez le résilier à tout moment sur la page publique intitulée \"Verträge hier kündigen\", sans vous connecter. La résiliation prend effet à la fin de votre période de facturation payée en cours, et vous conservez l'accès jusqu'à cette date.",
     "s4aPaymentFailed": "En cas d'échec de paiement, l'accès aux fonctionnalités IA s'arrête à l'expiration de votre période payée. Votre journal alimentaire reste intact.",
     "s4aPaymentWithdrawal": "En tant que consommateur, vous disposez de quatorze jours pour vous rétracter du contrat. Nos instructions de rétractation et le modèle de formulaire de rétractation sont disponibles sur la <withdrawal>page de rétractation</withdrawal>, où vous pouvez les enregistrer ou les imprimer.",
     "s4aPaymentWithdrawalLoss": "Lorsque vous souscrivez une formule, vous demandez expressément que nous commencions le service avant l'expiration du délai de rétractation, et vous reconnaissez perdre votre droit de rétractation dès que nous avons exécuté le contrat dans son intégralité. Nous enregistrons ces deux déclarations avec votre commande.",
@@ -170,6 +170,8 @@
     "rightBody1": "Vous avez le droit de vous rétracter du présent contrat sans donner de motif dans un délai de quatorze jours.",
     "rightBody2": "Le délai de rétractation expire quatorze jours après le jour de la conclusion du contrat.",
     "rightBody3": "Pour exercer le droit de rétractation, vous devez nous notifier ({{operator}}) votre décision de rétractation du présent contrat au moyen d'une déclaration dénuée d'ambiguïté, par exemple une lettre envoyée par la poste ou un courrier électronique. Vous pouvez utiliser le modèle de formulaire de rétractation joint, mais ce n'est pas obligatoire.",
+    "rightBody3a": "Vous pouvez également exercer votre droit de rétractation en ligne sur https://app.openplate.de/widerrufen. Si vous utilisez cette fonction en ligne, nous vous transmettrons sans délai un accusé de réception sur un support durable (par exemple par e-mail), précisant le contenu de la déclaration de rétractation ainsi que la date et l'heure de sa réception.",
+    "rightBody3b": "Vous pouvez également remplir et transmettre électroniquement le modèle de formulaire de rétractation, ou toute autre déclaration dénuée d'ambiguïté, sur notre site web à l'adresse https://app.openplate.de/widerrufen. Si vous utilisez cette option, nous vous enverrons sans délai un accusé de réception d'une telle rétractation (par exemple par e-mail).",
     "rightBody4": "Pour que le délai de rétractation soit respecté, il suffit que vous transmettiez votre communication relative à l'exercice du droit de rétractation avant l'expiration du délai de rétractation.",
     "consequencesHeading": "Effets de la rétractation",
     "consequencesBody1": "Si vous vous rétractez du présent contrat, nous vous rembourserons tous les paiements reçus de vous, y compris les frais de livraison (à l'exception des frais supplémentaires découlant du fait que vous avez choisi un mode de livraison autre que le mode moins coûteux de livraison standard proposé par nous), sans retard excessif et, en tout état de cause, au plus tard quatorze jours à compter du jour où nous sommes informés de votre décision de rétractation du présent contrat. Nous procéderons au remboursement en utilisant le même moyen de paiement que celui que vous avez utilisé pour la transaction initiale, sauf si vous convenez expressément d'un moyen différent ; en tout état de cause, ce remboursement n'occasionnera pas de frais pour vous.",
@@ -184,5 +186,51 @@
     "formField6": "Signature du (des) consommateur(s) (uniquement en cas de notification du présent formulaire sur papier)",
     "formField7": "Date",
     "formFootnote": "(*) Rayez la mention inutile."
+  },
+  "declarations": {
+    "cancel": {
+      "title": "Verträge hier kündigen",
+      "intro": "Résiliez un contrat avec nous. Vous recevrez une confirmation immédiate indiquant la date et l'heure de réception.",
+      "terminationTypeLabel": "Type de résiliation",
+      "terminationTypeOrdentlich": "Résiliation ordinaire",
+      "terminationTypeAusserordentlich": "Résiliation extraordinaire",
+      "reasonLabel": "Motif de la résiliation extraordinaire",
+      "nameLabel": "Nom",
+      "emailLabel": "Adresse e-mail",
+      "contractReferenceLabel": "Numéro de client ou de contrat (facultatif)",
+      "timingLabel": "Date à laquelle la résiliation doit prendre effet",
+      "timingEarliest": "Dès que possible",
+      "timingOnDate": "À une date précise",
+      "requestedDateLabel": "Date souhaitée (facultatif)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "title": "Vertrag widerrufen",
+      "intro": "Rétractez-vous d'un contrat conclu avec nous. Vous recevrez une confirmation immédiate indiquant la date et l'heure de réception.",
+      "nameLabel": "Nom",
+      "emailLabel": "Adresse e-mail",
+      "contractReferenceLabel": "Numéro de client ou de contrat (facultatif)",
+      "requestedDateLabel": "Date de conclusion du contrat (facultatif)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "cancelTitle": "Résiliation confirmée",
+      "withdrawTitle": "Rétractation confirmée",
+      "receiptIdLabel": "Récépissé n° : {{receiptId}}",
+      "kindCancel": "Type : Résiliation",
+      "kindWithdraw": "Type : Rétractation",
+      "addressLabel": "Envoyé à : {{email}}",
+      "receivedAtLabel": "Reçu le : {{instant}}",
+      "mailNotice": "Nous vous avons également envoyé cette confirmation par e-mail.",
+      "print": "Imprimer la confirmation"
+    },
+    "errors": {
+      "nameRequired": "Saisissez votre nom.",
+      "emailInvalid": "Ceci ne ressemble pas à une adresse e-mail.",
+      "reasonRequired": "Indiquez le motif de la résiliation extraordinaire.",
+      "invalid": "L'un des champs n'a pas pu être traité. Vérifiez vos saisies et réessayez.",
+      "rateLimited": "Trop de requêtes. Réessayez dans quelques minutes.",
+      "unreachable": "Nous n'avons pas pu accepter cette déclaration par voie électronique pour le moment. Veuillez utiliser l'adresse postale indiquée dans les mentions légales."
+    }
   }
 }

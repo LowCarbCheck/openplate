@@ -41,8 +41,8 @@ const ROOT_SOURCE = readFileSync(join(ROOT, 'app/root.tsx'), 'utf8');
 const APP_CSS = readFileSync(join(ROOT, 'app/app.css'), 'utf8');
 const LEGAL_DIRECTORY = join(ROOT, 'app/routes/legal');
 
-/** How many legal routes exist today. A fifth page must be added here on purpose. */
-const LEGAL_ROUTE_COUNT = 4;
+/** How many legal routes exist today. A ninth page must be added here on purpose. */
+const LEGAL_ROUTE_COUNT = 8;
 
 /** The class list of the first `<tag className="...">` in `source`, or null when there is none. */
 function classListOfTag({ source, tag }: { source: string; tag: string }): string | null {

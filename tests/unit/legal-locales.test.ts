@@ -152,9 +152,22 @@ describe('legal namespace — parity', () => {
 
   it('does not leave a German entry identical to its English source', () => {
     // Catches a key pasted across to make parity pass and never translated.
-    // The allowlist is words that really are the same in both languages.
+    // The allowlist is words that really are the same in both languages
+    // ('privacy.s9Heading', the two 'Name' labels) plus the four statutory
+    // button strings (M214/09): 'declarations.{cancel,withdraw}.{title,submit}'
+    // hold the literal German wording §312k/§356a BGB prescribe, so the
+    // "English" source is deliberately that same German text, not a
+    // translation gap.
     const same = Object.keys(EN).filter((key) => EN[key] === DE[key]);
-    assert.deepEqual(same.toSorted(), ['privacy.s9Heading']);
+    assert.deepEqual(same.toSorted(), [
+      'declarations.cancel.nameLabel',
+      'declarations.cancel.submit',
+      'declarations.cancel.title',
+      'declarations.withdraw.nameLabel',
+      'declarations.withdraw.submit',
+      'declarations.withdraw.title',
+      'privacy.s9Heading',
+    ]);
   });
 });
 

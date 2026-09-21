@@ -244,6 +244,13 @@
     "at": "2026-09-14",
     "it": "Scegli un orario già trascorso."
   },
+  "0363727661b4d16a": {
+    "en": "Extraordinary cancellation",
+    "path": "legal:declarations.cancel.terminationTypeAusserordentlich",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdetta straordinaria"
+  },
   "036c23b52a39cdb1": {
     "en": "Days logged, last 13 weeks",
     "path": "common:trends.grid.a11yLabelActivity",
@@ -572,6 +579,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Profilo: carboidrati totali, la differenza corrisponde a fibre e polioli"
+  },
+  "084f07a3bf2a65fd": {
+    "en": "Receipt no.: {{receiptId}}",
+    "path": "legal:declarations.confirmed.receiptIdLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Ricevuta n.: {{receiptId}}"
   },
   "085c85217f6f446b": {
     "en": "ml",
@@ -1826,6 +1840,13 @@
     "at": "2026-09-14",
     "it": "Ho dimenticato la password"
   },
+  "176047e37a8c7bf6": {
+    "en": "One of the fields could not be processed. Check your entries and try again.",
+    "path": "legal:declarations.errors.invalid",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Non è stato possibile elaborare uno dei campi. Controlli i dati inseriti e riprovi."
+  },
   "176d046f17806417": {
     "en": "Copy selected ({{count}})",
     "path": "common:diary.copy.copySelected",
@@ -2399,6 +2420,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Chi lo sta ancora usando"
+  },
+  "1df69cf7d31ebf62": {
+    "en": "Vertrag widerrufen",
+    "path": "legal:declarations.withdraw.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Vertrag widerrufen"
   },
   "1df992d2a29834e7": {
     "en": "Your invitation is probably fine. Try the link again in a moment.",
@@ -3156,6 +3184,13 @@
     "at": "2026-09-14",
     "it": "Ultimo controllo"
   },
+  "27fa0678cb953eb8": {
+    "en": "At the earliest possible date",
+    "path": "legal:declarations.cancel.timingEarliest",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Alla prima data utile"
+  },
   "283c930c1117a707": {
     "en": "Phone",
     "path": "legal:imprint.phoneLabel",
@@ -3310,12 +3345,26 @@
     "at": "2026-09-14",
     "it": "Amministrazione"
   },
+  "2a8a135809070cc6": {
+    "en": "We could not accept this declaration electronically right now. Please use the postal address named in the imprint.",
+    "path": "legal:declarations.errors.unreachable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Non è stato possibile accettare questa dichiarazione per via telematica in questo momento. Utilizzi l'indirizzo postale indicato nei crediti legali."
+  },
   "2ac264a0576e85da": {
     "en": "Stop sharing",
     "path": "common:sharing.grants.revoke",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Interrompi condivisione"
+  },
+  "2aec18267df13fc5": {
+    "en": "Verträge hier kündigen",
+    "path": "legal:declarations.cancel.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Verträge hier kündigen"
   },
   "2af3fe7d8c199c93": {
     "en": "reference",
@@ -3582,6 +3631,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Annulla"
+  },
+  "2e546d6e4f7229a9": {
+    "en": "Too many requests. Try again in a few minutes.",
+    "path": "legal:declarations.errors.rateLimited",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Troppe richieste. Riprovi tra qualche minuto."
   },
   "2e5e40215e40366c": {
     "en": "Settings",
@@ -3870,6 +3926,13 @@
     "at": "2026-09-14",
     "it": "Nome"
   },
+  "33eb11ef61df5884": {
+    "en": "Withdraw from a contract · openplate",
+    "path": "common:meta.widerrufen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Recedi da un contratto · openplate"
+  },
   "34093b224dc8529a": {
     "en": "A bit about you?",
     "path": "common:onboarding.step.body.title",
@@ -4156,6 +4219,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Hai aggiunto qualcosa alla dispensa."
+  },
+  "375fe2e66c55d17e": {
+    "en": "Reason for the extraordinary cancellation",
+    "path": "legal:declarations.cancel.reasonLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Motivo della disdetta straordinaria"
   },
   "376af1d8cf7f3612": {
     "en": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you.",
@@ -4605,6 +4675,13 @@
     "at": "2026-09-14",
     "it": "Accedi come {{name}}"
   },
+  "3e88be616eb9ccb7": {
+    "en": "Customer number or contract (optional)",
+    "path": "legal:declarations.cancel.contractReferenceLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Numero cliente o contratto (facoltativo)"
+  },
   "3eac9cf82deb42af": {
     "en": "Register Entry",
     "path": "legal:imprint.registerHeading",
@@ -5025,6 +5102,13 @@
     "at": "2026-09-14",
     "it": "Prima di un digiuno prolungato"
   },
+  "447af7e2a90e1536": {
+    "en": "You can also fill in and submit the model withdrawal form, or any other unambiguous statement, electronically on our website at https://app.openplate.de/widerrufen. If you use this option, we will send you a confirmation of receipt of such a withdrawal without delay (for example by e-mail).",
+    "path": "legal:withdrawal.rightBody3b",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Può inoltre compilare e trasmettere elettronicamente il modulo tipo di recesso, o qualsiasi altra dichiarazione esplicita, sul nostro sito web all'indirizzo https://app.openplate.de/widerrufen. Se utilizza questa opzione, Le invieremo senza indugio una conferma di ricezione di tale recesso (ad esempio tramite e-mail)."
+  },
   "447d5e52ac2f2f28": {
     "en": "Your fast is scheduled for {{when}}.",
     "path": "common:fasting.scheduled.srAnnounce",
@@ -5178,6 +5262,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "La chiave è stata copiata con uno spazio in più o con un carattere mancante. Prova a copiarla e incollarla di nuovo."
+  },
+  "462c3284e3b90ad9": {
+    "en": "Vertrag widerrufen",
+    "path": "common:chrome.withdrawContract",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Recedi dal contratto"
   },
   "46430643bb9b9fd2": {
     "en": "The note appears again before your next long fast.",
@@ -5522,6 +5613,13 @@
     "at": "2026-09-14",
     "it": "Le foto diventano macronutrienti, senza bisogno di chiavi"
   },
+  "4b67f0f4e93bccd2": {
+    "en": "Type: Cancellation",
+    "path": "legal:declarations.confirmed.kindCancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Tipo: Disdetta"
+  },
   "4bbf5c14fa567225": {
     "en": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
     "path": "common:scan.setup.sharedPhotoNote",
@@ -5549,6 +5647,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questa pagina richiede l'accesso."
+  },
+  "4be4c57458c5d0b7": {
+    "en": "On a specific date",
+    "path": "legal:declarations.cancel.timingOnDate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "In una data specifica"
   },
   "4c1b2d0c5a5f6ee0": {
     "en": "Cancel",
@@ -7013,6 +7118,13 @@
     "at": "2026-09-14",
     "it": "Revocare l'invito per {{email}}?"
   },
+  "5e60e1a8a6e4c1ae": {
+    "en": "Withdrawal confirmed · openplate",
+    "path": "common:meta.widerrufenBestaetigt",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Recesso confermato · openplate"
+  },
   "5e622d7dbe8f7cd2": {
     "en": "{{date}}, met your carb goal",
     "path": "common:diary.habit.met",
@@ -7258,6 +7370,13 @@
     "at": "2026-09-14",
     "it": "La loro chiave è cambiata"
   },
+  "60e9e969a8b89d4d": {
+    "en": "Cancellation confirmed",
+    "path": "legal:declarations.confirmed.cancelTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdetta confermata"
+  },
   "6101f13d702f006b": {
     "en": "Use the app today to start a streak.",
     "path": "common:trends.streak.empty",
@@ -7313,6 +7432,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Nessuno di essi La identifica, nessuno e utilizzato per creare profili e nessuno viene condiviso. Non utilizziamo cookie pubblicitari ne cookie di tracciamento di terze parti. La cancellazione dei dati del browser li rimuove; l'unico effetto e il ripristino di tali preferenze."
+  },
+  "616ca896113ffc80": {
+    "en": "Verträge hier kündigen",
+    "path": "common:chrome.cancelContract",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdici i contratti qui"
   },
   "6174dce41ad116ee": {
     "en": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary stays on this device. Run openplate yourself, and nothing is counted at all.",
@@ -7720,6 +7846,13 @@
     "at": "2026-09-14",
     "it": "Più lungo"
   },
+  "674890fb0f4d4cb6": {
+    "en": "Print confirmation",
+    "path": "legal:declarations.confirmed.print",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Stampa la conferma"
+  },
   "678f94329d2e0bff": {
     "en": "And {{count}} more changes.",
     "path": "common:whatsNew.card.more_other",
@@ -8014,6 +8147,13 @@
     "at": "2026-09-14",
     "it": "Caricamento…"
   },
+  "6c209c2bab8bd8f1": {
+    "en": "Enter your name.",
+    "path": "legal:declarations.errors.nameRequired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Inserisca il Suo nome."
+  },
   "6c261b4f0d571b29": {
     "en": "9. Self-hosting",
     "path": "legal:terms.s9Heading",
@@ -8132,6 +8272,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Digiuni terminati nelle ultime 13 settimane, ciascuno misurato rispetto al proprio obiettivo."
+  },
+  "6de21131656f5248": {
+    "en": "Type: Withdrawal",
+    "path": "legal:declarations.confirmed.kindWithdraw",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Tipo: Recesso"
   },
   "6e0691e15ac2589c": {
     "en": "Please choose a photo to upload.",
@@ -8763,6 +8910,13 @@
     "at": "2026-09-14",
     "it": "Account · openplate"
   },
+  "75fad9654bb5b50b": {
+    "en": "You can also exercise your right of withdrawal online at https://app.openplate.de/widerrufen. If you use this online function, we will send you an acknowledgement of receipt on a durable medium (for example by e-mail) without delay, stating the content of the withdrawal declaration and the date and time it was received.",
+    "path": "legal:withdrawal.rightBody3a",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Può inoltre esercitare il Suo diritto di recesso online all'indirizzo https://app.openplate.de/widerrufen. Se utilizza questa funzione online, Le invieremo senza indugio una conferma di ricezione su un supporto durevole (ad esempio tramite e-mail), indicante il contenuto della dichiarazione di recesso nonché la data e l'ora di ricezione."
+  },
   "761cb16d45c957d2": {
     "en": "Zinc",
     "path": "common:nutrients.name.zinc",
@@ -8818,6 +8972,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ho già un account"
+  },
+  "76a1cd5e7b92c6e5": {
+    "en": "Ordinary cancellation",
+    "path": "legal:declarations.cancel.terminationTypeOrdentlich",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdetta ordinaria"
   },
   "76a230f22f082263": {
     "en": "Photos read",
@@ -9561,6 +9722,13 @@
     "at": "2026-09-14",
     "it": "{{value}} g di carboidrati"
   },
+  "801ba2011452cd21": {
+    "en": "Name",
+    "path": "legal:declarations.withdraw.nameLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Nome"
+  },
   "801efd2c5edcfb55": {
     "en": "Fiber",
     "path": "common:trends.metric.fiber",
@@ -9742,6 +9910,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "it": "La serie nella schermata iniziale e in Progressi ora indica il numero di giorni in cui hai usato l'app."
+  },
+  "82527070d15db3e4": {
+    "en": "Cancel a contract with us. You will receive an immediate confirmation with the date and time we received it.",
+    "path": "legal:declarations.cancel.intro",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdica un contratto stipulato con noi. Riceverà una conferma immediata con la data e l'ora di ricezione."
   },
   "8259708af2f06ffb": {
     "en": "Undo",
@@ -10071,6 +10246,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questo gateway dichiara che il suo amministratore può esaminare i contenuti che invii, incluse le foto. È quanto segnala il gateway stesso. openplate non può verificarlo."
+  },
+  "867d961dec985417": {
+    "en": "That does not look like an email address.",
+    "path": "legal:declarations.errors.emailInvalid",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Questo dato non sembra un indirizzo email valido."
   },
   "8695670acf7d46b3": {
     "en": "No problem, nothing was connected. Try again whenever you're ready.",
@@ -11962,6 +12144,13 @@
     "at": "2026-09-14",
     "it": "Le quantità di riferimento sono raggruppate in ampie fasce di età, quindi basta solo l'anno, mai la tua data di nascita completa."
   },
+  "9e19e5e11c7013ab": {
+    "en": "Name the reason for the extraordinary cancellation.",
+    "path": "legal:declarations.errors.reasonRequired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Indichi il motivo del recesso straordinario."
+  },
   "9e4237451c87f348": {
     "en": "Use a custom model ID instead",
     "path": "common:settingsAi.model.customToggle",
@@ -12437,6 +12626,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": " almeno"
+  },
+  "a51f73fd1156a10c": {
+    "en": "Customer number or contract (optional)",
+    "path": "legal:declarations.withdraw.contractReferenceLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Numero cliente o contratto (facoltativo)"
   },
   "a527fc55b7ed738c": {
     "en": "Sugar alcohols (polyols)",
@@ -12942,6 +13138,13 @@
     "at": "2026-09-14",
     "it": "AVVISO PER L'OPERATORE: questo server ha restituito {{retained}} contributi di cui era già stata richiesta l'eliminazione. Sono stati rimossi qui, ed è necessario verificare questa installazione."
   },
+  "abf671307be43c71": {
+    "en": "Cancellation confirmed · openplate",
+    "path": "common:meta.kuendigungBestaetigt",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdetta confermata · openplate"
+  },
   "ac005e19409878bd": {
     "en": "The diary is created on this device the moment you log the first food.",
     "path": "common:landing.setup.steps.open.body",
@@ -13074,6 +13277,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Grassi"
+  },
+  "add089a5b7503147": {
+    "en": "Widerruf bestätigen",
+    "path": "legal:declarations.withdraw.submit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Widerruf bestätigen"
   },
   "add22588c1552e79": {
     "en": "Your sharing and research keys are not part of this check. If you erase, you may lose them.",
@@ -14104,6 +14314,13 @@
     "at": "2026-09-14",
     "it": "Impossibile coniare la chiave. Nulla è stato modificato."
   },
+  "bcc71f8a5fbe08bb": {
+    "en": "Withdrawal confirmed",
+    "path": "legal:declarations.confirmed.withdrawTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Recesso confermato"
+  },
   "bcd60088dbcbae9c": {
     "en": "Higher in {{nutrient}}",
     "path": "common:nutrients.suggestions.forNutrient",
@@ -14138,6 +14355,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Imposta una nuova password"
+  },
+  "bdbbb81ca9e7bd3e": {
+    "en": "Date the contract was made (optional)",
+    "path": "legal:declarations.withdraw.requestedDateLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Data di stipula del contratto (facoltativo)"
   },
   "bdc37ca577614cae": {
     "en": "What this study can open, with every withdrawal already purged.",
@@ -15014,6 +15238,13 @@
     "at": "2026-09-14",
     "it": "Quando scansioni un piatto, la sua foto resta solo su questo dispositivo per permetterti di rivederla nella voce di diario. Non viene mai caricata né sincronizzata. Le foto più vecchie vengono rimosse automaticamente dopo {{days}} giorni; disattiva questa opzione per smettere di salvarne di nuove."
   },
+  "ca04a44a2d6cac15": {
+    "en": "We also sent this confirmation to you by email.",
+    "path": "legal:declarations.confirmed.mailNotice",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Le abbiamo inviato questa conferma anche tramite email."
+  },
   "ca2af53c91323fe5": {
     "en": "People",
     "path": "common:admin.stats.people",
@@ -15195,6 +15426,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Vai al tuo diario"
+  },
+  "cdc998abfff3aa7f": {
+    "en": "Sent to: {{email}}",
+    "path": "legal:declarations.confirmed.addressLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Inviato a: {{email}}"
   },
   "cddadc768b3898a9": {
     "en": "Default after connecting OpenRouter, picked for privacy, not price: no training on your photos",
@@ -15399,6 +15637,13 @@
     "at": "2026-09-18",
     "it": "L'app tiene comunque traccia dei dati, smette solo di mostrarli."
   },
+  "d00c34522159ca2b": {
+    "en": "Type of cancellation",
+    "path": "legal:declarations.cancel.terminationTypeLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Tipo di disdetta"
+  },
   "d024b417afdfca54": {
     "en": "Sign-up is not answering right now. Please try again later.",
     "path": "common:landing.newsletter.status.unavailable",
@@ -15490,6 +15735,13 @@
     "at": "2026-09-14",
     "it": "2. Cosa rimane sul Suo dispositivo"
   },
+  "d16280e5a8b0639b": {
+    "en": "A paid plan renews monthly until you cancel. You can cancel at any time on the public page named \"Verträge hier kündigen\", without signing in. Cancellation takes effect at the end of your current paid billing period, and you retain access until that date.",
+    "path": "legal:terms.s4aPaymentRenewal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Un piano a pagamento si rinnova mensilmente fino alla Sua disdetta. Può recedere in qualsiasi momento sulla pagina pubblica denominata \"Verträge hier kündigen\", senza effettuare l'accesso. La disdetta ha effetto al termine del Suo periodo di fatturazione a pagamento in corso, e Lei mantiene l'accesso fino a tale data."
+  },
   "d163e11aacbdf235": {
     "en": "Could not make a sharing key.",
     "path": "common:sharing.identity.failed",
@@ -15524,6 +15776,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Un nuovo account include una prova gratuita di {{trialDays}} giorni. Al termine della prova, le scansioni dei piatti si interrompono finché non acquista un piano. Il resto di openplate continua a funzionare. Il Suo diario rimane sul Suo dispositivo e il Suo account continua la sincronizzazione."
+  },
+  "d1b5b1cc7bc1c6bd": {
+    "en": "Cancel a contract · openplate",
+    "path": "common:meta.kuendigung",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Disdici un contratto · openplate"
   },
   "d1bb98a66f04842d": {
     "en": "Goal days",
@@ -15924,6 +16183,13 @@
     "at": "2026-09-14",
     "it": "C'è solo una pesata finora, per calcolare una tendenza ne servono altre."
   },
+  "d68bd2b34304d983": {
+    "en": "Withdraw from a contract you made with us. You will receive an immediate confirmation with the date and time we received it.",
+    "path": "legal:declarations.withdraw.intro",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Receda da un contratto stipulato con noi. Riceverà una conferma immediata con la data e l'ora di ricezione."
+  },
   "d69ed04762762ee8": {
     "en": "0 turns photo reading off for this person.",
     "path": "common:admin.edit.allowanceHint",
@@ -16036,6 +16302,13 @@
     "at": "2026-09-19",
     "it": "Registrato {{count}} volta"
   },
+  "d84563de6635d6fb": {
+    "en": "Email address",
+    "path": "legal:declarations.cancel.emailLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Indirizzo e-mail"
+  },
   "d89906a1e313e8d3": {
     "en": "Show",
     "path": "common:admin.filter.groupLabel",
@@ -16147,6 +16420,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Impossibile modificare la password."
+  },
+  "d9fbc40902319260": {
+    "en": "Requested date (optional)",
+    "path": "legal:declarations.cancel.requestedDateLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Data richiesta (facoltativo)"
   },
   "da270d9b7787fb80": {
     "en": "{{value}} calories",
@@ -16939,6 +17219,13 @@
     "at": "2026-09-14",
     "it": "Questa app e il server di sincronizzazione non usano ancora la stessa versione, quindi la sincronizzazione è sospesa intenzionalmente."
   },
+  "e4c6de95e6e71a22": {
+    "en": "Received at: {{instant}}",
+    "path": "legal:declarations.confirmed.receivedAtLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Ricevuto il: {{instant}}"
+  },
   "e50b6320a8b2a8b6": {
     "en": "No goal, only the numbers",
     "path": "common:onboarding.style.justTrack.detail",
@@ -17464,6 +17751,13 @@
     "at": "2026-09-14",
     "it": "Connessione in corso…"
   },
+  "ebb1311d08fdc725": {
+    "en": "jetzt kündigen",
+    "path": "legal:declarations.cancel.submit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "jetzt kündigen"
+  },
   "ebd9b2440a0ae628": {
     "en": "Delete permanently",
     "path": "common:sync.delete.confirmCta",
@@ -17680,6 +17974,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Vai ai tuoi studi"
+  },
+  "eef682c54a03de86": {
+    "en": "Name",
+    "path": "legal:declarations.cancel.nameLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Nome"
   },
   "ef0088d2d5da6448": {
     "en": "Photograph your plate",
@@ -18241,6 +18542,13 @@
     "at": "2026-09-14",
     "it": "Istruzioni sul recesso"
   },
+  "f63c8c9d46042543": {
+    "en": "When the cancellation should take effect",
+    "path": "legal:declarations.cancel.timingLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Quando deve avere effetto la disdetta"
+  },
   "f652992d56dc207d": {
     "en": "Restore from a backup file",
     "path": "common:recover.restoreHeading",
@@ -18380,6 +18688,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{kept}} condivisioni mantenute, {{revoked}} revocate."
+  },
+  "f8672e0d387f7d57": {
+    "en": "Email address",
+    "path": "legal:declarations.withdraw.emailLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "it": "Indirizzo e-mail"
   },
   "f8974ac8c1130055": {
     "en": "Adjust the portion first. Macros follow.",

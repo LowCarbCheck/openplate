@@ -307,6 +307,7 @@
   "chrome": {
     "back": "Atrás",
     "buildStamp": "Compilación {{label}}",
+    "cancelContract": "Cancelar contratos aquí",
     "deviceMenuLabel": "Este dispositivo, abrir menú",
     "footerTagline": "{{appName}} de <lcc>lowcarbcheck.org</lcc>, un registro de comida que se queda en tu dispositivo",
     "footerTaglineManaged": "{{appName}} de <lcc>lowcarbcheck.org</lcc>, un registro de comida que solo tú puedes leer",
@@ -340,7 +341,8 @@
       "releaseAvailable": "openplate {{version}} está disponible",
       "reload": "Recargar",
       "view": "Qué cambió"
-    }
+    },
+    "withdrawContract": "Revocar contrato"
   },
   "clinicianLink": {
     "copied": "Copiado",
@@ -1328,7 +1330,11 @@
     "pantry": "Despensa · openplate",
     "recipes": "Recetas · openplate",
     "awards": "Tu historial · openplate",
-    "whatsNew": "Novedades · openplate"
+    "whatsNew": "Novedades · openplate",
+    "kuendigung": "Cancelar un contrato · openplate",
+    "kuendigungBestaetigt": "Cancelación confirmada · openplate",
+    "widerrufen": "Revocar un contrato · openplate",
+    "widerrufenBestaetigt": "Revocación confirmada · openplate"
   },
   "nav": {
     "add": "Añadir",

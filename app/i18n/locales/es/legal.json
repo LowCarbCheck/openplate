@@ -68,7 +68,7 @@
     "s4aPaymentHeading": "4a. Planes, precios y pago",
     "s4aPaymentPrice": "openplate Plus cuesta {{price}} al mes. Cada precio indicado es final e incluye el impuesto sobre el valor añadido alemán. No se aplican cargos adicionales.",
     "s4aPaymentTrial": "Una cuenta nueva incluye un periodo de prueba gratuito de {{trialDays}} días. Al finalizar el periodo de prueba, el escaneo de fotos de platos se detiene hasta que adquiera un plan. El resto de openplate continúa funcionando. Su diario permanece en su dispositivo y su cuenta continúa sincronizándose.",
-    "s4aPaymentRenewal": "Un plan de pago se renueva cada mes hasta que lo cancele. Puede cancelarlo en cualquier momento en la página del plan dentro de la aplicación. La cancelación surte efecto al final de su periodo de facturación pagado actual, y usted mantiene el acceso hasta esa fecha.",
+    "s4aPaymentRenewal": "Un plan de pago se renueva mensualmente hasta que usted lo cancele. Puede cancelar en cualquier momento en la página pública llamada \"Verträge hier kündigen\", sin iniciar sesión. La cancelación surte efecto al final de su periodo de facturación de pago actual, y usted conserva el acceso hasta esa fecha.",
     "s4aPaymentFailed": "Si un pago falla, el acceso a las funciones de IA finaliza cuando expire su periodo pagado. Su diario de comidas se mantiene intacto.",
     "s4aPaymentWithdrawal": "Como consumidor, usted dispone de catorce días para rescindir el contrato. Nuestra instrucción de desistimiento y el formulario modelo de desistimiento están disponibles en la <withdrawal>página de desistimiento</withdrawal>, donde puede guardar o imprimir ambos.",
     "s4aPaymentWithdrawalLoss": "Al adquirir un plan, usted solicita expresamente que comencemos el servicio antes de que expire el plazo de desistimiento, y reconoce que pierde su derecho de desistimiento una vez que hayamos ejecutado el contrato por completo. Registramos ambas declaraciones con su pedido.",
@@ -170,6 +170,8 @@
     "rightBody1": "Tiene usted derecho a desistir del presente contrato en un plazo de catorce días sin necesidad de justificación.",
     "rightBody2": "El plazo de desistimiento es de catorce días a partir del día de la celebración del contrato.",
     "rightBody3": "Para ejercer el derecho de desistimiento, debe usted notificarnos ({{operator}}) su decisión de desistir del contrato a través de una declaración inequívoca, por ejemplo una carta enviada por correo postal o un correo electrónico. Podrá utilizar el formulario de desistimiento modelo que figura a continuación, aunque su uso no es obligatorio.",
+    "rightBody3a": "También puede ejercer su derecho de desistimiento en línea en https://app.openplate.de/widerrufen. Si utiliza esta función en línea, le enviaremos sin demora un acuse de recibo en un soporte duradero (por ejemplo, por correo electrónico), indicando el contenido de la declaración de desistimiento y la fecha y hora en que se recibió.",
+    "rightBody3b": "También puede rellenar y enviar electrónicamente el formulario modelo de desistimiento, o cualquier otra declaración inequívoca, en nuestro sitio web en https://app.openplate.de/widerrufen. Si utiliza esta opción, le enviaremos sin demora una confirmación de la recepción de dicho desistimiento (por ejemplo, por correo electrónico).",
     "rightBody4": "Para cumplir el plazo de desistimiento, basta con que la comunicación relativa al ejercicio por su parte de este derecho sea enviada antes de que venza el plazo correspondiente.",
     "consequencesHeading": "Consecuencias del desistimiento",
     "consequencesBody1": "En caso de desistimiento por su parte, le devolveremos todos los pagos recibidos de usted, incluidos los gastos de entrega (con la excepción de los gastos adicionales resultantes de la elección por su parte de una modalidad de entrega diferente a la modalidad menos costosa de entrega ordinaria que ofrezcamos), sin ninguna demora indebida y, en todo caso, a más tardar catorce días a partir de la fecha en la que se nos informe de su decisión de desistir del presente contrato. Procederemos a efectuar dicho reembolso utilizando el mismo medio de pago empleado por usted para la transacción inicial, a no ser que haya usted dispuesto expresamente lo contrario; en todo caso, no incurrirá en ningún gasto como consecuencia del reembolso.",
@@ -184,5 +186,51 @@
     "formField6": "Firma del consumidor y usuario o de los consumidores y usuarios (solo si el presente formulario se presenta en papel)",
     "formField7": "Fecha",
     "formFootnote": "(*) Táchese lo que no proceda."
+  },
+  "declarations": {
+    "cancel": {
+      "title": "Verträge hier kündigen",
+      "intro": "Cancele un contrato con nosotros. Recibirá una confirmación inmediata con la fecha y hora en que lo recibimos.",
+      "terminationTypeLabel": "Tipo de cancelación",
+      "terminationTypeOrdentlich": "Cancelación ordinaria",
+      "terminationTypeAusserordentlich": "Cancelación extraordinaria",
+      "reasonLabel": "Motivo de la cancelación extraordinaria",
+      "nameLabel": "Nombre",
+      "emailLabel": "Dirección de correo electrónico",
+      "contractReferenceLabel": "Número de cliente o contrato (opcional)",
+      "timingLabel": "Cuándo debe surtir efecto la cancelación",
+      "timingEarliest": "En la fecha más temprana posible",
+      "timingOnDate": "En una fecha específica",
+      "requestedDateLabel": "Fecha solicitada (opcional)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "title": "Vertrag widerrufen",
+      "intro": "Desista de un contrato que haya celebrado con nosotros. Recibirá una confirmación inmediata con la fecha y hora en que lo recibimos.",
+      "nameLabel": "Nombre",
+      "emailLabel": "Dirección de correo electrónico",
+      "contractReferenceLabel": "Número de cliente o contrato (opcional)",
+      "requestedDateLabel": "Fecha de celebración del contrato (opcional)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "cancelTitle": "Cancelación confirmada",
+      "withdrawTitle": "Desistimiento confirmado",
+      "receiptIdLabel": "N.º de recibo: {{receiptId}}",
+      "kindCancel": "Tipo: Cancelación",
+      "kindWithdraw": "Tipo: Desistimiento",
+      "addressLabel": "Enviado a: {{email}}",
+      "receivedAtLabel": "Recibido el: {{instant}}",
+      "mailNotice": "También le enviamos esta confirmación por correo electrónico.",
+      "print": "Imprimir confirmación"
+    },
+    "errors": {
+      "nameRequired": "Introduzca su nombre.",
+      "emailInvalid": "Eso no parece una dirección de correo electrónico.",
+      "reasonRequired": "Indique el motivo de la cancelación extraordinaria.",
+      "invalid": "Uno de los campos no pudo procesarse. Revise sus datos e inténtelo de nuevo.",
+      "rateLimited": "Demasiadas solicitudes. Inténtelo de nuevo en unos minutos.",
+      "unreachable": "No pudimos aceptar esta declaración por vía electrónica en este momento. Utilice la dirección postal indicada en el aviso legal."
+    }
   }
 }
