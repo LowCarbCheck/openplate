@@ -171,7 +171,7 @@ export function WeightProgressCard({
     <Card className={cn(isCelebrating && 'motion-safe:animate-celebrate')}>
       <CardHeader className="space-y-3">
         <div className="space-y-1">
-          <CardTitle className="text-lg">{t('trends.weight.title')}</CardTitle>
+          <CardTitle>{t('trends.weight.title')}</CardTitle>
           <CardDescription>{t('trends.weight.description')}</CardDescription>
         </div>
         <LogWeightForm todayWeightKg={todayWeightKg} weightUnit={weightUnit} />
@@ -192,17 +192,18 @@ export function WeightProgressCard({
           onActiveIndexChange={setActiveIndex}
         />
 
-        <p className="min-h-[1.25rem] text-xs tabular-nums text-muted-foreground">
-          {activePoint !== null && activeTrend !== null ?
-            [
-              formatDayLabel(activePoint.date, i18n.language),
-              `${_display(activePoint.weightKg, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.raw')}`,
-              `${_display(activeTrend.value, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.trend')}`,
-            ].join(' · ')
-          : t('trends.weight.pointCaptionIdle')}
-        </p>
-
-        <p className="text-xs text-muted-foreground">{t('trends.weight.caption')}</p>
+        <div className="space-y-1.5">
+          <p className="min-h-[1.25rem] text-xs tabular-nums text-muted-foreground">
+            {activePoint !== null && activeTrend !== null ?
+              [
+                formatDayLabel(activePoint.date, i18n.language),
+                `${_display(activePoint.weightKg, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.raw')}`,
+                `${_display(activeTrend.value, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.trend')}`,
+              ].join(' · ')
+            : t('trends.weight.pointCaptionIdle')}
+          </p>
+          <p className="text-xs text-muted-foreground">{t('trends.weight.caption')}</p>
+        </div>
       </CardContent>
     </Card>
   );

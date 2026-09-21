@@ -121,15 +121,15 @@ screen's ceiling in §6:
 | Surface | Treatment |
 | --- | --- |
 | Section labels (meal groups, chip rows, search-result groups, drill-down blocks) | `<SectionEyebrow>`, and it is NOT brand-carrying any more: `text-xs font-semibold uppercase tracking-wide text-muted-foreground`, optional `trailingRule` hairline at `bg-border`. Exported as `SECTION_EYEBROW_CLASS` for the one inline copy (`fast-strip.tsx`). |
-| Card titles, app-wide | `text-base font-semibold tracking-tight` in the body face. No serif, see §4. |
-| The wordmark in the header kicker | `text-primary` on `<Wordmark>`, the product's own name. |
-| Active bottom-nav tab | `bg-primary/5` + `text-primary` + a `after:` top rule at `bg-primary`. Three cues, so it never depends on hue alone. |
-| The one primary action per screen | the default filled `Button`. One per screen, and a secondary action is never a second filled button. |
-| Links | `text-primary hover:underline underline-offset-4` in the app, `decoration-primary/30` under a landing secondary action. |
-| Interactive row/chip hover, and the just-added row | `hover:border-primary/40 hover:bg-primary/5`, and `border-primary/50 bg-primary/10` while an entry is freshly added. Hover is invisible on a phone and headless, so it costs nothing on the ceiling there. |
-| The "logging to a past day" banner | `border-primary/20 bg-primary/5` with a `text-primary` icon. Informational, never a warning, so no amber and no red. |
-| Landing screenshot frames | the hero frame's sanctioned `border-primary/55 shadow-2xl shadow-primary/20` (see §5), and `border-primary/25 shadow-md shadow-primary/5` on every shot below it. |
-| An award a person holds | the brand fill on `award-tile.tsx`'s `default` variant. |
+| Card titles, app-wide                                                            | `text-lg font-semibold tracking-tight` in the body face, the `CardTitle` default with no per-card override. No serif, see §4.                                                                                                                                      |
+| The wordmark in the header kicker                                                | `text-primary` on `<Wordmark>`, the product's own name.                                                                                                                                                                                                            |
+| Active bottom-nav tab                                                            | `bg-primary/5` + `text-primary` + a `after:` top rule at `bg-primary`. Three cues, so it never depends on hue alone.                                                                                                                                               |
+| The one primary action per screen                                                | the default filled `Button`. One per screen, and a secondary action is never a second filled button.                                                                                                                                                               |
+| Links                                                                            | `text-primary hover:underline underline-offset-4` in the app, `decoration-primary/30` under a landing secondary action.                                                                                                                                            |
+| Interactive row/chip hover, and the just-added row                               | `hover:border-primary/40 hover:bg-primary/5`, and `border-primary/50 bg-primary/10` while an entry is freshly added. Hover is invisible on a phone and headless, so it costs nothing on the ceiling there.                                                         |
+| The "logging to a past day" banner                                               | `border-primary/20 bg-primary/5` with a `text-primary` icon. Informational, never a warning, so no amber and no red.                                                                                                                                               |
+| Landing screenshot frames                                                        | the hero frame's sanctioned `border-primary/55 shadow-2xl shadow-primary/20` (see §5), and `border-primary/25 shadow-md shadow-primary/5` on every shot below it.                                                                                                  |
+| An award a person holds                                                          | the brand fill on `award-tile.tsx`'s `default` variant.                                                                                                                                                                                                            |
 
 Group subtotals are **no longer** on this list. A meal's net carbs, a nutrient's share of its
 target and a bundle's item count were all a `bg-primary/10 text-primary` pill; they use
@@ -223,16 +223,31 @@ this document does not learn it.
   `root.tsx` and Fraunces via an `@font-face` block in `app.css`. Never a Google Fonts CDN `<link>`
   (openplate is privacy-first and self-hosted, no third-party font beacons).
 - Scale (plain Tailwind, applied consistently). A monospace reads optically larger than Inter at
-  the same pixel size, which is why two of these stepped down in M243:
+  the same pixel size, which is why the header title stepped down in M243:
   - Header page title on a phone: `truncate text-sm font-semibold leading-tight tracking-tight md:text-xl`.
     14px, and MEASURED: it is the largest whole pixel size at which no route title in any of the
     six languages clips harder than Inter at 18px did, at 390px and at 360px. It is also the floor
     in `tests/design-contract.ts`, so the next clip cannot be "fixed" by shrinking the title.
   - Landing wordmark: `text-5xl font-bold tracking-tight sm:text-6xl`
-  - Card title: `text-base font-semibold leading-tight tracking-tight text-balance` (the `CardTitle`
-    primitive's default; auth and onboarding screens override the size)
+  - Card title: `text-lg font-semibold leading-tight tracking-tight text-balance` (the `CardTitle`
+    primitive's default; auth and onboarding screens override the size). It is 18px on every card.
+    M243 had stepped it to 16px while fourteen Insights cards kept an explicit `text-lg`, so one
+    screen drew both sizes over the same 14px body and no title stood clear of the text under it.
+    On 2026-09-21 the operator called the cards flat, with no visual hierarchy. The default went
+    back to 18px and the overrides were deleted. `CARD_TITLE_OVER_BODY_MIN_RATIO` in
+    `tests/design-contract.ts` holds the gap, and `tests/e2e/lcc-lineage-hierarchy.spec.ts` measures
+    it on a device that has data, which the empty-state read in `lcc-lineage-labels.spec.ts` never saw.
   - Body: `text-sm` (default) / `text-base`
   - Meta/labels/badges: `text-xs`; muted meta: `text-xs text-muted-foreground`
+- **A card reads in tiers, and each tier looks different, not just a little smaller.** In one face
+  at three nearby sizes, size alone does not separate a label from prose, so the tiers also differ
+  in case, weight and grey: a title (18px, semibold, ink), a description or note (14px or 12px,
+  muted, sentence case), a label (12px, semibold, muted, UPPERCASE: the section label recipe) and
+  a figure (20px, semibold, `tabular-nums`, ink). A stat is a label over a figure with an optional
+  note under it, and that is `StatTile` (`app/components/trends/stat-tile.tsx`): the weight card,
+  the range summary and the fasting stats all use the same label. **A stat tile holds a figure,
+  never a sentence.** A stat that has no figure yet gets no tile, and one quiet line under the row
+  says why. A filter group is named by the same section label, from the legend it already had.
 - Emphasis weight is `font-semibold`; `strong/b` renders 700.
 - Numbers in macro grids are the body face, which is now genuinely the mono font. Keep
   `tabular-nums` where columns of numbers stack.

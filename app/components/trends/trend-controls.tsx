@@ -12,7 +12,26 @@ import { ALL_MEALS, DEFAULT_TREND_METRIC } from '#app/lib/trend-chart';
 import type { TrendMetric, TrendSlot } from '#app/lib/trend-chart';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '#app/lib/meal-choice';
 import type { InsightsTab } from '#app/lib/insights-tabs';
+import { SECTION_EYEBROW_CLASS } from '#app/components/typography';
 import { Button } from '#app/components/ui/button';
+import type { ReactNode } from 'react';
+
+/**
+ * One group of chips under its name. Twelve equal chips in three stacked rows
+ * read as one wall, so each row wears its group's name as a section label. The
+ * name is the fieldset's `legend`, which stays for assistive technology, and
+ * this is its sighted twin, hidden from it so the name is read once.
+ */
+function ControlGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <p aria-hidden="true" className={SECTION_EYEBROW_CLASS}>
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
 
 /** The selectable day ranges and their plain-language label keys, mirroring the loader's accepted values. */
 const RANGE_OPTIONS: readonly { value: 7 | 14 | 30 | 90; labelKey: string }[] = [
@@ -87,73 +106,79 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Its own row of three columns: five metrics do not fit a phone beside
           the range group, and a control that scrolls sideways is the one thing
           this layout budget forbids. */}
-      <fieldset data-slot="trend-metric-controls" className="grid grid-cols-3 gap-2">
-        <legend className="sr-only">{t('trends.controls.metricGroup')}</legend>
-        {METRIC_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            asChild
-            size="sm"
-            className={CHIP_CLASS}
-            variant={metric === option.value ? 'default' : 'outline'}
-          >
-            <Link
-              to={controlHref({ range, slot, tab, metric: option.value })}
-              preventScrollReset
-              aria-current={metric === option.value ? 'true' : undefined}
+      <ControlGroup label={t('trends.controls.metricGroup')}>
+        <fieldset data-slot="trend-metric-controls" className="grid grid-cols-3 gap-2">
+          <legend className="sr-only">{t('trends.controls.metricGroup')}</legend>
+          {METRIC_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              asChild
+              size="sm"
+              className={CHIP_CLASS}
+              variant={metric === option.value ? 'default' : 'outline'}
             >
-              {t(option.labelKey)}
-            </Link>
-          </Button>
-        ))}
-      </fieldset>
-      <fieldset className="grid grid-cols-4 gap-2">
-        <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
-        {RANGE_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            asChild
-            size="sm"
-            className={CHIP_CLASS}
-            variant={range === option.value ? 'default' : 'outline'}
-          >
-            <Link
-              to={controlHref({ range: option.value, slot, tab, metric })}
-              preventScrollReset
-              aria-current={range === option.value ? 'true' : undefined}
+              <Link
+                to={controlHref({ range, slot, tab, metric: option.value })}
+                preventScrollReset
+                aria-current={metric === option.value ? 'true' : undefined}
+              >
+                {t(option.labelKey)}
+              </Link>
+            </Button>
+          ))}
+        </fieldset>
+      </ControlGroup>
+      <ControlGroup label={t('trends.controls.rangeGroup')}>
+        <fieldset className="grid grid-cols-4 gap-2">
+          <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
+          {RANGE_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              asChild
+              size="sm"
+              className={CHIP_CLASS}
+              variant={range === option.value ? 'default' : 'outline'}
             >
-              {t(option.labelKey)}
-            </Link>
-          </Button>
-        ))}
-      </fieldset>
+              <Link
+                to={controlHref({ range: option.value, slot, tab, metric })}
+                preventScrollReset
+                aria-current={range === option.value ? 'true' : undefined}
+              >
+                {t(option.labelKey)}
+              </Link>
+            </Button>
+          ))}
+        </fieldset>
+      </ControlGroup>
       {/* Its own row of three columns: five options do not fit a phone's width
           beside the two groups above, and a control that scrolls sideways is
           the one thing this layout budget forbids. */}
-      <fieldset data-slot="trend-slot-controls" className="grid grid-cols-3 gap-2">
-        <legend className="sr-only">{t('trends.controls.slotGroup')}</legend>
-        {SLOT_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            asChild
-            size="sm"
-            className={CHIP_CLASS}
-            variant={slot === option.value ? 'default' : 'outline'}
-          >
-            <Link
-              to={controlHref({ range, slot: option.value, tab, metric })}
-              preventScrollReset
-              aria-current={slot === option.value ? 'true' : undefined}
+      <ControlGroup label={t('trends.controls.slotGroup')}>
+        <fieldset data-slot="trend-slot-controls" className="grid grid-cols-3 gap-2">
+          <legend className="sr-only">{t('trends.controls.slotGroup')}</legend>
+          {SLOT_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              asChild
+              size="sm"
+              className={CHIP_CLASS}
+              variant={slot === option.value ? 'default' : 'outline'}
             >
-              {t(option.labelKey)}
-            </Link>
-          </Button>
-        ))}
-      </fieldset>
+              <Link
+                to={controlHref({ range, slot: option.value, tab, metric })}
+                preventScrollReset
+                aria-current={slot === option.value ? 'true' : undefined}
+              >
+                {t(option.labelKey)}
+              </Link>
+            </Button>
+          ))}
+        </fieldset>
+      </ControlGroup>
     </div>
   );
 }

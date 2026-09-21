@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Cards on Insights, the dashboard and Fasting now read in a clear order.** Every card title is the same size, 18 px, where half of them were 16 px and half 18 px over the same body text, so a title now stands clear of the line under it. The small labels above a figure, such as "Latest" and "To target" on the weight card, are grey capitals, so they no longer look like the sentences around them. The weight card and the summary of your last 7 days draw a tile only for a figure, and the reason a figure is missing is one line under the row instead of a sentence inside a tile. The three filter groups on the Nutrition tab, Metric, Time span and Meal, are named above their buttons.
+
 ## [0.37.0] - 2026-09-21
 
 ### Changed

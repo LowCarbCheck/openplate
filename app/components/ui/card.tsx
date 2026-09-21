@@ -33,13 +33,15 @@ CardHeader.displayName = 'CardHeader';
 const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     // DESIGN.md §4: a card title is a semibold label in the BODY face, at
-    // `text-base` (16px). It used to be the display serif at `text-lg`
-    // (M129, a serif card title over a tracked teal eyebrow on every card),
-    // and that pairing is the generated-template signature M243 removed. The
-    // brand face now draws the word "openplate" and nothing else, through
-    // the `Wordmark` component, so a title here must never ask for it. The
-    // body face is Victor Mono, which reads optically larger than Inter at
-    // the same size, which is why the step down from `text-lg`. Callers with
+    // `text-lg` (18px). It used to be the display serif at `text-lg` over a
+    // tracked teal eyebrow (M129), and that pairing is the generated-template
+    // signature M243 removed. M243 also stepped the default down to 16px, but
+    // fourteen Insights cards kept an explicit `text-lg`, so one screen carried
+    // 16px and 18px titles over the same 14px body, and no title stood clear of
+    // the text under it. On 2026-09-21 the operator called the cards flat, with
+    // no visual hierarchy, so the default is 18px and the overrides are gone.
+    // The brand face draws the word "openplate" and nothing else, through the
+    // `Wordmark` component, so a title here must never ask for it. Callers with
     // a different size (auth screens' `text-xl`, onboarding's `text-2xl`)
     // still override via `className`. This is also a label, never a live
     // figure: every number that changes as you use the app lives in card
@@ -47,7 +49,7 @@ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivE
     <div
       ref={ref}
       data-slot="card-title"
-      className={cn('text-base font-semibold leading-tight tracking-tight text-balance', className)}
+      className={cn('text-lg font-semibold leading-tight tracking-tight text-balance', className)}
       {...props}
     />
   ),

@@ -69,7 +69,7 @@ export function ActivityStreakCard({
     >
       <Card className="transition-colors hover:border-primary/40">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> {t('trends.streak.title')}
           </CardTitle>
           <CardDescription>{describeStreak(streak, t)}</CardDescription>

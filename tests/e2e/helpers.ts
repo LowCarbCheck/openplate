@@ -53,8 +53,10 @@ export async function useLanguage(page: Page, locale: LanguageCode): Promise<voi
  * is what lands on the diary.
  *
  * @param page - a page on a device that has never been used.
+ * @param weights - answers the weight step with these figures instead of skipping it, which is what gives
+ *   the device a weigh-in and a target to draw.
  */
-export async function completeOnboarding(page: Page): Promise<void> {
+export async function completeOnboarding(page: Page, weights?: { current: string; target: string }): Promise<void> {
   await page.goto('/welcome');
   await page.getByRole('link', { name: EN.welcome.start, exact: true }).click();
 
@@ -63,7 +65,13 @@ export async function completeOnboarding(page: Page): Promise<void> {
   await page.getByRole('button', { name: EN.onboarding.actions.continue }).click();
 
   await expect(page.getByText(EN.onboarding.step.weight.title)).toBeVisible();
-  await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();
+  if (weights === undefined) {
+    await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();
+  } else {
+    await page.locator('#currentWeightKg').fill(weights.current);
+    await page.locator('#targetWeightKg').fill(weights.target);
+    await page.getByRole('button', { name: EN.onboarding.actions.continue }).click();
+  }
 
   await expect(page.getByText(EN.onboarding.step.body.title)).toBeVisible();
   await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();

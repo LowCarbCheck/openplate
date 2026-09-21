@@ -69,7 +69,7 @@ export function SlotAveragesCard({ slots, averages }: { slots: readonly MealType
   return (
     <Card data-slot="slot-averages-card">
       <CardHeader>
-        <CardTitle className="text-lg">{t('trends.meals.averages.title')}</CardTitle>
+        <CardTitle>{t('trends.meals.averages.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <ul className="space-y-3">

@@ -26,7 +26,7 @@
  * ── THE EMPTY STATES ARE ROWS, NOT POSTERS ──
  * The fourth claim, and the one with nothing else guarding it: an empty state states the missing
  * figure at a data row's size, left, with its primary action inline, rather than as a centred
- * column under an 18 px title. It is read as COMPUTED text alignment and font size, so a poster
+ * column under an oversized title. It is read as COMPUTED text alignment and font size, so a poster
  * rebuilt out of different classes still fails. Two screens are read this way: the diary's
  * first-ever state (spec 05a) and the Insights page's own (spec 05b), each on the device state
  * that produces it.
@@ -39,6 +39,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
+import { CARD_TITLE_PX } from '../design-contract';
 import { completeOnboarding, logFoodManually } from './helpers';
 
 /** The two widths: the narrowest the app promises to fit, and the design width. */
@@ -65,10 +66,11 @@ const SEEDED_FOOD = { name: 'Screen walk cheddar', grams: '40', carbs: '1.2' } a
  * It was an 18 px `h3` on the diary and a default `CardTitle` on the Insights page, both inside
  * the centred-poster template. A row states its opening line at a card title's size or smaller,
  * so the ceiling is the card title size and anything above it is a poster again, whatever classes
- * built it. The diary's own line is 14 px and the Insights one is 16, which is why the ceiling is
- * a ceiling and not an equality.
+ * built it. The diary's own line is 14 px and the Insights one is the card title, which is why the ceiling
+ * is a ceiling and not an equality. It is read from the design contract, so a change to the card
+ * title moves it too. It was a literal 16 until the card title went back to 18 on 2026-09-21.
  */
-const EMPTY_STATE_TITLE_CEILING_PX = 16;
+const EMPTY_STATE_TITLE_CEILING_PX = CARD_TITLE_PX;
 
 /**
  * Every plot on those screens, and the height it draws, per width.
@@ -327,7 +329,7 @@ for (const state of EMPTY_STATES) {
       node.style.textAlign = 'center';
     });
     await title.evaluate((node) => {
-      node.style.fontSize = '18px';
+      node.style.fontSize = '24px';
     });
     const centred = await read();
     expect(centred.align, 'CONTROL: a centred empty state must read as centred').toBe('center');

@@ -788,7 +788,7 @@ function LoggedTogether({ siblings }: { siblings: LocalFoodLog[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t('entry.loggedTogether')}</CardTitle>
+        <CardTitle>{t('entry.loggedTogether')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {siblings.map((sibling) => (
@@ -1263,7 +1263,7 @@ export function EditEntry({
         {/* Portion — the primary control */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t('entry.fact.portion')}</CardTitle>
+            <CardTitle>{t('entry.fact.portion')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {baseGrams > 0 && (
@@ -1377,7 +1377,7 @@ export function EditEntry({
             same way the diary route itself refuses to render one. */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t('entry.edit.when')}</CardTitle>
+            <CardTitle>{t('entry.edit.when')}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">

@@ -118,6 +118,8 @@ const catalogSchema = z.object({
     }),
     goals: z.object({ invite: z.string(), hitRate: z.string(), honesty: z.string() }),
     overview: z.object({ openInsights: z.string() }),
+    controls: z.object({ metricGroup: z.string(), rangeGroup: z.string(), slotGroup: z.string() }),
+    weight: z.object({ singleEntry: z.string(), title: z.string() }),
   }),
   dashboard: z.object({
     insightsHint: z.object({ title: z.string() }),

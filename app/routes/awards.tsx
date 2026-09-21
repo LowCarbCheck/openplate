@@ -97,7 +97,7 @@ function AwardSection({ kind, earnedDays }: { kind: AwardKind; earnedDays: Map<s
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{t(awardSectionKey(kind))}</CardTitle>
+        <CardTitle>{t(awardSectionKey(kind))}</CardTitle>
       </CardHeader>
       <CardContent className="divide-y divide-border pt-0">
         {awardsOfKind(kind).map((award) => (

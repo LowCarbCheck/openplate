@@ -2,15 +2,17 @@
  * Unit tests for `#app/components/ui/card`, the shared Card/CardTitle surface
  * used by every card-based screen (diary, add, trends, settings). Pins the
  * DESIGN.md-aligned defaults (the ladder's card radius plus a `shadow-sm`
- * resting elevation, a real `text-base` CardTitle size in the body face, never
+ * resting elevation, a real `text-lg` CardTitle size in the body face, never
  * the display serif) so a future edit can't silently revert Card to the flat,
  * unsized state the design audit called out. A plain SSR render (no DOM needed)
  * is enough to assert on the emitted class list.
  *
  * M243 spec 02 changed the CardTitle half of this file: the title dropped the
- * display serif and `text-lg` for `text-base`, because a serif card title over a
- * tracked label is the generated-template signature. The brand face now draws
- * the word "openplate" and nothing else, through `Wordmark`.
+ * display serif, because a serif card title over a tracked label is the
+ * generated-template signature. The brand face now draws the word "openplate"
+ * and nothing else, through `Wordmark`. It also dropped to `text-base`, and on
+ * 2026-09-21 it went back to `text-lg`: fourteen cards had kept an explicit
+ * `text-lg`, so 16 px and 18 px titles shared a screen over one 14 px body.
  *
  * M243 spec 03 changed the radius half. The class is read from
  * `tests/design-contract.ts` rather than typed here, because it is a taste call
@@ -67,11 +69,11 @@ describe('Card', () => {
 });
 
 describe('CardTitle', () => {
-  it('defaults to text-base font-semibold (DESIGN.md §4 card title scale)', () => {
+  it('defaults to text-lg font-semibold (DESIGN.md §4 card title scale)', () => {
     const classes = classListOf(renderToStaticMarkup(createElement(CardTitle, {}, 'Your goals')));
-    assert.ok(classes.includes('text-base'));
+    assert.ok(classes.includes('text-lg'));
     assert.ok(classes.includes('font-semibold'));
-    assert.ok(!classes.includes('text-lg'), 'the old text-lg default must be gone');
+    assert.ok(!classes.includes('text-base'), 'the M243 text-base default must be gone');
   });
 
   it('does NOT carry the display serif: card titles are in the body face', () => {

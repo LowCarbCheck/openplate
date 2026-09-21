@@ -33,9 +33,7 @@ export function AdherenceGridCard({ grid, goals }: { grid: AdherenceGridModel; g
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">
-          {t(isActivityMode ? 'trends.grid.titleActivity' : 'trends.grid.title')}
-        </CardTitle>
+        <CardTitle>{t(isActivityMode ? 'trends.grid.titleActivity' : 'trends.grid.title')}</CardTitle>
         <CardDescription>
           {t(isActivityMode ? 'trends.grid.descriptionActivity' : 'trends.grid.description')}
         </CardDescription>

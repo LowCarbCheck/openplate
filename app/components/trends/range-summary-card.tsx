@@ -8,7 +8,15 @@
 import { useTranslation } from 'react-i18next';
 import type { RangeMetricSummary, RangeSummary } from '#app/lib/range-summary';
 import { MIN_TREND_DAYS, SparseTrendNotice } from '#app/components/trends/sparse-trend-notice';
+import {
+  STAT_FIGURE_CLASS,
+  STAT_GRID_CLASS,
+  STAT_NOTE_CLASS,
+  STAT_UNIT_CLASS,
+  StatTile,
+} from '#app/components/trends/stat-tile';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
+import { cn } from '#app/lib/utils';
 
 /** The narrow slice of i18next's `t` the module-scope formatter needs. */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
@@ -20,8 +28,8 @@ function formatSignedDelta({ value, unit, t }: { value: number; unit: string; t:
   return `${rounded > 0 ? '+' : '−'}${Math.abs(rounded)} ${unit}`;
 }
 
-/** One metric's row: its label, its "~"-hedged average, and its change line against the range before. */
-function MetricRow({
+/** One metric's tile: its label, its "~"-hedged average, and its change line against the range before. */
+function MetricTile({
   metric,
   label,
   summary,
@@ -43,17 +51,22 @@ function MetricRow({
   if (summary.average === null) return null;
 
   return (
-    <p data-slot="range-summary-metric" data-metric={metric} className="text-sm">
-      <span className="text-muted-foreground">{label}: </span>
-      <span data-slot="range-summary-value" data-value={summary.average} className="font-semibold tabular-nums">
-        ~{Math.round(summary.average)} {unit}
-      </span>
+    <StatTile label={label} data-slot="range-summary-metric" data-metric={metric}>
+      <p className={STAT_FIGURE_CLASS}>
+        <span data-slot="range-summary-value" data-value={summary.average}>
+          ~{Math.round(summary.average)}
+        </span>{' '}
+        <span className={STAT_UNIT_CLASS}>{unit}</span>
+      </p>
       {summary.change !== null && (
-        <span className="block text-xs text-muted-foreground tabular-nums">
-          {t('trends.overview.summary.change', { change: formatSignedDelta({ value: summary.change, unit, t }), days: range })}
-        </span>
+        <p className={cn(STAT_NOTE_CLASS, 'tabular-nums')}>
+          {t('trends.overview.summary.change', {
+            change: formatSignedDelta({ value: summary.change, unit, t }),
+            days: range,
+          })}
+        </p>
       )}
-    </p>
+    </StatTile>
   );
 }
 
@@ -71,16 +84,34 @@ export function RangeSummaryCard({ summary, range }: { summary: RangeSummary; ra
   return (
     <Card data-slot="range-summary-card">
       <CardHeader>
-        <CardTitle className="text-lg">{t('trends.overview.summary.title', { days: range })}</CardTitle>
+        <CardTitle>{t('trends.overview.summary.title', { days: range })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p data-slot="range-summary-logged-days" className="text-sm text-muted-foreground tabular-nums">
           {t('trends.meals.averages.loggedDays', { days: summary.loggedDays, total: range })}
         </p>
-        <div className="space-y-2">
-          <MetricRow metric="kcal" label={t('trends.metric.calories')} summary={summary.kcal} unit="kcal" range={range} />
-          <MetricRow metric="netCarbs" label={t('trends.metric.netCarbs')} summary={summary.netCarbs} unit="g" range={range} />
-          <MetricRow metric="protein" label={t('trends.metric.protein')} summary={summary.protein} unit="g" range={range} />
+        <div className={STAT_GRID_CLASS}>
+          <MetricTile
+            metric="kcal"
+            label={t('trends.metric.calories')}
+            summary={summary.kcal}
+            unit="kcal"
+            range={range}
+          />
+          <MetricTile
+            metric="netCarbs"
+            label={t('trends.metric.netCarbs')}
+            summary={summary.netCarbs}
+            unit="g"
+            range={range}
+          />
+          <MetricTile
+            metric="protein"
+            label={t('trends.metric.protein')}
+            summary={summary.protein}
+            unit="g"
+            range={range}
+          />
         </div>
       </CardContent>
     </Card>

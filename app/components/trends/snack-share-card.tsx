@@ -22,7 +22,7 @@ export function SnackShareCard({ rows, hasEnoughWeeks }: { rows: readonly SlotSh
     return (
       <Card data-slot="snack-share-card" data-state="sparse">
         <CardHeader>
-          <CardTitle className="text-lg">{t('trends.meals.snack.title')}</CardTitle>
+          <CardTitle>{t('trends.meals.snack.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">{t('trends.meals.snack.sparse')}</p>
@@ -37,7 +37,7 @@ export function SnackShareCard({ rows, hasEnoughWeeks }: { rows: readonly SlotSh
   return (
     <Card data-slot="snack-share-card" data-state="chart">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-lg">{t('trends.meals.snack.title')}</CardTitle>
+        <CardTitle>{t('trends.meals.snack.title')}</CardTitle>
         <CardDescription>{t('trends.meals.snack.description')}</CardDescription>
       </CardHeader>
       <CardContent>

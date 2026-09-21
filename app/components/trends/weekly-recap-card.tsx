@@ -163,7 +163,7 @@ export function WeeklyRecapCard({
     // the border are an ordinary card's.
     <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg">{t('trends.recap.title')}</CardTitle>
+        <CardTitle>{t('trends.recap.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <AverageLine current={current} previous={previous} />

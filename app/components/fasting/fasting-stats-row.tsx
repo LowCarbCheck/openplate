@@ -16,6 +16,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SECTION_EYEBROW_CLASS } from '#app/components/typography';
 import { formatFastDuration } from '#app/models/fasting';
 import type { FastingStats } from '#app/models/fasting-stats';
 
@@ -24,7 +25,7 @@ export interface FastingStatsRowProps {
   stats: FastingStats;
 }
 
-/** One figure and its label, the small stat recipe the rest of the app uses. */
+/** One figure and its label: the label is the section label recipe, the figure the stat figure. */
 function StatFigure({ figure, label }: { figure: string; label: string }): ReactElement {
   return (
     // `justify-end` on a stretched grid cell: a label that wraps to two lines
@@ -32,7 +33,7 @@ function StatFigure({ figure, label }: { figure: string; label: string }): React
     // up, so the four values never shared a line. Pinning the value to the
     // bottom of the cell lines them all up whatever the label does.
     <div className="flex h-full flex-col justify-end gap-0.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className={SECTION_EYEBROW_CLASS}>{label}</dt>
       <dd className="text-xl font-semibold tabular-nums">{figure}</dd>
     </div>
   );

@@ -39,7 +39,7 @@ export function UsualSlotFoodsCard({ slot, foods }: { slot: MealType; foods: rea
   return (
     <Card data-slot="usual-slot-foods-card" data-slot-name={slot}>
       <CardHeader>
-        <CardTitle className="text-lg">{t(USUAL_TITLE_KEYS[slot])}</CardTitle>
+        <CardTitle>{t(USUAL_TITLE_KEYS[slot])}</CardTitle>
       </CardHeader>
       <CardContent>
         {foods.length === 0 ?

@@ -136,7 +136,7 @@ export function MacroEnergySplitCard({ days, isWeekly }: { days: readonly TrendD
   return (
     <Card data-slot="macro-split-card">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-lg">{t('trends.split.title')}</CardTitle>
+        <CardTitle>{t('trends.split.title')}</CardTitle>
         <CardDescription>{t('trends.split.note')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

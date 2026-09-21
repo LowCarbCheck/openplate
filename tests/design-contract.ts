@@ -2,7 +2,7 @@
  * The design contract of the lowcarbcheck restyle (M243), as names and numbers, in ONE place.
  *
  * WHY A MODULE AND NOT LITERALS IN EACH TEST. The restyle is a taste call that a person may
- * reverse: Victor Mono back to Inter, a 28 px grid to a 32 px one, a 16 px card title to 18.
+ * reverse: Victor Mono back to Inter, a 28 px grid to a 32 px one, an 18 px card title back to 16.
  * If each test carried its own copy of `'Victor Mono Variable'` and `57`, a reversal would be
  * a hunt through a dozen files and the ones missed would fail for the wrong reason. Here it is
  * a one-line edit, and the tests that read it move together.
@@ -48,8 +48,14 @@ export const SECTION_EYEBROW_TOKENS = [
 /** The hairline that trails a section label, drawn in the border colour. */
 export const SECTION_EYEBROW_RULE_TOKEN = 'bg-border';
 
-/** The card title's recipe: 16 px semibold, in whatever face the body asks for. */
-export const CARD_TITLE_TOKENS = ['text-base', 'font-semibold', 'leading-tight', 'tracking-tight', 'text-balance'] as const;
+/** The card title's recipe: 18 px semibold, in whatever face the body asks for. */
+export const CARD_TITLE_TOKENS = [
+  'text-lg',
+  'font-semibold',
+  'leading-tight',
+  'tracking-tight',
+  'text-balance',
+] as const;
 
 /**
  * The header page title on a phone, and the floor no fix may go under. 14 px is the largest whole
@@ -69,8 +75,22 @@ export const HEADER_TITLE_INTER_BASELINE_PX = 18;
 /** The bottom bar's fixed height: `h-14` (56 px) plus its 1 px top border. */
 export const BOTTOM_BAR_HEIGHT_PX = 57;
 
-/** The default card title size, `text-base`. Callers may still override it. */
-export const CARD_TITLE_PX = 16;
+/**
+ * The default card title size, `text-lg`. Callers may still override it.
+ *
+ * It was 16 from M243 spec 03 until 2026-09-21, and that was a step BELOW what fourteen Insights
+ * cards still set by hand, so one screen drew 16 px and 18 px titles over the same 14 px body and
+ * no title stood clear of the text under it. The operator called the cards flat. 18 is the size
+ * the title had before the face changed, and the overrides that said so are gone.
+ */
+export const CARD_TITLE_PX = 18;
+
+/**
+ * The smallest a card title may be over the text under it, as a ratio. A title 16 over a body 14 is
+ * 1.14 and reads as more of the same; 18 over 14 is 1.29. The hierarchy check reads this, so a
+ * future step down to 16 fails there and not in a reviewer's eye.
+ */
+export const CARD_TITLE_OVER_BODY_MIN_RATIO = 1.25;
 
 /**
  * The graph paper's cell, and the alpha its hairlines are drawn at.

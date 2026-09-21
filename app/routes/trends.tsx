@@ -509,13 +509,13 @@ function ChartCard({
 
   return (
     <Card>
-      <CardHeader className="space-y-3">
+      <CardHeader className="space-y-4">
         <div className="space-y-1">
           {/* No `capitalize` here: the title is now a whole catalog string
               with its own correct casing, and the CSS class title-cases EVERY
               word — it rendered "Daily Net Carbs" in English and "Netto-KH
               Pro Tag" in German, which is simply wrong in both. */}
-          <CardTitle className="text-lg">{chartTitle}</CardTitle>
+          <CardTitle>{chartTitle}</CardTitle>
           <CardDescription>{hasEnoughDays ? t('trends.chart.tapHint') : t('trends.chart.sparseHint')}</CardDescription>
           {/* The title still says "Daily net carbs", which is only half true
               once a slot is chosen, so the slot is named right under it. */}

@@ -72,15 +72,13 @@ export function StreakGridCard({
         <CardHeader>
           {streak === null ?
             <>
-              <CardTitle className="text-base">
-                {t(isActivityMode ? 'trends.grid.titleActivity' : 'trends.grid.title')}
-              </CardTitle>
+              <CardTitle>{t(isActivityMode ? 'trends.grid.titleActivity' : 'trends.grid.title')}</CardTitle>
               <CardDescription>
                 {t(isActivityMode ? 'trends.grid.descriptionActivity' : 'trends.grid.description')}
               </CardDescription>
             </>
           : <>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2">
                 <Flame className="h-5 w-5 text-muted-foreground" aria-hidden="true" /> {t('trends.streak.title')}
               </CardTitle>
               <CardDescription>{describeStreak(streak, t)}</CardDescription>

@@ -10,7 +10,9 @@
  *    class list mentions `uppercase` and compares it with the computed colour of a real
  *    `text-primary` probe, so it does not care how a label is built, only what colour it is.
  *
- * 2. A CARD TITLE IS 16 PX IN THE BODY FACE. It was Fraunces at 18 px.
+ * 2. A CARD TITLE IS 18 PX IN THE BODY FACE. It was Fraunces at 18 px, then Victor Mono at 16 px
+ *    from M243 until 2026-09-21, when `lcc-lineage-hierarchy.spec.ts` began holding it on a device
+ *    that has data.
  *
  * 3. FRAUNCES DRAWS THE WORD "openplate" AND NOTHING ELSE. A sweep of every element on the
  *    screen whose computed family is Fraunces must find only elements that read exactly
@@ -221,7 +223,7 @@ test(`a card title is ${CARD_TITLE_PX}px in Victor Mono, and the reader can say 
   }
   expect(seen, 'the walk must have read at least one card title').toBeGreaterThan(0);
 
-  // CONTROL: the same read, pointed at a title forced into the old serif at the old size,
+  // CONTROL: the same read, pointed at a title forced into the old serif at the M243 size (16 px),
   // says no on both counts. A read that returned the body face for everything would pass
   // the walk above and prove nothing.
   await page.evaluate(
@@ -229,7 +231,7 @@ test(`a card title is ${CARD_TITLE_PX}px in Victor Mono, and the reader can say 
       const old = document.createElement('div');
       old.id = 'm243-old-card-title';
       old.dataset.slot = 'card-title';
-      old.style.cssText = `font-family:${family};font-size:18px;`;
+      old.style.cssText = `font-family:${family};font-size:16px;`;
       old.textContent = 'Old card title';
       document.body.append(old);
     },

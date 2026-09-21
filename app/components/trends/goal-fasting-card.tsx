@@ -26,7 +26,7 @@ export function GoalFastingCard({ share }: { share: FastTargetShare }): ReactEle
   return (
     <Card data-slot="goal-fasting-card">
       <CardHeader>
-        <CardTitle className="text-lg">{t('trends.goals.fasting.title')}</CardTitle>
+        <CardTitle>{t('trends.goals.fasting.title')}</CardTitle>
         <CardDescription>{t('trends.goals.fasting.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">

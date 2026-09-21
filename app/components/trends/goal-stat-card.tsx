@@ -78,7 +78,7 @@ export function GoalStatCard({ stat, showRuns }: { stat: GoalStat; showRuns: boo
   return (
     <Card data-slot="goal-stat-card" data-goal={stat.key} data-direction={stat.direction}>
       <CardHeader>
-        <CardTitle className="text-lg">{t(GOAL_TITLE_KEY[stat.key])}</CardTitle>
+        <CardTitle>{t(GOAL_TITLE_KEY[stat.key])}</CardTitle>
         <CardDescription>
           {stat.direction === 'max' ? t('trends.goals.goalMax', { goal }) : t('trends.goals.goalMin', { goal })}
         </CardDescription>

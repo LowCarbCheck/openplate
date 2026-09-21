@@ -116,10 +116,10 @@ const ALLOWED: readonly AllowedSite[] = [
     why: '`SHOT_FRAME`, the frame every product shot below the hero is drawn in. Several per page, one shape, which is what a tile is.',
   },
   {
-    file: 'components/trends/weight-stat-tiles.tsx',
+    file: 'components/trends/stat-tile.tsx',
     tier: 'tile',
     count: 1,
-    why: 'The three weight stat tiles above the chart. A tile in a grid, which is the tier itself.',
+    why: 'The stat tiles of the weight card and the range summary. A tile in a grid, which is the tier itself.',
   },
 ];
 

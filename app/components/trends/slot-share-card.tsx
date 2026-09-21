@@ -110,7 +110,7 @@ export function SlotShareCard({
   return (
     <Card data-slot="slot-share-card">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-lg">{t('trends.meals.share.title')}</CardTitle>
+        <CardTitle>{t('trends.meals.share.title')}</CardTitle>
         <CardDescription>{t(metric === 'kcal' ? 'trends.meals.share.descriptionCalories' : 'trends.meals.share.descriptionNetCarbs')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

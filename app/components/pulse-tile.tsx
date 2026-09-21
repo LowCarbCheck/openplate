@@ -31,7 +31,7 @@ export function PulseTile({ today }: { today: PulseToday | null }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('pulse.tile.title')}</CardTitle>
+        <CardTitle>{t('pulse.tile.title')}</CardTitle>
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
