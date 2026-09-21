@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate takes on the look of lowcarbcheck.org."
+    },
+    "fixed": {
+      "01": "The backup reminder is quiet when a server holds your diary.",
+      "02": "The update notice wraps instead of cutting off the version."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "A saved meal now reaches the server by itself.",
       "02": "Signing out no longer says everything reached the server when it has not.",
       "03": "The app no longer says the server cannot read your diary."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "The server now runs as one process in the container."
     }
   }
 }

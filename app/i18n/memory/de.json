@@ -6873,6 +6873,13 @@
     "at": "2026-09-14",
     "de": "Ketose"
   },
+  "5c89fc8f83af470e": {
+    "en": "The backup reminder is quiet when a server holds your diary.",
+    "path": "releases:v0_37_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Die Backup-Erinnerung bleibt stumm, wenn ein Server dein Tagebuch speichert."
+  },
   "5c96652c5d816888": {
     "en": "Dinner",
     "path": "common:add.meal.dinner",
@@ -8853,6 +8860,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Zu wenig Daten"
+  },
+  "7715159a0b0e656c": {
+    "en": "openplate takes on the look of lowcarbcheck.org.",
+    "path": "releases:v0_37_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "openplate übernimmt das Erscheinungsbild von lowcarbcheck.org."
   },
   "773b927672944e9c": {
     "en": "Write it",
@@ -12773,6 +12787,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Mein Tagebuch teilen"
+  },
+  "a97ac948cc98d4b1": {
+    "en": "The update notice wraps instead of cutting off the version.",
+    "path": "releases:v0_37_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Der Update-Hinweis bricht um, anstatt die Version abzuschneiden."
   },
   "a9acaefebcdc6607": {
     "en": "Read the source, MIT licensed",

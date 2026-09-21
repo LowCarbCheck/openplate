@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate adopta el aspecto de lowcarbcheck.org."
+    },
+    "fixed": {
+      "01": "El recordatorio de copia de seguridad no se muestra cuando un servidor contiene tu diario.",
+      "02": "El aviso de actualización se ajusta en varias líneas en vez de cortar la versión."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "Una comida guardada ahora llega sola al servidor.",
       "02": "Al cerrar sesión ya no se indica que todo llegó al servidor si no ha sido así.",
       "03": "La app ya no indica que el servidor no puede leer tu diario."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "El servidor ahora se ejecuta como un único proceso dentro del contenedor."
     }
   }
 }

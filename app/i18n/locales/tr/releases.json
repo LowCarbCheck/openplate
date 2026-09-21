@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate, lowcarbcheck.org görünümüne bürünür."
+    },
+    "fixed": {
+      "01": "Günlüğünü bir sunucu tuttuğunda yedekleme hatırlatıcısı sessiz kalır.",
+      "02": "Güncelleme bildirimi, sürümü kesmek yerine alt satıra kaydırır."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "Kaydedilen bir öğün artık sunucuya kendi kendine ulaşıyor.",
       "02": "Oturumu kapatırken, verilerin tümü sunucuya ulaşmamışsa artık her şey ulaştı demiyor.",
       "03": "Uygulama artık sunucunun günlüğünü okuyamadığını söylemiyor."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "Sunucu artık konteyner içinde tek bir süreç olarak çalışıyor."
     }
   }
 }

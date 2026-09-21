@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate übernimmt das Erscheinungsbild von lowcarbcheck.org."
+    },
+    "fixed": {
+      "01": "Die Backup-Erinnerung bleibt stumm, wenn ein Server dein Tagebuch speichert.",
+      "02": "Der Update-Hinweis bricht um, anstatt die Version abzuschneiden."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "Eine gespeicherte Mahlzeit wird nun von selbst an den Server übertragen.",
       "02": "Beim Abmelden wird nicht mehr behauptet, alles sei auf dem Server angekommen, wenn das nicht stimmt.",
       "03": "Die App behauptet nicht mehr, der Server könne dein Tagebuch nicht lesen."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "Der Server läuft nun als einzelner Prozess im Container."
     }
   }
 }

@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate adopte l'apparence de lowcarbcheck.org."
+    },
+    "fixed": {
+      "01": "Le rappel de sauvegarde reste discret lorsqu'un serveur conserve ton journal.",
+      "02": "La notification de mise à jour passe à la ligne au lieu de tronquer la version."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "Un repas enregistré est désormais envoyé seul au serveur.",
       "02": "La déconnexion n'indique plus que tout a été transmis au serveur si ce n'est pas le cas.",
       "03": "L'application n'indique plus que le serveur ne peut pas lire ton journal."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "Le serveur s'exécute désormais sous la forme d'un seul processus dans le conteneur."
     }
   }
 }

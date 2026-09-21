@@ -1,4 +1,14 @@
 {
+  "v0_37_0": {
+    "date": "2026-09-21",
+    "changed": {
+      "01": "openplate adotta l'aspetto grafico di lowcarbcheck.org."
+    },
+    "fixed": {
+      "01": "Il promemoria del backup non interviene se il tuo diario si trova su un server.",
+      "02": "L'avviso di aggiornamento va a capo invece di troncare la versione."
+    }
+  },
   "v0_36_0": {
     "date": "2026-09-20",
     "added": {
@@ -49,12 +59,6 @@
       "01": "Un pasto salvato ora raggiunge il server in modo autonomo.",
       "02": "La disconnessione non indica più che tutti i dati hanno raggiunto il server quando non è così.",
       "03": "L'app non afferma più che il server non può leggere il tuo diario."
-    }
-  },
-  "v0_34_1": {
-    "date": "2026-09-19",
-    "changed": {
-      "01": "Il server ora viene eseguito come singolo processo nel container."
     }
   }
 }
