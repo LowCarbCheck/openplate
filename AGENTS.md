@@ -104,6 +104,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0016](.adr/0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove | Accepted   |
 | [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted   |
 | [0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted   |
+| [0019](.adr/0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
