@@ -27,11 +27,12 @@
  * the action it describes.
  *
  * 3. Typing and speaking got a screen of their own (M203). Both cards used to
- *    land on `/add`, which is the database SEARCH: a box that wants one noun,
- *    shown to somebody who was just told to write a whole meal. They land on
- *    `/describe` now, which is the composer the lesson describes. The search is
- *    still in the product and the type card's copy still names it, as the way
- *    to add one exact item.
+ *    land on `/add` (now `/add/search`), the database SEARCH: a box that wants
+ *    one noun, shown to somebody who was just told to write a whole meal. They
+ *    land on `/add/describe` now (ADR-0019 moved it there from `/describe`),
+ *    which is the composer the lesson describes. The search is still in the
+ *    product and the type card's copy still names it, as the way to add one
+ *    exact item.
  *
  * 4. The app's own microphone is GONE (M203). It was a Web Speech button, it
  *    reported every failure to an `sr-only` region, so on a phone it read as a
@@ -50,6 +51,7 @@
  * the unit tests all read the same three rows.
  */
 import type { OnboardingExitDestination } from '#app/lib/onboarding';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 /** The three ways, in the order they are taught. */
 export const WAY_TO_LOG_IDS = ['photo', 'type', 'speak'] as const;
@@ -84,11 +86,11 @@ export const WAYS_TO_LOG: readonly WayToLog[] = WAY_TO_LOG_IDS.map((id) => ({
 
 /** The real action behind each card. Exhaustive over `WayToLogId` by construction. */
 function destinationFor(id: WayToLogId): OnboardingExitDestination {
-  if (id === 'photo') return '/scan';
+  if (id === 'photo') return ADD_PHOTO_PATH;
   // FOCUSES the composer's field and shows the dictation hint. Nothing starts
   // recording, because nothing in this app can: dictation is the keyboard's.
-  if (id === 'speak') return '/describe?speak=1';
-  return '/describe';
+  if (id === 'speak') return `${ADD_DESCRIBE_PATH}?speak=1`;
+  return ADD_DESCRIBE_PATH;
 }
 
 /**

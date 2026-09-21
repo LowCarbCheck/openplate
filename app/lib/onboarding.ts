@@ -5,6 +5,7 @@ import type { EatingStyleGoals, EatingStyleId } from '#app/lib/eating-style';
 import { eatingStyle, effectiveEatingStyle, isEatingStyleId } from '#app/lib/eating-style';
 import { isValidTimeZone } from '#app/lib/user-days';
 import { parseDisplayWeightToKg } from '#app/lib/weight-units';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 /**
  * Pure onboarding-flow logic — step ordering, goal-preset mapping, and the
@@ -481,16 +482,20 @@ export function resolveOnboardingTimezone(candidate: string | null | undefined):
  * the `_personal` onboarding gate before landing on settings, then flows on to
  * the diary once connected (see `settings.ai.tsx`'s `?next=` return).
  *
- * `/describe?speak=1` is the ways-to-log lesson's speak card. It focuses the
- * composer's field and shows the line naming the keyboard's dictation key.
- * There is nothing to start: the in-app microphone was removed in M203. It is
- * the same route with a flag in the query, so nothing about the open-redirect
- * guarantee changes: the list is still closed literals.
+ * `${ADD_DESCRIBE_PATH}?speak=1` is the ways-to-log lesson's speak card. It
+ * focuses the composer's field and shows the line naming the keyboard's
+ * dictation key. There is nothing to start: the in-app microphone was removed
+ * in M203. It is the same route with a flag in the query, so nothing about the
+ * open-redirect guarantee changes: the list is still closed literals.
  *
- * `/add` and `/add?speak=1` stay allowlisted although nothing produces them
- * any more: the search screen is still a real screen, and a stored or
- * bookmarked exit value pointing there must land rather than be silently
- * rewritten to the diary. `/add` ignores the flag.
+ * `/add`, `/add?speak=1`, `/describe`, `/describe?speak=1` and `/scan` (all
+ * pre-ADR-0019 addresses) STAY allowlisted although nothing produces them any
+ * more since the `/add` hub nesting: a stored or bookmarked exit value written
+ * to a device before this change must still resolve, on that device's own
+ * redirect through to its new home, rather than be silently rewritten to the
+ * diary. `/add` and `/add?speak=1` in particular predate even the composer
+ * split (M203); the search screen was and is still a real screen, `/add`
+ * ignores the speak flag.
  *
  * `/scan?mode=label` was here for the same lesson's third card until
  * 2026-09-08, when the label scan mode was merged into the one photo path
@@ -504,6 +509,9 @@ export const ONBOARDING_EXIT_DESTINATIONS = [
   '/describe',
   '/describe?speak=1',
   '/scan',
+  ADD_DESCRIBE_PATH,
+  `${ADD_DESCRIBE_PATH}?speak=1`,
+  ADD_PHOTO_PATH,
   '/settings/ai?next=diary',
 ] as const;
 

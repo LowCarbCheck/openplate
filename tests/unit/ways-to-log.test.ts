@@ -36,12 +36,13 @@ import { fileURLToPath } from 'node:url';
 import { ONBOARDING_STEPS, resolveExitDestination } from '../../app/lib/onboarding';
 import { WAYS_TO_LOG, WAY_TO_LOG_IDS, waysToLogCopyKeys } from '../../app/lib/ways-to-log';
 import { INTAKE_MODES } from '../../app/services/vision/task';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '../../app/lib/intake-hrefs';
 
 const ONBOARDING_ROUTE = readFileSync(
   fileURLToPath(new URL('../../app/routes/onboarding.tsx', import.meta.url)),
   'utf8',
 );
-const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/scan.tsx', import.meta.url)), 'utf8');
+const SCAN_ROUTE = readFileSync(fileURLToPath(new URL('../../app/routes/add.photo.tsx', import.meta.url)), 'utf8');
 
 describe('the lesson is three ways, inside the wizard that already existed', () => {
   it('teaches exactly three ways: photograph it, write it, say it', () => {
@@ -75,27 +76,28 @@ describe('each card starts the real action', () => {
 
   it('sends the photo card to the one photo path', () => {
     assert.equal(WAYS_TO_LOG[0]?.id, 'photo');
-    assert.equal(WAYS_TO_LOG[0]?.destination, '/scan');
+    assert.equal(WAYS_TO_LOG[0]?.destination, ADD_PHOTO_PATH);
   });
 
   it('sends the type card to the composer, never to the database search', () => {
     assert.equal(WAYS_TO_LOG[1]?.id, 'type');
-    assert.equal(WAYS_TO_LOG[1]?.destination, '/describe');
+    assert.equal(WAYS_TO_LOG[1]?.destination, ADD_DESCRIBE_PATH);
     // The defect M203 fixed: the card teaches "write a whole meal in one
-    // line" and used to land on `/add`, a search field that wants one noun.
-    assert.notEqual(WAYS_TO_LOG[1]?.destination, '/add');
+    // line" and used to land on the search field that wants one noun
+    // (`/add`, now `/add/search`, ADR-0019).
+    assert.notEqual(WAYS_TO_LOG[1]?.destination, ADD_SEARCH_PATH);
   });
 
   it('sends the speak card to the composer with its field focused, never to a microphone', () => {
     const speak = WAYS_TO_LOG[2];
     assert.equal(speak?.id, 'speak');
-    assert.equal(speak?.destination, '/describe?speak=1');
-    assert.notEqual(speak?.destination, '/add?speak=1');
+    assert.equal(speak?.destination, `${ADD_DESCRIBE_PATH}?speak=1`);
+    assert.notEqual(speak?.destination, `${ADD_SEARCH_PATH}?speak=1`);
     // `speak=1` is FOCUS AND A HINT. M203 deleted this app's Web Speech
     // microphone, so the composer must carry no recogniser at all: an app that
     // ships a microphone whose failures are invisible is worse than one with
     // none, which is what the removal was for.
-    const composer = readFileSync(fileURLToPath(new URL('../../app/routes/describe.tsx', import.meta.url)), 'utf8');
+    const composer = readFileSync(fileURLToPath(new URL('../../app/routes/add.describe.tsx', import.meta.url)), 'utf8');
     for (const forbidden of ['SpeechRecognition', 'startListening', 'SpeechInputButton']) {
       assert.ok(!composer.includes(forbidden), `the composer opens a microphone again (${forbidden})`);
     }

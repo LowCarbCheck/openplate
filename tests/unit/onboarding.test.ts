@@ -30,6 +30,7 @@ import {
   WEIGHT_NOT_A_NUMBER_KEY,
 } from '../../app/lib/onboarding';
 import type { StyleStepInput } from '../../app/lib/onboarding';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '../../app/lib/intake-hrefs';
 
 describe('parseOnboardingStep', () => {
   it('returns the value when it is a known step', () => {
@@ -198,6 +199,18 @@ describe('resolveExitDestination', () => {
 
   it('keeps the meal composer, which is where the type card now lands', () => {
     assert.equal(resolveExitDestination('/describe'), '/describe');
+  });
+
+  // ADR-0019: `/add`, `/scan` and `/describe` nest under `/add`, and the
+  // ways-to-log cards now submit the new addresses. The three tests above
+  // this one stay exactly as written, on purpose: a stored or bookmarked exit
+  // value written to a device before this change must still resolve to ITS
+  // OWN address (which then redirects on through to the new home), never be
+  // silently rewritten to the diary.
+  it('resolves the current photo, describe and speak destinations too', () => {
+    assert.equal(resolveExitDestination(ADD_PHOTO_PATH), ADD_PHOTO_PATH);
+    assert.equal(resolveExitDestination(ADD_DESCRIBE_PATH), ADD_DESCRIBE_PATH);
+    assert.equal(resolveExitDestination(`${ADD_DESCRIBE_PATH}?speak=1`), `${ADD_DESCRIBE_PATH}?speak=1`);
   });
 
   it('no longer allows the label scanner, because there is no second scanner', () => {
