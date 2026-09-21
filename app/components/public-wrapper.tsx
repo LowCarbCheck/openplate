@@ -240,6 +240,24 @@ export default function PublicWrapper({
             <Link to="/imprint" className={FOOTER_LINK_CLASS}>
               {t('chrome.imprint')}
             </Link>
+            {/* § 312k BGB (M214/09): the cancellation button, reachable
+                without signing in, carrying nothing else on it — Absatz 6
+                makes a missing button the more expensive outcome, it voids
+                the notice-period term for every customer who cannot find
+                one. */}
+            <Link to="/kuendigung" className={FOOTER_LINK_CLASS}>
+              {t('chrome.cancelContract')}
+            </Link>
+            {/* § 356a BGB (M214/09): the electronic withdrawal function, set
+                apart as a bordered pill so it reads as its own control
+                rather than an eighth word in this row. A plain outline, not
+                a thick left border. */}
+            <Link
+              to="/widerrufen"
+              className={cn(FOOTER_LINK_CLASS, 'rounded-full border border-input px-3 md:min-h-0 md:py-0.5')}
+            >
+              {t('chrome.withdrawContract')}
+            </Link>
           </nav>
         </div>
         {/* The build, on the public chrome too: a visitor reporting something

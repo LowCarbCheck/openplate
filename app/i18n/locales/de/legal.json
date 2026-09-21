@@ -68,7 +68,7 @@
     "s4aPaymentHeading": "4a. Tarife, Preise und Zahlung",
     "s4aPaymentPrice": "openplate Plus kostet {{price}} pro Monat. Jeder angegebene Preis ist ein Endpreis und enthält die deutsche Umsatzsteuer. Es fallen keine zusätzlichen Gebühren an.",
     "s4aPaymentTrial": "Ein neues Konto beinhaltet einen kostenlosen Testzeitraum von {{trialDays}} Tagen. Nach Ablauf des Testzeitraums wird das Scannen von Tellern pausiert, bis Sie ein Abonnement abschließen. Die restlichen Funktionen von openplate stehen weiterhin zur Verfügung. Ihr Tagebuch verbleibt auf Ihrem Gerät, und Ihr Konto wird weiterhin synchronisiert.",
-    "s4aPaymentRenewal": "Ein kostenpflichtiges Abonnement verlängert sich monatlich, bis Sie kündigen. Sie können jederzeit auf der Tarifseite in der App kündigen. Die Kündigung wird zum Ende Ihres aktuellen bezahlten Abrechnungszeitraums wirksam, und Sie behalten bis zu diesem Datum den Zugriff.",
+    "s4aPaymentRenewal": "Ein kostenpflichtiges Abonnement verlängert sich monatlich, bis Sie kündigen. Sie können jederzeit über die öffentliche Seite „Verträge hier kündigen“ kündigen, ohne sich anzumelden. Die Kündigung wird zum Ende Ihres aktuellen bezahlten Abrechnungszeitraums wirksam, und Sie behalten bis zu diesem Datum den Zugriff.",
     "s4aPaymentFailed": "Schlägt eine Zahlung fehl, endet der Zugriff auf KI-Funktionen mit Ablauf Ihres bezahlten Zeitraums. Ihr Ernährungstagebuch bleibt erhalten.",
     "s4aPaymentWithdrawal": "Als Verbraucher haben Sie das Recht, binnen vierzehn Tagen den Vertrag zu widerrufen. Unsere Widerrufsbelehrung und das Muster-Widerrufsformular finden Sie auf der <withdrawal>Widerrufsseite</withdrawal>, wo Sie beides speichern oder ausdrucken können.",
     "s4aPaymentWithdrawalLoss": "Mit dem Abschluss eines Abonnements verlangen Sie ausdrücklich, dass wir mit der Dienstleistung vor Ablauf der Widerrufsfrist beginnen, und bestätigen Ihre Kenntnis davon, dass Sie Ihr Widerrufsrecht bei vollständiger Vertragserfüllung durch uns verlieren. Wir protokollieren beide Erklärungen bei Ihrer Bestellung.",
@@ -170,6 +170,8 @@
     "rightBody1": "Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.",
     "rightBody2": "Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.",
     "rightBody3": "Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ({{operator}}) mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.",
+    "rightBody3a": "Sie können Ihr Widerrufsrecht auch online unter https://app.openplate.de/widerrufen ausüben. Wenn Sie diese Online-Funktion nutzen, übermitteln wir Ihnen auf einem dauerhaften Datenträger (z. B. durch eine E-Mail) unverzüglich eine Eingangsbestätigung mit Informationen zum Inhalt der Widerrufserklärung sowie dem Datum und der Uhrzeit ihres Eingangs.",
+    "rightBody3b": "Sie können das Muster-Widerrufsformular oder eine andere eindeutige Erklärung auch auf unserer Webseite unter https://app.openplate.de/widerrufen elektronisch ausfüllen und übermitteln. Machen Sie von dieser Möglichkeit Gebrauch, so werden wir Ihnen unverzüglich (z. B. per E-Mail) eine Bestätigung über den Eingang eines solchen Widerrufs übermitteln.",
     "rightBody4": "Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.",
     "consequencesHeading": "Folgen des Widerrufs",
     "consequencesBody1": "Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die sich daraus ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste Standardlieferung gewählt haben), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.",
@@ -184,5 +186,51 @@
     "formField6": "Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)",
     "formField7": "Datum",
     "formFootnote": "(*) Unzutreffendes streichen."
+  },
+  "declarations": {
+    "cancel": {
+      "title": "Verträge hier kündigen",
+      "intro": "Kündigen Sie einen Vertrag mit uns. Sie erhalten unmittelbar eine Bestätigung mit Datum und Uhrzeit des Eingangs.",
+      "terminationTypeLabel": "Art der Kündigung",
+      "terminationTypeOrdentlich": "Ordentliche Kündigung",
+      "terminationTypeAusserordentlich": "Außerordentliche Kündigung",
+      "reasonLabel": "Grund der außerordentlichen Kündigung",
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail-Adresse",
+      "contractReferenceLabel": "Kundennummer oder Vertrag (optional)",
+      "timingLabel": "Zeitpunkt der Kündigung",
+      "timingEarliest": "Zum nächstmöglichen Zeitpunkt",
+      "timingOnDate": "Zu einem bestimmten Datum",
+      "requestedDateLabel": "Gewünschtes Datum (optional)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "title": "Vertrag widerrufen",
+      "intro": "Widerrufen Sie einen mit uns geschlossenen Vertrag. Sie erhalten unmittelbar eine Bestätigung mit Datum und Uhrzeit des Eingangs.",
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail-Adresse",
+      "contractReferenceLabel": "Kundennummer oder Vertrag (optional)",
+      "requestedDateLabel": "Datum des Vertragsschlusses (optional)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "cancelTitle": "Kündigung bestätigt",
+      "withdrawTitle": "Widerruf bestätigt",
+      "receiptIdLabel": "Beleg-Nr.: {{receiptId}}",
+      "kindCancel": "Art: Kündigung",
+      "kindWithdraw": "Art: Widerruf",
+      "addressLabel": "Gesendet an: {{email}}",
+      "receivedAtLabel": "Eingegangen am: {{instant}}",
+      "mailNotice": "Diese Bestätigung wurde Ihnen zusätzlich per E-Mail zugesandt.",
+      "print": "Bestätigung drucken"
+    },
+    "errors": {
+      "nameRequired": "Bitte geben Sie Ihren Namen an.",
+      "emailInvalid": "Das sieht nicht wie eine E-Mail-Adresse aus.",
+      "reasonRequired": "Bitte nennen Sie den Grund für die außerordentliche Kündigung.",
+      "invalid": "Ein Feld konnte nicht verarbeitet werden. Bitte prüfen Sie Ihre Eingaben und versuchen Sie es erneut.",
+      "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es in ein paar Minuten erneut.",
+      "unreachable": "Ihre Erklärung konnte gerade nicht elektronisch entgegengenommen werden. Bitte nutzen Sie die im Impressum genannte Postanschrift."
+    }
   }
 }

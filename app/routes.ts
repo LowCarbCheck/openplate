@@ -122,6 +122,19 @@ export default [
     // links here in every copy a reader may have saved.
     route('/withdrawal', 'routes/legal/withdrawal.tsx'),
 
+    // The § 312k BGB cancellation button, `Verträge hier kündigen` (M214/09).
+    // Always registered, not gated on `plans`, for the same reason
+    // `/withdrawal` above is not: Absatz 6 makes the missing button the more
+    // expensive outcome, it voids the notice-period term for every customer.
+    route('/kuendigung', 'routes/legal/kuendigung.tsx'),
+    route('/kuendigung/bestaetigt', 'routes/legal/kuendigung-bestaetigt.tsx'),
+
+    // The § 356a BGB electronic withdrawal function, `Vertrag widerrufen`
+    // (M214/09). Same no-gate rule as `/kuendigung` above, and it is the
+    // function `withdrawal.tsx`'s Gestaltungshinweis 3 now names.
+    route('/widerrufen', 'routes/legal/widerrufen.tsx'),
+    route('/widerrufen/bestaetigt', 'routes/legal/widerrufen-bestaetigt.tsx'),
+
     // Service-worker offline fallback: precached at install, served for failed
     // navigations. Always cacheable, never gated.
     route('/offline', 'routes/offline.tsx'),

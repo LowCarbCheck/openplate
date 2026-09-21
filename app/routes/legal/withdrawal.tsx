@@ -65,7 +65,10 @@ function operatorFormLine(): string {
  *  - Hinweis 1 variant a): the period runs from "des Vertragsabschlusses";
  *  - Hinweis 2: our name, address, telephone number and e-mail, from
  *    `operator.ts` (see `OPERATOR.phone`);
- *  - Hinweis 3: NOT inserted, see the note below;
+ *  - Hinweis 3: INSERTED (M214/09) — `rightBody3a` and `rightBody3b` below,
+ *    naming `/widerrufen` as the online withdrawal function. § 356a BGB has
+ *    required that function since 2026-06-19, so the model text's own
+ *    Gesetzlichkeitsfiktion only holds with this paragraph present;
  *  - Hinweis 4 and 5: omitted, they concern goods and we deliver none;
  *  - Hinweis 6: inserted, with "Wasser/Gas/Strom/Fernwärme" struck as the
  *    model directs, leaving the services-only sentence.
@@ -73,13 +76,6 @@ function operatorFormLine(): string {
  * THE GERMAN IS THE BINDING TEXT. It is not wordsmith's to rephrase and it is
  * pinned byte-for-byte by `legal-withdrawal.test.ts`. The English beside it is
  * a courtesy translation, and `withdrawal.bindingNotice` says so on the page.
- *
- * TODO(owner): whether openplate must also offer an ONLINE WITHDRAWAL FUNCTION
- * (a button that withdraws the contract, Gestaltungshinweis 3, § 356 Absatz 5
- * BGB for contracts concluded on a website) is an owner question, not a
- * technical one. If the answer is yes, the inserted paragraph names the URL of
- * that function and an acknowledgement has to be e-mailed on a durable medium.
- * Nothing here may guess at it, so the paragraph is absent.
  *
  * Split into `WithdrawalContent` + default export for the same reason
  * `terms.tsx` is: the content renders under `renderToStaticMarkup` with no data
@@ -116,6 +112,11 @@ export function WithdrawalContent() {
         <P className="mt-4">{t('withdrawal.rightBody1')}</P>
         <P className="mt-4">{t('withdrawal.rightBody2')}</P>
         <P className="mt-4">{t('withdrawal.rightBody3', { operator: contact })}</P>
+        {/* Gestaltungshinweis 3 (M214/09): the online withdrawal function
+            § 356a BGB requires, and the model form's optional second
+            sentence about using it. Both name `/widerrufen`. */}
+        <P className="mt-4">{t('withdrawal.rightBody3a')}</P>
+        <P className="mt-4">{t('withdrawal.rightBody3b')}</P>
         <P className="mt-4">{t('withdrawal.rightBody4')}</P>
 
         <H2 variant="default" className="mt-8">
