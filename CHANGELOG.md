@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Add, Scan and Describe now nest under one address, /add.** /add is now the database search, at /add/search. /scan, the camera and the photo review, is now /add/photo. /describe, the message composer, is now /add/describe. The old addresses still work, each one redirects to its new home, so a bookmark, a home screen shortcut, or an installed app's stale link all keep working.
+
 ## [0.38.0] - 2026-09-21
 
 ### Added

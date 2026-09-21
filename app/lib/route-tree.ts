@@ -51,7 +51,12 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // ---------------------------------------------------------------------------
   { pattern: '/dashboard', parent: null },
   { pattern: '/diary', parent: null },
-  { pattern: '/scan', parent: null },
+  { pattern: '/add/photo', parent: null },
+  { pattern: '/add/search', parent: null },
+  // Bare `/add`, a redirect to `/add/search` (ADR-0019), not a screen: a
+  // person never rests here any more than on `/settings/goals` below. Kept in
+  // the table for the same reason that one is, the parity test reads
+  // `app/routes.ts` as text and finds this path there.
   { pattern: '/add', parent: null },
   { pattern: '/trends', parent: null },
   { pattern: '/nutrients', parent: null },
@@ -95,11 +100,12 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // and its loader narrows that to the entry's own DAY (`?date=`), which is
   // the same pathname; the ledger's pop matches on pathname, so both agree.
   { pattern: '/diary/entry/:id', parent: '/diary' },
-  // The meal composer. Its `handle.backTo` says `/diary`, not `/add`, so it is
-  // a child of the DIARY: the sentence you type there lands in the day you
-  // came from. The design note's "under /add unless its handle says otherwise"
-  // resolves here to the handle.
-  { pattern: '/describe', parent: '/diary' },
+  // The meal composer, at `/add/describe` since ADR-0019. Its `handle.backTo`
+  // still says `/diary`, not `/add`, so it is a child of the DIARY: the
+  // sentence you type there lands in the day you came from. The design
+  // note's "under /add unless its handle says otherwise" resolves here to
+  // the handle.
+  { pattern: '/add/describe', parent: '/diary' },
 
   // ---------------------------------------------------------------------------
   // Under settings. Each of these carries `handle.backTo: '/settings'`.

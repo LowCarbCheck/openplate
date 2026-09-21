@@ -36,7 +36,7 @@ import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
 
-import { UploadForm } from '../../app/routes/scan';
+import { UploadForm } from '../../app/routes/add.photo';
 import type { MonthlyAiUsage } from '../../app/models/ai-usage';
 
 /**

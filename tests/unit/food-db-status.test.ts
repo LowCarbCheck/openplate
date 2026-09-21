@@ -36,7 +36,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
-import { ConfirmDraftForm } from '../../app/routes/scan';
+import { ConfirmDraftForm } from '../../app/routes/add.photo';
 import { clearFoodResolutionCache, resolveIdentifiedFoods } from '../../app/services/food-resolution';
 import {
   clearNutrientReferenceCache,

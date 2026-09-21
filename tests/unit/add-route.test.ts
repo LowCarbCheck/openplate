@@ -31,7 +31,7 @@ import {
   searchEmptyMessage,
   type AddSearchCandidate,
   type Translate,
-} from '../../app/routes/add';
+} from '../../app/routes/add.search';
 import type { Macros } from '../../app/lib/macros';
 import type { FoodMatch } from '../../app/services/food-resolution';
 

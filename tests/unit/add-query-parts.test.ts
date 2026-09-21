@@ -30,7 +30,7 @@ import {
   splitQueryIntoParts,
 } from '../../app/lib/query-parts';
 import { QueryPartChips, SEARCH_CHIP_CLASS } from '../../app/components/add/query-part-chips';
-import { hasConfidentSearchMatch, type AddSearchCandidate } from '../../app/routes/add';
+import { hasConfidentSearchMatch, type AddSearchCandidate } from '../../app/routes/add.search';
 import type { Macros } from '../../app/lib/macros';
 
 function macros(): Macros {

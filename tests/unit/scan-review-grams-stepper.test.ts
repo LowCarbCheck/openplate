@@ -26,7 +26,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
 
-import { ConfirmDraftForm } from '../../app/routes/scan';
+import { ConfirmDraftForm } from '../../app/routes/add.photo';
 import type { PlateIdentification } from '../../app/services/vision/types';
 
 /** One transcribed nutrition panel: the exact case the chips could not cover. */

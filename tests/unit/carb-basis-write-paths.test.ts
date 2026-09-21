@@ -28,7 +28,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { parseWithZod } from '@conform-to/zod/v4';
 
 import i18next from '../../app/i18n/i18n';
-import { PortionStep, createLogSchema, buildLoggedEntry, type AddSearchCandidate } from '../../app/routes/add';
+import { PortionStep, createLogSchema, buildLoggedEntry, type AddSearchCandidate } from '../../app/routes/add.search';
 import {
   LogRecentSchema,
   QuickAddChipButton,

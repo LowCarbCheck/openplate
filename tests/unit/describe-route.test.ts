@@ -51,7 +51,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
-import { DescribeComposer, handOffDescription } from '../../app/routes/describe';
+import { DescribeComposer, handOffDescription } from '../../app/routes/add.describe';
 import { buildIntakeHref } from '../../app/lib/intake-hrefs';
 import { takeIntakeHandoff } from '../../app/lib/intake-handoff';
 import { parseIntakeConsumer, type IntakeConsumer } from '../../app/lib/intake-consumers';

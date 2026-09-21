@@ -31,7 +31,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
-import { ConfirmDraftForm } from '../../app/routes/scan';
+import { ConfirmDraftForm } from '../../app/routes/add.photo';
 
 /** The shipped label the waiting screen already used, so both screens say one thing. */
 const LABEL = z

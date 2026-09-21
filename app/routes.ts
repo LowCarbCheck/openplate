@@ -15,8 +15,8 @@ export default [
   route('/healthcheck', 'routes/healthcheck.ts'),
 
   // PWA share target server fallback: when the service worker isn't active yet,
-  // a shared photo POSTs here and gets bounced into the scan flow. Top-level so
-  // it isn't gated by the personal-chrome layout.
+  // a shared photo POSTs here and gets bounced into the photo flow (`/add/photo`).
+  // Top-level so it isn't gated by the personal-chrome layout.
   route('/share-target', 'routes/share-target.ts'),
 
   // OpenRouter OAuth PKCE callback (M127/02), CLIENT-ONLY (no loader/action;
@@ -99,11 +99,18 @@ export default [
   // depends on no layout loader and no onboarding gate.
   route('/dev/playground', 'routes/dev.playground.tsx'),
 
-  // Legacy path redirects (the /log → /diary and /log/plate → /scan rename,
-  // and /profile → /settings once the profile card-hub became the settings hub).
+  // Legacy path redirects (the /log → /diary and /log/plate → /add/photo
+  // rename, /profile → /settings once the profile card-hub became the
+  // settings hub, and the /add, /scan, /describe → /add/* hub nesting,
+  // ADR-0019). /scan and /describe forward their query string: /scan?shared=1
+  // in particular is the PWA share target's landing address, and an installed
+  // app keeps running its old service worker (and so keeps sending that exact
+  // URL) until it next updates.
   route('/log', 'routes/redirects/legacy-log.tsx'),
   route('/log/plate', 'routes/redirects/legacy-log-plate.tsx'),
   route('/profile', 'routes/redirects/legacy-profile.tsx'),
+  route('/scan', 'routes/redirects/legacy-scan.tsx'),
+  route('/describe', 'routes/redirects/legacy-describe.tsx'),
 
   // =============================================================================
   // Public chrome (landing, legal, onboarding)
@@ -170,16 +177,31 @@ export default [
     route('/catch-up', 'routes/catch-up.tsx'),
     route('/diary', 'routes/diary.tsx'),
     route('/diary/entry/:id', 'routes/diary.entry.$id.tsx'),
-    route('/scan', 'routes/scan.tsx'),
-    route('/add', 'routes/add.tsx'),
-    // The meal composer (M203): a message box, and nothing else. `/add` is the
-    // database SEARCH, and the two are different screens on purpose: the
-    // launcher's "Type" and "Speak" rows used to open the search form, which
-    // handed somebody who wanted to write a sentence a field that wants one
-    // noun. Client-only like every tracker surface: `?date=` and `?speak=1`
-    // are read off the URL and the words go to `/scan` in a module slot, so
-    // there is nothing here for a loader to do.
-    route('/describe', 'routes/describe.tsx'),
+    // The intake hub (ADR-0019): three sibling screens for the three real ways
+    // a food reaches the diary, nested under one address. The layout renders
+    // only an `<Outlet/>`; there is no hub SCREEN, the launcher's raised
+    // button and long-press sheet already serve that purpose in one gesture.
+    route('/add', 'routes/add.tsx', [
+      // Bare `/add` redirects to `/add/search`, the single most used of the
+      // three, so the tree has no anonymous "the parent" slot.
+      index('routes/add._index.tsx'),
+      // The database search, the portion step and manual entry. This is what
+      // `/add` used to be, whole.
+      route('search', 'routes/add.search.tsx'),
+      // The meal composer (M203): a message box, and nothing else. `search`
+      // above is the database SEARCH, and the two are different screens on
+      // purpose: the launcher's "Type" and "Speak" rows used to open the
+      // search form, which handed somebody who wanted to write a sentence a
+      // field that wants one noun. Client-only like every tracker surface:
+      // `?date=` and `?speak=1` are read off the URL and the words go to
+      // `/add/photo` in a module slot, so there is nothing here for a loader
+      // to do.
+      route('describe', 'routes/add.describe.tsx'),
+      // Camera, photo library, the OS share sheet, or AI-drafted text from
+      // `describe` above; owns the single review-and-confirm screen every one
+      // of those paths ends on. This is what `/scan` used to be, whole.
+      route('photo', 'routes/add.photo.tsx'),
+    ]),
     route('/trends', 'routes/trends.tsx'),
     // The record (M235/06): the explorer badges, the activity streak awards and
     // the on-plan family. Reached from the streak card on `/trends` and from
@@ -188,15 +210,15 @@ export default [
     // every tracker surface, the awards are on-device.
     route('/awards', 'routes/awards.tsx'),
     // "Your foods" (M123/07 item 5): lists/edits/deletes personal custom
-    // foods, hosting the same list `/add`'s "Your foods" sheet already used
-    // (see `foods.tsx`'s header for why it isn't a re-implementation).
+    // foods, hosting the same list `/add/search`'s "Your foods" sheet already
+    // used (see `foods.tsx`'s header for why it isn't a re-implementation).
     route('/foods', 'routes/foods.tsx'),
     // Saved meals (M123/07 item 1): a named, reusable bundle of foods, saved
     // from the diary and re-logged from here.
     route('/meals', 'routes/meals.tsx'),
     // The pantry (M233/02): what is in the fridge, captured by photographing a
     // shelf or by writing a list, and kept on the device. Client-only like
-    // every tracker surface, and for the same two reasons `/scan` is: the
+    // every tracker surface, and for the same two reasons `/add/photo` is: the
     // provider call is the browser's own (BYOK) and the list lives in the
     // on-device primary store, so there is nothing for a server loader to do.
     route('/pantry', 'routes/pantry.tsx'),
@@ -319,7 +341,7 @@ export default [
       route('feedback/:id', 'routes/admin.feedback.$id.tsx'),
     ]),
     // Resource route: server-proxied LCC food-name lookup for the client-side
-    // scan flow (M117/02), see app/routes/api.food-matches.ts.
+    // photo flow (M117/02), see app/routes/api.food-matches.ts.
     route('/api/food-matches', 'routes/api.food-matches.ts'),
     // Resource route: server-proxied LCC nutrient/reference-intake read for
     // `/nutrients` (M135/06), see app/routes/api.nutrients.ts.

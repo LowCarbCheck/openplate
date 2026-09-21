@@ -46,7 +46,7 @@ import {
   resolveConnectCardVariant,
   resolveConnectSessionState,
   type ConnectCardVariant,
-} from '../../app/routes/scan';
+} from '../../app/routes/add.photo';
 import { resolveEffectiveAiSettings } from '../../app/lib/ai/managed-ai-settings';
 import type { AllowanceDoor } from '../../app/lib/ai/managed-ai-settings';
 import type { SyncSessionSnapshot } from '../../app/lib/sync/sync-session';

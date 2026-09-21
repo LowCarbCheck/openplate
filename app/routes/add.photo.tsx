@@ -1,4 +1,4 @@
-import type { Route } from './+types/scan';
+import type { Route } from './+types/add.photo';
 import { useEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { Form, redirect, useFetcher, useNavigation } from 'react-router';
 import { Link } from '#app/components/link';

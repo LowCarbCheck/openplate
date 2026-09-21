@@ -8,7 +8,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getFailureAlertTitle } from '../../app/routes/scan';
+import { getFailureAlertTitle } from '../../app/routes/add.photo';
 
 /**
  * Identity translator: returns the key it is given, so each assertion below

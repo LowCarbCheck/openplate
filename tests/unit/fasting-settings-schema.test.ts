@@ -25,7 +25,7 @@ import { createPrimaryStore } from '../../app/lib/local-store/store';
 import { getLocalFastingSettings, putLocalFastingSettings } from '../../app/lib/local-store/primary-store';
 import { makeFastingRoutineSchema } from '../../app/routes/settings.fasting';
 import { needsCareSheet } from '../../app/models/fasting-care';
-import type { Translate } from '../../app/routes/add';
+import type { Translate } from '../../app/routes/add.search';
 
 const HOUR = 3_600_000;
 const ACKNOWLEDGED_AT = 1_750_000_000_000;

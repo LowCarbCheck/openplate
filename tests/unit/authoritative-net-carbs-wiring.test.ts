@@ -41,8 +41,8 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { parseWithZod } from '@conform-to/zod/v4';
 
 import { SearchResultRow } from '../../app/components/add/search-result-row';
-import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add';
-import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/scan';
+import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add.search';
+import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/add.photo';
 import { EntryReceipt } from '../../app/routes/diary.entry.$id';
 import {
   LogRecentSchema,

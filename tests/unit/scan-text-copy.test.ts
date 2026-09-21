@@ -24,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-import { identifyFailedErrorKey, intakeSubjectOf, noFoodsErrorKey } from '../../app/routes/scan';
+import { identifyFailedErrorKey, intakeSubjectOf, noFoodsErrorKey } from '../../app/routes/add.photo';
 
 type Catalog = { [key: string]: string | Catalog };
 const catalogSchema: z.ZodType<Catalog> = z.lazy(() => z.record(z.string(), z.union([z.string(), catalogSchema])));

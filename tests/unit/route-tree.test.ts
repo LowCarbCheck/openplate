@@ -19,11 +19,16 @@ const routesSource = readFileSync(fileURLToPath(new URL('../../app/routes.ts', i
 
 /**
  * Every `route('<path>', '<module>')` under the `_personal` layout, with the
- * nested `/admin` children resolved to their full paths.
+ * nested `/admin` and `/add` children resolved to their full paths.
  *
  * RESOURCE ROUTES ARE EXCLUDED. `/api/food-matches` and `/api/nutrients` are
  * `.ts` modules with no component: a browser never rests on one, so it can
  * never be a history entry and has no place in a tree about history.
+ *
+ * `/add`'s own three children (ADR-0019) are read the same way `/admin`'s
+ * are: `index('routes/add._index.tsx')` carries no path of its own, so bare
+ * `/add` is the layout's own `route('/add', ...)` match, and `search`,
+ * `describe` and `photo` are relative segments that need `/add/` in front.
  */
 function personalRoutePaths(): string[] {
   const layoutStart = routesSource.indexOf("layout('routes/_personal.tsx'");
@@ -33,6 +38,8 @@ function personalRoutePaths(): string[] {
   const paths: string[] = [];
   const adminStart = body.indexOf("route('/admin', 'routes/admin.tsx', [");
   const adminEnd = body.indexOf(']),', adminStart);
+  const addStart = body.indexOf("route('/add', 'routes/add.tsx', [");
+  const addEnd = body.indexOf(']),', addStart);
 
   for (const match of body.matchAll(/route\('([^']+)',\s*'(routes\/[^']+)'/g)) {
     const [, path, module] = match;
@@ -40,7 +47,14 @@ function personalRoutePaths(): string[] {
     if (module.endsWith('.ts')) continue; // resource route, never a location
     const at = match.index ?? 0;
     const isAdminChild = at > adminStart && at < adminEnd && !path.startsWith('/');
-    paths.push(isAdminChild ? `/admin/${path}` : path);
+    const isAddChild = at > addStart && at < addEnd && !path.startsWith('/');
+    if (isAdminChild) {
+      paths.push(`/admin/${path}`);
+    } else if (isAddChild) {
+      paths.push(`/add/${path}`);
+    } else {
+      paths.push(path);
+    }
   }
   return paths;
 }
@@ -85,7 +99,16 @@ describe('route-tree parity with app/routes.ts', () => {
 
 describe('parentOf', () => {
   it('answers null for every root the nav catalog reaches in one tap', () => {
-    for (const root of ['/dashboard', '/diary', '/scan', '/add', '/trends', '/nutrients', '/fasting', '/settings']) {
+    for (const root of [
+      '/dashboard',
+      '/diary',
+      '/add/photo',
+      '/add/search',
+      '/trends',
+      '/nutrients',
+      '/fasting',
+      '/settings',
+    ]) {
       assert.equal(parentOf(root), null, root);
     }
   });
@@ -149,8 +172,8 @@ describe('isDeeper, the four walks', () => {
   });
 
   it('walk 4: diary, add, save', () => {
-    assert.equal(isDeeper('/diary', '/add'), false);
-    assert.equal(isDeeper('/add', '/diary'), false);
+    assert.equal(isDeeper('/diary', '/add/search'), false);
+    assert.equal(isDeeper('/add/search', '/diary'), false);
   });
 
   it('refuses a jump that skipped a level', () => {

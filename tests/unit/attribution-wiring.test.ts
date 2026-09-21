@@ -35,8 +35,8 @@ import i18next from '../../app/i18n/i18n';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { parseWithZod } from '@conform-to/zod/v4';
 
-import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add';
-import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry } from '../../app/routes/scan';
+import { PortionStep, buildLoggedEntry, createLogSchema, type AddSearchCandidate } from '../../app/routes/add.search';
+import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry } from '../../app/routes/add.photo';
 import {
   LogRecentSchema,
   QuickAddChipButton,

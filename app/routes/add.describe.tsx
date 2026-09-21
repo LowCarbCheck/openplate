@@ -52,7 +52,7 @@
  * answer, the same one `/scan` and the camera gesture use: a BYOK row on an
  * open instance, the account's allowance on a managed one.
  */
-import type { Route } from './+types/describe';
+import type { Route } from './+types/add.describe';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';

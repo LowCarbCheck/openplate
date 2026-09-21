@@ -29,7 +29,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { withI18n } from './trends-i18n-harness';
 
 import { mealTypeForCapture, resolveCaptureInstant } from '../../app/lib/scan-capture-time';
-import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedBatch } from '../../app/routes/scan';
+import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedBatch } from '../../app/routes/add.photo';
 import { MEAL_LABEL_KEYS, MEAL_TYPES } from '../../app/lib/meal-choice';
 import type { PlateIdentification } from '../../app/services/vision/types';
 import type { MealType } from '../../types/enums';

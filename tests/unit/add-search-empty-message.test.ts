@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { createInstance } from 'i18next';
 import { z } from 'zod';
 
-import { describeSearchPause, searchEmptyMessage, type Translate } from '../../app/routes/add';
+import { describeSearchPause, searchEmptyMessage, type Translate } from '../../app/routes/add.search';
 
 /**
  * The copy this file makes claims about, parsed out of the shipped catalog at

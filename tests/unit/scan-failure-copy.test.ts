@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { classifyVisionHttpFailure } from '../../app/services/vision/failure-cause';
-import { describeFailureBody, getFailureAlertTitle, shouldOfferPlansDoor } from '../../app/routes/scan';
+import { describeFailureBody, getFailureAlertTitle, shouldOfferPlansDoor } from '../../app/routes/add.photo';
 import type { Translate } from '../../app/lib/sync/setup-flow';
 import type { VisionFailureCause } from '../../app/services/vision/failure-cause';
 

@@ -48,12 +48,12 @@ import { parseWithZod } from '@conform-to/zod/v4';
 
 import i18next from '../../app/i18n/i18n';
 import { SearchResultRow } from '../../app/components/add/search-result-row';
-import { PortionStep, type AddSearchCandidate } from '../../app/routes/add';
+import { PortionStep, type AddSearchCandidate } from '../../app/routes/add.search';
 import { EntryReceipt, EditEntry } from '../../app/routes/diary.entry.$id';
 import { formatEntryNetCarbs } from '../../app/routes/diary';
 import { localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
 import { computeMacroPreview } from '../../app/lib/portion-preview';
-import { ConfirmDraftForm, ConfirmDraftSchema, computeReviewItemPreview } from '../../app/routes/scan';
+import { ConfirmDraftForm, ConfirmDraftSchema, computeReviewItemPreview } from '../../app/routes/add.photo';
 import { toCuratedSource } from '../../app/services/food-resolution/apply-match';
 import { formatMacroNumberIn } from '../../app/lib/format-macro-number';
 import { carbStatusBadgeClass } from '../../app/utils/carb-status';

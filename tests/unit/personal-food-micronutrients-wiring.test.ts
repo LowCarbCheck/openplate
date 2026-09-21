@@ -48,8 +48,8 @@ import {
   buildManualFood,
   createLogSchema,
   type AddSearchCandidate,
-} from '../../app/routes/add';
-import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/scan';
+} from '../../app/routes/add.search';
+import { ConfirmDraftForm, ConfirmDraftSchema, buildConfirmedEntry, buildConfirmedFood } from '../../app/routes/add.photo';
 import { RestoreLogSchema, buildCopiedEntry, buildRestoredEntry } from '../../app/routes/diary';
 import { buildRestorePayload } from '../../app/routes/diary.entry.$id';
 import { localCuratedMatchToCandidate, localFoodToCandidate } from '../../app/lib/local-store/local-quick-add';
