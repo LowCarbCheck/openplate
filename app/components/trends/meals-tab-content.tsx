@@ -22,6 +22,7 @@ import { computeSlotAverages, computeSlotShares, topFoodsForSlot } from '#app/li
 import type { DateRange, SlotShareMetric } from '#app/lib/slot-stats';
 import type { LocalFoodLog } from '#app/lib/local-store/schema';
 import { SlotAveragesCard } from '#app/components/trends/slot-averages-card';
+import { PAIR_CLASS, WIDE_CLASS } from '#app/components/trends/insights-grid';
 import { SlotShareCard } from '#app/components/trends/slot-share-card';
 import { SnackShareCard } from '#app/components/trends/snack-share-card';
 import { UsualSlotFoodsCard } from '#app/components/trends/usual-slot-foods-card';
@@ -64,22 +65,30 @@ export function MealsTabContent({
 
   if (slot !== ALL_MEALS) {
     return (
-      <>
+      <div className={PAIR_CLASS}>
         <SlotAveragesCard slots={[slot]} averages={averages} />
         <UsualSlotFoodsCard slot={slot} foods={topFoodsForSlot({ logs, range, slot })} />
-      </>
+      </div>
     );
   }
 
   const shareMetric = _shareMetricFor(metric);
   return (
     <>
-      <SlotAveragesCard slots={MEAL_TYPES} averages={averages} />
-      <SlotShareCard rows={computeSlotShares({ logs, range, metric: shareMetric, isWeekly })} isWeekly={isWeekly} metric={shareMetric} />
-      <SnackShareCard
-        rows={computeSlotShares({ logs, range, metric: 'kcal', isWeekly: true })}
-        hasEnoughWeeks={rangeDays >= SNACK_SHARE_MIN_RANGE_DAYS}
-      />
+      <div className={WIDE_CLASS}>
+        <SlotAveragesCard slots={MEAL_TYPES} averages={averages} />
+      </div>
+      <div className={PAIR_CLASS}>
+        <SlotShareCard
+          rows={computeSlotShares({ logs, range, metric: shareMetric, isWeekly })}
+          isWeekly={isWeekly}
+          metric={shareMetric}
+        />
+        <SnackShareCard
+          rows={computeSlotShares({ logs, range, metric: 'kcal', isWeekly: true })}
+          hasEnoughWeeks={rangeDays >= SNACK_SHARE_MIN_RANGE_DAYS}
+        />
+      </div>
     </>
   );
 }

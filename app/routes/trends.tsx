@@ -100,7 +100,8 @@ const WEIGHT_WINDOW_DAYS = GRID_WEEKS * DAYS_IN_WEEK;
  * has no `useTranslation`. Safe: `clientAction` only ever executes in the
  * browser, where the i18next singleton IS the live, language-synced instance.
  */
-const actionT = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>): string => i18n.t(key, params ?? {});
+const actionT = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>): string =>
+  i18n.t(key, params ?? {});
 
 /**
  * Parses the `slot` search param into a meal slot, falling back to "every meal"
@@ -213,11 +214,17 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const chartWindow = { fromDate: shiftDate(today, -(range - 1)), toDate: today };
   // The six days before the first bar, so the first bars' 7-day average
   // windows are whole rather than cut off at the chart's left edge.
-  const leadWindow = { fromDate: shiftDate(chartWindow.fromDate, -(ROLLING_AVERAGE_DAYS - 1)), toDate: shiftDate(chartWindow.fromDate, -1) };
+  const leadWindow = {
+    fromDate: shiftDate(chartWindow.fromDate, -(ROLLING_AVERAGE_DAYS - 1)),
+    toDate: shiftDate(chartWindow.fromDate, -1),
+  };
   // The same-length range immediately before the chart window, for the
   // Overview tab's summary strip (M239/06): "compared with the N days
   // before" needs those days' own logs, not a second guess at what they were.
-  const previousRangeWindow = { fromDate: shiftDate(chartWindow.fromDate, -range), toDate: shiftDate(chartWindow.fromDate, -1) };
+  const previousRangeWindow = {
+    fromDate: shiftDate(chartWindow.fromDate, -range),
+    toDate: shiftDate(chartWindow.fromDate, -1),
+  };
   const currentWeekStart = startOfWeek(today);
   const currentWeekEnd = shiftDate(currentWeekStart, DAYS_IN_WEEK - 1);
   const previousWeekStart = shiftDate(currentWeekStart, -DAYS_IN_WEEK);
@@ -497,7 +504,9 @@ function ChartCard({
   // The 7-day line goes over daily bars only: over weekly bars each bar is
   // already a mean, and a mean of means would say less than the bars do.
   const averageFractions =
-    isWeekly ? null : selectAverageFractions({ leadDays: leadEntries, days: chartDays, metric, domainMax: chart.domainMax });
+    isWeekly ? null : (
+      selectAverageFractions({ leadDays: leadEntries, days: chartDays, metric, domainMax: chart.domainMax })
+    );
   const chartTitle = t(chartTitleKey({ metric, isWeekly }));
   // Below the threshold the chart is replaced, not drawn sparse — see
   // `SparseTrendNotice`. Counted over the SELECTED window AND the selected slot,
@@ -508,8 +517,13 @@ function ChartCard({
   const hasEnoughDays = loggedDaysInRange >= MIN_TREND_DAYS;
 
   return (
-    <Card>
+    <Card data-slot="trend-chart-card">
       <CardHeader className="space-y-4">
+        {/* FIRST IN THE CARD, so nothing above it can change height. The title
+            below wraps to two lines at 30 and 90 days and gains a slot line
+            under a meal; with the controls under it, every choice moved the next
+            choice down by 20 to 22 px (see `trend-controls.tsx`). */}
+        <TrendControls metric={metric} range={range} slot={slot} tab={tab} />
         <div className="space-y-1">
           {/* No `capitalize` here: the title is now a whole catalog string
               with its own correct casing, and the CSS class title-cases EVERY
@@ -525,7 +539,6 @@ function ChartCard({
             </p>
           )}
         </div>
-        <TrendControls metric={metric} range={range} slot={slot} tab={tab} />
       </CardHeader>
       <CardContent className="space-y-4">
         {hasEnoughDays ?
@@ -541,7 +554,9 @@ function ChartCard({
               metric={metric}
               hasGoal={chart.goalFraction !== null}
               hasAverageLine={averageFractions !== null && averageFractions.some((fraction) => fraction !== null)}
-              hasCarbsOutline={chart.bars.some((bar) => bar.outlineFraction !== null && bar.outlineFraction > bar.heightFraction)}
+              hasCarbsOutline={chart.bars.some(
+                (bar) => bar.outlineFraction !== null && bar.outlineFraction > bar.heightFraction,
+              )}
             />
           </>
         : <SparseTrendNotice loggedDays={loggedDaysInRange} />}
@@ -591,78 +606,104 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      {/* M239/02: four review sections in the URL. Every tab keeps `range`
+    // A CONTAINER AND A GRID (2026-09-21). The page was `max-w-2xl` at every
+    // width, so a 1440 px window drew a 672 px column between two empty
+    // gutters, and the operator called the screen way too narrow. It now takes
+    // the room the content area has, up to 72rem, and from 48rem of card room
+    // (a viewport of about 1150 px with the sidebar open) lays its cards two
+    // across. The container query, not the viewport, decides: a collapsed
+    // sidebar gives the page more room at the same window width, and a phone
+    // and a tablet with the sidebar open both stay one column.
+    <div data-slot="insights-page" className="@container mx-auto w-full max-w-6xl">
+      <div className="grid gap-6 @3xl:grid-cols-2">
+        {/* M239/02: four review sections in the URL. Every tab keeps `range`
           and `slot`, so switching sections never resets the chart window or
           the meal filter. */}
-      <InsightsTabStrip active={tab} range={range} slot={slot} metric={metric} />
+        <div className="@3xl:col-span-2">
+          <InsightsTabStrip active={tab} range={range} slot={slot} metric={metric} />
+        </div>
 
-      {/* The Overview tab (M239/06): the range summary strip, the three doors
+        {/* The Overview tab (M239/06): the range summary strip, the three doors
           into the other tabs, then the streak, weekly recap and weight cards
           the tab already carried. Its own component file so this dispatcher
           stays a dispatcher, the same split `GoalTabContent` and
           `MealsTabContent` use for their tabs. */}
-      {tab === 'overview' && (
-        <OverviewTabContent
-          summary={rangeSummary}
-          range={range}
-          slot={slot}
-          metric={metric}
-          marks={marks}
-          today={today}
-          gamificationHidden={gamificationHidden}
-          recap={recap}
-          weight={weight}
-          eatingWindow={eatingWindow}
-          goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
-          weightWindow={weightWindow}
-          targetWeightKg={targetWeightKg}
-          todayWeightKg={todayWeightKg}
-          weightUnit={weightUnit}
-        />
-      )}
+        {tab === 'overview' && (
+          <OverviewTabContent
+            summary={rangeSummary}
+            range={range}
+            slot={slot}
+            metric={metric}
+            marks={marks}
+            today={today}
+            gamificationHidden={gamificationHidden}
+            recap={recap}
+            weight={weight}
+            eatingWindow={eatingWindow}
+            goals={{ netCarbsCeiling: goals.netCarbsCeiling, proteinFloor: goals.proteinFloor }}
+            weightWindow={weightWindow}
+            targetWeightKg={targetWeightKg}
+            todayWeightKg={todayWeightKg}
+            weightUnit={weightUnit}
+          />
+        )}
 
-      {/* The Goals tab (M239/05): per-goal records, fasting, and the 13-week
+        {/* The Goals tab (M239/05): per-goal records, fasting, and the 13-week
           grid. `buildAdherenceGrid` is called here, inline in the JSX it
           feeds, rather than through a `useMemo` computed on every render:
           this way the grid is built only on the render where the Goals tab is
           actually shown, not on every metric toggle from the Nutrition tab. */}
-      {tab === 'goals' && (
-        <GoalTabContent
-          grid={buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals })}
-          goals={adherenceGoals}
-          visibility={gamificationVisibility}
-          fastTargets={fastTargets}
-        />
-      )}
+        {tab === 'goals' && (
+          <GoalTabContent
+            grid={buildAdherenceGrid({ today, weeks: GRID_WEEKS, days: gridDays, goals: adherenceGoals })}
+            goals={adherenceGoals}
+            visibility={gamificationVisibility}
+            fastTargets={fastTargets}
+          />
+        )}
 
-      {/* The chart itself is shared with Nutrition, but only while a Meals
+        {/* The chart itself is shared with Nutrition, but only while a Meals
           reader has picked one slot to look at in detail (M239/04): with no
           slot chosen, the tab's own averages/shares cards below replace it
           rather than repeating a whole-day chart the Meals tab isn't about. */}
-      {(tab === 'nutrition' || (tab === 'meals' && slot !== ALL_MEALS)) && (
-        <ChartCard entries={entries} leadEntries={leadEntries} range={range} slot={slot} tab={tab} metric={metric} goals={goals} />
-      )}
+        {(tab === 'nutrition' || (tab === 'meals' && slot !== ALL_MEALS)) && (
+          <div className="@3xl:col-span-2">
+            <ChartCard
+              entries={entries}
+              leadEntries={leadEntries}
+              range={range}
+              slot={slot}
+              tab={tab}
+              metric={metric}
+              goals={goals}
+            />
+          </div>
+        )}
 
-      {tab === 'nutrition' && (
-        <>
-          <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/nutrients">{t('nav.nutrients')}</Link>
-          </Button>
-        </>
-      )}
+        {tab === 'nutrition' && (
+          <>
+            <div className="@3xl:col-span-2">
+              <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
+            </div>
+            <div className="@3xl:col-span-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/nutrients">{t('nav.nutrients')}</Link>
+              </Button>
+            </div>
+          </>
+        )}
 
-      {tab === 'meals' && (
-        <MealsTabContent
-          logs={windowLogs}
-          range={{ fromDate: shiftDate(today, -(range - 1)), toDate: today }}
-          rangeDays={range}
-          isWeekly={range >= WEEKLY_BARS_FROM_RANGE}
-          slot={slot}
-          metric={metric}
-        />
-      )}
+        {tab === 'meals' && (
+          <MealsTabContent
+            logs={windowLogs}
+            range={{ fromDate: shiftDate(today, -(range - 1)), toDate: today }}
+            rangeDays={range}
+            isWeekly={range >= WEEKLY_BARS_FROM_RANGE}
+            slot={slot}
+            metric={metric}
+          />
+        )}
+      </div>
     </div>
   );
 }

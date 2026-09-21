@@ -21,6 +21,7 @@ import type { LocalActivityMark } from '#app/lib/local-store';
 import type { WeightUnit } from '#app/lib/weight-units';
 import { controlHref } from '#app/components/trends/trend-controls';
 import { ActivityStreakCard } from '#app/components/gamification/activity-streak-card';
+import { PAIR_CLASS, WIDE_CLASS } from '#app/components/trends/insights-grid';
 import { RangeSummaryCard } from '#app/components/trends/range-summary-card';
 import { WeeklyRecapCard } from '#app/components/trends/weekly-recap-card';
 import { WeightProgressCard } from '#app/components/trends/weight-progress-card';
@@ -76,7 +77,15 @@ function InsightsDoorCard({
 }
 
 /** The three doors, one per remaining tab, carrying the active range/slot/metric so switching tabs never resets them. */
-function InsightsDoorRow({ range, slot, metric }: { range: number; slot: TrendSlot; metric: TrendMetric }): ReactElement {
+function InsightsDoorRow({
+  range,
+  slot,
+  metric,
+}: {
+  range: number;
+  slot: TrendSlot;
+  metric: TrendMetric;
+}): ReactElement {
   return (
     <div className="grid grid-cols-3 gap-2">
       {DOOR_TABS.map((tab) => (
@@ -137,29 +146,47 @@ export function OverviewTabContent({
   weightUnit: WeightUnit;
 }): ReactElement {
   return (
+    // The page is a two-column grid from 48rem of room (`trends.tsx`). The
+    // summary, the doors and the weight chart run across both columns; the
+    // streak and the recap sit side by side, and the recap takes the whole row
+    // when the streak is switched off.
     <>
-      <RangeSummaryCard summary={summary} range={range} />
+      <div className={WIDE_CLASS}>
+        <RangeSummaryCard summary={summary} range={range} />
+      </div>
 
-      <InsightsDoorRow range={range} slot={slot} metric={metric} />
+      <div className={WIDE_CLASS}>
+        <InsightsDoorRow range={range} slot={slot} metric={metric} />
+      </div>
 
-      {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
-          derived from the same marks by the same function. The card is also
-          the only door to `/awards`, and both go together when the person
-          has switched these surfaces off. */}
-      <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
+      <div className={PAIR_CLASS}>
+        {/* The ACTIVITY streak (M235/06), the same number `/dashboard` shows,
+            derived from the same marks by the same function. The card is also
+            the only door to `/awards`, and both go together when the person
+            has switched these surfaces off. */}
+        <ActivityStreakCard marks={marks} today={today} hidden={gamificationHidden} />
 
-      <WeeklyRecapCard current={recap.current} previous={recap.previous} weight={weight} eatingWindow={eatingWindow} goals={goals} />
+        <WeeklyRecapCard
+          current={recap.current}
+          previous={recap.previous}
+          weight={weight}
+          eatingWindow={eatingWindow}
+          goals={goals}
+        />
+      </div>
 
       {/* The body story is its own chapter: the chart moved here from
           `/settings/profile`, which keeps the entry form and the weigh-in
           list. */}
-      <WeightProgressCard
-        points={weightWindow}
-        targetWeightKg={targetWeightKg}
-        today={today}
-        todayWeightKg={todayWeightKg}
-        weightUnit={weightUnit}
-      />
+      <div className={WIDE_CLASS}>
+        <WeightProgressCard
+          points={weightWindow}
+          targetWeightKg={targetWeightKg}
+          today={today}
+          todayWeightKg={todayWeightKg}
+          weightUnit={weightUnit}
+        />
+      </div>
     </>
   );
 }

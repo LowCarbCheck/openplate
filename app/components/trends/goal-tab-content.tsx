@@ -24,8 +24,10 @@ import { GoalStatCard } from '#app/components/trends/goal-stat-card';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent } from '#app/components/ui/card';
 import { isGamificationHidden } from '#app/lib/gamification/surfaces';
+import { WIDE_CLASS } from '#app/components/trends/insights-grid';
 import type { GamificationVisibility } from '#app/lib/gamification/surfaces';
 import { computeGoalStats } from '#app/lib/goal-stats';
+import { cn } from '#app/lib/utils';
 import type { AdherenceGoals, AdherenceGrid } from '#app/models/adherence-grid';
 import type { FastTargetShare } from '#app/models/fasting-stats';
 
@@ -68,8 +70,10 @@ export function GoalTabContent({
   if (stats.length === 0) {
     return (
       <>
-        <GoalInviteCard />
-        <GoalFastingCard share={fastTargets} />
+        <div className="space-y-6">
+          <GoalInviteCard />
+          <GoalFastingCard share={fastTargets} />
+        </div>
         <AdherenceGridCard grid={grid} goals={goals} />
       </>
     );
@@ -77,16 +81,22 @@ export function GoalTabContent({
 
   return (
     <>
+      {/* Two columns from 48rem of room: the per-goal records and the fasting
+          card on the left, the 13-week grid on the right. The grid's cells are
+          squares that fill their card, so it stays at one column's width and
+          does not stretch to a 1100 px slab of 80 px squares. */}
       {/* No headline sentence here: `AdherenceGridCard` below already prints
           the same one under its grid, and it was being read twice. */}
-      <div className="space-y-3">
-        {stats.map((stat) => (
-          <GoalStatCard key={stat.key} stat={stat} showRuns={showRuns} />
-        ))}
+      <div className="space-y-6">
+        <div className="space-y-3">
+          {stats.map((stat) => (
+            <GoalStatCard key={stat.key} stat={stat} showRuns={showRuns} />
+          ))}
+        </div>
+        <GoalFastingCard share={fastTargets} />
       </div>
-      <GoalFastingCard share={fastTargets} />
       <AdherenceGridCard grid={grid} goals={goals} />
-      <p data-slot="goals-honesty" className="text-xs text-muted-foreground">
+      <p data-slot="goals-honesty" className={cn('text-xs text-muted-foreground', WIDE_CLASS)}>
         {t('trends.goals.honesty')}
       </p>
     </>

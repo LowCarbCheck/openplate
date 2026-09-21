@@ -166,6 +166,15 @@ export function WeightProgressCard({
 
   const activePoint = activeIndex === null ? null : (points[activeIndex] ?? null);
   const activeTrend = activeIndex === null ? null : (trend[activeIndex] ?? null);
+  // One string, read out twice: as a tooltip on the point and in the caption under the chart.
+  const readout =
+    activePoint !== null && activeTrend !== null ?
+      [
+        formatDayLabel(activePoint.date, i18n.language),
+        `${_display(activePoint.weightKg, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.raw')}`,
+        `${_display(activeTrend.value, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.trend')}`,
+      ].join(' · ')
+    : null;
 
   return (
     <Card className={cn(isCelebrating && 'motion-safe:animate-celebrate')}>
@@ -190,17 +199,12 @@ export function WeightProgressCard({
           weightUnit={weightUnit}
           activeIndex={activeIndex}
           onActiveIndexChange={setActiveIndex}
+          readout={readout}
         />
 
         <div className="space-y-1.5">
           <p className="min-h-[1.25rem] text-xs tabular-nums text-muted-foreground">
-            {activePoint !== null && activeTrend !== null ?
-              [
-                formatDayLabel(activePoint.date, i18n.language),
-                `${_display(activePoint.weightKg, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.raw')}`,
-                `${_display(activeTrend.value, weightUnit, i18n.language)} ${weightUnit} ${t('trends.weight.point.trend')}`,
-              ].join(' · ')
-            : t('trends.weight.pointCaptionIdle')}
+            {readout ?? t('trends.weight.pointCaptionIdle')}
           </p>
           <p className="text-xs text-muted-foreground">{t('trends.weight.caption')}</p>
         </div>
