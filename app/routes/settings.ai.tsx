@@ -54,7 +54,7 @@ import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Badge } from '#app/components/ui/badge';
-import { SettingsSection } from '#app/components/settings/settings-section';
+import { SettingsDisclosure, SettingsSection } from '#app/components/settings/settings-section';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -695,12 +695,19 @@ function QuickstartCard({ recommendedProvider }: { recommendedProvider: AiProvid
 }
 
 /**
- * Reference explainer, shown BELOW the form only before a provider is
+ * Reference explainer, offered BELOW the form only before a provider is
  * connected: whether this is even worth doing (first sentence, so a visitor
  * who doesn't want it can stop reading right there), what you need to go get
  * and what it costs in real money, what happens to your photo, and that
  * setup is a one-time, ~2-minute job. Warm but not salesy (DESIGN.md tone),
  * text-sm, no new colors.
+ *
+ * CLOSED UNTIL IT IS ASKED FOR. It is a `SettingsDisclosure`, not a
+ * `SettingsSection`: six paragraphs of grey prose at the same weight as the
+ * form pushed the save button off the bottom of a phone, and a visitor who
+ * does not want any of it had to scroll past all of it. Nothing here is a
+ * form control, so the closed panel leaves the DOM and costs the page no
+ * height. See `settings-section.tsx` for why the heading is the trigger.
  *
  * Takes the recommended provider as a prop (M130/04) rather than assuming
  * OpenRouter: which provider the page puts first is locale-dependent now, and
@@ -721,7 +728,10 @@ function NotConnectedExplainer({
   // markup; the components map below names each slot.
   const emphasis = { strong: <span className="text-foreground" /> };
   return (
-    <SettingsSection label={t('settingsAi.explainer.title')} contentClassName="space-y-3 text-sm text-muted-foreground">
+    <SettingsDisclosure
+      label={t('settingsAi.explainer.title')}
+      contentClassName="space-y-3 text-sm text-muted-foreground"
+    >
       {/* Everything below this line is written for a visitor who has to go get
           their own provider key — including the sentence "openplate doesn't
           run its own AI", which is simply FALSE on an instance whose operator
@@ -773,19 +783,24 @@ function NotConnectedExplainer({
       <p>
         <Trans i18nKey="settingsAi.explainer.setupOpenAiNote" components={emphasis} />
       </p>
-    </SettingsSection>
+    </SettingsDisclosure>
   );
 }
 
 /**
- * Always-visible, plain-language "what do I do if it doesn't work" reference
- * — shown whether or not a provider is connected yet, since the questions it
- * answers are as relevant mid-setup as they are after months of scanning.
+ * The plain-language "what do I do if it doesn't work" reference, offered
+ * whether or not a provider is connected yet, since the questions it answers
+ * are as relevant mid-setup as they are after months of scanning.
+ *
+ * ALWAYS OFFERED, NO LONGER ALWAYS OPEN. It is troubleshooting: by definition
+ * it is read by somebody with a problem, and drawn open it sat under the save
+ * button for everybody else as well. A `SettingsDisclosure` keeps it one tap
+ * from every visitor and out of the way of the ones who are not stuck.
  */
 function ScanTroubleshootingCard() {
   const { t } = useTranslation();
   return (
-    <SettingsSection
+    <SettingsDisclosure
       label={t('settingsAi.troubleshooting.title')}
       contentClassName="space-y-2 text-sm text-muted-foreground"
     >
@@ -796,7 +811,7 @@ function ScanTroubleshootingCard() {
         <li>{t('settingsAi.troubleshooting.providerDown')}</li>
       </ul>
       <p>{t('settingsAi.troubleshooting.reassurance')}</p>
-    </SettingsSection>
+    </SettingsDisclosure>
   );
 }
 

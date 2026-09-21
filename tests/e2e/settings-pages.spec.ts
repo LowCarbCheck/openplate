@@ -114,6 +114,58 @@ test('a converted settings page wears the hub chrome and no card', async ({ page
   ).toBeGreaterThan(0);
 });
 
+/**
+ * `/settings/ai` is the densest page in the app, and the reference prose on it
+ * is now closed until somebody asks for it.
+ *
+ * WHAT WOULD GO RED WITHOUT THE FIX: the page used to draw the "why would I
+ * want this" explainer and the "what if a scan fails" troubleshooting list as
+ * ordinary `SettingsSection`s, always open, under the save button. There was no
+ * `settings-disclosure` section on the page at all, so the first count below
+ * read zero.
+ *
+ * WHY THE HEIGHT IS MEASURED AND NOT THE COUNT ALONE: two disclosures that
+ * opened onto nothing would satisfy every count here. The document has to get
+ * MEASURABLY taller when they open, or the page was not carrying the weight
+ * this change claims to have moved.
+ */
+test('the AI settings page keeps its reference prose behind a disclosure', async ({ page }) => {
+  await completeOnboarding(page);
+  await page.goto('/settings/ai');
+
+  const disclosures = page.locator('section[data-slot="settings-disclosure"]');
+  // ANCHOR FIRST. The connect card is an ordinary section and is always drawn,
+  // so seeing it proves the page is up before anything is counted as absent.
+  await expect(page.locator('[data-slot="settings-inset"]').first()).toBeVisible();
+
+  const headings = disclosures.locator('h2 button');
+  await expect(headings, 'the explainer and the troubleshooting list are both disclosures').toHaveCount(2);
+  await expect(
+    disclosures.locator('[data-slot="settings-inset"]'),
+    'a closed disclosure draws no box at all',
+  ).toHaveCount(0);
+  for (const state of await headings.evaluateAll((buttons) => buttons.map((b) => b.getAttribute('aria-expanded')))) {
+    expect(state, 'a disclosure starts closed').toBe('false');
+  }
+
+  const closedHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+
+  await headings.nth(0).click();
+  await headings.nth(1).click();
+  await expect(disclosures.locator('[data-slot="settings-inset"]'), 'both boxes open').toHaveCount(2);
+
+  // THE CONTROL. Radix animates the panel open, so the height is polled rather
+  // than read once; the threshold is what several paragraphs of prose actually
+  // cost, not a token pixel.
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollHeight), {
+      message: 'the prose behind the disclosures must be worth hiding',
+    })
+    .toBeGreaterThan(closedHeight + 200);
+
+  await expectPhoneLayout(page);
+});
+
 /** The device menu's language strip, opened from the header and measured. */
 async function measureLanguageStrip(
   page: Page,
