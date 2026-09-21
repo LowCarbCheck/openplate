@@ -418,8 +418,10 @@ type SeedPersistProbe = {
  * won the same race.
  *
  * The rule this waits on: the PERSISTED food-log table's row count reaches the
- * number of logs the seed contains. Anything less, `null` included, means the
- * save has not landed yet and the probe keeps waiting.
+ * number of logs the seed contains. Anything less means the save has not landed
+ * yet and the probe keeps waiting. `readPersistedTableRowCounts` answers with a
+ * tagged probe, and only `present` carries counts; `absent` and `blocked` both
+ * count as nothing on disk yet.
  *
  * `performance.now`, not `Date.now`: the init script freezes `Date`, so a
  * deadline computed from `Date.now()` would never move and this loop would
@@ -431,19 +433,42 @@ function buildPersistProbeExpression(expectedFoodLogs: number): string {
   const store = await import('/app/lib/local-store/store.ts');
   const schema = await import('/app/lib/local-store/schema.ts');
   const start = performance.now();
-  let counts = null;
+  let probe = null;
   let rows = 0;
   while (performance.now() - start < ${PERSIST_TIMEOUT_MS}) {
-    counts = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
-    rows = counts === null ? 0 : (counts[schema.FOOD_LOGS_TABLE] ?? 0);
+    probe = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
+    rows = probe.kind === 'present' ? (probe.counts[schema.FOOD_LOGS_TABLE] ?? 0) : 0;
     if (rows >= ${expectedFoodLogs}) {
-      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(counts) };
+      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(probe) };
     }
     await new Promise((resolve) => setTimeout(resolve, ${PERSIST_POLL_MS}));
   }
-  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(counts) };
+  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(probe) };
 })()`;
 }
+
+/**
+ * Record this build's release notes as already read, the way a device that has
+ * been in use for a while looks.
+ *
+ * The seeded profile onboarded long before this bundle was built, so the app
+ * correctly treats it as a device that lived through an update and offers the
+ * "What's new" card at the top of the diary and the dashboard. That card is a
+ * true feature and a wrong thing to photograph: it covers half the phone shot
+ * with a list of release leads that are stale the day after the capture.
+ *
+ * The version comes from the page's own `BUILD` and the write goes through
+ * `writeWhatsNewSeen`, so the stored value is exactly what the app would have
+ * written itself, and a retune of the storage key reaches this without an edit.
+ * It runs on the seeding page because `localStorage` belongs to the origin,
+ * like the diary, and the clear that precedes it has already happened.
+ */
+const ACKNOWLEDGE_WHATS_NEW_EXPRESSION = `(async () => {
+  const build = await import('/app/lib/build-info.ts');
+  const whatsNew = await import('/app/lib/whats-new.ts');
+  whatsNew.writeWhatsNewSeen(localStorage, build.BUILD.version);
+  return whatsNew.readWhatsNewSeen(localStorage);
+})()`;
 
 /**
  * Put the example diary into the origin's IndexedDB, on a page of its own.
@@ -480,6 +505,13 @@ async function seedOrigin(run: CaptureRun): Promise<void> {
     );
     if (seeded !== 'seeded') {
       throw new Error(`The seed import returned ${JSON.stringify(seeded)} instead of 'seeded'.`);
+    }
+
+    const acknowledged = await page.evaluate<string | null>(ACKNOWLEDGE_WHATS_NEW_EXPRESSION);
+    if (acknowledged === null) {
+      throw new Error(
+        'The release notes were not acknowledged, so the release-notes card would cover every diary and dashboard shot.',
+      );
     }
 
     // The expected count comes from the SAME envelope that was just imported,
