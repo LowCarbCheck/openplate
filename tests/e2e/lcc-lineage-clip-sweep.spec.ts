@@ -37,13 +37,29 @@
  * diary offers them as quick-add chips too. They appear on the diary, on the add screen and on the
  * dashboard, which is where a clipped name would hide.
  *
+ * ── TWO MATRICES, AND HOW TO RUN THE WIDE ONE ──
+ * The full sweep is six languages at three widths: 738 page reads, about eight minutes, on a
+ * browser tier that otherwise takes under three. That is the wrong price to pay on every push, so
+ * the DEFAULT matrix is German and Turkish, the widest language and the one with its own font file,
+ * at 360 and 390 px, the width the app promises and the width it is designed at: about two minutes.
+ * The full matrix runs on demand, and is what a font or a title size change must be judged by:
+ *
+ *     LCC_CLIP_SWEEP=full pnpm exec playwright test tests/e2e/lcc-lineage-clip-sweep.spec.ts
+ *
+ * Nothing is weakened by the narrower default. Every route is still read, both faces are still
+ * compared, and both hard claims still fail the run. What changes is only how many languages and
+ * widths the claims are made ABOUT, and `KNOWN_HARD_RESIDUE` is filtered to the matrix in play so a
+ * frozen row outside it is neither expected nor missed. A residue entry that names a language or a
+ * width the FULL matrix does not hold is a typo, and a test below fails on it.
+ *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
  * A sweep that found nothing would look exactly like a sweep that could not see. The control test
  * injects three elements known to clip in mono and not in Inter (an ordinary box, a bottom bar
  * label and an app header title), reads them through the SAME reader and the SAME comparison, and
  * requires all three to be listed, the last two to trip the hard assertion, and the real chrome
  * beside them to stay clean. It then writes them into the report and reads the report back, so the
- * file path is shown able to carry a finding.
+ * file path is shown able to carry a finding. It runs at 360 px, which is in both matrices, so the
+ * proof that the reader can see is paid for in both modes.
  *
  * NO SERVICE WORKER IS BLOCKED here: the sweep walks the app the way a person meets it.
  */
@@ -67,15 +83,28 @@ import {
 import { completeOnboarding, logFoodManually, useLanguage } from './helpers';
 
 /**
- * All six shipped languages. The brief names German (the widest) and Turkish (the second, with a
- * second font file) and asks for all six if the run stays under ten minutes. One language takes
- * about 80 seconds, so six take about eight minutes, and the three that are not German or Turkish
- * are the ones to drop from this list first if the run ever has to be shorter.
+ * All six shipped languages, the matrix `LCC_CLIP_SWEEP=full` sweeps. German is the widest and
+ * Turkish the second, with a second font file; the other four found the 15 px header title.
  */
-const LOCALES = ['de', 'tr', 'en', 'es', 'fr', 'it'] as const satisfies readonly LanguageCode[];
+const FULL_LOCALES = ['de', 'tr', 'en', 'es', 'fr', 'it'] as const satisfies readonly LanguageCode[];
 
 /** The three phone widths: the narrowest a person owns, the narrowest the app promises, and the design width. */
-const WIDTHS = [320, 360, 390] as const;
+const FULL_WIDTHS = [320, 360, 390] as const;
+
+/** The two languages the default matrix reads: the widest, and the one with its own font file. */
+const DEFAULT_LOCALES = ['de', 'tr'] as const satisfies readonly LanguageCode[];
+
+/** The two widths the default matrix reads: the width the app promises, and the width it is designed at. */
+const DEFAULT_WIDTHS = [360, 390] as const;
+
+/** Whether the operator asked for all six languages at all three widths. See the header. */
+const IS_FULL_SWEEP = process.env.LCC_CLIP_SWEEP === 'full';
+
+/** The languages this run reads. */
+const LOCALES: readonly LanguageCode[] = IS_FULL_SWEEP ? FULL_LOCALES : DEFAULT_LOCALES;
+
+/** The widths this run reads. */
+const WIDTHS: readonly number[] = IS_FULL_SWEEP ? FULL_WIDTHS : DEFAULT_WIDTHS;
 
 /** A generous height, so width is the only thing under test. */
 const PHONE_HEIGHT = 844;
@@ -83,7 +112,7 @@ const PHONE_HEIGHT = 844;
 /** Where the operator reads the result. */
 const REPORT_PATH = resolve(process.cwd(), 'test-results/lcc-lineage-clip-report.json');
 
-/** One locale's sweep: 13 public and ~30 personal routes, at three widths, read twice. */
+/** One locale's sweep: 11 public and 30 personal routes, at every width in the matrix, read twice. */
 const SWEEP_TIMEOUT_MS = 600_000;
 
 /** Screens a device meets before it has a diary. They are swept on a fresh device. */
@@ -311,6 +340,28 @@ function isResidue(row: ReportRow, residue: KnownHardResidue): boolean {
 }
 
 /**
+ * The frozen rows this run can actually observe: the ones in the language being swept, at a width
+ * the matrix in play reads. Filtering is what lets the default matrix keep the `unmatched` claim
+ * honest, instead of demanding a row from a width it never visited.
+ *
+ * @param known - every frozen entry.
+ * @param locale - the language being swept.
+ * @param widths - the widths this run reads.
+ * @returns the entries this run must see.
+ */
+function residueInMatrix({
+  known,
+  locale,
+  widths,
+}: {
+  known: readonly KnownHardResidue[];
+  locale: string;
+  widths: readonly number[];
+}): readonly KnownHardResidue[] {
+  return known.filter((residue) => residue.locale === locale && widths.includes(residue.viewport));
+}
+
+/**
  * Splits the hard rows into the ones a frozen entry explains and the ones nothing explains.
  *
  * @param rows - the hard rows a sweep collected.
@@ -384,8 +435,53 @@ test('the fixtures are 30 to 40 characters, so the long-name claim is not vacuou
   }
 });
 
+test('the matrix is the two-language default unless LCC_CLIP_SWEEP=full, and the residue is filtered to it', () => {
+  // WHAT THIS RUN IS READING. Named out loud, so a report of "nothing clipped" is read against the
+  // matrix that produced it and not against the full one.
+  if (IS_FULL_SWEEP) {
+    expect(LOCALES, 'the full sweep reads all six languages').toEqual([...FULL_LOCALES]);
+    expect(WIDTHS, 'the full sweep reads all three widths').toEqual([...FULL_WIDTHS]);
+  } else {
+    expect(LOCALES, 'the default sweep reads German and Turkish').toEqual(['de', 'tr']);
+    expect(WIDTHS, 'the default sweep reads 360 and 390').toEqual([360, 390]);
+  }
+  // Both matrices hold the width the control test injects at, and the width the app promises.
+  expect(WIDTHS, 'the control test injects at 360, so both matrices must read it').toContain(360);
+
+  // A frozen entry must name a place the FULL matrix visits, or it can never be matched and the
+  // `unmatched` claim is dead weight the day somebody fixes it.
+  for (const residue of KNOWN_HARD_RESIDUE) {
+    expect(FULL_LOCALES, `${residue.route}: a frozen row must name a shipped language`).toContain(residue.locale);
+    expect(FULL_WIDTHS, `${residue.route}: a frozen row must name a swept width`).toContain(residue.viewport);
+  }
+
+  // CONTROL: the filter really drops what this run cannot see. The one frozen row is Italian at
+  // 320 px, so the default matrix must not expect it and the full matrix must.
+  const italian320: KnownHardResidue = {
+    locale: 'it',
+    viewport: 320,
+    route: '/catch-up',
+    role: 'header-title',
+    why: 'control',
+  };
+  expect(
+    residueInMatrix({ known: [italian320], locale: 'it', widths: DEFAULT_WIDTHS }),
+    'a 320 px row is not expected by a run that never reads 320 px',
+  ).toEqual([]);
+  expect(
+    residueInMatrix({ known: [italian320], locale: 'it', widths: FULL_WIDTHS }),
+    'and it IS expected by a run that reads 320 px',
+  ).toEqual([italian320]);
+  expect(
+    residueInMatrix({ known: [italian320], locale: 'de', widths: FULL_WIDTHS }),
+    'and never by another language',
+  ).toEqual([]);
+});
+
 for (const locale of LOCALES) {
-  test(`the wider face clips no header title and no tab label, ${locale} at 320, 360 and 390`, async ({ page }) => {
+  test(`the wider face clips no header title and no tab label, ${locale} at ${WIDTHS.join(' and ')}`, async ({
+    page,
+  }) => {
     test.setTimeout(SWEEP_TIMEOUT_MS);
     const result: SweepResult = { rows: [], hard: [], pagesRead: 0, titlesRead: 0, tabLabelsRead: 0, badHosts: [] };
 
@@ -427,7 +523,7 @@ for (const locale of LOCALES) {
     // THE TWO HARD CLAIMS. Listed before asserted, so a failure names the element and the numbers.
     const { unexplained, unmatched } = partitionHard({
       rows: result.hard,
-      known: KNOWN_HARD_RESIDUE.filter((residue) => residue.locale === locale),
+      known: residueInMatrix({ known: KNOWN_HARD_RESIDUE, locale, widths: WIDTHS }),
     });
     const described = unexplained.map(
       (row) =>
