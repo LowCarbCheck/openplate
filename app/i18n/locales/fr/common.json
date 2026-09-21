@@ -307,7 +307,7 @@
   "chrome": {
     "back": "Retour",
     "buildStamp": "Version {{label}}",
-    "cancelContract": "Résilier des contrats ici",
+    "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Cet appareil, ouvrir le menu",
     "footerTagline": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire qui reste sur ton appareil",
     "footerTaglineManaged": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire que tu es le seul à pouvoir lire",
@@ -342,7 +342,7 @@
       "reload": "Recharger",
       "view": "Modifications apportées"
     },
-    "withdrawContract": "Rétracter un contrat"
+    "withdrawContract": "Vertrag widerrufen"
   },
   "clinicianLink": {
     "copied": "Copié",

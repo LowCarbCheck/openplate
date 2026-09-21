@@ -45,14 +45,14 @@ const NAMESPACES = ['common', 'legal'] as const;
 /**
  * Dotted paths whose value is mandated German statutory wording (§312k and
  * §356a BGB, the Button-Lösung), not a translation gap (M214/09). For these
- * two the "English" source itself holds the same German text on purpose, so
+ * three the "English" source itself holds the same German text on purpose, so
  * it is byte-identical in every locale, including German — the SENTENCE
  * heuristic below has no way to tell "the law names this exact phrase" from
  * a copy-paste, so they are named here instead. `legal-locales.test.ts`
  * carries the fuller set (its allowlist also covers the two-word labels this
  * heuristic's length threshold never reaches).
  */
-const STATUTORY_TEXT = new Set(['chrome.cancelContract', 'declarations.cancel.title']);
+const STATUTORY_TEXT = new Set(['chrome.cancelContract', 'chrome.withdrawContract', 'declarations.cancel.title']);
 
 /** A translation catalog: nested groups of keys bottoming out in translated strings. */
 interface Catalog {

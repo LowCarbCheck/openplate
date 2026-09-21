@@ -5268,7 +5268,7 @@
     "path": "common:chrome.withdrawContract",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
-    "fr": "Rétracter un contrat"
+    "fr": "Vertrag widerrufen"
   },
   "46430643bb9b9fd2": {
     "en": "The note appears again before your next long fast.",
@@ -7438,7 +7438,7 @@
     "path": "common:chrome.cancelContract",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
-    "fr": "Résilier des contrats ici"
+    "fr": "Verträge hier kündigen"
   },
   "6174dce41ad116ee": {
     "en": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary stays on this device. Run openplate yourself, and nothing is counted at all.",

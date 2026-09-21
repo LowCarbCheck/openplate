@@ -307,7 +307,7 @@
   "chrome": {
     "back": "Atrás",
     "buildStamp": "Compilación {{label}}",
-    "cancelContract": "Cancelar contratos aquí",
+    "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Este dispositivo, abrir menú",
     "footerTagline": "{{appName}} de <lcc>lowcarbcheck.org</lcc>, un registro de comida que se queda en tu dispositivo",
     "footerTaglineManaged": "{{appName}} de <lcc>lowcarbcheck.org</lcc>, un registro de comida que solo tú puedes leer",
@@ -342,7 +342,7 @@
       "reload": "Recargar",
       "view": "Qué cambió"
     },
-    "withdrawContract": "Revocar contrato"
+    "withdrawContract": "Vertrag widerrufen"
   },
   "clinicianLink": {
     "copied": "Copiado",

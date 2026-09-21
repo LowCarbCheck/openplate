@@ -307,7 +307,7 @@
   "chrome": {
     "back": "Geri",
     "buildStamp": "Sürüm {{label}}",
-    "cancelContract": "Sözleşmeleri buradan feshet",
+    "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Bu cihaz, menüyü aç",
     "footerTagline": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, verilerini cihazında tutan bir beslenme takipçisi",
     "footerTaglineManaged": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, yalnızca senin okuyabildiğin bir beslenme takipçisi",
@@ -342,7 +342,7 @@
       "reload": "Yeniden yükle",
       "view": "Neler değişti"
     },
-    "withdrawContract": "Sözleşmeden cay"
+    "withdrawContract": "Vertrag widerrufen"
   },
   "clinicianLink": {
     "copied": "Kopyalandı",
