@@ -1409,6 +1409,8 @@ export interface LocalSavedMealItem {
   carbBasis?: CarbBasis;
   /** Per-100g vitamins/minerals, same convention as `LocalFoodLog.micronutrientsPer100g`. */
   micronutrientsPer100g?: MicronutrientsPer100g;
+  /** The model's raw food flags (M219/03), same convention as `LocalFoodLog.flags`: absent for an item that never had any. */
+  flags?: FoodFlags;
 }
 
 /**

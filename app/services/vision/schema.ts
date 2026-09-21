@@ -276,7 +276,7 @@ export type UnvalidatedProviderJson = z.infer<ReturnType<typeof z.json>>;
 type RawPlateIdentification = z.infer<typeof PlateIdentificationParseSchema>;
 type RawIdentifiedFood = z.infer<typeof RawIdentifiedFoodParseSchema>;
 type RawMacros = z.infer<typeof RawMacrosSchema>;
-export type RawFoodFlags = z.infer<typeof LenientFoodFlagsSchema>;
+type RawFoodFlags = z.infer<typeof LenientFoodFlagsSchema>;
 
 /**
  * Vite substitutes `import.meta.env.DEV` at build time. Under plain Node,

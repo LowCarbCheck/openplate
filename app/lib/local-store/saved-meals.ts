@@ -37,6 +37,9 @@ export function savedMealItemFromLog(log: LocalFoodLog): LocalSavedMealItem {
     netCarbsPer100g: log.netCarbsPer100g,
     carbBasis: log.carbBasis,
     micronutrientsPer100g: log.micronutrientsPer100g,
+    // The raw flags (M219/03): a template that lost them would re-log a
+    // raw-milk cheese board with no chip, which reads as checked and fine.
+    flags: log.flags,
   };
 }
 
@@ -121,6 +124,7 @@ export function buildLogsFromSavedMealItems({
     netCarbsPer100g: item.netCarbsPer100g,
     carbBasis: item.carbBasis,
     micronutrientsPer100g: item.micronutrientsPer100g,
+    flags: item.flags,
   }));
 }
 

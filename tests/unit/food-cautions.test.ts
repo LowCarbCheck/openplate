@@ -22,9 +22,20 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { z } from 'zod';
 
+import { parseWithZod } from '@conform-to/zod/v4';
+
 import { withI18n } from './trends-i18n-harness';
 import SettingsLifePhase from '../../app/routes/settings.life-phase';
 import { EMPTY_BODY_METRICS } from '../../app/models/body-metrics';
+import { RestoreLogSchema, buildCopiedEntry, buildRestoredEntry } from '../../app/routes/diary';
+import { buildRestorePayload } from '../../app/routes/diary.entry.$id';
+import {
+  buildLogsFromSavedMeal,
+  buildLogsFromSavedMealItems,
+  buildSavedMealFromLogs,
+  savedMealItemFromLog,
+} from '../../app/lib/local-store/saved-meals';
+import { putLocalSavedMeal } from '../../app/lib/local-store/primary-store';
 
 import {
   NO_CAUTION_PROFILE,
@@ -397,5 +408,123 @@ describe('the life phase page', () => {
     const markup = renderLifePhasePage();
     assert.equal(slotText(markup, 'cautions-nonexistent'), undefined);
     assert.equal(markup.includes('data-slot="cautions-nonexistent"'), false);
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The raw flags survive every other way an entry is created (code review)
+////////////////////////////////////////////////////////////////////////////////
+
+/** The REAL undo-restore write path: `buildRestorePayload` -> `RestoreLogSchema` -> `buildRestoredEntry`. */
+function restoredEntry(log: LocalFoodLog): LocalFoodLog {
+  const formData = new FormData();
+  for (const [name, value] of Object.entries(buildRestorePayload(log))) formData.set(name, value);
+  const submission = parseWithZod(formData, { schema: RestoreLogSchema });
+  assert.equal(submission.status, 'success', 'RestoreLogSchema rejected the Undo payload');
+  if (submission.status !== 'success') throw new Error('unreachable');
+  return buildRestoredEntry({
+    value: submission.value,
+    id: 'restored-1',
+    loggedAtMs: log.loggedAt,
+    dayKey: log.dayKey,
+    createdAtMs: log.createdAt,
+  });
+}
+
+/** The REAL copy-day write path. */
+function copiedEntry(log: LocalFoodLog): LocalFoodLog {
+  return buildCopiedEntry({
+    log,
+    id: 'copy-1',
+    dayKey: '2026-09-22',
+    loggedAtMs: log.loggedAt + 86_400_000,
+    createdAtMs: log.loggedAt + 86_400_000,
+    logBatchId: 'copy-batch-1',
+  });
+}
+
+/** The REAL saved-meal path, both halves: the template off a log, then the rows off the template. */
+function relogged(log: LocalFoodLog): LocalFoodLog[] {
+  const item = savedMealItemFromLog(log);
+  return buildLogsFromSavedMealItems({
+    items: [item],
+    makeId: () => 'relog-1',
+    dayKey: '2026-09-22',
+    loggedAtMs: log.loggedAt + 86_400_000,
+    mealType: 'dinner',
+    logBatchId: 'relog-batch-1',
+    createdAtMs: log.loggedAt + 86_400_000,
+  });
+}
+
+describe('delete-then-Undo keeps the raw flags', () => {
+  it('ROUND TRIP: Undo restores a flagged entry with the same flags', () => {
+    assert.deepEqual(
+      restoredEntry(loggedRow(RAW_DAIRY_MILK)).flags,
+      RAW_DAIRY_MILK,
+      'Undo brought the entry back with its raw-milk note gone, which reads as checked and fine',
+    );
+  });
+
+  it('Undo of an entry without flags restores none, never a fabricated empty object, the control', () => {
+    assert.equal(restoredEntry(loggedRow(undefined)).flags, undefined);
+  });
+});
+
+describe('copy-day keeps the raw flags', () => {
+  it('ROUND TRIP: a copied flagged entry keeps the same flags on the new day', () => {
+    assert.deepEqual(copiedEntry(loggedRow(RAW_DAIRY_MILK)).flags, RAW_DAIRY_MILK);
+  });
+
+  it('copying an entry without flags copies none, the control', () => {
+    assert.equal(copiedEntry(loggedRow(undefined)).flags, undefined);
+  });
+});
+
+describe('a saved meal keeps the raw flags on its items', () => {
+  it('ROUND TRIP: a flagged log saved as a meal and logged again yields a row with the same flags', () => {
+    const rows = relogged(loggedRow(RAW_DAIRY_MILK));
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0]?.flags, RAW_DAIRY_MILK);
+    // And the whole-meal wrapper the Meals page and the slot tap go through.
+    const meal = buildSavedMealFromLogs({ logs: [loggedRow(RAW_DAIRY_MILK)], name: 'Cheese night', id: 'meal-1', createdAtMs: 1 });
+    assert.deepEqual(meal.items[0]?.flags, RAW_DAIRY_MILK);
+    const viaMeal = buildLogsFromSavedMeal({
+      meal,
+      makeId: () => 'relog-2',
+      dayKey: '2026-09-22',
+      loggedAtMs: 2,
+      mealType: 'dinner',
+      logBatchId: 'relog-batch-2',
+      createdAtMs: 2,
+    });
+    assert.deepEqual(viaMeal[0]?.flags, RAW_DAIRY_MILK);
+  });
+
+  it('a saved meal item with no flags yields a row with flags undefined, the control', () => {
+    const rows = relogged(loggedRow(undefined));
+    assert.equal(rows[0]?.flags, undefined);
+    assert.equal(savedMealItemFromLog(loggedRow(undefined)).flags, undefined);
+  });
+
+  it('ROUND TRIP: the backup keeps the flags on a saved meal item, and an unknown word is dropped on the way', async () => {
+    const store = createPrimaryStore();
+    const meal = buildSavedMealFromLogs({ logs: [loggedRow(RAW_DAIRY_MILK), loggedRow(undefined)], name: 'Cheese night', id: 'meal-1', createdAtMs: 1 });
+    await putLocalSavedMeal(meal, { store });
+
+    const exported = await exportBackup({ store, now: () => new Date('2026-09-22T09:00:00.000Z') });
+    const normalised = shareableSnapshotSchema.parse(exported.data);
+    assert.deepEqual(normalised.savedMeals[0]?.items[0]?.flags, RAW_DAIRY_MILK);
+    // The control: the second item never had flags and comes back without.
+    assert.equal(normalised.savedMeals[0]?.items[1]?.flags, undefined);
+
+    const widened = shareableSnapshotSchema.parse({
+      foods: [],
+      foodLogs: [],
+      weightEntries: [],
+      profile: null,
+      savedMeals: [{ ...meal, items: [{ ...meal.items[0], flags: { pregnancy: ['raw-dairy', 'quinine'], allergens: ['milk'] } }] }],
+    });
+    assert.deepEqual(widened.savedMeals[0]?.items[0]?.flags, RAW_DAIRY_MILK);
   });
 });

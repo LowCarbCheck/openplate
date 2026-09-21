@@ -374,6 +374,10 @@ const savedMealItemSchema = z.object({
   // the `total` formula and double-subtract fibre every time.
   carbBasis: z.enum(CARB_BASES).optional(),
   micronutrientsPer100g: micronutrientsPer100gSchema.optional(),
+  // Added within v24 (M219/03), mirrors `foodLogSchema.flags` for the same
+  // lossless-round-trip reason: without it a re-imported saved meal would
+  // re-log its raw-milk cheese with no chip. Same lenient narrowing.
+  flags: LenientFoodFlagsSchema.transform((raw) => normalizeFoodFlags(raw)).optional(),
 });
 
 const savedMealSchema = z.object({

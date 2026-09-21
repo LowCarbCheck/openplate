@@ -147,7 +147,10 @@ export function decideCautions({
 
 /**
  * One stable string per caution, for a React `key` and for a test that wants
- * to name a chip without reading its words. Two cautions on one food never
+ * to name a chip without reading its words. It is the TEST-SIDE structural
+ * key (the decision tables in `tests/unit/food-cautions.test.ts` compare
+ * these strings), never a catalog key; `cautionTextKey` in the chip owns the
+ * words. Two cautions on one food never
  * share a key: a category appears once, and an allergen is either contained
  * or may-contained, never both (`normalizeFoodFlags` keeps the certainty).
  *
