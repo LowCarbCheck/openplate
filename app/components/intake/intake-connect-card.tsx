@@ -1,24 +1,26 @@
 /**
- * The card a device with NO AI connection sees, lifted out of `/scan` (M233/02).
+ * The card a device with NO AI connection sees, lifted out of `/add/photo`
+ * (M233/02; that screen was `/scan` before ADR-0019).
  *
  * ── Why it moved, and what did NOT change ────────────────────────────────
  *
- * `/pantry` runs the same provider call `/scan` does, through the same rule
- * (`useEffectiveAiSettings`), so it reaches the same dead end for the same
- * reasons: no BYOK row on an open instance, no allowance on a managed one, or
- * a session still resuming. A second card would be a second set of sentences
- * about one fact, and the two would drift the first time the allowance rules
- * moved. This is a PURE MOVE: not a class, not a word and not a branch was
- * changed on the way, and `/scan` re-exports every name it used to export so
- * the tests that render each shape still import them from there.
+ * `/pantry` runs the same provider call `/add/photo` does, through the same
+ * rule (`useEffectiveAiSettings`), so it reaches the same dead end for the
+ * same reasons: no BYOK row on an open instance, no allowance on a managed
+ * one, or a session still resuming. A second card would be a second set of
+ * sentences about one fact, and the two would drift the first time the
+ * allowance rules moved. This is a PURE MOVE: not a class, not a word and not
+ * a branch was changed on the way, and `/add/photo` re-exports every name it
+ * used to export so the tests that render each shape still import them from
+ * there.
  *
  * ── It talks about the camera, on both screens, on purpose ───────────────
  *
  * The copy names photo estimates, and that is right for the pantry too: the
  * thing a person cannot do without a connection is photograph a shelf. The one
- * sentence that is `/scan`-shaped is the "add without a photo" button, which
- * goes to the database search, and it is honest on `/pantry` as well, since
- * writing the list by hand is exactly what is still possible there.
+ * sentence that is `/add/photo`-shaped is the "add without a photo" button,
+ * which goes to the database search, and it is honest on `/pantry` as well,
+ * since writing the list by hand is exactly what is still possible there.
  */
 import { useEffect, useRef, useState } from 'react';
 import { useRevalidator } from 'react-router';
@@ -35,15 +37,16 @@ import { useInstanceInferencePreset, useInstancePolicy } from '#app/hooks/use-pu
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { buildUrlWithoutSharedParam, hasSharedPhotoFlag, readSharedPhoto } from '#app/lib/shared-photo';
+import { ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 import { supportsOauthPkce } from '#app/services/vision/registry';
 import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
 
 /**
- * The one "not yet" state, shared by three waits: `/scan`'s client loader
- * reading the device, `/pantry`'s doing the same, and a managed instance still
- * reopening its session ({@link ConnectCard}). All three are the same fact to
- * the person in front of it, the answer has not arrived, and a card that
- * guessed at one of them would be wrong for a second.
+ * The one "not yet" state, shared by three waits: `/add/photo`'s client
+ * loader reading the device, `/pantry`'s doing the same, and a managed
+ * instance still reopening its session ({@link ConnectCard}). All three are
+ * the same fact to the person in front of it, the answer has not arrived, and
+ * a card that guessed at one of them would be wrong for a second.
  */
 export function ScanLoading() {
   const { t } = useTranslation();
@@ -130,11 +133,11 @@ function useKeylessSharedPhotoPreview(): string | null {
  * A fourth variant used to name a managed instance with no session, and sent
  * the person to the screen that reopens one. It cannot happen on this screen:
  * `_personal.tsx`'s gate reads `isDeviceLocked() || no session` and sends
- * every personal route, `/scan` included, to `/welcome` before this card ever
- * renders. The identical dead state was removed from `/describe` and `/add`
- * in M204 spec 01 (`resolveAiIntakeDoor`); this is the same decision for the
- * one screen it had not reached yet. See `use-ai-connection.ts` for the full
- * reasoning, which applies here unchanged.
+ * every personal route, `/add/photo` included, to `/welcome` before this card
+ * ever renders. The identical dead state was removed from `/add/describe` and
+ * `/add/search` in M204 spec 01 (`resolveAiIntakeDoor`); this is the same
+ * decision for the one screen it had not reached yet. See
+ * `use-ai-connection.ts` for the full reasoning, which applies here unchanged.
  */
 export type ConnectCardVariant =
   { kind: 'self-hosted' } | { kind: 'instance-ai'; host: string } | { kind: 'managed-missing' } | { kind: 'resuming' };
@@ -178,7 +181,8 @@ export function resolveConnectCardVariant({
 
 /**
  * Keyless-friendly landing for a user without an AI provider yet, also the cold
- * open for anyone who's never scanned before, since /scan is a primary tab. Says
+ * open for anyone who's never scanned before, since /add/photo is a primary
+ * tab. Says
  * plainly, before any jargon, what this does, that it needs a paid account the
  * visitor sets up themselves, roughly what it costs, and that everything else in
  * openplate works without it, so someone who will never do this can tell in one
@@ -257,7 +261,7 @@ export function ConnectCardView({
 }) {
   const { t } = useTranslation();
   const revalidator = useRevalidator();
-  const addHref = logDate ? `/add?date=${logDate}` : '/add';
+  const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
   // THE MANAGED SHAPE SUPPRESSES THE SAME BUTTONS the open shapes offer.
   // There is no key to bring on a managed instance, so the OAuth button, the

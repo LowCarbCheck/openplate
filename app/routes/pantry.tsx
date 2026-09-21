@@ -58,7 +58,7 @@ import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert'
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_DESCRIBE_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
 import { nextPantry, type PantryDraftRow } from '#app/lib/pantry-merge';
 import { trackPantryCaptured, type PantryCapturePath } from '#app/lib/matomo-events';
@@ -94,7 +94,7 @@ export const handle = {
 };
 
 /** The composer's own links, so the strip on this page hands its intake back to this page. */
-const PANTRY_DESCRIBE_HREF = buildIntakeHref('/describe', { to: '/pantry' });
+const PANTRY_DESCRIBE_HREF = buildIntakeHref(ADD_DESCRIBE_PATH, { to: '/pantry' });
 
 /** Where the recipes live (spec 04). Named once so the disabled door and the live one cannot disagree. */
 export const PANTRY_RECIPES_HREF = '/pantry/recipes';

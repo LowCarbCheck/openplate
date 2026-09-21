@@ -81,6 +81,7 @@ import { deriveActivityStreak, isGamificationHidden } from '#app/lib/gamificatio
 import { dismissInsightsHint, isInsightsHintDismissed } from '#app/lib/insights-hint';
 import { WhatsNewCard } from '#app/components/whats-new-card';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
+import { ADD_DESCRIBE_PATH } from '#app/lib/intake-hrefs';
 import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { PulseTileSlot } from '#app/components/pulse-tile';
@@ -460,7 +461,7 @@ function TodayHeroCard({
         the camera and the microphone in its frame, for the same reason.
       */}
       <RepeatYesterdayGhost offer={repeatYesterday} />
-      <IntakeComposer describeTo="/describe" />
+      <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />
       {/*
         THE SECOND THING THE COMPOSER ABOVE IS FOR (M233/02), and it is a
         separate door rather than a fourth key inside the strip. The strip

@@ -5,8 +5,12 @@
  * `#app/lib/onboarding`'s `resolveExitDestination`).
  *
  * Callers pass a short TOKEN (`?next=diary`), never a raw path, so a tampered
- * or off-app value can never become an open redirect.
+ * or off-app value can never become an open redirect. The tokens themselves
+ * are unchanged by ADR-0019's `/add` hub nesting, only the paths they resolve
+ * to: `?next=scan` and `?next=describe` are wire format already baked into
+ * links across the app, and renaming them would be churn for nothing.
  */
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 
 /** The `?next=` tokens a connect flow can return the user to. */
 export const SETTINGS_RETURN_TOKENS = ['diary', 'scan', 'add', 'describe'] as const;
@@ -16,9 +20,9 @@ export type SettingsReturnToken = (typeof SETTINGS_RETURN_TOKENS)[number];
 /** The in-app path each return token resolves to. */
 const RETURN_PATH_BY_TOKEN = {
   diary: '/diary',
-  scan: '/scan',
-  add: '/add',
-  describe: '/describe',
+  scan: ADD_PHOTO_PATH,
+  add: ADD_SEARCH_PATH,
+  describe: ADD_DESCRIBE_PATH,
 } satisfies Record<SettingsReturnToken, string>;
 
 /**

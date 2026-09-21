@@ -55,6 +55,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import i18n from '#app/i18n/i18n';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -437,7 +438,7 @@ function EmptyTrends() {
           <p className="text-xs text-muted-foreground">{t('trends.empty.body')}</p>
         </div>
         <Button asChild variant="outline" className="sm:shrink-0">
-          <Link to="/add">{t('trends.empty.cta')}</Link>
+          <Link to={ADD_SEARCH_PATH}>{t('trends.empty.cta')}</Link>
         </Button>
       </CardContent>
     </Card>

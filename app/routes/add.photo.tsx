@@ -126,6 +126,7 @@ import {
 } from '#app/lib/matomo-events';
 import type { LogInputPath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
+import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -1940,7 +1941,7 @@ export function UploadForm({
 }) {
   const { t } = useTranslation();
   const monthlyUsageLine = formatMonthlyUsageLine(monthlyUsage);
-  const addHref = logDate ? `/add?date=${logDate}` : '/add';
+  const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const failedAttemptCostUsd =
     usage && modelId && provider ? (estimateScanCostUsd(provider, modelId, usage) ?? null) : null;
   const failedAttemptCreditLine = usage ? formatFailedAttemptCreditLine(failedAttemptCostUsd, t) : null;
@@ -2009,7 +2010,7 @@ export function UploadForm({
 
   return (
     <div className="space-y-4">
-      {logDate && logDateLabel && <LoggingToBanner label={logDateLabel} switchToTodayHref="/scan" />}
+      {logDate && logDateLabel && <LoggingToBanner label={logDateLabel} switchToTodayHref={ADD_PHOTO_PATH} />}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -2802,7 +2803,7 @@ export function ConfirmDraftForm({
       {logDate && <input type="hidden" name="date" value={logDate} />}
       {/* Client-minted batch id, so the device photo cache and the server agree. */}
       {clientLogBatchId && <input type="hidden" name="clientLogBatchId" value={clientLogBatchId} />}
-      {logDate && logDateLabel && <LoggingToBanner label={logDateLabel} switchToTodayHref="/scan" />}
+      {logDate && logDateLabel && <LoggingToBanner label={logDateLabel} switchToTodayHref={ADD_PHOTO_PATH} />}
       <div className="space-y-1">
         <h2 ref={introHeadingRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">
           {t('scan.review.heading')}

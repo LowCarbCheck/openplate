@@ -28,7 +28,7 @@ import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { dayKeyToLocalDate, localDateToDayKey } from '#app/lib/day-key-date';
 import { resolveDiaryEmptyState } from '#app/lib/diary-empty-state';
 import type { DiaryEmptyState } from '#app/lib/diary-empty-state';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
@@ -2783,13 +2783,13 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
   // isn't today, so a back-dated log, typed or photographed, returns to the day
   // the user is looking at (not "today").
   //
-  // TWO DESTINATIONS, not one. `/describe` is where a person writes or says a
-  // meal; `/add` is the database SEARCH, and it is still what a food
-  // SUGGESTION links to, because a suggestion already names one exact food and
-  // rides in on `?q=`.
-  const describeTo = buildIntakeHref('/describe', { date, today });
-  const addTo = buildIntakeHref('/add', { date, today });
-  const scanTo = buildIntakeHref('/scan', { date, today });
+  // TWO DESTINATIONS, not one. `/add/describe` is where a person writes or
+  // says a meal; `/add/search` is the database SEARCH, and it is still what a
+  // food SUGGESTION links to, because a suggestion already names one exact
+  // food and rides in on `?q=`.
+  const describeTo = buildIntakeHref(ADD_DESCRIBE_PATH, { date, today });
+  const addTo = buildIntakeHref(ADD_SEARCH_PATH, { date, today });
+  const scanTo = buildIntakeHref(ADD_PHOTO_PATH, { date, today });
   const emptyState: DiaryEmptyState = resolveDiaryEmptyState({
     hasAnyLogs,
     isToday,

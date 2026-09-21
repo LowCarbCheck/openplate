@@ -14,7 +14,14 @@
  * is one line here and nothing anywhere else. `to` arrived exactly that way
  * when the pantry became a second intake consumer (M233/01).
  */
-import { DEFAULT_INTAKE_CONSUMER, type IntakeConsumer } from '#app/lib/intake-consumers';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH, DEFAULT_INTAKE_CONSUMER, type IntakeConsumer } from '#app/lib/intake-consumers';
+
+// Re-exported so a call site reaching for `buildIntakeHref` can spell the
+// three intake hub addresses (ADR-0019) from the same import, rather than a
+// second one to `intake-consumers.ts`. The constants themselves are defined
+// there, the leaf of this module's own dependency graph; see that file's
+// header for why the direction matters.
+export { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH };
 
 /** What a destination can carry beyond its path. Every field is optional; an empty bag returns the path unchanged. */
 export type IntakeHrefOptions = {
@@ -27,10 +34,11 @@ export type IntakeHrefOptions = {
   /** The meal slot, written as `meal=`. Nothing passes one yet, and it costs one line to keep ready. */
   slot?: string;
   /**
-   * Who the composer hands its words to, written as `to=`. The diary's `/scan`
-   * is the default everywhere, so it is written only when it is NOT `/scan`
-   * and the bare `/describe` URL the diary has always used stays bare. The
-   * type is the allowlist (`intake-consumers.ts`), never a free path.
+   * Who the composer hands its words to, written as `to=`. The diary's
+   * `/add/photo` is the default everywhere, so it is written only when it is
+   * NOT `/add/photo` and the bare `/add/describe` URL the diary has always
+   * used stays bare. The type is the allowlist (`intake-consumers.ts`), never
+   * a free path.
    */
   to?: IntakeConsumer;
 };

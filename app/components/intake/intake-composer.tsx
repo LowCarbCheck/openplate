@@ -9,11 +9,12 @@
  *
  * Two consumers render it today, and they differ only in the links they pass:
  *
- * - the diary, where `describeTo` is `/describe` and a photo goes to `/scan`,
- *   so words and pictures become food logged on the day on screen;
- * - the pantry (M233/02), where `describeTo` is `/describe?to=/pantry` and a
- *   photo goes to `/pantry`, so the same words and pictures become the list of
- *   what is in the fridge.
+ * - the diary, where `describeTo` is `/add/describe` and a photo goes to
+ *   `/add/photo`, so words and pictures become food logged on the day on
+ *   screen;
+ * - the pantry (M233/02), where `describeTo` is `/add/describe?to=/pantry`
+ *   and a photo goes to `/pantry`, so the same words and pictures become the
+ *   list of what is in the fridge.
  *
  * That is why it lives under `components/intake/` and is not called an
  * add-food composer: a third consumer is a third pair of hrefs at a call site,
@@ -45,9 +46,9 @@
  *
  * Type goes to `describeTo` and speak to the same destination with `speak=1`,
  * which focuses the composer's field and shows the dictation hint. Neither
- * goes to `/add`: that is the database search, which answers "which food is
- * this" for one item, and handing it to somebody who wants to write a whole
- * meal was the defect the three-button row already fixed once.
+ * goes to `/add/search`: that is the database search, which answers "which
+ * food is this" for one item, and handing it to somebody who wants to write a
+ * whole meal was the defect the three-button row already fixed once.
  *
  * Both destinations carry the viewed day when the caller passes one, so a
  * back-dated log, typed OR photographed, lands on the day in front of the
@@ -76,9 +77,9 @@
  * Filled everywhere was the original, deliberate call: a photo costs a camera
  * permission prompt, so it is worth naming first, and on `/dashboard` and
  * `/diary` this strip is the only prominent camera on the page. The tab bar's
- * raised circle is `md:hidden`, and the desktop sidebar carries `/scan` as a
- * flat link, so demoting the key everywhere would leave desktop and tablet
- * with no camera worth seeing.
+ * raised circle is `md:hidden`, and the desktop sidebar carries `/add/photo`
+ * as a flat link, so demoting the key everywhere would leave desktop and
+ * tablet with no camera worth seeing.
  *
  * Inside the sheet the page already has that raised circle, a few pixels
  * outside the panel, filled and owning the camera-first language by itself.
@@ -94,7 +95,7 @@ import { Camera, Keyboard, Mic } from 'lucide-react';
 
 import { Link } from '#app/components/link';
 import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_PHOTO_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
 /** Where this strip is drawn, which decides the camera key's weight and nothing else. */
@@ -131,8 +132,8 @@ interface IntakeComposerBaseProps {
  * `capture` and `scanTo` are mutually exclusive, not two independent optional
  * fields: a caller with its own capture has no use for a photo target, since
  * that capture already has its own, and a caller with neither gets the
- * default `/scan`. Modelling them as one flat object let a caller pass both
- * and lose `scanTo` in silence, so the choice is a discriminated union
+ * default `/add/photo`. Modelling them as one flat object let a caller pass
+ * both and lose `scanTo` in silence, so the choice is a discriminated union
  * instead, and passing both is a compile error at the call site.
  */
 export type IntakeComposerProps = IntakeComposerBaseProps &
@@ -165,7 +166,7 @@ export function IntakeComposer(props: IntakeComposerProps): ReactElement {
 
 /** The strip on a page with no camera of its own: it opens one, and it renders the input for it. */
 function ComposerWithOwnCamera({
-  scanTo = '/scan',
+  scanTo = ADD_PHOTO_PATH,
   ...rest
 }: IntakeComposerBaseProps & { scanTo?: string }): ReactElement {
   const camera = useCameraCapture({ scanTo });

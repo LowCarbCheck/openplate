@@ -94,7 +94,7 @@ const COPY = CATALOG.describe;
 const MANAGED_COPY = CATALOG.aiIntake;
 const DOOR_COPY = CATALOG.diary.copy;
 
-const SOURCE = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
+const SOURCE = readFileSync(new URL('../../app/routes/add.describe.tsx', import.meta.url), 'utf8');
 
 const noop = () => undefined;
 
@@ -109,7 +109,7 @@ function renderComposer({
   aiConnection = 'connected',
   door = { kind: 'byok' },
   speakArmed = false,
-  consumer = '/scan',
+  consumer = '/add/photo',
   repeatYesterday = null,
 }: {
   text?: string;
@@ -127,11 +127,11 @@ function renderComposer({
     door,
     speakArmed,
     consumer,
-    searchHref: '/add',
+    searchHref: '/add/search',
     repeatYesterday,
   });
-  const router = createMemoryRouter([{ path: '/describe', element: withI18n(element) }], {
-    initialEntries: ['/describe'],
+  const router = createMemoryRouter([{ path: '/add/describe', element: withI18n(element) }], {
+    initialEntries: ['/add/describe'],
   });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
@@ -292,7 +292,7 @@ describe('with no AI provider on this device', () => {
     assert.ok(markup.includes(COPY.connect), 'the way to connect a provider is gone');
     assert.match(markup, /href="\/settings\/ai\?next=describe"/, 'the connect link no longer returns here');
     assert.ok(markup.includes(COPY.searchInstead), 'the database search is no longer offered');
-    assert.match(markup, /href="\/add"/, 'the search link no longer points at the search screen');
+    assert.match(markup, /href="\/add\/search"/, 'the search link no longer points at the search screen');
   });
 
   it('says none of that when a provider is connected', () => {
@@ -317,7 +317,7 @@ describe('on a managed instance, where nobody brings a provider', () => {
   // M204 spec 01. The composer used to carry a third notice, for a signed-out
   // visitor on a managed instance, with a link to the sign in screen. Nobody
   // could reach it: signing out of a managed instance locks the device, and
-  // `_personal.tsx`'s gate turns `/describe` into a redirect to `/welcome`
+  // `_personal.tsx`'s gate turns `/add/describe` into a redirect to `/welcome`
   // before this component renders. `describe-signed-out-door.test.ts` holds
   // the lock half of that decision; this is the screen half.
   it('offers no way back into a session, in any state the notice has', () => {
@@ -335,7 +335,7 @@ describe('on a managed instance, where nobody brings a provider', () => {
     // so the check above is reading real markup rather than an empty string.
     const byok = renderComposer({ aiConnection: 'absent', door: { kind: 'byok' } });
     assert.match(byok, /href="\/settings\/ai\?next=describe"/);
-    assert.match(byok, /href="\/add"/);
+    assert.match(byok, /href="\/add\/search"/);
   });
 
   it('still offers the provider settings on an open instance', () => {
@@ -362,13 +362,13 @@ function clearSlot(): void {
 }
 
 describe('the hand-off to the intake consumer', () => {
-  it('parks the trimmed words as a typed intake and leaves for /scan', () => {
+  it('parks the trimmed words as a typed intake and leaves for /add/photo', () => {
     clearSlot();
     const visited: string[] = [];
     handOffDescription({
       text: '  2 fried eggs, a slice of toast  ',
       source: 'text',
-      intakeHref: '/scan',
+      intakeHref: '/add/photo',
       go: (href) => visited.push(href),
     });
 
@@ -377,23 +377,23 @@ describe('the hand-off to the intake consumer', () => {
       text: '2 fried eggs, a slice of toast',
       source: 'text',
     });
-    assert.deepStrictEqual(visited, ['/scan']);
+    assert.deepStrictEqual(visited, ['/add/photo']);
   });
 
   it('carries the day the person is looking at', () => {
     // The route builds the scan target through the shared helper now, so the
     // day it hands on is the day the URL it renders under carries.
-    const source = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../../app/routes/add.describe.tsx', import.meta.url), 'utf8');
     assert.match(source, /const intakeHref = buildIntakeHref\(intakeConsumer, \{ date: logDate \}\);/);
-    assert.equal(buildIntakeHref('/scan', { date: null }), '/scan');
-    assert.equal(buildIntakeHref('/scan', { date: '2026-09-07' }), '/scan?date=2026-09-07');
+    assert.equal(buildIntakeHref('/add/photo', { date: null }), '/add/photo');
+    assert.equal(buildIntakeHref('/add/photo', { date: '2026-09-07' }), '/add/photo?date=2026-09-07');
   });
 
   it('hands the words to the pantry when ?to= names it, day and all', () => {
     // M233/01. The diary is no longer the only consumer, so the destination
     // this screen leaves for is read off the URL rather than written into it.
     clearSlot();
-    const source = readFileSync(new URL('../../app/routes/describe.tsx', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../../app/routes/add.describe.tsx', import.meta.url), 'utf8');
     assert.match(source, /parseIntakeConsumer\(searchParams\.get\('to'\)\)/);
 
     const visited: string[] = [];
@@ -413,12 +413,12 @@ describe('the hand-off to the intake consumer', () => {
     });
   });
 
-  it('sends an unknown ?to= to /scan, so the parameter cannot become a redirect', () => {
+  it('sends an unknown ?to= to /add/photo, so the parameter cannot become a redirect', () => {
     // The control for the case above: with no allowlist both tests would pass
     // while `?to=//example.com` navigated a person off the app mid-sentence.
     clearSlot();
     const visited: string[] = [];
-    for (const hostile of ['/evil', '//example.com', 'https://example.com', '/scan/../evil']) {
+    for (const hostile of ['/evil', '//example.com', 'https://example.com', '/add/photo/../evil']) {
       handOffDescription({
         text: 'two eggs',
         source: 'text',
@@ -430,16 +430,16 @@ describe('the hand-off to the intake consumer', () => {
       clearSlot();
     }
 
-    assert.deepStrictEqual(visited, ['/scan', '/scan', '/scan', '/scan']);
-    assert.equal(parseIntakeConsumer(null), '/scan', 'a missing parameter stopped meaning the diary');
+    assert.deepStrictEqual(visited, ['/add/photo', '/add/photo', '/add/photo', '/add/photo']);
+    assert.equal(parseIntakeConsumer(null), '/add/photo', 'a missing parameter stopped meaning the diary');
   });
 
   it('spends nothing on an empty box', () => {
     clearSlot();
     const visited: string[] = [];
-    handOffDescription({ text: '   ', source: 'text', intakeHref: '/scan', go: (href) => visited.push(href) });
+    handOffDescription({ text: '   ', source: 'text', intakeHref: '/add/photo', go: (href) => visited.push(href) });
 
-    assert.equal(takeIntakeHandoff(), null, 'an empty box was parked for /scan to pay for');
+    assert.equal(takeIntakeHandoff(), null, 'an empty box was parked for /add/photo to pay for');
     assert.deepStrictEqual(visited, [], 'an empty box navigated to the scan screen anyway');
   });
 });
@@ -521,7 +521,7 @@ describe('the composer the pantry sends people to', () => {
   it('asks about a meal for the diary, which is the control', () => {
     // Without this, a composer that had simply swapped both sentences for the
     // pantry's would pass the test above on every screen.
-    const markup = renderComposer({ consumer: '/scan' });
+    const markup = renderComposer({ consumer: '/add/photo' });
 
     assert.ok(markup.includes(COPY.title));
     assert.ok(markup.includes(COPY.placeholder));
@@ -531,7 +531,7 @@ describe('the composer the pantry sends people to', () => {
   it('offers no food search, because a search adds a food to the DIARY', () => {
     const markup = renderComposer({ consumer: '/pantry' });
 
-    assert.doesNotMatch(markup, /href="\/add/u, 'the pantry composer links into the food search');
+    assert.doesNotMatch(markup, /href="\/add\/search/u, 'the pantry composer links into the food search');
     assert.ok(!markup.includes(COPY.searchInstead), 'the search sentence is on the pantry composer');
   });
 
@@ -545,9 +545,9 @@ describe('the composer the pantry sends people to', () => {
   it('offers both to the diary with the same inputs, which is the control', () => {
     // Without this the two absences above would pass against a composer that
     // had lost the search link and the door for everybody.
-    const markup = renderComposer({ consumer: '/scan', repeatYesterday: REPEAT_OFFER });
+    const markup = renderComposer({ consumer: '/add/photo', repeatYesterday: REPEAT_OFFER });
 
-    assert.match(markup, /href="\/add"/u);
+    assert.match(markup, /href="\/add\/search"/u);
     assert.ok(markup.includes(COPY.searchInstead));
     assert.notEqual(doorFormIndex(markup), -1);
   });

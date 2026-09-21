@@ -21,7 +21,7 @@ import { Camera, Keyboard, Mic } from 'lucide-react';
 
 import { Link } from '#app/components/link';
 import { useCameraCapture } from '#app/components/intake/use-camera-capture';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_PHOTO_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
 type VariantProps = {
@@ -43,7 +43,7 @@ const SEGMENT_CLASS =
  * equal; the camera is recognisable because its icon sits on a filled teal
  * chip, not because it is bigger or louder than the others.
  */
-export function AddFoodActionsSegmented({ describeTo, scanTo = '/scan', className }: VariantProps): ReactElement {
+export function AddFoodActionsSegmented({ describeTo, scanTo = ADD_PHOTO_PATH, className }: VariantProps): ReactElement {
   const { t } = useTranslation();
   const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
 

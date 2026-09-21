@@ -1,18 +1,26 @@
 /**
- * Web Share Target v2 glue for the scan flow.
+ * Web Share Target v2 glue for the photo flow (`/add/photo`, `/scan` before
+ * ADR-0019).
  *
  * When the service worker receives a photo shared from the OS share sheet it
  * stashes the file under a synthetic cache key and redirects the browser to
- * `/scan?shared=1`. The scan page reads the file back on mount via
+ * `/add/photo?shared=1`. The photo page reads the file back on mount via
  * `readSharedPhoto`, strips the flag from the URL, and feeds the file through
  * the normal library-pick pipeline.
+ *
+ * `/scan?shared=1` still arrives too, indefinitely: an installed PWA keeps
+ * running its OLD service worker (`public/sw.js`) until it next updates, so
+ * that worker keeps sending its own redirect target until the device
+ * refreshes it. `app/routes/redirects/legacy-scan.tsx` forwards that address
+ * on to `/add/photo`, query string and all, which is what this module's own
+ * `hasSharedPhotoFlag` / `readSharedPhoto` pair sees either way.
  *
  * The string helpers are pure and unit-tested. `readSharedPhoto` takes an
  * injected cache handle (structurally satisfied by `window.caches`) so its
  * contract is testable without a live browser.
  */
 
-/** The query flag the service worker adds when redirecting a shared photo to /scan. */
+/** The query flag the service worker adds when redirecting a shared photo to /add/photo. */
 export const SHARED_PHOTO_FLAG = 'shared';
 
 /** Cache name the service worker writes the shared photo to (keep in sync with public/sw.js). */

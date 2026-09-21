@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app
 import { cn } from '#app/lib/utils';
 import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { hasMovedBeyondPressTolerance, LONG_PRESS_MS, type PointerPosition } from '#app/lib/long-press';
 import { parseDateParam } from '#app/lib/user-days';
 import type { NavigationItem } from './app-sidebar';
@@ -14,9 +14,10 @@ import type { NavigationItem } from './app-sidebar';
 /**
  * The tab bar's flagship action: **the intent is the tap.**
  *
- * The raised circle used to be a `NavLink` to `/scan`, where the user then
- * chose a scan and then pressed a picker — three taps and two screens before
- * the camera opened. It is a button now, and it opens the camera itself.
+ * The raised circle used to be a `NavLink` to `/add/photo`, where the user
+ * then chose a scan and then pressed a picker, three taps and two screens
+ * before the camera opened. It is a button now, and it opens the camera
+ * itself.
  *
  * The gesture itself lives in `useCameraCapture`, which every add-food surface
  * shares; read that module for the browser rule it exists to obey. What stays
@@ -45,8 +46,8 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
   // `null` on today's view and on any screen that carries no day, which is
   // exactly what a bare destination means.
   const viewedDate = parseDateParam(new URLSearchParams(location.search).get('date'));
-  const describeTo = buildIntakeHref('/describe', { date: viewedDate });
-  const scanTo = buildIntakeHref('/scan', { date: viewedDate });
+  const describeTo = buildIntakeHref(ADD_DESCRIBE_PATH, { date: viewedDate });
+  const scanTo = buildIntakeHref(ADD_PHOTO_PATH, { date: viewedDate });
   const launcherCapture = useCameraCapture({ scanTo });
   const { capture, triggerRef, inputRef, inputProps } = launcherCapture;
   const pressStartRef = useRef<PointerPosition | null>(null);
@@ -164,7 +165,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
               through a bigger halo. The size, the offset and the ring are
               untouched on purpose: three clearances are measured off this box
               (`bottom-nav.tsx`'s `h-14`, `app-wrapper`'s `6rem` of bottom page
-              padding and `/scan`'s sticky action bar), and
+              padding and `/add/photo`'s sticky action bar), and
               `lcc-lineage-shell.spec.ts` freezes all four of its rect values. */}
           <span
             className={cn(
@@ -213,9 +214,9 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
           {/* THE SAME STRIP `/dashboard` AND `/diary` DRAW, given this
               component's camera. Its three keys are the three doors the sheet
               used to hand-roll: type, dictate, photograph. All three carry the
-              viewed day, and none of them points at `/add`, the database
-              search, which answers "which food is this" for one item rather
-              than taking a written meal.
+              viewed day, and none of them points at `/add/search`, the
+              database search, which answers "which food is this" for one item
+              rather than taking a written meal.
 
               `label` is "Type" here, not the strip's own invitation: the
               heading above already says "Add food", and the same words twice,

@@ -24,6 +24,7 @@ import { RepeatYesterdayDoor, RepeatYesterdayGhost } from '#app/components/repea
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Card, CardContent } from '#app/components/ui/card';
+import { ADD_DESCRIBE_PATH } from '#app/lib/intake-hrefs';
 
 export function clientLoader(): null {
   if (!import.meta.env.DEV) throw new Response('Not Found', { status: 404 });
@@ -86,7 +87,7 @@ export default function DevPlayground(): ReactElement {
             <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
               <CardContent className="space-y-3 p-5 sm:p-6">
                 <RepeatYesterdayGhost offer={SAMPLE_OFFER} />
-                <IntakeComposer describeTo="/describe" />
+                <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />
               </CardContent>
             </Card>
           </div>
@@ -95,10 +96,10 @@ export default function DevPlayground(): ReactElement {
         <div className="space-y-6">
           <h2 className="text-lg font-semibold">Add an entry</h2>
           <Sample label="A. Composer strip, write here, camera and mic in the frame">
-            <IntakeComposer describeTo="/describe" />
+            <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />
           </Sample>
           <Sample label="B. Segmented control, one surface split by hairlines">
-            <AddFoodActionsSegmented describeTo="/describe" />
+            <AddFoodActionsSegmented describeTo={ADD_DESCRIBE_PATH} />
           </Sample>
         </div>
 
@@ -115,7 +116,7 @@ export default function DevPlayground(): ReactElement {
           <Sample label="D. Eyebrow line above the add row">
             <div className="space-y-3">
               <RepeatYesterdayEyebrow offer={SAMPLE_OFFER} />
-              <IntakeComposer describeTo="/describe" />
+              <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />
             </div>
           </Sample>
         </div>

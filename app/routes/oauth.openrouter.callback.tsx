@@ -27,6 +27,7 @@ import { verifyProviderKey } from '#app/services/vision/verify-key';
 import { trackAiProviderConnected } from '#app/lib/matomo-events';
 import { reportError } from '#app/lib/report-error';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -147,7 +148,7 @@ function AlreadyConnectedCard() {
     <CardContent className="space-y-4 py-6 text-center">
       <p className="text-sm text-muted-foreground">{t('oauth.callback.alreadyConnected')}</p>
       <Button asChild className="h-11 w-full">
-        <Link to="/scan">{t('oauth.callback.goToScanning')}</Link>
+        <Link to={ADD_PHOTO_PATH}>{t('oauth.callback.goToScanning')}</Link>
       </Button>
     </CardContent>
   );
@@ -161,7 +162,7 @@ function ConnectedCard({ verified }: { verified: boolean }) {
         <p className="text-sm text-emerald-600 dark:text-emerald-400">{t('oauth.callback.connectedVerified')}</p>
       : <p className="text-sm text-muted-foreground">{t('oauth.callback.connectedUnverified')}</p>}
       <Button asChild className="h-11 w-full">
-        <Link to="/scan">{t('oauth.callback.goToScanning')}</Link>
+        <Link to={ADD_PHOTO_PATH}>{t('oauth.callback.goToScanning')}</Link>
       </Button>
     </CardContent>
   );

@@ -2,7 +2,7 @@
 // reference. Versioned named caches with an activate-time purge of stale
 // versions, an app-shell precache with a dedicated /offline fallback, and
 // per-request-type fetch strategies. It also backs the Web Share Target v2 flow
-// by stashing a shared photo for the scan page to pick up.
+// by stashing a shared photo for the /add/photo page to pick up.
 //
 // It deliberately never caches route data or endpoint responses: the single
 // source of offline data is the client-side store, not this worker. Requests
@@ -19,13 +19,20 @@
 // cache entry this time: it is what makes every installed device fetch this
 // file again and pick up the two new handlers, instead of a device that took
 // the old worker staying pushable-but-silent forever.
+// v5 (ADR-0019): `/add` in APP_SHELL became `/add/search`, the database
+// search's real address now that `/add` itself is a redirect. Without the
+// bump, a device that already ran the old shell keeps its stale `/add` entry
+// forever in the same-named cache, and the redirected fetch during precache
+// would never have populated it anyway (`!response.redirected`, same guard
+// `/` uses). The share-target redirect target also moved, from `/scan?shared=1`
+// to `/add/photo?shared=1`; see `handleShareTarget` below.
 // The push decision (what a push shows, where a tap lands) lives apart from
 // this file so it can be unit tested without a service worker. This worker is
 // registered as a classic script, so it loads that copy with `importScripts`
 // rather than a static `import`. It attaches `self.openplatePushDecision`.
 importScripts('/sw-push-decision.js');
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -46,7 +53,7 @@ const MAX_IMAGE_ENTRIES = 60;
 // Neither redirects when fetched directly (verified against the route source,
 // not assumed): `/recover` is a plain top-level page and `/onboarding`'s
 // server `loader` returns `{}` unconditionally, so both cache cleanly here.
-const APP_SHELL = ['/', '/dashboard', '/diary', '/add', '/offline', '/recover', '/onboarding'];
+const APP_SHELL = ['/', '/dashboard', '/diary', '/add/search', '/offline', '/recover', '/onboarding'];
 
 // ---------------------------------------------------------------------------
 // Install, precache the app shell (resiliently)
@@ -136,7 +143,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// Share target, stash the shared photo, redirect into the scan flow
+// Share target, stash the shared photo, redirect into the photo flow
 // ---------------------------------------------------------------------------
 async function handleShareTarget(request) {
   try {
@@ -144,19 +151,19 @@ async function handleShareTarget(request) {
     const photo = formData.get('photo');
     if (photo instanceof File) {
       const cache = await caches.open(SHARE_CACHE);
-      // Store under a synthetic GET key the scan page reads once on mount.
-      // Only stamp a type the sender actually provided, a hardcoded binary
-      // fallback here would defeat the image/jpeg default applied on read-back
-      // and fail photo validation.
+      // Store under a synthetic GET key the /add/photo page reads once on
+      // mount. Only stamp a type the sender actually provided, a hardcoded
+      // binary fallback here would defeat the image/jpeg default applied on
+      // read-back and fail photo validation.
       const headers = { 'X-Shared-Filename': encodeURIComponent(photo.name || 'shared-photo') };
       if (photo.type) headers['Content-Type'] = photo.type;
       await cache.put(SHARED_PHOTO_KEY, new Response(photo, { headers }));
-      return Response.redirect(new URL('/scan?shared=1', self.location.origin).toString(), 303);
+      return Response.redirect(new URL('/add/photo?shared=1', self.location.origin).toString(), 303);
     }
   } catch {
     // Fall through to the plain redirect below.
   }
-  return Response.redirect(new URL('/scan', self.location.origin).toString(), 303);
+  return Response.redirect(new URL('/add/photo', self.location.origin).toString(), 303);
 }
 
 // ---------------------------------------------------------------------------

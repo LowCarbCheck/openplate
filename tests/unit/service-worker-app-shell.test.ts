@@ -43,7 +43,7 @@ test('APP_SHELL precaches /onboarding, so a not-yet-onboarded device can reach i
 
 test('APP_SHELL still precaches the core navigation targets', () => {
   const shell = readAppShell();
-  for (const path of ['/', '/dashboard', '/diary', '/add', '/offline']) {
+  for (const path of ['/', '/dashboard', '/diary', '/add/search', '/offline']) {
     assert.ok(shell.includes(path), `expected APP_SHELL to include ${path}`);
   }
 });

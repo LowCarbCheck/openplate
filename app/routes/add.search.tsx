@@ -96,6 +96,7 @@ import { SectionEyebrow } from '#app/components/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { Camera, ChevronDown, ChevronLeft, Search, Sparkles } from 'lucide-react';
+import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -1731,7 +1732,7 @@ function SearchStep({
       const naturalReturnTo = logContext.date ? `/diary?date=${logContext.date}` : DEFAULT_RETURN_TO;
       if (returnTo !== naturalReturnTo) params.set('returnTo', returnTo);
       const queryString = params.toString();
-      navigate(queryString ? `/add?${queryString}` : '/add', { replace: true });
+      navigate(queryString ? `${ADD_SEARCH_PATH}?${queryString}` : ADD_SEARCH_PATH, { replace: true });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [searchValue, query, returnTo, logContext.date, navigate, isOnline]);
@@ -1748,22 +1749,22 @@ function SearchStep({
   }, []);
 
   // WHETHER THERE IS AN AI TO SEND WORDS TO, and where to send somebody who
-  // has none. The same answer the camera gesture and `/scan` use
+  // has none. The same answer the camera gesture and `/add/photo` use
   // (`useAiIntake`), so no two surfaces can disagree about what this device
   // can do: a BYOK row on an open instance, the account's allowance on a
   // managed one. `unknown` counts as no.
   const { connection: aiConnection, door: aiDoor } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';
-  const scanHref = logContext.date ? `/scan?date=${logContext.date}` : '/scan';
+  const scanHref = logContext.date ? `${ADD_PHOTO_PATH}?date=${logContext.date}` : ADD_PHOTO_PATH;
 
   /**
-   * Hand the words to `/scan` and go there.
+   * Hand the words to `/add/photo` and go there.
    *
    * The intake rides the one-shot hand-off slot rather than a query parameter,
-   * for the same reason a photo does: `/scan` owns the analysis, the review
-   * screen and the confirm, and this screen owns only the words. A query
-   * parameter would additionally put what somebody ate into their browser
-   * history, which is diary content in the address bar.
+   * for the same reason a photo does: `/add/photo` owns the analysis, the
+   * review screen and the confirm, and this screen owns only the words. A
+   * query parameter would additionally put what somebody ate into their
+   * browser history, which is diary content in the address bar.
    */
   const submitToAi = useCallback(
     (text: string, source: TypedIntakeSource): void => {
@@ -1969,7 +1970,7 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
   const logContext: LogDateContext = {
     date: logDate,
     label: logDateLabel,
-    switchToTodayHref: query ? `/add?q=${encodeURIComponent(query)}` : '/add',
+    switchToTodayHref: query ? `${ADD_SEARCH_PATH}?q=${encodeURIComponent(query)}` : ADD_SEARCH_PATH,
   };
 
   if (selected) {

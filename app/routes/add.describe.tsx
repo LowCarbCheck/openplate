@@ -62,7 +62,7 @@ import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
-import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { offerTypedText } from '#app/lib/intake-handoff';
 import { parseIntakeConsumer, type IntakeConsumer } from '#app/lib/intake-consumers';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
@@ -348,7 +348,7 @@ export default function DescribeRoute() {
   const intakeConsumer = parseIntakeConsumer(searchParams.get('to'));
   // Where the words go, carrying the day the person is looking at.
   const intakeHref = buildIntakeHref(intakeConsumer, { date: logDate });
-  const searchHref = logDate === null ? '/add' : `/add?date=${logDate}`;
+  const searchHref = logDate === null ? ADD_SEARCH_PATH : `${ADD_SEARCH_PATH}?date=${logDate}`;
 
   const { connection: aiConnection, door } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';

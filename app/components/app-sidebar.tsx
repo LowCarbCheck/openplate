@@ -92,8 +92,12 @@ export const personalNavigationItems: NavigationItem[] = [
   // in the sidebar.
   { labelKey: 'nav.dashboard', to: '/dashboard', icon: LayoutGrid, group: 'primary' },
   { labelKey: 'nav.diary', to: '/diary', icon: UtensilsCrossed, group: 'primary', tab: { order: 1 } },
-  { labelKey: 'nav.add', to: '/add', icon: Plus, group: 'primary', tab: { order: 3 } },
-  { labelKey: 'nav.scan', to: '/scan', icon: Camera, group: 'primary', tab: { order: 2, raised: true } },
+  // `/add/search` specifically (ADR-0019), not bare `/add`: `activeNavigationHref`
+  // matches this exactly or one level under it, so the row lights up on the
+  // database search and stays dark on `/add/photo`, a sibling rather than a
+  // child of it.
+  { labelKey: 'nav.add', to: '/add/search', icon: Plus, group: 'primary', tab: { order: 3 } },
+  { labelKey: 'nav.scan', to: '/add/photo', icon: Camera, group: 'primary', tab: { order: 2, raised: true } },
   // The fasting timer (M132). No `tab` field, for the same reason `/dashboard`
   // and `/trends` have none: `BottomNav` carries the daily LOGGING loop and its
   // raised centre button needs exactly three slots. A fast is something you

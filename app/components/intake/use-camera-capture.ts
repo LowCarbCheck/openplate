@@ -27,6 +27,7 @@ import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObjec
 import { offerPickedFile } from '#app/lib/intake-handoff';
 import { useAiConnection } from '#app/components/add/use-ai-connection';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
+import { ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 export type CameraCapture = {
   /** Open the camera, synchronously, inside the tap that asked for it. */
@@ -39,12 +40,13 @@ export type CameraCapture = {
   inputProps: ComponentProps<'input'>;
 };
 
-export function useCameraCapture({ scanTo = '/scan' }: { scanTo?: string } = {}): CameraCapture {
+export function useCameraCapture({ scanTo = ADD_PHOTO_PATH }: { scanTo?: string } = {}): CameraCapture {
   const navigate = useAppNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  // Shared with `/add`'s "Log with AI" action, so the two surfaces can never
-  // disagree about whether this device can analyse anything (`useAiConnection`).
+  // Shared with `/add/search`'s "Log with AI" action, so the two surfaces can
+  // never disagree about whether this device can analyse anything
+  // (`useAiConnection`).
   const aiConnection = useAiConnection();
 
   // A dismissed camera fires `cancel`, not `change`. Nothing visible should
