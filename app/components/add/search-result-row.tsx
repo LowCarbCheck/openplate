@@ -8,7 +8,7 @@ import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { matchTierChipClass, type MatchTier } from '#app/lib/match-quality';
 import { cn } from '#app/lib/utils';
 import { Badge } from '#app/components/ui/badge';
-import { LIST_ROW_CLASS } from '#app/components/list-row';
+import { CHIP_NEUTRAL, LIST_ROW_CLASS } from '#app/components/list-row';
 import { ChevronRight } from 'lucide-react';
 
 /**
@@ -171,7 +171,13 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
             defect: names like "Eggs boiled, with remoulade sauce, diluted…"
             were cut off unreadably on one line. */}
         <p className="line-clamp-2 text-sm font-medium">{candidate.name}</p>
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* TWO BLOCKS, NEVER THREE (the dense-pages pass). The per-100g line
+            used to be a third line of its own under the chips, which made a
+            list of eight recent foods twenty-four lines tall and gave every row
+            the same mass as the "your usual" shelf above it. It is a footnote
+            on the chips, so it rides in the chip row, and the row is a name
+            over a facts line. */}
+        <div data-slot="search-result-facts" className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
           {candidate.source !== 'curated' && (
             <Badge
               variant="outline"
@@ -181,7 +187,9 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
             </Badge>
           )}
           {candidate.source === 'curated' && shouldShowMatchTierChip(candidate.matchTier) && (
-            <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', matchTierChipClass[candidate.matchTier])}>
+            <span
+              className={cn('rounded-full px-2 py-0.5 text-xs font-medium', matchTierChipClass[candidate.matchTier])}
+            >
               {t(MATCH_TIER_LABEL_KEYS[candidate.matchTier])}
             </span>
           )}
@@ -190,11 +198,23 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
               {t('add.results.netCarbs', { value: formatMacroNumberIn(i18n.language, preview.netCarbsPer100g) })}
             </span>
           )}
-          {loggedHint && <span className="text-xs text-muted-foreground">{loggedHint}</span>}
+          {/* HOW OFTEN, AS A CHIP. It was a bare grey sentence at the end of
+              the row, which is the quietest thing on it, and it is the one fact
+              that separates the food somebody eats every week from the one they
+              logged once. `CHIP_NEUTRAL` is the named recipe for "a figure
+              beside a label" and carries no colour decision, so a much-logged
+              row gains weight without gaining a hue. */}
+          {loggedHint && (
+            <span data-slot="logged-count" className={cn(CHIP_NEUTRAL, 'text-xs font-medium tabular-nums')}>
+              {loggedHint}
+            </span>
+          )}
+          {summary && (
+            <span className="min-w-0 truncate text-xs text-muted-foreground">
+              {t('add.results.per100g', { summary })}
+            </span>
+          )}
         </div>
-        {summary && (
-          <p className="truncate text-xs text-muted-foreground">{t('add.results.per100g', { summary })}</p>
-        )}
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </button>

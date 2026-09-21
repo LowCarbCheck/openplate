@@ -41,6 +41,16 @@
  * `/onboarding` still clears the hint when the person actually chooses to start
  * fresh, which is where that belongs.
  *
+ * IT SAYS WHOSE APP IT IS. This screen carried no mark and no name at all: a
+ * card with a headline and two buttons, centred on an otherwise empty
+ * background. That reads as a page that failed to finish loading rather than
+ * as a deliberate first question. `/onboarding`, which is the very next screen
+ * for anybody who taps Start, has carried the lockup since the placeholder was
+ * taken off it, so the lockup here is the SAME one and not a second treatment:
+ * the app icon and `Wordmark`, in a row, at the same scale. It sits above the
+ * card and inside the centring, so the pair is centred as one group rather
+ * than the mark being pinned to a top edge the card is nowhere near.
+ *
  * "NOT YOU?" (M183 spec 04) sits beside the prefilled name and clears the
  * account hint, both in storage and in this screen's own state, so "Start"
  * becomes the primary button on the next paint rather than after a reload.
@@ -61,6 +71,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useSyncSession } from '#app/components/sync-status';
+import { Wordmark } from '#app/components/wordmark';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
@@ -288,7 +299,16 @@ export default function Welcome() {
   const session = useSyncSession();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-10 text-foreground">
+      {/* The product's own mark and name, in the one lockup this app draws
+          (`/onboarding`'s header, the sidebar, the public header): the icon
+          asset and `Wordmark`, never a second recipe. `alt=""` because the
+          word beside it already says the name out loud, so a reader with a
+          screen reader hears it once. */}
+      <span data-slot="welcome-brand" className="flex items-center gap-2.5">
+        <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 rounded-full" />
+        <Wordmark besideMark className="text-xl" />
+      </span>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-balance">{t('welcome.title')}</CardTitle>

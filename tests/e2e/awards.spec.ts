@@ -64,6 +64,64 @@ const AWARD_NOTE = fill(EN.awards.note, { title: EN.awards.explorer.log.food.tit
 /** The streak sentence for a person who has used the app on exactly one day. */
 const STREAK_OF_ONE = fill(EN.trends.streak.active_one, { count: '1' });
 
+/**
+ * The two ladder families print their step; the explorer family does not.
+ *
+ * WHAT WAS WRONG. `/awards` draws about sixteen rows, and a streak of three
+ * days and a streak of a hundred were the same object: one title, one pill.
+ * Nothing on the screen said which milestone was near and which was far, and
+ * that stayed true once they were earned, so it was the row's shape and not the
+ * empty state. The catalog already knows the number, so the row prints it.
+ *
+ * WHY THE CHECK IS PER CARD. The thresholds are NOT unique across the screen:
+ * 7, 14, 30 and 100 appear in the activity family and again in the on-plan one.
+ * A ladder is only a ladder inside its own family, so each card is read on its
+ * own and asked for distinct, ASCENDING steps.
+ *
+ * NO COPY IS READ. The titles are wordsmith-owned and get rephrased; the steps
+ * are numbers the catalog owns, which is exactly why they are what this reads.
+ */
+test('a tiered award prints its ladder step and an explorer award does not', async ({ page }) => {
+  await completeOnboarding(page);
+  await page.goto('/awards');
+
+  const cards = page.locator('[data-slot="card"]');
+  await expect(cards.first(), 'the record must draw its families').toBeVisible();
+  // THE THREE FAMILIES: functions tried, days in a row, days at or under goal.
+  await expect(cards).toHaveCount(3);
+  // NON-VACUITY for everything below: the screen really is a long flat list.
+  expect(await page.locator('[data-slot="award-tile"]').count(), 'the record lists every award').toBeGreaterThan(10);
+
+  const perCard = await cards.evaluateAll((sections) =>
+    sections.map((section) =>
+      [...section.querySelectorAll('[data-slot="award-threshold"]')].map((step) =>
+        Number.parseInt(step.textContent ?? '', 10),
+      ),
+    ),
+  );
+
+  const ladders = perCard.filter((steps) => steps.length > 0);
+  const flat = perCard.filter((steps) => steps.length === 0);
+  expect(ladders.length, 'the streak and the on-plan families are ladders').toBe(2);
+  // THE CONTROL. An explorer award has no threshold in the catalog, so it must
+  // print no step at all. Without this the reader would pass on a screen that
+  // stamped a number onto every single row, which differentiates nothing.
+  expect(flat.length, 'the explorer family prints no step').toBe(1);
+
+  for (const steps of ladders) {
+    expect(steps.length, 'a ladder is several rungs').toBeGreaterThan(3);
+    expect(
+      steps.every((step) => Number.isInteger(step) && step > 0),
+      `a step must be a day count: ${steps}`,
+    ).toBe(true);
+    expect(new Set(steps).size, `no two rungs of one ladder may read alike: ${steps}`).toBe(steps.length);
+    const ascending = steps.toSorted((a, b) => a - b);
+    expect(steps, `the rungs must be drawn in order: ${steps}`).toEqual(ascending);
+  }
+
+  await expectPhoneLayout(page);
+});
+
 test('a first logged food earns the explorer award, notes it once, and puts the streak at one', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));

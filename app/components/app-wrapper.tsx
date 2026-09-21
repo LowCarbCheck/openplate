@@ -332,7 +332,22 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                 in the same box and under the same fixed header height, so
                 nothing on this bar moves. There are no toasts any more. */}
             <HeaderStatus>
-              <div className="flex min-w-0 flex-col justify-center gap-px">
+              {/* `gap-1.5`, AND IT IS THE POINT OF THIS COLUMN. It was `gap-px`
+                  until 2026-09-21, which put the brand word 1.67 px of ink above
+                  the page title (measured, `tests/e2e/header-brand-kicker.spec.ts`).
+                  At that distance the two lines are one four-line-tall grey block
+                  on a phone: a reader cannot say which line is the product and
+                  which is the page they are on, and the operator said so of a
+                  diary screenshot. 6 px is about half the kicker's own 12 px body,
+                  which is the classic eyebrow step, and it reads as two ordered
+                  things rather than as padding that was cranked up. 8 px was drawn
+                  beside it and the pair started to drift apart inside the bar.
+
+                  IT COSTS THE BAR NOTHING. The column is 12 + 6 + 17.5 = 35.5 px
+                  inside a `min-h-16` header, so the header's fixed 64 px, which
+                  three other layout budgets are measured off, does not move.
+                  `tests/e2e/lcc-lineage-shell.spec.ts` re-reads that height. */}
+              <div className="flex min-w-0 flex-col justify-center gap-1.5">
                 {/* The wordmark, mobile only. Below `md` the mark to its left is
                     the app's ONLY persistent brand statement, so the word belongs
                     next to it; at `md`+ the sidebar's own `Logo()` renders this
@@ -350,8 +365,27 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
 
                     `Wordmark` renders the literal, lowercase brand string
                     (`APP_NAME`, deliberately outside i18n) in the brand face.
-                    Decorative: the `h1` below names the page for assistive tech. */}
-                <Wordmark aria-hidden="true" className="text-xs leading-none md:hidden" />
+                    Decorative: the `h1` below names the page for assistive tech.
+
+                    THE SIZE STAYS 12 px, and that is a decision, not an
+                    oversight. The pair reads as one blur for two reasons,
+                    proximity and likeness, and only proximity was fixable here.
+                    The title is ON its floor (`HEADER_TITLE_FLOOR_PX`), so it
+                    cannot grow, and the only way left to widen the size ratio
+                    would be to shrink the word, which is the opposite of what
+                    the operator asked for. What separates the two instead is the
+                    gap above and a weight difference of 500 (this word is 100,
+                    the title 600), which is the widest this face offers.
+
+                    `data-slot` because the gap above is now a measured contract
+                    and a measurement needs a handle it cannot lose. Reading "the
+                    span in the header that says openplate" would silently start
+                    reading the drawer's word the day that sheet renders inline. */}
+                <Wordmark
+                  aria-hidden="true"
+                  data-slot="header-brand-kicker"
+                  className="text-xs leading-none md:hidden"
+                />
                 {/* `truncate` because the longest titles ("Sync across devices",
                     "Connecting to OpenRouter", and their longer German
                     translations) would otherwise wrap the header to three lines

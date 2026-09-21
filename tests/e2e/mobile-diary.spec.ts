@@ -569,3 +569,158 @@ test('the entry receipt gives its star the tap floor', async ({ page }) => {
   expect(box, 'the favourite star must have a box').not.toBeNull();
   expect(underFloor([{ width: Math.round(box?.width ?? 0), height: Math.round(box?.height ?? 0) }])).toEqual([]);
 });
+
+////////////////////////////////////////////////////////////////////////////////
+// The day card states each figure once (2026-09-21)
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The four cells the composition block draws under its ratio bar, one per
+ * macro. A count, so a "no gram figures here" claim cannot be satisfied by
+ * deleting the block.
+ */
+const MACRO_CELL_COUNT = 4;
+
+/**
+ * One run of card text as a reader sees it, with every run of whitespace
+ * flattened to a single plain space.
+ *
+ * THE FLATTENING IS THE POINT, not tidiness. `formatMeasureIn` joins a figure
+ * to its unit with U+00A0 while the budget rows' own catalog templates use a
+ * plain space, so the two blocks printed "18 g" and "18 g" with DIFFERENT
+ * bytes between the number and the unit. They render identically, which is why
+ * the audit saw one figure twice, and a byte-for-byte reader would have called
+ * them two different strings and passed.
+ *
+ * @param text - raw `textContent` from the card.
+ * @returns the same text with single plain spaces.
+ */
+function flattenCardText(text: string): string {
+  return text.replace(/\s+/gu, ' ').trim();
+}
+
+/**
+ * Every "<number> g" the given card text prints, normalised.
+ *
+ * `\b` after the unit is what keeps this from matching the first letter of a
+ * word: "2 grams" is not a gram token, "2 g" is.
+ *
+ * @param text - raw `textContent` from the card.
+ * @returns one entry per gram figure, in print order.
+ */
+function gramFigures(text: string): string[] {
+  return Array.from(flattenCardText(text).matchAll(/\d[\d.,]*\s?g\b/gu), (match) => flattenCardText(match[0]));
+}
+
+/**
+ * Every percentage the given card text prints, as numbers, in print order.
+ * German writes "35 %" and the other five "35%", so the space is optional.
+ *
+ * @param text - raw `textContent` from the card.
+ * @returns one entry per percentage.
+ */
+function percentFigures(text: string): number[] {
+  return Array.from(flattenCardText(text).matchAll(/(\d+)\s?%/gu), (match) => Number(match[1]));
+}
+
+/**
+ * The day card used to say the same thing twice.
+ *
+ * `buildDayBudgetRows` pushes a protein, a fat and a fiber row for EVERY
+ * account, unconditionally, and "What you ate" printed those same three gram
+ * figures again a few hundred pixels below as bare numbers. Fat was verbatim
+ * (both sides ran the day's fat through `formatMacroNumberIn`); protein and
+ * fiber were the same quantity at two precisions, whole grams in the row's
+ * caption against one decimal in the cell, which reads as a disagreement
+ * rather than a repeat. A design audit read the card cold and asked why two
+ * similar dark blocks said almost the same thing.
+ *
+ * The claim below is stated on the COMPOSITION block's side, and it is
+ * deliberately not "no number appears in both blocks": on this fixture the
+ * day's fiber is 8 g and fiber's share of the day is 8 %, so a reader that
+ * compared bare numbers would call a correct card broken. A unit carries the
+ * distinction, and the block's whole job is that it states shares, never grams.
+ */
+test('the composition block restates no gram figure the budget rows already state', async ({ page }) => {
+  await seedNarrowDiary(page);
+
+  const rows = page.locator('li:has([data-slot="budget-subline"])');
+  const cells = page.locator('[data-slot="macro-share"]');
+  let rowText = '';
+
+  // English and German: German is the one language that spaces its percent
+  // sign, and the one whose decimal separator is a comma, so a reader that
+  // only ever ran in English would be pinning half the formatting.
+  for (const locale of ['en', 'de'] as const) {
+    await useLanguage(page, locale);
+    await page.goto('/diary');
+    await waitForTheDay(page);
+
+    //////////////////////////////////////////////////////////////////////////
+    // CONTROL: the AMOUNTS half is on screen and still states grams. Without
+    // this the claim would also pass against a card whose budget rows had
+    // stopped rendering, which is not the fix.
+    //////////////////////////////////////////////////////////////////////////
+    expect(await rows.count(), `${locale}: the fixture day must draw budget rows`).toBeGreaterThan(1);
+    rowText = flattenCardText(
+      await rows.evaluateAll((elements) => elements.map((element) => element.textContent ?? '').join(' | ')),
+    );
+    expect(gramFigures(rowText).length, `${locale}: the budget rows must still state the day in grams`).toBeGreaterThan(
+      1,
+    );
+
+    //////////////////////////////////////////////////////////////////////////
+    // CONTROL: the COMPOSITION half still states four figures. Deleting the
+    // cells would satisfy the claim below and lose the ratio bar's legend,
+    // so the cells are counted and each is required to carry a digit.
+    //////////////////////////////////////////////////////////////////////////
+    await expect(cells, `${locale}: the composition block must keep one cell per macro`).toHaveCount(MACRO_CELL_COUNT);
+    const cellTexts = (await cells.allTextContents()).map(flattenCardText);
+    for (const text of cellTexts) {
+      expect(text, `${locale}: every macro cell must state a figure, read "${text}"`).toMatch(/\d/u);
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // THE CLAIM: not one of those cells states a gram figure. Against the
+    // composition before this fix every cell did, so this goes red four times.
+    //////////////////////////////////////////////////////////////////////////
+    expect(
+      cellTexts.filter((text) => gramFigures(text).length > 0),
+      `${locale}: a macro cell repeated a gram figure the budget rows already carry`,
+    ).toEqual([]);
+
+    //////////////////////////////////////////////////////////////////////////
+    // ...and what they state instead is the bar's OWN share, to the bar's own
+    // rounding. A cell that printed some other percentage would be a new
+    // figure rather than a legend, and a sighted reader would be given
+    // different numbers from the ones the bar reads out.
+    //////////////////////////////////////////////////////////////////////////
+    const barText = (await page.locator('[data-slot="macro-ratio-bar"] .sr-only').textContent()) ?? '';
+    expect(percentFigures(barText).length, `${locale}: the bar must read out one share per macro`).toBe(
+      MACRO_CELL_COUNT,
+    );
+    expect(
+      cellTexts.flatMap(percentFigures),
+      `${locale}: the cells must state the same shares the ratio bar reads out`,
+    ).toEqual(percentFigures(barText));
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // THE RED CONTROL. The claim above is an ABSENCE, and an absence passes
+  // against a reader that can see nothing. Put a real gram figure, taken from
+  // a budget row on this very page, back into one cell, exactly as the block
+  // printed before this composition was fixed. The same reader must now name
+  // it. Without this the four expectations above could all be vacuous.
+  //////////////////////////////////////////////////////////////////////////////
+  const smuggled = gramFigures(rowText)[0];
+  expect(smuggled, 'the control needs a real gram figure from a budget row').toBeTruthy();
+  await cells.first().evaluate((element, text) => {
+    element.textContent = text;
+  }, smuggled);
+
+  const afterTexts = (await cells.allTextContents()).map(flattenCardText);
+  expect(
+    afterTexts.filter((text) => gramFigures(text).length > 0),
+    'the reader must report a gram figure smuggled back into a macro cell',
+  ).toEqual([smuggled]);
+});

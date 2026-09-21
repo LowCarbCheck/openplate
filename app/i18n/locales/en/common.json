@@ -596,7 +596,8 @@
     "macroRatio": {
       "empty": "No macros logged yet",
       "label": "Macro ratio: {{ratio}}",
-      "segment": "{{percent}}% {{macro}}"
+      "segment": "{{percent}}% {{macro}}",
+      "share": "{{percent}}%"
     },
     "macros": {
       "breakdownLine": "Carbs {{carbs}} g · Fiber {{fiber}} g · Protein {{protein}} g · Fat {{fat}} g · {{kcal}} calories",
@@ -1262,7 +1263,8 @@
   },
   "meals": {
     "description": "Meals you've saved as a bundle. Log one in a single tap, or remove it here.",
-    "empty": "You haven't saved a meal yet. Save one from the diary: bundle the foods you logged and give them a name.",
+    "emptyLead": "You haven't saved a meal yet.",
+    "howTo": "Save one from the diary: bundle the foods you logged and give them a name.",
     "itemCount_one": "{{count}} food",
     "itemCount_other": "{{count}} foods",
     "logNow": "Log now",

@@ -22,10 +22,11 @@
  * found.
  */
 import type { ReactNode } from 'react';
-import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, type LucideIcon } from 'lucide-react';
 
 import { Link } from '#app/components/link';
-import { SectionEyebrow } from '#app/components/typography';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
+import { SECTION_EYEBROW_CLASS, SectionEyebrow } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
 
 /**
@@ -131,6 +132,76 @@ export function SettingsSection({
       <div data-slot="settings-inset" className={cn(SETTINGS_INSET_CLASS, 'space-y-4 px-4 py-4', contentClassName)}>
         {children}
       </div>
+    </section>
+  );
+}
+
+/**
+ * The reference variant of {@link SettingsSection}: same inset box, same label,
+ * but the label is the control that opens it, and it starts closed.
+ *
+ * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
+ *
+ * `/settings/ai` ended with about ten paragraphs of small grey prose under the
+ * save button: what happens to a photo, what a scan costs, what to try when one
+ * fails. All of it is true and none of it is what a first-time visitor came for,
+ * and at equal weight it pushed the save button off the bottom of a phone. Prose
+ * that answers a question nobody has asked yet is the definition of a thing to
+ * put behind a disclosure.
+ *
+ * ── WHY THE HEADING IS THE TRIGGER ───────────────────────────────────────
+ *
+ * There is no "Show more" label anywhere below, on purpose. A second string
+ * would have to be written, judged and bought in six languages to say what the
+ * section's own heading already says, and a disclosure whose trigger is its
+ * heading is the plainer control anyway. The `<h2>` stays a real heading so the
+ * page keeps its outline; the `<button>` lives inside it, which is the nesting
+ * the HTML allows (a heading may contain a button, never the other way round).
+ *
+ * ── THE BOX ONLY EXISTS WHILE IT IS OPEN ─────────────────────────────────
+ *
+ * No `forceMount` here, unlike the key fields on `/settings/ai`: this variant
+ * carries reference text and never a form control, so nothing is lost by
+ * leaving the DOM while closed, and a closed section costs the page no height
+ * at all. Do not put a field in one.
+ */
+export function SettingsDisclosure({
+  label,
+  children,
+  contentClassName,
+}: {
+  label: string;
+  children: ReactNode;
+  contentClassName?: string;
+}) {
+  return (
+    <section className="space-y-2" data-slot="settings-disclosure">
+      <Collapsible>
+        <h2 className="px-4">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                SECTION_EYEBROW_CLASS,
+                // `group`, because Radix writes `data-state` on the TRIGGER and
+                // the chevron that has to turn is its child.
+                'group flex min-h-11 w-full items-center gap-1.5 text-left transition-colors hover:text-foreground',
+              )}
+            >
+              {label}
+              <ChevronDown
+                className="size-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-180"
+                aria-hidden="true"
+              />
+            </button>
+          </CollapsibleTrigger>
+        </h2>
+        <CollapsibleContent>
+          <div data-slot="settings-inset" className={cn(SETTINGS_INSET_CLASS, 'space-y-4 px-4 py-4', contentClassName)}>
+            {children}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </section>
   );
 }

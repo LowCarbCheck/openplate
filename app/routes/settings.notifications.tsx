@@ -272,7 +272,9 @@ export function CatchUpPreview({ previewLines }: { previewLines: readonly string
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-lg border bg-muted/40 p-3">
+    // `data-slot` so the browser tier can count the previews on screen in any
+    // language: there must be exactly one, whichever branch drew it.
+    <div data-slot="catch-up-preview" className="rounded-lg border bg-muted/40 p-3">
       <p className="text-xs font-medium">{t('settings.notifications.catchUp.preview')}</p>
       {previewLines.length === 0 && (
         <p className="mt-1 text-sm text-muted-foreground">{t('settings.notifications.catchUp.previewEmpty')}</p>
@@ -287,9 +289,15 @@ export function CatchUpPreview({ previewLines }: { previewLines: readonly string
 }
 
 /**
- * The two kinds, the cap line and the save button. Rendered only once the
- * master switch is on, because every control here describes something that
- * would arrive.
+ * The two kinds and the save button. Rendered only once the master switch is
+ * on, because every control here describes something that would arrive.
+ *
+ * THE CAP LINE USED TO BE THE LAST THING IN HERE. "At most two a day" is a
+ * promise about the whole feature, not about the state of one switch, and a
+ * person reading "your browser settings block notifications" is exactly the
+ * person deciding whether it is worth going to fix them. It is the page's own
+ * closing line now (see the page below), so it is true and present in every
+ * state instead of only in the one state that had plenty to say already.
  */
 export function NotificationKinds({
   prefs,
@@ -358,8 +366,6 @@ export function NotificationKinds({
         <Label htmlFor="fast-target-enabled">{t('settings.notifications.fastTarget.label')}</Label>
       </div>
 
-      <p className="text-xs text-muted-foreground">{t('settings.notifications.cap')}</p>
-
       <Button type="button" onClick={onSave} disabled={isSaving} className="h-11 sm:h-9">
         {t(isSaving ? 'settings.notifications.saving' : 'settings.notifications.save')}
       </Button>
@@ -391,6 +397,15 @@ export default function SettingsNotifications() {
   const [previewLines, setPreviewLines] = useState<string[]>([]);
 
   const instancePush = instance?.push === true;
+
+  // WHETHER THE KINDS PANEL IS ON SCREEN, named once because two things below
+  // are decided by it and a reader should not have to spot that they agree.
+  const showsKinds = availability === 'ready' && isOn;
+  // The preview lives INSIDE the kinds panel when that panel is drawn, so the
+  // standalone copy is for every other state: blocked, unsupported, not
+  // installed, this instance sends none, or simply not turned on yet. Never
+  // both at once, and never before the browser facts are readable.
+  const showsStandalonePreview = availability !== null && !showsKinds;
 
   // The environment read, as a function rather than as the body of one effect:
   // a person who leaves for the browser's own settings, allows notifications
@@ -531,7 +546,23 @@ export default function SettingsNotifications() {
   }, [dismissals, isOn, prefs, t]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
+    /**
+     * `min-h-full` and a column, so the page reaches the bottom of the screen
+     * in the states that have almost nothing to say.
+     *
+     * A BLOCKED BROWSER LEFT THIS PAGE 166 PX TALL in a content area of 735 on
+     * a 390 x 844 phone: one grey sentence at the top and bare background for
+     * the rest of it. Four of the five availability states are like that, and
+     * they are the states a person is most likely to arrive in.
+     *
+     * The fix is not to centre the section — no other settings page centres,
+     * and the ready-and-on state is taller than the screen anyway. It is to
+     * put the page's closing line at the BOTTOM of the filled column, and to
+     * say the thing this page exists to say (what would actually arrive) in
+     * the states that never got to show it. When the content outgrows the
+     * area, `mt-auto` has no free space left and everything behaves as before.
+     */
+    <div data-slot="notifications-page" className="mx-auto flex min-h-full max-w-xl flex-col gap-5">
       <SettingsSection
         label={t('settings.notifications.title')}
         description={t('settings.notifications.lead')}
@@ -553,7 +584,7 @@ export default function SettingsNotifications() {
           </div>
         )}
 
-        {availability === 'ready' && isOn && (
+        {showsKinds && (
           <NotificationKinds
             prefs={prefs}
             previewLines={previewLines}
@@ -562,7 +593,24 @@ export default function SettingsNotifications() {
             onSave={() => void handleSave()}
           />
         )}
+
+        {/* WHAT THEY WOULD BE GETTING. This page's whole argument is that
+            nobody should agree to a notification without reading it first, and
+            until now the only reader who ever saw one was the reader who had
+            already agreed. Somebody whose browser blocks notifications is the
+            person weighing up a trip to their browser settings, and this is
+            the sentence that decides it. It is the same component and the same
+            lines the kinds panel draws, over the same device read, so the two
+            cannot disagree. */}
+        {showsStandalonePreview && <CatchUpPreview previewLines={previewLines} />}
       </SettingsSection>
+
+      {/* The promise that closes the page, in every state. `mt-auto` is what
+          makes a two-sentence page end at the bottom of the screen rather than
+          a third of the way down it. */}
+      <p data-slot="notifications-cap" className="mt-auto pt-2 text-xs text-muted-foreground">
+        {t('settings.notifications.cap')}
+      </p>
     </div>
   );
 }
