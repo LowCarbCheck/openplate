@@ -34,7 +34,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import { BODY_STACK, BRAND_STACK, FRAUNCES, GRID_CELL_PX, GRID_LINE_ALPHA, PROSE_STACK } from '../design-contract';
+import { BODY_STACK, BRAND_STACK, GRID_CELL_PX, GRID_LINE_ALPHA, PROSE_STACK } from '../design-contract';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const ROOT_SOURCE = readFileSync(join(ROOT, 'app/root.tsx'), 'utf8');
@@ -170,18 +170,18 @@ describe('the three font roles', () => {
     assert.equal(bodyRoleIs({ css: APP_CSS, stack: BODY_STACK }), true, `--font-body must be exactly: ${BODY_STACK}`);
   });
 
-  it('declares the prose role as Inter and the brand role as Fraunces', () => {
+  it('declares the prose role as Inter and the brand role as Victor Mono, the wordmark\'s', () => {
     assert.deepEqual(valuesOf({ css: APP_CSS, property: '--font-prose' }), [PROSE_STACK]);
     assert.deepEqual(valuesOf({ css: APP_CSS, property: '--font-brand' }), [BRAND_STACK]);
   });
 
-  it('keeps `font-display` as an alias of the brand role, so there is one Fraunces line', () => {
+  it('keeps `font-display` as an alias of the brand role, so there is one line that names the wordmark face', () => {
     assert.deepEqual(valuesOf({ css: APP_CSS, property: '--font-display' }), ['var(--font-brand)']);
   });
 
-  it('lets no rule outside the roles set a face: the only font-family declarations are Fraunces and .prose', () => {
+  it('lets no rule outside the roles set a face: the only font-family declaration is .prose', () => {
     const families = valuesOf({ css: APP_CSS, property: 'font-family' });
-    assert.deepEqual(families.toSorted(), [`'${FRAUNCES}'`, 'var(--font-prose)'].toSorted());
+    assert.deepEqual(families, ['var(--font-prose)']);
   });
 
   it('turns ligatures off on the body, so ->, <= and != typed in a food name are drawn as typed', () => {

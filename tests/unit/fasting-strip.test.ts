@@ -9,8 +9,9 @@
  * Two things this pins that no other test can:
  *
  * 1. **The live figures are `tabular-nums` and never `font-display`.**
- *    DESIGN.md §4, the Fraunces subset carries no tabular figures, so a
- *    minute-ticking number set in it would jitter in width as it updates.
+ *    DESIGN.md §4, `font-display` is the wordmark's brand role and is set at
+ *    weight 100, so a minute-ticking number set in it would be a hairline that
+ *    changes once a minute.
  * 2. **The strip is a LINK, not a Card.** The Overview page's no-scroll budget
  *    is built on this row costing ~57 px; the moment someone "tidies" it into a
  *    `Card` it inherits `p-6` and the arithmetic in `dashboard.tsx`'s header
@@ -119,11 +120,11 @@ describe('FastStripRow', () => {
     assert.ok(/Starts in 3h \d+m/.test(html), `expected a "starts in" countdown: ${html}`);
   });
 
-  it('sets the live figures in tabular-nums and never in the display serif', () => {
+  it('sets the live figures in tabular-nums and never in the brand role', () => {
     const html = render(fastStartedHoursAgo(8));
 
     assert.ok(html.includes('tabular-nums'), 'ticking digits must not shift width as they change');
-    assert.ok(!html.includes('font-display'), 'Fraunces has no tabular figures, never on a live number');
+    assert.ok(!html.includes('font-display'), 'the brand role is the wordmark\'s, never a live number');
   });
 
   it('is a link row, not a card, the Overview height budget depends on it', () => {

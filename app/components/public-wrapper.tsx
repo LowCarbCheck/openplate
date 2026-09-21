@@ -93,7 +93,7 @@ export default function PublicWrapper({
               {showLogo && (
                 <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
                   <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6 rounded-full" />
-                  <Wordmark className="text-lg font-semibold text-foreground" />
+                  <Wordmark besideMark className="text-lg text-foreground" />
                 </a>
               )}
             </HeaderStatus>

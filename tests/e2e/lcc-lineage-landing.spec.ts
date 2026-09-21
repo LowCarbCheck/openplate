@@ -1,5 +1,5 @@
 /**
- * The landing fold: graph paper behind it, one serif on it, and it fits the phone (M243 spec 06).
+ * The landing fold: graph paper behind it, one thin wordmark on it, and it fits the phone (M243 spec 06).
  *
  * WHAT THE SPEC ASKED FOR, and why each claim is read the way it is:
  *
@@ -13,14 +13,15 @@
  * the hard way and whose predicate this file repeats deliberately: two readers of the same shape
  * in two specs is cheaper than one import that makes either spec unreadable on its own).
  *
- * ── THE WORDMARK IS THE ONE SERIF, AND `/diary` IS THE CONTROL ──
- * `<Wordmark/>` owns `font-display` (spec 02), so the landing's `h1` must compute Fraunces. That
- * claim is worth nothing on its own: a check that read "the page has a serif heading" would pass
- * a build where every heading went back to the serif. So the same reader is pointed at `/diary`'s
- * page title, which must NOT be Fraunces. A COMPUTED `font-family` is the declared stack and not
- * the painted face (`lcc-lineage-font.spec.ts` reads the painted face over CDP and is where that
- * claim lives); what is under test here is which ROLE each heading asks for, which is exactly
- * what the declared stack says.
+ * ── THE WORDMARK IS THE ONE THIN HEADING, AND `/diary` IS THE CONTROL ──
+ * `<Wordmark/>` owns the brand role and sets it at weight 100 (2026-09-21, it was Fraunces
+ * before), so the landing's `h1` must compute Victor Mono at weight 100. That claim is worth
+ * nothing on its own: a check that read "the page has a thin heading" would pass a build where
+ * every heading went thin. So the same reader is pointed at `/diary`'s page title, which must NOT
+ * be. A COMPUTED `font-weight` is the declared weight and not the painted one
+ * (`lcc-lineage-font.spec.ts` reads the painted face over CDP and is where that claim lives);
+ * what is under test here is which ROLE each heading asks for, which is what the declared style
+ * says.
  *
  * ── THE PAGE FITS ──
  * `documentElement.scrollWidth` at 390. This is also the regression guard for the hero call to
@@ -36,14 +37,14 @@
  * is AA for normal text. Both themes again, since both the ink and the line move with the theme.
  *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
- * The serif claim has `/diary` as its control. The grid claim has a control that strips the
+ * The wordmark claim has `/diary` as its control. The grid claim has a control that strips the
  * background image off the hero and requires the reader to report no paper. The contrast helper
  * is checked against two colours whose ratio is known (black on white is 21, white on white is 1),
  * so a helper that returned a constant cannot pass.
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { FRAUNCES, GRID_LINE_ALPHA, familyStartsWith } from '../design-contract';
+import { GRID_LINE_ALPHA, VICTOR_MONO, WORDMARK_WEIGHT, familyStartsWith } from '../design-contract';
 import { completeOnboarding } from './helpers';
 
 /** The design width, and the narrowest the app promises to fit. */
@@ -254,25 +255,40 @@ for (const scheme of SCHEMES) {
   });
 }
 
-test('the landing wordmark asks for the brand face, and a page title does not', async ({ page }) => {
+/** The two computed properties the wordmark is told apart by, as a heading reports them. */
+interface ComputedFace {
+  family: string;
+  weight: string;
+}
+
+/** Runs inside the page: what `node` computes for its family and its weight. */
+function readComputedFace(node: Element): ComputedFace {
+  const style = globalThis.getComputedStyle(node);
+  return { family: style.fontFamily, weight: style.fontWeight };
+}
+
+test('the landing wordmark is thin, and a page title is not', async ({ page }) => {
   await openLanding(page, { scheme: 'light', width: DESIGN_WIDTH });
 
   const heading = page.locator('main h1').first();
   await expect(heading, 'the landing must have a heading').toBeVisible();
-  const landingFamily = await heading.evaluate((node) => globalThis.getComputedStyle(node).fontFamily);
-  expect(landingFamily, `the landing wordmark must ask for ${FRAUNCES}, and asks for ${landingFamily}`).toMatch(
-    familyStartsWith(FRAUNCES),
+  const landing = await heading.evaluate(readComputedFace);
+  expect(landing.weight, `the landing wordmark must be weight ${WORDMARK_WEIGHT}, and is ${landing.weight}`).toBe(
+    WORDMARK_WEIGHT,
+  );
+  expect(landing.family, `the landing wordmark must be ${VICTOR_MONO}, and is ${landing.family}`).toMatch(
+    familyStartsWith(VICTOR_MONO),
   );
 
   // CONTROL: the same reader, on the app's own page title, must answer the other way. Without
-  // this the claim would pass a build in which every heading went back to the serif.
+  // this the claim would pass a build in which every heading went thin.
   await completeOnboarding(page);
   await page.goto('/diary');
   const appTitle = page.locator('header.sticky h1').first();
   await expect(appTitle, 'the diary must have a page title').toBeVisible();
-  const appFamily = await appTitle.evaluate((node) => globalThis.getComputedStyle(node).fontFamily);
-  expect(appFamily, `CONTROL: a page title must NOT ask for ${FRAUNCES}, and asks for ${appFamily}`).not.toMatch(
-    familyStartsWith(FRAUNCES),
+  const app = await appTitle.evaluate(readComputedFace);
+  expect(app.weight, `CONTROL: a page title must NOT be weight ${WORDMARK_WEIGHT}, and is ${app.weight}`).not.toBe(
+    WORDMARK_WEIGHT,
   );
 });
 

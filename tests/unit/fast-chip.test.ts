@@ -96,7 +96,7 @@ describe('FastChip, a running fast', () => {
   it('fits inside the header height budget and sets its digits tabular', () => {
     assert.ok(html.includes('min-h-9'), 'the pill must stay under the header`s min-h-16');
     assert.ok(html.includes('tabular-nums'), 'ticking digits must not shift width as they change');
-    assert.ok(!html.includes('font-display'), 'Fraunces has no tabular figures, never on a live number');
+    assert.ok(!html.includes('font-display'), 'the brand role is the wordmark\'s, never a live number');
   });
 });
 

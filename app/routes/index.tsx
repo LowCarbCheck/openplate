@@ -1366,7 +1366,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
             is for the screenshot and the grids, never for a 1024px-long
             sentence. */}
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
-          <Wordmark as="h1" className="text-5xl font-bold tracking-tight sm:text-6xl" />
+          <Wordmark as="h1" className="text-5xl sm:text-6xl" />
           {/* A short brand rule under the wordmark — the smallest possible
               piece of furniture that turns "a heading with paragraphs under
               it" into a composed masthead. */}

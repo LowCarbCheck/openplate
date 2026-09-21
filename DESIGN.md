@@ -189,7 +189,7 @@ there instead of a sweep of the tree.
 | --- | --- | --- | --- |
 | `--font-body` | `'Victor Mono Variable', 'Inter Variable', ui-monospace, monospace` | `font-body` | `<body>`, so the whole app |
 | `--font-prose` | `'Inter Variable', sans-serif` | `font-prose` | `.prose` and the four legal pages |
-| `--font-brand` | `'Fraunces', serif` | `font-display` | the `Wordmark` component, and nothing else |
+| `--font-brand` | `'Victor Mono Variable', ui-monospace, monospace` | `font-display` | the `Wordmark` component, and nothing else |
 
 Three more `--font-*` names sit in the same block and are NOT roles. `--font-sans` and `--font-mono`
 are Tailwind's own variable names, read by the `font-sans` and `font-mono` utilities; they still
@@ -208,19 +208,27 @@ this document does not learn it.
   a 358px column measures about 35 characters per line, below the readable floor, and the German
   terms page grows by 27 percent. lowcarbcheck.org does the same from the other side: seven of its
   densest route containers opt back into the sans face.
-- **The serif is a logotype, not a text face.** Fraunces (`--font-brand`, self-hosted from
-  `public/fonts/`) draws the word "openplate" and nothing else. It used to sit on every card title,
-  the header page title, a live number and nine landing headings, which is the generated-template
-  signature M243 removed. The `Wordmark` component is the only file allowed to write
-  `font-display`, and `tests/unit/wordmark-only-serif.test.ts` fails if the class appears anywhere
-  else under `app/`.
-- **Never a serif on a live figure**, and the rule is now doubly safe: the Fraunces subset has no
-  `tnum` feature, so digits would jitter as they update, and the serif no longer reaches a figure
-  at all. **Keep `tabular-nums` anyway** on every number that changes as you use the app (ring
-  stat, macro grid, gap rows, entry rows). Victor Mono is tabular by construction, so the class is
-  redundant today; it is what makes a rollback to a proportional body face safe.
+- **The wordmark is thin, in two colours, and it is one component.** The word "openplate" is set
+  in the brand role (`--font-brand`, reached through `font-display`) by the `Wordmark` component and
+  nowhere else. The recipe was decided by the operator on 2026-09-21, after judging it against the
+  real fonts: Victor Mono at its lowest weight, 100, tracking `-0.03em`, "open" in brand teal and
+  "plate" in the ink of the place it sits in. It was Fraunces, a display serif, from M129 until then.
+  The role still names the same Victor Mono the body uses, so the wordmark is told apart by weight
+  and colour and no longer by a face of its own. It stays a role so that changing the face of the
+  name is one line, and `tests/unit/wordmark-brand-role.test.ts` fails if the class appears anywhere
+  else under `app/`. Monospace helps here: every letter is 0.6em wide at every weight, so Thin and
+  Bold are the same width and no row around the word reflows.
+- **Centred on the mark by its x-height.** Where the word sits in a row beside the mark, `Wordmark`
+  takes `besideMark`, which lifts it by `0.08em` (1.4 px at 18). A flex row centres the line box, and
+  the eye reads the middle of the lowercase letters, so without the lift the word hangs low.
+  `tests/e2e/wordmark.spec.ts` measures it on a real page to within a pixel. The phone header's
+  kicker and the landing heading have no mark beside them and do not take it.
+- **Never the brand role on a live figure.** It is weight 100, a hairline, and it belongs to a name.
+  **Keep `tabular-nums`** on every number that changes as you use the app (ring stat, macro grid,
+  gap rows, entry rows). Victor Mono is tabular by construction, so the class is redundant today; it
+  is what makes a rollback to a proportional body face safe.
 - Fonts are **self-hosted**, Inter and Victor Mono via `@fontsource-variable/*` imports in
-  `root.tsx` and Fraunces via an `@font-face` block in `app.css`. Never a Google Fonts CDN `<link>`
+  `root.tsx`. There is no other font file: the 67 KB Fraunces file went with the serif. Never a Google Fonts CDN `<link>`
   (openplate is privacy-first and self-hosted, no third-party font beacons).
 - Scale (plain Tailwind, applied consistently). A monospace reads optically larger than Inter at
   the same pixel size, which is why the header title stepped down in M243:
@@ -228,7 +236,7 @@ this document does not learn it.
     14px, and MEASURED: it is the largest whole pixel size at which no route title in any of the
     six languages clips harder than Inter at 18px did, at 390px and at 360px. It is also the floor
     in `tests/design-contract.ts`, so the next clip cannot be "fixed" by shrinking the title.
-  - Landing wordmark: `text-5xl font-bold tracking-tight sm:text-6xl`
+  - Landing wordmark: `text-5xl sm:text-6xl`, the weight and the tracking come from `Wordmark`
   - Card title: `text-lg font-semibold leading-tight tracking-tight text-balance` (the `CardTitle`
     primitive's default; auth and onboarding screens override the size). It is 18px on every card.
     M243 had stepped it to 16px while fourteen Insights cards kept an explicit `text-lg`, so one
@@ -538,8 +546,8 @@ calorie hero.
   stated reason that amber is the one hue whose literal is an accessibility regression rather than
   a stylistic slip; widening the guard to the whole palette is a separate sweep, and a test that
   failed on day one would just be deleted.
-- No `font-display` or `font-brand` outside `app/components/wordmark.tsx`. The serif is the
-  product's name and nothing else (§4), and `tests/unit/wordmark-only-serif.test.ts` fails the
+- No `font-display` or `font-brand` outside `app/components/wordmark.tsx`. The brand role is the
+  product's name and nothing else (§4), and `tests/unit/wordmark-brand-role.test.ts` fails the
   build for any other file that writes either token.
 - No radius outside the five steps in §5, and no radius used as a SELECTOR in a test. Find an
   element by its `data-slot`, never by `div.rounded-2xl.bg-card`.

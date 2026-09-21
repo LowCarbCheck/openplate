@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **Cards on Insights, the dashboard and Fasting now read in a clear order.** Every card title is the same size, 18 px, where half of them were 16 px and half 18 px over the same body text, so a title now stands clear of the line under it. The small labels above a figure, such as "Latest" and "To target" on the weight card, are grey capitals, so they no longer look like the sentences around them. The weight card and the summary of your last 7 days draw a tile only for a figure, and the reason a figure is missing is one line under the row instead of a sentence inside a tile. The three filter groups on the Nutrition tab, Metric, Time span and Meal, are named above their buttons.
+- **The name openplate is now set thin, with the first half in teal, and centred on the mark.** The word beside the mark in the sidebar, the phone menu, the public header and the first screen used to be set in a heavy serif. It is now set in the same monospace face as the rest of the app, at its thinnest weight, with "open" in the brand teal and "plate" in the page ink, and lifted so the middle of its letters sits on the middle of the mark. The big name on the front page and the small name above the page title on a phone follow the same recipe. The serif font file is gone, so the app downloads 67 KB less.
 
 ## [0.37.0] - 2026-09-21
 

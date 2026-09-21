@@ -530,9 +530,9 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
           the public header already use — this was still the generic Layers
           icon in a teal square, i.e. the scaffold placeholder, on the very
           first screen a new user ever sees. */}
-      <span className="flex items-center gap-2.5 font-semibold">
+      <span className="flex items-center gap-2.5">
         <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 rounded-full" />
-        <Wordmark className="text-xl" />
+        <Wordmark besideMark className="text-xl" />
       </span>
       <p className="sr-only">{t('onboarding.stepOf', { current, total: ONBOARDING_STEPS.length })}</p>
       <div className="flex items-center gap-2">

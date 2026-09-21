@@ -76,12 +76,12 @@ describe('CardTitle', () => {
     assert.ok(!classes.includes('text-base'), 'the M243 text-base default must be gone');
   });
 
-  it('does NOT carry the display serif: card titles are in the body face', () => {
+  it('does NOT carry the brand role: card titles are in the body face', () => {
     const classes = classListOf(renderToStaticMarkup(createElement(CardTitle, {}, 'This week')));
-    assert.ok(!classes.includes('font-display'), 'a serif card title is the template signature M243 removed');
+    assert.ok(!classes.includes('font-display'), 'a card title in the brand role is the template signature M243 removed');
   });
 
-  it('CONTROL: the same reader sees the serif when it is there, on a caller override and on the wordmark', () => {
+  it('CONTROL: the same reader sees the brand role when it is there, on a caller override and on the wordmark', () => {
     // A reader that could never see `font-display` would pass the absence test above
     // for the wrong reason. Two renders that DO carry it prove it can fail: a caller
     // pushing the class onto a title, and the wordmark, which is the one element that
@@ -92,7 +92,7 @@ describe('CardTitle', () => {
     assert.ok(overridden.includes('font-display'), 'a caller override must be visible to the reader');
 
     const wordmark = classListOf(renderToStaticMarkup(createElement(Wordmark)));
-    assert.ok(wordmark.includes('font-display'), 'the wordmark is the positive control: it wears the serif');
+    assert.ok(wordmark.includes('font-display'), 'the wordmark is the positive control: it wears the brand role');
   });
 
   it('still accepts a caller override (e.g. auth screens at text-xl)', () => {

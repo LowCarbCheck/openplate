@@ -15,10 +15,10 @@
  *   five lines of it in a third of the card, stretching its neighbours.
  *
  * Every figure is `tabular-nums` in the page's own body face, and never the
- * brand serif. The comment here used to name `font-sans` and to allow the serif
+ * brand role. The comment here used to name `font-sans` and to allow the serif
  * on a hero number; both went in M243. The body role is one face now
  * (`--font-body`), and the `Wordmark` component is the only thing in the app
- * that may ask for the serif. The tile itself, and the ladder inside it, is
+ * that may ask for the brand role. The tile itself, and the ladder inside it, is
  * `StatTile`.
  */
 import { useTranslation } from 'react-i18next';

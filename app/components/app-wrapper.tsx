@@ -160,7 +160,7 @@ function NavDrawer() {
           <SheetTitle className="flex items-center gap-2 text-lg">
             <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7 rounded-lg" />
             {/* The product name is a proper noun, never translated. */}
-            <Wordmark />
+            <Wordmark besideMark />
           </SheetTitle>
           <SheetDescription className="sr-only">{t('chrome.navDrawerDescription')}</SheetDescription>
         </SheetHeader>
@@ -344,12 +344,14 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                     content block below" everywhere else in the app, so wearing
                     it made the brand read as a category kicker for the page
                     title rather than as the product name. A wordmark is set like
-                    a wordmark: normal tracking, lowercase, brand-teal.
+                    a wordmark: lowercase, thin, "open" in brand teal and "plate" in
+                    the ink of the header. The recipe lives in `Wordmark`, so this
+                    call passes a size and nothing else.
 
                     `Wordmark` renders the literal, lowercase brand string
                     (`APP_NAME`, deliberately outside i18n) in the brand face.
                     Decorative: the `h1` below names the page for assistive tech. */}
-                <Wordmark aria-hidden="true" className="text-xs font-semibold leading-none text-primary md:hidden" />
+                <Wordmark aria-hidden="true" className="text-xs leading-none md:hidden" />
                 {/* `truncate` because the longest titles ("Sync across devices",
                     "Connecting to OpenRouter", and their longer German
                     translations) would otherwise wrap the header to three lines
