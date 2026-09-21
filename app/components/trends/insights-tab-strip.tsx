@@ -7,7 +7,8 @@
  *
  * `grid-cols-4`, not a wrapping flex row: four equal columns can never
  * scroll sideways, which is the phone-first budget this strip is written
- * against (checked at 360 px).
+ * against (checked at 360 px). From 48rem of room it stops stretching across
+ * the whole page and sits at the width of its four labels, eight rem each.
  */
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
@@ -76,7 +77,7 @@ export function InsightsTabStrip({
       role="tablist"
       aria-label={t('trends.title')}
       data-slot="insights-tab-strip"
-      className="grid grid-cols-4 gap-1 rounded-lg border bg-card p-1"
+      className="grid grid-cols-4 gap-1 rounded-lg border bg-card p-1 @3xl:w-fit @3xl:[grid-template-columns:repeat(4,minmax(8rem,1fr))]"
     >
       {INSIGHTS_TABS.map((tab) => {
         const isActive = tab === active;

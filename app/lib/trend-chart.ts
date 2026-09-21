@@ -37,7 +37,13 @@ import type { MealType } from '#types/enums';
 export type TrendMetric = 'net-carbs' | 'calories' | 'protein' | 'fat' | 'fiber';
 
 /** Every metric, in the order the metric control lists them. */
-export const TREND_METRICS = ['net-carbs', 'calories', 'protein', 'fat', 'fiber'] as const satisfies readonly TrendMetric[];
+export const TREND_METRICS = [
+  'net-carbs',
+  'calories',
+  'protein',
+  'fat',
+  'fiber',
+] as const satisfies readonly TrendMetric[];
 
 /** The metric the chart opens on when the URL names none. */
 export const DEFAULT_TREND_METRIC: TrendMetric = 'net-carbs';
@@ -343,6 +349,38 @@ function _fractionOf({ value, domainMax }: { value: number | null; domainMax: nu
 /** Narrows to a day whose macro summary is present (i.e. it has logs). */
 function _isSummarized(day: TrendDay): day is SummarizedDay {
   return day.summary !== null;
+}
+
+/** How many equal bands the labelled axis aims to cut the plot into. */
+const AXIS_BANDS = 4;
+
+/** The mantissas a gridline step may take, so an axis reads 25, 50, 75 and never 33.3. */
+const AXIS_STEP_MANTISSAS = [1, 2, 2.5, 5, 10] as const;
+
+/**
+ * The labelled gridlines of the vertical axis, from the lowest above zero up to
+ * the last one that fits under `domainMax`. Zero is the baseline the chart
+ * already draws, so it is not in the list.
+ *
+ * The step comes from `AXIS_STEP_MANTISSAS`, the smallest one that keeps the
+ * plot to at most `AXIS_BANDS` bands, so every label is a round number on every
+ * scale (15 gives 5, 10, 15; 40 gives 10, 20, 30, 40; 1500 gives 500, 1000, 1500).
+ * The top of the axis is not always a gridline: a 25 g axis is labelled 10 and
+ * 20, because 25 is not a multiple of the step, and the goal tag or the bar
+ * tooltip is what carries the exact figure.
+ *
+ * @param domainMax - the axis top from `buildTrendChart`.
+ * @returns the values to label and to draw a gridline at, ascending; empty for a non-positive axis.
+ */
+export function chartAxisTicks(domainMax: number): number[] {
+  if (!(domainMax > 0)) return [];
+  const rough = domainMax / AXIS_BANDS;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+  const step =
+    (AXIS_STEP_MANTISSAS.find((mantissa) => mantissa * magnitude >= rough - Number.EPSILON) ?? 10) * magnitude;
+  const ticks: number[] = [];
+  for (let index = 1; index * step <= domainMax + step * 1e-9; index++) ticks.push(Number((index * step).toFixed(6)));
+  return ticks;
 }
 
 /** The vertical axis top: a nice ceiling above every positive value and the goal. */

@@ -15,6 +15,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '#app/components/ui/tooltip';
 import { MACRO_SWATCH_CLASS } from '#app/components/macro-ratio-bar';
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { computeMacroEnergySplit, computeRangeEnergySplit } from '#app/lib/macro-energy-split';
@@ -42,6 +43,9 @@ const MACRO_NOUN_KEY = {
   fat: 'diary.nutrients.fat',
 } satisfies Record<SplitMacro, string>;
 
+/** How long the pointer rests on a row before its tooltip opens; the bar chart and the adherence grid use the same figure. */
+const TOOLTIP_DELAY_MS = 80;
+
 /** The i18next `t` shape this module needs. */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
 
@@ -61,7 +65,8 @@ function describeShares({ shares, t }: { shares: MacroEnergyShares; t: Translate
 
 /** The accessible sentence for one row, including why a row has no split. */
 function describeRow({ row, dateLabel, t }: { row: SplitRow; dateLabel: string; t: Translate }): string {
-  if (row.shares !== null) return t('trends.split.row', { date: dateLabel, ratio: describeShares({ shares: row.shares, t }) });
+  if (row.shares !== null)
+    return t('trends.split.row', { date: dateLabel, ratio: describeShares({ shares: row.shares, t }) });
   if (!row.hasLogs) return t('trends.chart.bar.empty', { date: dateLabel });
   return t('trends.split.partial', { date: dateLabel });
 }
@@ -72,7 +77,14 @@ function describeRow({ row, dateLabel, t }: { row: SplitRow; dateLabel: string; 
  */
 function SplitBar({ shares, date }: { shares: MacroEnergyShares | null; date: string }) {
   if (shares === null) {
-    return <div data-slot="macro-split-bar" data-date={date} data-state="none" className="h-2.5 w-full rounded-full bg-muted" />;
+    return (
+      <div
+        data-slot="macro-split-bar"
+        data-date={date}
+        data-state="none"
+        className="h-2.5 w-full rounded-full bg-muted"
+      />
+    );
   }
   return (
     <div
@@ -145,21 +157,32 @@ export function MacroEnergySplitCard({ days, isWeekly }: { days: readonly TrendD
           {rows.map((row) => {
             const dateLabel = isWeekly ? t('trends.chart.bar.week', { date: labelOf(row.date) }) : labelOf(row.date);
             return (
-              <li key={row.date} data-slot="macro-split-row" data-date={row.date} className="flex items-center gap-3">
-                {/* `w-32` and no `truncate`: "Woche vom 14. Sept." needs 121px,
+              <Tooltip key={row.date} delayDuration={TOOLTIP_DELAY_MS}>
+                {/* The whole row is the target and not the 10 px bar: the label
+                    and the bar are one thing to a pointer, and the sentence is
+                    the row's own screen-reader sentence (2026-09-21, the
+                    operator asked for hovers on the charts). */}
+                <TooltipTrigger asChild>
+                  <li data-slot="macro-split-row" data-date={row.date} className="flex items-center gap-3">
+                    {/* `w-32` and no `truncate`: "Woche vom 14. Sept." needs 121px,
                     and every German row used to read "Woche vom 22..." with the
                     one thing that tells the rows apart cut off. */}
-                <span
-                  aria-hidden="true"
-                  className="w-32 shrink-0 break-words text-xs tabular-nums text-muted-foreground"
-                >
-                  {dateLabel}
-                </span>
-                <span className="sr-only">{describeRow({ row, dateLabel, t })}</span>
-                <div className="min-w-0 flex-1">
-                  <SplitBar shares={row.shares} date={row.date} />
-                </div>
-              </li>
+                    <span
+                      aria-hidden="true"
+                      className="w-32 shrink-0 break-words text-xs tabular-nums text-muted-foreground"
+                    >
+                      {dateLabel}
+                    </span>
+                    <span className="sr-only">{describeRow({ row, dateLabel, t })}</span>
+                    <div className="min-w-0 flex-1">
+                      <SplitBar shares={row.shares} date={row.date} />
+                    </div>
+                  </li>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-72">
+                  {describeRow({ row, dateLabel, t })}
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </ul>

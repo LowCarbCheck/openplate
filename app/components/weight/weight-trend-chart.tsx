@@ -33,6 +33,11 @@ interface WeightTrendChartProps {
   activeIndex: number | null;
   /** Raised as the pointer/keyboard moves across the chart — the PARENT owns the caption readout. */
   onActiveIndexChange: (index: number | null) => void;
+  /**
+   * The parent's readout of the active weigh-in ("Sat 12 Jul · 84.6 kg on the scale · 84.9 kg trend"), drawn as a
+   * tooltip on the point itself as well as in the caption under the chart. Null draws no tooltip.
+   */
+  readout?: string | null;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -56,6 +61,10 @@ const PLOT_BOTTOM = VIEW_HEIGHT - 14;
 const CROWDED_DOT_COUNT = 40;
 /** How many horizontal gridlines the axis aims for. */
 const TICK_COUNT = 4;
+/** A point this close to either end (as a share of the plot width) pins its tooltip to that edge. */
+const TOOLTIP_EDGE_SHARE = 0.2;
+/** A point higher than this share of the plot height puts its tooltip below it instead of above. */
+const TOOLTIP_FLIP_SHARE = 0.25;
 
 /**
  * Hand-rolled inline-SVG weight-trend chart (DESIGN.md §7 — no chart library):
@@ -84,6 +93,7 @@ export function WeightTrendChart({
   weightUnit,
   activeIndex,
   onActiveIndexChange,
+  readout = null,
 }: WeightTrendChartProps) {
   const geometry = useMemo(
     () => _buildGeometry({ points, targetWeightKg, today, weightUnit }),
@@ -246,6 +256,33 @@ export function WeightTrendChart({
               top: `${(activeTrend.y / VIEW_HEIGHT) * 100}%`,
             }}
           />
+        )}
+
+        {/* THE READOUT AT THE POINT (2026-09-21). The caption under the chart has
+            always said what the crosshair is on, but it sits a screen's width
+            from the point, and the operator asked for a tooltip. It is the same
+            string as the caption, placed above the higher of the two marks so it
+            covers neither, below them when they sit near the top of the plot, and
+            pinned to the near edge when the point is within a fifth of either end
+            so it never leaves the card. */}
+        {readout !== null && active !== null && activeTrend !== null && (
+          <span
+            data-slot="weight-tooltip"
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute z-10 whitespace-nowrap rounded-md bg-foreground px-3 py-1.5 text-xs text-background shadow-md',
+              active.x < VIEW_WIDTH * TOOLTIP_EDGE_SHARE ? 'translate-x-[-12px]'
+              : active.x > VIEW_WIDTH * (1 - TOOLTIP_EDGE_SHARE) ? 'translate-x-[calc(-100%+12px)]'
+              : '-translate-x-1/2',
+              Math.min(active.y, activeTrend.y) < VIEW_HEIGHT * TOOLTIP_FLIP_SHARE ? 'mt-4' : '-translate-y-full -mt-3',
+            )}
+            style={{
+              left: `${(active.x / VIEW_WIDTH) * 100}%`,
+              top: `${(Math.min(active.y, activeTrend.y) / VIEW_HEIGHT) * 100}%`,
+            }}
+          >
+            {readout}
+          </span>
         )}
 
         {/* Transparent hit layer: snapping is by x only, so a reader never has to

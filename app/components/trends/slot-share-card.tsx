@@ -18,6 +18,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '#app/components/ui/tooltip';
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { MEAL_LABEL_KEYS } from '#app/lib/meal-choice';
 import { SLOT_SHARE_KEYS } from '#app/lib/slot-stats';
@@ -39,29 +40,45 @@ const SLOT_LABEL_KEY = {
   noSlot: 'trends.meals.noMealSet',
 } satisfies Record<keyof SlotShareBucket, string>;
 
+/** How long the pointer rests on a row before its tooltip opens; the bar chart and the adherence grid use the same figure. */
+const TOOLTIP_DELAY_MS = 80;
+
 /** The i18next `t` shape this module needs. */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
 
 /** "Breakfast 40%, Lunch 20%, Dinner 30%, Snack 5%, No meal set 5%", the split in words. */
 function describeShares({ shares, t }: { shares: SlotShareBucket; t: Translate }): string {
-  return SLOT_SHARE_KEYS.map((key) => t('trends.meals.share.segment', { meal: t(SLOT_LABEL_KEY[key]), percent: Math.round(shares[key]) })).join(
-    ', ',
-  );
+  return SLOT_SHARE_KEYS.map((key) =>
+    t('trends.meals.share.segment', { meal: t(SLOT_LABEL_KEY[key]), percent: Math.round(shares[key]) }),
+  ).join(', ');
 }
 
 /** The accessible sentence for one row, including why a row has no split. */
 function describeRow({ row, dateLabel, t }: { row: SlotShareRow; dateLabel: string; t: Translate }): string {
-  if (row.shares !== null) return t('trends.meals.share.row', { date: dateLabel, ratio: describeShares({ shares: row.shares, t }) });
+  if (row.shares !== null)
+    return t('trends.meals.share.row', { date: dateLabel, ratio: describeShares({ shares: row.shares, t }) });
   return t('trends.chart.bar.empty', { date: dateLabel });
 }
 
 /** One 100 percent stacked bar, or an empty track when the day/week has no split. */
 function ShareBar({ shares, date }: { shares: SlotShareBucket | null; date: string }) {
   if (shares === null) {
-    return <div data-slot="slot-share-bar" data-date={date} data-state="none" className="h-2.5 w-full rounded-full bg-muted" />;
+    return (
+      <div
+        data-slot="slot-share-bar"
+        data-date={date}
+        data-state="none"
+        className="h-2.5 w-full rounded-full bg-muted"
+      />
+    );
   }
   return (
-    <div data-slot="slot-share-bar" data-date={date} data-state="split" className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
+    <div
+      data-slot="slot-share-bar"
+      data-date={date}
+      data-state="split"
+      className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted"
+    >
       {SLOT_SHARE_KEYS.map((key, index) => (
         <div
           key={key}
@@ -104,14 +121,20 @@ export function SlotShareCard({
   metric: SlotShareMetric;
 }) {
   const { t, i18n } = useTranslation();
-  const formatDate = new Intl.DateTimeFormat(dateLabelLocale(i18n.language), { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const formatDate = new Intl.DateTimeFormat(dateLabelLocale(i18n.language), {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
   const labelOf = (date: string): string => formatDate.format(new Date(`${date}T00:00:00Z`));
 
   return (
     <Card data-slot="slot-share-card">
       <CardHeader className="space-y-1">
         <CardTitle>{t('trends.meals.share.title')}</CardTitle>
-        <CardDescription>{t(metric === 'kcal' ? 'trends.meals.share.descriptionCalories' : 'trends.meals.share.descriptionNetCarbs')}</CardDescription>
+        <CardDescription>
+          {t(metric === 'kcal' ? 'trends.meals.share.descriptionCalories' : 'trends.meals.share.descriptionNetCarbs')}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <ShareLegend t={t} />
@@ -119,21 +142,32 @@ export function SlotShareCard({
           {rows.map((row) => {
             const dateLabel = isWeekly ? t('trends.chart.bar.week', { date: labelOf(row.date) }) : labelOf(row.date);
             return (
-              <li key={row.date} data-slot="slot-share-row" data-date={row.date} className="flex items-center gap-3">
-                {/* `w-32` and no `truncate`: "Woche vom 14. Sept." needs 121px,
+              <Tooltip key={row.date} delayDuration={TOOLTIP_DELAY_MS}>
+                {/* The whole row is the target and not the 10 px bar: the label
+                    and the bar are one thing to a pointer, and the sentence is
+                    the row's own screen-reader sentence (2026-09-21, the
+                    operator asked for hovers on the charts). */}
+                <TooltipTrigger asChild>
+                  <li data-slot="slot-share-row" data-date={row.date} className="flex items-center gap-3">
+                    {/* `w-32` and no `truncate`: "Woche vom 14. Sept." needs 121px,
                     and every German row used to read "Woche vom 22..." with the
                     one thing that tells the rows apart cut off. */}
-                <span
-                  aria-hidden="true"
-                  className="w-32 shrink-0 break-words text-xs tabular-nums text-muted-foreground"
-                >
-                  {dateLabel}
-                </span>
-                <span className="sr-only">{describeRow({ row, dateLabel, t })}</span>
-                <div className="min-w-0 flex-1">
-                  <ShareBar shares={row.shares} date={row.date} />
-                </div>
-              </li>
+                    <span
+                      aria-hidden="true"
+                      className="w-32 shrink-0 break-words text-xs tabular-nums text-muted-foreground"
+                    >
+                      {dateLabel}
+                    </span>
+                    <span className="sr-only">{describeRow({ row, dateLabel, t })}</span>
+                    <div className="min-w-0 flex-1">
+                      <ShareBar shares={row.shares} date={row.date} />
+                    </div>
+                  </li>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-72">
+                  {describeRow({ row, dateLabel, t })}
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </ul>

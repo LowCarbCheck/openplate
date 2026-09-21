@@ -34,8 +34,11 @@
  * gap, and the daily ranges gain a 7-day average line.
  */
 import { Link } from '#app/components/link';
+import { Tooltip, TooltipContent, TooltipTrigger } from '#app/components/ui/tooltip';
 import { useTranslation } from 'react-i18next';
+import { chartAxisTicks } from '#app/lib/trend-chart';
 import type { BarFill, BarGeometry, TrendChartModel, TrendMetric } from '#app/lib/trend-chart';
+import { formatDayLabel } from '#app/lib/format-day-label';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
 
@@ -46,6 +49,15 @@ import { cn } from '#app/lib/utils';
  */
 type Translate = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) => string;
 
+/**
+ * How long the pointer rests on a bar before its tooltip opens. The adherence
+ * grid uses the same figure, so two charts on one screen do not feel different.
+ */
+const TOOLTIP_DELAY_MS = 80;
+/** The plot's height: 176 px, and 240 px once the page has room for two columns, where a 1000 px wide plot at 176 px reads as a strip. */
+const PLOT_HEIGHT_CLASS = 'h-44 @3xl:h-60';
+/** Width of the y-axis label gutter: four digits ("2400") at the 12 px body size, and no more. */
+const AXIS_GUTTER_CLASS = 'w-9';
 /** Above this many bars the day axis prints every second label, so two-digit days never crowd. */
 const DENSE_AXIS_BARS = 10;
 /** SVG plot height in user units (bars grow up from `PLOT_HEIGHT`). */
@@ -349,11 +361,24 @@ const BAR_SENTENCE_KEY = {
  * starting on its Monday, and a valued weekly bar says its figure is a daily
  * average, so a screen reader never hears one week's mean as one day's total.
  */
-function barDateLabel({ bar, isWeekly, t }: { bar: BarGeometry; isWeekly: boolean; t: Translate }): string {
-  if (!isWeekly) return bar.date;
+function barDateLabel({
+  bar,
+  isWeekly,
+  t,
+  formatDate,
+}: {
+  bar: BarGeometry;
+  isWeekly: boolean;
+  t: Translate;
+  formatDate: (date: string) => string;
+}): string {
+  if (!isWeekly) return formatDate(bar.date);
   const hasValue = bar.fill !== 'empty' && bar.value !== null;
-  return t(hasValue ? 'trends.chart.bar.weekAverage' : 'trends.chart.bar.week', { date: bar.date });
+  return t(hasValue ? 'trends.chart.bar.weekAverage' : 'trends.chart.bar.week', { date: formatDate(bar.date) });
 }
+
+/** The date exactly as stored, `YYYY-MM-DD`, which is what a screen reader has always been read. */
+const isoDate = (date: string): string => date;
 
 /**
  * A human sentence for a bar's tappable link (its accessible name).
@@ -370,14 +395,17 @@ export function describeBar({
   isWeekly,
   t,
   language,
+  formatDate = isoDate,
 }: {
   bar: BarGeometry;
   metric: TrendMetric;
   isWeekly: boolean;
   t: Translate;
   language: string;
+  /** How the bar names its day. The screen-reader name keeps the ISO date; the tooltip passes `formatDayLabel`. */
+  formatDate?: (date: string) => string;
 }): string {
-  const date = barDateLabel({ bar, isWeekly, t });
+  const date = barDateLabel({ bar, isWeekly, t, formatDate });
   if (bar.fill === 'empty') return t('trends.chart.bar.empty', { date });
   if (bar.value === null) return t('trends.chart.bar.incomputable', { date });
   const sentence = t(BAR_SENTENCE_KEY[metric], {
@@ -454,9 +482,34 @@ function goalTagLabel(goalValue: number, metric: TrendMetric, language: string):
 }
 
 /**
- * The bar chart: an SVG plot plus an overlaid tappable-link grid and a plain
- * day-of-month axis. No reserved gutter: the goal tag draws over the top of
- * the plot instead, so every pixel of the card's width belongs to the bars.
+ * The y-axis label for a gridline: whole calories, otherwise the reader's own
+ * number format ("7,5" in German), with no unit because the goal tag and the
+ * tooltip carry it.
+ */
+function axisLabel(value: number, metric: TrendMetric, language: string): string {
+  return metric === 'calories' ? `${Math.round(value)}` : formatMacroNumberIn(language, value);
+}
+
+/**
+ * The bar chart: an SVG plot, a y axis of labelled gridlines, an overlaid
+ * tappable-link grid with a tooltip on every day, and a plain day-of-month axis.
+ *
+ * ── WHAT A PERSON CAN READ WITHOUT TAPPING (2026-09-21) ──────────────────
+ *
+ * The operator said the charts needed hovers, tooltips and labels. The bars had
+ * none of the three: no scale, so "how tall is tall" was a guess, and no way to
+ * read one day's figure short of opening the diary. Now there is a gutter of
+ * round-number labels on the left with a faint gridline at each, and a tooltip
+ * on the day under the pointer or the keyboard focus, saying what the bar's
+ * screen-reader name says (`describeBar`) with the day written as a person
+ * writes it. A touch screen gets no tooltip: a tap on a bar opens that day's
+ * diary, which is the better answer there, and Radix does not open a tooltip
+ * from a touch in any case.
+ *
+ * The gutter costs the bars 36 px of a 360 px phone. The old comment here said
+ * a 44 px gutter left the day labels two pixels apart on a 320 px phone; 36 px
+ * carries four digits and no more, and a 14-day chart still gives each day
+ * about 17 px.
  *
  * Each bar is a link to that day's diary. It is as wide as its own column and
  * cannot be widened without overlapping its neighbour, so the 44px touch rule
@@ -478,64 +531,113 @@ export function TrendChart({
   /** The rolling-average line, one height fraction per bar; null draws no line (weekly bars never get one). */
   averageFractions?: readonly (number | null)[] | null;
 }) {
-  const { bars, goalFraction } = model;
+  const { bars, goalFraction, domainMax } = model;
   const { t, i18n } = useTranslation();
   const width = bars.length * SLOT_WIDTH;
+  const ticks = chartAxisTicks(domainMax);
+  const formatDate = (date: string): string => formatDayLabel(date, i18n.language);
   return (
-    <div>
-      <div className="relative h-44">
-        <svg
-          viewBox={`0 0 ${width} ${PLOT_HEIGHT}`}
-          preserveAspectRatio="none"
-          className="h-full w-full"
-          aria-hidden="true"
-        >
-          <line
-            x1={0}
-            y1={PLOT_HEIGHT}
-            x2="100%"
-            y2={PLOT_HEIGHT}
-            className="text-border"
-            stroke="currentColor"
-            strokeWidth={1}
-            vectorEffect="non-scaling-stroke"
-          />
-          {goalFraction !== null && <GoalLine goalFraction={goalFraction} />}
-          {bars.map((bar, index) => (
-            <BarColumn key={bar.date} bar={bar} index={index} metric={metric} />
+    <div data-slot="trend-chart">
+      <div className="flex gap-1.5">
+        <div aria-hidden="true" className={cn('relative shrink-0', PLOT_HEIGHT_CLASS, AXIS_GUTTER_CLASS)}>
+          {ticks.map((tick) => (
+            <span
+              key={tick}
+              data-slot="chart-axis-label"
+              className="absolute right-0 -translate-y-1/2 text-xs tabular-nums text-muted-foreground"
+              style={{ top: `${(1 - tick / domainMax) * 100}%` }}
+            >
+              {axisLabel(tick, metric, i18n.language)}
+            </span>
           ))}
-          {averageFractions !== null && <AverageLine fractions={averageFractions} />}
-        </svg>
-        {goalFraction !== null && goalValue !== null && (
-          <GoalTag goalFraction={goalFraction} label={goalTagLabel(goalValue, metric, i18n.language)} />
-        )}
-        <div className="absolute inset-0 flex">
-          {bars.map((bar) => (
-            <Link
-              key={bar.date}
-              to={`/diary?date=${bar.date}`}
-              aria-label={describeBar({ bar, metric, isWeekly, t, language: i18n.language })}
-              className="min-h-11 flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <span
+            data-slot="chart-axis-label"
+            className="absolute bottom-0 right-0 translate-y-1/2 text-xs tabular-nums text-muted-foreground"
+          >
+            0
+          </span>
+        </div>
+        <div className={cn('relative min-w-0 flex-1', PLOT_HEIGHT_CLASS)}>
+          <svg
+            viewBox={`0 0 ${width} ${PLOT_HEIGHT}`}
+            preserveAspectRatio="none"
+            className="h-full w-full"
+            aria-hidden="true"
+          >
+            {ticks.map((tick) => {
+              const y = PLOT_HEIGHT * (1 - tick / domainMax);
+              return (
+                <line
+                  key={tick}
+                  data-slot="chart-gridline"
+                  x1={0}
+                  y1={y}
+                  x2="100%"
+                  y2={y}
+                  className="text-border"
+                  stroke="currentColor"
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+            <line
+              x1={0}
+              y1={PLOT_HEIGHT}
+              x2="100%"
+              y2={PLOT_HEIGHT}
+              className="text-border"
+              stroke="currentColor"
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
             />
-          ))}
+            {goalFraction !== null && <GoalLine goalFraction={goalFraction} />}
+            {bars.map((bar, index) => (
+              <BarColumn key={bar.date} bar={bar} index={index} metric={metric} />
+            ))}
+            {averageFractions !== null && <AverageLine fractions={averageFractions} />}
+          </svg>
+          {goalFraction !== null && goalValue !== null && (
+            <GoalTag goalFraction={goalFraction} label={goalTagLabel(goalValue, metric, i18n.language)} />
+          )}
+          <div className="absolute inset-0 flex">
+            {bars.map((bar) => (
+              <Tooltip key={bar.date} delayDuration={TOOLTIP_DELAY_MS}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={`/diary?date=${bar.date}`}
+                    aria-label={describeBar({ bar, metric, isWeekly, t, language: i18n.language })}
+                    data-slot="trend-bar-hit"
+                    className="min-h-11 flex-1 rounded-sm data-[state=delayed-open]:bg-foreground/5 data-[state=instant-open]:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6} className="max-w-64">
+                  {describeBar({ bar, metric, isWeekly, t, language: i18n.language, formatDate })}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="mt-1 flex">
-        {bars.map((bar, index) => (
-          <div key={bar.date} className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
-            {/* Counted back from the newest bar, so the day on the right is
-                always named however many bars the window holds. */}
-            <span
-              data-slot="chart-day-label"
-              className={cn(
-                'text-xs tabular-nums text-muted-foreground',
-                bars.length > DENSE_AXIS_BARS && (bars.length - 1 - index) % 2 !== 0 && 'hidden sm:inline',
-              )}
-            >
-              {bar.date.slice(8, 10)}
-            </span>
-          </div>
-        ))}
+      <div className="mt-1 flex gap-1.5">
+        <div aria-hidden="true" className={cn('shrink-0', AXIS_GUTTER_CLASS)} />
+        <div className="flex min-w-0 flex-1">
+          {bars.map((bar, index) => (
+            <div key={bar.date} className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
+              {/* Counted back from the newest bar, so the day on the right is
+                  always named however many bars the window holds. */}
+              <span
+                data-slot="chart-day-label"
+                className={cn(
+                  'text-xs tabular-nums text-muted-foreground',
+                  bars.length > DENSE_AXIS_BARS && (bars.length - 1 - index) % 2 !== 0 && 'hidden sm:inline',
+                )}
+              >
+                {bar.date.slice(8, 10)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildTrendChart } from '../../app/lib/trend-chart';
+import { buildTrendChart, chartAxisTicks } from '../../app/lib/trend-chart';
 import { goalDirectionFor, goalValueFor, resolveBarFill, selectMetricValue } from '../../app/lib/trend-chart';
 import { bucketByWeek } from '../../app/lib/trend-buckets';
 import type { TrendDay } from '../../app/lib/trend-chart';
@@ -417,7 +417,10 @@ describe('buildTrendChart, goalDirection per metric (M239/03)', () => {
   it('reads protein at the floor as met, by the diary rounding', () => {
     const atFloor = loggedDay('2026-07-13', { summary: makeSummary({ protein: 99.6 }) });
 
-    assert.strictEqual(buildTrendChart({ days: [atFloor], metric: 'protein', goalValue: FLOOR }).bars[0].isUnderGoal, false);
+    assert.strictEqual(
+      buildTrendChart({ days: [atFloor], metric: 'protein', goalValue: FLOOR }).bars[0].isUnderGoal,
+      false,
+    );
   });
 
   it('never flags a protein floor bar as under, since the real value may have reached the goal', () => {
@@ -480,7 +483,10 @@ describe('buildTrendChart, the total-carbs outline behind net carbs (M239/03)', 
   it('draws no outline for any other metric, or for an unlogged day', () => {
     const day = loggedDay('2026-07-13', { summary: makeSummary({ carbs: 30, netCarbs: 20 }) });
 
-    assert.strictEqual(buildTrendChart({ days: [day], metric: 'protein', goalValue: null }).bars[0].outlineFraction, null);
+    assert.strictEqual(
+      buildTrendChart({ days: [day], metric: 'protein', goalValue: null }).bars[0].outlineFraction,
+      null,
+    );
     assert.strictEqual(
       buildTrendChart({ days: [emptyDay('2026-07-13')], metric: 'net-carbs', goalValue: null }).bars[0].outlineFraction,
       null,
@@ -516,6 +522,48 @@ describe('selectMetricValue, the figure the bars and the average line share (M23
 
     assert.strictEqual(selectMetricValue({ day, metric: 'fiber' }), 7);
     assert.strictEqual(selectMetricValue({ day: emptyDay('2026-07-14'), metric: 'fiber' }), null);
-    assert.strictEqual(selectMetricValue({ day: loggedDay('2026-07-15', { kcalTotal: null, basis: 'none' }), metric: 'calories' }), null);
+    assert.strictEqual(
+      selectMetricValue({ day: loggedDay('2026-07-15', { kcalTotal: null, basis: 'none' }), metric: 'calories' }),
+      null,
+    );
+  });
+});
+
+describe('chartAxisTicks, the labelled gridlines of the vertical axis', () => {
+  it('cuts each nice ceiling into round numbers', () => {
+    assert.deepEqual(chartAxisTicks(15), [5, 10, 15]);
+    assert.deepEqual(chartAxisTicks(40), [10, 20, 30, 40]);
+    assert.deepEqual(chartAxisTicks(60), [20, 40, 60]);
+    assert.deepEqual(chartAxisTicks(100), [25, 50, 75, 100]);
+    assert.deepEqual(chartAxisTicks(1500), [500, 1000, 1500]);
+  });
+
+  it('leaves the top of the axis unlabelled when it is not a multiple of the step', () => {
+    assert.deepEqual(chartAxisTicks(25), [10, 20]);
+  });
+
+  it('never returns more gridlines than the plot has bands, and none above the axis', () => {
+    for (const ceiling of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 15, 25, 30, 40, 50, 60, 80, 100, 250, 2400, 3000]) {
+      const ticks = chartAxisTicks(ceiling);
+      assert.ok(ticks.length >= 1 && ticks.length <= 4, `${ceiling} gave ${ticks.length} ticks`);
+      assert.ok(
+        ticks.every((tick) => tick > 0 && tick <= ceiling),
+        `${ceiling} gave a tick outside the axis`,
+      );
+      assert.deepEqual(
+        ticks.toSorted((a, b) => a - b),
+        ticks,
+        `${ceiling} is not ascending`,
+      );
+    }
+  });
+
+  it('CONTROL: a non-positive axis has no gridlines, and a ladder that ignored the band count would fail the ceiling check', () => {
+    assert.deepEqual(chartAxisTicks(0), []);
+    assert.deepEqual(chartAxisTicks(-5), []);
+    // A step of 1 on a 40 g axis is forty gridlines. The band check above is the guard against that.
+    const forty = Array.from({ length: 40 }, (_unused, index) => index + 1);
+    assert.ok(forty.length > 4);
+    assert.notDeepEqual(chartAxisTicks(40), forty);
   });
 });
