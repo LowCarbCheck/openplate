@@ -61,6 +61,12 @@
  * file path is shown able to carry a finding. It runs at 360 px, which is in both matrices, so the
  * proof that the reader can see is paid for in both modes.
  *
+ * A SECOND CONTROL COVERS THE PLACEHOLDER READ (M243 spec 05b). A hint may be styled at a size of
+ * its own, so the reader measures the pseudo-element rather than the field, and the control places
+ * two fields: one whose hint is drawn smaller than its field and fits, which must be reported as
+ * clean, and one whose hint is drawn larger and does not fit, which must still be reported as
+ * clipped. Neither claim can be satisfied by a reader that simply reads the field.
+ *
  * NO SERVICE WORKER IS BLOCKED here: the sweep walks the app the way a person meets it.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -76,6 +82,7 @@ import {
   hardViolations,
   injectClipControls,
   readBothFaces,
+  readClips,
   settleFonts,
   waitForQuiet,
   type ClipRead,
@@ -623,4 +630,87 @@ test('CONTROL: the sweep lists a known overflow, and the hard claims fail on a c
     written.some((row) => row.role === null && row.text.startsWith('illl') && row.kind === 'newly-clipped'),
     'the known overflow must be in the report file',
   ).toBe(true);
+});
+
+/** The two placeholder controls: the text, and how the pseudo-element is sized against the field. */
+const PLACEHOLDER_CONTROLS = {
+  /** A hint drawn SMALLER than the field. Read in the field's size it would look clipped; it is not. */
+  smaller: { id: 'lcc-ph-smaller', text: 'CONTROL smaller hint', fieldPx: 20, hintPx: 10, boxFactor: 0.7 },
+  /** A hint drawn LARGER than the field. Read in the field's size it would look fine; it is clipped. */
+  larger: { id: 'lcc-ph-larger', text: 'CONTROL larger hint', fieldPx: 20, hintPx: 28, boxFactor: 1.1 },
+} as const;
+
+test('CONTROL: a placeholder is measured in the placeholder font, and still goes red when it is too wide', async ({
+  page,
+}) => {
+  // A PUBLIC PAGE, because this claim is about the reader and not about a screen. `/welcome` is
+  // the cheapest page in the app that a device with no diary is allowed to see.
+  await page.setViewportSize({ width: 390, height: PHONE_HEIGHT });
+  await page.goto('/welcome');
+  await waitForQuiet(page);
+  await settleFonts(page);
+
+  const geometry = await page.evaluate((controls) => {
+    const style = document.createElement('style');
+    style.textContent = Object.values(controls)
+      .map((control) => `#${control.id}::placeholder { font-size: ${control.hintPx}px; }`)
+      .join('\n');
+    document.head.append(style);
+
+    const measured: { id: string; boxWidth: number; atField: number; atHint: number }[] = [];
+    for (const control of Object.values(controls)) {
+      const probe = document.createElement('span');
+      probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font-size:${control.fieldPx}px`;
+      probe.textContent = control.text;
+      document.body.append(probe);
+      const atField = probe.getBoundingClientRect().width;
+      probe.remove();
+      const atHint = (atField / control.fieldPx) * control.hintPx;
+
+      const field = document.createElement('input');
+      field.id = control.id;
+      field.type = 'text';
+      field.placeholder = control.text;
+      const boxWidth = Math.round(atField * control.boxFactor);
+      field.style.cssText =
+        `position:absolute;left:0;top:0;width:${boxWidth}px;height:30px;padding:0;border:0;` +
+        `font-size:${control.fieldPx}px;`;
+      document.body.append(field);
+      measured.push({ id: control.id, boxWidth, atField: Math.round(atField), atHint: Math.round(atHint) });
+    }
+    return measured;
+  }, PLACEHOLDER_CONTROLS);
+
+  // The two controls are only controls if the two sizes really straddle the box. Stated before
+  // anything is read, so a control that had stopped separating the sizes fails here and not later
+  // as a confusing assertion about a clip.
+  const smaller = geometry.find((entry) => entry.id === PLACEHOLDER_CONTROLS.smaller.id);
+  const larger = geometry.find((entry) => entry.id === PLACEHOLDER_CONTROLS.larger.id);
+  expect(smaller, 'the smaller control must have been placed').toBeDefined();
+  expect(larger, 'the larger control must have been placed').toBeDefined();
+  expect(smaller?.atHint ?? 0, 'the small hint must fit its box').toBeLessThan(smaller?.boxWidth ?? 0);
+  expect(smaller?.atField ?? 0, 'and would not fit if it were read at the field size').toBeGreaterThan(
+    smaller?.boxWidth ?? 0,
+  );
+  expect(larger?.atField ?? 0, 'the large hint would fit if it were read at the field size').toBeLessThan(
+    larger?.boxWidth ?? 0,
+  );
+  expect(larger?.atHint ?? 0, 'and does not fit at its own size').toBeGreaterThan(larger?.boxWidth ?? 0);
+
+  const readings = await readClips(page);
+  const readingFor = (text: string) =>
+    readings.readings.find((reading) => reading.selector.endsWith('::placeholder') && reading.text === text);
+
+  const small = readingFor(PLACEHOLDER_CONTROLS.smaller.text);
+  expect(small, 'the smaller control must have been read').toBeDefined();
+  expect(small?.clip, 'a hint drawn smaller than its field is not clipped, and must not be reported as clipped').toBe(
+    0,
+  );
+
+  const big = readingFor(PLACEHOLDER_CONTROLS.larger.text);
+  expect(big, 'the larger control must have been read').toBeDefined();
+  expect(
+    big?.clip ?? 0,
+    'CONTROL: a hint drawn larger than its field IS clipped, and the reader must still say so',
+  ).toBeGreaterThan(0);
 });

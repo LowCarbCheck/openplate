@@ -20,11 +20,12 @@
  * come from the SAME build and the SAME DOM: no second build, no second port, and no drift
  * between what the two reads measured.
  *
- * THE ONE SIZE THAT IS NOT THE SAME. The header title is 15 px now and was 18 px in Inter. M243
- * spec 02 chose 15 on purpose (`lcc-lineage-header-title.spec.ts` holds the line), and the
- * contract there is "no title clips harder than Inter at 18 px". The baseline therefore also puts
- * the app header's title back to 18 px, or every title Inter clipped at 18 would read as newly
- * clipped in mono at 15.
+ * THE ONE SIZE THAT IS NOT THE SAME. The header title is 14 px now and was 18 px in Inter. M243
+ * spec 02 chose 15 and the six-locale sweep of spec 08 took it to 14, which is also the floor in
+ * `tests/design-contract.ts` (`lcc-lineage-header-title.spec.ts` holds the line). The contract
+ * there is "no title clips harder than Inter at 18 px", so the baseline also puts the app
+ * header's title back to 18 px, or every title Inter clipped at 18 would read as newly clipped in
+ * mono. Both numbers are read from the contract, never typed here.
  *
  * READING RULES, so a number means one thing:
  *
@@ -225,16 +226,32 @@ export async function readClips(page: Page): Promise<ClipRead> {
       }
 
       // A PLACEHOLDER IS TEXT THE BOX CLIPS TOO. An input's `scrollWidth` does not include its
-      // placeholder, so the placeholder is measured in a hidden span set in the input's own font.
-      // A `textarea` is left out on purpose: its placeholder WRAPS onto more lines, it is not cut.
+      // placeholder, so the placeholder is measured in a hidden span set in the placeholder's own
+      // font. A `textarea` is left out on purpose: its placeholder WRAPS onto more lines, it is
+      // not cut.
+      //
+      // THE PSEUDO-ELEMENT'S FONT, NOT THE FIELD'S (M243 spec 05b). A page may set
+      // `placeholder:text-sm` on a field whose value is drawn at 16 px, which is exactly how the
+      // add screen's search hint was made to fit; read in the field's own size the reader called
+      // that hint 32 px too wide when the browser was drawing it with 7 px to spare. It fails in
+      // the other direction too: a placeholder styled LARGER than its field used to read as
+      // fitting. `getComputedStyle(el, '::placeholder')` leaves the `font` SHORTHAND empty in
+      // Chromium, so the longhands are read one by one and the field's own value stands in for
+      // any the pseudo-element does not answer.
       for (const field of document.body.querySelectorAll('input[placeholder]')) {
         if (!(field instanceof HTMLInputElement)) continue;
         if (field.value !== '') continue;
         const box = field.getBoundingClientRect();
         if (box.width <= 1 || box.height <= 1) continue;
         const style = getComputedStyle(field);
+        const hint = getComputedStyle(field, '::placeholder');
+        const inherited = (property: 'fontSize' | 'fontFamily' | 'fontWeight' | 'fontStyle' | 'letterSpacing'): string =>
+          hint[property] === '' ? style[property] : hint[property];
         const probe = document.createElement('span');
-        probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${style.font};letter-spacing:${style.letterSpacing}`;
+        probe.style.cssText =
+          `position:absolute;visibility:hidden;white-space:pre;font-size:${inherited('fontSize')};` +
+          `font-family:${inherited('fontFamily')};font-weight:${inherited('fontWeight')};` +
+          `font-style:${inherited('fontStyle')};letter-spacing:${inherited('letterSpacing')}`;
         probe.textContent = field.placeholder;
         document.body.append(probe);
         const wanted = probe.getBoundingClientRect().width;
@@ -438,7 +455,7 @@ export const CONTROL_IDS = {
  *
  * THE STRING IS NARROW LETTERS ON PURPOSE. Inter is proportional and Victor Mono is a flat
  * 0.6 em, so a run of `i` and `l` is the string on which the two faces differ MOST. That is what
- * lets the header control work at all: the real title is 15 px in mono and 18 px in the Inter
+ * lets the header control work at all: the real title is 14 px in mono and 18 px in the Inter
  * baseline, so a string of ordinary width is WIDER in Inter and the control would fit in mono and
  * clip in Inter, which is the reverse of what it has to show.
  *

@@ -247,7 +247,17 @@ describe('the chips render as reachable buttons', () => {
     // The starter chips now take the class from this very constant, so the two
     // rows cannot drift apart. A hand-written class list here would fail.
     assert.match(addSource, /className=\{SEARCH_CHIP_CLASS\}/);
-    assert.equal(addSource.includes('min-h-9 items-center justify-center rounded-full'), false, 'chip class inlined');
+    // THE CONSTANT'S OWN VALUE, not a token sequence somebody has to keep in step with it. This
+    // line used to name `min-h-9 items-center justify-center rounded-full`, which stopped
+    // matching anything the moment the chip took the shared neutral recipe and the 44 px floor
+    // (M243 spec 05b) and would have gone on passing forever while saying nothing.
+    assert.equal(addSource.includes(SEARCH_CHIP_CLASS), false, 'chip class inlined');
+    // CONTROL: the same reader must catch a file that really did paste it.
+    assert.equal(
+      `<button className="${SEARCH_CHIP_CLASS}">`.includes(SEARCH_CHIP_CLASS),
+      true,
+      'CONTROL: an inlined chip class must be visible to this reader',
+    );
     assert.equal(render(['Kaffee']).includes(SEARCH_CHIP_CLASS), true, 'the rendered chip lost the shared class');
   });
 });

@@ -70,18 +70,26 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
           is filed where the person was told it would go, even if the clock
           crosses a window boundary while the page is open. */}
       <input type="hidden" name="slot" value={slot} />
+      {/* 44 px, the app's tap floor (M243 spec 05b). It was 40, and it only
+          ever showed up as a failure when the clock happened to land in the
+          same meal window as a habit, which is a flake the floor removes. */}
       <button
         type="submit"
         disabled={isLogging}
         className={cn(
-          'inline-flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60',
+          'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60',
           isLogging && 'pulse-soft',
         )}
       >
         {isBundle ?
-          <Utensils className="h-4 w-4 text-primary" aria-hidden="true" />
-        : <Repeat className="h-4 w-4 text-primary" aria-hidden="true" />}
-        <span className="max-w-[12rem] truncate">{offer.name}</span>
+          <Utensils className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        : <Repeat className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
+        {/* THE NAME WRAPS, it is not cut (M243 spec 05b). It was held to 12 rem
+            and ellipsed, which in the wider face hid 56 px of a 35 character
+            food name: the offer is "log THIS again", so a person who cannot
+            read which food it is has nothing to act on. The row already wraps,
+            so a second line costs the layout nothing. */}
+        <span className="min-w-0 break-words">{offer.name}</span>
         {/* Only a bundle says how many rows it writes. For a single food the
             count is always one, and printing it would be noise. */}
         {isBundle && (

@@ -11,16 +11,22 @@
  *
  * Tokens only, no raw colour (DESIGN.md section 2 and section 11).
  *
+ * THE UNCHOSEN CHIP IS NEUTRAL (M243 spec 05b, decision 3). It was a bordered
+ * ghost that tinted itself in the brand colour on hover, so a fieldset of five
+ * answers offered five brand-coloured invitations and the one already chosen
+ * had to shout over them. `CHIP_NEUTRAL` is the shared fill; only the chosen
+ * one is teal.
+ *
  * @param isSelected - whether this chip is the current answer.
  * @returns the class list for the chip.
  */
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { cn } from '#app/lib/utils';
 
 export function settingsChipClass(isSelected: boolean): string {
   return cn(
-    'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
+    CHIP_NEUTRAL,
+    'inline-flex min-h-11 items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+    isSelected && 'border-primary bg-primary text-primary-foreground',
   );
 }

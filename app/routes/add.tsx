@@ -78,6 +78,7 @@ import { OfflineBanner } from '#app/components/offline-banner';
 import { LoggingToBanner } from '#app/components/logging-to-banner';
 import { SearchResultRow } from '#app/components/add/search-result-row';
 import { QueryPartChips, SEARCH_CHIP_CLASS } from '#app/components/add/query-part-chips';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { queryPartsToOffer } from '#app/lib/query-parts';
 import { useAiIntake } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
@@ -1124,13 +1125,20 @@ function toHiddenMacro(value: number | null): string {
   return value === null ? '' : String(value);
 }
 
-/** Shared chip-button classes (portion choices, meal-less states, basis toggle) — a small selected/unselected pill. */
+/**
+ * Shared chip-button classes (portion choices, meal-less states, basis toggle) — a small selected/unselected pill.
+ *
+ * THE UNSELECTED CHIP IS NEUTRAL, from `CHIP_NEUTRAL` (M243 spec 05b, decision
+ * 3): only the one that is actually chosen wears the brand colour. It used to
+ * be a bordered ghost whose hairline turned to a raw palette green on hover,
+ * which is both a colour the brand repository does not own and a second thing
+ * on the row asking to be pressed.
+ */
 function chipButtonClass(isSelected: boolean): string {
   return cn(
-    'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+    CHIP_NEUTRAL,
+    'inline-flex min-h-11 items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+    isSelected && 'border-primary bg-primary text-primary-foreground',
   );
 }
 
@@ -1806,7 +1814,13 @@ function SearchStep({
               submitToAi(searchValue, 'text');
             }}
             placeholder={t('add.search.placeholder')}
-            className="h-11 pl-9"
+            // THE PLACEHOLDER IS ONE STEP SMALLER THAN THE VALUE (M243 spec
+            // 05b). The field is 16 px on a phone so iOS does not zoom it on
+            // focus, and at 16 px the German "Nach einem Lebensmittel suchen…"
+            // wants 310 px in the wider face against 278 px of room, so the
+            // last three words were simply cut. Only the hint shrinks; a typed
+            // food name stays at the field's own size.
+            className="h-11 pl-9 placeholder:text-sm"
           />
         </div>
         {/* THE PRIMARY ACTION ON THIS SCREEN. A whole meal in one sentence
@@ -1908,10 +1922,15 @@ function SearchStep({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* `min-h-11` and no bigger words (M243 spec 05b). The drawn box was
+            about 20 px, which `lcc-lineage-tap-targets.spec.ts` froze as the
+            last real offender on this screen. The negative margin keeps the
+            row's own height where it was, so the padding buys the finger its
+            floor without moving the layout. */}
         <button
           type="button"
           onClick={() => setShowManual((open) => !open)}
-          className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          className="-my-3 inline-flex min-h-11 items-center py-3 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
         >
           {t('add.search.addManually')}
         </button>

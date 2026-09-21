@@ -107,7 +107,14 @@ function LogWeightForm({ todayWeightKg, weightUnit }: { todayWeightKg: number | 
         onChange={(event) => setWeightText(event.target.value)}
         aria-describedby={fields.weightKg.errorId}
         aria-invalid={fields.weightKg.errors?.length ? true : undefined}
-        className="h-11 w-24 tabular-nums sm:h-9"
+        // 144 px and a hint one step down, not 96 px at the field's own size
+        // (M243 spec 05b). In the wider face the French "par ex. 72,5" wants
+        // 120 px against the 70 px the old field left it, so every language
+        // but Italian lost the number it was demonstrating. A weigh-in is four
+        // characters, so the extra width costs the row nothing it was using,
+        // and only the hint shrinks: a typed weight stays at the field's size,
+        // which is what keeps iOS from zooming the page on focus.
+        className="h-11 w-36 tabular-nums placeholder:text-sm sm:h-9"
       />
       <span className="text-sm text-muted-foreground">{weightUnit}</span>
       <input type="hidden" name={fields.weightKg.name} value={weightKgForSubmit} />

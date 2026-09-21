@@ -19,6 +19,7 @@ import { FieldError } from '#app/components/field-error';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 
 /** The Conform metadata a sub question needs, passed as plain values so this file never imports Conform. */
 export interface StyleFieldMeta {
@@ -53,13 +54,17 @@ function styleRowClass(isSelected: boolean): string {
   );
 }
 
-/** The 20/50/100 chip recipe, matching the goals card's one-tap chips. */
+/**
+ * The 20/50/100 chip recipe, matching the goals card's one-tap chips.
+ *
+ * Unchosen chips take `CHIP_NEUTRAL` (M243 spec 05b, decision 3), so the three
+ * ceilings on offer are three quiet keys and only the one in force is teal.
+ */
 function carbChipClass(isSelected: boolean): string {
   return cn(
-    'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
+    CHIP_NEUTRAL,
+    'inline-flex min-h-11 cursor-pointer items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+    isSelected && 'border-primary bg-primary text-primary-foreground',
   );
 }
 

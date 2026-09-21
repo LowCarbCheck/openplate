@@ -13,6 +13,13 @@
  * on the screen that should be wearing the brand. No CTA button:
  * the fix is "log more days", which every other surface on this page already
  * offers; a second "Add food" button here would just be noise.
+ *
+ * A ROW, NOT A CENTRED POSTER (M243 spec 05b). The mark, the count and the
+ * explanation used to stack down the middle of a 200 px tall panel, which is
+ * the template shape a person reads as "something went wrong" rather than
+ * "there is not enough data yet". Same three pieces, same words, laid out the
+ * way the data rows beside it are: mark at the left, sentences left, and the
+ * panel only as tall as they need.
  */
 import { useTranslation } from 'react-i18next';
 import { PlateGlyph } from '#app/components/plate-glyph';
@@ -31,10 +38,12 @@ export function SparseTrendNotice({ loggedDays }: { loggedDays: number }) {
   const logged = loggedDays <= 0 ? t('trends.sparse.countNone') : `${loggedDays}`;
 
   return (
-    <div className="surface-brand-soft flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-8 text-center">
-      <PlateGlyph className="h-12 w-12 text-primary/40" />
-      <p className="text-sm font-medium">{t('trends.sparse.headline', { logged })}</p>
-      <p className="max-w-xs text-xs text-muted-foreground">{t('trends.sparse.body', { days: MIN_TREND_DAYS })}</p>
+    <div className="surface-brand-soft flex items-center gap-3 rounded-lg border border-dashed border-border p-4">
+      <PlateGlyph className="h-10 w-10 shrink-0 text-primary/40" />
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-sm font-medium">{t('trends.sparse.headline', { logged })}</p>
+        <p className="text-xs text-muted-foreground">{t('trends.sparse.body', { days: MIN_TREND_DAYS })}</p>
+      </div>
     </div>
   );
 }

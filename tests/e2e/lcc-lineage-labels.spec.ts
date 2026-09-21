@@ -38,7 +38,15 @@ const DIARY_FOOD = { name: 'Smoke tier porridge', grams: '200', carbs: '10', mea
 /** Screens whose every uppercase label must be grey. */
 const LABEL_ROUTES = ['/settings', '/diary'] as const;
 
-/** Screens that carry a default card title on a fresh device. */
+/**
+ * Screens that carry a default card title on a fresh device.
+ *
+ * A FRESH DEVICE ON PURPOSE, and the reason is worth knowing (M243 spec 05b). Walking these with
+ * a logged food was tried and reaches `/trends`' three insights door cards, whose titles are a
+ * deliberate `text-sm` override. `tests/design-contract.ts` allows a caller to override the size,
+ * so those cards are not a violation and this claim is about the DEFAULT. The fresh device is
+ * what keeps the two apart without this file having to guess which titles were overridden.
+ */
 const CARD_TITLE_ROUTES = ['/dashboard', '/trends', '/scan'] as const;
 
 /**

@@ -407,19 +407,36 @@ export function HydrateFallback() {
   );
 }
 
-/** The friendly empty state for a fresh account with nothing to chart yet. */
+/**
+ * The empty state for a fresh device with nothing to chart yet.
+ *
+ * A ROW, NOT A POSTER (M243 spec 05b). It was the template every product
+ * ships: a card whose title was the page's own name, said again under the
+ * header that already says it, a description, a paragraph, and one FILLED
+ * button under it all. What a person needs to read is that there is no figure
+ * yet and what to do about it, so the statement and its caption sit left and
+ * the action sits INLINE beside them, from `sm` where there is room and
+ * directly under them on a phone, where a full-width button is the only honest
+ * shape. Every word of the three `trends.empty.*` keys is unchanged; the one
+ * string that went is the duplicated page name.
+ *
+ * THE STATEMENT IS STILL A `CardTitle`, at the card title's own size. It is
+ * what this card is about, and `lcc-lineage-labels.spec.ts` reads a card title
+ * on this route to prove the 16 px body-face rule on a fresh device. A row is
+ * a matter of alignment, size and where the action sits, not of having no
+ * heading at all.
+ */
 function EmptyTrends() {
   const { t } = useTranslation();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('trends.title')}</CardTitle>
-        <CardDescription>{t('trends.empty.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{t('trends.empty.body')}</p>
-        <Button asChild>
+    <Card data-slot="trends-empty">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+        <div className="min-w-0 space-y-0.5 sm:flex-1">
+          <CardTitle>{t('trends.empty.description')}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t('trends.empty.body')}</p>
+        </div>
+        <Button asChild variant="outline" className="sm:shrink-0">
           <Link to="/add">{t('trends.empty.cta')}</Link>
         </Button>
       </CardContent>

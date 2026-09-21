@@ -32,7 +32,7 @@ import type { LocalPersonalFood } from '#app/lib/local-store';
 import type { MacroEntryBasis } from '#app/lib/portions';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
-import { LIST_ROW_CLASS, LIST_STACK_CLASS } from '#app/components/list-row';
+import { CHIP_NEUTRAL, LIST_ROW_CLASS, LIST_STACK_CLASS } from '#app/components/list-row';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
 import { Button } from '#app/components/ui/button';
@@ -115,13 +115,17 @@ export function formatPer100gLine(macros: Macros, t: Translate, language: string
   return parts.join(' · ');
 }
 
-/** Small selected/unselected pill, matching the portion/basis chips used elsewhere in the add flow. */
+/**
+ * Small selected/unselected pill, matching the portion/basis chips used elsewhere in the add flow.
+ *
+ * The unselected half reads the shared neutral recipe (M243 spec 05b): a chip
+ * that is not chosen states a value, and a value is not the brand colour.
+ */
 function toggleButtonClass(isSelected: boolean): string {
   return cn(
-    'inline-flex min-h-9 items-center justify-center rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+    CHIP_NEUTRAL,
+    'inline-flex min-h-11 items-center justify-center border border-transparent px-3 py-1 text-xs font-medium transition-colors hover:bg-muted/70',
+    isSelected && 'border-primary bg-primary text-primary-foreground',
   );
 }
 

@@ -9,10 +9,12 @@
  * its content on one line breaks the width. Reading all three on one page load is also what keeps
  * the walk cheap enough to run at two widths.
  *
- * ── 5a COVERS `/diary` AND `/dashboard` ──
- * Those are the two screens spec 05a restyled. Spec 05b adds `/trends`, `/add`, `/scan` and
- * `/settings` to `ROUTES` and their plots to `FROZEN_CHART_PX`; nothing else about this file
- * needs to change for them.
+ * ── SIX SCREENS ──
+ * `/diary` and `/dashboard` are spec 05a's; `/trends`, `/add`, `/scan` and `/settings` are spec
+ * 05b's, and they were added by extending `ROUTES` and `FROZEN_CHART_PX`, exactly as this header
+ * said they would be. Four of the six draw no plot at all, and each of those carries an EMPTY
+ * frozen record rather than no record: the `satisfies` below turns adding a route into a decision
+ * about its charts instead of a silent skip.
  *
  * ── THE CHART HEIGHTS ARE A FROZEN SET, FAILING IN BOTH DIRECTIONS ──
  * "Unchanged" needs a number to be unchanged FROM, so each plot's drawn height is frozen here,
@@ -21,11 +23,13 @@
  * found. Without that last part a spec that silently matched nothing would be the greenest thing
  * in the tier.
  *
- * ── THE EMPTY DIARY IS A ROW, NOT A POSTER ──
- * The fourth claim, and the one with nothing else guarding it: the first-ever empty state states
- * the missing figure at a data row's size, left, with the composer inline, rather than as a
- * centred column under an 18 px title. It is read as COMPUTED text alignment and font size, so a
- * poster rebuilt out of different classes still fails.
+ * ── THE EMPTY STATES ARE ROWS, NOT POSTERS ──
+ * The fourth claim, and the one with nothing else guarding it: an empty state states the missing
+ * figure at a data row's size, left, with its primary action inline, rather than as a centred
+ * column under an 18 px title. It is read as COMPUTED text alignment and font size, so a poster
+ * rebuilt out of different classes still fails. Two screens are read this way: the diary's
+ * first-ever state (spec 05a) and the Insights page's own (spec 05b), each on the device state
+ * that produces it.
  *
  * ── EVERY READER IS SHOWN ABLE TO FAIL ──
  * A control injects a 900 px element into `main` and requires the width reader to report the
@@ -49,8 +53,8 @@ const TAP_FLOOR_PX = 44;
 /** A box this small is visually hidden and its label is the target instead. */
 const HIDDEN_CONTROL_PX = 1;
 
-/** The screens spec 05a restyled. Spec 05b appends its own. */
-const ROUTES = ['/diary', '/dashboard'] as const;
+/** The six screens the restyle touched: two from spec 05a, four from spec 05b. */
+const ROUTES = ['/diary', '/dashboard', '/trends', '/add', '/scan', '/settings'] as const;
 
 /** One food, so both screens draw a day rather than an empty state. */
 const SEEDED_FOOD = { name: 'Screen walk cheddar', grams: '40', carbs: '1.2' } as const;
@@ -58,22 +62,36 @@ const SEEDED_FOOD = { name: 'Screen walk cheddar', grams: '40', carbs: '1.2' } a
 /**
  * The largest an empty state's opening line may be drawn.
  *
- * It was an 18 px `h3`, the centred-poster template. A row states its label at the body size, so
- * the ceiling is the body size: anything above it is a poster again, whatever classes built it.
+ * It was an 18 px `h3` on the diary and a default `CardTitle` on the Insights page, both inside
+ * the centred-poster template. A row states its opening line at a card title's size or smaller,
+ * so the ceiling is the card title size and anything above it is a poster again, whatever classes
+ * built it. The diary's own line is 14 px and the Insights one is 16, which is why the ceiling is
+ * a ceiling and not an equality.
  */
-const EMPTY_STATE_TITLE_CEILING_PX = 14;
+const EMPTY_STATE_TITLE_CEILING_PX = 16;
 
 /**
  * Every plot on those screens, and the height it draws, per width.
  *
  * `day-ridge-plot` is the seven-day ridge in the dashboard's week tile, sized in JS from
- * `DRAW_HEIGHT_PX`. `macro-ratio-bar` is the composition bar at the top of the diary's "what you
- * ate" block, which the hero passes its own height class. Both are read at both widths because a
- * chart that only collapses on the narrow phone is the interesting failure.
+ * `DRAW_HEIGHT_PX`. `macro-ratio-bar` is the composition bar, at the top of the diary's "what you
+ * ate" block and again in the Insights range summary, which the hero passes its own height class.
+ * Both are read at both widths because a chart that only collapses on the narrow phone is the
+ * interesting failure.
+ *
+ * FOUR ROUTES CARRY AN EMPTY RECORD, and that is a statement, not an omission: `/add`, `/scan`
+ * and `/settings` draw no plot at any width, and on a device with one logged food the Insights
+ * page draws the composition bar and nothing else, because the trend chart is below its own
+ * three-day threshold (`SparseTrendNotice`). If one of them grows a plot, the line to change is
+ * here.
  */
 const FROZEN_CHART_PX = {
   '/diary': { 'macro-ratio-bar': 10 },
   '/dashboard': { 'day-ridge-plot': 62 },
+  '/trends': { 'macro-ratio-bar': 10 },
+  '/add': {},
+  '/scan': {},
+  '/settings': {},
 } as const satisfies Record<(typeof ROUTES)[number], Record<string, number>>;
 
 /** What a finger aims at in the page, which is `main` less the shell that shares it. */
@@ -101,7 +119,8 @@ interface HitAreaTarget {
  *
  * ONE ENTRY TODAY, and it fails in both directions like every other frozen set here: an entry
  * that stops matching a short target is reported as stale, so the day "Save as meal" grows a real
- * 44 px box this line is deleted rather than left to rot. Spec 05b adds its own routes.
+ * 44 px box this line is deleted rather than left to rot. The other five routes carry an empty
+ * list, which is the claim that every tappable row on them reaches the floor by its own box.
  */
 const KNOWN_HIT_AREA = {
   '/diary': [
@@ -112,6 +131,10 @@ const KNOWN_HIT_AREA = {
     },
   ],
   '/dashboard': [],
+  '/trends': [],
+  '/add': [],
+  '/scan': [],
+  '/settings': [],
 } as const satisfies Record<(typeof ROUTES)[number], readonly HitAreaTarget[]>;
 
 /** What one read of a page found: the unexplained offenders, and which known entries were seen. */
@@ -262,49 +285,57 @@ test('CONTROL: the width reader sees an injected overflow and the tap reader see
   });
 });
 
-test('the first-ever empty diary states the missing figure as a row, not as a centred poster', async ({ page }) => {
-  await completeOnboarding(page);
-  await page.setViewportSize({ width: WIDTHS[1], height: PHONE_HEIGHT });
-  await page.goto('/diary');
+/** The two empty states that were posters, and the door each one must offer inline. */
+const EMPTY_STATES = [
+  { route: '/diary', slot: 'diary-empty-first-ever', door: 'a[href^="/describe"]', what: 'the composer' },
+  { route: '/trends', slot: 'trends-empty', door: 'a[href="/add"]', what: 'the add door' },
+] as const;
 
-  const empty = page.locator('[data-slot="diary-empty-first-ever"]');
-  await expect(empty, 'a device with no food must show the first-ever empty state').toBeVisible();
+for (const state of EMPTY_STATES) {
+  test(`${state.route} states its missing figure as a row, not as a centred poster`, async ({ page }) => {
+    await completeOnboarding(page);
+    await page.setViewportSize({ width: WIDTHS[1], height: PHONE_HEIGHT });
+    await page.goto(state.route);
 
-  const title = empty.locator('p').first();
-  const read = async (): Promise<{ align: string; size: number }> =>
-    title.evaluate((node) => {
-      const style = globalThis.getComputedStyle(node);
-      return { align: style.textAlign, size: Number.parseFloat(style.fontSize) };
+    const empty = page.locator(`[data-slot="${state.slot}"]`);
+    await expect(empty, 'a device with no food must show the empty state').toBeVisible();
+
+    // THE FIRST TEXT ELEMENT IN THE STATE, in DOM order, whether the screen wrote it as a
+    // paragraph or as a card title. A reader fixed on `p` would have quietly skipped past the
+    // Insights page's card title to the caption under it and measured the wrong thing.
+    const title = empty.locator('p, [data-slot="card-title"]').first();
+    const read = async (): Promise<{ align: string; size: number }> =>
+      title.evaluate((node) => {
+        const style = globalThis.getComputedStyle(node);
+        return { align: style.textAlign, size: Number.parseFloat(style.fontSize) };
+      });
+
+    const asShipped = await read();
+    expect(asShipped.align, 'the statement reads from the left, as a row does').not.toBe('center');
+    expect(asShipped.size, 'and at a data row label size, not at a poster title size').toBeLessThanOrEqual(
+      EMPTY_STATE_TITLE_CEILING_PX,
+    );
+
+    // The primary action is INLINE: the screen's own way out is inside the empty state, not in a
+    // block below it. Containment rather than a coordinate keeps this true at both widths, where
+    // the row wraps on a phone and sits side by side from `sm`.
+    await expect(empty.locator(state.door).first(), `${state.what} must sit inside the empty state`).toBeVisible();
+
+    // CONTROL: centre it and enlarge it by hand, and both claims go red, so neither is a sentence
+    // this reader would answer the same way whatever it was pointed at.
+    await empty.evaluate((node) => {
+      node.style.textAlign = 'center';
     });
-
-  const asShipped = await read();
-  expect(asShipped.align, 'the statement reads from the left, as a row does').not.toBe('center');
-  expect(asShipped.size, 'and at a data row label size, not at a poster title size').toBeLessThanOrEqual(
-    EMPTY_STATE_TITLE_CEILING_PX,
-  );
-
-  // The primary action is INLINE: the composer's own door to `/describe` is inside the empty
-  // state, not in a block below it. Containment rather than a coordinate keeps this true at both
-  // widths, where the row wraps on a phone and sits side by side from `sm`.
-  await expect(
-    empty.locator('a[href^="/describe"]').first(),
-    'the composer must sit inside the empty state',
-  ).toBeVisible();
-
-  // CONTROL: centre it and enlarge it by hand, and both claims go red, so neither is a sentence
-  // this reader would answer the same way whatever it was pointed at.
-  await empty.evaluate((node) => {
-    node.style.textAlign = 'center';
+    await title.evaluate((node) => {
+      node.style.fontSize = '18px';
+    });
+    const centred = await read();
+    expect(centred.align, 'CONTROL: a centred empty state must read as centred').toBe('center');
+    expect(centred.size, 'CONTROL: a poster title must break the size ceiling').toBeGreaterThan(
+      EMPTY_STATE_TITLE_CEILING_PX,
+    );
   });
-  await title.evaluate((node) => {
-    node.style.fontSize = '18px';
-  });
-  const centred = await read();
-  expect(centred.align, 'CONTROL: a centred empty state must read as centred').toBe('center');
-  expect(centred.size, 'CONTROL: a poster title must break the size ceiling').toBeGreaterThan(
-    EMPTY_STATE_TITLE_CEILING_PX,
-  );
-});
+}
 
 for (const width of WIDTHS) {
   test(`the restyled screens fit, keep their charts and clear the tap floor at ${width} px`, async ({ page }) => {

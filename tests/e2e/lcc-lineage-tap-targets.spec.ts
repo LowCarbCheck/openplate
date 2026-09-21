@@ -32,12 +32,14 @@
  * which draws 28 px and buys its 44 from an `after:` box. None was caused by the new face and none
  * was in a file spec 08 could edit, so all four were named in `KNOWN_UNDER_FLOOR` with what each one is.
  *
- * TWO HAVE SINCE BEEN FIXED and their entries are gone: "Set your own targets" and "Open Insights"
- * are `inline-flex min-h-11` now, so the words kept their size and the box reached the floor
- * (M243 spec 05a, which owns `/diary`). The two that remain are there for a reason a reader can
- * check: "Save as meal" DOES reach 44 px, by an `after:` box that a drawn-box reader cannot see and
- * that `mobile-diary.spec.ts` proves by hit test instead; and "Add manually" lives on `/add`, which
- * spec 05b owns.
+ * THREE HAVE SINCE BEEN FIXED and their entries are gone: "Set your own targets" and "Open
+ * Insights" are `inline-flex min-h-11` now (M243 spec 05a, which owns `/diary`), and "Add
+ * manually" on `/add` is too (M243 spec 05b, which owns that screen). All three kept their type
+ * size and bought the floor with padding and a matching negative margin, so no row grew.
+ *
+ * ONE REMAINS, and it is there for a reason a reader can check: "Save as meal" DOES reach 44 px,
+ * by an `after:` box that a drawn-box reader cannot see and that `mobile-diary.spec.ts` proves by
+ * hit test instead.
  *
  * The list is a FROZEN SET, like the colour literals in
  * `brand-colors.test.ts`: it fails in both directions. A NEW small target fails the check, and an
@@ -99,11 +101,6 @@ const KNOWN_UNDER_FLOOR: readonly KnownSmallTarget[] = [
     route: '/diary',
     selector: '[data-slot="save-meal-trigger"]',
     reason: '"Save as meal" draws 28 px of ink and buys its 44 px from an `after:` box; mobile-diary.spec.ts proves the box by hit test, which a drawn-box reader cannot.',
-  },
-  {
-    route: '/add',
-    selector: 'button.text-muted-foreground.underline-offset-4',
-    reason: '"Add manually" is a `text-sm` text button under the search field, about 20 px tall.',
   },
 ];
 

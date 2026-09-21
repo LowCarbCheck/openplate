@@ -36,6 +36,7 @@ import { todayInTimezone } from '#app/lib/user-days';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { trackGoalsSaved } from '#app/lib/matomo-events';
 import { cn } from '#app/lib/utils';
+import { settingsChipClass } from '#app/components/settings/chip-class';
 import {
   getLocalBodyMetrics,
   getLocalProfileGoals,
@@ -133,17 +134,16 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Shared chip recipe, the same one the body metrics card on `/settings/profile`
- * uses, so the chips look identical wherever this fieldset is rendered
- * (DESIGN.md §2/§11, tokens only).
+ * The shared settings chip, with the one thing this screen adds to it.
+ *
+ * It used to be a SECOND copy of the recipe, which is how a chip on this page
+ * slowly stops looking like a chip on `/settings/profile`; M243 spec 06 made
+ * the neutral fill a decision in one place, so this file reads
+ * `settingsChipClass` and adds only the pointer, because these chips are
+ * labels wrapping a radio rather than buttons (DESIGN.md sections 2 and 11).
  */
 function chipClass(isSelected: boolean): string {
-  return cn(
-    'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
-  );
+  return cn(settingsChipClass(isSelected), 'cursor-pointer');
 }
 
 function LifePhaseSection({ metrics, today }: { metrics: BodyMetrics; today: string }) {

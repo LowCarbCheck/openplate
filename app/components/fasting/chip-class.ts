@@ -9,17 +9,20 @@
  * have to look identical. A second copy is how two rows of chips on the same
  * screen drift apart.
  */
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { cn } from '#app/lib/utils';
 
 /**
+ * The unchosen half reads `CHIP_NEUTRAL` (M243 spec 05b, decision 3): a chip
+ * that is merely on offer is a quiet fill, and only the current choice is teal.
+ *
  * @param isSelected - whether this chip is the current choice.
  * @returns the full class list for a chip button.
  */
 export function fastingChipClass(isSelected: boolean): string {
   return cn(
-    'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-    isSelected ?
-      'border-primary bg-primary text-primary-foreground'
-    : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground',
+    CHIP_NEUTRAL,
+    'inline-flex min-h-11 items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+    isSelected && 'border-primary bg-primary text-primary-foreground',
   );
 }

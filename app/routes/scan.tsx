@@ -99,6 +99,7 @@ import { showFoodAddedToast } from '#app/lib/food-added-toast';
 import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
+import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import i18nSingleton from '#app/i18n/i18n';
 import type { Translate } from '#app/lib/macro-sanity';
@@ -2999,10 +3000,10 @@ export function ConfirmDraftForm({
                           })
                         }
                         className={cn(
-                          'inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-                          view.currentGrams === view.printedServing.grams ?
-                            'border-primary bg-primary text-primary-foreground'
-                          : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+                          CHIP_NEUTRAL,
+                          'inline-flex min-h-11 items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+                          view.currentGrams === view.printedServing.grams &&
+                            'border-primary bg-primary text-primary-foreground',
                         )}
                       >
                         {view.printedServing.asPrinted}
@@ -3024,10 +3025,9 @@ export function ConfirmDraftForm({
                               })
                             }
                             className={cn(
-                              'inline-flex min-h-10 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
-                              isSelected ?
-                                'border-primary bg-primary text-primary-foreground'
-                              : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
+                              CHIP_NEUTRAL,
+                              'inline-flex min-h-11 items-center justify-center border border-transparent px-4 py-2 text-xs font-medium transition-colors hover:bg-muted/70',
+                              isSelected && 'border-primary bg-primary text-primary-foreground',
                             )}
                           >
                             {labelKey ? t(labelKey) : option.label} ({option.hint})
