@@ -230,6 +230,8 @@ test('the summary counts rows rather than trusting the options it was built from
   assert.equal(summary.foodLogCount, envelope.data.foodLogs.length);
   assert.equal(summary.weightEntryCount, envelope.data.weightEntries.length);
   assert.equal(summary.personalFoodCount, envelope.data.foods.length);
+  assert.equal(summary.savedMealCount, envelope.data.savedMeals.length);
+  assert.equal(summary.pantryItemCount, envelope.data.pantryItems.length);
 
   const recomputed = envelope.data.foodLogs
     .filter((log) => log.dayKey === END_DAY)
@@ -248,6 +250,56 @@ test('the anchor portion is solved to close the gap, and never goes negative', (
     () => solveAnchorGrams({ baseNetCarbs: 0, targetNetCarbs: 25, anchorNetCarbsPer100g: 0 }),
     /net carbohydrate/,
   );
+});
+
+test('the saved meals are non-empty and byte-identical across two runs with the same seed', () => {
+  const envelope = build();
+  assert.ok(envelope.data.savedMeals.length > 0, '/meals is not the empty state');
+  assert.deepEqual(envelope.data.savedMeals, build().data.savedMeals);
+});
+
+test('every saved-meal item is built from the catalogue, matching the personal food it points at', () => {
+  const envelope = build();
+  const foodsById = new Map(envelope.data.foods.map((food) => [food.id, food]));
+  for (const meal of envelope.data.savedMeals) {
+    assert.ok(meal.items.length > 0, `${meal.name} has at least one item`);
+    for (const item of meal.items) {
+      assert.ok(item.foodId !== null);
+      const personalFood = foodsById.get(item.foodId);
+      assert.ok(personalFood !== undefined, `${item.name} points at a personal food the diary also wrote`);
+      assert.equal(item.name, personalFood?.name);
+      assert.ok(item.quantityGrams > 0);
+      // The same three-state convention `toFoodLog` follows: a curated item
+      // carries the credit and the authoritative figure, a hand-typed one
+      // carries neither, and never as `null`.
+      if (item.curatedSource !== null) {
+        assert.equal('attribution' in item, true);
+        assert.equal('netCarbsPer100g' in item, true);
+      } else {
+        assert.equal('attribution' in item, false);
+        assert.equal('netCarbsPer100g' in item, false);
+      }
+    }
+  }
+});
+
+test('the pantry spans several categories and units, and every capture source appears', () => {
+  const items = build().data.pantryItems;
+  assert.ok(items.length >= 8, 'enough rows for the pantry screen to look populated');
+  assert.deepEqual(items, build().data.pantryItems, 'byte-identical across two runs with the same seed');
+
+  const categories = new Set(items.map((item) => item.category));
+  assert.ok(categories.size >= 5, 'the list is not one category repeated');
+
+  const units = new Set(items.map((item) => item.unit));
+  assert.ok(units.size >= 3, 'more than one unit appears');
+
+  const sources = new Set(items.map((item) => item.source));
+  assert.deepEqual([...sources].toSorted(), ['manual', 'photo', 'text']);
+
+  for (const item of items) {
+    assert.equal(item.amount === null, item.unit === null, `${item.name}: amount and unit are null together`);
+  }
 });
 
 /** `YYYY-MM-DD` plus `days`, as UTC calendar arithmetic. Local to this file so the test does not lean on the code it checks. */

@@ -447,6 +447,7 @@ function reportDiary({ summary, outPath }: { summary: SeedDiarySummary; outPath:
       `Diary written to ${outPath}`,
       `  schema v${SCHEMA_VERSION}, ${summary.firstDay} to ${summary.lastDay} (${summary.dayCount} days)`,
       `  ${summary.foodLogCount} entries, ${summary.personalFoodCount} saved foods, ${summary.weightEntryCount} weights`,
+      `  ${summary.savedMealCount} saved meals, ${summary.pantryItemCount} pantry items`,
       `  ${summary.emptyDayCount} days with nothing logged at all`,
       '',
     ].join('\n'),

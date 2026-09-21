@@ -38,7 +38,16 @@
  */
 import type { BackupEnvelope } from '../../app/lib/local-store/backup';
 import { SCHEMA_VERSION } from '../../app/lib/local-store/schema';
-import type { LocalFoodLog, LocalPersonalFood, LocalWeightEntry } from '../../app/lib/local-store/schema';
+import type {
+  LocalFoodLog,
+  LocalPantryItem,
+  LocalPersonalFood,
+  LocalSavedMeal,
+  LocalSavedMealItem,
+  LocalWeightEntry,
+  PantryCategory,
+  PantryUnit,
+} from '../../app/lib/local-store/schema';
 import type { Macros } from '../../app/lib/macros';
 import { computeNetCarbsFromParts } from '../../app/lib/net-carbs';
 import { dayBoundsInTimezone, shiftDate, todayInTimezone } from '../../app/lib/user-days';
@@ -303,6 +312,8 @@ export interface SeedDiarySummary {
   foodLogCount: number;
   personalFoodCount: number;
   weightEntryCount: number;
+  savedMealCount: number;
+  pantryItemCount: number;
   /** Net carbs per day, oldest first. An empty day is `0`, and `emptyDayCount` is what tells the two apart. */
   netCarbsByDay: readonly number[];
 }
@@ -561,6 +572,162 @@ function buildPersonalFoods(createdAt: number): LocalPersonalFood[] {
   });
 }
 
+/** Finds a catalogue food by its id fragment, or throws: a typo in a definition below must fail loudly, not seed a broken row. */
+function findSeedFood(id: string): SeedFood {
+  const food = SEED_CATALOG.find((candidate) => candidate.id === id);
+  if (food === undefined) throw new Error(`No seed food catalogued as ${id}`);
+  return food;
+}
+
+/** One item inside a saved-meal definition below: which catalogue food, and how much. */
+interface SeedSavedMealItemDefinition {
+  foodId: string;
+  grams: number;
+}
+
+/** One saved-meal definition below: fixed, not rolled, so `/meals` shows the same "usual meals" on every run. */
+interface SeedSavedMealDefinition {
+  id: string;
+  name: string;
+  items: readonly SeedSavedMealItemDefinition[];
+}
+
+/** The "usual meals" a reviewer expects on `/meals`, each a fixed mix of the same catalogue every entry above draws from. */
+const SAVED_MEAL_DEFINITIONS: readonly SeedSavedMealDefinition[] = [
+  {
+    id: 'seed-saved-meal-1',
+    name: 'Weekday breakfast',
+    items: [
+      { foodId: 'scrambled-eggs', grams: 150 },
+      { foodId: 'greek-yoghurt', grams: 120 },
+    ],
+  },
+  {
+    id: 'seed-saved-meal-2',
+    name: 'Chicken and greens lunch',
+    items: [
+      { foodId: 'chicken-breast', grams: 160 },
+      { foodId: 'broccoli', grams: 120 },
+      { foodId: 'mixed-salad', grams: 80 },
+    ],
+  },
+  {
+    id: 'seed-saved-meal-3',
+    name: 'Salmon dinner',
+    items: [
+      { foodId: 'salmon-fillet', grams: 170 },
+      { foodId: 'spinach', grams: 100 },
+    ],
+  },
+];
+
+/**
+ * The saved ("usual") meals for `/meals`, built from the catalogue rather than
+ * invented figures, so a re-log from one of these lines up with the matching
+ * personal food `buildPersonalFoods` already wrote.
+ */
+function buildSavedMeals(originAt: number): LocalSavedMeal[] {
+  return SAVED_MEAL_DEFINITIONS.map((definition, index) => {
+    const items: LocalSavedMealItem[] = definition.items.map((itemDefinition) => {
+      const food = findSeedFood(itemDefinition.foodId);
+      const item: LocalSavedMealItem = {
+        name: food.name,
+        quantityGrams: itemDefinition.grams,
+        macros: scaleToServing(food.macrosPer100g, itemDefinition.grams),
+        source: 'manual',
+        aiEstimated: false,
+        curatedSource: food.curated ? SEED_CURATED_SOURCE : null,
+        foodId: `seed-food-${food.id}`,
+      };
+      // Same three-state convention `toFoodLog` follows: written only when
+      // there is something to write, never as `null`.
+      if (food.curated) {
+        item.attribution = SEED_ATTRIBUTION;
+        item.netCarbsPer100g = round1(netCarbsPer100g(food));
+      }
+      return item;
+    });
+    return {
+      id: definition.id,
+      name: definition.name,
+      items,
+      createdAt: originAt + index * 60_000,
+    };
+  });
+}
+
+/** One pantry row's fixed shape, before the deterministic timestamps are stamped on. */
+interface SeedPantryItemDefinition {
+  id: string;
+  name: string;
+  amount: number | null;
+  unit: PantryUnit | null;
+  category: PantryCategory;
+  source: 'photo' | 'text' | 'manual';
+}
+
+/**
+ * Ordinary shelf ingredients for `/pantry` and `/pantry/recipes`, spanning
+ * several categories, every real unit plus the no-amount-yet case, and all
+ * three capture sources, so the list does not read as one photograph.
+ */
+const PANTRY_ITEM_DEFINITIONS: readonly SeedPantryItemDefinition[] = [
+  {
+    id: 'seed-pantry-item-1',
+    name: 'Extra virgin olive oil',
+    amount: 500,
+    unit: 'ml',
+    category: 'condiment',
+    source: 'manual',
+  },
+  { id: 'seed-pantry-item-2', name: 'Tinned chickpeas', amount: 400, unit: 'g', category: 'legume', source: 'text' },
+  { id: 'seed-pantry-item-3', name: 'Brown rice', amount: 1000, unit: 'g', category: 'grain', source: 'photo' },
+  {
+    id: 'seed-pantry-item-4',
+    name: 'Free-range eggs',
+    amount: 6,
+    unit: 'piece',
+    category: 'egg',
+    source: 'manual',
+  },
+  {
+    id: 'seed-pantry-item-5',
+    name: 'Cherry tomatoes',
+    amount: 250,
+    unit: 'g',
+    category: 'produce',
+    source: 'photo',
+  },
+  { id: 'seed-pantry-item-6', name: 'Parmesan', amount: 200, unit: 'g', category: 'dairy', source: 'text' },
+  {
+    id: 'seed-pantry-item-7',
+    name: 'Frozen cod fillets',
+    amount: 2,
+    unit: 'pack',
+    category: 'fish',
+    source: 'manual',
+  },
+  { id: 'seed-pantry-item-8', name: 'Garlic bulbs', amount: 5, unit: 'piece', category: 'produce', source: 'photo' },
+  { id: 'seed-pantry-item-9', name: 'Sea salt', amount: null, unit: null, category: 'other', source: 'manual' },
+];
+
+/** The pantry rows for `/pantry` and `/pantry/recipes`, stamped from the same deterministic clock as everything else. */
+function buildPantryItems(originAt: number): LocalPantryItem[] {
+  return PANTRY_ITEM_DEFINITIONS.map((definition, index) => {
+    const stampedAt = originAt + index * 60_000;
+    return {
+      id: definition.id,
+      name: definition.name,
+      amount: definition.amount,
+      unit: definition.unit,
+      category: definition.category,
+      source: definition.source,
+      createdAt: stampedAt,
+      updatedAt: stampedAt,
+    };
+  });
+}
+
 /**
  * The weight series: every third day, drifting down towards the target with a
  * small deterministic wobble.
@@ -678,8 +845,8 @@ export function buildSeedDiary(options: SeedDiaryOptions): BackupEnvelope {
         updatedAt: originAt,
       },
       fasts: [],
-      savedMeals: [],
-      pantryItems: [],
+      savedMeals: buildSavedMeals(originAt),
+      pantryItems: buildPantryItems(originAt),
       activityMarks: [],
       awards: [],
       fastingSettings: null,
@@ -723,6 +890,8 @@ export function summarizeSeedDiary(envelope: BackupEnvelope): SeedDiarySummary {
     foodLogCount: envelope.data.foodLogs.length,
     personalFoodCount: envelope.data.foods.length,
     weightEntryCount: envelope.data.weightEntries.length,
+    savedMealCount: envelope.data.savedMeals.length,
+    pantryItemCount: envelope.data.pantryItems.length,
     netCarbsByDay: spanDays.map((dayKey) => round1(netCarbsByDayKey.get(dayKey) ?? 0)),
   };
 }
