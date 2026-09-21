@@ -39,6 +39,13 @@
  * the default because adopting on every run would pair the hash of NEW English with the OLD
  * German and call the key done.
  *
+ * ── THE SCREEN GLOSSARY RIDES IN THE NOTES ──
+ * `scripts/translate-glossary.ts` builds the app's own name for each of its screens out of the
+ * English and target `common.json` and appends it to `NOTES`, so a release lead that names a
+ * screen is answered with the name the app itself uses. It also reports the remembered leads that
+ * missed one. Its header says why the names are read rather than typed, and why the report never
+ * fails a run.
+ *
  * ── TWO VOICES, TWO BUNDLES ──
  * `common.json` says "du" and `legal.json` says "Sie", and the register goes into the system
  * prompt of a request, so the strings of the two are batched apart (`groupByBundle`) and bought
@@ -67,6 +74,7 @@ import {
   saveCatalog,
   skipReason,
 } from './lib/translate-ui';
+import { RELEASE_NAMESPACE, SCREEN_NAMESPACE, screenGlossary, screenOffenders } from './translate-glossary';
 
 const args = process.argv.slice(2);
 function flag(name: string): string | undefined {
@@ -117,6 +125,12 @@ const TARGET = new Map<string, CatalogTree>(
   NAMESPACES.map((namespace) => [namespace, readCatalog(catalogPath(ROOT, LOCALE, namespace))]),
 );
 
+/** The two catalogs the screen names come out of. A run without them is a run that cannot name a screen. */
+const SCREEN_ENGLISH = catalogOrExit({ trees: ENGLISH, namespace: SCREEN_NAMESPACE, locale: SOURCE_LANGUAGE });
+const SCREEN_TARGET = catalogOrExit({ trees: TARGET, namespace: SCREEN_NAMESPACE, locale: LOCALE });
+/** The app's own name for each of its screens, in this locale, appended to every request's notes. */
+const SCREENS = screenGlossary({ english: SCREEN_ENGLISH, target: SCREEN_TARGET });
+
 /** The prose of each bundle, keyed by path and English (see `translate-bundles.ts`). */
 const BUNDLES = new Map<string, UnitOfLeaf[]>(
   [...groupByBundle(NAMESPACES)].map(([bundle, namespaces]) => [
@@ -163,10 +177,15 @@ if (quote.requests > 0) {
 } else {
   console.log('translate-ui: nothing to translate, 0.0000 USD.');
 }
+console.log(
+  `translate-ui: glossary: ${SCREENS.named} of ${SCREENS.of} screen names from ${LOCALE}/${SCREEN_NAMESPACE}.json, ` +
+    'outside the quote above. It rides in the notes, and `price` reads only the system prompt.',
+);
 
 if (DRY) {
   for (const unit of misses.slice(0, 20)) console.log(`  miss  ${unit.key}  ${unit.source.slice(0, 80)}`);
   if (misses.length > 20) console.log(`  ... and ${misses.length - 20} more`);
+  reportScreens();
   console.log('translate-ui: dry run, nothing was sent and nothing was written.');
   process.exit(0);
 }
@@ -202,7 +221,7 @@ if (misses.length > 0) {
     key,
     done,
     total,
-    notes: NOTES,
+    notes: [...NOTES, ...SCREENS.lines],
     afterChunk: ({ bundle, at, of, batch }) => {
       console.log(
         `  ${LOCALE} ${bundle} ${at}/${of} (${batch.length} strings) ... ${(total.cost - before).toFixed(6)} USD  ` +
@@ -229,6 +248,8 @@ if (misses.length > 0) {
 
 save();
 write();
+
+reportScreens();
 
 // THE DASH PASS, over the whole memory and not only over what was bought: a hand-written bundle
 // adopted with one in it, a hand edit, a model swap. It names the hash, because the hash is what
@@ -329,4 +350,48 @@ function write(): void {
     console.error('translate-ui: refusing to write the catalogs outside CI. Pass --local to override.');
     process.exit(1);
   }
+}
+
+/**
+ * Which remembered release leads name a screen and answer it with another word.
+ *
+ * A REPORT AND NEVER AN EXIT CODE, the same bargain the library's `glossaryOffenders` strikes and
+ * the opposite of the dash pass above: a dash is a character, a screen name is a word in a
+ * sentence, and a good translation is allowed to leave the noun out. It runs on every run,
+ * including one with nothing to buy, because that is the run a release does after the last locale
+ * is bought. The hash is what you delete from the memory to buy that one lead again.
+ */
+function reportScreens(): void {
+  const missed = screenOffenders({
+    memory,
+    locale: LOCALE,
+    english: SCREEN_ENGLISH,
+    target: SCREEN_TARGET,
+  });
+  if (missed.length === 0) {
+    console.log(`translate-ui: ${LOCALE}, no remembered ${RELEASE_NAMESPACE} lead misses a screen name.`);
+    return;
+  }
+  console.log(
+    `translate-ui: ${missed.length} remembered ${RELEASE_NAMESPACE} leads name a screen the ${LOCALE} catalog ` +
+      'names otherwise. A report, not a failure. Delete a hash from the memory to buy that lead again.',
+  );
+  for (const offender of missed) {
+    console.log(`  ${offender.hash}  ${offender.path}  ${offender.screen} -> ${offender.expected.join(' or ')}`);
+    console.log(`      en  ${offender.en}`);
+    console.log(`      ${LOCALE}  ${offender.say}`);
+  }
+}
+
+/**
+ * One namespace's catalog, or the end of the run.
+ *
+ * A NAMED FUNCTION rather than a guard beside the constants, because `reportScreens` below is a
+ * hoisted declaration and TypeScript will not carry a narrowing from the module body into it.
+ */
+function catalogOrExit(ask: { trees: Map<string, CatalogTree>; namespace: string; locale: string }): CatalogTree {
+  const tree = ask.trees.get(ask.namespace);
+  if (tree !== undefined) return tree;
+  console.error(`translate-ui: there is no ${ask.namespace} catalog for ${ask.locale}, so no screen can be named.`);
+  process.exit(1);
 }
