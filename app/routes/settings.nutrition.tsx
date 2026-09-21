@@ -618,9 +618,11 @@ function GoalsCard({
               onClick={() => setKcalTarget(String(suggestedKcalTarget))}
               // `tabular-nums` because the chip carries a LIVE figure, it
               // moves with every weigh-in, and DESIGN.md section 4 keeps
-              // changing numbers in `font-sans` with tabular digits. Same
-              // treatment the fasting summary line gives its interpolated
-              // number.
+              // every changing number in the body face with tabular digits.
+              // That face is a monospace since M243, so the class is
+              // redundant today and stays anyway: it is what makes a rollback
+              // to a proportional face safe. Same treatment the fasting
+              // summary line gives its interpolated number.
               className={cn(settingsChipClass(isSuggestedKcalSelected), 'tabular-nums')}
             >
               {t('goals.kcal.suggested', { kcal: suggestedKcalTarget })}

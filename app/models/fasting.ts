@@ -347,9 +347,12 @@ export function formatFastDuration(ms: number, t: Translate): string {
 /**
  * The LIVE countdown only: "16:04:12", hours unpadded and never wrapped at 24,
  * minutes and seconds zero-padded, no locale involvement (H:MM:SS is written
- * the same everywhere). Render it in `font-sans tabular-nums`, never
- * `font-display` (DESIGN.md §4, the Fraunces subset has no `tnum`, so the
- * digits would jitter once a second).
+ * the same everywhere). Render it in the body face with `tabular-nums`, never
+ * in the brand serif (DESIGN.md §4: the Fraunces subset has no `tnum`, so the
+ * digits would jitter once a second). Since M243 the serif draws the product's
+ * own name and nothing else, so this is a guard against a reintroduction
+ * rather than a live risk, and `tabular-nums` stays even though the body face
+ * is now tabular by construction.
  */
 export function formatFastClock(ms: number): string {
   const totalSeconds = Math.floor(Math.max(0, ms) / MS_PER_SECOND);

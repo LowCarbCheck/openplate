@@ -23,8 +23,10 @@
  * paints a hex literal.
  *
  * ── WHAT IS NOT PINNED ──
- * That `.surface-grid` is applied nowhere yet. Later steps put it on the hero and on the
- * landing hero, so a pin on its absence would have to be deleted by them.
+ * WHERE `.surface-grid` is drawn. The landing hero section wears the class and the in-app hero
+ * panel draws the same two layers from `.surface-brand`, so a source count here would be the
+ * weaker of two answers: `lcc-lineage-landing.spec.ts` and `lcc-lineage-hero.spec.ts` read what
+ * a browser actually paints in each place.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

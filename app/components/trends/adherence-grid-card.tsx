@@ -8,8 +8,11 @@
  *
  * On a plain `bg-card`, NOT `.surface-brand`: this screen already spends its
  * one hero on `WeeklyRecapCard` (DESIGN.md §2), and the ramp below was
- * validated for contrast against `--card` — a brand wash under the cells would
- * invalidate that check as well as being a second hero.
+ * validated for contrast against `--card`. The hero panel's own surface under
+ * the cells would invalidate that check as well as being a second hero. It is
+ * graph paper rather than a teal wash since M243, which changes nothing here:
+ * the ramp was measured against a flat card, and a patterned ground is not
+ * one.
  */
 import { useTranslation } from 'react-i18next';
 import { AdherenceGrid } from '#app/components/trends/adherence-grid';

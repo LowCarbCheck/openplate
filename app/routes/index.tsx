@@ -568,8 +568,9 @@ function useHomeHintRepair(): void {
  * largest contentful paint on this page.
  *
  * The frame carries `.surface-brand`, so this figure is the page's ONE hero
- * card (DESIGN.md §2, "one hero per screen") — the role the preview card used
- * to hold. Adding a second brand fill anywhere on this page is a bug.
+ * card (DESIGN.md §2, "at most one hero per screen"), the role the preview
+ * card used to hold. Adding a second `.surface-brand` anywhere on this page is
+ * a bug, and `tests/e2e/lcc-lineage-hero.spec.ts` counts them in a browser.
  */
 function HeroShot(): ReactElement {
   const { t } = useTranslation();
@@ -1333,11 +1334,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           the same 7% teal on a pale-teal ground drew a visible grey ring, so
           light gets 3.5%.
 
-          Under it, `brand-glow` (app.css) puts a soft elliptical teal light
+          Under it, `brand-glow` (app.css) puts a soft elliptical light
           behind the wordmark, so the page has depth instead of being a flat
-          field with a screenshot dropped on it. That one IS anchored to the
-          top: the hero is copy-then-image, so its optical centre is the
-          headline.
+          field with a screenshot dropped on it. It is a MUTED radial since
+          M243, not a brand one: the wordmark and the one call to action are
+          what the eye should find. That one IS anchored to the top: the hero
+          is copy-then-image, so its optical centre is the headline.
         */}
         <div className="brand-glow pointer-events-none absolute inset-x-0 -top-32 -z-10 h-[34rem]" aria-hidden="true" />
         {/*

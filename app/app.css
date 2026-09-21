@@ -518,8 +518,16 @@
      light, a deep one in dark), so the rule reads in both themes with no
      second declaration and no new token or literal colour. 28px cells: the
      original SVG stretches to about 128px at desktop width, which is too
-     coarse for a 390px column. Nothing wears this class yet, the shell and
-     the landing hero pick it up in their own steps. */
+     coarse for a 390px column.
+
+     WHO WEARS IT. The landing hero section, and that is all
+     (`app/routes/index.tsx`). The hero PANEL inside the app draws the same
+     two layers from `.surface-brand` above, at the same cell and the same
+     alpha, rather than composing this class, because the panel also sets its
+     own `background-color` and the two belong in one rule. The app shell's
+     `<main>` deliberately does NOT wear it: behind opaque cards the paper
+     would be visible only in the 16px gutters and under the smallest grey
+     text, which is noise rather than texture. */
   .surface-grid {
     background-image:
       linear-gradient(to right, hsl(var(--border) / 0.7) 1px, transparent 1px),

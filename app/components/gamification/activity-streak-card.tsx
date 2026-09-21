@@ -20,9 +20,9 @@
  * presentational, which is also what lets its hidden case be rendered against
  * its control in a unit test.
  *
- * DESIGN.md §2 "one `.surface-brand` hero per screen": Trends already spends
- * its hero on `WeeklyRecapCard`, so this renders on an ordinary `bg-card`
- * surface, a second brand wash on that screen would be a bug.
+ * DESIGN.md §2 "at most one `.surface-brand` hero per screen": Trends already
+ * spends its hero on `WeeklyRecapCard`, so this renders on an ordinary
+ * `bg-card` surface, and a second hero panel on that screen would be a bug.
  */
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';

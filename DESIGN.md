@@ -1,21 +1,46 @@
 # openplate Design Language
 
-Distilled from lowcarbcheck (`apps/remix-lcc`) — openplate is a sibling product and shares the
-family DNA: a neutral zinc scale carrying all surfaces, a single **teal** brand accent, and a
+Distilled from lowcarbcheck (`apps/remix-lcc`). openplate is a sibling product and shares the
+family DNA: a neutral scale carrying all surfaces, a single **teal** brand accent, and a
 traffic-light **carb-status color system** doing the semantic heavy lifting. The overall feel is
-"trustworthy nutrition tool" — clean, data-forward, slightly technical — not a playful consumer app.
+"trustworthy nutrition tool", clean, data-forward, slightly technical, never a playful consumer app.
 
 openplate keeps its shadcn/Tailwind-4 CSS-variable architecture (LCC predates it); this document
 maps LCC's literal-palette language onto openplate's semantic tokens. When adding UI, follow the
 recipes here instead of inventing new ones.
 
+## Lineage: what M243 took from lowcarbcheck.org, and what it refused
+
+M243 pulled the family resemblance much closer, and it is worth naming both halves.
+
+**Kept from LCC:** a monospace body voice, graph paper behind the hero, flat cards with a hairline,
+a radius ladder where each step means one kind of object, a grey section label, and an accent spent
+a countable number of times per screen.
+
+**Refused on purpose:** LCC's emerald (openplate-brand owns the teal, and which teal wins is still
+an open question for a person), its polychrome pastel chip rows, and its tinted section bands. Two
+things a reader notices first are also out of scope: the raised round Scan button, whose geometry
+carries three documented clearances, and `public/landing/*`, whose screenshots still show the
+pre-M243 look.
+
+**Why the M129 choices were reversed, so a third flip needs a real argument.** M129 put the body in
+Inter, bumped the dominant card radius to `rounded-2xl`, tinted the chrome with the brand hue, and
+set every card title in the display serif over a wide-tracked teal label. The operator read that on
+a phone, called the result generic and AI generated, and asked for lowcarbcheck.org's design
+instead. That is the whole reason: a taste call by the person who owns the product, not a
+measurement. Anyone proposing Inter bodies, one radius or serif card titles again is proposing to
+reverse that decision and owes an argument of the same kind. The seams are cheap on purpose: the
+body face is one line (`--font-body` in `app/app.css`) and every number the tests read is one file
+(`tests/design-contract.ts`).
+
 ---
 
 ## 1. Principles
 
-1. **Zinc carries the chrome, teal carries the brand, traffic-light carries the data.** Almost
+1. **The neutrals carry the chrome, teal carries the brand, traffic-light carries the data.** Almost
    everything is neutral. Teal appears only where attention belongs: primary CTAs, active nav,
-   focus rings, links, progress. Green/amber/red appear only to communicate carb quality.
+   focus rings, links, progress. It is counted rather than judged by eye: §6 freezes a ceiling per
+   screen. Green/amber/red appear only to communicate carb quality.
 2. **Feedback is mandatory.** Every async action shows its state: pending buttons get a spinner,
    navigations get the top progress bar, mutations confirm with a toast, destructive actions get a
    real dialog (never `window.confirm`). Nothing the user triggers may look frozen.
@@ -23,9 +48,10 @@ recipes here instead of inventing new ones.
    status. A user should identify "low-carb" without reading a number.
 4. **Dark mode is a first-class parallel palette**, not an inversion. Every recipe below has an
    explicit dark variant.
-5. **Soft but dense.** Generous radii (`rounded-2xl` primary content cards, `rounded-full` pills),
-   subtle shadows, compact information density. (M129/01 bumped the dominant card radius from
-   `rounded-lg`.)
+5. **Shape ranks things, and nothing is heavy at rest.** Five radius steps, each one a kind of
+   object (§5), plus `rounded-full` for pills. A resting card is `shadow-sm`, never heavier, with
+   the one sanctioned exception in §5. Information density stays compact. (M129/01 had put every
+   card on `rounded-2xl`; M243 spec 03 restored the ladder, which is what §5 had said all along.)
 
 ---
 
@@ -62,36 +88,53 @@ color is never the only cue — every macro figure is also named, ordered, and p
 Chart palette (from LCC, same value both modes): sky `#5899DA`, rose `#EE6868`, emerald `#19A979`,
 grape `#945ECF`, navy `#2F6497`, orange `#FF9F40`, yellow `#FFD700`, brown `#8B4513`.
 
-**Teal discipline (revised in M129):** the neutrals are teal-tinted everywhere, but a *saturated*
-teal surface is still rationed. Exactly three utilities may paint one, all defined in `app.css` and
-all expressed as `hsl(var(--primary) / …)` gradients — never a literal:
+**Teal is a rationed ACCENT, never a rationed SURFACE (M243 spec 04).** M129 read the rule the other
+way: three utilities painted a saturated `hsl(var(--primary) / …)` wash, and seven screens then read
+as a tinted card on a tinted page. The three utilities keep their names and their jobs, and none of
+them paints the brand hue any more. All three live in `app.css`, all three are token-only, never a
+literal:
 
-- `.surface-brand` — the ONE hero card per screen (diary day summary, trends "This week", the
-  landing preview). One per screen, never two.
-- `.surface-brand-soft` — placeholder/empty-state panels, paired with `border-dashed`.
-- `.brand-glow` — the landing hero backdrop only.
+- `.surface-brand` is the one hero panel per screen. A flat `bg-card` fill on the border colour at
+  `shadow-sm`, with §5b's graph paper drawn inside it. The paper is what marks the hero now that
+  the fill is an ordinary card fill.
+- `.surface-brand-soft` is a placeholder or empty-state panel, `bg-muted/40`, paired with
+  `border-dashed` on the border colour at every call site.
+- `.brand-glow` is the landing hero backdrop only, a muted radial, not a brand one.
 
 Everything else keeps `bg-card`. Ordinary cards, list rows and inputs never get a brand fill.
 
-**One hero per screen, named:** diary → the day summary; overview → "Today"; trends → "This week";
-landing → the preview card; fasting → whichever of the three state cards is on screen (plan /
-scheduled / active) — the state changes, the count does not. Adding a second `.surface-brand` to any
-of those screens is a bug. (Fasting is the first screen whose hero IDENTITY is state-dependent, which
-is why it is spelled out: the fix for "two of these states look unbranded" is not to give a second
-card a brand fill. `profile` no longer appears above because that route is gone — it redirects to
-`/settings`.)
+**At most one hero per screen, named:** diary is the day summary; overview is "Today"; trends is
+"This week"; landing is the screenshot frame; fasting is whichever of the three state cards is on
+screen (plan, scheduled, active), so the state changes and the count does not. The rule is "at
+most one", because an empty diary and a first visit legitimately draw none. A second
+`.surface-brand` on any of those screens is a bug, and it is a browser fact rather than a
+convention: `tests/e2e/lcc-lineage-hero.spec.ts` counts the elements on each screen in both the
+empty and the logged state, with a second-hero control that must go red. (Fasting is the one screen
+whose hero IDENTITY is state-dependent, which is why it is spelled out: the fix for "two of these
+states look unbranded" is not to give a second card a brand fill. `profile` no longer appears above
+because that route is gone, it redirects to `/settings`.)
 
-**Where the brand shows up outside a hero** (M129/06 "lean into it" pass) — these are the only
-sanctioned brand-carrying treatments on ordinary surfaces, all token-only:
+**Where the brand shows up outside a hero.** These are the only sanctioned brand-carrying
+treatments on ordinary surfaces, all token-only, and every one of them is counted against the
+screen's ceiling in §6:
 
 | Surface | Treatment |
 | --- | --- |
-| Section labels (meal groups, chip rows, search-result groups, drill-down blocks) | `<SectionEyebrow>` — `text-[11px] font-semibold uppercase tracking-[0.11em] text-primary`, optional `trailingRule` hairline at `bg-primary/20` |
-| Card titles, app-wide | `font-display` (Fraunces) via the `CardTitle` primitive — never on a live figure, see §4 |
-| Interactive row/chip hover | `hover:border-primary/40 hover:bg-primary/5` (replaces the old literal `teal-300`/`teal-600` pair) |
-| Group subtotals (meal net carbs) | `rounded-full bg-primary/10 px-2 py-0.5 text-primary` pill |
-| Active bottom-nav tab | `bg-primary/5` + a `after:` top rule at `bg-primary` |
-| Drill-down panel inside a hero | `rounded-xl border-primary/15 bg-card/70` — an inset card, because `.surface-brand`'s gradient has faded out by the bottom of a tall card |
+| Section labels (meal groups, chip rows, search-result groups, drill-down blocks) | `<SectionEyebrow>`, and it is NOT brand-carrying any more: `text-xs font-semibold uppercase tracking-wide text-muted-foreground`, optional `trailingRule` hairline at `bg-border`. Exported as `SECTION_EYEBROW_CLASS` for the one inline copy (`fast-strip.tsx`). |
+| Card titles, app-wide | `text-base font-semibold tracking-tight` in the body face. No serif, see §4. |
+| The wordmark in the header kicker | `text-primary` on `<Wordmark>`, the product's own name. |
+| Active bottom-nav tab | `bg-primary/5` + `text-primary` + a `after:` top rule at `bg-primary`. Three cues, so it never depends on hue alone. |
+| The one primary action per screen | the default filled `Button`. One per screen, and a secondary action is never a second filled button. |
+| Links | `text-primary hover:underline underline-offset-4` in the app, `decoration-primary/30` under a landing secondary action. |
+| Interactive row/chip hover, and the just-added row | `hover:border-primary/40 hover:bg-primary/5`, and `border-primary/50 bg-primary/10` while an entry is freshly added. Hover is invisible on a phone and headless, so it costs nothing on the ceiling there. |
+| The "logging to a past day" banner | `border-primary/20 bg-primary/5` with a `text-primary` icon. Informational, never a warning, so no amber and no red. |
+| Landing screenshot frames | the hero frame's sanctioned `border-primary/55 shadow-2xl shadow-primary/20` (see §5), and `border-primary/25 shadow-md shadow-primary/5` on every shot below it. |
+| An award a person holds | the brand fill on `award-tile.tsx`'s `default` variant. |
+
+Group subtotals are **no longer** on this list. A meal's net carbs, a nutrient's share of its
+target and a bundle's item count were all a `bg-primary/10 text-primary` pill; they use
+`CHIP_NEUTRAL` now (§6). A number is a number, and spending the accent on arithmetic leaves
+nothing to point at what a person should do.
 
 ---
 
@@ -138,47 +181,141 @@ renders: curated match cards, per-food draft cards, food-log entries. Dot indica
 
 ## 4. Typography
 
-- **Body font: Inter Variable (`font-sans`) on `<body>`.** Victor Mono Variable stays available as
-  `font-mono` for genuinely technical strings; Inter is the prose/UI voice.
-- **Display serif: Fraunces (`font-display`)**, self-hosted from `public/fonts/` (M129/01). It
-  carries the wordmark, page titles, and — since M129/06 — every **card title**, which is the
-  cheapest way to give screens past the hero some brand character.
-  **Never on a live figure.** The Fraunces subset has no `tnum` feature, so digits would jitter in
-  width as they update. Every number that changes as you use the app (ring stat, macro grid, gap
-  rows, entry rows) stays in `font-sans` with `tabular-nums`.
-- Fonts are **self-hosted via `@fontsource-variable/*` imports** in `root.tsx` — never a Google
-  Fonts CDN `<link>` (openplate is privacy-first, self-hosted; no third-party font beacons).
-- Scale (plain Tailwind, applied consistently):
-  - Page title: `text-2xl font-semibold tracking-tight`
-  - Hero (landing): `text-4xl font-bold tracking-tight sm:text-5xl`
-  - Card title: `text-lg font-semibold`
+**A screen asks for a ROLE, never for a face.** Three roles are declared in the `@theme` block of
+`app/app.css`, and they are the only names a component may use. A taste reversal is then one line
+there instead of a sweep of the tree.
+
+| Role | Declares | Utility | Who asks for it |
+| --- | --- | --- | --- |
+| `--font-body` | `'Victor Mono Variable', 'Inter Variable', ui-monospace, monospace` | `font-body` | `<body>`, so the whole app |
+| `--font-prose` | `'Inter Variable', sans-serif` | `font-prose` | `.prose` and the four legal pages |
+| `--font-brand` | `'Fraunces', serif` | `font-display` | the `Wordmark` component, and nothing else |
+
+Three more `--font-*` names sit in the same block and are NOT roles. `--font-sans` and `--font-mono`
+are Tailwind's own variable names, read by the `font-sans` and `font-mono` utilities; they still
+declare Inter and Victor Mono, which is how a one-off technical string can name a FACE, and no
+component in this app should need to. `--font-display` is an alias for `var(--font-brand)`, and it
+exists only so the Tailwind utility of that name resolves to the brand role.
+`tests/unit/design-md-in-sync.test.ts` fails if a `--font-*` name is added to the `@theme` block and
+this document does not learn it.
+
+- **Body face: Victor Mono Variable (M243 spec 01).** The monospace voice is the single largest
+  piece of the lowcarbcheck resemblance. Inter Variable sits behind it in the stack for a glyph
+  Victor Mono lacks, then the device's own monospace. Ligatures are off app-wide
+  (`font-variant-ligatures: none` on `body`): Victor Mono joins `->` and `<=` into one glyph, and
+  people type exactly those into food names.
+- **Long-form reading stays in Inter**, through the `prose` role. A monospace paragraph at 16px in
+  a 358px column measures about 35 characters per line, below the readable floor, and the German
+  terms page grows by 27 percent. lowcarbcheck.org does the same from the other side: seven of its
+  densest route containers opt back into the sans face.
+- **The serif is a logotype, not a text face.** Fraunces (`--font-brand`, self-hosted from
+  `public/fonts/`) draws the word "openplate" and nothing else. It used to sit on every card title,
+  the header page title, a live number and nine landing headings, which is the generated-template
+  signature M243 removed. The `Wordmark` component is the only file allowed to write
+  `font-display`, and `tests/unit/wordmark-only-serif.test.ts` fails if the class appears anywhere
+  else under `app/`.
+- **Never a serif on a live figure**, and the rule is now doubly safe: the Fraunces subset has no
+  `tnum` feature, so digits would jitter as they update, and the serif no longer reaches a figure
+  at all. **Keep `tabular-nums` anyway** on every number that changes as you use the app (ring
+  stat, macro grid, gap rows, entry rows). Victor Mono is tabular by construction, so the class is
+  redundant today; it is what makes a rollback to a proportional body face safe.
+- Fonts are **self-hosted**, Inter and Victor Mono via `@fontsource-variable/*` imports in
+  `root.tsx` and Fraunces via an `@font-face` block in `app.css`. Never a Google Fonts CDN `<link>`
+  (openplate is privacy-first and self-hosted, no third-party font beacons).
+- Scale (plain Tailwind, applied consistently). A monospace reads optically larger than Inter at
+  the same pixel size, which is why two of these stepped down in M243:
+  - Header page title on a phone: `truncate text-sm font-semibold leading-tight tracking-tight md:text-xl`.
+    14px, and MEASURED: it is the largest whole pixel size at which no route title in any of the
+    six languages clips harder than Inter at 18px did, at 390px and at 360px. It is also the floor
+    in `tests/design-contract.ts`, so the next clip cannot be "fixed" by shrinking the title.
+  - Landing wordmark: `text-5xl font-bold tracking-tight sm:text-6xl`
+  - Card title: `text-base font-semibold leading-tight tracking-tight text-balance` (the `CardTitle`
+    primitive's default; auth and onboarding screens override the size)
   - Body: `text-sm` (default) / `text-base`
   - Meta/labels/badges: `text-xs`; muted meta: `text-xs text-muted-foreground`
 - Emphasis weight is `font-semibold`; `strong/b` renders 700.
-- Numbers in macro grids are the mono font by default (body font) — this is intentional; keep
-  tabular alignment with `tabular-nums` where columns of numbers stack.
+- Numbers in macro grids are the body face, which is now genuinely the mono font. Keep
+  `tabular-nums` where columns of numbers stack.
 
 ---
 
 ## 5. Shape, elevation, spacing
 
-- Radii: `rounded-md` buttons/inputs/thumbnails · `rounded-lg` cards, dialogs, food images
-  (dominant) · `rounded-xl` feature/stat tiles · `rounded-full` pills, badges, status dots.
-  `--radius: 0.5rem` stays.
-- Shadows: `shadow-sm` resting cards → `hover:shadow-md` (list cards) or `hover:shadow-lg`
-  (feature cards); `shadow-lg` for overlays. Never heavier at rest — with ONE sanctioned
-  exception: the landing hero's screenshot frame, which carries `shadow-2xl shadow-primary/10`
-  at rest because it is a product photograph that has to lift off the page rather than a card
-  the user can act on (M146; it is the same element as §2's single landing `.surface-brand`,
-  so this exception cannot spread without breaking that rule first).
-- Interactive-card hover recipe: `transition-all duration-200 hover:shadow-md
-  hover:border-primary/40`. No `dark:` variant is needed — `primary` is already per-theme, which
-  the literal `teal-300`/`teal-600` pair this replaces was only ever emulating. (That pair is
-  banned by §11; this line used to still teach it, which is how it kept getting copied into new
-  cards. §2's hover row is the same recipe for rows and chips.)
+**THE RADIUS LADDER (M243 spec 03).** Five steps, and each step is one kind of object. Anything at
+the same step is the same kind of object, which is the whole point: a person learns the ladder once
+and then reads a screen faster. One radius used to mean everything, so the shape of a thing said
+nothing about what the thing was.
+
+| Tier | Class | px | What wears it |
+| --- | --- | --- | --- |
+| `dataRow` | `rounded` | 4 | a data row inside a panel: label, value, status |
+| `control` | `rounded-md` | 6 | buttons, inputs, composer keys, thumbnails |
+| `card` | `rounded-lg` | 8 | every card, every inset group, every list row, every panel |
+| `tile` | `rounded-xl` | 12 | a tile in a grid |
+| `hero` | `rounded-2xl` | 16 | the one hero per screen, dialogs, sheets, the landing frame |
+
+`rounded-full` is the sixth and is not a step: pills, badges, dots and avatars are round because
+they are round, not because of where they sit. `--radius: 0.5rem` stays.
+
+The ladder lives as numbers in `tests/design-contract.ts` (`RADIUS_TIER_PX`, `RADIUS_TIER_CLASS`),
+which is where a reversal is a one-line edit. `tests/unit/radius-tiers.test.ts` holds an allowlist
+of the eleven sites still permitted to draw 12px or 16px, with the reason beside each one, and
+`tests/e2e/lcc-lineage-shape.spec.ts` reads the COMPUTED radius of each tier in a real browser. A
+radius is never a test's way of FINDING an element: `Card` carries `data-slot="card"` for that,
+because a selector like `div.rounded-2xl.bg-card` fails the day a taste call moves and passes
+vacuously the day it moves and nobody notices.
+
+- Shadows: `shadow-sm` on resting cards, `hover:shadow-md` (list cards) or `hover:shadow-lg`
+  (feature cards), `shadow-lg` for overlays. Never heavier at rest, with ONE sanctioned exception:
+  the landing hero's screenshot frame, `border-primary/55 shadow-2xl shadow-primary/20` (and
+  `dark:border-primary/40 dark:shadow-primary/10`), because it is a product photograph that has to
+  lift off the page rather than a card the user can act on (M146). It is the same element as §2's
+  single landing `.surface-brand`, so the exception cannot spread without breaking that rule first.
+- Interactive-card hover recipe: `transition-colors duration-300 hover:border-primary/40
+  hover:bg-primary/5`. No `dark:` variant is needed, because `primary` is already per-theme, which
+  the literal `teal-300`/`teal-600` pair it replaces was only ever emulating. (That pair is banned
+  by §11 and four of them still exist, see §11. §2's hover row is the same recipe for rows and
+  chips. Hover is invisible on a phone and under headless Chromium, so a layout or colour claim
+  may never depend on it.)
 - Page container: `mx-auto max-w-3xl px-4 sm:px-6` for the app's focused single-column pages
   (openplate is narrower than LCC's `max-w-7xl` content site — keep it).
 - Vertical rhythm: `space-y-6` between page sections, `space-y-4` within cards, `gap-2` label→input.
+
+---
+
+## 5b. Texture: the graph paper (M243)
+
+The one piece of texture in the app, taken from lowcarbcheck.org's hero, and the cheapest thing
+that stops a screen reading as a scaffolded template. It is a CSS utility in `app.css`, drawn from
+tokens, with no image, no SVG and no new colour:
+
+```css
+.surface-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.7) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.7) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+```
+
+- **`--border` is themed**, a pale teal-grey in light and a deep one in dark, so the paper reads in
+  both themes from one declaration, with no second rule, no new token and no literal.
+- **28px cells.** The original SVG stretches to about 128px at desktop width, which is far too
+  coarse for a 390px column.
+- **Seven tenths alpha, in both places the paper is drawn.** Three tenths was tried first, out of
+  a worry about the 12px captions under the hero figures, and at three tenths the paper is simply
+  not there in either theme. What keeps the paper off the small text is the CONTENT, the data rows
+  and inner cards carry fills of their own, not a weaker line. The cell and the alpha are
+  `GRID_CELL_PX` and `GRID_LINE_ALPHA` in `tests/design-contract.ts`.
+
+**Where it is drawn, and where it is NOT.** Two places only: inside the one hero panel
+(`.surface-brand` declares its own copy, §2) and behind the landing hero section (`.surface-grid`
+on the wrapper in `app/routes/index.tsx`). It is deliberately **not** on the app shell's `<main>`,
+which was the first proposal: opaque cards would leave the paper visible only in 16px gutters and
+behind the smallest grey text, which is noise rather than texture.
+`tests/e2e/lcc-lineage-hero.spec.ts` asserts the dashboard's hero is the only element on that
+screen painting a grid, with a second-hero control that must break both that claim and the count.
 
 ---
 
@@ -187,15 +324,50 @@ renders: curated match cards, per-food draft cards, food-log entries. Dot indica
 **Buttons** — shadcn variants as shipped, with `default` now teal via `--primary`. Sizes unchanged.
 Pending state (see §7) is built into `SubmitButton`.
 
-**Badges/pills** — `rounded-full px-2 py-0.5 text-xs font-medium` + a color pair from §3 (or
-zinc: `bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300` for neutral chips like meal
-type). Larger filter pills: `px-4 py-2`.
+**The teal budget, counted per screen (M243 spec 05b).** "Use the accent sparingly" has never
+stopped a single teal icon from being added, because no one addition is the one that breaks the
+page. `TEAL_BUDGET_CEILING` in `tests/design-contract.ts` freezes the number each screen measured
+on the build that shipped: `/settings` 2, `/trends` 4, `/add` 5, `/diary` 9, `/dashboard` 12. A
+number counts one element inside `main` whose own text colour, background colour or drawn border
+resolves to `--primary` at any alpha above zero, and `tests/e2e/lcc-lineage-teal-budget.spec.ts`
+does the counting with an injection control that proves one more element breaks the ceiling. Every
+screen pays two before it draws anything of its own, the header wordmark and the raised launcher,
+and `/settings` is exactly those two. The next feature that wants the brand colour takes it away
+from something else, or moves a line in that file on purpose.
+
+**Rows.** Three named surfaces in `app/components/list-row.ts`, because four lists used to draw
+the same idea three ways:
+
+- `LIST_ROW_CLASS` = `rounded-lg border bg-card p-3`, a NAVIGABLE row. It goes somewhere, so it is
+  a card you can tap: a card's fill, a card's hairline, the ladder's card step. `LIST_STACK_CLASS`
+  (`space-y-3`) is the distance between two of them.
+- `DATA_ROW_CLASS` = `flex items-center gap-2 rounded bg-muted/40 p-3`, a DATA row inside a panel
+  that is already a card. It goes nowhere, so it has no border, a quieter fill and the ladder's
+  4px step. With `DATA_ROW_LABEL_CLASS`, `DATA_ROW_VALUE_CLASS` and `DATA_ROW_DOT_CLASS` it is
+  label, value, dot, and nothing else: no icon, no tile, no chevron. This is lowcarbcheck.org's
+  signature row.
+- Giving both the same surface is what made a screen read as boxes inside boxes.
+
+**Settings rows** keep their icon and their chevron and lost the tile. A settings row navigates, so
+the chevron earns its place, and a hub of fifteen rows in six languages is scanned by shape before
+it is read, so the glyph earns its place too. The glyph is `text-muted-foreground` in a `size-9`
+box with no fill: fifteen teal tiles spent the whole screen's accent on decoration.
+`SETTINGS_INSET_CLASS` (`rounded-lg border bg-card`) is the one container both the hub's groups and
+the sub-page blocks compose.
+
+**Badges/pills.** `rounded-full px-2 py-0.5 text-xs font-medium` plus a color pair from §3. A
+NEUTRAL chip uses `CHIP_NEUTRAL` (`rounded-full bg-muted px-2 py-0.5 text-foreground`) and never a
+literal palette pair; callers add their own `text-xs`, `font-medium` and `tabular-nums`, because
+the size and the weight are the caller's business and the fill and the ink are not. Larger filter
+pills: `px-4 py-2`. In a row of filter chips only the ACTIVE one is teal, which is
+lowcarbcheck.org's list-page recipe; polychrome pastel chips were considered and refused.
 
 **Food match card** (curated data from lowcarbcheck.org) — the richest element; model on LCC's
 `FoodItem`:
 
-- Thumbnail `h-16 w-16 rounded-md object-cover bg-zinc-100 dark:bg-zinc-900`, `loading="lazy"`;
-  container clips (`overflow-hidden`).
+- Thumbnail `h-16 w-16 rounded-md object-cover bg-muted`, `loading="lazy"`;
+  container clips (`overflow-hidden`). (The shipped rows still say `bg-zinc-100 dark:bg-zinc-900`
+  here, see §11.)
 - Title `text-sm font-medium truncate`; source label `text-xs font-medium text-muted-foreground`.
 - Net-carb badge colored by §3; macro summary `text-xs text-muted-foreground`.
 - Outbound link `text-xs text-primary hover:underline underline-offset-4`.
@@ -209,6 +381,16 @@ type). Larger filter pills: `px-4 py-2`.
 Use for action errors that must persist on screen (form-level failures).
 
 **Nav** — active link: `text-primary` (teal); inactive: `text-muted-foreground hover:text-foreground`.
+The bottom tab bar's active tab spends THREE cues, `bg-primary/5` plus `text-primary` plus an
+`after:` top rule at `bg-primary`, so the state never depends on hue alone. It is one of the two
+teal marks every screen pays for (see the budget above).
+
+**Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
+buttons, switches, date-picker cells, filter chips, settings rows, footer links, the drawer close
+key. `tests/e2e/lcc-lineage-tap-targets.spec.ts` measures it per screen and carries exactly four
+reasoned exceptions, each named in that file. Desktop sizes are unchanged. A control that will not
+fit is made to wrap rather than shrink: the update ribbon wraps its sentence and keeps its two
+keys at 44px, instead of cutting the version number off the end.
 
 ---
 
@@ -324,10 +506,31 @@ calorie hero.
 
 ## 11. Don'ts
 
-- No new accent colors. Brand washes are allowed but rationed — only the three `app.css` utilities
-  in §2, only in the places listed there, and never as a raw color literal in a component.
-- No `text-teal-*`/`bg-emerald-*`/`bg-zinc-*` literals in app code — every brand, macro and neutral
+- No new accent colors. The brand is an ACCENT and not a surface (§2), it is counted per screen
+  (§6), and it is never a raw color literal in a component. The three `app.css` utilities in §2
+  paint the hero, the empty panel and the landing backdrop, and none of them paints the brand hue.
+- No `text-teal-*`/`bg-emerald-*`/`bg-zinc-*` literals in app code: every brand, macro and neutral
   value is a token. Colour literals belong in `app/app.css` and nowhere else.
+  **This rule is not yet true of the tree, and M243 did not fix it.** A source scan of
+  `app/**/*.{ts,tsx}` today finds about fifty zinc, teal and emerald classes across seven files.
+  The one this document used to teach is still live in three of them: `hover:border-teal-300`
+  with `dark:hover:border-teal-600` in `app/components/carb-basis-field.tsx`,
+  `app/components/add/search-result-row.tsx` and `app/routes/diary.entry.$id.tsx` (twice), which
+  is the exact pair §5's hover recipe replaces. The rest are `bg-zinc-100`, `dark:bg-zinc-800` and
+  their siblings on thumbnails and code samples, plus the emerald marks on the OpenRouter and AI
+  settings screens. Do not widen that set, and do not read this bullet as a claim that the tree
+  obeys it. `tests/unit/design-tokens.test.ts` enforces the ban for the amber family only, for the
+  stated reason that amber is the one hue whose literal is an accessibility regression rather than
+  a stylistic slip; widening the guard to the whole palette is a separate sweep, and a test that
+  failed on day one would just be deleted.
+- No `font-display` or `font-brand` outside `app/components/wordmark.tsx`. The serif is the
+  product's name and nothing else (§4), and `tests/unit/wordmark-only-serif.test.ts` fails the
+  build for any other file that writes either token.
+- No radius outside the five steps in §5, and no radius used as a SELECTOR in a test. Find an
+  element by its `data-slot`, never by `div.rounded-2xl.bg-card`.
+- No thick left border to mark a block. A rule down the left edge of a card or a row is a template
+  tell; `tests/unit/day-budget-rows-component.test.tsx` fails on any `border-l-*` in the budget
+  rows, which is where it kept being reintroduced.
 - No `window.confirm` / `window.alert`.
 - No unlabeled spinners as page content — spinners attach to the thing that's pending.
 - No Google Fonts / CDN assets — self-hosted only.

@@ -2049,11 +2049,17 @@ function MealGroupSection({
     // precedent, one screen over).
     <div className="space-y-2" data-slot="meal-group" data-meal={group.mealType ?? 'none'}>
       {/*
-        Meal headers carry the app's shared brand eyebrow (M129 soul pass):
-        teal, uppercase, with a hairline running from the label to the
-        subtotal so the two read as one row rather than two loose fragments at
-        opposite edges. The subtotal sits in a quiet brand-tinted pill for the
-        same reason — it's a figure about the group, not body copy.
+        Meal headers carry the app's shared section label: grey, uppercase,
+        with a hairline running from the label to the subtotal so the two read
+        as one row rather than two loose fragments at opposite edges. The
+        subtotal sits in a quiet neutral pill for the same reason, it is a
+        figure about the group, not body copy.
+
+        BOTH WERE BRAND TEAL until M243. A group's name and a group's
+        arithmetic are not where a screen's accent belongs: the label is
+        `text-muted-foreground` through `SectionEyebrow` and the pill is
+        `CHIP_NEUTRAL`, so the teal is left for the tab, the one primary
+        action and the links (DESIGN.md section 2).
       */}
       {/*
         THE ROW WRAPS. The naming form `SaveMealButton` opens used to be a

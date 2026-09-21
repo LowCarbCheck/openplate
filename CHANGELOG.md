@@ -11,9 +11,14 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **openplate takes on the look of lowcarbcheck.org.** The app is set in the same monospace face as lowcarbcheck.org, on every screen but the long ones: the privacy policy, the terms and the other legal pages keep the old face, because a monospace paragraph in a phone column runs to about 35 characters a line. The panel at the top of Diary, Overview and Insights is a plain card carrying faint graph paper now, instead of a teal wash, and the same paper sits behind the landing page. Cards are flat with a thin edge, and a corner tells you what a thing is: a small corner for a row of figures, a card corner for a card, a wide one for the single panel at the top of a screen. The small uppercase labels above a group are grey, and so are the chips that state a number, which leaves the teal for the tab you are on, the one main button and the links. The word openplate keeps its own face and nothing else uses it. Settings rows kept their icon and lost its tinted tile. Nothing moved, nothing was removed, and no setting changed.
+
 ### Fixed
 
 - **The backup reminder is quiet when a server holds your diary.** The amber reminder on your diary says your diary lives on this device only, and it said so whether or not a copy existed anywhere else. It appeared on a hosted instance, where your account always keeps an encrypted copy, and it appeared on a self-hosted one after you signed this device in to sync. Only an export ever cleared it, so signing in never did. It now stays quiet whenever a server holds a copy, including the moment after a reload while the app is still reopening your session, so it is never shown and then taken away. On a device with no account and no sync, nothing changed.
+- **The update notice wraps instead of cutting off the version.** The row that appears above the header when a newer openplate exists was one line that trimmed itself to fit, so on a phone it read "openplate 0.35.1 is ava..." and hid the very thing it was telling you. It now takes a second line when the sentence and the buttons do not fit side by side, in all six languages. Reload and the dismiss key are 44 px tall, up from 28 px and a bare line of text, and they stay together so the dismiss key never ends up alone on a line.
 
 ## [0.36.0] - 2026-09-20
 
