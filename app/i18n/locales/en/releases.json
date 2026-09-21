@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate now carries a cancellation page and a withdrawal page that need no login."
+    },
+    "changed": {
+      "01": "Cards on Insights, the dashboard and Fasting now read in a clear order.",
+      "02": "The name openplate is now set thin, with the first half in teal, and centred on the mark."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "Overview's week card and its two tiles fit a phone.",
       "08": "A saved meal shows the whole name you gave it.",
       "09": "The describe screen names itself once, and the first-run headings keep their last word company."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Insights can now show the last 90 days.",
-      "02": "Progress is renamed to Insights, and now opens on four tabs.",
-      "03": "The Nutrition tab charts protein, fat and fiber too.",
-      "04": "The Meals tab now shows your averages and your usual foods.",
-      "05": "The Goals tab now shows how often you met each goal.",
-      "06": "Overview now opens with a summary of your chosen time span.",
-      "07": "The data screen says what is inside the JSON download."
-    },
-    "changed": {
-      "01": "The app no longer mentions openplate-gateway."
-    },
-    "fixed": {
-      "01": "A saved meal now reaches the server by itself.",
-      "02": "Signing out no longer says everything reached the server when it has not.",
-      "03": "The app no longer says the server cannot read your diary."
     }
   }
 }

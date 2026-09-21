@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate include ora una pagina di cancellazione e una pagina di recesso che non richiedono l'accesso."
+    },
+    "changed": {
+      "01": "Le schede in Analisi, nella bacheca e in Digiuno seguono ora un ordine chiaro.",
+      "02": "Il nome openplate ora usa un carattere sottile, ha la prima metà in color foglia di tè ed è centrato rispetto al logo."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "La scheda della settimana di Panoramica e i suoi due riquadri si adattano a uno smartphone.",
       "08": "Un pasto salvato mostra l'intero nome che gli hai dato.",
       "09": "La schermata di descrizione mostra il proprio titolo una sola volta, e i titoli del primo avvio non lasciano parole isolate a fine riga."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Analisi ora può mostrare gli ultimi 90 giorni.",
-      "02": "La sezione Progressi è stata rinominata in Analisi e ora si apre su quattro schede.",
-      "03": "La scheda Nutrizione traccia anche proteine, grassi e fibre.",
-      "04": "La scheda Pasti ora mostra le tue medie e i tuoi cibi consueti.",
-      "05": "La scheda Obiettivi ora mostra con che frequenza hai raggiunto ciascun obiettivo.",
-      "06": "La panoramica ora si apre con un riepilogo dell'intervallo temporale che hai scelto.",
-      "07": "La schermata dei dati spiega cosa contiene il file JSON scaricato."
-    },
-    "changed": {
-      "01": "L'app non fa più riferimento a openplate-gateway."
-    },
-    "fixed": {
-      "01": "Un pasto salvato ora raggiunge il server in modo autonomo.",
-      "02": "La disconnessione non indica più che tutti i dati hanno raggiunto il server quando non è così.",
-      "03": "L'app non afferma più che il server non può leggere il tuo diario."
     }
   }
 }

@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate ahora incluye una página de cancelación y una página de desistimiento que no requieren inicio de sesión."
+    },
+    "changed": {
+      "01": "Las tarjetas en Análisis, el panel y Ayuno ahora se leen en un orden claro.",
+      "02": "El nombre openplate ahora aparece en letra fina, con la primera mitad en verde azulado y centrado respecto al símbolo."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "La tarjeta semanal de Resumen y sus dos bloques caben en un teléfono.",
       "08": "Una comida guardada muestra el nombre completo que le diste.",
       "09": "La pantalla de descripción muestra su propio nombre una sola vez, y los encabezados de la primera ejecución no dejan palabras sueltas."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Análisis ahora puede mostrar los últimos 90 días.",
-      "02": "Progreso pasa a llamarse Análisis y ahora se abre en cuatro pestañas.",
-      "03": "La pestaña Nutrición también grafica proteínas, grasas y fibra.",
-      "04": "La pestaña Comidas ahora muestra tus promedios y tus alimentos habituales.",
-      "05": "La pestaña Objetivos ahora muestra con qué frecuencia cumpliste cada objetivo.",
-      "06": "Resumen ahora se abre con una vista general del periodo que elijas.",
-      "07": "La pantalla de datos indica qué contiene la descarga en JSON."
-    },
-    "changed": {
-      "01": "La app ya no menciona openplate-gateway."
-    },
-    "fixed": {
-      "01": "Una comida guardada ahora llega sola al servidor.",
-      "02": "Al cerrar sesión ya no se indica que todo llegó al servidor si no ha sido así.",
-      "03": "La app ya no indica que el servidor no puede leer tu diario."
     }
   }
 }

@@ -9225,6 +9225,13 @@
     "at": "2026-09-14",
     "de": "Wird geladen"
   },
+  "795ad2cdbb4e82b1": {
+    "en": "openplate now carries a cancellation page and a withdrawal page that need no login.",
+    "path": "releases:v0_38_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "openplate enthält jetzt eine Kündigungsseite und eine Widerrufsseite, die keine Anmeldung erfordern."
+  },
   "796c32837f26568c": {
     "en": "Last day of the window you asked for",
     "path": "common:research.console.cohort.toLabel",
@@ -13117,6 +13124,13 @@
     "at": "2026-09-14",
     "de": "Teilnehmende in dieser Datei: {{participants}}"
   },
+  "ab64ed9184f9bca5": {
+    "en": "Cards on Insights, the dashboard and Fasting now read in a clear order.",
+    "path": "releases:v0_38_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Karten unter Einblicke, der Übersicht und Fasten haben jetzt eine klare Reihenfolge."
+  },
   "abaf5af95034fc78": {
     "en": "The page you're looking for doesn't exist.",
     "path": "common:errors.notFoundDetails",
@@ -16672,6 +16686,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Weiterleitung…"
+  },
+  "dcac9046433b65c7": {
+    "en": "The name openplate is now set thin, with the first half in teal, and centred on the mark.",
+    "path": "releases:v0_38_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-21",
+    "de": "Der Name openplate ist jetzt dünn gesetzt, mit der ersten Hälfte in Blaugrün und auf die Bildmarke zentriert."
   },
   "dcde0645ce6b5d35": {
     "en": "Password",

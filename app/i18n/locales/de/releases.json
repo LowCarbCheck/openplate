@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate enthält jetzt eine Kündigungsseite und eine Widerrufsseite, die keine Anmeldung erfordern."
+    },
+    "changed": {
+      "01": "Karten unter Einblicke, der Übersicht und Fasten haben jetzt eine klare Reihenfolge.",
+      "02": "Der Name openplate ist jetzt dünn gesetzt, mit der ersten Hälfte in Blaugrün und auf die Bildmarke zentriert."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "Die Wochenkarte der Übersicht und ihre zwei Kacheln passen auf ein Smartphone.",
       "08": "Eine gespeicherte Mahlzeit zeigt den vollständigen Namen, den du ihr gegeben hast.",
       "09": "Die Beschreibungsansicht benennt sich einmal, und die Überschriften beim ersten Start behalten ihr letztes Wort bei sich."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Einblicke kann jetzt die letzten 90 Tage anzeigen.",
-      "02": "Fortschritt heißt jetzt Einblicke und öffnet sich auf vier Tabs.",
-      "03": "Der Tab Ernährung stellt auch Protein, Fett und Ballaststoffe im Diagramm dar.",
-      "04": "Der Tab Mahlzeiten zeigt jetzt deine Durchschnittswerte und deine üblichen Lebensmittel.",
-      "05": "Der Tab Ziele zeigt jetzt, wie oft du jedes Ziel erreicht hast.",
-      "06": "Die Übersicht öffnet sich jetzt mit einer Zusammenfassung deiner gewählten Zeitspanne.",
-      "07": "Der Daten-Bildschirm beschreibt, was im JSON-Download enthalten ist."
-    },
-    "changed": {
-      "01": "Die App erwähnt openplate-gateway nicht mehr."
-    },
-    "fixed": {
-      "01": "Eine gespeicherte Mahlzeit wird nun von selbst an den Server übertragen.",
-      "02": "Beim Abmelden wird nicht mehr behauptet, alles sei auf dem Server angekommen, wenn das nicht stimmt.",
-      "03": "Die App behauptet nicht mehr, der Server könne dein Tagebuch nicht lesen."
     }
   }
 }

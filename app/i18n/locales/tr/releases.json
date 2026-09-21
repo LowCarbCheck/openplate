@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate artık giriş gerektirmeyen bir iptal sayfası ve bir cayma sayfası içeriyor."
+    },
+    "changed": {
+      "01": "İçgörüler, Genel bakış ve Oruç bölümlerindeki kartlar artık belirgin bir sırada okunuyor.",
+      "02": "openplate adı artık ince yazılıyor, ilk yarısı deniz mavisi renkte ve işaretin üzerinde ortalanıyor."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "Genel bakışın hafta kartı ve iki kutucuğu telefona sığar.",
       "08": "Kayıtlı bir öğün, ona verdiğin adın tamamını gösterir.",
       "09": "Tarif etme ekranı adını bir kez belirtir, ilk çalıştırma başlıkları da son sözcüklerini yalnız bırakmaz."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "İçgörüler artık son 90 günü gösterebiliyor.",
-      "02": "İlerleme bölümünün adı İçgörüler olarak değiştirildi ve artık dört sekmeyle açılıyor.",
-      "03": "Beslenme sekmesi artık protein, yağ ve lifi de grafiklendiriyor.",
-      "04": "Öğünler sekmesi artık ortalamalarını ve her zamanki yiyeceklerini gösteriyor.",
-      "05": "Hedefler sekmesi artık her hedefe ne sıklıkla ulaştığını gösteriyor.",
-      "06": "Genel bakış artık seçtiğin zaman aralığının bir özetiyle açılıyor.",
-      "07": "Veri ekranı, JSON indirmesinin içinde nelerin yer aldığını belirtiyor."
-    },
-    "changed": {
-      "01": "Uygulama artık openplate-gateway adını anmıyor."
-    },
-    "fixed": {
-      "01": "Kaydedilen bir öğün artık sunucuya kendi kendine ulaşıyor.",
-      "02": "Oturumu kapatırken, verilerin tümü sunucuya ulaşmamışsa artık her şey ulaştı demiyor.",
-      "03": "Uygulama artık sunucunun günlüğünü okuyamadığını söylemiyor."
     }
   }
 }

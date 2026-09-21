@@ -1,4 +1,14 @@
 {
+  "v0_38_0": {
+    "date": "2026-09-21",
+    "added": {
+      "01": "openplate propose désormais une page d'annulation et une page de rétractation accessibles sans connexion."
+    },
+    "changed": {
+      "01": "Les cartes sur Analyses, Vue d'ensemble et Jeûne s'affichent désormais dans un ordre clair.",
+      "02": "Le nom openplate s'affiche désormais avec une graisse fine, la première moitié en sarcelle, et centré sur le logo."
+    }
+  },
   "v0_37_0": {
     "date": "2026-09-21",
     "changed": {
@@ -39,26 +49,6 @@
       "07": "La carte de la semaine de Vue d'ensemble et ses deux tuiles s'adaptent à un téléphone.",
       "08": "Un repas enregistré affiche le nom complet que tu lui as donné.",
       "09": "L'écran de description ne se nomme qu'une fois, et les titres du premier lancement évitent les mots orphelins."
-    }
-  },
-  "v0_35_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Analyses peut désormais afficher les 90 derniers jours.",
-      "02": "Progrès devient Analyses, et s'ouvre désormais sur quatre onglets.",
-      "03": "L'onglet Nutrition trace aussi les protéines, les lipides et les fibres.",
-      "04": "L'onglet Repas affiche désormais tes moyennes et tes aliments habituels.",
-      "05": "L'onglet Objectifs indique désormais la fréquence à laquelle tu as atteint chaque objectif.",
-      "06": "L'onglet Aperçu s'ouvre désormais sur un résumé de la période choisie.",
-      "07": "L'écran des données indique ce que contient le téléchargement JSON."
-    },
-    "changed": {
-      "01": "L'application ne mentionne plus openplate-gateway."
-    },
-    "fixed": {
-      "01": "Un repas enregistré est désormais envoyé seul au serveur.",
-      "02": "La déconnexion n'indique plus que tout a été transmis au serveur si ce n'est pas le cas.",
-      "03": "L'application n'indique plus que le serveur ne peut pas lire ton journal."
     }
   }
 }
