@@ -468,6 +468,7 @@
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { FoodFlags } from '#app/services/vision/schema';
 import type { EatingStyleId } from '#app/lib/eating-style';
+import type { MainGoalId } from '#app/lib/main-goal';
 import type { Allergen } from '#app/models/allergens';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
@@ -1181,6 +1182,25 @@ export interface LocalProfileGoals {
    * The stored pick is what makes the second one survive.
    */
   eatingStyle?: EatingStyleId | null;
+  /**
+   * The main goal, the one number the diary card shows first (added within
+   * v24, 2026-09-23), or absent/`null` for everybody who has never picked one.
+   * Readers go through `effectiveMainGoal` (`#app/lib/main-goal`), which falls
+   * back to the eating style's lens, so an absent value is never a missing
+   * lead.
+   *
+   * A NEW OPTIONAL FIELD rather than a fourth `trackingFocus` value, and with
+   * no version bump, deliberately. `trackingFocus` is an enum in `backup.ts`,
+   * and a sync blob is parsed through that schema on the receiving device, so a
+   * new enum value would make an older build refuse the blob and stop syncing.
+   * A bump would be worse still: an older build cannot decrypt a blob stamped
+   * with a newer `SCHEMA_VERSION`. An unknown KEY is simply dropped by an older
+   * build. The accepted cost: an older device can write the profile back
+   * without the key, the pick is lost, and the diary falls back to the lens,
+   * which shows a sensible lead rather than a wrong one. `eatingStyle` and
+   * `gamificationHidden` accepted the same risk.
+   */
+  mainGoal?: MainGoalId | null;
   /**
    * Whether this person has switched the streak and the awards off (added
    * within v23, M235/06), or absent/`null` for everybody who has never touched

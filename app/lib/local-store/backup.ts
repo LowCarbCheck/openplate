@@ -21,6 +21,7 @@ import { CARB_BASES } from '#app/lib/net-carbs';
 import { PANTRY_CATEGORIES, PANTRY_UNITS } from '#app/services/vision/pantry-schema';
 import { LenientFoodFlagsSchema, normalizeFoodFlags } from '#app/services/vision/schema';
 import { EATING_STYLE_IDS } from '#app/lib/eating-style';
+import { MAIN_GOAL_IDS } from '#app/lib/main-goal';
 import { parseAllergens } from '#app/models/allergens';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
 import { backfillSnapshotHistory, GAMIFICATION_BACKFILL_SCHEMA_VERSION } from '#app/lib/gamification/backfill';
@@ -303,6 +304,29 @@ const profileGoalsSchema = z.object({
   // There is no `.nullable()` because the store never writes `null` here, an
   // empty list is how "none" is spelled (`putLocalAllergens`).
   allergens: z.array(z.string()).transform(parseAllergens).optional(),
+  // Added within v24 (the main goal, 2026-09-23), one more OPTIONAL field on
+  // the same entity, under the same rules as every one above it: an envelope
+  // without the key reads as "never picked", and the diary then leads with
+  // the eating style's lens. No version bump and no migration step. The line
+  // is needed because zod strips unrecognized keys: without it the pick would
+  // vanish on every export and import, and it could never reach a second
+  // device, since the merged snapshot goes through this same schema.
+  //
+  // THE TRADE-OFF, stated once: a build older than this line (0.39.0 and
+  // before) does the stripping itself. It syncs on, because an unknown key is
+  // not an error, but it can write the profile back without the key, and the
+  // pick is then lost on every device. The app falls back to the lens, so
+  // nothing wrong shows; the person sees the default lead and can pick again.
+  // That is the risk `eatingStyle` and `gamificationHidden` accepted too, and
+  // it is why this is a new key rather than a fourth `trackingFocus` value,
+  // which an older build would refuse outright.
+  //
+  // `.catch(null)` rather than a bare enum, unlike `eatingStyle`: an unknown
+  // main goal is a value the reader CAN ignore (`effectiveMainGoal` falls back
+  // on it), so a file or a blob written by a build with a longer list must
+  // import with the pick cleared, never be refused whole. A refusal there
+  // would be the very sync stall this field was shaped to avoid.
+  mainGoal: z.enum(MAIN_GOAL_IDS).nullable().optional().catch(null),
 });
 
 const fastSchema = z.object({
