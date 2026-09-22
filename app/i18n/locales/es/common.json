@@ -1313,7 +1313,7 @@
     "photo": "Foto"
   },
   "nutrition": {
-    "title": "Alimentación y objetivos",
+    "title": "Dieta y objetivos",
     "loading": "Cargando…"
   },
   "profile": {
@@ -1380,7 +1380,7 @@
     "preferences": "Preferencias · openplate",
     "privacy": "Política de privacidad · openplate",
     "recover": "Recuperar tu diario · openplate",
-    "research": "Aportaciones a investigaciones · openplate",
+    "research": "Investigación · openplate",
     "scan": "Escanea tu plato · openplate",
     "settings": "Ajustes · openplate",
     "shared": "Compartido contigo · openplate",
@@ -1763,7 +1763,7 @@
     "title": "No encontramos tu diario en este dispositivo"
   },
   "research": {
-    "title": "Aportaciones a investigaciones",
+    "title": "Investigación",
     "intro": "Estudios con los que colaboras, qué recibe cada uno y cómo darte de baja.",
     "unavailable": "Este servidor de sincronización no tiene habilitada la vía de investigación. Aquí no se puede enviar ni retirar nada.",
     "needsSession": "Las aportaciones a investigaciones necesitan la contraseña de tu cuenta. Inicia sesión en este dispositivo primero.",
@@ -2141,7 +2141,7 @@
       "photosNote": "Las fotos del plato no se incluyen en esta descarga: se conservan solo en este dispositivo (mira \"Fotos en este dispositivo\" más abajo), nunca se empaquetan en una copia de seguridad ni en una exportación. Tu descarga contiene solo los números que registraste.",
       "keysNote": "La descarga en formato JSON contiene la clave privada que se usa cuando alguien comparte su diario contigo, y la semilla de tu seudónimo de investigación. Guarda este archivo en un lugar seguro, al igual que tu diario.",
       "preparing": "Preparando…",
-      "title": "Datos y copia de seguridad"
+      "title": "Datos y respaldo"
     },
     "groups": {
       "profile": "Sobre ti",

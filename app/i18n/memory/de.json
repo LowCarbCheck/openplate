@@ -3328,8 +3328,8 @@
     "en": "Saved meals",
     "path": "common:settings.rows.meals.title",
     "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Gespeicherte Mahlzeiten"
+    "at": "2026-09-22",
+    "de": "Gespeicherte Gerichte"
   },
   "292d196f1332f383": {
     "en": "Protein",
@@ -4619,6 +4619,13 @@
     "at": "2026-09-14",
     "de": "<b>Cookies:</b> keine. Die Analyse läuft ohne Cookies und speichert nichts auf Ihrem Endgerät; deshalb wurden Sie auch nicht um eine Einwilligung gebeten."
   },
+  "3bb310e3f73915a7": {
+    "en": "Research studies · openplate",
+    "path": "common:meta.research",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "de": "Studien · openplate"
+  },
   "3bc939dd52a371cf": {
     "en": "{{foods}} would close that gap.",
     "path": "common:catchUp.nudgeFoods",
@@ -4721,8 +4728,8 @@
     "en": "Describe your meal",
     "path": "common:describe.title",
     "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Beschreibe deine Mahlzeit"
+    "at": "2026-09-22",
+    "de": "Essen beschreiben"
   },
   "3daf42c516ac01cd": {
     "en": "Delete for good",
@@ -17148,6 +17155,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Selbst gehostet / lokaler Endpunkt"
+  },
+  "dc92b628cfe1f90b": {
+    "en": "Research studies",
+    "path": "common:research.title",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "de": "Studien"
   },
   "dc964d0c17f805ef": {
     "en": "Not set up",

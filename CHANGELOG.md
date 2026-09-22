@@ -13,7 +13,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Changed
 
-- **The page title on a phone is larger and sits closer to the brand name.** The title in the phone header is now 18 px instead of 14 px, with 4 px between it and the openplate wordmark above it instead of 6 px. The size is fixed: a title that does not fit is shortened in its translation, not shrunk. Thirteen titles in German, English, Spanish, French and Italian can still end in an ellipsis on a narrow phone until their strings are shortened.
+- **The page title on a phone is larger and sits closer to the brand name.** The title in the phone header is now 18 px instead of 14 px, with 4 px between it and the openplate wordmark above it instead of 6 px. The size is fixed: a title that does not fit is shortened in its translation, not shrunk. The thirteen titles in German, English, Spanish, French and Italian that first ended in an ellipsis at the new size are now shortened, and the research page's own title, "Research contributions", is now "Research studies" to match what the page is about.
 
 ## [0.39.0] - 2026-09-22
 

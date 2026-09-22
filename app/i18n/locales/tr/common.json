@@ -1380,7 +1380,7 @@
     "preferences": "Tercihler · openplate",
     "privacy": "Gizlilik politikası · openplate",
     "recover": "Günlüğünü kurtar · openplate",
-    "research": "Araştırma katkıları · openplate",
+    "research": "Araştırmalar · openplate",
     "scan": "Tabağını tara · openplate",
     "settings": "Ayarlar · openplate",
     "shared": "Seninle paylaşılanlar · openplate",
@@ -1763,7 +1763,7 @@
     "title": "Günlüğünü bu cihazda bulamıyoruz"
   },
   "research": {
-    "title": "Araştırma katkıları",
+    "title": "Araştırmalar",
     "intro": "Katkıda bulunduğun çalışmalar, her birinin ne aldığı ve nasıl ayrılacağın.",
     "unavailable": "Bu eşitleme sunucusunun araştırma kanalı yok. Burada hiçbir şey gönderilemez veya geri çekilemez.",
     "needsSession": "Araştırma katkıları için hesap şifren gerekir. Önce bu cihazda giriş yap.",

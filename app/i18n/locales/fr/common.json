@@ -1313,7 +1313,7 @@
     "photo": "Photo"
   },
   "nutrition": {
-    "title": "Alimentation et cibles",
+    "title": "Régime et objectifs",
     "loading": "Chargement…"
   },
   "profile": {
@@ -1380,7 +1380,7 @@
     "preferences": "Préférences · openplate",
     "privacy": "Politique de confidentialité · openplate",
     "recover": "Récupérer ton journal · openplate",
-    "research": "Contributions à la recherche · openplate",
+    "research": "Études · openplate",
     "scan": "Scanne ton assiette · openplate",
     "settings": "Paramètres · openplate",
     "shared": "Partagé avec toi · openplate",
@@ -1763,7 +1763,7 @@
     "title": "Impossible de trouver ton journal sur cet appareil"
   },
   "research": {
-    "title": "Contributions à la recherche",
+    "title": "Études",
     "intro": "Les études auxquelles tu participes, les données transmises à chacune et la marche à suivre pour te retirer.",
     "unavailable": "Ce serveur de synchronisation ne dispose d'aucun canal de recherche. Rien ne peut y être envoyé ni retiré.",
     "needsSession": "Les contributions à la recherche nécessitent le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",

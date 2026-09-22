@@ -1095,8 +1095,8 @@
     "en": "About openplate",
     "path": "common:about.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "it": "Informazioni su openplate"
+    "at": "2026-09-22",
+    "it": "Info su openplate"
   },
   "0e12e84a78cadc30": {
     "en": "71 and over",
@@ -3797,8 +3797,8 @@
     "en": "Your daily catch-up",
     "path": "common:catchUp.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "it": "Il tuo riepilogo giornaliero"
+    "at": "2026-09-22",
+    "it": "Riepilogo di oggi"
   },
   "2f7cb141a4e5e5d3": {
     "en": "Sugar alcohols",
@@ -4618,6 +4618,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "<b>Cookie:</b> nessuno. Il tracker funziona con i cookie disattivati e non memorizza nulla sul Suo dispositivo, motivo per cui non Le è stato chiesto di accettare nulla."
+  },
+  "3bb310e3f73915a7": {
+    "en": "Research studies · openplate",
+    "path": "common:meta.research",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "it": "Studi scientifici · openplate"
   },
   "3bc939dd52a371cf": {
     "en": "{{foods}} would close that gap.",
@@ -9915,8 +9922,8 @@
     "en": "About you",
     "path": "common:profile.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "it": "Informazioni personali"
+    "at": "2026-09-22",
+    "it": "Su di te"
   },
   "7f0e0c72a1401d59": {
     "en": "On average {{amount}} under your goal.",
@@ -15410,8 +15417,8 @@
     "en": "Eating and targets",
     "path": "common:nutrition.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "it": "Alimentazione e obiettivi"
+    "at": "2026-09-22",
+    "it": "Dieta e obiettivi"
   },
   "c5f7a744e9578ca6": {
     "en": "up to {{value}} g more",
@@ -17148,6 +17155,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Endpoint locale o self-hosted"
+  },
+  "dc92b628cfe1f90b": {
+    "en": "Research studies",
+    "path": "common:research.title",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "it": "Studi scientifici"
   },
   "dc964d0c17f805ef": {
     "en": "Not set up",

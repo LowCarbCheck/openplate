@@ -1380,7 +1380,7 @@
     "preferences": "Preferences · openplate",
     "privacy": "Privacy policy · openplate",
     "recover": "Recover your diary · openplate",
-    "research": "Research contributions · openplate",
+    "research": "Research studies · openplate",
     "scan": "Scan your plate · openplate",
     "settings": "Settings · openplate",
     "shared": "Shared with you · openplate",
@@ -1763,7 +1763,7 @@
     "title": "We can't find your diary on this device"
   },
   "research": {
-    "title": "Research contributions",
+    "title": "Research studies",
     "intro": "Studies you contribute to, what each one receives, and how to leave.",
     "unavailable": "This sync server has no research lane. Nothing can be sent or withdrawn here.",
     "needsSession": "Research contributions need your account password. Sign in on this device first.",

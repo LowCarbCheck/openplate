@@ -73,7 +73,7 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 
 export const handle = {
   titleKey: 'research.title',
-  title: 'Research contributions',
+  title: 'Research studies',
   backTo: '/settings',
 };
 

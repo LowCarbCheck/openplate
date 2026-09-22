@@ -4619,6 +4619,13 @@
     "at": "2026-09-14",
     "fr": "<b>Cookies :</b> aucun. Le traqueur fonctionne sans cookies et ne stocke rien sur votre appareil, c'est pourquoi aucun consentement ne vous a été demandé."
   },
+  "3bb310e3f73915a7": {
+    "en": "Research studies · openplate",
+    "path": "common:meta.research",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "fr": "Études · openplate"
+  },
   "3bc939dd52a371cf": {
     "en": "{{foods}} would close that gap.",
     "path": "common:catchUp.nudgeFoods",
@@ -15410,8 +15417,8 @@
     "en": "Eating and targets",
     "path": "common:nutrition.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Alimentation et cibles"
+    "at": "2026-09-22",
+    "fr": "Régime et objectifs"
   },
   "c5f7a744e9578ca6": {
     "en": "up to {{value}} g more",
@@ -17148,6 +17155,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Endpoint auto-hébergé / local"
+  },
+  "dc92b628cfe1f90b": {
+    "en": "Research studies",
+    "path": "common:research.title",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "fr": "Études"
   },
   "dc964d0c17f805ef": {
     "en": "Not set up",

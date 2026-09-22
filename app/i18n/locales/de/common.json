@@ -519,7 +519,7 @@
     }
   },
   "describe": {
-    "title": "Beschreibe deine Mahlzeit",
+    "title": "Essen beschreiben",
     "lead": "Schreib auf, was du gegessen hast. Die KI erkennt das Essen aus deinen Worten, genau wie bei einem Foto. Du prüfst jeden Eintrag, bevor etwas gespeichert wird.",
     "label": "Was hast du gegessen?",
     "placeholder": "2 Spiegeleier, eine Scheibe Toast mit Butter, schwarzer Kaffee",
@@ -1380,7 +1380,7 @@
     "preferences": "Darstellung & Sprache · openplate",
     "privacy": "Datenschutzerklärung · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
-    "research": "Forschungsbeiträge · openplate",
+    "research": "Studien · openplate",
     "scan": "Teller scannen · openplate",
     "settings": "Einstellungen · openplate",
     "shared": "Mit dir geteilt · openplate",
@@ -1763,7 +1763,7 @@
     "title": "Wir finden dein Tagebuch auf diesem Gerät nicht"
   },
   "research": {
-    "title": "Forschungsbeiträge",
+    "title": "Studien",
     "intro": "Studien, zu denen du beiträgst, was jede davon bekommt, und wie du wieder aussteigst.",
     "unavailable": "Dieser Sync-Server bietet keine Forschungsbeiträge an. Hier lässt sich nichts senden und nichts widerrufen.",
     "needsSession": "Für Forschungsbeiträge brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
@@ -2186,7 +2186,7 @@
         "carbs": "{{grams}} g Netto-KH pro Tag"
       },
       "meals": {
-        "title": "Gespeicherte Mahlzeiten"
+        "title": "Gespeicherte Gerichte"
       },
       "preferences": {
         "title": "Darstellung & Sprache"

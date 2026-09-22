@@ -4619,6 +4619,13 @@
     "at": "2026-09-14",
     "tr": "<b>Çerezler:</b> yoktur. Takip aracı çerezler kapalı olarak çalışır ve cihazınızda hiçbir şey saklamaz, bu nedenle sizden herhangi bir şeyi kabul etmeniz istenmemiştir."
   },
+  "3bb310e3f73915a7": {
+    "en": "Research studies · openplate",
+    "path": "common:meta.research",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "tr": "Araştırmalar · openplate"
+  },
   "3bc939dd52a371cf": {
     "en": "{{foods}} would close that gap.",
     "path": "common:catchUp.nudgeFoods",
@@ -17148,6 +17155,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kendi sunucunda barındırılan / yerel uç nokta"
+  },
+  "dc92b628cfe1f90b": {
+    "en": "Research studies",
+    "path": "common:research.title",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "tr": "Araştırmalar"
   },
   "dc964d0c17f805ef": {
     "en": "Not set up",

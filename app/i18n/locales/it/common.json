@@ -7,7 +7,7 @@
     "sourceValue": "{{appName}} su GitHub",
     "whatsNew": "Novità",
     "whatsNewValue": "Note di rilascio",
-    "title": "Informazioni su openplate",
+    "title": "Info su openplate",
     "updates": {
       "behindTitle": "È disponibile una versione più recente",
       "behindVersions": "Questo server esegue la versione v{{running}}. La versione più recente è la v{{latest}}.",
@@ -290,7 +290,7 @@
     }
   },
   "catchUp": {
-    "title": "Il tuo riepilogo giornaliero",
+    "title": "Riepilogo di oggi",
     "loading": "Lettura degli ultimi tre giorni.",
     "yesterdayHeading": "I numeri di ieri",
     "mealOne": "{{count}} pasto",
@@ -1313,11 +1313,11 @@
     "photo": "Foto"
   },
   "nutrition": {
-    "title": "Alimentazione e obiettivi",
+    "title": "Dieta e obiettivi",
     "loading": "Caricamento…"
   },
   "profile": {
-    "title": "Informazioni personali",
+    "title": "Su di te",
     "loading": "Caricamento…"
   },
   "lifePhase": {
@@ -1380,7 +1380,7 @@
     "preferences": "Preferenze · openplate",
     "privacy": "Informativa sulla privacy · openplate",
     "recover": "Recupera il tuo diario · openplate",
-    "research": "Contributi alla ricerca · openplate",
+    "research": "Studi scientifici · openplate",
     "scan": "Scansiona il tuo piatto · openplate",
     "settings": "Impostazioni · openplate",
     "shared": "Condivisi con te · openplate",
@@ -1763,7 +1763,7 @@
     "title": "Non riusciamo a trovare il tuo diario su questo dispositivo"
   },
   "research": {
-    "title": "Contributi alla ricerca",
+    "title": "Studi scientifici",
     "intro": "Studi a cui contribuisci, cosa riceve ciascuno e come abbandonarli.",
     "unavailable": "Questo server di sincronizzazione non ha una corsia di ricerca. Qui non è possibile inviare o revocare nulla.",
     "needsSession": "I contributi alla ricerca richiedono la password del tuo account. Prima accedi su questo dispositivo.",

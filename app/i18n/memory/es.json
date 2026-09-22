@@ -4619,6 +4619,13 @@
     "at": "2026-09-14",
     "es": "<b>Cookies:</b> ninguna. El rastreador funciona con las cookies desactivadas y no guarda nada en su dispositivo, motivo por el cual no se le solicitó aceptar nada."
   },
+  "3bb310e3f73915a7": {
+    "en": "Research studies · openplate",
+    "path": "common:meta.research",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "es": "Investigación · openplate"
+  },
   "3bc939dd52a371cf": {
     "en": "{{foods}} would close that gap.",
     "path": "common:catchUp.nudgeFoods",
@@ -15410,8 +15417,8 @@
     "en": "Eating and targets",
     "path": "common:nutrition.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "es": "Alimentación y objetivos"
+    "at": "2026-09-22",
+    "es": "Dieta y objetivos"
   },
   "c5f7a744e9578ca6": {
     "en": "up to {{value}} g more",
@@ -17149,6 +17156,13 @@
     "at": "2026-09-14",
     "es": "Endpoint autohospedado / local"
   },
+  "dc92b628cfe1f90b": {
+    "en": "Research studies",
+    "path": "common:research.title",
+    "model": "hand-written",
+    "at": "2026-09-22",
+    "es": "Investigación"
+  },
   "dc964d0c17f805ef": {
     "en": "Not set up",
     "path": "common:settings.rows.sync.notSetUp",
@@ -17979,8 +17993,8 @@
     "en": "Data & backup",
     "path": "common:settings.data.title",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "es": "Datos y copia de seguridad"
+    "at": "2026-09-22",
+    "es": "Datos y respaldo"
   },
   "e80cdbcb0d53bc43": {
     "en": "{{value}} g over",

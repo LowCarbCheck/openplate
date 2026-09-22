@@ -45,21 +45,7 @@ export interface KnownTitleOverflow {
  * holds 21 characters, and 260 px wide at 390 px and holds 24. A string of 21 characters or fewer
  * fits at both widths. `test-results/header-title-fit/<locale>.json` has the overflow of each.
  */
-export const KNOWN_TITLE_OVERFLOWS: readonly KnownTitleOverflow[] = [
-  { locale: 'de', titleKey: 'describe.title', routes: ['/add/describe'], viewports: [360, 390] },
-  { locale: 'de', titleKey: 'settings.rows.meals.title', routes: ['/meals'], viewports: [360] },
-  { locale: 'en', titleKey: 'research.title', routes: ['/settings/research'], viewports: [360] },
-  { locale: 'es', titleKey: 'nutrition.title', routes: ['/settings/nutrition'], viewports: [360] },
-  { locale: 'es', titleKey: 'research.title', routes: ['/settings/research'], viewports: [360, 390] },
-  { locale: 'es', titleKey: 'settings.data.title', routes: ['/settings/data'], viewports: [360, 390] },
-  { locale: 'fr', titleKey: 'nutrition.title', routes: ['/settings/nutrition'], viewports: [360] },
-  { locale: 'fr', titleKey: 'research.title', routes: ['/settings/research'], viewports: [360, 390] },
-  { locale: 'it', titleKey: 'about.title', routes: ['/settings/about'], viewports: [360, 390] },
-  { locale: 'it', titleKey: 'catchUp.title', routes: ['/catch-up'], viewports: [360, 390] },
-  { locale: 'it', titleKey: 'nutrition.title', routes: ['/settings/nutrition'], viewports: [360, 390] },
-  { locale: 'it', titleKey: 'profile.title', routes: ['/settings/profile'], viewports: [360] },
-  { locale: 'it', titleKey: 'research.title', routes: ['/settings/research'], viewports: [360] },
-];
+export const KNOWN_TITLE_OVERFLOWS: readonly KnownTitleOverflow[] = [];
 
 /** What a guard found, set against what the list expected. */
 export interface OverflowPartition<Found, Known> {
