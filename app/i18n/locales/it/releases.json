@@ -1,4 +1,27 @@
 {
+  "v0_39_0": {
+    "date": "2026-09-22",
+    "added": {
+      "01": "I pasti abituali ora ti chiedono di confermare la porzione prima della registrazione.",
+      "02": "Puoi elencare le tue allergie alimentari, fin dal primo giorno o più tardi nelle impostazioni.",
+      "03": "Gli alimenti che fotografi o descrivi ora includono brevi note su gravidanza, allattamento e sulle tue allergie."
+    },
+    "changed": {
+      "01": "Aggiungi, Scansiona e Descrivi ora si trovano sotto un unico indirizzo, /add.",
+      "02": "Nel diario, \"Cosa hai mangiato\" ora indica ciascun macronutriente come percentuale della giornata, non come un secondo valore in grammi.",
+      "03": "Analisi ora usa un layout a due colonne sugli schermi ampi."
+    },
+    "fixed": {
+      "01": "Il nome openplate non si trova più sopra il titolo della pagina su smartphone.",
+      "02": "La pagina delle impostazioni dell'IA mantiene le spiegazioni compresse finché non le richiedi.",
+      "03": "I tuoi pasti abituali ora si distinguono dall'elenco degli alimenti registrati di recente.",
+      "04": "Il tuo storico permette di distinguere a colpo d'occhio una serie di tre giorni da una di cento.",
+      "05": "La prima schermata ora include il simbolo e il nome di openplate.",
+      "06": "I pasti salvati ora indicano l'origine del pasto successivo.",
+      "07": "Descrivi ora posiziona il riquadro del messaggio in fondo alla pagina.",
+      "08": "Notifiche ora mostra il messaggio di domani anche se non puoi attivare le notifiche."
+    }
+  },
   "v0_38_0": {
     "date": "2026-09-21",
     "added": {
@@ -17,38 +40,6 @@
     "fixed": {
       "01": "Il promemoria del backup non interviene se il tuo diario si trova su un server.",
       "02": "L'avviso di aggiornamento va a capo invece di troncare la versione."
-    }
-  },
-  "v0_36_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "L'app ora ti mostra cosa è cambiato dopo un aggiornamento."
-    },
-    "changed": {
-      "01": "I tuoi digiuni ora ti seguono anche sugli altri tuoi dispositivi.",
-      "02": "Ora anche la tua dispensa ti segue.",
-      "03": "La finestra di disconnessione ora rileva se hai rinominato un pasto salvato.",
-      "04": "La finestra di disconnessione conta i tuoi digiuni e la tua dispensa, e avvisa solo su ciò che non può verificare.",
-      "05": "La schermata Informazioni ora indica quando il server non è aggiornato, e chi può aggiornarlo."
-    },
-    "fixed": {
-      "10": "L'informativa sulla privacy e i termini ora elencano tutto ciò che si sincronizza.",
-      "11": "Pulsanti, interruttori e selettore di data hanno le dimensioni di un pollice su uno smartphone.",
-      "12": "Il diario non scorre più lateralmente, e la freccia per il giorno successivo rimane sullo schermo.",
-      "13": "La cronologia dei digiuni, i grafici di Analisi e i relativi filtri si adattano a uno smartphone.",
-      "14": "Le pagine delle impostazioni hanno controlli a misura di pollice e spaziature uniformi.",
-      "15": "Le intestazioni legali in tedesco si adattano a uno smartphone.",
-      "16": "La cornice stessa dell'app è a misura di pollice, e la barra inferiore si sposta per fare spazio alla tastiera.",
-      "17": "La barra del giorno del diario si trova contro l'intestazione, e gli elenchi corrispondono al resto dell'app.",
-      "01": "Un termine registrato non viene mai annullato da un altro dispositivo.",
-      "02": "L'avviso di digiuno ora segue il digiuno, su ogni dispositivo.",
-      "03": "L'informativa sulla privacy e i termini ora indicano anche le tue chiavi di condivisione e ricerca.",
-      "04": "La finestra di disconnessione indica cosa fare con le tue chiavi, non solo ciò che non può verificare.",
-      "05": "Quando aggiungi un alimento a mano, ora vedi cosa manca nella tua lingua.",
-      "06": "I controlli sul modulo di aggiunta e su I tuoi alimenti sono a misura di pollice.",
-      "07": "La scheda della settimana di Panoramica e i suoi due riquadri si adattano a uno smartphone.",
-      "08": "Un pasto salvato mostra l'intero nome che gli hai dato.",
-      "09": "La schermata di descrizione mostra il proprio titolo una sola volta, e i titoli del primo avvio non lasciano parole isolate a fine riga."
     }
   }
 }

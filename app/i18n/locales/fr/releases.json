@@ -1,4 +1,27 @@
 {
+  "v0_39_0": {
+    "date": "2026-09-22",
+    "added": {
+      "01": "Un repas habituel te demande désormais de confirmer la portion avant de l'enregistrer.",
+      "02": "Tu peux lister tes allergies alimentaires, dès le premier jour ou plus tard dans les paramètres.",
+      "03": "Les aliments que tu photographies ou décris comportent désormais de courtes remarques pour la grossesse, l'allaitement et tes allergies."
+    },
+    "changed": {
+      "01": "Ajouter, Scanner et Décrire sont désormais regroupés sous une seule adresse, /add.",
+      "02": "« Ce que tu as mangé » sur le journal affiche désormais chaque macro sous forme de part de la journée, plutôt qu'une seconde valeur en grammes.",
+      "03": "Analyses utilise désormais une disposition en deux colonnes sur les écrans larges."
+    },
+    "fixed": {
+      "01": "Le nom openplate ne s'affiche plus au-dessus du titre de la page sur téléphone.",
+      "02": "La page des paramètres de l'IA garde ses explications masquées tant que tu ne les demandes pas.",
+      "03": "Tes repas habituels se distinguent désormais de la liste des aliments récemment enregistrés.",
+      "04": "Ton historique permet de distinguer d'un coup d'œil une série de trois jours d'une série de cent jours.",
+      "05": "Le premier écran affiche désormais le logo et le nom d'openplate.",
+      "06": "Les repas enregistrés t'indiquent désormais la provenance du suivant.",
+      "07": "Décrire place désormais la zone de message en bas de la page.",
+      "08": "Notifications affiche désormais le message de demain, même si tu ne peux pas activer les notifications."
+    }
+  },
   "v0_38_0": {
     "date": "2026-09-21",
     "added": {
@@ -17,38 +40,6 @@
     "fixed": {
       "01": "Le rappel de sauvegarde reste discret lorsqu'un serveur conserve ton journal.",
       "02": "La notification de mise à jour passe à la ligne au lieu de tronquer la version."
-    }
-  },
-  "v0_36_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "L'application t'indique désormais les changements après une mise à jour."
-    },
-    "changed": {
-      "01": "Tes jeûnes te suivent désormais sur tes autres appareils.",
-      "02": "Ton garde-manger te suit désormais aussi.",
-      "03": "La boîte de dialogue de déconnexion détecte désormais les repas enregistrés que tu as renommés.",
-      "04": "La boîte de dialogue de déconnexion compte tes jeûnes et ton garde-manger, et n'avertit que sur ce qu'elle ne peut pas vérifier.",
-      "05": "L'écran À propos indique désormais si le serveur a du retard, et qui peut le mettre à jour."
-    },
-    "fixed": {
-      "10": "La politique de confidentialité et les conditions listent désormais tout ce qui est synchronisé.",
-      "11": "Les boutons, les commutateurs et le sélecteur de date sont adaptés au pouce sur un téléphone.",
-      "12": "Le journal ne défile plus horizontalement, et la flèche du jour suivant reste à l'écran.",
-      "13": "L'historique de jeûne, les graphiques d'Analyses et leurs filtres s'adaptent à un téléphone.",
-      "14": "Les pages de paramètres ont des commandes adaptées au pouce et un espacement régulier.",
-      "15": "Les titres juridiques en allemand tiennent sur un téléphone.",
-      "16": "Le cadre propre de l'application est adapté au pouce, et la barre inférieure s'efface devant le clavier.",
-      "17": "La barre des jours du journal est collée à l'en-tête, et les listes s'accordent avec le reste de l'application.",
-      "01": "Une fin que tu as enregistrée n'est jamais annulée par un autre appareil.",
-      "02": "L'alerte de jeûne suit désormais le jeûne, sur chaque appareil.",
-      "03": "La politique de confidentialité et les conditions mentionnent désormais aussi tes clés de partage et de recherche.",
-      "04": "La boîte de dialogue de déconnexion explique quoi faire de tes clés, au lieu de seulement indiquer ce qu'elle ne peut pas vérifier.",
-      "05": "L'ajout manuel d'un aliment indique désormais ce qui manque dans ta langue.",
-      "06": "Les commandes du formulaire d'ajout et de Tes aliments sont adaptées au pouce.",
-      "07": "La carte de la semaine de Vue d'ensemble et ses deux tuiles s'adaptent à un téléphone.",
-      "08": "Un repas enregistré affiche le nom complet que tu lui as donné.",
-      "09": "L'écran de description ne se nomme qu'une fois, et les titres du premier lancement évitent les mots orphelins."
     }
   }
 }

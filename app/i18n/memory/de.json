@@ -524,6 +524,13 @@
     "at": "2026-09-14",
     "de": "Sperren"
   },
+  "07b629b72b3f6976": {
+    "en": "The AI settings page keeps its explanations folded away until you ask for them.",
+    "path": "releases:v0_39_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Die Seite für KI-Einstellungen klappt Erklärungen erst aus, wenn du sie anforderst."
+  },
   "07b7b897b8056aac": {
     "en": "Edit entry · openplate",
     "path": "common:meta.entry",
@@ -1651,6 +1658,13 @@
     "at": "2026-09-14",
     "de": "Weniger Gramm"
   },
+  "14756aa415f2c5f8": {
+    "en": "Your record tells a three day streak from a hundred day one at a glance.",
+    "path": "releases:v0_39_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Deine Serie zeigt auf einen Blick den Unterschied zwischen drei Tagen und hundert Tagen."
+  },
   "147af4848c7cb618": {
     "en": "Enter the email address you were invited at.",
     "path": "common:sync.email.required",
@@ -2056,6 +2070,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Um eine robuste Synchronisation zu gewährleisten, speichert der Server einen begrenzten Verlauf Ihrer verschlüsselten Daten: die fünf neuesten Versionen pro Konto. Wenn Sie eine neuere Version speichern, wird die älteste automatisch gelöscht. Durch die Nutzung der Synchronisation stimmen Sie diesem Aufbewahrungsmodell zu."
+  },
+  "1969a04e1bf1c444": {
+    "en": "Your usual meals now stand out from the list of recently logged foods.",
+    "path": "releases:v0_39_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Deine gewohnten Mahlzeiten heben sich jetzt von der Liste der kürzlich erfassten Lebensmittel ab."
   },
   "19732a9a3b080a1f": {
     "en": "Weight logged.",
@@ -3176,6 +3197,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "de": "Ein Monat darunter"
+  },
+  "2739a55d2069c3b9": {
+    "en": "You can list your food allergies, on day one or later in settings.",
+    "path": "releases:v0_39_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Du kannst deine Lebensmittelallergien angeben, direkt am ersten Tag oder später in den Einstellungen."
   },
   "275341e249af68b3": {
     "en": "{{hours}}h",
@@ -7972,6 +8000,13 @@
     "at": "2026-09-14",
     "de": "Ein Ring im Tagebuch zeigt, was von heute übrig ist."
   },
+  "66f3699e471215b1": {
+    "en": "The name openplate no longer sits on top of the page title on a phone.",
+    "path": "releases:v0_39_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Der Name openplate steht auf dem Smartphone nicht mehr über dem Seitentitel."
+  },
   "6705f282e82d8078": {
     "en": "Back to the list",
     "path": "common:admin.invite.back",
@@ -8245,6 +8280,13 @@
     "at": "2026-09-14",
     "de": "Konto"
   },
+  "6b6b6098e3938f4a": {
+    "en": "Foods you photograph or describe now carry small notes for pregnancy, breastfeeding and your allergies.",
+    "path": "releases:v0_39_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Lebensmittel, die du fotografierst oder beschreibst, enthalten jetzt kurze Hinweise zu Schwangerschaft, Stillzeit und deinen Allergien."
+  },
   "6b9f44e800d6d704": {
     "en": "When you last signed in, or last had a photo read.",
     "path": "common:account.operatorSees.lastSeenAt",
@@ -8335,6 +8377,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Trag dein erstes Gewicht ein, dann siehst du hier deinen Verlauf."
+  },
+  "6ca1ad408e3e136b": {
+    "en": "Saved meals now tells you where the next one comes from.",
+    "path": "releases:v0_39_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Gespeicherte Mahlzeiten zeigt dir jetzt, woher die nächste Mahlzeit stammt."
   },
   "6cb60b4780f4c0f2": {
     "en": "Account created",
@@ -9589,6 +9638,13 @@
     "at": "2026-09-14",
     "de": "Das bekommst du"
   },
+  "7bb22f3d1b4d64d4": {
+    "en": "A usual meal now asks you to confirm the portion before logging it.",
+    "path": "releases:v0_39_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Bei einer gewohnten Mahlzeit musst du die Portion jetzt bestätigen, bevor du sie einträgst."
+  },
   "7bc33e49610bd85b": {
     "en": "Make my sharing key",
     "path": "common:sharing.identity.generate",
@@ -9959,6 +10015,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Angaben löschen"
+  },
+  "805611fdaefa93be": {
+    "en": "Describe now puts the message box at the bottom of the page.",
+    "path": "releases:v0_39_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Beschreiben platziert das Eingabefeld jetzt am unteren Rand der Seite."
   },
   "80599fc23deda0c7": {
     "en": "Right of withdrawal",
@@ -11254,6 +11317,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Du bist bereits angemeldet. Mehr ist nicht zu tun."
+  },
+  "8f488bc75aebab78": {
+    "en": "Trends now uses a two-column layout on wide screens.",
+    "path": "releases:v0_39_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Einblicke verwendet auf breiten Bildschirmen jetzt ein zweispaltiges Layout."
   },
   "8f74b6eb5c7a63ad": {
     "en": "How many carbs a day?",
@@ -14916,6 +14986,13 @@
     "at": "2026-09-20",
     "de": "openplate ist Local-First aufgebaut. Ihre persönlichen Lebensmittel, Ernährungsprotokolle, Gewichtseinträge, Profil/Ziele, Fastenzeiten, Fastenroutine, gespeicherte Mahlzeiten, Vorrat, Serien und Auszeichnungen werden auf dem Gerät in der IndexedDB Ihres Browsers gespeichert. Diese Daten werden nicht an uns gesendet, und wir können sie nicht einsehen. Da sie in Ihrem Browserprofil liegen, werden sie beim Löschen Ihrer Browserdaten (oder des Speichers der Website) entfernt; bedenken Sie dies daher, bevor Sie diese löschen, und beachten Sie, dass diese Daten an den konkreten Browser und das Gerät gebunden sind, die Sie nutzen."
   },
+  "c0c316e3ba465e7a": {
+    "en": "Notifications now shows tomorrow's message even when you cannot turn notifications on.",
+    "path": "releases:v0_39_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Benachrichtigungen zeigt die Nachricht von morgen jetzt auch dann, wenn du Benachrichtigungen nicht aktivieren kannst."
+  },
   "c0c34be339304142": {
     "en": "Version retention.",
     "path": "legal:terms.s7Item2Label",
@@ -17800,6 +17877,13 @@
     "at": "2026-09-14",
     "de": "Kopiert"
   },
+  "e704581093a5dff7": {
+    "en": "The first screen now carries the openplate mark and name.",
+    "path": "releases:v0_39_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Der Startbildschirm enthält jetzt das Logo und den Namen von openplate."
+  },
   "e70c5da513039b5f": {
     "en": "Name",
     "path": "common:add.manual.name",
@@ -18359,6 +18443,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dein Tarif ist bezahlt und aktiv."
+  },
+  "ee42fd4f1875362a": {
+    "en": "Add, Scan and Describe now nest under one address, /add.",
+    "path": "releases:v0_39_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Hinzufügen, Scannen und Beschreiben liegen jetzt gebündelt unter einer einzigen Adresse, /add."
   },
   "ee7f982901e36f35": {
     "en": "Scan your plate instead",
@@ -19731,6 +19822,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "de": "Die App behauptet nicht mehr, der Server könne dein Tagebuch nicht lesen."
+  },
+  "ffa3b41edb27b5fe": {
+    "en": "\"What you ate\" on the diary now states each macro as a share of the day, not a second gram figure.",
+    "path": "releases:v0_39_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "„Was du gegessen hast“ im Tagebuch weist jeden Makronährstoff jetzt als Anteil des Tages aus, nicht mehr als zweite Gramm-Angabe."
   },
   "ffb18ccecc476fa0": {
     "en": "tuna",

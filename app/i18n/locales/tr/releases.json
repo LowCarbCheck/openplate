@@ -1,4 +1,27 @@
 {
+  "v0_39_0": {
+    "date": "2026-09-22",
+    "added": {
+      "01": "Her zamanki bir öğün, günlüğe kaydetmeden önce artık porsiyonu onaylamanı ister.",
+      "02": "Gıda alerjilerini ilk gün veya daha sonra ayarlardan listeleyebilirsin.",
+      "03": "Fotoğrafını çektiğin veya tarif ettiğin yiyecekler; artık hamilelik, emzirme ve alerjilerin için küçük notlar içerir."
+    },
+    "changed": {
+      "01": "Ekle, Tara ve Tarif et artık tek bir adres altında toplanıyor: /add.",
+      "02": "Günlükteki \"Ne yedin\" kısmı artık her makroyu ikinci bir gram değeri olarak değil, günün bir payı olarak belirtir.",
+      "03": "İçgörüler artık geniş ekranlarda iki sütunlu bir düzen kullanır."
+    },
+    "fixed": {
+      "01": "openplate adı artık telefonda sayfa başlığının üzerinde yer almaz.",
+      "02": "Yapay zeka ayarları sayfası, sen istemedikçe açıklamalarını kapalı tutar.",
+      "03": "Her zamanki öğünlerin, artık son kaydedilen yiyecekler listesinden ayırt edilir.",
+      "04": "Kaydın, üç günlük bir seriyi yüz günlük olandan bir bakışta ayırır.",
+      "05": "İlk ekran artık openplate işaretini ve adını taşır.",
+      "06": "Kaydedilen öğünler artık bir sonrakinin nereden geldiğini sana bildirir.",
+      "07": "Tarif et, ileti kutusunu artık sayfanın en altına yerleştirir.",
+      "08": "Bildirimler, bildirimleri açamadığın durumlarda bile artık yarının iletisini gösterir."
+    }
+  },
   "v0_38_0": {
     "date": "2026-09-21",
     "added": {
@@ -17,38 +40,6 @@
     "fixed": {
       "01": "Günlüğünü bir sunucu tuttuğunda yedekleme hatırlatıcısı sessiz kalır.",
       "02": "Güncelleme bildirimi, sürümü kesmek yerine alt satıra kaydırır."
-    }
-  },
-  "v0_36_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Uygulama artık bir güncellemeden sonra nelerin değiştiğini sana gösterir."
-    },
-    "changed": {
-      "01": "Oruçların artık diğer cihazlarına da taşınır.",
-      "02": "Kilerin de artık seninle birlikte gelir.",
-      "03": "Oturumu kapatma penceresi, adını değiştirdiğin kayıtlı bir öğünü artık fark eder.",
-      "04": "Oturumu kapatma penceresi oruçlarını ve kilerini sayar, yalnızca denetleyemediği şeyler hakkında uyarır.",
-      "05": "Hakkında ekranı artık sunucunun ne zaman geride kaldığını ve onu kimin güncelleyebileceğini belirtir."
-    },
-    "fixed": {
-      "10": "Gizlilik politikası ve şartlar artık eşitlenen her şeyi listeler.",
-      "11": "Düğmeler, anahtarlar ve tarih seçici telefonda başparmak boyutundadır.",
-      "12": "Günlük artık yana kaymaz, sonraki gün oku da ekranda kalır.",
-      "13": "Oruç geçmişi, İçgörüler grafikleri ve bunların filtreleri telefona sığar.",
-      "14": "Ayarlar sayfalarında başparmak boyutunda denetimler ve eşit boşluklar bulunur.",
-      "15": "Almanca yasal başlıklar telefona sığar.",
-      "16": "Uygulamanın kendi çerçevesi başparmak boyutundadır, alt çubuk da klavye için kenara çekilir.",
-      "17": "Günlüğün gün çubuğu üst bilgiye yaslanır, listeler de uygulamanın geri kalanıyla eşleşir.",
-      "01": "Kaydettiğin bir bitiş, başka bir cihaz tarafından asla geri alınmaz.",
-      "02": "Oruç uyarısı artık her cihazda orucu takip eder.",
-      "03": "Gizlilik politikası ve şartlar artık paylaşım ve araştırma anahtarlarını da belirtir.",
-      "04": "Oturumu kapatma penceresi yalnızca denetleyemediği şeyleri değil, anahtarların için ne yapman gerektiğini de söyler.",
-      "05": "Elle bir yiyecek eklerken neyin eksik olduğu artık kendi dilinde belirtilir.",
-      "06": "Ekleme formundaki ve Yiyeceklerin bölümündeki denetimler başparmak boyutundadır.",
-      "07": "Genel bakışın hafta kartı ve iki kutucuğu telefona sığar.",
-      "08": "Kayıtlı bir öğün, ona verdiğin adın tamamını gösterir.",
-      "09": "Tarif etme ekranı adını bir kez belirtir, ilk çalıştırma başlıkları da son sözcüklerini yalnız bırakmaz."
     }
   }
 }

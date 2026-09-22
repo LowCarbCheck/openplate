@@ -1,4 +1,27 @@
 {
+  "v0_39_0": {
+    "date": "2026-09-22",
+    "added": {
+      "01": "Bei einer gewohnten Mahlzeit musst du die Portion jetzt bestätigen, bevor du sie einträgst.",
+      "02": "Du kannst deine Lebensmittelallergien angeben, direkt am ersten Tag oder später in den Einstellungen.",
+      "03": "Lebensmittel, die du fotografierst oder beschreibst, enthalten jetzt kurze Hinweise zu Schwangerschaft, Stillzeit und deinen Allergien."
+    },
+    "changed": {
+      "01": "Hinzufügen, Scannen und Beschreiben liegen jetzt gebündelt unter einer einzigen Adresse, /add.",
+      "02": "„Was du gegessen hast“ im Tagebuch weist jeden Makronährstoff jetzt als Anteil des Tages aus, nicht mehr als zweite Gramm-Angabe.",
+      "03": "Einblicke verwendet auf breiten Bildschirmen jetzt ein zweispaltiges Layout."
+    },
+    "fixed": {
+      "01": "Der Name openplate steht auf dem Smartphone nicht mehr über dem Seitentitel.",
+      "02": "Die Seite für KI-Einstellungen klappt Erklärungen erst aus, wenn du sie anforderst.",
+      "03": "Deine gewohnten Mahlzeiten heben sich jetzt von der Liste der kürzlich erfassten Lebensmittel ab.",
+      "04": "Deine Serie zeigt auf einen Blick den Unterschied zwischen drei Tagen und hundert Tagen.",
+      "05": "Der Startbildschirm enthält jetzt das Logo und den Namen von openplate.",
+      "06": "Gespeicherte Mahlzeiten zeigt dir jetzt, woher die nächste Mahlzeit stammt.",
+      "07": "Beschreiben platziert das Eingabefeld jetzt am unteren Rand der Seite.",
+      "08": "Benachrichtigungen zeigt die Nachricht von morgen jetzt auch dann, wenn du Benachrichtigungen nicht aktivieren kannst."
+    }
+  },
   "v0_38_0": {
     "date": "2026-09-21",
     "added": {
@@ -17,38 +40,6 @@
     "fixed": {
       "01": "Die Backup-Erinnerung bleibt stumm, wenn ein Server dein Tagebuch speichert.",
       "02": "Der Update-Hinweis bricht um, anstatt die Version abzuschneiden."
-    }
-  },
-  "v0_36_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "Die App zeigt dir jetzt nach einer Aktualisierung, was sich geändert hat."
-    },
-    "changed": {
-      "01": "Deine Fastenzeiten folgen dir jetzt auf deine anderen Geräte.",
-      "02": "Deine Vorratskammer folgt dir jetzt ebenfalls.",
-      "03": "Der Abmeldedialog bemerkt jetzt eine gespeicherte Mahlzeit, die du umbenannt hast.",
-      "04": "Der Abmeldedialog zählt deine Fastenzeiten sowie deine Vorratskammer und warnt nur vor dem, was er nicht prüfen kann.",
-      "05": "Die Ansicht „Über openplate“ zeigt jetzt an, wenn der Server im Rückstand ist, und wer ihn aktualisieren kann."
-    },
-    "fixed": {
-      "10": "Die Datenschutzerklärung und die Nutzungsbedingungen listen jetzt alles auf, was synchronisiert wird.",
-      "11": "Schaltflächen, Schalter und die Datumsauswahl sind auf dem Smartphone daumengroß.",
-      "12": "Das Tagebuch scrollt nicht mehr seitwärts, und der Pfeil für den nächsten Tag bleibt auf dem Bildschirm.",
-      "13": "Der Fastenverlauf, die Diagramme unter Einblicke und deren Filter passen auf ein Smartphone.",
-      "14": "Einstellungsseiten haben daumengroße Bedienelemente und gleichmäßige Abstände.",
-      "15": "Deutsche rechtliche Überschriften passen auf ein Smartphone.",
-      "16": "Der Rahmen der App selbst ist daumengroß, und die untere Leiste weicht der Tastatur.",
-      "17": "Die Tagesleiste des Tagebuchs liegt an der Kopfzeile an, und die Listen passen zum Rest der App.",
-      "01": "Ein von dir erfasstes Ende wird von einem anderen Gerät niemals rückgängig gemacht.",
-      "02": "Der Fastenalarm folgt jetzt dem Fasten, auf jedem Gerät.",
-      "03": "Die Datenschutzerklärung und die Nutzungsbedingungen nennen jetzt auch deine Freigabe- und Forschungsschlüssel.",
-      "04": "Der Abmeldedialog erklärt, was du mit deinen Schlüsseln tun solltest, nicht nur, was er nicht prüfen kann.",
-      "05": "Das manuelle Hinzufügen eines Lebensmittels nennt jetzt in deiner Sprache, was fehlt.",
-      "06": "Die Bedienelemente im Formular zum Hinzufügen und unter „Deine Lebensmittel“ sind daumengroß.",
-      "07": "Die Wochenkarte der Übersicht und ihre zwei Kacheln passen auf ein Smartphone.",
-      "08": "Eine gespeicherte Mahlzeit zeigt den vollständigen Namen, den du ihr gegeben hast.",
-      "09": "Die Beschreibungsansicht benennt sich einmal, und die Überschriften beim ersten Start behalten ihr letztes Wort bei sich."
     }
   }
 }

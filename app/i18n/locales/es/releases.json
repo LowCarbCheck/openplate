@@ -1,4 +1,27 @@
 {
+  "v0_39_0": {
+    "date": "2026-09-22",
+    "added": {
+      "01": "Las comidas habituales ahora te piden confirmar la porción antes de registrarlas.",
+      "02": "Puedes indicar tus alergias alimentarias, desde el primer día o más tarde en los ajustes.",
+      "03": "Los alimentos que fotografías o describes ahora incluyen notas breves sobre embarazo, lactancia y tus alergias."
+    },
+    "changed": {
+      "01": "Añadir, Escanear y Describir se agrupan ahora bajo una misma dirección, /add.",
+      "02": "\"Qué comiste\" en el diario muestra ahora cada macronutriente como porcentaje del día, no como una segunda cifra en gramos.",
+      "03": "Análisis usa ahora un diseño de dos columnas en pantallas anchas."
+    },
+    "fixed": {
+      "01": "El nombre openplate ya no se superpone al título de la página en un teléfono.",
+      "02": "La página de ajustes de IA mantiene sus explicaciones plegadas hasta que las solicitas.",
+      "03": "Tus comidas habituales ahora se distinguen de la lista de alimentos registrados recientemente.",
+      "04": "Tu historial permite distinguir de un vistazo una racha de tres días de una de cien.",
+      "05": "La primera pantalla incluye ahora la marca y el nombre de openplate.",
+      "06": "Comidas guardadas indica ahora de dónde procede la siguiente.",
+      "07": "Describir sitúa ahora el cuadro de mensaje en la parte inferior de la página.",
+      "08": "Notificaciones muestra ahora el mensaje de mañana incluso si no puedes activarlas."
+    }
+  },
   "v0_38_0": {
     "date": "2026-09-21",
     "added": {
@@ -17,38 +40,6 @@
     "fixed": {
       "01": "El recordatorio de copia de seguridad no se muestra cuando un servidor contiene tu diario.",
       "02": "El aviso de actualización se ajusta en varias líneas en vez de cortar la versión."
-    }
-  },
-  "v0_36_0": {
-    "date": "2026-09-20",
-    "added": {
-      "01": "La aplicación ahora te muestra qué cambió tras una actualización."
-    },
-    "changed": {
-      "01": "Tus ayunos ahora te siguen al resto de tus dispositivos.",
-      "02": "Tu despensa ahora también te sigue.",
-      "03": "El diálogo de cierre de sesión ahora detecta si renombraste una comida guardada.",
-      "04": "El diálogo de cierre de sesión cuenta tus ayunos y tu despensa, y solo advierte sobre lo que no puede comprobar.",
-      "05": "La pantalla Acerca de ahora indica cuándo el servidor está desactualizado y quién puede actualizarlo."
-    },
-    "fixed": {
-      "10": "La política de privacidad y los términos ahora enumeran todo lo que se sincroniza.",
-      "11": "Los botones, los interruptores y el selector de fecha tienen el tamaño del pulgar en un teléfono.",
-      "12": "El diario ya no se desplaza lateralmente y la flecha del día siguiente permanece en pantalla.",
-      "13": "El historial de ayuno, los gráficos de Análisis y sus filtros caben en un teléfono.",
-      "14": "Las páginas de ajustes tienen controles con el tamaño del pulgar y un espaciado uniforme.",
-      "15": "Los encabezados legales en alemán caben en un teléfono.",
-      "16": "El propio marco de la aplicación tiene el tamaño del pulgar y la barra inferior se aparta para dar paso al teclado.",
-      "17": "La barra de días del diario queda pegada al encabezado y las listas coinciden con el resto de la aplicación.",
-      "01": "Un fin que hayas registrado nunca se anula desde otro dispositivo.",
-      "02": "La alerta de ayuno ahora sigue al ayuno, en cada dispositivo.",
-      "03": "La política de privacidad y los términos ahora también mencionan tus claves de uso compartido y de investigación.",
-      "04": "El diálogo de cierre de sesión indica qué hacer con tus claves, no solo lo que no puede comprobar.",
-      "05": "Al añadir un alimento a mano, ahora se indica en tu idioma qué falta.",
-      "06": "Los controles del formulario para añadir y de Tus alimentos tienen el tamaño del pulgar.",
-      "07": "La tarjeta semanal de Resumen y sus dos bloques caben en un teléfono.",
-      "08": "Una comida guardada muestra el nombre completo que le diste.",
-      "09": "La pantalla de descripción muestra su propio nombre una sola vez, y los encabezados de la primera ejecución no dejan palabras sueltas."
     }
   }
 }

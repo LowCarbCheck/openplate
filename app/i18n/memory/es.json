@@ -524,6 +524,13 @@
     "at": "2026-09-14",
     "es": "Suspender"
   },
+  "07b629b72b3f6976": {
+    "en": "The AI settings page keeps its explanations folded away until you ask for them.",
+    "path": "releases:v0_39_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "La página de ajustes de IA mantiene sus explicaciones plegadas hasta que las solicitas."
+  },
   "07b7b897b8056aac": {
     "en": "Edit entry · openplate",
     "path": "common:meta.entry",
@@ -1651,6 +1658,13 @@
     "at": "2026-09-14",
     "es": "Reducir gramos"
   },
+  "14756aa415f2c5f8": {
+    "en": "Your record tells a three day streak from a hundred day one at a glance.",
+    "path": "releases:v0_39_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Tu historial permite distinguir de un vistazo una racha de tres días de una de cien."
+  },
   "147af4848c7cb618": {
     "en": "Enter the email address you were invited at.",
     "path": "common:sync.email.required",
@@ -2056,6 +2070,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Para garantizar la solidez de la sincronización, el servidor conserva un historial limitado de sus datos cifrados, las cinco versiones más recientes por cuenta. Al guardar una versión más reciente, la más antigua se purga automáticamente. Al utilizar la sincronización, usted acepta este modelo de retención."
+  },
+  "1969a04e1bf1c444": {
+    "en": "Your usual meals now stand out from the list of recently logged foods.",
+    "path": "releases:v0_39_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Tus comidas habituales ahora se distinguen de la lista de alimentos registrados recientemente."
   },
   "19732a9a3b080a1f": {
     "en": "Weight logged.",
@@ -3176,6 +3197,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "es": "Un mes por debajo"
+  },
+  "2739a55d2069c3b9": {
+    "en": "You can list your food allergies, on day one or later in settings.",
+    "path": "releases:v0_39_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Puedes indicar tus alergias alimentarias, desde el primer día o más tarde en los ajustes."
   },
   "275341e249af68b3": {
     "en": "{{hours}}h",
@@ -7972,6 +8000,13 @@
     "at": "2026-09-14",
     "es": "Un anillo en tu diario muestra lo que queda de hoy."
   },
+  "66f3699e471215b1": {
+    "en": "The name openplate no longer sits on top of the page title on a phone.",
+    "path": "releases:v0_39_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "El nombre openplate ya no se superpone al título de la página en un teléfono."
+  },
   "6705f282e82d8078": {
     "en": "Back to the list",
     "path": "common:admin.invite.back",
@@ -8245,6 +8280,13 @@
     "at": "2026-09-14",
     "es": "Cuenta"
   },
+  "6b6b6098e3938f4a": {
+    "en": "Foods you photograph or describe now carry small notes for pregnancy, breastfeeding and your allergies.",
+    "path": "releases:v0_39_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Los alimentos que fotografías o describes ahora incluyen notas breves sobre embarazo, lactancia y tus alergias."
+  },
   "6b9f44e800d6d704": {
     "en": "When you last signed in, or last had a photo read.",
     "path": "common:account.operatorSees.lastSeenAt",
@@ -8335,6 +8377,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Registra tu primer pesaje para ver tu tendencia."
+  },
+  "6ca1ad408e3e136b": {
+    "en": "Saved meals now tells you where the next one comes from.",
+    "path": "releases:v0_39_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Comidas guardadas indica ahora de dónde procede la siguiente."
   },
   "6cb60b4780f4c0f2": {
     "en": "Account created",
@@ -9589,6 +9638,13 @@
     "at": "2026-09-14",
     "es": "Lo que obtienes"
   },
+  "7bb22f3d1b4d64d4": {
+    "en": "A usual meal now asks you to confirm the portion before logging it.",
+    "path": "releases:v0_39_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Las comidas habituales ahora te piden confirmar la porción antes de registrarlas."
+  },
   "7bc33e49610bd85b": {
     "en": "Make my sharing key",
     "path": "common:sharing.identity.generate",
@@ -9959,6 +10015,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Eliminar estos datos"
+  },
+  "805611fdaefa93be": {
+    "en": "Describe now puts the message box at the bottom of the page.",
+    "path": "releases:v0_39_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Describir sitúa ahora el cuadro de mensaje en la parte inferior de la página."
   },
   "80599fc23deda0c7": {
     "en": "Right of withdrawal",
@@ -11254,6 +11317,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Ya estás en la lista. No tienes que hacer nada más."
+  },
+  "8f488bc75aebab78": {
+    "en": "Trends now uses a two-column layout on wide screens.",
+    "path": "releases:v0_39_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Análisis usa ahora un diseño de dos columnas en pantallas anchas."
   },
   "8f74b6eb5c7a63ad": {
     "en": "How many carbs a day?",
@@ -14916,6 +14986,13 @@
     "at": "2026-09-20",
     "es": "openplate se ha diseñado local-first. Sus alimentos personales, registros de alimentos, entradas de peso, perfil/objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios se almacenan en el dispositivo en el IndexedDB de su navegador. Estos datos no se nos envían y no podemos verlos. Dado que residen en el perfil de su navegador, borrar los datos del navegador (o el almacenamiento del sitio) los elimina, por lo que debe tenerlo en cuenta antes de borrarlos, y observe que estos datos están vinculados al navegador y al dispositivo específicos que usted utiliza."
   },
+  "c0c316e3ba465e7a": {
+    "en": "Notifications now shows tomorrow's message even when you cannot turn notifications on.",
+    "path": "releases:v0_39_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Notificaciones muestra ahora el mensaje de mañana incluso si no puedes activarlas."
+  },
   "c0c34be339304142": {
     "en": "Version retention.",
     "path": "legal:terms.s7Item2Label",
@@ -17800,6 +17877,13 @@
     "at": "2026-09-14",
     "es": "Copiado"
   },
+  "e704581093a5dff7": {
+    "en": "The first screen now carries the openplate mark and name.",
+    "path": "releases:v0_39_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "La primera pantalla incluye ahora la marca y el nombre de openplate."
+  },
   "e70c5da513039b5f": {
     "en": "Name",
     "path": "common:add.manual.name",
@@ -18359,6 +18443,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tu plan está pagado y activo."
+  },
+  "ee42fd4f1875362a": {
+    "en": "Add, Scan and Describe now nest under one address, /add.",
+    "path": "releases:v0_39_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Añadir, Escanear y Describir se agrupan ahora bajo una misma dirección, /add."
   },
   "ee7f982901e36f35": {
     "en": "Scan your plate instead",
@@ -19731,6 +19822,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "es": "La app ya no indica que el servidor no puede leer tu diario."
+  },
+  "ffa3b41edb27b5fe": {
+    "en": "\"What you ate\" on the diary now states each macro as a share of the day, not a second gram figure.",
+    "path": "releases:v0_39_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "\"Qué comiste\" en el diario muestra ahora cada macronutriente como porcentaje del día, no como una segunda cifra en gramos."
   },
   "ffb18ccecc476fa0": {
     "en": "tuna",
