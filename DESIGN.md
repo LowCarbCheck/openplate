@@ -441,6 +441,16 @@ keys at 44px, instead of cutting the version number off the end.
   belongs to the tab bar and the raised Scan button — toasts never cover them.
 - **Destructive actions**: AlertDialog confirmation (`ConfirmAction`) with a destructive button and
   pending spinner — `window.confirm` is banned.
+- **No layout shift (operator rule, 2026-09-22).** Nothing on a screen moves because the person
+  typed, focused a field or picked an option, or because a line loaded or a status arrived. A line
+  that can appear (a hint, an error, a preset's detail line, a count, a converted unit) has its box
+  from the first paint: render it always and hide it with `invisible`, give its slot a one-line
+  `min-h-*`, or place it where nothing sits below it. A lazy chunk or an image reserves its size in
+  its fallback, as `WayToLogCard` does. Only an expansion the person asked for (a disclosure, a
+  picked style revealing its own fields) may push content down, and never content above the tap
+  point. Check it in `tests/e2e/`: read `getBoundingClientRect().top` of the elements below the
+  change before and after, and require a `layout-shift` `PerformanceObserver` total of 0. A
+  screenshot alone proves nothing here.
 - **Radix enter/exit**: `tw-animate-css` data-state animations as shipped (fade/zoom/slide).
 - **Micro-interactions**: `transition-colors` default; images in interactive cards
   `group-hover:scale-105 transition-transform duration-200`; arrow affordances

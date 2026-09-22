@@ -116,6 +116,7 @@ ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the
 - **Path aliases**: `#app/*`, `#config`, `#build/*`, `#types/*` — defined in `tsconfig.json` `paths` only (no `package.json` `imports` field)
 - **Config access**: always go through `CONFIG` from `#config` (`app/config/index.ts`). Never read `process.env` directly outside that file — it's the only place with prod-vs-dev fallback logic and `requireEnv`/`optionalEnv` validation
 - **Logging**: always via `#app/lib/logger` (`createComponentLogger('name')`), never raw `console.*` in application code
+- **No layout shift**: typing, focusing, picking an option, a load or a status never moves what is on screen. A line that can appear reserves its box from the first paint (`invisible` or a one-line `min-h-*`), and a lazy chunk reserves its size in the fallback. A change that touches this carries an e2e check: `getBoundingClientRect` before and after, and a `layout-shift` total of 0. The full rule is in DESIGN.md section 7
 
 ## Data Model
 
