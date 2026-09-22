@@ -563,7 +563,7 @@
  * ===========================================================================
  * Waiting vocabulary
  * ===========================================================================
- * Two classes, used only where the app is genuinely waiting on something —
+ * Three classes, used only where the app is genuinely waiting on something,
  * never as decoration on static content (DESIGN.md §7, §11).
  *
  * Motion is OPT-IN, not opt-out: the base rule carries no animation at all, so
@@ -601,6 +601,25 @@
 
   .loading-dots > *:nth-child(3) {
     animation-delay: 0.32s;
+  }
+
+  /* The boot screen's wordmark, one letter of "plate" at a time: the teal of
+     "open" runs through the word and back. `Wordmark` sets each letter's
+     delay, so the phase lives beside the letters it staggers. Colour only, so
+     no letter changes width while it runs. */
+  .wordmark-wave {
+    animation: wordmark-wave 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes wordmark-wave {
+  0%,
+  100% {
+    color: hsl(var(--foreground));
+  }
+
+  50% {
+    color: hsl(var(--primary));
   }
 }
 

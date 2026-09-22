@@ -12,10 +12,42 @@ type WordmarkProps = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
    * mark is beside the word: the phone header's kicker and the landing heading.
    */
   besideMark?: boolean;
+  /**
+   * The boot screen's animation: every letter becomes its own span, "open" stays teal and the
+   * letters of "plate" take the teal in turn and hand it back. The word is then decoration, so it
+   * is hidden from screen readers here, and the caller's own label speaks for the screen.
+   */
+  wave?: boolean;
 };
 
 /** Where the word breaks in two. "open" is teal, "plate" takes the ink of the place it sits in. */
 const OPEN_LENGTH = 'open'.length;
+
+/** How far each letter of the wave starts behind the one before it, in seconds. */
+const WAVE_STEP_S = 0.1;
+
+/**
+ * The nine letters, one span each. The delay counts across the whole word, so "p" starts at
+ * 0.4 s and "e" at 0.8 s. The keyframe and the reduced-motion opt-in live in `app.css` under
+ * `.wordmark-wave`; with motion reduced the class draws nothing and "plate" keeps its ink.
+ */
+function WaveLetters(): ReactElement[] {
+  return [...APP_NAME].map((letter, index) => {
+    const key = `${index}${letter}`;
+    if (index < OPEN_LENGTH) {
+      return (
+        <span key={key} className="text-primary">
+          {letter}
+        </span>
+      );
+    }
+    return (
+      <span key={key} className="wordmark-wave" style={{ animationDelay: `${(index * WAVE_STEP_S).toFixed(1)}s` }}>
+        {letter}
+      </span>
+    );
+  });
+}
 
 /**
  * The word "openplate", the product's own name, and the only element in the app that draws it.
@@ -40,16 +72,31 @@ const OPEN_LENGTH = 'open'.length;
  * measured at weight 100: it puts the middle of the x-height on the mark's centre. In pixels that
  * is 1.4 at 18. `tests/e2e/wordmark.spec.ts` reads the real page and holds it to a pixel.
  *
+ * WHY `wave` SPLITS THE WORD HERE. The boot screen animates the word letter by letter, and the
+ * colour of "open" is part of the recipe above. Splitting in the caller would type that colour a
+ * second time. The letters change colour only, so the word keeps its width while it runs.
+ *
  * WHY IT TAKES NO CHILDREN. The face is for the word, so the word is not a parameter. A caller
  * that wants another string in the brand face has to change this file, which is exactly the
  * review that decision deserves.
  */
-export function Wordmark({ as: Tag = 'span', besideMark = false, className, ...props }: WordmarkProps): ReactElement {
+export function Wordmark({
+  as: Tag = 'span',
+  besideMark = false,
+  wave = false,
+  className,
+  ...props
+}: WordmarkProps): ReactElement {
+  const classes = cn('font-display font-thin tracking-[-0.03em]', besideMark && 'relative top-[-0.08em]', className);
+  if (wave) {
+    return (
+      <Tag className={classes} {...props} aria-hidden="true">
+        <WaveLetters />
+      </Tag>
+    );
+  }
   return (
-    <Tag
-      className={cn('font-display font-thin tracking-[-0.03em]', besideMark && 'relative top-[-0.08em]', className)}
-      {...props}
-    >
+    <Tag className={classes} {...props}>
       <span className="text-primary">{APP_NAME.slice(0, OPEN_LENGTH)}</span>
       {APP_NAME.slice(OPEN_LENGTH)}
     </Tag>

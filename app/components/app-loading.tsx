@@ -1,14 +1,15 @@
+import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
 
 /**
- * Three brand-colored dots breathing in sequence — the app's inline "waiting"
+ * Three brand-colored dots breathing in sequence, the app's inline "waiting"
  * mark. Timing and the reduced-motion opt-in live in `app.css`'s
  * `.loading-dots` rule; this component owns only the geometry.
  *
  * Decorative by construction: it is never the only thing on screen saying
  * "waiting", so it carries `aria-hidden` and leaves the announcement to the
  * `role="status"` region around it. Two sizes: `sm` for a dot row that sits
- * inline beside text, `md` for the boot screen.
+ * inline beside text, `md` for a larger row.
  */
 export function LoadingDots({ size = 'sm', className }: { size?: 'sm' | 'md'; className?: string }) {
   const dotSize = size === 'md' ? 'h-2 w-2' : 'h-1.5 w-1.5';
@@ -26,7 +27,7 @@ export function LoadingDots({ size = 'sm', className }: { size?: 'sm' | 'md'; cl
 }
 
 /**
- * The boot screen — what the app shows between "HTML has arrived" and "the
+ * The boot screen, what the app shows between "HTML has arrived" and "the
  * device's own data has been read".
  *
  * Every tracker route is client-only (`clientLoader` over IndexedDB), so the
@@ -37,11 +38,16 @@ export function LoadingDots({ size = 'sm', className }: { size?: 'sm' | 'md'; cl
  *
  * The mark is the app icon rather than `PlateGlyph`: at this moment the user
  * has just tapped a home-screen icon or a bookmark, and seeing the same icon
- * they tapped is the reassurance the screen is for. It breathes with
- * `pulse-soft`, and the dots underneath carry the sense of progress that a
- * single static mark can't.
+ * they tapped is the reassurance the screen is for. It stands still. The
+ * motion is in the name under it (the operator's "option E", 2026-09-23):
+ * "open" is teal, and the teal runs through "plate" and back, one letter at a
+ * time, which carries the sense of progress the three dots used to. The name
+ * is the same `Wordmark` every other screen draws, at 28px, so the boot screen
+ * and the header it hands over to spell the brand one way. With reduced motion
+ * the word stands still too, "open" teal and "plate" in the page's ink.
  *
- * Copy-free on purpose — there is no honest sentence to write here (we don't
+ * Copy-free on purpose, the name aside, which is a brand and never
+ * translated. There is no honest sentence to write here (we don't
  * know yet whether it's a diary, a scan or settings that's coming), and a
  * label would have to be translated for the sake of one word. The
  * `role="status"` region carries an `aria-label` instead, so screen readers
@@ -56,8 +62,10 @@ export function AppLoading({ label }: { label: string }) {
     >
       {/* `alt=""` + the labelled status region above: the icon is decoration,
           the region is the announcement. */}
-      <img src="/icons/icon-192.png?v=2" alt="" className="pulse-soft h-16 w-16" />
-      <LoadingDots size="md" />
+      <img src="/icons/icon-192.png?v=2" alt="" className="h-16 w-16" />
+      {/* `wave` hides the word from screen readers, so no reader spells it
+          out letter by letter; the region's label speaks instead. */}
+      <Wordmark wave className="text-[28px] leading-none" />
     </output>
   );
 }
