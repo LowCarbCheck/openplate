@@ -29,6 +29,16 @@ export const MAIN_GOAL_IDS = ['net-carbs', 'calories', 'protein'] as const;
 /** One of the three main goals. Stored verbatim in `LocalProfileGoals.mainGoal`. */
 export type MainGoalId = (typeof MAIN_GOAL_IDS)[number];
 
+/**
+ * The i18n KEY naming each main goal, shared by the settings card and the
+ * onboarding list so the two screens cannot word the same choice two ways.
+ */
+export const MAIN_GOAL_LABEL_KEY = {
+  'net-carbs': 'mainGoal.option.netCarbs',
+  calories: 'mainGoal.option.calories',
+  protein: 'mainGoal.option.protein',
+} as const satisfies Record<MainGoalId, string>;
+
 /** The ids as a set, so the guard is a lookup rather than a scan. */
 const MAIN_GOAL_ID_SET: ReadonlySet<string> = new Set<MainGoalId>(MAIN_GOAL_IDS);
 

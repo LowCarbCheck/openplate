@@ -495,7 +495,7 @@ describe('buildDayBudgetRows, the main goal leads', () => {
     assert.equal(lead.progressText, null);
     assert.equal(lead.targetSource, 'none');
     assert.equal(lead.tone, 'default');
-    assert.deepEqual(lead.figure, { value: '899 calories', suffix: null });
+    assert.deepEqual(lead.figure, { value: '899', suffix: 'calories' });
     assert.deepEqual(keys(rows), ['calories', 'netCarbs', 'protein', 'fat', 'fiber']);
     // CONTROL: the same goals WITHOUT a calorie main goal draw no calorie row at
     // all, the older rule, so the row above exists because of the main goal.
@@ -509,7 +509,7 @@ describe('buildDayBudgetRows, the main goal leads', () => {
     const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: 1800, proteinFloor: 90 }, false, 'net-carbs');
     assert.equal(rows[0].key, 'netCarbs');
     assert.equal(rows[0].fraction, null);
-    assert.deepEqual(rows[0].figure, { value: '25.1 g', suffix: null });
+    assert.deepEqual(rows[0].figure, { value: '25.1', suffix: 'g' });
   });
 });
 
@@ -523,9 +523,9 @@ describe('the figure each row carries', () => {
     assert.deepEqual(rowFor(rows, 'fiber').figure, { value: '13', suffix: '/ 25 g' });
   });
 
-  it('prints an untargeted figure whole, with no suffix', () => {
+  it('prints an untargeted figure with the bare unit as its suffix', () => {
     const rows = buildRows(DAY, { ...BOTH_GOALS, kcalTarget: null });
-    assert.deepEqual(rowFor(rows, 'fat').figure, { value: '34.6 g', suffix: null });
+    assert.deepEqual(rowFor(rows, 'fat').figure, { value: '34.6', suffix: 'g' });
   });
 
   it('formats a mid-tween figure through the same rounding as the settled one', () => {
@@ -693,7 +693,8 @@ describe('DayBudgetRows, the lead view', () => {
     const goals = { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: 90 };
     const lead = leadMarkup(renderLead(buildRows(DAY, goals, false, 'calories')));
     assert.match(lead, /data-metric="calories"/);
-    assert.ok(lead.includes('899 calories'));
+    // Only the number is large; the unit rides in the quiet suffix.
+    assert.match(lead, /text-\[2rem\][^>]*>899<span[^>]*> calories<\/span>/);
     assert.ok(!lead.includes('budget-track'), 'no target, no meter');
     assert.match(lead, /<a[^>]*href="\/settings\/nutrition"[^>]*>No daily target<\/a>/);
     // CONTROL: with a target the same lead draws its meter and no such link.

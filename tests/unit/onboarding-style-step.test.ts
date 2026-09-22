@@ -31,6 +31,7 @@ import type { ReproductiveStatus } from '../../app/lib/local-store/schema';
 /** The loader fields `StyleStep` reads, flattened. Defaults are a first-run device: nothing stored. */
 interface StyleStepFixture {
   eatingStyle: EatingStyleId | null;
+  mainGoal: string | null;
   goalNetCarbsCeilingG: number | null;
   goalKcalTarget: number | null;
   goalProteinFloorG: number | null;
@@ -40,6 +41,7 @@ interface StyleStepFixture {
 function fixture(overrides: Partial<StyleStepFixture> = {}): StyleStepFixture {
   return {
     eatingStyle: null,
+    mainGoal: null,
     goalNetCarbsCeilingG: null,
     goalKcalTarget: null,
     goalProteinFloorG: null,
@@ -55,6 +57,7 @@ function fixture(overrides: Partial<StyleStepFixture> = {}): StyleStepFixture {
 function renderStyleStep(data: StyleStepFixture): string {
   const loaderData: StyleStepData = {
     eatingStyle: data.eatingStyle,
+    mainGoal: data.mainGoal,
     goalNetCarbsCeilingG: data.goalNetCarbsCeilingG,
     goalKcalTarget: data.goalKcalTarget,
     goalProteinFloorG: data.goalProteinFloorG,
@@ -274,5 +277,61 @@ describe('the step has no Skip', () => {
       renderStyleStep(fixture()) + '<button type="submit" name="_intent" value="skip">Skip for now</button>';
     assert.throws(() => assert.deepEqual(skipSubmits(withSkip), []));
     assert.throws(() => assert.equal(withSkip.includes('Skip for now'), false));
+  });
+});
+
+/** Every `<input type="radio" name="mainGoal" ...>` tag in the markup. */
+function mainGoalRadios(markup: string): string[] {
+  return markup.match(/<input[^>]*name="mainGoal"[^>]*>/g) ?? [];
+}
+
+/** The value of the one ticked main goal radio, or `null`. */
+function checkedMainGoal(markup: string): string | null {
+  const checked = mainGoalRadios(markup).filter((tag) => tag.includes('checked'));
+  if (checked.length > 1) throw new Error('more than one main goal is ticked');
+  return /value="([^"]+)"/.exec(checked[0] ?? '')?.[1] ?? null;
+}
+
+describe('the main goal list', () => {
+  it('is not asked before a style is picked', () => {
+    assert.deepEqual(mainGoalRadios(renderStyleStep(fixture())), []);
+    // CONTROL: the same reader finds all three once a style is on file.
+    assert.equal(mainGoalRadios(renderStyleStep(fixture({ eatingStyle: 'low-carb' }))).length, 3);
+  });
+
+  it("starts on the style's lens", () => {
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'low-carb' }))), 'net-carbs');
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'low-kcal' }))), 'calories');
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'high-protein' }))), 'protein');
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'just-track' }))), 'net-carbs');
+  });
+
+  it('starts on a stored pick over the lens, and ignores a stored value it does not know', () => {
+    assert.equal(
+      checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'low-carb', mainGoal: 'protein' }))),
+      'protein',
+    );
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'low-kcal', mainGoal: 'fiber' }))), 'calories');
+  });
+});
+
+describe('the carb limit detail line', () => {
+  it('draws every detail line from the first paint, and shows none until a chip is picked', () => {
+    const markup = renderStyleStep(fixture({ eatingStyle: 'low-carb' }));
+    const detail = /<p data-slot="carb-preset-detail"[^>]*>([\s\S]*?)<\/p>/.exec(markup)?.[1] ?? '';
+    const spans = detail.match(/<span[^>]*>[^<]*<\/span>/g) ?? [];
+    assert.equal(spans.length, 3, 'one line per preset, stacked in one cell');
+    assert.ok(
+      spans.every((span) => span.includes('invisible')),
+      'nothing picked, so every line holds its space and shows nothing',
+    );
+    // CONTROL: a stored ceiling ticks its chip, and exactly that line shows.
+    const picked = renderStyleStep(fixture({ eatingStyle: 'low-carb', goalNetCarbsCeilingG: 50 }));
+    const pickedDetail = /<p data-slot="carb-preset-detail"[^>]*>([\s\S]*?)<\/p>/.exec(picked)?.[1] ?? '';
+    const visible = (pickedDetail.match(/<span[^>]*>[^<]*<\/span>/g) ?? []).filter(
+      (span) => !span.includes('invisible'),
+    );
+    assert.equal(visible.length, 1);
+    assert.ok(visible[0]?.includes('Under 50 g'));
   });
 });

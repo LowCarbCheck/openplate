@@ -8,7 +8,8 @@
  * pages now. That old address still resolves, as a redirect to this one.
  *
  * What lives HERE: the style card, which decides which of the numbers below
- * survive at all, and then the four targets, carb ceiling, protein floor,
+ * survive at all, the main goal card, which decides which one the diary shows
+ * first, and then the four targets, carb ceiling, protein floor,
  * calories and target weight. What lives on `/settings/profile`: height, sex,
  * birth year and the weigh-in log. What lives on `/settings/life-phase`:
  * pregnancy and breastfeeding.
@@ -58,6 +59,7 @@ import type { ReproductiveStatus } from '#app/lib/local-store/schema';
 import { CARB_PRESETS as ONBOARDING_CARB_PRESETS, type CarbPreset } from '#app/lib/onboarding';
 import { effectiveEatingStyle, reconcileEatingStyle, styleCaution, type EatingStyleId } from '#app/lib/eating-style';
 import { makeEatingStyleSchema, planEatingStyleSave, CARB_SUB_PRESETS, styleNeedsWeight } from '#app/lib/eating-style-form';
+import { effectiveMainGoal, MAIN_GOAL_IDS, MAIN_GOAL_LABEL_KEY, type MainGoalId } from '#app/lib/main-goal';
 import { eatingStyleCardKey, goalsCardKey } from '#app/lib/goals-form-key';
 import { EatingStyleCautionNote, EatingStylePicker } from '#app/components/eating-style-picker';
 import type { Translate } from '#app/lib/body-metrics-schema';
@@ -96,6 +98,8 @@ export const handle = {
 const INTENT = {
   /** The eating style card (M210 spec 05), one pick and the numbers it owns. */
   SAVE_EATING_STYLE: 'save-eating-style',
+  /** The main goal card: one pick, and it writes `mainGoal` and nothing else. */
+  SAVE_MAIN_GOAL: 'save-main-goal',
 } as const;
 
 /**
@@ -138,6 +142,9 @@ function _clearableGoalField(t: Translate): z.ZodType<number | null> {
     z.coerce.number().positive(t('goals.errors.positiveOrBlank')).nullable(),
   );
 }
+
+/** The main goal card's one field: one of the three ids, never anything else. */
+const mainGoalSchema = z.object({ mainGoal: z.enum(MAIN_GOAL_IDS) });
 
 function makeGoalsSchema(t: Translate) {
   return z.object({
@@ -212,11 +219,23 @@ export async function clientLoader() {
     eatingStyle: profile?.eatingStyle ?? null,
   });
 
+  // The main goal in effect: the stored pick, or the one the style's lens
+  // implies. Derived for DISPLAY, like the style above; nothing is written
+  // back until the person saves the card.
+  const mainGoal = effectiveMainGoal({
+    goalNetCarbsCeilingG: goals.netCarbsCeilingG,
+    goalKcalTarget: goals.kcalTarget,
+    goalProteinFloorG: goals.proteinFloorG,
+    eatingStyle: profile?.eatingStyle ?? null,
+    mainGoal: profile?.mainGoal ?? null,
+  });
+
   return {
     goals,
     suggestedKcalTarget,
     proteinSuggestion,
     style,
+    mainGoal,
     // The card asks for a weight rather than silently falling back, and the
     // caution note reads the stored status. Both ride the loader so the card
     // stays a pure render of what is on file.
@@ -337,10 +356,29 @@ async function _saveEatingStyle(formData: FormData) {
   });
 }
 
+/**
+ * Saves the main goal, and only the main goal.
+ *
+ * It changes which figure the diary card leads with and nothing else: no goal
+ * number, no style, no `trackingFocus`. A calorie main goal with no calorie
+ * target is a valid save; the diary then leads with the day's calorie total
+ * and says there is no daily target, and the card says so here too.
+ */
+async function _saveMainGoal(formData: FormData) {
+  const submission = parseWithZod(formData, { schema: mainGoalSchema });
+  if (submission.status !== 'success') return submission.reply();
+  await patchLocalProfileGoals({ mainGoal: submission.value.mainGoal });
+  return redirectWithLocalToast('/settings/nutrition', {
+    type: 'success',
+    description: actionT('settings.mainGoal.saved'),
+  });
+}
+
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const intent = formData.get('_intent');
   if (intent === INTENT.SAVE_EATING_STYLE) return _saveEatingStyle(formData);
+  if (intent === INTENT.SAVE_MAIN_GOAL) return _saveMainGoal(formData);
   return _saveGoals(formData);
 }
 
@@ -448,6 +486,86 @@ function EatingStyleCard({
           A note, never a block and never a number (M210 spec 04). */}
       {caution !== null && <EatingStyleCautionNote />}
     </SettingsSection>
+  );
+}
+
+/**
+ * The main goal card: which one number the diary card shows first.
+ *
+ * Three rows in one radio group, the same row recipe the style card uses, so a
+ * pick changes a border and a fill and nothing else: every row is the same
+ * height picked or not.
+ *
+ * THE HINT'S LINE IS RESERVED. Picking "Calories" without a calorie target
+ * shows one line saying there is no target yet. That line is rendered from the
+ * first paint whenever the person has no calorie target, `invisible` until
+ * the pick asks for it, so choosing or leaving Calories moves nothing below
+ * (DESIGN.md section 7). With a target the hint can never show, so it takes
+ * no space at all.
+ */
+function MainGoalCard({ mainGoal, kcalTarget }: { mainGoal: MainGoalId; kcalTarget: number | null }) {
+  const { t } = useTranslation();
+  const fetcher = useFetcher<typeof clientAction>();
+  const isSaving = fetcher.state !== 'idle';
+  const [selected, setSelected] = useState<MainGoalId>(mainGoal);
+  const [form, fields] = useForm({
+    id: 'main-goal',
+    // SAFETY: as on the cards around it, this route's `clientAction` only
+    // ever resolves to a `parseWithZod(...).reply()` or nothing.
+    lastResult: fetcher.data as SubmissionResult<string[]> | undefined,
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: mainGoalSchema });
+    },
+    defaultValue: { mainGoal },
+  });
+  const isHintShown = selected === 'calories' && kcalTarget === null;
+
+  return (
+    <SettingsSection label={t('settings.mainGoal.title')} description={t('settings.mainGoal.lead')}>
+      <fetcher.Form method="post" {...getFormProps(form)} className="space-y-4">
+        <input type="hidden" name="_intent" value={INTENT.SAVE_MAIN_GOAL} />
+        <fieldset data-slot="main-goal-options" className="space-y-2">
+          <legend className="sr-only">{t('settings.mainGoal.title')}</legend>
+          {MAIN_GOAL_IDS.map((goal) => {
+            const isSelected = goal === selected;
+            return (
+              <label key={goal} className={mainGoalRowClass(isSelected)}>
+                <input
+                  type="radio"
+                  name={fields.mainGoal.name}
+                  value={goal}
+                  checked={isSelected}
+                  onChange={() => setSelected(goal)}
+                  className="sr-only"
+                />
+                <span className="block text-sm font-medium">{t(MAIN_GOAL_LABEL_KEY[goal])}</span>
+              </label>
+            );
+          })}
+        </fieldset>
+        {kcalTarget === null && (
+          <p
+            data-slot="main-goal-no-target-hint"
+            aria-hidden={isHintShown ? undefined : true}
+            className={cn('text-xs text-muted-foreground', !isHintShown && 'invisible')}
+          >
+            {t('settings.mainGoal.noTargetHint')}
+          </p>
+        )}
+        <FieldError id={fields.mainGoal.errorId} errors={fields.mainGoal.errors} />
+        <SubmitButton pending={isSaving} pendingLabel={t('goals.saving')} className="h-11 sm:h-9">
+          {t('settings.mainGoal.save')}
+        </SubmitButton>
+      </fetcher.Form>
+    </SettingsSection>
+  );
+}
+
+/** A main goal row by selection state: the style card's row recipe, border and fill only. */
+function mainGoalRowClass(isSelected: boolean): string {
+  return cn(
+    'block min-h-11 cursor-pointer border p-3 transition-colors focus-within:ring-2 focus-within:ring-primary',
+    isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
   );
 }
 
@@ -673,7 +791,8 @@ function GoalsCard({
 }
 
 export default function SettingsNutrition({ loaderData }: Route.ComponentProps) {
-  const { goals, suggestedKcalTarget, proteinSuggestion, style, latestWeightKg, reproductiveStatus } = loaderData;
+  const { goals, suggestedKcalTarget, proteinSuggestion, style, mainGoal, latestWeightKg, reproductiveStatus } =
+    loaderData;
   // Device-local display preference only (not synced), and READ ONLY here: the
   // toggle that writes it stands beside the weigh-in log on `/settings/profile`,
   // which is the page where a weight is entered. One storage key, one reader
@@ -695,6 +814,15 @@ export default function SettingsNutrition({ loaderData }: Route.ComponentProps) 
         goals={goals}
         latestWeightKg={latestWeightKg}
         reproductiveStatus={reproductiveStatus}
+      />
+      {/* Right after the style: the style decides which numbers exist, this
+          decides which one the diary shows first. KEYED by the stored pick
+          and by whether a calorie target exists, so a save re-seeds the
+          selection and the hint's reserved line follows the targets card. */}
+      <MainGoalCard
+        key={`${mainGoal}:${goals.kcalTarget === null ? 'no-kcal' : 'kcal'}`}
+        mainGoal={mainGoal}
+        kcalTarget={goals.kcalTarget}
       />
       {/* KEYED for the same reason the style card is: the fields are
           uncontrolled, Conform seeds them from `defaultValue` once, and a save

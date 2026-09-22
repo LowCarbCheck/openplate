@@ -543,6 +543,8 @@
       "calories": "Calories",
       "figureOf": "/ {{target}}",
       "figureOfGrams": "/ {{target}} g",
+      "figureUnitCalories": "calories",
+      "figureUnitGrams": "g",
       "grams": "{{value}} g",
       "gramsLeft": "jusqu'à {{value}} g en plus",
       "gramsOver": "{{value}} g en trop",
@@ -1624,6 +1626,9 @@
     "loading": "Chargement…",
     "localFirst": "Tes données restent sur <strong>cet appareil</strong>. Nous ne les voyons jamais. Le journal que tu t'apprêtes à commencer reste local, toujours.",
     "localFirstManaged": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'opérateur gère l'IA, les photos envoyées pour estimation transitent donc par ce serveur. La politique de confidentialité détaille les accès possibles de l'opérateur.",
+    "mainGoal": {
+      "label": "Quel chiffre compte le plus ?"
+    },
     "step": {
       "body": {
         "description": "Facultatif. Ces informations permettent d'adapter les apports nutritionnels de référence et de suggérer un nombre de calories, et comme tout le reste, elles restent sur cet appareil.",
@@ -2302,6 +2307,13 @@
         "saved": "Enregistré.",
         "failed": "L'opération a échoué. Réessaie."
       }
+    },
+    "mainGoal": {
+      "lead": "Le chiffre que ton journal affiche en premier.",
+      "noTargetHint": "Tu n'as pas encore d'objectif de calories. Définis-en un ci-dessous pour afficher une barre.",
+      "save": "Enregistrer l'objectif principal",
+      "saved": "Objectif principal enregistré",
+      "title": "Objectif principal"
     }
   },
   "settingsAi": {
@@ -3551,5 +3563,12 @@
     },
     "new": "Nouveau",
     "allReleases": "Toutes les versions sur GitHub"
+  },
+  "mainGoal": {
+    "option": {
+      "calories": "Calories",
+      "netCarbs": "Glucides nets",
+      "protein": "Protéines"
+    }
   }
 }

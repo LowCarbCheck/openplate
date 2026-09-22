@@ -349,9 +349,7 @@ function BudgetLead({ row, headline, figure }: { row: DayBudgetRow; headline: st
         <p className="text-xs text-muted-foreground">{row.label}</p>
         <p className={cn('mt-1 text-[2rem] font-semibold leading-tight tabular-nums', toneTextClass(row))}>
           {figure.value}
-          {figure.suffix !== null && (
-            <span className="text-sm font-normal text-muted-foreground"> {figure.suffix}</span>
-          )}
+          <span className="text-sm font-normal text-muted-foreground"> {figure.suffix}</span>
         </p>
       </div>
       <LeadViewMeter row={row} heightClass="h-2" />
@@ -391,9 +389,7 @@ function QuietRow({ row }: { row: DayBudgetRow }) {
       >
         <span>
           {row.figure.value}
-          {row.figure.suffix !== null && (
-            <span className="text-xs font-normal text-muted-foreground"> {row.figure.suffix}</span>
-          )}
+          <span className="text-xs font-normal text-muted-foreground"> {row.figure.suffix}</span>
         </span>
         {isMet && <Check className="size-3.5 shrink-0" aria-hidden="true" />}
       </span>

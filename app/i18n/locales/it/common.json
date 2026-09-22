@@ -543,6 +543,8 @@
       "calories": "Calorie",
       "figureOf": "/ {{target}}",
       "figureOfGrams": "/ {{target}} g",
+      "figureUnitCalories": "calorie",
+      "figureUnitGrams": "g",
       "grams": "{{value}} g",
       "gramsLeft": "fino a {{value}} g in più",
       "gramsOver": "{{value}} g oltre",
@@ -1624,6 +1626,9 @@
     "loading": "Caricamento in corso…",
     "localFirst": "I tuoi dati risiedono su <strong>questo dispositivo</strong>. Noi non li vediamo mai. Il diario che stai per iniziare resta in locale, sempre.",
     "localFirstManaged": "Il tuo diario risiede su <strong>questo dispositivo</strong> e si sincronizza con il server in forma cifrata. Il gestore amministra l'IA, quindi le foto inviate per le stime transitano attraverso quel server. L'informativa sulla privacy illustra a cosa può accedere il gestore.",
+    "mainGoal": {
+      "label": "Quale valore conta di più?"
+    },
     "step": {
       "body": {
         "description": "Facoltativo. Ci permettono di adattare i valori di riferimento dei nutrienti e suggerire una quota calorica, e come tutto il resto, rimangono su questo dispositivo.",
@@ -2302,6 +2307,13 @@
         "saved": "Salvato.",
         "failed": "Operazione non riuscita. Riprova."
       }
+    },
+    "mainGoal": {
+      "lead": "Il valore che il tuo diario mostra per primo.",
+      "noTargetHint": "Non hai ancora un obiettivo calorico. Impostane uno sotto per vedere una barra.",
+      "save": "Salva obiettivo principale",
+      "saved": "Obiettivo principale salvato",
+      "title": "Obiettivo principale"
     }
   },
   "settingsAi": {
@@ -3551,5 +3563,12 @@
     },
     "new": "Nuovo",
     "allReleases": "Tutti i rilasci su GitHub"
+  },
+  "mainGoal": {
+    "option": {
+      "calories": "Calorie",
+      "netCarbs": "Carboidrati netti",
+      "protein": "Proteine"
+    }
   }
 }

@@ -70,6 +70,7 @@ import {
   styleCaution,
 } from '#app/lib/eating-style';
 import type { EatingStyle, EatingStyleId } from '#app/lib/eating-style';
+import { isMainGoalId, MAIN_GOAL_IDS, MAIN_GOAL_LABEL_KEY, mainGoalForLens, type MainGoalId } from '#app/lib/main-goal';
 import {
   WEIGHT_UNITS,
   formatKgForDisplay,
@@ -153,6 +154,9 @@ const CARB_PRESET_FIELD = 'carbPreset';
 
 /** The form field the kcal step submits, unchanged from the old focus step. */
 const KCAL_TARGET_FIELD = 'kcalTarget';
+
+/** The form field the main goal list submits, the profile field's own name. */
+const MAIN_GOAL_FIELD = 'mainGoal';
 
 /**
  * The query flag that carries "your protein goal has no weight to scale from"
@@ -239,6 +243,9 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     // loader because `initialStyleSelection` decides from the set of them, and
     // a screen that read only one would tick a style nobody chose.
     eatingStyle: profile?.eatingStyle ?? null,
+    // The stored main goal, so a person who steps back finds their own pick
+    // rather than the one their style implies.
+    mainGoal: profile?.mainGoal ?? null,
     goalProteinFloorG: profile?.goalProteinFloorG ?? null,
     // Set by the style step's redirect when `high-protein` was picked with no
     // weigh-in on file, so the weight step can say why it matters now.
@@ -310,6 +317,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       style: readField(formData, STYLE_FIELD),
       carbPresetId: readField(formData, CARB_PRESET_FIELD),
       kcalTarget: readField(formData, KCAL_TARGET_FIELD),
+      mainGoal: readField(formData, MAIN_GOAL_FIELD),
     });
     // Same rule as the weight and body steps: an incomplete answer stays on
     // the step. Advancing would store a style whose own number is missing, and
@@ -460,7 +468,9 @@ async function saveStyle(values: StyleStepValues): Promise<boolean> {
     latestWeightKg,
     referenceProteinFloorG,
   });
-  await patchLocalProfileGoals({ ...patch, trackingFocus: trackingFocusForPatch(patch) });
+  // The main goal rides the same write: it is an answer on this step, and a
+  // separate write would stamp a second `updatedAt` for one Continue.
+  await patchLocalProfileGoals({ ...patch, trackingFocus: trackingFocusForPatch(patch), mainGoal: values.mainGoal });
   return needsWeight;
 }
 
@@ -499,6 +509,8 @@ type StyleStepErrors = Partial<Record<StyleStepField, string>>;
  */
 export interface StyleStepData {
   eatingStyle: EatingStyleId | null;
+  /** The stored main goal, or `null` (or a value this build does not know) when none was picked. */
+  mainGoal: string | null;
   goalNetCarbsCeilingG: number | null;
   goalKcalTarget: number | null;
   goalProteinFloorG: number | null;
@@ -722,6 +734,12 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
   const [carbPreset, setCarbPreset] = useState<string | null>(() =>
     initialCarbPresetSelection(loaderData.goalNetCarbsCeilingG),
   );
+  // The main goal the person PICKED on this screen, or the one stored before.
+  // `null` means "follow the style": the list then shows the lens's own
+  // answer, and it moves with the style until the person picks one.
+  const [pickedMainGoal, setPickedMainGoal] = useState<MainGoalId | null>(() =>
+    isMainGoalId(loaderData.mainGoal) ? loaderData.mainGoal : null,
+  );
   // The two follow-up questions are read off the TABLE, never off a second
   // list of style ids here, so a style that changes what it asks for changes
   // it in one place (`app/lib/eating-style.ts`).
@@ -747,6 +765,12 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
         )}
         {definition?.kcalMode === 'asked' && (
           <KcalTargetField defaultValue={loaderData.goalKcalTarget} errorKey={errors.kcalTarget} />
+        )}
+        {definition !== null && (
+          <MainGoalPicker
+            selected={pickedMainGoal ?? mainGoalForLens(definition.lens)}
+            onSelect={setPickedMainGoal}
+          />
         )}
         {/* No Skip here: `just-track` in the list above IS the "no goal"
             answer, so a second way to decline would only be a way to decline
@@ -917,7 +941,6 @@ function CarbPresetPicker({
   errorKey?: string;
 }) {
   const { t } = useTranslation();
-  const detailKey = STYLE_CARB_PRESETS.find((preset) => preset.id === selected)?.detailKey;
   return (
     <fieldset className="space-y-2 border border-dashed p-4">
       <legend className="px-1 text-sm font-medium">{t('onboarding.carbPreset.legend')}</legend>
@@ -926,8 +949,8 @@ function CarbPresetPicker({
           <label
             key={preset.id}
             className={cn(
-              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === preset.id),
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
             )}
           >
             <input
@@ -942,8 +965,59 @@ function CarbPresetPicker({
           </label>
         ))}
       </div>
-      {detailKey !== undefined && <p className="text-xs text-muted-foreground">{t(detailKey)}</p>}
+      {/* Every preset's detail line is drawn into ONE grid cell, stacked, and
+          only the picked one is visible: the cell is as tall as the longest
+          line from the first paint, so picking a chip, or switching between
+          two, moves nothing below it (DESIGN.md section 7). It used to render
+          only once a chip was picked, and the Continue button dropped 24 px. */}
+      <p data-slot="carb-preset-detail" className="grid text-xs text-muted-foreground">
+        {STYLE_CARB_PRESETS.map((preset) => (
+          <span key={preset.id} className={cn('col-start-1 row-start-1', preset.id === selected ? undefined : 'invisible')}>
+            {t(preset.detailKey)}
+          </span>
+        ))}
+      </p>
       <FieldError id="carbPreset-error" errors={errorKey === undefined ? undefined : [t(errorKey)]} />
+    </fieldset>
+  );
+}
+
+/**
+ * "Which number matters most?", shown once a style is picked (2026-09-23).
+ *
+ * Pre-selected from the style's lens, so Continue never asks twice: carb
+ * styles and "just track" start on net carbs, the calorie style on calories,
+ * high protein on protein. The answer decides which figure the diary card
+ * leads with, and nothing else. Chips rather than cards: three short words,
+ * one tap, the same recipe as the carb limit above. Every chip keeps the same
+ * padding picked or not, so a pick moves nothing beside it.
+ */
+function MainGoalPicker({ selected, onSelect }: { selected: MainGoalId; onSelect: (goal: MainGoalId) => void }) {
+  const { t } = useTranslation();
+  return (
+    <fieldset data-slot="onboarding-main-goal" className="space-y-2">
+      <legend className="text-sm font-medium">{t('onboarding.mainGoal.label')}</legend>
+      <div className="flex flex-wrap gap-2 pt-1">
+        {MAIN_GOAL_IDS.map((goal) => (
+          <label
+            key={goal}
+            className={cn(
+              chipClass(selected === goal),
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+            )}
+          >
+            <input
+              type="radio"
+              name={MAIN_GOAL_FIELD}
+              value={goal}
+              checked={selected === goal}
+              onChange={() => onSelect(goal)}
+              className="sr-only"
+            />
+            {t(MAIN_GOAL_LABEL_KEY[goal])}
+          </label>
+        ))}
+      </div>
     </fieldset>
   );
 }
@@ -956,6 +1030,11 @@ function CarbPresetPicker({
  * is teal. Their old hover edge was a raw palette green as well.
  */
 function chipClass(isSelected: boolean): string {
+  // ORDER AT THE CALL SITE MATTERS: `CHIP_NEUTRAL` carries its own `px-2
+  // py-0.5`, so a caller's padding must come AFTER this in `cn(...)` or the
+  // unchosen chip is 8 px narrower than the chosen one, and picking one
+  // pushes its neighbours sideways (the kg/lb toggle did, by 8 px).
+
   if (isSelected) return 'border-primary bg-primary text-primary-foreground';
   return cn(CHIP_NEUTRAL, 'border-transparent hover:bg-muted/70');
 }
@@ -1021,7 +1100,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
           type="button"
           aria-pressed={unit === candidate}
           onClick={() => onChange(candidate)}
-          className={cn('min-h-8 px-3 py-1 uppercase transition-colors', chipClass(unit === candidate))}
+          className={cn(chipClass(unit === candidate), 'min-h-8 px-3 py-1 uppercase transition-colors')}
         >
           {candidate}
         </button>
@@ -1177,8 +1256,8 @@ function ChipRadioGroup({
               // tabbing through these chips gave a keyboard user no visible
               // focus indicator (M123/13 second-review finding 3 — the same
               // gap `carb-basis-field.tsx` copied this component's shape from).
-              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === option.value),
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
             )}
           >
             <input
@@ -1252,8 +1331,8 @@ function BodyNumberField({
 /** The wizard's chip, as the two shared fieldsets on the body step take it: a label wrapping a hidden input. */
 function bodyStepChipClass(isSelected: boolean): string {
   return cn(
-    'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
     chipClass(isSelected),
+    'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
   );
 }
 

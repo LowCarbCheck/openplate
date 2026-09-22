@@ -11,11 +11,19 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **You can pick a main goal, the number the diary shows first.** Eating and targets in settings has a new Main goal card with three choices: net carbs, calories or protein. The first-run questions ask the same thing once a style is picked, already set to the one your style suggests. The choice only decides which figure leads the diary's day card; the dashboard, the trends and the day's verdict stay as they are. Picking calories without a calorie target is allowed: the card says so, and the diary shows the day's calories with a link to set a target. The choice is stored in your profile and travels in your backup and in sync. An older openplate on another device ignores it and may drop it, and the diary then goes back to following your eating style.
+
 ### Changed
 
 - **The page title on a phone is larger and sits closer to the brand name.** The title in the phone header is now 18 px instead of 14 px, with 4 px between it and the openplate wordmark above it instead of 6 px. The size is fixed: a title that does not fit is shortened in its translation, not shrunk. The thirteen titles in German, English, Spanish, French and Italian that first ended in an ellipsis at the new size are now shortened, and the research page's own title, "Research contributions", is now "Research studies" to match what the page is about.
 - **Every corner in the app is square now, except a real circle.** Cards, buttons, inputs, selects, dialogs, sheets, menus, badges, chips, images, progress bars and the header and bottom bar all lost their rounded corners. An avatar, a status dot, a round icon button, a switch and a spinner stay round, because they are circles by design and not because of where they sit.
-- **The diary day card leads with one large figure.** The top of the card now shows one number large, what you ate against its target, for example "25.1 / 50 g", with a thick bar under it and a quiet line saying what is left. The other figures follow as a quiet list, each with its amount against its target and a thin bar. Which figure leads follows your eating style for now: net carbs for the carb styles and for just tracking, calories for the calorie style, protein for the high-protein style. A lead with no target shows the day's total, no bar, and a link to set a target, and a protein lead on the reference intake says that it is a reference. The dashboard and the catch-up screen keep their rows as they were.
+- **The diary day card leads with one large figure.** The top of the card now shows one number large, what you ate against its target, for example "25.1 / 50 g", with a thick bar under it and a quiet line saying what is left. The other figures follow as a quiet list, each with its amount against its target and a thin bar. Which figure leads is your main goal, and until you pick one it follows your eating style: net carbs for the carb styles and for just tracking, calories for the calorie style, protein for the high-protein style. A lead with no target shows the day's total, no bar, and a link to set a target, and a protein lead on the reference intake says that it is a reference. The dashboard and the catch-up screen keep their rows as they were.
+
+### Fixed
+
+- **Nothing moves on the first-run questions when you pick or type.** Picking a carb limit showed its description line only after the pick, so the Continue button dropped 24 px; the line now holds its space from the start. A picked chip was 8 px wider than the others, which pushed the kg and lb toggle and the sex and allergy chips sideways; every chip now keeps one width. Typing the week of a pregnancy turned a two-line note into one line and lifted everything under it by 16 px; the note now keeps its height. The same note on the Life phase settings page keeps its height too.
 
 ## [0.39.0] - 2026-09-22
 

@@ -244,7 +244,7 @@ describe('resolveExitDestination', () => {
 
 /** A blank submission: nothing picked, nothing typed, which is a first run. */
 function blankStyleSubmission(overrides: Partial<StyleStepInput> = {}): StyleStepInput {
-  return { style: null, carbPresetId: null, kcalTarget: null, ...overrides };
+  return { style: null, carbPresetId: null, kcalTarget: null, mainGoal: null, ...overrides };
 }
 
 describe('validateStyleStep', () => {
@@ -298,6 +298,8 @@ describe('validateStyleStep', () => {
         style,
         carbPresetCeiling: null,
         kcalTarget: null,
+        // No main goal posted: the style's lens answers.
+        mainGoal: style === 'high-protein' ? 'protein' : 'net-carbs',
       });
     }
   });
@@ -309,6 +311,7 @@ describe('validateStyleStep', () => {
       style: 'low-carb',
       carbPresetCeiling: 20,
       kcalTarget: null,
+      mainGoal: 'net-carbs',
     });
   });
 
@@ -321,7 +324,28 @@ describe('validateStyleStep', () => {
       style: 'low-carb-low-kcal',
       carbPresetCeiling: 100,
       kcalTarget: 1800,
+      mainGoal: 'net-carbs',
     });
+  });
+
+  it('carries the picked main goal, whatever the style', () => {
+    const result = validateStyleStep(
+      blankStyleSubmission({ style: 'low-carb', carbPresetId: 'keto', mainGoal: 'protein' }),
+    );
+    assert.equal(result.ok === true ? result.values.mainGoal : null, 'protein');
+  });
+
+  it("falls back to the style's lens for a missing or unknown main goal, and never fails the step for it", () => {
+    for (const mainGoal of [null, '', 'fiber']) {
+      const result = validateStyleStep(blankStyleSubmission({ style: 'low-kcal', kcalTarget: '1800', mainGoal }));
+      assert.equal(result.ok, true, `main goal ${JSON.stringify(mainGoal)} must not block Continue`);
+      assert.equal(result.ok === true ? result.values.mainGoal : null, 'calories');
+    }
+    // CONTROL: a valid pick is not overridden by that fallback.
+    const picked = validateStyleStep(
+      blankStyleSubmission({ style: 'low-kcal', kcalTarget: '1800', mainGoal: 'net-carbs' }),
+    );
+    assert.equal(picked.ok === true ? picked.values.mainGoal : null, 'net-carbs');
   });
 
   it('ignores an answer the style never asked for, rather than storing it', () => {

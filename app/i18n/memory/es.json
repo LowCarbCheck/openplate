@@ -2813,6 +2813,13 @@
     "at": "2026-09-14",
     "es": "Nombre del consumidor y usuario o de los consumidores y usuarios"
   },
+  "21a2bf803dcaaa88": {
+    "en": "g",
+    "path": "common:diary.budget.figureUnitGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "g"
+  },
   "21bed23bfa4d9f79": {
     "en": "Everything on this device has reached the server.",
     "path": "common:signOut.outbox.empty",
@@ -4773,6 +4780,13 @@
     "at": "2026-09-14",
     "es": "Nada que mostrar todavía. Una mañana sin nada que reportar no recibe ninguna notificación."
   },
+  "3e6750a1e926c8ee": {
+    "en": "The number your diary shows first.",
+    "path": "common:settings.mainGoal.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "El número que tu diario muestra primero."
+  },
   "3e6c599972a522b2": {
     "en": "Checks disabled",
     "path": "common:about.updates.disabled",
@@ -6341,6 +6355,13 @@
     "at": "2026-09-14",
     "es": "Guardar"
   },
+  "52a0fb02bdea23ce": {
+    "en": "Main goal saved",
+    "path": "common:settings.mainGoal.saved",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Objetivo principal guardado"
+  },
   "52b031e76c4cef6a": {
     "en": "Log your first food",
     "path": "common:onboarding.step.firstFood.title",
@@ -7047,6 +7068,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Alto en proteínas"
+  },
+  "5ab3c310562f1fd8": {
+    "en": "Save main goal",
+    "path": "common:settings.mainGoal.save",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Guardar objetivo principal"
   },
   "5ab9e906c97cfe0c": {
     "en": "On average right at your goal.",
@@ -11283,6 +11311,13 @@
     "at": "2026-09-14",
     "es": "Definir una contraseña nueva"
   },
+  "8e4e784357a65489": {
+    "en": "Calories",
+    "path": "common:mainGoal.option.calories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Calorías"
+  },
   "8e5ea056de6ee817": {
     "en": "Privacy policy · openplate",
     "path": "common:meta.privacy",
@@ -12066,6 +12101,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Ayuno iniciado."
+  },
+  "98ccabfeed10a386": {
+    "en": "calories",
+    "path": "common:diary.budget.figureUnitCalories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "calorías"
   },
   "98d412c32690f740": {
     "en": "Not connected",
@@ -13432,6 +13474,13 @@
     "at": "2026-09-14",
     "es": "Bajo en carbohidratos"
   },
+  "aa2bc71c4deca874": {
+    "en": "Protein",
+    "path": "common:mainGoal.option.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Proteína"
+  },
   "aa9767e8f4fd42af": {
     "en": "Cheap input, but it misread two of our three test plates",
     "path": "common:settingsAi.model.blurb.mistral-small-2603",
@@ -14159,6 +14208,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Introduce un número válido"
+  },
+  "b428993e25b2bbca": {
+    "en": "Net carbs",
+    "path": "common:mainGoal.option.netCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Carbohidratos netos"
   },
   "b448a1995a18f75b": {
     "en": "Your last 7 days",
@@ -17296,6 +17352,13 @@
     "at": "2026-09-14",
     "es": "Código fuente"
   },
+  "dec2addb8a344dea": {
+    "en": "Which number matters most?",
+    "path": "common:onboarding.mainGoal.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "¿Qué número importa más?"
+  },
   "deed50468b2de4b2": {
     "en": "The instance can hold a food database key, and says so when the database refuses.",
     "path": "releases:v0_34_0.added.06",
@@ -17365,6 +17428,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Pueden configurar una contraseña y empezar de inmediato."
+  },
+  "dfe9388c2a9465c4": {
+    "en": "You have no calorie target yet. Set one below to see a bar.",
+    "path": "common:settings.mainGoal.noTargetHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Aún no tienes un objetivo de calorías. Establece uno abajo para ver una barra."
   },
   "dff805b1818aa0be": {
     "en": "from {{hours}} h",
@@ -19472,6 +19542,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "es": "openplate se ha diseñado con arquitectura local-first. Sus alimentos, registros, entradas de peso, objetivos, ayunos, rutina de ayuno, comidas guardadas, despensa, rachas y premios, y sus claves para compartir e investigación se almacenan en su dispositivo en IndexedDB. Su cuenta también conserva una copia cifrada en nuestro servidor para que otros dispositivos puedan sincronizarse. Almacenamos esa copia como texto cifrado. No la leemos durante las operaciones ordinarias. La Sección 6 explica lo que permite nuestra clave de recuperación. Si usted borra los datos de su navegador, la copia local se elimina. Iniciar sesión de nuevo restaura sus datos a partir de la copia cifrada del servidor."
+  },
+  "fadd5b23ba6c11ae": {
+    "en": "Main goal",
+    "path": "common:settings.mainGoal.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "es": "Objetivo principal"
   },
   "faf4ad3fd0621955": {
     "en": "No finished day to check against this goal yet.",

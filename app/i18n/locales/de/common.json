@@ -543,6 +543,8 @@
       "calories": "Kalorien",
       "figureOf": "/ {{target}}",
       "figureOfGrams": "/ {{target}} g",
+      "figureUnitCalories": "Kalorien",
+      "figureUnitGrams": "g",
       "grams": "{{value}} g",
       "gramsLeft": "noch {{value}} g möglich",
       "gramsOver": "{{value}} g darüber",
@@ -1624,6 +1626,9 @@
     "loading": "Wird geladen…",
     "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
     "localFirstManaged": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong> und synchronisiert sich verschlüsselt mit dem Server. Der Betreiber verwaltet die KI, daher werden für Schätzungen versendete Fotos bei der Übertragung über diesen Server geleitet. Die Datenschutzerklärung beschreibt im Detail, worauf der Betreiber Zugriff hat.",
+    "mainGoal": {
+      "label": "Welche Zahl ist am wichtigsten?"
+    },
     "step": {
       "body": {
         "description": "Optional. Damit können wir Nährstoff-Referenzwerte anpassen und eine Kalorienmenge vorschlagen. Wie alles andere bleiben auch diese Angaben auf diesem Gerät.",
@@ -2302,6 +2307,13 @@
         "saved": "Gespeichert.",
         "failed": "Das hat nicht geklappt. Versuch es noch einmal."
       }
+    },
+    "mainGoal": {
+      "lead": "Die Zahl, die dein Tagebuch zuerst anzeigt.",
+      "noTargetHint": "Du hast noch kein Kalorienziel festgelegt. Lege unten eins fest, um einen Balken zu sehen.",
+      "save": "Hauptziel speichern",
+      "saved": "Hauptziel gespeichert",
+      "title": "Hauptziel"
     }
   },
   "settingsAi": {
@@ -3551,5 +3563,12 @@
     },
     "new": "Neu",
     "allReleases": "Alle Releases auf GitHub"
+  },
+  "mainGoal": {
+    "option": {
+      "calories": "Kalorien",
+      "netCarbs": "Netto-Kohlenhydrate",
+      "protein": "Protein"
+    }
   }
 }

@@ -543,6 +543,8 @@
       "calories": "Kalori",
       "figureOf": "/ {{target}}",
       "figureOfGrams": "/ {{target}} g",
+      "figureUnitCalories": "kalori",
+      "figureUnitGrams": "g",
       "grams": "{{value}} g",
       "gramsLeft": "en fazla {{value}} g daha",
       "gramsOver": "{{value}} g aşıldı",
@@ -1624,6 +1626,9 @@
     "loading": "Yükleniyor…",
     "localFirst": "Verilerin <strong>bu cihazda</strong> tutulur. Biz onları asla görmeyiz. Başlamak üzere olduğun günlük her zaman yerel kalır.",
     "localFirstManaged": "Günlüğün <strong>bu cihazda</strong> tutulur ve sunucuya şifrelenmiş biçimde eşitlenir. Yapay zekayı işletmeci yönetir, bu nedenle tahmin için gönderilen fotoğraflar aktarım sırasında bu sunucudan geçer. İşletmecinin nelere erişebileceği gizlilik politikasında ayrıntılarıyla anlatılır.",
+    "mainGoal": {
+      "label": "Hangi sayı en çok önem taşıyor?"
+    },
     "step": {
       "body": {
         "description": "İsteğe bağlı. Bunlar besin referans miktarlarını uyarlamamızı ve bir kalori değeri önermemizi sağlar, diğer her şey gibi bu cihazda kalırlar.",
@@ -2302,6 +2307,13 @@
         "saved": "Kaydedildi.",
         "failed": "İşe yaramadı. Tekrar dene."
       }
+    },
+    "mainGoal": {
+      "lead": "Günlüğünün ilk gösterdiği sayı.",
+      "noTargetHint": "Henüz bir kalori hedefin yok. Çubuğu görmek için aşağıdan bir tane belirle.",
+      "save": "Ana hedefi kaydet",
+      "saved": "Ana hedef kaydedildi",
+      "title": "Ana hedef"
     }
   },
   "settingsAi": {
@@ -3551,5 +3563,12 @@
     },
     "new": "Yeni",
     "allReleases": "GitHub üzerindeki tüm sürümler"
+  },
+  "mainGoal": {
+    "option": {
+      "calories": "Kalori",
+      "netCarbs": "Net karbonhidrat",
+      "protein": "Protein"
+    }
   }
 }

@@ -80,14 +80,15 @@ export type BudgetFigureFormat = 'grams' | 'wholeGrams' | 'kcal';
 
 /**
  * A row's consumed figure, in two parts, so a layout can size them apart:
- * "25.1" and "/ 50 g" for a row with a target, or the whole "25.1 g" and no
- * suffix for a row without one. The lead view prints `value` large and the
- * suffix quietly beside it; the quiet list prints both at one size.
+ * "25.1" and "/ 50 g" for a row with a target, "25.1" and "g" for a row
+ * without one. The lead view prints `value` large and the suffix quietly
+ * beside it, so a lead with no target reads "899 calories" with only the
+ * number large, never the unit word at the figure's size.
  */
 export interface BudgetFigure {
   value: string;
-  /** "/ 50 g" or "/ 1800", or `null` when the row has no target to put it against. */
-  suffix: string | null;
+  /** "/ 50 g" or "/ 1800" against a target, or the bare unit, "g" or "calories", without one. */
+  suffix: string;
 }
 
 export interface DayBudgetRow {
@@ -257,7 +258,7 @@ export function formatBudgetHeadline({
  * @param numericValue - the consumed amount to print.
  * @param language - the active UI language, for the decimal separator.
  * @param t - the caller's translator.
- * @returns the figure's value and its "/ target" suffix.
+ * @returns the figure's value and its suffix, "/ target" or the bare unit.
  */
 export function formatBudgetFigure({
   row,
@@ -273,7 +274,7 @@ export function formatBudgetFigure({
   const isKcal = row.figureFormat === 'kcal';
   const value = formatFigureNumber({ format: row.figureFormat, value: numericValue, language });
   if (row.target === null) {
-    return { value: t(isKcal ? 'diary.kcal.absolute' : 'diary.budget.grams', { value }), suffix: null };
+    return { value, suffix: t(isKcal ? 'diary.budget.figureUnitCalories' : 'diary.budget.figureUnitGrams') };
   }
   return {
     value,

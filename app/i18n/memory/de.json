@@ -2813,6 +2813,13 @@
     "at": "2026-09-14",
     "de": "Name des/der Verbraucher(s)"
   },
+  "21a2bf803dcaaa88": {
+    "en": "g",
+    "path": "common:diary.budget.figureUnitGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "g"
+  },
   "21bed23bfa4d9f79": {
     "en": "Everything on this device has reached the server.",
     "path": "common:signOut.outbox.empty",
@@ -4773,6 +4780,13 @@
     "at": "2026-09-14",
     "de": "Noch gibt es nichts zu sehen. Wenn es morgens nichts zu berichten gibt, kommt keine Benachrichtigung."
   },
+  "3e6750a1e926c8ee": {
+    "en": "The number your diary shows first.",
+    "path": "common:settings.mainGoal.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Die Zahl, die dein Tagebuch zuerst anzeigt."
+  },
   "3e6c599972a522b2": {
     "en": "Checks disabled",
     "path": "common:about.updates.disabled",
@@ -6341,6 +6355,13 @@
     "at": "2026-09-14",
     "de": "Speichern"
   },
+  "52a0fb02bdea23ce": {
+    "en": "Main goal saved",
+    "path": "common:settings.mainGoal.saved",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Hauptziel gespeichert"
+  },
   "52b031e76c4cef6a": {
     "en": "Log your first food",
     "path": "common:onboarding.step.firstFood.title",
@@ -7047,6 +7068,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Viel Eiweiß"
+  },
+  "5ab3c310562f1fd8": {
+    "en": "Save main goal",
+    "path": "common:settings.mainGoal.save",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Hauptziel speichern"
   },
   "5ab9e906c97cfe0c": {
     "en": "On average right at your goal.",
@@ -11283,6 +11311,13 @@
     "at": "2026-09-14",
     "de": "Neues Passwort festlegen"
   },
+  "8e4e784357a65489": {
+    "en": "Calories",
+    "path": "common:mainGoal.option.calories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Kalorien"
+  },
   "8e5ea056de6ee817": {
     "en": "Privacy policy · openplate",
     "path": "common:meta.privacy",
@@ -12066,6 +12101,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Fasten gestartet."
+  },
+  "98ccabfeed10a386": {
+    "en": "calories",
+    "path": "common:diary.budget.figureUnitCalories",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Kalorien"
   },
   "98d412c32690f740": {
     "en": "Not connected",
@@ -13432,6 +13474,13 @@
     "at": "2026-09-14",
     "de": "Low-Carb"
   },
+  "aa2bc71c4deca874": {
+    "en": "Protein",
+    "path": "common:mainGoal.option.protein",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Protein"
+  },
   "aa9767e8f4fd42af": {
     "en": "Cheap input, but it misread two of our three test plates",
     "path": "common:settingsAi.model.blurb.mistral-small-2603",
@@ -14159,6 +14208,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Gib eine gültige Zahl ein"
+  },
+  "b428993e25b2bbca": {
+    "en": "Net carbs",
+    "path": "common:mainGoal.option.netCarbs",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Netto-Kohlenhydrate"
   },
   "b448a1995a18f75b": {
     "en": "Your last 7 days",
@@ -17296,6 +17352,13 @@
     "at": "2026-09-14",
     "de": "Quellcode"
   },
+  "dec2addb8a344dea": {
+    "en": "Which number matters most?",
+    "path": "common:onboarding.mainGoal.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Welche Zahl ist am wichtigsten?"
+  },
   "deed50468b2de4b2": {
     "en": "The instance can hold a food database key, and says so when the database refuses.",
     "path": "releases:v0_34_0.added.06",
@@ -17365,6 +17428,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Person kann ein Passwort festlegen und direkt loslegen."
+  },
+  "dfe9388c2a9465c4": {
+    "en": "You have no calorie target yet. Set one below to see a bar.",
+    "path": "common:settings.mainGoal.noTargetHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Du hast noch kein Kalorienziel festgelegt. Lege unten eins fest, um einen Balken zu sehen."
   },
   "dff805b1818aa0be": {
     "en": "from {{hours}} h",
@@ -19472,6 +19542,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "de": "openplate ist Local-First aufgebaut. Ihre Lebensmittel, Protokolle, Gewichtseinträge, Ziele, Fastenzeiten, Fastenroutinen, gespeicherten Mahlzeiten, Vorräte, Serien und Auszeichnungen sowie Ihre Freigabe- und Forschungsschlüssel werden auf Ihrem Gerät in IndexedDB gespeichert. Ihr Konto speichert zudem eine verschlüsselte Kopie auf unserem Server, damit andere Geräte synchronisieren können. Wir speichern diese Kopie als Geheimtext. Im normalen Betrieb lesen wir sie nicht. Abschnitt 6 erläutert, was unser Wiederherstellungsschlüssel gestattet. Wenn Sie Ihre Browserdaten löschen, wird die lokale Kopie gelöscht. Eine erneute Anmeldung stellt Ihre Daten aus der verschlüsselten Serverkopie wieder her."
+  },
+  "fadd5b23ba6c11ae": {
+    "en": "Main goal",
+    "path": "common:settings.mainGoal.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "de": "Hauptziel"
   },
   "faf4ad3fd0621955": {
     "en": "No finished day to check against this goal yet.",

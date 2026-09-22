@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { TrackingFocusType } from '#types/enums';
 import { selectGoalRings, storedTrackingFocusFor } from '#app/lib/goal-rings';
 import type { EatingStyleGoals, EatingStyleId } from '#app/lib/eating-style';
-import { eatingStyle, effectiveEatingStyle, isEatingStyleId } from '#app/lib/eating-style';
+import { eatingStyle, effectiveEatingStyle, isEatingStyleId, lensForStyle } from '#app/lib/eating-style';
+import { isMainGoalId, mainGoalForLens, type MainGoalId } from '#app/lib/main-goal';
 import { isValidTimeZone } from '#app/lib/user-days';
 import { parseDisplayWeightToKg } from '#app/lib/weight-units';
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
@@ -242,15 +243,23 @@ export interface StyleStepInput {
   carbPresetId: string | null;
   /** The raw kcal field, read only for a style that asks for one. */
   kcalTarget: string | null;
+  /**
+   * The picked main goal. The list is pre-selected from the style's lens, so
+   * a normal submission always carries one; absent or unknown falls back to
+   * that same lens-derived answer rather than failing the step.
+   */
+  mainGoal: string | null;
 }
 
-/** The three answers the style step gathers, parsed. */
+/** The answers the style step gathers, parsed. */
 export interface StyleStepValues {
   style: EatingStyleId;
   /** The sub preset ceiling in grams, or `null` for a style that does not ask. */
   carbPresetCeiling: number | null;
   /** The kcal target, or `null` for a style that does not ask. */
   kcalTarget: number | null;
+  /** The main goal to store: the one picked, or the style lens's own when none valid was posted. */
+  mainGoal: MainGoalId;
 }
 
 /**
@@ -280,11 +289,13 @@ const styleStepSchema = z
     style: z.string().nullable(),
     carbPresetId: z.string().nullable(),
     kcalTarget: z.string().nullable(),
+    mainGoal: z.string().nullable(),
   })
   .transform((raw) => ({
     style: isEatingStyleId(raw.style) ? raw.style : null,
     carbPresetCeiling: carbCeilingForPreset(raw.carbPresetId),
     kcalTarget: parseKcalTarget(raw.kcalTarget),
+    mainGoal: isMainGoalId(raw.mainGoal) ? raw.mainGoal : null,
   }))
   .superRefine((values, ctx) => {
     if (values.style === null) {
@@ -316,14 +327,19 @@ export function validateStyleStep(raw: StyleStepInput): StyleStepResult {
     style: raw.style,
     carbPresetId: raw.carbPresetId,
     kcalTarget: raw.kcalTarget,
+    mainGoal: raw.mainGoal,
   });
   if (parsed.success) {
-    const { style, carbPresetCeiling, kcalTarget } = parsed.data;
+    const { style, carbPresetCeiling, kcalTarget, mainGoal } = parsed.data;
     // `superRefine` has already refused a null style, so this narrowing can
     // only fail if the schema above lost that rule, and then it must throw
     // rather than write a styleless profile.
     if (style === null) throw new Error('validateStyleStep accepted a submission with no style');
-    return { ok: true, values: { style, carbPresetCeiling, kcalTarget } };
+    // A missing main goal is not an error the step shows: the list is always
+    // pre-selected once a style is picked, so only a hand-built post can omit
+    // it, and the style's own lens is then the honest answer.
+    const resolvedMainGoal = mainGoal ?? mainGoalForLens(lensForStyle(style));
+    return { ok: true, values: { style, carbPresetCeiling, kcalTarget, mainGoal: resolvedMainGoal } };
   }
   const errors: Partial<Record<StyleStepField, string>> = {};
   for (const issue of parsed.error.issues) {

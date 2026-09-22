@@ -35,6 +35,7 @@ import { Label } from '#app/components/ui/label';
 import { dueDateFromWeeksAlong, resolveGestation, resolveLactationMonths } from '#app/lib/reproductive-stage';
 import type { Trimester } from '#app/lib/reproductive-stage';
 import { REPRODUCTIVE_STATUS_VALUES } from '#app/models/body-metrics';
+import { cn } from '#app/lib/utils';
 
 /** The three raw form strings this fieldset owns. */
 export interface ReproductiveStatusValue {
@@ -111,6 +112,7 @@ export function ReproductiveStatusFields({
   const gestation = isPregnant ? resolveGestation({ dueDate: value.pregnancyDueDate, today }) : null;
   const lactationMonths = isLactating ? resolveLactationMonths({ startDate: value.lactationStartDate, today }) : null;
 
+  const notSetLine = t('bodyMetrics.reproductive.derivedNotSet');
   const derivedLine =
     gestation !== null ?
       t('bodyMetrics.reproductive.derivedTrimester', {
@@ -118,7 +120,7 @@ export function ReproductiveStatusFields({
         week: gestation.week,
       })
     : lactationMonths !== null ? t('bodyMetrics.reproductive.derivedMonths', { count: lactationMonths })
-    : t('bodyMetrics.reproductive.derivedNotSet');
+    : notSetLine;
 
   return (
     <fieldset className="space-y-2">
@@ -201,7 +203,20 @@ export function ReproductiveStatusFields({
         </div>
       )}
 
-      {(isPregnant || isLactating) && <p className="text-xs text-muted-foreground">{derivedLine}</p>}
+      {/* The "no date yet" sentence is always drawn, invisible once a date
+          gives a shorter line, and the current line sits in the same grid
+          cell on top of it. The cell is therefore as tall as the longest of
+          the two from the moment the fields appear, so typing a week that
+          turns two lines into one moves nothing below (DESIGN.md section 7).
+          Typing "1" used to lift the allergens and Continue by 16 px. */}
+      {(isPregnant || isLactating) && (
+        <p data-slot="reproductive-derived-line" className="grid text-xs text-muted-foreground">
+          <span className={cn('col-start-1 row-start-1', derivedLine === notSetLine ? undefined : 'invisible')}>
+            {notSetLine}
+          </span>
+          {derivedLine !== notSetLine && <span className="col-start-1 row-start-1">{derivedLine}</span>}
+        </p>
+      )}
     </fieldset>
   );
 }

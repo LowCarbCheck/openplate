@@ -105,6 +105,7 @@ const catalogSchema = z.object({
       save: z.string(),
       hint: z.object({ title: z.string(), dismiss: z.string() }),
     }),
+    budget: z.object({ leadNoTarget: z.string() }),
   }),
   trends: z.object({
     slot: z.object({ all: z.string() }),
@@ -161,6 +162,7 @@ const catalogSchema = z.object({
       }),
       toast: z.object({ on: z.string() }),
     }),
+    mainGoal: z.object({ save: z.string(), saved: z.string() }),
   }),
   sync: z.object({
     emailLabel: z.string(),

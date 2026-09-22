@@ -170,6 +170,18 @@ describe('ReproductiveStatusFields, the date the chip reveals', () => {
   });
 });
 
+/**
+ * Whether `text` is SHOWN: present in a span that is not `invisible`. The
+ * not-set sentence is always in the markup now, held invisible under a
+ * shorter derived line so the fieldset keeps its height (DESIGN.md section 7),
+ * so "is it in the markup" no longer answers "does a person read it".
+ */
+function showsText(markup: string, text: string): boolean {
+  return Array.from(markup.matchAll(/<span class="([^"]*)">([^<]*)<\/span>/g)).some(
+    (match) => match[2] === text && !match[1].split(/\s+/).includes('invisible'),
+  );
+}
+
 describe('ReproductiveStatusFields, the derived line', () => {
   it('reports the trimester a due date 20 weeks along implies', () => {
     const markup = render({
@@ -180,13 +192,27 @@ describe('ReproductiveStatusFields, the derived line', () => {
       trimester: copy.trimester.second,
       week: '20',
     });
-    assert.equal(markup.includes(expected), true);
-    assert.equal(markup.includes(copy.derivedNotSet), false);
+    assert.equal(showsText(markup, expected), true);
+    assert.equal(showsText(markup, copy.derivedNotSet), false);
+  });
+
+  it('holds the not-set line invisible under a derived one, so typing a date moves nothing', () => {
+    const markup = render({
+      biologicalSex: null,
+      value: { ...BLANK, reproductiveStatus: 'pregnant', pregnancyDueDate: DUE_DATE_20_WEEKS_ALONG },
+    });
+    // The longer sentence is still drawn, which is what reserves its height...
+    assert.equal(markup.includes(copy.derivedNotSet), true);
+    // ...and a person does not read it.
+    assert.equal(showsText(markup, copy.derivedNotSet), false);
+    // CONTROL: with no date the same reader says it IS shown.
+    const blank = render({ biologicalSex: null, value: { ...BLANK, reproductiveStatus: 'pregnant' } });
+    assert.equal(showsText(blank, copy.derivedNotSet), true);
   });
 
   it('says the date is not set when it is blank, rather than reporting week 1', () => {
     const markup = render({ biologicalSex: null, value: { ...BLANK, reproductiveStatus: 'pregnant' } });
-    assert.equal(markup.includes(copy.derivedNotSet), true);
+    assert.equal(showsText(markup, copy.derivedNotSet), true);
     assert.equal(markup.includes(copy.trimester.second), false);
   });
 
@@ -196,12 +222,12 @@ describe('ReproductiveStatusFields, the derived line', () => {
       value: { ...BLANK, reproductiveStatus: 'lactating', lactationStartDate: '2026-05-09' },
     });
     const expected = interpolate(copy.derivedMonths_other, { count: '4' });
-    assert.equal(markup.includes(expected), true);
-    assert.equal(markup.includes(copy.derivedNotSet), false);
+    assert.equal(showsText(markup, expected), true);
+    assert.equal(showsText(markup, copy.derivedNotSet), false);
 
     // The control: no birth date, no month count.
     const blank = render({ biologicalSex: null, value: { ...BLANK, reproductiveStatus: 'lactating' } });
-    assert.equal(blank.includes(copy.derivedNotSet), true);
+    assert.equal(showsText(blank, copy.derivedNotSet), true);
   });
 });
 

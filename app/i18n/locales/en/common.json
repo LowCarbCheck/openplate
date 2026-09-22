@@ -543,6 +543,8 @@
       "calories": "Calories",
       "figureOf": "/ {{target}}",
       "figureOfGrams": "/ {{target}} g",
+      "figureUnitCalories": "calories",
+      "figureUnitGrams": "g",
       "grams": "{{value}} g",
       "gramsLeft": "up to {{value}} g more",
       "gramsOver": "{{value}} g over",
@@ -1624,6 +1626,9 @@
     "loading": "Loading…",
     "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
     "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator manages the AI, so photos sent for estimates pass through that server in transit. The privacy policy details what the operator can access.",
+    "mainGoal": {
+      "label": "Which number matters most?"
+    },
     "step": {
       "body": {
         "description": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number, and like everything else, they stay on this device.",
@@ -2302,6 +2307,13 @@
         "saved": "Saved.",
         "failed": "That did not work. Try again."
       }
+    },
+    "mainGoal": {
+      "lead": "The number your diary shows first.",
+      "noTargetHint": "You have no calorie target yet. Set one below to see a bar.",
+      "save": "Save main goal",
+      "saved": "Main goal saved",
+      "title": "Main goal"
     }
   },
   "settingsAi": {
@@ -3551,5 +3563,12 @@
     },
     "new": "New",
     "allReleases": "All releases on GitHub"
+  },
+  "mainGoal": {
+    "option": {
+      "calories": "Calories",
+      "netCarbs": "Net carbs",
+      "protein": "Protein"
+    }
   }
 }
