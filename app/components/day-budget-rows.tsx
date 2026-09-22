@@ -25,7 +25,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { Check } from 'lucide-react';
-import type { AnimatedHeadlines, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
+import type { AnimatedHeadlines, BudgetFigure, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
 import {
   DATA_ROW_CLASS,
   DATA_ROW_DOT_CLASS,
@@ -86,20 +86,16 @@ const REFERENCE_TAG_CLASS =
  * both dates off the targets page). Same size, same weight:
  * the tag is a footnote either way, never an alarm.
  */
-function ReferenceTag({ row }: { row: DayBudgetRow }) {
+function ReferenceTag({ row, className = REFERENCE_TAG_CLASS }: { row: DayBudgetRow; className?: string }) {
   const { t } = useTranslation();
-  if (!row.referenceDateMissing)
-    return <span className={REFERENCE_TAG_CLASS}>{t('diary.drilldown.referenceTag')}</span>;
+  if (!row.referenceDateMissing) return <span className={className}>{t('diary.drilldown.referenceTag')}</span>;
 
   const key =
     row.missingReferenceDate === 'birth-date' ?
       'diary.drilldown.referenceTagBirthDateMissing'
     : 'diary.drilldown.referenceTagDateMissing';
   return (
-    <Link
-      to="/settings/life-phase"
-      className={cn(REFERENCE_TAG_CLASS, 'underline underline-offset-2 hover:text-foreground')}
-    >
+    <Link to="/settings/life-phase" className={cn(className, 'underline underline-offset-2 hover:text-foreground')}>
       {t(key)}
     </Link>
   );
@@ -155,10 +151,9 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
 
   return (
     <li
-      className={cn(
-        DATA_ROW_CLASS,
-        'relative grid grid-cols-[minmax(0,1fr)_auto_auto] gap-y-0.5 overflow-hidden p-2',
-      )}
+      className={cn(DATA_ROW_CLASS, 'relative grid grid-cols-[minmax(0,1fr)_auto_auto] gap-y-0.5 overflow-hidden p-2')}
+      data-slot="budget-row"
+      data-metric={row.key}
     >
       {/*
         A German label beside the reference tag overflowed at a large font: it
@@ -230,37 +225,243 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
         target has nothing to report progress against, so it states its
         sentence instead of inventing a maximum for it.
       */}
-      {row.target === null ?
-        <span className="sr-only">{row.srLabel}</span>
-      : <progress
-          className="sr-only"
-          value={Math.round(row.consumed)}
-          max={Math.round(row.target)}
-          aria-label={row.srLabel}
-        />
-      }
+      <RowSemantics row={row} />
     </li>
   );
 }
 
 /**
+ * The fact half of a row: a real `progress` element with the unclamped
+ * figures, or the row's sentence when there is no target to report against.
+ * Shared by both layouts, so neither can drift from the other in what
+ * assistive tech hears.
+ */
+function RowSemantics({ row }: { row: DayBudgetRow }) {
+  if (row.target === null) return <span className="sr-only">{row.srLabel}</span>;
+  return (
+    <progress
+      className="sr-only"
+      value={Math.round(row.consumed)}
+      max={Math.round(row.target)}
+      aria-label={row.srLabel}
+    />
+  );
+}
+
+/** A meter fill, amber once the row is over, the metric's own colour otherwise. */
+function fillClassFor(row: DayBudgetRow): string {
+  return row.tone === 'over' ? 'bg-accent-amber' : ROW_FILL_CLASS[row.key];
+}
+
+/** The figure's ink: amber over a ceiling, brand once a floor is reached, plain otherwise. */
+function toneTextClass(row: DayBudgetRow): string {
+  if (row.tone === 'over') return 'text-accent-amber';
+  if (row.tone === 'met') return 'text-primary';
+  return 'text-foreground';
+}
+
+/**
+ * A meter on a neutral track, the lead view's recipe (layout D). The track is
+ * `bg-muted` rather than a tint of the metric: in this layout the fill is the
+ * one coloured thing on the line, so an empty track stays quiet.
+ */
+function LeadViewMeter({ row, heightClass }: { row: DayBudgetRow; heightClass: string }) {
+  if (row.fraction === null) return null;
+  return (
+    <div data-slot="budget-track" aria-hidden="true" className={cn('overflow-hidden bg-muted', heightClass)}>
+      <div
+        className={cn('h-full motion-safe:transition-[width] motion-safe:duration-500', fillClassFor(row))}
+        style={{ width: `${row.fraction * 100}%` }}
+      />
+    </div>
+  );
+}
+
+/**
+ * The footnote a target that is not the person's own carries: "reference" for
+ * a population figure, the linked date request when the reference fell back,
+ * "from your targets" for the derived fat figure. Nothing for a goal they set.
+ * Inline, beside the label, in the quiet list.
+ */
+function InlineTargetTag({ row }: { row: DayBudgetRow }) {
+  const { t } = useTranslation();
+  if (row.targetSource === 'default') return <ReferenceTag row={row} className={INLINE_TAG_CLASS} />;
+  if (row.targetSource === 'derived')
+    return <span className={INLINE_TAG_CLASS}>{t('diary.drilldown.derivedTag')}</span>;
+  return null;
+}
+
+/** The tag recipe in the quiet list: the reference tag's type, placed after the label rather than under it. */
+const INLINE_TAG_CLASS = 'ms-2 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground';
+
+/**
+ * The caption under the lead figure.
+ *
+ * With a target it is the row's own headline ("up to 24.9 g more", "12 g still
+ * needed", "Reached"), tweened where the diary tweens it. A protein lead on
+ * the reference intake says so in words, because that figure is not one the
+ * person set. With NO target it says "No daily target" and links to the page
+ * where one is set: the lead stays on the metric the person chose, and the
+ * caption is the honest half of that choice.
+ */
+function LeadCaption({ row, headline }: { row: DayBudgetRow; headline: string }) {
+  const { t } = useTranslation();
+  if (row.target === null) {
+    return (
+      <Link
+        to="/settings/nutrition"
+        data-slot="budget-lead-no-target"
+        className="inline-flex min-h-11 items-center text-xs text-primary underline-offset-4 hover:underline"
+      >
+        {t('diary.budget.leadNoTarget')}
+      </Link>
+    );
+  }
+  const isMet = row.tone === 'met';
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
+      <span className={cn('inline-flex items-center gap-1', row.tone === 'default' ? undefined : toneTextClass(row))}>
+        {headline}
+        {isMet && <Check className="size-3.5 shrink-0" aria-hidden="true" />}
+      </span>
+      {row.targetSource === 'default' &&
+        (row.referenceDateMissing ?
+          <ReferenceTag row={row} className="text-xs text-muted-foreground" />
+        : <span>{t('diary.budget.referenceTarget')}</span>)}
+    </p>
+  );
+}
+
+/**
+ * The lead: the main goal's figure, large, with an 8 px meter and a quiet
+ * caption (layout D, operator decision 2026-09-23).
+ *
+ * The big number is what the person ATE, set against the target in the small
+ * suffix ("25.1 / 50 g"), and the caption says what that means ("up to 24.9 g
+ * more"). The old row put the sentence big and the figure small, so the eye
+ * met a different kind of phrase on every line; here the figure is the one
+ * thing at that size.
+ */
+function BudgetLead({ row, headline, figure }: { row: DayBudgetRow; headline: string; figure: BudgetFigure }) {
+  return (
+    <div data-slot="budget-lead" data-metric={row.key} className="space-y-2 border-b pb-3">
+      <div>
+        <p className="text-xs text-muted-foreground">{row.label}</p>
+        <p className={cn('mt-1 text-[2rem] font-semibold leading-tight tabular-nums', toneTextClass(row))}>
+          {figure.value}
+          {figure.suffix !== null && (
+            <span className="text-sm font-normal text-muted-foreground"> {figure.suffix}</span>
+          )}
+        </p>
+      </div>
+      <LeadViewMeter row={row} heightClass="h-2" />
+      <LeadCaption row={row} headline={headline} />
+      <RowSemantics row={row} />
+    </div>
+  );
+}
+
+/**
+ * One line of the quiet list under the lead: the label, the figure against
+ * its target, and a 3 px meter across the full width. No hairline between the
+ * lines: on this fill a hairline and an empty meter are the same grey, and a
+ * row read as two rules. The meters separate the rows. No dot and no sentence:
+ * the meter carries the colour, the figure carries the amount, and the
+ * sentence each row used to print is still what assistive tech hears.
+ *
+ * A row with no target draws no meter, the same rule the older layout keeps.
+ */
+function QuietRow({ row }: { row: DayBudgetRow }) {
+  const isMet = row.tone === 'met';
+  return (
+    <li
+      data-slot="budget-row"
+      data-metric={row.key}
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-1.5 py-2 last:pb-0"
+    >
+      <span className="min-w-0 break-words text-sm">
+        {row.label}
+        <InlineTargetTag row={row} />
+      </span>
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 text-right text-sm font-semibold tabular-nums',
+          toneTextClass(row),
+        )}
+      >
+        <span>
+          {row.figure.value}
+          {row.figure.suffix !== null && (
+            <span className="text-xs font-normal text-muted-foreground"> {row.figure.suffix}</span>
+          )}
+        </span>
+        {isMet && <Check className="size-3.5 shrink-0" aria-hidden="true" />}
+      </span>
+      {row.fraction !== null && (
+        <div className="col-span-2">
+          <LeadViewMeter row={row} heightClass="h-[3px]" />
+        </div>
+      )}
+      <RowSemantics row={row} />
+    </li>
+  );
+}
+
+/**
+ * What the lead view needs beyond the rows: the tweened figure, when the
+ * caller animates it. `null` paints the settled figure.
+ */
+export interface BudgetLeadView {
+  animatedFigure: BudgetFigure | null;
+}
+
+/**
  * The day's budget rows.
+ *
+ * TWO LAYOUTS. With `lead`, the first row is the lead figure and the others
+ * are a quiet list under it (layout D, the diary only). Without it, the stack
+ * of filled rows below, unchanged, which the dashboard and catch-up keep.
  *
  * A STACK OF FILLED ROWS, not a divided list. The rows were hairline-separated
  * while they sat on the hero's own fill; each one carries the data-row recipe's
  * quiet fill now, and a divider between two filled blocks draws nothing anyone
  * can see. The separation is the gap.
  *
- * @param rows - the rows to draw, already in display order.
+ * @param rows - the rows to draw, already in display order; with `lead`, the first one leads.
  * @param animatedHeadlines - tweened headlines for the two budget rows, or null where the caller does not animate (the dashboard does not).
+ * @param lead - the lead view's extras, or null for the stack of filled rows.
  */
 export function DayBudgetRows({
   rows,
   animatedHeadlines = null,
+  lead = null,
 }: {
   rows: DayBudgetRow[];
   animatedHeadlines?: AnimatedHeadlines | null;
+  lead?: BudgetLeadView | null;
 }) {
+  if (lead !== null) {
+    const [first, ...rest] = rows;
+    if (first === undefined) throw new Error('DayBudgetRows was asked for a lead view with no rows');
+    // ONE quiet fill under the whole block, the data row recipe's own
+    // `bg-muted/40`: the hero card draws graph paper (DESIGN.md section 5b),
+    // and it is the content's fill that keeps the paper out from under small
+    // text. The rows used to carry it one by one; the lead view is one block.
+    return (
+      <div data-slot="budget-lead-view" className="bg-muted/40 p-3">
+        <BudgetLead
+          row={first}
+          headline={headlineFor(first, animatedHeadlines)}
+          figure={lead.animatedFigure ?? first.figure}
+        />
+        <ul>
+          {rest.map((row) => (
+            <QuietRow key={row.key} row={row} />
+          ))}
+        </ul>
+      </div>
+    );
+  }
   return (
     <ul className="space-y-1">
       {rows.map((row) => (

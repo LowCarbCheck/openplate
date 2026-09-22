@@ -34,12 +34,14 @@ import { DayBudgetRows } from '../../app/components/day-budget-rows';
 import { DATA_ROW_DOT_CLASS } from '../../app/components/list-row';
 import {
   buildDayBudgetRows,
+  formatBudgetFigure,
   formatBudgetHeadline,
   type DayBudgetRow,
   type DayBudgetRowKey,
 } from '../../app/lib/day-budget-rows';
 import { computeDayGaps } from '../../app/lib/macro-gaps';
 import type { MissingReferenceDate, Translate } from '../../app/lib/macro-gaps';
+import type { MainGoalId } from '../../app/lib/main-goal';
 
 /**
  * The REAL catalog, not a stub. These assertions are about exact wording, and
@@ -67,7 +69,12 @@ interface DayGoals {
   missingReferenceDate?: MissingReferenceDate | null;
 }
 
-function buildRows(totals: DayTotals, goals: DayGoals, hasEstimates = false): DayBudgetRow[] {
+function buildRows(
+  totals: DayTotals,
+  goals: DayGoals,
+  hasEstimates = false,
+  mainGoal: MainGoalId | undefined = undefined,
+): DayBudgetRow[] {
   const gaps = computeDayGaps({
     totals: { netCarbs: totals.netCarbs, protein: totals.protein, fiber: totals.fiber },
     goals: {
@@ -89,6 +96,7 @@ function buildRows(totals: DayTotals, goals: DayGoals, hasEstimates = false): Da
     gaps,
     t,
     language: 'en',
+    mainGoal,
   });
 }
 
@@ -431,6 +439,110 @@ describe('formatBudgetHeadline', () => {
   });
 });
 
+/** The row keys in display order. */
+function keys(rows: DayBudgetRow[]): DayBudgetRowKey[] {
+  return rows.map((row) => row.key);
+}
+
+/**
+ * The main goal decides which row leads (2026-09-23). Only the ORDER moves:
+ * every row keeps the words it had, and a calorie lead with no calorie target
+ * still leads, as the day's absolute figure with no meter.
+ */
+describe('buildDayBudgetRows, the main goal leads', () => {
+  it('leads with net carbs when no main goal is passed, the order every other caller keeps', () => {
+    assert.deepEqual(keys(buildRows(DAY, BOTH_GOALS)), ['netCarbs', 'calories', 'protein', 'fat', 'fiber']);
+    assert.deepEqual(keys(buildRows(DAY, BOTH_GOALS, false, 'net-carbs')), [
+      'netCarbs',
+      'calories',
+      'protein',
+      'fat',
+      'fiber',
+    ]);
+  });
+
+  it('moves protein to the front and leaves the rest in their order', () => {
+    assert.deepEqual(keys(buildRows(DAY, BOTH_GOALS, false, 'protein')), [
+      'protein',
+      'netCarbs',
+      'calories',
+      'fat',
+      'fiber',
+    ]);
+  });
+
+  it('moves calories to the front when there is a calorie target', () => {
+    const rows = buildRows(DAY, BOTH_GOALS, false, 'calories');
+    assert.deepEqual(keys(rows), ['calories', 'netCarbs', 'protein', 'fat', 'fiber']);
+    assert.equal(rows[0].fraction, 899 / 1800);
+    assert.equal(rows[0].targetSource, 'goal');
+  });
+
+  it('leads a protein goal with the reference intake when no floor is set, and says it is a reference', () => {
+    const rows = buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 67 }, false, 'protein');
+    assert.equal(rows[0].key, 'protein');
+    assert.equal(rows[0].target, 67);
+    assert.equal(rows[0].targetSource, 'default');
+  });
+
+  it('still leads with calories when there is no calorie target: no meter, no fraction, the absolute figure', () => {
+    const goals = { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: 90 };
+    const rows = buildRows(DAY, goals, false, 'calories');
+    const lead = rows[0];
+    assert.equal(lead.key, 'calories', 'the lead is never swapped for another metric');
+    assert.equal(lead.fraction, null);
+    assert.equal(lead.target, null);
+    assert.equal(lead.progressText, null);
+    assert.equal(lead.targetSource, 'none');
+    assert.equal(lead.tone, 'default');
+    assert.deepEqual(lead.figure, { value: '899 calories', suffix: null });
+    assert.deepEqual(keys(rows), ['calories', 'netCarbs', 'protein', 'fat', 'fiber']);
+    // CONTROL: the same goals WITHOUT a calorie main goal draw no calorie row at
+    // all, the older rule, so the row above exists because of the main goal.
+    assert.equal(
+      buildRows(DAY, goals).some((row) => row.key === 'calories'),
+      false,
+    );
+  });
+
+  it('leads net carbs with the absolute figure when there is no ceiling, and never swaps it', () => {
+    const rows = buildRows(DAY, { netCarbsCeiling: null, kcalTarget: 1800, proteinFloor: 90 }, false, 'net-carbs');
+    assert.equal(rows[0].key, 'netCarbs');
+    assert.equal(rows[0].fraction, null);
+    assert.deepEqual(rows[0].figure, { value: '25.1 g', suffix: null });
+  });
+});
+
+describe('the figure each row carries', () => {
+  it('splits a targeted figure into the amount and "/ target"', () => {
+    const rows = buildRows(DAY, BOTH_GOALS);
+    assert.deepEqual(rowFor(rows, 'netCarbs').figure, { value: '25.1', suffix: '/ 50 g' });
+    assert.deepEqual(rowFor(rows, 'calories').figure, { value: '899', suffix: '/ 1800' });
+    // Whole grams on a floor row, the rounding its caption has always used.
+    assert.deepEqual(rowFor(rows, 'protein').figure, { value: '95', suffix: '/ 90 g' });
+    assert.deepEqual(rowFor(rows, 'fiber').figure, { value: '13', suffix: '/ 25 g' });
+  });
+
+  it('prints an untargeted figure whole, with no suffix', () => {
+    const rows = buildRows(DAY, { ...BOTH_GOALS, kcalTarget: null });
+    assert.deepEqual(rowFor(rows, 'fat').figure, { value: '34.6 g', suffix: null });
+  });
+
+  it('formats a mid-tween figure through the same rounding as the settled one', () => {
+    const netCarbs = rowFor(buildRows(DAY, BOTH_GOALS), 'netCarbs');
+    assert.deepEqual(
+      formatBudgetFigure({ row: netCarbs, numericValue: netCarbs.consumed, language: 'en', t }),
+      netCarbs.figure,
+    );
+    assert.deepEqual(formatBudgetFigure({ row: netCarbs, numericValue: 12.34, language: 'en', t }), {
+      value: '12.3',
+      suffix: '/ 50 g',
+    });
+    // German writes the decimal with a comma, on every frame.
+    assert.equal(formatBudgetFigure({ row: netCarbs, numericValue: 12.34, language: 'de', t }).value, '12,3');
+  });
+});
+
 /**
  * The rows as the diary paints them, with no tween, which is what the dashboard
  * renders.
@@ -527,6 +639,75 @@ describe('DayBudgetRows rendering', () => {
     // reference is left, and no date is asked for.
     assert.equal(html.match(/>reference</g)?.length, 1);
     assert.ok(!html.includes('/settings/life-phase'));
+  });
+});
+
+/** The lead view (layout D), as the diary draws it, with the settled figure. */
+function renderLead(rows: DayBudgetRow[]): string {
+  return renderToStaticMarkup(
+    withI18n(createElement(MemoryRouter, null, createElement(DayBudgetRows, { rows, lead: { animatedFigure: null } }))),
+  );
+}
+
+/** The markup of the lead block alone, so a claim about the lead never matches the list under it. */
+function leadMarkup(html: string): string {
+  const start = html.indexOf('data-slot="budget-lead"');
+  const end = html.indexOf('<ul', start);
+  if (start === -1 || end === -1) throw new Error('expected a lead block followed by the quiet list');
+  return html.slice(start, end);
+}
+
+describe('DayBudgetRows, the lead view', () => {
+  it('leads with the main goal, its figure large, and lists every other row under it', () => {
+    const html = renderLead(buildRows(DAY, BOTH_GOALS, false, 'protein'));
+    const lead = leadMarkup(html);
+    assert.match(lead, /data-metric="protein"/);
+    assert.ok(lead.includes('text-[2rem]'), 'the lead figure is the one large number on the card');
+    assert.ok(lead.includes('>95<'), 'the lead states what was eaten');
+    assert.ok(lead.includes('/ 90 g'));
+    // Four quiet rows, one per metric that is not leading.
+    assert.equal(html.match(/data-slot="budget-row"/g)?.length, 4);
+    // CONTROL: the default lead is net carbs, so the protein above is the main goal at work.
+    assert.match(leadMarkup(renderLead(buildRows(DAY, BOTH_GOALS))), /data-metric="netCarbs"/);
+  });
+
+  it('draws an 8 px meter under the lead and 3 px meters in the list', () => {
+    const html = renderLead(buildRows(DAY, BOTH_GOALS));
+    assert.equal(leadMarkup(html).match(/data-slot="budget-track"[^>]*class="[^"]*\bh-2\b/g)?.length, 1);
+    // All three targets are set, so fat has its derived reference and all four list rows draw one.
+    assert.equal(html.match(/h-\[3px\]/g)?.length, 4);
+    // CONTROL: without a calorie target there is no calorie row and fat loses its reference: two meters.
+    assert.equal(renderLead(buildRows(DAY, { ...BOTH_GOALS, kcalTarget: null })).match(/h-\[3px\]/g)?.length, 2);
+  });
+
+  it('says a reference protein lead is a reference, in words', () => {
+    const lead = leadMarkup(
+      renderLead(buildRows(DAY, { ...BOTH_GOALS, proteinFloor: null, proteinReferenceG: 67 }, false, 'protein')),
+    );
+    assert.ok(lead.includes('The target is a reference intake.'));
+    // CONTROL: a floor the person set says nothing of the kind.
+    assert.ok(!leadMarkup(renderLead(buildRows(DAY, BOTH_GOALS, false, 'protein'))).includes('reference intake'));
+  });
+
+  it('shows a calorie lead with no target as the day total, no meter, and "No daily target" as a link', () => {
+    const goals = { netCarbsCeiling: 50, kcalTarget: null, proteinFloor: 90 };
+    const lead = leadMarkup(renderLead(buildRows(DAY, goals, false, 'calories')));
+    assert.match(lead, /data-metric="calories"/);
+    assert.ok(lead.includes('899 calories'));
+    assert.ok(!lead.includes('budget-track'), 'no target, no meter');
+    assert.match(lead, /<a[^>]*href="\/settings\/nutrition"[^>]*>No daily target<\/a>/);
+    // CONTROL: with a target the same lead draws its meter and no such link.
+    const targeted = leadMarkup(renderLead(buildRows(DAY, BOTH_GOALS, false, 'calories')));
+    assert.ok(targeted.includes('budget-track'));
+    assert.ok(!targeted.includes('No daily target'));
+  });
+
+  it('keeps no left border and no status dot in either half', () => {
+    const html = renderLead(buildRows(DAY, BOTH_GOALS));
+    assert.ok(!/border-l-(?!0)/.test(html));
+    assert.equal(html.match(new RegExp(DATA_ROW_DOT_CLASS, 'g'))?.length ?? 0, 0);
+    // CONTROL: the stack of filled rows, rendered from the same rows, still has its five dots.
+    assert.equal(render(buildRows(DAY, BOTH_GOALS)).match(new RegExp(DATA_ROW_DOT_CLASS, 'g'))?.length, 5);
   });
 });
 

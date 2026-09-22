@@ -33,6 +33,7 @@ import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
 import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
+import { effectiveMainGoal, type MainGoalId } from '#app/lib/main-goal';
 import type { EatingStyleLens } from '#app/lib/eating-style';
 import {
   computeReferenceProteinFloor,
@@ -98,7 +99,7 @@ import { StickySubheader } from '#app/components/sticky-subheader';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
-import { buildDayBudgetRows, formatBudgetHeadline } from '#app/lib/day-budget-rows';
+import { buildDayBudgetRows, formatBudgetFigure, formatBudgetHeadline } from '#app/lib/day-budget-rows';
 import type { AnimatedHeadlines } from '#app/lib/day-budget-rows';
 import { DayVerdictChip, SuggestionsDisclosure, WhatYouAte } from '#app/components/day-summary-details';
 import { Button } from '#app/components/ui/button';
@@ -1069,6 +1070,8 @@ export interface DiaryData {
     proteinReferenceMissingDate: MissingReferenceDate | null;
     /** The eating style's lens, which decides the day's one verdict. */
     lens: EatingStyleLens;
+    /** Which figure the day card leads with. */
+    mainGoal: MainGoalId;
   };
   habitStrip: HabitStripDay[];
   loggedDaysCount: number;
@@ -1167,6 +1170,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
         eatingStyle: profile?.eatingStyle ?? null,
       }),
     ),
+    // Which figure the day card leads with: the person's own pick, or the one
+    // the style's lens implies when they never picked (`effectiveMainGoal`).
+    mainGoal: effectiveMainGoal({
+      goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+      goalKcalTarget: profile?.goalKcalTarget ?? null,
+      goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+      eatingStyle: profile?.eatingStyle ?? null,
+      mainGoal: profile?.mainGoal ?? null,
+    }),
   };
 
   // The habit strip always ends on the real "today" (not the viewed date), so
@@ -1757,6 +1769,8 @@ interface DiaryGoals {
   proteinReferenceMissingDate: MissingReferenceDate | null;
   /** The eating style's lens, which decides the day's one verdict. */
   lens: EatingStyleLens;
+  /** Which figure the day card leads with (`effectiveMainGoal`). */
+  mainGoal: MainGoalId;
 }
 
 /**
@@ -1868,22 +1882,38 @@ function DaySummaryCard({
     gaps,
     t,
     language: i18n.language,
+    mainGoal: goals.mainGoal,
   });
-  // Net carbs always leads the list (`buildDayBudgetRows`' contract); the
-  // calorie row exists only for someone who set a calorie target.
-  const netCarbsRow = rows[0];
+  // The main goal's row leads (`buildDayBudgetRows` puts it first), and it is
+  // no longer always net carbs, so the two budget rows are found by KEY. Net
+  // carbs is always built; calories only for a calorie target or a calorie
+  // main goal.
+  const leadRow = rows[0];
+  const netCarbsRow = rows.find((row) => row.key === 'netCarbs');
+  if (netCarbsRow === undefined) throw new Error('buildDayBudgetRows built no net-carb row');
   const caloriesRow = rows.find((row) => row.key === 'calories') ?? null;
 
   // ONE tweened scalar per BUDGET row: the headline counts toward its own
   // figure and the meter follows the settled fraction. Keyed by day + framing
-  // so switching days or goal modes resets instead of tweening across. Two
-  // fixed calls rather than one per row, because the number of rows changes
-  // with the person's goals and a hook may not.
+  // so switching days or goal modes resets instead of tweening across. Fixed
+  // calls rather than one per row, because the number of rows changes with the
+  // person's goals and a hook may not.
   const animatedNetCarbs = useCountUp(netCarbsRow.headlineNumeric ?? 0, `${date}:${netCarbsRow.headlineMode ?? 'none'}`);
   const animatedCalories = useCountUp(
     caloriesRow?.headlineNumeric ?? 0,
     `${date}:${caloriesRow?.headlineMode ?? 'none'}`,
   );
+  // The lead's big figure is what the day CONSUMED, and it counts toward it
+  // the same way (DESIGN.md section 7, the hero figure counts old to new).
+  // Keyed by the lead's metric as well, so switching the main goal resets
+  // rather than tweening protein grams into calories.
+  const animatedLeadConsumed = useCountUp(leadRow.consumed, `${date}:lead:${leadRow.key}`);
+  const animatedLeadFigure = formatBudgetFigure({
+    row: leadRow,
+    numericValue: animatedLeadConsumed,
+    language: i18n.language,
+    t,
+  });
   const animatedHeadlines: AnimatedHeadlines = {
     netCarbs: formatBudgetHeadline({
       row: netCarbsRow,
@@ -1940,11 +1970,18 @@ function DaySummaryCard({
             no lens is withheld always: `DayVerdictChip` renders nothing. */}
         <DayVerdictChip verdict={verdict} />
         <div className="space-y-1">
-          <DayBudgetRows rows={rows} animatedHeadlines={animatedHeadlines} />
+          <DayBudgetRows
+            rows={rows}
+            animatedHeadlines={animatedHeadlines}
+            lead={{ animatedFigure: animatedLeadFigure }}
+          />
           {/* `inline-flex min-h-11` rather than `inline-block` (M243 spec
               05a): 16 px of ink is not a target a thumb can hit, so the words
               keep their size and sit centred in a 44 px box. */}
-          {!hasAnyGoal && (
+          {/* Withheld when the lead already says "No daily target" as a link to
+              the same page: two links to one place, one line apart, is one too
+              many. */}
+          {!hasAnyGoal && leadRow.target !== null && (
             <Link
               to="/settings/nutrition"
               className="inline-flex min-h-11 items-center text-xs text-primary underline-offset-4 hover:underline"

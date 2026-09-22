@@ -541,13 +541,17 @@
     },
     "budget": {
       "calories": "Calories",
+      "figureOf": "/ {{target}}",
+      "figureOfGrams": "/ {{target}} g",
       "grams": "{{value}} g",
       "gramsLeft": "jusqu'à {{value}} g en plus",
       "gramsOver": "{{value}} g en trop",
+      "leadNoTarget": "Aucun objectif quotidien",
       "left": "jusqu'à {{value}} en plus",
       "over": "{{value}} en trop",
       "progress": "{{consumed}} sur {{target}}",
       "progressGrams": "{{consumed}} sur {{target}} g",
+      "referenceTarget": "L'objectif sert d'apport de référence.",
       "srRowGrams": "{{label}} : {{consumed}} sur {{target}} g. {{status}}.",
       "srRowNoTarget": "{{label}}: {{status}}."
     },

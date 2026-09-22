@@ -644,7 +644,10 @@ function percentFigures(text: string): number[] {
 test('the composition block restates no gram figure the budget rows already state', async ({ page }) => {
   await seedNarrowDiary(page);
 
-  const rows = page.locator('li:has([data-slot="budget-subline"])');
+  // The lead figure and the quiet list under it (layout D), found by their
+  // slots: the list has no sub-line any more, so the old
+  // `li:has([data-slot="budget-subline"])` reader would find nothing.
+  const rows = page.locator('[data-slot="budget-lead"], [data-slot="budget-row"]');
   const cells = page.locator('[data-slot="macro-share"]');
   let rowText = '';
 

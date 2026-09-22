@@ -541,13 +541,17 @@
     },
     "budget": {
       "calories": "Kalori",
+      "figureOf": "/ {{target}}",
+      "figureOfGrams": "/ {{target}} g",
       "grams": "{{value}} g",
       "gramsLeft": "en fazla {{value}} g daha",
       "gramsOver": "{{value}} g aşıldı",
+      "leadNoTarget": "Günlük hedef yok",
       "left": "en fazla {{value}} daha",
       "over": "{{value}} aşıldı",
       "progress": "{{consumed}} / {{target}}",
       "progressGrams": "{{consumed}} / {{target}} g",
+      "referenceTarget": "Hedef, bir referans alım miktarıdır.",
       "srRowGrams": "{{label}}: {{consumed}} / {{target}} g. {{status}}.",
       "srRowNoTarget": "{{label}}: {{status}}."
     },

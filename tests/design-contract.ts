@@ -175,7 +175,7 @@ export const LIST_ROW_PADDING_PX = 12;
  * | `/settings`  |       2 | the wordmark, the launcher                                              |
  * | `/trends`    |       4 | the two, the active tab, "Log weight"                                   |
  * | `/add/search`|       5 | the two, the "Set up AI" link, the active tab's icon and its label      |
- * | `/diary`     |       9 | the two, the active tab (two), the camera key, two links, two status dots |
+ * | `/diary`     |       8 | the two, the active tab (two), the camera key, two links, the habit day's dot. It was 9 until the lead figure (layout D, 2026-09-23) dropped the budget row's status dot |
  * | `/dashboard` |      12 | the two, the camera key, two hand-off links (four), the award mark, and four data marks: the status dot, an adherence cell, the streak legend dot and a ridge bar |
  *
  * The dashboard is the one screen far above LowCarbCheck's three, and every one of its twelve
@@ -186,7 +186,7 @@ export const LIST_ROW_PADDING_PX = 12;
  * the chips on the review, add and settings screens are `bg-muted` (decision 3).
  */
 export const TEAL_BUDGET_CEILING = {
-  '/diary': 9,
+  '/diary': 8,
   '/dashboard': 12,
   '/trends': 4,
   '/settings': 2,

@@ -6,6 +6,13 @@
     "at": "2026-09-14",
     "fr": "Enregistré."
   },
+  "0050bfce7271eab5": {
+    "en": "No daily target",
+    "path": "common:diary.budget.leadNoTarget",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "fr": "Aucun objectif quotidien"
+  },
   "0052333823fcaabf": {
     "en": "See what's new",
     "path": "common:whatsNew.card.open",
@@ -8490,6 +8497,13 @@
     "at": "2026-09-14",
     "fr": "Choisis une photo à téléverser."
   },
+  "6e33f76ea614b56e": {
+    "en": "/ {{target}} g",
+    "path": "common:diary.budget.figureOfGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "fr": "/ {{target}} g"
+  },
   "6e6c2985c8280dbd": {
     "en": "Your fast has been running for {{duration}}.",
     "path": "common:catchUp.fastActive",
@@ -9602,6 +9616,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Rapide et précis sur le détail des aliments"
+  },
+  "7b1a4a8e42cd3a70": {
+    "en": "The target is a reference intake.",
+    "path": "common:diary.budget.referenceTarget",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-22",
+    "fr": "L'objectif sert d'apport de référence."
   },
   "7b3dc37b10fcd8a3": {
     "en": "Everything else you sync is encrypted on this device before it leaves. This one report is not, so the server receives it in readable form.",

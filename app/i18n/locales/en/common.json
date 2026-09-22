@@ -541,13 +541,17 @@
     },
     "budget": {
       "calories": "Calories",
+      "figureOf": "/ {{target}}",
+      "figureOfGrams": "/ {{target}} g",
       "grams": "{{value}} g",
       "gramsLeft": "up to {{value}} g more",
       "gramsOver": "{{value}} g over",
+      "leadNoTarget": "No daily target",
       "left": "up to {{value}} more",
       "over": "{{value}} over",
       "progress": "{{consumed}} of {{target}}",
       "progressGrams": "{{consumed}} of {{target}} g",
+      "referenceTarget": "The target is a reference intake.",
       "srRowGrams": "{{label}}: {{consumed}} of {{target}} g. {{status}}.",
       "srRowNoTarget": "{{label}}: {{status}}."
     },

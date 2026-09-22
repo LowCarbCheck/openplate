@@ -53,6 +53,7 @@ import { selectGoalRings } from '#app/lib/goal-rings';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { describeGap } from '#app/lib/macro-gaps';
 import type { DayGaps, MacroGap, MacroGapTargetSource, MissingReferenceDate } from '#app/lib/macro-gaps';
+import type { MainGoalId } from '#app/lib/main-goal';
 
 /** Which metric a row describes. The array order below is the display order. */
 export type DayBudgetRowKey = 'netCarbs' | 'calories' | 'protein' | 'fat' | 'fiber';
@@ -70,6 +71,25 @@ export type DayBudgetTargetSource = MacroGapTargetSource | 'derived';
 /** How a row is painted: amber past a ceiling, brand once a floor is reached, plain otherwise. */
 export type DayBudgetRowTone = 'default' | 'over' | 'met';
 
+/**
+ * How a row's consumed figure is printed: grams to one decimal (net carbs and
+ * fat, the precision their headlines already use), whole grams (the two floor
+ * rows, whose captions have always rounded), or whole calories.
+ */
+export type BudgetFigureFormat = 'grams' | 'wholeGrams' | 'kcal';
+
+/**
+ * A row's consumed figure, in two parts, so a layout can size them apart:
+ * "25.1" and "/ 50 g" for a row with a target, or the whole "25.1 g" and no
+ * suffix for a row without one. The lead view prints `value` large and the
+ * suffix quietly beside it; the quiet list prints both at one size.
+ */
+export interface BudgetFigure {
+  value: string;
+  /** "/ 50 g" or "/ 1800", or `null` when the row has no target to put it against. */
+  suffix: string | null;
+}
+
 export interface DayBudgetRow {
   key: DayBudgetRowKey;
   /** The metric's name, from the shared macro catalog. */
@@ -86,6 +106,10 @@ export interface DayBudgetRow {
   tone: DayBudgetRowTone;
   /** The meter's caption: "25.1 of 50 g", "899 of 1800". Null when there is no target. */
   progressText: string | null;
+  /** How `figure` was formatted, so a tweened value can be printed through the same rounding. */
+  figureFormat: BudgetFigureFormat;
+  /** The consumed figure against its target, for the lead view and the quiet list (`formatBudgetFigure`). */
+  figure: BudgetFigure;
   /** Consumed over target, clamped to 0..1. Null when there is no (or a non-positive) target. */
   fraction: number | null;
   /** The raw, unclamped figures behind the meter, as the visually hidden `progress` element reports them. */
@@ -168,6 +192,16 @@ export interface DayBudgetRowsInput {
   t: Translate;
   /** Active UI language, for the decimal separator. Passed in for the same reason. */
   language: string | null | undefined;
+  /**
+   * Which metric leads the list: its row comes first. Optional, and absent
+   * means net carbs, the order every caller had before the main goal existed.
+   * Only the diary passes it; the dashboard and catch-up keep that order.
+   *
+   * A `'calories'` lead with no calorie target still gets its row, as the
+   * day's absolute figure with no meter: a lead is never silently swapped for
+   * another metric because the person has not set a number for it yet.
+   */
+  mainGoal?: MainGoalId;
 }
 
 /** The headline template per framing. The wording lives in `diary.budget.*`; only the mapping lives here. */
@@ -212,6 +246,69 @@ export function formatBudgetHeadline({
   return t(HEADLINE_KEY[mode], { value: formatHeroValue({ numericValue, mode, hasEstimates, language }) });
 }
 
+/**
+ * A row's consumed figure, formatted from a (possibly mid-tween) value.
+ *
+ * The same rounding for the settled figure and every frame of the diary's
+ * count-up, for the reason `formatBudgetHeadline` gives: an animation that
+ * formats differently from its destination snaps on its last frame.
+ *
+ * @param row - the row the figure belongs to; its format and target decide the shape.
+ * @param numericValue - the consumed amount to print.
+ * @param language - the active UI language, for the decimal separator.
+ * @param t - the caller's translator.
+ * @returns the figure's value and its "/ target" suffix.
+ */
+export function formatBudgetFigure({
+  row,
+  numericValue,
+  language,
+  t,
+}: {
+  row: Pick<DayBudgetRow, 'figureFormat' | 'target'>;
+  numericValue: number;
+  language: string | null | undefined;
+  t: Translate;
+}): BudgetFigure {
+  const isKcal = row.figureFormat === 'kcal';
+  const value = formatFigureNumber({ format: row.figureFormat, value: numericValue, language });
+  if (row.target === null) {
+    return { value: t(isKcal ? 'diary.kcal.absolute' : 'diary.budget.grams', { value }), suffix: null };
+  }
+  return {
+    value,
+    suffix: t(isKcal ? 'diary.budget.figureOf' : 'diary.budget.figureOfGrams', { target: Math.round(row.target) }),
+  };
+}
+
+/** One consumed number, rounded the way its row's other lines already round it. */
+function formatFigureNumber({
+  format,
+  value,
+  language,
+}: {
+  format: BudgetFigureFormat;
+  value: number;
+  language: string | null | undefined;
+}): string {
+  if (format === 'kcal') return String(Math.round(value));
+  if (format === 'wholeGrams') return formatMacroNumberIn(language, Math.round(value));
+  return formatMacroNumberIn(language, value);
+}
+
+/** Fills in `figure` from the row's own format and target, so no builder can print it a second way. */
+function withFigure({
+  row,
+  t,
+  language,
+}: {
+  row: Omit<DayBudgetRow, 'figure'>;
+  t: Translate;
+  language: string | null | undefined;
+}): DayBudgetRow {
+  return { ...row, figure: formatBudgetFigure({ row, numericValue: row.consumed, language, t }) };
+}
+
 /** Clamped 0..1 share of a budget, or null when there is nothing positive to divide against. */
 function budgetFraction(consumed: number, target: number | null): number | null {
   if (target === null || target <= 0) return null;
@@ -242,7 +339,7 @@ function budgetRow({
 }): DayBudgetRow {
   const isGrams = key === 'netCarbs';
   const consumedText = isGrams ? formatMacroNumberIn(language, consumed) : String(Math.round(consumed));
-  return {
+  const row = {
     key,
     label: t(isGrams ? 'diary.macros.netCarbs' : 'diary.budget.calories'),
     headline: t(HEADLINE_KEY[stat.mode], { value: stat.value }),
@@ -256,6 +353,7 @@ function budgetRow({
           target: Math.round(target),
         })
       ),
+    figureFormat: isGrams ? 'grams' : 'kcal',
     fraction: budgetFraction(consumed, target),
     consumed,
     target,
@@ -265,7 +363,8 @@ function budgetRow({
     referenceDateMissing: false,
     missingReferenceDate: null,
     srLabel: stat.srLabel,
-  };
+  } satisfies Omit<DayBudgetRow, 'figure'>;
+  return withFigure({ row, t, language });
 }
 
 /**
@@ -292,7 +391,7 @@ function floorRow({
   const formatGrams = (value: number): string => formatMacroNumberIn(language, value);
   const headline = describeGap(gap, formatGrams, t);
   const consumed = Math.round(gap.consumed);
-  return {
+  const row = {
     key,
     label: gap.label,
     headline,
@@ -301,6 +400,7 @@ function floorRow({
     tone: gap.isMet ? 'met' : 'default',
     progressText:
       gap.target === null ? null : t('diary.budget.progressGrams', { consumed, target: Math.round(gap.target) }),
+    figureFormat: 'wholeGrams',
     fraction: gap.fraction,
     consumed: gap.consumed,
     target: gap.target,
@@ -316,7 +416,8 @@ function floorRow({
           target: Math.round(gap.target),
           status: headline,
         }),
-  };
+  } satisfies Omit<DayBudgetRow, 'figure'>;
+  return withFigure({ row, t, language });
 }
 
 /** Atwater energy factors, in kilocalories per gram, for the fat derivation below. */
@@ -383,7 +484,7 @@ function absoluteFatRow({
 }): DayBudgetRow {
   const label = t('diary.macros.fat');
   const headline = t('diary.budget.grams', { value: formatMacroNumberIn(language, totals.fat) });
-  return {
+  const row = {
     key: 'fat',
     label,
     headline,
@@ -391,6 +492,7 @@ function absoluteFatRow({
     headlineMode: null,
     tone: 'default',
     progressText: null,
+    figureFormat: 'grams',
     fraction: null,
     consumed: totals.fat,
     target: null,
@@ -398,7 +500,8 @@ function absoluteFatRow({
     referenceDateMissing: false,
     missingReferenceDate: null,
     srLabel: t('diary.budget.srRowNoTarget', { label, status: headline }),
-  };
+  } satisfies Omit<DayBudgetRow, 'figure'>;
+  return withFigure({ row, t, language });
 }
 
 /**
@@ -445,7 +548,7 @@ function referencedFatRow({
   const headline = t(isOver ? 'diary.budget.gramsOver' : 'diary.budget.gramsLeft', {
     value: formatMacroNumberIn(language, difference),
   });
-  return {
+  const row = {
     key: 'fat',
     label,
     headline,
@@ -454,6 +557,7 @@ function referencedFatRow({
     // Never 'over': see this function's doc. The calorie row carries that warning.
     tone: 'default',
     progressText: t('diary.budget.progressGrams', { consumed: consumedText, target: referenceG }),
+    figureFormat: 'grams',
     fraction: budgetFraction(totals.fat, referenceG),
     consumed: totals.fat,
     target: referenceG,
@@ -466,7 +570,8 @@ function referencedFatRow({
       target: referenceG,
       status: headline,
     }),
-  };
+  } satisfies Omit<DayBudgetRow, 'figure'>;
+  return withFigure({ row, t, language });
 }
 
 /**
@@ -495,24 +600,103 @@ function fatRow({
 }
 
 /**
- * The day's budget rows, in display order: net carbs, calories, protein, fat,
- * fiber.
+ * The calorie row with no target: the day's absolute figure and no meter, the
+ * shape net carbs takes without a ceiling.
+ *
+ * It exists for ONE caller, a person whose main goal is calories and who has
+ * not set a calorie target. Their lead must still be calories, never another
+ * metric swapped in without a word, so the row is drawn with the day's total
+ * and the lead view says there is no daily target. Every other caller keeps
+ * the older rule: no calorie target, no calorie row.
+ *
+ * @param totals - the day's figures.
+ * @param t - the caller's translator.
+ * @param language - the active UI language.
+ * @returns the calorie row, untargeted.
+ */
+function absoluteCaloriesRow({
+  totals,
+  t,
+  language,
+}: {
+  totals: DayBudgetTotals;
+  t: Translate;
+  language: string | null | undefined;
+}): DayBudgetRow {
+  const label = t('diary.budget.calories');
+  const headline = t('diary.kcal.absolute', { value: Math.round(totals.kcal) });
+  const row = {
+    key: 'calories',
+    label,
+    headline,
+    headlineNumeric: null,
+    headlineMode: null,
+    tone: 'default',
+    progressText: null,
+    figureFormat: 'kcal',
+    fraction: null,
+    consumed: totals.kcal,
+    target: null,
+    targetSource: 'none',
+    referenceDateMissing: false,
+    missingReferenceDate: null,
+    srLabel: t('diary.budget.srRowNoTarget', { label, status: headline }),
+  } satisfies Omit<DayBudgetRow, 'figure'>;
+  return withFigure({ row, t, language });
+}
+
+/** The row key each main goal leads with. */
+const LEAD_ROW_KEY = {
+  'net-carbs': 'netCarbs',
+  calories: 'calories',
+  protein: 'protein',
+} satisfies Record<MainGoalId, DayBudgetRowKey>;
+
+/**
+ * The rows with the main goal's row moved to the front, the rest in their
+ * usual order.
+ *
+ * Throws when the lead's row is missing: `buildDayBudgetRows` always builds
+ * net carbs and protein, and builds calories whenever calories is the main
+ * goal, so a miss here is a builder that lost a row, not a state to paper over.
+ */
+function leadFirst({ rows, mainGoal }: { rows: DayBudgetRow[]; mainGoal: MainGoalId }): DayBudgetRow[] {
+  const leadKey = LEAD_ROW_KEY[mainGoal];
+  const lead = rows.find((row) => row.key === leadKey);
+  if (lead === undefined)
+    throw new Error(`buildDayBudgetRows built no "${leadKey}" row for the main goal "${mainGoal}"`);
+  return [lead, ...rows.filter((row) => row !== lead)];
+}
+
+/**
+ * The day's budget rows, in display order: the main goal's row first, then
+ * net carbs, calories, protein, fat and fiber, whichever are not leading.
  *
  * Net carbs is always present. With a ceiling it is a budget, without one it
- * is the day's absolute figure and no meter is drawn. Calories appear only
- * when the person set a calorie target, which is `selectGoalRings`' decision
- * and not this module's; a caller with no target shows the absolute calorie
- * figure in the "What you ate" block instead.
+ * is the day's absolute figure and no meter is drawn. Calories appear when the
+ * person set a calorie target, which is `selectGoalRings`' decision and not
+ * this module's; a caller with no target shows the absolute calorie figure in
+ * the "What you ate" block instead. The one exception is a calorie MAIN GOAL
+ * with no target: the lead cannot be missing, so the row is drawn untargeted
+ * (`absoluteCaloriesRow`), and the caller then withholds its own absolute
+ * line, since the row now carries that figure.
  *
  * Each budget row asks `formatHeroStats` for ONE framing by hiding the other
  * goal from it. That is what guarantees the net-carb row gets a carb framing
  * even for someone who tracks calories only, where the shared entry point
  * would hand back the calorie stat.
  *
- * @param input - the day's totals, the two budgets, the day's gaps, and the caller's translator.
- * @returns three to five rows, in display order.
+ * @param input - the day's totals, the two budgets, the day's gaps, the caller's translator, and the main goal.
+ * @returns four or five rows, the lead first.
  */
-export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudgetRowsInput): DayBudgetRow[] {
+export function buildDayBudgetRows({
+  totals,
+  goals,
+  gaps,
+  t,
+  language,
+  mainGoal = 'net-carbs',
+}: DayBudgetRowsInput): DayBudgetRow[] {
   const heroInput = {
     netCarbs: totals.netCarbs,
     kcal: totals.kcal,
@@ -548,6 +732,8 @@ export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudg
         language,
       }),
     );
+  } else if (mainGoal === 'calories') {
+    rows.push(absoluteCaloriesRow({ totals, t, language }));
   }
 
   const missingReferenceDate = goals.missingReferenceDate ?? null;
@@ -556,5 +742,5 @@ export function buildDayBudgetRows({ totals, goals, gaps, t, language }: DayBudg
     fatRow({ totals, goals, t, language }),
     floorRow({ key: 'fiber', gap: gaps.fiber, missingReferenceDate, t, language }),
   );
-  return rows;
+  return leadFirst({ rows, mainGoal });
 }
