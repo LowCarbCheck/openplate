@@ -230,12 +230,16 @@ this document does not learn it.
 - Fonts are **self-hosted**, Inter and Victor Mono via `@fontsource-variable/*` imports in
   `root.tsx`. There is no other font file: the 67 KB Fraunces file went with the serif. Never a Google Fonts CDN `<link>`
   (openplate is privacy-first and self-hosted, no third-party font beacons).
-- Scale (plain Tailwind, applied consistently). A monospace reads optically larger than Inter at
-  the same pixel size, which is why the header title stepped down in M243:
-  - Header page title on a phone: `truncate text-sm font-semibold leading-tight tracking-tight md:text-xl`.
-    14px, and MEASURED: it is the largest whole pixel size at which no route title in any of the
-    six languages clips harder than Inter at 18px did, at 390px and at 360px. It is also the floor
-    in `tests/design-contract.ts`, so the next clip cannot be "fixed" by shrinking the title.
+- Scale (plain Tailwind, applied consistently):
+  - Header page title on a phone: `truncate text-lg font-semibold leading-tight tracking-tight md:text-xl`,
+    4px (`gap-1`) under the 12px wordmark kicker. 18px, and FIXED: the operator chose it on
+    2026-09-22 after a playground comparison (it had been 14px since M243). Fitting is a
+    requirement on the STRINGS. Every title must fit its slot at 360px and 390px in all six
+    languages, which at 0.6em per character is about 21 characters at 360px and 24 at 390px. A
+    title that does not fit is fixed by a shorter string, never by a smaller size, a clamp or a
+    shrink to fit. `HEADER_TITLE_PX` in `tests/design-contract.ts` holds the size, and
+    `tests/e2e/header-title-fit.ts` lists the strings still waiting to be shortened, a list that
+    only shrinks.
   - Landing wordmark: `text-5xl sm:text-6xl`, the weight and the tracking come from `Wordmark`
   - Card title: `text-lg font-semibold leading-tight tracking-tight text-balance` (the `CardTitle`
     primitive's default; auth and onboarding screens override the size). It is 18px on every card.

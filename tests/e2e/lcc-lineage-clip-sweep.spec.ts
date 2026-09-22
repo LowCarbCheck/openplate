@@ -11,19 +11,25 @@
  * A REPORT, NOT A VERDICT. Almost everything found here is a fact for the operator to weigh, so it
  * goes to `test-results/lcc-lineage-clip-report.json` and this spec does not fail on it. Exactly
  * two things are hard, because a person cannot work around them: the app header's page title and
- * the bottom bar's tab labels. Those fail the run when they are newly clipped, or when a tab label
- * wraps onto a second line, compared with Inter. Everything else is listed, never asserted.
+ * the bottom bar's tab labels. Everything else is listed, never asserted.
  *
- * THE HARD CLAIM FOUND SOMETHING ON ITS FIRST RUN, and it was fixed rather than listed. At 15 px
- * the header title clipped harder than Inter at 18 px for seven Spanish, French and Italian titles
- * at 320 and 360 px, which the German and Turkish measurement of spec 02 could not see. The title
- * is now 14 px (`text-sm`, the floor in `tests/design-contract.ts`). One row is left, and it is
- * frozen in `KNOWN_HARD_RESIDUE` with its reason: it fails in both directions, so a fix is noticed.
+ * THE HEADER TITLE MUST FIT, FULL STOP (operator, 2026-09-22). It is 18 px and the size is fixed
+ * (`HEADER_TITLE_PX`), so the title each route really draws must have `scrollWidth <= clientWidth`
+ * at 360 and 390 px, with no comparison to Inter. A title that does not fit is a defect in its
+ * string. The strings that did not fit on the day the size changed are listed in
+ * `header-title-fit.ts`, and that list only shrinks: an overflow it does not name fails, and a
+ * named route whose title now fits fails too. At 320 px, which only the full matrix reads, the
+ * title is reported and not asserted: 360 px is the narrowest screen the app promises to fit.
+ * `lcc-lineage-header-title.spec.ts` holds the same rule for every title string in all six
+ * languages without visiting a route; this sweep is the check that the title a route draws is one
+ * of those strings, in the real page.
+ *
+ * THE TAB LABELS ARE STILL HELD AGAINST INTER. A label fails the run when it is newly clipped, or
+ * wraps onto a second line, in Victor Mono and not in Inter.
  *
  * HOW THE TWO FACES ARE COMPARED. `clip-baseline.ts` injects the Inter stack at runtime and
- * explains why that is one custom property and why the header title is put back to 18 px in the
- * baseline. It reads the same DOM twice, so the only thing that changed between the reads is the
- * face.
+ * explains why that is one custom property. It reads the same DOM twice, so the only thing that
+ * changed between the reads is the face.
  *
  * FIRST-VISIT ROUTES, IN TWO GROUPS. A fresh device meets `/welcome`, the onboarding, the landing
  * page, the sign-in doors and the legal pages BEFORE it has a diary, and `_personal.tsx` sends it
@@ -48,16 +54,16 @@
  *
  * Nothing is weakened by the narrower default. Every route is still read, both faces are still
  * compared, and both hard claims still fail the run. What changes is only how many languages and
- * widths the claims are made ABOUT, and `KNOWN_HARD_RESIDUE` is filtered to the matrix in play so a
- * frozen row outside it is neither expected nor missed. A residue entry that names a language or a
- * width the FULL matrix does not hold is a typo, and a test below fails on it.
+ * widths the claims are made ABOUT, and `KNOWN_TITLE_OVERFLOWS` is filtered to the matrix in play,
+ * so an entry outside it is neither expected nor missed. An entry naming a route this sweep never
+ * requests could never be matched here, and a test below fails on it.
  *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
  * A sweep that found nothing would look exactly like a sweep that could not see. The control test
  * injects three elements known to clip in mono and not in Inter (an ordinary box, a bottom bar
- * label and an app header title), reads them through the SAME reader and the SAME comparison, and
- * requires all three to be listed, the last two to trip the hard assertion, and the real chrome
- * beside them to stay clean. It then writes them into the report and reads the report back, so the
+ * label and an app header title), reads them through the SAME reader, and requires all three to be
+ * listed, the tab label to trip the comparison, the title to trip the fit rule, and the real
+ * chrome beside them to stay clean. It then writes them into the report and reads the report back, so the
  * file path is shown able to carry a finding. It runs at 360 px, which is in both matrices, so the
  * proof that the reader can see is paid for in both modes.
  *
@@ -75,11 +81,12 @@ import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import type { LanguageCode } from '../../app/i18n/language-prefs';
-import { BODY_STACK, PROSE_STACK } from '../design-contract';
+import { BODY_STACK, HEADER_TITLE_FIT_WIDTHS_PX, PROSE_STACK } from '../design-contract';
 import {
   clipRowSchema,
   compareClips,
   hardViolations,
+  headerTitleOverflows,
   injectClipControls,
   readBothFaces,
   readClips,
@@ -88,10 +95,16 @@ import {
   type ClipRead,
 } from './clip-baseline';
 import { completeOnboarding, logFoodManually, useLanguage } from './helpers';
+import {
+  KNOWN_TITLE_OVERFLOWS,
+  partitionKnownOverflows,
+  routeMatches,
+  type KnownTitleOverflow,
+} from './header-title-fit';
 
 /**
  * All six shipped languages, the matrix `LCC_CLIP_SWEEP=full` sweeps. German is the widest and
- * Turkish the second, with a second font file; the other four found the 15 px header title.
+ * Turkish the second, with a second font file.
  */
 const FULL_LOCALES = ['de', 'tr', 'en', 'es', 'fr', 'it'] as const satisfies readonly LanguageCode[];
 
@@ -189,28 +202,29 @@ const FOOD_NAME_MAX_CHARS = 40;
 /** What the bottom bar holds today: the diary, the raised launcher and the add screen. */
 const MIN_TAB_LABELS = 3;
 
-/** A place where a hard claim is known to be broken and cannot be fixed by size. */
-interface KnownHardResidue {
+/** The route pattern of a food's own page, which the sweep reaches by tapping a diary row. */
+const ENTRY_ROUTE = '/diary/entry/:id';
+
+/** Every path this sweep requests, as patterns, so a list entry can be checked against it. */
+const SWEPT_ROUTES: readonly string[] = [...PUBLIC_ROUTES, ...APP_ROUTES, ENTRY_ROUTE];
+
+/** A header title that does not fit, where the sweep found it. */
+interface TitleOverflow {
   locale: string;
   viewport: number;
   route: string;
-  role: 'header-title' | 'tab-label';
-  why: string;
+  text: string;
+  scrollWidth: number;
+  clientWidth: number;
 }
 
-/**
- * The hard rows that survive the 14 px title. See the header: this is a frozen set, and it fails
- * when a NEW row appears and when a listed one stops appearing.
- */
-const KNOWN_HARD_RESIDUE: readonly KnownHardResidue[] = [
-  {
-    locale: 'it',
-    viewport: 320,
-    route: '/catch-up',
-    role: 'header-title',
-    why: 'The Italian title "Il tuo riepilogo giornaliero" is 28 characters. At 14 px, the floor in design-contract.ts, it clips 24 px in Victor Mono against 21 px in Inter at 320 px: 3 px more, on a screen narrower than the 360 px the app promises to fit. Below 14 px a title is not read, so size cannot close it; a tighter letter spacing or a shorter Italian title would.',
-  },
-];
+/** One list entry, expanded to one route at one width, which is the unit the sweep can observe. */
+interface ExpectedTitleOverflow {
+  locale: string;
+  titleKey: string;
+  route: string;
+  viewport: number;
+}
 
 /** One finding, with the place it was found. */
 const reportRowSchema = clipRowSchema.extend({
@@ -282,8 +296,10 @@ function writeReport(change: {
 /** Everything one sweep learned. */
 interface SweepResult {
   rows: ReportRow[];
-  /** Header title and tab label rows that got worse: the two hard claims. */
+  /** Tab label rows that got worse than in Inter: the comparative hard claim. */
   hard: ReportRow[];
+  /** Header titles that do not fit, at the widths the fit rule holds: the absolute hard claim. */
+  titleOverflows: TitleOverflow[];
   /** Pages read. */
   pagesRead: number;
   /** Pages on which a header title was read, and tab labels in total, so the hard claim is not vacuous. */
@@ -336,51 +352,55 @@ async function sweepOne({
   return { rows, mono, landed };
 }
 
-/** Whether a hard row is the place a frozen entry names. */
-function isResidue(row: ReportRow, residue: KnownHardResidue): boolean {
-  return (
-    row.locale === residue.locale &&
-    row.viewport === residue.viewport &&
-    row.route === residue.route &&
-    row.role === residue.role
-  );
-}
-
 /**
- * The frozen rows this run can actually observe: the ones in the language being swept, at a width
- * the matrix in play reads. Filtering is what lets the default matrix keep the `unmatched` claim
- * honest, instead of demanding a row from a width it never visited.
+ * The list entries this run can actually observe: the ones in the language being swept, at a
+ * width the matrix in play reads, one per route the entry names. Filtering is what lets the
+ * default matrix keep the `stale` claim honest, instead of demanding a row from a width or a
+ * language it never visited.
  *
- * @param known - every frozen entry.
- * @param locale - the language being swept.
- * @param widths - the widths this run reads.
- * @returns the entries this run must see.
+ * @param options.known - every list entry.
+ * @param options.locale - the language being swept.
+ * @param options.widths - the widths this run reads.
+ * @returns one expected overflow per route and width.
  */
-function residueInMatrix({
+function titleOverflowsInMatrix({
   known,
   locale,
   widths,
 }: {
-  known: readonly KnownHardResidue[];
+  known: readonly KnownTitleOverflow[];
   locale: string;
   widths: readonly number[];
-}): readonly KnownHardResidue[] {
-  return known.filter((residue) => residue.locale === locale && widths.includes(residue.viewport));
+}): ExpectedTitleOverflow[] {
+  const expected: ExpectedTitleOverflow[] = [];
+  for (const entry of known) {
+    if (entry.locale !== locale) continue;
+    for (const viewport of entry.viewports) {
+      if (!widths.includes(viewport)) continue;
+      for (const route of entry.routes) expected.push({ locale, titleKey: entry.titleKey, route, viewport });
+    }
+  }
+  return expected;
 }
 
 /**
- * Splits the hard rows into the ones a frozen entry explains and the ones nothing explains.
+ * Whether a found overflow is the place an expected one names.
  *
- * @param rows - the hard rows a sweep collected.
- * @param known - the frozen residue.
- * @returns the explained rows, the unexplained rows, and the entries no row matched.
+ * @param finding - a title the sweep found overflowing.
+ * @param entry - one expanded list entry.
+ * @returns true for the same language, width and route.
  */
-function partitionHard({ rows, known }: { rows: readonly ReportRow[]; known: readonly KnownHardResidue[] }) {
-  return {
-    explained: rows.filter((row) => known.some((residue) => isResidue(row, residue))),
-    unexplained: rows.filter((row) => !known.some((residue) => isResidue(row, residue))),
-    unmatched: known.filter((residue) => !rows.some((row) => isResidue(row, residue))),
-  };
+function isExpectedOverflow(finding: TitleOverflow, entry: ExpectedTitleOverflow): boolean {
+  return (
+    finding.locale === entry.locale &&
+    finding.viewport === entry.viewport &&
+    routeMatches({ pattern: entry.route, path: finding.route })
+  );
+}
+
+/** Whether the fit rule holds at a width: 360 and 390, never 320. */
+function isFitWidth(width: number): boolean {
+  return HEADER_TITLE_FIT_WIDTHS_PX.some((fit) => fit === width);
 }
 
 /**
@@ -409,6 +429,18 @@ async function sweepRoutes({
       into.pagesRead += 1;
       into.rows.push(...rows);
       into.hard.push(...hardViolations(rows));
+      if (isFitWidth(width)) {
+        for (const reading of headerTitleOverflows(mono)) {
+          into.titleOverflows.push({
+            locale,
+            viewport: width,
+            route,
+            text: reading.text,
+            scrollWidth: reading.scrollWidth,
+            clientWidth: reading.clientWidth,
+          });
+        }
+      }
       into.titlesRead += titles;
       into.tabLabelsRead += labels;
       // Every header measurement needs exactly one status host, or a fallback bar is painted over
@@ -442,7 +474,7 @@ test('the fixtures are 30 to 40 characters, so the long-name claim is not vacuou
   }
 });
 
-test('the matrix is the two-language default unless LCC_CLIP_SWEEP=full, and the residue is filtered to it', () => {
+test('the matrix is the two-language default unless LCC_CLIP_SWEEP=full, and the title list is filtered to it', () => {
   // WHAT THIS RUN IS READING. Named out loud, so a report of "nothing clipped" is read against the
   // matrix that produced it and not against the full one.
   if (IS_FULL_SWEEP) {
@@ -452,45 +484,63 @@ test('the matrix is the two-language default unless LCC_CLIP_SWEEP=full, and the
     expect(LOCALES, 'the default sweep reads German and Turkish').toEqual(['de', 'tr']);
     expect(WIDTHS, 'the default sweep reads 360 and 390').toEqual([360, 390]);
   }
-  // Both matrices hold the width the control test injects at, and the width the app promises.
+  // Both matrices hold the width the control test injects at, and both widths the fit rule holds.
   expect(WIDTHS, 'the control test injects at 360, so both matrices must read it').toContain(360);
-
-  // A frozen entry must name a place the FULL matrix visits, or it can never be matched and the
-  // `unmatched` claim is dead weight the day somebody fixes it.
-  for (const residue of KNOWN_HARD_RESIDUE) {
-    expect(FULL_LOCALES, `${residue.route}: a frozen row must name a shipped language`).toContain(residue.locale);
-    expect(FULL_WIDTHS, `${residue.route}: a frozen row must name a swept width`).toContain(residue.viewport);
+  for (const fit of HEADER_TITLE_FIT_WIDTHS_PX) {
+    expect(WIDTHS, `the header title must fit at ${fit}px, so both matrices must read it`).toContain(fit);
   }
 
-  // CONTROL: the filter really drops what this run cannot see. The one frozen row is Italian at
-  // 320 px, so the default matrix must not expect it and the full matrix must.
-  const italian320: KnownHardResidue = {
+  // An entry must name a route this sweep requests, or the sweep can never match it and never
+  // notice the day it is fixed.
+  for (const entry of KNOWN_TITLE_OVERFLOWS) {
+    for (const route of entry.routes) {
+      expect(
+        SWEPT_ROUTES.some((swept) => routeMatches({ pattern: route, path: swept })),
+        `${entry.locale} ${entry.titleKey}: ${route} must be a route this sweep requests`,
+      ).toBe(true);
+    }
+  }
+
+  // CONTROL: the filter really drops what this run cannot see.
+  const italian: KnownTitleOverflow = {
     locale: 'it',
-    viewport: 320,
-    route: '/catch-up',
-    role: 'header-title',
-    why: 'control',
+    titleKey: 'catchUp.title',
+    routes: ['/catch-up'],
+    viewports: [360, 390],
   };
   expect(
-    residueInMatrix({ known: [italian320], locale: 'it', widths: DEFAULT_WIDTHS }),
-    'a 320 px row is not expected by a run that never reads 320 px',
+    titleOverflowsInMatrix({ known: [italian], locale: 'de', widths: FULL_WIDTHS }),
+    'an Italian entry is not expected by a German run',
   ).toEqual([]);
   expect(
-    residueInMatrix({ known: [italian320], locale: 'it', widths: FULL_WIDTHS }),
-    'and it IS expected by a run that reads 320 px',
-  ).toEqual([italian320]);
-  expect(
-    residueInMatrix({ known: [italian320], locale: 'de', widths: FULL_WIDTHS }),
-    'and never by another language',
+    titleOverflowsInMatrix({ known: [italian], locale: 'it', widths: [320] }),
+    'nor by a run that reads only 320 px',
   ).toEqual([]);
+  expect(
+    titleOverflowsInMatrix({ known: [italian], locale: 'it', widths: DEFAULT_WIDTHS }),
+    'and it IS expected, once per width, by an Italian run at 360 and 390',
+  ).toEqual([
+    { locale: 'it', titleKey: 'catchUp.title', route: '/catch-up', viewport: 360 },
+    { locale: 'it', titleKey: 'catchUp.title', route: '/catch-up', viewport: 390 },
+  ]);
+  expect(routeMatches({ pattern: ENTRY_ROUTE, path: '/diary/entry/abc' }), 'a :id matches one segment').toBe(true);
+  expect(routeMatches({ pattern: ENTRY_ROUTE, path: '/diary' }), 'and not a shorter path').toBe(false);
 });
 
 for (const locale of LOCALES) {
-  test(`the wider face clips no header title and no tab label, ${locale} at ${WIDTHS.join(' and ')}`, async ({
+  test(`every header title fits and the wider face clips no tab label, ${locale} at ${WIDTHS.join(' and ')}`, async ({
     page,
   }) => {
     test.setTimeout(SWEEP_TIMEOUT_MS);
-    const result: SweepResult = { rows: [], hard: [], pagesRead: 0, titlesRead: 0, tabLabelsRead: 0, badHosts: [] };
+    const result: SweepResult = {
+      rows: [],
+      hard: [],
+      titleOverflows: [],
+      pagesRead: 0,
+      titlesRead: 0,
+      tabLabelsRead: 0,
+      badHosts: [],
+    };
 
     // 1. The first-visit screens, on a device that has never been used, in the language under test.
     await useLanguage(page, locale);
@@ -528,23 +578,32 @@ for (const locale of LOCALES) {
     expect(result.badHosts, `${locale}: a header read needs exactly one header and no fallback bar`).toEqual([]);
 
     // THE TWO HARD CLAIMS. Listed before asserted, so a failure names the element and the numbers.
-    const { unexplained, unmatched } = partitionHard({
-      rows: result.hard,
-      known: residueInMatrix({ known: KNOWN_HARD_RESIDUE, locale, widths: WIDTHS }),
-    });
-    const described = unexplained.map(
+    const labels = result.hard.map(
       (row) =>
         `${row.route} at ${row.viewport}px: ${row.role} "${row.text}" ${row.kind}, mono clips ${row.mono.clip}px on ${row.mono.lines} line(s), Inter ${row.inter.clip}px on ${row.inter.lines}`,
     );
-    expect(described, `${locale}: a header page title or a bottom bar label is newly clipped in Victor Mono`).toEqual([]);
+    expect(labels, `${locale}: a bottom bar label is newly clipped in Victor Mono`).toEqual([]);
+
+    const titles = partitionKnownOverflows({
+      found: result.titleOverflows,
+      known: titleOverflowsInMatrix({ known: KNOWN_TITLE_OVERFLOWS, locale, widths: WIDTHS }),
+      isMatch: isExpectedOverflow,
+    });
     expect(
-      unmatched.map((residue) => `${residue.route} at ${residue.viewport}px: ${residue.why}`),
-      `${locale}: a frozen hard row no longer appears, so delete it from KNOWN_HARD_RESIDUE`,
+      titles.unexplained.map(
+        (row) =>
+          `${row.route} at ${row.viewport}px: "${row.text}" overflows ${row.scrollWidth - row.clientWidth}px of a ${row.clientWidth}px slot`,
+      ),
+      `${locale}: a header page title does not fit at 18px; shorten the string, never the size`,
+    ).toEqual([]);
+    expect(
+      titles.stale.map((listed) => `${listed.route} at ${listed.viewport}px: ${listed.titleKey} fits now`),
+      `${locale}: a listed title fits now, so delete it from KNOWN_TITLE_OVERFLOWS`,
     ).toEqual([]);
   });
 }
 
-test('CONTROL: the sweep lists a known overflow, and the hard claims fail on a clipped title and tab label', async ({
+test('CONTROL: the sweep lists a known overflow, and the hard claims fail on a title that does not fit and a clipped tab label', async ({
   page,
 }) => {
   await completeOnboarding(page);
@@ -579,45 +638,46 @@ test('CONTROL: the sweep lists a known overflow, and the hard claims fail on a c
   expect(plain?.mono.clip ?? 0, 'the plain control must clip in mono').toBeGreaterThan(0);
   expect(plain?.inter.clip ?? -1, 'the plain control must not clip in Inter').toBe(0);
 
-  // The two hard controls carry their role, and the hard claim finds exactly them.
+  // The tab label control trips the comparison, and nothing else does.
   const violations = hardViolations(rows);
   expect(
-    violations.map((row) => row.role).toSorted(),
-    'the hard claim must flag the clipped title and the clipped tab label, and nothing else',
-  ).toEqual(['header-title', 'tab-label']);
-  expect(
-    violations.every((row) => row.text.startsWith('illl')),
-    'and both flagged rows must be the injected controls',
-  ).toBe(true);
+    violations.map((row) => row.role),
+    'the comparative claim must flag the clipped tab label, and nothing else',
+  ).toEqual(['tab-label']);
+  expect(violations[0]?.text.startsWith('illl'), 'and the flagged row must be the injected control').toBe(true);
 
-  // The frozen residue can fail in both directions: handed the control's own row as an entry, the
-  // partition explains it and reports nothing unmatched; handed no entry, it leaves it unexplained.
-  const asReportRows: ReportRow[] = [];
-  for (const row of violations) {
-    asReportRows.push({ ...row, locale: 'control', viewport: 360, route: '/diary', landed: '/diary' });
-  }
-  const first = asReportRows[0];
+  // The title control trips the fit rule, and the real header title beside it does not.
+  const overflowing = headerTitleOverflows(mono);
   expect(
-    partitionHard({ rows: asReportRows, known: [] }).unexplained.length,
-    'with no frozen entry both control rows are unexplained',
-  ).toBe(2);
-  const frozen: KnownHardResidue = {
+    overflowing.map((reading) => reading.text.startsWith('illl')),
+    'the fit rule must flag the injected title, and only it',
+  ).toEqual([true]);
+
+  // The list fails in both directions: with no entry the title overflow is unexplained, with a
+  // matching entry it is explained, and an entry no overflow matches is stale.
+  const found: TitleOverflow[] = overflowing.map((reading) => ({
     locale: 'control',
     viewport: 360,
     route: '/diary',
-    role: first.role ?? 'header-title',
-    why: 'control',
-  };
-  const withEntry = partitionHard({ rows: asReportRows, known: [frozen] });
-  expect(withEntry.explained.length, 'a matching entry explains its row').toBe(1);
-  expect(withEntry.unexplained.length, 'and leaves the other one').toBe(1);
+    text: reading.text,
+    scrollWidth: reading.scrollWidth,
+    clientWidth: reading.clientWidth,
+  }));
+  const entry: ExpectedTitleOverflow = { locale: 'control', titleKey: 'control', route: '/diary', viewport: 360 };
   expect(
-    partitionHard({ rows: [], known: [frozen] }).unmatched,
-    'an entry no row matches is reported, so a fixed row is noticed',
-  ).toEqual([frozen]);
+    partitionKnownOverflows({ found, known: [], isMatch: isExpectedOverflow }).unexplained.length,
+    'with no entry the control title is unexplained',
+  ).toBe(1);
+  const withEntry = partitionKnownOverflows({ found, known: [entry], isMatch: isExpectedOverflow });
+  expect(withEntry.unexplained, 'a matching entry explains it').toEqual([]);
+  expect(withEntry.stale, 'and is not stale while the title overflows').toEqual([]);
+  expect(
+    partitionKnownOverflows({ found: [], known: [entry], isMatch: isExpectedOverflow }).stale,
+    'an entry no overflow matches is stale, so a shortened string is noticed',
+  ).toEqual([entry]);
 
   // The real chrome beside them is clean: the claim is not simply "everything fails".
-  expect(hardViolations(realRows), 'the real header title and tab labels must not be flagged').toEqual([]);
+  expect(hardViolations(realRows), 'the real tab labels must not be flagged').toEqual([]);
 
   // The report path carries a finding: written to the file, read back from the file.
   const controlReportRows: ReportRow[] = [];

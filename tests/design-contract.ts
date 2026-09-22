@@ -68,19 +68,23 @@ export const CARD_TITLE_TOKENS = [
 ] as const;
 
 /**
- * The header page title on a phone, and the floor no fix may go under. 14 px is the largest whole
- * pixel size at which no route title in any of the six languages is clipped harder in Victor Mono than it was in
- * Inter at 18 px, at 390 px and at 360 px. It was 15 px until the clip sweep
- * (`lcc-lineage-clip-sweep.spec.ts`, M243 spec 08) found Italian and French titles clipped harder
- * at 360 px, which German and Turkish, the two languages spec 02 measured, do not show. The floor
- * stops a clip from being "fixed" by shrinking the title until it is unreadable, and the title now
- * sits ON it, so the next clip cannot be fixed by size.
+ * The header page title on a phone: 18 px, weight 600, and it does not bend.
+ *
+ * The operator chose it on 2026-09-22 after a side by side comparison in a playground. Until then
+ * it was 14 px, the largest size at which no title clipped harder in Victor Mono than it had in
+ * Inter at 18 px, and a title barely larger than the body under it. That rule is gone with the
+ * size: there is no Inter baseline any more and no floor to defend, because the size is fixed.
+ *
+ * FITTING IS A REQUIREMENT ON THE STRINGS. Victor Mono is a flat 0.6 em, so at this size every
+ * character costs 10.8 px and the slot holds a fixed count of them. Every title that lands in the
+ * slot must fit at `HEADER_TITLE_FIT_WIDTHS_PX` in all six languages, and one that does not is a
+ * defect in its locale file, fixed by a shorter string. Never by a smaller size, a clamp or a
+ * shrink to fit. `lcc-lineage-header-title.spec.ts` and `lcc-lineage-clip-sweep.spec.ts` hold it.
  */
-export const HEADER_TITLE_PX = 14;
-export const HEADER_TITLE_FLOOR_PX = 14;
+export const HEADER_TITLE_PX = 18;
 
-/** The Inter size the header title was set at before the face changed, which is the baseline a clip is judged against. */
-export const HEADER_TITLE_INTER_BASELINE_PX = 18;
+/** The two phone widths every header title must fit at: the one the app promises, and the design width. */
+export const HEADER_TITLE_FIT_WIDTHS_PX = [360, 390] as const;
 
 /** The bottom bar's fixed height: `h-14` (56 px) plus its 1 px top border. */
 export const BOTTOM_BAR_HEIGHT_PX = 57;

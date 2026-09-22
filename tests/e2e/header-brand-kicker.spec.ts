@@ -40,12 +40,15 @@ import { completeOnboarding, HEADER_HEIGHT, useLanguage } from './helpers';
 /**
  * The least white, in CSS pixels, that may sit between the word's ink and the title's.
  *
- * WHERE IT COMES FROM. The column asks for 6 px (`gap-1.5`), which lands at about 6.7 px of ink
- * gap because the word's box ends above its descender. 5 is that figure with room for a browser
- * that rounds glyph metrics differently, and it is still three times the 1.67 px the defect
- * measured, so a partial revert fails here rather than passing at a hair's width.
+ * WHERE IT COMES FROM. The column asks for 4 px (`gap-1`) above an 18 px title, the pair the
+ * operator chose on 2026-09-22. Measured on the production build that lands at 5.21 px of ink gap
+ * under "Diary", "Research contributions" and "Forschungsbeiträge", and 6.38 px under "Tagebuch",
+ * because the title's box starts above its capitals. 4.5 leaves room for a browser that rounds
+ * glyph metrics differently, and it is still more than twice the 1.67 px the defect measured, so
+ * a partial revert (`gap-0.5` reads about 3.2 px) fails here rather than passing at a hair's width.
+ * Until 2026-09-22 the column asked for 6 px over a 14 px title and this minimum was 5.
  */
-const MIN_INK_GAP_PX = 5;
+const MIN_INK_GAP_PX = 4.5;
 
 /** The row gap the column carried while the two lines read as one block. */
 const OLD_GAP_CSS = '1px';

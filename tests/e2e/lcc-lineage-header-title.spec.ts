@@ -1,74 +1,66 @@
 /**
- * The header page title, measured against the face it replaced (M243 spec 02).
+ * Every header page title fits the 18 px slot, in all six languages, at 360 and 390 px.
  *
- * WHY MEASURE. The header title is `truncate`: a title wider than its slot loses its tail to an
- * ellipsis, and nothing else in the app notices. Victor Mono is a flat 0.6 em per character and
- * Inter is proportional, so the same German title is wider in Victor Mono at the same size. The
- * slot is about 170 px, and one title already truncated in Inter. A face swap with no size
- * change therefore truncates more titles, earlier, on every phone, and passes every other test.
+ * THE DECISION (operator, 2026-09-22, after a playground comparison). The phone header title is
+ * 18 px, weight 600, and the size is fixed (`HEADER_TITLE_PX`). It had been 14 px since M243 spec
+ * 08, chosen as the largest size at which no title clipped harder in Victor Mono than it had in
+ * Inter at 18 px. That comparison is gone: there is no Inter baseline to be measured against any
+ * more. FITTING IS NOW A REQUIREMENT ON THE STRINGS. A title that does not fit is a defect in its
+ * locale file, fixed by a shorter string, never by a smaller size, a clamp or a shrink to fit.
  *
- * THE RULE, IN ONE SENTENCE. No route title in German or Turkish is clipped harder than it was
- * clipped in Inter at the size Inter was set at (18 px). The baseline is measured in the same
- * page, at runtime, by forcing the Inter stack onto the same header element, so the comparison
- * survives a change of slot width, a new title or a new language string. Every route title is
- * read out of the shipped bundle through the route's own `handle.titleKey`, so a new route is
- * covered the day it exists.
+ * WHAT IS MEASURED. Every title key a route under the personal layout declares in its `handle`,
+ * plus the two titles the layout's error boundary puts in the same slot, is read out of each
+ * shipped `common.json` and written into the REAL header `h1`, so the slot width, the tracking,
+ * the weight and `truncate` are the ones a person gets. A title fits when its `scrollWidth` is no
+ * larger than its `clientWidth`. No tolerance: the rule is the operator's, and a sub-pixel of
+ * overflow is still an ellipsis. The computed size is read beside every title, so a size change
+ * that made titles fit would fail here instead of passing.
  *
- * ── THE MEASURED TABLE (2026-09-20, production build, headless Chromium) ──
- * `clip` is `scrollWidth - clientWidth` of the header `h1` with the title in it. Each cell is
- * "titles clipped harder than Inter at 18 px, and by how many px at worst". The other four
- * languages were measured too and are in the report that came with this spec; only German and
- * Turkish are held here, as asked.
+ * THE LIST OF TITLES THAT DO NOT FIT YET lives in `header-title-fit.ts`, and it only shrinks: a
+ * title that overflows and is not listed fails, and a listed title that now fits fails too, so the
+ * entry is deleted in the change that shortens the string.
  *
- *                 390 px phone                    360 px phone
- *   size      German        Turkish          German         Turkish
- *   18 px     3, +11.0      0                4, +44.0       1, +13.0
- *   17 px     0             0                3, +19.0       0
- *   16 px     0             0                3, +20.0       0
- *   15 px     0             0                0              0        <- chosen
- *   14 px     0             0                0              0
- *
- * 15 px is the largest size at which nothing clips harder at either width. 16 and 17 pass at
- * 390 px and fail for German at 360 px, which is the narrowest screen this app promises to fit.
- * Headless Chromium on Linux rounds glyph advances to whole pixels at these sizes (16 px and
- * 17 px measure the same, so do 13 px and 14 px), so the table steps in pairs. A phone that
- * positions glyphs at fractions of a pixel measures a little narrower than this, never wider.
- *
- * ── SPEC 08 MOVED THE SIZE TO 14 PX ──
- * The table above is spec 02's record and is left as it was measured, for German and Turkish. The
- * clip sweep (`lcc-lineage-clip-sweep.spec.ts`, M243 spec 08) reads all six languages, and at 15 px
- * it found Italian and French titles clipped harder than Inter at 360 px: "Il tuo riepilogo
- * giornaliero" clipped 12 px where Inter clipped 0, and "Contributions à la recherche" 12 px where
- * Inter clipped 4. 14 px is a row of the table that already passed for German and Turkish, and it is
- * the floor in `tests/design-contract.ts`, so `HEADER_TITLE_PX` now reads 14.
+ * THE REPORT. Each language writes `test-results/header-title-fit/<locale>.json`: every title, its
+ * overflow in px at both widths, the slot width, and how many characters the slot holds at 18 px,
+ * found by growing a string one character at a time in the same element. That is the number a
+ * translator needs.
  *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
- * The comparison is also run at the old 18 px size, in the new face, and MUST find a title that
- * clips harder than Inter did. A comparison that answered "fine" at every size would pass the
- * walk and prove nothing.
+ * The control test sends a string that cannot fit through the same reader and the same
+ * partition and requires it to come back unexplained, hands the partition an entry for a title
+ * that fits and requires it to come back stale, and forces the title to 14 px and requires the
+ * size read to see it.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import type { LanguageCode } from '../../app/i18n/language-prefs';
-import {
-  HEADER_TITLE_FLOOR_PX,
-  HEADER_TITLE_INTER_BASELINE_PX,
-  HEADER_TITLE_PX,
-  INTER,
-} from '../design-contract';
+import { HEADER_TITLE_FIT_WIDTHS_PX, HEADER_TITLE_PX } from '../design-contract';
 import { completeOnboarding, useLanguage } from './helpers';
+import { KNOWN_TITLE_OVERFLOWS, partitionKnownOverflows, type KnownTitleOverflow } from './header-title-fit';
 
-/** The two languages held here. German is the widest of the six, Turkish the second. */
-const LOCALES = ['de', 'tr'] as const satisfies readonly LanguageCode[];
+/** All six shipped languages. */
+const LOCALES = ['de', 'tr', 'en', 'es', 'fr', 'it'] as const satisfies readonly LanguageCode[];
 
-/** The two phone widths. 360 px is the narrowest screen the app promises to fit. */
-const WIDTHS = [390, 360] as const;
+/** The app header's title, and only that one: `header` is also an element inside pages. */
+const HEADER_TITLE = 'header.sticky h1';
 
-/** A sub-pixel of layout rounding is not a clip. */
-const CLIP_TOLERANCE_PX = 0.5;
+/**
+ * The titles the personal layout's error boundary writes into the same slot. They are not in any
+ * route's `handle`, and a person meets them on a bad link.
+ */
+const ERROR_TITLE_KEYS = ['errors.title', 'errors.notFoundTitle'] as const;
+
+/** Where each language's measurements go. */
+const REPORT_DIR = resolve(process.cwd(), 'test-results/header-title-fit');
+
+/** A string long enough that no phone slot can hold it at 18 px: 60 characters is about 620 px. */
+const CONTROL_TITLE = 'W'.repeat(60);
+
+/** The size the control forces the title to, the size it had before 2026-09-22. */
+const CONTROL_SIZE_PX = 14;
 
 /** A JSON value, so a catalog can be walked without a cast. */
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
@@ -101,138 +93,311 @@ function stringAt(tree: Json, path: string): string | null {
 }
 
 /**
- * The `titleKey` of every route's `handle`, read from the route modules.
+ * The route modules the personal layout renders, which are the ones whose title reaches the
+ * app header. Read from `app/routes.ts`, so a new route is covered the day it is registered.
  *
- * @returns each key once, sorted.
+ * @returns module file names such as `settings.research.tsx`.
  */
-function routeTitleKeys(): string[] {
+function personalRouteFiles(): Set<string> {
+  const tree = readFileSync(resolve(process.cwd(), 'app/routes.ts'), 'utf8');
+  const start = tree.indexOf("layout('routes/_personal.tsx'");
+  if (start === -1) throw new Error('app/routes.ts has no personal layout, so no title reaches the header');
+  const files = new Set<string>();
+  for (const match of tree.slice(start).matchAll(/'routes\/([^'/]+\.tsx)'/g)) {
+    if (match[1] !== '_personal.tsx') files.add(match[1]);
+  }
+  return files;
+}
+
+/**
+ * Every title key that can land in the header, with the modules that declare it.
+ *
+ * @returns title key to module file names, sorted by key.
+ */
+function headerTitleKeys(): Map<string, string[]> {
   const directory = resolve(process.cwd(), 'app/routes');
-  const keys = new Set<string>();
-  for (const name of readdirSync(directory).filter((file) => file.endsWith('.tsx'))) {
+  const personal = personalRouteFiles();
+  const keys = new Map<string, string[]>();
+  for (const name of readdirSync(directory).filter((file) => personal.has(file))) {
     const source = readFileSync(resolve(directory, name), 'utf8');
     for (const block of source.matchAll(/export const handle[^=]*=\s*\{([^}]*)\}/g)) {
       const key = /titleKey:\s*'([^']+)'/.exec(block[1]);
-      if (key !== null) keys.add(key[1]);
+      if (key !== null) keys.set(key[1], [...(keys.get(key[1]) ?? []), name]);
     }
   }
-  return [...keys].toSorted();
+  for (const key of ERROR_TITLE_KEYS) keys.set(key, ['_personal.tsx (ErrorBoundary)']);
+  return new Map([...keys].toSorted(([a], [b]) => a.localeCompare(b)));
+}
+
+/** One title, as a language ships it. */
+interface HeaderTitle {
+  titleKey: string;
+  title: string;
+  modules: string[];
 }
 
 /**
- * Every route title in one language, from the shipped bundle.
+ * Every header title in one language, from the shipped catalog.
  *
  * @param locale - a shipped language code.
- * @returns the titles that resolve to a string.
+ * @returns each key with its string. A key the catalog does not hold fails the run.
  */
-function routeTitlesFor(locale: LanguageCode): string[] {
+function headerTitlesFor(locale: LanguageCode): HeaderTitle[] {
   const tree = jsonSchema.parse(
     JSON.parse(readFileSync(resolve(process.cwd(), `app/i18n/locales/${locale}/common.json`), 'utf8')),
   );
-  return routeTitleKeys()
-    .map((key) => stringAt(tree, key))
-    .filter((title): title is string => title !== null);
+  const titles: HeaderTitle[] = [];
+  for (const [titleKey, modules] of headerTitleKeys()) {
+    const title = stringAt(tree, titleKey);
+    if (title === null) throw new Error(`${locale}/common.json has no string at ${titleKey}`);
+    titles.push({ titleKey, title, modules });
+  }
+  return titles;
 }
 
-/** How hard each title clips: in the app's own face, in the old size of that face, and in Inter. */
-interface ClipReading {
+/** One title, measured in the real header. */
+interface TitleReading {
+  titleKey: string;
   title: string;
-  /** Clipped px in the header as it is built now. */
-  actual: number;
-  /** Clipped px in the new face at the OLD size, the control. */
-  atOldSize: number;
-  /** Clipped px in Inter at its old size, the baseline. */
-  inter: number;
+  scrollWidth: number;
+  clientWidth: number;
+  /** `scrollWidth - clientWidth`, never negative. Any value above zero is a title that does not fit. */
+  overflow: number;
+  /** The computed font size, in px, with this title in the element. */
+  fontSize: number;
+}
+
+/** One title at one width, as it goes in the report file. */
+interface ReportedTitle extends TitleReading {
+  width: number;
+  /** The route modules that declare the title. */
+  modules: string[];
+}
+
+/** What one width says about the slot itself. */
+interface SlotReading {
+  /** The `h1`'s own `clientWidth`, the room a title has. */
+  slotWidth: number;
+  /** The most characters of `x` the slot holds without overflowing, grown one at a time. */
+  maxChars: number;
 }
 
 /**
- * Measures every title in the real header `h1`, three ways.
- *
- * The title is written into the header's own element, so the slot width, the tracking, the
- * weight and `truncate` are the real ones. The Inter baseline and the old-size control are
- * written as inline styles on that same element and removed afterwards.
+ * Writes each title into the real header `h1` and reads whether it fits.
  *
  * @param page - a page on a route with the app header.
- * @param titles - the strings to measure.
- * @returns one reading per title.
+ * @param titles - the titles to measure.
+ * @returns one reading per title, in the order given.
  */
-async function measureClips(page: Page, titles: readonly string[]): Promise<ClipReading[]> {
+async function measureTitles(page: Page, titles: readonly { titleKey: string; title: string }[]): Promise<TitleReading[]> {
   return page.evaluate(
-    ({ list, interFamily, baseline }) => {
-      const heading = document.querySelector('header h1');
-      if (!(heading instanceof HTMLElement)) throw new Error('the page has no header h1');
+    ({ list, selector }) => {
+      const heading = document.querySelector(selector);
+      if (!(heading instanceof HTMLElement)) throw new Error('the page has no app header h1');
       const original = heading.textContent;
-      const readings = list.map((title) => {
+      const readings = list.map(({ titleKey, title }) => {
         heading.textContent = title;
-        const actual = Math.max(0, heading.scrollWidth - heading.clientWidth);
-
-        heading.style.fontSize = `${baseline}px`;
-        const atOldSize = Math.max(0, heading.scrollWidth - heading.clientWidth);
-
-        heading.style.fontFamily = `"${interFamily}", sans-serif`;
-        const inter = Math.max(0, heading.scrollWidth - heading.clientWidth);
-
-        heading.style.fontFamily = '';
-        heading.style.fontSize = '';
-        return { title, actual, atOldSize, inter };
+        return {
+          titleKey,
+          title,
+          scrollWidth: heading.scrollWidth,
+          clientWidth: heading.clientWidth,
+          overflow: Math.max(0, heading.scrollWidth - heading.clientWidth),
+          fontSize: Number.parseFloat(getComputedStyle(heading).fontSize),
+        };
       });
       heading.textContent = original;
       return readings;
     },
-    { list: [...titles], interFamily: INTER, baseline: HEADER_TITLE_INTER_BASELINE_PX },
+    { list: [...titles], selector: HEADER_TITLE },
   );
 }
 
-test('no German or Turkish route title clips harder than it did in Inter, at 390 and 360', async ({ page }) => {
-  await completeOnboarding(page);
+/**
+ * Reads the slot's width and how many characters it holds, in the real `h1`.
+ *
+ * @param page - a page on a route with the app header.
+ * @returns the slot's width and its character budget.
+ */
+async function measureSlot(page: Page): Promise<SlotReading> {
+  return page.evaluate((selector) => {
+    const heading = document.querySelector(selector);
+    if (!(heading instanceof HTMLElement)) throw new Error('the page has no app header h1');
+    const original = heading.textContent;
+    let maxChars = 0;
+    for (let count = 1; count <= 200; count += 1) {
+      heading.textContent = 'x'.repeat(count);
+      if (heading.scrollWidth > heading.clientWidth) break;
+      maxChars = count;
+    }
+    const slotWidth = heading.clientWidth;
+    heading.textContent = original;
+    return { slotWidth, maxChars };
+  }, HEADER_TITLE);
+}
 
-  let controlFoundAWorseTitle = false;
-  let titlesMeasured = 0;
+/**
+ * The titles that do not fit.
+ *
+ * @param readings - the output of {@link measureTitles}.
+ * @returns the readings whose `scrollWidth` exceeds their `clientWidth`.
+ */
+function overflowsOf(readings: readonly TitleReading[]): TitleReading[] {
+  return readings.filter((reading) => reading.scrollWidth > reading.clientWidth);
+}
 
-  for (const locale of LOCALES) {
+/**
+ * Matches a measured overflow to a list entry for one width.
+ *
+ * @param options.locale - the language measured.
+ * @param options.width - the width measured.
+ * @returns a matcher for {@link partitionKnownOverflows}.
+ */
+function matcherFor({ locale, width }: { locale: LanguageCode; width: number }) {
+  return (reading: TitleReading, entry: KnownTitleOverflow): boolean =>
+    entry.locale === locale && entry.titleKey === reading.titleKey && entry.viewports.some((port) => port === width);
+}
+
+/**
+ * The list entries one width of one language can observe.
+ *
+ * @param options.locale - the language measured.
+ * @param options.width - the width measured.
+ * @returns the entries this read must find overflowing.
+ */
+function knownFor({ locale, width }: { locale: LanguageCode; width: number }): KnownTitleOverflow[] {
+  return KNOWN_TITLE_OVERFLOWS.filter(
+    (entry) => entry.locale === locale && entry.viewports.some((port) => port === width),
+  );
+}
+
+/**
+ * Puts the phone at a width on the diary, with the header title up and no status in its place.
+ *
+ * @param page - a page past onboarding.
+ * @param width - the phone width.
+ */
+async function openHeaderAt(page: Page, width: number): Promise<void> {
+  await page.setViewportSize({ width, height: 844 });
+  await page.goto('/diary');
+  await expect(page.locator(HEADER_TITLE), 'the header title is up').toBeVisible();
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+}
+
+test('the list names only shipped languages, fit widths and real title keys', () => {
+  const keys = headerTitleKeys();
+  expect(keys.size, 'the route handles must yield titles').toBeGreaterThan(20);
+  for (const entry of KNOWN_TITLE_OVERFLOWS) {
+    const where = `${entry.locale} ${entry.titleKey}`;
+    expect(LOCALES, `${where}: a listed title must be in a shipped language`).toContain(entry.locale);
+    expect(keys.has(entry.titleKey), `${where}: a listed title must be a key the header draws`).toBe(true);
+    expect(entry.viewports.length, `${where}: a listed title must name a width`).toBeGreaterThan(0);
+    expect(entry.routes.length, `${where}: a listed title must name the routes that draw it`).toBeGreaterThan(0);
+  }
+});
+
+for (const locale of LOCALES) {
+  test(`every ${locale} header title fits at 18 px, at ${HEADER_TITLE_FIT_WIDTHS_PX.join(' and ')} px`, async ({
+    page,
+  }) => {
+    await completeOnboarding(page);
     await useLanguage(page, locale);
-    const titles = routeTitlesFor(locale);
-    expect(titles.length, `${locale}: the route handles must yield titles`).toBeGreaterThan(20);
+    const titles = headerTitlesFor(locale);
 
-    for (const width of WIDTHS) {
-      await page.setViewportSize({ width, height: 844 });
-      await page.goto('/diary');
-      await expect(page.locator('header h1').first()).toBeVisible();
+    const report: ReportedTitle[] = [];
+    const slots: Record<number, SlotReading> = {};
+    const problems: string[] = [];
+    const stale: string[] = [];
+
+    for (const width of HEADER_TITLE_FIT_WIDTHS_PX) {
+      await openHeaderAt(page, width);
       const where = `${locale} at ${width}px`;
+      slots[width] = await measureSlot(page);
+      const readings = await measureTitles(page, titles);
+      expect(readings.length, `${where}: every title must have been measured`).toBe(titles.length);
 
-      // The header's own promises, so the measurement is of the real thing.
-      const style = await page
-        .locator('header h1')
-        .first()
-        .evaluate((element) => ({
-          size: Number.parseFloat(getComputedStyle(element).fontSize),
-          overflow: getComputedStyle(element).textOverflow,
-        }));
-      expect(style.overflow, `${where}: the header title must still truncate with an ellipsis`).toBe('ellipsis');
-      expect(style.size, `${where}: the header title size is the contract size`).toBe(HEADER_TITLE_PX);
-      expect(style.size, `${where}: the header title may not be shrunk below the floor`).toBeGreaterThanOrEqual(
-        HEADER_TITLE_FLOOR_PX,
-      );
+      // THE SIZE. Read beside every title, so a size change that made a title fit fails here.
+      const offSize = readings.filter((reading) => reading.fontSize !== HEADER_TITLE_PX);
+      expect(
+        offSize.map((reading) => `"${reading.title}" is drawn at ${reading.fontSize}px`),
+        `${where}: the header title size is fixed at ${HEADER_TITLE_PX}px`,
+      ).toEqual([]);
 
-      const readings = await measureClips(page, titles);
-      titlesMeasured += readings.length;
-
-      // THE CLAIM.
-      const worse = readings
-        .filter((reading) => reading.actual > reading.inter + CLIP_TOLERANCE_PX)
-        .map((reading) => `"${reading.title}" clips ${reading.actual}px, Inter clipped ${reading.inter}px`);
-      expect(worse, `${where}: these titles clip harder than they did in Inter`).toEqual([]);
-
-      if (readings.some((reading) => reading.atOldSize > reading.inter + CLIP_TOLERANCE_PX)) {
-        controlFoundAWorseTitle = true;
+      // THE FIT, against the list of strings still waiting to be shortened.
+      const partition = partitionKnownOverflows({
+        found: overflowsOf(readings),
+        known: knownFor({ locale, width }),
+        isMatch: matcherFor({ locale, width }),
+      });
+      for (const reading of partition.unexplained) {
+        problems.push(
+          `${where}: "${reading.title}" (${reading.titleKey}) overflows ${reading.overflow}px; ` +
+            `the slot holds ${slots[width]?.maxChars} characters and the title has ${[...reading.title].length}`,
+        );
+      }
+      for (const entry of partition.stale) {
+        stale.push(`${where}: ${entry.titleKey} now fits, delete it from KNOWN_TITLE_OVERFLOWS`);
+      }
+      for (const reading of readings) {
+        const modules = titles.find((title) => title.titleKey === reading.titleKey)?.modules ?? [];
+        report.push({ width, ...reading, modules });
       }
     }
-  }
 
-  // CONTROL: the same comparison, at the old 18 px size in the new face, found a title that
-  // clips harder than Inter. Without this the claim above could pass at every size.
-  expect(titlesMeasured, 'the walk must have measured titles').toBeGreaterThan(0);
+    mkdirSync(REPORT_DIR, { recursive: true });
+    writeFileSync(
+      resolve(REPORT_DIR, `${locale}.json`),
+      `${JSON.stringify({ locale, sizePx: HEADER_TITLE_PX, slots, readings: report }, null, 2)}\n`,
+    );
+
+    expect(problems, `${locale}: these header titles do not fit at ${HEADER_TITLE_PX}px; shorten the string`).toEqual(
+      [],
+    );
+    expect(stale, `${locale}: these listed titles fit now`).toEqual([]);
+  });
+}
+
+test('CONTROL: a title that cannot fit is caught, a listed title that fits is stale, and a smaller size is seen', async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await useLanguage(page, 'en');
+  await openHeaderAt(page, 360);
+
+  const [longTitle, shortTitle] = await measureTitles(page, [
+    { titleKey: 'control.long', title: CONTROL_TITLE },
+    { titleKey: 'diary.title', title: 'Diary' },
+  ]);
+  expect(longTitle?.overflow ?? 0, 'the control string must overflow the slot').toBeGreaterThan(0);
+  expect(shortTitle?.overflow ?? -1, 'and a five-letter title must not').toBe(0);
+
+  const readings = [longTitle, shortTitle].filter((reading): reading is TitleReading => reading !== undefined);
+  const isMatch = matcherFor({ locale: 'en', width: 360 });
+
+  // An overflow nothing lists is unexplained, which is what fails a locale above.
   expect(
-    controlFoundAWorseTitle,
-    'at 18px in the new face some title must clip harder than Inter, or the comparison cannot fail',
-  ).toBe(true);
+    partitionKnownOverflows({ found: overflowsOf(readings), known: [], isMatch }).unexplained.map((r) => r.titleKey),
+    'CONTROL: an unlisted overflow must be unexplained',
+  ).toEqual(['control.long']);
+
+  // A listed entry for a title that fits comes back stale, which is what keeps the list shrinking.
+  const fitsButListed: KnownTitleOverflow = { locale: 'en', titleKey: 'diary.title', routes: ['/diary'], viewports: [360] };
+  expect(
+    partitionKnownOverflows({ found: overflowsOf(readings), known: [fitsButListed], isMatch }).stale,
+    'CONTROL: a listed title that fits must be stale',
+  ).toEqual([fitsButListed]);
+
+  // And a listed entry for the overflow explains it, so the list is able to hold a real finding.
+  const listed: KnownTitleOverflow = { locale: 'en', titleKey: 'control.long', routes: ['/diary'], viewports: [360] };
+  const withEntry = partitionKnownOverflows({ found: overflowsOf(readings), known: [listed], isMatch });
+  expect(withEntry.unexplained, 'a listed overflow is explained').toEqual([]);
+  expect(withEntry.stale, 'and is not stale while it still overflows').toEqual([]);
+
+  // The size read sees a smaller title.
+  await page.locator(HEADER_TITLE).evaluate((element, size) => {
+    if (element instanceof HTMLElement) element.style.fontSize = `${size}px`;
+  }, CONTROL_SIZE_PX);
+  const [shrunk] = await measureTitles(page, [{ titleKey: 'diary.title', title: 'Diary' }]);
+  expect(shrunk?.fontSize, 'CONTROL: the size read must see a title forced to 14px').toBe(CONTROL_SIZE_PX);
+  expect(shrunk?.fontSize, 'and that is not the contract size').not.toBe(HEADER_TITLE_PX);
 });

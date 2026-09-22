@@ -20,12 +20,10 @@
  * come from the SAME build and the SAME DOM: no second build, no second port, and no drift
  * between what the two reads measured.
  *
- * THE ONE SIZE THAT IS NOT THE SAME. The header title is 14 px now and was 18 px in Inter. M243
- * spec 02 chose 15 and the six-locale sweep of spec 08 took it to 14, which is also the floor in
- * `tests/design-contract.ts` (`lcc-lineage-header-title.spec.ts` holds the line). The contract
- * there is "no title clips harder than Inter at 18 px", so the baseline also puts the app
- * header's title back to 18 px, or every title Inter clipped at 18 would read as newly clipped in
- * mono. Both numbers are read from the contract, never typed here.
+ * THE HEADER TITLE IS NOT JUDGED AGAINST INTER ANY MORE (operator, 2026-09-22). It is 18 px in
+ * both reads, the size it had in Inter, and its claim is absolute: it fits its slot or it is a
+ * defect in its string (`headerTitleOverflows`, and `header-title-fit.ts` for the titles still
+ * waiting for a shorter string). Only the bottom bar's tab labels are still held against Inter.
  *
  * READING RULES, so a number means one thing:
  *
@@ -46,7 +44,6 @@ import { z } from 'zod';
 
 import {
   BODY_STACK,
-  HEADER_TITLE_INTER_BASELINE_PX,
   HEADER_TITLE_PX,
   INTER,
   PROSE_STACK,
@@ -60,10 +57,8 @@ export const APP_HEADER_TITLE = 'header.sticky h1';
 /** The bottom bar. A label in it is the last `span` of a tab, holding text and nothing else. */
 export const BOTTOM_BAR = '[data-slot="bottom-nav-shell"] nav';
 
-/** The baseline stylesheet: the body role back to Inter, and the header title back to 18 px. */
-export const INTER_BASELINE_CSS =
-  `:root { --font-body: ${PROSE_STACK} !important; }\n` +
-  `${APP_HEADER_TITLE} { font-size: ${HEADER_TITLE_INTER_BASELINE_PX}px !important; }\n`;
+/** The baseline stylesheet: the body role back to Inter, and nothing else. */
+export const INTER_BASELINE_CSS = `:root { --font-body: ${PROSE_STACK} !important; }\n`;
 
 /**
  * Stops every animation and transition, so a measurement is of the layout and not of a frame.
@@ -333,13 +328,30 @@ export function compareClips({ mono, inter }: { mono: ClipRead; inter: ClipRead 
 }
 
 /**
- * The rows the brief holds hard: a header title or a bottom bar label that got worse.
+ * The one comparative hard claim left: a bottom bar label that got worse than it was in Inter.
+ *
+ * The header title used to be held here too. Since 2026-09-22 its claim is absolute and does not
+ * read Inter at all, see {@link headerTitleOverflows}; its rows still come out of
+ * {@link compareClips} and go in the report, and this filter leaves them there.
  *
  * @param rows - the output of {@link compareClips}.
- * @returns the rows that carry a role.
+ * @returns the rows that are tab labels.
  */
 export function hardViolations<Row extends { role: ClipRole | null }>(rows: readonly Row[]): Row[] {
-  return rows.filter((row) => row.role !== null);
+  return rows.filter((row) => row.role === 'tab-label');
+}
+
+/**
+ * The app header titles in one read that do not fit their slot.
+ *
+ * The operator's rule, word for word: `scrollWidth <= clientWidth`, so there is no tolerance and
+ * no comparison with another face. A title that does not fit is a defect in its string.
+ *
+ * @param read - the read taken in the app's own face.
+ * @returns the header title readings whose `scrollWidth` exceeds their `clientWidth`.
+ */
+export function headerTitleOverflows(read: ClipRead): ClipReading[] {
+  return read.readings.filter((reading) => reading.role === 'header-title' && reading.scrollWidth > reading.clientWidth);
 }
 
 /**
@@ -454,10 +466,9 @@ export const CONTROL_IDS = {
  * - `title` is a heading inside the app header, which must carry the `header-title` role.
  *
  * THE STRING IS NARROW LETTERS ON PURPOSE. Inter is proportional and Victor Mono is a flat
- * 0.6 em, so a run of `i` and `l` is the string on which the two faces differ MOST. That is what
- * lets the header control work at all: the real title is 14 px in mono and 18 px in the Inter
- * baseline, so a string of ordinary width is WIDER in Inter and the control would fit in mono and
- * clip in Inter, which is the reverse of what it has to show.
+ * 0.6 em, so a run of `i` and `l` is the string on which the two faces differ MOST, and the box
+ * between the two widths is as wide as it can be. The header title control is at 18 px in both
+ * faces, the size the real title has in both reads.
  *
  * All three are taken out of flow, so they move nothing else on the page.
  *
@@ -515,7 +526,7 @@ export async function injectClipControls(page: Page): Promise<ControlGeometry[]>
       const header = document.querySelector('header.sticky');
       if (header === null) throw new Error('the page has no app header to hold a control');
       const title = document.createElement('h1');
-      place({ element: title, id: ids.title, monoSize: sizes.title, interSize: sizes.titleBaseline });
+      place({ element: title, id: ids.title, monoSize: sizes.title, interSize: sizes.title });
       header.append(title);
 
       return geometry;
@@ -524,7 +535,7 @@ export async function injectClipControls(page: Page): Promise<ControlGeometry[]>
       ids: CONTROL_IDS,
       monoStack: BODY_STACK,
       interStack: PROSE_STACK,
-      sizes: { body: 14, title: HEADER_TITLE_PX, titleBaseline: HEADER_TITLE_INTER_BASELINE_PX },
+      sizes: { body: 14, title: HEADER_TITLE_PX },
     },
   );
 }

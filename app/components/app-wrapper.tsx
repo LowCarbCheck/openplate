@@ -332,22 +332,24 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                 in the same box and under the same fixed header height, so
                 nothing on this bar moves. There are no toasts any more. */}
             <HeaderStatus>
-              {/* `gap-1.5`, AND IT IS THE POINT OF THIS COLUMN. It was `gap-px`
+              {/* `gap-1`, AND IT IS THE POINT OF THIS COLUMN. It was `gap-px`
                   until 2026-09-21, which put the brand word 1.67 px of ink above
                   the page title (measured, `tests/e2e/header-brand-kicker.spec.ts`).
-                  At that distance the two lines are one four-line-tall grey block
-                  on a phone: a reader cannot say which line is the product and
-                  which is the page they are on, and the operator said so of a
-                  diary screenshot. 6 px is about half the kicker's own 12 px body,
-                  which is the classic eyebrow step, and it reads as two ordered
-                  things rather than as padding that was cranked up. 8 px was drawn
-                  beside it and the pair started to drift apart inside the bar.
+                  At that distance the two lines are one grey block on a phone: a
+                  reader cannot say which line is the product and which is the
+                  page they are on, and the operator said so of a diary
+                  screenshot. It was `gap-1.5` (6 px) for one day, beside a 14 px
+                  title. On 2026-09-22 the operator compared the pair in a
+                  playground and chose an 18 px title with 4 px above it: the
+                  larger title already stands apart from the 12 px word by size,
+                  so the white can be smaller, and the pair still reads as two
+                  ordered things instead of drifting apart inside the bar.
 
-                  IT COSTS THE BAR NOTHING. The column is 12 + 6 + 17.5 = 35.5 px
+                  IT COSTS THE BAR NOTHING. The column is 12 + 4 + 22.5 = 38.5 px
                   inside a `min-h-16` header, so the header's fixed 64 px, which
                   three other layout budgets are measured off, does not move.
                   `tests/e2e/lcc-lineage-shell.spec.ts` re-reads that height. */}
-              <div className="flex min-w-0 flex-col justify-center gap-1.5">
+              <div className="flex min-w-0 flex-col justify-center gap-1">
                 {/* The wordmark, mobile only. Below `md` the mark to its left is
                     the app's ONLY persistent brand statement, so the word belongs
                     next to it; at `md`+ the sidebar's own `Logo()` renders this
@@ -368,14 +370,12 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                     Decorative: the `h1` below names the page for assistive tech.
 
                     THE SIZE STAYS 12 px, and that is a decision, not an
-                    oversight. The pair reads as one blur for two reasons,
-                    proximity and likeness, and only proximity was fixable here.
-                    The title is ON its floor (`HEADER_TITLE_FLOOR_PX`), so it
-                    cannot grow, and the only way left to widen the size ratio
-                    would be to shrink the word, which is the opposite of what
-                    the operator asked for. What separates the two instead is the
-                    gap above and a weight difference of 500 (this word is 100,
-                    the title 600), which is the widest this face offers.
+                    oversight. The pair read as one blur for two reasons,
+                    proximity and likeness. Both are answered on the title's
+                    side: the title is 18 px, half again the word's size, and
+                    600 against this word's 100, the widest weight step this
+                    face offers. Shrinking the word would widen the ratio too,
+                    and is the opposite of what the operator asked for.
 
                     `data-slot` because the gap above is now a measured contract
                     and a measurement needs a handle it cannot lose. Reading "the
@@ -386,24 +386,30 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                   data-slot="header-brand-kicker"
                   className="text-xs leading-none md:hidden"
                 />
-                {/* `truncate` because the longest titles ("Sync across devices",
-                    "Connecting to OpenRouter", and their longer German
-                    translations) would otherwise wrap the header to three lines
-                    on a narrow phone.
+                {/* 18 px ON A PHONE, FIXED, AND THE STRINGS MUST FIT IT. The
+                    operator chose this on 2026-09-22 after comparing sizes side
+                    by side in a playground. It had been 14 px, the largest size
+                    at which no title clipped harder in Victor Mono than it had
+                    in Inter at 18 px, and at 14 px a page title is barely larger
+                    than the body under it.
 
-                    14px ON A PHONE, AND MEASURED. This was `text-lg` (18px) back
-                    when the face was Inter. Victor Mono is a flat 0.6em per
-                    character, wider than Inter for any mixed-case title, and the
-                    title slot is only about 172px. 14px is the largest whole pixel
-                    size at which no route title in any of the six languages is clipped
-                    harder than Inter at 18px clipped it, at 390px and at 360px
-                    (`lcc-lineage-clip-sweep.spec.ts` holds the line, and
-                    `lcc-lineage-header-title.spec.ts` holds German and Turkish).
-                    It was 15px until the sweep found Italian and French titles
-                    ("Il tuo riepilogo giornaliero", "Contributions à la
-                    recherche") clipped harder at 360px. 14px is also the floor
-                    in `tests/design-contract.ts`: below it a title is not read. */}
-                <h1 className="truncate text-sm font-semibold leading-tight tracking-tight md:text-xl">
+                    THE SIZE DOES NOT BEND. Victor Mono is a flat 0.6 em per
+                    character, so a title here costs 10.8 px a character and the
+                    slot holds a fixed count of them. A title that does not fit
+                    is a defect in its STRING, in its locale file, and is fixed
+                    by shortening the string. There is no shrink to fit, no
+                    clamp and no fallback size, on purpose.
+                    `lcc-lineage-header-title.spec.ts` writes every route title
+                    of all six languages into this element at 360 and 390 px and
+                    fails on any that does not fit;
+                    `lcc-lineage-clip-sweep.spec.ts` checks the title each route
+                    really draws. Both read the size from
+                    `tests/design-contract.ts` (`HEADER_TITLE_PX`).
+
+                    `truncate` stays only as the last safety net, so a title
+                    that slips through ends in an ellipsis instead of wrapping
+                    the header onto a second line. Desktop keeps `md:text-xl`. */}
+                <h1 className="truncate text-lg font-semibold leading-tight tracking-tight md:text-xl">
                   {title || APP_NAME}
                 </h1>
               </div>
