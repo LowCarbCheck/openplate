@@ -745,7 +745,7 @@ export function ProvenanceNote({ log }: { log: LocalFoodLog }) {
   if (log.curatedSource) {
     return (
       <div className="space-y-1">
-        <span className="inline-flex w-fit items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+        <span className="inline-flex w-fit items-center bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
           {t('entry.provenance.curated.badge')}
         </span>
         <p className="text-xs text-muted-foreground">{t('entry.provenance.curated.note')}</p>
@@ -767,7 +767,7 @@ export function ProvenanceNote({ log }: { log: LocalFoodLog }) {
   if (log.attribution) {
     return (
       <div className="space-y-1">
-        <span className="inline-flex w-fit items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
+        <span className="inline-flex w-fit items-center bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800 dark:bg-zinc-800 dark:text-zinc-300">
           {t('entry.provenance.adapted.badge')}
         </span>
         <p className="text-xs text-muted-foreground">{t('entry.provenance.adapted.note')}</p>
@@ -800,7 +800,7 @@ function LoggedTogether({ siblings }: { siblings: LocalFoodLog[] }) {
           <Link
             key={sibling.id}
             to={`/diary/entry/${sibling.id}`}
-            className="flex min-h-11 items-center justify-between gap-3 rounded-md border p-3 transition-colors hover:border-teal-300 hover:bg-muted/50 dark:hover:border-teal-600"
+            className="flex min-h-11 items-center justify-between gap-3 border p-3 transition-colors hover:border-teal-300 hover:bg-muted/50 dark:hover:border-teal-600"
           >
             <span className="min-w-0 truncate text-sm font-medium">{sibling.name}</span>
             <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
@@ -987,7 +987,7 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
           <img
             src={photoDataUrl}
             alt={t('entry.photo.alt', { name: log.name })}
-            className="max-h-80 w-full rounded-lg object-cover"
+            className="max-h-80 w-full object-cover"
           />
           <figcaption className="text-xs text-muted-foreground">{t('entry.photo.caption')}</figcaption>
         </figure>
@@ -1036,7 +1036,7 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
                 </span>
                 <span
                   className={cn(
-                    'inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                    'inline-flex w-fit items-center px-2 py-0.5 text-xs font-medium',
                     carbStatusBadgeClass[carbStatus],
                   )}
                 >
@@ -1298,7 +1298,7 @@ export function EditEntry({
                       aria-pressed={isSelected}
                       onClick={() => setGrams(scalePortionGrams(baseGrams, option.multiplier))}
                       className={cn(
-                        'inline-flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-xs font-medium transition-colors',
+                        'inline-flex min-h-11 items-center justify-center border px-4 py-2 text-xs font-medium transition-colors',
                         isSelected ?
                           'border-primary bg-primary text-primary-foreground'
                         : 'border-border text-muted-foreground hover:border-teal-300 hover:text-foreground dark:hover:border-teal-600',
@@ -1349,7 +1349,7 @@ export function EditEntry({
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span
                   className={cn(
-                    'inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                    'inline-flex w-fit items-center px-2 py-0.5 text-xs font-medium',
                     carbStatusBadgeClass[previewCarbStatus],
                   )}
                 >

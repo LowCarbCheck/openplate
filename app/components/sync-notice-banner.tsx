@@ -157,7 +157,7 @@ export function SyncNoticeBanner({
   return (
     <output
       className={cn(
-        'flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber',
+        'flex items-start gap-2 border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber',
         className,
       )}
     >
@@ -183,7 +183,7 @@ export function SyncNoticeBanner({
         type="button"
         aria-label={t('sync.notice.dismiss')}
         onClick={dismiss}
-        className="shrink-0 rounded p-0.5 text-accent-amber/70 hover:text-accent-amber"
+        className="shrink-0 p-0.5 text-accent-amber/70 hover:text-accent-amber"
       >
         <X className="h-4 w-4" />
       </button>

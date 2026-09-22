@@ -274,7 +274,7 @@ export function CatchUpPreview({ previewLines }: { previewLines: readonly string
   return (
     // `data-slot` so the browser tier can count the previews on screen in any
     // language: there must be exactly one, whichever branch drew it.
-    <div data-slot="catch-up-preview" className="rounded-lg border bg-muted/40 p-3">
+    <div data-slot="catch-up-preview" className="border bg-muted/40 p-3">
       <p className="text-xs font-medium">{t('settings.notifications.catchUp.preview')}</p>
       {previewLines.length === 0 && (
         <p className="mt-1 text-sm text-muted-foreground">{t('settings.notifications.catchUp.previewEmpty')}</p>

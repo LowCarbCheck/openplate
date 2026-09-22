@@ -69,7 +69,7 @@ export function StudyKeyCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {identity.hasUnopenedCompartment && (
-          <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber">
+          <output className="flex items-start gap-2 border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="flex-1">{t('research.console.identity.unopened')}</span>
           </output>

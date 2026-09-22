@@ -70,7 +70,7 @@ export function ErrorFallback({ error, homeTo = '/', homeLabel, boundary = 'rout
       <h1 className="text-3xl font-bold tracking-tight text-foreground">{heading}</h1>
       <p className="max-w-md text-muted-foreground">{details}</p>
       {devMessage && (
-        <pre className="max-w-full overflow-auto rounded-lg bg-muted p-4 text-left text-sm text-muted-foreground">
+        <pre className="max-w-full overflow-auto bg-muted p-4 text-left text-sm text-muted-foreground">
           {devMessage}
         </pre>
       )}

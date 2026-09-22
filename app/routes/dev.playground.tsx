@@ -46,7 +46,7 @@ function Sample({ label, children }: { label: string; children: ReactNode }): Re
   return (
     <section className="space-y-3">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</h3>
-      <div className="rounded-lg border border-border bg-card/40 p-4">
+      <div className="border border-border bg-card/40 p-4">
         <div className="mx-auto max-w-sm">{children}</div>
       </div>
     </section>
@@ -60,7 +60,7 @@ export default function DevPlayground(): ReactElement {
     <main className="min-h-screen bg-background px-4 py-10 text-foreground">
       <div className="mx-auto max-w-3xl space-y-10">
         <header className="space-y-2">
-          <p className="inline-flex rounded-full bg-accent-amber-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-amber">
+          <p className="inline-flex bg-accent-amber-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-amber">
             Temporary review page, not shipped UI
           </p>
           <h1 className="text-2xl font-bold">Component variants</h1>
@@ -84,7 +84,7 @@ export default function DevPlayground(): ReactElement {
             Concept C (ghost of yesterday) stacked above concept A (composer strip), inside the real hero card shell.
           </p>
           <div className="mx-auto max-w-sm">
-            <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+            <Card className="surface-brand overflow-hidden shadow-sm">
               <CardContent className="space-y-3 p-5 sm:p-6">
                 <RepeatYesterdayGhost offer={SAMPLE_OFFER} />
                 <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />

@@ -17,7 +17,7 @@ export function OfflineBanner({ message, className }: { message?: string; classN
   return (
     <output
       className={cn(
-        'flex items-center gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber',
+        'flex items-center gap-2 border border-accent-amber-border bg-accent-amber-surface px-3 py-2 text-sm text-accent-amber',
         className,
       )}
     >

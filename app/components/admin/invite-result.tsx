@@ -79,7 +79,7 @@ export function CopyableLink({ link }: { link: string }) {
 
   return (
     <div className="space-y-2">
-      <p className="break-all rounded-lg border bg-muted/30 p-3 font-mono text-xs">{link}</p>
+      <p className="break-all border bg-muted/30 p-3 font-mono text-xs">{link}</p>
       <Button type="button" variant="outline" className="h-11" onClick={() => void copy()}>
         {isCopied ?
           <Check className="h-4 w-4" aria-hidden="true" />

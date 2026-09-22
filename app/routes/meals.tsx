@@ -262,7 +262,7 @@ export default function Meals({ loaderData }: Route.ComponentProps) {
           from `handle.title` — see `settings.data.tsx` for the same pattern. */}
       <p className="text-sm text-muted-foreground">{t('meals.description')}</p>
       {meals.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-8 text-center">
+        <div className="flex flex-col items-center gap-2 border border-dashed p-8 text-center">
           <BookMarked className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
           {/* The two halves of what used to be one sentence. Split so the
               second one can be said on its own below, where the first one

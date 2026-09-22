@@ -38,7 +38,7 @@ export function SparseTrendNotice({ loggedDays }: { loggedDays: number }) {
   const logged = loggedDays <= 0 ? t('trends.sparse.countNone') : `${loggedDays}`;
 
   return (
-    <div className="surface-brand-soft flex items-center gap-3 rounded-lg border border-dashed border-border p-4">
+    <div className="surface-brand-soft flex items-center gap-3 border border-dashed border-border p-4">
       <PlateGlyph className="h-10 w-10 shrink-0 text-primary/40" />
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium">{t('trends.sparse.headline', { logged })}</p>

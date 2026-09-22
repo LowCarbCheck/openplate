@@ -32,7 +32,7 @@ export function StatsRow({ stats }: StatsRowProps) {
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {cells.map((cell) => (
-        <div key={cell.label} className="rounded-lg border p-3">
+        <div key={cell.label} className="border p-3">
           <dt className="text-xs text-muted-foreground">{cell.label}</dt>
           <dd className="text-2xl font-semibold tabular-nums">{cell.value}</dd>
         </div>

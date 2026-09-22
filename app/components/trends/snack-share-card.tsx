@@ -53,8 +53,8 @@ export function SnackShareCard({ rows, hasEnoughWeeks }: { rows: readonly SlotSh
                 <span className="sr-only">
                   {share === null ? t('trends.chart.bar.empty', { date: dateLabel }) : t('trends.meals.snack.row', { date: dateLabel, percent: Math.round(share) })}
                 </span>
-                <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
-                  {share !== null && <div data-slot="snack-share-fill" style={{ width: `${share}%` }} className="h-full rounded-full bg-primary/25" />}
+                <div className="h-2.5 min-w-0 flex-1 overflow-hidden bg-muted">
+                  {share !== null && <div data-slot="snack-share-fill" style={{ width: `${share}%` }} className="h-full bg-primary/25" />}
                 </div>
                 <span
                   aria-hidden="true"

@@ -15,7 +15,7 @@ export function LoggingToBanner({ label, switchToTodayHref }: { label: string; s
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+    <div className="flex items-center gap-2 border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
       <CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         {/* `Trans`, not plain interpolation: the day label carries its own

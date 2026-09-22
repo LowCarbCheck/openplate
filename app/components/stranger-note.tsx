@@ -60,7 +60,7 @@ export function StrangerNote({ variant }: { variant: StrangerNoteVariant }) {
   ];
 
   return (
-    <div className="mb-6 rounded-lg border bg-muted/40 p-4 text-sm">
+    <div className="mb-6 border bg-muted/40 p-4 text-sm">
       <p className="text-muted-foreground">{t(SENTENCE_KEYS[variant])}</p>
       <nav className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
         {links.map((link) => (

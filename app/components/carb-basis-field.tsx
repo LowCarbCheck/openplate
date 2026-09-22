@@ -77,7 +77,7 @@ export function CarbBasisField({
               // pattern. Without it, a keyboard user tabbing through these
               // three options gets no visible indicator of which one is
               // focused (M123/13 second-review finding 3).
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === option.value),
             )}
           >

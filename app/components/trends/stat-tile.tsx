@@ -19,7 +19,8 @@
  * Three tiles across a phone leave about 75px of content each, and a signed
  * figure with its unit does not fit that at 20px. So below 560px a tile is one
  * row, label left and figure right, and from 560px the tiles stand side by
- * side with the label on top. The tiles keep the ladder's tile step (12px).
+ * side with the label on top. The tiles draw no radius, corners are square
+ * app-wide (DESIGN.md section 5).
  */
 import type { HTMLAttributes, ReactNode } from 'react';
 
@@ -51,7 +52,7 @@ export function StatTile({ label, children, className, ...rest }: StatTileProps)
     <div
       data-slot="stat-tile"
       className={cn(
-        'flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-card p-3 min-[560px]:block',
+        'flex min-h-11 items-center justify-between gap-3 border bg-card p-3 min-[560px]:block',
         className,
       )}
       {...rest}

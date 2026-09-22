@@ -47,7 +47,6 @@ import type { LocalProfileGoals } from '../../app/lib/local-store';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { PLAN_PAGE_HREF } from '../../app/lib/plans/plans-door';
 import type { PublicConfig } from '../../app/config/public-config';
-import { RADIUS_TIER_CLASS } from '../design-contract';
 
 /** The REAL catalog: the labels below are resolved, not transcribed. */
 const t = (key: string, params?: Readonly<Record<string, string | number | boolean | Date>>) =>
@@ -227,10 +226,11 @@ describe('the hub reads as one inset grouped list, not a stack of cards', () => 
 
   it('draws exactly one list container, with one hairline divider set, per rendered group', () => {
     // THE SLOT IS THE IDENTITY, NOT THE RADIUS. This counted `rounded-2xl`
-    // until M243 spec 03 moved the inset onto the ladder's card step, which is
-    // exactly the failure mode a radius-as-identity check has: it says nothing
-    // about the container and everything about a taste call. `data-slot` is put
-    // on the container by `SettingsGroup` and by nothing else.
+    // until M243 spec 03 moved the inset onto the ladder's card step, and the
+    // ladder itself is gone since 2026-09-22 (square corners everywhere): a
+    // radius-as-identity check says nothing about the container and everything
+    // about a taste call. `data-slot` is put on the container by
+    // `SettingsGroup` and by nothing else.
     //
     // CONTROL: the old per-row card markup (a box on every row, `space-y-2`
     // between rows) carried zero of either attribute, so both counts would be 0
@@ -255,12 +255,12 @@ describe('the hub reads as one inset grouped list, not a stack of cards', () => 
     assert.ok(rowClassLists.length > 0, 'expected at least one row <a> in the rendered hub');
     for (const classList of rowClassLists) {
       const tokens = classList.split(/\s+/);
-      // EVERY step of the ladder, not just the one the old markup used: a row
-      // that came back as its own box would come back wearing whatever radius
-      // was fashionable that week.
-      for (const radius of Object.values(RADIUS_TIER_CLASS)) {
-        assert.ok(!tokens.includes(radius), `a row link still carries its own ${radius} box: "${classList}"`);
-      }
+      // ANY radius utility, whole or variant-prefixed, not one class typed
+      // here: a row that came back as its own box would come back wearing
+      // whatever radius was fashionable that week, and corners are square
+      // app-wide now anyway (2026-09-22), so a row link may carry none at all.
+      const radiusToken = tokens.find((token) => /(?:^|:)rounded(?:-|$)/.test(token));
+      assert.equal(radiusToken, undefined, `a row link still carries its own radius box: "${classList}"`);
       assert.ok(!tokens.includes('border'), `a row link still carries its own border: "${classList}"`);
     }
   });

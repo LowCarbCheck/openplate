@@ -49,7 +49,7 @@ export function FeedbackQueue({ reports, retentionDays, deletingId, onDelete }: 
   if (reports.length === 0) return <p className="text-sm text-muted-foreground">{t('admin.feedback.empty')}</p>;
 
   return (
-    <ul className="divide-y rounded-lg border">
+    <ul className="divide-y border">
       {reports.map((report) => (
         <FeedbackRow
           key={report.id}

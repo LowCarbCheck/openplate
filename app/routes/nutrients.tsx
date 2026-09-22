@@ -332,8 +332,8 @@ function ReferenceFootnote({ reference }: { reference: ReferenceAmount }): React
  */
 function ShareBar({ share }: { share: number }): ReactElement {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-primary/15" aria-hidden="true">
-      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(share, 1) * 100}%` }} />
+    <div className="h-1.5 w-full overflow-hidden bg-primary/15" aria-hidden="true">
+      <div className="h-full bg-primary" style={{ width: `${Math.min(share, 1) * 100}%` }} />
     </div>
   );
 }
@@ -545,7 +545,7 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* The screen's single hero panel (DESIGN.md §2, one per screen). */}
-      <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+      <Card className="surface-brand overflow-hidden shadow-sm">
         <CardContent className="space-y-5 p-5 sm:p-6">
           <div className="space-y-1.5">
             <SectionEyebrow>{t('nutrients.hero.eyebrow')}</SectionEyebrow>

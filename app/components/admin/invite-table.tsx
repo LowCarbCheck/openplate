@@ -38,7 +38,7 @@ export function InviteTable({ invites, onResend, onRevoke }: InviteTableProps) {
   if (pending.length === 0) return <p className="text-sm text-muted-foreground">{t('admin.invites.empty')}</p>;
 
   return (
-    <ul className="divide-y rounded-lg border">
+    <ul className="divide-y border">
       {pending.map((invite) => (
         <InviteRow key={invite.id} invite={invite} onResend={onResend} onRevoke={onRevoke} />
       ))}

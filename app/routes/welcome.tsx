@@ -306,7 +306,7 @@ export default function Welcome() {
           word beside it already says the name out loud, so a reader with a
           screen reader hears it once. */}
       <span data-slot="welcome-brand" className="flex items-center gap-2.5">
-        <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 rounded-full" />
+        <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8" />
         <Wordmark besideMark className="text-xl" />
       </span>
       <Card className="w-full max-w-md">
@@ -318,7 +318,7 @@ export default function Welcome() {
         </CardHeader>
         <CardContent className="space-y-4">
           {session.error?.reason === 'reauth-required' && (
-            <p className="rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
+            <p className="border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
               {t('sync.status.error.reauth-required')}
             </p>
           )}

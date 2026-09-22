@@ -589,7 +589,7 @@ function HeroShot(): ReactElement {
         black so the lift belongs to the page. See DESIGN.md §5 — this is the
         one sanctioned resting shadow heavier than `shadow-sm`.
       */}
-      <div className="surface-brand overflow-hidden rounded-2xl border border-primary/55 bg-card p-1.5 shadow-2xl shadow-primary/20 ring-1 ring-inset ring-black/5 dark:border-primary/40 dark:shadow-primary/10 dark:ring-white/5 sm:p-2">
+      <div className="surface-brand overflow-hidden border border-primary/55 bg-card p-1.5 shadow-2xl shadow-primary/20 ring-1 ring-inset ring-black/5 dark:border-primary/40 dark:shadow-primary/10 dark:ring-white/5 sm:p-2">
         <HeroPicture
           themeClassName="hidden dark:block"
           mobileSrc="/landing/en/diary-mobile-dark.webp"
@@ -633,7 +633,7 @@ const CROP_FADE = '[mask-image:linear-gradient(to_bottom,black_84%,transparent_1
  * visible frame at all in the theme most visitors arrive in. One brand-tinted
  * recipe, stated once, used everywhere below the hero.
  */
-const SHOT_FRAME = 'rounded-xl border border-primary/25 bg-card p-1 shadow-md shadow-primary/5';
+const SHOT_FRAME = 'border border-primary/25 bg-card p-1 shadow-md shadow-primary/5';
 
 /**
  * The one rendered shape every "how it works" step shot is drawn into.
@@ -740,7 +740,7 @@ function HeroPicture({
         className={cn(
           // One step inside `SHOT_FRAME`'s 12px tile corner, which has 4px of
           // padding: an image that matched its frame would bulge at the corners.
-          'mx-auto w-full max-w-[20rem] rounded-lg',
+          'mx-auto w-full max-w-[20rem]',
           // The phone capture is 2.16 screens tall and is cropped mid-diary,
           // so its bottom edge cuts a row of food in half. The fade turns that
           // slice into "the list continues" instead of a rendering fault. The
@@ -921,7 +921,7 @@ function StepShot({
 }): ReactElement {
   return (
     <div className={cn(SHOT_FRAME, 'mx-auto w-full max-w-[11rem] sm:mx-0 sm:max-w-[15rem]')}>
-      <div className={cn('relative overflow-hidden rounded-lg', STEP_SHOT_ASPECT, cropped && CROP_FADE)}>
+      <div className={cn('relative overflow-hidden', STEP_SHOT_ASPECT, cropped && CROP_FADE)}>
         <ThemedShot
           srcDark={srcDark}
           srcLight={srcLight}
@@ -1054,7 +1054,7 @@ function HowStep({
         </div>
       : null}
       <div className="order-1 min-w-0 space-y-2 sm:order-2 sm:row-start-2 sm:mt-0 sm:space-y-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <span className="inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         <h3 className="text-lg font-semibold tracking-tight text-balance">{title}</h3>
@@ -1084,8 +1084,8 @@ function HowStep({
  */
 function FeatureCard({ icon: Icon, title, body }: { icon: LucideIcon; title: string; body: string }): ReactElement {
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="border bg-card p-5 shadow-sm">
+      <span className="inline-flex h-9 w-9 items-center justify-center bg-primary/10 text-primary">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       {/* `text-lg`, one step up from the body it sits on. At `text-base` these
@@ -1138,7 +1138,7 @@ function SetupStep({ step, title, body }: { step: number; title: string; body: s
 }
 
 /**
- * One rung of the ladder below the hero, on a plain `bg-card` surface.
+ * A card below the hero, on a plain `bg-card` surface.
  *
  * `bg-card` is not a style preference: the hero screenshot's frame is this
  * page's ONE `.surface-brand` (DESIGN.md §2, "one hero per screen"), so every
@@ -1205,8 +1205,8 @@ function LadderCard({
   children: ReactNode;
 }): ReactElement {
   return (
-    // No radius override: a `Card` is the ladder's card step, and this is a
-    // card. The `rounded-2xl` here used to restate the Card default.
+    // No radius override: a `Card` draws no radius (DESIGN.md section 5), and
+    // this is a card. A `rounded-2xl` here once restated the M129 Card default.
     <Card>
       <CardContent
         className={cn(
@@ -1215,7 +1215,7 @@ function LadderCard({
         )}
       >
         <div className="min-w-0 max-w-[65ch] space-y-4">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="inline-flex h-10 w-10 items-center justify-center bg-primary/10 text-primary">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
           <h2 className="text-2xl font-bold tracking-tight text-balance sm:text-[28px]">{title}</h2>
@@ -1370,7 +1370,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           {/* A short brand rule under the wordmark — the smallest possible
               piece of furniture that turns "a heading with paragraphs under
               it" into a composed masthead. */}
-          <span aria-hidden="true" className="mt-5 block h-1 w-16 rounded-full bg-primary" />
+          <span aria-hidden="true" className="mt-5 block h-1 w-16 bg-primary" />
           {/* THE HERO PARAGRAPH, and the first sentence a visitor reads. It
               said the diary "lives on your device", which was the THIRD
               occurrence of one false claim on one page: the title above it and

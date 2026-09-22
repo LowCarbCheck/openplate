@@ -17,22 +17,26 @@
  *
  * ── THE DATA ROW IS A DIFFERENT THING ────────────────────────────────────
  *
- * A NAVIGABLE row goes somewhere: it has a card's fill, a card's hairline and
- * a card's 8px radius, because it is a card you can tap. A DATA row goes
- * nowhere: it is a label, a figure and a status dot inside a panel that is
- * already a card, so it has no border at all, a quieter fill and the ladder's
- * smallest 4px radius (`tests/design-contract.ts`). Giving both the same
- * surface is what made a screen read as boxes inside boxes.
+ * A NAVIGABLE row goes somewhere: it has a card's fill and a card's hairline,
+ * because it is a card you can tap. A DATA row goes nowhere: it is a label, a
+ * figure and a status dot inside a panel that is already a card, so it has no
+ * border at all and a quieter fill. Giving both the same surface is what made
+ * a screen read as boxes inside boxes.
+ *
+ * Every corner here is square (operator decision, 2026-09-22): neither row
+ * draws a radius any more, and the ladder that used to give the navigable row
+ * 8px and the data row 4px (`tests/design-contract.ts`) is retired. The one
+ * round shape left is `DATA_ROW_DOT_CLASS`'s dot, a circle by design.
  */
 
-/** The navigable row: 8px radius, 12px padding, a card fill and a hairline. */
-export const LIST_ROW_CLASS = 'rounded-lg border bg-card p-3';
+/** The navigable row: 12px padding, a card fill and a hairline. */
+export const LIST_ROW_CLASS = 'border bg-card p-3';
 
 /** The distance between two of those rows, the same 12px the settings groups use. */
 export const LIST_STACK_CLASS = 'space-y-3';
 
-/** A data row inside a panel: no border, a quiet fill, the ladder's 4px step. */
-export const DATA_ROW_CLASS = 'flex items-center gap-2 rounded bg-muted/40 p-3';
+/** A data row inside a panel: no border, a quiet fill. */
+export const DATA_ROW_CLASS = 'flex items-center gap-2 bg-muted/40 p-3';
 
 /** Its label: the quiet half of the row. */
 export const DATA_ROW_LABEL_CLASS = 'text-sm font-medium text-muted-foreground';
@@ -55,4 +59,4 @@ export const DATA_ROW_DOT_CLASS = 'size-4 shrink-0 rounded-full';
  * `font-medium` and `tabular-nums`; the size and the weight are the caller's
  * business, the fill and the ink are not.
  */
-export const CHIP_NEUTRAL = 'rounded-full bg-muted px-2 py-0.5 text-foreground';
+export const CHIP_NEUTRAL = 'bg-muted px-2 py-0.5 text-foreground';

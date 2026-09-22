@@ -72,13 +72,13 @@ export function TrendLegend({
       )}
       {hasGoal && metric === 'net-carbs' && (
         <LegendItem
-          swatch={<span className="h-2.5 w-2.5 rounded-sm bg-accent-amber" />}
+          swatch={<span className="h-2.5 w-2.5 bg-accent-amber" />}
           label={t('trends.legend.overGoal')}
         />
       )}
       {hasAverageLine && (
         <LegendItem
-          swatch={<span data-slot="trend-legend-average" className="w-3 rounded-full border-t-2 border-foreground" />}
+          swatch={<span data-slot="trend-legend-average" className="w-3 border-t-2 border-foreground" />}
           label={t('trends.legend.average')}
         />
       )}
@@ -89,7 +89,7 @@ export function TrendLegend({
         />
       )}
       <LegendItem
-        swatch={<span className={cn('h-2.5 w-2.5 rounded-sm border-t-2', FLOOR_SWATCH_CLASS[metric])} />}
+        swatch={<span className={cn('h-2.5 w-2.5 border-t-2', FLOOR_SWATCH_CLASS[metric])} />}
         label={t('trends.legend.incomplete')}
       />
       <LegendItem swatch={<span className="h-3 w-px bg-muted-foreground/40" />} label={t('trends.legend.noEntry')} />

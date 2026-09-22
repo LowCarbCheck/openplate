@@ -205,7 +205,7 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
         side="bottom"
         // Reduced motion keeps the sheet, drops the slide — the position is
         // the information, the travel is decoration.
-        className="motion-reduce:transition-none motion-reduce:animate-none rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+        className="motion-reduce:transition-none motion-reduce:animate-none pb-[env(safe-area-inset-bottom)]"
       >
         <SheetHeader>
           <SheetTitle>{t('launcher.sheetTitle')}</SheetTitle>

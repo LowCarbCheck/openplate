@@ -56,7 +56,7 @@ export function AppLoading({ label }: { label: string }) {
     >
       {/* `alt=""` + the labelled status region above: the icon is decoration,
           the region is the announcement. */}
-      <img src="/icons/icon-192.png?v=2" alt="" className="pulse-soft h-16 w-16 rounded-2xl" />
+      <img src="/icons/icon-192.png?v=2" alt="" className="pulse-soft h-16 w-16" />
       <LoadingDots size="md" />
     </output>
   );

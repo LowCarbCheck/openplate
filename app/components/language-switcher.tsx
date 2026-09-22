@@ -81,7 +81,7 @@ export function LanguageRow() {
       value={active}
       onValueChange={(value) => switchLanguage(value, active)}
       data-slot={LANGUAGE_STRIP_SLOT}
-      className="grid grid-cols-3 gap-1 rounded-lg bg-muted/40 p-1"
+      className="grid grid-cols-3 gap-1 bg-muted/40 p-1"
     >
       {SUPPORTED_LANGUAGES.map((code) => (
         <DropdownMenuRadioItem
@@ -95,7 +95,7 @@ export function LanguageRow() {
             // segmented cell says "selected" with the whole filled cell instead, so the dot
             // and the `pl-8` reserved for it go away.
             '[&>span:first-child]:hidden',
-            'min-h-11 min-w-0 cursor-pointer justify-center rounded-md px-2 py-2 text-xs font-medium',
+            'min-h-11 min-w-0 cursor-pointer justify-center px-2 py-2 text-xs font-medium',
             'text-muted-foreground data-[state=checked]:bg-background data-[state=checked]:text-foreground',
             'data-[state=checked]:shadow-sm data-[state=checked]:ring-1 data-[state=checked]:ring-primary/30',
           )}

@@ -161,7 +161,7 @@ export default function AdminInvite() {
               <Label htmlFor={fields.role.id}>{t('admin.role.label')}</Label>
               <select
                 {...getSelectProps(fields.role)}
-                className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                className="h-11 w-full border border-input bg-background px-3 text-sm"
               >
                 <option value="member">{t('admin.role.standard')}</option>
                 <option value="admin">{t('admin.role.admin')}</option>

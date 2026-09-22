@@ -92,7 +92,7 @@ export default function PublicWrapper({
             <HeaderStatus>
               {showLogo && (
                 <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
-                  <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6 rounded-full" />
+                  <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6" />
                   <Wordmark besideMark className="text-lg text-foreground" />
                 </a>
               )}
@@ -254,7 +254,7 @@ export default function PublicWrapper({
                 a thick left border. */}
             <Link
               to="/widerrufen"
-              className={cn(FOOTER_LINK_CLASS, 'rounded-full border border-input px-3 md:min-h-0 md:py-0.5')}
+              className={cn(FOOTER_LINK_CLASS, 'border border-input px-3 md:min-h-0 md:py-0.5')}
             >
               {t('chrome.withdrawContract')}
             </Link>

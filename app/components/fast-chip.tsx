@@ -74,7 +74,7 @@ export function FastChip({ fast, nowMs, stageLabel, othersFasting = null }: Fast
     <Link
       to="/fasting"
       aria-label={label}
-      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 text-xs font-medium tabular-nums text-primary hover:bg-primary/10"
+      className="inline-flex min-h-9 items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 text-xs font-medium tabular-nums text-primary hover:bg-primary/10"
     >
       <Timer className="size-3.5 shrink-0" aria-hidden="true" />
       <span>{text}</span>

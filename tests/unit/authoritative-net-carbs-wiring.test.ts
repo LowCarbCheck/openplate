@@ -187,8 +187,15 @@ function renderPortionStep(candidate: AddSearchCandidate): string {
  * The one net-carb badge on a surface. Tolerates both spellings currently in
  * use ("21.7g net carbs" in the list, "21.7 g net carbs" on the portion step)
  * so a copy tweak doesn't masquerade as a wiring regression.
+ *
+ * `class` IS NOT THE FIRST ATTRIBUTE, so the pattern does not anchor on it
+ * being one: this app's convention puts `data-slot` before `className` (see
+ * `Card`, every `SettingsGroup` row), and the confirm step's own badge grew a
+ * `data-slot="net-carbs-badge"` on 2026-09-22 so `tests/e2e/scan-review.spec.ts`
+ * could stop finding it by its now-squared `rounded-full`. A pattern anchored
+ * on attribute order would have gone red for the wrong reason that same day.
  */
-const NET_CARB_BADGE = /<span class="([^"]*)"[^>]*>\s*([\d.]+)\s*g net carbs\s*<\/span>/;
+const NET_CARB_BADGE = /<span[^>]*\bclass="([^"]*)"[^>]*>\s*([\d.]+)\s*g net carbs\s*<\/span>/;
 
 /** What a badge assertion inspects: the span's classes and the gram figure it renders. */
 type NetCarbBadge = { classes: string; figure: string };

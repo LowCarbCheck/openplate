@@ -218,7 +218,6 @@ function BarColumn({ bar, index, metric }: { bar: BarGeometry; index: number; me
         y={PLOT_HEIGHT - INCOMPLETE_NUB_UNITS}
         width={barWidth}
         height={INCOMPLETE_NUB_UNITS}
-        rx={0.8}
         className="text-muted-foreground"
         fill="currentColor"
         fillOpacity={0.45}
@@ -242,11 +241,10 @@ function BarColumn({ bar, index, metric }: { bar: BarGeometry; index: number; me
             y={y}
             width={barWidth}
             height={height}
-            rx={0.8}
             fill="currentColor"
             className={FLOOR_FILL_CLASS}
           />
-          <rect x={x} y={y} width={barWidth} height={capHeight} rx={0.8} fill="currentColor" />
+          <rect x={x} y={y} width={barWidth} height={capHeight} fill="currentColor" />
         </g>
       </>
     );
@@ -261,7 +259,6 @@ function BarColumn({ bar, index, metric }: { bar: BarGeometry; index: number; me
         y={y}
         width={barWidth}
         height={height}
-        rx={0.8}
         className={colorClass}
         fill="currentColor"
         fillOpacity={bar.fill === 'derived' ? DERIVED_FILL_OPACITY : 1}
@@ -461,7 +458,7 @@ function GoalTag({ goalFraction, label }: { goalFraction: number; label: string 
 
   return (
     <span
-      className="pointer-events-none absolute right-0 -translate-y-full whitespace-nowrap rounded bg-muted px-1 py-px text-xs font-medium tabular-nums text-muted-foreground"
+      className="pointer-events-none absolute right-0 -translate-y-full whitespace-nowrap bg-muted px-1 py-px text-xs font-medium tabular-nums text-muted-foreground"
       style={{ top: `${(1 - goalFraction) * 100}%` }}
     >
       <span className="sr-only">{t('trends.chart.goalTagPrefix')}</span>
@@ -608,7 +605,7 @@ export function TrendChart({
                     to={`/diary?date=${bar.date}`}
                     aria-label={describeBar({ bar, metric, isWeekly, t, language: i18n.language })}
                     data-slot="trend-bar-hit"
-                    className="min-h-11 flex-1 rounded-sm data-[state=delayed-open]:bg-foreground/5 data-[state=instant-open]:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="min-h-11 flex-1 data-[state=delayed-open]:bg-foreground/5 data-[state=instant-open]:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top" sideOffset={6} className="max-w-64">

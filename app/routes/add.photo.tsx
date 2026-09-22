@@ -2084,10 +2084,10 @@ export function UploadForm({
                   and a box you can type into while it does would be a promise
                   the screen cannot keep. */}
               {isTextIntake && (
-                <figure className="relative w-full rounded-lg border bg-muted/40 p-4">
+                <figure className="relative w-full border bg-muted/40 p-4">
                   <blockquote className="text-sm break-words whitespace-pre-wrap">{typedText}</blockquote>
                   {phase === 'dispatching' && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 backdrop-blur">
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       <p className="text-sm font-medium">{getIdentifyStageMessage(elapsedSeconds, t, 'text')}</p>
                     </div>
@@ -2096,7 +2096,7 @@ export function UploadForm({
               )}
 
               {!isTextIntake && file && previewUrl && (
-                <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded-lg bg-zinc-100 sm:max-h-80 dark:bg-zinc-900">
+                <div className="relative aspect-video max-h-72 w-full overflow-hidden bg-zinc-100 sm:max-h-80 dark:bg-zinc-900">
                   <img src={previewUrl} alt={previewAlt} className="h-full w-full object-cover" />
                   {phase === 'grace' && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 p-4 backdrop-blur">
@@ -2123,7 +2123,7 @@ export function UploadForm({
               )}
 
               {!isTextIntake && !file && (
-                <div className="flex aspect-video max-h-44 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-4 text-center">
+                <div className="flex aspect-video max-h-44 w-full flex-col items-center justify-center gap-2 border-2 border-dashed border-border p-4 text-center">
                   <Camera className="h-8 w-8 text-muted-foreground" />
                   <p className="text-sm font-medium">{emptyTitle}</p>
                 </div>
@@ -2270,7 +2270,7 @@ function MatchNetCarbBadge({ netCarbsPer100g }: { netCarbsPer100g: number | null
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex w-fit items-center whitespace-nowrap px-2 py-0.5 text-xs font-medium',
         carbStatusBadgeClass[carbStatus],
       )}
     >
@@ -2294,7 +2294,7 @@ const MATCH_TIER_LABEL_KEY = {
 function MatchTierChip({ tier }: { tier: MatchTier }) {
   const { t } = useTranslation();
   return (
-    <span className={cn('whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium', matchTierChipClass[tier])}>
+    <span className={cn('whitespace-nowrap px-2 py-0.5 text-xs font-medium', matchTierChipClass[tier])}>
       {t(MATCH_TIER_LABEL_KEY[tier])}
     </span>
   );
@@ -2317,7 +2317,7 @@ function CuratedMatchCard({
   const { t, i18n } = useTranslation();
   const macroSummary = formatCuratedMacroSummary(match, t, i18n.language);
   return (
-    <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+    <div className="space-y-2 border bg-muted/40 p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">{t('scan.review.match.foundIn')}</p>
@@ -2341,7 +2341,7 @@ function CuratedMatchCard({
           split "thumbnail+title" from "badge+macro" any other way. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="flex items-start gap-3">
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
+          <div className="h-16 w-16 shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
             {match.imageUrl && (
               <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
             )}
@@ -2402,9 +2402,9 @@ function MatchOptionRow({ match, applied, onUse }: { match: FoodMatch; applied: 
     // otherwise starves the text column down to a sliver, truncating the
     // title and wrapping the macro line one word per line. At sm+: original
     // side-by-side layout (thumbnail + text | button).
-    <div className="flex flex-col gap-2 rounded-md border bg-background p-2 sm:flex-row sm:items-start sm:gap-3">
+    <div className="flex flex-col gap-2 border bg-background p-2 sm:flex-row sm:items-start sm:gap-3">
       <div className="flex min-w-0 flex-1 items-start gap-3">
-        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
+        <div className="h-12 w-12 shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
           {match.imageUrl && <img src={match.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />}
         </div>
         <div className="min-w-0 flex-1 space-y-1">
@@ -2885,7 +2885,7 @@ export function ConfirmDraftForm({
       {typedText !== null && (
         <figure className="space-y-1">
           <figcaption className="text-xs text-muted-foreground">{t('scan.textIntake.label')}</figcaption>
-          <blockquote className="rounded-lg border bg-muted/40 p-3 text-sm break-words whitespace-pre-wrap">
+          <blockquote className="border bg-muted/40 p-3 text-sm break-words whitespace-pre-wrap">
             {typedText}
           </blockquote>
         </figure>
@@ -2933,7 +2933,7 @@ export function ConfirmDraftForm({
           <Card key={index} className={cn('transition-opacity', !included && 'opacity-60')}>
             <CardContent className="space-y-3 p-4">
               {/* Whole header row toggles inclusion, the label enlarges the hit area. */}
-              <label className="-m-1 flex cursor-pointer items-start justify-between gap-3 rounded-md p-1 transition-colors hover:bg-muted/50">
+              <label className="-m-1 flex cursor-pointer items-start justify-between gap-3 p-1 transition-colors hover:bg-muted/50">
                 <div className="min-w-0 space-y-1">
                   <p className="truncate text-sm font-medium">{view.displayName || t('scan.review.unnamedFood')}</p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -2944,12 +2944,12 @@ export function ConfirmDraftForm({
                         the package in the person's hand says so. Text, not a
                         colour: a tint alone would carry the whole meaning. */}
                     {view.isFromLabel && (
-                      <span className="inline-flex w-fit items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      <span className="inline-flex w-fit items-center border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
                         {t('scan.review.fromLabel')}
                       </span>
                     )}
                     {view.confidence === 'low' && (
-                      <span className="inline-flex w-fit items-center rounded-full bg-accent-amber-surface px-2 py-0.5 text-xs font-medium text-accent-amber">
+                      <span className="inline-flex w-fit items-center bg-accent-amber-surface px-2 py-0.5 text-xs font-medium text-accent-amber">
                         {t('scan.review.doubleCheck')}
                       </span>
                     )}
@@ -3148,8 +3148,9 @@ export function ConfirmDraftForm({
               {preview && carbStatus ?
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span
+                    data-slot="net-carbs-badge"
                     className={cn(
-                      'inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                      'inline-flex w-fit items-center px-2 py-0.5 text-xs font-medium',
                       carbStatusBadgeClass[carbStatus],
                     )}
                   >
@@ -3162,7 +3163,7 @@ export function ConfirmDraftForm({
               : <p className="text-xs text-muted-foreground">{t('scan.review.macrosUnknown')}</p>}
 
               {preview && view.sanityIssues.length > 0 && (
-                <div className="space-y-1 rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
+                <div className="space-y-1 border border-accent-amber-border bg-accent-amber-surface p-2 text-xs text-accent-amber">
                   {view.sanityIssues.map((issue) => (
                     <p key={issue.code}>{issue.message}</p>
                   ))}

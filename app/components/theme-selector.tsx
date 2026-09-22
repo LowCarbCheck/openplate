@@ -130,10 +130,9 @@ export function ThemeSelector() {
     <div
       role="radiogroup"
       aria-label={t('preferences.theme.title')}
-      // A segmented control: the group is the ladder's card step (8px) and the
-      // three segments below are the control step (6px), so a segment nests
-      // inside the group instead of matching it.
-      className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/40 p-1.5"
+      // A segmented control, square corners throughout (DESIGN.md section 5):
+      // the group and its three segments below draw no radius at all.
+      className="grid grid-cols-3 gap-2 border bg-muted/40 p-1.5"
     >
       {THEME_OPTIONS.map((option) => {
         const Icon = option.icon;
@@ -147,7 +146,7 @@ export function ThemeSelector() {
           <label
             key={option.value}
             className={cn(
-              'flex min-h-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-primary',
+              'flex min-h-11 cursor-pointer flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-primary',
               isActive ?
                 'bg-background text-foreground shadow-sm ring-1 ring-primary/30'
               : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',

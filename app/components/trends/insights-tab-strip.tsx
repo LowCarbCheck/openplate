@@ -77,7 +77,7 @@ export function InsightsTabStrip({
       role="tablist"
       aria-label={t('trends.title')}
       data-slot="insights-tab-strip"
-      className="grid grid-cols-4 gap-1 rounded-lg border bg-card p-1 @3xl:w-fit @3xl:[grid-template-columns:repeat(4,minmax(8rem,1fr))]"
+      className="grid grid-cols-4 gap-1 border bg-card p-1 @3xl:w-fit @3xl:[grid-template-columns:repeat(4,minmax(8rem,1fr))]"
     >
       {INSIGHTS_TABS.map((tab) => {
         const isActive = tab === active;
@@ -89,7 +89,7 @@ export function InsightsTabStrip({
             role="tab"
             aria-selected={isActive}
             className={cn(
-              'flex min-h-11 min-w-0 items-center justify-center rounded-md px-1 py-1.5 text-center',
+              'flex min-h-11 min-w-0 items-center justify-center px-1 py-1.5 text-center',
               // NOT `truncate`: three of the four German labels and two of the
               // Turkish ones need more than a quarter of a 360px phone, and a
               // navigation label that ends in an ellipsis is a navigation

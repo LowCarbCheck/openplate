@@ -157,7 +157,7 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
             phone and the right-hand end of the one row on a desktop. */}
         <fieldset
           data-slot="trend-range-controls"
-          className="col-span-2 grid grid-cols-4 gap-0.5 rounded-md border bg-card p-0.5 @xl:col-span-1 @xl:ml-auto @xl:w-96"
+          className="col-span-2 grid grid-cols-4 gap-0.5 border bg-card p-0.5 @xl:col-span-1 @xl:ml-auto @xl:w-96"
         >
           <legend className="sr-only">{t('trends.controls.rangeGroup')}</legend>
           {RANGE_OPTIONS.map((option) => {
@@ -169,7 +169,7 @@ export function TrendControls({ metric, range, slot, tab }: TrendSelection) {
                 preventScrollReset
                 aria-current={isActive ? 'true' : undefined}
                 className={cn(
-                  'flex min-h-11 min-w-0 items-center justify-center rounded-sm px-1 text-center text-xs font-medium leading-tight transition-colors md:min-h-7',
+                  'flex min-h-11 min-w-0 items-center justify-center px-1 text-center text-xs font-medium leading-tight transition-colors md:min-h-7',
                   isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
                 )}
               >

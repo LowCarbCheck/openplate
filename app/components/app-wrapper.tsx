@@ -76,7 +76,7 @@ function InstallDrawerItem({ onNavigate }: { onNavigate: () => void }) {
 /** One drawer row's classes, active rows carry the brand the same way the sidebar's do. */
 function drawerItemClasses(isActive: boolean): string {
   return cn(
-    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
+    'flex min-h-11 items-center gap-3 px-3 text-sm font-medium transition-colors',
     isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted',
   );
 }
@@ -152,13 +152,13 @@ function NavDrawer() {
           className="relative size-9 shrink-0 p-0 after:absolute after:-inset-1 after:content-[''] hover:bg-transparent md:hidden"
           aria-label={t('chrome.logoMenuLabel')}
         >
-          <img src="/icons/icon-192.png?v=2" alt="" className="size-9 rounded-lg" />
+          <img src="/icons/icon-192.png?v=2" alt="" className="size-9" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-72 gap-0 p-0 md:hidden">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2 text-lg">
-            <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7 rounded-lg" />
+            <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7" />
             {/* The product name is a proper noun, never translated. */}
             <Wordmark besideMark />
           </SheetTitle>

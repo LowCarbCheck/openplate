@@ -204,7 +204,7 @@ function Logo() {
         isCollapsed && 'gap-0 px-0 justify-center',
       )}
     >
-      <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+      <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 shrink-0" />
       {!isCollapsed && <Wordmark besideMark className="text-lg text-sidebar-foreground" />}
     </Link>
   );

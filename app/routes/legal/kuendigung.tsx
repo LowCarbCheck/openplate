@@ -256,7 +256,7 @@ export default function Kuendigung() {
                   id={fields.reason.id}
                   name={fields.reason.name}
                   rows={3}
-                  className="w-full resize-none rounded-md border border-input bg-card px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full resize-none border border-input bg-card px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <FieldError id={fields.reason.errorId} errors={fields.reason.errors} />
               </div>

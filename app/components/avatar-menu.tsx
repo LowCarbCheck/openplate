@@ -171,7 +171,7 @@ function ThemeRow() {
       onValueChange={(value) => {
         if (isTheme(value)) selectTheme(value);
       }}
-      className="flex gap-1 rounded-lg bg-muted/40 p-1"
+      className="flex gap-1 bg-muted/40 p-1"
     >
       {THEME_OPTIONS.map((option) => {
         const Icon = option.icon;
@@ -186,7 +186,7 @@ function ThemeRow() {
               // filled cell instead, so the dot — and the `pl-8` reserved for
               // it — go away.
               '[&>span:first-child]:hidden',
-              'flex-1 cursor-pointer flex-col justify-center gap-1 rounded-md py-2 pl-2 pr-2 text-[11px] font-medium',
+              'flex-1 cursor-pointer flex-col justify-center gap-1 py-2 pl-2 pr-2 text-[11px] font-medium',
               'text-muted-foreground data-[state=checked]:bg-background data-[state=checked]:text-foreground',
               'data-[state=checked]:shadow-sm data-[state=checked]:ring-1 data-[state=checked]:ring-primary/30',
             )}

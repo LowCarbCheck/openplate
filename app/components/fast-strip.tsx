@@ -13,8 +13,8 @@
  *
  * Not a `Card`: a `Card` would bring `p-6` plus a header/content split, and the
  * whole point is that this is ONE ROW. It borrows `Card`'s resting look
- * (`rounded-lg border bg-card shadow-sm`, the ladder's card step) so it reads
- * as a sibling of the tiles below without paying their padding.
+ * (`border bg-card shadow-sm`, no radius, DESIGN.md section 5) so it reads as
+ * a sibling of the tiles below without paying their padding.
  */
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +61,7 @@ export function FastStripRow({ fast, nowMs }: FastStripRowProps): ReactElement {
   return (
     <Link
       to="/fasting"
-      className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+      className="flex items-center gap-3 border bg-card px-3 py-2.5 shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
     >
       <Timer className="size-4 shrink-0 text-primary" aria-hidden="true" />
       <span className="min-w-0 flex-1">

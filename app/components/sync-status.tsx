@@ -58,7 +58,7 @@ export function SyncRestoredNotice({ notice }: { notice: StorageHealNotice }) {
   const { t } = useTranslation();
   if (notice.kind !== 'restored') return null;
   return (
-    <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
+    <output className="flex items-start gap-2 border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
       <RotateCcw className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <div className="space-y-1">
         <p className="font-medium">{t('sync.status.restored.title')}</p>
@@ -105,7 +105,7 @@ export function SyncStatus({ onSyncNow }: { onSyncNow: () => void }) {
       <SyncRestoredNotice notice={session.storageHealNotice} />
 
       {session.error !== null && (
-        <output className="flex items-start gap-2 rounded-lg border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
+        <output className="flex items-start gap-2 border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div className="space-y-1">
             <p className="font-medium">{t(`sync.status.error.${session.error.reason}`)}</p>

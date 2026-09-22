@@ -176,7 +176,7 @@ interface DescribeComposerProps {
  *
  * IT IS ONE MESSAGE BOX, not a form. A bordered textarea, a square button
  * beside it and a full-width Send below it read as a form to fill in; a
- * person writing a sentence about lunch is writing a message. So one rounded
+ * person writing a sentence about lunch is writing a message. So one
  * container carries the border and the focus ring, the textarea inside it is
  * borderless and transparent and grows with the content, and Send is a round
  * icon button in the container's bottom right corner.
@@ -290,10 +290,12 @@ export function DescribeComposer({
 
         {/* ONE CONTAINER. It owns the border, the background and the focus
             ring, so focusing the textarea lights the whole box rather than a
-            rectangle inside a rectangle. The ladder's card step (8px), the same
-            box the intake composer strip draws: a field and a key side by side
-            is a control group, not a 16px hero. */}
-        <div className="flex items-end gap-2 rounded-lg border border-input bg-card px-3 py-2 focus-within:ring-2 focus-within:ring-ring">
+            rectangle inside a rectangle. Square corners, the same box the
+            intake composer strip draws: a field and a key side by side. */}
+        <div
+          data-slot="describe-composer"
+          className="flex items-end gap-2 border border-input bg-card px-3 py-2 focus-within:ring-2 focus-within:ring-ring"
+        >
           <textarea
             id="describe-meal"
             ref={fieldRef}

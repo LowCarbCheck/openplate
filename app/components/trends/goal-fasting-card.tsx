@@ -33,8 +33,8 @@ export function GoalFastingCard({ share }: { share: FastTargetShare }): ReactEle
         <p className="text-sm font-medium text-foreground tabular-nums">
           {t('trends.goals.fasting.reached', { reached: share.reachedCount, finished: share.finishedCount })}
         </p>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
-          <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+        <div className="h-2 w-full overflow-hidden bg-muted" aria-hidden="true">
+          <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       </CardContent>
     </Card>

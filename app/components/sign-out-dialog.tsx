@@ -199,7 +199,7 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="flex items-start gap-2.5 rounded-lg border border-border p-3">
+        <div className="flex items-start gap-2.5 border border-border p-3">
           {/* Unticked on every open. Erasing is a second act inside this one,
               and it is the person's act. */}
           <input
@@ -208,7 +208,7 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
             checked={eraseDevice}
             onChange={(event) => setEraseDevice(event.target.checked)}
             disabled={isBusy}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary"
+            className="mt-0.5 h-4 w-4 shrink-0 border-input accent-primary"
           />
           <div className="space-y-1">
             <Label htmlFor={ERASE_FIELD_ID} className="text-sm font-normal leading-relaxed">

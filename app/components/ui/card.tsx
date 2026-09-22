@@ -3,21 +3,20 @@ import * as React from 'react';
 import { cn } from '#app/lib/utils';
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  // A card is the ladder's 8px step (`tests/design-contract.ts`, DESIGN.md
-  // section 5). It was 16px from M129/01 until M243 spec 03, by which point one
-  // radius meant a card, a list row, a settings inset, a dialog, a textarea and
-  // a focus ring, so the shape said nothing about what a thing was. 16px is now
-  // the hero and the sheet, and a card is a card.
+  // A card draws no radius (`app/app.css`'s `--radius`, DESIGN.md section 5):
+  // square corners everywhere, operator decision 2026-09-22. It was the
+  // ladder's 8px step from M243 spec 03 until then, and 16px from M129/01
+  // before that.
   //
-  // `data-slot` is the identity, not the radius. Three browser specs used to
-  // find a card as `div.rounded-2xl.bg-card`, which is a test that fails the day
-  // a taste call moves, and passes vacuously the day it moves and nobody
+  // `data-slot` is the identity, not the corner. Three browser specs used to
+  // find a card as `div.rounded-2xl.bg-card`, which is a test that fails the
+  // day a taste call moves, and passes vacuously the day it moves and nobody
   // notices. Cards rest at `shadow-sm`, never heavier; hover elevation is a
   // per-instance opt-in for interactive rows, not a Card-wide default.
   <div
     ref={ref}
     data-slot="card"
-    className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)}
+    className={cn('border bg-card text-card-foreground shadow-sm', className)}
     {...props}
   />
 ));

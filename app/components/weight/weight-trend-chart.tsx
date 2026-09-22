@@ -103,7 +103,7 @@ export function WeightTrendChart({
 
   if (!geometry) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+      <div className="flex h-40 items-center justify-center border border-dashed text-sm text-muted-foreground">
         {t('trends.weight.chartEmpty')}
       </div>
     );
@@ -159,7 +159,7 @@ export function WeightTrendChart({
         ))}
       </div>
 
-      <div className="relative h-40 min-w-0 flex-1 rounded-lg sm:h-48">
+      <div className="relative h-40 min-w-0 flex-1 sm:h-48">
         {/*
           `preserveAspectRatio="none"` so the plot fills a height this card
           chooses instead of one its width dictates: at 3.2:1 the chart was 87px
@@ -225,7 +225,7 @@ export function WeightTrendChart({
         {geometry.targetY !== null && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-0 -translate-y-full rounded bg-card px-1 text-xs tabular-nums text-muted-foreground"
+            className="pointer-events-none absolute right-0 -translate-y-full bg-card px-1 text-xs tabular-nums text-muted-foreground"
             style={{ top: `${(geometry.targetY / VIEW_HEIGHT) * 100}%` }}
           >
             {t('trends.weight.target', {
@@ -270,7 +270,7 @@ export function WeightTrendChart({
             data-slot="weight-tooltip"
             aria-hidden="true"
             className={cn(
-              'pointer-events-none absolute z-10 whitespace-nowrap rounded-md bg-foreground px-3 py-1.5 text-xs text-background shadow-md',
+              'pointer-events-none absolute z-10 whitespace-nowrap bg-foreground px-3 py-1.5 text-xs text-background shadow-md',
               active.x < VIEW_WIDTH * TOOLTIP_EDGE_SHARE ? 'translate-x-[-12px]'
               : active.x > VIEW_WIDTH * (1 - TOOLTIP_EDGE_SHARE) ? 'translate-x-[calc(-100%+12px)]'
               : '-translate-x-1/2',
@@ -293,7 +293,7 @@ export function WeightTrendChart({
         <button
           type="button"
           aria-label={t('trends.weight.chartLabel', { unit: spelledUnit })}
-          className="absolute inset-0 cursor-default rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute inset-0 cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onKeyDown={handleKeyDown}
           onBlur={() => onActiveIndexChange(null)}
           onPointerMove={handlePointerMove}

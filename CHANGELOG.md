@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **The page title on a phone is larger and sits closer to the brand name.** The title in the phone header is now 18 px instead of 14 px, with 4 px between it and the openplate wordmark above it instead of 6 px. The size is fixed: a title that does not fit is shortened in its translation, not shrunk. The thirteen titles in German, English, Spanish, French and Italian that first ended in an ellipsis at the new size are now shortened, and the research page's own title, "Research contributions", is now "Research studies" to match what the page is about.
+- **Every corner in the app is square now, except a real circle.** Cards, buttons, inputs, selects, dialogs, sheets, menus, badges, chips, images, progress bars and the header and bottom bar all lost their rounded corners. An avatar, a status dot, a round icon button, a switch and a spinner stay round, because they are circles by design and not because of where they sit.
 
 ## [0.39.0] - 2026-09-22
 

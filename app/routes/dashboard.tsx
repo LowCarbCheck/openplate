@@ -131,7 +131,7 @@ const HANDOFF_LINK_CLASS =
  * competing with the control it sits under.
  */
 const PANTRY_DOOR_CLASS =
-  'flex w-full flex-col gap-0.5 rounded-lg border border-border/70 bg-card/60 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5';
+  'flex w-full flex-col gap-0.5 border border-border/70 bg-card/60 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5';
 
 /**
  * Card padding for the two glance tiles.
@@ -488,7 +488,7 @@ function TodayHeroCard({
   // not a fill or a border of its own: those are an ordinary card's since
   // M243/04.
   return (
-    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+    <Card className="surface-brand overflow-hidden shadow-sm">
       {/* `p-4 space-y-4` rather than `p-5 space-y-5` (M243 spec 05a): the hero
           filled about four fifths of the phone, and the graph paper it now
           draws is only worth drawing if some of the page shows beside it. */}
@@ -592,9 +592,9 @@ function WeekGlanceCard({ ridge }: { ridge: DayRidgeModel }): ReactElement {
     <Link
       to="/trends?tab=overview"
       data-slot="week-glance-card"
-      // The ring is drawn on this wrapper, so it takes the radius of the card
-      // inside it (the ladder's 8px card step).
-      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, around the card inside it. Both
+      // draw a square corner (DESIGN.md section 5).
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={cn(GLANCE_HEADER_CLASS, 'flex-row items-start justify-between gap-2 space-y-0')}>
@@ -638,9 +638,9 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
   return (
     <Link
       to="/trends"
-      // The ring is drawn on this wrapper, so it takes the radius of the card
-      // inside it (the ladder's 8px card step).
-      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // The ring is drawn on this wrapper, around the card inside it. Both
+      // draw a square corner (DESIGN.md section 5).
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Card className="h-full transition-colors hover:border-primary/40">
         <CardHeader className={GLANCE_HEADER_CLASS}>

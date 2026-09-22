@@ -120,49 +120,25 @@ export const GRID_CELL_PX = 28;
 export const GRID_LINE_ALPHA = 0.7;
 
 /**
- * THE SHAPE LADDER (M243 spec 03), decided before a single class was edited.
+ * EVERY CORNER IS SQUARE (operator decision, 2026-09-22), which retires the five-step radius
+ * ladder M243 spec 03 wrote here. From M129/01 to M243 spec 03 one radius meant everything;
+ * spec 03 answered that by giving each kind of object its own step, a data row at 4 px up to a
+ * hero at 16 px, so a person could learn the ladder once and read a screen faster. The operator
+ * called for zero everywhere instead, so the ladder is gone rather than flattened to a five-way
+ * tie at the same number, which would have kept five names for one idea.
  *
- * One radius used to mean everything. `rounded-2xl` was on the card, the list row, the settings
- * inset, the dialog, a textarea, a segmented control and a focus ring alike, so the shape of a
- * thing said nothing about what the thing WAS. Five steps now, and each step is one kind of object.
- * Anything at the same step is the same kind of object, which is the whole point: a person learns
- * the ladder once and then reads the screen faster.
+ * THE ONE EXCEPTION IS A CIRCLE, drawn as `rounded-full`, and only when the shape genuinely is
+ * one: an avatar, a dot, a round icon button, a switch's thumb and track, a spinner, a radio
+ * indicator. `rounded-full` on anything else, a pill-shaped chip, a segmented control, a progress
+ * bar's track, a search field, is squared along with everything that used to sit on the ladder.
  *
- * | Tier      | Class          | px | What wears it                                            |
- * | --------- | -------------- | -- | -------------------------------------------------------- |
- * | `dataRow` | `rounded`      |  4 | a data row inside a panel: label, value, status           |
- * | `control` | `rounded-md`   |  6 | buttons, inputs, composer keys, thumbnails                |
- * | `card`    | `rounded-lg`   |  8 | every card, every inset group, every list row, every panel |
- * | `tile`    | `rounded-xl`   | 12 | a tile in a grid                                          |
- * | `hero`    | `rounded-2xl`  | 16 | the one hero per screen, dialogs, sheets, the landing frame |
- *
- * `rounded-full` is the sixth and is not a step: pills, badges, dots and avatars are round because
- * they are round, not because of where they sit.
- *
- * This resolves DESIGN.md's own contradiction, section 1.5 said `rounded-2xl` and section 5 said
- * `rounded-lg`, in section 5's favour. `tests/unit/radius-tiers.test.ts` holds the allowlist of the
- * sites still allowed to draw 12 px and 16 px, and `tests/e2e/lcc-lineage-shape.spec.ts` reads the
- * COMPUTED radius of each tier in a real browser.
+ * `app/app.css`'s `--radius` and every token derived from it are `0`, so a component that still
+ * asks Tailwind's default scale for a rounded corner draws none.
+ * `tests/e2e/square-corners.spec.ts` reads the COMPUTED `border-*-radius` of every visible element
+ * on a real page and fails on anything above zero that is not a circle (width equal to height and
+ * a radius at least half of it).
  */
-export const RADIUS_TIER_PX = {
-  dataRow: 4,
-  control: 6,
-  card: 8,
-  tile: 12,
-  hero: 16,
-} as const;
-
-/** A step on the ladder. */
-export type RadiusTier = keyof typeof RADIUS_TIER_PX;
-
-/** The Tailwind utility each step is written as, which is what a source guard matches on. */
-export const RADIUS_TIER_CLASS = {
-  dataRow: 'rounded',
-  control: 'rounded-md',
-  card: 'rounded-lg',
-  tile: 'rounded-xl',
-  hero: 'rounded-2xl',
-} as const satisfies Record<RadiusTier, string>;
+export const SQUARE_CORNER_PX = 0;
 
 /**
  * The padding a list row draws, `p-3`. It was `p-4` while the row was 16 px round; a row that is

@@ -12,7 +12,7 @@
  * variants compose, and a test pins it once rather than per component.
  *
  * `SettingsGroup` is a list of destinations, so its container adds hairline
- * dividers and clips them at the radius; `SettingsSection` is one block of
+ * dividers and clips them at its edge; `SettingsSection` is one block of
  * content, so its container adds padding. A page that wants rows uses
  * `SettingsGroup`; there is deliberately no `variant` prop choosing between
  * them.
@@ -31,10 +31,11 @@ import { cn } from '#app/lib/utils';
 
 /**
  * The one inset-container recipe: both variants below compose it, nothing else
- * re-types it. It is the ladder's card step (8px, `tests/design-contract.ts`),
- * because an inset group IS a card, one with rows in it instead of a title.
+ * re-types it. It draws no radius, corners are square app-wide (DESIGN.md
+ * section 5), because an inset group IS a card, one with rows in it instead
+ * of a title.
  */
-export const SETTINGS_INSET_CLASS = 'rounded-lg border bg-card';
+export const SETTINGS_INSET_CLASS = 'border bg-card';
 
 /**
  * One settings destination. The whole row is the link (not a trailing "Open"

@@ -356,7 +356,7 @@ function RotationCard({ onRotated }: { onRotated: () => void }) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      : <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+      : <div className="space-y-2 border border-primary/30 bg-primary/5 p-4">
           <p className="text-sm font-medium">{t('sharing.rotate.doneTitle')}</p>
           {/* THE COUNTS, and nothing else (M192). A rotation still mints a
               fresh recovery code, and the card used to print it with a

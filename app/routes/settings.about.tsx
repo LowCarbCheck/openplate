@@ -141,7 +141,7 @@ function ReleaseStatus({
   }
 
   return (
-    <div data-release-status="behind" className="space-y-1 rounded-lg bg-muted/50 px-3 py-3">
+    <div data-release-status="behind" className="space-y-1 bg-muted/50 px-3 py-3">
       <p className="text-sm font-medium">{t('about.updates.behindTitle')}</p>
       <p className="text-sm text-muted-foreground break-words">
         {t('about.updates.behindVersions', { running: server.currentVersion, latest: server.latest })}

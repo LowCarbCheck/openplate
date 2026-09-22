@@ -106,7 +106,7 @@ export function PeopleTable({ people, currentAccountId, activity, filter, onFilt
     <div className="space-y-3">
       <PeopleFilterBar filter={filter} onFilterChange={onFilterChange} />
       {reason === 'not-empty' ?
-        <div className="rounded-lg border">
+        <div className="border">
           <PeopleHeader hasStrips={activity !== null} />
           <ul className="divide-y">
             {visible.map((person) => (
@@ -158,7 +158,7 @@ function PeopleFilterBar({
         <Label htmlFor="admin-people-group">{t('admin.filter.groupLabel')}</Label>
         <select
           id="admin-people-group"
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-11 w-full border border-input bg-background px-3 text-sm"
           value={filter.group}
           onChange={(event) => onFilterChange({ ...filter, group: readGroup(event.target.value) })}
         >

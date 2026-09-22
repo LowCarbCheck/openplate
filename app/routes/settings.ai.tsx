@@ -408,7 +408,7 @@ function ModelRadioCard({
       // would otherwise be read out in full for every option in the list.
       aria-label={model.label}
       className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-accent/50',
+        'flex cursor-pointer items-start gap-3 border p-3 text-sm transition-colors hover:bg-accent/50',
         isSelected && 'border-primary bg-accent/40',
       )}
     >
@@ -559,7 +559,7 @@ function DisconnectDialogDescription({ settings }: { settings: LocalAiSettings }
     return (
       <span className="block space-y-2">
         <span className="block">{t('settingsAi.disconnect.stops')}</span>
-        <span className="block rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
+        <span className="block border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
           {t('settingsAi.preset.disconnectNote')}
         </span>
       </span>
@@ -570,7 +570,7 @@ function DisconnectDialogDescription({ settings }: { settings: LocalAiSettings }
   return (
     <span className="block space-y-2">
       <span className="block">{t('settingsAi.disconnect.stops')}</span>
-      <span className="block rounded-md border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
+      <span className="block border border-accent-amber-border bg-accent-amber-surface p-2 text-accent-amber">
         <Trans
           i18nKey="settingsAi.disconnect.notRevoked"
           values={{ provider: providerLabel({ provider, t }) }}
@@ -611,7 +611,7 @@ function ConnectedPanel({ settings, onDisconnected }: { settings: LocalAiSetting
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-emerald-500/30 bg-emerald-500/10 p-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
           <span>
@@ -1097,7 +1097,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     aria-pressed={isActive}
                     onClick={() => selectProvider(definition.id)}
                     className={cn(
-                      'flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-center text-sm transition-colors hover:bg-accent/50',
+                      'flex min-h-11 items-center justify-center gap-2 border px-3 py-2 text-center text-sm transition-colors hover:bg-accent/50',
                       isActive && 'border-primary bg-accent/40 font-medium',
                     )}
                   >
@@ -1199,7 +1199,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     blocking a submit the user can't see a reason for. */}
                 <CollapsibleContent
                   forceMount
-                  className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                  className="mt-3 space-y-4 border p-4 data-[state=closed]:hidden"
                 >
                   <Collapsible open={isAdvancedOpen || hasHiddenAdvancedFieldError} onOpenChange={setIsAdvancedOpen}>
                     <CollapsibleTrigger asChild>
@@ -1212,7 +1212,7 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
                     </CollapsibleTrigger>
                     <CollapsibleContent
                       forceMount
-                      className="mt-3 space-y-4 rounded-md border p-4 data-[state=closed]:hidden"
+                      className="mt-3 space-y-4 border p-4 data-[state=closed]:hidden"
                     >
                       {PROVIDER_REGISTRY[selectedProvider].placement === 'advanced' && (
                         <button

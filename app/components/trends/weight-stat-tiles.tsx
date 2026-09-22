@@ -18,8 +18,7 @@
  * brand role. The comment here used to name `font-sans` and to allow the serif
  * on a hero number; both went in M243. The body role is one face now
  * (`--font-body`), and the `Wordmark` component is the only thing in the app
- * that may ask for the brand role. The tile itself, and the ladder inside it, is
- * `StatTile`.
+ * that may ask for the brand role. The tile itself is `StatTile`.
  */
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';

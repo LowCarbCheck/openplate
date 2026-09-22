@@ -139,7 +139,7 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
           type="button"
           aria-label={t('chrome.status.dismiss')}
           onClick={() => clearStatus()}
-          className="flex size-11 shrink-0 items-center justify-center rounded-lg"
+          className="flex size-11 shrink-0 items-center justify-center"
         >
           <X className="size-4 opacity-70" aria-hidden="true" />
         </button>

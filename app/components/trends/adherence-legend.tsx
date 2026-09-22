@@ -20,7 +20,7 @@ const RAMP_CLASSES = ['bg-adherence-1', 'bg-adherence-2', 'bg-adherence-3', 'bg-
 
 /** One legend swatch. Always `aria-hidden` — the entry's text is the accessible content. */
 function Swatch({ className }: { className: string }) {
-  return <span className={`h-2.5 w-2.5 shrink-0 rounded-[2px] ${className}`} aria-hidden="true" />;
+  return <span className={`h-2.5 w-2.5 shrink-0 ${className}`} aria-hidden="true" />;
 }
 
 /** One legend entry: a swatch and its label. */

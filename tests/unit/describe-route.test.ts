@@ -57,7 +57,6 @@ import { takeIntakeHandoff } from '../../app/lib/intake-handoff';
 import { parseIntakeConsumer, type IntakeConsumer } from '../../app/lib/intake-consumers';
 import type { AiConnection, AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import type { RepeatYesterdayOffer } from '../../app/lib/copy-day';
-import { RADIUS_TIER_CLASS } from '../design-contract';
 
 /** The shipped copy this file asserts on, so a renamed key fails here rather than shipping a raw `describe.send`. */
 const describeCopySchema = z.object({
@@ -171,16 +170,13 @@ describe('the composer is a message box, not a form', () => {
     assert.doesNotMatch(markup, /type="search"/, 'a search field reappeared on the composer screen');
   });
 
-  it('puts the field and Send in ONE rounded container', () => {
+  it('puts the field and Send in ONE container', () => {
     const markup = renderComposer();
-    // THE SHAPE IS READ FROM THE CONTRACT, not typed here. The container was
-    // 16px until M243 spec 03 put it on the ladder's card step, and a test that
-    // spelled the class out would have failed for the wrong reason: what this
+    // FOUND BY ITS SLOT, not by its corners: the container drew a radius until
+    // the operator squared every corner in the app on 2026-09-22, and what this
     // test is about is that there is ONE box, not what its corners measure.
-    const container = new RegExp(`<div class="([^"]*\\b${RADIUS_TIER_CLASS.card}\\b[^"]*)">\\s*<textarea`, 'u').exec(
-      markup,
-    );
-    assert.ok(container !== null, 'the textarea no longer sits inside a rounded container');
+    const container = /<div data-slot="describe-composer" class="([^"]*)">\s*<textarea/u.exec(markup);
+    assert.ok(container !== null, 'the textarea no longer sits inside the describe-composer container');
     const className = container[1] ?? '';
     assert.match(className, /\bborder-input\b/, 'the container lost its border');
     assert.match(className, /\bbg-card\b/, 'the container lost its background');

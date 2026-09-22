@@ -86,7 +86,7 @@ function AdherenceDayReadout({
               : <Minus className="h-3 w-3 shrink-0" aria-hidden="true" />}
               <span
                 className={cn(
-                  'h-2 w-2 shrink-0 rounded-[2px]',
+                  'h-2 w-2 shrink-0',
                   row.verdict === 'met' ? 'bg-adherence-4' : 'bg-adherence-unrated',
                 )}
                 aria-hidden="true"
@@ -159,7 +159,7 @@ const AdherenceCell = memo(function AdherenceCell({
         <span
           aria-hidden="true"
           className={cn(
-            'block aspect-square w-full rounded-sm',
+            'block aspect-square w-full',
             fillClassForDay(day),
             day.isToday && 'outline outline-[1.5px] outline-offset-[1px] outline-foreground/55',
           )}
@@ -191,7 +191,7 @@ const AdherenceCell = memo(function AdherenceCell({
               // The `after` pseudo-element expands the touch target by 1px on
               // every side into the 2px gap — bigger than the painted square,
               // with zero overlap between neighbours.
-              "relative block aspect-square w-full rounded-sm after:absolute after:-inset-[1px] after:content-['']",
+              "relative block aspect-square w-full after:absolute after:-inset-[1px] after:content-['']",
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
               fillClassForDay(day),
               day.isToday && 'outline outline-[1.5px] outline-offset-[1px] outline-foreground/55',

@@ -161,7 +161,7 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
       )}
     >
       {candidate.imageUrl && (
-        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-900">
+        <div className="h-12 w-12 shrink-0 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
           <img src={candidate.imageUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
         </div>
       )}
@@ -188,13 +188,13 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
           )}
           {candidate.source === 'curated' && shouldShowMatchTierChip(candidate.matchTier) && (
             <span
-              className={cn('rounded-full px-2 py-0.5 text-xs font-medium', matchTierChipClass[candidate.matchTier])}
+              className={cn('px-2 py-0.5 text-xs font-medium', matchTierChipClass[candidate.matchTier])}
             >
               {t(MATCH_TIER_LABEL_KEYS[candidate.matchTier])}
             </span>
           )}
           {preview && carbStatus && (
-            <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', carbStatusBadgeClass[carbStatus])}>
+            <span className={cn('px-2 py-0.5 text-xs font-medium', carbStatusBadgeClass[carbStatus])}>
               {t('add.results.netCarbs', { value: formatMacroNumberIn(i18n.language, preview.netCarbsPer100g) })}
             </span>
           )}

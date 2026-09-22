@@ -1,9 +1,9 @@
 /**
  * Unit tests for `#app/components/ui/card`, the shared Card/CardTitle surface
  * used by every card-based screen (diary, add, trends, settings). Pins the
- * DESIGN.md-aligned defaults (the ladder's card radius plus a `shadow-sm`
- * resting elevation, a real `text-lg` CardTitle size in the body face, never
- * the display serif) so a future edit can't silently revert Card to the flat,
+ * DESIGN.md-aligned defaults (square corners plus a `shadow-sm` resting
+ * elevation, a real `text-lg` CardTitle size in the body face, never the
+ * display serif) so a future edit can't silently revert Card to the flat,
  * unsized state the design audit called out. A plain SSR render (no DOM needed)
  * is enough to assert on the emitted class list.
  *
@@ -14,12 +14,10 @@
  * 2026-09-21 it went back to `text-lg`: fourteen cards had kept an explicit
  * `text-lg`, so 16 px and 18 px titles shared a screen over one 14 px body.
  *
- * M243 spec 03 changed the radius half. The class is read from
- * `tests/design-contract.ts` rather than typed here, because it is a taste call
- * a person may reverse, and Card grew `data-slot="card"` so the browser tier can
- * stop finding a card by its corners. Both are asserted: the radius, because the
- * ladder means nothing if the card is not on its step, and the slot, because
- * three specs now select on it.
+ * M243 spec 03 had put Card on a five-step radius ladder; the operator retired
+ * that ladder on 2026-09-22 for square corners everywhere. Card kept
+ * `data-slot="card"` regardless, so the browser tier finds a card by its slot
+ * and never by its corners.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,7 +26,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { Card, CardTitle } from '../../app/components/ui/card';
 import { Wordmark } from '../../app/components/wordmark';
-import { RADIUS_TIER_CLASS } from '../design-contract';
 
 /** Pulls the `class="..."` attribute value out of a single-element SSR render. */
 function classListOf(html: string): string[] {
@@ -37,13 +34,16 @@ function classListOf(html: string): string[] {
   return match[1].split(/\s+/);
 }
 
+/** Whether `token` is a radius utility, whole or variant-prefixed (`sm:rounded-lg`). */
+function isRadiusToken(token: string): boolean {
+  return /(?:^|:)rounded(?:-|$)/.test(token);
+}
+
 describe('Card', () => {
-  it('rests at shadow-sm on the ladder`s card step', () => {
+  it('draws no radius: corners are square', () => {
     const classes = classListOf(renderToStaticMarkup(createElement(Card, {}, 'content')));
-    // WHOLE TOKENS, not `includes` on the markup: `sm:rounded-lg` contains the
-    // card class as a substring and is a different radius.
-    assert.ok(classes.includes(RADIUS_TIER_CLASS.card), `expected ${RADIUS_TIER_CLASS.card}`);
-    assert.ok(!classes.includes(RADIUS_TIER_CLASS.hero), 'the hero step is not the card step');
+    const radiusToken = classes.find(isRadiusToken);
+    assert.equal(radiusToken, undefined, `a card must draw no radius, found "${radiusToken}"`);
     assert.ok(classes.includes('shadow-sm'), 'expected shadow-sm');
     assert.ok(!classes.includes('shadow'), 'the bare, unscaled shadow class should not be the resting default');
   });

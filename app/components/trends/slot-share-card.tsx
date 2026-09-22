@@ -68,7 +68,7 @@ function ShareBar({ shares, date }: { shares: SlotShareBucket | null; date: stri
         data-slot="slot-share-bar"
         data-date={date}
         data-state="none"
-        className="h-2.5 w-full rounded-full bg-muted"
+        className="h-2.5 w-full bg-muted"
       />
     );
   }
@@ -77,7 +77,7 @@ function ShareBar({ shares, date }: { shares: SlotShareBucket | null; date: stri
       data-slot="slot-share-bar"
       data-date={date}
       data-state="split"
-      className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted"
+      className="flex h-2.5 w-full overflow-hidden bg-muted"
     >
       {SLOT_SHARE_KEYS.map((key, index) => (
         <div
@@ -98,7 +98,7 @@ function ShareLegend({ t }: { t: Translate }) {
     <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
       {SLOT_SHARE_KEYS.map((key) => (
         <span key={key} className="inline-flex items-center gap-1.5">
-          <span aria-hidden="true" className={cn('h-2.5 w-2.5 rounded-sm', SLOT_SEGMENT_CLASS[key])} />
+          <span aria-hidden="true" className={cn('h-2.5 w-2.5', SLOT_SEGMENT_CLASS[key])} />
           {t(SLOT_LABEL_KEY[key])}
         </span>
       ))}

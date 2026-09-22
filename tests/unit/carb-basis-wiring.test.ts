@@ -198,8 +198,13 @@ function renderEditEntry(log: LocalFoodLog): string {
  * use ("21.7g net carbs" on the search/portion surfaces, "21.7 g net carbs /
  * 100 g" on the receipt hero, "21.7 g net carbs" on the edit preview) so a
  * copy tweak doesn't masquerade as a wiring regression.
+ *
+ * `class` is matched anywhere in the tag, not anchored as the first
+ * attribute: this app's convention puts `data-slot` before `className`, and
+ * `tests/unit/authoritative-net-carbs-wiring.test.ts`'s sibling regex went
+ * red for exactly that reason the day its own badge grew a slot.
  */
-const NET_CARB_BADGE = /<span class="([^"]*)"[^>]*>\s*([\d.]+)\s*g net carbs(?:\s*\/\s*100\s*g)?\s*<\/span>/;
+const NET_CARB_BADGE = /<span[^>]*\bclass="([^"]*)"[^>]*>\s*([\d.]+)\s*g net carbs(?:\s*\/\s*100\s*g)?\s*<\/span>/;
 
 type NetCarbBadge = { classes: string; figure: string };
 

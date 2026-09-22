@@ -161,7 +161,7 @@ export function WeeklyRecapCard({
     // one consistent thing across the app rather than a different tint per
     // page. The graph paper inside the panel is what marks it; the fill and
     // the border are an ordinary card's.
-    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+    <Card className="surface-brand overflow-hidden shadow-sm">
       <CardHeader>
         <CardTitle>{t('trends.recap.title')}</CardTitle>
       </CardHeader>

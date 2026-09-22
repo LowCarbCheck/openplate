@@ -48,7 +48,7 @@ function RepeatYesterdayEyebrowBody({
           disabled={isCopying}
           aria-describedby={hintId}
           className={cn(
-            'inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-sm font-semibold text-primary underline decoration-primary/40 decoration-dashed underline-offset-4 transition-colors hover:decoration-primary hover:decoration-solid disabled:opacity-60',
+            'inline-flex shrink-0 items-center gap-1.5 px-1.5 py-1 text-sm font-semibold text-primary underline decoration-primary/40 decoration-dashed underline-offset-4 transition-colors hover:decoration-primary hover:decoration-solid disabled:opacity-60',
             isCopying && 'pulse-soft',
           )}
         >

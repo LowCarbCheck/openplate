@@ -58,7 +58,7 @@ export function SharedDiaryView({ diary }: { diary: SharedDiary }) {
 
       <ul className="space-y-3">
         {days.map((day) => (
-          <li key={day.dayKey} className="rounded-lg border bg-card p-4">
+          <li key={day.dayKey} className="border bg-card p-4">
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-sm font-medium">{day.dayKey}</p>
               <p className="text-sm text-muted-foreground">

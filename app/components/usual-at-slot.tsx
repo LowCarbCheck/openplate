@@ -145,7 +145,7 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
             type="button"
             disabled={isLogging}
             className={cn(
-              'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent/70 disabled:opacity-60',
+              'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 bg-accent px-3 py-1.5 text-left text-sm font-medium transition-colors hover:bg-accent/70 disabled:opacity-60',
               isLogging && 'pulse-soft',
             )}
           >

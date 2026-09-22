@@ -93,7 +93,7 @@ export function StageList({ elapsedMs }: StageListProps): ReactElement {
   const current = stageAt(elapsedMs);
 
   return (
-    <details className="rounded-lg border border-border/60 bg-card px-4 py-3">
+    <details className="border border-border/60 bg-card px-4 py-3">
       <summary className="flex min-h-11 cursor-pointer list-none items-center text-sm font-medium">
         {t('fasting.stages.listTitle')}
       </summary>

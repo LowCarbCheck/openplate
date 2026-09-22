@@ -14,8 +14,9 @@ recipes here instead of inventing new ones.
 M243 pulled the family resemblance much closer, and it is worth naming both halves.
 
 **Kept from LCC:** a monospace body voice, graph paper behind the hero, flat cards with a hairline,
-a radius ladder where each step means one kind of object, a grey section label, and an accent spent
-a countable number of times per screen.
+a grey section label, and an accent spent a countable number of times per screen. M243 spec 03 also
+kept a five-step radius ladder from LCC; the operator retired it on 2026-09-22 for square corners
+everywhere, see §5.
 
 **Refused on purpose:** LCC's emerald (openplate-brand owns the teal, and which teal wins is still
 an open question for a person), its polychrome pastel chip rows, and its tinted section bands. Two
@@ -48,10 +49,12 @@ body face is one line (`--font-body` in `app/app.css`) and every number the test
    status. A user should identify "low-carb" without reading a number.
 4. **Dark mode is a first-class parallel palette**, not an inversion. Every recipe below has an
    explicit dark variant.
-5. **Shape ranks things, and nothing is heavy at rest.** Five radius steps, each one a kind of
-   object (§5), plus `rounded-full` for pills. A resting card is `shadow-sm`, never heavier, with
-   the one sanctioned exception in §5. Information density stays compact. (M129/01 had put every
-   card on `rounded-2xl`; M243 spec 03 restored the ladder, which is what §5 had said all along.)
+5. **Nothing is heavy, and nothing is round unless it is a circle.** Every corner is square (§5);
+   `rounded-full` is drawn only on a shape that genuinely is a circle, an avatar, a dot, a switch, a
+   spinner. A resting card is `shadow-sm`, never heavier, with the one sanctioned exception in §5.
+   Information density stays compact. (M129/01 had put every card on `rounded-2xl`; M243 spec 03
+   answered with a five-step radius ladder instead of one radius for everything; the operator
+   squared every corner in the app on 2026-09-22, which is what §5 says now.)
 
 ---
 
@@ -268,29 +271,28 @@ this document does not learn it.
 
 ## 5. Shape, elevation, spacing
 
-**THE RADIUS LADDER (M243 spec 03).** Five steps, and each step is one kind of object. Anything at
-the same step is the same kind of object, which is the whole point: a person learns the ladder once
-and then reads a screen faster. One radius used to mean everything, so the shape of a thing said
-nothing about what the thing was.
+**Every corner is square.** Operator decision, 2026-09-22. From M129/01 to M243 spec 03 one radius
+meant everything, a card, a list row, a settings inset, a dialog, a textarea and a focus ring alike,
+so the shape of a thing said nothing about what the thing was. Spec 03 answered that with a
+five-step radius ladder, a data row at 4px up to a hero at 16px, so a person could learn the ladder
+once and read a screen faster. The operator called for zero everywhere instead: not a five-way tie
+at the same number, which would have kept five names for one idea, but no radius at all. `--radius`
+in `app/app.css` is `0`, and every Tailwind radius utility it or Tailwind's own default scale feeds,
+`rounded`, `rounded-sm/md/lg/xl/2xl/3xl`, a side or corner variant, an arbitrary `rounded-[…]`,
+draws nothing.
 
-| Tier | Class | px | What wears it |
-| --- | --- | --- | --- |
-| `dataRow` | `rounded` | 4 | a data row inside a panel: label, value, status |
-| `control` | `rounded-md` | 6 | buttons, inputs, composer keys, thumbnails |
-| `card` | `rounded-lg` | 8 | every card, every inset group, every list row, every panel |
-| `tile` | `rounded-xl` | 12 | a tile in a grid |
-| `hero` | `rounded-2xl` | 16 | the one hero per screen, dialogs, sheets, the landing frame |
+`rounded-full` is the one exception, and it is not a step on any ladder: it is drawn only on a shape
+that genuinely IS a circle, an avatar, a dot, a round icon button, a switch's thumb and track, a
+spinner, a radio indicator. A pill-shaped chip, a segmented control, a progress bar's track, a
+search field, all of which used `rounded-full` to fake a rounder corner than the ladder gave them,
+draw none now either.
 
-`rounded-full` is the sixth and is not a step: pills, badges, dots and avatars are round because
-they are round, not because of where they sit. `--radius: 0.5rem` stays.
-
-The ladder lives as numbers in `tests/design-contract.ts` (`RADIUS_TIER_PX`, `RADIUS_TIER_CLASS`),
-which is where a reversal is a one-line edit. `tests/unit/radius-tiers.test.ts` holds an allowlist
-of the eleven sites still permitted to draw 12px or 16px, with the reason beside each one, and
-`tests/e2e/lcc-lineage-shape.spec.ts` reads the COMPUTED radius of each tier in a real browser. A
-radius is never a test's way of FINDING an element: `Card` carries `data-slot="card"` for that,
-because a selector like `div.rounded-2xl.bg-card` fails the day a taste call moves and passes
-vacuously the day it moves and nobody notices.
+`tests/design-contract.ts` holds the number (`SQUARE_CORNER_PX`, zero) and the exception in one
+place, which is where a reversal is a one-line edit. `tests/e2e/square-corners.spec.ts` reads the
+COMPUTED `border-*-radius` of every visible element on a real page and fails on anything above zero
+that is not a circle. A radius is never a test's way of FINDING an element: `Card` carries
+`data-slot="card"` for that, because a selector like `div.rounded-2xl.bg-card` fails the day a taste
+call moves and passes vacuously the day it moves and nobody notices.
 
 - Shadows: `shadow-sm` on resting cards, `hover:shadow-md` (list cards) or `hover:shadow-lg`
   (feature cards), `shadow-lg` for overlays. Never heavier at rest, with ONE sanctioned exception:
@@ -365,36 +367,36 @@ from something else, or moves a line in that file on purpose.
 **Rows.** Three named surfaces in `app/components/list-row.ts`, because four lists used to draw
 the same idea three ways:
 
-- `LIST_ROW_CLASS` = `rounded-lg border bg-card p-3`, a NAVIGABLE row. It goes somewhere, so it is
-  a card you can tap: a card's fill, a card's hairline, the ladder's card step. `LIST_STACK_CLASS`
+- `LIST_ROW_CLASS` = `border bg-card p-3`, a NAVIGABLE row. It goes somewhere, so it is a card you
+  can tap: a card's fill, a card's hairline, a card's square corner. `LIST_STACK_CLASS`
   (`space-y-3`) is the distance between two of them.
-- `DATA_ROW_CLASS` = `flex items-center gap-2 rounded bg-muted/40 p-3`, a DATA row inside a panel
-  that is already a card. It goes nowhere, so it has no border, a quieter fill and the ladder's
-  4px step. With `DATA_ROW_LABEL_CLASS`, `DATA_ROW_VALUE_CLASS` and `DATA_ROW_DOT_CLASS` it is
-  label, value, dot, and nothing else: no icon, no tile, no chevron. This is lowcarbcheck.org's
-  signature row.
+- `DATA_ROW_CLASS` = `flex items-center gap-2 bg-muted/40 p-3`, a DATA row inside a panel that is
+  already a card. It goes nowhere, so it has no border and a quieter fill. With
+  `DATA_ROW_LABEL_CLASS`, `DATA_ROW_VALUE_CLASS` and `DATA_ROW_DOT_CLASS` (a dot, so still
+  `rounded-full`) it is label, value, dot, and nothing else: no icon, no tile, no chevron. This is
+  lowcarbcheck.org's signature row.
 - Giving both the same surface is what made a screen read as boxes inside boxes.
 
 **Settings rows** keep their icon and their chevron and lost the tile. A settings row navigates, so
 the chevron earns its place, and a hub of fifteen rows in six languages is scanned by shape before
 it is read, so the glyph earns its place too. The glyph is `text-muted-foreground` in a `size-9`
 box with no fill: fifteen teal tiles spent the whole screen's accent on decoration.
-`SETTINGS_INSET_CLASS` (`rounded-lg border bg-card`) is the one container both the hub's groups and
-the sub-page blocks compose.
+`SETTINGS_INSET_CLASS` (`border bg-card`) is the one container both the hub's groups and the
+sub-page blocks compose.
 
-**Badges/pills.** `rounded-full px-2 py-0.5 text-xs font-medium` plus a color pair from §3. A
-NEUTRAL chip uses `CHIP_NEUTRAL` (`rounded-full bg-muted px-2 py-0.5 text-foreground`) and never a
-literal palette pair; callers add their own `text-xs`, `font-medium` and `tabular-nums`, because
-the size and the weight are the caller's business and the fill and the ink are not. Larger filter
-pills: `px-4 py-2`. In a row of filter chips only the ACTIVE one is teal, which is
-lowcarbcheck.org's list-page recipe; polychrome pastel chips were considered and refused.
+**Badges/pills.** `px-2 py-0.5 text-xs font-medium` plus a color pair from §3, no radius: a chip
+that used `rounded-full` to read as a pill is squared like everything else in §5. A NEUTRAL chip
+uses `CHIP_NEUTRAL` (`bg-muted px-2 py-0.5 text-foreground`) and never a literal palette pair;
+callers add their own `text-xs`, `font-medium` and `tabular-nums`, because the size and the weight
+are the caller's business and the fill and the ink are not. Larger filter pills: `px-4 py-2`. In a
+row of filter chips only the ACTIVE one is teal, which is lowcarbcheck.org's list-page recipe;
+polychrome pastel chips were considered and refused.
 
 **Food match card** (curated data from lowcarbcheck.org) — the richest element; model on LCC's
 `FoodItem`:
 
-- Thumbnail `h-16 w-16 rounded-md object-cover bg-muted`, `loading="lazy"`;
-  container clips (`overflow-hidden`). (The shipped rows still say `bg-zinc-100 dark:bg-zinc-900`
-  here, see §11.)
+- Thumbnail `h-16 w-16 object-cover bg-muted`, `loading="lazy"`; container clips
+  (`overflow-hidden`). (The shipped rows still say `bg-zinc-100 dark:bg-zinc-900` here, see §11.)
 - Title `text-sm font-medium truncate`; source label `text-xs font-medium text-muted-foreground`.
 - Net-carb badge colored by §3; macro summary `text-xs text-muted-foreground`.
 - Outbound link `text-xs text-primary hover:underline underline-offset-4`.
@@ -403,7 +405,7 @@ lowcarbcheck.org's list-page recipe; polychrome pastel chips were considered and
 **Inputs** — shadcn `Input`/`Label`. Field errors: one shared `<FieldError>` rendering
 `text-sm text-red-600 dark:text-red-400` (never re-inline the red `<p>`).
 
-**Inline alerts** — shadcn `Alert` pattern: `rounded-lg border p-4 text-sm` with icon; destructive:
+**Inline alerts** — shadcn `Alert` pattern: `border p-4 text-sm` with icon; destructive:
 `border-red-500/50 text-red-700 dark:text-red-400 [&>svg]:text-current bg-red-50 dark:bg-red-900/20`.
 Use for action errors that must persist on screen (form-level failures).
 
@@ -481,8 +483,8 @@ keys at 44px, instead of cutting the version number off the end.
 
 ## 8. Imagery
 
-- Food/plate images: `aspect-video` in cards (`object-cover`), `rounded-lg` via container clip,
-  placeholder backdrop `bg-zinc-100 dark:bg-zinc-900`. Thumbnails `rounded-md` at `h-12`–`h-16`.
+- Food/plate images: `aspect-video` in cards (`object-cover`), square corners via container clip,
+  placeholder backdrop `bg-zinc-100 dark:bg-zinc-900`. Thumbnails at `h-12`–`h-16`, no radius.
 - The plate-photo preview (pre-upload) uses the same aspect-video card treatment; during
   identification it gets a `backdrop-blur` overlay with spinner + staged copy.
 - Plate photos are **never persisted** — previews are client-side object URLs, revoked on change.
@@ -563,8 +565,9 @@ calorie hero.
 - No `font-display` or `font-brand` outside `app/components/wordmark.tsx`. The brand role is the
   product's name and nothing else (§4), and `tests/unit/wordmark-brand-role.test.ts` fails the
   build for any other file that writes either token.
-- No radius outside the five steps in §5, and no radius used as a SELECTOR in a test. Find an
-  element by its `data-slot`, never by `div.rounded-2xl.bg-card`.
+- No radius anywhere, except `rounded-full` on a shape that is a circle by design (§5). No radius
+  used as a SELECTOR in a test, either: find an element by its `data-slot`, never by
+  `div.rounded-2xl.bg-card`.
 - No thick left border to mark a block. A rule down the left edge of a card or a row is a template
   tell; `tests/unit/day-budget-rows-component.test.tsx` fails on any `border-l-*` in the budget
   rows, which is where it kept being reintroduced.

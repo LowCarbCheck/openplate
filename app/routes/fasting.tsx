@@ -545,7 +545,7 @@ function formatFastMoment(atMs: number, { timezone, language }: { timezone: stri
 /** The one hero panel on this screen, whichever state it is in. */
 function HeroCard({ children }: { children: ReactElement }): ReactElement {
   return (
-    <Card className="surface-brand overflow-hidden rounded-2xl shadow-sm">
+    <Card className="surface-brand overflow-hidden shadow-sm">
       <CardContent className="space-y-5 p-5 sm:p-6">{children}</CardContent>
     </Card>
   );
@@ -967,7 +967,7 @@ function PlanFastCard({
           <div className="space-y-2">
             <p className="text-sm font-medium">{t('fasting.plan.startModeLabel')}</p>
             <fieldset
-              className="inline-flex shrink-0 rounded-full border p-0.5 text-xs font-medium"
+              className="inline-flex shrink-0 border p-0.5 text-xs font-medium"
               aria-label={t('fasting.plan.startModeLabel')}
             >
               {(['now', 'later'] as const).map((mode) => (
@@ -977,7 +977,7 @@ function PlanFastCard({
                   aria-pressed={startMode === mode}
                   onClick={() => setStartMode(mode)}
                   className={cn(
-                    'min-h-11 min-w-11 rounded-full px-4 py-1 transition-colors',
+                    'min-h-11 min-w-11 px-4 py-1 transition-colors',
                     startMode === mode ?
                       'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground',

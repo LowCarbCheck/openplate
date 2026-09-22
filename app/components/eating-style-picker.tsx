@@ -49,7 +49,7 @@ export interface EatingStylePickerProps {
 /** One row of the style list. Bordered and tinted when picked, never a left rule. */
 function styleRowClass(isSelected: boolean): string {
   return cn(
-    'block cursor-pointer rounded-lg border p-3 transition-colors',
+    'block cursor-pointer border p-3 transition-colors',
     isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
   );
 }

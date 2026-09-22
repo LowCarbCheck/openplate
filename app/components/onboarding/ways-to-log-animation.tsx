@@ -72,7 +72,6 @@ function PhotoGlyph() {
         y="4"
         width="40"
         height="40"
-        rx="5"
         fill="currentColor"
         stroke="none"
         opacity="0"
@@ -91,7 +90,7 @@ function PhotoGlyph() {
 function TypeGlyph() {
   return (
     <Glyph>
-      <rect x="4" y="5" width="40" height="13" rx="6.5" />
+      <rect x="4" y="5" width="40" height="13" />
       <circle cx="13" cy="11.5" r="3" />
       <path d="M15.4 13.9 18 16.5" />
       <path d="M23 11.5h14" />

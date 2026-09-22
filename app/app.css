@@ -9,10 +9,19 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --radius: 0.5rem;
+  /* Square corners everywhere (operator decision, 2026-09-22): every derived radius resolves to
+     0, so a component that still asks Tailwind's default scale for `rounded-lg` or `rounded-md`
+     draws no corner at all. The one round shape left in the app is `rounded-full`, on something
+     that is a circle by design (an avatar, a dot, a round icon button, a switch, a spinner, a
+     radio indicator); that utility does not read this token, so it is unaffected. See DESIGN.md
+     section 5. */
+  --radius: 0px;
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
 
   --font-sans: 'Inter Variable', sans-serif;
   --font-mono: 'Victor Mono Variable', monospace;

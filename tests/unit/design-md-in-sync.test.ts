@@ -5,25 +5,27 @@
  * The document contradicted the tree for eleven months. Section 1.5 taught `rounded-2xl` primary
  * cards while section 5 taught `rounded-lg`; section 4 said the body font was Inter after it was
  * not. A contract nobody can trust is read once and then ignored, and the next person re-derives
- * the language from whatever component they happen to open. So the two things M243 pinned as
- * NUMBERS AND NAMES elsewhere, the font roles in `app/app.css`'s `@theme` block and the radius
- * ladder in `tests/design-contract.ts`, must also appear in `DESIGN.md`.
+ * the language from whatever component they happen to open. So the thing M243 pinned as NUMBERS
+ * AND NAMES elsewhere, the font roles in `app/app.css`'s `@theme` block, must also appear in
+ * `DESIGN.md`. The radius ladder M243 spec 03 pinned the same way is gone: the operator squared
+ * every corner in the app on 2026-09-22, and DESIGN.md's own square-corner rule is checked below
+ * by content rather than by a rung-by-rung table, because there is no longer a table to keep in
+ * sync.
  *
  * ── WHAT THIS DOES AND DOES NOT CHECK ──
- * It checks that the document NAMES each role and each rung, not that the prose around them is
- * good. A sixth font role or a sixth radius tier therefore fails here until somebody writes the
- * sentence that explains it, which is the whole point: the edit that adds the rung is the edit
- * that documents it.
+ * It checks that the document NAMES each role, not that the prose around it is good. A sixth font
+ * role therefore fails here until somebody writes the sentence that explains it, which is the whole
+ * point: the edit that adds the role is the edit that documents it.
  *
  * It deliberately does NOT read the CSS the other way round. `lcc-lineage-foundation.test.ts`
- * already asserts what each role DECLARES, and `radius-tiers.test.ts` already asserts which files
- * may draw which class. Duplicating either here would mean two files to update for one change.
+ * already asserts what each role DECLARES. Duplicating it here would mean two files to update for
+ * one change.
  *
  * ── EVERY ASSERTION HAS A CONTROL ──
  * `document.includes('--font-body')` is the kind of check that passes forever once it is written,
  * including against a document that says the opposite. So each predicate below is also run
- * against a fixture built to make it answer no: a document missing a role, a ladder row whose
- * class belongs to the tier above, a row that dropped its pixel size.
+ * against a fixture built to make it answer no: a document missing a role, a document that dropped
+ * the square-corner sentence or the `rounded-full` exception.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,14 +33,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import {
-  BODY_STACK,
-  BRAND_STACK,
-  PROSE_STACK,
-  RADIUS_TIER_CLASS,
-  RADIUS_TIER_PX,
-  type RadiusTier,
-} from '../design-contract';
+import { BODY_STACK, BRAND_STACK, PROSE_STACK } from '../design-contract';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const APP_CSS = readFileSync(join(ROOT, 'app/app.css'), 'utf8');
@@ -46,14 +41,6 @@ const DESIGN_MD = readFileSync(join(ROOT, 'DESIGN.md'), 'utf8');
 
 /** How many `--font-*` names the `@theme` block carries today, so a deleted role also fails. */
 const FONT_NAME_COUNT = 6;
-
-/**
- * The ladder's rungs, in the order `tests/design-contract.ts` declares them. Written out rather
- * than read off `RADIUS_TIER_PX`'s keys, because `Object.keys` answers `string[]` and narrowing it
- * back would be an unchecked assertion. The first test below compares the two lists, so a sixth
- * tier added over there fails here until it is added to this line and to DESIGN.md.
- */
-const RADIUS_TIERS = ['dataRow', 'control', 'card', 'tile', 'hero'] as const satisfies readonly RadiusTier[];
 
 /** The stylesheet with every block comment removed, so a name written only in prose is not a name. */
 function withoutComments(css: string): string {
@@ -103,33 +90,12 @@ function fontNamesMissingFrom({ document, css }: { document: string; css: string
   return fontNamesOf(css).filter((name) => !namesToken({ document, name }));
 }
 
-/**
- * The one line of `document` that names `tier`, or null when no line does.
- *
- * A LINE, not the whole document, because the ladder is a table and the point of the table is
- * that the tier, its class and its pixel size sit together. Spread across three paragraphs they
- * could each be right and the row still be wrong.
- *
- * @param document - the document's text.
- * @param tier - the tier name, as `tests/design-contract.ts` spells it.
- * @returns the first line carrying the tier name in backticks.
- */
-function ladderRowFor({ document, tier }: { document: string; tier: RadiusTier }): string | null {
-  return document.split('\n').find((line) => line.includes(`\`${tier}\``)) ?? null;
-}
+/** The literal sentence DESIGN.md section 5 states the square-corner rule in. */
+const SQUARE_CORNER_SENTENCE = 'Every corner is square.';
 
-/** Whether the ladder row for `tier` carries its class as a whole token and its pixel size. */
-function ladderRowIsComplete({ document, tier }: { document: string; tier: RadiusTier }): boolean {
-  const row = ladderRowFor({ document, tier });
-  if (row === null) return false;
-  const carriesClass = row.includes(`\`${RADIUS_TIER_CLASS[tier]}\``);
-  const carriesPx = new RegExp(`(?<![0-9])${RADIUS_TIER_PX[tier]}(?![0-9])`, 'u').test(row);
-  return carriesClass && carriesPx;
-}
-
-/** Every tier whose row in `document` is missing, incomplete, or carries the wrong class. */
-function tiersMissingFrom(document: string): RadiusTier[] {
-  return RADIUS_TIERS.filter((tier) => !ladderRowIsComplete({ document, tier }));
+/** Whether `document` states the square-corner rule and names its one exception. */
+function documentTeachesSquareCorners(document: string): boolean {
+  return document.includes(SQUARE_CORNER_SENTENCE) && document.includes('`rounded-full`');
 }
 
 describe('DESIGN.md names every font role in the @theme block', () => {
@@ -173,39 +139,33 @@ describe('DESIGN.md names every font role in the @theme block', () => {
   });
 });
 
-describe('DESIGN.md names every rung of the radius ladder', () => {
-  it('judges exactly the tiers the design contract declares, in its order', () => {
-    assert.deepEqual(
-      Object.keys(RADIUS_TIER_PX),
-      [...RADIUS_TIERS],
-      'a tier was added to or removed from `tests/design-contract.ts`; add it here and to DESIGN.md section 5',
+describe('DESIGN.md states the square-corner rule', () => {
+  it('says every corner is square, and names the one exception', () => {
+    assert.ok(
+      documentTeachesSquareCorners(DESIGN_MD),
+      'DESIGN.md section 5 must state the square-corner rule and quote `rounded-full`',
     );
   });
 
-  it('every tier has a row carrying its name, its class and its pixel size', () => {
-    assert.deepEqual(
-      tiersMissingFrom(DESIGN_MD),
-      [],
-      'DESIGN.md section 5 must carry one table row per tier in `tests/design-contract.ts`',
+  it('does not still teach the retired radius ladder', () => {
+    assert.doesNotMatch(
+      DESIGN_MD,
+      /\|\s*`dataRow`\s*\|/u,
+      'the five-step radius ladder table was retired 2026-09-22; DESIGN.md section 5 must not still carry it',
     );
   });
 
-  it('CONTROL: a row with the wrong class, a row with no pixel size, and a missing row all fail', () => {
-    const wrongClass = '| `card` | `rounded-2xl` | 8 | every card |';
-    assert.equal(ladderRowIsComplete({ document: wrongClass, tier: 'card' }), false, 'the hero class is not the card class');
-
-    const noPixels = '| `card` | `rounded-lg` | every card |';
-    assert.equal(ladderRowIsComplete({ document: noPixels, tier: 'card' }), false, 'a row without 8 is not a row');
-
-    const complete = '| `card` | `rounded-lg` | 8 | every card |';
-    assert.equal(ladderRowIsComplete({ document: complete, tier: 'card' }), true, 'the real row must pass');
-
-    const withoutTile = DESIGN_MD.split('`tile`').join('`tiles`');
-    assert.deepEqual(tiersMissingFrom(withoutTile), ['tile'], 'a document that dropped the tile rung must fail');
-  });
-
-  it('CONTROL: the data row rung is not satisfied by a longer class', () => {
-    const rounder = '| `dataRow` | `rounded-md` | 4 | a data row |';
-    assert.equal(ladderRowIsComplete({ document: rounder, tier: 'dataRow' }), false, '`rounded-md` is the control step');
+  it('CONTROL: a document missing the sentence, and one missing the exception, both answer no', () => {
+    assert.equal(
+      documentTeachesSquareCorners(DESIGN_MD.split(SQUARE_CORNER_SENTENCE).join('Corners are small.')),
+      false,
+      'a document that dropped the square-corner sentence must fail',
+    );
+    assert.equal(
+      documentTeachesSquareCorners(DESIGN_MD.split('`rounded-full`').join('a round shape')),
+      false,
+      'a document that dropped the `rounded-full` exception must fail',
+    );
+    assert.equal(documentTeachesSquareCorners(DESIGN_MD), true, 'the real document must pass');
   });
 });

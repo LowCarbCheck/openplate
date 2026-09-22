@@ -82,7 +82,7 @@ function SplitBar({ shares, date }: { shares: MacroEnergyShares | null; date: st
         data-slot="macro-split-bar"
         data-date={date}
         data-state="none"
-        className="h-2.5 w-full rounded-full bg-muted"
+        className="h-2.5 w-full bg-muted"
       />
     );
   }
@@ -91,7 +91,7 @@ function SplitBar({ shares, date }: { shares: MacroEnergyShares | null; date: st
       data-slot="macro-split-bar"
       data-date={date}
       data-state="split"
-      className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted"
+      className="flex h-2.5 w-full overflow-hidden bg-muted"
     >
       {SPLIT_ORDER.map((macro, index) => (
         <div
@@ -115,7 +115,7 @@ function AverageSplit({ shares, t }: { shares: MacroEnergyShares; t: Translate }
       <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {SPLIT_ORDER.map((macro) => (
           <span key={macro} className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className={cn('h-2.5 w-2.5 rounded-sm', MACRO_SWATCH_CLASS[macro])} />
+            <span aria-hidden="true" className={cn('h-2.5 w-2.5', MACRO_SWATCH_CLASS[macro])} />
             {t('trends.split.share', { macro: t(MACRO_NAME_KEY[macro]), percent: Math.round(shares[macro]) })}
           </span>
         ))}

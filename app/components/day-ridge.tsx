@@ -192,7 +192,7 @@ export function DayRidge({
         {ridge.days.map((day) => {
           const label = ridgeDayLabel({ day, ridge, dayLabel: spokenDay.format(utcInstant(day.date)), t });
           const barClassName = cn(
-            'block w-full rounded-t-sm transition-colors',
+            'block w-full transition-colors',
             RIDGE_BAR_CLASS[day.state],
             day.isToday && 'ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
           );

@@ -37,7 +37,7 @@ export function ActivityStrip({ days, size = 'full' }: ActivityStripProps) {
       {days.map((entry) => (
         <li
           key={entry.day}
-          className={`${SIZE_CLASS[size]} rounded-sm ${LEVEL_CLASS[activityLevel(entry.count)]}`}
+          className={`${SIZE_CLASS[size]} ${LEVEL_CLASS[activityLevel(entry.count)]}`}
           title={t('admin.person.day', { day: entry.day, photos: entry.count })}
         >
           <span className="sr-only">{t('admin.person.day', { day: entry.day, photos: entry.count })}</span>

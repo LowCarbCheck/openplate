@@ -54,13 +54,13 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
   const [limit, setLimit] = useState(String(person.dailyAiLimit));
 
   return (
-    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
+    <div className="space-y-3 bg-muted/30 p-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor={`role-${person.id}`}>{t('admin.role.label')}</Label>
           <select
             id={`role-${person.id}`}
-            className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="h-11 w-full border border-input bg-background px-3 text-sm"
             value={role}
             onChange={(event) => setRole(event.target.value === 'admin' ? 'admin' : 'member')}
           >

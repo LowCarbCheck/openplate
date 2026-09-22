@@ -40,7 +40,7 @@ export function CareSheet({ isOpen, onOpenChange, onUnderstood }: CareSheetProps
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="motion-reduce:transition-none motion-reduce:animate-none rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
+        className="motion-reduce:transition-none motion-reduce:animate-none pb-[env(safe-area-inset-bottom)]"
       >
         <SheetHeader>
           <SheetTitle>{t('fasting.care.title')}</SheetTitle>
@@ -67,7 +67,7 @@ export function PregnancyNotice(): ReactElement {
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-lg border border-border/60 bg-muted/40 px-4 py-3">
+    <div className="border border-border/60 bg-muted/40 px-4 py-3">
       <p className="text-sm text-muted-foreground">{t('fasting.care.pregnancyNotice')}</p>
     </div>
   );

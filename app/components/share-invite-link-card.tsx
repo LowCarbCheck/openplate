@@ -80,11 +80,11 @@ export function ShareInviteLinkCard({ identity, accountId }: { identity: ShareId
         </div>
 
         <div className="flex justify-center">
-          <QrCode value={link} title={t('clinicianLink.qrTitle')} className="h-48 w-48 rounded-lg border bg-white" />
+          <QrCode value={link} title={t('clinicianLink.qrTitle')} className="h-48 w-48 border bg-white" />
         </div>
 
         <div className="space-y-2">
-          <p className="break-all rounded-lg border bg-muted/30 p-3 font-mono text-xs">{link}</p>
+          <p className="break-all border bg-muted/30 p-3 font-mono text-xs">{link}</p>
           <CopyLinkButton link={link} />
         </div>
 

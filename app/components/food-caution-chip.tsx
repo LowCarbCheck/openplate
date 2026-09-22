@@ -56,7 +56,7 @@ export function FoodCautionChip({ caution, className }: { caution: FoodCaution; 
       className={cn(
         // `items-start` and a top margin on the icon rather than `items-center`:
         // once the sentence wraps to a second line the icon stays on the first.
-        'inline-flex items-start gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-start gap-1 px-2 py-0.5 text-xs font-medium',
         TONE_CLASS[caution.tier],
         className,
       )}

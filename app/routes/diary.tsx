@@ -1923,7 +1923,7 @@ function DaySummaryCard({
   // element, no layout shift, and gated behind `motion-safe:` so a
   // reduced-motion visitor simply doesn't get it (see app.css).
   const heroCardClass = cn(
-    'surface-brand overflow-hidden rounded-2xl shadow-sm',
+    'surface-brand overflow-hidden shadow-sm',
     celebrating && 'motion-safe:animate-celebrate',
   );
 
@@ -2207,20 +2207,20 @@ function SaveMealHint({
     <div
       data-slot="save-meal-hint"
       data-meal={slot}
-      className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-dashed border-primary/40 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 border border-dashed border-primary/40 bg-card/60 px-3 py-1.5 text-xs text-muted-foreground"
     >
       <span className="min-w-0 flex-1">{t('diary.saveMeal.hint.title')}</span>
       <button
         type="button"
         onClick={onSave}
-        className="shrink-0 rounded-full px-2 py-0.5 font-medium text-primary transition-colors hover:bg-primary/10"
+        className="shrink-0 px-2 py-0.5 font-medium text-primary transition-colors hover:bg-primary/10"
       >
         {t('diary.saveMeal.trigger')}
       </button>
       <button
         type="button"
         onClick={() => onDismiss(slot)}
-        className="shrink-0 rounded-full px-2 py-0.5 transition-colors hover:bg-primary/10 hover:text-foreground"
+        className="shrink-0 px-2 py-0.5 transition-colors hover:bg-primary/10 hover:text-foreground"
       >
         {t('diary.saveMeal.hint.dismiss')}
       </button>
@@ -2305,7 +2305,7 @@ function SaveMealButton({
         onChange={(event) => setName(event.target.value)}
         placeholder={t('diary.saveMeal.namePlaceholder')}
         aria-label={t('diary.saveMeal.namePlaceholder')}
-        className="h-11 min-w-0 flex-1 rounded-full border border-border bg-card px-2.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:h-7 md:w-32 md:flex-none"
+        className="h-11 min-w-0 flex-1 border border-border bg-card px-2.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:h-7 md:w-32 md:flex-none"
       />
       <Button
         type="submit"
@@ -2416,7 +2416,7 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
            that slow taps show up at all — and `pulse-soft` costs no layout, so
            a row of chips can't reflow as one of them goes pending. */
         className={cn(
-          'inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60',
+          'inline-flex min-h-11 max-w-full items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-60',
           isLogging && 'pulse-soft',
         )}
       >
@@ -2490,7 +2490,7 @@ function CopyFromYesterdayChip({
         /* Same treatment as the quick-add chip above — the label already swaps
            to "Copying…", the pulse is what keeps it from looking stuck. */
         className={cn(
-          'inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-60',
+          'inline-flex min-h-11 max-w-full items-center gap-1.5 border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-60',
           isCopying && 'pulse-soft',
         )}
       >
@@ -2548,7 +2548,7 @@ function CopyFromYesterday({
             type="button"
             onClick={() => setIsPicking(true)}
             data-slot="copy-choose-entries"
-            className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+            className="inline-flex min-h-11 max-w-full items-center gap-1.5 border border-dashed border-border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
           >
             {t('diary.copy.chooseEntries')}
           </button>
@@ -2630,7 +2630,7 @@ function CopyEntryPicker({
                   <label
                     key={log.id}
                     data-slot="copy-entry-row"
-                    className="-mx-1 flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md px-1 transition-colors hover:bg-muted/50"
+                    className="-mx-1 flex min-h-11 cursor-pointer items-center justify-between gap-3 px-1 transition-colors hover:bg-muted/50"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <input

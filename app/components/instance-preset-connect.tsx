@@ -82,7 +82,7 @@ export function InstancePresetConnect({ onConnected, className }: InstancePreset
   }
 
   return (
-    <div className={cn('space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4', className)}>
+    <div className={cn('space-y-3 border border-primary/30 bg-primary/5 p-4', className)}>
       <div className="space-y-1">
         <p className="text-sm font-medium">{t('settingsAi.preset.title')}</p>
         <p className="text-sm text-muted-foreground">{t('settingsAi.preset.body')}</p>

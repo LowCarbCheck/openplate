@@ -335,11 +335,11 @@ export function ConnectCardView({
             answer arrives. */}
         {!isManaged && <InstancePresetConnect onConnected={() => void revalidator.revalidate()} />}
         {sharedPhotoPreviewUrl && (
-          <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
+          <div className="flex items-center gap-3 border bg-muted/40 p-3">
             <img
               src={sharedPhotoPreviewUrl}
               alt={t('scan.setup.sharedPhotoAlt')}
-              className="h-14 w-14 shrink-0 rounded-md object-cover"
+              className="h-14 w-14 shrink-0 object-cover"
             />
             <p className="text-sm text-muted-foreground">{t('scan.setup.sharedPhotoNote')}</p>
           </div>

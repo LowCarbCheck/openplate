@@ -273,7 +273,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
 
   return (
     <fieldset
-      className="inline-flex shrink-0 rounded-full border p-0.5 text-xs font-medium"
+      className="inline-flex shrink-0 border p-0.5 text-xs font-medium"
       aria-label={t('goals.weight.unitToggleLabel')}
     >
       {WEIGHT_UNITS.map((option) => (
@@ -283,7 +283,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
           aria-pressed={unit === option}
           onClick={() => onChange(option)}
           className={cn(
-            'min-h-11 min-w-11 rounded-full px-4 py-1 transition-colors',
+            'min-h-11 min-w-11 px-4 py-1 transition-colors',
             unit === option ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
           )}
         >
@@ -305,7 +305,8 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
  *
  * Drawn with the shared `SettingsRow` primitive inside a bare inset
  * container, the same grouped-list look the settings hub uses, rather than
- * the old per-row `rounded-xl border bg-card` card.
+ * the old per-row `rounded-xl border bg-card` card (that rounding is gone
+ * too now, corners are square app-wide, DESIGN.md section 5).
  */
 function LifePhaseRow({ metrics, today }: { metrics: BodyMetrics; today: string }) {
   const { t } = useTranslation();

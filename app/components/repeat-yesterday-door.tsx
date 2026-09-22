@@ -114,7 +114,7 @@ function RepeatYesterdayButton({
         disabled={isCopying}
         aria-describedby={hintId}
         className={cn(
-          'inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-primary/50 bg-card/60 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5 disabled:opacity-60',
+          'inline-flex min-h-10 w-full items-center justify-center gap-1.5 border border-dashed border-primary/50 bg-card/60 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5 disabled:opacity-60',
           isCopying && 'pulse-soft',
         )}
       >
@@ -176,7 +176,7 @@ function RepeatYesterdayGhostBody({
         disabled={isCopying}
         aria-describedby={hintId}
         className={cn(
-          'block w-full rounded-lg border border-dashed border-primary/35 bg-card/50 p-3 text-left transition-all hover:border-primary/70 hover:bg-primary/5 hover:shadow-md hover:shadow-black/20 disabled:opacity-60 motion-safe:active:scale-[0.99]',
+          'block w-full border border-dashed border-primary/35 bg-card/50 p-3 text-left transition-all hover:border-primary/70 hover:bg-primary/5 hover:shadow-md hover:shadow-black/20 disabled:opacity-60 motion-safe:active:scale-[0.99]',
           isCopying && 'pulse-soft',
         )}
       >
@@ -190,7 +190,7 @@ function RepeatYesterdayGhostBody({
           {ghostRows.map((width) => (
             <span
               key={width}
-              className={cn('h-2 rounded-full border border-dashed border-primary/30 bg-primary/5', width)}
+              className={cn('h-2 border border-dashed border-primary/30 bg-primary/5', width)}
             />
           ))}
         </span>

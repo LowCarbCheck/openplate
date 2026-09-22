@@ -175,7 +175,7 @@ export default function SettingsAccount() {
           )}
           <SettingsSection label={t('account.devices.title')} description={t('account.devices.body')}>
             <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
-            <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <p className="border bg-muted/30 p-3 text-xs text-muted-foreground">
               {t('account.devices.photosStayHere')}
             </p>
           </SettingsSection>

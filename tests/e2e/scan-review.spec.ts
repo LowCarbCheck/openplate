@@ -207,10 +207,10 @@ test('the review card reports the same net carbs the logged entry does', async (
   // for an honest reason and this spec would be asserting nothing.
   await expect(itemCard.getByText(EN.scan.review.fromLabel)).toBeVisible();
 
-  // The badge, found by the tail of its own catalog sentence so no wording is
-  // pinned and no other pill on the card can answer for it.
-  const netCarbsTail = EN.scan.review.netCarbsForPortion.split('{{value}}')[1].trim();
-  const netCarbsBadge = itemCard.locator('span.rounded-full').filter({ hasText: netCarbsTail });
+  // The badge, found by its own slot, never by a class: `rounded-full` used to
+  // find it and stopped being true the day corners were squared (2026-09-22),
+  // which is exactly the failure mode a radius-as-identity selector has.
+  const netCarbsBadge = itemCard.locator('[data-slot="net-carbs-badge"]');
 
   await expect(netCarbsBadge).toHaveText(fill(EN.scan.review.netCarbsForPortion, { value: EXPECTED_NET_CARBS }));
   // THE CONTROL, on the same badge: the reported defect, stated as the thing

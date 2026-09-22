@@ -45,13 +45,13 @@ export function FeedbackPhoto({ reportId, state }: FeedbackPhotoProps) {
       <img
         src={state.src}
         alt={t('admin.feedback.photoAlt', { id: reportId })}
-        className="max-h-80 w-full rounded-lg border object-contain"
+        className="max-h-80 w-full border object-contain"
       />
     );
   }
 
   return (
-    <p className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+    <p className="flex items-center gap-2 border border-dashed px-4 py-6 text-sm text-muted-foreground">
       <ImageOff className="h-4 w-4 shrink-0" aria-hidden="true" />
       {state.kind === 'none' && t('admin.feedback.noPhoto')}
       {state.kind === 'loading' && t('admin.feedback.photoLoading')}

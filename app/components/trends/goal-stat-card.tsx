@@ -90,8 +90,8 @@ export function GoalStatCard({ stat, showRuns }: { stat: GoalStat; showRuns: boo
             <p data-slot="goal-hit-rate" className="text-sm font-medium text-foreground tabular-nums">
               {t('trends.goals.hitRate', { met: stat.metDays, rated: stat.ratedDays })}
             </p>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
-              <div data-slot="goal-hit-bar" className="h-full rounded-full bg-primary" style={{ width: `${Math.round(stat.hitRate * PERCENT)}%` }} />
+            <div className="h-2 w-full overflow-hidden bg-muted" aria-hidden="true">
+              <div data-slot="goal-hit-bar" className="h-full bg-primary" style={{ width: `${Math.round(stat.hitRate * PERCENT)}%` }} />
             </div>
           </>
         }

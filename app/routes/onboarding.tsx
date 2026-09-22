@@ -544,7 +544,7 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
           icon in a teal square, i.e. the scaffold placeholder, on the very
           first screen a new user ever sees. */}
       <span className="flex items-center gap-2.5">
-        <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8 rounded-full" />
+        <img src="/icons/icon-192.png?v=2" alt="" className="h-8 w-8" />
         <Wordmark besideMark className="text-xl" />
       </span>
       <p className="sr-only">{t('onboarding.stepOf', { current, total: ONBOARDING_STEPS.length })}</p>
@@ -553,7 +553,7 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
           <span
             key={stepId}
             aria-hidden="true"
-            className={cn('h-2 rounded-full transition-all', dotClass(index + 1, current))}
+            className={cn('h-2 transition-all', dotClass(index + 1, current))}
           />
         ))}
       </div>
@@ -580,7 +580,7 @@ function LocalFirstExplainer() {
   // screen is the point of this card.
   const { serverHoldsTheDiary } = useInstancePolicy();
   return (
-    <div className="mt-6 space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
+    <div className="mt-6 space-y-2 border bg-muted/30 p-4 text-sm">
       <p className="flex items-start gap-2">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <span>
@@ -786,7 +786,7 @@ function StyleOptionCard({
       // would otherwise be read out as part of every option.
       aria-label={t(style.labelKey)}
       className={cn(
-        'flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all focus-within:ring-2 focus-within:ring-primary',
+        'flex min-h-11 cursor-pointer items-start gap-3 border p-4 transition-all focus-within:ring-2 focus-within:ring-primary',
         styleCardClass(isSelected),
       )}
     >
@@ -919,14 +919,14 @@ function CarbPresetPicker({
   const { t } = useTranslation();
   const detailKey = STYLE_CARB_PRESETS.find((preset) => preset.id === selected)?.detailKey;
   return (
-    <fieldset className="space-y-2 rounded-lg border border-dashed p-4">
+    <fieldset className="space-y-2 border border-dashed p-4">
       <legend className="px-1 text-sm font-medium">{t('onboarding.carbPreset.legend')}</legend>
       <div className="flex flex-wrap gap-2">
         {STYLE_CARB_PRESETS.map((preset) => (
           <label
             key={preset.id}
             className={cn(
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === preset.id),
             )}
           >
@@ -972,7 +972,7 @@ function chipClass(isSelected: boolean): string {
 function KcalTargetField({ defaultValue, errorKey }: { defaultValue: number | null; errorKey?: string }) {
   const { t } = useTranslation();
   return (
-    <div className="space-y-2 rounded-lg border border-dashed p-4">
+    <div className="space-y-2 border border-dashed p-4">
       <Label htmlFor={KCAL_TARGET_FIELD}>{t('onboarding.kcal.requiredLabel')}</Label>
       <Input
         id={KCAL_TARGET_FIELD}
@@ -1013,7 +1013,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
   return (
     <fieldset
       aria-label={t('onboarding.weight.unitToggleLabel')}
-      className="inline-flex rounded-full border p-0.5 text-sm"
+      className="inline-flex border p-0.5 text-sm"
     >
       {WEIGHT_UNITS.map((candidate) => (
         <button
@@ -1021,7 +1021,7 @@ function WeightUnitToggle({ unit, onChange }: { unit: WeightUnit; onChange: (uni
           type="button"
           aria-pressed={unit === candidate}
           onClick={() => onChange(candidate)}
-          className={cn('min-h-8 rounded-full px-3 py-1 uppercase transition-colors', chipClass(unit === candidate))}
+          className={cn('min-h-8 px-3 py-1 uppercase transition-colors', chipClass(unit === candidate))}
         >
           {candidate}
         </button>
@@ -1103,7 +1103,7 @@ function WeightStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; 
             weigh-in on file: the floor fell back to the reference, and this is
             the one place that says why a weight would change it. */}
         {loaderData.needsWeight && (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <p className="border border-dashed p-4 text-sm text-muted-foreground">
             {t('onboarding.style.needsWeight')}
           </p>
         )}
@@ -1177,7 +1177,7 @@ function ChipRadioGroup({
               // tabbing through these chips gave a keyboard user no visible
               // focus indicator (M123/13 second-review finding 3 — the same
               // gap `carb-basis-field.tsx` copied this component's shape from).
-              'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+              'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
               chipClass(selected === option.value),
             )}
           >
@@ -1252,7 +1252,7 @@ function BodyNumberField({
 /** The wizard's chip, as the two shared fieldsets on the body step take it: a label wrapping a hidden input. */
 function bodyStepChipClass(isSelected: boolean): string {
   return cn(
-    'flex min-h-11 cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
+    'flex min-h-11 cursor-pointer items-center border px-4 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary',
     chipClass(isSelected),
   );
 }
@@ -1447,7 +1447,7 @@ function WayToLogCard({
       pendingLabel={t('onboarding.firstFood.opening')}
       disabled={isBusy}
       variant="outline"
-      className="h-auto w-full justify-start gap-4 whitespace-normal rounded-lg p-4 text-left"
+      className="h-auto w-full justify-start gap-4 whitespace-normal p-4 text-left"
     >
       {/* The drawing is decoration around the label, so its absence while the
           chunk loads must not move the text: the fallback reserves the box. */}
@@ -1489,7 +1489,7 @@ function FirstFoodKeyNote() {
   return (
     <Form
       method="post"
-      className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground"
+      className="mt-4 flex items-start gap-2 bg-muted/50 px-4 py-3 text-xs text-muted-foreground"
     >
       <TimezoneField />
       <input type="hidden" name="_intent" value={INTENT.FINISH} />
@@ -1577,7 +1577,7 @@ export function FirstFoodInstallFootnote({ affordance, promptInstall }: InstallA
 
   if (affordance === 'cannot-install') {
     return (
-      <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+      <div className="mt-4 flex items-start gap-2 bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
         <Download className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>{t('install.phoneNote', { appName: APP_NAME })}</p>
       </div>
@@ -1585,7 +1585,7 @@ export function FirstFoodInstallFootnote({ affordance, promptInstall }: InstallA
   }
 
   return (
-    <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+    <div className="mt-4 flex items-start gap-2 bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
       <Download className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <div className="flex flex-col items-start gap-2">
         <p>

@@ -138,7 +138,7 @@ export function ShareVerifyStep({
         <p className="text-xs text-muted-foreground">{t('sharing.grant.labelHint')}</p>
       </div>
 
-      <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+      <div className="space-y-2 border border-primary/30 bg-primary/5 p-4">
         <Label htmlFor="share-typed-fingerprint" className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-primary" aria-hidden="true" />
           {t('sharing.grant.fingerprintLabel')}

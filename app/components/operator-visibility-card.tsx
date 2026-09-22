@@ -55,7 +55,7 @@ export function OperatorVisibilityCard() {
         ))}
       </ul>
       <p className="text-sm">{t('account.operatorSees.activity', { days: USAGE_COUNTER_RETENTION_DAYS })}</p>
-      <p className="rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+      <p className="border bg-muted/30 p-3 text-xs text-muted-foreground">
         {t('account.operatorSees.notTheDiary')}
       </p>
     </SettingsSection>

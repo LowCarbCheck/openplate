@@ -125,7 +125,7 @@ export function ActivityOverview({ people, state, requestedDays, onRequestDays, 
 
       {people.length === 0 ?
         <p className="text-sm text-muted-foreground">{t('admin.people.empty')}</p>
-      : <div className="rounded-lg border">
+      : <div className="border">
           <ActivityHeader windowDays={state.kind === 'ready' ? state.window.days : null} />
           <ul className="divide-y">
             {rows.map((row) => (

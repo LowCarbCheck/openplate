@@ -62,7 +62,7 @@ export function StudyVerifyStep({
     <form className="space-y-4" onSubmit={handleSubmit}>
       {/* The name the LINK claims, marked as claimed. Anybody who can write
           the link can write it, and a study name reads like credentials. */}
-      <div className="space-y-1 rounded-lg border bg-muted/30 p-4">
+      <div className="space-y-1 border bg-muted/30 p-4">
         <p className="text-sm font-medium">
           {invite.claimedLabel === null ?
             t('research.join.claimed.unnamed')
@@ -85,7 +85,7 @@ export function StudyVerifyStep({
         <p className="text-xs text-muted-foreground">{t('research.join.labelHint')}</p>
       </div>
 
-      <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+      <div className="space-y-2 border border-primary/30 bg-primary/5 p-4">
         <Label htmlFor="study-typed-fingerprint" className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-primary" aria-hidden="true" />
           {t('research.join.fingerprintLabel')}

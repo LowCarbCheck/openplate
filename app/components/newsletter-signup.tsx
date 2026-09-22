@@ -200,7 +200,7 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
           value="true"
           checked={consented}
           onChange={(event) => setConsented(event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary"
+          className="mt-0.5 h-4 w-4 shrink-0 border-input accent-primary"
         />
         <Label htmlFor={CONSENT_FIELD_ID} className="text-sm font-normal leading-relaxed text-muted-foreground">
           {t('landing.newsletter.consent')}
