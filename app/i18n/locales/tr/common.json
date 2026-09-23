@@ -697,7 +697,8 @@
       "jumpToToday": "Bugüne git",
       "nextDay": "Sonraki gün",
       "openCalendar": "{{day}} görüntüleniyor. Farklı bir güne geçmek için takvimi aç.",
-      "previousDay": "Önceki gün"
+      "previousDay": "Önceki gün",
+      "today": "Bugün"
     },
     "netCarbsValue": "{{value}} g net karbonhidrat",
     "nutrients": {

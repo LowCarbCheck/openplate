@@ -697,7 +697,8 @@
       "jumpToToday": "Zu heute springen",
       "nextDay": "Nächster Tag",
       "openCalendar": "Du siehst {{day}}. Öffne den Kalender, um zu einem anderen Tag zu springen.",
-      "previousDay": "Vorheriger Tag"
+      "previousDay": "Vorheriger Tag",
+      "today": "Heute"
     },
     "netCarbsValue": "{{value}} g Netto-KH",
     "nutrients": {

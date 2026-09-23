@@ -331,6 +331,57 @@ test('the diary fits a 360 px phone in every language, on today and on a past da
   }
 });
 
+// The operator's phone (2026-09-23) is 411 px wide: past the 400 px step where
+// the "jump to today" shortcut turns from an icon into words. Spelled out in
+// German it ran off the right edge and covered the next-day arrow, and the
+// 360 px check above never saw it, because at 360 the shortcut is an icon.
+const WORDED_SHORTCUT_WIDTHS = [400, 412] as const;
+
+test('the date bar of a past day fits once the today shortcut shows words', async ({ page }) => {
+  const today = await seedNarrowDiary(page);
+  const yesterday = shiftDay(today, -1);
+
+  for (const width of WORDED_SHORTCUT_WIDTHS) {
+    await page.setViewportSize({ width, height: NARROW_PHONE_HEIGHT });
+    for (const locale of LOCALES) {
+      await useLanguage(page, locale);
+      await page.goto(`/diary?date=${yesterday}`);
+
+      const shortcut = page.locator('[data-slot="date-nav"] a[href="/diary"]');
+      await expect(shortcut, `${locale} at ${width} px: the today shortcut must show`).toBeVisible();
+      const words = shortcut.locator('span');
+      await expect(words, `${locale} at ${width} px: the shortcut must show words here, not the icon`).toBeVisible();
+
+      const nav = page.locator('[data-slot="date-nav"]');
+      const navBox = await nav.boundingBox();
+      const shortcutBox = await shortcut.boundingBox();
+      const arrowBox = await page.locator('[data-slot="next-day"]').boundingBox();
+      expect(navBox && shortcutBox && arrowBox, `${locale} at ${width} px: every box must exist`).toBeTruthy();
+      if (!navBox || !shortcutBox || !arrowBox) continue;
+
+      expect(
+        shortcutBox.x + shortcutBox.width,
+        `${locale} at ${width} px: the shortcut must end before the next-day arrow starts`,
+      ).toBeLessThanOrEqual(arrowBox.x);
+      expect(
+        arrowBox.x + arrowBox.width,
+        `${locale} at ${width} px: the next-day arrow ends past the right of the screen`,
+      ).toBeLessThanOrEqual(width);
+      // One line: a label that wraps inside its fixed-height box is clipped
+      // or spills, and either reads as broken.
+      expect(
+        await shortcut.evaluate((element) => element.scrollWidth <= element.clientWidth),
+        `${locale} at ${width} px: the shortcut's words must fit its own box`,
+      ).toBe(true);
+
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
+        .toBe(true);
+      await expect.poll(() => overflowingElements(page, LAYOUT_SELECTOR)).toEqual([]);
+    }
+  }
+});
+
 test('a meal subtotal never states a figure its own rows call unknown', async ({ page }) => {
   await seedNarrowDiary(page);
   await page.goto('/diary');

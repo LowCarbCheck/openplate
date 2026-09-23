@@ -1721,7 +1721,7 @@ function DateNav({
           </PopoverContent>
         </Popover>
         {/*
-          THE SHORTCUT IS AN ICON ON A PHONE. Spelled out, this button and the
+          THE SHORTCUT IS AN ICON ON A NARROW PHONE. Spelled out, this button and the
           date beside it needed 383 px of a 328 px row at 360, and the "next
           day" arrow was pushed off the right edge of the screen (worse in
           German, where the label is "Zu heute springen"). The word comes back
@@ -1735,11 +1735,14 @@ function DateNav({
             asChild
             aria-label={t('diary.nav.jumpToToday')}
             title={t('diary.nav.jumpToToday')}
-            className="h-11 w-11 shrink-0 p-0 min-[400px]:h-8 min-[400px]:w-auto min-[400px]:px-3"
+            className="h-11 w-11 shrink-0 p-0 min-[400px]:h-8 min-[400px]:w-auto min-[400px]:px-2 min-[400px]:text-xs"
           >
             <Link to="/diary">
               <ChevronsRight className="h-4 w-4 min-[400px]:hidden" aria-hidden="true" />
-              <span className="hidden min-[400px]:inline">{t('diary.nav.jumpToToday')}</span>
+              {/* One short word on screen ("Today"), the full sentence in the
+                  label and the tooltip. The sentence spelled out ran past the
+                  next-day arrow at 411 px (operator, 2026-09-23). */}
+              <span className="hidden whitespace-nowrap min-[400px]:inline">{t('diary.nav.today')}</span>
             </Link>
           </Button>
         )}

@@ -697,7 +697,8 @@
       "jumpToToday": "Vai a oggi",
       "nextDay": "Giorno successivo",
       "openCalendar": "Stai visualizzando {{day}}. Apri il calendario per passare a un altro giorno.",
-      "previousDay": "Giorno precedente"
+      "previousDay": "Giorno precedente",
+      "today": "Oggi"
     },
     "netCarbsValue": "{{value}} g di carboidrati netti",
     "nutrients": {

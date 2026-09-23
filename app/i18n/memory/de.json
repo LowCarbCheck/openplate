@@ -16806,6 +16806,13 @@
     "at": "2026-09-14",
     "de": "Du bleibst abgemeldet, bis du dich wieder anmeldest. Dein Tagebuch bleibt auf diesem Gerät."
   },
+  "e1f5a81929d5fd2e": {
+    "en": "Today",
+    "path": "common:diary.nav.today",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Heute"
+  },
   "e2597421e7c996c6": {
     "en": "Last {{days}} days",
     "path": "common:trends.overview.summary.title",
