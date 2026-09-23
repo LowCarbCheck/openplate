@@ -36,8 +36,8 @@
  * choose reaches either. The one field a request carries is the consent
  * language, which chooses which of two reviewed sentences a person reads.
  */
-import { planViewSchema, redirectTargetSchema, PLANS_API_PREFIX } from './plans-wire';
-import type { CheckoutLocale, CheckoutRequestWire, PlanView, RedirectTarget } from './plans-wire';
+import { planOfferSchema, planViewSchema, redirectTargetSchema, PLANS_API_PREFIX } from './plans-wire';
+import type { CheckoutLocale, CheckoutRequestWire, PlanOffer, PlanView, RedirectTarget } from './plans-wire';
 import type { AuthorizedMethod } from './auth-client';
 import type { JsonValue } from '../protocol';
 import { isSyncRequestError } from './sync-error';
@@ -87,6 +87,32 @@ export class PlansClient {
       method: 'GET',
       parse: (body) => planViewSchema.parse(body),
     });
+  }
+
+  /**
+   * What this instance sells, in one language: the plans with their gross
+   * prices and terms, the order texts and their links (M245/03).
+   *
+   * A BODY THAT DOES NOT DECODE IS NO OFFER. Unlike the plan read, which a
+   * page reports as a failure, an offer the client cannot fully read must
+   * not be half drawn: a price without its term, or a term without its price,
+   * is the one thing a page about money may never show. So a shape mismatch
+   * is logged and answered as {@link PLANS_ABSENT}, and the placement draws
+   * nothing, exactly as it does on an instance with no biller.
+   *
+   * @param input.locale - the language the texts are wanted in. It chooses
+   *   words, never a price.
+   */
+  async readOffer(input: { locale: string }): Promise<PlansOutcome<PlanOffer>> {
+    const outcome = await this.send({
+      path: `${PLANS_API_PREFIX}/offer?locale=${encodeURIComponent(input.locale)}`,
+      method: 'GET',
+      parse: (body) => planOfferSchema.safeParse(body),
+    });
+    if (outcome.status === 'absent') return PLANS_ABSENT;
+    if (outcome.value.success) return { status: 'ok', value: outcome.value.data };
+    log.error('the plan offer did not match its schema', { path: `${PLANS_API_PREFIX}/offer` });
+    return PLANS_ABSENT;
   }
 
   /**

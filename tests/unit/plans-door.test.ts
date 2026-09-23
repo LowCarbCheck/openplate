@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import {
   PLAN_PAGE_HREF,
   checkoutLocaleFor,
+  offerLocaleFor,
   hasPlansDoor,
   requirePlansDoor,
 } from '../../app/lib/plans/plans-door';
@@ -105,5 +106,19 @@ describe('the address the plan page lives at', () => {
   it('is a route this app actually registers', () => {
     const routes = readFileSync(fileURLToPath(new URL('../../app/routes.ts', import.meta.url)), 'utf8');
     assert.match(routes, /route\('\/settings\/plan', 'routes\/settings\.plan\.tsx'\)/);
+  });
+});
+
+describe('the offer language', () => {
+  it('asks in any of the six app languages, by its bare code', () => {
+    assert.equal(offerLocaleFor('fr'), 'fr');
+    assert.equal(offerLocaleFor('tr-TR'), 'tr');
+    assert.equal(offerLocaleFor('en-GB'), 'en');
+  });
+
+  it('falls back to German for a language the app does not ship', () => {
+    // THE CONTROL for the case above: a real language, just not one of the six.
+    assert.equal(offerLocaleFor('pt-BR'), 'de');
+    assert.equal(offerLocaleFor(''), 'de');
   });
 });

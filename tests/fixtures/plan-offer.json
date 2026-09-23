@@ -1,0 +1,30 @@
+{
+  "locale": "en",
+  "consentVersion": "fixture-consent-1",
+  "plans": [
+    {
+      "key": "monthly",
+      "interval": "month",
+      "grossCents": 500,
+      "currency": "EUR",
+      "term": "Fixture term text for the monthly plan."
+    },
+    {
+      "key": "yearly",
+      "interval": "year",
+      "grossCents": 4000,
+      "currency": "EUR",
+      "term": "Fixture term text for the yearly plan."
+    }
+  ],
+  "texts": {
+    "heading": "Fixture heading",
+    "summary": ["Fixture summary line one.", "Fixture summary line two."],
+    "withdrawal": "Fixture withdrawal notice.",
+    "termsConsent": "Fixture terms consent with a {terms} slot.",
+    "earlyStartConsent": "Fixture early start consent.",
+    "button": "Fixture order button",
+    "paymentNote": "Fixture payment note."
+  },
+  "links": { "terms": "/terms", "privacy": "/privacy", "withdrawal": "/withdrawal" }
+}

@@ -29,8 +29,9 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { withI18n } from './trends-i18n-harness';
-import { PlanScreen, readCheckoutReturn, type PlanReadState } from '../../app/routes/settings.plan';
-import type { PlanView } from '../../app/lib/sync/engine/client/plans-wire';
+import { PlanScreen, readCheckoutReturn, readPlanParam, type PlanReadState } from '../../app/routes/settings.plan';
+import { planOfferSchema, type PlanKey, type PlanOffer, type PlanView } from '../../app/lib/sync/engine/client/plans-wire';
+import fixtureOffer from '../fixtures/plan-offer.json';
 import enCommon from '../../app/i18n/locales/en/common.json';
 
 const PAID: PlanView = {
@@ -44,12 +45,21 @@ const PAID: PlanView = {
 
 function render(
   state: PlanReadState,
-  overrides: { busy?: 'none' | 'checkout' | 'portal'; checkoutReturn?: 'none' | 'success' | 'cancelled'; actionFailed?: boolean } = {},
+  overrides: {
+    busy?: 'none' | 'checkout' | 'portal';
+    checkoutReturn?: 'none' | 'success' | 'cancelled';
+    actionFailed?: boolean;
+    offer?: PlanOffer | null;
+    selectedPlan?: PlanKey | null;
+  } = {},
 ): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(PlanScreen, {
         state,
+        offer: overrides.offer ?? null,
+        selectedPlan: overrides.selectedPlan ?? null,
+        onSelectPlan: () => undefined,
         busy: overrides.busy ?? 'none',
         checkoutReturn: overrides.checkoutReturn ?? 'none',
         actionFailed: overrides.actionFailed ?? false,
@@ -138,5 +148,60 @@ describe('the plan page', () => {
     // control is that a near miss is not silently accepted.
     assert.equal(readCheckoutReturn('canceled'), 'none');
     assert.equal(readCheckoutReturn(null), 'none');
+  });
+});
+
+/** Whether the start button carries the `disabled` ATTRIBUTE, not a `disabled:` class variant. */
+function isStartDisabled(markup: string): boolean {
+  const start = /<button[^>]*>(?:(?!<\/button>).)*<\/button>/gs;
+  const buttons = [...markup.matchAll(start)].map((match) => match[0]);
+  const startButton = buttons.find((button) => button.includes(enCommon.plan.start));
+  assert.ok(startButton !== undefined, 'no start button');
+  return /<button[^>]*\sdisabled=""/.test(startButton);
+}
+
+describe('the plan page with an offer', () => {
+  const OFFER = planOfferSchema.parse(fixtureOffer);
+  const FREE: PlanView = { ...PAID, plan: 'none', planKey: null, interval: null, portalAvailable: false };
+
+  it('draws the plan cards for somebody without a plan', () => {
+    const markup = render({ kind: 'ready', plan: FREE }, { offer: OFFER });
+    assert.equal([...markup.matchAll(/data-slot="plan-card"/g)].length, 2);
+    // THE CONTROL: no offer, no cards.
+    assert.equal(render({ kind: 'ready', plan: FREE }).includes('data-slot="plan-card"'), false);
+  });
+
+  it('holds the start button until a plan is picked, and says why', () => {
+    const unpicked = render({ kind: 'ready', plan: FREE }, { offer: OFFER });
+    assert.equal(isStartDisabled(unpicked), true);
+    assert.ok(unpicked.includes(enCommon.plan.choice.pickFirst));
+    // THE CONTROL: the same page with a pick enables it and hides the line.
+    const picked = render({ kind: 'ready', plan: FREE }, { offer: OFFER, selectedPlan: 'yearly' });
+    assert.equal(isStartDisabled(picked), false);
+    assert.equal(picked.includes(enCommon.plan.choice.pickFirst), false);
+  });
+
+  it('keeps the old button working where the biller sends no offer', () => {
+    assert.equal(isStartDisabled(render({ kind: 'ready', plan: FREE })), false);
+  });
+
+  it('reserves the line above the buttons whether or not it says anything', () => {
+    for (const markup of [
+      render({ kind: 'ready', plan: FREE }, { offer: OFFER }),
+      render({ kind: 'ready', plan: FREE }, { offer: OFFER, selectedPlan: 'monthly' }),
+      render({ kind: 'ready', plan: FREE }, { offer: OFFER, selectedPlan: 'monthly', actionFailed: true }),
+    ]) {
+      assert.equal([...markup.matchAll(/data-slot="plan-action-line"/g)].length, 1);
+    }
+  });
+});
+
+describe('the plan a link names', () => {
+  it('reads the two keys and ignores anything else', () => {
+    assert.equal(readPlanParam('yearly'), 'yearly');
+    assert.equal(readPlanParam('monthly'), 'monthly');
+    assert.equal(readPlanParam('Yearly'), null);
+    assert.equal(readPlanParam('lifetime'), null);
+    assert.equal(readPlanParam(null), null);
   });
 });

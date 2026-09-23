@@ -52,3 +52,11 @@ rows and saved meals, `meta.perEntity` carries NO stamp for any of them, and
 
 Regenerate it only from a real `v0.35.1` checkout. A payload this repository's
 current engine wrote would assert nothing at all.
+
+## `plan-offer.json` is a NEUTRAL `GET /v1/plans/offer` body
+
+The shape M250 and M245/03 share, with placeholder texts that say "Fixture" on
+purpose. It is read by `tests/unit/plans-client.test.ts`, the plan card and
+plan page unit tests, and served by the browser tier's stubbed core. Never put
+a real order sentence, legal sentence or consent text here: those live in the
+private biller. The two numbers are fixture prices, and no app code holds them.

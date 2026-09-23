@@ -28,6 +28,7 @@
  */
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { isCheckoutLocale, type CheckoutLocale } from '#app/lib/sync/engine/client/plans-wire';
+import { isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 
 /**
  * The address of the plan page.
@@ -68,4 +69,17 @@ export function requirePlansDoor(instance: InstanceDescriptor | null): void {
 export function checkoutLocaleFor(uiLanguage: string): CheckoutLocale {
   const base = uiLanguage.split('-')[0] ?? '';
   return isCheckoutLocale(base) ? base : 'de';
+}
+
+/**
+ * Which language the offer's texts are asked in, from the language this app is
+ * drawn in.
+ *
+ * The six app languages pass through, because the biller holds its order texts
+ * in all six (M245 decision). Anything else is German, for the reason
+ * {@link checkoutLocaleFor} gives.
+ */
+export function offerLocaleFor(uiLanguage: string): LanguageCode {
+  const base = uiLanguage.split('-')[0] ?? '';
+  return isLanguageCode(base) ? base : 'de';
 }

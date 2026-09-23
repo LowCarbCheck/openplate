@@ -3351,6 +3351,18 @@
     "returned": {
       "success": "Gracias. El pago se procesó correctamente. Puede tardar unos instantes en reflejarse aquí.",
       "cancelled": "Cerraste la página de pago. No se realizó ningún cargo."
+    },
+    "choice": {
+      "legend": "Pick a plan",
+      "interval": {
+        "month": "Monthly",
+        "year": "Yearly"
+      },
+      "pricePerMonth": "{{price}} a month",
+      "pricePerYear": "{{price}} a year",
+      "monthlyEquivalent": "Works out at {{price}} a month.",
+      "saving": "{{saving}} less than twelve monthly payments.",
+      "pickFirst": "Pick a plan to go on."
     }
   },
   "usual": {

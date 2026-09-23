@@ -49,8 +49,21 @@ import { SettingsSection } from '#app/components/settings/settings-section';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
-import type { PlanStatus, PlanView } from '#app/lib/sync/engine/client/plans-wire';
-import { usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
+import {
+  PLAN_KEYS,
+  type PlanKey,
+  type PlanOffer,
+  type PlanStatus,
+  type PlanView,
+} from '#app/lib/sync/engine/client/plans-wire';
+import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
+import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
+import { usePlanOffer } from '#app/hooks/use-plan-offer';
+import { PlanChoice } from '#app/components/plans/plan-choice';
+import { useSyncSession } from '#app/components/sync-status';
+import { planStanding } from '#app/lib/plans/plan-standing';
+import { offerLocaleFor } from '#app/lib/plans/plans-door';
+import { cn } from '#app/lib/utils';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -73,10 +86,14 @@ export function loader() {
 /** @throws a 404 Response on an instance with no biller behind it, which is what the service itself answers. */
 export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs, 'serverLoader'>): Promise<{
   syncServerUrl: string;
+  instance: InstanceDescriptor | null;
 }> {
   const { syncServerUrl } = await serverLoader();
-  requirePlansDoor(await readCachedServerInstance(syncServerUrl));
-  return { syncServerUrl };
+  const instance = await readCachedServerInstance(syncServerUrl);
+  requirePlansDoor(instance);
+  // The descriptor rides along so the page's standing reads the SAME answer
+  // the gate just passed, rather than a second read that starts at `null`.
+  return { syncServerUrl, instance };
 }
 clientLoader.hydrate = true as const;
 
@@ -113,21 +130,33 @@ const STATUS_KEY_BY_PLAN = {
  */
 export function PlanScreen({
   state,
+  offer,
+  selectedPlan,
   busy,
   checkoutReturn,
   actionFailed,
+  onSelectPlan,
   onStart,
   onManage,
 }: {
   state: PlanReadState;
+  /** What this instance sells, or `null` when there is no offer to draw. */
+  offer: PlanOffer | null;
+  /** The picked plan, `null` until the person picks one or a link named one. */
+  selectedPlan: PlanKey | null;
   busy: PlanAction;
   checkoutReturn: CheckoutReturn;
   /** `true` when the last button press did not produce an address to follow. */
   actionFailed: boolean;
+  onSelectPlan: (key: PlanKey) => void;
   onStart: () => void;
   onManage: () => void;
 }) {
   const { t } = useTranslation();
+  // With an offer on screen the person picks first, so the plan they read is
+  // the plan they asked for. With none (a biller older than the offer) the
+  // button works as it always did.
+  const needsPick = offer !== null && selectedPlan === null;
 
   if (state.kind === 'loading') return <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>;
 
@@ -153,18 +182,37 @@ export function PlanScreen({
 
         {state.kind === 'ready' && <PlanPeriod plan={state.plan} />}
 
-        {/* THE PRICE IS NOT HERE, and its absence is deliberate: no number
-            in this app is the price. The gross figure and the words that go
-            with it are decided by the owner and shown by Checkout, which is
-            also where the law requires them. This line states the one thing
-            that is true of every price this instance charges. */}
+        {/* THE PRICES ARE DATA. No number in this app is a price: every
+            figure on the cards is the biller's `grossCents`, or arithmetic on
+            it (`plan-prices.ts`), and the term under each is the biller's own
+            sentence. */}
+        {state.kind === 'ready' && offer !== null && (
+          <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} />
+        )}
+
         <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
 
-        {actionFailed && <p className="text-sm text-destructive">{t('plan.actionFailed')}</p>}
+        {/* ONE RESERVED LINE for the two things that can appear above the
+            buttons, so neither a failed press nor a pick moves them. */}
+        {state.kind === 'ready' && (
+          <p
+            data-slot="plan-action-line"
+            role={actionFailed ? 'alert' : undefined}
+            className={cn(
+              'min-h-5 text-sm',
+              actionFailed ? 'text-destructive' : 'text-muted-foreground',
+              !actionFailed && !needsPick && 'invisible',
+            )}
+          >
+            {actionFailed && t('plan.actionFailed')}
+            {!actionFailed && needsPick && t('plan.choice.pickFirst')}
+            {!actionFailed && !needsPick && '\u00a0'}
+          </p>
+        )}
 
         {state.kind === 'ready' && (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={onStart} disabled={busy !== 'none'}>
+            <Button type="button" onClick={onStart} disabled={busy !== 'none' || needsPick}>
               {busy === 'checkout' ?
                 <Loader2 className="h-4 w-4 animate-spin" />
               : <CreditCard className="h-4 w-4" />}
@@ -211,16 +259,46 @@ export function readCheckoutReturn(value: string | null): CheckoutReturn {
   return 'none';
 }
 
+/**
+ * The plan a link named, `?plan=yearly`, or `null`.
+ *
+ * THE ONLY WAY A PLAN IS PICKED BEFORE THE PERSON PICKS ONE: they followed a
+ * link that already said which. Anything else in the parameter is ignored.
+ */
+export function readPlanParam(value: string | null): PlanKey | null {
+  return PLAN_KEYS.find((key) => key === value) ?? null;
+}
+
 export default function SettingsPlan() {
   const { i18n } = useTranslation();
   const [searchParams] = useSearchParams();
-  // The loader has already passed the door, so the read is always enabled here.
-  const state = usePlanRead({ isEnabled: true });
+  const session = useSyncSession();
+  // The loader has already passed the door, so the read is always enabled
+  // here, and the descriptor it passed is the one the standing reads.
+  const { instance } = useLoaderData<typeof clientLoader>();
+  const read = usePlanRead({ isEnabled: true });
+  const standing = planStanding({
+    instance,
+    account: session.account,
+    planView: planViewOf(read),
+    now: new Date(),
+  });
+  // A paying person is not sold a second plan, so their page never asks.
+  const offerRead = usePlanOffer({
+    isEnabled: read.kind === 'ready' && standing.kind !== 'subscribed',
+    locale: offerLocaleFor(i18n.language),
+  });
+  const [pickedPlan, setPickedPlan] = useState<PlanKey | null>(() => readPlanParam(searchParams.get('plan')));
   const [busy, setBusy] = useState<PlanAction>('none');
   const [actionFailed, setActionFailed] = useState(false);
-  // Read so the loader's own gate cannot be skipped by a direct render; the
-  // value itself is not drawn.
-  useLoaderData<typeof clientLoader>();
+
+  const offer = offerRead.settled ? offerRead.offer : null;
+  // A linked plan the offer does not contain is no pick at all.
+  const selectedPlan = offer?.plans.some((plan) => plan.key === pickedPlan) ? pickedPlan : null;
+  // HELD UNTIL THE OFFER IS IN, so the cards never arrive underneath a page
+  // that is already drawn and push its buttons down.
+  const isWaitingForOffer = read.kind === 'ready' && standing.kind !== 'subscribed' && !offerRead.settled;
+  const state: PlanReadState = isWaitingForOffer ? { kind: 'loading' } : read;
 
   /**
    * Follows an address the biller answered.
@@ -266,6 +344,9 @@ export default function SettingsPlan() {
   return (
     <PlanScreen
       state={state}
+      offer={offer}
+      selectedPlan={selectedPlan}
+      onSelectPlan={setPickedPlan}
       busy={busy}
       checkoutReturn={readCheckoutReturn(searchParams.get('checkout'))}
       actionFailed={actionFailed}

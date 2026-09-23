@@ -26,7 +26,15 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { PlansClient, type PlansTransport } from '../../app/lib/sync/engine/client/plans-client';
-import { PLANS_API_PREFIX, PLAN_INTERVALS, PLAN_KEYS, PLAN_STATUSES, planViewSchema } from '../../app/lib/sync/engine/client/plans-wire';
+import {
+  PLANS_API_PREFIX,
+  PLAN_INTERVALS,
+  PLAN_KEYS,
+  PLAN_STATUSES,
+  planOfferSchema,
+  planViewSchema,
+} from '../../app/lib/sync/engine/client/plans-wire';
+import fixtureOffer from '../fixtures/plan-offer.json';
 import type { AuthorizedMethod } from '../../app/lib/sync/engine/client/auth-client';
 import type { JsonValue } from '../../app/lib/sync/engine/protocol';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
@@ -195,5 +203,83 @@ describe('the plan client', () => {
   it('throws on a body it cannot decode, rather than answering a half-read plan', async () => {
     const { transport } = fakeTransport({ answers: { plan: 'active' } });
     await assert.rejects(new PlansClient({ transport }).readPlan());
+  });
+});
+
+/** The fixture offer with its plans replaced. */
+function withPlans(plans: readonly object[]) {
+  return { ...fixtureOffer, plans };
+}
+
+/** The fixture offer with its terms link replaced. */
+function withTerms(terms: string) {
+  return { ...fixtureOffer, links: { ...fixtureOffer.links, terms } };
+}
+
+describe('the offer, the contract M250 and M245/03 share', () => {
+  it('decodes the fixture offer with both plans, their prices and every text', () => {
+    const offer = planOfferSchema.parse(fixtureOffer);
+    assert.deepEqual(
+      offer.plans.map((plan) => [plan.key, plan.interval, plan.grossCents, plan.currency]),
+      [
+        ['monthly', 'month', 500, 'EUR'],
+        ['yearly', 'year', 4000, 'EUR'],
+      ],
+    );
+    assert.deepEqual(Object.keys(offer.texts).toSorted(), [
+      'button',
+      'earlyStartConsent',
+      'heading',
+      'paymentNote',
+      'summary',
+      'termsConsent',
+      'withdrawal',
+    ]);
+    assert.deepEqual(Object.keys(offer.links).toSorted(), ['privacy', 'terms', 'withdrawal']);
+  });
+
+  it('refuses an offer whose figures the app would derive wrongly', () => {
+    // THE CONTROL FOR THE DECODER: each of these differs from the fixture in
+    // exactly one place, and the fixture itself decodes above.
+    const [monthly, yearly] = fixtureOffer.plans;
+    assert.ok(monthly !== undefined && yearly !== undefined);
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, interval: 'month' }])), /disagree/);
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, key: 'monthly', interval: 'month' }])), /twice/);
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, grossCents: 40.5 }])));
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, grossCents: 0 }])));
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, currency: 'euro' }])));
+    assert.throws(() => planOfferSchema.parse(withPlans([monthly, { ...yearly, key: 'quarterly' }])));
+    assert.throws(() => planOfferSchema.parse(withPlans([])));
+  });
+
+  it('accepts only app paths as links, so a relayed body cannot send a buyer off the instance', () => {
+    assert.equal(planOfferSchema.parse(withTerms('/legal/terms')).links.terms, '/legal/terms');
+    assert.throws(() => planOfferSchema.parse(withTerms('https://elsewhere.example/terms')));
+    assert.throws(() => planOfferSchema.parse(withTerms('//elsewhere.example/terms')));
+  });
+
+  it('reads the offer with one GET, naming the language in the query and nothing else', async () => {
+    const { transport, calls } = fakeTransport({ answers: fixtureOffer });
+    const outcome = await new PlansClient({ transport }).readOffer({ locale: 'de' });
+    assert.equal(outcome.status, 'ok');
+    assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/offer?locale=de`, method: 'GET', body: undefined }]);
+  });
+
+  it('answers absent for an offer it cannot decode, never a half-drawn one', async () => {
+    const { transport } = fakeTransport({ answers: { ...fixtureOffer, plans: [{ key: 'monthly' }] } });
+    assert.deepEqual(await new PlansClient({ transport }).readOffer({ locale: 'en' }), { status: 'absent' });
+  });
+
+  it('answers absent for the shut door, and still throws a biller that fell over', async () => {
+    const shut = fakeTransport({ fails: notFound });
+    assert.deepEqual(await new PlansClient({ transport: shut.transport }).readOffer({ locale: 'en' }), {
+      status: 'absent',
+    });
+    const broken = fakeTransport({
+      fails: () => {
+        throw new SyncRequestError({ kind: 'server', message: 'upstream unreachable', status: 502 });
+      },
+    });
+    await assert.rejects(new PlansClient({ transport: broken.transport }).readOffer({ locale: 'en' }), /unreachable/);
   });
 });

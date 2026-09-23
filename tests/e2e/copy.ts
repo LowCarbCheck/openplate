@@ -127,6 +127,16 @@ const catalogSchema = z.object({
     week: z.object({ title: z.string() }),
   }),
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
+  plan: z.object({
+    start: z.string(),
+    choice: z.object({
+      legend: z.string(),
+      monthlyEquivalent: z.string(),
+      saving: z.string(),
+      pickFirst: z.string(),
+      interval: z.object({ month: z.string(), year: z.string() }),
+    }),
+  }),
   catchUp: z.object({ yesterdayHeading: z.string() }),
   describe: z.object({ title: z.string() }),
   goals: z.object({ save: z.string() }),

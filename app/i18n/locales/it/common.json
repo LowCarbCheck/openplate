@@ -3351,6 +3351,18 @@
     "returned": {
       "success": "Grazie. Il pagamento è andato a buon fine. Potrebbe essere necessario qualche istante prima che compaia qui.",
       "cancelled": "Hai chiuso la pagina di pagamento. Non è stato addebitato nulla."
+    },
+    "choice": {
+      "legend": "Pick a plan",
+      "interval": {
+        "month": "Monthly",
+        "year": "Yearly"
+      },
+      "pricePerMonth": "{{price}} a month",
+      "pricePerYear": "{{price}} a year",
+      "monthlyEquivalent": "Works out at {{price}} a month.",
+      "saving": "{{saving}} less than twelve monthly payments.",
+      "pickFirst": "Pick a plan to go on."
     }
   },
   "usual": {

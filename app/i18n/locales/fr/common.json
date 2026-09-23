@@ -3351,6 +3351,18 @@
     "returned": {
       "success": "Merci. Ton paiement est bien passé. L'affichage peut prendre un instant ici.",
       "cancelled": "Tu as fermé la page de paiement. Rien n'a été débité."
+    },
+    "choice": {
+      "legend": "Pick a plan",
+      "interval": {
+        "month": "Monthly",
+        "year": "Yearly"
+      },
+      "pricePerMonth": "{{price}} a month",
+      "pricePerYear": "{{price}} a year",
+      "monthlyEquivalent": "Works out at {{price}} a month.",
+      "saving": "{{saving}} less than twelve monthly payments.",
+      "pickFirst": "Pick a plan to go on."
     }
   },
   "usual": {

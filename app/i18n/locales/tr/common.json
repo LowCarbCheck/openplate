@@ -3351,6 +3351,18 @@
     "returned": {
       "success": "Teşekkürler. Ödemen alındı. Buraya yansıması biraz zaman alabilir.",
       "cancelled": "Ödeme sayfasını kapattın. Hiçbir ücret alınmadı."
+    },
+    "choice": {
+      "legend": "Pick a plan",
+      "interval": {
+        "month": "Monthly",
+        "year": "Yearly"
+      },
+      "pricePerMonth": "{{price}} a month",
+      "pricePerYear": "{{price}} a year",
+      "monthlyEquivalent": "Works out at {{price}} a month.",
+      "saving": "{{saving}} less than twelve monthly payments.",
+      "pickFirst": "Pick a plan to go on."
     }
   },
   "usual": {

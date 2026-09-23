@@ -138,3 +138,67 @@ export function isCheckoutLocale(value: string): value is CheckoutLocale {
   const known: readonly string[] = CHECKOUT_LOCALES;
   return known.includes(value);
 }
+
+/** Which interval each key bills at, transcribed from the catalogue, so an offer that pairs them wrongly is refused. */
+export const PLAN_INTERVAL_BY_KEY = { monthly: 'month', yearly: 'year' } satisfies Record<PlanKey, PlanInterval>;
+
+/**
+ * One plan in `GET /plans/offer` (M245/03).
+ *
+ * `grossCents` IS THE PRICE STRIPE CHARGES, read by the biller from its price
+ * objects at boot. It is the only number about money this client ever holds,
+ * and it holds it only as data. `term` is the biller's own sentence about how
+ * the plan runs, drawn verbatim.
+ */
+export const offerPlanSchema = z
+  .object({
+    key: z.enum(PLAN_KEYS),
+    interval: z.enum(PLAN_INTERVALS),
+    grossCents: z.number().int().positive(),
+    currency: z.string().regex(/^[A-Z]{3}$/),
+    term: z.string().min(1),
+  })
+  // A yearly key billed monthly would make every figure the app derives from
+  // it wrong. Unknown must not sell, so the pair is checked, not trusted.
+  .refine((plan) => PLAN_INTERVAL_BY_KEY[plan.key] === plan.interval, { message: 'key and interval disagree' });
+
+export type OfferPlan = z.infer<typeof offerPlanSchema>;
+
+/**
+ * A link the offer names. AN APP PATH AND NOTHING ELSE: the body is relayed
+ * from a service this repository never compiled against, and a page about
+ * money must not carry a link off the instance that the instance did not write.
+ */
+const appPathSchema = z.string().regex(/^\/(?!\/)/);
+
+/**
+ * `GET /plans/offer?locale=xx`, the contract M250 and M245/03 share
+ * (`.tracker/M250-openplate-pricing-and-conversion-components/00-README.md`).
+ *
+ * Everything a person reads about the order arrives here: the texts in the
+ * requested language and the links. The app draws them and writes none of
+ * them. A body that does not decode is treated as no offer at all, the
+ * existing rule that unknown must not sell (`PLANS_ABSENT`).
+ */
+export const planOfferSchema = z.object({
+  locale: z.string(),
+  consentVersion: z.string().min(1),
+  plans: z
+    .array(offerPlanSchema)
+    .min(1)
+    .refine((plans) => new Set(plans.map((plan) => plan.key)).size === plans.length, {
+      message: 'a plan key appears twice',
+    }),
+  texts: z.object({
+    heading: z.string(),
+    summary: z.array(z.string()),
+    withdrawal: z.string(),
+    termsConsent: z.string(),
+    earlyStartConsent: z.string(),
+    button: z.string(),
+    paymentNote: z.string(),
+  }),
+  links: z.object({ terms: appPathSchema, privacy: appPathSchema, withdrawal: appPathSchema }),
+});
+
+export type PlanOffer = z.infer<typeof planOfferSchema>;
