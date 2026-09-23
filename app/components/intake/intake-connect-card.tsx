@@ -43,6 +43,7 @@ import { buildUrlWithoutSharedParam, hasSharedPhotoFlag, readSharedPhoto } from 
 import { ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 import { supportsOauthPkce } from '#app/services/vision/registry';
 import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 /**
  * The one "not yet" state, shared by three waits: `/add/photo`'s client
@@ -281,7 +282,7 @@ export function ConnectCardView({
    */
   plansAvailable: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const revalidator = useRevalidator();
   const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const sharedPhotoPreviewUrl = useKeylessSharedPhotoPreview();
@@ -340,7 +341,7 @@ export function ConnectCardView({
             {allowanceDoor.kind === 'allowance-ended' && (
               <p>
                 {t('scan.setup.managedMissing.expired', {
-                  date: new Date(allowanceDoor.endedAt).toLocaleDateString(),
+                  date: formatNumericDate(allowanceDoor.endedAt, i18n.language),
                 })}
               </p>
             )}

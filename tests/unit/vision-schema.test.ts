@@ -42,7 +42,7 @@ const VALID_PAYLOAD = {
 
 describe('parsePlateIdentificationJson', () => {
   it('parses a valid JSON response', () => {
-    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD));
+    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD), 'en');
 
     assert.strictEqual(result.foods.length, 1);
     assert.strictEqual(result.foods[0]?.name, 'grilled chicken breast');
@@ -54,7 +54,7 @@ describe('parsePlateIdentificationJson', () => {
   it('tolerates a ```json fenced response', () => {
     const fenced = '```json\n' + JSON.stringify(VALID_PAYLOAD) + '\n```';
 
-    const result = parsePlateIdentificationJson(fenced);
+    const result = parsePlateIdentificationJson(fenced, 'en');
 
     assert.strictEqual(result.foods[0]?.name, 'grilled chicken breast');
   });
@@ -62,13 +62,13 @@ describe('parsePlateIdentificationJson', () => {
   it('tolerates a plain ``` fenced response with no language tag', () => {
     const fenced = '```\n' + JSON.stringify(VALID_PAYLOAD) + '\n```';
 
-    const result = parsePlateIdentificationJson(fenced);
+    const result = parsePlateIdentificationJson(fenced, 'en');
 
     assert.strictEqual(result.foods.length, 1);
   });
 
   it('exposes the portionHint string when present', () => {
-    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD));
+    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD), 'en');
 
     assert.strictEqual(result.foods[0]?.portionHint, 'about half the plate');
   });
@@ -93,7 +93,7 @@ describe('parsePlateIdentificationJson', () => {
       notes: null,
     };
 
-    const result = parsePlateIdentificationJson(JSON.stringify(payload));
+    const result = parsePlateIdentificationJson(JSON.stringify(payload), 'en');
 
     assert.strictEqual(result.foods[0]?.portionHint, undefined);
   });
@@ -117,11 +117,11 @@ describe('parsePlateIdentificationJson', () => {
       notes: null,
     };
 
-    assert.throws(() => parsePlateIdentificationJson(JSON.stringify(payload)), VisionProviderError);
+    assert.throws(() => parsePlateIdentificationJson(JSON.stringify(payload), 'en'), VisionProviderError);
   });
 
   it('converts null macro fields to undefined rather than 0', () => {
-    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD));
+    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD), 'en');
 
     const macros = result.foods[0]?.macrosPer100g;
     assert.strictEqual(macros?.fiber, undefined);
@@ -151,24 +151,24 @@ describe('parsePlateIdentificationJson', () => {
       notes: 'could not estimate macros confidently',
     };
 
-    const result = parsePlateIdentificationJson(JSON.stringify(payload));
+    const result = parsePlateIdentificationJson(JSON.stringify(payload), 'en');
 
     assert.strictEqual(result.foods[0]?.macrosPer100g, undefined);
     assert.strictEqual(result.notes, 'could not estimate macros confidently');
   });
 
   it('throws a VisionProviderError on garbage (non-JSON) input', () => {
-    assert.throws(() => parsePlateIdentificationJson('not json at all'), VisionProviderError);
+    assert.throws(() => parsePlateIdentificationJson('not json at all', 'en'), VisionProviderError);
   });
 
   it('throws a VisionProviderError when the JSON does not match the expected shape', () => {
-    assert.throws(() => parsePlateIdentificationJson(JSON.stringify({ oops: true })), VisionProviderError);
+    assert.throws(() => parsePlateIdentificationJson(JSON.stringify({ oops: true }), 'en'), VisionProviderError);
   });
 });
 
 describe('validatePlateIdentification', () => {
   it('validates an already-parsed object (enforced-output path)', () => {
-    const result = validatePlateIdentification(VALID_PAYLOAD);
+    const result = validatePlateIdentification(VALID_PAYLOAD, 'en');
 
     assert.strictEqual(result.foods[0]?.name, 'grilled chicken breast');
     assert.strictEqual(result.foods[0]?.portionHint, 'about half the plate');
@@ -177,13 +177,13 @@ describe('validatePlateIdentification', () => {
   it('throws a VisionProviderError on a shape mismatch', () => {
     assert.throws(
       () =>
-        validatePlateIdentification({ foods: 'not an array', notes: null, unreadable: false, unreadableReason: null }),
+        validatePlateIdentification({ foods: 'not an array', notes: null, unreadable: false, unreadableReason: null }, 'en'),
       VisionProviderError,
     );
   });
 
   it('throws a VisionProviderError on a non-object value', () => {
-    assert.throws(() => validatePlateIdentification(42), VisionProviderError);
+    assert.throws(() => validatePlateIdentification(42, 'en'), VisionProviderError);
   });
 });
 
@@ -216,6 +216,7 @@ describe('PLATE_IDENTIFICATION_JSON_SCHEMA', () => {
     // estimated item answers them with `null` rather than by omitting them.
     // `flags` (M219) is required too, and never null: three lists, each empty
     // when nothing applies. Its own shape is pinned in food-flags-schema.test.ts.
+    // So is `translations` (M251), pinned in vision-translations.test.ts.
     assert.deepStrictEqual((foodSchema.required ?? []).toSorted(), [
       'brand',
       'carbBasis',
@@ -227,6 +228,7 @@ describe('PLATE_IDENTIFICATION_JSON_SCHEMA', () => {
       'name',
       'portionHint',
       'servingSize',
+      'translations',
     ]);
   });
 
@@ -273,7 +275,7 @@ describe('PLATE_IDENTIFICATION_JSON_SCHEMA', () => {
  */
 describe('per-item provenance and attribution', () => {
   it('still accepts a response that omits both fields (every cloud provider)', () => {
-    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD));
+    const result = parsePlateIdentificationJson(JSON.stringify(VALID_PAYLOAD), 'en');
 
     assert.strictEqual(result.foods[0]?.provenance, undefined);
     assert.strictEqual(result.foods[0]?.attribution, undefined);
@@ -314,7 +316,7 @@ describe('per-item provenance and attribution', () => {
       notes: null,
     };
 
-    const result = parsePlateIdentificationJson(JSON.stringify(payload));
+    const result = parsePlateIdentificationJson(JSON.stringify(payload), 'en');
 
     assert.strictEqual(result.foods[0]?.provenance, 'corpus');
     assert.strictEqual(result.foods[0]?.attribution, 'Bundeslebensmittelschlüssel (BLS), CC BY 4.0');
@@ -344,7 +346,7 @@ describe('per-item provenance and attribution', () => {
       notes: null,
     };
 
-    assert.throws(() => parsePlateIdentificationJson(JSON.stringify(payload)), VisionProviderError);
+    assert.throws(() => parsePlateIdentificationJson(JSON.stringify(payload), 'en'), VisionProviderError);
   });
 
   it('keeps BOTH field names out of the provider-facing JSON schema entirely', () => {
@@ -375,6 +377,7 @@ describe('per-item provenance and attribution', () => {
       'name',
       'portionHint',
       'servingSize',
+      'translations',
     ]);
   });
 });

@@ -192,6 +192,7 @@ const NO_SYNC_CONFIG: PublicConfig = {
   analytics: null,
   instancePreset: null,
   managed: false,
+  foodDbBackfill: false,
 };
 
 /** The hub, rendered under a router whose ROOT carries the public config the hooks read. */

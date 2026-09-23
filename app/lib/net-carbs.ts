@@ -118,6 +118,8 @@ export function parseCarbBasis(raw: string | null | undefined): CarbBasis | null
  */
 export function carbBasisForOrigin(origin: string | null): CarbBasis | undefined {
   if (origin === 'bls' || origin === 'curated') return 'available';
-  if (origin === 'fdc' || origin === 'user') return 'total';
+  // `proposal` (M251/04, LowCarbCheck M205): a food LowCarbCheck published
+  // from a proposal, which it stores on the total basis.
+  if (origin === 'fdc' || origin === 'user' || origin === 'proposal') return 'total';
   return undefined;
 }

@@ -40,6 +40,13 @@ import type { CarbBasis } from '#app/lib/net-carbs';
 import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
 import { toStoredAttribution } from '#app/lib/attribution';
 import {
+  applyFoodNameEdit,
+  displayFoodName,
+  encodeNameTranslations,
+  nameTranslationsFormField,
+  type NamedFood,
+} from '#app/lib/food-name';
+import {
   derivePortionChoices,
   deriveSelectedPortionQuantity,
   encodeDisplayPortion,
@@ -342,6 +349,8 @@ export function createLogSchema(t: Translate) {
      * not here — same split as `createManualSchema`'s `carbBasis` field.
      */
     carbBasis: z.string().optional(),
+    /** The candidate's name per app language (M251/03), from a recent or a custom food. Blank for everything else. */
+    nameTranslations: nameTranslationsFormField,
     carbs: createOptionalNonNegativeNumberSchema(),
     fiber: createOptionalNonNegativeNumberSchema(),
     sugars: createOptionalNonNegativeNumberSchema(),
@@ -461,7 +470,17 @@ function filterLocalRecentsByQuery({
 }): LocalRecentFood[] {
   if (query === '') return recentFoods.slice(0, limit);
   const lowerQuery = query.toLowerCase();
-  return recentFoods.filter((food) => food.name.toLowerCase().includes(lowerQuery)).slice(0, limit);
+  return recentFoods.filter((food) => foodNameMatches(food, lowerQuery)).slice(0, limit);
+}
+
+/**
+ * Whether a query finds a stored food: by its stored name, or by the name it
+ * shows in the reader's language (M251/03). A German reader types "Apfel" for
+ * a food that was logged as "Apple" and now reads "Apfel" everywhere.
+ */
+function foodNameMatches(food: NamedFood, lowerQuery: string): boolean {
+  if (food.name.toLowerCase().includes(lowerQuery)) return true;
+  return displayFoodName(food, currentLanguage()).toLowerCase().includes(lowerQuery);
 }
 
 /** Resolves the `?date=` back-dating context shared by the client loader and the action handlers. */
@@ -617,7 +636,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
   if (query !== '') {
     const lowerQuery = query.toLowerCase();
     customCandidates = customFoods
-      .filter((food) => food.name.toLowerCase().includes(lowerQuery))
+      .filter((food) => foodNameMatches(food, lowerQuery))
       .slice(0, CUSTOM_DISPLAY_LIMIT)
       .map((food) => Object.assign(localFoodToCandidate(food), { matchTier: null }));
     // Only the food NAME is sent to the curated food database, and the call
@@ -773,6 +792,9 @@ export function buildLoggedEntry({
   return {
     id,
     name: data.name,
+    // The same food, so the same names (M251/03). Absent for a curated pick,
+    // whose name already arrived in the app language.
+    nameTranslations: data.nameTranslations,
     quantityGrams: data.quantityGrams,
     macros: scaleMacrosPer100gToServing(macrosPer100g, data.quantityGrams),
     mealType: data.mealType ?? null,
@@ -842,7 +864,13 @@ async function handleLog({
   // The activity mark, on the day the PERSON is having rather than the day the
   // entry landed on: a backdated log is still app use today (M235/04).
   await noteActivity({ signal: 'log.food', now: Date.now() });
-  return addedToastRedirect({ name: data.name, mealType: data.mealType ?? null, dayKey, activeDate, returnTo });
+  return addedToastRedirect({
+    name: displayFoodName(data, currentLanguage()),
+    mealType: data.mealType ?? null,
+    dayKey,
+    activeDate,
+    returnTo,
+  });
 }
 
 /**
@@ -987,7 +1015,7 @@ async function handleDeleteFood({ formData }: { formData: FormData }): Promise<D
   return {
     intent: 'deleteFood',
     foodId: submission.value.foodId,
-    name: existing?.name ?? translate('add.custom.fallbackName'),
+    name: existing === null ? translate('add.custom.fallbackName') : displayFoodName(existing, currentLanguage()),
   };
 }
 
@@ -1036,15 +1064,18 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
   // the escape hatch spec 13 gives an already-UNKNOWN row), so the submitted
   // value wins outright rather than falling back to `existing.carbBasis`.
   const carbBasis = parseCarbBasis(data.carbBasis);
+  // THEIR WORDS WIN (M251/03): an unchanged name keeps its translations, a
+  // changed one becomes the name in every language.
+  const renamed = applyFoodNameEdit({ food: existing, submittedName: data.name, language: currentLanguage() });
   await putLocalFood({
     ...existing,
-    name: data.name,
+    ...renamed,
     macrosPer100g: { ...macrosPer100g, carbs: macrosPer100g.carbs },
     netCarbsPer100g,
     carbBasis: carbBasis ?? undefined,
   });
   trackCustomFoodEdited();
-  return { intent: 'editFood', ok: true, name: data.name };
+  return { intent: 'editFood', ok: true, name: displayFoodName(renamed, currentLanguage()) };
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
@@ -1285,7 +1316,7 @@ export function PortionStep({
       )}
       <Card>
         <CardHeader>
-          <CardTitle className="line-clamp-2">{candidate.name}</CardTitle>
+          <CardTitle className="line-clamp-2">{displayFoodName(candidate, i18n.language)}</CardTitle>
           <CardDescription>{t(SOURCE_HEADER_KEYS[candidate.source])}</CardDescription>
           {/* The source's licence credit (e.g. CC BY 4.0) — real, and kept
               discoverable, but placed up here in the header rather than
@@ -1305,6 +1336,11 @@ export function PortionStep({
             <input type="hidden" name="returnTo" value={returnTo} />
             {logContext.date && <input type="hidden" name="date" value={logContext.date} />}
             <input type="hidden" name={fields.name.name} value={candidate.name} />
+            <input
+              type="hidden"
+              name={fields.nameTranslations.name}
+              value={encodeNameTranslations(candidate.nameTranslations)}
+            />
             <input type="hidden" name={fields.curatedSource.name} value={candidate.curatedSource ?? ''} />
             <input type="hidden" name={fields.foodId.name} value={candidate.foodId ?? ''} />
             <input type="hidden" name={fields.aiEstimated.name} value={candidate.aiEstimated ? 'true' : 'false'} />

@@ -33,6 +33,7 @@ import { ConfirmButton } from '#app/components/admin/person-actions';
 import { Link } from '#app/components/link';
 import type { AdminFeedbackReport } from '#app/lib/admin/admin-wire';
 import { reportDeletesAt } from '#app/lib/admin/feedback-console';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export interface FeedbackQueueProps {
   reports: AdminFeedbackReport[];
@@ -75,7 +76,7 @@ function FeedbackRow({
   isDeleting: boolean;
   onDelete: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const deletesAt = reportDeletesAt({ createdAt: report.createdAt, retentionDays });
 
   return (
@@ -101,8 +102,8 @@ function FeedbackRow({
         }
       </p>
       <div className="shrink-0 space-y-1 text-sm text-muted-foreground sm:text-right">
-        <p>{t('admin.feedback.reportedAt', { date: new Date(report.createdAt).toLocaleDateString() })}</p>
-        {deletesAt !== null && <p>{t('admin.feedback.deletesAt', { date: deletesAt.toLocaleDateString() })}</p>}
+        <p>{t('admin.feedback.reportedAt', { date: formatNumericDate(report.createdAt, i18n.language) })}</p>
+        {deletesAt !== null && <p>{t('admin.feedback.deletesAt', { date: formatNumericDate(deletesAt, i18n.language) })}</p>}
       </div>
       <ConfirmButton
         label={t('admin.feedback.deleteCta')}

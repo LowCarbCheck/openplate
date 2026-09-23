@@ -18,6 +18,7 @@ import type { LocalFoodLog } from '#app/lib/local-store/schema';
 import { summarizeDay } from '#app/models/food-log-summary';
 import { MEAL_TYPES } from '#app/lib/meal-choice';
 import type { MealType } from '#types/enums';
+import type { FoodTranslations } from '#app/services/vision/translations';
 
 /** An inclusive `YYYY-MM-DD` window, the shape every range-bound selector here takes. */
 export interface DateRange {
@@ -271,6 +272,8 @@ export interface SlotFood {
   key: string;
   /** The most recently logged display name under this key. */
   name: string;
+  /** That log's name per app language (M251/03). Render through `displayFoodName`. */
+  nameTranslations?: FoodTranslations;
   /** How many entries at this slot, in the range, were grouped under this key. */
   logCount: number;
 }
@@ -283,6 +286,7 @@ function _nameKey(name: string): string {
 /** One grouped food's accumulating evidence while scanning the logs. */
 interface FoodGroup {
   name: string;
+  nameTranslations?: FoodTranslations;
   logCount: number;
   latestLoggedAt: number;
 }
@@ -316,7 +320,7 @@ export function topFoodsForSlot({
     const key = log.foodId ?? `name:${_nameKey(log.name)}`;
     const existing = groups.get(key);
     if (!existing) {
-      groups.set(key, { name: log.name, logCount: 1, latestLoggedAt: log.loggedAt });
+      groups.set(key, { name: log.name, nameTranslations: log.nameTranslations, logCount: 1, latestLoggedAt: log.loggedAt });
       continue;
     }
     existing.logCount += 1;
@@ -325,10 +329,11 @@ export function topFoodsForSlot({
     if (log.loggedAt >= existing.latestLoggedAt) {
       existing.latestLoggedAt = log.loggedAt;
       existing.name = log.name;
+      existing.nameTranslations = log.nameTranslations;
     }
   }
   return [...groups.entries()]
     .toSorted(([, left], [, right]) => right.logCount - left.logCount || right.latestLoggedAt - left.latestLoggedAt)
     .slice(0, TOP_FOODS_LIMIT)
-    .map(([key, group]) => ({ key, name: group.name, logCount: group.logCount }));
+    .map(([key, group]) => ({ key, name: group.name, nameTranslations: group.nameTranslations, logCount: group.logCount }));
 }

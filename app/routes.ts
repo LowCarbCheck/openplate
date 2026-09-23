@@ -361,5 +361,8 @@ export default [
     // Resource route: server-proxied LCC nutrient/reference-intake read for
     // `/nutrients` (M135/06), see app/routes/api.nutrients.ts.
     route('/api/nutrients', 'routes/api.nutrients.ts'),
+    // Relays food proposals to LowCarbCheck when backfill is on (M251/04),
+    // see app/routes/api.food-proposals.ts.
+    route('/api/food-proposals', 'routes/api.food-proposals.ts'),
   ]),
 ] satisfies RouteConfig;

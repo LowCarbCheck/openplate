@@ -2053,6 +2053,7 @@
         "calories": "{{value}} Kalorien",
         "carbs": "{{value}} g Kohlenhydrate",
         "dismiss": "Vorschlag ausblenden",
+        "estimate": "Geschätzte Werte",
         "fiber": "{{value}} g Ballaststoffe",
         "foundIn": "In LowCarbCheck gefunden",
         "netCarbs": "{{value}} g Netto-KH",
@@ -2374,6 +2375,11 @@
     "field": {
       "baseUrl": "Basis-URL",
       "model": "Modell"
+    },
+    "foodDb": {
+      "description": "Wenn du ein von der KI benanntes Lebensmittel speicherst, werden sein Name in jeder App-Sprache sowie seine Nährwerte an LowCarbCheck gesendet, die Lebensmitteldatenbank, in der diese App nach Lebensmitteln sucht. Es werden keinerlei Daten über dich mitgesendet: kein Konto, kein Foto, kein Tagebucheintrag. Ein Name, den du selbst eingibst oder änderst, wird niemals gesendet.",
+      "label": "Hilf der Lebensmitteldatenbank",
+      "title": "Lebensmitteldatenbank"
     },
     "loading": "Deine KI-Einstellungen werden geladen…",
     "manualEntry": {

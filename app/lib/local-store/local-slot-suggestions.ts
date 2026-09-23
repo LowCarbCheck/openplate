@@ -41,6 +41,7 @@
 import type { MealType } from '#types/enums';
 import type { LocalFoodLog, LocalSavedMeal, LocalSavedMealItem } from './schema';
 import { savedMealItemFromLog } from './saved-meals';
+import type { FoodTranslations } from '#app/services/vision/translations';
 
 /** How many suggestions the section offers at most, matching the density of the quick-add chips. */
 export const SLOT_SUGGESTION_LIMIT = 3;
@@ -70,6 +71,8 @@ export interface SlotSuggestion {
   id: string;
   /** What to print: the saved meal's chosen name, or the food's most recent casing. */
   name: string;
+  /** A food's name per app language (M251/03), absent for a saved meal, whose name is the person's own. Render through `displayFoodName`. */
+  nameTranslations?: FoodTranslations;
   /** How many DISTINCT days inside the window this suggestion was eaten in this slot. */
   dayCount: number;
   /** Epoch-ms of the most recent qualifying log, the tie-break between equal day counts. */
@@ -92,6 +95,8 @@ export interface UsualAtSlotOffer {
   id: string;
   kind: SlotSuggestionKind;
   name: string;
+  /** See `SlotSuggestion.nameTranslations`. */
+  nameTranslations?: FoodTranslations;
   /** How many entries one tap writes, so a bundle can say it is a bundle. */
   itemCount: number;
 }
@@ -102,6 +107,7 @@ export function toUsualAtSlotOffer(suggestion: SlotSuggestion): UsualAtSlotOffer
     id: suggestion.id,
     kind: suggestion.kind,
     name: suggestion.name,
+    nameTranslations: suggestion.nameTranslations,
     itemCount: suggestion.items.length,
   };
 }
@@ -228,6 +234,7 @@ export function computeSlotSuggestions({
     kind: 'food',
     id: foodSuggestionId(latest.name),
     name: latest.name,
+    nameTranslations: latest.nameTranslations,
     dayCount: days.size,
     lastLoggedAt: latest.loggedAt,
     // The whole snapshot of the most recent log, so the re-log carries the

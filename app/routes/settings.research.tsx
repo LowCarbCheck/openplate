@@ -66,6 +66,7 @@ import {
   type SubmitOutcomeCopy,
 } from '#app/lib/sync/research/submit-view';
 import { DAILY_INTAKE_V1 } from '#app/lib/sync/research/tiers';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -204,7 +205,7 @@ function EnrolmentCard({
   /** Refreshes the list after an accepted submission, so the window line names the days that just went. */
   onSubmitted: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const name = enrolment.label ?? t('research.enrolments.unnamed', { studyAccountId: enrolment.studyAccountId });
 
   return (
@@ -212,7 +213,7 @@ function EnrolmentCard({
       <div className="space-y-1">
         <h3 className="text-sm font-medium">{name}</h3>
         <p className="text-xs text-muted-foreground">
-          {t('research.enrolments.joined', { at: new Date(enrolment.joinedAt).toLocaleDateString() })}
+          {t('research.enrolments.joined', { at: formatNumericDate(enrolment.joinedAt, i18n.language) })}
         </p>
       </div>
 
@@ -234,7 +235,7 @@ function EnrolmentCard({
           {enrolment.server === null ?
             t('research.enrolments.neverSent')
           : t('research.enrolments.lastSent', {
-              at: new Date(enrolment.server.updatedAt).toLocaleDateString(),
+              at: formatNumericDate(enrolment.server.updatedAt, i18n.language),
               version: enrolment.server.contributionVersion,
             })
           }

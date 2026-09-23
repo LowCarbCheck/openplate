@@ -24,6 +24,7 @@ import { EATING_STYLE_IDS } from '#app/lib/eating-style';
 import { MAIN_GOAL_IDS } from '#app/lib/main-goal';
 import { parseAllergens } from '#app/models/allergens';
 import { micronutrientsPer100gSchema } from '#app/lib/micronutrients';
+import { storedNameTranslationsSchema } from '#app/lib/food-name';
 import { backfillSnapshotHistory, GAMIFICATION_BACKFILL_SCHEMA_VERSION } from '#app/lib/gamification/backfill';
 import { LAST_EXPORT_VALUE } from './store';
 import { SCHEMA_VERSION } from './schema';
@@ -88,6 +89,8 @@ const macrosSchema = z.object({
 const personalFoodSchema = z.object({
   id: z.string(),
   name: z.string(),
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  nameTranslations: storedNameTranslationsSchema,
   brand: z.string().nullable(),
   macrosPer100g: macrosSchema,
   source: z.enum(['user', 'plate_ai']),
@@ -134,6 +137,8 @@ const personalFoodSchema = z.object({
 const foodLogSchema = z.object({
   id: z.string(),
   name: z.string(),
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  nameTranslations: storedNameTranslationsSchema,
   quantityGrams: z.number(),
   macros: macrosSchema,
   mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).nullable(),
@@ -382,6 +387,8 @@ const fastingSettingsSchema = z.object({
 // doc comment gives: a saved meal is a template, not a pinned-to-a-day log.
 const savedMealItemSchema = z.object({
   name: z.string(),
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  nameTranslations: storedNameTranslationsSchema,
   quantityGrams: z.number(),
   macros: macrosSchema,
   source: z.enum(['manual', 'plate_ai']),
@@ -427,6 +434,8 @@ const savedMealSchema = z.object({
 const pantryItemSchema = z.object({
   id: z.string(),
   name: z.string(),
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  nameTranslations: storedNameTranslationsSchema,
   amount: z.number().nullable(),
   unit: z.enum(PANTRY_UNITS).nullable(),
   category: z.enum(PANTRY_CATEGORIES),
@@ -825,6 +834,13 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // is back-filled on purpose, because `deriveEatingStyle` reads a style out of the
   // goal numbers on every read, so writing a guess here would freeze a
   // derivation that is meant to follow the numbers.
+
+  // Nor is there one for `nameTranslations` (a food's name in every
+  // language, M251/03): it is ONE OPTIONAL field on four EXISTING entities,
+  // added within v24 with no bump (the main-goal precedent, see `schema.ts`),
+  // so an older envelope lacks the key everywhere and every schema accepts it
+  // as-is. Nothing is back-filled: an older name stays in the one language it
+  // arrived in, which is a milestone non-goal, not a gap.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {

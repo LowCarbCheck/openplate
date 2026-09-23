@@ -39,6 +39,7 @@ import {
   type ShareIdentityView,
   type SharedWithMeView,
 } from '#app/lib/sync/share-actions';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -57,7 +58,7 @@ type SharedState =
   | { status: 'ready'; shares: SharedWithMeView[] };
 
 export default function SharedIndex() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const session = useSyncSession();
   const [state, setState] = useState<SharedState>({ status: 'loading' });
   const [identity, setIdentity] = useState<ShareIdentityView | null>(null);
@@ -153,7 +154,7 @@ export default function SharedIndex() {
                       {t('sharing.clinician.patientTitle', { accountId: share.grantorAccountId })}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {t('sharing.clinician.sharedSince', { at: new Date(share.createdAt).toLocaleDateString() })}
+                      {t('sharing.clinician.sharedSince', { at: formatNumericDate(share.createdAt, i18n.language) })}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">

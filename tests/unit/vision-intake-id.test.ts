@@ -10,7 +10,7 @@ import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createOpenAiCompatibleProvider, INTAKE_ID_HEADER } from '../../app/services/vision/openai-compatible';
-import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
+import { photoIntakeTask } from '../../app/services/vision/task';
 import { newIntakeId, TRIAL_SCANS_LEFT_HEADER } from '../../app/lib/plans/trial-scans';
 
 const originalFetch = globalThis.fetch;
@@ -63,7 +63,7 @@ const IMAGE = { base64: 'AAAA', mimeType: 'image/png' } as const;
 
 /** Runs one photo intake and swallows the parse outcome; these tests read the requests. */
 async function scan(provider: ReturnType<typeof createOpenAiCompatibleProvider>): Promise<void> {
-  await provider.runScan({ task: PHOTO_INTAKE_TASK, image: IMAGE }).catch(() => undefined);
+  await provider.runScan({ task: photoIntakeTask('en'), image: IMAGE }).catch(() => undefined);
 }
 
 describe('X-Intake-Id', () => {

@@ -60,6 +60,7 @@ import { parseCarbBasis } from '#app/lib/net-carbs';
 import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { cautionProfileOf, decideCautions, foodFlagsField } from '#app/lib/food-cautions';
 import type { CautionProfile } from '#app/lib/food-cautions';
+import { displayFoodName, encodeNameTranslations, nameTranslationsFormField } from '#app/lib/food-name';
 import { FoodCautionChips } from '#app/components/food-caution-chip';
 import { toStoredAttribution } from '#app/lib/attribution';
 import { formatMacroNumberIn, formatMeasureIn } from '#app/lib/format-macro-number';
@@ -107,6 +108,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
+import { calendarDayButtonLabel, calendarLocale, type DayButtonLabel } from '#app/i18n/calendar-locale';
 import { AdherenceLegend } from '#app/components/trends/adherence-legend';
 import { countConfiguredGoals } from '#app/models/adherence-grid';
 import type { AdherenceMode } from '#app/models/adherence-grid';
@@ -114,7 +116,6 @@ import { selectCalendarDayLevels } from '#app/lib/calendar-day-levels';
 import type { CalendarDayLevel } from '#app/lib/calendar-day-levels';
 import { CALENDAR_DAY_MODIFIER_CLASSNAMES, calendarDayModifierFor } from '#app/lib/adherence-cell-fill';
 import type { CalendarDayModifier } from '#app/lib/adherence-cell-fill';
-import { labelDayButton as defaultLabelDayButton } from 'react-day-picker';
 import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Copy } from 'lucide-react';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -302,6 +303,8 @@ export const RestoreLogSchema = z.object({
    * carried in the first place.
    */
   flags: foodFlagsField,
+  /** The deleted entry's name per app language (M251/03), the sixth field of the same class. Blank decodes to absent. */
+  nameTranslations: nameTranslationsFormField,
   carbs: createOptionalNonNegativeNumberSchema(),
   fiber: createOptionalNonNegativeNumberSchema(),
   sugars: createOptionalNonNegativeNumberSchema(),
@@ -360,6 +363,8 @@ export const LogRecentSchema = z.object({
    * that read a false, understated net-carbs figure.
    */
   carbBasis: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
+  /** The chip's name per app language (M251/03): a re-log of an AI-named food keeps reading in its reader's language. */
+  nameTranslations: nameTranslationsFormField,
   carbs: createOptionalNonNegativeNumberSchema(),
   fiber: createOptionalNonNegativeNumberSchema(),
   sugars: createOptionalNonNegativeNumberSchema(),
@@ -493,6 +498,8 @@ export function buildRestoredEntry({
     carbBasis: parseCarbBasis(value.carbBasis) ?? undefined,
     // The fifth field of the same class (M219/03), see `RestoreLogSchema.flags`.
     flags: value.flags,
+    // The sixth (M251/03), see `RestoreLogSchema.nameTranslations`.
+    nameTranslations: value.nameTranslations,
   };
 }
 
@@ -518,7 +525,7 @@ async function handleRestore(formData: FormData, timezone: string): Promise<Resp
   // the day they were viewing when they hit Undo).
   return redirectWithLocalToast(`/diary?date=${entryDate}`, {
     type: 'success',
-    description: translate('diary.toast.restored', { name: value.name }),
+    description: translate('diary.toast.restored', { name: displayFoodName(value, currentLanguage()) }),
   });
 }
 
@@ -574,6 +581,8 @@ export function buildRecentLogEntry({
     // The fourth field of the same class (M123/13 review finding) — see
     // `LogRecentSchema.carbBasis`'s doc.
     carbBasis: parseCarbBasis(value.carbBasis) ?? undefined,
+    // The name per app language (M251/03): the same food, so the same names.
+    nameTranslations: value.nameTranslations,
   };
 }
 
@@ -621,7 +630,7 @@ async function handleLogRecent(
   return {
     intent: 'log-recent',
     createdLogId: id,
-    name: value.name,
+    name: displayFoodName(value, currentLanguage()),
     // Translated here rather than left to the toast: the fetcher's data crosses
     // no locale boundary, and the chip's `useEffect` would otherwise have to
     // re-derive a meal it never saw.
@@ -677,6 +686,8 @@ export function buildCopiedEntry({
   return {
     id,
     name: log.name,
+    // Same food, same names (M251/03).
+    nameTranslations: log.nameTranslations,
     quantityGrams: log.quantityGrams,
     macros: log.macros,
     mealType: log.mealType,
@@ -780,7 +791,7 @@ async function handleCopyYesterday(
     intent: 'copy-yesterday',
     copiedBatchId: batchId,
     copiedCount: sourceLogs.length,
-    firstName: sourceLogs[0]?.name ?? '',
+    firstName: sourceLogs[0] === undefined ? '' : displayFoodName(sourceLogs[0], currentLanguage()),
     netCarbsTotal: totals.netCarbs,
     hasEstimates: totals.hasEstimates,
     dayLabel: toastDayLabel(targetDate, timezone),
@@ -976,6 +987,7 @@ function readFavoriteNames(): Set<string> {
 function toFrequentChip(recent: LocalRecentFood): LocalFrequentChip {
   return {
     name: recent.name,
+    nameTranslations: recent.nameTranslations,
     lastQuantityGrams: recent.lastQuantityGrams,
     macros: recent.macros,
     foodId: recent.foodId,
@@ -1626,16 +1638,23 @@ function DateNav({
   // "4 of 4 goals" there would be false; saying "level 4 of 4" is the same
   // thing the legend's own ramp says. The grid's `metCount` string is the one
   // that may speak in goals, because the grid has the counts.
+  // THE PICKER'S LOCALE, named here as well as defaulted in the wrapper,
+  // because the day label below builds on it: react-day-picker's exported
+  // `labelDayButton` is the English one and appends "Today" and "selected" in
+  // English whatever the locale, so the base has to come from the locale's own
+  // labels (M251 spec 01).
+  const pickerLocale = calendarLocale(i18n.language);
+  const localeLabelDayButton = calendarDayButtonLabel(i18n.language);
   const labelDayButton = useCallback(
-    (...args: Parameters<typeof defaultLabelDayButton>): string => {
-      const base = defaultLabelDayButton(...args);
+    (...args: Parameters<DayButtonLabel>): string => {
+      const base = localeLabelDayButton(...args);
       const entry = calendarDayLevels[localDateToDayKey(args[0])];
       if (entry === undefined) return base;
       if (entry.status === 'logged') return `${base}. ${t('trends.grid.cell.logged')}`;
       if (entry.status === 'unrated') return `${base}. ${t('trends.grid.cell.unrated')}`;
       return `${base}. ${t('trends.grid.cell.level', { level: entry.level })}`;
     },
-    [calendarDayLevels, t],
+    [calendarDayLevels, localeLabelDayButton, t],
   );
 
   const hasUnratedCalendarDays = useMemo(
@@ -1678,6 +1697,7 @@ function DateNav({
               leaves (the mobile audit measured left 0, width 278). */}
           <PopoverContent className="w-auto p-0" align="center" collisionPadding={POPOVER_COLLISION_PADDING_PX}>
             <CalendarPicker
+              locale={pickerLocale}
               mode="single"
               selected={dayKeyToLocalDate(date)}
               month={dayKeyToLocalDate(date)}
@@ -2071,7 +2091,7 @@ function LogEntryCard({
         <CardContent className="flex min-h-[3.5rem] items-center justify-between gap-4 p-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{log.name}</span>
+              <span className="font-medium">{displayFoodName(log, i18n.language)}</span>
               {justAdded && (
                 <Badge variant="outline" className="text-muted-foreground">
                   {t('diary.entry.justAdded')}
@@ -2440,6 +2460,9 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
           dot showed the right colour while the tap created a row that
           silently reverted to the `total` fallback. */}
       <input type="hidden" name="carbBasis" value={chip.carbBasis ?? ''} />
+      {/* The name per app language (M251/03), so the re-logged row reads in
+          its reader's language like the one it was copied from. */}
+      <input type="hidden" name="nameTranslations" value={encodeNameTranslations(chip.nameTranslations)} />
       {MACRO_KEYS.map((key) => (
         <input key={key} type="hidden" name={key} value={macroHidden(chip.macros[key])} />
       ))}
@@ -2467,7 +2490,7 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
             lines tall; a food nobody can read is worse. `break-words` only
             breaks inside a word when the word alone cannot fit a line, so an
             ordinary name still breaks at its spaces. */}
-        <span className="min-w-0 break-words text-left">+ {chip.name}</span>
+        <span className="min-w-0 break-words text-left">+ {displayFoodName(chip, i18n.language)}</span>
       </button>
     </logFetcher.Form>
   );
@@ -2676,7 +2699,7 @@ function CopyEntryPicker({
                         onChange={() => toggle(log.id)}
                         className="h-4 w-4 shrink-0 accent-primary"
                       />
-                      <span className="min-w-0 break-words text-sm">{log.name}</span>
+                      <span className="min-w-0 break-words text-sm">{displayFoodName(log, i18n.language)}</span>
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {formatEntryTime(log.loggedAt, timezone, i18n.language)}

@@ -26,6 +26,9 @@ import type { LocalFoodLog, LocalSavedMeal, LocalSavedMealItem } from './schema'
 export function savedMealItemFromLog(log: LocalFoodLog): LocalSavedMealItem {
   return {
     name: log.name,
+    // The name per app language (M251/03), so a re-logged meal still reads in
+    // whichever language its reader uses.
+    nameTranslations: log.nameTranslations,
     quantityGrams: log.quantityGrams,
     macros: log.macros,
     source: log.source,
@@ -108,6 +111,7 @@ export function buildLogsFromSavedMealItems({
   return items.map((item) => ({
     id: makeId(),
     name: item.name,
+    nameTranslations: item.nameTranslations,
     quantityGrams: item.quantityGrams,
     macros: item.macros,
     mealType,

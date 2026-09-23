@@ -36,6 +36,7 @@ const LABEL_IDENTIFICATION: PlateIdentification = {
   foods: [
     {
       name: 'Test crispbread',
+      translations: { en: 'Test crispbread' },
       estimatedGrams: 100,
       confidence: 'high',
       macroSource: 'label',

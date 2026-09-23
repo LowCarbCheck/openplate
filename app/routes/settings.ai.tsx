@@ -25,7 +25,8 @@ import { CONFIG } from '#app/config';
 import { readInstancePolicy } from '#app/lib/read-instance-policy';
 import { resolveSettingsReturnPath } from '#app/lib/settings-return';
 import { syncNow } from '#app/lib/sync/sync-actions';
-import { useInstanceInferencePreset } from '#app/hooks/use-public-config';
+import { useInstanceInferencePreset, usePublicConfig } from '#app/hooks/use-public-config';
+import { FoodDbContributionToggle } from '#app/components/food-db-contribution-toggle';
 import { randomUuid } from '#app/lib/uuid';
 import { formatSettingsUsageLine } from '#app/models/ai-usage';
 import type { MonthlyAiUsage } from '#app/models/ai-usage';
@@ -824,6 +825,8 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
   // — which is the default, and means this page renders exactly as it did
   // before M138 spec 06.
   const instancePreset = useInstanceInferencePreset();
+  // Whether this instance proposes foods to LowCarbCheck at all (M251/04).
+  const isFoodDbBackfillOn = usePublicConfig()?.foodDbBackfill ?? false;
   // Where a successful connect returns the user (`?next=diary|scan|add`) — a
   // TOKEN, resolved through the allowlist below, never a raw path.
   const nextToken = searchParams.get('next');
@@ -1297,6 +1300,9 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
           </SubmitButton>
         </Form>
       </SettingsSection>
+      {/* The person's own switch for food proposals (M251/04), only on an
+          instance that sends them. */}
+      <FoodDbContributionToggle isInstanceOn={isFoodDbBackfillOn} />
       {!isConnected && (
         <NotConnectedExplainer recommendedProvider={recommendedProvider} hasInstancePreset={instancePreset !== null} />
       )}

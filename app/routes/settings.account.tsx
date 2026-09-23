@@ -77,6 +77,7 @@ import {
   setSyncDisplayName,
   syncNow,
 } from '#app/lib/sync/sync-actions';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -359,7 +360,7 @@ function AllowanceCard({
    */
   plansAvailable: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <SettingsSection
       label={t('account.allowance.title')}
@@ -373,8 +374,8 @@ function AllowanceCard({
       {expiresAt !== null && (
         <p className="text-sm text-muted-foreground">
           {door.kind === 'allowance-ended' ?
-            t('account.allowance.expired', { date: new Date(expiresAt).toLocaleDateString() })
-          : t('account.allowance.expires', { date: new Date(expiresAt).toLocaleDateString() })}
+            t('account.allowance.expired', { date: formatNumericDate(expiresAt, i18n.language) })
+          : t('account.allowance.expires', { date: formatNumericDate(expiresAt, i18n.language) })}
         </p>
       )}
       {/* THE SENTENCE THAT USED TO NAME A PERSON WHO MAY NOT EXIST. On an

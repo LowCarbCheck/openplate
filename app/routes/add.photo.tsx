@@ -19,7 +19,7 @@ import type {
   ScanTokenUsage,
   VisionFailureCause,
 } from '#app/services/vision';
-import { MACRO_SOURCE_VALUES, PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '#app/services/vision';
+import { MACRO_SOURCE_VALUES, photoIntakeTask, textIntakeTask } from '#app/services/vision';
 import type { PlateImageInput, VisionProvider } from '#app/services/vision';
 import { INTAKE_SOURCES } from '#app/lib/intake-source';
 import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
@@ -29,6 +29,7 @@ import { reportPhotoParsed } from '#app/lib/pulse';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
+  isEstimatedFoodOrigin,
   matchMacrosToFormValues,
   resolveAppliedMatchSnapshot,
   toCuratedSource,
@@ -132,6 +133,17 @@ import {
 import type { LogInputPath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
 import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
+import { formatNumericDate } from '#app/i18n/date-locale';
+import { toLanguageCode } from '#app/i18n/language-prefs';
+import {
+  encodeNameTranslations,
+  nameTranslationsFormField,
+  pinShownFoodName,
+  resolveConfirmedNameTranslations,
+} from '#app/lib/food-name';
+import type { FoodTranslations } from '#app/services/vision/translations';
+import { buildConfirmedProposals, sendFoodProposals } from '#app/lib/food-proposals-client';
+import { usePublicConfig } from '#app/hooks/use-public-config';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -327,6 +339,24 @@ function makeConfirmItemSchema(t: Translate) {
      * flags and the profile (D6).
      */
     flags: foodFlagsField,
+    /**
+     * The name as the MODEL gave it (M251/03), so the confirm can tell an
+     * accepted name from one the person typed over. Hidden, never edited.
+     */
+    aiName: z.string().optional(),
+    /**
+     * The model's name for this food in every app language, one hidden JSON
+     * value, decoded leniently. Kept only while `name` still equals `aiName`,
+     * see `resolveConfirmedNameTranslations`.
+     */
+    nameTranslations: nameTranslationsFormField,
+    /**
+     * Whether the applied match is an ESTIMATE (M251/04): a LowCarbCheck row
+     * with origin `proposal`. Derived every render from the applied match, like
+     * `attribution`. `true` stores the entry as estimated with no curated
+     * source; anything else is `false`.
+     */
+    matchIsEstimate: z.preprocess((value) => value === 'true', z.boolean()),
     macros: makeConfirmMacrosSchema(t),
   });
 }
@@ -691,7 +721,9 @@ async function completePlateIntake({
  * (amends ADR-0005, 2026-09-08).
  */
 async function runPhotoIntake(context: ScanAttemptContext): Promise<IdentifyResult> {
-  const identification = await context.visionProvider.runScan({ task: PHOTO_INTAKE_TASK, image: context.image });
+  // THE APP LANGUAGE AT THE MOMENT OF THE CALL names the foods (M251 spec 02).
+  const task = photoIntakeTask(toLanguageCode(currentLanguage()));
+  const identification = await context.visionProvider.runScan({ task, image: context.image });
   return completePlateIntake({ identification, context });
 }
 
@@ -700,10 +732,11 @@ async function runPhotoIntake(context: ScanAttemptContext): Promise<IdentifyResu
  *
  * No photo is read, nothing is downscaled, and nothing else about the flow
  * changes: the descriptor carries the one thing that differs (see
- * `TEXT_INTAKE_TASK`), and the result rejoins the plate path immediately.
+ * `textIntakeTask`), and the result rejoins the plate path immediately.
  */
 async function runTextIntake(context: TextAttemptContext): Promise<IdentifyResult> {
-  const identification = await context.visionProvider.runTextIntake({ task: TEXT_INTAKE_TASK, text: context.text });
+  const task = textIntakeTask(toLanguageCode(currentLanguage()));
+  const identification = await context.visionProvider.runTextIntake({ task, text: context.text });
   return completePlateIntake({ identification, context });
 }
 
@@ -926,6 +959,19 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
 }
 
 /**
+ * The translations one confirmed item is stored with: the form's, unless the
+ * person typed over the model's name (M251/03). One function for the log and
+ * the personal food, so the two rows can never disagree about it.
+ */
+function confirmedNameTranslations(item: ConfirmItem): FoodTranslations | undefined {
+  return resolveConfirmedNameTranslations({
+    name: item.name,
+    aiName: item.aiName,
+    translations: item.nameTranslations,
+  });
+}
+
+/**
  * Builds the food-log entry one confirmed plate item persists, the pure core
  * of `handleConfirm`, split out so the whole "AI draft (± an applied curated
  * match) → stored entry" path is unit-testable without a store, a clock, or a
@@ -966,12 +1012,18 @@ export function buildConfirmedEntry({
   logBatchId: string;
 }): LocalFoodLog {
   // Provenance: non-empty only when the user applied a curated LCC match to
-  // this food. It doubles as the `aiEstimated` discriminator below.
-  const curatedSource = item.curatedSource && item.curatedSource.trim() !== '' ? item.curatedSource.trim() : null;
+  // this food. It doubles as the `aiEstimated` discriminator below. A row
+  // LowCarbCheck published from a proposal is an estimate, never a curated
+  // source (M251/04), so it claims none.
+  const appliedSource = item.curatedSource && item.curatedSource.trim() !== '' ? item.curatedSource.trim() : null;
+  const curatedSource = item.matchIsEstimate ? null : appliedSource;
   return {
     id,
     foodId,
     name: item.name,
+    // The name in every app language, unless the person typed their own
+    // (M251/03). Their words win in every language.
+    nameTranslations: confirmedNameTranslations(item),
     quantityGrams: item.estimatedGrams,
     macros: scaleMacrosPer100gToServing(per100g, item.estimatedGrams),
     // The slot the person chose on the confirm screen, preselected from when
@@ -1049,6 +1101,9 @@ export function buildConfirmedFood({
   return {
     id,
     name: item.name,
+    // The SAME translations the log gets, so "Your foods" follows the reader's
+    // language too (M251/03).
+    nameTranslations: confirmedNameTranslations(item),
     // THE MANUFACTURER, when the item came off a package. Hardcoded `null`
     // while a label was a separate scan writing its own row; a label item is
     // an ordinary item on this draft now, and dropping its brand here would
@@ -1234,6 +1289,20 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     await putLocalFood(food);
     await putLocalFoodLog(entry);
   }
+  // THE PROPOSALS TO LOWCARBCHECK (M251/04), after the rows are written and
+  // never awaited: a contribution, not a step of logging. The instance gate
+  // rides the form from the root loader; the person's switch is read here.
+  sendFoodProposals({
+    isInstanceOn: formData.get('foodDbBackfill') === 'true',
+    proposals: buildConfirmedProposals({
+      intakeSource: readIntakeSource(formData),
+      // `buildConfirmedBatch` answers one pair per item, in order.
+      items: batch.flatMap(({ entry }, index) => {
+        const item = includedItems[index];
+        return item === undefined ? [] : [{ entry, curatedSource: item.curatedSource, macrosPer100g: item.macros }];
+      }),
+    }),
+  });
 
   // The photograph, on the same signal as the rows and under the same batch
   // id. It is handed over by the review screen through a one-shot slot
@@ -1897,6 +1966,8 @@ export function describeFailureBody(
      * dateless sentence is the fallback rather than an interpolated blank.
      */
     allowanceEndsAt?: string | null;
+    /** The app language, for the allowance end date. Never the browser's own (M251 spec 01). */
+    language: string;
   },
   t: Translate,
 ): string | undefined {
@@ -1906,7 +1977,7 @@ export function describeFailureBody(
   if (params.failureCause === 'allowance-expired') {
     const endsAt = params.allowanceEndsAt;
     if (endsAt !== null && endsAt !== undefined) {
-      return t('scan.errors.provider.allowanceExpiredOn', { date: new Date(endsAt).toLocaleDateString() });
+      return t('scan.errors.provider.allowanceExpiredOn', { date: formatNumericDate(endsAt, params.language) });
     }
   }
   // A MANAGED 429 IS TWO DIFFERENT SENTENCES, and only the header tells them
@@ -2005,7 +2076,7 @@ export function UploadForm({
   onCancel: () => void;
   onRetry: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const monthlyUsageLine = formatMonthlyUsageLine(monthlyUsage);
   const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const failedAttemptCostUsd =
@@ -2232,7 +2303,10 @@ export function UploadForm({
                     //, showing it as the main body, not a muted afterthought.
                     // `describeFailureBody` additionally swaps in OpenRouter-
                     // specific free-tier copy for a `rate-limit` failure.
-                  : describeFailureBody({ failureCause, provider, error, retryAfterSeconds, allowanceEndsAt }, t)
+                  : describeFailureBody(
+                      { failureCause, provider, error, retryAfterSeconds, allowanceEndsAt, language: i18n.language },
+                      t,
+                    )
                 }
               </IntakeFailureAlert>
             )}
@@ -2360,6 +2434,18 @@ function CuratedMatchCard({
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">{t('scan.review.match.foundIn')}</p>
           <MatchTierChip tier={tier} />
+          {/* AN ESTIMATE, NOT A CURATED ROW (M251/04): LowCarbCheck published
+              this food from a proposal, so its numbers are a model's. Said in
+              text beside the chip, and the entry it logs is stored as
+              estimated; see `isEstimatedFoodOrigin`. */}
+          {isEstimatedFoodOrigin(match.origin) && (
+            <span
+              data-slot="match-estimate"
+              className="inline-flex w-fit items-center border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground"
+            >
+              {t('scan.review.match.estimate')}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -2670,6 +2756,7 @@ export function ConfirmDraftForm({
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const isSaving = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'confirm';
+  const isFoodDbBackfillOn = usePublicConfig()?.foodDbBackfill ?? false;
 
   // Mint the batch id client-side (post-mount, so SSR and hydration agree on an
   // empty value): it's posted as a hidden field so the server keys every entry
@@ -2761,6 +2848,13 @@ export function ConfirmDraftForm({
             // above: they are the model's answer, nothing on this screen edits
             // them, and a log that lost them would show no caution forever.
             flags: encodeFoodFlags(food.flags),
+            // The model's name and its translations (M251/03). The entry for
+            // the language this screen is read in is pinned to the name it
+            // shows, so the diary later shows the words confirmed here.
+            aiName: food.name,
+            nameTranslations: encodeNameTranslations(
+              pinShownFoodName({ translations: food.translations, name: food.name, language: i18n.language }),
+            ),
             macros: {
               carbs: food.macrosPer100g?.carbs !== undefined ? String(food.macrosPer100g.carbs) : undefined,
               fiber: food.macrosPer100g?.fiber !== undefined ? String(food.macrosPer100g.fiber) : undefined,
@@ -2886,6 +2980,10 @@ export function ConfirmDraftForm({
       {/* Which way in this draft arrived by. Outside every collapsible for the
           same reason the date is: it must submit whatever the person expands. */}
       <input type="hidden" name="intakeSource" value={intakeSource} />
+      {/* Whether this instance passes AI-named foods on to LowCarbCheck
+          (M251/04), from the root loader. The server route refuses on its
+          own reading too, so this only saves a request that would be refused. */}
+      <input type="hidden" name="foodDbBackfill" value={isFoodDbBackfillOn ? 'true' : 'false'} />
       {/* Kept outside every collapsible so the back-dated day always submits. */}
       {logDate && <input type="hidden" name="date" value={logDate} />}
       {/* Client-minted batch id, so the device photo cache and the server agree. */}
@@ -3022,6 +3120,8 @@ export function ConfirmDraftForm({
               <input {...getInputProps(itemFieldset.macroSource, { type: 'hidden' })} />
               <input {...getInputProps(itemFieldset.brand, { type: 'hidden' })} />
               <input {...getInputProps(itemFieldset.flags, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.aiName, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.nameTranslations, { type: 'hidden' })} />
               {/* The applied match's two snapshotted facts. DERIVED every render
                   from `curatedSource` + the live macro fields (never `form.update`d
                   like `curatedSource` is), so a later macro edit can withdraw the
@@ -3045,6 +3145,11 @@ export function ConfirmDraftForm({
                 type="hidden"
                 name={itemFieldset.attribution.name}
                 value={view.appliedSnapshot.attribution ?? ''}
+              />
+              <input
+                type="hidden"
+                name={itemFieldset.matchIsEstimate.name}
+                value={view.appliedSnapshot.isEstimate ? 'true' : 'false'}
               />
               {/* Same "derived every render from `curatedSource`, never withdrawn by an
                   edit" treatment as `attribution` above, not `netCarbsPer100g`'s

@@ -112,7 +112,11 @@ describe('/add/photo runs the text task on what it was handed', () => {
   });
 
   it('runs the text task and rejoins the plate path', () => {
-    assert.match(SCAN_ROUTE, /runTextIntake\(\{ task: TEXT_INTAKE_TASK, text: context\.text \}\)/);
+    // Built in the app language of the moment of the call (M251 spec 02).
+    assert.match(
+      SCAN_ROUTE,
+      /const task = textIntakeTask\(toLanguageCode\(currentLanguage\(\)\)\);\s*\n\s*const identification = await context\.visionProvider\.runTextIntake\(\{ task, text: context\.text \}\)/,
+    );
     assert.match(SCAN_ROUTE, /return completePlateIntake\(\{ identification, context \}\)/);
     // One shared completion for both, so the empty-result accounting and the
     // curated enrichment cannot diverge between them.

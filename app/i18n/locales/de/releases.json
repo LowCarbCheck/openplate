@@ -1,4 +1,17 @@
 {
+  "v0_43_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Lebensmittelnamen richten sich nach der App-Sprache.",
+      "02": "Server können gespeicherte Lebensmittel für LowCarbCheck vorschlagen."
+    },
+    "changed": {
+      "01": "Foto-, Text- und Vorratskammer-Scans benennen jedes Lebensmittel in der App-Sprache."
+    },
+    "fixed": {
+      "01": "Die Datumsauswahl und jedes ausgegebene Datum richten sich nach der App-Sprache."
+    }
+  },
   "v0_42_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,21 +37,6 @@
     "changed": {
       "01": "Die Release-Seite nennt die Personen, denen ein Changelog-Eintrag dankt.",
       "02": "Die rechtlichen Seiten stammen aus einem Ordner, den du einbindest, und openplate liefert keine eigenen mit."
-    }
-  },
-  "v0_40_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Du kannst ein Hauptziel auswählen, also den Wert, den das Tagebuch zuerst anzeigt."
-    },
-    "changed": {
-      "01": "Auf dem Smartphone ist der Seitentitel größer und steht näher am Markennamen.",
-      "02": "Jede Ecke in der App ist nun eckig, abgesehen von echten Kreisen.",
-      "03": "Die Tageskarte im Tagebuch beginnt mit einer großen Zahl.",
-      "04": "Der Ladebildschirm zeigt den Namen openplate statt dreier Punkte."
-    },
-    "fixed": {
-      "01": "Bei den Fragen zur Ersteinrichtung verschiebt sich nichts, wenn du eine Auswahl triffst oder tippst."
     }
   }
 }

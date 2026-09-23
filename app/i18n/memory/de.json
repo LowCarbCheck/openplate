@@ -6362,6 +6362,13 @@
     "at": "2026-09-14",
     "de": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
   },
+  "58400761a28170ec": {
+    "en": "Photo, typed and pantry scans name each food in the app language.",
+    "path": "releases:v0_43_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Foto-, Text- und Vorratskammer-Scans benennen jedes Lebensmittel in der App-Sprache."
+  },
   "585235f27cd1a63a": {
     "en": "Logging…",
     "path": "common:entry.action.logAgainPending",
@@ -7790,6 +7797,13 @@
     "at": "2026-09-14",
     "de": "Keto"
   },
+  "6bc6c866fe4da49f": {
+    "en": "When you save a food the AI named, its name in every app language and its nutrition values go to LowCarbCheck, the food database this app looks foods up in. Nothing about you goes with them: no account, no photo, no diary entry. A name you type or change yourself is never sent.",
+    "path": "common:settingsAi.foodDb.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Wenn du ein von der KI benanntes Lebensmittel speicherst, werden sein Name in jeder App-Sprache sowie seine Nährwerte an LowCarbCheck gesendet, die Lebensmitteldatenbank, in der diese App nach Lebensmitteln sucht. Es werden keinerlei Daten über dich mitgesendet: kein Konto, kein Foto, kein Tagebucheintrag. Ein Name, den du selbst eingibst oder änderst, wird niemals gesendet."
+  },
   "6be2eff8ea560886": {
     "en": "Median eating window ~{{duration}} across {{days}} days",
     "path": "common:trends.recap.eatingWindow",
@@ -8433,6 +8447,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Zurück"
+  },
+  "7443fb4ccea17afd": {
+    "en": "The date picker and every printed date follow the app language.",
+    "path": "releases:v0_43_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Die Datumsauswahl und jedes ausgegebene Datum richten sich nach der App-Sprache."
   },
   "7454a9a068d57259": {
     "en": "Fast scheduled.",
@@ -16939,6 +16960,13 @@
     "at": "2026-09-23",
     "de": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst."
   },
+  "e77580e3d1e024f9": {
+    "en": "Servers can propose saved foods to LowCarbCheck.",
+    "path": "releases:v0_43_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Server können gespeicherte Lebensmittel für LowCarbCheck vorschlagen."
+  },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
     "path": "common:research.enrolments.window",
@@ -17646,6 +17674,13 @@
     "at": "2026-09-14",
     "de": "Foto-Schätzungen sind für dieses Konto nicht aktiviert."
   },
+  "f136b5657f811dc1": {
+    "en": "Estimated values",
+    "path": "common:scan.review.match.estimate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Geschätzte Werte"
+  },
   "f184037a91c89400": {
     "en": "Over your calorie goal",
     "path": "common:diary.impact.kcal.over",
@@ -18031,6 +18066,13 @@
     "at": "2026-09-14",
     "de": "Beitreten · openplate"
   },
+  "f60026707d160925": {
+    "en": "Food database",
+    "path": "common:settingsAi.foodDb.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Lebensmitteldatenbank"
+  },
   "f652992d56dc207d": {
     "en": "Restore from a backup file",
     "path": "common:recover.restoreHeading",
@@ -18191,6 +18233,20 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Passe zuerst die Portion an. Die Makronährstoffe folgen."
+  },
+  "f8ab13ee623f2970": {
+    "en": "Food names follow the app language.",
+    "path": "releases:v0_43_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Lebensmittelnamen richten sich nach der App-Sprache."
+  },
+  "f8edde882f81f295": {
+    "en": "Help the food database",
+    "path": "common:settingsAi.foodDb.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Hilf der Lebensmitteldatenbank"
   },
   "f8f0c4bc7319a796": {
     "en": "The weekly share of your calories that came from snacks.",

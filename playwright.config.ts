@@ -52,7 +52,14 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
-import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_MATOMO_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
+import {
+  E2E_APP_PORT,
+  E2E_APP_URL,
+  E2E_FOOD_DB_API_KEY,
+  E2E_FOOD_DB_URL,
+  E2E_MATOMO_URL,
+  E2E_SYNC_SERVER_URL,
+} from './tests/e2e/env';
 import { buildTierServerCommand } from './tests/e2e/server-env';
 
 /** The build artefact the production server serves. */
@@ -130,6 +137,7 @@ export default defineConfig({
       syncServerUrl: E2E_SYNC_SERVER_URL,
       contentDir: CONTENT_DIR,
       foodDbUrl: E2E_FOOD_DB_URL,
+      foodDbApiKey: E2E_FOOD_DB_API_KEY,
       matomoUrl: E2E_MATOMO_URL,
     }),
     url: `${E2E_APP_URL}/`,

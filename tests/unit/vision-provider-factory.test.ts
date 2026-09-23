@@ -11,7 +11,10 @@ import assert from 'node:assert/strict';
 import { z } from 'zod';
 
 import { createVisionProvider } from '../../app/services/vision/index';
-import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
+import { photoIntakeTask } from '../../app/services/vision/task';
+
+/** The adapters are language-blind; any app language builds a task for them. */
+const PHOTO_INTAKE_TASK = photoIntakeTask('en');
 
 const originalFetch = globalThis.fetch;
 

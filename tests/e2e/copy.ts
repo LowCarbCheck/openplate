@@ -68,6 +68,7 @@ const catalogSchema = z.object({
   entry: z.object({
     action: z.object({ delete: z.string(), logAgain: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),
+    edit: z.object({ save: z.string() }),
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
@@ -80,6 +81,8 @@ const catalogSchema = z.object({
       foodDbUnavailable: z.string(),
       netCarbsForPortion: z.string(),
       confirmAndLog: z.string(),
+      match: z.object({ useThisData: z.string() }),
+      fineTune: z.string(),
       sanity: z.object({
         componentOverTotal: z.string(),
         macro: z.object({ carbs: z.string(), fiber: z.string() }),
@@ -189,6 +192,7 @@ const catalogSchema = z.object({
   settingsAi: z.object({
     advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),
     save: z.object({ settings: z.string() }),
+    foodDb: z.object({ label: z.string() }),
   }),
   settings: z.object({
     notifications: z.object({

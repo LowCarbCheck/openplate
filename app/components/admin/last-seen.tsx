@@ -14,9 +14,10 @@
  * reader's own locale (`PROTOCOL.md` §5.20).
  */
 import { useTranslation } from 'react-i18next';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export function LastSeenValue({ lastSeenAt }: { lastSeenAt: string | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (lastSeenAt === null) return <>{t('admin.lastSeen.never')}</>;
-  return <>{new Date(lastSeenAt).toLocaleDateString()}</>;
+  return <>{formatNumericDate(lastSeenAt, i18n.language)}</>;
 }

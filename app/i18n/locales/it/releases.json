@@ -1,4 +1,17 @@
 {
+  "v0_43_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "I nomi degli alimenti seguono la lingua dell'app.",
+      "02": "I server possono proporre gli alimenti salvati a LowCarbCheck."
+    },
+    "changed": {
+      "01": "Le scansioni da foto, da testo digitato e della dispensa assegnano un nome a ogni alimento nella lingua dell'app."
+    },
+    "fixed": {
+      "01": "Il selettore di data e ogni data visualizzata seguono la lingua dell'app."
+    }
+  },
   "v0_42_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,21 +37,6 @@
     "changed": {
       "01": "La pagina della versione riconosce le persone ringraziate in una voce del changelog.",
       "02": "Le pagine legali provengono da una cartella montata da te, e openplate non ne include di sue."
-    }
-  },
-  "v0_40_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Puoi scegliere un obiettivo principale, il numero che il diario mostra per primo."
-    },
-    "changed": {
-      "01": "Sul telefono il titolo della pagina è più grande e più vicino al nome del marchio.",
-      "02": "Nell'applicazione ogni angolo ora è retto, tranne dove c'è un cerchio vero e proprio.",
-      "03": "La scheda del giorno del diario si apre con una cifra grande.",
-      "04": "La schermata di caricamento mostra il nome openplate invece dei tre puntini."
-    },
-    "fixed": {
-      "01": "Nelle domande al primo avvio non si muove nulla mentre scegli o digiti."
     }
   }
 }

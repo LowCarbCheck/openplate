@@ -36,6 +36,7 @@ export interface TierServerCommandOptions {
   readonly syncServerUrl: string;
   readonly contentDir: string;
   readonly foodDbUrl: string;
+  readonly foodDbApiKey: string;
   readonly matomoUrl: string;
 }
 
@@ -73,6 +74,11 @@ export function buildTierServerCommand(options: TierServerCommandOptions): strin
     // other spec loads no tracker, because `matomo.js` 404s there.
     MATOMO_URL: options.matomoUrl,
     MATOMO_SITE_ID: '1',
+    // BACKFILL IS ON IN THIS TIER (M251/04), with a key the fake knows, so
+    // `food-proposals.spec.ts` can read what the server relays. The person's
+    // own switch is what a spec turns off to prove nothing is sent.
+    FOOD_DB_API_KEY: options.foodDbApiKey,
+    FOOD_DB_BACKFILL: 'true',
     ...HERMETIC_SERVER_ENV,
   } satisfies Readonly<Record<string, string>>;
   return `cross-env ${toAssignments(assignments)} tsx ./server.ts`;

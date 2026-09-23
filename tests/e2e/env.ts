@@ -178,3 +178,10 @@ export const E2E_ACCOUNT_PASSPHRASE = 'seventeen purple lanterns drifting';
  * reader cannot drift apart.
  */
 export const E2E_INVITE_TOKEN_VAR = 'OPENPLATE_E2E_INVITE_TOKEN';
+
+/**
+ * The LowCarbCheck key the browser tier's app server is started with
+ * (M251/04), so the fake food database can tell the openplate server's keyed
+ * proposal call from an anonymous one. Not a real key.
+ */
+export const E2E_FOOD_DB_API_KEY = 'lcc_e2e_proposals_key_not_real';

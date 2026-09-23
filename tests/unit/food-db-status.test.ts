@@ -257,6 +257,7 @@ const IDENTIFICATION = {
   foods: [
     {
       name: 'Rye bread',
+      translations: { en: 'Rye bread' },
       estimatedGrams: 40,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,

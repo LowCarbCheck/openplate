@@ -34,6 +34,7 @@ import { classifyVisionHttpFailure } from '../../app/services/vision/failure-cau
 import { describeFailureBody, getFailureAlertTitle, shouldOfferPlansDoor } from '../../app/routes/add.photo';
 import type { Translate } from '../../app/lib/sync/setup-flow';
 import type { VisionFailureCause } from '../../app/services/vision/failure-cause';
+import { formatNumericDate } from '../../app/i18n/date-locale';
 
 /** A translation catalog: nested groups of keys bottoming out in translated strings. */
 type Catalog = { [key: string]: string | Catalog };
@@ -182,13 +183,13 @@ test('every managed failure has a translated sentence in BOTH locales', () => {
     { cause: 'account-suspended', pattern: /suspended/i },
   ] as const satisfies readonly { cause: VisionFailureCause; pattern: RegExp }[];
   for (const { cause, pattern } of expected) {
-    const english = describeFailureBody({ failureCause: cause }, t);
+    const english = describeFailureBody({ failureCause: cause, language: 'en' }, t);
     assert.ok(english !== undefined, `${cause} has no body`);
     assert.match(english, pattern);
     // The German is a different sentence, not the English one falling through
     // a missing key: `translatorFor` returns the KEY on a miss, so a hole shows
     // up as a dotted path here.
-    const german = describeFailureBody({ failureCause: cause }, tDe);
+    const german = describeFailureBody({ failureCause: cause, language: 'de' }, tDe);
     assert.ok(german !== undefined && !german.includes('scan.errors'), `${cause} is missing in German`);
     assert.notEqual(german, english);
   }
@@ -200,10 +201,10 @@ test('the two M212 refusals each have their own sentence, in both locales', () =
     { cause: 'ai-instance-ceiling', banned: /API key|AI settings/i },
   ] as const satisfies readonly { cause: VisionFailureCause; banned: RegExp }[];
   for (const { cause, banned } of expected) {
-    const english = describeFailureBody({ failureCause: cause }, t);
+    const english = describeFailureBody({ failureCause: cause, language: 'en' }, t);
     assert.ok(english !== undefined, `${cause} has no body`);
     assert.doesNotMatch(english, banned);
-    const german = describeFailureBody({ failureCause: cause }, tDe);
+    const german = describeFailureBody({ failureCause: cause, language: 'de' }, tDe);
     assert.ok(german !== undefined && !german.includes('scan.errors'), `${cause} is missing in German`);
     assert.notEqual(german, english);
   }
@@ -211,17 +212,24 @@ test('the two M212 refusals each have their own sentence, in both locales', () =
   // that ended are the two refusals a person could most easily be told the
   // wrong one about, and only the second is about them.
   assert.notEqual(
-    describeFailureBody({ failureCause: 'allowance-expired' }, t),
-    describeFailureBody({ failureCause: 'ai-instance-ceiling' }, t),
+    describeFailureBody({ failureCause: 'allowance-expired', language: 'en' }, t),
+    describeFailureBody({ failureCause: 'ai-instance-ceiling', language: 'en' }, t),
   );
 });
 
 test('the expired sentence names the date when the session knows it, and never a blank', () => {
-  const dated = describeFailureBody({ failureCause: 'allowance-expired', allowanceEndsAt: '2026-09-01T00:00:00.000Z' }, t);
-  assert.match(String(dated), new RegExp(new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()));
+  const endsAt = '2026-09-01T00:00:00.000Z';
+  const dated = describeFailureBody({ failureCause: 'allowance-expired', allowanceEndsAt: endsAt, language: 'en' }, t);
+  assert.ok(String(dated).includes(formatNumericDate(endsAt, 'en')));
+  // THE DATE FOLLOWS THE APP LANGUAGE, not the runtime's default (M251 spec
+  // 01). The control is the English form, which a German sentence must not
+  // carry; the two forms differ in every time zone (`01/09` against `1.9.`).
+  const german = describeFailureBody({ failureCause: 'allowance-expired', allowanceEndsAt: endsAt, language: 'de' }, tDe);
+  assert.ok(String(german).includes(formatNumericDate(endsAt, 'de')));
+  assert.ok(!String(german).includes(formatNumericDate(endsAt, 'en')));
   // THE CONTROL. With no date read yet, the dateless sentence is used rather
   // than an interpolated empty string, and the two really are different.
-  const undated = describeFailureBody({ failureCause: 'allowance-expired' }, t);
+  const undated = describeFailureBody({ failureCause: 'allowance-expired', language: 'en' }, t);
   assert.notEqual(dated, undated);
   assert.doesNotMatch(String(undated), /\{\{date\}\}/);
   assert.doesNotMatch(String(undated), /ended on\s*\./);
@@ -254,23 +262,23 @@ test('no other refusal grows a plan door, however many plans the instance sells'
 });
 
 test('a 429 under a minute says "in a minute", and one over it says "tomorrow"', () => {
-  const soon = describeFailureBody({ failureCause: 'rate-limit', retryAfterSeconds: 30 }, t);
+  const soon = describeFailureBody({ failureCause: 'rate-limit', retryAfterSeconds: 30, language: 'en' }, t);
   assert.match(String(soon), /in a minute/i);
 
-  const tomorrow = describeFailureBody({ failureCause: 'rate-limit', retryAfterSeconds: 43_200 }, t);
+  const tomorrow = describeFailureBody({ failureCause: 'rate-limit', retryAfterSeconds: 43_200, language: 'en' }, t);
   assert.match(String(tomorrow), /tomorrow/i);
   assert.notEqual(soon, tomorrow, 'the whole point of reading the header');
 });
 
 test('a 429 with no header keeps the generic wording rather than inventing a deadline', () => {
-  const body = describeFailureBody({ failureCause: 'rate-limit' }, t);
+  const body = describeFailureBody({ failureCause: 'rate-limit', language: 'en' }, t);
   assert.doesNotMatch(String(body), /tomorrow/i);
 });
 
 test("OpenRouter's own rate-limit copy still wins on an open instance", () => {
   // The free tier resets daily and says so; the managed branch must not have
   // taken that over.
-  const body = describeFailureBody({ failureCause: 'rate-limit', provider: 'openrouter', retryAfterSeconds: 30 }, t);
+  const body = describeFailureBody({ failureCause: 'rate-limit', provider: 'openrouter', retryAfterSeconds: 30, language: 'en' }, t);
   assert.equal(body, EN.get('scan.errors.openrouterRateLimit'));
 });
 
@@ -360,7 +368,7 @@ test('the spent-scans headline names the number the account was given, and stand
 
 test('the spent-scans body says the food database still works', () => {
   assert.equal(
-    describeFailureBody({ failureCause: 'trial-scans-spent' }, t),
+    describeFailureBody({ failureCause: 'trial-scans-spent', language: 'en' }, t),
     EN.get('scan.errors.provider.trialScansSpent'),
   );
 });

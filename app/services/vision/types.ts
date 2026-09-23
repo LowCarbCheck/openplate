@@ -12,6 +12,7 @@ import type { IntakeTaskDescriptor } from './task';
 // The flag vocabulary (`PREGNANCY_CATEGORIES`, `ALLERGENS`, `FoodFlags`)
 // lives beside the schema that asks for it, and is imported from there.
 import type { FoodFlags } from './schema';
+import type { FoodTranslations } from './translations';
 import type { CarbBasis } from '#app/lib/net-carbs';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
@@ -107,6 +108,13 @@ export interface IdentifiedFood {
    * decided on the device from the local profile, never here.
    */
   flags: FoodFlags;
+  /**
+   * The same food named in every app language the model gave, trimmed, blanks
+   * dropped, and ALWAYS carrying the language the call was made in (filled
+   * from `name` when the model left it out). M251 spec 02; see
+   * `./translations` for why a weak model's gaps never fail a scan.
+   */
+  translations: FoodTranslations;
   /** See {@link MacroProvenance} — present only when the provider reported it. */
   provenance?: MacroProvenance;
   /**

@@ -10,7 +10,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { clockLocale, dateLabelLocale, numberLocale } from '../../app/i18n/date-locale';
+import { clockLocale, dateLabelLocale, formatNumericDate, numberLocale } from '../../app/i18n/date-locale';
 import { formatDayLabel } from '../../app/lib/format-day-label';
 
 describe('dateLabelLocale', () => {
@@ -81,5 +81,22 @@ describe('formatDayLabel', () => {
 
   it('throws on a malformed date regardless of language', () => {
     assert.throws(() => formatDayLabel('12/07/2026', 'de'), /Invalid date/);
+  });
+});
+
+describe('formatNumericDate', () => {
+  // Noon UTC, so the calendar day is the 23rd in every time zone on earth.
+  const instant = '2026-09-23T12:00:00.000Z';
+
+  it('writes a German date the German way', () => {
+    assert.equal(formatNumericDate(instant, 'de'), '23.9.2026');
+  });
+
+  it('writes an English date day first, like every English day label', () => {
+    assert.equal(formatNumericDate(instant, 'en'), '23/09/2026');
+  });
+
+  it('control: the two languages really do differ, so neither assertion above is the runtime default twice', () => {
+    assert.notEqual(formatNumericDate(instant, 'de'), formatNumericDate(instant, 'en'));
   });
 });

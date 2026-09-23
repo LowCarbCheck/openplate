@@ -55,6 +55,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { activityTotal } from '#app/lib/admin/activity-strip';
 import type { AdminAccountActivity, AdminAccountView } from '#app/lib/admin/admin-wire';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 /** Where the activity request is. One `kind`, so a spinner and a strip can never be on screen together. */
 export type PersonActivityState =
@@ -78,7 +79,7 @@ export interface PersonDetailProps extends PersonDetailActions {
 }
 
 export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...actions }: PersonDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +138,7 @@ export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...act
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">{t('admin.columns.joined')}</dt>
-              <dd>{new Date(person.createdAt).toLocaleDateString()}</dd>
+              <dd>{formatNumericDate(person.createdAt, i18n.language)}</dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">{t('admin.columns.usedToday')}</dt>

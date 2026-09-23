@@ -67,7 +67,7 @@ const noopPromptInstall = () => Promise.resolve();
 
 /** A self-hosted instance's public config -- the same shape scan-connect-card.test.ts uses. */
 function publicConfig(): PublicConfig {
-  return { syncServerUrl: null, analytics: null, instancePreset: null, managed: false };
+  return { syncServerUrl: null, analytics: null, instancePreset: null, managed: false, foodDbBackfill: false };
 }
 
 /**

@@ -28,6 +28,7 @@ import { clientLoader } from '../../app/routes/settings.ai';
 import { NoAiIntakeNotice } from '../../app/components/add/no-ai-intake-notice';
 import { resolveAiIntakeDoor, type AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import enCommon from '../../app/i18n/locales/en/common.json';
+import { formatNumericDate } from '../../app/i18n/date-locale';
 
 /** The notice `/add` and `/describe` draw, rendered for one door. */
 function renderNoAiNotice(door: AiIntakeDoor): string {
@@ -170,7 +171,8 @@ describe('no surface names an administrator where memberInvites is on', () => {
     const markup = renderNoAiNotice(door);
     assert.doesNotMatch(markup, /administrator/i);
     assert.doesNotMatch(markup, /\{\{date\}\}/, 'the date is interpolated, never printed as a placeholder');
-    assert.match(markup, new RegExp(new Date('2026-09-01T00:00:00.000Z').toLocaleDateString()));
+    // THE APP LANGUAGE'S FORM, never the runtime's default (M251 spec 01).
+    assert.ok(markup.includes(formatNumericDate('2026-09-01T00:00:00.000Z', 'en')));
   });
 
   it('KEEPS the old sentence where there really is an administrator, which is the control', () => {

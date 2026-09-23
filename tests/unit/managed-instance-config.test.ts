@@ -35,6 +35,7 @@ const OPEN_CONFIG: PublicConfig = {
   instancePreset: null,
   analytics: null,
   managed: false,
+  foodDbBackfill: false,
 };
 
 test('an unset, empty, or whitespace INSTANCE_MODE means an open instance', () => {

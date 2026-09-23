@@ -37,6 +37,8 @@ import { CustomFoodsList } from '#app/components/add/manage-custom-foods';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { trackCustomFoodDeleted, trackCustomFoodEdited } from '#app/lib/matomo-events';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import i18nSingleton from '#app/i18n/i18n';
+import { applyFoodNameEdit, displayFoodName } from '#app/lib/food-name';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -102,7 +104,11 @@ async function handleDeleteFood({ formData }: { formData: FormData }): Promise<D
   const existing = await getLocalFood(submission.value.foodId);
   await deleteLocalFood(submission.value.foodId);
   trackCustomFoodDeleted();
-  return { intent: 'deleteFood', foodId: submission.value.foodId, name: existing?.name ?? '' };
+  return {
+    intent: 'deleteFood',
+    foodId: submission.value.foodId,
+    name: existing === null ? '' : displayFoodName(existing, i18nSingleton.language),
+  };
 }
 
 async function handleEditFood({ formData }: { formData: FormData }): Promise<EditFoodResult> {
@@ -131,15 +137,17 @@ async function handleEditFood({ formData }: { formData: FormData }): Promise<Edi
   // cleared by a macro edit either — same reasoning, and same "the submitted
   // value wins outright" rule as `/add`'s duplicate handler.
   const carbBasis = parseCarbBasis(data.carbBasis);
+  // THEIR WORDS WIN (M251/03), the rule `/add`'s duplicate handler follows.
+  const renamed = applyFoodNameEdit({ food: existing, submittedName: data.name, language: i18nSingleton.language });
   await putLocalFood({
     ...existing,
-    name: data.name,
+    ...renamed,
     macrosPer100g: { ...macrosPer100g, carbs: macrosPer100g.carbs },
     netCarbsPer100g,
     carbBasis: carbBasis ?? undefined,
   });
   trackCustomFoodEdited();
-  return { intent: 'editFood', ok: true, name: data.name };
+  return { intent: 'editFood', ok: true, name: displayFoodName(renamed, i18nSingleton.language) };
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {

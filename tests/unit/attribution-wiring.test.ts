@@ -205,6 +205,7 @@ const AI_IDENTIFICATION = {
   foods: [
     {
       name: 'Wheat bran',
+      translations: { en: 'Wheat bran' },
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,
@@ -499,10 +500,17 @@ describe('the credit survives every other way an entry is created', () => {
     assert.deepEqual(
       { ...copy, id: 'log-1', dayKey: DAY_KEY, loggedAt: LOGGED_AT_MS, createdAt: LOGGED_AT_MS, logBatchId: null },
       // M123/13 review finding 3 added `carbBasis` to `buildCopiedEntry`'s
-      // field list, and M219/03 added `flags`; `creditedEntry()` carries
-      // neither, so the copy carries neither, asserted explicitly here so
-      // this deep-equal stays exhaustive.
-      { ...creditedEntry(), portion: undefined, micronutrientsPer100g: undefined, carbBasis: undefined, flags: undefined },
+      // field list, M219/03 added `flags` and M251/03 `nameTranslations`;
+      // `creditedEntry()` carries none of them, so the copy carries none,
+      // asserted explicitly here so this deep-equal stays exhaustive.
+      {
+        ...creditedEntry(),
+        portion: undefined,
+        micronutrientsPer100g: undefined,
+        carbBasis: undefined,
+        flags: undefined,
+        nameTranslations: undefined,
+      },
     );
   });
 

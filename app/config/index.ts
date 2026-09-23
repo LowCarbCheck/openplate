@@ -95,12 +95,21 @@ export interface FoodDbConfig {
    * (`foodDbKeyDisplayPrefix`) is what a log line may carry.
    */
   apiKey: string | null;
+  /**
+   * Whether this instance passes AI-named foods on to LowCarbCheck as
+   * proposals (M251/04, `FOOD_DB_BACKFILL`). True only when the operator asked
+   * for it AND the integration is on AND a key is set, because the proposal
+   * endpoint accepts keyed servers only. See {@link resolveFoodDbBackfill}.
+   */
+  backfill: boolean;
 }
 
 const DEFAULT_FOOD_DB_API_URL = 'https://lowcarbcheck.org';
 
-/** The two environment variables the food-database integration is built from. */
+/** The three environment variables the food-database integration is built from. */
 interface FoodDbEnv {
+  /** `FOOD_DB_BACKFILL`, raw: `true`, `false`, or unset. See {@link resolveFoodDbBackfill}. */
+  backfill: string | undefined;
   /** `FOOD_DB_API_URL`, raw. Its three states are the whole point, see below. */
   apiUrl: string | undefined;
   /** `FOOD_DB_API_KEY`, raw. Unset, empty and whitespace-only all mean the anonymous tier. */
@@ -133,14 +142,64 @@ function parseFoodDbApiKey(raw: string | undefined): string | null {
  * and a swapped pair would compile, send the key as the base URL, and fail in
  * a way no type checks.
  */
-function parseFoodDbConfig(env: FoodDbEnv): FoodDbConfig {
+export function parseFoodDbConfig(env: FoodDbEnv): FoodDbConfig {
   const apiKey = parseFoodDbApiKey(env.apiKey);
-  if (env.apiUrl === undefined) return { enabled: true, apiUrl: DEFAULT_FOOD_DB_API_URL, apiKey };
+  if (env.apiUrl === undefined) {
+    return {
+      enabled: true,
+      apiUrl: DEFAULT_FOOD_DB_API_URL,
+      apiKey,
+      backfill: resolveFoodDbBackfill({ raw: env.backfill, isEnabled: true, apiKey }),
+    };
+  }
   const trimmed = env.apiUrl.trim();
   // Integration OFF: no request ever goes out, so the key is dropped here
   // rather than carried around in a config nothing reads.
-  if (trimmed === '') return { enabled: false, apiUrl: '', apiKey: null };
-  return { enabled: true, apiUrl: trimmed.replace(/\/+$/, ''), apiKey };
+  if (trimmed === '') {
+    return {
+      enabled: false,
+      apiUrl: '',
+      apiKey: null,
+      backfill: resolveFoodDbBackfill({ raw: env.backfill, isEnabled: false, apiKey: null }),
+    };
+  }
+  return {
+    enabled: true,
+    apiUrl: trimmed.replace(/\/+$/, ''),
+    apiKey,
+    backfill: resolveFoodDbBackfill({ raw: env.backfill, isEnabled: true, apiKey }),
+  };
+}
+
+/**
+ * Parses `FOOD_DB_BACKFILL` (M251/04): whether AI-named foods are proposed to
+ * LowCarbCheck.
+ *
+ * OFF BY DEFAULT, and off unless all three hold: the operator wrote `true`,
+ * the integration is on, and a key is set. LowCarbCheck accepts proposals
+ * from keyed servers only, so `true` without a key would send requests that
+ * are refused every time; it is read as off instead, and the operator sees
+ * the reason in the docs, not in a stream of refusals.
+ *
+ * Unset and empty are `false`. Any word other than `true` or `false` stops the
+ * boot, the house rule for a typo: `FOOD_DB_BACKFILL=ture` is somebody who
+ * wanted it on.
+ *
+ * @param options.raw - `FOOD_DB_BACKFILL`, raw.
+ * @param options.isEnabled - whether the food-database integration is on at all.
+ * @param options.apiKey - the parsed key, or `null`.
+ * @returns whether this instance sends proposals.
+ */
+export function resolveFoodDbBackfill(options: {
+  raw: string | undefined;
+  isEnabled: boolean;
+  apiKey: string | null;
+}): boolean {
+  const value = options.raw?.trim().toLowerCase() ?? '';
+  if (value !== '' && value !== 'true' && value !== 'false') {
+    throw new Error(`FOOD_DB_BACKFILL must be "true" or "false", got "${options.raw}".`);
+  }
+  return value === 'true' && options.isEnabled && options.apiKey !== null;
 }
 
 /**
@@ -340,7 +399,11 @@ export const CONFIG = {
    * `FOOD_DB_API_KEY` is optional and server-only: unset is the anonymous
    * tier, which is what every instance ran on before M238.
    */
-  foodDb: parseFoodDbConfig({ apiUrl: process.env.FOOD_DB_API_URL, apiKey: process.env.FOOD_DB_API_KEY }),
+  foodDb: parseFoodDbConfig({
+    apiUrl: process.env.FOOD_DB_API_URL,
+    apiKey: process.env.FOOD_DB_API_KEY,
+    backfill: process.env.FOOD_DB_BACKFILL,
+  }),
 
   /**
    * Micronutrient reference basis (M234 spec 05)

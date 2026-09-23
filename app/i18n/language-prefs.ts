@@ -73,6 +73,15 @@ export function isLanguageCode(value: UnvalidatedLanguage): value is LanguageCod
   return SUPPORTED_LANGUAGE_SET.has(value);
 }
 
+/**
+ * Any language-ish value, narrowed to an app language, with the default for
+ * anything else. For a caller that holds `i18n.language` (a plain string) and
+ * needs the code an AI prompt or a locale map is keyed by.
+ */
+export function toLanguageCode(value: UnvalidatedLanguage): LanguageCode {
+  return isLanguageCode(value) ? value : DEFAULT_LANGUAGE;
+}
+
 /** 1 year — a durable per-device preference, like the theme. */
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 

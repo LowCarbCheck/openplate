@@ -330,6 +330,7 @@ const NO_APPLIED_MATCH: AppliedMatchSnapshot = {
   carbBasis: undefined,
   attribution: null,
   micronutrientsPer100g: undefined,
+  isEstimate: false,
 };
 
 describe('the plate-scan review card honours a label item\'s own panel convention', () => {
@@ -455,6 +456,7 @@ function sanityIdentification(carbBasis: CarbBasis | undefined) {
     foods: [
       {
         name: SANITY_FOOD_NAME,
+        translations: { en: SANITY_FOOD_NAME },
         estimatedGrams: 100,
         confidence: 'high' as const,
         macroSource: carbBasis === undefined ? ('estimated' as const) : ('label' as const),

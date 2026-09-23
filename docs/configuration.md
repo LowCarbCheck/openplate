@@ -28,6 +28,7 @@ const appUrl = CONFIG.app.url;
 | `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
 | `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent (never photos, never anything about you), and the lookup fails open. Set to an empty string to disable it entirely. |
 | `FOOD_DB_API_KEY`           | unset                       | Optional key for the food database above. Unset is the free anonymous tier, which is rate limited and is enough to try openplate out. A free key with a generous monthly allowance takes an email address and one click at [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers). Read server side only and never sent to a browser, so it is safe in your environment file. |
+| `FOOD_DB_BACKFILL`          | `false`                     | Set to `true` to pass foods people save from an AI answer on to LowCarbCheck as proposals, so the food database gains new foods and the titles it lacks. Needs `FOOD_DB_API_KEY`. Without a key it stays off. A person can still turn it off for their own device in **Settings → AI**. See [Proposals to the food database](#proposals-to-the-food-database). Any value other than `true` or `false` stops the boot on purpose. |
 | `NUTRIENT_REFERENCE_BASIS`  | `dge`                       | Which published document the **Nutrients** screen quotes: `dge` (German DGE Referenzwerte), `efsa` (EU) or `us` (NASEM/IOM). One basis per instance, for every language, because a reference body follows where a person lives and not which language they read. The screen names the document it used under every amount. An unknown value stops the boot on purpose. |
 | `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-core](https://github.com/LowCarbCheck/openplate-core) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
 | `CONTENT_DIR`               | unset (no legal pages)      | A folder of markdown files for the legal pages (`<CONTENT_DIR>/<lang>/<slug>.md`), mounted read only. Unset, every content route answers 404 and no legal link is drawn. A value that names no folder stops the boot on purpose. See [content.md](content.md). |
@@ -80,6 +81,28 @@ The lookup is fail-open either way: if the food database is unreachable, refused
 allowance, a scan still completes and still shows numbers. Those numbers are then the AI's
 own estimate rather than a database figure, and the app says so on screen rather than
 letting the difference pass unnoticed.
+
+## Proposals to the food database
+
+With `FOOD_DB_BACKFILL=true` and a key, openplate passes each food a person saves from a
+photo or a typed meal on to LowCarbCheck, through this server:
+
+- A food the person matched to a LowCarbCheck row sends the food's names in every app
+  language, so the row gains the titles it lacks.
+- A food with no match sends its names in every app language and its macros per 100 g, so
+  LowCarbCheck can add it. It needs an English name and all four of carbs, fat, protein and
+  energy. A food without them is not sent.
+- A name the person typed or changed themselves is never sent.
+
+A proposal carries the names, the macros, and whether the food came from a photo or a typed
+meal. It carries no account, no diary entry, no photo, and no address of the person.
+LowCarbCheck sees your server and your key. LowCarbCheck judges each proposal with a model
+when it arrives and publishes what passes. A food published this way comes back from the
+food database marked as an estimate, and openplate shows and stores it as one, never as a
+curated source.
+
+Each person can switch it off for their device in **Settings → AI**. It is off on every
+instance until the operator sets `FOOD_DB_BACKFILL=true`.
 
 ## Newsletter sign-up
 

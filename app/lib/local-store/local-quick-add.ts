@@ -25,13 +25,14 @@
 import type { Macros } from '#app/lib/macros';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { FoodMatch } from '#app/services/food-resolution';
-import { toCuratedSource } from '#app/services/food-resolution/apply-match';
+import { isEstimatedFoodOrigin, toCuratedSource } from '#app/services/food-resolution/apply-match';
 import { chipCarbStatus } from '#app/lib/frequent-chips';
 import type { CarbStatus } from '#app/utils/carb-status';
 import { carbBasisForOrigin, type CarbBasis } from '#app/lib/net-carbs';
 import { snapshotToPer100gAtGrams } from '#app/lib/quick-add-search';
 import { FALLBACK_PORTION_GRAMS, portionToGrams, resolveDefaultPortion, type DisplayPortion } from '#app/lib/portions';
 import type { LocalFoodLog, LocalPersonalFood } from './schema';
+import type { FoodTranslations } from '#app/services/vision/translations';
 
 /** Case-insensitive, whitespace-trimmed dedupe key for a food/candidate name. */
 function nameKey(name: string): string {
@@ -46,6 +47,8 @@ function nameKey(name: string): string {
 export interface LocalRecentFood {
   /** The most recent casing the user logged this name under. */
   name: string;
+  /** The most recent log's name per app language (M251/03), verbatim. Render through `displayFoodName`. */
+  nameTranslations?: FoodTranslations;
   /** Grams of the most recent log for this name. */
   lastQuantityGrams: number;
   /** Epoch-ms this name was most recently logged. */
@@ -140,6 +143,7 @@ export function computeLocalRecentFoods(
     .slice(0, limit)
     .map(({ latest, timesLogged }) => ({
       name: latest.name,
+      nameTranslations: latest.nameTranslations,
       lastQuantityGrams: latest.quantityGrams,
       lastLoggedAt: latest.loggedAt,
       timesLogged,
@@ -175,6 +179,8 @@ export function computeLocalRecentFoods(
  */
 export interface LocalFrequentChip {
   name: string;
+  /** The underlying log's name per app language, verbatim; see `LocalRecentFood.nameTranslations`. */
+  nameTranslations?: FoodTranslations;
   lastQuantityGrams: number;
   macros: Macros;
   foodId: string | null;
@@ -213,6 +219,7 @@ export function selectLocalFrequentChips(
     .slice(0, limit)
     .map((recent) => ({
       name: recent.name,
+      nameTranslations: recent.nameTranslations,
       lastQuantityGrams: recent.lastQuantityGrams,
       macros: recent.macros,
       foodId: recent.foodId,
@@ -245,6 +252,12 @@ export type LocalQuickAddSource = 'recent' | 'custom' | 'curated';
 export interface LocalQuickAddCandidate {
   source: LocalQuickAddSource;
   name: string;
+  /**
+   * The name per app language, for a recent or a custom candidate that came
+   * from an AI answer (M251/03). Absent for a curated candidate, whose `name`
+   * already arrives in the app language from the food database.
+   */
+  nameTranslations?: FoodTranslations;
   macrosPer100g: Macros;
   /**
    * This candidate's AUTHORITATIVE per-100g net carbs — the same three-state
@@ -371,6 +384,7 @@ export function localRecentFoodToCandidate(recent: LocalRecentFood): LocalQuickA
   return {
     source: 'recent',
     name: recent.name,
+    nameTranslations: recent.nameTranslations,
     macrosPer100g,
     authoritativeNetCarbsPer100g: recent.netCarbsPer100g,
     carbBasis: recent.carbBasis,
@@ -418,6 +432,7 @@ export function localFoodToCandidate(food: LocalPersonalFood): LocalQuickAddCand
   return {
     source: 'custom',
     name: food.name,
+    nameTranslations: food.nameTranslations,
     macrosPer100g: food.macrosPer100g,
     authoritativeNetCarbsPer100g: food.netCarbsPer100g,
     carbBasis: food.carbBasis,
@@ -484,9 +499,12 @@ export function localCuratedMatchToCandidate(match: FoodMatch): LocalQuickAddCan
     carbBasis: carbBasisForOrigin(match.origin),
     defaultGrams: candidateDefaultGrams(defaultPortion),
     defaultPortion,
-    curatedSource: toCuratedSource(match.slug),
+    // A row LowCarbCheck published from a proposal is an ESTIMATE (M251/04):
+    // it claims no curated source and logs as estimated, see
+    // `isEstimatedFoodOrigin`.
+    curatedSource: isEstimatedFoodOrigin(match.origin) ? null : toCuratedSource(match.slug),
     foodId: null,
-    aiEstimated: false,
+    aiEstimated: isEstimatedFoodOrigin(match.origin),
     imageUrl: match.imageUrl,
     timesLogged: 0,
     url: match.url,

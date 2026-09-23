@@ -37,6 +37,7 @@ const TIER_OPTIONS = {
   syncServerUrl: 'http://127.0.0.1:20001',
   contentDir: '/tmp/content',
   foodDbUrl: 'http://127.0.0.1:20002',
+  foodDbApiKey: 'e2e-key',
   matomoUrl: 'http://127.0.0.1:9',
 } as const;
 

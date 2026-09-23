@@ -1,4 +1,17 @@
 {
+  "v0_43_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Les noms d'aliments suivent la langue de l'application.",
+      "02": "Les serveurs peuvent proposer les aliments enregistrés à LowCarbCheck."
+    },
+    "changed": {
+      "01": "Les analyses par photo, saisie et garde-manger nomment chaque aliment dans la langue de l'application."
+    },
+    "fixed": {
+      "01": "Le sélecteur de date et chaque date affichée suivent la langue de l'application."
+    }
+  },
   "v0_42_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,21 +37,6 @@
     "changed": {
       "01": "La page de version crédite les personnes remerciées dans une entrée du journal des modifications.",
       "02": "Les pages légales proviennent d'un dossier que tu montes, et openplate n'en fournit aucune par défaut."
-    }
-  },
-  "v0_40_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Tu peux choisir un objectif principal, le chiffre que le journal affiche en premier."
-    },
-    "changed": {
-      "01": "Sur téléphone, le titre de la page est plus grand et se place plus près du nom de la marque.",
-      "02": "Tous les angles de l'application sont désormais droits, sauf les cercles parfaits.",
-      "03": "La carte du jour dans le journal met en avant un seul grand chiffre.",
-      "04": "L'écran de chargement affiche le nom d'openplate au lieu de trois points."
-    },
-    "fixed": {
-      "01": "Rien ne bouge sur les questions de première utilisation quand tu choisis ou saisis."
     }
   }
 }

@@ -13,6 +13,7 @@
  * owner-private compartment — and lets this screen be rendered in a test.
  */
 import { useTranslation } from 'react-i18next';
+import { displayFoodName } from '#app/lib/food-name';
 
 import { computeDailyTotals } from '#app/lib/local-store';
 import type { LocalFoodLog } from '#app/lib/local-store';
@@ -39,7 +40,7 @@ export function summariseSharedDiary(logs: readonly LocalFoodLog[], limit = DAYS
 }
 
 export function SharedDiaryView({ diary }: { diary: SharedDiary }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const days = summariseSharedDiary(diary.snapshot.foodLogs);
 
   return (
@@ -68,7 +69,7 @@ export function SharedDiaryView({ diary }: { diary: SharedDiary }) {
             <ul className="mt-2 space-y-1">
               {day.entries.map((entry) => (
                 <li key={entry.id} className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
-                  <span className="min-w-0 truncate">{entry.name}</span>
+                  <span className="min-w-0 truncate">{displayFoodName(entry, i18n.language)}</span>
                   <span>{t('sharing.clinician.entryGrams', { grams: Math.round(entry.quantityGrams) })}</span>
                 </li>
               ))}

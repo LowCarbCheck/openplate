@@ -106,6 +106,10 @@ This is the one path the app server stands on, and it is narrow by construction:
 - It fails open. If the database is unreachable, refuses the key, or runs out of allowance, the
   scan still completes with the model's own numbers, and the screen says so.
 - `FOOD_DB_API_URL=""` turns it off, and then no food name leaves your server.
+- With `FOOD_DB_BACKFILL=true` it also carries proposals: the names of a food a person saved
+  from an AI answer, in every app language, and for a food with no match its macros per 100 g.
+  Never a name the person typed, never a photo or a diary entry. See
+  [configuration.md](configuration.md#proposals-to-the-food-database).
 
 It runs on the server rather than in the browser. This keeps the key off the page, and lets the
 operator's setting decide whether names leave at all. The key is `FOOD_DB_API_KEY`. Without one

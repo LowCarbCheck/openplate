@@ -6362,6 +6362,13 @@
     "at": "2026-09-14",
     "tr": "ABD tarzı (karbonhidrat lifi içerir)"
   },
+  "58400761a28170ec": {
+    "en": "Photo, typed and pantry scans name each food in the app language.",
+    "path": "releases:v0_43_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Fotoğraf, yazılı ve kiler taramaları her yiyeceği uygulama dilinde adlandırır."
+  },
   "585235f27cd1a63a": {
     "en": "Logging…",
     "path": "common:entry.action.logAgainPending",
@@ -7790,6 +7797,13 @@
     "at": "2026-09-14",
     "tr": "Keto"
   },
+  "6bc6c866fe4da49f": {
+    "en": "When you save a food the AI named, its name in every app language and its nutrition values go to LowCarbCheck, the food database this app looks foods up in. Nothing about you goes with them: no account, no photo, no diary entry. A name you type or change yourself is never sent.",
+    "path": "common:settingsAi.foodDb.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yapay zekanın adlandırdığı bir yiyeceği kaydettiğinde, yiyeceğin tüm uygulama dillerindeki adı ve besin değerleri, bu uygulamanın yiyecekleri aramak için kullandığı yiyecek veritabanı olan LowCarbCheck platformuna gider. Bunlarla birlikte sana dair hiçbir şey gitmez: hesap yok, fotoğraf yok, günlük girdisi yok. Kendi yazdığın ya da değiştirdiğin bir ad asla gönderilmez."
+  },
   "6be2eff8ea560886": {
     "en": "Median eating window ~{{duration}} across {{days}} days",
     "path": "common:trends.recap.eatingWindow",
@@ -8433,6 +8447,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Geri"
+  },
+  "7443fb4ccea17afd": {
+    "en": "The date picker and every printed date follow the app language.",
+    "path": "releases:v0_43_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Tarih seçici ve yazdırılan her tarih, uygulama dilini izler."
   },
   "7454a9a068d57259": {
     "en": "Fast scheduled.",
@@ -16939,6 +16960,13 @@
     "at": "2026-09-23",
     "tr": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
   },
+  "e77580e3d1e024f9": {
+    "en": "Servers can propose saved foods to LowCarbCheck.",
+    "path": "releases:v0_43_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Sunucular, kaydedilen yiyecekleri LowCarbCheck'e önerebilir."
+  },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
     "path": "common:research.enrolments.window",
@@ -17646,6 +17674,13 @@
     "at": "2026-09-14",
     "tr": "Bu hesap için fotoğraf tahminleri etkinleştirilmemiş."
   },
+  "f136b5657f811dc1": {
+    "en": "Estimated values",
+    "path": "common:scan.review.match.estimate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Tahmini değerler"
+  },
   "f184037a91c89400": {
     "en": "Over your calorie goal",
     "path": "common:diary.impact.kcal.over",
@@ -18031,6 +18066,13 @@
     "at": "2026-09-14",
     "tr": "Katıl · openplate"
   },
+  "f60026707d160925": {
+    "en": "Food database",
+    "path": "common:settingsAi.foodDb.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yiyecek veritabanı"
+  },
   "f652992d56dc207d": {
     "en": "Restore from a backup file",
     "path": "common:recover.restoreHeading",
@@ -18191,6 +18233,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Önce porsiyonu ayarla. Makrolar buna göre değişir."
+  },
+  "f8ab13ee623f2970": {
+    "en": "Food names follow the app language.",
+    "path": "releases:v0_43_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yiyecek adları uygulama dilini izler."
+  },
+  "f8edde882f81f295": {
+    "en": "Help the food database",
+    "path": "common:settingsAi.foodDb.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yiyecek veritabanına katkıda bulun"
   },
   "f8f0c4bc7319a796": {
     "en": "The weekly share of your calories that came from snacks.",

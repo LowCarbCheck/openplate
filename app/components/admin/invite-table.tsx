@@ -24,6 +24,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Button } from '#app/components/ui/button';
 import { ConfirmButton } from './person-actions';
 import type { InviteView } from '#app/lib/admin/admin-wire';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export interface InviteTableProps {
   invites: InviteView[];
@@ -55,7 +56,7 @@ function InviteRow({
   onResend: (input: { id: number }) => Promise<void>;
   onRevoke: (input: { id: number }) => Promise<void>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +80,7 @@ function InviteRow({
           <p className="truncate text-sm text-muted-foreground">
             {invite.displayName ?? t('admin.noName')}
             {' · '}
-            {t('admin.invites.expires', { date: new Date(invite.expiresAt).toLocaleDateString() })}
+            {t('admin.invites.expires', { date: formatNumericDate(invite.expiresAt, i18n.language) })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

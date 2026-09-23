@@ -27,6 +27,7 @@ import { computeEditPatch, macrosDiffer, resolveEditedBasis, resolveEditedNetCar
 import { encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { encodeMicronutrients } from '#app/lib/micronutrients';
 import { cautionProfileOf, decideCautions, encodeFoodFlags } from '#app/lib/food-cautions';
+import { applyFoodNameEdit, displayFoodName, encodeNameTranslations } from '#app/lib/food-name';
 import { FoodCautionChips } from '#app/components/food-caution-chip';
 import { parseNumericFieldValue } from '#app/lib/conform-field-value';
 import {
@@ -539,7 +540,9 @@ async function handleLogAgain(id: string) {
   return {
     id: randomUuid(),
     title: undefined,
-    description: translate('entry.toast.loggedAgain', { name: existing.name }),
+    description: translate('entry.toast.loggedAgain', {
+      name: displayFoodName(existing, i18nSingleton.language),
+    }),
     type: 'success' as const,
   };
 }
@@ -596,7 +599,10 @@ async function handleSave(formData: FormData, id: string, timezone: string) {
 
   await putLocalFoodLog({
     ...existing,
-    name: value.name,
+    // THEIR WORDS WIN (M251/03). The field showed the name in this screen's
+    // language; an unchanged field keeps the stored name and its translations,
+    // a changed one becomes the name in every language.
+    ...applyFoodNameEdit({ food: existing, submittedName: value.name, language: i18nSingleton.language }),
     quantityGrams: value.quantityGrams,
     macros: snapshot,
     mealType: value.mealType ?? null,
@@ -802,7 +808,7 @@ function LoggedTogether({ siblings }: { siblings: LocalFoodLog[] }) {
             to={`/diary/entry/${sibling.id}`}
             className="flex min-h-11 items-center justify-between gap-3 border p-3 transition-colors hover:border-teal-300 hover:bg-muted/50 dark:hover:border-teal-600"
           >
-            <span className="min-w-0 truncate text-sm font-medium">{sibling.name}</span>
+            <span className="min-w-0 truncate text-sm font-medium">{displayFoodName(sibling, i18n.language)}</span>
             <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
               {formatMeasureIn(i18n.language, sibling.quantityGrams, 'g')}
               <ChevronRight className="h-4 w-4" />
@@ -874,6 +880,9 @@ export function buildRestorePayload(log: LocalFoodLog) {
     // with its raw flags gone, so a raw-milk note the person had already seen
     // would vanish and read as "checked and fine".
     flags: encodeFoodFlags(log.flags),
+    // And the sixth (M251/03): without this an undone entry would come back
+    // in the one language it was logged in.
+    nameTranslations: encodeNameTranslations(log.nameTranslations),
     carbs: macroPayloadValue(log.macros.carbs),
     fiber: macroPayloadValue(log.macros.fiber),
     sugars: macroPayloadValue(log.macros.sugars),
@@ -966,7 +975,7 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   const handleDeleteClick = () => {
     setIsDeleting(true);
     publishStatus({
-      text: t('entry.toast.removed', { name: log.name }),
+      text: t('entry.toast.removed', { name: displayFoodName(log, i18n.language) }),
       action: { label: t('entry.toast.undo'), onClick: handleUndo },
     });
     // Device-local photo cache: when this is the batch's last remaining entry,
@@ -986,7 +995,7 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
         <figure className="space-y-1">
           <img
             src={photoDataUrl}
-            alt={t('entry.photo.alt', { name: log.name })}
+            alt={t('entry.photo.alt', { name: displayFoodName(log, i18n.language) })}
             className="max-h-80 w-full object-cover"
           />
           <figcaption className="text-xs text-muted-foreground">{t('entry.photo.caption')}</figcaption>
@@ -994,7 +1003,7 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
       )}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="text-2xl font-semibold tracking-tight">{log.name}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{displayFoodName(log, i18n.language)}</h2>
           <FavoriteToggle name={log.name} />
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -1200,7 +1209,9 @@ export function EditEntry({
     // same values) — Conform only reads these on mount, so keeping them stable
     // avoids any re-render reset.
     defaultValue: {
-      name: log.name,
+      // The name as the receipt showed it, in this screen's language. Saving
+      // it unchanged is never a rename; see `applyFoodNameEdit` in `handleSave`.
+      name: displayFoodName(log, i18n.language),
       quantityGrams: formatMacroNumber(grams),
       date: loggedAtDateValue,
       time: loggedAtTimeValue,

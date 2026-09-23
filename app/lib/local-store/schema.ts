@@ -464,9 +464,32 @@
  * every export/import round trip; it parses leniently, through the same
  * narrowing the wire answer gets, so an unknown category in a file written
  * by a longer list restores with that entry dropped.
+ *
+ * NOTE (M251/03, a food's name in every language): `nameTranslations` is
+ * added WITHIN v24, with no bump, to FOUR existing entities at once:
+ * {@link LocalFoodLog}, {@link LocalPersonalFood}, {@link LocalSavedMealItem}
+ * and {@link LocalPantryItem}, every entity that stores a food's name. It
+ * follows the main-goal precedent on {@link LocalProfileGoals}: ONE OPTIONAL
+ * field on an existing entity, and a row saved before it simply lacks the key
+ * and renders its `name` in every language, which is exactly what a name saved
+ * before this field means. There is no `migrateSnapshot` step and there must
+ * not be one: rewriting old rows is a milestone non-goal, and nothing could
+ * translate them honestly. The four lines on `backup.ts`'s entity schemas ARE
+ * needed, because zod strips unrecognized keys and would drop the translations
+ * on every export and every sync round trip.
+ *
+ * WHY NO BUMP. The sync blob is sealed with `SCHEMA_VERSION` in its AAD, so a
+ * bump at launch would leave a person's second device, still on the older
+ * build, unable to decrypt the sync at all until it updates. Without the bump
+ * the failure is small and visible: an older build parses the blob, zod drops
+ * the unknown key, and any row it re-pushes loses its `nameTranslations` and
+ * falls back to `name`. That row then reads in the language it was logged in,
+ * which is the state before M251, and nothing is lost that a person typed.
+ * `displayFoodName` (`#app/lib/food-name`) is the one reader.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { FoodFlags } from '#app/services/vision/schema';
+import type { FoodTranslations } from '#app/services/vision/translations';
 import type { EatingStyleId } from '#app/lib/eating-style';
 import type { MainGoalId } from '#app/lib/main-goal';
 import type { Allergen } from '#app/models/allergens';
@@ -803,6 +826,14 @@ export interface LocalPersonalFood {
   /** Client-generated stable id (the TinyBase rowId). */
   id: string;
   name: string;
+  /**
+   * The same food's name in each app language an AI answer gave (added within
+   * v24, M251/03), read only through `displayFoodName` (`#app/lib/food-name`).
+   * ABSENT for a hand-typed food, a food whose name the person edited (their
+   * words win in every language) and every row saved before the field existed; all of those
+   * render `name` everywhere.
+   */
+  nameTranslations?: FoodTranslations;
   brand: string | null;
   /** Per-100g macros. */
   macrosPer100g: Macros;
@@ -919,6 +950,14 @@ export interface LocalPersonalFood {
 export interface LocalFoodLog {
   id: string;
   name: string;
+  /**
+   * The same food's name in each app language an AI answer gave (added within
+   * v24, M251/03), read only through `displayFoodName` (`#app/lib/food-name`).
+   * ABSENT for a hand-typed food, a food whose name the person edited (their
+   * words win in every language) and every row saved before the field existed; all of those
+   * render `name` everywhere.
+   */
+  nameTranslations?: FoodTranslations;
   quantityGrams: number;
   /** Per-serving macros (already scaled from per-100g). */
   macros: Macros;
@@ -1411,6 +1450,8 @@ export interface LocalFastingSettings {
  */
 export interface LocalSavedMealItem {
   name: string;
+  /** The name per app language, same convention as `LocalFoodLog.nameTranslations`. */
+  nameTranslations?: FoodTranslations;
   quantityGrams: number;
   /** Per-serving macros (already scaled from per-100g), exactly as `LocalFoodLog.macros`. */
   macros: Macros;
@@ -1493,8 +1534,14 @@ export type PantryCategory = PantryCategoryValue;
 export interface LocalPantryItem {
   /** Client-generated stable id (the TinyBase rowId). */
   id: string;
-  /** The person's own words for the item, in their own language. Never translated on the way in or out. */
+  /** The item's name: the app language a reading answered in, or the person's own words for a row they typed or edited. */
   name: string;
+  /**
+   * The same item per app language, from a photo or text reading (added within
+   * v24, M251/03), same convention as `LocalFoodLog.nameTranslations`: dropped the
+   * moment the person edits the name, absent for a row typed by hand.
+   */
+  nameTranslations?: FoodTranslations;
   /** How much, when it is known. Null means "not stated", and never 0. */
   amount: number | null;
   /** What {@link LocalPantryItem.amount} is measured in. Null whenever the amount is. */

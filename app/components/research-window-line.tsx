@@ -12,7 +12,7 @@
  *
  * The dates are printed as the raw `YYYY-MM-DD` day keys, matching
  * `research.export.window`'s convention in the researcher's own export. A
- * `new Date('2026-08-24').toLocaleDateString()` would render the PREVIOUS day
+ * `toLocaleDateString` on `new Date('2026-08-24')` would render the PREVIOUS day
  * west of UTC — a day key is a calendar day, not an instant.
  */
 import { useTranslation } from 'react-i18next';

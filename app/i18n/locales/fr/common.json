@@ -2053,6 +2053,7 @@
         "calories": "{{value}} calories",
         "carbs": "{{value}} g de glucides",
         "dismiss": "Ignorer la suggestion",
+        "estimate": "Valeurs estimées",
         "fiber": "{{value}} g de fibres",
         "foundIn": "Trouvé dans LowCarbCheck",
         "netCarbs": "{{value}} g de glucides nets",
@@ -2374,6 +2375,11 @@
     "field": {
       "baseUrl": "URL de base",
       "model": "Modèle"
+    },
+    "foodDb": {
+      "description": "Lorsque tu enregistres un aliment nommé par l'IA, son nom dans chaque langue de l'application et ses valeurs nutritionnelles sont envoyés à LowCarbCheck, la base de données alimentaires dans laquelle cette application recherche les aliments. Aucune information te concernant n'est jointe, ni compte, ni photo, ni entrée de journal. Un nom que tu saisis ou modifies toi-même n'est jamais envoyé.",
+      "label": "Aider la base de données alimentaires",
+      "title": "Base de données alimentaires"
     },
     "loading": "Chargement de tes paramètres d'IA…",
     "manualEntry": {

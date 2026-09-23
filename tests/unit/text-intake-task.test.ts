@@ -15,10 +15,37 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { INTAKE_MODES, INTAKE_TASK_BY_MODE, PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '../../app/services/vision/task';
+import { INTAKE_MODES, INTAKE_TASK_BY_MODE, photoIntakeTask, textIntakeTask } from '../../app/services/vision/task';
 import type { IntakeMode } from '../../app/services/vision/task';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
-import { TEXT_INTAKE_SYSTEM_PROMPT } from '../../app/services/vision/prompt';
+import { buildTextIntakeSystemPrompt } from '../../app/services/vision/prompt';
+
+/** The prompts are built per app language (M251 spec 02); these rules hold in every one, so English stands for all. */
+const TEXT_INTAKE_SYSTEM_PROMPT = buildTextIntakeSystemPrompt('en');
+const TEXT_INTAKE_TASK = textIntakeTask('en');
+const PHOTO_INTAKE_TASK = photoIntakeTask('en');
+
+/** One answer both tasks must read the same way, because they share the plate schema. */
+const PLATE_ANSWER = {
+  unreadable: false,
+  unreadableReason: null,
+  notes: null,
+  foods: [
+    {
+      name: 'banana',
+      estimatedGrams: 120,
+      confidence: 'high',
+      portionHint: null,
+      macroSource: 'estimated',
+      brand: null,
+      servingSize: null,
+      carbBasis: null,
+      macrosPer100g: null,
+      flags: { pregnancy: [], allergens: [], mayContain: [] },
+      translations: { en: 'banana', de: 'Banane', fr: 'banane', it: 'banana', es: 'plátano', tr: 'muz' },
+    },
+  ],
+};
 
 /**
  * A pure check, kept separate from the prompt itself, so the test below can
@@ -28,12 +55,16 @@ import { TEXT_INTAKE_SYSTEM_PROMPT } from '../../app/services/vision/prompt';
  * for.
  */
 function promptSplitsDrinkAndMilk(prompt: string): boolean {
-  return prompt.includes('is coffee and oat milk') && prompt.includes('Kaffee and Hafermilch');
+  return (
+    prompt.includes('"coffee with oat milk"') &&
+    prompt.includes('"Kaffee mit Hafermilch"') &&
+    prompt.includes('are each two items')
+  );
 }
 
 describe('the text intake task', () => {
   it('is paired with its own prompt and the PLATE schema, in the task table', () => {
-    assert.strictEqual(INTAKE_TASK_BY_MODE.text, TEXT_INTAKE_TASK);
+    assert.strictEqual(INTAKE_TASK_BY_MODE.text, textIntakeTask);
     assert.strictEqual(TEXT_INTAKE_TASK.systemPrompt, TEXT_INTAKE_SYSTEM_PROMPT);
     // By reference: a second JSON Schema for the same shape is how the two
     // paths would start to drift.
@@ -41,8 +72,13 @@ describe('the text intake task', () => {
   });
 
   it('parses and validates through the plate path, so the results are one shape', () => {
-    assert.strictEqual(TEXT_INTAKE_TASK.parse, PHOTO_INTAKE_TASK.parse);
-    assert.strictEqual(TEXT_INTAKE_TASK.validate, PHOTO_INTAKE_TASK.validate);
+    // BY BEHAVIOUR, not by reference: each task now carries its own closure
+    // over the app language, so the same answer must simply read the same.
+    assert.deepStrictEqual(TEXT_INTAKE_TASK.validate(PLATE_ANSWER), PHOTO_INTAKE_TASK.validate(PLATE_ANSWER));
+    assert.deepStrictEqual(
+      TEXT_INTAKE_TASK.parse(JSON.stringify(PLATE_ANSWER)),
+      PHOTO_INTAKE_TASK.parse(JSON.stringify(PLATE_ANSWER)),
+    );
   });
 
   it('carries no capture ceiling, because there is no capture', () => {
@@ -59,7 +95,7 @@ describe('the text intake task', () => {
 
   it('has a task for every intake mode', () => {
     for (const mode of INTAKE_MODES) {
-      const task: { mode: IntakeMode } = INTAKE_TASK_BY_MODE[mode];
+      const task: { mode: IntakeMode } = INTAKE_TASK_BY_MODE[mode]('en');
       assert.strictEqual(task.mode, mode);
     }
   });
@@ -87,9 +123,14 @@ describe('the text intake prompt', () => {
     assert.match(TEXT_INTAKE_SYSTEM_PROMPT, /Only when they gave no amount at all/);
   });
 
-  it('accepts any language and answers in the same one', () => {
+  it('accepts any language and answers in the APP language, not the one typed (M251 spec 02)', () => {
     assert.match(TEXT_INTAKE_SYSTEM_PROMPT, /may be in any language/);
-    assert.match(TEXT_INTAKE_SYSTEM_PROMPT, /SAME language the person used/);
+    const german = buildTextIntakeSystemPrompt('de');
+    assert.ok(german.includes('language code "de")'));
+    // THE CONTROL: the old rule mirrored the input, and a prompt that still
+    // carried it would contradict the app-language line above.
+    assert.doesNotMatch(german, /SAME language the person used/);
+    assert.ok(!buildTextIntakeSystemPrompt('fr').includes('language code "de")'));
   });
 
   it('refuses to invent a brand, and drops to low confidence instead', () => {

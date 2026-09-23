@@ -91,6 +91,9 @@ export async function loader({ request }: Route.LoaderArgs) {
     // secret: a Matomo URL and site id are both public by construction (they
     // are in the tracker request every page makes).
     analytics: CONFIG.analytics,
+    // M251/04: a boolean and nothing else. The key and the upstream address
+    // stay on the server; the page only learns whether sending is on.
+    foodDbBackfill: CONFIG.foodDb.backfill,
   };
 
   // Whether this instance shows legal pages at all (M246): the imprint exists
