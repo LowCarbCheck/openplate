@@ -6348,6 +6348,13 @@
     "at": "2026-09-14",
     "de": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
   },
+  "58400761a28170ec": {
+    "en": "Photo, typed and pantry scans name each food in the app language.",
+    "path": "releases:v0_43_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Foto-, Text- und Vorratskammer-Scans benennen jedes Lebensmittel in der App-Sprache."
+  },
   "585235f27cd1a63a": {
     "en": "Logging…",
     "path": "common:entry.action.logAgainPending",
@@ -8419,6 +8426,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Zurück"
+  },
+  "7443fb4ccea17afd": {
+    "en": "The date picker and every printed date follow the app language.",
+    "path": "releases:v0_43_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Die Datumsauswahl und jedes ausgegebene Datum richten sich nach der App-Sprache."
   },
   "7454a9a068d57259": {
     "en": "Fast scheduled.",
@@ -16904,6 +16918,13 @@
     "at": "2026-09-23",
     "de": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst."
   },
+  "e77580e3d1e024f9": {
+    "en": "Servers can propose saved foods to LowCarbCheck.",
+    "path": "releases:v0_43_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Server können gespeicherte Lebensmittel für LowCarbCheck vorschlagen."
+  },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
     "path": "common:research.enrolments.window",
@@ -18170,6 +18191,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Passe zuerst die Portion an. Die Makronährstoffe folgen."
+  },
+  "f8ab13ee623f2970": {
+    "en": "Food names follow the app language.",
+    "path": "releases:v0_43_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Lebensmittelnamen richten sich nach der App-Sprache."
   },
   "f8edde882f81f295": {
     "en": "Help the food database",

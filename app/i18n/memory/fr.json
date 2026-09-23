@@ -6348,6 +6348,13 @@
     "at": "2026-09-14",
     "fr": "Format US (les glucides incluent les fibres)"
   },
+  "58400761a28170ec": {
+    "en": "Photo, typed and pantry scans name each food in the app language.",
+    "path": "releases:v0_43_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Les analyses par photo, saisie et garde-manger nomment chaque aliment dans la langue de l'application."
+  },
   "585235f27cd1a63a": {
     "en": "Logging…",
     "path": "common:entry.action.logAgainPending",
@@ -8419,6 +8426,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Retour"
+  },
+  "7443fb4ccea17afd": {
+    "en": "The date picker and every printed date follow the app language.",
+    "path": "releases:v0_43_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Le sélecteur de date et chaque date affichée suivent la langue de l'application."
   },
   "7454a9a068d57259": {
     "en": "Fast scheduled.",
@@ -16904,6 +16918,13 @@
     "at": "2026-09-23",
     "fr": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
   },
+  "e77580e3d1e024f9": {
+    "en": "Servers can propose saved foods to LowCarbCheck.",
+    "path": "releases:v0_43_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Les serveurs peuvent proposer les aliments enregistrés à LowCarbCheck."
+  },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
     "path": "common:research.enrolments.window",
@@ -18170,6 +18191,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ajuste d'abord la portion. Les macronutriments suivront."
+  },
+  "f8ab13ee623f2970": {
+    "en": "Food names follow the app language.",
+    "path": "releases:v0_43_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Les noms d'aliments suivent la langue de l'application."
   },
   "f8edde882f81f295": {
     "en": "Help the food database",

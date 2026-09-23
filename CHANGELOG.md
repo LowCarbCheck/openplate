@@ -11,18 +11,20 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-09-23
+
 ### Added
 
-- **Food names follow the app language.** A food logged from a photo, a typed meal, or a pantry reading now keeps its name in all six app languages. The diary, the entry page, your foods, saved meals, the quick-add chips, and the pantry show the name in the language the app is set to. Switch from German to French, and yesterday's "Apfel" reads "Pomme". A name you type or edit yourself is kept as you wrote it in every language. Foods logged before this version keep the one name they have. The names travel in your backup and in sync. An older openplate on another device keeps syncing, and a food it saves again loses its other names and shows the one it was logged with.
-- **Servers can propose saved foods to LowCarbCheck.** Set `FOOD_DB_BACKFILL=true` and `FOOD_DB_API_KEY` to forward foods that users save from photos or typed meals. For matched rows, the server sends the food names in every app language. For unmatched foods, it sends names and macros per 100 g. The server never sends user data or names typed or edited by users. This feature is off by default, and users can disable it on their devices under Settings, AI. Foods published from proposals are stored and shown as estimates, never as curated sources.
+- **Food names follow the app language.** A food logged from a photo, a typed meal, or a pantry reading now keeps its name in all six app languages. The diary, the entry page, your foods, saved meals, the quick-add chips, and the pantry show the name in the language the app is set to. Switch from German to French, and yesterday's "Apfel" reads "Pomme". A name you type or edit yourself is kept as you wrote it in every language. Foods logged before this version keep the one name they have. The names travel in your backup and in sync. An older openplate on another device keeps syncing, and a food it saves again loses its other names and shows the one it was logged with. ([f726cd9](https://github.com/LowCarbCheck/openplate/commit/f726cd9))
+- **Servers can propose saved foods to LowCarbCheck.** Set `FOOD_DB_BACKFILL=true` and `FOOD_DB_API_KEY` to forward foods that users save from photos or typed meals. For matched rows, the server sends the food names in every app language. For unmatched foods, it sends names and macros per 100 g. The server never sends user data or names typed or edited by users. This feature is off by default, and users can disable it on their devices under Settings, AI. Foods published from proposals are stored and shown as estimates, never as curated sources. ([a94be3f](https://github.com/LowCarbCheck/openplate/commit/a94be3f))
 
 ### Changed
 
-- **Photo, typed and pantry scans name each food in the app language.** The photo prompt named no language, so answers came back mostly in English, and a typed meal or shopping list came back in whatever language it was typed in. Every scan now asks for the names in the language the app shows, and for a `translations` object with the same food named in all six app languages. An answer without translations, from a model that ignores the request, still opens the review as before.
+- **Photo, typed and pantry scans name each food in the app language.** The photo prompt named no language, so answers came back mostly in English, and a typed meal or shopping list came back in whatever language it was typed in. Every scan now asks for the names in the language the app shows, and for a `translations` object with the same food named in all six app languages. An answer without translations, from a model that ignores the request, still opens the review as before. ([4cf92f2](https://github.com/LowCarbCheck/openplate/commit/4cf92f2))
 
 ### Fixed
 
-- **The date picker and every printed date follow the app language.** The diary's date picker drew English weekdays and an English month on every screen, and the admin pages, the account and plan pages, the research and sharing pages and the scan's allowance notice printed dates in the browser's own format, `9/23/2026` on a German screen. They now use the app language, `23.9.2026` in German. In English the picker's week now starts on Monday, like every other week in the app, and dates read `23/09/2026`.
+- **The date picker and every printed date follow the app language.** The diary's date picker drew English weekdays and an English month on every screen, and the admin pages, the account and plan pages, the research and sharing pages and the scan's allowance notice printed dates in the browser's own format, `9/23/2026` on a German screen. They now use the app language, `23.9.2026` in German. In English the picker's week now starts on Monday, like every other week in the app, and dates read `23/09/2026`. ([473c08a](https://github.com/LowCarbCheck/openplate/commit/473c08a))
 
 ## [0.42.0] - 2026-09-23
 

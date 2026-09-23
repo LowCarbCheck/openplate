@@ -6348,6 +6348,13 @@
     "at": "2026-09-14",
     "tr": "ABD tarzı (karbonhidrat lifi içerir)"
   },
+  "58400761a28170ec": {
+    "en": "Photo, typed and pantry scans name each food in the app language.",
+    "path": "releases:v0_43_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Fotoğraf, yazılı ve kiler taramaları her yiyeceği uygulama dilinde adlandırır."
+  },
   "585235f27cd1a63a": {
     "en": "Logging…",
     "path": "common:entry.action.logAgainPending",
@@ -8419,6 +8426,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Geri"
+  },
+  "7443fb4ccea17afd": {
+    "en": "The date picker and every printed date follow the app language.",
+    "path": "releases:v0_43_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Tarih seçici ve yazdırılan her tarih, uygulama dilini izler."
   },
   "7454a9a068d57259": {
     "en": "Fast scheduled.",
@@ -16904,6 +16918,13 @@
     "at": "2026-09-23",
     "tr": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
   },
+  "e77580e3d1e024f9": {
+    "en": "Servers can propose saved foods to LowCarbCheck.",
+    "path": "releases:v0_43_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Sunucular, kaydedilen yiyecekleri LowCarbCheck'e önerebilir."
+  },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",
     "path": "common:research.enrolments.window",
@@ -18170,6 +18191,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Önce porsiyonu ayarla. Makrolar buna göre değişir."
+  },
+  "f8ab13ee623f2970": {
+    "en": "Food names follow the app language.",
+    "path": "releases:v0_43_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yiyecek adları uygulama dilini izler."
   },
   "f8edde882f81f295": {
     "en": "Help the food database",
