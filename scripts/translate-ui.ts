@@ -4,7 +4,8 @@
  * The app's entry over the translator this workspace already runs for its website. The library
  * under `scripts/lib/translate*.ts` is a vendored copy of `openplate-website`'s (see
  * `scripts/sync-translate-lib.ts` and `scripts/lib/TRANSLATE_SOURCE.json`); this file names what
- * differs: the catalogs are `app/i18n/locales/<locale>/{common,legal}.json`, the memory is
+ * differs: the catalogs are `app/i18n/locales/<locale>/*.json` (`common`, and `releases`; the
+ * `legal` bundle left in M246), the memory is
  * `app/i18n/memory/<locale>.json`, the languages are this app's, and `legal` is bought in its
  * own voice. Same flags, same exit codes, same memory discipline as the website's script.
  *

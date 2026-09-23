@@ -1369,7 +1369,6 @@
     "fasting": "Jeûne · openplate",
     "fastingSettings": "Paramètres de jeûne · openplate",
     "foods": "Tes aliments · openplate",
-    "imprint": "Mentions légales · openplate",
     "join": "Rejoindre · openplate",
     "joinStudy": "Rejoindre une étude · openplate",
     "landing": "openplate, un suivi alimentaire qui reste sur ton appareil",
@@ -1384,7 +1383,6 @@
     "offline": "Tu es hors ligne · openplate",
     "onboarding": "Bienvenue sur openplate",
     "preferences": "Préférences · openplate",
-    "privacy": "Politique de confidentialité · openplate",
     "recover": "Récupérer ton journal · openplate",
     "research": "Études · openplate",
     "scan": "Scanne ton assiette · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Connexion · openplate",
     "study": "Console d'étude · openplate",
     "sync": "Compte · openplate",
-    "terms": "Conditions d'utilisation · openplate",
     "trends": "Analyses · openplate",
     "welcome": "Bienvenue · openplate",
     "forgot": "Mot de passe oublié",
@@ -1403,16 +1400,11 @@
     "admin": "Administration",
     "landingDescriptionManaged": "Prends ta photo d'assiette ou recherche ce que tu as mangé. openplate calcule les glucides en quelques secondes et les compare à l'objectif quotidien que tu as fixé. Cette instance est accessible uniquement sur invitation, et ton journal est chiffré sur cet appareil avant qu'une copie n'arrive sur le serveur.",
     "plan": "Ton forfait · openplate",
-    "withdrawal": "Droit de rétractation · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Garde-manger · openplate",
     "recipes": "Recettes · openplate",
     "awards": "Ton historique · openplate",
-    "whatsNew": "Nouveautés · openplate",
-    "kuendigung": "Résilier un contrat · openplate",
-    "kuendigungBestaetigt": "Résiliation confirmée · openplate",
-    "widerrufen": "Se rétracter d'un contrat · openplate",
-    "widerrufenBestaetigt": "Rétractation confirmée · openplate"
+    "whatsNew": "Nouveautés · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -3569,6 +3561,47 @@
       "calories": "Calories",
       "netCarbs": "Glucides nets",
       "protein": "Protéines"
+    }
+  },
+  "content": {
+    "lastUpdated": "Dernière mise à jour : {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Type de résiliation",
+      "terminationTypeOrdentlich": "Résiliation ordinaire",
+      "terminationTypeAusserordentlich": "Résiliation extraordinaire",
+      "reasonLabel": "Motif de la résiliation extraordinaire",
+      "nameLabel": "Nom",
+      "emailLabel": "Adresse e-mail",
+      "contractReferenceLabel": "Numéro de client ou de contrat (facultatif)",
+      "timingLabel": "Date à laquelle la résiliation doit prendre effet",
+      "timingEarliest": "Dès que possible",
+      "timingOnDate": "À une date précise",
+      "requestedDateLabel": "Date souhaitée (facultatif)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Nom",
+      "emailLabel": "Adresse e-mail",
+      "contractReferenceLabel": "Numéro de client ou de contrat (facultatif)",
+      "requestedDateLabel": "Date de conclusion du contrat (facultatif)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "Récépissé n° : {{receiptId}}",
+      "kindCancel": "Type : Résiliation",
+      "kindWithdraw": "Type : Rétractation",
+      "addressLabel": "Envoyé à : {{email}}",
+      "receivedAtLabel": "Reçu le : {{instant}}",
+      "print": "Imprimer la confirmation"
+    },
+    "errors": {
+      "nameRequired": "Saisissez votre nom.",
+      "emailInvalid": "Ceci ne ressemble pas à une adresse e-mail.",
+      "reasonRequired": "Indiquez le motif de la résiliation extraordinaire.",
+      "invalid": "L'un des champs n'a pas pu être traité. Vérifiez vos saisies et réessayez.",
+      "rateLimited": "Trop de requêtes. Réessayez dans quelques minutes."
     }
   }
 }

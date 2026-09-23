@@ -8,10 +8,17 @@
  * exactly `jetzt kündigen`. Absatz 6 makes the omission the expensive
  * outcome: where the button is missing, a consumer may cancel at any time
  * without notice, which voids the notice-period term for every customer this
- * deployment ever signs. Both labels are pinned byte for byte in
- * `app/i18n/locales/de/legal.json` — see `declarations.cancel.title` and
- * `declarations.cancel.submit` — and are NOT wordsmith's to rephrase, in
- * either language bundle.
+ * deployment ever signs. The title is the `title` of the mounted
+ * `kuendigung.md` (M246, `docs/content.md`), and the submit label is
+ * `declarations.cancel.submit` in each locale's `common.json`. Neither
+ * is wordsmith's to rephrase.
+ *
+ * ── THE PROSE IS MOUNTED, THE MECHANISM IS HERE ──
+ *
+ * The lead paragraph and the `unavailable` text come from
+ * `<CONTENT_DIR>/<lang>/kuendigung.md`, read in the loader. The form, its
+ * labels, its validation and the POST stay in this file. With no content
+ * folder the route answers 404, like every content page.
  *
  * ── PUBLIC, UNAUTHENTICATED, ALWAYS REGISTERED ────────────────────────────
  *
@@ -21,7 +28,8 @@
  *
  * ── CLIENT-ONLY, LIKE EVERY UNAUTHENTICATED FORM IN THIS APP ──────────────
  *
- * No loader, no action: the declaration goes straight from this browser to
+ * The loader reads the page's prose and nothing else. There is no action:
+ * the declaration goes straight from this browser to
  * `openplate-core`'s own origin (`SYNC_SERVER_URL`), never through this
  * server, the same shape `/forgot` and `/join-study` already use.
  * `CredentialSubmitButton` is reused here for the reason its own doc states
@@ -32,27 +40,34 @@
  * and the guard costs nothing extra to reuse.
  */
 import { useState } from 'react';
-import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { z } from 'zod';
 
+import type { Route } from './+types/kuendigung';
+import { ContentArticle, ContentBlocks } from '#app/components/content-article';
 import { CredentialSubmitButton } from '#app/components/credential-submit-button';
-import { FieldError } from '#app/components/field-error';
-import { H1, P } from '#app/components/typography';
+import { DeclarationSubmitError, ReservedFieldError, type DeclarationFailure } from '#app/components/declaration-form-parts';
 import PublicWrapper from '#app/components/public-wrapper';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
-import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
+import { contentPageTitle } from '#app/lib/content/content-page-title';
+import { sectionBlocks } from '#app/lib/content/markdown';
 import { createComponentLogger } from '#app/lib/logger';
 import { checkoutLocaleFor } from '#app/lib/plans/plans-door';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import '#app/i18n/i18n';
 
-export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.kuendigung') }];
+/** SERVER: the page's prose, from the mounted content folder. */
+export async function loader({ request }: Route.LoaderArgs) {
+  return { page: await loadContentPageOrThrow({ request, slug: 'kuendigung' }) };
+}
+
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
 
 const log = createComponentLogger('kuendigung');
 
@@ -146,14 +161,16 @@ async function submitCancelDeclaration(input: {
   return { status: 'unreachable' };
 }
 
-export default function Kuendigung() {
-  const { t, i18n } = useTranslation('legal');
+export default function Kuendigung({ loaderData }: Route.ComponentProps) {
+  const { page } = loaderData;
+  const unavailable = sectionBlocks(page, 'unavailable');
+  const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   const [terminationType, setTerminationType] = useState<TerminationType>('ordentlich');
   const [timing, setTiming] = useState<Timing>('earliest');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<DeclarationFailure | null>(null);
 
   const [form, fields] = useForm({
     id: 'kuendigung-form',
@@ -182,7 +199,7 @@ export default function Kuendigung() {
   async function submitForm(value: CancelDeclarationValues): Promise<void> {
     if (serverUrl === null) return;
     setIsSubmitting(true);
-    setSubmitError(null);
+    setFailure(null);
     const email = canonicalizeEmail(value.email);
     const outcome = await submitCancelDeclaration({
       serverUrl,
@@ -205,30 +222,15 @@ export default function Kuendigung() {
       });
       return;
     }
-    if (outcome.status === 'invalid') {
-      setSubmitError(t('declarations.errors.invalid'));
-      return;
-    }
-    if (outcome.status === 'rate-limited') {
-      setSubmitError(t('declarations.errors.rateLimited'));
-      return;
-    }
-    setSubmitError(t('declarations.errors.unreachable'));
+    setFailure(outcome.status);
   }
 
   return (
     <PublicWrapper>
-      <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
-        <H1 variant="default" className="mb-8">
-          {t('declarations.cancel.title')}
-        </H1>
-        <P variant="lead" className="mb-8">
-          {t('declarations.cancel.intro')}
-        </P>
-
+      <ContentArticle title={page.title} updated={page.updated} language={page.language} blocks={page.body}>
         {serverUrl === null ?
-          <P>{t('declarations.errors.unreachable')}</P>
-        : <form {...getFormProps(form)} className="not-prose space-y-6">
+          <ContentBlocks blocks={unavailable} />
+        : <form {...getFormProps(form)} className="not-prose mt-8 space-y-6">
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">{t('declarations.cancel.terminationTypeLabel')}</legend>
               {TERMINATION_TYPES.map((option) => (
@@ -246,9 +248,11 @@ export default function Kuendigung() {
                   )}
                 </label>
               ))}
-              <FieldError id={fields.terminationType.errorId} errors={fields.terminationType.errors} />
+              <ReservedFieldError id={fields.terminationType.errorId} errors={fields.terminationType.errors} />
             </fieldset>
 
+            {/* An expansion the person asked for (DESIGN.md section 7): picking
+                the extraordinary type reveals its reason field, below the tap. */}
             {terminationType === 'ausserordentlich' && (
               <div className="space-y-2">
                 <Label htmlFor={fields.reason.id}>{t('declarations.cancel.reasonLabel')}</Label>
@@ -258,14 +262,14 @@ export default function Kuendigung() {
                   rows={3}
                   className="w-full resize-none border border-input bg-card px-3 py-2 text-base outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <FieldError id={fields.reason.errorId} errors={fields.reason.errors} />
+                <ReservedFieldError id={fields.reason.errorId} errors={fields.reason.errors} />
               </div>
             )}
 
             <div className="space-y-2">
               <Label htmlFor={fields.name.id}>{t('declarations.cancel.nameLabel')}</Label>
               <Input {...getInputProps(fields.name, { type: 'text' })} autoComplete="name" />
-              <FieldError id={fields.name.errorId} errors={fields.name.errors} />
+              <ReservedFieldError id={fields.name.errorId} errors={fields.name.errors} />
             </div>
 
             <div className="space-y-2">
@@ -276,7 +280,7 @@ export default function Kuendigung() {
                 spellCheck={false}
                 autoCapitalize="none"
               />
-              <FieldError id={fields.email.errorId} errors={fields.email.errors} />
+              <ReservedFieldError id={fields.email.errorId} errors={fields.email.errors} />
             </div>
 
             <div className="space-y-2">
@@ -299,7 +303,7 @@ export default function Kuendigung() {
                   {t(`declarations.cancel.timing${option === 'earliest' ? 'Earliest' : 'OnDate'}`)}
                 </label>
               ))}
-              <FieldError id={fields.timing.errorId} errors={fields.timing.errors} />
+              <ReservedFieldError id={fields.timing.errorId} errors={fields.timing.errors} />
             </fieldset>
 
             <div className="space-y-2">
@@ -307,14 +311,14 @@ export default function Kuendigung() {
               <Input {...getInputProps(fields.requestedDate, { type: 'date' })} />
             </div>
 
-            {submitError !== null && <P className="text-sm text-red-600 dark:text-red-400">{submitError}</P>}
-
             <CredentialSubmitButton disabled={isSubmitting} className="h-11 w-full sm:w-auto">
               {t('declarations.cancel.submit')}
             </CredentialSubmitButton>
+
+            <DeclarationSubmitError failure={failure} unavailable={unavailable} />
           </form>
         }
-      </article>
+      </ContentArticle>
     </PublicWrapper>
   );
 }

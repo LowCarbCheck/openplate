@@ -52,3 +52,20 @@ rows and saved meals, `meta.perEntity` carries NO stamp for any of them, and
 
 Regenerate it only from a real `v0.35.1` checkout. A payload this repository's
 current engine wrote would assert nothing at all.
+
+## `content/` is a FIXTURE, never the real legal text
+
+The browser tier mounts this folder as `CONTENT_DIR` (`playwright.config.ts`),
+so `/terms`, `/privacy`, `/imprint`, `/withdrawal`, `/kuendigung`,
+`/widerrufen`, their receipts and `/privacy/website` render in the tests. The
+real legal pages live in a private repository; this one is public, so every
+file here is neutral placeholder text. Do not copy a sentence from the real
+files into it.
+
+The files follow the same format as the real ones (`docs/content.md`): front
+matter with `title` and `updated`, the markdown subset, and the named sections
+the two statutory pages must carry. `de/` holds only the pages a German spec
+reads; every other page falls back to `en/`, which is itself under test. The
+titles of `kuendigung.md` and `widerrufen.md` are the statutory button labels,
+which are labels and not prose. `.prettierignore` keeps `pnpm format` off the
+folder, because prettier would rewrite its hard breaks.

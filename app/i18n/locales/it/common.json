@@ -1369,7 +1369,6 @@
     "fasting": "Digiuno · openplate",
     "fastingSettings": "Impostazioni del digiuno · openplate",
     "foods": "I tuoi alimenti · openplate",
-    "imprint": "Note legali · openplate",
     "join": "Unisciti · openplate",
     "joinStudy": "Partecipa a uno studio · openplate",
     "landing": "openplate, un diario alimentare che resta sul tuo dispositivo",
@@ -1384,7 +1383,6 @@
     "offline": "Sei offline · openplate",
     "onboarding": "Ti diamo il benvenuto su openplate",
     "preferences": "Preferenze · openplate",
-    "privacy": "Informativa sulla privacy · openplate",
     "recover": "Recupera il tuo diario · openplate",
     "research": "Studi scientifici · openplate",
     "scan": "Scansiona il tuo piatto · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Accedi · openplate",
     "study": "Console dello studio · openplate",
     "sync": "Account · openplate",
-    "terms": "Termini di servizio · openplate",
     "trends": "Analisi · openplate",
     "welcome": "Benvenuto · openplate",
     "forgot": "Password dimenticata",
@@ -1403,16 +1400,11 @@
     "admin": "Amministrazione",
     "landingDescriptionManaged": "Fotografa il tuo piatto o cerca quello che hai mangiato. openplate ti mostra i carboidrati in pochi secondi e ne tiene traccia rispetto all'obiettivo giornaliero che hai impostato. Questa istanza è accessibile solo su invito e il tuo diario viene cifrato su questo dispositivo prima che una copia raggiunga il server.",
     "plan": "Il tuo piano · openplate",
-    "withdrawal": "Diritto di recesso · openplate",
     "notifications": "Notifiche · openplate",
     "pantry": "Dispensa · openplate",
     "recipes": "Ricette · openplate",
     "awards": "I tuoi progressi · openplate",
-    "whatsNew": "Novità · openplate",
-    "kuendigung": "Disdici un contratto · openplate",
-    "kuendigungBestaetigt": "Disdetta confermata · openplate",
-    "widerrufen": "Recedi da un contratto · openplate",
-    "widerrufenBestaetigt": "Recesso confermato · openplate"
+    "whatsNew": "Novità · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -3569,6 +3561,47 @@
       "calories": "Calorie",
       "netCarbs": "Carboidrati netti",
       "protein": "Proteine"
+    }
+  },
+  "content": {
+    "lastUpdated": "Ultimo aggiornamento: {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Tipo di disdetta",
+      "terminationTypeOrdentlich": "Disdetta ordinaria",
+      "terminationTypeAusserordentlich": "Disdetta straordinaria",
+      "reasonLabel": "Motivo della disdetta straordinaria",
+      "nameLabel": "Nome",
+      "emailLabel": "Indirizzo e-mail",
+      "contractReferenceLabel": "Numero cliente o contratto (facoltativo)",
+      "timingLabel": "Quando deve avere effetto la disdetta",
+      "timingEarliest": "Alla prima data utile",
+      "timingOnDate": "In una data specifica",
+      "requestedDateLabel": "Data richiesta (facoltativo)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Nome",
+      "emailLabel": "Indirizzo e-mail",
+      "contractReferenceLabel": "Numero cliente o contratto (facoltativo)",
+      "requestedDateLabel": "Data di stipula del contratto (facoltativo)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "Ricevuta n.: {{receiptId}}",
+      "kindCancel": "Tipo: Disdetta",
+      "kindWithdraw": "Tipo: Recesso",
+      "addressLabel": "Inviato a: {{email}}",
+      "receivedAtLabel": "Ricevuto il: {{instant}}",
+      "print": "Stampa la conferma"
+    },
+    "errors": {
+      "nameRequired": "Inserisca il Suo nome.",
+      "emailInvalid": "Questo dato non sembra un indirizzo email valido.",
+      "reasonRequired": "Indichi il motivo del recesso straordinario.",
+      "invalid": "Non è stato possibile elaborare uno dei campi. Controlli i dati inseriti e riprovi.",
+      "rateLimited": "Troppe richieste. Riprovi tra qualche minuto."
     }
   }
 }

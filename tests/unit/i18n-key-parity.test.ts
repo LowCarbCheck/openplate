@@ -6,7 +6,7 @@
  * renders English, which is exactly the kind of half-translated page nobody
  * notices in review and every reader of that language notices immediately.
  * There is no cloud CI on this repo (see the workspace CLAUDE.md), so this
- * test is the gate: a key added to `en/common.json` or `en/legal.json`
+ * test is the gate: a key added to `en/common.json`
  * without its counterparts fails the local pre-push run.
  *
  * The assertion is one-directional on purpose, `target ⊇ en`. English is the
@@ -40,19 +40,18 @@ const SOURCE = 'en';
 const TARGETS = SUPPORTED_LANGUAGES.filter((code) => code !== SOURCE);
 
 /** Every catalog the app ships, `app/i18n/locales/<locale>/<namespace>.json`. */
-const NAMESPACES = ['common', 'legal'] as const;
+const NAMESPACES = ['common'] as const;
 
 /**
  * Dotted paths whose value is mandated German statutory wording (§312k and
  * §356a BGB, the Button-Lösung), not a translation gap (M214/09). For these
- * three the "English" source itself holds the same German text on purpose, so
- * it is byte-identical in every locale, including German — the SENTENCE
+ * two the "English" source itself holds the same German text on purpose, so
+ * it is byte-identical in every locale, including German. The SENTENCE
  * heuristic below has no way to tell "the law names this exact phrase" from
- * a copy-paste, so they are named here instead. `legal-locales.test.ts`
- * carries the fuller set (its allowlist also covers the two-word labels this
- * heuristic's length threshold never reaches).
+ * a copy-paste, so they are named here instead. The page titles that carry
+ * the same labels are in the mounted content files now (M246), not here.
  */
-const STATUTORY_TEXT = new Set(['chrome.cancelContract', 'chrome.withdrawContract', 'declarations.cancel.title']);
+const STATUTORY_TEXT = new Set(['chrome.cancelContract', 'chrome.withdrawContract']);
 
 /** A translation catalog: nested groups of keys bottoming out in translated strings. */
 interface Catalog {

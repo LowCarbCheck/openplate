@@ -1369,7 +1369,6 @@
     "fasting": "Açlık takibi · openplate",
     "fastingSettings": "Açlık ayarları · openplate",
     "foods": "Besinlerin · openplate",
-    "imprint": "Künye · openplate",
     "join": "Katıl · openplate",
     "joinStudy": "Çalışmaya katıl · openplate",
     "landing": "openplate, cihazında kalan bir besin takip uygulaması",
@@ -1384,7 +1383,6 @@
     "offline": "Çevrimdışısın · openplate",
     "onboarding": "openplate uygulamasına hoş geldin",
     "preferences": "Tercihler · openplate",
-    "privacy": "Gizlilik politikası · openplate",
     "recover": "Günlüğünü kurtar · openplate",
     "research": "Araştırmalar · openplate",
     "scan": "Tabağını tara · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Giriş yap · openplate",
     "study": "Çalışma konsolu · openplate",
     "sync": "Hesap · openplate",
-    "terms": "Hizmet şartları · openplate",
     "trends": "İçgörüler · openplate",
     "welcome": "Hoş geldin · openplate",
     "forgot": "Şifreni mi unuttun",
@@ -1403,16 +1400,11 @@
     "admin": "Yönetim",
     "landingDescriptionManaged": "Tabağının fotoğrafını çek veya ne yediğini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Bu sunucu örneği yalnızca davetiyelidir ve bir kopyası sunucuya ulaşmadan önce günlüğün bu cihazda şifrelenir.",
     "plan": "Planın · openplate",
-    "withdrawal": "Cayma hakkı · openplate",
     "notifications": "Bildirimler · openplate",
     "pantry": "Kiler · openplate",
     "recipes": "Tarifler · openplate",
     "awards": "Kayıtların · openplate",
-    "whatsNew": "Yenilikler · openplate",
-    "kuendigung": "Bir sözleşmeyi feshet · openplate",
-    "kuendigungBestaetigt": "Fesih onaylandı · openplate",
-    "widerrufen": "Bir sözleşmeden cay · openplate",
-    "widerrufenBestaetigt": "Cayma onaylandı · openplate"
+    "whatsNew": "Yenilikler · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -3569,6 +3561,47 @@
       "calories": "Kalori",
       "netCarbs": "Net karbonhidrat",
       "protein": "Protein"
+    }
+  },
+  "content": {
+    "lastUpdated": "Son güncelleme: {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Fesih türü",
+      "terminationTypeOrdentlich": "Olağan fesih",
+      "terminationTypeAusserordentlich": "Olağanüstü fesih",
+      "reasonLabel": "Olağanüstü fesih gerekçesi",
+      "nameLabel": "Ad",
+      "emailLabel": "E-posta adresi",
+      "contractReferenceLabel": "Müşteri numarası veya sözleşme (isteğe bağlı)",
+      "timingLabel": "Feshin yürürlüğe gireceği zaman",
+      "timingEarliest": "Mümkün olan en erken tarihte",
+      "timingOnDate": "Belirli bir tarihte",
+      "requestedDateLabel": "Talep edilen tarih (isteğe bağlı)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Ad",
+      "emailLabel": "E-posta adresi",
+      "contractReferenceLabel": "Müşteri numarası veya sözleşme (isteğe bağlı)",
+      "requestedDateLabel": "Sözleşmenin yapıldığı tarih (isteğe bağlı)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "Makbuz no.: {{receiptId}}",
+      "kindCancel": "Tür: Fesih",
+      "kindWithdraw": "Tür: Cayma",
+      "addressLabel": "Gönderilen adres: {{email}}",
+      "receivedAtLabel": "Alınma zamanı: {{instant}}",
+      "print": "Onayı yazdır"
+    },
+    "errors": {
+      "nameRequired": "Adınızı girin.",
+      "emailInvalid": "Bu bir e-posta adresi gibi görünmüyor.",
+      "reasonRequired": "Olağanüstü fesih nedenini belirtin.",
+      "invalid": "Alanlardan biri işlenemedi. Girdilerinizi kontrol edin ve tekrar deneyin.",
+      "rateLimited": "Çok fazla istek var. Birkaç dakika içinde tekrar deneyin."
     }
   }
 }

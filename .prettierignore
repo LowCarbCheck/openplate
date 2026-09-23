@@ -1,3 +1,7 @@
 # A byte-identical copy of a file LowCarbCheck also commits, pinned by SHA-256.
 # See tests/fixtures/README.md. A reformat here breaks a cross-repo contract.
 tests/fixtures/nutrients-response.json
+
+# The content fixture follows the legal file contract byte for byte (M246):
+# prettier would rewrite its hard breaks and definition lines.
+tests/fixtures/content/

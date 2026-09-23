@@ -7,7 +7,7 @@ import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { BuildStamp } from '#app/components/build-stamp';
 import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
-import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useHasLegalPages, useInstancePolicy } from '#app/hooks/use-public-config';
 import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
 import { Button } from './ui/button';
 import { HeaderStatus } from './header-status';
@@ -59,6 +59,7 @@ export default function PublicWrapper({
 }) {
   const { t } = useTranslation();
   const { headerOffersSignIn, serverHoldsTheDiary } = useInstancePolicy();
+  const hasLegalPages = useHasLegalPages();
   const container = cn('container mx-auto w-full px-4', wide ? 'max-w-5xl' : 'max-w-3xl');
 
   return (
@@ -228,36 +229,44 @@ export default function PublicWrapper({
             <Link to="/settings/preferences" className={FOOTER_LINK_CLASS}>
               {t('chrome.preferences')}
             </Link>
-            <Link to="/privacy" className={FOOTER_LINK_CLASS}>
-              {t('chrome.privacy')}
-            </Link>
-            <Link to="/terms" className={FOOTER_LINK_CLASS}>
-              {t('chrome.terms')}
-            </Link>
-            {/* Section 5 DDG requires the imprint to be reachable from every
-                page ("leicht erkennbar, unmittelbar erreichbar"), so it belongs
-                in the footer rather than only at a known URL. */}
-            <Link to="/imprint" className={FOOTER_LINK_CLASS}>
-              {t('chrome.imprint')}
-            </Link>
-            {/* § 312k BGB (M214/09): the cancellation button, reachable
-                without signing in, carrying nothing else on it — Absatz 6
-                makes a missing button the more expensive outcome, it voids
-                the notice-period term for every customer who cannot find
-                one. */}
-            <Link to="/kuendigung" className={FOOTER_LINK_CLASS}>
-              {t('chrome.cancelContract')}
-            </Link>
-            {/* § 356a BGB (M214/09): the electronic withdrawal function, set
-                apart as a bordered pill so it reads as its own control
-                rather than an eighth word in this row. A plain outline, not
-                a thick left border. */}
-            <Link
-              to="/widerrufen"
-              className={cn(FOOTER_LINK_CLASS, 'border border-input px-3 md:min-h-0 md:py-0.5')}
-            >
-              {t('chrome.withdrawContract')}
-            </Link>
+            {/* THE FIVE LEGAL LINKS, drawn only where the mounted content
+                folder has the pages (M246, `useHasLegalPages`). With no
+                `CONTENT_DIR` each of them would be a 404, so the row keeps
+                its three app links and nothing else. */}
+            {hasLegalPages && (
+              <>
+                <Link to="/privacy" className={FOOTER_LINK_CLASS}>
+                  {t('chrome.privacy')}
+                </Link>
+                <Link to="/terms" className={FOOTER_LINK_CLASS}>
+                  {t('chrome.terms')}
+                </Link>
+                {/* Section 5 DDG requires the imprint to be reachable from every
+                    page ("leicht erkennbar, unmittelbar erreichbar"), so it belongs
+                    in the footer rather than only at a known URL. */}
+                <Link to="/imprint" className={FOOTER_LINK_CLASS}>
+                  {t('chrome.imprint')}
+                </Link>
+                {/* § 312k BGB (M214/09): the cancellation button, reachable
+                    without signing in, carrying nothing else on it. Absatz 6
+                    makes a missing button the more expensive outcome, it voids
+                    the notice-period term for every customer who cannot find
+                    one. */}
+                <Link to="/kuendigung" className={FOOTER_LINK_CLASS}>
+                  {t('chrome.cancelContract')}
+                </Link>
+                {/* § 356a BGB (M214/09): the electronic withdrawal function, set
+                    apart as a bordered pill so it reads as its own control
+                    rather than an eighth word in this row. A plain outline, not
+                    a thick left border. */}
+                <Link
+                  to="/widerrufen"
+                  className={cn(FOOTER_LINK_CLASS, 'border border-input px-3 md:min-h-0 md:py-0.5')}
+                >
+                  {t('chrome.withdrawContract')}
+                </Link>
+              </>
+            )}
           </nav>
         </div>
         {/* The build, on the public chrome too: a visitor reporting something

@@ -6,13 +6,15 @@
  * matters here, the PWA keeps working fully offline in every language
  * without a separate cache entry for the translations.
  *
- * THREE NAMESPACES. `common` is the UI, loaded on every page. `legal` is the
- * long prose of the three legal routes and is kept separate so ~600 lines of
- * policy text in two languages are not carried into the bundle every page
- * downloads. `releases` is the in-app release notes, generated from
- * CHANGELOG.md by `pnpm release-catalog` and never hand-written (ADR-0018).
- * All three are still inline, for the offline reason above, and the split is
- * about keeping `common` honest, not about lazy loading.
+ * TWO NAMESPACES. `common` is the UI, loaded on every page. `releases` is the
+ * in-app release notes, generated from CHANGELOG.md by `pnpm release-catalog`
+ * and never hand-written (ADR-0018). Both are inline, for the offline reason
+ * above.
+ *
+ * There is no `legal` namespace any more (M246). The legal pages are markdown
+ * files in a folder the operator mounts (`CONTENT_DIR`, `docs/content.md`),
+ * read on the server; only the chrome of the two statutory forms (labels,
+ * buttons, errors) is here, in `common` under `declarations` and `content`.
  *
  * Detection is pinned to the COOKIE ONLY, which is a deliberate deviation from
  * tgl's `['cookie', 'localStorage', 'navigator']`. The server renders from
@@ -33,12 +35,6 @@ import frCommon from './locales/fr/common.json';
 import itCommon from './locales/it/common.json';
 import esCommon from './locales/es/common.json';
 import trCommon from './locales/tr/common.json';
-import enLegal from './locales/en/legal.json';
-import deLegal from './locales/de/legal.json';
-import frLegal from './locales/fr/legal.json';
-import itLegal from './locales/it/legal.json';
-import esLegal from './locales/es/legal.json';
-import trLegal from './locales/tr/legal.json';
 import enReleases from './locales/en/releases.json';
 import deReleases from './locales/de/releases.json';
 import frReleases from './locales/fr/releases.json';
@@ -57,13 +53,13 @@ interface Catalog {
  * without a catalog here a typecheck failure rather than a silently English UI.
  */
 const RESOURCES = {
-  en: { common: enCommon, legal: enLegal, releases: enReleases },
-  de: { common: deCommon, legal: deLegal, releases: deReleases },
-  fr: { common: frCommon, legal: frLegal, releases: frReleases },
-  it: { common: itCommon, legal: itLegal, releases: itReleases },
-  es: { common: esCommon, legal: esLegal, releases: esReleases },
-  tr: { common: trCommon, legal: trLegal, releases: trReleases },
-} satisfies Record<LanguageCode, { common: Catalog; legal: Catalog; releases: Catalog }>;
+  en: { common: enCommon, releases: enReleases },
+  de: { common: deCommon, releases: deReleases },
+  fr: { common: frCommon, releases: frReleases },
+  it: { common: itCommon, releases: itReleases },
+  es: { common: esCommon, releases: esReleases },
+  tr: { common: trCommon, releases: trReleases },
+} satisfies Record<LanguageCode, { common: Catalog; releases: Catalog }>;
 
 void i18next
   .use(LanguageDetector)
@@ -73,7 +69,7 @@ void i18next
     fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: [...SUPPORTED_LANGUAGES],
     defaultNS: 'common',
-    ns: ['common', 'legal', 'releases'],
+    ns: ['common', 'releases'],
     detection: {
       order: ['cookie'],
       lookupCookie: LANGUAGE_COOKIE,

@@ -3,7 +3,8 @@
  * Victor Mono, long-form prose stays in Inter, and the page has a graph-paper utility.
  *
  * Every rule below is read out of the source text, not rendered, because it is a
- * sentence about three files: `app/root.tsx`, `app/app.css` and the four legal routes.
+ * sentence about a few files: `app/root.tsx`, `app/app.css`, and the legal routes with the one
+ * component they all draw through (`app/components/content-article.tsx`, M246).
  * The browser tier (`tests/e2e/lcc-lineage-foundation.spec.ts`) reads the computed and
  * the painted face off a real page. This file is the cheap half that fails in a second,
  * before a build.
@@ -40,9 +41,11 @@ const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const ROOT_SOURCE = readFileSync(join(ROOT, 'app/root.tsx'), 'utf8');
 const APP_CSS = readFileSync(join(ROOT, 'app/app.css'), 'utf8');
 const LEGAL_DIRECTORY = join(ROOT, 'app/routes/legal');
+/** The one component every legal route draws its page through, and so the one `<article>` there is. */
+const CONTENT_ARTICLE = readFileSync(join(ROOT, 'app/components/content-article.tsx'), 'utf8');
 
-/** How many legal routes exist today. A ninth page must be added here on purpose. */
-const LEGAL_ROUTE_COUNT = 8;
+/** How many legal routes exist today. A tenth page must be added here on purpose. */
+const LEGAL_ROUTE_COUNT = 9;
 
 /** The class list of the first `<tag className="...">` in `source`, or null when there is none. */
 function classListOfTag({ source, tag }: { source: string; tag: string }): string | null {
@@ -286,11 +289,17 @@ describe('the legal pages', () => {
     assert.equal(legalSources().length, LEGAL_ROUTE_COUNT, 'a legal route was added or removed: update the count');
   });
 
-  it('gives every legal <article> container the font-prose token', () => {
+  it('draws every legal route through the one content article, so the next check covers them all', () => {
+    // Since M246 no route writes its own <article>: the text is a mounted file and
+    // `ContentArticle` (directly, or inside `ContentPageView`) is the only container.
     const offenders = legalSources()
-      .filter(([, source]) => !articleAsksForProseRole(source))
+      .filter(([, source]) => !/<Content(?:Article|PageView)\b/.test(source) || /<article\b/.test(source))
       .map(([name]) => name);
-    assert.deepEqual(offenders, [], `these legal pages would render in the body's monospace: ${offenders.join(', ')}`);
+    assert.deepEqual(offenders, [], `these legal routes do not draw through ContentArticle: ${offenders.join(', ')}`);
+  });
+
+  it('gives the content <article> container the font-prose token', () => {
+    assert.equal(articleAsksForProseRole(CONTENT_ARTICLE), true, "legal pages would render in the body's monospace");
   });
 
   it('CONTROL: the old container, a face token and a responsive-only container answer no', () => {

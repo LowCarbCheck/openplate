@@ -66,3 +66,17 @@ export function useInstanceInferencePreset(): InstanceInferencePreset | null {
 export function useInstancePolicy(): InstancePolicy {
   return getInstancePolicy(usePublicConfig());
 }
+
+/**
+ * Whether this instance shows legal pages (M246): the root loader found the
+ * imprint in the mounted content folder.
+ *
+ * `false` with no `CONTENT_DIR`, and `false` where the root loader has not run
+ * (error boundaries), which is the safe direction: a link that is missing can
+ * be added by an operator, a link that 404s is a broken promise on every page.
+ * Every surface that links to `/terms`, `/privacy`, `/imprint`, `/kuendigung`
+ * or `/widerrufen` asks this one hook.
+ */
+export function useHasLegalPages(): boolean {
+  return useRouteLoaderData<typeof rootLoader>('root')?.hasLegalPages ?? false;
+}

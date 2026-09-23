@@ -32,6 +32,16 @@ const CANCEL_SUBMIT = 'jetzt kündigen';
 const WITHDRAW_TITLE = 'Vertrag widerrufen';
 const WITHDRAW_SUBMIT = 'Widerruf bestätigen';
 
+/**
+ * The receipt titles, from the FIXTURE content folder the webServer mounts
+ * (`tests/fixtures/content/de`, M246). The real titles are in private files;
+ * what is asserted here is that the page draws its file's title, not a word.
+ */
+const CANCEL_RECEIPT_TITLE = 'Fixture-Kündigungsbeleg';
+const WITHDRAW_RECEIPT_TITLE = 'Fixture-Widerrufsbeleg';
+/** The fixture's `mail-notice` section, which the receipt draws after its lines. */
+const MAIL_NOTICE = 'Fixture-Hinweis zur Bestätigung per E-Mail.';
+
 /** What a § 312k confirmation page must never carry (design section 1 and the milestone's Requirements). */
 const RETENTION_WORDS = ['Rabatt', 'Angebot', 'pausieren', 'Umfrage', 'Support'];
 
@@ -100,7 +110,7 @@ test.describe('the two statutory buttons', () => {
     // updates before React finishes swapping the article's content, and a
     // one-shot `innerText()` read right after `waitForURL` can still catch
     // the form's stale DOM for a frame.
-    await expect(page.getByRole('heading', { name: 'Kündigung bestätigt', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: CANCEL_RECEIPT_TITLE, exact: true })).toBeVisible();
     const text = await page.locator('article').innerText();
 
     // The receipt id, and both halves of the received instant.
@@ -108,6 +118,7 @@ test.describe('the two statutory buttons', () => {
     expect(text).toContain('2026');
     expect(text).toMatch(/\d{1,2}:\d{2}/u);
     expect(text).toContain('erika@example.invalid');
+    expect(text, 'the mail notice comes from the content file').toContain(MAIL_NOTICE);
 
     for (const word of RETENTION_WORDS) {
       expect(text, `the confirmation page must not carry "${word}"`).not.toContain(word);
@@ -130,13 +141,14 @@ test.describe('the two statutory buttons', () => {
     // updates before React finishes swapping the article's content, and a
     // one-shot `innerText()` read right after `waitForURL` can still catch
     // the form's stale DOM for a frame.
-    await expect(page.getByRole('heading', { name: 'Widerruf bestätigt', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: WITHDRAW_RECEIPT_TITLE, exact: true })).toBeVisible();
     const text = await page.locator('article').innerText();
 
     expect(text).toContain(RECEIPT_ID);
     expect(text).toContain('2026');
     expect(text).toMatch(/\d{1,2}:\d{2}/u);
     expect(text).toContain('erika@example.invalid');
+    expect(text, 'the mail notice comes from the content file').toContain(MAIL_NOTICE);
 
     for (const word of RETENTION_WORDS) {
       expect(text, `the confirmation page must not carry "${word}"`).not.toContain(word);
