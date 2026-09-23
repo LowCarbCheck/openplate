@@ -643,6 +643,13 @@
     "at": "2026-09-14",
     "tr": "Karbonhidrat"
   },
+  "09677d44944a8ba0": {
+    "en": "The scan screen states the account's free AI scans on a scan trial.",
+    "path": "releases:v0_45_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Tarama ekranı, tarama denemesindeki hesabın ücretsiz yapay zeka taramalarını belirtir."
+  },
   "096934f3255145da": {
     "en": "Calories",
     "path": "common:trends.metric.calories",
@@ -1104,6 +1111,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Elle ekle"
+  },
+  "0e2290d6ff90caaf": {
+    "en": "A free trial is told that invitations open with a plan.",
+    "path": "releases:v0_45_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz denemedeki bir kullanıcıya, davetlerin bir planla açıldığı bildirilir."
   },
   "0e2480ec37fa7cb2": {
     "en": "We could not build a meal. Try again in a moment.",
@@ -1678,6 +1692,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Sağlayıcı değiştirmek için önce bağlantıyı kes."
+  },
+  "1598c706bd099dea": {
+    "en": "The \"today\" shortcut on a past day fits the date bar again.",
+    "path": "releases:v0_45_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Geçmiş bir gündeki \"bugün\" kısayolu, tarih çubuğuna yeniden sığar."
   },
   "15ad7e2c464e8c40": {
     "en": "Calories",
@@ -9932,6 +9953,13 @@
     "at": "2026-09-14",
     "tr": "Kayıtlı öğünler · openplate"
   },
+  "842b5f6ce6efee4c": {
+    "en": "An account made in the browser no longer logs a storage loss on every page load.",
+    "path": "releases:v0_45_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Tarayıcıda oluşturulan bir hesap, artık her sayfa yüklendiğinde bir depolama kaybı kaydetmez."
+  },
   "8433a4b56e88c536": {
     "en": "Every food you log is written to this browser’s own storage. The server keeps no copy: it has no database at all, so there is nothing of yours on it to leak. Export the lot as a file whenever you like.",
     "path": "common:landing.features.local.body",
@@ -12592,6 +12620,13 @@
     "at": "2026-09-14",
     "tr": "Bu sayfa yüklenirken bir hata oluştu."
   },
+  "a6dfaa9177076e80": {
+    "en": "A page load no longer reports a blocked eval.",
+    "path": "releases:v0_45_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bir sayfa yüklemesi artık engellenmiş bir eval bildirmez."
+  },
   "a6e533ee8107d610": {
     "en": "This device",
     "path": "common:chrome.thisDevice",
@@ -14782,6 +14817,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Gün boyunca su iç ve içine biraz tuz ekle. 72 saati aşan hiçbir durum bu uygulamanın rehberlik edebileceği kapsamda değildir."
+  },
+  "c566d5401c74ed38": {
+    "en": "The invitation and account pages no longer jump while they load.",
+    "path": "releases:v0_45_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Davet ve hesap sayfaları yüklenirken artık kayma yapmaz."
   },
   "c5685eb550058373": {
     "en": "{{count}} food that would close the fiber gap",
@@ -17547,6 +17589,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Çıkış yap"
+  },
+  "eb7252bfcdb6de24": {
+    "en": "The header says when the free AI scans are used.",
+    "path": "releases:v0_45_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Başlık, ücretsiz yapay zeka taramalarının ne zaman kullanıldığını belirtir."
   },
   "eb7f0f0d2ac4efb9": {
     "en": "What this instance is running, and what the project has published.",

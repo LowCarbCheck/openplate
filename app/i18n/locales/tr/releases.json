@@ -1,4 +1,18 @@
 {
+  "v0_45_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Başlık, ücretsiz yapay zeka taramalarının ne zaman kullanıldığını belirtir.",
+      "02": "Ücretsiz denemedeki bir kullanıcıya, davetlerin bir planla açıldığı bildirilir."
+    },
+    "fixed": {
+      "01": "Tarayıcıda oluşturulan bir hesap, artık her sayfa yüklendiğinde bir depolama kaybı kaydetmez.",
+      "02": "Tarama ekranı, tarama denemesindeki hesabın ücretsiz yapay zeka taramalarını belirtir.",
+      "03": "Davet ve hesap sayfaları yüklenirken artık kayma yapmaz.",
+      "04": "Bir sayfa yüklemesi artık engellenmiş bir eval bildirmez.",
+      "05": "Geçmiş bir gündeki \"bugün\" kısayolu, tarih çubuğuna yeniden sığar."
+    }
+  },
   "v0_44_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,23 +38,6 @@
     },
     "fixed": {
       "01": "Tarih seçici ve yazdırılan her tarih, uygulama dilini izler."
-    }
-  },
-  "v0_42_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Plan sayfası, sen başlamadan önce her iki planı da fiyatlarıyla birlikte gösterir.",
-      "02": "Analizler, bir plan teklifinden ödemeye kadar olan dört adımı sayar.",
-      "03": "Başlık alanı, bir denemedeki kalan yapay zeka tarama günlerini geriye doğru sayar.",
-      "04": "Denemenin son günleri, yapay zeka ile kaç öğün kaydettiğini belirtir."
-    },
-    "changed": {
-      "01": "Bir abonenin plan sayfası bir siparişi değil, sahip olduğu planı gösterir.",
-      "02": "Plan sayfası artık sipariş sayfasıdır, Stripe ise yalnızca ödemeyi alır.",
-      "03": "Biten bir yapay zeka kotası artık bir çıkmaz sokak değil, bir plan teklifi gösterir."
-    },
-    "fixed": {
-      "01": "Plan sayfası açılmadan önce eşitleme sunucusuna danışır."
     }
   }
 }

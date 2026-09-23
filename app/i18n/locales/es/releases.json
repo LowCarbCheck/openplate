@@ -1,4 +1,18 @@
 {
+  "v0_45_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "La cabecera indica cuándo se usan los escaneos de IA gratuitos.",
+      "02": "En un periodo de prueba gratis se indica que las invitaciones se desbloquean con un plan."
+    },
+    "fixed": {
+      "01": "Una cuenta creada en el navegador ya no registra una pérdida de almacenamiento cada vez que carga una página.",
+      "02": "La pantalla de escaneo muestra los escaneos de IA gratuitos de la cuenta durante una prueba de escaneo.",
+      "03": "Las páginas de invitaciones y de cuenta ya no dan saltos mientras se cargan.",
+      "04": "La carga de una página ya no reporta un eval bloqueado.",
+      "05": "El acceso directo \"hoy\" en un día pasado vuelve a encajar en la barra de fecha."
+    }
+  },
   "v0_44_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,23 +38,6 @@
     },
     "fixed": {
       "01": "El selector de fechas y cada fecha mostrada siguen el idioma de la aplicación."
-    }
-  },
-  "v0_42_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "La página de planes muestra ambos planes con sus precios antes de empezar.",
-      "02": "Las analíticas registran los cuatro pasos desde la oferta de un plan hasta el pago.",
-      "03": "La cabecera muestra la cuenta atrás de los días de análisis con IA que quedan en el periodo de prueba.",
-      "04": "Los últimos días de la prueba indican cuántas comidas registraste con la IA."
-    },
-    "changed": {
-      "01": "La página de planes de un suscriptor muestra el plan que tiene, no un pedido.",
-      "02": "La página de planes es ahora la página de pedidos, y Stripe solo procesa el pago.",
-      "03": "Al agotarse la cuota de IA se muestra una oferta de plan, no un callejón sin salida."
-    },
-    "fixed": {
-      "01": "La página de planes consulta al servidor de sincronización antes de abrirse."
     }
   }
 }

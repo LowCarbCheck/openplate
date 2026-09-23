@@ -1,4 +1,18 @@
 {
+  "v0_45_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "L'en-tête indique quand les analyses IA gratuites sont utilisées.",
+      "02": "Un essai gratuit est informé que les invitations s'ouvrent avec un abonnement."
+    },
+    "fixed": {
+      "01": "Un compte créé dans le navigateur ne consigne plus de perte de stockage à chaque chargement de page.",
+      "02": "L'écran d'analyse indique les analyses IA gratuites du compte lors d'un essai d'analyse.",
+      "03": "Les pages d'invitation et de compte ne sautent plus pendant leur chargement.",
+      "04": "Le chargement d'une page ne signale plus un eval bloqué.",
+      "05": "Le raccourci « aujourd'hui » sur un jour passé s'ajuste de nouveau à la barre de date."
+    }
+  },
   "v0_44_0": {
     "date": "2026-09-23",
     "added": {
@@ -24,23 +38,6 @@
     },
     "fixed": {
       "01": "Le sélecteur de date et chaque date affichée suivent la langue de l'application."
-    }
-  },
-  "v0_42_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "La page des forfaits affiche les deux forfaits et leurs prix avant que tu ne commences.",
-      "02": "Les outils de mesure comptent les quatre étapes entre la proposition d'un forfait et le paiement.",
-      "03": "L'en-tête décompte les jours d'analyses par IA restants pour la période d'essai.",
-      "04": "Les derniers jours de la période d'essai indiquent combien de repas tu as enregistrés avec l'IA."
-    },
-    "changed": {
-      "01": "La page des forfaits d'un abonné affiche son forfait actuel, pas une commande.",
-      "02": "La page des forfaits sert désormais de page de commande, et Stripe ne gère que le paiement.",
-      "03": "Un quota d'IA épuisé affiche désormais une proposition de forfait, pas une impasse."
-    },
-    "fixed": {
-      "01": "La page des forfaits interroge le serveur de synchronisation avant de s'ouvrir."
     }
   }
 }
