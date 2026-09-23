@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The release page credits the people a changelog entry thanks.** The GitHub release page previously showed only the bold first sentence of each entry. Any `Thanks @name` or `Reported by @name` later in the entry was omitted, and GitHub showed no contributors. Each line on the release page now ends with that credit. Only a handle directly after a credit phrase counts, so names inside code or running text are never included.
+
 ## [0.40.0] - 2026-09-23
 
 ### Added

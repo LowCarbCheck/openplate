@@ -22,7 +22,13 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { changelogAnchor, checkUnreleased, parseSection, renderBody } from '../../scripts/release-notes';
+import {
+  changelogAnchor,
+  checkUnreleased,
+  creditedHandles,
+  parseSection,
+  renderBody,
+} from '../../scripts/release-notes';
 
 const REPO = 'LowCarbCheck/openplate';
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -167,7 +173,7 @@ describe('checkUnreleased', () => {
       '## [Unreleased]\n',
       '## [Unreleased]\n\n### Fixed\n\n- **A thing is fixed.** The detail follows here.\n',
     );
-    assert.deepEqual(checkUnreleased(filled), [{ name: 'Fixed', leads: ['A thing is fixed.'] }]);
+    assert.deepEqual(checkUnreleased(filled), [{ name: 'Fixed', leads: ['A thing is fixed.'], credits: [[]] }]);
   });
 
   it('a bullet with no bold lead fails, and the message names the section', () => {
@@ -184,6 +190,75 @@ describe('checkUnreleased', () => {
   it('an unknown group heading fails', () => {
     const bad = FULL.replace('## [Unreleased]\n', '## [Unreleased]\n\n### Removed\n');
     assert.throws(() => checkUnreleased(bad), /unknown group heading '### Removed'/);
+  });
+});
+
+// ---- Credits --------------------------------------------------------------------------------
+// GitHub draws a release's Contributors avatars only for users the body @mentions, so the page
+// line keeps the credit its bullet carries.
+
+const CREDITS = `# Changelog
+
+## [3.0.0] - 2026-11-01
+
+### Added
+
+- **A.** Detail. Thanks @alice (#1, fixes #2). ([aaaaaaa](https://github.com/LowCarbCheck/openplate/commit/aaaaaaa))
+- **B.** Detail. Reported by @bob (#3). ([bbbbbbb](https://github.com/LowCarbCheck/openplate/commit/bbbbbbb))
+- **C.** Detail. Thanks to @carol and @dave-x, and suggested by @Alice. (#4)
+- **D.** Contributed by [@erin](https://github.com/erin) (#5).
+
+### Fixed
+
+- **E.** The \`@effort\` token, \`Thanks @mallory\`, the @types/node scope, mail me@example.com and the @word in prose.
+- **F.** Thanks @AltanS for the review, and thanks @frank.
+- **G.** Built by @AltanS alone.
+- **H.** Reported by @LowCarbCheck, the repo owner, not a contributor.
+`;
+
+describe('credits', () => {
+  it('each bullet keeps its own credit, phrase as written', () => {
+    const section = parseSection({ changelog: CREDITS, version: '3.0.0' });
+    const added = section.groups.find((group) => group.name === 'Added');
+    assert.deepEqual(added?.credits, [
+      [{ phrase: 'Thanks', handles: ['alice'] }],
+      [{ phrase: 'Reported by', handles: ['bob'] }],
+      [
+        { phrase: 'Thanks to', handles: ['carol', 'dave-x'] },
+        { phrase: 'Suggested by', handles: ['Alice'] },
+      ],
+      [{ phrase: 'Contributed by', handles: ['erin'] }],
+    ]);
+  });
+
+  it('code spans, scopes, e-mail, bare @words, the maintainer and the owning org do not count', () => {
+    const fixed = parseSection({ changelog: CREDITS, version: '3.0.0' }).groups.find((group) => group.name === 'Fixed');
+    assert.deepEqual(fixed?.credits, [[], [{ phrase: 'Thanks', handles: ['frank'] }], [], []]);
+  });
+
+  it("the section's handles are deduped, first spelling wins", () => {
+    assert.deepEqual(creditedHandles(parseSection({ changelog: CREDITS, version: '3.0.0' })), [
+      'alice',
+      'bob',
+      'carol',
+      'dave-x',
+      'erin',
+      'frank',
+    ]);
+  });
+
+  it('the page line ends with the credit, as a bare @mention', () => {
+    const body = renderBody({ changelog: CREDITS, version: '3.0.0', repo: REPO, tag: 'v3.0.0' });
+    assert.ok(body.includes('- A. Thanks @alice.\n'), body);
+    assert.ok(body.includes('- B. Reported by @bob.\n'), body);
+    assert.ok(body.includes('- C. Thanks to @carol and @dave-x. Suggested by @Alice.\n'), body);
+    assert.ok(body.includes('- D. Contributed by @erin.\n'), body);
+    assert.ok(body.includes('- E.\n'), body);
+    assert.ok(body.includes('- F. Thanks @frank.\n'), body);
+    assert.ok(body.includes('- G.\n'), body);
+    assert.ok(body.includes('- H.\n'), body);
+    assert.ok(!body.includes('@AltanS'), body);
+    assert.ok(!body.includes('@LowCarbCheck'), body);
   });
 });
 
