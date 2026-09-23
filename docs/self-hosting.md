@@ -116,6 +116,9 @@ See [sync.md](sync.md) for what sync is and how the client reaches it.
    `environment:` block as `FOOD_DB_API_KEY`, and run `docker compose up -d` again. Without a
    key everyone on the instance shares one small anonymous allowance. See
    [configuration.md](configuration.md#the-food-database-key).
+   With a key you can also set `FOOD_DB_BACKFILL=true`, which passes the foods people save
+   from an AI answer on to LowCarbCheck as proposals. See
+   [configuration.md](configuration.md#proposals-to-the-food-database).
 
 ## HTTPS
 

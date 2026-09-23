@@ -52,7 +52,14 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
-import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_MATOMO_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
+import {
+  E2E_APP_PORT,
+  E2E_APP_URL,
+  E2E_FOOD_DB_API_KEY,
+  E2E_FOOD_DB_URL,
+  E2E_MATOMO_URL,
+  E2E_SYNC_SERVER_URL,
+} from './tests/e2e/env';
 
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
@@ -137,7 +144,11 @@ export default defineConfig({
       // the events off the wire. Every other spec loads no tracker, because
       // `matomo.js` 404s there. The consumer instance runs with analytics on,
       // so this is closer to production, not further from it.
-      `MATOMO_URL=${E2E_MATOMO_URL} MATOMO_SITE_ID=1 tsx ./server.ts`,
+      `MATOMO_URL=${E2E_MATOMO_URL} MATOMO_SITE_ID=1 ` +
+      // BACKFILL IS ON IN THIS TIER (M251/04), with a key the fake knows, so
+      // `food-proposals.spec.ts` can read what the server relays. The person's
+      // own switch is what a spec turns off to prove nothing is sent.
+      `FOOD_DB_API_KEY=${E2E_FOOD_DB_API_KEY} FOOD_DB_BACKFILL=true tsx ./server.ts`,
     url: `${E2E_APP_URL}/`,
     // NEVER REUSE. A server left over from an earlier run is serving an earlier
     // build, which is the "you verified yesterday's build" failure.

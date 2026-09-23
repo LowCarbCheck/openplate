@@ -240,7 +240,7 @@ describe('hasServerCopyOfTheDiary', () => {
  * `device-only-managed-copy.test.ts`.
  */
 function publicConfig(managed: boolean): PublicConfig {
-  return { syncServerUrl: 'https://sync.openplate.test', analytics: null, instancePreset: null, managed };
+  return { syncServerUrl: 'https://sync.openplate.test', analytics: null, instancePreset: null, managed, foodDbBackfill: false };
 }
 
 /**

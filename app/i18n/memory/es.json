@@ -7776,6 +7776,13 @@
     "at": "2026-09-14",
     "es": "Keto"
   },
+  "6bc6c866fe4da49f": {
+    "en": "When you save a food the AI named, its name in every app language and its nutrition values go to LowCarbCheck, the food database this app looks foods up in. Nothing about you goes with them: no account, no photo, no diary entry. A name you type or change yourself is never sent.",
+    "path": "common:settingsAi.foodDb.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Cuando guardas un alimento al que la IA le asignó un nombre, dicho nombre en cada idioma de la app y sus valores nutricionales se envían a LowCarbCheck, la base de datos de alimentos donde esta app los busca. No se incluye ningún dato sobre ti: ni cuenta, ni foto, ni entrada del diario. Los nombres que escribas o modifiques tú jamás se envían."
+  },
   "6be2eff8ea560886": {
     "en": "Median eating window ~{{duration}} across {{days}} days",
     "path": "common:trends.recap.eatingWindow",
@@ -17604,6 +17611,13 @@
     "at": "2026-09-14",
     "es": "Las estimaciones por foto no están activadas para esta cuenta."
   },
+  "f136b5657f811dc1": {
+    "en": "Estimated values",
+    "path": "common:scan.review.match.estimate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Valores estimados"
+  },
   "f184037a91c89400": {
     "en": "Over your calorie goal",
     "path": "common:diary.impact.kcal.over",
@@ -17989,6 +18003,13 @@
     "at": "2026-09-14",
     "es": "Unirte · openplate"
   },
+  "f60026707d160925": {
+    "en": "Food database",
+    "path": "common:settingsAi.foodDb.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Base de datos de alimentos"
+  },
   "f652992d56dc207d": {
     "en": "Restore from a backup file",
     "path": "common:recover.restoreHeading",
@@ -18149,6 +18170,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Ajusta primero la porción. Los macronutrientes se adaptan después."
+  },
+  "f8edde882f81f295": {
+    "en": "Help the food database",
+    "path": "common:settingsAi.foodDb.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Ayuda a la base de datos de alimentos"
   },
   "f8f0c4bc7319a796": {
     "en": "The weekly share of your calories that came from snacks.",

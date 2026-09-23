@@ -133,6 +133,14 @@ export interface PublicConfig {
    * {@link isManagedInstance} for what it still refuses to do without.
    */
   managed: boolean;
+  /**
+   * Whether this instance passes AI-named foods on to LowCarbCheck as
+   * proposals (M251/04, `CONFIG.foodDb.backfill`). A fact about the instance,
+   * not a secret: it tells the browser whether sending is possible at all, so
+   * `false` means no proposal request ever leaves the page and the settings
+   * switch does not render. The server route refuses on its own reading too.
+   */
+  foodDbBackfill: boolean;
 }
 
 /**

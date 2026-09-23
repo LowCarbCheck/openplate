@@ -29,6 +29,7 @@ import { reportPhotoParsed } from '#app/lib/pulse';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
+  isEstimatedFoodOrigin,
   matchMacrosToFormValues,
   resolveAppliedMatchSnapshot,
   toCuratedSource,
@@ -140,6 +141,8 @@ import {
   resolveConfirmedNameTranslations,
 } from '#app/lib/food-name';
 import type { FoodTranslations } from '#app/services/vision/translations';
+import { buildConfirmedProposals, sendFoodProposals } from '#app/lib/food-proposals-client';
+import { usePublicConfig } from '#app/hooks/use-public-config';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -346,6 +349,13 @@ function makeConfirmItemSchema(t: Translate) {
      * see `resolveConfirmedNameTranslations`.
      */
     nameTranslations: nameTranslationsFormField,
+    /**
+     * Whether the applied match is an ESTIMATE (M251/04): a LowCarbCheck row
+     * with origin `proposal`. Derived every render from the applied match, like
+     * `attribution`. `true` stores the entry as estimated with no curated
+     * source; anything else is `false`.
+     */
+    matchIsEstimate: z.preprocess((value) => value === 'true', z.boolean()),
     macros: makeConfirmMacrosSchema(t),
   });
 }
@@ -997,8 +1007,11 @@ export function buildConfirmedEntry({
   logBatchId: string;
 }): LocalFoodLog {
   // Provenance: non-empty only when the user applied a curated LCC match to
-  // this food. It doubles as the `aiEstimated` discriminator below.
-  const curatedSource = item.curatedSource && item.curatedSource.trim() !== '' ? item.curatedSource.trim() : null;
+  // this food. It doubles as the `aiEstimated` discriminator below. A row
+  // LowCarbCheck published from a proposal is an estimate, never a curated
+  // source (M251/04), so it claims none.
+  const appliedSource = item.curatedSource && item.curatedSource.trim() !== '' ? item.curatedSource.trim() : null;
+  const curatedSource = item.matchIsEstimate ? null : appliedSource;
   return {
     id,
     foodId,
@@ -1271,6 +1284,20 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     await putLocalFood(food);
     await putLocalFoodLog(entry);
   }
+  // THE PROPOSALS TO LOWCARBCHECK (M251/04), after the rows are written and
+  // never awaited: a contribution, not a step of logging. The instance gate
+  // rides the form from the root loader; the person's switch is read here.
+  sendFoodProposals({
+    isInstanceOn: formData.get('foodDbBackfill') === 'true',
+    proposals: buildConfirmedProposals({
+      intakeSource: readIntakeSource(formData),
+      // `buildConfirmedBatch` answers one pair per item, in order.
+      items: batch.flatMap(({ entry }, index) => {
+        const item = includedItems[index];
+        return item === undefined ? [] : [{ entry, curatedSource: item.curatedSource, macrosPer100g: item.macros }];
+      }),
+    }),
+  });
 
   // The photograph, on the same signal as the rows and under the same batch
   // id. It is handed over by the review screen through a one-shot slot
@@ -2368,6 +2395,18 @@ function CuratedMatchCard({
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">{t('scan.review.match.foundIn')}</p>
           <MatchTierChip tier={tier} />
+          {/* AN ESTIMATE, NOT A CURATED ROW (M251/04): LowCarbCheck published
+              this food from a proposal, so its numbers are a model's. Said in
+              text beside the chip, and the entry it logs is stored as
+              estimated; see `isEstimatedFoodOrigin`. */}
+          {isEstimatedFoodOrigin(match.origin) && (
+            <span
+              data-slot="match-estimate"
+              className="inline-flex w-fit items-center border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground"
+            >
+              {t('scan.review.match.estimate')}
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -2678,6 +2717,7 @@ export function ConfirmDraftForm({
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const isSaving = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'confirm';
+  const isFoodDbBackfillOn = usePublicConfig()?.foodDbBackfill ?? false;
 
   // Mint the batch id client-side (post-mount, so SSR and hydration agree on an
   // empty value): it's posted as a hidden field so the server keys every entry
@@ -2901,6 +2941,10 @@ export function ConfirmDraftForm({
       {/* Which way in this draft arrived by. Outside every collapsible for the
           same reason the date is: it must submit whatever the person expands. */}
       <input type="hidden" name="intakeSource" value={intakeSource} />
+      {/* Whether this instance passes AI-named foods on to LowCarbCheck
+          (M251/04), from the root loader. The server route refuses on its
+          own reading too, so this only saves a request that would be refused. */}
+      <input type="hidden" name="foodDbBackfill" value={isFoodDbBackfillOn ? 'true' : 'false'} />
       {/* Kept outside every collapsible so the back-dated day always submits. */}
       {logDate && <input type="hidden" name="date" value={logDate} />}
       {/* Client-minted batch id, so the device photo cache and the server agree. */}
@@ -3062,6 +3106,11 @@ export function ConfirmDraftForm({
                 type="hidden"
                 name={itemFieldset.attribution.name}
                 value={view.appliedSnapshot.attribution ?? ''}
+              />
+              <input
+                type="hidden"
+                name={itemFieldset.matchIsEstimate.name}
+                value={view.appliedSnapshot.isEstimate ? 'true' : 'false'}
               />
               {/* Same "derived every render from `curatedSource`, never withdrawn by an
                   edit" treatment as `attribution` above, not `netCarbsPer100g`'s

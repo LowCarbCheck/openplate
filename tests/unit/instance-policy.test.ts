@@ -228,6 +228,7 @@ const OPEN_CONFIG: PublicConfig = {
   instancePreset: null,
   analytics: null,
   managed: false,
+  foodDbBackfill: false,
 };
 
 describe('reading the instance policy', () => {

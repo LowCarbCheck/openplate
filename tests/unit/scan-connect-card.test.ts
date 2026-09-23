@@ -65,6 +65,7 @@ function publicConfig(overrides: Partial<PublicConfig> = {}): PublicConfig {
     analytics: null,
     instancePreset: null,
     managed: false,
+    foodDbBackfill: false,
     ...overrides,
   };
 }

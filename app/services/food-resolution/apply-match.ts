@@ -44,6 +44,29 @@ export function matchMacrosToFormValues(macros: FoodMatchMacros): MacroFormValue
   };
 }
 
+/**
+ * The origin LowCarbCheck gives a food it published from a proposal (M251/04,
+ * LowCarbCheck M205). Its numbers are a model's estimate that another model
+ * judged, and its attribution line says so.
+ */
+export const PROPOSAL_FOOD_ORIGIN = 'proposal';
+
+/**
+ * Whether a food database row is an ESTIMATE rather than a curated source.
+ *
+ * A row with origin `proposal` is shown and stored as an estimate, never as a
+ * curated source: otherwise a model's guess that travelled to LowCarbCheck and
+ * back would return labelled as a database fact. An applied match of this
+ * origin therefore writes `aiEstimated: true` and no `curatedSource`, which
+ * every provenance badge and note in the app already reads as "estimated".
+ *
+ * @param origin - the match's `FoodMatch.origin`.
+ * @returns true for an estimated origin.
+ */
+export function isEstimatedFoodOrigin(origin: string | null | undefined): boolean {
+  return origin === PROPOSAL_FOOD_ORIGIN;
+}
+
 /** Builds the provenance token stored on a food log when a curated match is applied. */
 export function toCuratedSource(slug: string): string {
   return `lowcarbcheck:${slug}`;
@@ -83,6 +106,13 @@ export interface AppliedMatchSnapshot {
    * "we have nothing", never "all zero".
    */
   micronutrientsPer100g: MicronutrientsPer100g | undefined;
+  /**
+   * Whether the applied match is an ESTIMATE rather than a curated source
+   * (M251/04, see {@link isEstimatedFoodOrigin}), `false` when no match is
+   * applied. Follows `attribution`'s rule: a macro edit does not change where
+   * the row came from.
+   */
+  isEstimate: boolean;
 }
 
 /**
@@ -139,7 +169,13 @@ export function resolveAppliedMatchSnapshot({
 }): AppliedMatchSnapshot {
   const applied = matches.find((match) => toCuratedSource(match.slug) === appliedCuratedSource);
   if (!applied) {
-    return { netCarbsPer100g: undefined, carbBasis: undefined, attribution: null, micronutrientsPer100g: undefined };
+    return {
+      netCarbsPer100g: undefined,
+      carbBasis: undefined,
+      attribution: null,
+      micronutrientsPer100g: undefined,
+      isEstimate: false,
+    };
   }
   const macrosChanged = macrosDiffer(applied.macrosPer100g, editedMacrosPer100g);
   return {
@@ -153,5 +189,6 @@ export function resolveAppliedMatchSnapshot({
     // adjusting a carb value has neither measured it nor invalidated it, and
     // withdrawing it would just turn a covered entry uncovered for no reason.
     micronutrientsPer100g: cloneMicronutrients(applied.micronutrientsPer100g),
+    isEstimate: isEstimatedFoodOrigin(applied.origin),
   };
 }

@@ -77,6 +77,8 @@ const catalogSchema = z.object({
       foodDbUnavailable: z.string(),
       netCarbsForPortion: z.string(),
       confirmAndLog: z.string(),
+      match: z.object({ useThisData: z.string() }),
+      fineTune: z.string(),
       sanity: z.object({
         componentOverTotal: z.string(),
         macro: z.object({ carbs: z.string(), fiber: z.string() }),
@@ -177,6 +179,7 @@ const catalogSchema = z.object({
   settingsAi: z.object({
     advanced: z.object({ toggle: z.string(), openaiCompatibleOption: z.string() }),
     save: z.object({ settings: z.string() }),
+    foodDb: z.object({ label: z.string() }),
   }),
   settings: z.object({
     notifications: z.object({

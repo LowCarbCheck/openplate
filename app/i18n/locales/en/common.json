@@ -2045,6 +2045,7 @@
         "calories": "{{value}} calories",
         "carbs": "{{value}} g carbs",
         "dismiss": "Dismiss suggestion",
+        "estimate": "Estimated values",
         "fiber": "{{value}} g fiber",
         "foundIn": "Found in LowCarbCheck",
         "netCarbs": "{{value}} g net carbs",
@@ -2366,6 +2367,11 @@
     "field": {
       "baseUrl": "Base URL",
       "model": "Model"
+    },
+    "foodDb": {
+      "description": "When you save a food the AI named, its name in every app language and its nutrition values go to LowCarbCheck, the food database this app looks foods up in. Nothing about you goes with them: no account, no photo, no diary entry. A name you type or change yourself is never sent.",
+      "label": "Help the food database",
+      "title": "Food database"
     },
     "loading": "Loading your AI settings…",
     "manualEntry": {

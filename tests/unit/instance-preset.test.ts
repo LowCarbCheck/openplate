@@ -106,6 +106,7 @@ describe('getInstanceInferencePreset', () => {
         instancePreset: null,
         analytics: null,
         managed: false,
+        foodDbBackfill: false,
       }),
       null,
     );
@@ -118,6 +119,7 @@ describe('getInstanceInferencePreset', () => {
         instancePreset: PRESET,
         analytics: null,
         managed: false,
+        foodDbBackfill: false,
       }),
       PRESET,
     );

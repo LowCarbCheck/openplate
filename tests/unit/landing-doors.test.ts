@@ -66,7 +66,7 @@ function publicConfig(managed: boolean): PublicConfig {
     syncServerUrl: 'https://sync.openplate.test',
     analytics: null,
     instancePreset: null,
-    managed,
+    managed, foodDbBackfill: false,
   };
 }
 

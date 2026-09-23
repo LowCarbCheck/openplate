@@ -2045,6 +2045,7 @@
         "calories": "{{value}} kalori",
         "carbs": "{{value}} g karbonhidrat",
         "dismiss": "Öneriyi yoksay",
+        "estimate": "Tahmini değerler",
         "fiber": "{{value}} g lif",
         "foundIn": "LowCarbCheck içinde bulundu",
         "netCarbs": "{{value}} g net karbonhidrat",
@@ -2366,6 +2367,11 @@
     "field": {
       "baseUrl": "Temel URL",
       "model": "Model"
+    },
+    "foodDb": {
+      "description": "Yapay zekanın adlandırdığı bir yiyeceği kaydettiğinde, yiyeceğin tüm uygulama dillerindeki adı ve besin değerleri, bu uygulamanın yiyecekleri aramak için kullandığı yiyecek veritabanı olan LowCarbCheck platformuna gider. Bunlarla birlikte sana dair hiçbir şey gitmez: hesap yok, fotoğraf yok, günlük girdisi yok. Kendi yazdığın ya da değiştirdiğin bir ad asla gönderilmez.",
+      "label": "Yiyecek veritabanına katkıda bulun",
+      "title": "Yiyecek veritabanı"
     },
     "loading": "Yapay zeka ayarların yükleniyor…",
     "manualEntry": {

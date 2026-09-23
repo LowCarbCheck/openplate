@@ -76,9 +76,10 @@ const OPEN_CONFIG = {
   instancePreset: null,
   analytics: null,
   managed: false,
+  foodDbBackfill: false,
 } satisfies PublicConfig;
 
-const MANAGED_CONFIG = { ...OPEN_CONFIG, managed: true } satisfies PublicConfig;
+const MANAGED_CONFIG = { ...OPEN_CONFIG, managed: true, foodDbBackfill: false } satisfies PublicConfig;
 
 function noop(): void {
   // The card's two buttons; no assertion here presses one.

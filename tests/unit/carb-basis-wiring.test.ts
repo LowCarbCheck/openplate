@@ -330,6 +330,7 @@ const NO_APPLIED_MATCH: AppliedMatchSnapshot = {
   carbBasis: undefined,
   attribution: null,
   micronutrientsPer100g: undefined,
+  isEstimate: false,
 };
 
 describe('the plate-scan review card honours a label item\'s own panel convention', () => {

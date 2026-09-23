@@ -31,6 +31,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { MINERAL_KEYS, VITAMIN_KEYS } from '../../app/lib/micronutrients';
+import { E2E_FOOD_DB_API_KEY } from './env';
 
 /** The committed wire fixture, the one LowCarbCheck's own tests hash. */
 const NUTRIENTS_BODY = readFileSync(
@@ -92,6 +93,15 @@ export interface FakeFoodDb {
 export const FOOD_DB_REFUSAL_PATH = '/__e2e__/search-refusal';
 
 /**
+ * The seam a spec reads the recorded food proposals through (M251/04): GET
+ * answers every proposal received since the last reset, in arrival order, and
+ * DELETE forgets them. Same `__e2e__` naming, same reason as above.
+ */
+export const FOOD_DB_PROPOSALS_PATH = '/__e2e__/proposals';
+
+
+
+/**
  * Starts the fake on a named port.
  *
  * A NAMED PORT for the reason `fake-sync-service` takes one: the app server is
@@ -107,6 +117,13 @@ export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeF
    * it, because this fake outlives every spec in the run.
    */
   let refusalStatus: number | null = null;
+  /**
+   * Every proposal LowCarbCheck's endpoint would have received, as posted.
+   * Only a call LowCarbCheck itself would accept is recorded: one with the
+   * instance key and WITHOUT a browser `Origin`, which is what proves the
+   * request came from the openplate server and not from the page.
+   */
+  let proposals: object[] = [];
 
   const server: Server = createServer((request, response) => {
     const path = new URL(request.url ?? '/', 'http://127.0.0.1').pathname;
@@ -121,6 +138,40 @@ export async function startFakeFoodDb({ port }: { port: number }): Promise<FakeF
         refusalStatus = Number.isInteger(asked) ? asked : null;
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end(JSON.stringify({ refusalStatus }));
+      });
+      return;
+    }
+    if (path === FOOD_DB_PROPOSALS_PATH) {
+      request.resume();
+      if (request.method === 'DELETE') proposals = [];
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(JSON.stringify({ proposals }));
+      return;
+    }
+    if (path === '/api/v1/foods/proposals') {
+      // LowCarbCheck's two refusals, stated the way M205 states them.
+      if (request.headers.origin !== undefined) {
+        request.resume();
+        response.writeHead(403, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ error: { code: 'browser_origin' } }));
+        return;
+      }
+      if (request.headers.authorization !== `Bearer ${E2E_FOOD_DB_API_KEY}`) {
+        request.resume();
+        response.writeHead(401, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ error: { code: 'invalid_key' } }));
+        return;
+      }
+      let body = '';
+      request.on('data', (chunk: Buffer) => (body += chunk.toString()));
+      request.on('end', () => {
+        // SAFETY: the openplate server's own JSON; a malformed body is a
+        // defect this fake should surface, so it is recorded as it came.
+        const posted = JSON.parse(body) as { proposals?: object[] };
+        const received = posted.proposals ?? [];
+        proposals = [...proposals, ...received];
+        response.writeHead(202, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ proposals: received.map((_, index) => ({ id: index + 1, status: 'pending' })) }));
       });
       return;
     }

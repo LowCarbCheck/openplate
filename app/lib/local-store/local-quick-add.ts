@@ -25,7 +25,7 @@
 import type { Macros } from '#app/lib/macros';
 import type { MicronutrientsPer100g } from '#app/lib/micronutrients';
 import type { FoodMatch } from '#app/services/food-resolution';
-import { toCuratedSource } from '#app/services/food-resolution/apply-match';
+import { isEstimatedFoodOrigin, toCuratedSource } from '#app/services/food-resolution/apply-match';
 import { chipCarbStatus } from '#app/lib/frequent-chips';
 import type { CarbStatus } from '#app/utils/carb-status';
 import { carbBasisForOrigin, type CarbBasis } from '#app/lib/net-carbs';
@@ -499,9 +499,12 @@ export function localCuratedMatchToCandidate(match: FoodMatch): LocalQuickAddCan
     carbBasis: carbBasisForOrigin(match.origin),
     defaultGrams: candidateDefaultGrams(defaultPortion),
     defaultPortion,
-    curatedSource: toCuratedSource(match.slug),
+    // A row LowCarbCheck published from a proposal is an ESTIMATE (M251/04):
+    // it claims no curated source and logs as estimated, see
+    // `isEstimatedFoodOrigin`.
+    curatedSource: isEstimatedFoodOrigin(match.origin) ? null : toCuratedSource(match.slug),
     foodId: null,
-    aiEstimated: false,
+    aiEstimated: isEstimatedFoodOrigin(match.origin),
     imageUrl: match.imageUrl,
     timesLogged: 0,
     url: match.url,

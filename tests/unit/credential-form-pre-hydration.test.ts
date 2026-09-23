@@ -101,7 +101,7 @@ function enabledSubmitTags(markup: string): string[] {
 
 /** A managed instance's public config: sync is configured, so every credential screen is offered. */
 function publicConfig(): PublicConfig {
-  return { syncServerUrl: SYNC_SERVER_URL, analytics: null, instancePreset: null, managed: true };
+  return { syncServerUrl: SYNC_SERVER_URL, analytics: null, instancePreset: null, managed: true, foodDbBackfill: false };
 }
 
 /**

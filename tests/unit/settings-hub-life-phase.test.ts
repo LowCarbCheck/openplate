@@ -44,6 +44,7 @@ const PUBLIC_CONFIG: PublicConfig = {
   analytics: null,
   instancePreset: null,
   managed: false,
+  foodDbBackfill: false,
 };
 
 /**

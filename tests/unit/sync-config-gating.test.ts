@@ -55,20 +55,21 @@ test('a non-default port survives into the CSP entry', () => {
 
 test('isSyncConfigured is false for every shape of "no config"', () => {
   assert.equal(isSyncConfigured(undefined), false, 'no root loader data — error boundaries take this path');
-  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null, managed: false }), false);
-  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null, managed: false }), false);
+  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
+  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
   assert.equal(
     isSyncConfigured({
       syncServerUrl: 'https://sync.example.com',
       instancePreset: null,
       analytics: null,
       managed: false,
+      foodDbBackfill: false,
     }),
     true,
   );
 });
 
-test('the public config carries exactly four members, and nothing else', () => {
+test('the public config carries exactly five members, and nothing else', () => {
   // A compile-time assertion made runtime-visible: if a FIFTH field is ever
   // added to `PublicConfig`, this fails and forces the addition to be a
   // decision rather than a side effect. The channel is an allowlist.
@@ -88,13 +89,25 @@ test('the public config carries exactly four members, and nothing else', () => {
   // a different ground: it decides the SHAPE of the app (one door or two).
   // Deriving it per screen instead would let "this is a managed instance" be
   // true on one and false on the next.
+  //
+  // `foodDbBackfill` (M251/04) is admitted on the same ground as `managed`: a
+  // boolean about the instance, not an address and not a secret. It decides
+  // whether a proposal request can leave the page at all, and the key and the
+  // upstream address it depends on stay on the server.
   const config: PublicConfig = {
     syncServerUrl: 'https://sync.example.com',
     instancePreset: null,
     analytics: null,
     managed: false,
+    foodDbBackfill: false,
   };
-  assert.deepEqual(Object.keys(config).toSorted(), ['analytics', 'instancePreset', 'managed', 'syncServerUrl']);
+  assert.deepEqual(Object.keys(config).toSorted(), [
+    'analytics',
+    'foodDbBackfill',
+    'instancePreset',
+    'managed',
+    'syncServerUrl',
+  ]);
 });
 
 test('the passphrase strength hint never blocks, and never flatters a short passphrase', () => {
