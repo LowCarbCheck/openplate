@@ -129,6 +129,12 @@ const catalogSchema = z.object({
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
     start: z.string(),
+    manage: z.string(),
+    returned: z.object({ success: z.string() }),
+    card: z.object({
+      name: z.object({ month: z.string(), year: z.string() }),
+      yearThenMonthly: z.string(),
+    }),
     choice: z.object({
       legend: z.string(),
       monthlyEquivalent: z.string(),

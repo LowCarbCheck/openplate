@@ -49,19 +49,14 @@ import { SettingsSection } from '#app/components/settings/settings-section';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
-import {
-  PLAN_KEYS,
-  type PlanKey,
-  type PlanOffer,
-  type PlanStatus,
-  type PlanView,
-} from '#app/lib/sync/engine/client/plans-wire';
+import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/lib/sync/engine/client/plans-wire';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
 import { PlanChoice } from '#app/components/plans/plan-choice';
 import { useSyncSession } from '#app/components/sync-status';
-import { planStanding } from '#app/lib/plans/plan-standing';
+import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
+import { PlanStatusCard } from '#app/components/plans/plan-status-card';
 import { offerLocaleFor } from '#app/lib/plans/plans-door';
 import { cn } from '#app/lib/utils';
 import { trackOrderSent, trackPaymentReturned } from '#app/lib/matomo-events';
@@ -131,6 +126,7 @@ const STATUS_KEY_BY_PLAN = {
  */
 export function PlanScreen({
   state,
+  standing,
   offer,
   selectedPlan,
   busy,
@@ -141,6 +137,8 @@ export function PlanScreen({
   onManage,
 }: {
   state: PlanReadState;
+  /** Where the person stands, from `planStanding`. A subscriber gets the status card instead of the order. */
+  standing: PlanStanding;
   /** What this instance sells, or `null` when there is no offer to draw. */
   offer: PlanOffer | null;
   /** The picked plan, `null` until the person picks one or a link named one. */
@@ -158,6 +156,7 @@ export function PlanScreen({
   // the plan they asked for. With none (a biller older than the offer) the
   // button works as it always did.
   const needsPick = offer !== null && selectedPlan === null;
+  const subscribed = state.kind === 'ready' && standing.kind === 'subscribed' ? standing : null;
 
   if (state.kind === 'loading') return <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>;
 
@@ -172,84 +171,80 @@ export function PlanScreen({
         <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>
       )}
 
-      <SettingsSection
-        label={t('plan.title')}
-        description={state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
-        contentClassName="space-y-3"
-      >
-        {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
-        {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
-        {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
+      {/* A SUBSCRIBER IS NOT SOLD A SECOND PLAN. They get what they hold,
+          the date that matters next and the way to the portal. */}
+      {subscribed !== null && (
+        <PlanStatusCard
+          standing={subscribed}
+          portalAvailable={state.kind === 'ready' && state.plan.portalAvailable}
+          isOpeningPortal={busy === 'portal'}
+          isBusy={busy !== 'none'}
+          onManage={onManage}
+        />
+      )}
 
-        {state.kind === 'ready' && <PlanPeriod plan={state.plan} />}
+      {subscribed === null && (
+        <SettingsSection
+          label={t('plan.title')}
+          description={state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
+          contentClassName="space-y-3"
+        >
+          {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
+          {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
+          {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
 
-        {/* THE PRICES ARE DATA. No number in this app is a price: every
-            figure on the cards is the biller's `grossCents`, or arithmetic on
-            it (`plan-prices.ts`), and the term under each is the biller's own
-            sentence. */}
-        {state.kind === 'ready' && offer !== null && (
-          <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} placement="plan-page" />
-        )}
+          {/* THE PRICES ARE DATA. No number in this app is a price: every
+              figure on the cards is the biller's `grossCents`, or arithmetic on
+              it (`plan-prices.ts`), and the term under each is the biller's own
+              sentence. */}
+          {state.kind === 'ready' && offer !== null && (
+            <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} placement="plan-page" />
+          )}
 
-        <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
+          <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
 
-        {/* ONE RESERVED LINE for the two things that can appear above the
-            buttons, so neither a failed press nor a pick moves them. */}
-        {state.kind === 'ready' && (
-          <p
-            data-slot="plan-action-line"
-            role={actionFailed ? 'alert' : undefined}
-            className={cn(
-              'min-h-5 text-sm',
-              actionFailed ? 'text-destructive' : 'text-muted-foreground',
-              !actionFailed && !needsPick && 'invisible',
-            )}
-          >
-            {actionFailed && t('plan.actionFailed')}
-            {!actionFailed && needsPick && t('plan.choice.pickFirst')}
-            {!actionFailed && !needsPick && '\u00a0'}
-          </p>
-        )}
+          {/* ONE RESERVED LINE for the two things that can appear above the
+              buttons, so neither a failed press nor a pick moves them. */}
+          {state.kind === 'ready' && (
+            <p
+              data-slot="plan-action-line"
+              role={actionFailed ? 'alert' : undefined}
+              className={cn(
+                'min-h-5 text-sm',
+                actionFailed ? 'text-destructive' : 'text-muted-foreground',
+                !actionFailed && !needsPick && 'invisible',
+              )}
+            >
+              {actionFailed && t('plan.actionFailed')}
+              {!actionFailed && needsPick && t('plan.choice.pickFirst')}
+              {!actionFailed && !needsPick && '\u00a0'}
+            </p>
+          )}
 
-        {state.kind === 'ready' && (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={onStart} disabled={busy !== 'none' || needsPick}>
-              {busy === 'checkout' ?
-                <Loader2 className="h-4 w-4 animate-spin" />
-              : <CreditCard className="h-4 w-4" />}
-              {t('plan.start')}
-            </Button>
-            {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
-                biller answers a 404 for an account with no customer, and a
-                button whose only outcome is that 404 is a button that lies. */}
-            {state.plan.portalAvailable && (
-              <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
-                {busy === 'portal' ?
+          {state.kind === 'ready' && (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={onStart} disabled={busy !== 'none' || needsPick}>
+                {busy === 'checkout' ?
                   <Loader2 className="h-4 w-4 animate-spin" />
-                : <ExternalLink className="h-4 w-4" />}
-                {t('plan.manage')}
+                : <CreditCard className="h-4 w-4" />}
+                {t('plan.start')}
               </Button>
-            )}
-          </div>
-        )}
-      </SettingsSection>
+              {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
+                  biller answers a 404 for an account with no customer, and a
+                  button whose only outcome is that 404 is a button that lies. */}
+              {state.plan.portalAvailable && (
+                <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
+                  {busy === 'portal' ?
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  : <ExternalLink className="h-4 w-4" />}
+                  {t('plan.manage')}
+                </Button>
+              )}
+            </div>
+          )}
+        </SettingsSection>
+      )}
     </div>
-  );
-}
-
-/**
- * The two date facts, which are one date and two opposite meanings.
- *
- * A CANCELLED SUBSCRIPTION STILL HAS A PERIOD END, and that end is the day
- * access stops rather than the day it renews. Saying "renews on" there would
- * be the page contradicting the cancellation the person just made.
- */
-function PlanPeriod({ plan }: { plan: PlanView }) {
-  const { t } = useTranslation();
-  if (plan.currentPeriodEnd === null) return null;
-  const date = new Date(plan.currentPeriodEnd).toLocaleDateString();
-  return (
-    <p className="text-sm">{plan.cancelAtPeriodEnd ? t('plan.endsOn', { date }) : t('plan.renewsOn', { date })}</p>
   );
 }
 
@@ -369,6 +364,7 @@ export default function SettingsPlan() {
   return (
     <PlanScreen
       state={state}
+      standing={standing}
       offer={offer}
       selectedPlan={selectedPlan}
       onSelectPlan={setPickedPlan}

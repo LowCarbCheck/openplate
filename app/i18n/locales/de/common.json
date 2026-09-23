@@ -3363,6 +3363,13 @@
       "monthlyEquivalent": "Works out at {{price}} a month.",
       "saving": "{{saving}} less than twelve monthly payments.",
       "pickFirst": "Pick a plan to go on."
+    },
+    "card": {
+      "name": {
+        "month": "Monthly plan",
+        "year": "Yearly plan"
+      },
+      "yearThenMonthly": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month."
     }
   },
   "usual": {

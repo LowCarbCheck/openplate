@@ -32,6 +32,21 @@ import { withI18n } from './trends-i18n-harness';
 import { PlanScreen, readCheckoutReturn, readPlanParam, type PlanReadState } from '../../app/routes/settings.plan';
 import { planOfferSchema, type PlanKey, type PlanOffer, type PlanView } from '../../app/lib/sync/engine/client/plans-wire';
 import fixtureOffer from '../fixtures/plan-offer.json';
+import { planStanding } from '../../app/lib/plans/plan-standing';
+import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
+
+/** An instance whose handshake says a biller stands behind it. */
+const SELLING: InstanceDescriptor = {
+  name: 'Example',
+  language: 'de',
+  mail: true,
+  memberInvites: true,
+  plans: true,
+  ai: { model: 'fake/vision-1' },
+};
+
+/** The clock every render reads, before the fixture period ends. */
+const NOW = new Date('2026-09-23T12:00:00.000Z');
 import enCommon from '../../app/i18n/locales/en/common.json';
 
 const PAID: PlanView = {
@@ -42,6 +57,12 @@ const PAID: PlanView = {
   cancelAtPeriodEnd: false,
   portalAvailable: true,
 };
+
+/** A subscription that is over, from somebody the biller still holds a customer for. */
+const LAPSED: PlanView = { ...PAID, plan: 'canceled', currentPeriodEnd: '2026-08-09T00:00:00.000Z' };
+
+/** A yearly subscription that renews into the monthly plan. */
+const YEARLY: PlanView = { ...PAID, planKey: 'yearly', interval: 'year', currentPeriodEnd: '2027-03-15T10:00:00.000Z' };
 
 function render(
   state: PlanReadState,
@@ -57,6 +78,12 @@ function render(
     withI18n(
       createElement(PlanScreen, {
         state,
+        standing: planStanding({
+          instance: SELLING,
+          account: null,
+          planView: state.kind === 'ready' ? state.plan : null,
+          now: NOW,
+        }),
         offer: overrides.offer ?? null,
         selectedPlan: overrides.selectedPlan ?? null,
         onSelectPlan: () => undefined,
@@ -76,8 +103,8 @@ function buttonCount(markup: string): number {
 }
 
 describe('the plan page', () => {
-  it('draws both buttons for an account the biller holds a customer for', () => {
-    const markup = render({ kind: 'ready', plan: PAID });
+  it('draws both buttons for a lapsed account the biller holds a customer for', () => {
+    const markup = render({ kind: 'ready', plan: LAPSED });
     assert.equal(buttonCount(markup), 2);
     assert.ok(markup.includes(enCommon.plan.start));
     assert.ok(markup.includes(enCommon.plan.manage));
@@ -87,7 +114,7 @@ describe('the plan page', () => {
     // THE CONTROL for the case above. The biller answers a machine coded 404
     // for an account with no customer row, so the button would have exactly
     // one outcome, and it is a failure.
-    const markup = render({ kind: 'ready', plan: { ...PAID, portalAvailable: false } });
+    const markup = render({ kind: 'ready', plan: { ...LAPSED, portalAvailable: false } });
     assert.equal(buttonCount(markup), 1);
     assert.equal(markup.includes(enCommon.plan.manage), false);
   });
@@ -112,7 +139,7 @@ describe('the plan page', () => {
   it('says the price includes VAT on the screen a consumer reads', () => {
     // M213 spec 07 item 2: no place shows a consumer a net price, and every
     // place that discusses one says so.
-    assert.ok(render({ kind: 'ready', plan: PAID }).includes(enCommon.plan.vatNote));
+    assert.ok(render({ kind: 'ready', plan: LAPSED }).includes(enCommon.plan.vatNote));
   });
 
   it('offers no button in any state where pressing one could not work', () => {
@@ -136,7 +163,7 @@ describe('the plan page', () => {
   });
 
   it('shows the failure of a press without losing the buttons', () => {
-    const markup = render({ kind: 'ready', plan: PAID }, { actionFailed: true });
+    const markup = render({ kind: 'ready', plan: LAPSED }, { actionFailed: true });
     assert.ok(markup.includes(enCommon.plan.actionFailed));
     assert.equal(buttonCount(markup), 2, 'a failed press left nothing to try again with');
   });
@@ -203,5 +230,56 @@ describe('the plan a link names', () => {
     assert.equal(readPlanParam('Yearly'), null);
     assert.equal(readPlanParam('lifetime'), null);
     assert.equal(readPlanParam(null), null);
+  });
+});
+
+/** The part of a catalog sentence before its date, so a rephrase does not fail and a swapped branch does. */
+function lead(sentence: string): string {
+  return sentence.split('{{date}}')[0] ?? '';
+}
+
+describe('the status card for a subscriber', () => {
+  it('shows a yearly subscriber their plan, the year turning monthly, and only the manage button', () => {
+    const markup = render({ kind: 'ready', plan: YEARLY });
+    assert.match(markup, /data-slot="plan-status-card" data-plan-key="yearly"/);
+    assert.ok(markup.includes(enCommon.plan.card.name.year));
+    assert.ok(markup.includes(lead(enCommon.plan.card.yearThenMonthly)));
+    assert.equal(buttonCount(markup), 1);
+    assert.ok(markup.includes(enCommon.plan.manage));
+    assert.equal(markup.includes(enCommon.plan.start), false, 'a subscriber was offered a second plan');
+  });
+
+  it('gives a monthly subscriber the renewal date and no yearly note', () => {
+    // THE CONTROL for the note above: same card, monthly plan.
+    const markup = render({ kind: 'ready', plan: PAID });
+    assert.ok(markup.includes(enCommon.plan.card.name.month));
+    assert.ok(markup.includes(lead(enCommon.plan.renewsOn)));
+    assert.equal(markup.includes(lead(enCommon.plan.card.yearThenMonthly)), false);
+  });
+
+  it('says a cancelled yearly plan ends, rather than that it turns monthly', () => {
+    const markup = render({ kind: 'ready', plan: { ...YEARLY, cancelAtPeriodEnd: true } });
+    assert.ok(markup.includes(lead(enCommon.plan.endsOn)));
+    assert.equal(markup.includes(lead(enCommon.plan.card.yearThenMonthly)), false);
+  });
+
+  it('names a payment Stripe is retrying', () => {
+    assert.ok(render({ kind: 'ready', plan: { ...YEARLY, plan: 'past_due' } }).includes(enCommon.plan.status.pastDue));
+    assert.equal(render({ kind: 'ready', plan: YEARLY }).includes(enCommon.plan.status.pastDue), false);
+  });
+
+  it('draws no button when there is no customer to open a portal onto', () => {
+    assert.equal(buttonCount(render({ kind: 'ready', plan: { ...YEARLY, portalAvailable: false } })), 0);
+  });
+
+  it('is not drawn for somebody without a plan, who gets the order instead', () => {
+    const markup = render({ kind: 'ready', plan: { ...PAID, plan: 'none', planKey: null, interval: null } });
+    assert.equal(markup.includes('data-slot="plan-status-card"'), false);
+    assert.ok(markup.includes(enCommon.plan.start));
+  });
+
+  it('thanks a returning subscriber above the card', () => {
+    const markup = render({ kind: 'ready', plan: YEARLY }, { checkoutReturn: 'success' });
+    assert.ok(markup.indexOf(enCommon.plan.returned.success) < markup.indexOf('data-slot="plan-status-card"'));
   });
 });
