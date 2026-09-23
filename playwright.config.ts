@@ -53,6 +53,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
 import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_MATOMO_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
+import { buildTierServerCommand } from './tests/e2e/server-env';
 
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
@@ -120,24 +121,17 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command:
-      `cross-env NODE_ENV=production PORT=${E2E_APP_PORT} HOST=127.0.0.1 ` +
-      `APP_URL=${E2E_APP_URL} SYNC_SERVER_URL=${E2E_SYNC_SERVER_URL} ` +
-      // THE LEGAL PAGES COME FROM A FIXTURE FOLDER (see `CONTENT_DIR` above).
-      // Unset, every content route would 404 and the footer would lose its
-      // five legal links, which several specs here count.
-      `CONTENT_DIR=${CONTENT_DIR} ` +
-      // THE FOOD DATABASE IS A FAKE IN THIS TIER (`tests/e2e/fake-food-db.ts`).
-      // Left unset, the production server asks the real lowcarbcheck.org, so a
-      // smoke tier would depend on somebody else's uptime and assert against
-      // numbers this repository does not hold.
-      `FOOD_DB_API_URL=${E2E_FOOD_DB_URL} ` +
-      // ANALYTICS ARE ON IN THIS TIER, pointed at a loopback origin that
-      // serves nothing (`E2E_MATOMO_URL`), so the plans funnel spec can read
-      // the events off the wire. Every other spec loads no tracker, because
-      // `matomo.js` 404s there. The consumer instance runs with analytics on,
-      // so this is closer to production, not further from it.
-      `MATOMO_URL=${E2E_MATOMO_URL} MATOMO_SITE_ID=1 tsx ./server.ts`,
+    // THE ENVIRONMENT IS BUILT IN `tests/e2e/server-env.ts`, which also keeps
+    // this server off the network: no release check against GitHub, so the
+    // tier never turns red because somebody tagged a release.
+    command: buildTierServerCommand({
+      port: E2E_APP_PORT,
+      appUrl: E2E_APP_URL,
+      syncServerUrl: E2E_SYNC_SERVER_URL,
+      contentDir: CONTENT_DIR,
+      foodDbUrl: E2E_FOOD_DB_URL,
+      matomoUrl: E2E_MATOMO_URL,
+    }),
     url: `${E2E_APP_URL}/`,
     // NEVER REUSE. A server left over from an earlier run is serving an earlier
     // build, which is the "you verified yesterday's build" failure.

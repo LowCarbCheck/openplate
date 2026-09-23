@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 import { E2E_FOOD_DB_URL, E2E_SYNC_SERVER_URL } from './env';
+import { buildManagedServerEnv } from './server-env';
 
 /** The checkout root, where `server.ts` and the build live. */
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -114,17 +115,21 @@ export async function startManagedAppServer(): Promise<ManagedAppServer> {
   const url = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, ['--import', 'tsx', './server.ts'], {
     cwd: REPO_ROOT,
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      PORT: String(port),
-      HOST: '127.0.0.1',
-      APP_URL: url,
-      SYNC_SERVER_URL: E2E_SYNC_SERVER_URL,
-      INSTANCE_MODE: 'managed',
-      CONTENT_DIR,
-      FOOD_DB_API_URL: E2E_FOOD_DB_URL,
-    },
+    // The hermetic set (`server-env.ts`) is laid over these, so this server
+    // never asks GitHub for a release either.
+    env: buildManagedServerEnv({
+      inherited: process.env,
+      values: {
+        NODE_ENV: 'production',
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        APP_URL: url,
+        SYNC_SERVER_URL: E2E_SYNC_SERVER_URL,
+        INSTANCE_MODE: 'managed',
+        CONTENT_DIR,
+        FOOD_DB_API_URL: E2E_FOOD_DB_URL,
+      },
+    }),
     stdio: 'ignore',
   });
   try {
