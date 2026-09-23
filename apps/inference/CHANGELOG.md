@@ -5,6 +5,16 @@ All notable changes to `openplate-inference` are recorded here. The format follo
 [semantic versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, a breaking
 change moves the minor.
 
+## [Unreleased]
+
+### Changed
+
+- **The plate contract knows the client's flags and translations.** openplate
+  now asks every provider for `flags` (food cautions) and `translations` (the
+  food's name in each app language). The vendored contract accepts both as
+  optional fields, and its JSON Schema lists them. This service does not fill
+  them yet. openplate reads an answer without them as before.
+
 ## [0.1.4] - 2026-09-20
 
 ### Added

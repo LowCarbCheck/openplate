@@ -64,6 +64,64 @@ export const ServingSizeSchema = z.object({
 });
 
 /**
+ * openplate's pregnancy categories (`PREGNANCY_CATEGORIES`, M219 spec 01),
+ * transcribed. The model classifies every food; the device decides what to show.
+ */
+export const PREGNANCY_CATEGORIES = [
+  'raw-dairy',
+  'soft-cheese',
+  'raw-meat',
+  'raw-egg',
+  'raw-fish',
+  'smoked-fish',
+  'high-mercury-fish',
+  'liver-retinol',
+  'alcohol',
+  'caffeine',
+  'raw-sprouts',
+] as const;
+
+/** The 14 allergens EU Regulation 1169/2011 Annex II requires a label to declare (openplate's `ALLERGENS`). */
+export const ALLERGENS = [
+  'gluten',
+  'crustaceans',
+  'eggs',
+  'fish',
+  'peanuts',
+  'soybeans',
+  'milk',
+  'nuts',
+  'celery',
+  'mustard',
+  'sesame',
+  'sulphites',
+  'lupin',
+  'molluscs',
+] as const;
+
+/** openplate's `RawFoodFlagsSchema`: three enum arrays, each empty when nothing applies. */
+export const FoodFlagsSchema = z.object({
+  pregnancy: z.array(z.enum(PREGNANCY_CATEGORIES)),
+  allergens: z.array(z.enum(ALLERGENS)),
+  mayContain: z.array(z.enum(ALLERGENS)),
+});
+
+/**
+ * openplate's app languages (`SUPPORTED_LANGUAGES` in
+ * `app/i18n/language-prefs.ts`), transcribed. The parity test compares the two
+ * lists, so a seventh language there fails here until it is added.
+ */
+export const APP_LANGUAGES = ['en', 'de', 'fr', 'it', 'es', 'tr'] as const;
+
+/**
+ * openplate's `RawFoodTranslationsSchema` (M251 spec 02): the same food named
+ * in every app language, one key per code in {@link APP_LANGUAGES}.
+ */
+export const FoodTranslationsSchema = z.object(
+  Object.fromEntries(APP_LANGUAGES.map((code) => [code, z.string()])),
+);
+
+/**
  * The base per-item shape, byte-for-byte the client's contract. Kept separate
  * from `IdentifiedFoodSchema` so the parity test can compare exactly this
  * against openplate's `RawIdentifiedFoodSchema` without the two forward-looking
@@ -96,6 +154,19 @@ export const BaseIdentifiedFoodSchema = z.object({
    * still read the panel, and `null` already means "not decided".
    */
   carbBasis: z.enum(CARB_BASES).nullable().catch(null),
+  /**
+   * `flags` (openplate M219) and `translations` (openplate M251) are REQUIRED
+   * in the client's wire schema, which is what a cloud provider is asked for.
+   * They are `.optional()` HERE, the one departure from the shape rules above,
+   * because this service's pipeline does not produce either yet, and the
+   * client parses both leniently: an answer without them still opens the
+   * review screen, with no flags and the name as the only translation. The
+   * derived JSON Schema still lists them as required (`applyStrictModeRules`
+   * makes every property required), so a model this service constrains with
+   * it is asked for both.
+   */
+  flags: FoodFlagsSchema.optional(),
+  translations: FoodTranslationsSchema.optional(),
 });
 
 /**

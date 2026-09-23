@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
+  APP_LANGUAGES,
   BaseIdentifiedFoodSchema,
   BasePlateIdentificationSchema,
   MacrosSchema,
@@ -36,6 +37,7 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OPENPLATE_SCHEMA_PATH = resolve(here, '../../../openplate/app/services/vision/schema.ts');
+const OPENPLATE_LANGUAGES_PATH = resolve(here, '../../../openplate/app/i18n/language-prefs.ts');
 
 const openplateAvailable = existsSync(OPENPLATE_SCHEMA_PATH);
 
@@ -100,6 +102,8 @@ describe('vendored PlateIdentification contract', () => {
       'brand',
       'servingSize',
       'carbBasis',
+      'flags',
+      'translations',
     ]);
     expect(PLATE_IDENTIFICATION_JSON_SCHEMA.$schema).toBeUndefined();
   });
@@ -141,5 +145,18 @@ describe('vendored PlateIdentification contract', () => {
     expect(source).toContain('brand: z.string().nullable()');
     expect(source).toContain('servingSize: RawServingSizeSchema.nullable()');
     expect(source).toContain('carbBasis: z.enum(CARB_BASES).nullable().catch(null)');
+    // The two the client added after the first transcription (M219, M251).
+    expect(source).toContain('flags: RawFoodFlagsSchema');
+    expect(source).toContain('translations: RawFoodTranslationsSchema');
+  });
+
+  it.skipIf(!openplateAvailable)('matches openplate on the list of app languages the translations are keyed by', () => {
+    const source = readFileSync(OPENPLATE_LANGUAGES_PATH, 'utf8');
+    const declared = /SUPPORTED_LANGUAGES = \[([^\]]*)\] as const/u.exec(source)?.[1] ?? '';
+    const codes = [...declared.matchAll(/'([a-z]{2})'/gu)].map((match) => match[1]);
+    expect(codes).toEqual([...APP_LANGUAGES]);
+    // Keyed by that list, in the schema the client asks every provider for.
+    const translations = PLATE_IDENTIFICATION_JSON_SCHEMA.properties?.foods?.items?.properties?.translations;
+    expect(translations?.required).toEqual([...APP_LANGUAGES]);
   });
 });
