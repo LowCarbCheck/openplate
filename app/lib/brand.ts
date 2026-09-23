@@ -27,6 +27,15 @@ export const REPO_URL = 'https://github.com/LowCarbCheck/openplate';
  */
 export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
+/**
+ * The self-hosting guide on the project site (M250/10), where the plan page's
+ * free card sends somebody who would rather run openplate themselves. The
+ * site renders `docs/self-hosting.md` from the repository above, translated,
+ * and it is the one place that walkthrough is kept. A fork that keeps its own
+ * guide changes this line with {@link REPO_URL}.
+ */
+export const SELF_HOSTING_DOCS_URL = 'https://openplate.de/docs/app/self-hosting';
+
 /*
  * `APP_VERSION` used to live here: a hand-copied mirror of `package.json`'s
  * `version`, with a unit test to stop it drifting. It is gone. The version now

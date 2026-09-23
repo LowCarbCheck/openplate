@@ -24,6 +24,8 @@ const catalogSchema = z.object({
   }),
   nav: z.object({
     trends: z.string(),
+    plan: z.string(),
+    settings: z.string(),
   }),
   welcome: z.object({
     start: z.string(),
@@ -144,6 +146,9 @@ const catalogSchema = z.object({
     offer: z.object({ from: z.string() }),
     recap: z.object({ meals_one: z.string(), mealsSoFar_one: z.string() }),
     manage: z.string(),
+    endsOn: z.string(),
+    status: z.object({ active: z.string(), paidUntil: z.string() }),
+    selfHost: z.object({ title: z.string(), link: z.string() }),
     returned: z.object({ success: z.string() }),
     card: z.object({
       name: z.object({ month: z.string(), year: z.string() }),

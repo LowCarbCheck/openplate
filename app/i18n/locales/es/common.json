@@ -1421,7 +1421,8 @@
     "scan": "Escanear",
     "settings": "Ajustes",
     "trends": "Análisis",
-    "pantry": "Despensa"
+    "pantry": "Despensa",
+    "plan": "Plan"
   },
   "nutrients": {
     "amount": {
@@ -3369,7 +3370,9 @@
       "trialing": "Tu periodo de prueba está activo.",
       "active": "Tu plan está pagado y activo.",
       "pastDue": "No se pudo procesar tu último pago.",
-      "canceled": "Tu plan ha terminado."
+      "canceled": "Tu plan ha terminado.",
+      "paidUntil": "Tu plan está pagado hasta el {{date}} y no se renueva.",
+      "doesNotRenew": "Tu plan está pagado y no se renueva."
     },
     "renewsOn": "Se renueva el {{date}} hasta que lo canceles.",
     "endsOn": "Cancelaste la suscripción. Tu acceso dura hasta el {{date}} y luego se detiene.",
@@ -3425,6 +3428,12 @@
       "meals_other": "En tu prueba registraste {{count}} comidas con IA.",
       "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
       "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+    },
+    "selfHost": {
+      "title": "Aloja openplate tú mismo",
+      "price": "Gratis",
+      "body": "Todas las funciones, en un servidor que gestionas tú. No hay nada que contratar aquí.",
+      "link": "Cómo alojarlo tú mismo"
     }
   },
   "usual": {

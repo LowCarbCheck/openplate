@@ -1421,7 +1421,8 @@
     "scan": "Scansiona",
     "settings": "Impostazioni",
     "trends": "Analisi",
-    "pantry": "Dispensa"
+    "pantry": "Dispensa",
+    "plan": "Piano"
   },
   "nutrients": {
     "amount": {
@@ -3369,7 +3370,9 @@
       "trialing": "La tua prova è attiva.",
       "active": "Il tuo piano è pagato e attivo.",
       "pastDue": "L'ultimo pagamento non è andato a buon fine.",
-      "canceled": "Il tuo piano è terminato."
+      "canceled": "Il tuo piano è terminato.",
+      "paidUntil": "Il tuo piano è pagato fino al {{date}} e non si rinnova.",
+      "doesNotRenew": "Il tuo piano è pagato e non si rinnova."
     },
     "renewsOn": "Si rinnova il {{date}} fino all'eventuale disdetta.",
     "endsOn": "Hai disdetto l'abbonamento. L'accesso rimane valido fino al {{date}}, poi si interrompe.",
@@ -3425,6 +3428,12 @@
       "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA.",
       "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
       "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+    },
+    "selfHost": {
+      "title": "Esegui openplate in autonomia",
+      "price": "Gratis",
+      "body": "Tutte le funzionalità, su un server gestito da te. Niente da acquistare qui.",
+      "link": "Come fare self-hosting"
     }
   },
   "usual": {

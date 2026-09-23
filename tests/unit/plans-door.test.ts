@@ -15,6 +15,7 @@ import {
   PLAN_PAGE_HREF,
   checkoutLocaleFor,
   offerLocaleFor,
+  hasPlanNavigationEntry,
   hasPlansDoor,
   requirePlansDoor,
 } from '../../app/lib/plans/plans-door';
@@ -139,5 +140,18 @@ describe('the offer language', () => {
     // THE CONTROL for the case above: a real language, just not one of the six.
     assert.equal(offerLocaleFor('pt-BR'), 'de');
     assert.equal(offerLocaleFor(''), 'de');
+  });
+});
+
+describe('the plan entry in the navigation (M250)', () => {
+  it('is drawn for a signed-in person on an instance that sells plans', () => {
+    assert.equal(hasPlanNavigationEntry({ instance: { ...INSTANCE, plans: true }, isSignedIn: true }), true);
+  });
+
+  it('is not drawn on an instance without plans, for nobody signed in, or before the handshake answered', () => {
+    // Each is the case above with one fact changed, so each is its control.
+    assert.equal(hasPlanNavigationEntry({ instance: { ...INSTANCE, plans: false }, isSignedIn: true }), false);
+    assert.equal(hasPlanNavigationEntry({ instance: { ...INSTANCE, plans: true }, isSignedIn: false }), false);
+    assert.equal(hasPlanNavigationEntry({ instance: null, isSignedIn: true }), false);
   });
 });

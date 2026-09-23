@@ -1421,7 +1421,8 @@
     "scan": "Scanner",
     "settings": "Paramètres",
     "trends": "Analyses",
-    "pantry": "Garde-manger"
+    "pantry": "Garde-manger",
+    "plan": "Forfait"
   },
   "nutrients": {
     "amount": {
@@ -3369,7 +3370,9 @@
       "trialing": "Ton essai est en cours.",
       "active": "Ton forfait est payé et actif.",
       "pastDue": "Ton dernier paiement n'a pas abouti.",
-      "canceled": "Ton forfait a pris fin."
+      "canceled": "Ton forfait a pris fin.",
+      "paidUntil": "Ton forfait est payé jusqu'au {{date}} et ne se renouvelle pas.",
+      "doesNotRenew": "Ton forfait est payé et ne se renouvelle pas."
     },
     "renewsOn": "Il se renouvelle le {{date}}, sauf si tu résilies.",
     "endsOn": "Tu as résilié. Ton accès reste valable jusqu'au {{date}}, puis s'arrête.",
@@ -3425,6 +3428,12 @@
       "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
       "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
       "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+    },
+    "selfHost": {
+      "title": "Héberge openplate toi-même",
+      "price": "Gratuit",
+      "body": "Toutes les fonctionnalités, sur ton propre serveur. Rien à commander ici.",
+      "link": "Comment l'auto-héberger"
     }
   },
   "usual": {

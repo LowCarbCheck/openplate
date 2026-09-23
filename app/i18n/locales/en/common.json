@@ -1421,7 +1421,8 @@
     "scan": "Scan",
     "settings": "Settings",
     "trends": "Insights",
-    "pantry": "Pantry"
+    "pantry": "Pantry",
+    "plan": "Plan"
   },
   "nutrients": {
     "amount": {
@@ -3369,7 +3370,9 @@
       "trialing": "Your trial is running.",
       "active": "Your plan is paid and running.",
       "pastDue": "Your last payment did not go through.",
-      "canceled": "Your plan has ended."
+      "canceled": "Your plan has ended.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "It renews on {{date}} until you cancel.",
     "endsOn": "You cancelled. Your access runs to {{date}} and then stops.",
@@ -3425,6 +3428,12 @@
       "meals_other": "In your trial you logged {{count}} meals with AI.",
       "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
       "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+    },
+    "selfHost": {
+      "title": "Run openplate yourself",
+      "price": "Free",
+      "body": "Every feature, on a server you run. Nothing to order here.",
+      "link": "How to self-host"
     }
   },
   "usual": {

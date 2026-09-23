@@ -65,6 +65,22 @@ export function hasPlansDoor(instance: InstanceDescriptor | null): boolean {
   return instance?.plans ?? false;
 }
 
+/**
+ * Whether the navigation draws an entry to the plan page (M250): only for a
+ * signed-in person, and only on an instance that sells plans. Pure, so the
+ * rule is testable without a shell; `usePlanNavigationEntry` feeds it a
+ * descriptor read fresh when the shell mounted.
+ */
+export function hasPlanNavigationEntry({
+  instance,
+  isSignedIn,
+}: {
+  instance: InstanceDescriptor | null;
+  isSignedIn: boolean;
+}): boolean {
+  return isSignedIn && hasPlansDoor(instance);
+}
+
 /** Reads the descriptor of one server. The seam {@link requirePlansDoor} reads through. */
 export type InstanceReader = (serverUrl: string) => Promise<InstanceDescriptor | null>;
 

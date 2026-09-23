@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
 import { PlanChoice } from '#app/components/plans/plan-choice';
+import { SelfHostCard } from '#app/components/plans/self-host-card';
 import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { DATE_SLOT, TERMS_SLOT, type PlanKey, type PlanOffer } from '#app/lib/sync/engine/client/plans-wire';
@@ -167,6 +168,11 @@ export function PlanOrder({
         {/* THE PRICES ARE DATA. Every figure on the cards is the biller's
             `grossCents`, or arithmetic on it (`plan-prices.ts`), and the term
             under each is the biller's own sentence. */}
+        {/* THE FREE WAY FIRST, and only on a first order (M250/10). It is
+            not part of the choice below: the radio group, the boxes and the
+            button are about the paid plans alone. A subscriber moving to the
+            yearly plan is not told about it again. */}
+        {mode.kind === 'first' && <SelfHostCard />}
         <PlanChoice plans={plans} selectedKey={selectedPlan} onSelect={onSelectPlan} placement="plan-page" />
 
         <ul data-slot="plan-order-summary" className="list-disc space-y-1 pl-5 text-sm">

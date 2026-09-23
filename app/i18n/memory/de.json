@@ -1266,6 +1266,13 @@
     "at": "2026-09-14",
     "de": "Fasten läuft seit {{elapsed}}. Ziel {{target}}."
   },
+  "108b845064d88946": {
+    "en": "Your plan is paid and does not renew.",
+    "path": "common:plan.status.doesNotRenew",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Dein Tarif ist bezahlt und verlängert sich nicht."
+  },
   "108daa8a4b23708d": {
     "en": "These numbers look inconsistent ({{stated}} kcal vs ~{{computed}} from the macros), double-check before logging.",
     "path": "common:scan.review.sanity.kcalMismatch",
@@ -1846,6 +1853,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "de": "Sulfite"
+  },
+  "1831b9d9e003eb8f": {
+    "en": "Run openplate yourself",
+    "path": "common:plan.selfHost.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "openplate selbst betreiben"
   },
   "185c28f5b2cd7df9": {
     "en": "{{value}} g fiber",
@@ -8364,6 +8378,13 @@
     "at": "2026-09-14",
     "de": "Gerade eben geprüft. Die nächste Prüfung ist um {{when}} möglich."
   },
+  "7366904534ee2082": {
+    "en": "Your plan is paid until {{date}} and does not renew.",
+    "path": "common:plan.status.paidUntil",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Dein Tarif ist bis zum {{date}} bezahlt und verlängert sich nicht."
+  },
   "7375c457b8dda14b": {
     "en": "Not synced from this device yet",
     "path": "common:sync.status.never",
@@ -13726,6 +13747,13 @@
     "at": "2026-09-14",
     "de": "Essen eintragen · openplate"
   },
+  "ba61f1729ec627dd": {
+    "en": "Plan",
+    "path": "common:nav.plan",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Tarif"
+  },
   "ba9b138ad999f394": {
     "en": "Still interested? Here's the deal: openplate doesn't run its own AI, so it can't offer free photo scans. Instead you bring <strong>your own key</strong> from an AI company, and openplate uses it to read your plate photos: your key, your provider, your data. The key lives only on this device: openplate never sends it anywhere but the provider you choose below, and never stores or sees it on its own server.",
     "path": "common:settingsAi.explainer.byok",
@@ -14082,6 +14110,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Niemand hier gehört zu \"{{group}}\"."
+  },
+  "bffcaaa8587c6bc5": {
+    "en": "Free",
+    "path": "common:plan.selfHost.price",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Kostenlos"
   },
   "c00846140d165224": {
     "en": "There is nothing at this address.",
@@ -16666,6 +16701,13 @@
     "at": "2026-09-14",
     "de": "Wähl ein Modell."
   },
+  "e4970642eb3bcd94": {
+    "en": "Every feature, on a server you run. Nothing to order here.",
+    "path": "common:plan.selfHost.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Alle Funktionen auf einem Server, den du selbst betreibst. Hier gibt es nichts zu bestellen."
+  },
   "e4a193e95d5b8dcb": {
     "en": "This app and the sync server don’t speak the same version yet, so syncing is paused on purpose.",
     "path": "common:sync.status.error.incompatible",
@@ -18583,6 +18625,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dein Browser fragt nicht mehr. Erlaube Benachrichtigungen in den Website-Einstellungen."
+  },
+  "fdb635be0ee9b34a": {
+    "en": "How to self-host",
+    "path": "common:plan.selfHost.link",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "So hostest du selbst"
   },
   "fdc79967bbe743d0": {
     "en": "{{value}} g still needed",

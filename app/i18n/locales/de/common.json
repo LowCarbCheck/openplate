@@ -1421,7 +1421,8 @@
     "scan": "Scannen",
     "settings": "Einstellungen",
     "trends": "Einblicke",
-    "pantry": "Vorratskammer"
+    "pantry": "Vorratskammer",
+    "plan": "Tarif"
   },
   "nutrients": {
     "amount": {
@@ -3369,7 +3370,9 @@
       "trialing": "Deine Testphase läuft.",
       "active": "Dein Tarif ist bezahlt und aktiv.",
       "pastDue": "Deine letzte Zahlung hat nicht geklappt.",
-      "canceled": "Dein Tarif ist beendet."
+      "canceled": "Dein Tarif ist beendet.",
+      "paidUntil": "Dein Tarif ist bis zum {{date}} bezahlt und verlängert sich nicht.",
+      "doesNotRenew": "Dein Tarif ist bezahlt und verlängert sich nicht."
     },
     "renewsOn": "Verlängert sich am {{date}}, solange du nicht kündigst.",
     "endsOn": "Du hast gekündigt. Dein Zugriff läuft noch bis zum {{date}} und endet dann.",
@@ -3425,6 +3428,12 @@
       "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst.",
       "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
       "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+    },
+    "selfHost": {
+      "title": "openplate selbst betreiben",
+      "price": "Kostenlos",
+      "body": "Alle Funktionen auf einem Server, den du selbst betreibst. Hier gibt es nichts zu bestellen.",
+      "link": "So hostest du selbst"
     }
   },
   "usual": {
