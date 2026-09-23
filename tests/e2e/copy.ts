@@ -97,6 +97,7 @@ const catalogSchema = z.object({
   recipes: z.object({
     servingsEaten: z.object({ increase: z.string(), logOf: z.string() }),
     macros: z.object({ ofLeft: z.string() }),
+    asking: z.string(),
   }),
   portions: z.object({
     unit: z.object({ serving_other: z.string() }),

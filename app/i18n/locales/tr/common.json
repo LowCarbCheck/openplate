@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "Bu işe yaramadı",
       "failed": "Bir yemek oluşturamadık. Birazdan tekrar dene.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "Bu günlüğe kaydedilemedi. Birazdan yeniden dene."
     }
   },

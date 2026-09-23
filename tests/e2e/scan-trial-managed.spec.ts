@@ -18,6 +18,8 @@
  * that says 2 after a scan can only have read the response header, and the
  * spec counts account reads to show no refetch happened.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
 
@@ -36,6 +38,12 @@ const BOOT_BUDGET_MS = 90_000;
 
 /** A walk through four screens takes longer than the tier's 30 s per spec. */
 const WALK_BUDGET_MS = 90_000;
+
+/** The recipes screen's sentence for an instance with no model, read from the shipped English bundle. */
+const NO_MODEL_SENTENCE = z
+  .object({ recipes: z.object({ errors: z.object({ noModel: z.string() }) }) })
+  .parse(JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8'))).recipes.errors
+  .noModel;
 
 /** The scans the stubbed account says are left, on every read. */
 const ACCOUNT_SCANS_LEFT = 3;
@@ -97,10 +105,11 @@ interface ProxyCall {
   intakeId: string | null;
 }
 
-/** What the stubs saw. */
+/** What the stubs saw, and the model the handshake names, which a spec may change between loads. */
 interface Recorded {
   calls: ProxyCall[];
   accountReads: number;
+  model: string | null;
 }
 
 let server: ManagedAppServer;
@@ -132,7 +141,7 @@ function corsHeaders(request: Request) {
 
 /** Routes the handshake, the plan reads, the account and the proxy. */
 async function routeManagedCore(page: Page): Promise<Recorded> {
-  const recorded: Recorded = { calls: [], accountReads: 0 };
+  const recorded: Recorded = { calls: [], accountReads: 0, model: 'e2e-model' };
   let scansLeft = ACCOUNT_SCANS_LEFT;
 
   await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) =>
@@ -148,7 +157,7 @@ async function routeManagedCore(page: Page): Promise<Recorded> {
           memberInvites: false,
           plans: true,
           openSignup: true,
-          ai: { model: 'e2e-model' },
+          ai: { model: recorded.model },
           trial: { scans: 10 },
         },
       },
@@ -315,4 +324,26 @@ test('a second photo, a typed meal, a pantry read and a recipe round each send o
   const ids = recorded.calls.map((call) => call.intakeId);
   expect(ids.every((id) => id !== null), 'an action sent no intake id').toBe(true);
   expect(new Set(ids).size, 'two actions shared one intake id').toBe(ids.length);
+});
+
+test('a recipe round on an instance with no model says so instead of waiting', async ({ page }) => {
+  const recorded = await routeManagedCore(page);
+  await signInManaged(page);
+
+  // A pantry to ask about, read while the instance still names a model.
+  await page.goto(`${server.url}/pantry`);
+  await page
+    .locator('main div.max-w-xl input[type="file"][capture]')
+    .setInputFiles({ name: 'shelf.png', mimeType: 'image/png', buffer: PIXEL_PNG });
+  await expect(page.getByText(EN.pantry.review.title)).toBeVisible({ timeout: 10_000 });
+  await page.getByRole('button', { name: EN.pantry.review.confirm }).click();
+  await expect.poll(() => pantryRowsOnDisk(page)).toBe(1);
+
+  // The operator's model goes away. A document load reads the handshake again.
+  recorded.model = null;
+  await page.goto(`${server.url}/pantry/recipes`);
+  await expect(page.getByText(NO_MODEL_SENTENCE)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(EN.recipes.asking)).toHaveCount(0);
+  // THE CONTROL is the walk above, where the same screen with a model sends a round.
+  expect(recorded.calls.filter((call) => call.task === 'recipe_proposals')).toEqual([]);
 });

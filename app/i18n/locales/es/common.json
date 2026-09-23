@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "No ha funcionado",
       "failed": "No pudimos crear una comida. Inténtalo de nuevo en un momento.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "No pudimos registrar eso. Inténtalo de nuevo en un momento."
     }
   },

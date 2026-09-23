@@ -45,6 +45,7 @@ import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert'
 import { MealSelectField } from '#app/components/meal-select-field';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { newIntakeId } from '#app/lib/plans/trial-scans';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
@@ -470,6 +471,12 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const effective = useEffectiveAiSettings(loaderData.settings);
+  // WHETHER THE HANDSHAKE HAS ANSWERED, and with which model. A managed
+  // instance whose handshake names no model has nothing to buy a round with,
+  // and that must be said rather than waited for (M253/05, below).
+  const instanceRead = useServerInstanceRead();
+  const hasNoManagedModel =
+    effective?.source === 'managed' && instanceRead.isSettled && (instanceRead.instance?.ai?.model ?? null) === null;
   const [searchParams, setSearchParams] = useSearchParams();
   const [phase, setPhase] = useState<RecipePhase>({ kind: 'asking' });
   const [isLogging, setIsLogging] = useState(false);
@@ -505,12 +512,19 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
     // back to the connect card below, and the ref stays empty so the answer is
     // bought the moment a connection resolves.
     if (effective === null) return;
+    // AN INSTANCE WITH NO MODEL AT ALL is a failure to show, not a wait: the
+    // handshake has answered and named none, so no round can be bought.
+    if (hasNoManagedModel) {
+      setPhase({ kind: 'failed', message: t('recipes.errors.noModel') });
+      return;
+    }
     // A MANAGED MODEL NOT READ YET is no answer to buy with (M253/05). The
     // first render resolves the managed settings before the handshake's model
     // has landed (`useEffectiveAiSettings` starts it at `null`), and buying
     // then failed the round with no request sent and locked the slot below,
     // so a managed instance never proposed a recipe on arrival. The effect
-    // runs again when the model arrives.
+    // runs again when the model arrives, or when the handshake says there is
+    // none (the branch above).
     if (effective.source === 'managed' && effective.model === null) return;
     if (boughtForRef.current === slot) return;
     boughtForRef.current = slot;
@@ -540,7 +554,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
       }
       setPhase({ kind: 'ready', recipes: servable });
     })();
-  }, [effective, slot, i18n.language, t]);
+  }, [effective, hasNoManagedModel, slot, i18n.language, t]);
 
   const logRecipe = useCallback(
     async (recipe: RecipeProposal, servingsEaten: number): Promise<void> => {

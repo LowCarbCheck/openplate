@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "That did not work",
       "failed": "We could not build a meal. Try again in a moment.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "We could not log that. Try again in a moment."
     }
   },

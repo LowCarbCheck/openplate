@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "Operazione non riuscita",
       "failed": "Non è stato possibile creare un pasto. Riprova tra poco.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "Impossibile registrarlo. Riprova tra poco."
     }
   },

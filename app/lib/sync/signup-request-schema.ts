@@ -10,7 +10,12 @@
 import { z } from 'zod';
 
 import { describeEmailProblem } from './email';
-import { SIGNUP_CAPTCHA_FAILED, SIGNUP_EMAIL_DOMAIN_BLOCKED } from './engine/client/auth-wire';
+import {
+  SIGNUP_CAPTCHA_FAILED,
+  SIGNUP_CAPTCHA_UNAVAILABLE,
+  SIGNUP_EMAIL_DOMAIN_REFUSED,
+  SIGNUP_EMAIL_INVALID,
+} from './engine/client/auth-wire';
 import { isSyncRequestError } from './engine/client/sync-error';
 import type { Translate } from './setup-flow';
 
@@ -32,12 +37,16 @@ export function makeSignupRequestSchema(t: Translate) {
  * - `wait`: the service throttled this source; `minutes` is its own advice,
  *   rounded up, or `null` when it gave none.
  * - `captcha`: the challenge was refused; a new one may pass.
+ * - `captcha-unavailable`: the service could not ask the challenge provider; later may pass.
+ * - `email`: the service refused the address itself.
  * - `domain`: the service takes no sign-ups from that domain.
  * - `failed`: anything else, including an unreachable service.
  */
 export type SignupProblem =
   | { kind: 'wait'; minutes: number | null }
   | { kind: 'captcha' }
+  | { kind: 'captcha-unavailable' }
+  | { kind: 'email' }
   | { kind: 'domain' }
   | { kind: 'failed' };
 
@@ -56,6 +65,8 @@ export function describeSignupFailure(cause: unknown): SignupProblem {
     return { kind: 'wait', minutes: hasAdvice ? Math.ceil(seconds / SECONDS_PER_MINUTE) : null };
   }
   if (cause.code === SIGNUP_CAPTCHA_FAILED) return { kind: 'captcha' };
-  if (cause.code === SIGNUP_EMAIL_DOMAIN_BLOCKED) return { kind: 'domain' };
+  if (cause.code === SIGNUP_CAPTCHA_UNAVAILABLE) return { kind: 'captcha-unavailable' };
+  if (cause.code === SIGNUP_EMAIL_INVALID) return { kind: 'email' };
+  if (cause.code === SIGNUP_EMAIL_DOMAIN_REFUSED) return { kind: 'domain' };
   return { kind: 'failed' };
 }

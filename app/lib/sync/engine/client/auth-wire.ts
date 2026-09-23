@@ -303,16 +303,22 @@ export interface SignupRequestRequestWire {
 }
 
 /**
- * The two refusals of {@link SignupRequestRequestWire} a person can act on,
- * as the body's `error` code (a `400`). Transcribed, like every literal here.
+ * The refusals of {@link SignupRequestRequestWire} a person can act on, as the
+ * body's `error` code. Transcribed from `openplate-core` `PROTOCOL.md` §5.8.3
+ * (`src/accounts/open-signup.ts`), like every literal here.
  *
- * - `captcha-failed`: the challenge token was missing, spent or refused. A new
- *   challenge and the same address can succeed.
- * - `email-domain-blocked`: the service takes no sign-ups from that domain,
+ * - `400 email-invalid`: not an address the service accepts.
+ * - `400 email-domain-refused`: an address at a known throwaway mail service,
  *   so only another address can succeed.
+ * - `400 captcha-failed`: the challenge token was missing, spent or refused. A
+ *   new challenge and the same address can succeed.
+ * - `503 captcha-unavailable`: the service could not ask the challenge
+ *   provider. Nothing is wrong with the request; later can succeed.
  */
+export const SIGNUP_EMAIL_INVALID = 'email-invalid';
+export const SIGNUP_EMAIL_DOMAIN_REFUSED = 'email-domain-refused';
 export const SIGNUP_CAPTCHA_FAILED = 'captcha-failed';
-export const SIGNUP_EMAIL_DOMAIN_BLOCKED = 'email-domain-blocked';
+export const SIGNUP_CAPTCHA_UNAVAILABLE = 'captcha-unavailable';
 
 /** `POST /v1/auth/reset/open` — spends the mailed token for the escrowed code. */
 export interface ResetOpenRequestWire {

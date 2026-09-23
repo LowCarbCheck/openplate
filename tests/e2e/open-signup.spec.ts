@@ -47,8 +47,10 @@ const copySchema = z.object({
     trial_other: z.string(),
     wait_other: z.string(),
     captchaFailed: z.string(),
+    captchaUnavailable: z.string(),
     domainBlocked: z.string(),
   }),
+  sync: z.object({ email: z.object({ invalid: z.string() }) }),
 });
 const COPY = copySchema.parse(
   JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')),
@@ -328,6 +330,23 @@ test('the control: a 429 shows the wait from Retry-After and not the inbox line'
   await expect(page.locator('[data-slot="sign-up-sent"]')).toBeHidden();
 });
 
+test('a refused address and an unreachable challenge each get their own line, never the inbox line', async ({
+  page,
+}) => {
+  await routeHealth(page, { openSignup: true });
+  await routeSignupRequest(page, [
+    { status: 400, json: { error: 'email-invalid' } },
+    { status: 503, json: { error: 'captcha-unavailable' } },
+  ]);
+  await openSignUp(page);
+
+  await submitAddress(page, 'anna@example.org');
+  await expect(page.locator('[data-slot="sign-up-problem"]')).toHaveText(COPY.sync.email.invalid);
+  await page.getByRole('button', { name: COPY.signUp.submit }).click();
+  await expect(page.locator('[data-slot="sign-up-problem"]')).toHaveText(COPY.signUp.captchaUnavailable);
+  await expect(page.locator('[data-slot="sign-up-sent"]')).toBeHidden();
+});
+
 test('the free scans sentence comes from the handshake, and says nothing without it', async ({ page }) => {
   await routeHealth(page, { openSignup: true, trialScans: 10 });
   await openSignUp(page);
@@ -348,7 +367,7 @@ test('the challenge loads under the CSP, holds its box, rides with the request a
   await routeTurnstileStub(page, scriptGate.promise);
   const bodies = await routeSignupRequest(page, [
     { status: 400, json: { error: 'captcha-failed' } },
-    { status: 400, json: { error: 'email-domain-blocked' } },
+    { status: 400, json: { error: 'email-domain-refused' } },
     { status: 202, json: {} },
   ]);
   await page.goto(`${server.url}/sign-up`);

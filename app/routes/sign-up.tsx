@@ -256,6 +256,10 @@ function describeProblem(problem: SignupProblem, t: Translate): string {
     return problem.minutes === null ? t('signUp.waitLater') : t('signUp.wait', { count: problem.minutes });
   }
   if (problem.kind === 'captcha') return t('signUp.captchaFailed');
+  // The same sentence as a widget that never loaded: the check cannot run now.
+  if (problem.kind === 'captcha-unavailable') return t('signUp.captchaUnavailable');
+  // The shared address sentence, the one the field itself shows.
+  if (problem.kind === 'email') return t('sync.email.invalid');
   if (problem.kind === 'domain') return t('signUp.domainBlocked');
   return t('signUp.failed');
 }

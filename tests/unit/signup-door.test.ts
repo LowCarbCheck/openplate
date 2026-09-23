@@ -108,9 +108,16 @@ describe('describeSignupFailure', () => {
 
   it('reads the challenge and the domain refusals from their codes', () => {
     const captcha = new SyncRequestError({ kind: 'server', message: 'x', status: 400, code: 'captcha-failed' });
-    const domain = new SyncRequestError({ kind: 'server', message: 'x', status: 400, code: 'email-domain-blocked' });
+    const domain = new SyncRequestError({ kind: 'server', message: 'x', status: 400, code: 'email-domain-refused' });
     assert.deepEqual(describeSignupFailure(captcha), { kind: 'captcha' });
     assert.deepEqual(describeSignupFailure(domain), { kind: 'domain' });
+  });
+
+  it('reads the refused address and the unreachable challenge from their codes', () => {
+    const email = new SyncRequestError({ kind: 'server', message: 'x', status: 400, code: 'email-invalid' });
+    const unavailable = new SyncRequestError({ kind: 'server', message: 'x', status: 503, code: 'captcha-unavailable' });
+    assert.deepEqual(describeSignupFailure(email), { kind: 'email' });
+    assert.deepEqual(describeSignupFailure(unavailable), { kind: 'captcha-unavailable' });
   });
 
   it('answers "failed" for an unknown code and a transport failure, the control for both codes above', () => {

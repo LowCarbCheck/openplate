@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "L'opération a échoué",
       "failed": "Impossible de composer un repas. Réessaie dans un instant.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "Impossible d'enregistrer cela dans ton journal. Réessaie dans un instant."
     }
   },

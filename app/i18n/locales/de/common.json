@@ -3519,6 +3519,7 @@
     "errors": {
       "title": "Das hat nicht geklappt",
       "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal.",
+      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
       "logFailed": "Wir konnten das nicht eintragen. Versuche es gleich noch einmal."
     }
   },
