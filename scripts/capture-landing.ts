@@ -37,6 +37,7 @@
  */
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -47,6 +48,7 @@ import type { CdpPage } from './lib/cdp';
 import { buildLandingSeed, SEED_INSTANT, SEED_TIMEZONE } from './landing-seed';
 import { isLanguageCode, LANGUAGE_COOKIE, LANGUAGE_STORAGE_KEY, SUPPORTED_LANGUAGES } from '../app/i18n/language-prefs';
 import type { LanguageCode } from '../app/i18n/language-prefs';
+import { WHATS_NEW_STORAGE_KEY } from '../app/lib/whats-new';
 
 type Theme = 'light' | 'dark';
 
@@ -99,6 +101,26 @@ export const VIEWS: readonly LandingView[] = [
 const THEMES: readonly Theme[] = ['light', 'dark'];
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+/** The one field of `package.json` this script needs, read the same way `vite.config.ts`'s `packageVersion` does. */
+const packageVersionSchema = z.object({ version: z.string() });
+
+/**
+ * This checkout's own version, straight from `package.json`, not a literal.
+ *
+ * `BUILD.version` (`app/lib/build-info.ts`) is this exact field, injected by
+ * Vite's `define` at both dev and build time (see `vite.config.ts`'s
+ * `packageVersion`). Reading it the same way here, rather than pinning a
+ * version string, is what keeps `buildInitScript`'s what's-new seed correct
+ * across every future release without anyone having to remember to bump it.
+ */
+function readAppVersion(): string {
+  const manifest = packageVersionSchema.safeParse(JSON.parse(readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')));
+  return manifest.success ? manifest.data.version : '0.0.0';
+}
+
+/** Read once, at module load. */
+const APP_VERSION = readAppVersion();
 
 const DEFAULT_APP_PORT = 3111;
 const DEFAULT_BROWSER_PORT = 9333;
@@ -304,6 +326,9 @@ async function settle(page: CdpPage): Promise<void> {
  * The locale: this script writes the localStorage MIRROR only, which is what
  * the client-side detector reads after hydration. The cookie is deliberately
  * not here, because this script is too late for it. See `setLanguageCookie`.
+ *
+ * The what's-new card: this also acknowledges `APP_VERSION` up front, so
+ * `app/components/whats-new-card.tsx` never renders over a landing shot.
  */
 function buildInitScript(theme: Theme, locale: LanguageCode): string {
   return `
@@ -317,6 +342,12 @@ Object.defineProperty(globalThis, 'Date', { value: D, writable: true, configurab
 try {
   localStorage.setItem('theme', ${JSON.stringify(theme)});
   localStorage.setItem(${JSON.stringify(LANGUAGE_STORAGE_KEY)}, ${JSON.stringify(locale)});
+  // Acknowledge this checkout's own version up front, so the "what's new" card
+  // (app/components/whats-new-card.tsx, gated by decideWhatsNew in
+  // app/lib/whats-new.ts) never renders over a landing shot. This runs before
+  // app code on every page the run opens, not just the seeding page, so every
+  // capture starts already caught up.
+  localStorage.setItem(${JSON.stringify(WHATS_NEW_STORAGE_KEY)}, ${JSON.stringify(APP_VERSION)});
 } catch (error) {
   /* storage blocked; the cookie set through CDP still carries the locale */
 }
@@ -431,17 +462,17 @@ function buildPersistProbeExpression(expectedFoodLogs: number): string {
   const store = await import('/app/lib/local-store/store.ts');
   const schema = await import('/app/lib/local-store/schema.ts');
   const start = performance.now();
-  let counts = null;
+  let probe = null;
   let rows = 0;
   while (performance.now() - start < ${PERSIST_TIMEOUT_MS}) {
-    counts = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
-    rows = counts === null ? 0 : (counts[schema.FOOD_LOGS_TABLE] ?? 0);
+    probe = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
+    rows = probe.kind === 'present' ? (probe.counts[schema.FOOD_LOGS_TABLE] ?? 0) : 0;
     if (rows >= ${expectedFoodLogs}) {
-      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(counts) };
+      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(probe) };
     }
     await new Promise((resolve) => setTimeout(resolve, ${PERSIST_POLL_MS}));
   }
-  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(counts) };
+  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(probe) };
 })()`;
 }
 
