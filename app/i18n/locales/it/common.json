@@ -3388,6 +3388,12 @@
     "recap": {
       "meals_one": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA.",
       "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
+    },
+    "selfHost": {
+      "title": "Run openplate yourself",
+      "price": "Free",
+      "body": "Every feature, on a server you run. Nothing to order here.",
+      "link": "How to self-host"
     }
   },
   "usual": {

@@ -55,6 +55,7 @@ import fixtureOffer from '../fixtures/plan-offer.json';
 import { planStanding } from '../../app/lib/plans/plan-standing';
 import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 import enCommon from '../../app/i18n/locales/en/common.json';
+import { SELF_HOSTING_DOCS_URL } from '../../app/lib/brand';
 
 /** An instance whose handshake says a biller stands behind it. */
 const SELLING: InstanceDescriptor = {
@@ -504,5 +505,33 @@ describe('the trial recap on the plan page (M250/05)', () => {
     assert.ok(markup.includes('data-slot="plan-order"'), 'the fixture offer drew no order');
     assert.ok(markup.includes(RECAP), 'no recap line was drawn');
     assert.ok(markup.indexOf(RECAP) < markup.indexOf('data-slot="plan-order"'));
+  });
+});
+
+/** The markup between the plan choice's fieldset tags. */
+function fieldsetOf(markup: string): string {
+  return /<fieldset[^>]*data-slot="plan-choice"[^>]*>.*?<\/fieldset>/s.exec(markup)?.[0] ?? '';
+}
+
+describe('the free card before the plans (M250/10)', () => {
+  it('comes first, links the self-hosting guide, and is no part of the radio group', () => {
+    const markup = render({ kind: 'ready', plan: FREE });
+    const card = markup.indexOf('data-slot="plan-self-host"');
+    assert.ok(card >= 0, 'no free card');
+    assert.ok(card < markup.indexOf('data-slot="plan-choice"'), 'the free card is not first');
+    assert.ok(markup.includes(`<a href="${SELF_HOSTING_DOCS_URL}"`), 'no link to the self-hosting guide');
+    assert.equal(fieldsetOf(markup).includes('plan-self-host'), false, 'the free card sits inside the radio group');
+    // Two paid plans, two radios: the free card added none.
+    assert.equal([...fieldsetOf(markup).matchAll(/type="radio"/g)].length, 2);
+    assert.equal([...markup.matchAll(/type="radio"/g)].length, 2);
+  });
+
+  it('is not shown to a subscriber moving to the yearly plan', () => {
+    const markup = render(
+      { kind: 'ready', plan: PAID },
+      { mode: { kind: 'switch', startsAt: PAID.currentPeriodEnd ?? '' }, selectedPlan: 'yearly' },
+    );
+    assert.ok(markup.includes('data-slot="plan-order"'), 'THE CONTROL: the order is drawn');
+    assert.equal(markup.includes('data-slot="plan-self-host"'), false);
   });
 });

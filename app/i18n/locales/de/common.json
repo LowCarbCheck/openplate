@@ -3388,6 +3388,12 @@
     "recap": {
       "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
       "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst."
+    },
+    "selfHost": {
+      "title": "Run openplate yourself",
+      "price": "Free",
+      "body": "Every feature, on a server you run. Nothing to order here.",
+      "link": "How to self-host"
     }
   },
   "usual": {

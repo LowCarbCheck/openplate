@@ -140,6 +140,7 @@ const catalogSchema = z.object({
     manage: z.string(),
     endsOn: z.string(),
     status: z.object({ active: z.string(), paidUntil: z.string() }),
+    selfHost: z.object({ title: z.string(), link: z.string() }),
     returned: z.object({ success: z.string() }),
     card: z.object({
       name: z.object({ month: z.string(), year: z.string() }),

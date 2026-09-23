@@ -3388,6 +3388,12 @@
     "recap": {
       "meals_one": "En tu prueba registraste {{count}} comida con IA.",
       "meals_other": "En tu prueba registraste {{count}} comidas con IA."
+    },
+    "selfHost": {
+      "title": "Run openplate yourself",
+      "price": "Free",
+      "body": "Every feature, on a server you run. Nothing to order here.",
+      "link": "How to self-host"
     }
   },
   "usual": {

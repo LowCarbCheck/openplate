@@ -172,7 +172,10 @@ test('a failed order says so above the button, moves nothing, and can be tried a
 
   await settleAnimations(page);
   const before = await readTops(page);
-  const buttonTopBefore = await orderButton(page).evaluate((node) => node.getBoundingClientRect().top);
+  // PAGE-relative, for `readTops`' reason: the click scrolls the button into
+  // view once the free card (M250/10) has put it below the fold, and a scroll
+  // is not a shift.
+  const buttonTopBefore = await orderButton(page).evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
   const entriesBefore = (await readShiftEntries(page)).length;
 
   await orderButton(page).click();
@@ -186,7 +189,9 @@ test('a failed order says so above the button, moves nothing, and can be tried a
   const report = entries.flatMap((entry) => entry.sources).join('\n');
   expect(movedBetween(before, await readTops(page)), `the failure moved something\n${report}`).toEqual([]);
   expect(shiftScoreAfter(entries, 0), `layout-shift after the failure\n${report}`).toBe(0);
-  expect(await orderButton(page).evaluate((node) => node.getBoundingClientRect().top)).toBe(buttonTopBefore);
+  expect(await orderButton(page).evaluate((node) => node.getBoundingClientRect().top + window.scrollY)).toBe(
+    buttonTopBefore,
+  );
 
   // Retry is possible: the button works again and the boxes stay ticked.
   await expect(orderButton(page)).toBeEnabled();

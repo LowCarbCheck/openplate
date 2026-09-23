@@ -3388,6 +3388,12 @@
     "recap": {
       "meals_one": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin.",
       "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
+    },
+    "selfHost": {
+      "title": "Run openplate yourself",
+      "price": "Free",
+      "body": "Every feature, on a server you run. Nothing to order here.",
+      "link": "How to self-host"
     }
   },
   "usual": {
