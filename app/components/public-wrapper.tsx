@@ -91,10 +91,22 @@ export default function PublicWrapper({
               sign-in door does not move by a pixel and the bar stays `h-16`. */}
           <div className="flex min-w-0 flex-1 items-center">
             <HeaderStatus>
+              {/* ON A PHONE, THE WORD STEPS ASIDE WHEN TWO CONTROLS NEED THE
+                  ROOM (M250/09). The managed header carries two, and at their
+                  natural widths the row needs 396 px in English and 468 px in
+                  Spanish, so on a 360 or 390 px phone the word was squeezed
+                  and painted over the access button. `max-sm:sr-only` keeps
+                  the word as the link's name for a screen reader and draws
+                  the mark alone; from `sm` up nothing changes. The open
+                  header has one control and fits, so it keeps the word.
+                  `tests/e2e/landing-fits-a-phone.spec.ts` is the guard. */}
               {showLogo && (
                 <a href="/" className="flex items-center gap-3 font-medium transition-opacity hover:opacity-80">
                   <img src="/icons/icon-192.png?v=2" alt="" className="h-6 w-6" />
-                  <Wordmark besideMark className="text-lg text-foreground" />
+                  <Wordmark
+                    besideMark
+                    className={cn('text-lg text-foreground', headerOffersSignIn && 'max-sm:sr-only')}
+                  />
                 </a>
               )}
             </HeaderStatus>
@@ -136,7 +148,10 @@ export default function PublicWrapper({
                 managed instance `/dashboard` bounces to `/welcome`, so a button
                 named for a destination is a redirect wearing that name. Naming
                 the real door is what makes the label true. */}
-            <Button asChild variant="outline" size="sm" className="px-4 md:h-10">
+            {/* `px-3` below `sm`, the size's own padding: with the word gone
+                the managed row still needs 362 px in Spanish at `px-4`, two
+                more than a 360 px phone has. */}
+            <Button asChild variant="outline" size="sm" className="px-3 sm:px-4 md:h-10">
               <Link to={headerOffersSignIn ? '/sign-in' : '/dashboard'}>
                 {headerOffersSignIn ? t('chrome.signIn') : t('chrome.openTracker')}
               </Link>

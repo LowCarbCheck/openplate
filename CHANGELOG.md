@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The signed-out header fits a phone on a managed instance.** With sign in and the access button in the header, the row needed up to 468 px, so on a 360 or 390 px phone the openplate word ran over the access button. Below the small breakpoint the header now shows the mark alone when it carries both controls, and the word stays the link's name for screen readers. `tests/e2e/landing-fits-a-phone.spec.ts` checks all six languages at 360, 390 and 412 px on a managed build.
+
 ## [0.42.0] - 2026-09-23
 
 ### Added
