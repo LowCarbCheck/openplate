@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **An instance with open sign-up offers a sign-up form.** When the core's `/health` says `instance.openSignup`, the signed-out header, the landing and `/welcome` offer "Sign up" instead of the invite-only wording, and `/sign-up` takes an email address and posts it to `POST /v1/auth/signup-request`; the core mails the letter whose link creates the account. The form states the instance's free AI scans when `instance.trial` names a number, shows the wait from `Retry-After` on a `429`, and carries a Cloudflare Turnstile challenge when `instance.signupCaptcha` names a site key. On a managed instance the CSP now allows `challenges.cloudflare.com` in `script-src` and `frame-src` for that challenge; the script loads only on `/sign-up`. An older core reads as invite-only, and nothing changes there.
+
 ### Fixed
 
 - **The signed-out header fits a phone on a managed instance.** With sign in and the access button in the header, the row needed up to 468 px, so on a 360 or 390 px phone the openplate word ran over the access button. Below the small breakpoint the header now shows the mark alone when it carries both controls, and the word stays the link's name for screen readers. `tests/e2e/landing-fits-a-phone.spec.ts` checks all six languages at 360, 390 and 412 px on a managed build.

@@ -1062,6 +1062,26 @@ export async function requestSyncPasswordReset({
 }
 
 /**
+ * Asks an open instance for an account addressed to this email (M253/02).
+ *
+ * The service answers `202` whatever is true about the address, so a resolved
+ * promise is ONE outcome and the screen shows one sentence. Unlike the reset
+ * request above, the failures are NOT swallowed: a throttle carries a wait the
+ * person should read, a refused challenge asks for a new one, and a blocked
+ * domain asks for another address. The caller reads them off the
+ * `SyncRequestError`.
+ */
+export async function requestOpenSignup({
+  serverUrl,
+  email,
+  captchaToken,
+  fetchImpl,
+}: { serverUrl: string; email: string; captchaToken: string | null } & SyncActionOptions): Promise<void> {
+  const { authClient } = clients({ serverUrl, fetchImpl });
+  await authClient.signupRequest({ email, captchaToken });
+}
+
+/**
  * "I forgot my password": open the mailed reset token, then run the recovery
  * ceremony with the code the service was holding.
  *

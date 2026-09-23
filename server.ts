@@ -95,6 +95,9 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
   // `null` unless an operator set MATOMO_URL + MATOMO_SITE_ID, which leaves
   // this header byte-for-byte what it was before analytics existed.
   analyticsOrigin: analyticsCspOrigin(CONFIG.analytics),
+  // The sign-up form's Turnstile challenge (M253). Only a managed instance
+  // can have open sign-up, so every other instance keeps its header as it was.
+  signupCaptchaPossible: CONFIG.instance.managed,
 });
 
 /**

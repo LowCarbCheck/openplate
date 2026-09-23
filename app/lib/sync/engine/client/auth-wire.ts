@@ -273,6 +273,31 @@ export interface ResetRequestWire {
   email: string;
 }
 
+/**
+ * `POST /v1/auth/signup-request`, a person asks an open instance for an
+ * account (M253/01). Always answered `202` with an empty body, whatever is
+ * true about the address, so a caller shows one sentence and learns nothing.
+ *
+ * `captchaToken` rides along only when the handshake names a challenge
+ * (`instance.signupCaptcha`); an instance without one never reads it.
+ */
+export interface SignupRequestRequestWire {
+  email: string;
+  captchaToken?: string;
+}
+
+/**
+ * The two refusals of {@link SignupRequestRequestWire} a person can act on,
+ * as the body's `error` code (a `400`). Transcribed, like every literal here.
+ *
+ * - `captcha-failed`: the challenge token was missing, spent or refused. A new
+ *   challenge and the same address can succeed.
+ * - `email-domain-blocked`: the service takes no sign-ups from that domain,
+ *   so only another address can succeed.
+ */
+export const SIGNUP_CAPTCHA_FAILED = 'captcha-failed';
+export const SIGNUP_EMAIL_DOMAIN_BLOCKED = 'email-domain-blocked';
+
 /** `POST /v1/auth/reset/open` — spends the mailed token for the escrowed code. */
 export interface ResetOpenRequestWire {
   resetToken: string;

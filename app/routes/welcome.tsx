@@ -72,7 +72,11 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useSyncSession } from '#app/components/sync-status';
 import { Wordmark } from '#app/components/wordmark';
+import { cn } from '#app/lib/utils';
+import { SIGN_UP_PATH } from '#app/components/account-door';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { hasOpenSignup } from '#app/lib/plans/signup-door';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { buildJoinFragment, isJoinLinkEmpty, parseJoinLinkInput } from '#app/lib/join-link';
 import { trackInviteLinkPasted } from '#app/lib/matomo-events';
@@ -289,6 +293,14 @@ export default function Welcome() {
   // `managed`, so the question is answered once and handed over.
   const { requiresAccount } = useInstancePolicy();
   const { hint, forgetName } = useWelcomeHint(requiresAccount);
+  // ON AN INSTANCE WITH OPEN SIGN-UP there is a third door, "create an
+  // account", and the body says so instead of pointing at an invite link
+  // (M253/02). The handshake decides it, so a managed screen waits for it the
+  // way it already waits for the device hint, rather than drawing the
+  // invite-only sentence and swapping it a moment later.
+  const instanceRead = useServerInstanceRead();
+  const isInstanceKnown = !requiresAccount || instanceRead.isSettled;
+  const offersSignUp = requiresAccount && hasOpenSignup(instanceRead.instance);
   const [isPastingLink, setIsPastingLink] = useState(false);
   // WHY THEY ARE HERE, when the app ended their session rather than they did
   // (0.10.3). `endSessionRefused` publishes the reason on the signed-out
@@ -314,7 +326,10 @@ export default function Welcome() {
           <CardTitle className="text-balance">{t('welcome.title')}</CardTitle>
           {/* The open body offers starting a diary, which is not on offer
               here — so a managed instance says what its two doors are. */}
-          <CardDescription>{requiresAccount ? t('welcome.managed.body') : t('welcome.body')}</CardDescription>
+          <CardDescription className={cn(!isInstanceKnown && 'invisible')}>
+            {!requiresAccount && t('welcome.body')}
+            {requiresAccount && (offersSignUp ? t('welcome.managed.bodyOpen') : t('welcome.managed.body'))}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {session.error?.reason === 'reauth-required' && (
@@ -323,14 +338,21 @@ export default function Welcome() {
             </p>
           )}
           {isPastingLink && <PasteInviteLink onCancel={() => setIsPastingLink(false)} />}
-          {!isPastingLink && hint === null && (
+          {!isPastingLink && (hint === null || !isInstanceKnown) && (
             <div className="flex justify-center py-4" aria-busy="true">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               <span className="sr-only">{t('chrome.loading')}</span>
             </div>
           )}
-          {!isPastingLink && hint !== null && (
-            <WelcomeChoices hint={hint} onForgetName={forgetName} onPasteInviteLink={() => setIsPastingLink(true)} />
+          {!isPastingLink && hint !== null && isInstanceKnown && (
+            <div className="space-y-3">
+              <WelcomeChoices hint={hint} onForgetName={forgetName} onPasteInviteLink={() => setIsPastingLink(true)} />
+              {offersSignUp && (
+                <Button asChild variant="outline" className="h-11 w-full justify-center">
+                  <Link to={SIGN_UP_PATH}>{t('welcome.managed.signUp')}</Link>
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

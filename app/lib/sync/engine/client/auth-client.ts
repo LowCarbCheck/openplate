@@ -70,6 +70,7 @@ import {
   type RotationResponseWire,
   type SessionResponseWire,
   type SessionTokensWire,
+  type SignupRequestRequestWire,
   type SignupRequestWire,
 } from './auth-wire';
 import { errorKindForStatus, SyncRequestError } from './sync-error';
@@ -860,6 +861,26 @@ export class SyncAuthClient implements SyncTokenProvider {
     const request: ResetRequestWire = { email: input.email };
     await this.requestJson<unknown>({
       path: `${AUTH_API_PREFIX}/reset/request`,
+      method: 'POST',
+      body: request,
+    });
+  }
+
+  /**
+   * Asks an open instance to mail this address a letter that creates an
+   * account (M253/01, `PROTOCOL.md` §5.8.3).
+   *
+   * RETURNS NOTHING, for the reason {@link resetRequest} returns nothing: the
+   * service answers one `202` for a new address, a pending one and an existing
+   * account alike. A throttle (`429`, with `Retry-After`), a refused challenge
+   * and a blocked domain still throw, because each one asks the person to do
+   * something different, and none of them says anything about the address.
+   */
+  async signupRequest(input: { email: string; captchaToken: string | null }): Promise<void> {
+    const request: SignupRequestRequestWire =
+      input.captchaToken === null ? { email: input.email } : { email: input.email, captchaToken: input.captchaToken };
+    await this.requestJson<unknown>({
+      path: `${AUTH_API_PREFIX}/signup-request`,
       method: 'POST',
       body: request,
     });

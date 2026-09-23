@@ -82,6 +82,12 @@ export default [
   // client-only for the same reasons `/sign-in` is.
   route('/forgot', 'routes/forgot.tsx'),
 
+  // "Sign up" on an instance with open sign-up (M253/02). One field, one
+  // letter, and one answer whatever is true about the address. Top-level and
+  // client-only for the same reasons `/forgot` is; on an invite-only instance
+  // it says so and links back to sign in.
+  route('/sign-up', 'routes/sign-up.tsx'),
+
   // Where the mailed reset link lands (M192/05). The token rides in the URL
   // FRAGMENT, which no browser sends to any server, so there is nothing here a
   // loader could read even if one existed, the same rule `/join` follows, and

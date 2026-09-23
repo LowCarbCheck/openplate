@@ -397,6 +397,7 @@
     "requestAccessClose": "Close",
     "requestAccessTitle": "This instance is invite-only",
     "signIn": "Sign in",
+    "signUp": "Sign up",
     "source": "Source code",
     "sourceShort": "Source",
     "status": {
@@ -1227,7 +1228,8 @@
       "tagline": "openplate is a carb-first food diary that lives on your device: photograph your plate or search for what you ate, and see where the day stands.",
       "taglineManaged": "openplate is a carb-first food diary that keeps an encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
       "ticks": "No account · Installs like an app · Works offline · Photo scans use your own AI key",
-      "ticksManaged": "Invitation only · Installs like an app · Works offline · Photo estimates included"
+      "ticksManaged": "Invitation only · Installs like an app · Works offline · Photo estimates included",
+      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Every day",
@@ -1390,6 +1392,7 @@
     "shared": "Shared with you · openplate",
     "sharing": "Sharing · openplate",
     "signIn": "Sign in · openplate",
+    "signUp": "Sign up · openplate",
     "study": "Study console · openplate",
     "sync": "Account · openplate",
     "trends": "Insights · openplate",
@@ -2573,6 +2576,23 @@
     "unavailable": "Accounts are turned off on this server.",
     "forgot": "Forgot password?"
   },
+  "signUp": {
+    "title": "Create an account",
+    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
+    "trial_one": "{{count}} free AI scan, no time limit.",
+    "trial_other": "{{count}} free AI scans, no time limit.",
+    "emailRequired": "Type your email address.",
+    "submit": "Send the letter",
+    "sent": "Check your inbox. The link in the letter creates your account.",
+    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
+    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
+    "waitLater": "Too many requests from this network. Try again later.",
+    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
+    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
+    "failed": "The request did not go through. Try again in a moment.",
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
   "signOut": {
     "menuItem": "Sign out",
     "title": "Sign out",
@@ -2979,12 +2999,14 @@
     "haveAccount": "I already have an account",
     "managed": {
       "body": "Sign in to your account, or open the invite link you were sent.",
+      "bodyOpen": "Sign in to your account, or create one with your email address.",
       "haveInvite": "I have an invite link",
       "pasteTitle": "Paste your invite link",
       "pasteLabel": "Invite link",
       "pasteHint": "Paste the whole link, exactly as you received it.",
       "pasteContinue": "Continue",
-      "pasteInvalid": "That does not look like an invite link. Paste the whole link, exactly as you received it."
+      "pasteInvalid": "That does not look like an invite link. Paste the whole link, exactly as you received it.",
+      "signUp": "Create an account"
     },
     "returning": "This device was signed in to an account before.",
     "signIn": "Sign in",

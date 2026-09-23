@@ -187,6 +187,7 @@ describe('CSP — the third-party script origin is part of the gate', () => {
     providerOrigins: [],
     presetOrigin: null,
     gatewayOrigin: null,
+    signupCaptchaPossible: false,
   };
 
   it('names no third-party script origin when the newsletter is off', () => {

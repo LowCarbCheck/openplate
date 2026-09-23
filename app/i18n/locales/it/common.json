@@ -397,6 +397,7 @@
     "requestAccessClose": "Chiudi",
     "requestAccessTitle": "Questa istanza è solo su invito",
     "signIn": "Accedi",
+    "signUp": "Sign up",
     "source": "Codice sorgente",
     "sourceShort": "Sorgente",
     "status": {
@@ -1227,7 +1228,8 @@
       "tagline": "openplate è un diario alimentare incentrato sui carboidrati che risiede sul tuo dispositivo: scatta una foto del piatto o cerca cosa hai mangiato, e controlla a che punto è la giornata.",
       "taglineManaged": "openplate è un diario alimentare incentrato sui carboidrati che conserva una copia cifrata sul server del gestore: fai una foto del piatto o cerca ciò che hai mangiato, e controlla la situazione della giornata.",
       "ticks": "Nessun account · Si installa come un'app · Funziona offline · Le scansioni delle foto usano la tua chiave AI",
-      "ticksManaged": "Solo su invito · Si installa come un'app · Funziona offline · Stime dalle foto incluse"
+      "ticksManaged": "Solo su invito · Si installa come un'app · Funziona offline · Stime dalle foto incluse",
+      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Ogni giorno",
@@ -1390,6 +1392,7 @@
     "shared": "Condivisi con te · openplate",
     "sharing": "Condivisione · openplate",
     "signIn": "Accedi · openplate",
+    "signUp": "Sign up · openplate",
     "study": "Console dello studio · openplate",
     "sync": "Account · openplate",
     "trends": "Analisi · openplate",
@@ -2573,6 +2576,23 @@
     "unavailable": "Gli account sono disattivati su questo server.",
     "forgot": "Password dimenticata?"
   },
+  "signUp": {
+    "title": "Create an account",
+    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
+    "trial_one": "{{count}} free AI scan, no time limit.",
+    "trial_other": "{{count}} free AI scans, no time limit.",
+    "emailRequired": "Type your email address.",
+    "submit": "Send the letter",
+    "sent": "Check your inbox. The link in the letter creates your account.",
+    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
+    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
+    "waitLater": "Too many requests from this network. Try again later.",
+    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
+    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
+    "failed": "The request did not go through. Try again in a moment.",
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
   "signOut": {
     "menuItem": "Disconnettiti",
     "title": "Disconnettiti",
@@ -2979,12 +2999,14 @@
     "haveAccount": "Ho già un account",
     "managed": {
       "body": "Accedi al tuo account oppure apri il link di invito che hai ricevuto.",
+      "bodyOpen": "Sign in to your account, or create one with your email address.",
       "haveInvite": "Ho un link di invito",
       "pasteTitle": "Incolla il tuo link di invito",
       "pasteLabel": "Link di invito",
       "pasteHint": "Incolla il link completo, esattamente come lo hai ricevuto.",
       "pasteContinue": "Continua",
-      "pasteInvalid": "Questo non sembra un link di invito. Incolla il link completo, esattamente come lo hai ricevuto."
+      "pasteInvalid": "Questo non sembra un link di invito. Incolla il link completo, esattamente come lo hai ricevuto.",
+      "signUp": "Create an account"
     },
     "returning": "Questo dispositivo era già collegato a un account.",
     "signIn": "Accedi",

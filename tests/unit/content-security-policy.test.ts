@@ -48,6 +48,7 @@ const DEFAULT_POLICY = buildContentSecurityPolicy({
   // before that feature existed.
   newsletterEnabled: false,
   analyticsOrigin: null,
+  signupCaptchaPossible: false,
 });
 
 test("script-src carries 'wasm-unsafe-eval' — without it, sync passphrase derivation is dead in production", () => {
@@ -88,6 +89,7 @@ test('the sync origin is appended to connect-src only when sync is configured', 
     // before that feature existed.
     newsletterEnabled: false,
     analyticsOrigin: null,
+    signupCaptchaPossible: false,
   });
   assert.match(directive(configured, 'connect-src'), /https:\/\/sync\.example\.com/);
 });
@@ -103,6 +105,7 @@ test('operator-supplied connect-src origins survive alongside the sync origin', 
     // before that feature existed.
     newsletterEnabled: false,
     analyticsOrigin: null,
+    signupCaptchaPossible: false,
   });
   const connectSrc = directive(policy, 'connect-src');
 
@@ -145,6 +148,7 @@ test('the builder is pure — same inputs, identical header', () => {
     // before that feature existed.
     newsletterEnabled: false,
     analyticsOrigin: null,
+    signupCaptchaPossible: false,
   };
   assert.equal(buildContentSecurityPolicy(input), buildContentSecurityPolicy(input));
 });
@@ -182,6 +186,7 @@ test("connect-src carries the instance preset's origin when one is configured", 
     // before that feature existed.
     newsletterEnabled: false,
     analyticsOrigin: null,
+    signupCaptchaPossible: false,
   });
 
   assert.match(directive(configured, 'connect-src'), /https:\/\/ai\.house\.example:8443/);
@@ -199,4 +204,32 @@ test('connect-src gains nothing when no instance preset is configured', () => {
 
   assert.ok(!connectSrc.includes('undefined'), `connect-src: ${connectSrc}`);
   assert.ok(!connectSrc.includes('null'), `connect-src: ${connectSrc}`);
+});
+
+test('a managed instance allows the sign-up challenge: Turnstile script and frame, and no connect-src', () => {
+  // M253: the sign-up form carries a Turnstile widget on a managed instance.
+  // Script and frame are what the widget needs; its iframe's own requests run
+  // under the iframe's policy, so connect-src must NOT widen for it.
+  const managed = buildContentSecurityPolicy({
+    syncOrigin: 'https://sync.example.org',
+    connectExtra: [],
+    providerOrigins: REGISTRY_PROVIDER_ORIGINS,
+    presetOrigin: null,
+    newsletterEnabled: false,
+    analyticsOrigin: null,
+    signupCaptchaPossible: true,
+  });
+  assert.match(directive(managed, 'script-src'), /https:\/\/challenges\.cloudflare\.com/);
+  assert.equal(directive(managed, 'frame-src'), "frame-src 'self' https://challenges.cloudflare.com");
+  assert.doesNotMatch(directive(managed, 'connect-src'), /challenges\.cloudflare\.com/);
+  // THE CONTROL: the same instance with the switch off names Cloudflare nowhere.
+  assert.doesNotMatch(buildContentSecurityPolicy({
+    syncOrigin: 'https://sync.example.org',
+    connectExtra: [],
+    providerOrigins: REGISTRY_PROVIDER_ORIGINS,
+    presetOrigin: null,
+    newsletterEnabled: false,
+    analyticsOrigin: null,
+    signupCaptchaPossible: false,
+  }), /challenges\.cloudflare\.com|frame-src/);
 });

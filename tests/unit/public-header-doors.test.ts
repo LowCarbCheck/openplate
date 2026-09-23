@@ -36,6 +36,7 @@ function readComponent(name: string): string {
 
 const HEADER = readComponent('public-wrapper.tsx');
 const DIALOG = readComponent('invite-only-dialog.tsx');
+const DOOR = readComponent('account-door.tsx');
 
 describe('the public header on a managed instance', () => {
   it('reads the named policy question rather than the mode name', () => {
@@ -56,8 +57,19 @@ describe('the public header on a managed instance', () => {
   });
 
   it('offers the no-account path beside it, on the same question', () => {
-    assert.match(HEADER, /\{headerOffersSignIn && <InviteOnlyDialog \/>\}/);
-    assert.match(HEADER, /import \{ InviteOnlyDialog \} from '#app\/components\/invite-only-dialog';/);
+    // M253/02: the path is `AccountDoor`, which draws the invite-only dialog
+    // or "Sign up" from the handshake. The header asks the mode question only.
+    assert.match(HEADER, /\{headerOffersSignIn && <AccountDoor \/>\}/);
+    assert.match(HEADER, /import \{ AccountDoor \} from '#app\/components\/account-door';/);
+  });
+
+  it('draws the invite-only dialog unless the handshake says sign-up is open', () => {
+    assert.match(DOOR, /return hasOpenSignup\(instance\) \? 'sign-up' : 'invite-only';/);
+    assert.match(DOOR, /\{door === 'invite-only' && <InviteOnlyDialog \/>\}/);
+    // No door at all until the handshake has answered, so an open instance
+    // never shows the invite-only wording for a moment.
+    assert.match(DOOR, /if \(!isSettled\) return 'unknown';/);
+    assert.ok(DOOR.includes("t('chrome.signUp')"), 'the open label comes from the catalog');
   });
 });
 
@@ -73,7 +85,8 @@ describe('the open instance header is unchanged', () => {
     // A second mention would be an unconditional one: the guard is the count,
     // because a `&&` added anywhere else in this file would still read fine.
     assert.equal(HEADER.split('chrome.signIn').length - 1, 1);
-    assert.equal(HEADER.split('InviteOnlyDialog').length - 1, 2, 'one import, one guarded render');
+    assert.equal(HEADER.split('<AccountDoor />').length - 1, 1, 'one guarded render');
+    assert.ok(!HEADER.includes('InviteOnlyDialog'), 'the dialog is drawn by the door, never by the header');
   });
 });
 

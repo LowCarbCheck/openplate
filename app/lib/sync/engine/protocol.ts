@@ -181,6 +181,33 @@ export type InstanceDescriptor = {
    */
   plans: boolean;
   /**
+   * Whether a person may ask this instance for an account with an email
+   * address, so `POST /v1/auth/signup-request` exists on it (M253/01).
+   * DESCRIPTIVE, NEVER A GRANT, like every other field here: `false` means the
+   * route answers the ordinary unknown-path `404`, and the app draws the
+   * invite-only wording instead of a sign-up door.
+   *
+   * OPTIONAL IN THE TYPE, but the decoder always writes a boolean, answering
+   * `false` for a service older than the field. Absent and `false` are the
+   * same fact for every reader; `hasOpenSignup` is the only one.
+   */
+  openSignup?: boolean;
+  /**
+   * The scan trial a new account on this instance starts with, or ABSENT when
+   * the instance runs none (M253/03).
+   *
+   * A PROMISE, like `feedback` below, so the client MUST NOT invent it: absent
+   * means no number is stated anywhere. The number on screen is this one and
+   * never a typed literal.
+   */
+  trial?: { scans: number };
+  /**
+   * The challenge the sign-up form carries, or ABSENT when it carries none
+   * (M253, owner decision 2026-09-23). Only Turnstile exists. Present only
+   * where `openSignup` is on; the site key is public by design.
+   */
+  signupCaptcha?: SignupCaptcha;
+  /**
    * Whether this instance sends web push, so `/v1/push/*` exists on it (M223
    * spec 01). DESCRIPTIVE, NEVER A GRANT, like every other field here.
    *
@@ -230,6 +257,9 @@ export type InstanceDescriptor = {
    */
   nutrientReferenceBasis?: NutrientReferenceBasis;
 };
+
+/** The sign-up challenge of {@link InstanceDescriptor.signupCaptcha}. */
+export type SignupCaptcha = { provider: 'turnstile'; siteKey: string };
 
 /**
  * The three bodies an instance may publish reference values from: the German
@@ -323,6 +353,23 @@ const instanceDescriptorSchema = z.object({
   // `.catch(false)` for the same reason as the line above: a service with no
   // biller, and a service built before the field, both mean no plan door.
   plans: z.boolean().catch(false),
+  // `.catch(false)` for the same reason again (M253/02): an older core has no
+  // open sign-up, and a nonsense value must read as invite-only, which is the
+  // safe direction because the service refuses the route anyway.
+  openSignup: z.boolean().catch(false),
+  // A PROMISE, so `.optional()` and `.catch(undefined)` like `feedback`
+  // below: a count that is not a positive whole number is no promise anybody
+  // can read, and it must not fail the whole descriptor either.
+  trial: z
+    .object({ scans: z.number().int().positive() })
+    .optional()
+    .catch(undefined),
+  // A provider this build cannot render is dropped, so the form is sent with
+  // no token and the service answers for itself.
+  signupCaptcha: z
+    .object({ provider: z.literal('turnstile'), siteKey: z.string().min(1) })
+    .optional()
+    .catch(undefined),
   // `.optional()` because the field is younger than this decoder's other
   // booleans, and `.catch(undefined)` so a nonsense value cannot fail the
   // whole descriptor and take the AI model down with it. Absent and `false`

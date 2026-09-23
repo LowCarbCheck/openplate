@@ -8,7 +8,7 @@ import { BuildStamp } from '#app/components/build-stamp';
 import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
 import { useHasLegalPages, useInstancePolicy } from '#app/hooks/use-public-config';
-import { InviteOnlyDialog } from '#app/components/invite-only-dialog';
+import { AccountDoor } from '#app/components/account-door';
 import { Button } from './ui/button';
 import { HeaderStatus } from './header-status';
 
@@ -137,7 +137,10 @@ export default function PublicWrapper({
                 is spent on the two controls a visitor actually needs, and an
                 open instance keeps the one it always had. The footer's Source
                 link is untouched and is now the only one on the page. */}
-            {headerOffersSignIn && <InviteOnlyDialog />}
+            {/* "Sign up" on an open instance, the invite-only dialog on any
+                other (M253/02). `AccountDoor` reads the handshake and draws
+                nothing until it has answered. */}
+            {headerOffersSignIn && <AccountDoor />}
             {/* `md:h-10` keeps the pointer-sized box this corner has always
                 drawn. The phone height comes from the `sm` size itself now
                 (44px below `md`), which is what the hand-written `h-10` here

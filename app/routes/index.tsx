@@ -25,6 +25,8 @@ import PublicWrapper from '#app/components/public-wrapper';
 import { PlateGlyph } from '#app/components/plate-glyph';
 import { NewsletterSignup } from '#app/components/newsletter-signup';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { hasOpenSignup } from '#app/lib/plans/signup-door';
 import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
@@ -1272,6 +1274,28 @@ function LadderCard({
  * which on a laptop produced a screen and a half of teal-black nothing before
  * the first word of substance. What fills a hero is the product, not padding.
  */
+/**
+ * The small print under the hero on an instance whose AI comes with the
+ * account (M253/02).
+ *
+ * "Invitation only" is true of an invite-only instance and false of one with
+ * open sign-up, and only the handshake knows which, after the first paint. So
+ * the line is held `invisible` until the handshake answers, and its box keeps
+ * two lines from the first paint, so neither the wait nor the answer moves the
+ * picture under it.
+ */
+function ManagedHeroTicks({ requiresAccount }: { requiresAccount: boolean }) {
+  const { t } = useTranslation();
+  const { isSettled, instance } = useServerInstanceRead();
+  const isKnown = !requiresAccount || isSettled;
+  const offersSignUp = requiresAccount && hasOpenSignup(instance);
+  return (
+    <p className={cn('mt-4 min-h-8 text-xs text-muted-foreground', !isKnown && 'invisible')}>
+      {offersSignUp ? t('landing.hero.ticksManagedOpen') : t('landing.hero.ticksManaged')}
+    </p>
+  );
+}
+
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
@@ -1453,9 +1477,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               No `whitespace-nowrap`: at 320px this wraps to two lines, and a
               wrapped line is better than the horizontal scroll that forcing it
               onto one would produce on the narrowest phones. */}
-          <p className="mt-4 text-xs text-muted-foreground">
-            {aiComesFromTheInstance ? t('landing.hero.ticksManaged') : t('landing.hero.ticks')}
-          </p>
+          {aiComesFromTheInstance ?
+            <ManagedHeroTicks requiresAccount={requiresAccount} />
+          : <p className="mt-4 text-xs text-muted-foreground">{t('landing.hero.ticks')}</p>}
         </div>
         <HeroShot />
       </div>

@@ -397,6 +397,7 @@
     "requestAccessClose": "Fermer",
     "requestAccessTitle": "Cette instance est accessible uniquement sur invitation",
     "signIn": "Connexion",
+    "signUp": "Sign up",
     "source": "Code source",
     "sourceShort": "Source",
     "status": {
@@ -1227,7 +1228,8 @@
       "tagline": "openplate est un journal alimentaire axé d'abord sur les glucides qui réside sur ton appareil : prends une photo d'assiette ou recherche ce que tu as mangé, et observe où en est ta journée.",
       "taglineManaged": "openplate est un journal alimentaire axé sur les glucides qui conserve une copie chiffrée sur le serveur de l'opérateur : prends une photo d'assiette ou recherche ce que tu as mangé, puis regarde le bilan du jour.",
       "ticks": "Sans compte · S'installe comme une application · Fonctionne hors ligne · L'analyse des photos utilise ta propre clé d'IA",
-      "ticksManaged": "Sur invitation uniquement · S'installe comme une application · Fonctionne hors ligne · Estimations par photo incluses"
+      "ticksManaged": "Sur invitation uniquement · S'installe comme une application · Fonctionne hors ligne · Estimations par photo incluses",
+      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Chaque jour",
@@ -1390,6 +1392,7 @@
     "shared": "Partagé avec toi · openplate",
     "sharing": "Partage · openplate",
     "signIn": "Connexion · openplate",
+    "signUp": "Sign up · openplate",
     "study": "Console d'étude · openplate",
     "sync": "Compte · openplate",
     "trends": "Analyses · openplate",
@@ -2573,6 +2576,23 @@
     "unavailable": "Les comptes sont désactivés sur ce serveur.",
     "forgot": "Mot de passe oublié ?"
   },
+  "signUp": {
+    "title": "Create an account",
+    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
+    "trial_one": "{{count}} free AI scan, no time limit.",
+    "trial_other": "{{count}} free AI scans, no time limit.",
+    "emailRequired": "Type your email address.",
+    "submit": "Send the letter",
+    "sent": "Check your inbox. The link in the letter creates your account.",
+    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
+    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
+    "waitLater": "Too many requests from this network. Try again later.",
+    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
+    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
+    "failed": "The request did not go through. Try again in a moment.",
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
   "signOut": {
     "menuItem": "Se déconnecter",
     "title": "Déconnexion",
@@ -2979,12 +2999,14 @@
     "haveAccount": "J'ai déjà un compte",
     "managed": {
       "body": "Connecte-toi à ton compte, ou ouvre le lien d'invitation qu'on t'a envoyé.",
+      "bodyOpen": "Sign in to your account, or create one with your email address.",
       "haveInvite": "J'ai un lien d'invitation",
       "pasteTitle": "Colle ton lien d'invitation",
       "pasteLabel": "Lien d'invitation",
       "pasteHint": "Colle le lien entier, exactement comme tu l'as reçu.",
       "pasteContinue": "Continuer",
-      "pasteInvalid": "Cela ne ressemble pas à un lien d'invitation. Colle le lien entier, exactement comme tu l'as reçu."
+      "pasteInvalid": "Cela ne ressemble pas à un lien d'invitation. Colle le lien entier, exactement comme tu l'as reçu.",
+      "signUp": "Create an account"
     },
     "returning": "Cet appareil était connecté à un compte auparavant.",
     "signIn": "Se connecter",

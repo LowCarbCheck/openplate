@@ -76,9 +76,31 @@ export function readFreshServerInstance(serverUrl: string): Promise<InstanceDesc
  * that could not be reached.
  */
 export function useServerInstance(): InstanceDescriptor | null {
+  return useServerInstanceRead().instance;
+}
+
+/** One `/health` read as a screen sees it: whether it has answered, and what it said. */
+export interface ServerInstanceRead {
+  /** `false` while the read is in flight. An unreachable service is settled, with `instance: null`. */
+  isSettled: boolean;
+  instance: InstanceDescriptor | null;
+}
+
+/**
+ * The same read, and whether it has ANSWERED.
+ *
+ * FOR A SCREEN THAT DRAWS ONE OF TWO DOORS (M253/02). `useServerInstance`
+ * answers `null` both while the read is in flight and after it failed, which
+ * is right for a hint and wrong for a door: a header that drew the invite-only
+ * wording while the read ran would show it for a moment on an instance whose
+ * sign-up is open. So a door draws nothing until `isSettled`, and then draws
+ * the one that is true. With no sync server there is nothing to wait for, and
+ * the read is settled at once.
+ */
+export function useServerInstanceRead(): ServerInstanceRead {
   const config = usePublicConfig();
   const syncServerUrl = config?.syncServerUrl ?? null;
-  const [instance, setInstance] = useState<InstanceDescriptor | null>(null);
+  const [read, setRead] = useState<{ url: string; instance: InstanceDescriptor | null } | null>(null);
 
   useEffect(() => {
     // No sync server on this instance means nothing to ask and nothing that
@@ -89,7 +111,7 @@ export function useServerInstance(): InstanceDescriptor | null {
       // `readServerInstance` fails open and never rejects, so there is nothing
       // here for a catch to do: an unreachable service IS the `null` result.
       const next = await readCachedServerInstance(syncServerUrl);
-      if (isMounted) setInstance(next);
+      if (isMounted) setRead({ url: syncServerUrl, instance: next });
     };
     void ask();
     return () => {
@@ -97,7 +119,10 @@ export function useServerInstance(): InstanceDescriptor | null {
     };
   }, [syncServerUrl]);
 
-  return instance;
+  if (syncServerUrl === null) return { isSettled: true, instance: null };
+  // An answer about another server is no answer about this one.
+  if (read === null || read.url !== syncServerUrl) return { isSettled: false, instance: null };
+  return { isSettled: true, instance: read.instance };
 }
 
 /**

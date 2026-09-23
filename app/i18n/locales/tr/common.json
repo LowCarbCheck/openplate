@@ -397,6 +397,7 @@
     "requestAccessClose": "Kapat",
     "requestAccessTitle": "Bu örnek yalnızca davetle çalışır",
     "signIn": "Giriş yap",
+    "signUp": "Sign up",
     "source": "Kaynak kod",
     "sourceShort": "Kaynak",
     "status": {
@@ -1227,7 +1228,8 @@
       "tagline": "openplate, cihazında çalışan ve önceliği karbonhidrat olan bir besin günlüğüdür: tabağının fotoğrafını çek veya ne yediğini ara, günün durumunu gör.",
       "taglineManaged": "openplate, yönetici sunucusunda şifreli bir kopya tutan ve karbonhidrat odaklı çalışan bir yemek günlüğüdür: tabak fotoğrafı çek veya ne yediğini ara, günün nasıl geçtiğini gör.",
       "ticks": "Hesap gerektirmez · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf taramaları kendi yapay zeka anahtarını kullanır",
-      "ticksManaged": "Yalnızca davetle · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf tahminleri dahildir"
+      "ticksManaged": "Yalnızca davetle · Uygulama gibi kurulur · Çevrimdışı çalışır · Fotoğraf tahminleri dahildir",
+      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Her gün",
@@ -1390,6 +1392,7 @@
     "shared": "Seninle paylaşılanlar · openplate",
     "sharing": "Paylaşım · openplate",
     "signIn": "Giriş yap · openplate",
+    "signUp": "Sign up · openplate",
     "study": "Çalışma konsolu · openplate",
     "sync": "Hesap · openplate",
     "trends": "İçgörüler · openplate",
@@ -2573,6 +2576,23 @@
     "unavailable": "Bu sunucuda hesaplar kapalı.",
     "forgot": "Şifreni mi unuttun?"
   },
+  "signUp": {
+    "title": "Create an account",
+    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
+    "trial_one": "{{count}} free AI scan, no time limit.",
+    "trial_other": "{{count}} free AI scans, no time limit.",
+    "emailRequired": "Type your email address.",
+    "submit": "Send the letter",
+    "sent": "Check your inbox. The link in the letter creates your account.",
+    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
+    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
+    "waitLater": "Too many requests from this network. Try again later.",
+    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
+    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
+    "failed": "The request did not go through. Try again in a moment.",
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
   "signOut": {
     "menuItem": "Çıkış yap",
     "title": "Çıkış yap",
@@ -2979,12 +2999,14 @@
     "haveAccount": "Zaten bir hesabım var",
     "managed": {
       "body": "Hesabına giriş yap veya sana gönderilen davet bağlantısını aç.",
+      "bodyOpen": "Sign in to your account, or create one with your email address.",
       "haveInvite": "Davet bağlantım var",
       "pasteTitle": "Davet bağlantını yapıştır",
       "pasteLabel": "Davet bağlantısı",
       "pasteHint": "Bağlantının tamamını, sana ulaştığı haliyle yapıştır.",
       "pasteContinue": "Devam et",
-      "pasteInvalid": "Bu bir davet bağlantısına benzemiyor. Bağlantının tamamını, sana ulaştığı haliyle yapıştır."
+      "pasteInvalid": "Bu bir davet bağlantısına benzemiyor. Bağlantının tamamını, sana ulaştığı haliyle yapıştır.",
+      "signUp": "Create an account"
     },
     "returning": "Bu cihazda daha önce bir hesaba giriş yapılmıştı.",
     "signIn": "Giriş yap",

@@ -397,6 +397,7 @@
     "requestAccessClose": "Cerrar",
     "requestAccessTitle": "Esta instancia funciona solo por invitación",
     "signIn": "Iniciar sesión",
+    "signUp": "Sign up",
     "source": "Código fuente",
     "sourceShort": "Fuente",
     "status": {
@@ -1227,7 +1228,8 @@
       "tagline": "openplate es un diario de comida centrado en los carbohidratos que reside en tu dispositivo: saca una foto de tu plato o busca lo que has comido, y consulta el balance del día.",
       "taglineManaged": "openplate es un diario de comidas centrado en los carbohidratos que guarda una copia cifrada en el servidor del operador: saca una foto del plato o busca lo que has comido para ver cómo va el día.",
       "ticks": "Sin cuenta · Se instala como una app · Funciona sin conexión · El escaneo de fotos usa tu propia clave de IA",
-      "ticksManaged": "Solo con invitación · Se instala como una app · Funciona sin conexión · Estimaciones por foto incluidas"
+      "ticksManaged": "Solo con invitación · Se instala como una app · Funciona sin conexión · Estimaciones por foto incluidas",
+      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
     },
     "how": {
       "eyebrow": "Cada día",
@@ -1390,6 +1392,7 @@
     "shared": "Compartido contigo · openplate",
     "sharing": "Compartir · openplate",
     "signIn": "Iniciar sesión · openplate",
+    "signUp": "Sign up · openplate",
     "study": "Consola del estudio · openplate",
     "sync": "Cuenta · openplate",
     "trends": "Análisis · openplate",
@@ -2573,6 +2576,23 @@
     "unavailable": "Las cuentas están desactivadas en este servidor.",
     "forgot": "¿Has olvidado la contraseña?"
   },
+  "signUp": {
+    "title": "Create an account",
+    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
+    "trial_one": "{{count}} free AI scan, no time limit.",
+    "trial_other": "{{count}} free AI scans, no time limit.",
+    "emailRequired": "Type your email address.",
+    "submit": "Send the letter",
+    "sent": "Check your inbox. The link in the letter creates your account.",
+    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
+    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
+    "waitLater": "Too many requests from this network. Try again later.",
+    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
+    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
+    "failed": "The request did not go through. Try again in a moment.",
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
   "signOut": {
     "menuItem": "Cerrar sesión",
     "title": "Cerrar sesión",
@@ -2979,12 +2999,14 @@
     "haveAccount": "Ya tengo una cuenta",
     "managed": {
       "body": "Inicia sesión en tu cuenta o abre el enlace de invitación que te enviaron.",
+      "bodyOpen": "Sign in to your account, or create one with your email address.",
       "haveInvite": "Tengo un enlace de invitación",
       "pasteTitle": "Pega tu enlace de invitación",
       "pasteLabel": "Enlace de invitación",
       "pasteHint": "Pega el enlace completo, tal y como lo recibiste.",
       "pasteContinue": "Continuar",
-      "pasteInvalid": "Eso no parece un enlace de invitación. Pega el enlace completo, tal y como lo recibiste."
+      "pasteInvalid": "Eso no parece un enlace de invitación. Pega el enlace completo, tal y como lo recibiste.",
+      "signUp": "Create an account"
     },
     "returning": "Este dispositivo ya había iniciado sesión en una cuenta anteriormente.",
     "signIn": "Iniciar sesión",

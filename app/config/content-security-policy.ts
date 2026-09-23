@@ -104,6 +104,25 @@ export interface ContentSecurityPolicyInput {
    * third one costs nothing new and is named only for the reader's benefit.
    */
   analyticsOrigin: string | null;
+  /**
+   * Whether this instance can carry the sign-up form's Turnstile challenge
+   * (M253, owner decision 2026-09-23): `true` on a managed instance, which is
+   * the only kind whose core can open sign-up.
+   *
+   * WHY NOT THE CORE'S OWN ANSWER. The header is built once, at boot, and the
+   * core says whether it runs a challenge on `/health`, which this server does
+   * not read. Waiting for a second switch on this side would let an operator
+   * turn the challenge on in the core and ship a sign-up form whose widget the
+   * CSP blocks, so nobody could sign up. The widening is therefore tied to the
+   * one kind of instance that can have the form, and the SCRIPT is still
+   * loaded only by `/sign-up`, only when the core names a site key.
+   *
+   * ONLY `script-src` and `frame-src`, which is what Turnstile needs: its
+   * script loads from Cloudflare and it draws an iframe from the same origin,
+   * and the iframe's own requests run under the iframe's policy, not this one.
+   * `false` leaves the header byte for byte what it was.
+   */
+  signupCaptchaPossible: boolean;
 }
 
 /**
@@ -119,7 +138,10 @@ export function buildContentSecurityPolicy({
   presetOrigin,
   newsletterEnabled,
   analyticsOrigin,
+  signupCaptchaPossible,
 }: ContentSecurityPolicyInput): string {
+  // Turnstile's script and frame are wanted by EITHER feature, and named once.
+  const isTurnstileAllowed = newsletterEnabled || signupCaptchaPossible;
   const connectSrc = [
     "'self'",
     ...providerOrigins,
@@ -161,13 +183,13 @@ export function buildContentSecurityPolicy({
   // before.
   const scriptSrc = [
     ...SCRIPT_SRC,
-    ...(newsletterEnabled ? [TURNSTILE_ORIGIN] : []),
+    ...(isTurnstileAllowed ? [TURNSTILE_ORIGIN] : []),
     // `matomo.js`. Appended only when analytics are configured — with them off
     // this list is identical to `SCRIPT_SRC`, which is the property the
     // unconfigured-instance claim rests on.
     ...(analyticsOrigin === null ? [] : [analyticsOrigin]),
   ];
-  const frameSrc = newsletterEnabled ? [`frame-src 'self' ${TURNSTILE_ORIGIN}`] : [];
+  const frameSrc = isTurnstileAllowed ? [`frame-src 'self' ${TURNSTILE_ORIGIN}`] : [];
 
   return [
     "default-src 'self'",
