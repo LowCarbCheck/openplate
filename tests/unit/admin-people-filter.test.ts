@@ -22,6 +22,7 @@ function person(overrides: Partial<AdminAccountView> & { id: number; email: stri
     allowanceExpiresAt: null,
     suspendedAt: null,
     invitesLeft: null,
+    trialScans: null,
     createdAt: '2026-08-01T09:00:00.000Z',
     lastSeenAt: null,
     ...overrides,

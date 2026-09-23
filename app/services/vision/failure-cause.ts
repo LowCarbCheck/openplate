@@ -86,6 +86,17 @@ export type VisionFailureCause =
    */
   | 'allowance-expired'
   /**
+   * `403 {"error":"trial-scans-spent"}`, the account's free AI scans are used
+   * up (M253/03, `PROTOCOL.md` §5.19).
+   *
+   * A THIRD REFUSAL, NOT `allowance-expired` AND NOT `auth`. Nothing ran out
+   * on a date, and nothing about a key is wrong: the next step is a plan, so
+   * the screen shows the plan offer. Before this cause existed an unknown 403
+   * code fell through to `auth` ("check your key"), which on a managed
+   * instance names a key the person never had.
+   */
+  | 'trial-scans-spent'
+  /**
    * `503 {"error":"ai-instance-ceiling"}`, the whole instance has spent its
    * daily ceiling, and every account is refused until the next UTC day.
    *
@@ -194,6 +205,7 @@ async function is429CreditExhaustion(response: Response): Promise<boolean> {
 const AI_NOT_ALLOWED_CODE = 'ai-not-allowed';
 const ACCOUNT_SUSPENDED_CODE = 'account-suspended';
 const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
+const TRIAL_SCANS_SPENT_CODE = 'trial-scans-spent';
 
 /** The marker on the instance-wide `503`, see `VisionFailureCause`. */
 const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
@@ -224,6 +236,8 @@ const ACCOUNT_SUSPENDED_MESSAGE = 'Your account is suspended. Ask your administr
 // account, so the DATE is added by the screen, which has both; the sentence
 // here is the true one that needs neither (`scan.tsx`, `describeFailureBody`).
 const ALLOWANCE_EXPIRED_MESSAGE = 'Your allowance for photo estimates has ended. Everything else keeps working.';
+// No number: this module has no account, and the screen adds the count it read.
+const TRIAL_SCANS_SPENT_MESSAGE = 'You used your free AI scans. Pick a plan to keep using AI entries.';
 const AI_INSTANCE_CEILING_MESSAGE =
   'This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.';
 
@@ -277,6 +291,7 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
     if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
     if (code === ALLOWANCE_EXPIRED_CODE) return { cause: 'allowance-expired', message: ALLOWANCE_EXPIRED_MESSAGE };
+    if (code === TRIAL_SCANS_SPENT_CODE) return { cause: 'trial-scans-spent', message: TRIAL_SCANS_SPENT_MESSAGE };
     // A provider refusing a pasted key: the open instance's ordinary case.
     return { cause: 'auth', message: AUTH_MESSAGE };
   }

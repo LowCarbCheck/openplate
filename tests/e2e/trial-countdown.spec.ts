@@ -190,3 +190,38 @@ test('no countdown on an instance without plans, which is never asked for one', 
   await expect(countdownAction(page)).toHaveCount(0);
   expect(planReads, 'an instance without plans was asked for a plan').toBe(0);
 });
+
+test('on a scan trial the countdown counts free scans, not days (M253/05)', async ({ page }) => {
+  await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null });
+  // NO DATE and a count: the core's scan trial. A future date would lift the
+  // count, which the day cases above are.
+  await routeAccountAllowance(page, {
+    dailyAiLimit: TRIAL_DAILY_LIMIT,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 7 },
+  });
+  await signIn(page);
+
+  await expect(countdownAction(page)).toBeVisible({ timeout: 10_000 });
+  await expect(headerStatus(page)).toContainText(fill(EN.plan.countdown.scansLeft_other, { count: '7' }));
+  // THE CONTROL: the same slot says no days, so the text above is the scans
+  // sentence and not a day sentence that happens to share a word.
+  await expect(headerStatus(page)).not.toContainText(fill(EN.plan.countdown.daysLeft_other, { count: '7' }));
+});
+
+test('a spent scan trial shows no countdown (M253/05)', async ({ page }) => {
+  await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null });
+  await routeAccountAllowance(page, {
+    dailyAiLimit: TRIAL_DAILY_LIMIT,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 0 },
+  });
+  const planRead = waitForPlanRead(page);
+  await signIn(page);
+  await planRead;
+
+  // THE ANCHOR is the header title, drawn once the plan read has landed; the
+  // control is the test above, where the same query finds the line.
+  await expect(page.locator('header h1')).toBeVisible();
+  await expect(countdownAction(page)).toHaveCount(0);
+});

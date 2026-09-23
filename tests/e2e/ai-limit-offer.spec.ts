@@ -31,7 +31,13 @@ import {
   shiftScoreAfter,
 } from './layout-shift';
 import { funnel, recordMatomo } from './matomo-stub';
-import { createGate, FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW, routePlansCore } from './plans-stub';
+import {
+  createGate,
+  FIXTURE_OFFER_BODY,
+  NO_SUBSCRIPTION_VIEW,
+  routeAccountAllowance,
+  routePlansCore,
+} from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -63,13 +69,16 @@ function offerCard(page: Page): Locator {
   return page.locator('[data-slot="plan-offer-compact"]');
 }
 
-/** The vision endpoint refuses every scan the way the AI proxy does once an allowance has ended. */
-async function refuseEveryScan(page: Page): Promise<void> {
+/**
+ * The vision endpoint refuses every scan the way the AI proxy does: once an
+ * allowance has ended by default, or with the code a spec names.
+ */
+async function refuseEveryScan(page: Page, code = 'allowance-expired'): Promise<void> {
   await page.route(`${VISION_BASE_URL}/models`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
   );
   await page.route(`${VISION_BASE_URL}/chat/completions`, (route) =>
-    route.fulfill({ status: 403, json: { error: { code: 'allowance-expired' } } }),
+    route.fulfill({ status: 403, json: { error: { code } } }),
   );
 }
 
@@ -87,14 +96,14 @@ async function signInWithProvider(page: Page): Promise<void> {
   await page.waitForURL('**/diary');
 }
 
-/** Takes one photo and waits for the refusal. */
-async function scanAndBeRefused(page: Page): Promise<void> {
+/** Takes one photo and waits for the refusal whose headline the spec names. */
+async function scanAndBeRefused(page: Page, title = EN.scan.errors.titles.allowanceExpired): Promise<void> {
   await page.goto('/add/photo');
   const captureCard = page.locator('[data-slot="card"]').filter({ has: page.locator('input[type="file"][capture]') });
   await captureCard
     .locator('input[type="file"][capture]')
     .setInputFiles({ name: 'plate.png', mimeType: 'image/png', buffer: PIXEL_PNG });
-  await expect(page.getByText(EN.scan.errors.titles.allowanceExpired)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(title)).toBeVisible({ timeout: 10_000 });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -159,4 +168,49 @@ test('an instance that sells nothing keeps the refusal as it was, and never asks
   await settleFrames(page);
   await expect(offerCard(page)).toHaveCount(0);
   expect(offerReads, 'an instance without plans was asked for its plans').toBe(0);
+});
+
+test('spent free scans turn into the same offer, headed with the number given (M253/05)', async ({ page }) => {
+  const events = await recordMatomo(page);
+  const offerGate = createGate();
+  const requests = await routePlansCore(page, {
+    planView: NO_SUBSCRIPTION_VIEW,
+    offerBody: FIXTURE_OFFER_BODY,
+    offerGate: offerGate.promise,
+  });
+  await routeAccountAllowance(page, {
+    dailyAiLimit: 20,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 0 },
+  });
+  await refuseEveryScan(page, 'trial-scans-spent');
+  await signInWithProvider(page);
+  await scanAndBeRefused(page, fill(EN.scan.errors.titles.trialScansSpent_other, { count: '10' }));
+
+  await expect(offerCard(page)).toBeVisible();
+  const priceLine = offerCard(page).locator('[data-slot="plan-offer-price"]');
+  await expect.poll(() => requests.locales.length, { message: 'the card never asked for the offer' }).toBe(1);
+  await settleFrames(page);
+  const topsBefore = await readTops(page);
+  const shiftsBefore = (await readShiftEntries(page)).length;
+
+  offerGate.open();
+  await expect(priceLine).toHaveText(expectedFromLine());
+  await settleFrames(page);
+  expect(movedBetween(topsBefore, await readTops(page)), 'the price moved the scan screen').toEqual([]);
+  expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift while the price arrived').toBe(0);
+  await offerCard(page).scrollIntoViewIfNeeded();
+  await expect.poll(() => funnel(events)).toEqual(['offer-seen:ai-limit']);
+});
+
+test('the control: a refusal no plan answers draws no offer on the same instance (M253/05)', async ({ page }) => {
+  const requests = await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
+  await refuseEveryScan(page, 'ai-not-allowed');
+  await signInWithProvider(page);
+  await scanAndBeRefused(page, EN.scan.errors.titles.aiNotAllowed);
+
+  // THE ANCHOR is the refusal above, drawn in the same render as the card.
+  await settleFrames(page);
+  await expect(offerCard(page)).toHaveCount(0);
+  expect(requests.locales, 'an offer was read for a refusal no plan answers').toEqual([]);
 });

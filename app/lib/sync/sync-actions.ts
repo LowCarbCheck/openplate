@@ -77,6 +77,7 @@ import {
 } from './sync-session';
 import { cacheOpenSession, closeAndForgetSyncSession, endSessionRefused, openSyncVault } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
+import { decodeTrialScans } from '#app/lib/plans/trial-scans';
 
 /** Overridable seams. Production passes none of these; tests pass all of them. */
 export interface SyncActionOptions {
@@ -968,6 +969,7 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
       aiUsedToday: account.aiUsedToday,
       allowanceExpiresAt: account.allowanceExpiresAt ?? null,
       invitesLeft: account.invitesLeft ?? null,
+      trialScans: decodeTrialScans(account.trialScans),
       createdAt: account.createdAt,
     },
   });
@@ -1007,6 +1009,8 @@ export async function refreshSyncAccount(): Promise<void> {
         // account sends lowers the count by one.
         allowanceExpiresAt: account.allowanceExpiresAt ?? null,
         invitesLeft: account.invitesLeft ?? null,
+        // THE SCAN COUNT MOVES ON THE SERVER TOO (M253/05), with every scan.
+        trialScans: decodeTrialScans(account.trialScans),
         createdAt: account.createdAt,
       },
     });

@@ -142,3 +142,41 @@ test('with no meal logged with AI there is no recap line, on the plan page or in
   await openPlanPage(page);
   await expect(recapLine(page)).toHaveCount(0);
 });
+
+test('on a scan trial with three scans or fewer left, the countdown sums up the meals so far (M253/05)', async ({
+  page,
+}) => {
+  await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
+  await routeAccountAllowance(page, {
+    dailyAiLimit: 20,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 3 },
+    createdAt: new Date().toISOString(),
+  });
+  await page.route(`${STUB_PROVIDER_URL}/chat/completions`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [{ index: 0, message: { role: 'assistant', content: IDENTIFICATION } }],
+        usage: { prompt_tokens: 1000, completion_tokens: 200 },
+      }),
+    }),
+  );
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+  await connectStubAiProvider(page);
+  await logOnePlateWithAi(page);
+
+  const recap = fill(EN.plan.recap.mealsSoFar_one, { count: '1' });
+  await page.goto('/diary');
+  await expect(headerStatus(page)).toContainText(fill(EN.plan.countdown.scansLeft_other, { count: '3' }), {
+    timeout: 10_000,
+  });
+  await expect(headerStatus(page)).toContainText(recap);
+  // THE CONTROL: the dated sentence is not what a scan trial reads.
+  await expect(headerStatus(page)).not.toContainText(fill(EN.plan.recap.meals_one, { count: '1' }));
+
+  await openPlanPage(page);
+  await expect(recapLine(page)).toHaveText(recap);
+});

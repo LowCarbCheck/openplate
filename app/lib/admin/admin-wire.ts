@@ -57,6 +57,15 @@ export const accountViewSchema = z.object({
    * the end date above: an older service means exactly "there is no cap here".
    */
   invitesLeft: z.number().int().nullable().catch(null),
+  /**
+   * The account's free AI scans, or `null` for none (M253/03, `PROTOCOL.md`
+   * §5.15). `.catch(null)` like the two above: an older core sends no key, and
+   * "no scan trial" is exactly what it means.
+   */
+  trialScans: z
+    .object({ granted: z.number().int().min(0), left: z.number().int().min(0) })
+    .nullable()
+    .catch(null),
   createdAt: z.string(),
   /**
    * When this person last did something on purpose, or `null` if they never

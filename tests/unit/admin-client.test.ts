@@ -538,3 +538,17 @@ test('a malformed body fails at the boundary rather than rendering as undefined'
   const { client } = clientAnswering({ accounts: [{ ...ACCOUNT, aiUsedToday: undefined }], total: 1 });
   await assert.rejects(() => client.listAccounts());
 });
+
+test('createInvite asks for the instance trial with "trial": true and sends no allowance of its own (M253/05)', async () => {
+  const { client, requests } = clientAnswering({ invite: INVITE, emailed: true, link: null });
+  await client.createInvite({ email: 'bea@example.org', trial: true, expiresInDays: 7 });
+
+  assert.deepEqual(requests[0]?.body, { email: 'bea@example.org', expiresInDays: 7, trial: true });
+});
+
+test('patchAccount carries the free scans given, and only them (M253/05)', async () => {
+  const { client, requests } = clientAnswering({ account: ACCOUNT });
+  await client.patchAccount({ id: 7, trialScans: 12 });
+
+  assert.deepEqual(requests[0]?.body, { trialScans: 12 });
+});

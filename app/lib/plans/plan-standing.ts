@@ -34,11 +34,23 @@
  * `resolveAllowanceDoor` makes, so this function and the AI proxy never
  * disagree about the last second.
  *
+ * ── OR THE TRIAL IS A COUNT (M253/05) ───────────────────────────────────
+ *
+ * Since M253 a new account on an open instance gets free AI scans with no end
+ * date (`AccountView.trialScans`). So `trial` and `trial-ended` carry a
+ * `basis`: `days` for the dated trial above, which still runs for accounts
+ * that were invited before the switch and on self-hosted instances, and
+ * `scans` for the count. A future date wins over the count, as it does in the
+ * proxy's ladder (`PROTOCOL.md` §5.19): a paid or granted window lifts the scan
+ * gate, so a person with a date is never shown a count that no longer binds.
+ *
  * PURE, AND THE CLOCK IS AN ARGUMENT, so the last minute of a trial and a
  * subscription that ends today are ordinary test cases.
  */
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import type { PlanInterval, PlanKey, PlanView } from '#app/lib/sync/engine/client/plans-wire';
+
+import type { TrialScans } from './trial-scans';
 
 import { hasPlansDoor } from './plans-door';
 
@@ -51,12 +63,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * - `no-plans`: draw nothing. The instance sells nothing, a fact is not known
  *   yet, or the person has an open allowance with no end date, which nothing
  *   sold here would improve.
- * - `trial`: an allowance with an end date still ahead. `daysLeft` is whole
- *   days, rounded UP, so the last minute of a trial still reads one day and
- *   never zero.
- * - `trial-ended`: no plan, and no working allowance. `endedAt` is the date
- *   that passed, or `null` for an account that never had an allowance at all,
- *   the same dateless fact `PlansDoor` carries in `use-ai-connection.ts`.
+ * - `trial`, basis `days`: an allowance with an end date still ahead.
+ *   `daysLeft` is whole days, rounded UP, so the last minute of a trial still
+ *   reads one day and never zero.
+ * - `trial`, basis `scans`: free AI scans left and no end date (M253/05).
+ *   `scansLeft` is above zero; zero is `trial-ended`.
+ * - `trial-ended`: no plan, and no working allowance. Basis `days`: `endedAt`
+ *   is the date that passed, or `null` for an account that never had an
+ *   allowance at all, the same dateless fact `PlansDoor` carries in
+ *   `use-ai-connection.ts`. Basis `scans`: every free scan is used, and there
+ *   is no date to name.
  * - `subscribed`: the biller holds a live subscription. `renews` is `false`
  *   when it was cancelled and runs out at `periodEnd`. `planKey` and
  *   `interval` are `null` when the biller could not name the plan.
@@ -64,8 +80,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export type PlanStanding =
   | { kind: 'no-plans' }
-  | { kind: 'trial'; endsAt: string; daysLeft: number }
-  | { kind: 'trial-ended'; endedAt: string | null }
+  | { kind: 'trial'; basis: 'days'; endsAt: string; daysLeft: number }
+  | { kind: 'trial'; basis: 'scans'; scansLeft: number; scansGranted: number }
+  | { kind: 'trial-ended'; basis: 'days'; endedAt: string | null }
+  | { kind: 'trial-ended'; basis: 'scans'; endedAt: null }
   | {
       kind: 'subscribed';
       planKey: PlanKey | null;
@@ -78,12 +96,17 @@ export type PlanStanding =
     }
   | { kind: 'lapsed' };
 
-/** The two account facts a standing needs, a subset of the session snapshot's `account`. */
+/** The account facts a standing needs, a subset of the session snapshot's `account`. */
 export interface StandingAccount {
   /** `null` is "not read yet", never zero. */
   dailyAiLimit: number | null;
   /** `null` is "no end date" or "not read yet". Neither is expired. */
   allowanceExpiresAt: string | null;
+  /**
+   * The free AI scans, or `null`/absent for none (M253/05). OPTIONAL, so an
+   * account read from a core older than the field is today's account.
+   */
+  trialScans?: TrialScans | null;
 }
 
 /** The single `no-plans` value, so no caller builds a second one. */
@@ -140,11 +163,30 @@ function subscribedStanding(planView: PlanView): PlanStanding {
 function neverSubscribedStanding({ account, now }: { account: StandingAccount | null; now: Date }): PlanStanding {
   if (account === null || account.dailyAiLimit === null) return NO_PLANS;
   const endsAtMs = account.allowanceExpiresAt === null ? Number.NaN : Date.parse(account.allowanceExpiresAt);
-  if (Number.isNaN(endsAtMs)) {
-    return account.dailyAiLimit > 0 ? NO_PLANS : { kind: 'trial-ended', endedAt: null };
-  }
+  if (Number.isNaN(endsAtMs)) return datelessStanding({ dailyAiLimit: account.dailyAiLimit, trialScans: account.trialScans ?? null });
   const endsAt = account.allowanceExpiresAt;
-  if (endsAt === null || endsAtMs <= now.getTime()) return { kind: 'trial-ended', endedAt: endsAt };
-  if (account.dailyAiLimit <= 0) return { kind: 'trial-ended', endedAt: null };
-  return { kind: 'trial', endsAt, daysLeft: Math.ceil((endsAtMs - now.getTime()) / DAY_MS) };
+  if (endsAt === null || endsAtMs <= now.getTime()) return { kind: 'trial-ended', basis: 'days', endedAt: endsAt };
+  if (account.dailyAiLimit <= 0) return { kind: 'trial-ended', basis: 'days', endedAt: null };
+  return { kind: 'trial', basis: 'days', endsAt, daysLeft: Math.ceil((endsAtMs - now.getTime()) / DAY_MS) };
+}
+
+/**
+ * An account with no end date: a scan trial, a standing grant, or no AI.
+ *
+ * The allowance is asked FIRST, the proxy's order: an account with no daily
+ * allowance is `403 ai-not-allowed` whatever its count says, so it keeps
+ * today's dateless `trial-ended`. With an allowance, a count decides; without a
+ * count it is a standing grant, which nothing sold here would improve.
+ */
+function datelessStanding({
+  dailyAiLimit,
+  trialScans,
+}: {
+  dailyAiLimit: number;
+  trialScans: TrialScans | null;
+}): PlanStanding {
+  if (dailyAiLimit <= 0) return { kind: 'trial-ended', basis: 'days', endedAt: null };
+  if (trialScans === null) return NO_PLANS;
+  if (trialScans.left <= 0) return { kind: 'trial-ended', basis: 'scans', endedAt: null };
+  return { kind: 'trial', basis: 'scans', scansLeft: trialScans.left, scansGranted: trialScans.granted };
 }

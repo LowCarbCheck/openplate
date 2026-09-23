@@ -26,6 +26,11 @@
  * there is no window and no sentence, because a count over a guessed window
  * would claim meals that were not the trial's.
  *
+ * A SCAN TRIAL HAS NO END DATE (M253/05), so its window runs from the account's
+ * creation to now: every AI meal logged so far, and the sentence says "so far".
+ * The end is unbounded rather than the clock, so the window, and the read it
+ * keys, does not change on every render; a meal cannot be created in the future.
+ *
  * Pure: the logs and the dates are arguments.
  */
 import type { LocalFoodLog } from '#app/lib/local-store';
@@ -33,6 +38,18 @@ import type { PlanStanding } from '#app/lib/plans/plan-standing';
 
 /** The calendar days before the end at which the countdown carries the recap. */
 export const RECAP_NEAR_END_DAYS = 3;
+
+/** The free scans left at which the countdown carries the recap (M253/05). */
+export const RECAP_NEAR_END_SCANS = 3;
+
+/** The recap's sentence: "in your trial" for a dated trial, "so far" for a scan trial, which has no end yet. */
+export type RecapSentenceKey = 'plan.recap.meals' | 'plan.recap.mealsSoFar';
+
+/** Which recap sentence a standing reads. */
+export function recapSentenceKey(standing: PlanStanding): RecapSentenceKey {
+  const isScans = (standing.kind === 'trial' || standing.kind === 'trial-ended') && standing.basis === 'scans';
+  return isScans ? 'plan.recap.mealsSoFar' : 'plan.recap.meals';
+}
 
 /** The trial, as two epoch-ms instants. `startsAtMs` is included, `endsAtMs` is not. */
 export interface TrialWindow {
@@ -60,16 +77,22 @@ export function trialRecapWindow({
   const endsAt = trialEndOf(standing);
   if (endsAt === null || accountCreatedAt === null || accountCreatedAt === undefined) return null;
   const startsAtMs = Date.parse(accountCreatedAt);
-  const endsAtMs = Date.parse(endsAt);
+  const endsAtMs = endsAt === UNBOUNDED ? Number.POSITIVE_INFINITY : Date.parse(endsAt);
   if (Number.isNaN(startsAtMs) || Number.isNaN(endsAtMs) || startsAtMs >= endsAtMs) return null;
   return { startsAtMs, endsAtMs };
 }
 
-/** The instant a trial ends or ended, or `null` for every standing that is not about a trial with a date. */
+/** The end of a scan trial's window: none. A sentinel rather than a date, so no clock is read. */
+const UNBOUNDED = 'unbounded';
+
+/**
+ * The instant a trial ends or ended, {@link UNBOUNDED} for a scan trial, or
+ * `null` for every standing that is not about a trial.
+ */
 function trialEndOf(standing: PlanStanding): string | null {
-  if (standing.kind === 'trial') return standing.endsAt;
-  if (standing.kind === 'trial-ended') return standing.endedAt;
-  return null;
+  if (standing.kind !== 'trial' && standing.kind !== 'trial-ended') return null;
+  if (standing.basis === 'scans') return UNBOUNDED;
+  return standing.kind === 'trial' ? standing.endsAt : standing.endedAt;
 }
 
 /**

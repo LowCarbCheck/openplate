@@ -43,10 +43,14 @@ export interface CountdownStorage {
   setItem: (key: string, value: string) => void;
 }
 
-/** What the countdown says: how many days of AI scans are left, today included. `1` is the last day. */
-export interface TrialCountdown {
-  daysLeft: number;
-}
+/**
+ * What the countdown says.
+ *
+ * - `days`: how many days of AI scans are left, today included. `1` is the last day.
+ * - `scans`: how many free AI scans are left (M253/05). Above zero, because a
+ *   spent trial is `trial-ended` and draws no countdown.
+ */
+export type TrialCountdown = { basis: 'days'; daysLeft: number } | { basis: 'scans'; scansLeft: number };
 
 /**
  * The calendar days of AI scans left, today included, or `null` when the
@@ -118,8 +122,14 @@ export function resolveTrialCountdown({
   if (standing.kind !== 'trial') return null;
   if (closedDay === localDateToDayKey(now)) return null;
   if (isPlanPage(pathname)) return null;
-  const daysLeft = trialCountdownDaysLeft({ endsAt: standing.endsAt, now });
-  return daysLeft === null ? null : { daysLeft };
+  switch (standing.basis) {
+    case 'scans':
+      return { basis: 'scans', scansLeft: standing.scansLeft };
+    case 'days': {
+      const daysLeft = trialCountdownDaysLeft({ endsAt: standing.endsAt, now });
+      return daysLeft === null ? null : { basis: 'days', daysLeft };
+    }
+  }
 }
 
 /** Whether a path is the plan page, with or without a trailing slash. */

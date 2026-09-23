@@ -67,6 +67,7 @@ import { usePlanOffer } from '#app/hooks/use-plan-offer';
 import { useTrialRecap } from '#app/hooks/use-trial-recap';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
+import { recapSentenceKey } from '#app/lib/plans/trial-recap';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
 import {
   NO_CONSENTS,
@@ -289,7 +290,7 @@ export function PlanScreen(props: PlanScreenProps) {
           so this line never arrives above an order already drawn. */}
       {state.kind === 'ready' && props.recapMealCount !== null && props.recapMealCount > 0 && (
         <p data-slot="plan-trial-recap" className="text-sm">
-          {t('plan.recap.meals', { count: props.recapMealCount })}
+          {t(recapSentenceKey(standing), { count: props.recapMealCount })}
         </p>
       )}
 

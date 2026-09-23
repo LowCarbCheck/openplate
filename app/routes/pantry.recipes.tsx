@@ -46,6 +46,7 @@ import { MealSelectField } from '#app/components/meal-select-field';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { newIntakeId } from '#app/lib/plans/trial-scans';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { MEAL_TYPES } from '#app/lib/meal-choice';
 import { mealTypeForTime } from '#app/lib/meal-time';
@@ -206,7 +207,11 @@ async function proposeRecipes({
       provider: triple.provider,
       model: triple.model,
       baseUrl: triple.baseUrl,
-      credential: effective.source === 'managed' ? managedAiCredential() : { apiKey: effective.settings.apiKey ?? '' },
+      // One intake id for this round of recipes, the person's one action (M253/05).
+      credential:
+        effective.source === 'managed' ?
+          managedAiCredential({ intakeId: newIntakeId() })
+        : { apiKey: effective.settings.apiKey ?? '' },
     });
     const proposals = await provider.runTextIntake({
       task: RECIPE_PROPOSAL_TASK,
@@ -500,6 +505,13 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
     // back to the connect card below, and the ref stays empty so the answer is
     // bought the moment a connection resolves.
     if (effective === null) return;
+    // A MANAGED MODEL NOT READ YET is no answer to buy with (M253/05). The
+    // first render resolves the managed settings before the handshake's model
+    // has landed (`useEffectiveAiSettings` starts it at `null`), and buying
+    // then failed the round with no request sent and locked the slot below,
+    // so a managed instance never proposed a recipe on arrival. The effect
+    // runs again when the model arrives.
+    if (effective.source === 'managed' && effective.model === null) return;
     if (boughtForRef.current === slot) return;
     boughtForRef.current = slot;
     setPhase({ kind: 'asking' });

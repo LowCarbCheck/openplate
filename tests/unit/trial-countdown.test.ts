@@ -32,7 +32,7 @@ function localIso(day: number, hour: number, minute = 0, ms = 0): string {
 }
 
 function trial(endsAt: string): PlanStanding {
-  return { kind: 'trial', endsAt, daysLeft: 99 };
+  return { kind: 'trial', basis: 'days', endsAt, daysLeft: 99 };
 }
 
 function memoryStorage(initial: Record<string, string> = {}): CountdownStorage & { data: Record<string, string> } {
@@ -86,14 +86,14 @@ describe('when the countdown shows', () => {
   it('shows during a trial, on any page but the plan page', () => {
     assert.deepEqual(
       resolveTrialCountdown({ standing: trial(inAWeek), now: NOW, closedDay: null, pathname: '/diary' }),
-      { daysLeft: 8 },
+      { basis: 'days', daysLeft: 8 },
     );
   });
 
   it('does not show for any standing that is not a trial', () => {
     const others: PlanStanding[] = [
       { kind: 'no-plans' },
-      { kind: 'trial-ended', endedAt: localIso(22, 12) },
+      { kind: 'trial-ended', basis: 'days', endedAt: localIso(22, 12) },
       { kind: 'lapsed' },
       { kind: 'subscribed', planKey: 'yearly', interval: 'year', periodEnd: inAWeek, renews: true, isPastDue: false },
     ];
@@ -167,5 +167,29 @@ describe('the status channel reports a close', () => {
     publishStatus({ text: 'countdown', ttlMs: null, onDismiss: () => (closes += 1) });
     publishStatus({ text: 'something else' });
     assert.equal(closes, 0);
+  });
+});
+
+describe('a scan trial countdown (M253/05)', () => {
+  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 7, scansGranted: 10 };
+
+  it('says the scans left, not days, on a scan trial', () => {
+    assert.deepEqual(resolveTrialCountdown({ standing: scans, now: NOW, closedDay: null, pathname: '/diary' }), {
+      basis: 'scans',
+      scansLeft: 7,
+    });
+  });
+
+  it('keeps the same close-for-the-day and plan-page rules', () => {
+    assert.equal(resolveTrialCountdown({ standing: scans, now: NOW, closedDay: TODAY, pathname: '/diary' }), null);
+    assert.equal(
+      resolveTrialCountdown({ standing: scans, now: NOW, closedDay: null, pathname: '/settings/plan' }),
+      null,
+    );
+  });
+
+  it('shows nothing once the free scans are used', () => {
+    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedAt: null };
+    assert.equal(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: null, pathname: '/diary' }), null);
   });
 });

@@ -1987,6 +1987,7 @@
         "rateLimitMinute": "Kısa sürede art arda çok sayıda istek gönderildi. Bir dakika içinde tekrar dene.",
         "allowanceSpent": "Bugünkü yapay zeka tahminlerini tükettin. Yarın tekrar dene.",
         "allowanceExpired": "Fotoğraf tahminleri için kotan doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
+        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Fotoğraf tahminleri için kotan {{date}} tarihinde doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
         "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok."
       },
@@ -2003,6 +2004,9 @@
         "aiNotAllowed": "Yapay zeka tahminleri kapalı",
         "accountSuspended": "Hesabın askıya alındı",
         "allowanceExpired": "Fotoğraf tahminlerin sona erdi",
+        "trialScansSpent_one": "You used your {{count}} free AI scan",
+        "trialScansSpent_other": "You used your {{count}} free AI scans",
+        "trialScansSpentUncounted": "You used your free AI scans",
         "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu"
       },
       "text": {
@@ -3052,6 +3056,7 @@
       "none": "Bu hesap için fotoğraf tahminleri etkinleştirilmemiş.",
       "askAdmin": "Bunu yöneticin belirler.",
       "today": "Bugünkü fotoğraf tahminleri: {{used}} / {{limit}}",
+      "trialScans": "{{left}} of {{granted}} free AI scans left.",
       "expires": "Bu hesap için fotoğraf tahminleri {{date}} tarihine kadar geçerlidir.",
       "expired": "Bu hesap için fotoğraf tahminleri {{date}} tarihinde sona erdi.",
       "planLink": "Planını gör"
@@ -3075,7 +3080,8 @@
       "activity": "Ayrıca son {{days}} günün her birinde senin için kaç fotoğrafın okunduğunu da görebilirler. Daha eski günlük sayımlar silinir.",
       "notTheDiary": "Ne yediğin o sayfalarda yer almaz. Günlüğün herhangi bir kopyası bu cihazdan çıkmadan önce burada şifrelenir, bu nedenle orada okunamaz.",
       "allowanceExpiresAt": "Kotanın bittiği tarih.",
-      "invitesLeft": "Kalan davetiye sayın."
+      "invitesLeft": "Kalan davetiye sayın.",
+      "trialScans": "How many free AI scans you were given, and how many are left."
     },
     "password": {
       "title": "Parola",
@@ -3146,6 +3152,7 @@
       "role": "Rol",
       "allowance": "Günlük fotoğraf",
       "usedToday": "Bugün kullanılan",
+      "trialScans": "Free AI scans",
       "standing": "Durum",
       "lastSeen": "Son giriş",
       "recentDays": "Son {{days}} gün",
@@ -3155,6 +3162,7 @@
     },
     "usage": "{{used}} / {{limit}}",
     "usageNone": "Fotoğraf yok",
+    "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
       "never": "Hiç giriş yapmadı"
     },
@@ -3190,6 +3198,8 @@
       "cancel": "İptal",
       "allowanceLabel": "Gün başına fotoğraf",
       "allowanceHint": "0 değeri, bu kişi için fotoğraf okumayı kapatır.",
+      "trialScansLabel": "Free AI scans",
+      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
       "saved": "Kaydedildi.",
       "failed": "Bu değişiklik uygulanamadı."
     },
@@ -3237,6 +3247,10 @@
       "emailRequired": "Bir e-posta adresi gerekli.",
       "nameLabel": "Ad",
       "nameHint": "İsteğe bağlı. Kendilerine ve listede sana gösterilir.",
+      "grantLabel": "What the account gets",
+      "grantTrial_one": "Free trial ({{count}} scan)",
+      "grantTrial_other": "Free trial ({{count}} scans)",
+      "grantStanding": "Standing allowance",
       "allowanceLabel": "Günlük fotoğraf",
       "allowanceHint": "Her gün kaç tabak fotoğrafı okutabilecekleri. 0 değeri özelliği kapatır.",
       "expiryLabel": "Bağlantının geçerlilik süresi:",
@@ -3399,6 +3413,8 @@
       "daysLeft_one": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
       "daysLeft_other": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
       "lastDay": "Deneme sürendeki yapay zeka taramaları bugün bitiyor.",
+      "scansLeft_one": "{{count}} free AI scan left.",
+      "scansLeft_other": "{{count}} free AI scans left.",
       "action": "Planları gör"
     },
     "offer": {
@@ -3406,7 +3422,9 @@
     },
     "recap": {
       "meals_one": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin.",
-      "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
+      "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin.",
+      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
+      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
     }
   },
   "usual": {

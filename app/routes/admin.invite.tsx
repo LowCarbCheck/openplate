@@ -15,6 +15,14 @@
  * the ordinary case. An administrator inviting their fifth colleague should
  * not have to make four decisions again.
  *
+ * ── A trial where the instance has one (M253/05) ─────────────────────────
+ *
+ * On an instance whose handshake names a scan trial (`instance.trial`), the
+ * form offers "Free trial (N scans)" or "Standing allowance", the trial
+ * picked, and sends `"trial": true`: the core writes its own trial pair, so no
+ * number is typed here. The form waits for the handshake before it draws, so
+ * the choice is there from its first paint and never arrives under a cursor.
+ *
  * ── Client-only, like every account screen ───────────────────────────────
  *
  * The loader answers "does this instance have a server" and nothing else. The
@@ -24,7 +32,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getFormProps, getInputProps, getSelectProps, useForm } from '@conform-to/react';
+import { getCollectionProps, getFormProps, getInputProps, getSelectProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { Loader2 } from 'lucide-react';
 
@@ -47,12 +55,35 @@ import { canonicalizeEmail } from '#app/lib/sync/email';
 import type { Delivery } from '#app/lib/admin/admin-wire';
 import { isSyncRequestError } from '#app/lib/sync/engine/client/sync-error';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { offeredTrialScans } from '#app/lib/plans/signup-door';
 
 /** What the page is doing. `sent` carries the answer the result card needs and nothing else. */
 type InviteState =
   { kind: 'form' } | { kind: 'working' } | { kind: 'forbidden' } | { kind: 'sent'; email: string; delivery: Delivery };
 
 export default function AdminInvite() {
+  const { t } = useTranslation();
+  const { isSettled, instance } = useServerInstanceRead();
+
+  if (!isSettled) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.invite.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center py-4" aria-busy="true">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">{t('chrome.loading')}</span>
+        </CardContent>
+      </Card>
+    );
+  }
+  return <AdminInviteForm trialScans={offeredTrialScans(instance)} />;
+}
+
+/** The invitation form, once the handshake says whether the instance runs a trial. */
+function AdminInviteForm({ trialScans }: { trialScans: number | null }) {
   const { t } = useTranslation();
   const navigate = useAppNavigate();
   const [state, setState] = useState<InviteState>({ kind: 'form' });
@@ -66,6 +97,8 @@ export default function AdminInvite() {
       role: 'member',
       dailyAiLimit: String(DEFAULT_INVITE_ALLOWANCE),
       expiresInDays: String(DEFAULT_INVITE_EXPIRY_DAYS),
+      // The trial is PICKED where there is one: it is the instance's own offer.
+      grant: trialScans === null ? 'standing' : 'trial',
     },
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: makeInviteSchema(t) });
@@ -91,12 +124,15 @@ export default function AdminInvite() {
     // invited `Anna@Example.ORG` when the account is `anna@example.org`.
     const email = canonicalizeEmail(values.email);
     const displayName = values.displayName.trim();
+    // A TRIAL SENDS NO NUMBER: the core writes its own pair for it.
+    const isTrial = trialScans !== null && values.grant === 'trial';
     try {
       const outcome = await client.createInvite({
         email,
         displayName: displayName === '' ? null : displayName,
         role: values.role,
-        dailyAiLimit: values.dailyAiLimit,
+        dailyAiLimit: isTrial ? undefined : values.dailyAiLimit,
+        trial: isTrial ? true : undefined,
         expiresInDays: values.expiresInDays,
       });
       if (outcome.status === 'forbidden') {
@@ -115,6 +151,7 @@ export default function AdminInvite() {
   }
 
   if (state.kind === 'forbidden') return <NotAnAdministratorCard />;
+  const isTrialPicked = trialScans !== null && fields.grant.value !== 'standing';
 
   if (state.kind === 'sent') {
     return (
@@ -156,6 +193,20 @@ export default function AdminInvite() {
             <p className="text-xs text-muted-foreground">{t('admin.invite.nameHint')}</p>
           </div>
 
+          {trialScans !== null && (
+            <fieldset data-slot="invite-grant" className="space-y-2">
+              <legend className="text-sm font-medium">{t('admin.invite.grantLabel')}</legend>
+              {getCollectionProps(fields.grant, { type: 'radio', options: ['trial', 'standing'] }).map(({ key, ...props }) => (
+                <label key={key} htmlFor={props.id} className="flex min-h-11 items-center gap-2 text-sm">
+                  <input {...props} className="h-4 w-4 accent-primary" />
+                  {props.value === 'trial' ?
+                    t('admin.invite.grantTrial', { count: trialScans })
+                  : t('admin.invite.grantStanding')}
+                </label>
+              ))}
+            </fieldset>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor={fields.role.id}>{t('admin.role.label')}</Label>
@@ -168,11 +219,15 @@ export default function AdminInvite() {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={fields.dailyAiLimit.id}>{t('admin.invite.allowanceLabel')}</Label>
-              <Input {...getInputProps(fields.dailyAiLimit, { type: 'number' })} min={0} step={1} className="h-11" />
-              <p className="text-xs text-muted-foreground">{t('admin.invite.allowanceHint')}</p>
-            </div>
+            {/* The picked grant reveals its own field: a standing allowance is
+                a number, a trial is the instance's and has none. */}
+            {!isTrialPicked && (
+              <div className="space-y-2">
+                <Label htmlFor={fields.dailyAiLimit.id}>{t('admin.invite.allowanceLabel')}</Label>
+                <Input {...getInputProps(fields.dailyAiLimit, { type: 'number' })} min={0} step={1} className="h-11" />
+                <p className="text-xs text-muted-foreground">{t('admin.invite.allowanceHint')}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -105,6 +105,7 @@ import { cn } from '#app/lib/utils';
 import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
+import { newIntakeId } from '#app/lib/plans/trial-scans';
 import i18nSingleton from '#app/i18n/i18n';
 import type { Translate } from '#app/lib/macro-sanity';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -873,7 +874,11 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       // The MANAGED path hands over a token provider rather than a key, and
       // that is what lets the adapter refresh once on a 401, an access token
       // lasts fifteen minutes and a tab stays open for hours.
-      credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential(),
+      //
+      // ONE INTAKE ID PER SUBMISSION (M253/05): this action is one person
+      // action, a photo (label folded in) or a typed meal, and every retry
+      // the adapter makes for it carries the same id, so it costs one scan.
+      credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential({ intakeId: newIntakeId() }),
     });
     const attempt: IntakeAttemptContext = {
       visionProvider,
@@ -1398,7 +1403,11 @@ function ScanFlow({
   // that surface keeps no hooks of its own and stays renderable in a test.
   // `null` on an open instance and in the moments before the account view
   // lands, which is the dateless sentence, never a blank one.
-  const allowanceEndsAt = useSyncSession().account?.allowanceExpiresAt ?? null;
+  const sessionAccount = useSyncSession().account;
+  const allowanceEndsAt = sessionAccount?.allowanceExpiresAt ?? null;
+  // THE NUMBER THE SCAN REFUSAL NAMES (M253/05), for the same reason: a prop,
+  // so `UploadForm` stays hook-free. `null` without a scan trial.
+  const trialScansGranted = sessionAccount?.trialScans?.granted ?? null;
   // WHETHER THE REFUSAL HAS A DOOR (M213 spec 05). Read here for the same
   // reason the date is, so `UploadForm` keeps no hooks and stays renderable in
   // a test. `false` for an unreachable or older service, which leaves the
@@ -1732,6 +1741,7 @@ function ScanFlow({
         failureCause={failedIdentify?.failureCause}
         retryAfterSeconds={failedIdentify?.retryAfterSeconds}
         allowanceEndsAt={allowanceEndsAt}
+        trialScansGranted={trialScansGranted}
         plansAvailable={plansAvailable}
         provider={failedIdentify?.provider}
         usage={failedIdentify?.usage}
@@ -1771,11 +1781,27 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   // of capacity for the day.
   'allowance-expired': 'scan.errors.titles.allowanceExpired',
   'ai-instance-ceiling': 'scan.errors.titles.instanceCeiling',
+  // THE DATELESS, COUNTLESS FORM (M253/05). `getFailureAlertTitle` swaps in
+  // the counted title when the session knows how many scans were given.
+  'trial-scans-spent': 'scan.errors.titles.trialScansSpentUncounted',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
-/** The alert headline for a given failure cause, see `FAILURE_TITLE_KEY_BY_CAUSE`. */
-export function getFailureAlertTitle(failureCause: VisionFailureCause | undefined, t: Translate): string {
+/**
+ * The alert headline for a given failure cause, see `FAILURE_TITLE_KEY_BY_CAUSE`.
+ *
+ * @param trialScansGranted - how many free scans the account was given, when
+ *   the session knows it. Names the number on the one refusal that is about a
+ *   number; `null` or absent gives the countless headline, never a blank.
+ */
+export function getFailureAlertTitle(
+  failureCause: VisionFailureCause | undefined,
+  t: Translate,
+  trialScansGranted?: number | null,
+): string {
   if (failureCause === undefined || failureCause === 'genuinely-no-food') return t('scan.errors.titles.noLuck');
+  if (failureCause === 'trial-scans-spent' && trialScansGranted !== null && trialScansGranted !== undefined) {
+    return t('scan.errors.titles.trialScansSpent', { count: trialScansGranted });
+  }
   return t(FAILURE_TITLE_KEY_BY_CAUSE[failureCause]);
 }
 
@@ -1816,6 +1842,9 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   // swaps the two rate-limit sentences on `Retry-After`.
   'allowance-expired': 'scan.errors.provider.allowanceExpired',
   'ai-instance-ceiling': 'scan.errors.provider.instanceCeiling',
+  // The free scans are used: a plan is the next step, and the food database
+  // still answers without AI (M253/05).
+  'trial-scans-spent': 'scan.errors.provider.trialScansSpent',
   // The remaining causes deliberately keep the adapter's own English (see above).
   'invalid-request': undefined,
   transient: undefined,
@@ -1825,8 +1854,10 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
 /**
  * Whether the refusal a person is looking at has a page that fixes it.
  *
- * ONE CAUSE ONLY, and that is the whole rule. `allowance-expired` is the
- * refusal a payment answers; `ai-not-allowed` is an account an administrator
+ * TWO CAUSES, and that is the whole rule. `allowance-expired` and
+ * `trial-scans-spent` (M253/05) are the refusals a payment answers: a trial
+ * that ran out on a date, and one whose free scans are used. `ai-not-allowed`
+ * is an account an administrator
  * never switched on, and offering to sell a plan there would be an
  * advertisement on a screen somebody opened to log a meal. The composer's
  * notice draws the same distinction through `resolveAiIntakeDoor`, so the two
@@ -1836,7 +1867,10 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
  * link rendered from a `&&` inside the alert would have neither.
  */
 export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause; plansAvailable: boolean }): boolean {
-  return input.plansAvailable && input.failureCause === 'allowance-expired';
+  return (
+    input.plansAvailable &&
+    (input.failureCause === 'allowance-expired' || input.failureCause === 'trial-scans-spent')
+  );
 }
 
 /**
@@ -1914,6 +1948,7 @@ export function UploadForm({
   failureCause,
   retryAfterSeconds,
   allowanceEndsAt,
+  trialScansGranted,
   plansAvailable,
   provider,
   usage,
@@ -1947,6 +1982,8 @@ export function UploadForm({
    * refusal that is about a date.
    */
   allowanceEndsAt?: string | null;
+  /** How many free AI scans the account was given, or `null`. Names the count on `trial-scans-spent`. */
+  trialScansGranted?: number | null;
   /**
    * Whether this instance sells a plan, so the expiry refusal has somewhere to
    * send a person (M213 spec 05).
@@ -2011,7 +2048,9 @@ export function UploadForm({
   const photoLabel = isTextIntake ? t('scan.textIntake.label') : t('scan.capture.photoLabel');
   const previewAlt = t('scan.capture.previewAlt');
   const alertTitle =
-    isPhotoQualityFailure && isTextIntake ? t('scan.errors.text.title') : getFailureAlertTitle(failureCause, t);
+    isPhotoQualityFailure && isTextIntake ?
+      t('scan.errors.text.title')
+    : getFailureAlertTitle(failureCause, t, trialScansGranted);
   const photoQualityBody = isTextIntake ? t('scan.errors.text.qualityBody') : t('scan.errors.photoQualityBody');
   // Only relevant for a photo-quality failure: whether there's extra detail
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case

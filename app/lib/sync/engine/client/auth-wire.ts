@@ -100,7 +100,23 @@ export interface AccountViewWire {
    * a client believes.
    */
   invitesLeft: number | null;
+  /**
+   * The account's free AI scans, or `null` for an account with no scan trial
+   * (M253/03, `PROTOCOL.md` §5.15). ABSENT on a core older than the field,
+   * which means the same thing.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT, like the end date above. The proxy
+   * counts and refuses with `403 trial-scans-spent`. Read only through
+   * `decodeTrialScans`, because this interface is a cast, not a parse.
+   */
+  trialScans?: TrialScansWire | null;
   createdAt: IsoTimestamp;
+}
+
+/** `AccountView.trialScans` on the wire: how many scans were given, and how many are left. */
+export interface TrialScansWire {
+  granted: number;
+  left: number;
 }
 
 /**

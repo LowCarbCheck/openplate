@@ -48,6 +48,7 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { bindingTrialScans, type TrialScans } from '#app/lib/plans/trial-scans';
 import { formatRelativeTime } from '#app/lib/relative-time';
 import { deriveSyncMenuState, type SyncMenuState } from '#app/lib/sync/sync-menu-state';
 import { DropdownMenuItem, DropdownMenuSeparator } from './ui/dropdown-menu';
@@ -68,6 +69,8 @@ export type AllowanceLine =
   | { kind: 'none' }
   /** A working allowance, with today's numbers. */
   | { kind: 'usage'; used: number; limit: number }
+  /** A scan trial, with the free scans left (M253/05). Replaces the per-day line. */
+  | { kind: 'trial-scans'; left: number; granted: number }
   /** No allowance at all, on an instance that sells no plan. */
   | { kind: 'no-allowance' }
   /** No allowance, on an instance that has a plan page behind it. */
@@ -83,6 +86,11 @@ export interface AllowanceLineInput {
   aiUsedToday: number | null;
   /** `hasPlansDoor(useServerInstance())`. */
   plansAvailable: boolean;
+  /**
+   * The scan trial that binds this account (`bindingTrialScans`), or
+   * `null`/absent. OPTIONAL, so every caller written before M253 reads as today.
+   */
+  trialScans?: TrialScans | null;
 }
 
 /**
@@ -97,10 +105,14 @@ export function resolveAllowanceLine({
   dailyAiLimit,
   aiUsedToday,
   plansAvailable,
+  trialScans,
 }: AllowanceLineInput): AllowanceLine {
   if (!aiComesFromTheInstance) return { kind: 'none' };
   if (dailyAiLimit === null) return { kind: 'none' };
   if (dailyAiLimit === 0) return plansAvailable ? { kind: 'plan' } : { kind: 'no-allowance' };
+  if (trialScans !== null && trialScans !== undefined) {
+    return { kind: 'trial-scans', left: trialScans.left, granted: trialScans.granted };
+  }
   return { kind: 'usage', used: aiUsedToday ?? 0, limit: dailyAiLimit };
 }
 
@@ -207,6 +219,11 @@ export function AccountStripView({ state, title, allowance }: AccountStripViewPr
                 {t('account.allowance.today', { used: allowance.used, limit: allowance.limit })}
               </span>
             )}
+            {allowance.kind === 'trial-scans' && (
+              <span className="block truncate text-xs text-muted-foreground">
+                {t('account.allowance.trialScans', { left: allowance.left, granted: allowance.granted })}
+              </span>
+            )}
             {allowance.kind === 'no-allowance' && (
               <span className="block truncate text-xs text-muted-foreground">{t('account.allowance.none')}</span>
             )}
@@ -241,6 +258,10 @@ export function AvatarAccountStrip() {
     dailyAiLimit: account?.dailyAiLimit ?? null,
     aiUsedToday: account?.aiUsedToday ?? null,
     plansAvailable: hasPlansDoor(instance),
+    trialScans: bindingTrialScans({
+      trialScans: account?.trialScans,
+      allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    }),
   });
 
   return <AccountStripView state={state} title={account?.displayName ?? account?.email ?? null} allowance={allowance} />;

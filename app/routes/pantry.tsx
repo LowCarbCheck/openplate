@@ -57,6 +57,7 @@ import { ConnectCard, ScanLoading } from '#app/components/intake/intake-connect-
 import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { newIntakeId } from '#app/lib/plans/trial-scans';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { ADD_DESCRIBE_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
@@ -159,8 +160,11 @@ async function readPantry({
       provider: triple.provider,
       model: triple.model,
       baseUrl: triple.baseUrl,
+      // One intake id for this identify, the person's one action (M253/05).
       credential:
-        effective.source === 'managed' ? managedAiCredential() : { apiKey: effective.settings.apiKey ?? '' },
+        effective.source === 'managed' ?
+          managedAiCredential({ intakeId: newIntakeId() })
+        : { apiKey: effective.settings.apiKey ?? '' },
     });
     const identification =
       handoff.kind === 'photo' ?

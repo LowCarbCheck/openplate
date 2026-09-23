@@ -211,11 +211,12 @@ export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): P
   return requests;
 }
 
-/** The fields an allowance sets, leaving an absent `createdAt` as the fake's own. */
-function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt }: AccountAllowance): AccountAllowance {
-  return createdAt === undefined ?
-      { dailyAiLimit, allowanceExpiresAt }
-    : { dailyAiLimit, allowanceExpiresAt, createdAt };
+/** The fields an allowance sets, leaving an absent `createdAt` and `trialScans` as the fake's own. */
+function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt, trialScans }: AccountAllowance): AccountAllowance {
+  const patch: AccountAllowance = { dailyAiLimit, allowanceExpiresAt };
+  if (createdAt !== undefined) patch.createdAt = createdAt;
+  if (trialScans !== undefined) patch.trialScans = trialScans;
+  return patch;
 }
 
 /** An auth answer that carries the account, every other key kept as the fake sent it. */
@@ -233,6 +234,11 @@ export interface AccountAllowance {
    * the account at its own start and leaves earlier specs' meals outside.
    */
   createdAt?: string;
+  /**
+   * The account's free AI scans (M253/05), or absent for the fake's own, which
+   * sends none, like a core older than the field.
+   */
+  trialScans?: { granted: number; left: number } | null;
 }
 
 /**

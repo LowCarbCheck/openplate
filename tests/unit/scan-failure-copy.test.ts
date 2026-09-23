@@ -287,6 +287,7 @@ test('every cause has a headline, in both locales', () => {
     'account-suspended',
     'allowance-expired',
     'ai-instance-ceiling',
+    'trial-scans-spent',
   ] as const;
   for (const cause of causes) {
     for (const [locale, translate] of [
@@ -320,4 +321,46 @@ test('413 is not retried', () => {
   // The second upload was the larger cost of the two.
   const adapter = readFileSync(new URL('../../app/services/vision/openai-compatible.ts', import.meta.url), 'utf8');
   assert.match(adapter, /NON_RETRYABLE_CLIENT_ERROR_STATUSES[^=]*=\s*new Set\(\[401, 402, 403, 413, 429\]\)/);
+});
+
+// ---------------------------------------------------------------------------
+// The scan trial (M253/05)
+// ---------------------------------------------------------------------------
+
+test('403 trial-scans-spent is its own cause, and an unknown code still falls through to auth', async () => {
+  const spent = await classifyVisionHttpFailure(refusal({ status: 403, body: { error: 'trial-scans-spent' } }));
+  assert.equal(spent.cause, 'trial-scans-spent');
+  assert.doesNotMatch(spent.message, /API key|AI settings/i);
+  // THE CONTROL: a code this build does not know is still a key refusal.
+  const unknown = await classifyVisionHttpFailure(refusal({ status: 403, body: { error: 'something-new' } }));
+  assert.equal(unknown.cause, 'auth');
+});
+
+test('the spent-scans refusal offers the plan page, only where there is one', () => {
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-scans-spent', plansAvailable: true }), true);
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-scans-spent', plansAvailable: false }), false);
+});
+
+/** `t` with i18next's plural suffix, for the one headline that counts. */
+function pluralT(key: string, params?: Readonly<Record<string, string | number | boolean | Date>>): string {
+  if (params?.count === undefined) return t(key, params);
+  return t(`${key}_${params.count === 1 ? 'one' : 'other'}`, params);
+}
+
+test('the spent-scans headline names the number the account was given, and stands without it', () => {
+  assert.equal(
+    getFailureAlertTitle('trial-scans-spent', pluralT, 10),
+    EN.get('scan.errors.titles.trialScansSpent_other')?.replace('{{count}}', '10'),
+  );
+  // THE CONTROL: no count known, a headline with no number, never a blank.
+  const uncounted = getFailureAlertTitle('trial-scans-spent', pluralT, null);
+  assert.equal(uncounted, EN.get('scan.errors.titles.trialScansSpentUncounted'));
+  assert.doesNotMatch(uncounted, /\d/);
+});
+
+test('the spent-scans body says the food database still works', () => {
+  assert.equal(
+    describeFailureBody({ failureCause: 'trial-scans-spent' }, t),
+    EN.get('scan.errors.provider.trialScansSpent'),
+  );
 });

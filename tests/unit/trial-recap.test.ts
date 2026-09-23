@@ -9,7 +9,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import type { PlanStanding } from '../../app/lib/plans/plan-standing';
-import { countTrialAiMeals, trialRecapWindow, type RecapLog, type TrialWindow } from '../../app/lib/plans/trial-recap';
+import {
+  countTrialAiMeals,
+  recapSentenceKey,
+  trialRecapWindow,
+  type RecapLog,
+  type TrialWindow,
+} from '../../app/lib/plans/trial-recap';
 
 const CREATED_AT = '2026-09-01T10:00:00.000Z';
 const ENDS_AT = '2026-09-15T10:00:00.000Z';
@@ -57,12 +63,12 @@ describe('the meals counted', () => {
 });
 
 describe('the trial window', () => {
-  const trial: PlanStanding = { kind: 'trial', endsAt: ENDS_AT, daysLeft: 3 };
+  const trial: PlanStanding = { kind: 'trial', basis: 'days', endsAt: ENDS_AT, daysLeft: 3 };
 
   it('runs from the account creation to the end of a running trial, or of one that ended', () => {
     assert.deepEqual(trialRecapWindow({ standing: trial, accountCreatedAt: CREATED_AT }), WINDOW);
     assert.deepEqual(
-      trialRecapWindow({ standing: { kind: 'trial-ended', endedAt: ENDS_AT }, accountCreatedAt: CREATED_AT }),
+      trialRecapWindow({ standing: { kind: 'trial-ended', basis: 'days', endedAt: ENDS_AT }, accountCreatedAt: CREATED_AT }),
       WINDOW,
     );
   });
@@ -72,7 +78,7 @@ describe('the trial window', () => {
     assert.equal(trialRecapWindow({ standing: trial, accountCreatedAt: undefined }), null);
     assert.equal(trialRecapWindow({ standing: trial, accountCreatedAt: 'not a date' }), null);
     assert.equal(
-      trialRecapWindow({ standing: { kind: 'trial-ended', endedAt: null }, accountCreatedAt: CREATED_AT }),
+      trialRecapWindow({ standing: { kind: 'trial-ended', basis: 'days', endedAt: null }, accountCreatedAt: CREATED_AT }),
       null,
     );
     const subscribed: PlanStanding = {
@@ -90,5 +96,33 @@ describe('the trial window', () => {
 
   it('does not exist when the account was created after the trial ended', () => {
     assert.equal(trialRecapWindow({ standing: trial, accountCreatedAt: '2026-09-20T00:00:00.000Z' }), null);
+  });
+});
+
+describe('the recap of a scan trial (M253/05)', () => {
+  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 2, scansGranted: 10 };
+
+  it('counts from the account\'s creation with no end, because a scan trial has no date', () => {
+    assert.deepEqual(trialRecapWindow({ standing: scans, accountCreatedAt: CREATED_AT }), {
+      startsAtMs: Date.parse(CREATED_AT),
+      endsAtMs: Number.POSITIVE_INFINITY,
+    });
+    // A spent scan trial still sums up what the scans were used for.
+    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedAt: null };
+    assert.notEqual(trialRecapWindow({ standing: spent, accountCreatedAt: CREATED_AT }), null);
+  });
+
+  it('counts a meal logged long after any day trial would have ended', () => {
+    const window = trialRecapWindow({ standing: scans, accountCreatedAt: CREATED_AT });
+    assert.ok(window !== null);
+    const late = log({ createdAt: Date.parse('2027-01-01T00:00:00.000Z') });
+    assert.equal(countTrialAiMeals({ logs: [late], window }), 1);
+    // THE CONTROL: the dated window of the same account does not count it.
+    assert.equal(countTrialAiMeals({ logs: [late], window: WINDOW }), 0);
+  });
+
+  it('says "so far" for a scan trial and "in your trial" for a dated one', () => {
+    assert.equal(recapSentenceKey(scans), 'plan.recap.mealsSoFar');
+    assert.equal(recapSentenceKey({ kind: 'trial', basis: 'days', endsAt: ENDS_AT, daysLeft: 3 }), 'plan.recap.meals');
   });
 });

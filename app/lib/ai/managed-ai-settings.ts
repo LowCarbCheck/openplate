@@ -32,7 +32,7 @@
  */
 import type { LocalAiSettings } from '#app/lib/local-store';
 import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
-import { getSyncVault } from '#app/lib/sync/sync-session';
+import { applyTrialScansLeft, getSyncVault } from '#app/lib/sync/sync-session';
 import type { OpenAiCompatibleCredential } from '#app/services/vision/openai-compatible';
 
 /** The API namespace the instance's AI proxy is mounted under, appended to `SYNC_SERVER_URL`. */
@@ -231,10 +231,19 @@ export function resolveAllowanceDoor({
  * `Authorization` header at all: the server then answers its own 401, and the
  * truth ("you are not signed in") reaches the screen instead of a malformed
  * credential.
+ *
+ * @param input.intakeId - one id per AI action the person started
+ *   (`newIntakeId`), made where the action starts. The adapter sends it as
+ *   `X-Intake-Id` on every request of that action, so the core counts one
+ *   scan per action, retries included (M253/05).
  */
-export function managedAiCredential(): OpenAiCompatibleCredential {
+export function managedAiCredential({ intakeId }: { intakeId: string }): OpenAiCompatibleCredential {
   return {
     getBearer: async () => getSyncVault()?.authClient.getAccessToken() ?? null,
     refreshBearer: async () => (await getSyncVault()?.authClient.refreshAccessToken()) ?? null,
+    intakeId,
+    // THE COUNT FOLLOWS THE SCAN (M253/05): the proxy states the scans left on
+    // every answer, and the header countdown reads the snapshot.
+    onTrialScansLeft: applyTrialScansLeft,
   };
 }

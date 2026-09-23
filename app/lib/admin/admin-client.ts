@@ -111,6 +111,11 @@ export interface AccountPatch {
   dailyAiLimit?: number;
   suspended?: boolean;
   displayName?: string | null;
+  /**
+   * How many free AI scans the account is given (M253/03). Sets `granted`;
+   * scans already used stay used. `null` ends the scan trial.
+   */
+  trialScans?: number | null;
 }
 
 /** What an invitation is created with. Only the address is required; the service defaults the rest. */
@@ -120,6 +125,12 @@ export interface InviteDraft {
   role?: AccountRole;
   dailyAiLimit?: number;
   expiresInDays?: number;
+  /**
+   * `true` mints the instance's scan trial (M253/03): the service writes its
+   * own `TRIAL_SCANS` and `TRIAL_DAILY_AI_LIMIT`, so `dailyAiLimit` is not sent
+   * with it. Offered only where the handshake names `instance.trial`.
+   */
+  trial?: boolean;
 }
 
 export class AdminClient {
@@ -571,6 +582,7 @@ function patchBody(patch: AccountPatch): JsonValue {
     dailyAiLimit: patch.dailyAiLimit,
     suspended: patch.suspended,
     displayName: patch.displayName,
+    trialScans: patch.trialScans,
   });
 }
 
@@ -582,6 +594,7 @@ function inviteBody(draft: InviteDraft): JsonValue {
     role: draft.role,
     dailyAiLimit: draft.dailyAiLimit,
     expiresInDays: draft.expiresInDays,
+    trial: draft.trial,
   });
 }
 

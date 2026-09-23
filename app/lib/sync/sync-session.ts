@@ -37,6 +37,7 @@ import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage, unlockDevice } from './sync-state';
+import { decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 
 /**
  * The address this device last signed in with.
@@ -122,6 +123,16 @@ export interface SyncSessionSnapshot {
      * thing to a screen: draw no invite card. Only a number draws one.
      */
     invitesLeft: number | null;
+    /**
+     * The account's free AI scans, or `null`/absent for none (M253/05).
+     *
+     * `null` IS ALSO "not read yet" and "a core older than the field", and all
+     * three draw today's day-based standing. Moved between account reads by
+     * the proxy's `X-Trial-Scans-Left` header (`applyTrialScansLeft`), so the
+     * count on screen follows a scan without a refetch. OPTIONAL for the reason
+     * `createdAt` below is: every other snapshot fixture is right without it.
+     */
+    trialScans?: TrialScans | null;
     /**
      * When the account was created, as an ISO instant, or `null`/absent.
      *
@@ -246,6 +257,22 @@ export function updateSyncSession(patch: Partial<SyncSessionSnapshot>): void {
 }
 
 /**
+ * Moves the scan count on screen to what the proxy just said (M253/05).
+ *
+ * The managed adapter calls this with every `X-Trial-Scans-Left` it reads, so
+ * the header countdown follows a scan without an account refetch. A snapshot
+ * with no account, or an account the app believes has no scan trial, is left
+ * alone: the next account read brings the whole view.
+ */
+export function applyTrialScansLeft(left: number): void {
+  const account = snapshot.account;
+  if (account === null) return;
+  const trialScans = withScansLeft({ trial: account.trialScans ?? null, left });
+  if (trialScans === null || trialScans.left === account.trialScans?.left) return;
+  publish({ ...snapshot, account: { ...account, trialScans } });
+}
+
+/**
  * Opens a session. Called once a passphrase (or a resumed cache) has produced
  * a DEK and the service has issued tokens.
  *
@@ -297,6 +324,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       // put `undefined` where every reader tests for `null`.
       allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
       invitesLeft: knownAccount?.invitesLeft ?? null,
+      trialScans: decodeTrialScans(knownAccount?.trialScans),
       createdAt: knownAccount?.createdAt ?? null,
     },
     isResuming: false,

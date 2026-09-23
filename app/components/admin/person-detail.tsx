@@ -147,6 +147,19 @@ export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...act
                 : t('admin.usage', { used: person.aiUsedToday, limit: person.dailyAiLimit })}
               </dd>
             </div>
+            {/* THE FREE SCANS (M253/05), only for an account that has a scan
+                trial: used against given, both from the account row. */}
+            {person.trialScans !== null && (
+              <div data-slot="person-trial-scans">
+                <dt className="text-xs text-muted-foreground">{t('admin.columns.trialScans')}</dt>
+                <dd>
+                  {t('admin.trialScansUsed', {
+                    used: person.trialScans.granted - person.trialScans.left,
+                    granted: person.trialScans.granted,
+                  })}
+                </dd>
+              </div>
+            )}
           </dl>
 
           {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

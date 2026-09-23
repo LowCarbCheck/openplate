@@ -223,6 +223,7 @@ export type ScanFailureReason =
   | 'ai-not-allowed'
   | 'account-suspended'
   | 'allowance-expired'
+  | 'trial-scans-spent'
   | 'ai-instance-ceiling'
   // Not provider causes: the photo never reached a provider at all.
   | 'no-provider'

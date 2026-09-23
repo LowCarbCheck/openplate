@@ -37,6 +37,10 @@ export function makeInviteSchema(t: Translate) {
       displayName: z.string().default(''),
       role: z.union([z.literal('admin'), z.literal('member')]).default('member'),
       dailyAiLimit: z.coerce.number().int().min(0).default(DEFAULT_INVITE_ALLOWANCE),
+      // WHAT THE ACCOUNT GETS (M253/05): the instance's free trial, or the
+      // standing allowance above. Only offered where the handshake names a
+      // trial; everywhere else the field is absent and reads as `standing`.
+      grant: z.enum(['trial', 'standing']).default('standing'),
       expiresInDays: z.coerce.number().int().min(1).max(MAX_INVITE_EXPIRY_DAYS).default(DEFAULT_INVITE_EXPIRY_DAYS),
     })
     .superRefine((value, ctx) => {

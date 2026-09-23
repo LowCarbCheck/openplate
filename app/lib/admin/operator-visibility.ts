@@ -100,6 +100,8 @@ export const OPERATOR_VISIBILITY = {
   // says how many addresses this account has already handed over.
   allowanceExpiresAt: { copyKey: 'account.operatorSees.allowanceExpiresAt' },
   invitesLeft: { copyKey: 'account.operatorSees.invitesLeft' },
+  // M253/03: the free AI scans. A count the operator sees and can change.
+  trialScans: { copyKey: 'account.operatorSees.trialScans' },
   // THE ONE FIELD WITH NO LINE. It is the primary key of the account row: an
   // administrator does see it, and it says nothing about the person that the
   // address above it does not say better. A line for it would spend a

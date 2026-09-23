@@ -37,6 +37,7 @@ import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-caus
 import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
+import { readTrialScansLeft } from '#app/lib/plans/trial-scans';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const HTTP_CLIENT_ERROR_START = 400;
@@ -63,8 +64,24 @@ export type OpenAiCompatibleCredential =
    * session is over. Two functions rather than one with a flag, because "give
    * me the token" and "that token was refused, get another" are different
    * questions and only the second may spend a refresh token.
+   *
+   * THIS IS THE MANAGED PROXY'S CREDENTIAL AND NOTHING ELSE'S, which is why the
+   * intake rides on it (M253/05). `intakeId` is sent as `X-Intake-Id` on every
+   * request of this action, both retries included, so the core counts one scan
+   * per action. A BYOK credential has no such field and can never send the
+   * header: a custom header to a provider the person configured would fail
+   * that provider's CORS preflight.
    */
-  | { getBearer: () => Promise<string | null>; refreshBearer: () => Promise<string | null> };
+  | {
+      getBearer: () => Promise<string | null>;
+      refreshBearer: () => Promise<string | null>;
+      intakeId: string;
+      /** Called with `X-Trial-Scans-Left` whenever a response carries it, success or refusal. */
+      onTrialScansLeft?: (left: number) => void;
+    };
+
+/** The request header that names one person action to the managed proxy. Transcribed from `PROTOCOL.md` §5.19. */
+export const INTAKE_ID_HEADER = 'X-Intake-Id';
 
 export interface OpenAiCompatibleProviderOptions {
   /** How to authenticate. See {@link OpenAiCompatibleCredential}. */
@@ -268,6 +285,9 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       // `Bearer null`. The endpoint then answers its own 401, which classifies
       // as "sign in again" — the truth — instead of a malformed credential.
       if (bearer !== null) headers.set('Authorization', `Bearer ${bearer}`);
+      // THE SAME ID ON EVERY SEND of this intake, the retries below included:
+      // `sendRequest` is the one place a request is built.
+      if (isBearerProvider(credential)) headers.set(INTAKE_ID_HEADER, credential.intakeId);
       try {
         return await fetch(url, {
           method: 'POST',
@@ -309,6 +329,13 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
     // balance, or a rate limit, where resending changes nothing.
     if (isStructuredOutputRejection(response.status)) {
       response = await sendRequest(false, bearer);
+    }
+
+    // THE COUNT THE CORE JUST STATED, from the final answer, a refusal
+    // included (`403 trial-scans-spent` carries `0`).
+    if (isBearerProvider(credential)) {
+      const left = readTrialScansLeft(response.headers);
+      if (left !== null) credential.onTrialScansLeft?.(left);
     }
 
     if (!response.ok) {

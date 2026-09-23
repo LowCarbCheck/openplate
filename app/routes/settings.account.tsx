@@ -61,6 +61,8 @@ import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
+import { bindingTrialScans, type TrialScans } from '#app/lib/plans/trial-scans';
+import type { Translate } from '#app/lib/sync/setup-flow';
 import { canSendMemberInvites } from '#app/lib/sync/member-invites';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
@@ -119,6 +121,12 @@ export default function SettingsAccount() {
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
     now: new Date(),
   });
+  // THE COUNT THAT BINDS, if any (M253/05): a scan trial with no date. A paid
+  // or granted date lifts it, so the per-day numbers are the true ones then.
+  const trialScans = bindingTrialScans({
+    trialScans: account?.trialScans,
+    allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+  });
   // AND WHETHER THERE IS A PAGE THAT CHANGES IT (M213 spec 05). The same
   // handshake read, one line down: on an instance with a biller behind it the
   // allowance is a thing a person buys, so the card that explains the
@@ -155,6 +163,7 @@ export default function SettingsAccount() {
                 { usedToday: account.aiUsedToday, dailyLimit: account.dailyAiLimit }
               : null
             }
+            trialScans={trialScans}
           />
           {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
             <AllowanceCard
@@ -163,6 +172,7 @@ export default function SettingsAccount() {
               expiresAt={account.allowanceExpiresAt}
               door={allowanceDoor}
               plansAvailable={plansAvailable}
+              trialScans={trialScans}
             />
           )}
           {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
@@ -218,11 +228,14 @@ function IdentityCard({
   email,
   displayName,
   allowance,
+  trialScans,
 }: {
   email: string;
   displayName: string | null;
   /** `null` on an open instance, where there is no allowance to have. */
   allowance: { usedToday: number; dailyLimit: number } | null;
+  /** The scan trial that binds this account, or `null`. Replaces the per-day line (M253/05). */
+  trialScans: TrialScans | null;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState(displayName ?? '');
@@ -255,7 +268,9 @@ function IdentityCard({
           heading: a section carries ONE description, and the address is it. */}
       {allowance !== null && allowance.dailyLimit > 0 && (
         <p className="text-sm text-muted-foreground">
-          {t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })}
+          {trialScans === null ?
+            t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })
+          : t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted })}
         </p>
       )}
       <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
@@ -286,6 +301,25 @@ function IdentityCard({
   );
 }
 
+/** The allowance card's one line: none, a scan trial's count, or today's numbers. */
+function describeAllowance({
+  dailyLimit,
+  usedToday,
+  trialScans,
+  t,
+}: {
+  dailyLimit: number;
+  usedToday: number;
+  trialScans: TrialScans | null;
+  t: Translate;
+}): string {
+  if (dailyLimit === 0) return t('account.allowance.none');
+  if (trialScans !== null) {
+    return t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted });
+  }
+  return t('account.allowance.body', { used: usedToday, limit: dailyLimit });
+}
+
 /**
  * The photo allowance, on a managed instance only.
  *
@@ -299,9 +333,12 @@ function AllowanceCard({
   expiresAt,
   door,
   plansAvailable,
+  trialScans,
 }: {
   dailyLimit: number;
   usedToday: number;
+  /** The scan trial that binds this account, or `null`. Its count replaces the per-day line (M253/05). */
+  trialScans: TrialScans | null;
   /**
    * When the allowance ends, or `null`.
    *
@@ -326,11 +363,7 @@ function AllowanceCard({
   return (
     <SettingsSection
       label={t('account.allowance.title')}
-      description={
-        dailyLimit === 0 ?
-          t('account.allowance.none')
-        : t('account.allowance.body', { used: usedToday, limit: dailyLimit })
-      }
+      description={describeAllowance({ dailyLimit, usedToday, trialScans, t })}
     >
       {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
           3 days" is a sentence baked in one language and computed against

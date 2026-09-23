@@ -38,6 +38,8 @@ import type { AccountRole, AdminAccountView } from '#app/lib/admin/admin-wire';
 export interface PersonEdit {
   role: AccountRole;
   dailyAiLimit: number;
+  /** The free AI scans given (M253/05). Sent only for an account that has a scan trial. */
+  trialScans?: number;
 }
 
 export interface PersonEditorProps {
@@ -52,6 +54,8 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
   const { t } = useTranslation();
   const [role, setRole] = useState<AccountRole>(person.role);
   const [limit, setLimit] = useState(String(person.dailyAiLimit));
+  const [scans, setScans] = useState(String(person.trialScans?.granted ?? 0));
+  const hasTrialScans = person.trialScans !== null;
 
   return (
     <div className="space-y-3 bg-muted/30 p-3">
@@ -81,13 +85,35 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
           />
           <p className="text-xs text-muted-foreground">{t('admin.edit.allowanceHint')}</p>
         </div>
+        {hasTrialScans && (
+          <div className="space-y-1">
+            <Label htmlFor={`scans-${person.id}`}>{t('admin.edit.trialScansLabel')}</Label>
+            <Input
+              id={`scans-${person.id}`}
+              type="number"
+              min={0}
+              max={MAX_TRIAL_SCANS}
+              step={1}
+              className="h-11"
+              value={scans}
+              onChange={(event) => setScans(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">{t('admin.edit.trialScansHint')}</p>
+          </div>
+        )}
       </div>
       <div className="flex gap-2">
         <Button
           type="button"
           size="sm"
           disabled={isBusy}
-          onClick={() => onSave({ role, dailyAiLimit: readAllowance(limit) })}
+          onClick={() =>
+            onSave(
+              hasTrialScans ?
+                { role, dailyAiLimit: readAllowance(limit), trialScans: readTrialScans(scans) }
+              : { role, dailyAiLimit: readAllowance(limit) },
+            )
+          }
         >
           {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {t('admin.edit.save')}
@@ -98,6 +124,19 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
       </div>
     </div>
   );
+}
+
+/** The core's bound on a scan trial (`PROTOCOL.md` §5.20, M253/03). */
+const MAX_TRIAL_SCANS = 100;
+
+/**
+ * The typed field turned into a number of free scans, clamped to the core's
+ * bound. A blank or unparseable field is `0`: no free scans, the safe
+ * direction for the same reason the allowance below takes it.
+ */
+function readTrialScans(raw: string): number {
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, MAX_TRIAL_SCANS) : 0;
 }
 
 /**

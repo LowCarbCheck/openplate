@@ -69,7 +69,9 @@ const catalogSchema = z.object({
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
-    errors: z.object({ titles: z.object({ allowanceExpired: z.string() }) }),
+    errors: z.object({
+      titles: z.object({ allowanceExpired: z.string(), trialScansSpent_other: z.string(), aiNotAllowed: z.string() }),
+    }),
     review: z.object({
       heading: z.string(),
       fromLabel: z.string(),
@@ -132,9 +134,14 @@ const catalogSchema = z.object({
   }),
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
-    countdown: z.object({ daysLeft_other: z.string(), lastDay: z.string(), action: z.string() }),
+    countdown: z.object({
+      daysLeft_other: z.string(),
+      lastDay: z.string(),
+      action: z.string(),
+      scansLeft_other: z.string(),
+    }),
     offer: z.object({ from: z.string() }),
-    recap: z.object({ meals_one: z.string() }),
+    recap: z.object({ meals_one: z.string(), mealsSoFar_one: z.string() }),
     manage: z.string(),
     returned: z.object({ success: z.string() }),
     card: z.object({
@@ -158,7 +165,7 @@ const catalogSchema = z.object({
     }),
   }),
   catchUp: z.object({ yesterdayHeading: z.string() }),
-  describe: z.object({ title: z.string() }),
+  describe: z.object({ title: z.string(), send: z.string() }),
   goals: z.object({ save: z.string() }),
   awards: z.object({
     title: z.string(),

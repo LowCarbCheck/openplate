@@ -227,6 +227,7 @@ const PENDING_ACCOUNT: AccountViewWire = {
   allowanceExpiresAt: null,
   suspendedAt: null,
   invitesLeft: null,
+  trialScans: null,
   createdAt: '',
 };
 

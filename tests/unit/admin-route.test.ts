@@ -72,6 +72,7 @@ const ADMIN: AdminAccountView = {
   allowanceExpiresAt: null,
   suspendedAt: null,
   invitesLeft: null,
+  trialScans: null,
   createdAt: '2026-08-01T09:00:00.000Z',
   lastSeenAt: '2026-09-06T18:30:00.000Z',
 };
@@ -86,6 +87,7 @@ const SUSPENDED_PERSON: AdminAccountView = {
   allowanceExpiresAt: null,
   suspendedAt: '2026-09-03T09:00:00.000Z',
   invitesLeft: null,
+  trialScans: null,
   createdAt: '2026-08-20T09:00:00.000Z',
   lastSeenAt: '2026-09-05T07:15:00.000Z',
 };
@@ -101,6 +103,7 @@ const NEVER_ARRIVED: AdminAccountView = {
   allowanceExpiresAt: null,
   suspendedAt: null,
   invitesLeft: null,
+  trialScans: null,
   createdAt: '2026-09-05T09:00:00.000Z',
   lastSeenAt: null,
 };
@@ -638,4 +641,29 @@ test('a server that reports mail AND hands back a link is treated as the link ca
 
   assert.match(html, /Invitation ready for/);
   assert.match(html, /Copy the link/);
+});
+
+test("a person with a scan trial shows the free scans used against those given (M253/05)", () => {
+  const withTrial = { ...SUSPENDED_PERSON, trialScans: { granted: 10, left: 3 } };
+  const html = render(
+    createElement(PersonDetail, {
+      person: withTrial,
+      activity: { kind: 'loading' },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+  assert.match(html, /data-slot="person-trial-scans"/);
+  assert.match(html, /7 of 10 used/);
+
+  // THE CONTROL: the same person with no scan trial shows no such cell.
+  const without = render(
+    createElement(PersonDetail, {
+      person: SUSPENDED_PERSON,
+      activity: { kind: 'loading' },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+  assert.doesNotMatch(without, /person-trial-scans/);
 });

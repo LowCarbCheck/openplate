@@ -1987,6 +1987,7 @@
         "rateLimitMinute": "Tu as envoyé plusieurs requêtes très rapprochées. Réessaie dans une minute.",
         "allowanceSpent": "Tu as épuisé tes estimations par l'IA pour aujourd'hui. Réessaie demain.",
         "allowanceExpired": "Ton quota d'estimations par photo est épuisé. Tout le reste fonctionne toujours dans openplate.",
+        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
         "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème."
       },
@@ -2003,6 +2004,9 @@
         "aiNotAllowed": "Les estimations par l'IA sont désactivées",
         "accountSuspended": "Ton compte est suspendu",
         "allowanceExpired": "Tes estimations par photo sont épuisées",
+        "trialScansSpent_one": "You used your {{count}} free AI scan",
+        "trialScansSpent_other": "You used your {{count}} free AI scans",
+        "trialScansSpentUncounted": "You used your free AI scans",
         "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui"
       },
       "text": {
@@ -3052,6 +3056,7 @@
       "none": "Les estimations par photo ne sont pas activées pour ce compte.",
       "askAdmin": "C'est ton administrateur qui configure cela.",
       "today": "Estimations par photo aujourd'hui : {{used}} sur {{limit}}",
+      "trialScans": "{{left}} of {{granted}} free AI scans left.",
       "expires": "Les estimations par photo pour ce compte sont actives jusqu'au {{date}}.",
       "expired": "Les estimations par photo pour ce compte ont pris fin le {{date}}.",
       "planLink": "Voir ton forfait"
@@ -3075,7 +3080,8 @@
       "activity": "Ces personnes peuvent aussi voir combien de photos ont été analysées pour toi lors de chacun des {{days}} derniers jours. Les décomptes quotidiens plus anciens sont supprimés.",
       "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte, il ne peut donc pas y être lu.",
       "allowanceExpiresAt": "La date de fin de ton quota.",
-      "invitesLeft": "Le nombre d'invitations qu'il te reste."
+      "invitesLeft": "Le nombre d'invitations qu'il te reste.",
+      "trialScans": "How many free AI scans you were given, and how many are left."
     },
     "password": {
       "title": "Mot de passe",
@@ -3146,6 +3152,7 @@
       "role": "Rôle",
       "allowance": "Photos par jour",
       "usedToday": "Utilisées aujourd'hui",
+      "trialScans": "Free AI scans",
       "standing": "Statut",
       "lastSeen": "Dernière connexion",
       "recentDays": "{{days}} derniers jours",
@@ -3155,6 +3162,7 @@
     },
     "usage": "{{used}} sur {{limit}}",
     "usageNone": "Aucune photo",
+    "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
       "never": "Jamais connecté"
     },
@@ -3190,6 +3198,8 @@
       "cancel": "Annuler",
       "allowanceLabel": "Photos par jour",
       "allowanceHint": "0 désactive la lecture de photos pour cette personne.",
+      "trialScansLabel": "Free AI scans",
+      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
       "saved": "Enregistré.",
       "failed": "Cette modification n'a pas été appliquée."
     },
@@ -3237,6 +3247,10 @@
       "emailRequired": "Une adresse e-mail est requise.",
       "nameLabel": "Nom",
       "nameHint": "Facultatif. Visible par cette personne, et par toi dans la liste.",
+      "grantLabel": "What the account gets",
+      "grantTrial_one": "Free trial ({{count}} scan)",
+      "grantTrial_other": "Free trial ({{count}} scans)",
+      "grantStanding": "Standing allowance",
       "allowanceLabel": "Photos par jour",
       "allowanceHint": "Nombre de photos d'assiette analysables par jour. Mettre 0 pour désactiver.",
       "expiryLabel": "Le lien reste valide pendant",
@@ -3399,6 +3413,8 @@
       "daysLeft_one": "Il te reste {{count}} jour de scans IA dans ton essai.",
       "daysLeft_other": "Il te reste {{count}} jours de scans IA dans ton essai.",
       "lastDay": "Les scans IA de ton essai se terminent aujourd’hui.",
+      "scansLeft_one": "{{count}} free AI scan left.",
+      "scansLeft_other": "{{count}} free AI scans left.",
       "action": "Voir les forfaits"
     },
     "offer": {
@@ -3406,7 +3422,9 @@
     },
     "recap": {
       "meals_one": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
-      "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
+      "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
+      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
+      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
     }
   },
   "usual": {

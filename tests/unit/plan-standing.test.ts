@@ -100,21 +100,22 @@ describe('no plans', () => {
 
 describe('trial', () => {
   it('counts whole days left, rounded up', () => {
-    assert.deepEqual(standing({}), { kind: 'trial', endsAt: IN_TRIAL.allowanceExpiresAt, daysLeft: 3 });
+    assert.deepEqual(standing({}), { kind: 'trial', basis: 'days', endsAt: IN_TRIAL.allowanceExpiresAt, daysLeft: 3 });
     const longer = standing({ account: { ...IN_TRIAL, allowanceExpiresAt: fromNow(2 * DAY_MS + MINUTE_MS) } });
-    assert.equal(longer.kind === 'trial' && longer.daysLeft, 3);
+    assert.equal(longer.kind === 'trial' && longer.basis === 'days' && longer.daysLeft, 3);
   });
 
   it('still reads one day in the last minute of a trial, never zero', () => {
     const lastMinute = standing({ account: { ...IN_TRIAL, allowanceExpiresAt: fromNow(MINUTE_MS) } });
     assert.equal(lastMinute.kind, 'trial');
-    assert.equal(lastMinute.kind === 'trial' && lastMinute.daysLeft, 1);
+    assert.equal(lastMinute.kind === 'trial' && lastMinute.basis === 'days' && lastMinute.daysLeft, 1);
   });
 
   it('reads the boundary instant itself as ended, the way the AI proxy does', () => {
     const endsNow = fromNow(0);
     assert.deepEqual(standing({ account: { ...IN_TRIAL, allowanceExpiresAt: endsNow } }), {
       kind: 'trial-ended',
+      basis: 'days',
       endedAt: endsNow,
     });
   });
@@ -125,6 +126,7 @@ describe('trial ended', () => {
     const ended = fromNow(-DAY_MS);
     assert.deepEqual(standing({ account: { dailyAiLimit: 20, allowanceExpiresAt: ended } }), {
       kind: 'trial-ended',
+      basis: 'days',
       endedAt: ended,
     });
   });
@@ -132,6 +134,7 @@ describe('trial ended', () => {
   it('carries no date for an account that never had an allowance', () => {
     assert.deepEqual(standing({ account: { dailyAiLimit: 0, allowanceExpiresAt: null } }), {
       kind: 'trial-ended',
+      basis: 'days',
       endedAt: null,
     });
   });
@@ -139,6 +142,7 @@ describe('trial ended', () => {
   it('reads a date ahead with no allowance as no trial, rather than counting down to nothing', () => {
     assert.deepEqual(standing({ account: { dailyAiLimit: 0, allowanceExpiresAt: fromNow(DAY_MS) } }), {
       kind: 'trial-ended',
+      basis: 'days',
       endedAt: null,
     });
   });
@@ -209,5 +213,62 @@ describe('lapsed', () => {
   it('is told apart from a person who never subscribed', () => {
     // THE CONTROL for the case above: same account, no subscription ever.
     assert.equal(standing({ planView: NO_SUBSCRIPTION, account: IN_TRIAL }).kind, 'trial');
+  });
+});
+
+describe('a scan trial (M253/05)', () => {
+  /** A scan-trial account: a daily allowance, no end date, three of ten free scans left. */
+  const SCAN_TRIAL: StandingAccount = {
+    dailyAiLimit: 20,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 3 },
+  };
+
+  it('counts scans for an account with a count and no date', () => {
+    assert.deepEqual(standing({ account: SCAN_TRIAL }), {
+      kind: 'trial',
+      basis: 'scans',
+      scansLeft: 3,
+      scansGranted: 10,
+    });
+  });
+
+  it('counts days for the same account with a future date, which lifts the scan gate', () => {
+    // THE CONTROL for the case above: the one field that differs is the date.
+    const dated = standing({ account: { ...SCAN_TRIAL, allowanceExpiresAt: fromNow(3 * DAY_MS) } });
+    assert.equal(dated.kind === 'trial' && dated.basis, 'days');
+  });
+
+  it('ends the trial at zero scans left, with no date to name', () => {
+    assert.deepEqual(standing({ account: { ...SCAN_TRIAL, trialScans: { granted: 10, left: 0 } } }), {
+      kind: 'trial-ended',
+      basis: 'scans',
+      endedAt: null,
+    });
+  });
+
+  it('keeps today\'s answer for an account with no count and no date', () => {
+    assert.deepEqual(standing({ account: { ...SCAN_TRIAL, trialScans: null } }), NO_PLANS);
+  });
+
+  it('names the passed date, not the count, once a date has passed', () => {
+    const ended = fromNow(-DAY_MS);
+    assert.deepEqual(standing({ account: { ...SCAN_TRIAL, allowanceExpiresAt: ended } }), {
+      kind: 'trial-ended',
+      basis: 'days',
+      endedAt: ended,
+    });
+  });
+
+  it('reads an account with no allowance as no AI, whatever its count says, as the proxy does', () => {
+    assert.deepEqual(standing({ account: { ...SCAN_TRIAL, dailyAiLimit: 0 } }), {
+      kind: 'trial-ended',
+      basis: 'days',
+      endedAt: null,
+    });
+  });
+
+  it('gives way to a live subscription', () => {
+    assert.equal(standing({ account: SCAN_TRIAL, planView: YEARLY }).kind, 'subscribed');
   });
 });

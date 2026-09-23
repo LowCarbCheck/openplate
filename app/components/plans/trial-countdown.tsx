@@ -17,6 +17,14 @@
  * once per page load: if something later replaces it, it does not come back
  * until the next load, where a nudge that keeps returning would be a nag.
  *
+ * ── A SCAN COUNT FOLLOWS THE SCAN (M253/05) ──────────────────────────────
+ *
+ * On a scan trial the line says how many free AI scans are left, and the
+ * proxy moves that number on every answer (`X-Trial-Scans-Left`, written into
+ * the session snapshot). While the line this mount published is still the one
+ * on screen, a new number REPLACES it in place, in the same slot, so "3" turns
+ * into "2" without a reload. A line something else replaced stays gone.
+ *
  * ── NOTHING HERE DECIDES ─────────────────────────────────────────────────
  *
  * Whether the line shows and what number it says are `trial-countdown.ts`'s
@@ -37,7 +45,9 @@ import { localDateToDayKey } from '#app/lib/day-key-date';
 import { trackOfferSeen } from '#app/lib/matomo-events';
 import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { closeCountdownForDay, readCountdownClosedDay, resolveTrialCountdown } from '#app/lib/plans/trial-countdown';
-import { RECAP_NEAR_END_DAYS } from '#app/lib/plans/trial-recap';
+import type { TrialCountdown as Countdown } from '#app/lib/plans/trial-countdown';
+import { RECAP_NEAR_END_DAYS, RECAP_NEAR_END_SCANS, recapSentenceKey } from '#app/lib/plans/trial-recap';
+import type { Translate } from '#app/lib/sync/setup-flow';
 import { clearStatus, publishStatus, readStatus, useStatus } from '#app/lib/status';
 
 /**
@@ -74,7 +84,6 @@ export function TrialCountdown(): null {
 
   const countdown =
     closedDay === undefined ? null : resolveTrialCountdown({ standing, now: new Date(), closedDay, pathname });
-  const daysLeft = countdown?.daysLeft ?? null;
   const isChannelFree = status === null;
   // NEAR THE END, THE LINE SAYS WHAT THE TRIAL WAS USED FOR (M250/05), as the
   // status's smaller second line. Earlier in the trial there is nothing worth
@@ -82,21 +91,33 @@ export function TrialCountdown(): null {
   const recap = useTrialRecap({
     standing,
     accountCreatedAt: session.account?.createdAt,
-    isEnabled: daysLeft !== null && daysLeft <= RECAP_NEAR_END_DAYS,
+    isEnabled: countdown !== null && isNearTheEnd(countdown),
   });
   const recapCount = recap.settled ? recap.mealCount : null;
+  const text = countdown === null ? null : countdownText(countdown, t);
+  // No line for a count of zero: "you logged no meals" is a reproach.
+  const description =
+    recapCount === null || recapCount === 0 ? null : t(recapSentenceKey(standing), { count: recapCount });
+  /** What the line says, as one value, so a changed number is a changed line. */
+  const lineKey = text === null ? null : `${text}\n${description ?? ''}`;
+  /** The line this mount last published. */
+  const publishedKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (daysLeft === null || !isChannelFree || publishedId.current !== null) return;
+    if (text === null || lineKey === null) return;
     // THE WHOLE LINE AT ONCE: a second line added after the first is drawn
     // would be a status changing under the reader's eyes.
     if (!recap.settled) return;
+    const hasPublished = publishedId.current !== null;
+    const isOnScreen = hasPublished && readStatus()?.id === publishedId.current;
+    // Replaced by something else, it stays gone until the next load.
+    if (hasPublished && !isOnScreen) return;
+    // The first line waits for an empty channel; a moved count replaces its own.
+    if (!hasPublished && !isChannelFree) return;
+    if (isOnScreen && publishedKey.current === lineKey) return;
     publishStatus({
-      // THE LAST DAY IS ITS OWN SENTENCE. "1 day left" on the day it ends
-      // reads as "tomorrow too", which is not true.
-      text: daysLeft === 1 ? t('plan.countdown.lastDay') : t('plan.countdown.daysLeft', { count: daysLeft }),
-      // No line for a count of zero: "you logged no meals" is a reproach.
-      description: recapCount === null || recapCount === 0 ? undefined : t('plan.recap.meals', { count: recapCount }),
+      text,
+      description: description ?? undefined,
       tone: 'info',
       // UNTIL CLOSED. A line that faded on its own could not be closed for
       // the day, and would come back on the next load as if never seen.
@@ -109,16 +130,44 @@ export function TrialCountdown(): null {
       },
     });
     publishedId.current = readStatus()?.id ?? null;
-    trackOfferSeen('countdown');
-  }, [daysLeft, isChannelFree, recap.settled, recapCount, t]);
+    publishedKey.current = lineKey;
+    // Seen once per load, not once per number.
+    if (!hasPublished) trackOfferSeen('countdown');
+  }, [text, description, lineKey, isChannelFree, recap.settled, t]);
 
   // WITHDRAWN WHEN IT STOPS BEING TRUE: on the plan page itself, after a
-  // purchase turned the trial into a subscription, or once closed. Only this
-  // mount's own status is cleared, never whatever replaced it.
+  // purchase turned the trial into a subscription, after the last free scan,
+  // or once closed. Only this mount's own status is cleared, never whatever
+  // replaced it.
+  const isShowing = countdown !== null;
   useEffect(() => {
-    if (daysLeft !== null || publishedId.current === null) return;
+    if (isShowing || publishedId.current === null) return;
     if (readStatus()?.id === publishedId.current) clearStatus();
-  }, [daysLeft]);
+  }, [isShowing]);
 
   return null;
+}
+
+/** The countdown's sentence. */
+function countdownText(countdown: Countdown, t: Translate): string {
+  switch (countdown.basis) {
+    case 'scans':
+      return t('plan.countdown.scansLeft', { count: countdown.scansLeft });
+    case 'days':
+      // THE LAST DAY IS ITS OWN SENTENCE. "1 day left" on the day it ends
+      // reads as "tomorrow too", which is not true.
+      return countdown.daysLeft === 1 ?
+          t('plan.countdown.lastDay')
+        : t('plan.countdown.daysLeft', { count: countdown.daysLeft });
+  }
+}
+
+/** Whether the line is near enough the end to carry the recap. */
+function isNearTheEnd(countdown: Countdown): boolean {
+  switch (countdown.basis) {
+    case 'scans':
+      return countdown.scansLeft <= RECAP_NEAR_END_SCANS;
+    case 'days':
+      return countdown.daysLeft <= RECAP_NEAR_END_DAYS;
+  }
 }

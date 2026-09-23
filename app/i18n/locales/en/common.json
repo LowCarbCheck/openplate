@@ -1987,6 +1987,7 @@
         "rateLimitMinute": "That was a few requests in quick succession. Try again in a minute.",
         "allowanceSpent": "You have used today's AI estimates. Try again tomorrow.",
         "allowanceExpired": "Your allowance for photo estimates has ended. Everything else in openplate keeps working.",
+        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Your allowance for photo estimates ended on {{date}}. Everything else in openplate keeps working.",
         "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account."
       },
@@ -2003,6 +2004,9 @@
         "aiNotAllowed": "AI estimates are off",
         "accountSuspended": "Your account is suspended",
         "allowanceExpired": "Your photo estimates have ended",
+        "trialScansSpent_one": "You used your {{count}} free AI scan",
+        "trialScansSpent_other": "You used your {{count}} free AI scans",
+        "trialScansSpentUncounted": "You used your free AI scans",
         "instanceCeiling": "This instance is out of capacity today"
       },
       "text": {
@@ -3052,6 +3056,7 @@
       "none": "Photo estimates are not switched on for this account.",
       "askAdmin": "Your administrator sets this.",
       "today": "Photo estimates today: {{used}} of {{limit}}",
+      "trialScans": "{{left}} of {{granted}} free AI scans left.",
       "expires": "Photo estimates for this account run until {{date}}.",
       "expired": "Photo estimates for this account ended on {{date}}.",
       "planLink": "See your plan"
@@ -3075,7 +3080,8 @@
       "activity": "They can also see how many photos were read for you on each of the last {{days}} days. Older daily counts are deleted.",
       "notTheDiary": "What you eat is not on those pages. Your diary is encrypted on this device before any copy of it leaves, so it cannot be read there.",
       "allowanceExpiresAt": "The date your allowance ends.",
-      "invitesLeft": "How many invitations you have left."
+      "invitesLeft": "How many invitations you have left.",
+      "trialScans": "How many free AI scans you were given, and how many are left."
     },
     "password": {
       "title": "Password",
@@ -3146,6 +3152,7 @@
       "role": "Role",
       "allowance": "Photos per day",
       "usedToday": "Used today",
+      "trialScans": "Free AI scans",
       "standing": "Standing",
       "lastSeen": "Last sign-in",
       "recentDays": "Last {{days}} days",
@@ -3155,6 +3162,7 @@
     },
     "usage": "{{used}} of {{limit}}",
     "usageNone": "No photos",
+    "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
       "never": "Never signed in"
     },
@@ -3190,6 +3198,8 @@
       "cancel": "Cancel",
       "allowanceLabel": "Photos per day",
       "allowanceHint": "0 turns photo reading off for this person.",
+      "trialScansLabel": "Free AI scans",
+      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
       "saved": "Saved.",
       "failed": "That change did not go through."
     },
@@ -3237,6 +3247,10 @@
       "emailRequired": "An email address is needed.",
       "nameLabel": "Name",
       "nameHint": "Optional. Shown to them, and to you in the list.",
+      "grantLabel": "What the account gets",
+      "grantTrial_one": "Free trial ({{count}} scan)",
+      "grantTrial_other": "Free trial ({{count}} scans)",
+      "grantStanding": "Standing allowance",
       "allowanceLabel": "Photos per day",
       "allowanceHint": "How many plate photos they may have read each day. 0 turns it off.",
       "expiryLabel": "The link stays valid for",
@@ -3399,6 +3413,8 @@
       "daysLeft_one": "{{count}} day of AI scans left in your trial.",
       "daysLeft_other": "{{count}} days of AI scans left in your trial.",
       "lastDay": "Your trial's AI scans end today.",
+      "scansLeft_one": "{{count}} free AI scan left.",
+      "scansLeft_other": "{{count}} free AI scans left.",
       "action": "See plans"
     },
     "offer": {
@@ -3406,7 +3422,9 @@
     },
     "recap": {
       "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_other": "In your trial you logged {{count}} meals with AI.",
+      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
+      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
     }
   },
   "usual": {

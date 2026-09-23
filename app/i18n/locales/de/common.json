@@ -1987,6 +1987,7 @@
         "rateLimitMinute": "Das waren zu viele Anfragen kurz hintereinander. Versuch es in einer Minute noch einmal.",
         "allowanceSpent": "Du hast deine heutigen KI-Schätzungen aufgebraucht. Versuch es morgen wieder.",
         "allowanceExpired": "Dein Kontingent für Foto-Schätzungen ist abgelaufen. Alles andere in openplate funktioniert weiterhin.",
+        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
         "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung."
       },
@@ -2003,6 +2004,9 @@
         "aiNotAllowed": "KI-Schätzungen sind deaktiviert",
         "accountSuspended": "Dein Konto ist gesperrt",
         "allowanceExpired": "Deine Foto-Schätzungen sind abgelaufen",
+        "trialScansSpent_one": "You used your {{count}} free AI scan",
+        "trialScansSpent_other": "You used your {{count}} free AI scans",
+        "trialScansSpentUncounted": "You used your free AI scans",
         "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr"
       },
       "text": {
@@ -3052,6 +3056,7 @@
       "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
       "askAdmin": "Das legt deine Administration fest.",
       "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
+      "trialScans": "{{left}} of {{granted}} free AI scans left.",
       "expires": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}.",
       "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}.",
       "planLink": "Deinen Tarif ansehen"
@@ -3075,7 +3080,8 @@
       "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
       "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
       "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
-      "invitesLeft": "Wie viele Einladungen du noch übrig hast."
+      "invitesLeft": "Wie viele Einladungen du noch übrig hast.",
+      "trialScans": "How many free AI scans you were given, and how many are left."
     },
     "password": {
       "title": "Passwort",
@@ -3146,6 +3152,7 @@
       "role": "Rolle",
       "allowance": "Fotos pro Tag",
       "usedToday": "Heute genutzt",
+      "trialScans": "Free AI scans",
       "standing": "Status",
       "lastSeen": "Letzte Anmeldung",
       "recentDays": "Letzte {{days}} Tage",
@@ -3155,6 +3162,7 @@
     },
     "usage": "{{used}} von {{limit}}",
     "usageNone": "Keine Fotos",
+    "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
       "never": "Nie angemeldet"
     },
@@ -3190,6 +3198,8 @@
       "cancel": "Abbrechen",
       "allowanceLabel": "Fotos pro Tag",
       "allowanceHint": "0 schaltet Foto-Schätzungen für diese Person ab.",
+      "trialScansLabel": "Free AI scans",
+      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
       "saved": "Gespeichert.",
       "failed": "Die Änderung konnte nicht übernommen werden."
     },
@@ -3237,6 +3247,10 @@
       "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
       "nameLabel": "Name",
       "nameHint": "Optional. Wird der Person und dir in der Liste angezeigt.",
+      "grantLabel": "What the account gets",
+      "grantTrial_one": "Free trial ({{count}} scan)",
+      "grantTrial_other": "Free trial ({{count}} scans)",
+      "grantStanding": "Standing allowance",
       "allowanceLabel": "Fotos pro Tag",
       "allowanceHint": "Wie viele Teller-Fotos pro Tag ausgewertet werden dürfen. 0 schaltet es ab.",
       "expiryLabel": "Der Link bleibt gültig für",
@@ -3399,6 +3413,8 @@
       "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",
       "daysLeft_other": "Noch {{count}} Tage KI-Scans in deiner Testphase.",
       "lastDay": "Die KI-Scans deiner Testphase enden heute.",
+      "scansLeft_one": "{{count}} free AI scan left.",
+      "scansLeft_other": "{{count}} free AI scans left.",
       "action": "Tarife ansehen"
     },
     "offer": {
@@ -3406,7 +3422,9 @@
     },
     "recap": {
       "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
-      "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst."
+      "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst.",
+      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
+      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
     }
   },
   "usual": {
