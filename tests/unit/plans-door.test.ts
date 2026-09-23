@@ -20,6 +20,9 @@ import {
 } from '../../app/lib/plans/plans-door';
 import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 
+/** The sync server the gate is asked about. */
+const SERVER = 'https://sync.example.test';
+
 const INSTANCE: InstanceDescriptor = {
   name: 'Example',
   language: 'de',
@@ -41,21 +44,37 @@ describe('the plans door', () => {
     assert.equal(hasPlansDoor(null), false);
   });
 
-  it('answers the ordinary 404, exactly as the service does', () => {
-    assert.doesNotThrow(() => requirePlansDoor({ ...INSTANCE, plans: true }));
+  it('answers the ordinary 404, exactly as the service does', async () => {
+    const open = { ...INSTANCE, plans: true };
+    assert.equal(await requirePlansDoor({ serverUrl: SERVER, readInstance: async () => open }), open);
     for (const instance of [{ ...INSTANCE, plans: false }, null]) {
       // The status is read off the caught value rather than matched by a
       // predicate, so the assertion says WHICH status it wants and a 500
       // would fail it.
       let caught: Response | null = null;
       try {
-        requirePlansDoor(instance);
+        await requirePlansDoor({ serverUrl: SERVER, readInstance: async () => instance });
       } catch (error) {
         caught = error instanceof Response ? error : null;
       }
       assert.ok(caught !== null, 'no Response was thrown');
       assert.equal(caught.status, 404);
     }
+  });
+
+  it('reads the descriptor for the server it names, on every call, and holds none of its own', async () => {
+    // M245/05: the gate must not answer from a descriptor it read earlier. A
+    // gate that remembered the first answer would pass the first call and
+    // open the door on the second, after the server shut it.
+    const asked: string[] = [];
+    const answers = [{ ...INSTANCE, plans: true }, { ...INSTANCE, plans: false }];
+    const readInstance = async (serverUrl: string): Promise<InstanceDescriptor | null> => {
+      asked.push(serverUrl);
+      return answers[asked.length - 1] ?? null;
+    };
+    await requirePlansDoor({ serverUrl: SERVER, readInstance });
+    await assert.rejects(requirePlansDoor({ serverUrl: SERVER, readInstance }), (error) => error instanceof Response);
+    assert.deepEqual(asked, [SERVER, SERVER]);
   });
 
   it('is not a policy question, and did not become one', () => {

@@ -25,8 +25,27 @@
  * An unreachable service, a malformed body, a build older than the field and
  * a read still in flight all read `null`, and all four answer `false` here.
  * Unknown must not offer to sell somebody something.
+ *
+ * ── THE GATE READS A FRESH DESCRIPTOR (M245/05, decided 2026-09-23) ──────
+ *
+ * `/settings/plan` opened on a preview whose core answered `plans: false`.
+ * The browser tier (`tests/e2e/plans-door-descriptor.spec.ts`) found the path:
+ * the tab's cached descriptor (`readCachedServerInstance`) is keyed on the
+ * server URL and lives as long as the tab, so a tab that read `plans: true`
+ * once kept opening the page by client navigation after the core switched its
+ * biller off. No descriptor is persisted across tabs; the suspected foreign
+ * descriptor in the origin's storage does not exist.
+ *
+ * The decision: a ROUTE GATE uses a descriptor fetched for THIS server URL at
+ * the moment it opens, and a cached one only while that read is still in
+ * flight, which is the only cached read that is fresh by construction
+ * (`readFreshServerInstance`). {@link requirePlansDoor} therefore takes the
+ * server URL and reads, and never takes a descriptor a caller already held.
+ * {@link hasPlansDoor} stays a pure check on a descriptor: a LINK or a notice
+ * may draw from the tab's cache, because following it runs this gate.
  */
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
+import { readFreshServerInstance } from '#app/hooks/use-server-instance';
 import { isCheckoutLocale, type CheckoutLocale } from '#app/lib/sync/engine/client/plans-wire';
 import { isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 
@@ -46,16 +65,31 @@ export function hasPlansDoor(instance: InstanceDescriptor | null): boolean {
   return instance?.plans ?? false;
 }
 
+/** Reads the descriptor of one server. The seam {@link requirePlansDoor} reads through. */
+export type InstanceReader = (serverUrl: string) => Promise<InstanceDescriptor | null>;
+
 /**
- * The same signal, as the route gate.
+ * The same signal, as the route gate, read FRESH for the server named.
  *
+ * @param input.serverUrl - the sync server this instance talks to.
+ * @param input.readInstance - how the descriptor is read. Defaults to
+ *   {@link readFreshServerInstance}; a unit test passes its own.
+ * @returns the descriptor the gate passed, so the page reads the same answer.
  * @throws a 404 `Response` on an instance with no biller behind it, which is
  * every instance where `/v1/plans/*` answers 404 itself. The page says the
  * same thing the service says rather than rendering an explanation of a
  * feature this deployment does not have.
  */
-export function requirePlansDoor(instance: InstanceDescriptor | null): void {
-  if (!hasPlansDoor(instance)) throw new Response('Not Found', { status: 404 });
+export async function requirePlansDoor({
+  serverUrl,
+  readInstance = readFreshServerInstance,
+}: {
+  serverUrl: string;
+  readInstance?: InstanceReader;
+}): Promise<InstanceDescriptor> {
+  const instance = await readInstance(serverUrl);
+  if (instance === null || !hasPlansDoor(instance)) throw new Response('Not Found', { status: 404 });
+  return instance;
 }
 
 /**

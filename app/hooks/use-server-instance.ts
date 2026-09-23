@@ -13,6 +13,11 @@
  * server, and an operator moving it means a new document anyway. The cache dies
  * with the tab.
  *
+ * A ROUTE GATE DOES NOT READ THE CACHE. A hint on a screen may be as old as
+ * the tab; a gate that opens a page may not, because the same server can
+ * answer differently an hour later (M245/05). A gate calls
+ * {@link readFreshServerInstance}, which asks again.
+ *
  * FAILS OPEN, like the read underneath it: an unreachable service, a malformed
  * body or a service older than the fields all yield `null`. Every caller must
  * treat `null` as "not known", never as a licence to substitute a default of
@@ -24,16 +29,45 @@ import { usePublicConfig } from '#app/hooks/use-public-config';
 import { readServerInstance } from '#app/lib/sync/sync-actions';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 
+/** One `/health` read, and whether it has answered yet. */
+interface InstanceRead {
+  promise: Promise<InstanceDescriptor | null>;
+  isSettled: boolean;
+}
+
 /** One in-flight or settled `/health` read per server URL. Shared by every mount in the tab. */
-const instanceCache = new Map<string, Promise<InstanceDescriptor | null>>();
+const instanceCache = new Map<string, InstanceRead>();
+
+/** Sends one `/health` read and makes it the tab's answer for that server. */
+function startInstanceRead(serverUrl: string): InstanceRead {
+  const read: InstanceRead = { promise: readServerInstance(serverUrl), isSettled: false };
+  const settle = (): void => {
+    read.isSettled = true;
+  };
+  read.promise.then(settle, settle);
+  instanceCache.set(serverUrl, read);
+  return read;
+}
 
 /** The instance descriptor for a server, read at most once per tab. Never rejects. */
 export function readCachedServerInstance(serverUrl: string): Promise<InstanceDescriptor | null> {
+  return (instanceCache.get(serverUrl) ?? startInstanceRead(serverUrl)).promise;
+}
+
+/**
+ * The instance descriptor for a server as it answers NOW, for a route gate.
+ *
+ * A read that is still in flight is reused, because it was sent to this URL
+ * and has not answered yet, so it reports the server's current state. A read
+ * that has ANSWERED is never reused here: the tab's cache lives as long as the
+ * tab, and a server can switch a door off while a tab sits open (M245/05).
+ * The fresh answer replaces the cached one, so every screen that reads the
+ * cache afterwards agrees with the gate. Never rejects.
+ */
+export function readFreshServerInstance(serverUrl: string): Promise<InstanceDescriptor | null> {
   const cached = instanceCache.get(serverUrl);
-  if (cached !== undefined) return cached;
-  const pending = readServerInstance(serverUrl);
-  instanceCache.set(serverUrl, pending);
-  return pending;
+  if (cached !== undefined && !cached.isSettled) return cached.promise;
+  return startInstanceRead(serverUrl).promise;
 }
 
 /**

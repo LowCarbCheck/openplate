@@ -20,6 +20,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **A subscriber's plan page shows the plan they hold, not an order.** Somebody the billing service holds a live subscription for now sees a card naming their plan (monthly or yearly), whether it is paid or a payment is being retried, one date, and the button to manage it. The date reads as the renewal for a monthly plan, as the end of the paid year for a yearly plan with a note that it then continues monthly and can be cancelled every month, and as the day access stops for a cancelled plan. The start button and the plan cards are no longer drawn for a subscriber, and the page does not ask for the offer at all. The thank-you after a payment now shows once: the marker leaves the address, so a reload does not repeat it.
 
+### Fixed
+
+- **The plan page asks the sync server before it opens.** The page used to trust the answer the tab read first, so a tab that once saw plans on offer kept opening it after the operator switched the billing service off. The page now reads the server's `/health` again each time it opens, and answers 404 when plans are gone.
+
 ## [0.40.0] - 2026-09-23
 
 ### Added

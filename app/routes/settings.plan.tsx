@@ -15,9 +15,11 @@
  * one screenshot, which is the same reasoning `admin.feedback.tsx` writes down.
  *
  * The handshake read happens in the CLIENT loader and not the server one,
- * for the reason that route gives: the fact belongs to the sync server, the
- * browser already has it cached for the tab, and this app's server must not
- * start making a request per page load to answer it.
+ * for the reason that route gives: the fact belongs to the sync server, and
+ * this app's server must not start making a request per page load to answer
+ * it. The gate reads it FRESH rather than from the tab's cache (M245/05,
+ * `plans-door.ts`): a tab that once saw the door open must not keep opening
+ * the page after the server shut it.
  *
  * ── Two buttons, both of which leave ─────────────────────────────────────
  *
@@ -46,7 +48,6 @@ import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
-import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
 import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/lib/sync/engine/client/plans-wire';
@@ -82,11 +83,10 @@ export function loader() {
 /** @throws a 404 Response on an instance with no biller behind it, which is what the service itself answers. */
 export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs, 'serverLoader'>): Promise<{
   syncServerUrl: string;
-  instance: InstanceDescriptor | null;
+  instance: InstanceDescriptor;
 }> {
   const { syncServerUrl } = await serverLoader();
-  const instance = await readCachedServerInstance(syncServerUrl);
-  requirePlansDoor(instance);
+  const instance = await requirePlansDoor({ serverUrl: syncServerUrl });
   // The descriptor rides along so the page's standing reads the SAME answer
   // the gate just passed, rather than a second read that starts at `null`.
   return { syncServerUrl, instance };

@@ -54,22 +54,26 @@ export const YEARLY_SUBSCRIBER_VIEW = {
 };
 
 /**
- * A handshake that advertises a biller. Transcribed rather than patched over
- * the fake's answer, for the reason `push-activation.spec.ts` gives.
+ * The handshake, transcribed rather than patched over the fake's answer, for
+ * the reason `push-activation.spec.ts` gives.
+ *
+ * @param plans - what the handshake says about the biller.
  */
-const HEALTH_WITH_PLANS = {
-  protocolVersion: PROTOCOL_VERSION,
-  envelopeVersion: ENVELOPE_VERSION,
-  serviceVersion: 'fake-e2e',
-  instance: {
-    name: 'openplate-e2e',
-    language: 'en',
-    mail: false,
-    memberInvites: false,
-    plans: true,
-    ai: { model: null },
-  },
-};
+function healthBody(plans: boolean) {
+  return {
+    protocolVersion: PROTOCOL_VERSION,
+    envelopeVersion: ENVELOPE_VERSION,
+    serviceVersion: 'fake-e2e',
+    instance: {
+      name: 'openplate-e2e',
+      language: 'en',
+      mail: false,
+      memberInvites: false,
+      plans,
+      ai: { model: null },
+    },
+  };
+}
 
 /** What the stubbed biller answers. */
 export interface PlansStub {
@@ -77,11 +81,17 @@ export interface PlansStub {
   planView: object;
   /** The `GET /plans/offer` body as text, or `null` to answer the shut door's 404. */
   offerBody: string | null;
+  /**
+   * What `/health` says about the biller, read PER REQUEST, so a spec can
+   * switch the door off while a tab is open. Absent means `true`.
+   */
+  plans?: boolean;
 }
 
-/** Every offer request the page sent, with the query it named. */
+/** Every offer request the page sent, with the query it named, and how often the handshake was read. */
 export interface OfferRequests {
   locales: string[];
+  healthReads: number;
 }
 
 /**
@@ -92,8 +102,11 @@ export interface OfferRequests {
  * @returns the offer requests, recorded as they arrive.
  */
 export async function routePlansCore(page: Page, stub: PlansStub): Promise<OfferRequests> {
-  const requests: OfferRequests = { locales: [] };
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => route.fulfill({ json: HEALTH_WITH_PLANS }));
+  const requests: OfferRequests = { locales: [], healthReads: 0 };
+  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => {
+    requests.healthReads += 1;
+    return route.fulfill({ json: healthBody(stub.plans ?? true) });
+  });
   await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
   await page.route(
     (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
