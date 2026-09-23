@@ -3905,6 +3905,13 @@
     "at": "2026-09-14",
     "tr": "Bugün kaydedilen: {{weight}} {{unit}}."
   },
+  "30be5db6e0b7c5cb": {
+    "en": "Every corner in the app is square now, except a real circle.",
+    "path": "releases:v0_40_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Gerçek bir daire hariç, uygulamadaki her köşe artık karedir."
+  },
   "31035cca29936162": {
     "en": "after the retention period set by the operator of the sync server you use",
     "path": "legal:privacy.reportWindowUnknown",
@@ -11780,6 +11787,13 @@
     "at": "2026-09-17",
     "tr": "Miktar yok"
   },
+  "94b0962695407c86": {
+    "en": "Nothing moves on the first-run questions when you pick or type.",
+    "path": "releases:v0_40_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "İlk çalıştırma sorularında bir seçim yaptığında veya yazdığında hiçbir şey hareket etmez."
+  },
   "94c2ccd179585656": {
     "en": "Save details",
     "path": "common:bodyMetrics.save",
@@ -12417,6 +12431,13 @@
     "at": "2026-09-14",
     "tr": "yaklaşık bir dakika içinde"
   },
+  "9cc2eaddfb18f409": {
+    "en": "The diary day card leads with one large figure.",
+    "path": "releases:v0_40_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Günlük gün kartı büyük bir rakamla başlar."
+  },
   "9ce94844073afc6d": {
     "en": "The openplate app server stores nothing about you at all. It has no accounts, no database, and no record of your visit beyond the ordinary web-request metadata described in Section 5. Everything below concerns the <b>separate, optional sync service</b> described in Section 6, which you only ever reach by choosing to create a sync account. If you never do, none of it applies to you.",
     "path": "legal:privacy.s3Body1",
@@ -12745,6 +12766,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "tr": "Bu kurulumun hangi mikro besin referans değerlerini göstereceğini seç. Bu seçim buradaki herkes için her dilde geçerli olur."
+  },
+  "a145c93ac8d349bb": {
+    "en": "The loading screen shows the openplate name instead of three dots.",
+    "path": "releases:v0_40_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yükleme ekranı üç nokta yerine openplate adını gösterir."
   },
   "a15118e8d98d29fa": {
     "en": "Fasts",
@@ -15272,6 +15300,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kayıt girdiğin günler"
+  },
+  "c2e296c8e70b9004": {
+    "en": "The page title on a phone is larger and sits closer to the brand name.",
+    "path": "releases:v0_40_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Telefonda sayfa başlığı daha büyüktür ve marka adına daha yakın durur."
   },
   "c30fbd59ab3db18f": {
     "en": "Install {{appName}}",
@@ -18765,6 +18800,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İletişim"
+  },
+  "f07c6e230c608d91": {
+    "en": "You can pick a main goal, the number the diary shows first.",
+    "path": "releases:v0_40_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Günlüğün ilk gösterdiği sayı olan ana hedefi seçebilirsin."
   },
   "f091f1ea1bb49dcf": {
     "en": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",

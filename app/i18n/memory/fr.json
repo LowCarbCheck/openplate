@@ -3905,6 +3905,13 @@
     "at": "2026-09-14",
     "fr": "Enregistré aujourd'hui : {{weight}} {{unit}}."
   },
+  "30be5db6e0b7c5cb": {
+    "en": "Every corner in the app is square now, except a real circle.",
+    "path": "releases:v0_40_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Tous les angles de l'application sont désormais droits, sauf les cercles parfaits."
+  },
   "31035cca29936162": {
     "en": "after the retention period set by the operator of the sync server you use",
     "path": "legal:privacy.reportWindowUnknown",
@@ -11780,6 +11787,13 @@
     "at": "2026-09-17",
     "fr": "Sans quantité"
   },
+  "94b0962695407c86": {
+    "en": "Nothing moves on the first-run questions when you pick or type.",
+    "path": "releases:v0_40_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Rien ne bouge sur les questions de première utilisation quand tu choisis ou saisis."
+  },
   "94c2ccd179585656": {
     "en": "Save details",
     "path": "common:bodyMetrics.save",
@@ -12417,6 +12431,13 @@
     "at": "2026-09-14",
     "fr": "dans environ une minute"
   },
+  "9cc2eaddfb18f409": {
+    "en": "The diary day card leads with one large figure.",
+    "path": "releases:v0_40_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "La carte du jour dans le journal met en avant un seul grand chiffre."
+  },
   "9ce94844073afc6d": {
     "en": "The openplate app server stores nothing about you at all. It has no accounts, no database, and no record of your visit beyond the ordinary web-request metadata described in Section 5. Everything below concerns the <b>separate, optional sync service</b> described in Section 6, which you only ever reach by choosing to create a sync account. If you never do, none of it applies to you.",
     "path": "legal:privacy.s3Body1",
@@ -12745,6 +12766,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "fr": "Choisis quelles valeurs de référence pour les micronutriments cette instance affiche. Ce choix s'applique à tout le monde ici, dans toutes les langues."
+  },
+  "a145c93ac8d349bb": {
+    "en": "The loading screen shows the openplate name instead of three dots.",
+    "path": "releases:v0_40_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "L'écran de chargement affiche le nom d'openplate au lieu de trois points."
   },
   "a15118e8d98d29fa": {
     "en": "Fasts",
@@ -15272,6 +15300,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Jours où tu as saisi"
+  },
+  "c2e296c8e70b9004": {
+    "en": "The page title on a phone is larger and sits closer to the brand name.",
+    "path": "releases:v0_40_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Sur téléphone, le titre de la page est plus grand et se place plus près du nom de la marque."
   },
   "c30fbd59ab3db18f": {
     "en": "Install {{appName}}",
@@ -18765,6 +18800,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Contact"
+  },
+  "f07c6e230c608d91": {
+    "en": "You can pick a main goal, the number the diary shows first.",
+    "path": "releases:v0_40_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "fr": "Tu peux choisir un objectif principal, le chiffre que le journal affiche en premier."
   },
   "f091f1ea1bb49dcf": {
     "en": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",

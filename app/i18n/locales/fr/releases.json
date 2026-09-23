@@ -1,4 +1,19 @@
 {
+  "v0_40_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Tu peux choisir un objectif principal, le chiffre que le journal affiche en premier."
+    },
+    "changed": {
+      "01": "Sur téléphone, le titre de la page est plus grand et se place plus près du nom de la marque.",
+      "02": "Tous les angles de l'application sont désormais droits, sauf les cercles parfaits.",
+      "03": "La carte du jour dans le journal met en avant un seul grand chiffre.",
+      "04": "L'écran de chargement affiche le nom d'openplate au lieu de trois points."
+    },
+    "fixed": {
+      "01": "Rien ne bouge sur les questions de première utilisation quand tu choisis ou saisis."
+    }
+  },
   "v0_39_0": {
     "date": "2026-09-22",
     "added": {
@@ -30,16 +45,6 @@
     "changed": {
       "01": "Les cartes sur Analyses, Vue d'ensemble et Jeûne s'affichent désormais dans un ordre clair.",
       "02": "Le nom openplate s'affiche désormais avec une graisse fine, la première moitié en sarcelle, et centré sur le logo."
-    }
-  },
-  "v0_37_0": {
-    "date": "2026-09-21",
-    "changed": {
-      "01": "openplate adopte l'apparence de lowcarbcheck.org."
-    },
-    "fixed": {
-      "01": "Le rappel de sauvegarde reste discret lorsqu'un serveur conserve ton journal.",
-      "02": "La notification de mise à jour passe à la ligne au lieu de tronquer la version."
     }
   }
 }

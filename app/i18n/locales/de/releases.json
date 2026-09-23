@@ -1,4 +1,19 @@
 {
+  "v0_40_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Du kannst ein Hauptziel auswählen, also den Wert, den das Tagebuch zuerst anzeigt."
+    },
+    "changed": {
+      "01": "Auf dem Smartphone ist der Seitentitel größer und steht näher am Markennamen.",
+      "02": "Jede Ecke in der App ist nun eckig, abgesehen von echten Kreisen.",
+      "03": "Die Tageskarte im Tagebuch beginnt mit einer großen Zahl.",
+      "04": "Der Ladebildschirm zeigt den Namen openplate statt dreier Punkte."
+    },
+    "fixed": {
+      "01": "Bei den Fragen zur Ersteinrichtung verschiebt sich nichts, wenn du eine Auswahl triffst oder tippst."
+    }
+  },
   "v0_39_0": {
     "date": "2026-09-22",
     "added": {
@@ -30,16 +45,6 @@
     "changed": {
       "01": "Karten unter Einblicke, der Übersicht und Fasten haben jetzt eine klare Reihenfolge.",
       "02": "Der Name openplate ist jetzt dünn gesetzt, mit der ersten Hälfte in Blaugrün und auf die Bildmarke zentriert."
-    }
-  },
-  "v0_37_0": {
-    "date": "2026-09-21",
-    "changed": {
-      "01": "openplate übernimmt das Erscheinungsbild von lowcarbcheck.org."
-    },
-    "fixed": {
-      "01": "Die Backup-Erinnerung bleibt stumm, wenn ein Server dein Tagebuch speichert.",
-      "02": "Der Update-Hinweis bricht um, anstatt die Version abzuschneiden."
     }
   }
 }

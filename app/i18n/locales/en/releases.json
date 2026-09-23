@@ -1,4 +1,19 @@
 {
+  "v0_40_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "You can pick a main goal, the number the diary shows first."
+    },
+    "changed": {
+      "01": "The page title on a phone is larger and sits closer to the brand name.",
+      "02": "Every corner in the app is square now, except a real circle.",
+      "03": "The diary day card leads with one large figure.",
+      "04": "The loading screen shows the openplate name instead of three dots."
+    },
+    "fixed": {
+      "01": "Nothing moves on the first-run questions when you pick or type."
+    }
+  },
   "v0_39_0": {
     "date": "2026-09-22",
     "added": {
@@ -30,16 +45,6 @@
     "changed": {
       "01": "Cards on Insights, the dashboard and Fasting now read in a clear order.",
       "02": "The name openplate is now set thin, with the first half in teal, and centred on the mark."
-    }
-  },
-  "v0_37_0": {
-    "date": "2026-09-21",
-    "changed": {
-      "01": "openplate takes on the look of lowcarbcheck.org."
-    },
-    "fixed": {
-      "01": "The backup reminder is quiet when a server holds your diary.",
-      "02": "The update notice wraps instead of cutting off the version."
     }
   }
 }

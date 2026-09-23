@@ -1,4 +1,19 @@
 {
+  "v0_40_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Puedes elegir un objetivo principal, el número que el diario muestra primero."
+    },
+    "changed": {
+      "01": "El título de la página en un teléfono es más grande y queda más cerca del nombre de la marca.",
+      "02": "Todas las esquinas de la app son ahora cuadradas, salvo los círculos reales.",
+      "03": "La tarjeta del día del diario empieza con una cifra grande.",
+      "04": "La pantalla de carga muestra el nombre openplate en lugar de tres puntos."
+    },
+    "fixed": {
+      "01": "Nada se mueve en las preguntas iniciales cuando eliges o escribes."
+    }
+  },
   "v0_39_0": {
     "date": "2026-09-22",
     "added": {
@@ -30,16 +45,6 @@
     "changed": {
       "01": "Las tarjetas en Análisis, el panel y Ayuno ahora se leen en un orden claro.",
       "02": "El nombre openplate ahora aparece en letra fina, con la primera mitad en verde azulado y centrado respecto al símbolo."
-    }
-  },
-  "v0_37_0": {
-    "date": "2026-09-21",
-    "changed": {
-      "01": "openplate adopta el aspecto de lowcarbcheck.org."
-    },
-    "fixed": {
-      "01": "El recordatorio de copia de seguridad no se muestra cuando un servidor contiene tu diario.",
-      "02": "El aviso de actualización se ajusta en varias líneas en vez de cortar la versión."
     }
   }
 }

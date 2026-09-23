@@ -1,4 +1,19 @@
 {
+  "v0_40_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Puoi scegliere un obiettivo principale, il numero che il diario mostra per primo."
+    },
+    "changed": {
+      "01": "Sul telefono il titolo della pagina è più grande e più vicino al nome del marchio.",
+      "02": "Nell'applicazione ogni angolo ora è retto, tranne dove c'è un cerchio vero e proprio.",
+      "03": "La scheda del giorno del diario si apre con una cifra grande.",
+      "04": "La schermata di caricamento mostra il nome openplate invece dei tre puntini."
+    },
+    "fixed": {
+      "01": "Nelle domande al primo avvio non si muove nulla mentre scegli o digiti."
+    }
+  },
   "v0_39_0": {
     "date": "2026-09-22",
     "added": {
@@ -30,16 +45,6 @@
     "changed": {
       "01": "Le schede in Analisi, nella bacheca e in Digiuno seguono ora un ordine chiaro.",
       "02": "Il nome openplate ora usa un carattere sottile, ha la prima metà in color foglia di tè ed è centrato rispetto al logo."
-    }
-  },
-  "v0_37_0": {
-    "date": "2026-09-21",
-    "changed": {
-      "01": "openplate adotta l'aspetto grafico di lowcarbcheck.org."
-    },
-    "fixed": {
-      "01": "Il promemoria del backup non interviene se il tuo diario si trova su un server.",
-      "02": "L'avviso di aggiornamento va a capo invece di troncare la versione."
     }
   }
 }
