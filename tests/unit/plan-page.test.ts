@@ -105,6 +105,7 @@ interface RenderOverrides {
   orderYearlyHref?: string | null;
   switchStartsAt?: string | null;
   isAlreadySubscribed?: boolean;
+  recapMealCount?: number | null;
 }
 
 function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
@@ -145,6 +146,7 @@ function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
           orderYearlyHref: overrides.orderYearlyHref ?? null,
           switchStartsAt: overrides.switchStartsAt ?? null,
           isAlreadySubscribed: overrides.isAlreadySubscribed ?? false,
+          recapMealCount: overrides.recapMealCount ?? null,
           onSelectPlan: () => undefined,
           onConsentChange: () => undefined,
           onOrder: () => undefined,
@@ -458,5 +460,31 @@ describe('a monthly subscriber moving to the yearly plan', () => {
     assert.ok(markup.includes(lead(enCommon.plan.card.switchBooked)));
     assert.ok(markup.includes(longDate));
     assert.equal(markup.includes(enCommon.plan.card.orderYearly), false);
+  });
+});
+
+describe('the trial recap on the plan page (M250/05)', () => {
+  const NO_PLAN: PlanView = { ...PAID, plan: 'none', planKey: null, interval: null, currentPeriodEnd: null };
+  const RECAP = 'data-slot="plan-trial-recap"';
+
+  it('names the meals logged with AI, in the plural form the count asks for', () => {
+    const many = render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 12 });
+    assert.ok(many.includes(enCommon.plan.recap.meals_other.replace('{{count}}', '12')), many);
+    const one = render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 1 });
+    assert.ok(one.includes(enCommon.plan.recap.meals_one.replace('{{count}}', '1')), one);
+  });
+
+  it('draws no line for no count and for a count of zero', () => {
+    // THE CONTROLS for the render above, through the same slot.
+    assert.ok(!render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: null }).includes(RECAP));
+    assert.ok(!render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 0 }).includes(RECAP));
+    assert.ok(render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 3 }).includes(RECAP));
+  });
+
+  it('sits above the order, so the plans are read after it', () => {
+    const markup = render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 3 });
+    assert.ok(markup.includes('data-slot="plan-order"'), 'the fixture offer drew no order');
+    assert.ok(markup.includes(RECAP), 'no recap line was drawn');
+    assert.ok(markup.indexOf(RECAP) < markup.indexOf('data-slot="plan-order"'));
   });
 });

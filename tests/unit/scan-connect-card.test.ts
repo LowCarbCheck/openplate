@@ -108,10 +108,11 @@ function render(config: PublicConfig): string {
 function renderVariant(
   variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>,
   allowanceDoor: AllowanceDoor = { kind: 'ask-admin' },
+  plansAvailable = false,
 ): string {
   return renderElement(
     publicConfig({ managed: true }),
-    createElement(ConnectCardView, { variant, logDate: null, allowanceDoor }),
+    createElement(ConnectCardView, { variant, logDate: null, allowanceDoor, plansAvailable }),
   );
 }
 
@@ -280,6 +281,23 @@ describe('ConnectCardView on a managed instance with a session open', () => {
 
   it('does not name a photo recipient, because no photo goes anywhere yet', () => {
     assert.ok(!markup.includes('gateway.openplate.de'));
+  });
+});
+
+describe('ConnectCardView at the AI limit on an instance that sells plans (M250/04)', () => {
+  const OFFER_CARD = 'data-slot="plan-offer-compact"';
+  const ENDED: AllowanceDoor = { kind: 'allowance-ended', endedAt: '2026-09-01T00:00:00.000Z' };
+
+  it('draws the offer under the ended sentence, and under the never-switched-on one', () => {
+    assert.ok(renderVariant({ kind: 'managed-missing' }, ENDED, true).includes(OFFER_CARD));
+    assert.ok(renderVariant({ kind: 'managed-missing' }, { kind: 'not-switched-on' }, true).includes(OFFER_CARD));
+  });
+
+  it('draws no offer where no plan is sold, or where an administrator switches the allowance on', () => {
+    // THE CONTROLS, through the same query: the same account on an instance
+    // that sells nothing, and the organization's answer on one that does.
+    assert.ok(!renderVariant({ kind: 'managed-missing' }, ENDED, false).includes(OFFER_CARD));
+    assert.ok(!renderVariant({ kind: 'managed-missing' }, { kind: 'ask-admin' }, true).includes(OFFER_CARD));
   });
 });
 

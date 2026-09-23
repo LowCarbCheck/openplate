@@ -45,7 +45,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import type { AiIntakeDoor } from '#app/components/add/use-ai-connection';
-import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
+import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
 
 interface NoAiIntakeNoticeProps {
   door: AiIntakeDoor;
@@ -99,16 +99,21 @@ export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }:
   // `/settings/plan`, which is exactly the door the `ask-admin` copy says does
   // not exist. The date is kept where there is one, for the reason
   // `allowance-ended` keeps it.
+  //
+  // THE DOOR IS AN OFFER NOW (M250/04). The sentence stays, as the card's
+  // lead, and the link became the card's one button, with the lowest monthly
+  // price above it once the offer is read. The card holds its height before
+  // the price arrives, so the price fills a box already drawn.
   if (door.kind === 'plans') {
     return (
-      <p className={NOTICE_CLASS}>
-        {door.endedAt === null ?
-          t('aiIntake.plansNotSwitchedOn')
-        : t('aiIntake.plansEnded', { date: new Date(door.endedAt).toLocaleDateString() })}{' '}
-        <Link to={PLAN_PAGE_HREF} className={LINK_CLASS}>
-          {t('aiIntake.plansLink')}
-        </Link>
-      </p>
+      <PlanOfferCompact
+        placement="ai-limit"
+        lead={
+          door.endedAt === null ?
+            t('aiIntake.plansNotSwitchedOn')
+          : t('aiIntake.plansEnded', { date: new Date(door.endedAt).toLocaleDateString() })
+        }
+      />
     );
   }
 

@@ -21,6 +21,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, type Page } from '@playwright/test';
+import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
@@ -88,12 +89,22 @@ export interface PlansStub {
    * switch the door off while a tab is open. Absent means `true`.
    */
   plans?: boolean;
+  /**
+   * Holds every `GET /plans/me` answer until it settles, so a spec can take a
+   * layout reading BEFORE what the plan read draws arrives (M250/03). Absent
+   * answers at once.
+   */
+  planViewGate?: Promise<void>;
+  /** Holds every `GET /plans/offer` answer the same way, for a card that reads the offer lazily (M250/04). */
+  offerGate?: Promise<void>;
 }
 
 /** Every offer request the page sent, with the query it named, and how often the handshake was read. */
 export interface OfferRequests {
   locales: string[];
   healthReads: number;
+  /** How many `GET /plans/me` requests arrived, answered or still held. */
+  planViews: number;
 }
 
 /**
@@ -104,16 +115,21 @@ export interface OfferRequests {
  * @returns the offer requests, recorded as they arrive.
  */
 export async function routePlansCore(page: Page, stub: PlansStub): Promise<OfferRequests> {
-  const requests: OfferRequests = { locales: [], healthReads: 0 };
+  const requests: OfferRequests = { locales: [], healthReads: 0, planViews: 0 };
   await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => {
     requests.healthReads += 1;
     return route.fulfill({ json: healthBody(stub.plans ?? true) });
   });
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, async (route) => {
+    requests.planViews += 1;
+    await stub.planViewGate;
+    await route.fulfill({ json: stub.planView });
+  });
   await page.route(
     (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
-    (route) => {
+    async (route) => {
       requests.locales.push(new URL(route.request().url()).searchParams.get('locale') ?? '');
+      await stub.offerGate;
       if (stub.offerBody === null) return route.fulfill({ status: 404, json: { error: 'not found' } });
       return route.fulfill({ status: 200, contentType: 'application/json', body: stub.offerBody });
     },
@@ -193,4 +209,71 @@ export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): P
     return route.fulfill({ status: 410, json: { error: 'checkout-gone' } });
   });
   return requests;
+}
+
+/** The fields an allowance sets, leaving an absent `createdAt` as the fake's own. */
+function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt }: AccountAllowance): AccountAllowance {
+  return createdAt === undefined ?
+      { dailyAiLimit, allowanceExpiresAt }
+    : { dailyAiLimit, allowanceExpiresAt, createdAt };
+}
+
+/** An auth answer that carries the account, every other key kept as the fake sent it. */
+const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.unknown()) });
+
+/** The allowance facts a spec gives the fixture account. */
+export interface AccountAllowance {
+  dailyAiLimit: number;
+  /** The ISO instant the allowance ends, or `null` for none. */
+  allowanceExpiresAt: string | null;
+  /**
+   * The ISO instant the account says it was created, or absent for the fake's
+   * own. The trial recap counts from it (M250/05), and the fixture account is
+   * shared by every spec in a run, so a spec that counts its own meals starts
+   * the account at its own start and leaves earlier specs' meals outside.
+   */
+  createdAt?: string;
+}
+
+/**
+ * Gives the fixture account an allowance, on every auth answer that carries
+ * the account (the sign-in, the resume, the account read).
+ *
+ * THE FAKE SERVICE IS LEFT ALONE. It models the sync protocol and holds no
+ * allowance dates, which is right for it; a trial is a fact about a consumer
+ * instance, so it is written onto the wire here, the way the handshake's
+ * `plans: true` is. Everything else in the body is the fake's own answer.
+ *
+ * @param page - the page, before its first navigation.
+ * @param allowance - what the account answers.
+ */
+export async function routeAccountAllowance(page: Page, allowance: AccountAllowance): Promise<void> {
+  await page.route(
+    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    async (route) => {
+      const response = await route.fetch();
+      const text = await response.text();
+      const envelope = accountEnvelopeSchema.safeParse(text === '' ? null : JSON.parse(text));
+      if (!envelope.success) return route.fulfill({ response, body: text });
+      return route.fulfill({
+        response,
+        json: { ...envelope.data, account: { ...envelope.data.account, ...accountPatch(allowance) } },
+      });
+    },
+  );
+}
+
+/** A promise a spec settles by hand, for `PlansStub.planViewGate`. */
+export interface Gate {
+  promise: Promise<void>;
+  open: () => void;
+}
+
+/** A closed gate. `open()` lets everything it holds through, once and for good. */
+export function createGate(): Gate {
+  let resolveGate: (() => void) | null = null;
+  const promise = new Promise<void>((settle) => {
+    resolveGate = settle;
+  });
+  return { promise, open: () => resolveGate?.() };
 }

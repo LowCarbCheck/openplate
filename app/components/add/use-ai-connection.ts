@@ -172,14 +172,22 @@ export function resolveAiIntakeDoor({
 }): AiIntakeDoor {
   if (!aiComesFromTheInstance) return { kind: 'byok' };
   const door = resolveAllowanceDoor(allowance);
-  if (!plansAvailable) return door;
-  // THE TWO ANSWERS A PAYMENT FIXES, and no others. An `ask-admin` instance
-  // has somebody who can switch the allowance on, and offering to sell a plan
-  // instead would be wrong on an organization's deployment even if that
-  // deployment also happened to have a biller.
-  if (door.kind === 'allowance-ended') return { kind: 'plans', endedAt: door.endedAt };
-  if (door.kind === 'not-switched-on') return { kind: 'plans', endedAt: null };
-  return door;
+  if (!plansAvailable || !isFixedByPayment(door)) return door;
+  return { kind: 'plans', endedAt: door.kind === 'allowance-ended' ? door.endedAt : null };
+}
+
+/**
+ * Whether a plan would fix this allowance answer, on an instance that sells one.
+ *
+ * THE TWO ANSWERS A PAYMENT FIXES, and no others. An `ask-admin` instance
+ * has somebody who can switch the allowance on, and offering to sell a plan
+ * instead would be wrong on an organization's deployment even if that
+ * deployment also happened to have a biller. One function, so the notice under
+ * a dead intake and `/scan`'s connect card (M250/04) cannot draw the offer for
+ * two different sets of accounts.
+ */
+export function isFixedByPayment(door: AllowanceDoor): boolean {
+  return door.kind === 'allowance-ended' || door.kind === 'not-switched-on';
 }
 
 /** Whether this device may run an AI intake right now, and where to send a person who may not. */

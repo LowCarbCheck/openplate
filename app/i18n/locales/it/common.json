@@ -3380,6 +3380,19 @@
       "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
       "unavailable": "The order page could not be loaded. Try again later.",
       "withdrawalLink": "Withdrawal instruction and form"
+    },
+    "countdown": {
+      "daysLeft_one": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova.",
+      "daysLeft_other": "Ti restano {{count}} giorni di scansioni IA nel tuo periodo di prova.",
+      "lastDay": "Le scansioni IA del tuo periodo di prova terminano oggi.",
+      "action": "Vedi i piani"
+    },
+    "offer": {
+      "from": "Piani da {{price}} al mese."
+    },
+    "recap": {
+      "meals_one": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA.",
+      "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
     }
   },
   "usual": {

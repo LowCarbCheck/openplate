@@ -3380,6 +3380,19 @@
       "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
       "unavailable": "The order page could not be loaded. Try again later.",
       "withdrawalLink": "Withdrawal instruction and form"
+    },
+    "countdown": {
+      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
+      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
+      "lastDay": "Your trial's AI scans end today.",
+      "action": "See plans"
+    },
+    "offer": {
+      "from": "Plans from {{price}} a month."
+    },
+    "recap": {
+      "meals_one": "In your trial you logged {{count}} meal with AI.",
+      "meals_other": "In your trial you logged {{count}} meals with AI."
     }
   },
   "usual": {

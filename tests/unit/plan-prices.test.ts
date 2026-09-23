@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 
 import {
   formatCents,
+  lowestMonthlyPrice,
   monthlyEquivalentCents,
   planCardFigures,
   yearlySavingPercent,
@@ -86,5 +87,29 @@ describe('the formatted card figures', () => {
       ['yearly', 'monthly'],
     );
     assert.equal(reversed[0]?.saving, '33%');
+  });
+});
+
+describe('the lowest a plan costs per month, for the compact offer (M250/04)', () => {
+  it("is the yearly plan's monthly equivalent when that is the lower, the same figure its card states", () => {
+    const [, yearly] = planCardFigures({ plans: OFFER.plans, locale: 'en' });
+    assert.equal(lowestMonthlyPrice({ plans: OFFER.plans, locale: 'en' }), yearly?.monthlyEquivalent);
+    assert.equal(lowestMonthlyPrice({ plans: OFFER.plans, locale: 'en' }), '€3.33');
+  });
+
+  it('is the monthly price when the yearly plan works out dearer per month', () => {
+    // 7200 a year is 6.00 a month, above the 5.00 monthly plan.
+    const plans = OFFER.plans.map((plan) =>
+      plan.interval === 'year' ? Object.assign(structuredClone(plan), { grossCents: 7200 }) : plan,
+    );
+    assert.equal(lowestMonthlyPrice({ plans, locale: 'en' }), '€5.00');
+  });
+
+  it('says nothing for no plans, or for plans in two currencies', () => {
+    assert.equal(lowestMonthlyPrice({ plans: [], locale: 'en' }), null);
+    const mixed = OFFER.plans.map((plan) =>
+      plan.interval === 'year' ? Object.assign(structuredClone(plan), { currency: 'CHF' }) : plan,
+    );
+    assert.equal(lowestMonthlyPrice({ plans: mixed, locale: 'en' }), null);
   });
 });

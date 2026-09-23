@@ -16,6 +16,7 @@ import { BottomNav } from './bottom-nav';
 import { FastChipSlot } from './fast-chip';
 import { CatchUpWriter } from './catch-up-writer';
 import { PulseHeartbeat } from './pulse-heartbeat';
+import { TrialCountdown } from './plans/trial-countdown';
 import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
@@ -434,6 +435,11 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
                   reason, a log lands on whatever page the person is on
                   (M223). */}
               <CatchUpWriter />
+              {/* No markup either: during a trial it publishes the countdown
+                  to the status channel, which this header's title slot draws
+                  (M250/03). Mounted in the personal shell only, once, so the
+                  line is published once per page load. */}
+              <TrialCountdown />
               {/* The device menu, at both breakpoints, identity, the theme
                   inline, and the settings people revisit. See
                   `avatar-menu.tsx` for why the theme lives in here rather than

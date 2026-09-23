@@ -147,6 +147,8 @@ const MANAGED_BRANCH_KEYS = [
   'aiIntake.plansEnded',
   'aiIntake.plansNotSwitchedOn',
   'aiIntake.plansLink',
+  // M250/04: the price line of the compact offer that replaced that link.
+  'plan.offer.from',
 ];
 
 /**

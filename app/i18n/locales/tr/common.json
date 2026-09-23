@@ -3380,6 +3380,19 @@
       "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
       "unavailable": "The order page could not be loaded. Try again later.",
       "withdrawalLink": "Withdrawal instruction and form"
+    },
+    "countdown": {
+      "daysLeft_one": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
+      "daysLeft_other": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
+      "lastDay": "Deneme sürendeki yapay zeka taramaları bugün bitiyor.",
+      "action": "Planları gör"
+    },
+    "offer": {
+      "from": "Ayda {{price}}'den başlayan planlar."
+    },
+    "recap": {
+      "meals_one": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin.",
+      "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
     }
   },
   "usual": {

@@ -64,6 +64,7 @@ import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/l
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
+import { useTrialRecap } from '#app/hooks/use-trial-recap';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
@@ -160,6 +161,11 @@ export interface PlanScreenProps {
   switchStartsAt: string | null;
   /** `true` after the biller said this account already pays, with no order block left to say it in. */
   isAlreadySubscribed: boolean;
+  /**
+   * The meals logged with AI during the trial (M250/05), or `null` when there
+   * is no trial to sum up. Zero draws no line, like `null`.
+   */
+  recapMealCount: number | null;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
   onOrder: () => void;
@@ -278,6 +284,15 @@ export function PlanScreen(props: PlanScreenProps) {
         <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>
       )}
 
+      {/* WHAT THE TRIAL WAS USED FOR, above the plans, counted from this
+          device's diary (M250/05). The page is held until the count is in,
+          so this line never arrives above an order already drawn. */}
+      {state.kind === 'ready' && props.recapMealCount !== null && props.recapMealCount > 0 && (
+        <p data-slot="plan-trial-recap" className="text-sm">
+          {t('plan.recap.meals', { count: props.recapMealCount })}
+        </p>
+      )}
+
       {order !== null && (
         <PlanOrder
           {...order}
@@ -379,6 +394,12 @@ export default function SettingsPlan() {
     refresh: offerRefresh,
   });
 
+  const recap = useTrialRecap({
+    standing,
+    accountCreatedAt: session.account?.createdAt,
+    isEnabled: read.kind === 'ready',
+  });
+
   const offer = offerRead.settled ? offerRead.offer : null;
   const wantedPick = isSwitching ? 'yearly' : (pickedPlan ?? linkedPlan);
   // A linked plan the offer does not contain is no pick at all.
@@ -386,9 +407,12 @@ export default function SettingsPlan() {
   const mode: OrderMode =
     isSwitching && switchStart !== null ? { kind: 'switch', startsAt: switchStart } : { kind: 'first' };
   const isOrderLoading = wantsOrder && !offerRead.settled;
-  // HELD UNTIL THE OFFER IS IN for somebody without a plan, so the order
-  // never arrives underneath a page that is already drawn and pushes it down.
-  const state: PlanReadState = isOrderLoading && !isSubscribed ? { kind: 'loading' } : read;
+  // HELD UNTIL THE OFFER AND THE TRIAL RECAP ARE IN for somebody without a
+  // plan, so neither the order nor the recap line above it arrives underneath
+  // a page that is already drawn and pushes it down.
+  const isWaitingForRecap = read.kind === 'ready' && !recap.settled;
+  const state: PlanReadState =
+    (isOrderLoading && !isSubscribed) || isWaitingForRecap ? { kind: 'loading' } : read;
   const order: OrderView | null =
     wantsOrder && offer !== null ?
       { offer, mode, selectedPlan, consents, notice, isOrdering: busy === 'order' }
@@ -512,6 +536,7 @@ export default function SettingsPlan() {
       onSelectPlan={setPickedPlan}
       onConsentChange={onConsentChange}
       onOrder={onOrder}
+      recapMealCount={recap.settled ? recap.mealCount : null}
       onManage={onManage}
     />
   );

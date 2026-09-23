@@ -3310,6 +3310,13 @@
     "at": "2026-09-21",
     "it": "Alla prima data utile"
   },
+  "2802b607f430ffb5": {
+    "en": "{{count}} day of AI scans left in your trial.",
+    "path": "common:plan.countdown.daysLeft_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova."
+  },
   "283c930c1117a707": {
     "en": "Phone",
     "path": "legal:imprint.phoneLabel",
@@ -3351,6 +3358,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Account e sincronizzazione"
+  },
+  "28e96a4b6c0a580c": {
+    "en": "{{count}} days of AI scans left in your trial.",
+    "path": "common:plan.countdown.daysLeft_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Ti restano {{count}} giorni di scansioni IA nel tuo periodo di prova."
   },
   "29113a90b9129828": {
     "en": "The German version of this page is the binding one. This English text is a translation, provided for information only.",
@@ -4730,6 +4744,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Un macronutriente sconosciuto per una voce non contribuisce al totale giornaliero, quindi un totale basso potrebbe indicare un dato sconosciuto anziché un apporto ridotto. Leggi loggedEntryCount insieme a ogni totale e considera non quantificato un totale pari a zero con un conteggio diverso da zero."
+  },
+  "3c6eb04c8e48fd43": {
+    "en": "Your trial's AI scans end today.",
+    "path": "common:plan.countdown.lastDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Le scansioni IA del tuo periodo di prova terminano oggi."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",
@@ -7089,6 +7110,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "it": "Un pasto salvato mostra l'intero nome che gli hai dato."
+  },
+  "5a9683a9539ade1c": {
+    "en": "See plans",
+    "path": "common:plan.countdown.action",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Vedi i piani"
   },
   "5a9f0cd33667d187": {
     "en": "The study is instructed to delete your contribution, and openplate’s study tools drop it on every pull.",
@@ -11737,6 +11765,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Lettura degli ultimi tre giorni."
+  },
+  "92f1a8250d599029": {
+    "en": "Plans from {{price}} a month.",
+    "path": "common:plan.offer.from",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Piani da {{price}} al mese."
   },
   "9356af6053e82883": {
     "en": "Anthropic direct",
@@ -17681,6 +17716,13 @@
     "at": "2026-09-14",
     "it": "Non stai contribuendo a nessuno studio. Per partecipare ne serve l'impronta stampata sui moduli di consenso."
   },
+  "e1643934c13d78cf": {
+    "en": "In your trial you logged {{count}} meals with AI.",
+    "path": "common:plan.recap.meals_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
+  },
   "e16d0509d32c1d39": {
     "en": "Your data is encrypted on your device before upload. Our server stores only opaque ciphertext it cannot read, and the encryption keys are derived on your device from a passphrase only you hold.",
     "path": "legal:terms.s7Item1Body",
@@ -18135,6 +18177,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Imposta una nuova password"
+  },
+  "e765d3155992d7ed": {
+    "en": "In your trial you logged {{count}} meal with AI.",
+    "path": "common:plan.recap.meals_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA."
   },
   "e7885f85c7cc2674": {
     "en": "Whole calendar days inside the window you send, one row per day, and never a time, a food name or a photo.",

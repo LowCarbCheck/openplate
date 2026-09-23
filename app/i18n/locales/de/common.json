@@ -3380,6 +3380,19 @@
       "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
       "unavailable": "The order page could not be loaded. Try again later.",
       "withdrawalLink": "Withdrawal instruction and form"
+    },
+    "countdown": {
+      "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",
+      "daysLeft_other": "Noch {{count}} Tage KI-Scans in deiner Testphase.",
+      "lastDay": "Die KI-Scans deiner Testphase enden heute.",
+      "action": "Tarife ansehen"
+    },
+    "offer": {
+      "from": "Tarife ab {{price}} im Monat."
+    },
+    "recap": {
+      "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
+      "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst."
     }
   },
   "usual": {

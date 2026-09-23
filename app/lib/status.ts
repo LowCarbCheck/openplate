@@ -54,6 +54,16 @@ export interface StatusMessage {
   description: string | null;
   tone: StatusTone;
   action: StatusAction | null;
+  /**
+   * Called when the person closes the status with its dismiss control, and
+   * only then: not when it times out, not when a later publish replaces it,
+   * and not when its action is pressed. `null` when the caller does not care.
+   *
+   * It exists for a status that must stay closed once somebody closed it (the
+   * trial countdown is closed for the day, M250/03). The channel keeps no
+   * memory of its own, so the caller records the close.
+   */
+  onDismiss: (() => void) | null;
 }
 
 /** What a caller passes. Only `text` is required; every other field has a default worth having. */
@@ -62,6 +72,8 @@ export interface PublishStatusInput {
   description?: string;
   tone?: StatusTone;
   action?: StatusAction;
+  /** See `StatusMessage.onDismiss`. */
+  onDismiss?: () => void;
   /** Milliseconds until it clears itself, or `null` to persist until dismissed. Defaults per tone. */
   ttlMs?: number | null;
 }
@@ -101,7 +113,14 @@ function cancelTimer(): void {
  *
  * @param input - the message, its tone, and how long it should stay.
  */
-export function publishStatus({ text, description, tone = 'info', action, ttlMs }: PublishStatusInput): void {
+export function publishStatus({
+  text,
+  description,
+  tone = 'info',
+  action,
+  onDismiss,
+  ttlMs,
+}: PublishStatusInput): void {
   cancelTimer();
   current = {
     id: nextId++,
@@ -109,6 +128,7 @@ export function publishStatus({ text, description, tone = 'info', action, ttlMs 
     description: description ?? null,
     tone,
     action: action ?? null,
+    onDismiss: onDismiss ?? null,
   };
   emit();
   const ttl = ttlMs === undefined ? STATUS_TTL_MS[tone] : ttlMs;

@@ -122,6 +122,17 @@ export interface SyncSessionSnapshot {
      * thing to a screen: draw no invite card. Only a number draws one.
      */
     invitesLeft: number | null;
+    /**
+     * When the account was created, as an ISO instant, or `null`/absent.
+     *
+     * On a consumer instance the trial is the allowance an invitation writes
+     * when it creates the account (M213/05), so this is where a trial starts,
+     * and the trial recap counts from it (M250/05). Absent and `null` both
+     * mean "not read yet", and a reader that needs the date draws nothing
+     * without it. OPTIONAL, unlike its neighbours, because nothing but the
+     * recap reads it and every other snapshot fixture is right without it.
+     */
+    createdAt?: string | null;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -286,6 +297,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       // put `undefined` where every reader tests for `null`.
       allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
       invitesLeft: knownAccount?.invitesLeft ?? null,
+      createdAt: knownAccount?.createdAt ?? null,
     },
     isResuming: false,
     phase: 'idle',
