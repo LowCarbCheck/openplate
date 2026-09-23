@@ -50,9 +50,38 @@ export const PLAN_STATUSES = ['none', 'trialing', 'active', 'past_due', 'cancele
 
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
 
+/**
+ * The two plans the biller sells (M245/01, `openplate-billing/src/plans/plan-catalogue.ts`).
+ *
+ * A KEY, NEVER A NAME AND NEVER A PRICE. The client names a plan by this word
+ * and nothing else; what the plan costs and how it is described arrive from the
+ * biller as data.
+ */
+export const PLAN_KEYS = ['monthly', 'yearly'] as const;
+
+export type PlanKey = (typeof PLAN_KEYS)[number];
+
+/** How often a plan bills, transcribed from `PLAN_INTERVALS` in the same catalogue. */
+export const PLAN_INTERVALS = ['month', 'year'] as const;
+
+export type PlanInterval = (typeof PLAN_INTERVALS)[number];
+
 /** `GET /plans/me`, transcribed field for field from `PlanView` in the biller. */
 export const planViewSchema = z.object({
+  /** The subscription STATUS. The name is historic: M245/01 kept it and put the key beside it. */
   plan: z.enum(PLAN_STATUSES),
+  /**
+   * Which plan the subscription is on, or `null` with no subscription.
+   *
+   * `.catch(null)` BECAUSE THE FIELD IS YOUNGER THAN THE PAGE THAT READS IT. A
+   * biller built before M245/01 omits it, and a newer one may name a third key
+   * this client has never heard of. Both mean "this client cannot name the
+   * plan", which a screen can say honestly, and neither may turn a paying
+   * person's plan page into a read failure.
+   */
+  planKey: z.enum(PLAN_KEYS).nullable().catch(null),
+  /** How often that plan bills, or `null` whenever the key is. Same tolerance, same reason. */
+  interval: z.enum(PLAN_INTERVALS).nullable().catch(null),
   /** An ISO instant, or `null` when there is no subscription at all. */
   currentPeriodEnd: z.string().nullable(),
   cancelAtPeriodEnd: z.boolean(),

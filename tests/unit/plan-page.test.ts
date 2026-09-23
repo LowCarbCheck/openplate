@@ -35,6 +35,8 @@ import enCommon from '../../app/i18n/locales/en/common.json';
 
 const PAID: PlanView = {
   plan: 'active',
+  planKey: 'monthly',
+  interval: 'month',
   currentPeriodEnd: '2026-10-09T00:00:00.000Z',
   cancelAtPeriodEnd: false,
   portalAvailable: true,
@@ -92,7 +94,7 @@ describe('the plan page', () => {
   });
 
   it('names no date at all when the biller sent none', () => {
-    const markup = render({ kind: 'ready', plan: { plan: 'none', currentPeriodEnd: null, cancelAtPeriodEnd: false, portalAvailable: false } });
+    const markup = render({ kind: 'ready', plan: { plan: 'none', planKey: null, interval: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, portalAvailable: false } });
     assert.equal(markup.includes(enCommon.plan.renewsOn.split('{{date}}')[0] ?? ''), false);
     assert.equal(markup.includes(enCommon.plan.endsOn.split('{{date}}')[0] ?? ''), false);
   });

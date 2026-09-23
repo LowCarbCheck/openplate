@@ -35,7 +35,7 @@
  * There is no DOM test library in this repository, so a state that can only be
  * reached by clicking is a state nothing checks.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
@@ -46,11 +46,11 @@ import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
-import { useSyncSession } from '#app/components/sync-status';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
 import type { PlanStatus, PlanView } from '#app/lib/sync/engine/client/plans-wire';
+import { usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -86,20 +86,8 @@ export function HydrateFallback() {
   return <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>;
 }
 
-/**
- * Where the plan read is.
- *
- * `absent` IS ITS OWN STATE and not a failure: it is the biller answering 404
- * between the handshake this page passed and the read it then made, which is
- * an operator switching the door off while a tab sat open. Saying "there is no
- * plan here" is true; saying "something went wrong" is not.
- */
-export type PlanReadState =
-  | { kind: 'loading' }
-  | { kind: 'signed-out' }
-  | { kind: 'absent' }
-  | { kind: 'failed' }
-  | { kind: 'ready'; plan: PlanView };
+/** Where the plan read is. Owned by `use-plan-standing.ts`, re-exported for the screen's own tests. */
+export type { PlanReadState };
 
 /** Which button is busy, so neither can be pressed twice into two Stripe sessions. */
 export type PlanAction = 'none' | 'checkout' | 'portal';
@@ -225,43 +213,14 @@ export function readCheckoutReturn(value: string | null): CheckoutReturn {
 
 export default function SettingsPlan() {
   const { i18n } = useTranslation();
-  // Read so a signed-out tab says so rather than reporting a failed request.
-  const session = useSyncSession();
   const [searchParams] = useSearchParams();
-  const [state, setState] = useState<PlanReadState>({ kind: 'loading' });
+  // The loader has already passed the door, so the read is always enabled here.
+  const state = usePlanRead({ isEnabled: true });
   const [busy, setBusy] = useState<PlanAction>('none');
   const [actionFailed, setActionFailed] = useState(false);
   // Read so the loader's own gate cannot be skipped by a direct render; the
   // value itself is not drawn.
   useLoaderData<typeof clientLoader>();
-
-  const hasAccount = session.account !== null;
-
-  useEffect(() => {
-    if (!hasAccount) {
-      setState({ kind: 'signed-out' });
-      return;
-    }
-    let isMounted = true;
-    const read = async (): Promise<void> => {
-      const client = currentPlansClient();
-      if (client === null) {
-        if (isMounted) setState({ kind: 'signed-out' });
-        return;
-      }
-      try {
-        const outcome = await client.readPlan();
-        if (!isMounted) return;
-        setState(outcome.status === 'ok' ? { kind: 'ready', plan: outcome.value } : { kind: 'absent' });
-      } catch {
-        if (isMounted) setState({ kind: 'failed' });
-      }
-    };
-    void read();
-    return () => {
-      isMounted = false;
-    };
-  }, [hasAccount]);
 
   /**
    * Follows an address the biller answered.

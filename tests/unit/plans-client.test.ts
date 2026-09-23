@@ -26,7 +26,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { PlansClient, type PlansTransport } from '../../app/lib/sync/engine/client/plans-client';
-import { PLANS_API_PREFIX, PLAN_STATUSES, planViewSchema } from '../../app/lib/sync/engine/client/plans-wire';
+import { PLANS_API_PREFIX, PLAN_INTERVALS, PLAN_KEYS, PLAN_STATUSES, planViewSchema } from '../../app/lib/sync/engine/client/plans-wire';
 import type { AuthorizedMethod } from '../../app/lib/sync/engine/client/auth-client';
 import type { JsonValue } from '../../app/lib/sync/engine/protocol';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
@@ -67,6 +67,8 @@ function notFound(): never {
 /** The plan view as the biller really writes it, field for field. */
 const PAID_VIEW = {
   plan: 'active',
+  planKey: 'monthly',
+  interval: 'month',
   currentPeriodEnd: '2026-10-09T00:00:00.000Z',
   cancelAtPeriodEnd: false,
   portalAvailable: true,
@@ -81,14 +83,39 @@ describe('the plan wire shapes, transcribed from openplate-billing', () => {
     assert.deepEqual([...PLAN_STATUSES], ['none', 'trialing', 'active', 'past_due', 'canceled']);
   });
 
-  it('decodes exactly the four fields of PlanView', () => {
+  it('decodes exactly the six fields of PlanView', () => {
     const view = planViewSchema.parse(PAID_VIEW);
     assert.deepEqual(Object.keys(view).toSorted(), [
       'cancelAtPeriodEnd',
       'currentPeriodEnd',
+      'interval',
       'plan',
+      'planKey',
       'portalAvailable',
     ]);
+  });
+
+  it('names the two plan keys and the two intervals of the M245/01 catalogue', () => {
+    assert.deepEqual([...PLAN_KEYS], ['monthly', 'yearly']);
+    assert.deepEqual([...PLAN_INTERVALS], ['month', 'year']);
+    const yearly = planViewSchema.parse({ ...PAID_VIEW, planKey: 'yearly', interval: 'year' });
+    assert.equal(yearly.planKey, 'yearly');
+    assert.equal(yearly.interval, 'year');
+  });
+
+  it('reads a missing or unknown plan key as unnamed, never as a failed read', () => {
+    // A biller older than M245/01 sends no key at all, and a newer one may
+    // name a plan this client has never heard of. Both keep the status.
+    const { planKey, interval, ...beforeM245 } = PAID_VIEW;
+    assert.equal(planKey, 'monthly');
+    assert.equal(interval, 'month');
+    const older = planViewSchema.parse(beforeM245);
+    assert.equal(older.plan, 'active');
+    assert.equal(older.planKey, null);
+    assert.equal(older.interval, null);
+    const newer = planViewSchema.parse({ ...PAID_VIEW, planKey: 'quarterly', interval: 'quarter' });
+    assert.equal(newer.planKey, null);
+    assert.equal(newer.interval, null);
   });
 
   it('refuses a body the biller does not send', () => {
