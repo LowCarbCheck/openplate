@@ -170,7 +170,11 @@ export default function Join() {
   }, [configuredSyncUrl]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md items-center px-4 py-10">
+    // TOP-ALIGNED, NOT CENTRED (M253/11). The card starts on the small
+    // "reading" body and becomes the form when the lookup answers; a centred
+    // card grew both ways and its top jumped up by half the growth, a layout
+    // shift of 0.107 on a phone. Anchored at the top, only its bottom edge moves.
+    <main className="mx-auto flex min-h-dvh max-w-md items-start px-4 py-10 sm:py-16">
       <Card className="w-full">
         <CardHeader>
           <CardTitle>{t('join.title')}</CardTitle>

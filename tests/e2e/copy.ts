@@ -217,6 +217,8 @@ const catalogSchema = z.object({
     signIn: z.object({ submit: z.string() }),
   }),
   signOut: z.object({ confirm: z.string() }),
+  join: z.object({ working: z.string(), invitedAs: z.string() }),
+  account: z.object({ invites: z.object({ title: z.string(), left: z.string() }) }),
 });
 
 /** Every string this tier reads, in one language, validated against that language's shipped bundle. */

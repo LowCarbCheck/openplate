@@ -58,7 +58,7 @@ import {
 import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
-import { useServerInstance } from '#app/hooks/use-server-instance';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { bindingTrialScans, type TrialScans } from '#app/lib/plans/trial-scans';
@@ -113,7 +113,8 @@ export default function SettingsAccount() {
   // managed, so it cannot be an `InstancePolicy` question: two managed
   // instances answer it differently. `false` while the handshake is in flight,
   // which draws no card and keeps the sentence that names an administrator.
-  const instance = useServerInstance();
+  const instanceRead = useServerInstanceRead();
+  const instance = instanceRead.instance;
   const memberInvites = instance?.memberInvites ?? false;
   // WHY the allowance is missing, in the words that are true here, resolved by
   // the same rule `/scan` and the composer's notice ask (M212 spec 04).
@@ -166,39 +167,50 @@ export default function SettingsAccount() {
             }
             trialScans={trialScans}
           />
-          {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
-            <AllowanceCard
-              dailyLimit={account.dailyAiLimit}
-              usedToday={account.aiUsedToday}
-              expiresAt={account.allowanceExpiresAt}
-              door={allowanceDoor}
-              plansAvailable={plansAvailable}
-              trialScans={trialScans}
-            />
-          )}
-          {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
+          {/* EVERYTHING BELOW WAITS FOR THE HANDSHAKE (M253/11 item 2). The
+              handshake decides whether the invite card exists and what the
+              allowance card links to, and a card that arrived between two
+              sections pushed every section below it down (a layout shift of
+              0.107 on a phone). Drawn only once `/health` has answered or
+              failed, the whole lower page arrives at once under the identity
+              card, where nothing sits below it to be pushed. */}
+          {instanceRead.isSettled && (
+            <>
+              {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
+                <AllowanceCard
+                  dailyLimit={account.dailyAiLimit}
+                  usedToday={account.aiUsedToday}
+                  expiresAt={account.allowanceExpiresAt}
+                  door={allowanceDoor}
+                  plansAvailable={plansAvailable}
+                  trialScans={trialScans}
+                />
+              )}
+              {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
               instance says whether the route exists at all, and the account
               says whether this person has any left; `null` is "the cap is not
               about you", which is an administrator and an instance with the
               feature off, and it is also the unread moment after a reload. */}
-          {canSendMemberInvites({ memberInvites, invitesLeft: account.invitesLeft }) && (
-            <InviteCard invitesLeft={account.invitesLeft ?? 0} />
-          )}
-          <SettingsSection label={t('account.devices.title')} description={t('account.devices.body')}>
-            <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
-            <p className="border bg-muted/30 p-3 text-xs text-muted-foreground">
-              {t('account.devices.photosStayHere')}
-            </p>
-          </SettingsSection>
-          {/* AFTER the devices card and before the password one, because it
+              {canSendMemberInvites({ memberInvites, invitesLeft: account.invitesLeft }) && (
+                <InviteCard invitesLeft={account.invitesLeft ?? 0} />
+              )}
+              <SettingsSection label={t('account.devices.title')} description={t('account.devices.body')}>
+                <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
+                <p className="border bg-muted/30 p-3 text-xs text-muted-foreground">
+                  {t('account.devices.photosStayHere')}
+                </p>
+              </SettingsSection>
+              {/* AFTER the devices card and before the password one, because it
               is a fact about this account rather than an action on it, and it
               answers the question the two cards above raise: this instance
               keeps a copy and reads photos for you, so who looks at that.
               Nothing renders on an open instance, which has no operator and
               nobody for the sentence to be about (M201/06). */}
-          {operatorSeesActivity && <OperatorVisibilityCard />}
-          <ChangePasswordCard />
-          <DangerZoneCard accountEmail={account.email} />
+              {operatorSeesActivity && <OperatorVisibilityCard />}
+              <ChangePasswordCard />
+              <DangerZoneCard accountEmail={account.email} />
+            </>
+          )}
         </>
       }
     </div>

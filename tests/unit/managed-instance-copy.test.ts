@@ -199,7 +199,10 @@ describe('no surface names an administrator where memberInvites is on', () => {
     // The account page reads the descriptor into a variable and then asks it
     // twice, since M213 spec 05 added the plans question beside this one, so
     // the two facts cannot come from two different reads of `/health`.
-    assert.match(account, /const instance = useServerInstance\(\);/);
+    // Since M253/11 that one read is `useServerInstanceRead`, whose settled
+    // flag holds the lower page until the handshake answers.
+    assert.match(account, /const instanceRead = useServerInstanceRead\(\);/);
+    assert.match(account, /const instance = instanceRead\.instance;/);
     assert.match(account, /instance\?\.memberInvites \?\? false/);
     assert.match(scan, /memberInvites: instance\?\.memberInvites \?\? false/);
   });

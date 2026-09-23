@@ -13,6 +13,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Fixed
 
+- **The invitation and account pages no longer jump while they load.** On `/join` the card was centred, so when the invitation was read it grew both ways and its top jumped up; it now starts at the top of the page. On `/settings/account` the invite card appeared between two sections when the server's `/health` answer arrived and pushed the rest of the page down; everything under the identity card now waits for that answer and arrives at once. Both measured a layout shift of 0.107 on a phone and now measure 0 in `tests/e2e/no-shift-on-load.spec.ts`.
 - **A page load no longer reports a blocked `eval`.** Zod tested whether it could compile its parsers with `new Function`, the content security policy refused it as intended, and every page load reported that refusal as a violation. The app now switches zod's compiler off before any schema is built, so the browser reports nothing, and a real violation stands out. `tests/e2e/csp-quiet.spec.ts` loads four pages and requires zero violations.
 
 ## [0.44.0] - 2026-09-23
