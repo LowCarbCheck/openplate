@@ -103,7 +103,8 @@ import { readDayCarbTotals } from '#app/lib/day-carb-totals';
 import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
 import { CHIP_NEUTRAL } from '#app/components/list-row';
-import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
 import i18nSingleton from '#app/i18n/i18n';
 import type { Translate } from '#app/lib/macro-sanity';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -2197,17 +2198,15 @@ export function UploadForm({
               </IntakeFailureAlert>
             )}
 
-            {/* THE DOOR, WHERE THERE IS ONE (M213 spec 05). A link under the
-                alert rather than a sentence inside it: `describeFailureBody`
-                answers a string, the date sentence is already written, and a
-                second copy of it carrying an anchor would be the two surfaces
-                drifting apart that `shouldOfferPlansDoor` exists to stop. */}
+            {/* THE DOOR, WHERE THERE IS ONE (M213 spec 05), AS AN OFFER
+                (M250/04). A card under the alert rather than a sentence inside
+                it: `describeFailureBody` answers a string, the date sentence is
+                already written above, and a second copy of it would be the two
+                surfaces drifting apart that `shouldOfferPlansDoor` exists to
+                stop. So the card carries no lead of its own, only the lowest
+                monthly price and the one button to the plan page. */}
             {error && shouldOfferPlansDoor({ failureCause, plansAvailable: plansAvailable ?? false }) && (
-              <p className="text-xs">
-                <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
-                  {t('aiIntake.plansLink')}
-                </Link>
-              </p>
+              <PlanOfferCompact placement="ai-limit" />
             )}
 
             {error && failedAttemptCreditLine && (

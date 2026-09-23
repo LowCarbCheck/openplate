@@ -95,3 +95,22 @@ export function planCardFigures({ plans, locale }: { plans: readonly OfferPlan[]
     };
   });
 }
+
+/**
+ * The lowest a plan costs per month, for the compact offer's "from" line
+ * (M250/04), formatted in the reader's language.
+ *
+ * A monthly plan costs its price; a yearly plan costs its monthly
+ * equivalent, the SAME figure its card states (`monthlyEquivalentCents`), so
+ * the compact line and the card it links to never disagree by a cent.
+ *
+ * `null` when there is nothing true to say: no plans, or plans in more than
+ * one currency, where "from" would compare euros with something else.
+ */
+export function lowestMonthlyPrice({ plans, locale }: { plans: readonly OfferPlan[]; locale: string }): string | null {
+  const [first] = plans;
+  if (first === undefined) return null;
+  if (plans.some((plan) => plan.currency !== first.currency)) return null;
+  const perMonth = plans.map((plan) => monthlyEquivalentCents(plan) ?? plan.grossCents);
+  return formatCents({ cents: Math.min(...perMonth), currency: first.currency, locale });
+}

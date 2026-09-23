@@ -36,6 +36,9 @@ import { useSyncSession } from '#app/components/sync-status';
 import { useInstanceInferencePreset, useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
+import { isFixedByPayment } from '#app/components/add/use-ai-connection';
 import { buildUrlWithoutSharedParam, hasSharedPhotoFlag, readSharedPhoto } from '#app/lib/shared-photo';
 import { ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 import { supportsOauthPkce } from '#app/services/vision/registry';
@@ -228,7 +231,16 @@ export function ConnectCard({ logDate }: { logDate: string | null }) {
   // are opposite, so the screen waits rather than picking one and correcting
   // itself a moment later.
   if (variant.kind === 'resuming') return <ScanLoading />;
-  return <ConnectCardView variant={variant} logDate={logDate} allowanceDoor={allowanceDoor} />;
+  return (
+    <ConnectCardView
+      variant={variant}
+      logDate={logDate}
+      allowanceDoor={allowanceDoor}
+      // THE HANDSHAKE, AND NEVER A PROBE (`PROTOCOL.md` §5.22), read from the
+      // same cached `/health` answer as the allowance door above.
+      plansAvailable={hasPlansDoor(instance)}
+    />
+  );
 }
 
 /**
@@ -246,6 +258,7 @@ export function ConnectCardView({
   variant,
   logDate,
   allowanceDoor,
+  plansAvailable,
 }: {
   variant: Exclude<ConnectCardVariant, { kind: 'resuming' }>;
   logDate: string | null;
@@ -258,6 +271,15 @@ export function ConnectCardView({
    * zero call sites.
    */
   allowanceDoor: AllowanceDoor;
+  /**
+   * Whether this instance sells a plan (M250/04). With one, an allowance a
+   * payment would fix gets the compact offer under its sentence.
+   *
+   * REQUIRED, with no default, for `allowanceDoor`'s reason: a default of
+   * `false` would compile at every call site and keep the dead end on the one
+   * instance that has a page which fixes it.
+   */
+  plansAvailable: boolean;
 }) {
   const { t } = useTranslation();
   const revalidator = useRevalidator();
@@ -323,6 +345,12 @@ export function ConnectCardView({
               </p>
             )}
           </div>
+        )}
+        {/* NOT A DEAD END WHERE A PLAN FIXES IT (M250/04). The sentences
+            above stay as they are; the offer sits under them, on an instance
+            that sells a plan and only for the two answers a payment fixes. */}
+        {variant.kind === 'managed-missing' && plansAvailable && isFixedByPayment(allowanceDoor) && (
+          <PlanOfferCompact placement="ai-limit" />
         )}
         {/* One tap, no key to go and get, renders nothing at all when this
             instance provides no AI of its own. Above the BYOK buttons because

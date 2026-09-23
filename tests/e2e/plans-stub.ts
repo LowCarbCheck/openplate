@@ -84,6 +84,8 @@ export interface PlansStub {
    * answers at once.
    */
   planViewGate?: Promise<void>;
+  /** Holds every `GET /plans/offer` answer the same way, for a card that reads the offer lazily (M250/04). */
+  offerGate?: Promise<void>;
 }
 
 /** Every offer request the page sent, with the query it named. */
@@ -110,8 +112,9 @@ export async function routePlansCore(page: Page, stub: PlansStub): Promise<Offer
   });
   await page.route(
     (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
-    (route) => {
+    async (route) => {
       requests.locales.push(new URL(route.request().url()).searchParams.get('locale') ?? '');
+      await stub.offerGate;
       if (stub.offerBody === null) return route.fulfill({ status: 404, json: { error: 'not found' } });
       return route.fulfill({ status: 200, contentType: 'application/json', body: stub.offerBody });
     },

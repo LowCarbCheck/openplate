@@ -66,7 +66,9 @@ const catalogSchema = z.object({
     action: z.object({ delete: z.string(), logAgain: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),
   }),
+  aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
+    errors: z.object({ titles: z.object({ allowanceExpired: z.string() }) }),
     review: z.object({
       heading: z.string(),
       fromLabel: z.string(),
@@ -130,6 +132,7 @@ const catalogSchema = z.object({
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
     countdown: z.object({ daysLeft_other: z.string(), lastDay: z.string(), action: z.string() }),
+    offer: z.object({ from: z.string() }),
     start: z.string(),
     manage: z.string(),
     returned: z.object({ success: z.string() }),

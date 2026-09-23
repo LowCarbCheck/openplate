@@ -3376,6 +3376,9 @@
       "daysLeft_other": "{{count}} days of AI scans left in your trial.",
       "lastDay": "Your trial's AI scans end today.",
       "action": "See plans"
+    },
+    "offer": {
+      "from": "Plans from {{price}} a month."
     }
   },
   "usual": {
