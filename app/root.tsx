@@ -1,3 +1,5 @@
+// First, before any schema is built: see that module for why the order matters.
+import '#app/lib/zod-jitless';
 import '@fontsource-variable/inter/index.css';
 import '@fontsource-variable/victor-mono/index.css';
 import { useEffect } from 'react';

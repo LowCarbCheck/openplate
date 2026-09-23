@@ -1,3 +1,5 @@
+// First, before any schema is built: see that module for why the order matters.
+import '#app/lib/zod-jitless';
 // Server-graph-only module: installing the pino-backed reporter here wires it
 // into the Vite SSR module graph so SSR error boundaries report via pino.
 import { installServerErrorReporter } from '#app/lib/report-error.server';

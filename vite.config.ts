@@ -114,6 +114,25 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          // ZOD AND ITS CONFIGURATION SHARE ONE CHUNK (M253/11 item 3).
+          //
+          // `app/lib/zod-jitless.ts` must run before the first object schema
+          // is built, and schemas are built at module load all over the app.
+          // As an ordinary import of `root.tsx` it was bundled INTO the root
+          // chunk, whose imports (every chunk that builds a schema) run before
+          // its own body, so the eval probe fired first. This group puts the
+          // module and its dependency, zod, into one chunk, where it runs right
+          // after zod itself and before any module that imports zod.
+          // `tests/e2e/csp-quiet.spec.ts` fails if the order ever breaks.
+          codeSplitting: {
+            groups: [{ name: 'zod', test: /[\\/]app[\\/]lib[\\/]zod-jitless\.ts$/ }],
+          },
+        },
+      },
+    },
     server: {
       port: serverPort,
       // Dev-only: allow access via the machine hostname / tailnet MagicDNS name

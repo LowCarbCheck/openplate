@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **A page load no longer reports a blocked `eval`.** Zod tested whether it could compile its parsers with `new Function`, the content security policy refused it as intended, and every page load reported that refusal as a violation. The app now switches zod's compiler off before any schema is built, so the browser reports nothing, and a real violation stands out. `tests/e2e/csp-quiet.spec.ts` loads four pages and requires zero violations.
+
 ## [0.44.0] - 2026-09-23
 
 ### Added
