@@ -3335,8 +3335,8 @@
       "active": "Tu plan está pagado y activo.",
       "pastDue": "No se pudo procesar tu último pago.",
       "canceled": "Tu plan ha terminado.",
-      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
-      "doesNotRenew": "Your plan is paid and does not renew."
+      "paidUntil": "Tu plan está pagado hasta el {{date}} y no se renueva.",
+      "doesNotRenew": "Tu plan está pagado y no se renueva."
     },
     "renewsOn": "Se renueva el {{date}} hasta que lo canceles.",
     "endsOn": "Cancelaste la suscripción. Tu acceso dura hasta el {{date}} y luego se detiene.",
@@ -3390,10 +3390,10 @@
       "meals_other": "En tu prueba registraste {{count}} comidas con IA."
     },
     "selfHost": {
-      "title": "Run openplate yourself",
-      "price": "Free",
-      "body": "Every feature, on a server you run. Nothing to order here.",
-      "link": "How to self-host"
+      "title": "Aloja openplate tú mismo",
+      "price": "Gratis",
+      "body": "Todas las funciones, en un servidor que gestionas tú. No hay nada que contratar aquí.",
+      "link": "Cómo alojarlo tú mismo"
     }
   },
   "usual": {

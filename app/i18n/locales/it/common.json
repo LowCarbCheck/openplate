@@ -1419,7 +1419,7 @@
     "settings": "Impostazioni",
     "trends": "Analisi",
     "pantry": "Dispensa",
-    "plan": "Plan"
+    "plan": "Piano"
   },
   "nutrients": {
     "amount": {
@@ -3335,8 +3335,8 @@
       "active": "Il tuo piano è pagato e attivo.",
       "pastDue": "L'ultimo pagamento non è andato a buon fine.",
       "canceled": "Il tuo piano è terminato.",
-      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
-      "doesNotRenew": "Your plan is paid and does not renew."
+      "paidUntil": "Il tuo piano è pagato fino al {{date}} e non si rinnova.",
+      "doesNotRenew": "Il tuo piano è pagato e non si rinnova."
     },
     "renewsOn": "Si rinnova il {{date}} fino all'eventuale disdetta.",
     "endsOn": "Hai disdetto l'abbonamento. L'accesso rimane valido fino al {{date}}, poi si interrompe.",
@@ -3390,10 +3390,10 @@
       "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
     },
     "selfHost": {
-      "title": "Run openplate yourself",
-      "price": "Free",
-      "body": "Every feature, on a server you run. Nothing to order here.",
-      "link": "How to self-host"
+      "title": "Esegui openplate in autonomia",
+      "price": "Gratis",
+      "body": "Tutte le funzionalità, su un server gestito da te. Niente da acquistare qui.",
+      "link": "Come fare self-hosting"
     }
   },
   "usual": {

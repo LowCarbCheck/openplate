@@ -3335,8 +3335,8 @@
       "active": "Planının ödemesi yapıldı ve devrede.",
       "pastDue": "Son ödemen gerçekleşmedi.",
       "canceled": "Planın sona erdi.",
-      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
-      "doesNotRenew": "Your plan is paid and does not renew."
+      "paidUntil": "Planın {{date}} tarihine kadar ödendi ve yenilenmeyecek.",
+      "doesNotRenew": "Planın ödendi ve yenilenmeyecek."
     },
     "renewsOn": "Sen iptal edene kadar {{date}} tarihinde yenilenir.",
     "endsOn": "İptal ettin. Erişimin {{date}} tarihine kadar devam eder ve ardından durur.",
@@ -3390,10 +3390,10 @@
       "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
     },
     "selfHost": {
-      "title": "Run openplate yourself",
-      "price": "Free",
-      "body": "Every feature, on a server you run. Nothing to order here.",
-      "link": "How to self-host"
+      "title": "openplate'i kendin çalıştır",
+      "price": "Ücretsiz",
+      "body": "Tüm özellikler, kendi çalıştırdığın bir sunucuda. Buradan satın alacağın bir şey yok.",
+      "link": "Kendi sunucunda nasıl çalıştırırsın"
     }
   },
   "usual": {

@@ -1419,7 +1419,7 @@
     "settings": "Paramètres",
     "trends": "Analyses",
     "pantry": "Garde-manger",
-    "plan": "Plan"
+    "plan": "Forfait"
   },
   "nutrients": {
     "amount": {
@@ -3335,8 +3335,8 @@
       "active": "Ton forfait est payé et actif.",
       "pastDue": "Ton dernier paiement n'a pas abouti.",
       "canceled": "Ton forfait a pris fin.",
-      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
-      "doesNotRenew": "Your plan is paid and does not renew."
+      "paidUntil": "Ton forfait est payé jusqu'au {{date}} et ne se renouvelle pas.",
+      "doesNotRenew": "Ton forfait est payé et ne se renouvelle pas."
     },
     "renewsOn": "Il se renouvelle le {{date}}, sauf si tu résilies.",
     "endsOn": "Tu as résilié. Ton accès reste valable jusqu'au {{date}}, puis s'arrête.",
@@ -3390,10 +3390,10 @@
       "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
     },
     "selfHost": {
-      "title": "Run openplate yourself",
-      "price": "Free",
-      "body": "Every feature, on a server you run. Nothing to order here.",
-      "link": "How to self-host"
+      "title": "Héberge openplate toi-même",
+      "price": "Gratuit",
+      "body": "Toutes les fonctionnalités, sur ton propre serveur. Rien à commander ici.",
+      "link": "Comment l'auto-héberger"
     }
   },
   "usual": {
