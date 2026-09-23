@@ -431,17 +431,17 @@ function buildPersistProbeExpression(expectedFoodLogs: number): string {
   const store = await import('/app/lib/local-store/store.ts');
   const schema = await import('/app/lib/local-store/schema.ts');
   const start = performance.now();
-  let counts = null;
+  let probe = null;
   let rows = 0;
   while (performance.now() - start < ${PERSIST_TIMEOUT_MS}) {
-    counts = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
-    rows = counts === null ? 0 : (counts[schema.FOOD_LOGS_TABLE] ?? 0);
+    probe = await persist.readPersistedTableRowCounts(store.PRIMARY_DB_NAME);
+    rows = probe.kind === 'present' ? (probe.counts[schema.FOOD_LOGS_TABLE] ?? 0) : 0;
     if (rows >= ${expectedFoodLogs}) {
-      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(counts) };
+      return { persisted: true, foodLogRows: rows, counts: JSON.stringify(probe) };
     }
     await new Promise((resolve) => setTimeout(resolve, ${PERSIST_POLL_MS}));
   }
-  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(counts) };
+  return { persisted: false, foodLogRows: rows, counts: JSON.stringify(probe) };
 })()`;
 }
 
