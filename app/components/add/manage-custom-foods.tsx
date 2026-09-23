@@ -35,6 +35,7 @@ import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-
 import { CHIP_NEUTRAL, LIST_ROW_CLASS, LIST_STACK_CLASS } from '#app/components/list-row';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
+import { displayFoodName } from '#app/lib/food-name';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -145,7 +146,7 @@ function EditFoodForm({
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const fetcher = useFetcher();
   const [basis, setBasis] = useState<MacroEntryBasis>('per100g');
   const [servingGrams, setServingGrams] = useState('');
@@ -163,12 +164,12 @@ function EditFoodForm({
     const data = parsed.data;
     shownResult.current = fetcher.data;
     if (data.ok) {
-      publishStatus({ text: t('add.custom.updated', { name: data.name ?? food.name }), tone: 'success' });
+      publishStatus({ text: t('add.custom.updated', { name: data.name ?? displayFoodName(food, i18n.language) }), tone: 'success' });
       onSaved();
       return;
     }
     publishStatus({ text: editFailureMessage(data.reason, t), tone: 'error' });
-  }, [fetcher.data, food.name, onSaved, t]);
+  }, [fetcher.data, food, i18n.language, onSaved, t]);
 
   return (
     <fetcher.Form method="post" className={cn(LIST_ROW_CLASS, 'space-y-3')}>
@@ -177,7 +178,12 @@ function EditFoodForm({
       <input type="hidden" name="macroBasis" value={basis} />
       <div className="grid gap-1">
         <Label htmlFor={`edit-name-${food.id}`}>{t('add.custom.name')}</Label>
-        <Input id={`edit-name-${food.id}`} name="name" defaultValue={food.name} className="h-10" />
+        <Input
+          id={`edit-name-${food.id}`}
+          name="name"
+          defaultValue={displayFoodName(food, i18n.language)}
+          className="h-10"
+        />
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -289,7 +295,7 @@ function CustomFoodRow({
   return (
     <div data-slot="custom-food-row" className={cn(LIST_ROW_CLASS, 'flex items-start justify-between gap-3')}>
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="truncate text-sm font-medium">{food.name}</p>
+        <p className="truncate text-sm font-medium">{displayFoodName(food, i18n.language)}</p>
         {summary && <p className="text-xs text-muted-foreground">{t('add.custom.per100g', { summary })}</p>}
       </div>
       {/* A thumb's width apart, and a thumb each: these two keys sat 4 px
@@ -302,7 +308,7 @@ function CustomFoodRow({
           size="icon-sm"
           className="size-11 md:size-8"
           onClick={onEdit}
-          aria-label={t('add.custom.editAria', { name: food.name })}
+          aria-label={t('add.custom.editAria', { name: displayFoodName(food, i18n.language) })}
         >
           <Pencil className="h-4 w-4" />
         </Button>
@@ -313,14 +319,14 @@ function CustomFoodRow({
               variant="ghost"
               size="icon-sm"
               className="size-11 md:size-8"
-              aria-label={t('add.custom.removeAria', { name: food.name })}
+              aria-label={t('add.custom.removeAria', { name: displayFoodName(food, i18n.language) })}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t('add.custom.removeTitle', { name: food.name })}</AlertDialogTitle>
+              <AlertDialogTitle>{t('add.custom.removeTitle', { name: displayFoodName(food, i18n.language) })}</AlertDialogTitle>
               <AlertDialogDescription>{t('add.custom.removeDescription')}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

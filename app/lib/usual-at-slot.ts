@@ -25,6 +25,7 @@
  * performs (`handleLogMeal`), it lands in the same place, and it says so the
  * same way.
  */
+import { displayFoodName } from '#app/lib/food-name';
 import { z } from 'zod';
 import { parseWithZod } from '@conform-to/zod/v4';
 import i18n from '#app/i18n/i18n';
@@ -186,6 +187,6 @@ export async function handleLogUsual(formData: FormData): Promise<Response> {
 
   return redirectWithLocalToast('/diary', {
     type: 'success',
-    description: i18n.t('usual.toast.logged', { name: suggestion.name, count: entries.length }),
+    description: i18n.t('usual.toast.logged', { name: displayFoodName(suggestion, i18n.language), count: entries.length }),
   });
 }

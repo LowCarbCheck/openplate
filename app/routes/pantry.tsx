@@ -61,6 +61,7 @@ import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { ADD_DESCRIBE_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { takeIntakeHandoff, type ScanHandoff } from '#app/lib/intake-handoff';
 import { nextPantry, type PantryDraftRow } from '#app/lib/pantry-merge';
+import { displayFoodName, pinShownFoodName } from '#app/lib/food-name';
 import { trackPantryCaptured, type PantryCapturePath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
 import { fileToBase64 } from '#app/lib/file-to-base64';
@@ -211,22 +212,39 @@ function readUnitValue(value: string): PantryUnit | null {
   return PANTRY_UNITS.find((unit) => unit === value) ?? null;
 }
 
-/** A stored item as a draft row. */
-export function draftFromStored(item: LocalPantryItem): PantryDraftRow {
+/**
+ * A stored item as a draft row, its name box showing the reader's language
+ * (M251/03). See `PantryDraftRow.nameOrigin` for how an untouched row saves.
+ */
+export function draftFromStored(item: LocalPantryItem, language: string): PantryDraftRow {
+  const shownName = displayFoodName(item, language);
   return {
     key: item.id,
-    name: item.name,
+    name: shownName,
+    nameOrigin: { storedName: item.name, shownName, nameTranslations: item.nameTranslations },
     amount: item.amount === null ? '' : String(item.amount),
     unit: item.unit,
     category: item.category,
   };
 }
 
-/** A freshly read item as a draft row. */
-export function draftFromReading(item: PantryIdentification['items'][number], key: string): PantryDraftRow {
+/**
+ * A freshly read item as a draft row, carrying the reading's translations with
+ * the entry for the language on screen pinned to the name the box shows.
+ */
+export function draftFromReading(
+  item: PantryIdentification['items'][number],
+  key: string,
+  language: string,
+): PantryDraftRow {
   return {
     key,
     name: item.name,
+    nameOrigin: {
+      storedName: item.name,
+      shownName: item.name,
+      nameTranslations: pinShownFoodName({ translations: item.translations, name: item.name, language }),
+    },
     amount: item.amount === null ? '' : String(item.amount),
     unit: item.unit,
     category: item.category,
@@ -479,7 +497,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
   const location = useLocation();
   const effective = useEffectiveAiSettings(loaderData.settings);
   const [stored, setStored] = useState<LocalPantryItem[]>(loaderData.items);
-  const [rows, setRows] = useState<PantryDraftRow[]>(() => loaderData.items.map(draftFromStored));
+  const [rows, setRows] = useState<PantryDraftRow[]>(() => loaderData.items.map((item) => draftFromStored(item, i18n.language)));
   const [phase, setPhase] = useState<PantryPhase>({ kind: 'list' });
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -515,7 +533,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
           setPhase({ kind: 'failed', subject, message: t('pantry.errors.nothingFound') });
           return;
         }
-        setRows(result.identification.items.map((item, index) => draftFromReading(item, `read-${index}`)));
+        setRows(result.identification.items.map((item, index) => draftFromReading(item, `read-${index}`, i18n.language)));
         setPhase({ kind: 'review', subject, notes: result.identification.notes ?? null });
       })();
     };
@@ -549,7 +567,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
         // a reading ADDS to the shelf, the list IS the shelf. See `nextPantry`.
         const written = await replaceLocalPantry(nextPantry({ stored, rows, path, now: Date.now() }));
         setStored(written);
-        setRows(written.map(draftFromStored));
+        setRows(written.map((item) => draftFromStored(item, i18n.language)));
         trackPantryCaptured(path);
         // The pantry's own signal, on the ONE write this screen performs and
         // after it succeeded: the catch below is the failed save (M235/04).
@@ -565,7 +583,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
         setIsSaving(false);
       }
     },
-    [rows, stored, t],
+    [rows, stored, t, i18n.language],
   );
 
   /** The last save's failure, or null. Rendered above whichever surface is showing. */
@@ -613,7 +631,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
         onChange={setRows}
         onConfirm={() => void save(phase.subject)}
         onDiscard={() => {
-          setRows(stored.map(draftFromStored));
+          setRows(stored.map((item) => draftFromStored(item, i18n.language)));
           setPhase({ kind: 'list' });
         }}
         isSaving={isSaving}

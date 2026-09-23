@@ -14,7 +14,8 @@
  *
  * Case-folded and whitespace-collapsed, and nothing cleverer. "Eggs", "eggs"
  * and "  eggs " are one ingredient. "Eier" and "eggs" are two, deliberately:
- * the app never translates a person's own list (see `pantry-prompt.ts`), and a
+ * a reading names its items in the app language and carries their
+ * translations (M251), but the merge folds on the stored name alone, and a
  * matcher that decided those were the same would be doing translation with no
  * way for the person to see it happen or undo it. Two rows they can merge by
  * renaming one is a smaller problem than one row in a language they did not
@@ -29,10 +30,13 @@
 import { randomUuid } from '#app/lib/uuid';
 import type { PantryCapturePath } from '#app/lib/matomo-events';
 import type { LocalPantryItem, PantryCategory, PantryUnit } from '#app/lib/local-store/schema';
+import type { FoodTranslations } from '#app/services/vision/translations';
 
 /** One row as a capture or a review form hands it over: everything but an identity and a clock. */
 export interface CapturedPantryItem {
   name: string;
+  /** The item per app language, from a reading the person did not rename (M251/03). */
+  nameTranslations?: FoodTranslations;
   amount: number | null;
   unit: PantryUnit | null;
   category: PantryCategory;
@@ -106,6 +110,7 @@ export function mergePantry({
       merged.push({
         id: makeId(),
         name: item.name.trim(),
+        nameTranslations: item.nameTranslations,
         amount: item.amount,
         // A unit without an amount would render a bare "ml" against a name.
         unit: item.amount === null ? null : item.unit,
@@ -124,6 +129,9 @@ export function mergePantry({
       // of a row is a rename rather than a no-op that silently keeps the old
       // spelling. The key is unchanged by definition, so nothing moves.
       name: item.name.trim(),
+      // The capture's translations, or none: a renamed row is the person's
+      // own words in every language (M251/03).
+      nameTranslations: item.nameTranslations,
       amount: item.amount,
       unit: item.amount === null ? null : item.unit,
       category: item.category,
@@ -153,7 +161,15 @@ export function mergePantry({
 export interface PantryDraftRow {
   /** Stable key for the list, never stored. A row's stored id is decided by the merge. */
   key: string;
+  /** The text in the name box: the reader's language for a stored or read row, whatever the person typed after that. */
   name: string;
+  /**
+   * Where the name box started (M251/03), absent for a line the person added.
+   * While `name` still equals `shownName`, the save writes `storedName` and its
+   * translations back unchanged; once the person types over it, their words
+   * become the name and the translations are dropped.
+   */
+  nameOrigin?: { storedName: string; shownName: string; nameTranslations?: FoodTranslations };
   amount: string;
   unit: PantryUnit | null;
   category: PantryCategory;
@@ -204,7 +220,7 @@ export function capturedFromDrafts(rows: readonly PantryDraftRow[], source: Pant
     if (row.name.trim() === '') continue;
     const amount = parseAmount(row.amount);
     captured.push({
-      name: row.name,
+      ...rowName(row),
       amount,
       unit: amount === null ? null : row.unit,
       category: row.category,
@@ -224,7 +240,23 @@ export function capturedFromDrafts(rows: readonly PantryDraftRow[], source: Pant
  */
 function rowsHold(rows: readonly PantryDraftRow[], item: LocalPantryItem): boolean {
   const key = pantryNameKey(item.name);
-  return rows.some((row) => pantryNameKey(row.name) === key);
+  return rows.some((row) => pantryNameKey(rowName(row).name) === key);
+}
+
+/**
+ * The name a draft row is saved under, and its translations (M251/03).
+ *
+ * An UNTOUCHED row saves the name the store or the reading held, not the text
+ * the box showed, so a stored row shown in another language still folds onto
+ * itself in the merge and keeps its translations. A row the person typed over
+ * saves their words, with no translations: their words win in every language.
+ */
+function rowName(row: PantryDraftRow): Pick<CapturedPantryItem, 'name' | 'nameTranslations'> {
+  const origin = row.nameOrigin;
+  if (origin !== undefined && pantryNameKey(row.name) === pantryNameKey(origin.shownName)) {
+    return { name: origin.storedName, nameTranslations: origin.nameTranslations };
+  }
+  return { name: row.name, nameTranslations: undefined };
 }
 
 /**

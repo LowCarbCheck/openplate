@@ -464,9 +464,30 @@
  * every export/import round trip; it parses leniently, through the same
  * narrowing the wire answer gets, so an unknown category in a file written
  * by a longer list restores with that entry dropped.
+ *
+ * NOTE (M251/03, a food's name in every language): `SCHEMA_VERSION` v24 -> v25
+ * adds ONE OPTIONAL field, `nameTranslations`, to FOUR existing entities at
+ * once: {@link LocalFoodLog}, {@link LocalPersonalFood},
+ * {@link LocalSavedMealItem} and {@link LocalPantryItem}, every entity that
+ * stores a food's name. It is under the optional-field rules of the M206, M210
+ * and M219/02 bumps, NOT under the v6 -> v7 or v17 -> v18 ones: a pre-v25 row,
+ * and a v24 envelope, simply lacks the key and reads back as a valid v25 row
+ * whose name renders in every language, which is exactly what a name saved
+ * before this version means. There is therefore no `migrateSnapshotToV25`
+ * step and there must not be one: rewriting old rows is a milestone non-goal,
+ * and nothing could translate them honestly. The four lines on `backup.ts`'s
+ * entity schemas ARE needed, because zod strips unrecognized keys and would
+ * drop the translations on every export and every sync round trip.
+ *
+ * WHY A BUMP, when the main goal inside v24 deliberately took none: the spec
+ * asked for one, and the AAD is the price. After the first push from a v25
+ * build an older build cannot decrypt the blob until it updates, the same
+ * forward-only step every bump above records. `displayFoodName`
+ * (`#app/lib/food-name`) is the one reader.
  */
 import type { PantryCategoryValue, PantryUnitValue } from '#app/services/vision/pantry-schema';
 import type { FoodFlags } from '#app/services/vision/schema';
+import type { FoodTranslations } from '#app/services/vision/translations';
 import type { EatingStyleId } from '#app/lib/eating-style';
 import type { MainGoalId } from '#app/lib/main-goal';
 import type { Allergen } from '#app/models/allergens';
@@ -481,7 +502,7 @@ import type { MealType, FoodLogSourceType, FoodSourceType, TrackingFocusType } f
  * version are migrated forward before they touch the store. Bump on any change
  * to the entity shapes below.
  */
-export const SCHEMA_VERSION = 24;
+export const SCHEMA_VERSION = 25;
 
 /**
  * The one owner id this app mints. It scopes the device-local surfaces that
@@ -803,6 +824,14 @@ export interface LocalPersonalFood {
   /** Client-generated stable id (the TinyBase rowId). */
   id: string;
   name: string;
+  /**
+   * The same food's name in each app language an AI answer gave (added v25,
+   * M251/03), read only through `displayFoodName` (`#app/lib/food-name`).
+   * ABSENT for a hand-typed food, a food whose name the person edited (their
+   * words win in every language) and every row saved before v25; all of those
+   * render `name` everywhere.
+   */
+  nameTranslations?: FoodTranslations;
   brand: string | null;
   /** Per-100g macros. */
   macrosPer100g: Macros;
@@ -919,6 +948,14 @@ export interface LocalPersonalFood {
 export interface LocalFoodLog {
   id: string;
   name: string;
+  /**
+   * The same food's name in each app language an AI answer gave (added v25,
+   * M251/03), read only through `displayFoodName` (`#app/lib/food-name`).
+   * ABSENT for a hand-typed food, a food whose name the person edited (their
+   * words win in every language) and every row saved before v25; all of those
+   * render `name` everywhere.
+   */
+  nameTranslations?: FoodTranslations;
   quantityGrams: number;
   /** Per-serving macros (already scaled from per-100g). */
   macros: Macros;
@@ -1411,6 +1448,8 @@ export interface LocalFastingSettings {
  */
 export interface LocalSavedMealItem {
   name: string;
+  /** The name per app language, same convention as `LocalFoodLog.nameTranslations`. */
+  nameTranslations?: FoodTranslations;
   quantityGrams: number;
   /** Per-serving macros (already scaled from per-100g), exactly as `LocalFoodLog.macros`. */
   macros: Macros;
@@ -1493,8 +1532,14 @@ export type PantryCategory = PantryCategoryValue;
 export interface LocalPantryItem {
   /** Client-generated stable id (the TinyBase rowId). */
   id: string;
-  /** The person's own words for the item, in their own language. Never translated on the way in or out. */
+  /** The item's name: the app language a reading answered in, or the person's own words for a row they typed or edited. */
   name: string;
+  /**
+   * The same item per app language, from a photo or text reading (added v25,
+   * M251/03), same convention as `LocalFoodLog.nameTranslations`: dropped the
+   * moment the person edits the name, absent for a row typed by hand.
+   */
+  nameTranslations?: FoodTranslations;
   /** How much, when it is known. Null means "not stated", and never 0. */
   amount: number | null;
   /** What {@link LocalPantryItem.amount} is measured in. Null whenever the amount is. */

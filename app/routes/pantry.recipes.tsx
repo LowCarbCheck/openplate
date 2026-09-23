@@ -31,6 +31,7 @@
  * not-connected card and the failure alert are `/scan`'s, shared through
  * `components/intake/` rather than copied.
  */
+import { displayFoodName } from '#app/lib/food-name';
 import type { Route } from './+types/pantry.recipes';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import { redirect, useSearchParams } from 'react-router';
@@ -211,7 +212,8 @@ async function proposeRecipes({
     const proposals = await provider.runTextIntake({
       task: RECIPE_PROPOSAL_TASK,
       text: buildRecipeProposalUserPrompt({
-        pantry,
+        // The names in the language the recipes are asked for (M251/03).
+        pantry: pantry.map((item) => ({ ...item, name: displayFoodName(item, language) })),
         remainingDayBlock: describeRemainingDayForPrompt(day, language),
         slot: day.slot,
         language,

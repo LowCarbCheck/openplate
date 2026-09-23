@@ -66,6 +66,7 @@ const catalogSchema = z.object({
   entry: z.object({
     action: z.object({ delete: z.string(), logAgain: z.string() }),
     toast: z.object({ removed: z.string(), undo: z.string() }),
+    edit: z.object({ save: z.string() }),
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({

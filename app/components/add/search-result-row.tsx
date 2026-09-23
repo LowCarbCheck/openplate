@@ -10,6 +10,7 @@ import { cn } from '#app/lib/utils';
 import { Badge } from '#app/components/ui/badge';
 import { CHIP_NEUTRAL, LIST_ROW_CLASS } from '#app/components/list-row';
 import { ChevronRight } from 'lucide-react';
+import { displayFoodName } from '#app/lib/food-name';
 
 /**
  * The narrow slice of i18next's `t` this module's pure helper depends on —
@@ -170,7 +171,7 @@ export function SearchResultRow({ candidate, onSelect }: { candidate: SearchResu
             descriptor wraps to a second line instead of clipping mid-word —
             defect: names like "Eggs boiled, with remoulade sauce, diluted…"
             were cut off unreadably on one line. */}
-        <p className="line-clamp-2 text-sm font-medium">{candidate.name}</p>
+        <p className="line-clamp-2 text-sm font-medium">{displayFoodName(candidate, i18n.language)}</p>
         {/* TWO BLOCKS, NEVER THREE (the dense-pages pass). The per-100g line
             used to be a third line of its own under the chips, which made a
             list of eight recent foods twenty-four lines tall and gave every row

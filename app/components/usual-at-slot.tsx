@@ -39,6 +39,7 @@
 import { useId, useState, type ReactElement } from 'react';
 import { useFetcher } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { displayFoodName } from '#app/lib/food-name';
 import { Minus, Plus, Repeat, Utensils } from 'lucide-react';
 
 import type { MealType } from '#types/enums';
@@ -100,7 +101,10 @@ const USUAL_TITLE_KEYS = {
  * fields the old direct-submit form posted, plus `scalePercent`.
  */
 function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: MealType }): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // A saved meal carries no translations (its name is the person's own), so
+  // this reads the stored name for a bundle and the reader's language for a food.
+  const offerName = displayFoodName(offer, i18n.language);
   const fetcher = useFetcher();
   const isLogging = fetcher.state !== 'idle';
   const isBundle = offer.kind === 'saved-meal';
@@ -157,7 +161,7 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
                 food name: the offer is "log THIS again", so a person who cannot
                 read which food it is has nothing to act on. The row already wraps,
                 so a second line costs the layout nothing. */}
-            <span className="min-w-0 break-words">{offer.name}</span>
+            <span className="min-w-0 break-words">{offerName}</span>
             {/* Only a bundle says how many rows it writes. For a single food the
                 count is always one, and printing it would be noise. This is the
                 ONE difference between the two chip shapes, together with the
@@ -176,7 +180,7 @@ function UsualOfferButton({ offer, slot }: { offer: UsualAtSlotOffer; slot: Meal
         </AlertDialogTrigger>
         <AlertDialogContent data-slot="usual-confirm-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>{offer.name}</AlertDialogTitle>
+            <AlertDialogTitle>{offerName}</AlertDialogTitle>
             {/* The bundle's item count, same copy the chip itself prints, so a
                 person who opens the dialog straight from a screenshot still
                 sees the same figure. A single food gets a plain instruction

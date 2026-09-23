@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Food names follow the app language.** A food logged from a photo, a typed meal, or a pantry reading now keeps its name in all six app languages. The diary, the entry page, your foods, saved meals, the quick-add chips, and the pantry show the name in the language the app is set to. Switch from German to French, and yesterday's "Apfel" reads "Pomme". A name you type or edit yourself is kept as you wrote it in every language. Foods logged before this version keep the one name they have. The names travel in your backup and in sync. This raises the local store to version 25, so an older openplate on another device cannot open a sync written by this one until it updates.
+
 ### Changed
 
 - **Photo, typed and pantry scans name each food in the app language.** The photo prompt named no language, so answers came back mostly in English, and a typed meal or shopping list came back in whatever language it was typed in. Every scan now asks for the names in the language the app shows, and for a `translations` object with the same food named in all six app languages. An answer without translations, from a model that ignores the request, still opens the review as before.

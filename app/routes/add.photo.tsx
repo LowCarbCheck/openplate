@@ -133,6 +133,13 @@ import { noteActivity } from '#app/lib/gamification/record';
 import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 import { formatNumericDate } from '#app/i18n/date-locale';
 import { toLanguageCode } from '#app/i18n/language-prefs';
+import {
+  encodeNameTranslations,
+  nameTranslationsFormField,
+  pinShownFoodName,
+  resolveConfirmedNameTranslations,
+} from '#app/lib/food-name';
+import type { FoodTranslations } from '#app/services/vision/translations';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -328,6 +335,17 @@ function makeConfirmItemSchema(t: Translate) {
      * flags and the profile (D6).
      */
     flags: foodFlagsField,
+    /**
+     * The name as the MODEL gave it (M251/03), so the confirm can tell an
+     * accepted name from one the person typed over. Hidden, never edited.
+     */
+    aiName: z.string().optional(),
+    /**
+     * The model's name for this food in every app language, one hidden JSON
+     * value, decoded leniently. Kept only while `name` still equals `aiName`,
+     * see `resolveConfirmedNameTranslations`.
+     */
+    nameTranslations: nameTranslationsFormField,
     macros: makeConfirmMacrosSchema(t),
   });
 }
@@ -926,6 +944,19 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
 }
 
 /**
+ * The translations one confirmed item is stored with: the form's, unless the
+ * person typed over the model's name (M251/03). One function for the log and
+ * the personal food, so the two rows can never disagree about it.
+ */
+function confirmedNameTranslations(item: ConfirmItem): FoodTranslations | undefined {
+  return resolveConfirmedNameTranslations({
+    name: item.name,
+    aiName: item.aiName,
+    translations: item.nameTranslations,
+  });
+}
+
+/**
  * Builds the food-log entry one confirmed plate item persists, the pure core
  * of `handleConfirm`, split out so the whole "AI draft (± an applied curated
  * match) → stored entry" path is unit-testable without a store, a clock, or a
@@ -972,6 +1003,9 @@ export function buildConfirmedEntry({
     id,
     foodId,
     name: item.name,
+    // The name in every app language, unless the person typed their own
+    // (M251/03). Their words win in every language.
+    nameTranslations: confirmedNameTranslations(item),
     quantityGrams: item.estimatedGrams,
     macros: scaleMacrosPer100gToServing(per100g, item.estimatedGrams),
     // The slot the person chose on the confirm screen, preselected from when
@@ -1049,6 +1083,9 @@ export function buildConfirmedFood({
   return {
     id,
     name: item.name,
+    // The SAME translations the log gets, so "Your foods" follows the reader's
+    // language too (M251/03).
+    nameTranslations: confirmedNameTranslations(item),
     // THE MANUFACTURER, when the item came off a package. Hardcoded `null`
     // while a label was a separate scan writing its own row; a label item is
     // an ordinary item on this draft now, and dropping its brand here would
@@ -2732,6 +2769,13 @@ export function ConfirmDraftForm({
             // above: they are the model's answer, nothing on this screen edits
             // them, and a log that lost them would show no caution forever.
             flags: encodeFoodFlags(food.flags),
+            // The model's name and its translations (M251/03). The entry for
+            // the language this screen is read in is pinned to the name it
+            // shows, so the diary later shows the words confirmed here.
+            aiName: food.name,
+            nameTranslations: encodeNameTranslations(
+              pinShownFoodName({ translations: food.translations, name: food.name, language: i18n.language }),
+            ),
             macros: {
               carbs: food.macrosPer100g?.carbs !== undefined ? String(food.macrosPer100g.carbs) : undefined,
               fiber: food.macrosPer100g?.fiber !== undefined ? String(food.macrosPer100g.fiber) : undefined,
@@ -2993,6 +3037,8 @@ export function ConfirmDraftForm({
               <input {...getInputProps(itemFieldset.macroSource, { type: 'hidden' })} />
               <input {...getInputProps(itemFieldset.brand, { type: 'hidden' })} />
               <input {...getInputProps(itemFieldset.flags, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.aiName, { type: 'hidden' })} />
+              <input {...getInputProps(itemFieldset.nameTranslations, { type: 'hidden' })} />
               {/* The applied match's two snapshotted facts. DERIVED every render
                   from `curatedSource` + the live macro fields (never `form.update`d
                   like `curatedSource` is), so a later macro edit can withdraw the

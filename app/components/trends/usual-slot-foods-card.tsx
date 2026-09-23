@@ -12,6 +12,7 @@
  * so a tap here does nothing and nothing here posts a form.
  */
 import { useTranslation } from 'react-i18next';
+import { displayFoodName } from '#app/lib/food-name';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import type { SlotFood } from '#app/lib/slot-stats';
 import type { MealType } from '#types/enums';
@@ -34,7 +35,7 @@ const USUAL_TITLE_KEYS = {
  * @param foods - `topFoodsForSlot`'s answer for this slot and range, most-logged first.
  */
 export function UsualSlotFoodsCard({ slot, foods }: { slot: MealType; foods: readonly SlotFood[] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <Card data-slot="usual-slot-foods-card" data-slot-name={slot}>
@@ -47,7 +48,7 @@ export function UsualSlotFoodsCard({ slot, foods }: { slot: MealType; foods: rea
         : <ol className="space-y-2">
             {foods.map((food) => (
               <li key={food.key} data-slot="usual-slot-food" className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate">{food.name}</span>
+                <span className="min-w-0 truncate">{displayFoodName(food, i18n.language)}</span>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {t('trends.meals.usual.timesLogged', { count: food.logCount })}
                 </span>
