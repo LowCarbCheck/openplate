@@ -3353,23 +3353,23 @@
       "cancelled": "Du hast die Bezahlseite geschlossen. Es wurde nichts berechnet."
     },
     "choice": {
-      "legend": "Pick a plan",
+      "legend": "Tarif wählen",
       "interval": {
-        "month": "Monthly",
-        "year": "Yearly"
+        "month": "Monatlich",
+        "year": "Jährlich"
       },
-      "pricePerMonth": "{{price}} a month",
-      "pricePerYear": "{{price}} a year",
-      "monthlyEquivalent": "Works out at {{price}} a month.",
-      "saving": "{{saving}} less than twelve monthly payments.",
-      "pickFirst": "Pick a plan to go on."
+      "pricePerMonth": "{{price}} im Monat",
+      "pricePerYear": "{{price}} im Jahr",
+      "monthlyEquivalent": "Umgerechnet {{price}} im Monat.",
+      "saving": "{{saving}} günstiger als zwölf Monatsbeiträge.",
+      "pickFirst": "Wähle einen Tarif, um fortzufahren."
     },
     "card": {
       "name": {
-        "month": "Monthly plan",
-        "year": "Yearly plan"
+        "month": "Monatstarif",
+        "year": "Jahrestarif"
       },
-      "yearThenMonthly": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month."
+      "yearThenMonthly": "Dein bezahltes Jahr läuft bis {{date}}. Danach läuft der Tarif monatlich weiter, und du kannst ihn jeden Monat kündigen."
     }
   },
   "usual": {

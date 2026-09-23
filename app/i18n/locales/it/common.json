@@ -3353,23 +3353,23 @@
       "cancelled": "Hai chiuso la pagina di pagamento. Non è stato addebitato nulla."
     },
     "choice": {
-      "legend": "Pick a plan",
+      "legend": "Scegli un piano",
       "interval": {
-        "month": "Monthly",
-        "year": "Yearly"
+        "month": "Mensile",
+        "year": "Annuale"
       },
-      "pricePerMonth": "{{price}} a month",
-      "pricePerYear": "{{price}} a year",
-      "monthlyEquivalent": "Works out at {{price}} a month.",
-      "saving": "{{saving}} less than twelve monthly payments.",
-      "pickFirst": "Pick a plan to go on."
+      "pricePerMonth": "{{price}} al mese",
+      "pricePerYear": "{{price}} all'anno",
+      "monthlyEquivalent": "Equivale a {{price}} al mese.",
+      "saving": "{{saving}} in meno rispetto a dodici pagamenti mensili.",
+      "pickFirst": "Scegli un piano per continuare."
     },
     "card": {
       "name": {
-        "month": "Monthly plan",
-        "year": "Yearly plan"
+        "month": "Piano mensile",
+        "year": "Piano annuale"
       },
-      "yearThenMonthly": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month."
+      "yearThenMonthly": "Il tuo anno pagato dura fino al {{date}}. Dopodiché il piano prosegue mensilmente, e puoi disdirlo ogni mese."
     }
   },
   "usual": {

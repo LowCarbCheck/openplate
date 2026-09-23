@@ -3353,23 +3353,23 @@
       "cancelled": "Ödeme sayfasını kapattın. Hiçbir ücret alınmadı."
     },
     "choice": {
-      "legend": "Pick a plan",
+      "legend": "Bir plan seç",
       "interval": {
-        "month": "Monthly",
-        "year": "Yearly"
+        "month": "Aylık",
+        "year": "Yıllık"
       },
-      "pricePerMonth": "{{price}} a month",
-      "pricePerYear": "{{price}} a year",
-      "monthlyEquivalent": "Works out at {{price}} a month.",
-      "saving": "{{saving}} less than twelve monthly payments.",
-      "pickFirst": "Pick a plan to go on."
+      "pricePerMonth": "Ayda {{price}}",
+      "pricePerYear": "Yılda {{price}}",
+      "monthlyEquivalent": "Ayda {{price}} denk geliyor.",
+      "saving": "On iki aylık ödemeye kıyasla {{saving}} daha az.",
+      "pickFirst": "Devam etmek için bir plan seç."
     },
     "card": {
       "name": {
-        "month": "Monthly plan",
-        "year": "Yearly plan"
+        "month": "Aylık plan",
+        "year": "Yıllık plan"
       },
-      "yearThenMonthly": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month."
+      "yearThenMonthly": "Ödediğin yıl {{date}} tarihine kadar geçerlidir. Sonrasında plan aylık olarak devam eder ve her ay iptal edebilirsin."
     }
   },
   "usual": {

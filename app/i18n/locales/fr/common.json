@@ -3353,23 +3353,23 @@
       "cancelled": "Tu as fermé la page de paiement. Rien n'a été débité."
     },
     "choice": {
-      "legend": "Pick a plan",
+      "legend": "Choisis un forfait",
       "interval": {
-        "month": "Monthly",
-        "year": "Yearly"
+        "month": "Mensuel",
+        "year": "Annuel"
       },
-      "pricePerMonth": "{{price}} a month",
-      "pricePerYear": "{{price}} a year",
-      "monthlyEquivalent": "Works out at {{price}} a month.",
-      "saving": "{{saving}} less than twelve monthly payments.",
-      "pickFirst": "Pick a plan to go on."
+      "pricePerMonth": "{{price}} par mois",
+      "pricePerYear": "{{price}} par an",
+      "monthlyEquivalent": "Soit {{price}} par mois.",
+      "saving": "{{saving}} de moins que douze mensualités.",
+      "pickFirst": "Choisis un forfait pour continuer."
     },
     "card": {
       "name": {
-        "month": "Monthly plan",
-        "year": "Yearly plan"
+        "month": "Forfait mensuel",
+        "year": "Forfait annuel"
       },
-      "yearThenMonthly": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month."
+      "yearThenMonthly": "Ton année payée va jusqu'au {{date}}. Ensuite, le forfait continue au mois, et tu peux le résilier chaque mois."
     }
   },
   "usual": {

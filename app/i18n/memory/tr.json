@@ -181,6 +181,13 @@
     "at": "2026-09-14",
     "tr": "Geri yükleniyor…"
   },
+  "028a5481a289eb5b": {
+    "en": "{{saving}} less than twelve monthly payments.",
+    "path": "common:plan.choice.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "On iki aylık ödemeye kıyasla {{saving}} daha az."
+  },
   "028baa7b3d422c2f": {
     "en": "Time",
     "path": "common:settings.notifications.catchUp.time",
@@ -341,6 +348,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Rapor silinemedi."
+  },
+  "04c5da8b6d86e59e": {
+    "en": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month.",
+    "path": "common:plan.card.yearThenMonthly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ödediğin yıl {{date}} tarihine kadar geçerlidir. Sonrasında plan aylık olarak devam eder ve her ay iptal edebilirsin."
   },
   "04c623b97b5225b7": {
     "en": "Removed {{name}}.",
@@ -2925,6 +2939,13 @@
     "at": "2026-09-14",
     "tr": "Emin değilim"
   },
+  "22d86e0c4ecde8fd": {
+    "en": "Monthly",
+    "path": "common:plan.choice.interval.month",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Aylık"
+  },
   "2321102d9a4d8375": {
     "en": "Numbers look wrong? Report this entry",
     "path": "common:entry.report.button",
@@ -3995,6 +4016,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bunu bir kez yaparsın ve sonra bir daha yapmazsın. Üç adım vardır ve ortadaki adım senin için zaten tamamlanmıştır."
+  },
+  "33262658c78f62a0": {
+    "en": "Pick a plan",
+    "path": "common:plan.choice.legend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bir plan seç"
   },
   "332d44d5c74b8c4f": {
     "en": "Buttons, switches and the date picker are thumb sized on a phone.",
@@ -5836,6 +5864,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İptal"
+  },
+  "4c1c080eefc9fba3": {
+    "en": "Pick a plan to go on.",
+    "path": "common:plan.choice.pickFirst",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Devam etmek için bir plan seç."
   },
   "4c7b99428402919b": {
     "en": "Open Insights",
@@ -8713,6 +8748,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Eklemek istediğin bir not var mı?"
+  },
+  "6fe666ea8693b97b": {
+    "en": "Yearly",
+    "path": "common:plan.choice.interval.year",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yıllık"
   },
   "6fef720f29156539": {
     "en": "View on lowcarbcheck.org",
@@ -13222,6 +13264,13 @@
     "at": "2026-09-14",
     "tr": "Fikrini mi değiştirdin? Bu işlem yukarıdaki tüm ayrıntıları bu cihazdan kaldırır."
   },
+  "a729106f261bc37a": {
+    "en": "{{price}} a year",
+    "path": "common:plan.choice.pricePerYear",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yılda {{price}}"
+  },
   "a74ab706fc0e700c": {
     "en": "What's new",
     "path": "common:about.whatsNew",
@@ -16848,6 +16897,13 @@
     "at": "2026-09-14",
     "tr": "3. Sunucularımızda ne saklıyoruz"
   },
+  "d71250cd023373de": {
+    "en": "Yearly plan",
+    "path": "common:plan.card.name.year",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yıllık plan"
+  },
   "d7344bd747de095d": {
     "en": "The name you chose, if you chose one.",
     "path": "common:account.operatorSees.displayName",
@@ -18108,6 +18164,13 @@
     "at": "2026-09-21",
     "tr": "Ekle"
   },
+  "e7d466295df16e9f": {
+    "en": "{{price}} a month",
+    "path": "common:plan.choice.pricePerMonth",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ayda {{price}}"
+  },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
     "path": "common:sync.create.cta",
@@ -18891,6 +18954,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tekrar dene"
+  },
+  "f1df66ed7a553d5f": {
+    "en": "Monthly plan",
+    "path": "common:plan.card.name.month",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Aylık plan"
   },
   "f1f603facc989d73": {
     "en": "Their link stops working. You can invite them again whenever you like.",
@@ -19780,6 +19850,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kaydet"
+  },
+  "fcc9501c3f7c6200": {
+    "en": "Works out at {{price}} a month.",
+    "path": "common:plan.choice.monthlyEquivalent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ayda {{price}} denk geliyor."
   },
   "fccc7b2f42450cb9": {
     "en": "Set the password",

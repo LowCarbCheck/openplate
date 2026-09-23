@@ -181,6 +181,13 @@
     "at": "2026-09-14",
     "de": "Wird wiederhergestellt…"
   },
+  "028a5481a289eb5b": {
+    "en": "{{saving}} less than twelve monthly payments.",
+    "path": "common:plan.choice.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "{{saving}} günstiger als zwölf Monatsbeiträge."
+  },
   "028baa7b3d422c2f": {
     "en": "Time",
     "path": "common:settings.notifications.catchUp.time",
@@ -341,6 +348,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Meldung konnte nicht gelöscht werden."
+  },
+  "04c5da8b6d86e59e": {
+    "en": "Your paid year runs to {{date}}. After that the plan continues monthly, and you can cancel it every month.",
+    "path": "common:plan.card.yearThenMonthly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Dein bezahltes Jahr läuft bis {{date}}. Danach läuft der Tarif monatlich weiter, und du kannst ihn jeden Monat kündigen."
   },
   "04c623b97b5225b7": {
     "en": "Removed {{name}}.",
@@ -2925,6 +2939,13 @@
     "at": "2026-09-14",
     "de": "Nicht sicher"
   },
+  "22d86e0c4ecde8fd": {
+    "en": "Monthly",
+    "path": "common:plan.choice.interval.month",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Monatlich"
+  },
   "2321102d9a4d8375": {
     "en": "Numbers look wrong? Report this entry",
     "path": "common:entry.report.button",
@@ -3995,6 +4016,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Das machst du einmal und dann nie wieder. Drei Schritte, und der mittlere ist für dich schon erledigt."
+  },
+  "33262658c78f62a0": {
+    "en": "Pick a plan",
+    "path": "common:plan.choice.legend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Tarif wählen"
   },
   "332d44d5c74b8c4f": {
     "en": "Buttons, switches and the date picker are thumb sized on a phone.",
@@ -5836,6 +5864,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Abbrechen"
+  },
+  "4c1c080eefc9fba3": {
+    "en": "Pick a plan to go on.",
+    "path": "common:plan.choice.pickFirst",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Wähle einen Tarif, um fortzufahren."
   },
   "4c7b99428402919b": {
     "en": "Open Insights",
@@ -8713,6 +8748,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Etwas zu notieren?"
+  },
+  "6fe666ea8693b97b": {
+    "en": "Yearly",
+    "path": "common:plan.choice.interval.year",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Jährlich"
   },
   "6fef720f29156539": {
     "en": "View on lowcarbcheck.org",
@@ -13222,6 +13264,13 @@
     "at": "2026-09-14",
     "de": "Anders überlegt? Damit löschst du alle Angaben oben von diesem Gerät."
   },
+  "a729106f261bc37a": {
+    "en": "{{price}} a year",
+    "path": "common:plan.choice.pricePerYear",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "{{price}} im Jahr"
+  },
   "a74ab706fc0e700c": {
     "en": "What's new",
     "path": "common:about.whatsNew",
@@ -16848,6 +16897,13 @@
     "at": "2026-09-14",
     "de": "3. Was wir auf unseren Servern speichern"
   },
+  "d71250cd023373de": {
+    "en": "Yearly plan",
+    "path": "common:plan.card.name.year",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Jahrestarif"
+  },
   "d7344bd747de095d": {
     "en": "The name you chose, if you chose one.",
     "path": "common:account.operatorSees.displayName",
@@ -18108,6 +18164,13 @@
     "at": "2026-09-21",
     "de": "Hinzufügen"
   },
+  "e7d466295df16e9f": {
+    "en": "{{price}} a month",
+    "path": "common:plan.choice.pricePerMonth",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "{{price}} im Monat"
+  },
   "e7d7acdc022aa65b": {
     "en": "Create an account",
     "path": "common:sync.create.cta",
@@ -18891,6 +18954,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Nochmal versuchen"
+  },
+  "f1df66ed7a553d5f": {
+    "en": "Monthly plan",
+    "path": "common:plan.card.name.month",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Monatstarif"
   },
   "f1f603facc989d73": {
     "en": "Their link stops working. You can invite them again whenever you like.",
@@ -19780,6 +19850,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Speichern"
+  },
+  "fcc9501c3f7c6200": {
+    "en": "Works out at {{price}} a month.",
+    "path": "common:plan.choice.monthlyEquivalent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Umgerechnet {{price}} im Monat."
   },
   "fccc7b2f42450cb9": {
     "en": "Set the password",
