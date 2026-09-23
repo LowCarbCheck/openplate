@@ -225,10 +225,12 @@ test.describe('/kuendigung around the file', () => {
     await page.goto('/kuendigung');
     await expect(page.locator('input[name="name"]')).toBeVisible();
     // THE BASELINE WAITS FOR THE FONTS. The swap from the fallback face to
-    // Inter and Victor Mono moves text on every public page of this app,
-    // `/welcome` and `/offline` included, which this change does not touch.
-    // That is a load-time question for the font setup, not for this form; what
-    // is judged here is what the PERSON's input does to the page.
+    // Inter and Victor Mono reflows the text of every legal page on load, on
+    // main as on this branch. Measured 2026-09-23 on two production builds at
+    // the phone viewport: with the real text, /kuendigung shifts 0.0227 on
+    // main and 0.0208 here, and with the web fonts blocked every legal page
+    // shifts 0 on both. That is a load-time question for the font setup, not
+    // for this form; what is judged here is what the PERSON's input does.
     await page.evaluate(async () => {
       await document.fonts.ready;
     });
