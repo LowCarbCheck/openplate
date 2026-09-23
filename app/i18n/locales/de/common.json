@@ -397,7 +397,7 @@
     "requestAccessClose": "Schließen",
     "requestAccessTitle": "Diese Instanz erfordert eine Einladung",
     "signIn": "Anmelden",
-    "signUp": "Sign up",
+    "signUp": "Registrieren",
     "source": "Quellcode",
     "sourceShort": "Quellcode",
     "status": {
@@ -1229,7 +1229,7 @@
       "taglineManaged": "openplate ist ein auf Kohlenhydrate ausgerichtetes Ernährungstagebuch, das eine verschlüsselte Kopie auf dem Server des Betreibers speichert: Fotografiere deinen Teller oder suche nach deinen Mahlzeiten, um deinen Tag im Blick zu behalten.",
       "ticks": "Kein Konto · Installiert sich wie eine App · Funktioniert offline · Foto-Scans laufen über deinen eigenen KI-Schlüssel",
       "ticksManaged": "Nur auf Einladung · Lässt sich wie eine App installieren · Funktioniert offline · Foto-Schätzungen inklusive",
-      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
+      "ticksManagedOpen": "Offene Registrierung · Installiert wie eine App · Funktioniert offline · Foto-Schätzungen inklusive"
     },
     "how": {
       "eyebrow": "Jeden Tag",
@@ -1392,7 +1392,7 @@
     "shared": "Mit dir geteilt · openplate",
     "sharing": "Teilen · openplate",
     "signIn": "Anmelden · openplate",
-    "signUp": "Sign up · openplate",
+    "signUp": "Registrieren · openplate",
     "study": "Studien-Konsole · openplate",
     "sync": "Konto · openplate",
     "trends": "Einblicke · openplate",
@@ -1988,7 +1988,7 @@
         "rateLimitMinute": "Das waren zu viele Anfragen kurz hintereinander. Versuch es in einer Minute noch einmal.",
         "allowanceSpent": "Du hast deine heutigen KI-Schätzungen aufgebraucht. Versuch es morgen wieder.",
         "allowanceExpired": "Dein Kontingent für Foto-Schätzungen ist abgelaufen. Alles andere in openplate funktioniert weiterhin.",
-        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
+        "trialScansSpent": "Wähle einen Tarif, um KI-Einträge weiter zu nutzen. Die Suche in der Lebensmitteldatenbank funktioniert weiterhin.",
         "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
         "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung."
       },
@@ -2005,9 +2005,9 @@
         "aiNotAllowed": "KI-Schätzungen sind deaktiviert",
         "accountSuspended": "Dein Konto ist gesperrt",
         "allowanceExpired": "Deine Foto-Schätzungen sind abgelaufen",
-        "trialScansSpent_one": "You used your {{count}} free AI scan",
-        "trialScansSpent_other": "You used your {{count}} free AI scans",
-        "trialScansSpentUncounted": "You used your free AI scans",
+        "trialScansSpent_one": "Du hast deinen {{count}} kostenlosen KI-Scan aufgebraucht",
+        "trialScansSpent_other": "Du hast deine {{count}} kostenlosen KI-Scans aufgebraucht",
+        "trialScansSpentUncounted": "Du hast deine kostenlosen KI-Scans aufgebraucht",
         "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr"
       },
       "text": {
@@ -2588,21 +2588,21 @@
     "forgot": "Passwort vergessen?"
   },
   "signUp": {
-    "title": "Create an account",
-    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
-    "trial_one": "{{count}} free AI scan, no time limit.",
-    "trial_other": "{{count}} free AI scans, no time limit.",
-    "emailRequired": "Type your email address.",
-    "submit": "Send the letter",
-    "sent": "Check your inbox. The link in the letter creates your account.",
-    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
-    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
-    "waitLater": "Too many requests from this network. Try again later.",
-    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
-    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
-    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
-    "failed": "The request did not go through. Try again in a moment.",
-    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+    "title": "Konto erstellen",
+    "body": "Gib deine E-Mail-Adresse ein. Wir schicken dir eine E-Mail, und der Link darin erstellt dein Konto.",
+    "trial_one": "{{count}} kostenloser KI-Scan, ohne Zeitlimit.",
+    "trial_other": "{{count}} kostenlose KI-Scans, ohne Zeitlimit.",
+    "emailRequired": "Gib deine E-Mail-Adresse ein.",
+    "submit": "E-Mail senden",
+    "sent": "Schau in dein Postfach. Der Link in der E-Mail erstellt dein Konto.",
+    "wait_one": "Zu viele Anfragen aus diesem Netzwerk. Versuche es in {{count}} Minute noch einmal.",
+    "wait_other": "Zu viele Anfragen aus diesem Netzwerk. Versuche es in {{count}} Minuten noch einmal.",
+    "waitLater": "Zu viele Anfragen aus diesem Netzwerk. Versuche es später noch einmal.",
+    "captchaFailed": "Die Überprüfung ist fehlgeschlagen. Warte auf eine neue Überprüfung und sende die E-Mail dann erneut.",
+    "captchaUnavailable": "Die Überprüfung konnte nicht geladen werden. Lade die Seite neu oder deaktiviere einen Blocker für diese Seite.",
+    "domainBlocked": "Wir können keine Registrierungen von dieser E-Mail-Domain annehmen. Nutze eine andere Adresse.",
+    "failed": "Die Anfrage hat nicht geklappt. Versuche es gleich noch einmal.",
+    "legal": "Lies die <terms>Nutzungsbedingungen</terms> und die <privacy>Datenschutzhinweise</privacy>, bevor du dich registrierst."
   },
   "signOut": {
     "menuItem": "Abmelden",
@@ -3010,14 +3010,14 @@
     "haveAccount": "Ich habe schon ein Konto",
     "managed": {
       "body": "Melde dich bei deinem Konto an oder öffne den Einladungslink, den du erhalten hast.",
-      "bodyOpen": "Sign in to your account, or create one with your email address.",
+      "bodyOpen": "Melde dich bei deinem Konto an, oder erstelle eines mit deiner E-Mail-Adresse.",
       "haveInvite": "Ich habe einen Einladungslink",
       "pasteTitle": "Füge deinen Einladungslink ein",
       "pasteLabel": "Einladungslink",
       "pasteHint": "Füge den gesamten Link genau so ein, wie du ihn erhalten hast.",
       "pasteContinue": "Weiter",
       "pasteInvalid": "Das sieht nicht nach einem Einladungslink aus. Füge den gesamten Link genau so ein, wie du ihn erhalten hast.",
-      "signUp": "Create an account"
+      "signUp": "Konto erstellen"
     },
     "returning": "Dieses Gerät war zuvor an einem Konto angemeldet.",
     "signIn": "Anmelden",
@@ -3063,7 +3063,7 @@
       "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
       "askAdmin": "Das legt deine Administration fest.",
       "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
-      "trialScans": "{{left}} of {{granted}} free AI scans left.",
+      "trialScans": "Noch {{left}} von {{granted}} kostenlosen KI-Scans übrig.",
       "expires": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}.",
       "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}.",
       "planLink": "Deinen Tarif ansehen"
@@ -3088,7 +3088,7 @@
       "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
       "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
       "invitesLeft": "Wie viele Einladungen du noch übrig hast.",
-      "trialScans": "How many free AI scans you were given, and how many are left."
+      "trialScans": "Wie viele kostenlose KI-Scans du bekommen hast und wie viele noch übrig sind."
     },
     "password": {
       "title": "Passwort",
@@ -3159,7 +3159,7 @@
       "role": "Rolle",
       "allowance": "Fotos pro Tag",
       "usedToday": "Heute genutzt",
-      "trialScans": "Free AI scans",
+      "trialScans": "Kostenlose KI-Scans",
       "standing": "Status",
       "lastSeen": "Letzte Anmeldung",
       "recentDays": "Letzte {{days}} Tage",
@@ -3169,7 +3169,7 @@
     },
     "usage": "{{used}} von {{limit}}",
     "usageNone": "Keine Fotos",
-    "trialScansUsed": "{{used}} of {{granted}} used",
+    "trialScansUsed": "{{used}} von {{granted}} verbraucht",
     "lastSeen": {
       "never": "Nie angemeldet"
     },
@@ -3205,8 +3205,8 @@
       "cancel": "Abbrechen",
       "allowanceLabel": "Fotos pro Tag",
       "allowanceHint": "0 schaltet Foto-Schätzungen für diese Person ab.",
-      "trialScansLabel": "Free AI scans",
-      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
+      "trialScansLabel": "Kostenlose KI-Scans",
+      "trialScansHint": "Wie viele kostenlose KI-Scans diese Person erhält. Bereits verbrauchte Scans bleiben verbraucht.",
       "saved": "Gespeichert.",
       "failed": "Die Änderung konnte nicht übernommen werden."
     },
@@ -3254,10 +3254,10 @@
       "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
       "nameLabel": "Name",
       "nameHint": "Optional. Wird der Person und dir in der Liste angezeigt.",
-      "grantLabel": "What the account gets",
-      "grantTrial_one": "Free trial ({{count}} scan)",
-      "grantTrial_other": "Free trial ({{count}} scans)",
-      "grantStanding": "Standing allowance",
+      "grantLabel": "Was das Konto erhält",
+      "grantTrial_one": "Kostenlose Testphase ({{count}} Scan)",
+      "grantTrial_other": "Kostenlose Testphase ({{count}} Scans)",
+      "grantStanding": "Dauerhaftes Kontingent",
       "allowanceLabel": "Fotos pro Tag",
       "allowanceHint": "Wie viele Teller-Fotos pro Tag ausgewertet werden dürfen. 0 schaltet es ab.",
       "expiryLabel": "Der Link bleibt gültig für",
@@ -3422,8 +3422,8 @@
       "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",
       "daysLeft_other": "Noch {{count}} Tage KI-Scans in deiner Testphase.",
       "lastDay": "Die KI-Scans deiner Testphase enden heute.",
-      "scansLeft_one": "{{count}} free AI scan left.",
-      "scansLeft_other": "{{count}} free AI scans left.",
+      "scansLeft_one": "Noch {{count}} kostenloser KI-Scan übrig.",
+      "scansLeft_other": "Noch {{count}} kostenlose KI-Scans übrig.",
       "action": "Tarife ansehen"
     },
     "offer": {
@@ -3432,8 +3432,8 @@
     "recap": {
       "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
       "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst.",
-      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
-      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+      "mealsSoFar_one": "Du hast bisher {{count}} Mahlzeit mit KI erfasst.",
+      "mealsSoFar_other": "Du hast bisher {{count}} Mahlzeiten mit KI erfasst."
     },
     "selfHost": {
       "title": "openplate selbst betreiben",
@@ -3534,7 +3534,7 @@
     "errors": {
       "title": "Das hat nicht geklappt",
       "failed": "Es konnte keine Mahlzeit zusammengestellt werden. Versuche es gleich noch einmal.",
-      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
+      "noModel": "Auf dieser Instanz ist gerade kein KI-Modell verfügbar, daher kann keine Mahlzeit erstellt werden. Versuch es später noch einmal.",
       "logFailed": "Wir konnten das nicht eintragen. Versuche es gleich noch einmal."
     }
   },

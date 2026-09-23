@@ -860,6 +860,13 @@
     "at": "2026-09-14",
     "it": "Vitamina B6"
   },
+  "0aefe8de6aebdd1d": {
+    "en": "{{count}} free AI scans left.",
+    "path": "common:plan.countdown.scansLeft_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{count}} scansioni IA gratuite rimaste."
+  },
   "0b03149ba7c24cbb": {
     "en": "See the plans",
     "path": "common:aiIntake.plansLink",
@@ -1322,6 +1329,13 @@
     "at": "2026-09-14",
     "it": "es. 154"
   },
+  "118a0ffa6e660d89": {
+    "en": "Create an account",
+    "path": "common:welcome.managed.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Crea un account"
+  },
   "11af66a9601ab403": {
     "en": "{{routine}}, starts {{time}}",
     "path": "common:settings.hub.fasting.description",
@@ -1699,6 +1713,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Stai usando la parte gratuita di openplate."
+  },
+  "161b0b2256585752": {
+    "en": "How many free AI scans this person is given. Scans already used stay used.",
+    "path": "common:admin.edit.trialScansHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Quante scansioni IA gratuite vengono assegnate a questa persona. Le scansioni già usate restano usate."
   },
   "161b7adae032e1a7": {
     "en": "A subscriber's plan page shows the plan they hold, not an order.",
@@ -2092,6 +2113,13 @@
     "at": "2026-09-14",
     "it": "Salvate, non è stato possibile verificare la chiave in questo momento (spesso la content-security policy blocca un endpoint diverso da localhost, oppure l'endpoint non consente le richieste CORS del browser, vedi il testo di aiuto dell'URL di base qui sopra)."
   },
+  "1b3ec7356341e627": {
+    "en": "Type your email address. We send you an email, and the link in it creates your account.",
+    "path": "common:signUp.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Inserisci il tuo indirizzo email. Ti invieremo un'email con il link per creare il tuo account."
+  },
   "1b752fc3cb17fcd3": {
     "en": "Sugars",
     "path": "common:add.macros.sugars",
@@ -2189,6 +2217,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{used}} su {{limit}} usate oggi."
+  },
+  "1c2f4c4ebbf4bcdb": {
+    "en": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "path": "common:signUp.captchaUnavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Impossibile caricare la verifica. Ricarica la pagina o disattiva i blocchi dei contenuti per questo sito."
   },
   "1c4c7d915194a9d0": {
     "en": "Join a study · openplate",
@@ -4773,6 +4808,13 @@
     "at": "2026-09-14",
     "it": "Sigillati con una chiave non presente su questo dispositivo: {{unopenable}} contributi su {{total}}. Non sono inclusi in questo file. Si tratta di un problema di chiavi, non di dati."
   },
+  "435aad5630b40011": {
+    "en": "What the account gets",
+    "path": "common:admin.invite.grantLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Cosa riceve l'account"
+  },
   "437baec739b54a0d": {
     "en": "The operator of this openplate has to allow it",
     "path": "common:connectGateway.blocked.operatorTitle",
@@ -5263,6 +5305,13 @@
     "at": "2026-09-14",
     "it": "openplate, un diario alimentare leggibile solo da te"
   },
+  "4a254ea19d4d67a5": {
+    "en": "You logged {{count}} meals with AI so far.",
+    "path": "common:plan.recap.mealsSoFar_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Finora hai registrato {{count}} pasti con l'IA."
+  },
   "4a4f15af7af019f1": {
     "en": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
     "path": "common:landing.features.selfHost.body",
@@ -5500,6 +5549,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Passo {{current}} di {{total}}"
+  },
+  "4d9998d36ae518cb": {
+    "en": "Pick a plan to keep using AI entries. Searching the food database still works.",
+    "path": "common:scan.errors.provider.trialScansSpent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Scegli un piano per continuare a usare gli inserimenti con IA. La ricerca nel database degli alimenti rimane sempre attiva."
   },
   "4daa38e117e31ff0": {
     "en": "Try again",
@@ -6586,6 +6642,13 @@
     "at": "2026-09-23",
     "it": "Una quota di IA esaurita mostra ora la proposta di un piano, non un vicolo cieco."
   },
+  "5aec4fcf7062b1af": {
+    "en": "Free trial ({{count}} scan)",
+    "path": "common:admin.invite.grantTrial_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Prova gratuita ({{count}} scansione)"
+  },
   "5afe0a1d82a23c7b": {
     "en": "How did it go?",
     "path": "common:fasting.end.moodLabel",
@@ -6767,6 +6830,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "it": "Suggerisci un pasto"
+  },
+  "5d4c472859c1128a": {
+    "en": "Open sign-up · Installs like an app · Works offline · Photo estimates included",
+    "path": "common:landing.hero.ticksManagedOpen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Iscrizione aperta · Si installa come un'app · Funziona offline · Stime da foto incluse"
   },
   "5d4f0ad8c5da53f6": {
     "en": "Password",
@@ -7447,6 +7517,13 @@
     "at": "2026-09-14",
     "it": "tra {{duration}}"
   },
+  "65fa8a620ac55ddc": {
+    "en": "Sign up · openplate",
+    "path": "common:meta.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Registrati · openplate"
+  },
   "66021b9822f65f0c": {
     "en": "Loading…",
     "path": "common:add.loading",
@@ -7467,6 +7544,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Sopra il limite di riferimento. Questo valore è un massimo da non superare, non una quantità da raggiungere."
+  },
+  "66482ff4787e2f84": {
+    "en": "Create an account",
+    "path": "common:signUp.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Crea un account"
   },
   "66532a20145bf825": {
     "en": "Too many requests. Try again in a few minutes.",
@@ -8091,6 +8175,13 @@
     "at": "2026-09-14",
     "it": "Il tuo nome (facoltativo)"
   },
+  "6f78f82b120edfec": {
+    "en": "How many free AI scans you were given, and how many are left.",
+    "path": "common:account.operatorSees.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Quante scansioni IA gratuite hai ricevuto e quante ne restano."
+  },
   "6f94d115bfb648d5": {
     "en": "Jump to today",
     "path": "common:diary.nav.jumpToToday",
@@ -8412,6 +8503,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Digiuni completati"
+  },
+  "738f0e5c4cc542c0": {
+    "en": "You used your free AI scans",
+    "path": "common:scan.errors.titles.trialScansSpentUncounted",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Hai usato le tue scansioni gratuite con IA"
   },
   "73a144fa45b05e0f": {
     "en": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
@@ -9204,6 +9302,13 @@
     "at": "2026-09-14",
     "it": "Oggi ti rimangono {{value}} calorie rispetto al tuo obiettivo di {{target}} calorie."
   },
+  "7d35bae3bb732fe3": {
+    "en": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up.",
+    "path": "common:signUp.legal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Leggi i <terms>termini di servizio</terms> e l'<privacy>informativa sulla privacy</privacy> prima di registrarti."
+  },
   "7d593cabc881d533": {
     "en": "The question closed, or your browser never asked it. Tap the switch again.",
     "path": "common:settings.notifications.state.dismissed",
@@ -9224,6 +9329,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Digiuno rimosso."
+  },
+  "7d9220bbb5ae2ce6": {
+    "en": "Sign in to your account, or create one with your email address.",
+    "path": "common:welcome.managed.bodyOpen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Accedi al tuo account oppure creane uno con il tuo indirizzo email."
   },
   "7daa324a10f747f6": {
     "en": "Log {{count}} serving",
@@ -10148,6 +10260,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Non c'era nulla da disconnettere."
+  },
+  "898a73e7d41a46b5": {
+    "en": "You logged {{count}} meal with AI so far.",
+    "path": "common:plan.recap.mealsSoFar_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Finora hai registrato {{count}} pasto con l'IA."
   },
   "89bbbc31fabcfce5": {
     "en": "Entry updated.",
@@ -11444,6 +11563,13 @@
     "at": "2026-09-14",
     "it": "Allora non c'è più nulla da recuperare e ci dispiace, ma questa è la risposta onesta. Da qui puoi iniziare un nuovo diario, e se in seguito dovesse spuntare un backup, potrai comunque ripristinarlo sopra."
   },
+  "99f108bb91eac361": {
+    "en": "Standing allowance",
+    "path": "common:admin.invite.grantStanding",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Quota fissa"
+  },
   "99f58c571d8e721c": {
     "en": "Reading your items...",
     "path": "common:pantry.reading",
@@ -11562,6 +11688,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "In precedenza hai verificato {{pinned}}; questo link contiene {{offered}}. Succede quando qualcuno genera una nuova chiave, ma anche quando ne sostituisce una. Ripeti la verifica insieme a questa persona, a voce, prima di continuare."
+  },
+  "9b83d1bddf5280d5": {
+    "en": "{{count}} free AI scan left.",
+    "path": "common:plan.countdown.scansLeft_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{count}} scansione IA gratuita rimasta."
   },
   "9b8da0889f5d5722": {
     "en": "Accounts here are created with an invite link. If you have one, open it to get started.",
@@ -11828,6 +11961,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Rimuovere questo digiuno?"
+  },
+  "9f0d39d6e878018b": {
+    "en": "The check did not pass. Wait for a new check, then send the email again.",
+    "path": "common:signUp.captchaFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "La verifica non è andata a buon fine. Attendi un nuovo controllo e invia di nuovo l'email."
   },
   "9f104f564a20856b": {
     "en": "Sending your words…",
@@ -12522,6 +12662,20 @@
     "at": "2026-09-14",
     "it": "Un nuovo invito è stato inviato a {{email}}."
   },
+  "a829605e001610b1": {
+    "en": "You used your {{count}} free AI scans",
+    "path": "common:scan.errors.titles.trialScansSpent_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Hai usato le tue {{count}} scansioni gratuite con IA"
+  },
+  "a83ac510d3e0ee9e": {
+    "en": "{{used}} of {{granted}} used",
+    "path": "common:admin.trialScansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{used}} su {{granted}} usate"
+  },
   "a873654ca334c43f": {
     "en": "Starting analysis…",
     "path": "common:scan.analyzing.starting",
@@ -13082,6 +13236,13 @@
     "at": "2026-09-17",
     "it": "Operazione non riuscita"
   },
+  "b060f2b4e5ff77a1": {
+    "en": "{{count}} free AI scan, no time limit.",
+    "path": "common:signUp.trial_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{count}} scansione gratuita con IA, senza limiti di tempo."
+  },
   "b09b8b6047637931": {
     "en": "Reference values",
     "path": "common:admin.settings.title",
@@ -13298,6 +13459,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Accedi · openplate"
+  },
+  "b3449415df0a0691": {
+    "en": "{{count}} free AI scans, no time limit.",
+    "path": "common:signUp.trial_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{count}} scansioni gratuite con IA, senza limiti di tempo."
   },
   "b345c7a07cd63fdc": {
     "en": "Enter your weight",
@@ -13999,6 +14167,13 @@
     "at": "2026-09-14",
     "it": "Elimina"
   },
+  "be1378d24fec7417": {
+    "en": "Free trial ({{count}} scans)",
+    "path": "common:admin.invite.grantTrial_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Prova gratuita ({{count}} scansioni)"
+  },
   "be16d2fdf46c6c0c": {
     "en": "That address is longer than {{max}} characters.",
     "path": "common:sync.email.tooLong",
@@ -14236,6 +14411,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Disconnetti ed elimina"
+  },
+  "c1b2760a7ba86b11": {
+    "en": "Free AI scans",
+    "path": "common:admin.columns.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Scansioni IA gratuite"
   },
   "c1bc362852b5de42": {
     "en": "Search is taking a quick break. Try again {{when}}. Your recent and saved foods still work below.",
@@ -15035,6 +15217,13 @@
     "at": "2026-09-14",
     "it": "Dillo a voce"
   },
+  "ce46f53d5679dbde": {
+    "en": "Too many requests from this network. Try again in {{count}} minute.",
+    "path": "common:signUp.wait_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Troppe richieste da questa rete. Riprova tra {{count}} minuto."
+  },
   "ce5d630bdde3764b": {
     "en": "Joining…",
     "path": "common:connectGateway.confirm.joining",
@@ -15595,6 +15784,13 @@
     "at": "2026-09-14",
     "it": "Invito inviato a {{email}}"
   },
+  "d49e32e8f3282c35": {
+    "en": "This instance has no AI model right now, so no meal can be built. Try again later.",
+    "path": "common:recipes.errors.noModel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Al momento questa istanza non ha un modello IA, quindi non è possibile creare pasti. Riprova più tardi."
+  },
   "d4a1bcfa9a0301a0": {
     "en": "This device is signed in as {{signedInAs}}, and the invitation is for {{invitedEmail}}. Sign out first to use it.",
     "path": "common:join.signedInElsewhere.body",
@@ -15826,6 +16022,13 @@
     "at": "2026-09-14",
     "it": "Scatta una foto, ottieni i macronutrienti"
   },
+  "d79407d02bfc5e93": {
+    "en": "The request did not go through. Try again in a moment.",
+    "path": "common:signUp.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "La richiesta non è andata a buon fine. Riprova tra poco."
+  },
   "d7d3bd67d705fa84": {
     "en": "The photo could not be loaded.",
     "path": "common:admin.feedback.photoFailed",
@@ -15923,6 +16126,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Home"
+  },
+  "d98d18b1073a656c": {
+    "en": "Sign up",
+    "path": "common:chrome.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Registrati"
   },
   "d9c282129442ab0f": {
     "en": "Type your email address and we will send you a link to set a new one.",
@@ -16883,6 +17093,13 @@
     "at": "2026-09-14",
     "it": "la tua ultima pesata"
   },
+  "e6e06e11181d2fa6": {
+    "en": "Check your inbox. The link in the email creates your account.",
+    "path": "common:signUp.sent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Controlla la posta in arrivo. Il link nell'email creerà il tuo account."
+  },
   "e6fd2ffa4da7fb56": {
     "en": "Copied",
     "path": "common:admin.invite.linkCopied",
@@ -17009,6 +17226,13 @@
     "at": "2026-09-14",
     "it": "Dati e backup"
   },
+  "e802639792089b15": {
+    "en": "Type your email address.",
+    "path": "common:signUp.emailRequired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Inserisci il tuo indirizzo email."
+  },
   "e80cdbcb0d53bc43": {
     "en": "{{value}} g over",
     "path": "common:diary.budget.gramsOver",
@@ -17099,6 +17323,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Ottenuto il {{date}}"
+  },
+  "e956605b6ac05484": {
+    "en": "We cannot take sign-ups from this email domain. Use another address.",
+    "path": "common:signUp.domainBlocked",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Non possiamo accettare registrazioni da questo dominio email. Usa un altro indirizzo."
   },
   "e95c379d55b71392": {
     "en": "Preferences",
@@ -17288,6 +17519,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Partecipa a questo studio"
+  },
+  "ebe5f901df3ac9fa": {
+    "en": "{{left}} of {{granted}} free AI scans left.",
+    "path": "common:account.allowance.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "{{left}} di {{granted}} scansioni gratuite con IA rimaste."
   },
   "ebea9fb6c3b2e941": {
     "en": "Receipt no.: {{receiptId}}",
@@ -17534,6 +17772,13 @@
     "at": "2026-09-14",
     "it": "Invii la foto del piatto e i valori di questa voce. Non viene inviato nient'altro dal tuo diario. Chi amministra questo server può aprire quella foto e leggere quei valori."
   },
+  "ef19819678aed6b4": {
+    "en": "Too many requests from this network. Try again in {{count}} minutes.",
+    "path": "common:signUp.wait_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Troppe richieste da questa rete. Riprova tra {{count}} minuti."
+  },
   "ef1a2fa7fde44876": {
     "en": "Your past counts: the app rebuilds the record from the diary you already have.",
     "path": "releases:v0_34_0.added.03",
@@ -17575,6 +17820,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questo rimuove la voce dalla cronologia del peso. Puoi registrarla di nuovo in qualsiasi momento."
+  },
+  "ef6257ea305efcaa": {
+    "en": "You used your {{count}} free AI scan",
+    "path": "common:scan.errors.titles.trialScansSpent_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Hai usato la tua {{count}} scansione gratuita con IA"
   },
   "efa7db3f8a23ccde": {
     "en": "Entry",
@@ -17750,6 +18002,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "it": "Le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle, quindi esporta prima un file di backup: le include."
+  },
+  "f252bc59883a86f6": {
+    "en": "Send the email",
+    "path": "common:signUp.submit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Invia l'email"
+  },
+  "f254cc393e19a4d4": {
+    "en": "Too many requests from this network. Try again later.",
+    "path": "common:signUp.waitLater",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Troppe richieste da questa rete. Riprova più tardi."
   },
   "f2580527a96c03f1": {
     "en": "On a specific date",
@@ -18716,6 +18982,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "it": "Settimana del {{date}}, media giornaliera"
+  },
+  "fe445f73fef8e4c0": {
+    "en": "Free AI scans",
+    "path": "common:admin.edit.trialScansLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Scansioni IA gratuite"
   },
   "fe5a275fb4e1d870": {
     "en": "The legal pages come from a folder you mount, and openplate ships none of its own.",

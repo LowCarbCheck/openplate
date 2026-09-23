@@ -860,6 +860,13 @@
     "at": "2026-09-14",
     "tr": "B6 Vitamini"
   },
+  "0aefe8de6aebdd1d": {
+    "en": "{{count}} free AI scans left.",
+    "path": "common:plan.countdown.scansLeft_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zekâ taraman kaldı."
+  },
   "0b03149ba7c24cbb": {
     "en": "See the plans",
     "path": "common:aiIntake.plansLink",
@@ -1322,6 +1329,13 @@
     "at": "2026-09-14",
     "tr": "örn. 154"
   },
+  "118a0ffa6e660d89": {
+    "en": "Create an account",
+    "path": "common:welcome.managed.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Hesap oluştur"
+  },
   "11af66a9601ab403": {
     "en": "{{routine}}, starts {{time}}",
     "path": "common:settings.hub.fasting.description",
@@ -1699,6 +1713,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate uygulamasının ücretsiz kısmındasın."
+  },
+  "161b0b2256585752": {
+    "en": "How many free AI scans this person is given. Scans already used stay used.",
+    "path": "common:admin.edit.trialScansHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu kişiye kaç adet ücretsiz yapay zekâ taraması tanımlanacağı. Daha önce kullanılan taramalar kullanılmış kalır."
   },
   "161b7adae032e1a7": {
     "en": "A subscriber's plan page shows the plan they hold, not an order.",
@@ -2092,6 +2113,13 @@
     "at": "2026-09-14",
     "tr": "Kaydedildi, anahtar şu an doğrulanamadı (genellikle içerik güvenlik politikasının localhost dışındaki bir uç noktayı engellemesi ya da uç noktanın tarayıcı CORS isteklerine izin vermemesi nedeniyle, yukarıdaki temel URL yardım metnine bak)."
   },
+  "1b3ec7356341e627": {
+    "en": "Type your email address. We send you an email, and the link in it creates your account.",
+    "path": "common:signUp.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "E-posta adresini yaz. Sana bir e-posta göndereceğiz, içindeki bağlantı hesabını oluşturacak."
+  },
   "1b752fc3cb17fcd3": {
     "en": "Sugars",
     "path": "common:add.macros.sugars",
@@ -2189,6 +2217,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bugün {{used}} / {{limit}} kullanıldı."
+  },
+  "1c2f4c4ebbf4bcdb": {
+    "en": "The check could not load. Reload the page, or turn off a blocker for this page.",
+    "path": "common:signUp.captchaUnavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Doğrulama yüklenemedi. Sayfayı yenile veya bu sayfa için engelleyiciyi kapat."
   },
   "1c4c7d915194a9d0": {
     "en": "Join a study · openplate",
@@ -4773,6 +4808,13 @@
     "at": "2026-09-14",
     "tr": "Bu cihazda bulunmayan bir anahtarla mühürlenmiş: {{total}} katkıdan {{unopenable}} tanesi. Bu dosyada yer almazlar. Bu bir veri sorunu değil, bir anahtar sorunudur."
   },
+  "435aad5630b40011": {
+    "en": "What the account gets",
+    "path": "common:admin.invite.grantLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Hesaba tanımlanacak hak"
+  },
   "437baec739b54a0d": {
     "en": "The operator of this openplate has to allow it",
     "path": "common:connectGateway.blocked.operatorTitle",
@@ -5263,6 +5305,13 @@
     "at": "2026-09-14",
     "tr": "openplate, yalnızca senin okuyabildiğin bir besin takip uygulaması"
   },
+  "4a254ea19d4d67a5": {
+    "en": "You logged {{count}} meals with AI so far.",
+    "path": "common:plan.recap.mealsSoFar_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Şimdiye kadar yapay zekâ ile {{count}} öğün kaydettin."
+  },
   "4a4f15af7af019f1": {
     "en": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
     "path": "common:landing.features.selfHost.body",
@@ -5500,6 +5549,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Adım {{current}} / {{total}}"
+  },
+  "4d9998d36ae518cb": {
+    "en": "Pick a plan to keep using AI entries. Searching the food database still works.",
+    "path": "common:scan.errors.provider.trialScansSpent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Yapay zeka ile kayıt eklemeye devam etmek için bir plan seç. Besin veritabanında arama yapmaya devam edebilirsin."
   },
   "4daa38e117e31ff0": {
     "en": "Try again",
@@ -6586,6 +6642,13 @@
     "at": "2026-09-23",
     "tr": "Biten bir yapay zeka kotası artık bir çıkmaz sokak değil, bir plan teklifi gösterir."
   },
+  "5aec4fcf7062b1af": {
+    "en": "Free trial ({{count}} scan)",
+    "path": "common:admin.invite.grantTrial_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz deneme ({{count}} tarama)"
+  },
   "5afe0a1d82a23c7b": {
     "en": "How did it go?",
     "path": "common:fasting.end.moodLabel",
@@ -6767,6 +6830,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "tr": "Bir yemek öner"
+  },
+  "5d4c472859c1128a": {
+    "en": "Open sign-up · Installs like an app · Works offline · Photo estimates included",
+    "path": "common:landing.hero.ticksManagedOpen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Açık kayıt · Uygulama gibi yüklenir · Çevrimdışı çalışır · Fotoğraflı tahminler dahil"
   },
   "5d4f0ad8c5da53f6": {
     "en": "Password",
@@ -7447,6 +7517,13 @@
     "at": "2026-09-14",
     "tr": "{{duration}} içinde"
   },
+  "65fa8a620ac55ddc": {
+    "en": "Sign up · openplate",
+    "path": "common:meta.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Kayıt ol · openplate"
+  },
   "66021b9822f65f0c": {
     "en": "Loading…",
     "path": "common:add.loading",
@@ -7467,6 +7544,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Referans sınırın üstünde. Bu bir hedef miktar değil, altında kalınması gereken bir üst sınırdır."
+  },
+  "66482ff4787e2f84": {
+    "en": "Create an account",
+    "path": "common:signUp.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Hesap oluştur"
   },
   "66532a20145bf825": {
     "en": "Too many requests. Try again in a few minutes.",
@@ -8091,6 +8175,13 @@
     "at": "2026-09-14",
     "tr": "Adın (isteğe bağlı)"
   },
+  "6f78f82b120edfec": {
+    "en": "How many free AI scans you were given, and how many are left.",
+    "path": "common:account.operatorSees.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Sana kaç ücretsiz yapay zekâ taraması tanımlandığı ve kaç tane kaldığı."
+  },
   "6f94d115bfb648d5": {
     "en": "Jump to today",
     "path": "common:diary.nav.jumpToToday",
@@ -8412,6 +8503,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tamamlanan oruçlar"
+  },
+  "738f0e5c4cc542c0": {
+    "en": "You used your free AI scans",
+    "path": "common:scan.errors.titles.trialScansSpentUncounted",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz yapay zeka tarama haklarını kullandın"
   },
   "73a144fa45b05e0f": {
     "en": "There is no analytics, no advertising and no tracking pixel in openplate. Nothing you do in the app is counted, and nothing about it is sent anywhere.",
@@ -9204,6 +9302,13 @@
     "at": "2026-09-14",
     "tr": "Bugün {{target}} kalorilik hedefinden geriye {{value}} kalori kaldı."
   },
+  "7d35bae3bb732fe3": {
+    "en": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up.",
+    "path": "common:signUp.legal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Kayıt olmadan önce <terms>şartları</terms> ve <privacy>gizlilik bildirimini</privacy> oku."
+  },
   "7d593cabc881d533": {
     "en": "The question closed, or your browser never asked it. Tap the switch again.",
     "path": "common:settings.notifications.state.dismissed",
@@ -9224,6 +9329,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Oruç kaldırıldı."
+  },
+  "7d9220bbb5ae2ce6": {
+    "en": "Sign in to your account, or create one with your email address.",
+    "path": "common:welcome.managed.bodyOpen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Hesabına giriş yap veya e-posta adresinle bir hesap oluştur."
   },
   "7daa324a10f747f6": {
     "en": "Log {{count}} serving",
@@ -10148,6 +10260,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bağlantısı kesilecek bir şey yoktu."
+  },
+  "898a73e7d41a46b5": {
+    "en": "You logged {{count}} meal with AI so far.",
+    "path": "common:plan.recap.mealsSoFar_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Şimdiye kadar yapay zekâ ile {{count}} öğün kaydettin."
   },
   "89bbbc31fabcfce5": {
     "en": "Entry updated.",
@@ -11444,6 +11563,13 @@
     "at": "2026-09-14",
     "tr": "O zaman geri getirilecek hiçbir şey kalmadı, üzgünüz, dürüst cevap bu. Buradan yeni bir günlük başlatabilirsin, daha sonra bir yedek çıkarsa üzerine yine de geri yükleyebilirsin."
   },
+  "99f108bb91eac361": {
+    "en": "Standing allowance",
+    "path": "common:admin.invite.grantStanding",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Sürekli kullanım hakkı"
+  },
   "99f58c571d8e721c": {
     "en": "Reading your items...",
     "path": "common:pantry.reading",
@@ -11562,6 +11688,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Daha önce {{pinned}} doğrulamıştın; bu bağlantı ise {{offered}} taşıyor. Bu durum biri yeni bir anahtar oluşturduğunda veya bir anahtarı değiştirdiğinde meydana gelir. Devam etmeden önce kontrolü onlarla birlikte, sesli olarak tekrar yap."
+  },
+  "9b83d1bddf5280d5": {
+    "en": "{{count}} free AI scan left.",
+    "path": "common:plan.countdown.scansLeft_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zekâ taraman kaldı."
   },
   "9b8da0889f5d5722": {
     "en": "Accounts here are created with an invite link. If you have one, open it to get started.",
@@ -11828,6 +11961,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu oruç silinsin mi?"
+  },
+  "9f0d39d6e878018b": {
+    "en": "The check did not pass. Wait for a new check, then send the email again.",
+    "path": "common:signUp.captchaFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Doğrulama geçilemedi. Yeni bir doğrulama bekle, ardından e-postayı tekrar gönder."
   },
   "9f104f564a20856b": {
     "en": "Sending your words…",
@@ -12522,6 +12662,20 @@
     "at": "2026-09-14",
     "tr": "{{email}} adresine yeni bir davet gönderildi."
   },
+  "a829605e001610b1": {
+    "en": "You used your {{count}} free AI scans",
+    "path": "common:scan.errors.titles.trialScansSpent_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın"
+  },
+  "a83ac510d3e0ee9e": {
+    "en": "{{used}} of {{granted}} used",
+    "path": "common:admin.trialScansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{granted}} haktan {{used}} tanesi kullanıldı"
+  },
   "a873654ca334c43f": {
     "en": "Starting analysis…",
     "path": "common:scan.analyzing.starting",
@@ -13082,6 +13236,13 @@
     "at": "2026-09-17",
     "tr": "Bu işe yaramadı"
   },
+  "b060f2b4e5ff77a1": {
+    "en": "{{count}} free AI scan, no time limit.",
+    "path": "common:signUp.trial_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok."
+  },
   "b09b8b6047637931": {
     "en": "Reference values",
     "path": "common:admin.settings.title",
@@ -13298,6 +13459,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Giriş yap · openplate"
+  },
+  "b3449415df0a0691": {
+    "en": "{{count}} free AI scans, no time limit.",
+    "path": "common:signUp.trial_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok."
   },
   "b345c7a07cd63fdc": {
     "en": "Enter your weight",
@@ -13999,6 +14167,13 @@
     "at": "2026-09-14",
     "tr": "Sil"
   },
+  "be1378d24fec7417": {
+    "en": "Free trial ({{count}} scans)",
+    "path": "common:admin.invite.grantTrial_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz deneme ({{count}} tarama)"
+  },
   "be16d2fdf46c6c0c": {
     "en": "That address is longer than {{max}} characters.",
     "path": "common:sync.email.tooLong",
@@ -14236,6 +14411,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Oturumu kapat ve sil"
+  },
+  "c1b2760a7ba86b11": {
+    "en": "Free AI scans",
+    "path": "common:admin.columns.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz yapay zekâ taramaları"
   },
   "c1bc362852b5de42": {
     "en": "Search is taking a quick break. Try again {{when}}. Your recent and saved foods still work below.",
@@ -15035,6 +15217,13 @@
     "at": "2026-09-14",
     "tr": "Söyle"
   },
+  "ce46f53d5679dbde": {
+    "en": "Too many requests from this network. Try again in {{count}} minute.",
+    "path": "common:signUp.wait_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu ağdan çok fazla istek gönderildi. {{count}} dakika sonra tekrar dene."
+  },
   "ce5d630bdde3764b": {
     "en": "Joining…",
     "path": "common:connectGateway.confirm.joining",
@@ -15595,6 +15784,13 @@
     "at": "2026-09-14",
     "tr": "Davet {{email}} adresine gönderildi"
   },
+  "d49e32e8f3282c35": {
+    "en": "This instance has no AI model right now, so no meal can be built. Try again later.",
+    "path": "common:recipes.errors.noModel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu sunucuda şu anda bir yapay zekâ modeli yok, bu yüzden öğün oluşturulamıyor. Daha sonra tekrar dene."
+  },
   "d4a1bcfa9a0301a0": {
     "en": "This device is signed in as {{signedInAs}}, and the invitation is for {{invitedEmail}}. Sign out first to use it.",
     "path": "common:join.signedInElsewhere.body",
@@ -15826,6 +16022,13 @@
     "at": "2026-09-14",
     "tr": "Fotoğraf çek, makroları al"
   },
+  "d79407d02bfc5e93": {
+    "en": "The request did not go through. Try again in a moment.",
+    "path": "common:signUp.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "İstek tamamlanamadı. Birazdan tekrar dene."
+  },
   "d7d3bd67d705fa84": {
     "en": "The photo could not be loaded.",
     "path": "common:admin.feedback.photoFailed",
@@ -15923,6 +16126,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Ana sayfa"
+  },
+  "d98d18b1073a656c": {
+    "en": "Sign up",
+    "path": "common:chrome.signUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Kayıt ol"
   },
   "d9c282129442ab0f": {
     "en": "Type your email address and we will send you a link to set a new one.",
@@ -16883,6 +17093,13 @@
     "at": "2026-09-14",
     "tr": "son tartı kaydın"
   },
+  "e6e06e11181d2fa6": {
+    "en": "Check your inbox. The link in the email creates your account.",
+    "path": "common:signUp.sent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Gelen kutunu kontrol et. E-postadaki bağlantı hesabını oluşturacak."
+  },
   "e6fd2ffa4da7fb56": {
     "en": "Copied",
     "path": "common:admin.invite.linkCopied",
@@ -17009,6 +17226,13 @@
     "at": "2026-09-14",
     "tr": "Veriler ve yedekleme"
   },
+  "e802639792089b15": {
+    "en": "Type your email address.",
+    "path": "common:signUp.emailRequired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "E-posta adresini yaz."
+  },
   "e80cdbcb0d53bc43": {
     "en": "{{value}} g over",
     "path": "common:diary.budget.gramsOver",
@@ -17099,6 +17323,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "Kazanıldı: {{date}}"
+  },
+  "e956605b6ac05484": {
+    "en": "We cannot take sign-ups from this email domain. Use another address.",
+    "path": "common:signUp.domainBlocked",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu e-posta alan adından kayıt kabul edemiyoruz. Başka bir adres kullan."
   },
   "e95c379d55b71392": {
     "en": "Preferences",
@@ -17288,6 +17519,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu çalışmaya katıl"
+  },
+  "ebe5f901df3ac9fa": {
+    "en": "{{left}} of {{granted}} free AI scans left.",
+    "path": "common:account.allowance.trialScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{left}} / {{granted}} ücretsiz yapay zeka taraması kaldı."
   },
   "ebea9fb6c3b2e941": {
     "en": "Receipt no.: {{receiptId}}",
@@ -17534,6 +17772,13 @@
     "at": "2026-09-14",
     "tr": "Bu tabağın fotoğrafını ve bu kayıttaki değerleri gönderirsin. Günlüğünden başka hiçbir şey bununla birlikte gitmez. Bu sunucunun bir yöneticisi o fotoğrafı açabilir ve bu değerleri okuyabilir."
   },
+  "ef19819678aed6b4": {
+    "en": "Too many requests from this network. Try again in {{count}} minutes.",
+    "path": "common:signUp.wait_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu ağdan çok fazla istek gönderildi. {{count}} dakika sonra tekrar dene."
+  },
   "ef1a2fa7fde44876": {
     "en": "Your past counts: the app rebuilds the record from the diary you already have.",
     "path": "releases:v0_34_0.added.03",
@@ -17575,6 +17820,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu işlem kaydı kilo geçmişinden kaldırır. İstediğin zaman yeniden kaydedebilirsin."
+  },
+  "ef6257ea305efcaa": {
+    "en": "You used your {{count}} free AI scan",
+    "path": "common:scan.errors.titles.trialScansSpent_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın"
   },
   "efa7db3f8a23ccde": {
     "en": "Entry",
@@ -17750,6 +18002,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "tr": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin, bu yüzden önce bir yedekleme dosyası dışa aktar: anahtarlar bu dosyaya dahil edilir."
+  },
+  "f252bc59883a86f6": {
+    "en": "Send the email",
+    "path": "common:signUp.submit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "E-postayı gönder"
+  },
+  "f254cc393e19a4d4": {
+    "en": "Too many requests from this network. Try again later.",
+    "path": "common:signUp.waitLater",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Bu ağdan çok fazla istek gönderildi. Daha sonra tekrar dene."
   },
   "f2580527a96c03f1": {
     "en": "On a specific date",
@@ -18716,6 +18982,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "{{date}} haftası, günlük ortalama"
+  },
+  "fe445f73fef8e4c0": {
+    "en": "Free AI scans",
+    "path": "common:admin.edit.trialScansLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz yapay zekâ taramaları"
   },
   "fe5a275fb4e1d870": {
     "en": "The legal pages come from a folder you mount, and openplate ships none of its own.",

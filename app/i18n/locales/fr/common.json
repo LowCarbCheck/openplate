@@ -397,7 +397,7 @@
     "requestAccessClose": "Fermer",
     "requestAccessTitle": "Cette instance est accessible uniquement sur invitation",
     "signIn": "Connexion",
-    "signUp": "Sign up",
+    "signUp": "S'inscrire",
     "source": "Code source",
     "sourceShort": "Source",
     "status": {
@@ -1229,7 +1229,7 @@
       "taglineManaged": "openplate est un journal alimentaire axé sur les glucides qui conserve une copie chiffrée sur le serveur de l'opérateur : prends une photo d'assiette ou recherche ce que tu as mangé, puis regarde le bilan du jour.",
       "ticks": "Sans compte · S'installe comme une application · Fonctionne hors ligne · L'analyse des photos utilise ta propre clé d'IA",
       "ticksManaged": "Sur invitation uniquement · S'installe comme une application · Fonctionne hors ligne · Estimations par photo incluses",
-      "ticksManagedOpen": "Open sign-up · Installs like an app · Works offline · Photo estimates included"
+      "ticksManagedOpen": "Inscription libre · S'installe comme une appli · Fonctionne hors ligne · Estimations photo incluses"
     },
     "how": {
       "eyebrow": "Chaque jour",
@@ -1392,7 +1392,7 @@
     "shared": "Partagé avec toi · openplate",
     "sharing": "Partage · openplate",
     "signIn": "Connexion · openplate",
-    "signUp": "Sign up · openplate",
+    "signUp": "S'inscrire · openplate",
     "study": "Console d'étude · openplate",
     "sync": "Compte · openplate",
     "trends": "Analyses · openplate",
@@ -1988,7 +1988,7 @@
         "rateLimitMinute": "Tu as envoyé plusieurs requêtes très rapprochées. Réessaie dans une minute.",
         "allowanceSpent": "Tu as épuisé tes estimations par l'IA pour aujourd'hui. Réessaie demain.",
         "allowanceExpired": "Ton quota d'estimations par photo est épuisé. Tout le reste fonctionne toujours dans openplate.",
-        "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
+        "trialScansSpent": "Choisis un forfait pour continuer à utiliser les saisies par IA. La recherche dans la base d'aliments fonctionne toujours.",
         "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
         "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème."
       },
@@ -2005,9 +2005,9 @@
         "aiNotAllowed": "Les estimations par l'IA sont désactivées",
         "accountSuspended": "Ton compte est suspendu",
         "allowanceExpired": "Tes estimations par photo sont épuisées",
-        "trialScansSpent_one": "You used your {{count}} free AI scan",
-        "trialScansSpent_other": "You used your {{count}} free AI scans",
-        "trialScansSpentUncounted": "You used your free AI scans",
+        "trialScansSpent_one": "Tu as utilisé ton {{count}} scan IA gratuit",
+        "trialScansSpent_other": "Tu as utilisé tes {{count}} scans IA gratuits",
+        "trialScansSpentUncounted": "Tu as utilisé tes scans IA gratuits",
         "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui"
       },
       "text": {
@@ -2588,21 +2588,21 @@
     "forgot": "Mot de passe oublié ?"
   },
   "signUp": {
-    "title": "Create an account",
-    "body": "Type your email address. We send you a letter, and the link in it creates your account.",
-    "trial_one": "{{count}} free AI scan, no time limit.",
-    "trial_other": "{{count}} free AI scans, no time limit.",
-    "emailRequired": "Type your email address.",
-    "submit": "Send the letter",
-    "sent": "Check your inbox. The link in the letter creates your account.",
-    "wait_one": "Too many requests from this network. Try again in {{count}} minute.",
-    "wait_other": "Too many requests from this network. Try again in {{count}} minutes.",
-    "waitLater": "Too many requests from this network. Try again later.",
-    "captchaFailed": "The check did not pass. Wait for a new check, then send the letter again.",
-    "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
-    "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
-    "failed": "The request did not go through. Try again in a moment.",
-    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+    "title": "Créer un compte",
+    "body": "Saisis ton adresse e-mail. Nous t'envoyons un e-mail, et le lien qu'il contient crée ton compte.",
+    "trial_one": "{{count}} scan IA gratuit, sans limite de temps.",
+    "trial_other": "{{count}} scans IA gratuits, sans limite de temps.",
+    "emailRequired": "Saisis ton adresse e-mail.",
+    "submit": "Envoyer l'e-mail",
+    "sent": "Vérifie ta boîte de réception. Le lien dans l'e-mail crée ton compte.",
+    "wait_one": "Trop de requêtes depuis ce réseau. Réessaie dans {{count}} minute.",
+    "wait_other": "Trop de requêtes depuis ce réseau. Réessaie dans {{count}} minutes.",
+    "waitLater": "Trop de requêtes depuis ce réseau. Réessaie plus tard.",
+    "captchaFailed": "La vérification a échoué. Attends une nouvelle vérification, puis renvoie l'e-mail.",
+    "captchaUnavailable": "Impossible de charger la vérification. Recharge la page ou désactive ton bloqueur pour cette page.",
+    "domainBlocked": "Nous ne pouvons pas accepter d'inscription avec ce domaine d'e-mail. Utilise une autre adresse.",
+    "failed": "La demande n'a pas abouti. Réessaie dans un instant.",
+    "legal": "Consulte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy> avant de t'inscrire."
   },
   "signOut": {
     "menuItem": "Se déconnecter",
@@ -3010,14 +3010,14 @@
     "haveAccount": "J'ai déjà un compte",
     "managed": {
       "body": "Connecte-toi à ton compte, ou ouvre le lien d'invitation qu'on t'a envoyé.",
-      "bodyOpen": "Sign in to your account, or create one with your email address.",
+      "bodyOpen": "Connecte-toi à ton compte, ou crées-en un avec ton adresse e-mail.",
       "haveInvite": "J'ai un lien d'invitation",
       "pasteTitle": "Colle ton lien d'invitation",
       "pasteLabel": "Lien d'invitation",
       "pasteHint": "Colle le lien entier, exactement comme tu l'as reçu.",
       "pasteContinue": "Continuer",
       "pasteInvalid": "Cela ne ressemble pas à un lien d'invitation. Colle le lien entier, exactement comme tu l'as reçu.",
-      "signUp": "Create an account"
+      "signUp": "Créer un compte"
     },
     "returning": "Cet appareil était connecté à un compte auparavant.",
     "signIn": "Se connecter",
@@ -3063,7 +3063,7 @@
       "none": "Les estimations par photo ne sont pas activées pour ce compte.",
       "askAdmin": "C'est ton administrateur qui configure cela.",
       "today": "Estimations par photo aujourd'hui : {{used}} sur {{limit}}",
-      "trialScans": "{{left}} of {{granted}} free AI scans left.",
+      "trialScans": "{{left}} sur {{granted}} scans IA gratuits restants.",
       "expires": "Les estimations par photo pour ce compte sont actives jusqu'au {{date}}.",
       "expired": "Les estimations par photo pour ce compte ont pris fin le {{date}}.",
       "planLink": "Voir ton forfait"
@@ -3088,7 +3088,7 @@
       "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte, il ne peut donc pas y être lu.",
       "allowanceExpiresAt": "La date de fin de ton quota.",
       "invitesLeft": "Le nombre d'invitations qu'il te reste.",
-      "trialScans": "How many free AI scans you were given, and how many are left."
+      "trialScans": "Le nombre de scans IA gratuits qui t'ont été accordés, et combien il t'en reste."
     },
     "password": {
       "title": "Mot de passe",
@@ -3159,7 +3159,7 @@
       "role": "Rôle",
       "allowance": "Photos par jour",
       "usedToday": "Utilisées aujourd'hui",
-      "trialScans": "Free AI scans",
+      "trialScans": "Scans IA gratuits",
       "standing": "Statut",
       "lastSeen": "Dernière connexion",
       "recentDays": "{{days}} derniers jours",
@@ -3169,7 +3169,7 @@
     },
     "usage": "{{used}} sur {{limit}}",
     "usageNone": "Aucune photo",
-    "trialScansUsed": "{{used}} of {{granted}} used",
+    "trialScansUsed": "{{used}} sur {{granted}} utilisés",
     "lastSeen": {
       "never": "Jamais connecté"
     },
@@ -3205,8 +3205,8 @@
       "cancel": "Annuler",
       "allowanceLabel": "Photos par jour",
       "allowanceHint": "0 désactive la lecture de photos pour cette personne.",
-      "trialScansLabel": "Free AI scans",
-      "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
+      "trialScansLabel": "Scans IA gratuits",
+      "trialScansHint": "Nombre de scans IA gratuits accordés à cette personne. Les scans déjà consommés le restent.",
       "saved": "Enregistré.",
       "failed": "Cette modification n'a pas été appliquée."
     },
@@ -3254,10 +3254,10 @@
       "emailRequired": "Une adresse e-mail est requise.",
       "nameLabel": "Nom",
       "nameHint": "Facultatif. Visible par cette personne, et par toi dans la liste.",
-      "grantLabel": "What the account gets",
-      "grantTrial_one": "Free trial ({{count}} scan)",
-      "grantTrial_other": "Free trial ({{count}} scans)",
-      "grantStanding": "Standing allowance",
+      "grantLabel": "Ce que le compte reçoit",
+      "grantTrial_one": "Essai gratuit ({{count}} scan)",
+      "grantTrial_other": "Essai gratuit ({{count}} scans)",
+      "grantStanding": "Quota permanent",
       "allowanceLabel": "Photos par jour",
       "allowanceHint": "Nombre de photos d'assiette analysables par jour. Mettre 0 pour désactiver.",
       "expiryLabel": "Le lien reste valide pendant",
@@ -3422,8 +3422,8 @@
       "daysLeft_one": "Il te reste {{count}} jour de scans IA dans ton essai.",
       "daysLeft_other": "Il te reste {{count}} jours de scans IA dans ton essai.",
       "lastDay": "Les scans IA de ton essai se terminent aujourd’hui.",
-      "scansLeft_one": "{{count}} free AI scan left.",
-      "scansLeft_other": "{{count}} free AI scans left.",
+      "scansLeft_one": "Il te reste {{count}} scan IA gratuit.",
+      "scansLeft_other": "Il te reste {{count}} scans IA gratuits.",
       "action": "Voir les forfaits"
     },
     "offer": {
@@ -3432,8 +3432,8 @@
     "recap": {
       "meals_one": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
       "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
-      "mealsSoFar_one": "You logged {{count}} meal with AI so far.",
-      "mealsSoFar_other": "You logged {{count}} meals with AI so far."
+      "mealsSoFar_one": "Tu as enregistré {{count}} repas avec l'IA jusqu'ici.",
+      "mealsSoFar_other": "Tu as enregistré {{count}} repas avec l'IA jusqu'ici."
     },
     "selfHost": {
       "title": "Héberge openplate toi-même",
@@ -3534,7 +3534,7 @@
     "errors": {
       "title": "L'opération a échoué",
       "failed": "Impossible de composer un repas. Réessaie dans un instant.",
-      "noModel": "This instance has no AI model right now, so no meal can be built. Try again later.",
+      "noModel": "Cette instance n'a pas de modèle d'IA actuellement, impossible de générer un repas. Réessaie plus tard.",
       "logFailed": "Impossible d'enregistrer cela dans ton journal. Réessaie dans un instant."
     }
   },
