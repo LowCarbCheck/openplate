@@ -1,4 +1,18 @@
 {
+  "v0_44_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Un'istanza con registrazione aperta mostra un modulo di registrazione.",
+      "02": "L'app scala le scansioni IA gratuite durante un periodo di prova.",
+      "03": "La barra laterale e il menu per smartphone contengono una voce per la pagina del piano.",
+      "04": "La scelta del piano inizia con una scheda gratuita per eseguire openplate in autonomia."
+    },
+    "fixed": {
+      "01": "L'intestazione per gli utenti non autenticati si adatta agli smartphone su un'istanza gestita.",
+      "02": "Su un'istanza gestita le ricette vengono proposte all'apertura della schermata.",
+      "03": "Un piano annullato non risulta più pagato e attivo."
+    }
+  },
   "v0_43_0": {
     "date": "2026-09-23",
     "added": {
@@ -27,16 +41,6 @@
     },
     "fixed": {
       "01": "La pagina del piano interroga il server di sincronizzazione prima di aprirsi."
-    }
-  },
-  "v0_41_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Una nuova pagina contiene l'informativa sulla privacy del sito web."
-    },
-    "changed": {
-      "01": "La pagina della versione riconosce le persone ringraziate in una voce del changelog.",
-      "02": "Le pagine legali provengono da una cartella montata da te, e openplate non ne include di sue."
     }
   }
 }

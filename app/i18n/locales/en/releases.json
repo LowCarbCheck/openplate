@@ -1,4 +1,18 @@
 {
+  "v0_44_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "An instance with open sign-up offers a sign-up form.",
+      "02": "The app counts free AI scans down during a scan trial.",
+      "03": "The sidebar and the phone menu carry an entry to the plan page.",
+      "04": "The plan choice starts with a free card for running openplate yourself."
+    },
+    "fixed": {
+      "01": "The signed-out header fits a phone on a managed instance.",
+      "02": "Recipes on a managed instance are proposed when the screen opens.",
+      "03": "A cancelled plan no longer says it is paid and running."
+    }
+  },
   "v0_43_0": {
     "date": "2026-09-23",
     "added": {
@@ -27,16 +41,6 @@
     },
     "fixed": {
       "01": "The plan page asks the sync server before it opens."
-    }
-  },
-  "v0_41_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "A new page carries the website's own privacy text."
-    },
-    "changed": {
-      "01": "The release page credits the people a changelog entry thanks.",
-      "02": "The legal pages come from a folder you mount, and openplate ships none of its own."
     }
   }
 }

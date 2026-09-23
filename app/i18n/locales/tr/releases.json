@@ -1,4 +1,18 @@
 {
+  "v0_44_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Kayıt olmaya açık bir örnek, bir kayıt formu sunar.",
+      "02": "Uygulama, tarama denemesi boyunca ücretsiz yapay zeka taramalarını geriye doğru sayar.",
+      "03": "Kenar çubuğu ve telefon menüsü, plan sayfasına giden bir girdi içerir.",
+      "04": "Plan seçimi, openplate uygulamasını kendi başına çalıştırman için ücretsiz bir kartla başlar."
+    },
+    "fixed": {
+      "01": "Oturum açılmamış üst bilgi, yönetilen bir örnekte telefona sığar.",
+      "02": "Yönetilen bir örnekteki tarifler, ekran açıldığında önerilir.",
+      "03": "İptal edilen bir plan, artık ücretli ve çalışıyor olarak görünmez."
+    }
+  },
   "v0_43_0": {
     "date": "2026-09-23",
     "added": {
@@ -27,16 +41,6 @@
     },
     "fixed": {
       "01": "Plan sayfası açılmadan önce eşitleme sunucusuna danışır."
-    }
-  },
-  "v0_41_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Yeni bir sayfa, web sitesinin kendi gizlilik metnini taşır."
-    },
-    "changed": {
-      "01": "Sürüm sayfası, bir değişiklik günlüğü girdisinin teşekkür ettiği kişilere atıfta bulunur.",
-      "02": "Yasal sayfalar bağladığın bir klasörden gelir, openplate kendisinden hiçbir şey içermez."
     }
   }
 }

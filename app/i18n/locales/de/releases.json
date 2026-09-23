@@ -1,4 +1,18 @@
 {
+  "v0_44_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Eine Instanz mit offener Registrierung bietet ein Registrierungsformular an.",
+      "02": "Die App zählt kostenlose KI-Scans während einer Testphase herunter.",
+      "03": "Die Seitenleiste und das Smartphone-Menü enthalten einen Eintrag zur Plan-Seite.",
+      "04": "Die Planauswahl beginnt mit einer kostenlosen Karte für den Selbstbetrieb von openplate."
+    },
+    "fixed": {
+      "01": "Die Kopfzeile im abgemeldeten Zustand passt auf einer verwalteten Instanz auf ein Smartphone.",
+      "02": "Rezepte auf einer verwalteten Instanz werden vorgeschlagen, sobald sich der Bildschirm öffnet.",
+      "03": "Ein gekündigter Plan wird nicht mehr als bezahlt und aktiv angezeigt."
+    }
+  },
   "v0_43_0": {
     "date": "2026-09-23",
     "added": {
@@ -27,16 +41,6 @@
     },
     "fixed": {
       "01": "Die Tarifseite fragt den Sync-Server ab, bevor sie sich öffnet."
-    }
-  },
-  "v0_41_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Eine neue Seite enthält die eigene Datenschutzerklärung der Website."
-    },
-    "changed": {
-      "01": "Die Release-Seite nennt die Personen, denen ein Changelog-Eintrag dankt.",
-      "02": "Die rechtlichen Seiten stammen aus einem Ordner, den du einbindest, und openplate liefert keine eigenen mit."
     }
   }
 }

@@ -2589,6 +2589,13 @@
     "at": "2026-09-20",
     "it": "Le intestazioni legali in tedesco si adattano a uno smartphone."
   },
+  "21259745eb0c036d": {
+    "en": "The app counts free AI scans down during a scan trial.",
+    "path": "releases:v0_44_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "L'app scala le scansioni IA gratuite durante un periodo di prova."
+  },
   "2127e9d9a8840dcf": {
     "en": "Cancel",
     "path": "common:add.custom.cancel",
@@ -4457,6 +4464,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{count}} uovo"
+  },
+  "3de80bb2ca1c9e4d": {
+    "en": "A cancelled plan no longer says it is paid and running.",
+    "path": "releases:v0_44_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Un piano annullato non risulta più pagato e attivo."
   },
   "3dee7193c728fab0": {
     "en": "Date cannot be in the future",
@@ -6985,6 +6999,13 @@
     "at": "2026-09-14",
     "it": "Segnalato il {{date}}"
   },
+  "5eeb0cd7f4dcf577": {
+    "en": "The sidebar and the phone menu carry an entry to the plan page.",
+    "path": "releases:v0_44_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "La barra laterale e il menu per smartphone contengono una voce per la pagina del piano."
+  },
   "5ef1d9c304b0c534": {
     "en": "Loading your day…",
     "path": "common:dashboard.loading",
@@ -8426,6 +8447,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "it": "Potrebbe essere pesce o frutti di mare crudi, evita in gravidanza"
+  },
+  "72848a754db09184": {
+    "en": "Recipes on a managed instance are proposed when the screen opens.",
+    "path": "releases:v0_44_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Su un'istanza gestita le ricette vengono proposte all'apertura della schermata."
   },
   "72898abcffa62e15": {
     "en": "No meal",
@@ -10239,6 +10267,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Caricamento in corso"
+  },
+  "8926a6cf68da7311": {
+    "en": "The signed-out header fits a phone on a managed instance.",
+    "path": "releases:v0_44_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "L'intestazione per gli utenti non autenticati si adatta agli smartphone su un'istanza gestita."
   },
   "8934e1746167c253": {
     "en": "Enter your name.",
@@ -14321,6 +14356,13 @@
     "at": "2026-09-14",
     "it": "Non c'è nulla a questo indirizzo."
   },
+  "c00a15e46943b39d": {
+    "en": "An instance with open sign-up offers a sign-up form.",
+    "path": "releases:v0_44_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "Un'istanza con registrazione aperta mostra un modulo di registrazione."
+  },
   "c00efb052c47e509": {
     "en": "Hours of fasting",
     "path": "common:fasting.plan.customLabel",
@@ -14383,6 +14425,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il tuo obiettivo: "
+  },
+  "c1327833abde9bdd": {
+    "en": "The plan choice starts with a free card for running openplate yourself.",
+    "path": "releases:v0_44_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "it": "La scelta del piano inizia con una scheda gratuita per eseguire openplate in autonomia."
   },
   "c16db4eb6410fc22": {
     "en": "{{reached}} of {{finished}} reached their target",

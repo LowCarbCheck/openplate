@@ -1,4 +1,18 @@
 {
+  "v0_44_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Une instance avec inscription ouverte propose un formulaire d'inscription.",
+      "02": "L'application décompte les analyses IA gratuites pendant une période d'essai d'analyse.",
+      "03": "La barre latérale et le menu pour téléphone comportent une entrée vers la page des forfaits.",
+      "04": "Le choix du forfait commence par une carte gratuite pour faire tourner openplate toi-même."
+    },
+    "fixed": {
+      "01": "L'en-tête déconnecté s'adapte à un téléphone sur une instance infogérée.",
+      "02": "Les recettes sur une instance infogérée sont proposées dès l'ouverture de l'écran.",
+      "03": "Un forfait résilié n'indique plus qu'il est payé et actif."
+    }
+  },
   "v0_43_0": {
     "date": "2026-09-23",
     "added": {
@@ -27,16 +41,6 @@
     },
     "fixed": {
       "01": "La page des forfaits interroge le serveur de synchronisation avant de s'ouvrir."
-    }
-  },
-  "v0_41_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Une nouvelle page contient le texte de confidentialité propre au site web."
-    },
-    "changed": {
-      "01": "La page de version crédite les personnes remerciées dans une entrée du journal des modifications.",
-      "02": "Les pages légales proviennent d'un dossier que tu montes, et openplate n'en fournit aucune par défaut."
     }
   }
 }
