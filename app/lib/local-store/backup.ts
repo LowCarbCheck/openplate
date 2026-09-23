@@ -89,7 +89,7 @@ const macrosSchema = z.object({
 const personalFoodSchema = z.object({
   id: z.string(),
   name: z.string(),
-  // Added v25 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
   nameTranslations: storedNameTranslationsSchema,
   brand: z.string().nullable(),
   macrosPer100g: macrosSchema,
@@ -137,7 +137,7 @@ const personalFoodSchema = z.object({
 const foodLogSchema = z.object({
   id: z.string(),
   name: z.string(),
-  // Added v25 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
   nameTranslations: storedNameTranslationsSchema,
   quantityGrams: z.number(),
   macros: macrosSchema,
@@ -387,7 +387,7 @@ const fastingSettingsSchema = z.object({
 // doc comment gives: a saved meal is a template, not a pinned-to-a-day log.
 const savedMealItemSchema = z.object({
   name: z.string(),
-  // Added v25 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
   nameTranslations: storedNameTranslationsSchema,
   quantityGrams: z.number(),
   macros: macrosSchema,
@@ -434,7 +434,7 @@ const savedMealSchema = z.object({
 const pantryItemSchema = z.object({
   id: z.string(),
   name: z.string(),
-  // Added v25 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
+  // Added within v24 (M251/03), lenient like `flags`: see `storedNameTranslationsSchema`.
   nameTranslations: storedNameTranslationsSchema,
   amount: z.number().nullable(),
   unit: z.enum(PANTRY_UNITS).nullable(),
@@ -835,11 +835,12 @@ export function migrateEnvelopeForward(envelope: RawBackupEnvelope): BackupEnvel
   // goal numbers on every read, so writing a guess here would freeze a
   // derivation that is meant to follow the numbers.
 
-  // Nor is there one for v24 -> v25 (a food's name in every language, M251/03):
-  // it put ONE OPTIONAL field, `nameTranslations`, on four EXISTING entities,
-  // so a v24 envelope lacks the key everywhere and every schema accepts it
-  // as-is. Nothing is back-filled: a name saved before v25 stays in the one
-  // language it arrived in, which is a milestone non-goal, not a gap.
+  // Nor is there one for `nameTranslations` (a food's name in every
+  // language, M251/03): it is ONE OPTIONAL field on four EXISTING entities,
+  // added within v24 with no bump (the main-goal precedent, see `schema.ts`),
+  // so an older envelope lacks the key everywhere and every schema accepts it
+  // as-is. Nothing is back-filled: an older name stays in the one language it
+  // arrived in, which is a milestone non-goal, not a gap.
 
   const result = snapshotSchema.safeParse(migratedData);
   if (!result.success) {

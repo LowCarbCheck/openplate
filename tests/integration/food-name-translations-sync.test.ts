@@ -320,7 +320,7 @@ test('a food logged on the tablet lands in the phone store with its names, throu
   assert.equal(displayFoodName(stored, 'tr'), 'Elma');
 });
 
-test('control: a row saved before v25 travels with no names and reads as its own name everywhere', async () => {
+test('control: a row saved before M251 travels with no names and reads as its own name everywhere', async () => {
   const { phone, tablet } = twoDevices();
   const { nameTranslations: _dropped, ...legacy } = translatedLog('log-3', { foodId: null });
   await putLocalFoodLog(legacy);

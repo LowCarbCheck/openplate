@@ -4,9 +4,9 @@
  * ── What is stored ───────────────────────────────────────────────────────
  *
  * Every entity that names a food keeps `name`, the name the person confirmed,
- * and since v25 an OPTIONAL `nameTranslations`: the same food in each app
+ * and since M251 an OPTIONAL `nameTranslations`: the same food in each app
  * language an AI answer gave (`FoodTranslations`, spec 02). A row saved before
- * v25, a hand-typed food and a food whose name the person edited have no
+ * M251, a hand-typed food and a food whose name the person edited have no
  * `nameTranslations` at all, and they render `name` in every language.
  *
  * ── One reader ───────────────────────────────────────────────────────────

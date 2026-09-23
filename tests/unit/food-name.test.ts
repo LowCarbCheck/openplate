@@ -8,7 +8,7 @@
  *      the REAL rendered form, the real schema and the real row builders, and
  *      a hand-edited name drops them from both rows.
  *   3. Every path that copies a logged food copies its names.
- *   4. The field survives a backup round trip, a v24 envelope imports with it
+ *   4. The field survives a backup round trip, a row without it imports with it
  *      absent, and the pantry keeps it for an untouched row only.
  */
 import { describe, it } from 'node:test';
@@ -283,16 +283,16 @@ function envelopeWith(schemaVersion: number, foodLog: FiledFoodLog) {
 }
 
 describe('the stored field', () => {
-  it('is at schema v25', () => {
-    assert.equal(SCHEMA_VERSION, 25);
+  it('rides v24 with no bump, the main-goal precedent', () => {
+    assert.equal(SCHEMA_VERSION, 24);
   });
 
   it('survives a backup round trip, an unknown language dropped', () => {
-    const migrated = migrateEnvelopeForward(envelopeWith(25, { ...translatedLog(), nameTranslations: { ...NAMES, nl: 'Appel' } }));
+    const migrated = migrateEnvelopeForward(envelopeWith(24, { ...translatedLog(), nameTranslations: { ...NAMES, nl: 'Appel' } }));
     assert.deepEqual(migrated.data.foodLogs[0]?.nameTranslations, NAMES);
   });
 
-  it('control: a v24 row without the key imports with it absent, and renders its name', () => {
+  it('control: a row without the key imports with it absent, and renders its name', () => {
     const { nameTranslations: _dropped, ...legacy } = translatedLog();
     const migrated = migrateEnvelopeForward(envelopeWith(24, legacy));
     const row = migrated.data.foodLogs[0];

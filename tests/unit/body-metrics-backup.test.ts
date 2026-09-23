@@ -81,8 +81,8 @@ describe('schema version', () => {
   // What it guards is that a bump is never silent ,
   // the version the envelope stamps is the version an older build refuses, so
   // a change here has to be a change someone chose.
-  it('is 25, bumped past the v8 body-metrics bump by everything through the food name translations', () => {
-    assert.equal(SCHEMA_VERSION, 25);
+  it('is 24, bumped past the v8 body-metrics bump by everything through the allergens', () => {
+    assert.equal(SCHEMA_VERSION, 24);
   });
 });
 

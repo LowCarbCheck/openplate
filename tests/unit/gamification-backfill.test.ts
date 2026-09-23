@@ -361,9 +361,9 @@ describe('the backfill over a real store', () => {
     assert.equal(first.marks.length, 11, 'ten logged days and one weigh-in');
     assert.deepEqual(stillFires(await listLocalAwards({ store: device })), [], 'a stored award would fire a note');
     // The stamp is the CURRENT schema version, not the one the backfill was
-    // written for, so this pin moves with every bump (v25 is the food name
-    // translations, M251/03) while `GAMIFICATION_BACKFILL_SCHEMA_VERSION` stays at 23.
-    assert.equal(await readLocalSchemaVersion({ store: device }), 25, 'the store was not stamped as migrated');
+    // written for, so this pin moves with every bump (v24 is the allergen
+    // list, M219/02) while `GAMIFICATION_BACKFILL_SCHEMA_VERSION` stays at 23.
+    assert.equal(await readLocalSchemaVersion({ store: device }), 24, 'the store was not stamped as migrated');
 
     const afterFirst = JSON.stringify(device.getTables());
     const second = await backfillGamification({ store: device, today: TODAY });
