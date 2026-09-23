@@ -3131,7 +3131,9 @@
       "none": "Tu as utilisé toutes tes invitations.",
       "send": "Envoyer l'invitation",
       "sent": "Si cette adresse peut recevoir une invitation, le message est en route. Nous répondons toujours la même chose, afin que personne ne puisse utiliser cette fonction pour savoir qui a déjà un compte.",
-      "failed": "L'invitation n'a pas pu être envoyée. Réessaie dans un instant."
+      "failed": "L'invitation n'a pas pu être envoyée. Réessaie dans un instant.",
+      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+      "needsPlanLink": "See plans"
     }
   },
   "admin": {

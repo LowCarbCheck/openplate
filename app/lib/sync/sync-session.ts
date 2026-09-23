@@ -124,6 +124,12 @@ export interface SyncSessionSnapshot {
      */
     invitesLeft: number | null;
     /**
+     * Whether invitations wait for a paid plan (M253/11). `true` only when the
+     * service said so; absent, `false` and "not read yet" all draw the card
+     * `invitesLeft` alone decides. OPTIONAL, like `trialScans` below.
+     */
+    invitesNeedAPlan?: boolean;
+    /**
      * The account's free AI scans, or `null`/absent for none (M253/05).
      *
      * `null` IS ALSO "not read yet" and "a core older than the field", and all
@@ -324,6 +330,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       // put `undefined` where every reader tests for `null`.
       allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
       invitesLeft: knownAccount?.invitesLeft ?? null,
+      invitesNeedAPlan: knownAccount?.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(knownAccount?.trialScans),
       createdAt: knownAccount?.createdAt ?? null,
     },

@@ -101,6 +101,16 @@ export interface AccountViewWire {
    */
   invitesLeft: number | null;
   /**
+   * `true` when `invitesLeft` is `0` only because this account is a scan trial
+   * nobody has paid for yet (M253/11, `PROTOCOL.md` §5.15 and §5.21): the
+   * route answers `403 invites-need-a-plan` until a future
+   * `allowanceExpiresAt` is written. ABSENT on a core older than the field,
+   * which reads as `false`: `invitesLeft: 0` is still true there.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT, like `invitesLeft`.
+   */
+  invitesNeedAPlan?: boolean;
+  /**
    * The account's free AI scans, or `null` for an account with no scan trial
    * (M253/03, `PROTOCOL.md` §5.15). ABSENT on a core older than the field,
    * which means the same thing.

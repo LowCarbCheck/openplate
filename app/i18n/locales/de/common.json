@@ -3131,7 +3131,9 @@
       "none": "Du hast alle deine Einladungen aufgebraucht.",
       "send": "Einladung senden",
       "sent": "Wenn an diese Adresse eine Einladung gesendet werden kann, ist sie unterwegs. Wir antworten jedes Mal auf dieselbe Weise, damit niemand herausfinden kann, wer bereits registriert ist.",
-      "failed": "Die Einladung konnte nicht gesendet werden. Versuch es gleich noch einmal."
+      "failed": "Die Einladung konnte nicht gesendet werden. Versuch es gleich noch einmal.",
+      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+      "needsPlanLink": "See plans"
     }
   },
   "admin": {

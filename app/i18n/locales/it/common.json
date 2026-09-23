@@ -3131,7 +3131,9 @@
       "none": "Hai esaurito tutti i tuoi inviti.",
       "send": "Invia invito",
       "sent": "Se quell'indirizzo può essere invitato, l'invito è in arrivo. Rispondiamo sempre nello stesso modo, così nessuno può usare questa funzione per scoprire chi è già registrato.",
-      "failed": "Impossibile inviare l'invito. Riprova tra poco."
+      "failed": "Impossibile inviare l'invito. Riprova tra poco.",
+      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+      "needsPlanLink": "See plans"
     }
   },
   "admin": {

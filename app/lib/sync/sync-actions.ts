@@ -969,6 +969,7 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
       aiUsedToday: account.aiUsedToday,
       allowanceExpiresAt: account.allowanceExpiresAt ?? null,
       invitesLeft: account.invitesLeft ?? null,
+      invitesNeedAPlan: account.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(account.trialScans),
       createdAt: account.createdAt,
     },
@@ -1009,6 +1010,7 @@ export async function refreshSyncAccount(): Promise<void> {
         // account sends lowers the count by one.
         allowanceExpiresAt: account.allowanceExpiresAt ?? null,
         invitesLeft: account.invitesLeft ?? null,
+        invitesNeedAPlan: account.invitesNeedAPlan === true,
         // THE SCAN COUNT MOVES ON THE SERVER TOO (M253/05), with every scan.
         trialScans: decodeTrialScans(account.trialScans),
         createdAt: account.createdAt,

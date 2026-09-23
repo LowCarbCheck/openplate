@@ -3131,7 +3131,9 @@
       "none": "You have used all of your invitations.",
       "send": "Send invitation",
       "sent": "If that address can be invited, the invitation is on its way. We answer the same way every time, so nobody can use this to find out who is already here.",
-      "failed": "The invitation could not be sent. Try again in a moment."
+      "failed": "The invitation could not be sent. Try again in a moment.",
+      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+      "needsPlanLink": "See plans"
     }
   },
   "admin": {

@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Added
 
 - **The header says when the free AI scans are used.** On a scan trial the header counted down to one scan left and then showed nothing, so a person learned the trial was over only when the next scan was refused. At zero the same line now says "Free AI scans used." with the "See plans" button, on every page but the plan page, and it can be closed for the day like the countdown. It sits in the header's status slot, so it moves nothing on the page; a subscriber and an account with a standing allowance never see it. `tests/e2e/scans-used-line.spec.ts` checks it.
+- **A free trial is told that invitations open with a plan.** A scan-trial account read "Invitations you have left: 2", and every invitation it sent created another free trial. The core now refuses invitations from an unpaid trial (`403 invites-need-a-plan`) and says so on the account view with `invitesNeedAPlan`. The account page reads that field and shows a sentence with a link to the plans instead of the count and the address field. A paid member keeps the invite form, and an older core without the field keeps today's card. `tests/e2e/invites-need-a-plan.spec.ts` checks all three.
 
 ### Fixed
 

@@ -3131,7 +3131,9 @@
       "none": "Tüm davetiyelerini kullandın.",
       "send": "Davet gönder",
       "sent": "Bu adres davet edilebiliyorsa davetiye yola çıktı. Kimlerin zaten burada olduğunu kimse bu yolla öğrenemesin diye her seferinde aynı yanıtı veririz.",
-      "failed": "Davet gönderilemedi. Birazdan tekrar dene."
+      "failed": "Davet gönderilemedi. Birazdan tekrar dene.",
+      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+      "needsPlanLink": "See plans"
     }
   },
   "admin": {

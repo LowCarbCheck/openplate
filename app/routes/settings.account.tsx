@@ -192,7 +192,11 @@ export default function SettingsAccount() {
               about you", which is an administrator and an instance with the
               feature off, and it is also the unread moment after a reload. */}
               {canSendMemberInvites({ memberInvites, invitesLeft: account.invitesLeft }) && (
-                <InviteCard invitesLeft={account.invitesLeft ?? 0} />
+                <InviteCard
+                  invitesLeft={account.invitesLeft ?? 0}
+                  needsAPlan={account.invitesNeedAPlan === true}
+                  plansAvailable={plansAvailable}
+                />
               )}
               <SettingsSection label={t('account.devices.title')} description={t('account.devices.body')}>
                 <SyncStatus onSyncNow={() => void syncNow().catch(() => undefined)} />
@@ -428,7 +432,45 @@ function AllowanceCard({
  * `refreshSyncAccount` runs after a submit because the count moved on the
  * server, and this screen is the only one that draws it.
  */
-function InviteCard({ invitesLeft }: { invitesLeft: number }) {
+function InviteCard({
+  invitesLeft,
+  needsAPlan,
+  plansAvailable,
+}: {
+  invitesLeft: number;
+  /**
+   * The account is a scan trial nobody has paid for, so the service refuses
+   * every invitation until a plan is bought (M253/11, owner decision). The card
+   * then says why and where the plans are, instead of "all used", and offers
+   * no field: a person must not type an address into a form that cannot send.
+   */
+  needsAPlan: boolean;
+  /** Whether this instance sells a plan, so the sentence has a page to link to. */
+  plansAvailable: boolean;
+}) {
+  if (needsAPlan) return <InviteNeedsAPlanCard plansAvailable={plansAvailable} />;
+  return <InviteFormCard invitesLeft={invitesLeft} />;
+}
+
+/** The invite card of a free trial: one sentence and the door to the plans. */
+function InviteNeedsAPlanCard({ plansAvailable }: { plansAvailable: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <SettingsSection label={t('account.invites.title')} description={t('account.invites.body')}>
+      <p className="text-sm text-muted-foreground">{t('account.invites.needsPlan')}</p>
+      {plansAvailable && (
+        <p className="text-sm">
+          <Link to={PLAN_PAGE_HREF} className="text-primary underline-offset-4 hover:underline">
+            {t('account.invites.needsPlanLink')}
+          </Link>
+        </p>
+      )}
+    </SettingsSection>
+  );
+}
+
+/** The invite card with its address field, for an account the service lets invite. */
+function InviteFormCard({ invitesLeft }: { invitesLeft: number }) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isBusy, setIsBusy] = useState(false);

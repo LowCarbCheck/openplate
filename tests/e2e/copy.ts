@@ -220,7 +220,15 @@ const catalogSchema = z.object({
   }),
   signOut: z.object({ confirm: z.string() }),
   join: z.object({ working: z.string(), invitedAs: z.string() }),
-  account: z.object({ invites: z.object({ title: z.string(), left: z.string() }) }),
+  account: z.object({
+    invites: z.object({
+      title: z.string(),
+      left: z.string(),
+      none: z.string(),
+      needsPlan: z.string(),
+      needsPlanLink: z.string(),
+    }),
+  }),
 });
 
 /** Every string this tier reads, in one language, validated against that language's shipped bundle. */
