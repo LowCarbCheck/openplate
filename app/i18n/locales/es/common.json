@@ -3425,7 +3425,8 @@
       "lastDay": "Los escaneos con IA de tu prueba terminan hoy.",
       "scansLeft_one": "Te queda {{count}} escaneo gratis con IA.",
       "scansLeft_other": "Te quedan {{count}} escaneos gratis con IA.",
-      "action": "Ver planes"
+      "action": "Ver planes",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Planes desde {{price}} al mes."

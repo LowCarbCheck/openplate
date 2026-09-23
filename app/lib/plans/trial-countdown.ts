@@ -47,10 +47,14 @@ export interface CountdownStorage {
  * What the countdown says.
  *
  * - `days`: how many days of AI scans are left, today included. `1` is the last day.
- * - `scans`: how many free AI scans are left (M253/05). Above zero, because a
- *   spent trial is `trial-ended` and draws no countdown.
+ * - `scans`: how many free AI scans are left (M253/05). Above zero.
+ * - `scans-used`: the free AI scans are all spent (M253/11, owner decision).
+ *   A spent scan trial is `trial-ended`, and before this the header went from
+ *   "1 left" to silence; the person learned it only from the next refusal. A
+ *   spent DAY trial still draws nothing: the owner asked about scans.
  */
-export type TrialCountdown = { basis: 'days'; daysLeft: number } | { basis: 'scans'; scansLeft: number };
+export type TrialCountdown =
+  { basis: 'days'; daysLeft: number } | { basis: 'scans'; scansLeft: number } | { basis: 'scans-used' };
 
 /**
  * The calendar days of AI scans left, today included, or `null` when the
@@ -98,7 +102,7 @@ export function closeCountdownForDay({ storage, dayKey }: { storage: CountdownSt
 /**
  * Whether the countdown shows, and what it says.
  *
- * `null` for everybody who is not in a trial (the standing already answers
+ * `null` for everybody who is not in a trial or at the end of a scan trial (the standing already answers
  * `no-plans` for an instance that sells nothing and for every fact not yet
  * read), for a person who closed it today, and on the plan page itself, where
  * a link to the page somebody is reading is a link to nowhere.
@@ -119,9 +123,11 @@ export function resolveTrialCountdown({
   closedDay: string | null;
   pathname: string;
 }): TrialCountdown | null {
-  if (standing.kind !== 'trial') return null;
+  const isScansUsed = standing.kind === 'trial-ended' && standing.basis === 'scans';
+  if (standing.kind !== 'trial' && !isScansUsed) return null;
   if (closedDay === localDateToDayKey(now)) return null;
   if (isPlanPage(pathname)) return null;
+  if (standing.kind !== 'trial') return { basis: 'scans-used' };
   switch (standing.basis) {
     case 'scans':
       return { basis: 'scans', scansLeft: standing.scansLeft };

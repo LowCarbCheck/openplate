@@ -3425,7 +3425,8 @@
       "lastDay": "Your trial's AI scans end today.",
       "scansLeft_one": "{{count}} free AI scan left.",
       "scansLeft_other": "{{count}} free AI scans left.",
-      "action": "See plans"
+      "action": "See plans",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Plans from {{price}} a month."

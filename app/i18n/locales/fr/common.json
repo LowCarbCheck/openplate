@@ -3425,7 +3425,8 @@
       "lastDay": "Les scans IA de ton essai se terminent aujourd’hui.",
       "scansLeft_one": "Il te reste {{count}} scan IA gratuit.",
       "scansLeft_other": "Il te reste {{count}} scans IA gratuits.",
-      "action": "Voir les forfaits"
+      "action": "Voir les forfaits",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Forfaits à partir de {{price}} par mois."

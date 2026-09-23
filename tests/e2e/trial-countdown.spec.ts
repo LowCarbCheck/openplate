@@ -209,7 +209,7 @@ test('on a scan trial the countdown counts free scans, not days (M253/05)', asyn
   await expect(headerStatus(page)).not.toContainText(fill(EN.plan.countdown.daysLeft_other, { count: '7' }));
 });
 
-test('a spent scan trial shows no countdown (M253/05)', async ({ page }) => {
+test('a spent scan trial says the free scans are used instead of counting (M253/11)', async ({ page }) => {
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null });
   await routeAccountAllowance(page, {
     dailyAiLimit: TRIAL_DAILY_LIMIT,
@@ -220,8 +220,9 @@ test('a spent scan trial shows no countdown (M253/05)', async ({ page }) => {
   await signIn(page);
   await planRead;
 
-  // THE ANCHOR is the header title, drawn once the plan read has landed; the
-  // control is the test above, where the same query finds the line.
-  await expect(page.locator('header h1')).toBeVisible();
-  await expect(countdownAction(page)).toHaveCount(0);
+  // THE OWNER'S DECISION (M253/11): at zero the line stays, says the scans
+  // are used and keeps the plan button. It used to draw nothing.
+  await expect(countdownAction(page)).toBeVisible({ timeout: 10_000 });
+  await expect(headerStatus(page)).toContainText(EN.plan.countdown.scansUsed);
+  await expect(headerStatus(page)).not.toContainText(fill(EN.plan.countdown.scansLeft_other, { count: '0' }));
 });

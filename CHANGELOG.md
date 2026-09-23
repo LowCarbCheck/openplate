@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The header says when the free AI scans are used.** On a scan trial the header counted down to one scan left and then showed nothing, so a person learned the trial was over only when the next scan was refused. At zero the same line now says "Free AI scans used." with the "See plans" button, on every page but the plan page, and it can be closed for the day like the countdown. It sits in the header's status slot, so it moves nothing on the page; a subscriber and an account with a standing allowance never see it. `tests/e2e/scans-used-line.spec.ts` checks it.
+
 ### Fixed
 
 - **The scan screen states the account's free AI scans on a scan trial.** After ten trial scans the screen said "AI usage this month: 2 scans · cost unknown for your model": the line counts a log kept in this browser, which misses every scan made on another device or before the browser's storage was cleared, and it priced a scan the instance pays for as if the person had set up the model. On a managed instance during a scan trial the line now reads the account's own count, for example "10 of 10 free AI scans used", and follows each scan. A paid account and a person's own AI key keep the per-device line. `tests/e2e/scan-usage-line.spec.ts` checks both.

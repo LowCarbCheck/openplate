@@ -188,8 +188,15 @@ describe('a scan trial countdown (M253/05)', () => {
     );
   });
 
-  it('shows nothing once the free scans are used', () => {
+  it('says the free scans are used once they are, on any page but the plan page (M253/11)', () => {
     const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedAt: null };
-    assert.equal(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: null, pathname: '/diary' }), null);
+    assert.deepEqual(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: null, pathname: '/diary' }), {
+      basis: 'scans-used',
+    });
+    assert.equal(
+      resolveTrialCountdown({ standing: spent, now: NOW, closedDay: null, pathname: '/settings/plan' }),
+      null,
+    );
+    assert.equal(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: TODAY, pathname: '/diary' }), null);
   });
 });

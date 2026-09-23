@@ -146,6 +146,7 @@ const catalogSchema = z.object({
       lastDay: z.string(),
       action: z.string(),
       scansLeft_other: z.string(),
+      scansUsed: z.string(),
     }),
     offer: z.object({ from: z.string() }),
     recap: z.object({ meals_one: z.string(), mealsSoFar_one: z.string() }),

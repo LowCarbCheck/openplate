@@ -3425,7 +3425,8 @@
       "lastDay": "Deneme sürendeki yapay zeka taramaları bugün bitiyor.",
       "scansLeft_one": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "scansLeft_other": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
-      "action": "Planları gör"
+      "action": "Planları gör",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Ayda {{price}}'den başlayan planlar."

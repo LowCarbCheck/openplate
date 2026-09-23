@@ -200,7 +200,12 @@ test('spent free scans turn into the same offer, headed with the number given (M
   expect(movedBetween(topsBefore, await readTops(page)), 'the price moved the scan screen').toEqual([]);
   expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift while the price arrived').toBe(0);
   await offerCard(page).scrollIntoViewIfNeeded();
-  await expect.poll(() => funnel(events)).toEqual(['offer-seen:ai-limit']);
+  // The header's "free AI scans used" line (M253/11) is an offer of its own
+  // and counts as `offer-seen:countdown` once per load; this card is the
+  // `ai-limit` one.
+  await expect
+    .poll(() => funnel(events).filter((event) => event !== 'offer-seen:countdown'))
+    .toEqual(['offer-seen:ai-limit']);
 });
 
 test('the control: a refusal no plan answers draws no offer on the same instance (M253/05)', async ({ page }) => {

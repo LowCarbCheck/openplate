@@ -3425,7 +3425,8 @@
       "lastDay": "Le scansioni IA del tuo periodo di prova terminano oggi.",
       "scansLeft_one": "{{count}} scansione IA gratuita rimasta.",
       "scansLeft_other": "{{count}} scansioni IA gratuite rimaste.",
-      "action": "Vedi i piani"
+      "action": "Vedi i piani",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Piani da {{price}} al mese."

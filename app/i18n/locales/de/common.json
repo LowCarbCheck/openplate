@@ -3425,7 +3425,8 @@
       "lastDay": "Die KI-Scans deiner Testphase enden heute.",
       "scansLeft_one": "Noch {{count}} kostenloser KI-Scan übrig.",
       "scansLeft_other": "Noch {{count}} kostenlose KI-Scans übrig.",
-      "action": "Tarife ansehen"
+      "action": "Tarife ansehen",
+      "scansUsed": "Free AI scans used."
     },
     "offer": {
       "from": "Tarife ab {{price}} im Monat."

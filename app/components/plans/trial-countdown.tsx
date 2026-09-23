@@ -153,6 +153,8 @@ function countdownText(countdown: Countdown, t: Translate): string {
   switch (countdown.basis) {
     case 'scans':
       return t('plan.countdown.scansLeft', { count: countdown.scansLeft });
+    case 'scans-used':
+      return t('plan.countdown.scansUsed');
     case 'days':
       // THE LAST DAY IS ITS OWN SENTENCE. "1 day left" on the day it ends
       // reads as "tomorrow too", which is not true.
@@ -167,6 +169,9 @@ function isNearTheEnd(countdown: Countdown): boolean {
   switch (countdown.basis) {
     case 'scans':
       return countdown.scansLeft <= RECAP_NEAR_END_SCANS;
+    // The trial is over, and the line says so; a recap belongs to the count.
+    case 'scans-used':
+      return false;
     case 'days':
       return countdown.daysLeft <= RECAP_NEAR_END_DAYS;
   }
