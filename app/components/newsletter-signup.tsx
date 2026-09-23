@@ -28,6 +28,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Check, Loader2 } from 'lucide-react';
 
 import { Link } from '#app/components/link';
+import { useHasLegalPages } from '#app/hooks/use-public-config';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -109,6 +110,7 @@ function useTurnstile(siteKey: string, language: string, enabled: boolean) {
 export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const { t, i18n } = useTranslation();
   const fetcher = useFetcher<NewsletterOutcome>();
+  const hasLegalPages = useHasLegalPages();
   const [consented, setConsented] = useState(false);
   const language = i18n.resolvedLanguage ?? i18n.language;
   // The challenge is fetched on the visitor's FIRST INTERACTION with this form,
@@ -207,19 +209,23 @@ export function NewsletterSignup({ turnstileSiteKey }: { turnstileSiteKey: strin
         </Label>
       </div>
 
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        <Trans
-          i18nKey="landing.newsletter.privacy"
-          components={{
-            privacy: (
-              <Link to="/privacy" className="underline underline-offset-4 transition-colors hover:text-foreground">
-                {/* Replaced by the linked run from the catalog entry. */}
-                privacy
-              </Link>
-            ),
-          }}
-        />
-      </p>
+      {/* The privacy line only where the mounted content folder has a
+          privacy page to link to (M246); otherwise the link would 404. */}
+      {hasLegalPages && (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          <Trans
+            i18nKey="landing.newsletter.privacy"
+            components={{
+              privacy: (
+                <Link to="/privacy" className="underline underline-offset-4 transition-colors hover:text-foreground">
+                  {/* Replaced by the linked run from the catalog entry. */}
+                  privacy
+                </Link>
+              ),
+            }}
+          />
+        </p>
+      )}
 
       {/* The challenge itself. It is the reason this section can exist at all
           on a service whose data-protection paperwork is still open.

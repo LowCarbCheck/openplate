@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Una página nueva incluye el texto de privacidad propio del sitio web."
+    },
+    "changed": {
+      "01": "La página de la versión menciona a las personas a las que agradece una entrada del registro de cambios.",
+      "02": "Las páginas legales provienen de una carpeta que montas, y openplate no incluye ninguna propia."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "Comidas guardadas indica ahora de dónde procede la siguiente.",
       "07": "Describir sitúa ahora el cuadro de mensaje en la parte inferior de la página.",
       "08": "Notificaciones muestra ahora el mensaje de mañana incluso si no puedes activarlas."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate ahora incluye una página de cancelación y una página de desistimiento que no requieren inicio de sesión."
-    },
-    "changed": {
-      "01": "Las tarjetas en Análisis, el panel y Ayuno ahora se leen en un orden claro.",
-      "02": "El nombre openplate ahora aparece en letra fina, con la primera mitad en verde azulado y centrado respecto al símbolo."
     }
   }
 }

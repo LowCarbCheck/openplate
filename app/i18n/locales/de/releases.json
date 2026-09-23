@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Eine neue Seite enthält die eigene Datenschutzerklärung der Website."
+    },
+    "changed": {
+      "01": "Die Release-Seite nennt die Personen, denen ein Changelog-Eintrag dankt.",
+      "02": "Die rechtlichen Seiten stammen aus einem Ordner, den du einbindest, und openplate liefert keine eigenen mit."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "Gespeicherte Mahlzeiten zeigt dir jetzt, woher die nächste Mahlzeit stammt.",
       "07": "Beschreiben platziert das Eingabefeld jetzt am unteren Rand der Seite.",
       "08": "Benachrichtigungen zeigt die Nachricht von morgen jetzt auch dann, wenn du Benachrichtigungen nicht aktivieren kannst."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate enthält jetzt eine Kündigungsseite und eine Widerrufsseite, die keine Anmeldung erfordern."
-    },
-    "changed": {
-      "01": "Karten unter Einblicke, der Übersicht und Fasten haben jetzt eine klare Reihenfolge.",
-      "02": "Der Name openplate ist jetzt dünn gesetzt, mit der ersten Hälfte in Blaugrün und auf die Bildmarke zentriert."
     }
   }
 }

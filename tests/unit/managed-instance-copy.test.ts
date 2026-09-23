@@ -29,10 +29,6 @@ import { NoAiIntakeNotice } from '../../app/components/add/no-ai-intake-notice';
 import { resolveAiIntakeDoor, type AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import enCommon from '../../app/i18n/locales/en/common.json';
 
-function readLegal(name: string): string {
-  return readFileSync(fileURLToPath(new URL(`../../app/routes/legal/${name}`, import.meta.url)), 'utf8');
-}
-
 /** The notice `/add` and `/describe` draw, rendered for one door. */
 function renderNoAiNotice(door: AiIntakeDoor): string {
   return renderToStaticMarkup(
@@ -143,54 +139,6 @@ describe('/settings/ai on a managed instance', () => {
     assert.ok(thrown instanceof Response, 'the guard throws a redirect Response');
     assert.equal(thrown.status, 302);
     assert.equal(thrown.headers.get('location'), '/settings');
-  });
-});
-
-/**
- * The legal pages, wired the same way (M212 spec 06).
- *
- * WHAT IS PINNED IS THE QUESTION, not the sentence. `legal-pages.test.ts`
- * renders both documents and checks that the managed one has stopped making
- * the claim; this checks that the branch which chooses it names the rule it
- * depends on, so the next paragraph that should ask the same question can be
- * found by grepping for it.
- */
-describe('the legal pages ask which fact each paragraph depends on', () => {
-  for (const [file, managedKey] of [
-    ['terms.tsx', 'terms.s3BodyManaged'],
-    ['terms.tsx', 'terms.s4HeadingManaged'],
-    ['privacy.tsx', 'privacy.s1Item3Managed'],
-    ['privacy.tsx', 'privacy.s2Body2Managed'],
-    ['privacy.tsx', 'privacy.s4HeadingManaged'],
-  ]) {
-    it(`${file} chooses ${managedKey} by asking where the photo estimates come from`, () => {
-      assertChosenByPolicy(readLegal(file), 'aiComesFromTheInstance', managedKey);
-    });
-  }
-
-  it('privacy.tsx chooses privacy.s3OutroManaged by asking who holds the diary', () => {
-    // A DIFFERENT QUESTION on purpose: the second exception this paragraph
-    // admits is the recovery escrow, which is about the copy on the server and
-    // not about who reads a photograph.
-    assertChosenByPolicy(readLegal('privacy.tsx'), 'serverHoldsTheDiary', 'privacy.s3OutroManaged');
-  });
-
-  it('draws the two new paragraphs from a call site rather than leaving them in the catalog', () => {
-    // The defect this whole file exists for: a `*Managed` twin that is never
-    // rendered passes key parity and leaves the false sentence on the screen.
-    assert.match(readLegal('terms.tsx'), /aiComesFromTheInstance && <P className="mt-4">\{t\('terms\.s4AllowanceManaged'\)\}/);
-    assert.match(readLegal('privacy.tsx'), /memberInvites && <P className="mt-4">\{t\('privacy\.s3InvitesManaged'\)\}/);
-  });
-
-  it('reads memberInvites off the instance rather than inventing a policy question for it', () => {
-    // `InstancePolicy` states that the mode is its only input, and two managed
-    // instances answer this differently. It comes off `/health`, like the
-    // feedback retention window beside it.
-    // ONE READ, TWO QUESTIONS since M213 spec 07 put the plans fact beside it:
-    // the descriptor is read into a variable and asked twice, so the two
-    // paragraphs cannot come from two different reads of `/health`.
-    assert.match(readLegal('privacy.tsx'), /const instance = useServerInstance\(\);/);
-    assert.match(readLegal('privacy.tsx'), /instance\?\.memberInvites \?\? false/);
   });
 });
 

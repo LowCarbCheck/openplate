@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
+import { useHasLegalPages } from '#app/hooks/use-public-config';
 
 /** Which sentence a gate-exempt page shows a stranger. */
 export type StrangerNoteVariant = 'device' | 'needs-sign-in';
@@ -52,11 +53,19 @@ export function strangerNoteVariantForPath(pathname: string): StrangerNoteVarian
  */
 export function StrangerNote({ variant }: { variant: StrangerNoteVariant }) {
   const { t } = useTranslation();
+  const hasLegalPages = useHasLegalPages();
+  // The two legal links only where the mounted content folder has the pages
+  // (M246): with no `CONTENT_DIR` they would both be 404s.
+  const legalLinks = hasLegalPages ?
+      [
+        { to: '/imprint', label: t('chrome.imprint') },
+        { to: '/privacy', label: t('chrome.privacy') },
+      ]
+    : [];
   const links = [
     { to: '/', label: t('strangerNote.home') },
     { to: '/sign-in', label: t('chrome.signIn') },
-    { to: '/imprint', label: t('chrome.imprint') },
-    { to: '/privacy', label: t('chrome.privacy') },
+    ...legalLinks,
   ];
 
   return (

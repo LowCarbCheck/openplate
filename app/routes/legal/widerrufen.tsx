@@ -6,12 +6,18 @@
  * § 356a BGB, in force since 2026-06-19 (Directive (EU) 2023/2673), requires a
  * function labelled exactly `Vertrag widerrufen` and a confirmation button
  * labelled exactly `Widerruf bestätigen`, continuously available, prominently
- * placed, with an immediate confirmation on a durable medium. Both labels are
- * pinned byte for byte in `app/i18n/locales/de/legal.json` — see
- * `declarations.withdraw.title` and `declarations.withdraw.submit` — and are
- * NOT wordsmith's to rephrase, in either language bundle. `withdrawal.tsx`'s
- * Gestaltungshinweis 3 names this page as the "online withdrawal function"
- * the model text now discloses.
+ * placed, with an immediate confirmation on a durable medium. The title is the
+ * `title` of the mounted `widerrufen.md` (M246, `docs/content.md`), and the
+ * submit label is `declarations.withdraw.submit` in
+ * each locale's `common.json`. Neither is wordsmith's to rephrase. The
+ * `/withdrawal` page names this one as the online withdrawal function.
+ *
+ * ── THE PROSE IS MOUNTED, THE MECHANISM IS HERE ──
+ *
+ * The lead paragraph and the `unavailable` text come from
+ * `<CONTENT_DIR>/<lang>/widerrufen.md`, read in the loader. The form, its
+ * labels, its validation and the POST stay in this file. With no content
+ * folder the route answers 404, like every content page.
  *
  * ── NO REASON FIELD ────────────────────────────────────────────────────────
  *
@@ -22,34 +28,41 @@
  *
  * ── PUBLIC, UNAUTHENTICATED, ALWAYS REGISTERED, CLIENT-ONLY ───────────────
  *
- * Same shape as `/kuendigung` beside it — no login, no gate on `plans`, no
- * loader or action: the declaration goes straight from this browser to
+ * Same shape as `/kuendigung` beside it: no login, no gate on `plans`, a
+ * loader for the prose only and no action. The declaration goes straight from this browser to
  * `openplate-core`'s own origin (`SYNC_SERVER_URL`). `CredentialSubmitButton`
  * is reused for the pre-hydration-GET guard its own doc states generically,
  * not for its name — see `kuendigung.tsx`'s header for the full argument.
  */
 import { useState } from 'react';
-import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { z } from 'zod';
 
+import type { Route } from './+types/widerrufen';
+import { ContentArticle, ContentBlocks } from '#app/components/content-article';
 import { CredentialSubmitButton } from '#app/components/credential-submit-button';
-import { FieldError } from '#app/components/field-error';
-import { H1, P } from '#app/components/typography';
+import { DeclarationSubmitError, ReservedFieldError, type DeclarationFailure } from '#app/components/declaration-form-parts';
 import PublicWrapper from '#app/components/public-wrapper';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
-import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
+import { contentPageTitle } from '#app/lib/content/content-page-title';
+import { sectionBlocks } from '#app/lib/content/markdown';
 import { createComponentLogger } from '#app/lib/logger';
 import { checkoutLocaleFor } from '#app/lib/plans/plans-door';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import '#app/i18n/i18n';
 
-export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLanguage(matches), 'meta.widerrufen') }];
+/** SERVER: the page's prose, from the mounted content folder. */
+export async function loader({ request }: Route.LoaderArgs) {
+  return { page: await loadContentPageOrThrow({ request, slug: 'widerrufen' }) };
+}
+
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
 
 const log = createComponentLogger('widerrufen');
 
@@ -125,12 +138,14 @@ async function submitWithdrawDeclaration(input: {
   return { status: 'unreachable' };
 }
 
-export default function Widerrufen() {
-  const { t, i18n } = useTranslation('legal');
+export default function Widerrufen({ loaderData }: Route.ComponentProps) {
+  const { page } = loaderData;
+  const unavailable = sectionBlocks(page, 'unavailable');
+  const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<DeclarationFailure | null>(null);
 
   const [form, fields] = useForm({
     id: 'widerrufen-form',
@@ -151,7 +166,7 @@ export default function Widerrufen() {
   async function submitForm(value: WithdrawDeclarationValues): Promise<void> {
     if (serverUrl === null) return;
     setIsSubmitting(true);
-    setSubmitError(null);
+    setFailure(null);
     const email = canonicalizeEmail(value.email);
     const outcome = await submitWithdrawDeclaration({
       serverUrl,
@@ -174,34 +189,19 @@ export default function Widerrufen() {
       });
       return;
     }
-    if (outcome.status === 'invalid') {
-      setSubmitError(t('declarations.errors.invalid'));
-      return;
-    }
-    if (outcome.status === 'rate-limited') {
-      setSubmitError(t('declarations.errors.rateLimited'));
-      return;
-    }
-    setSubmitError(t('declarations.errors.unreachable'));
+    setFailure(outcome.status);
   }
 
   return (
     <PublicWrapper>
-      <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
-        <H1 variant="default" className="mb-8">
-          {t('declarations.withdraw.title')}
-        </H1>
-        <P variant="lead" className="mb-8">
-          {t('declarations.withdraw.intro')}
-        </P>
-
+      <ContentArticle title={page.title} updated={page.updated} language={page.language} blocks={page.body}>
         {serverUrl === null ?
-          <P>{t('declarations.errors.unreachable')}</P>
-        : <form {...getFormProps(form)} className="not-prose space-y-6">
+          <ContentBlocks blocks={unavailable} />
+        : <form {...getFormProps(form)} className="not-prose mt-8 space-y-6">
             <div className="space-y-2">
               <Label htmlFor={fields.name.id}>{t('declarations.withdraw.nameLabel')}</Label>
               <Input {...getInputProps(fields.name, { type: 'text' })} autoComplete="name" />
-              <FieldError id={fields.name.errorId} errors={fields.name.errors} />
+              <ReservedFieldError id={fields.name.errorId} errors={fields.name.errors} />
             </div>
 
             <div className="space-y-2">
@@ -212,7 +212,7 @@ export default function Widerrufen() {
                 spellCheck={false}
                 autoCapitalize="none"
               />
-              <FieldError id={fields.email.errorId} errors={fields.email.errors} />
+              <ReservedFieldError id={fields.email.errorId} errors={fields.email.errors} />
             </div>
 
             <div className="space-y-2">
@@ -225,14 +225,14 @@ export default function Widerrufen() {
               <Input {...getInputProps(fields.requestedDate, { type: 'date' })} />
             </div>
 
-            {submitError !== null && <P className="text-sm text-red-600 dark:text-red-400">{submitError}</P>}
-
             <CredentialSubmitButton disabled={isSubmitting} className="h-11 w-full sm:w-auto">
               {t('declarations.withdraw.submit')}
             </CredentialSubmitButton>
+
+            <DeclarationSubmitError failure={failure} unavailable={unavailable} />
           </form>
         }
-      </article>
+      </ContentArticle>
     </PublicWrapper>
   );
 }

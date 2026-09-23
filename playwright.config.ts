@@ -57,6 +57,13 @@ import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_MATOMO_URL, E2E_SYNC_SE
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
 
+/**
+ * The content folder this tier serves its legal pages from (M246). NEUTRAL
+ * FIXTURE TEXT, never the real legal prose: this repository is public, and the
+ * real files live in a private one. It follows the same file contract.
+ */
+const CONTENT_DIR = fileURLToPath(new URL('./tests/fixtures/content', import.meta.url));
+
 /** The font configuration this tier renders in. See that file for why it exists. */
 const FONTS_CONF = fileURLToPath(new URL('./tests/e2e/fonts.conf', import.meta.url));
 
@@ -116,6 +123,10 @@ export default defineConfig({
     command:
       `cross-env NODE_ENV=production PORT=${E2E_APP_PORT} HOST=127.0.0.1 ` +
       `APP_URL=${E2E_APP_URL} SYNC_SERVER_URL=${E2E_SYNC_SERVER_URL} ` +
+      // THE LEGAL PAGES COME FROM A FIXTURE FOLDER (see `CONTENT_DIR` above).
+      // Unset, every content route would 404 and the footer would lose its
+      // five legal links, which several specs here count.
+      `CONTENT_DIR=${CONTENT_DIR} ` +
       // THE FOOD DATABASE IS A FAKE IN THIS TIER (`tests/e2e/fake-food-db.ts`).
       // Left unset, the production server asks the real lowcarbcheck.org, so a
       // smoke tier would depend on somebody else's uptime and assert against

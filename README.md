@@ -116,7 +116,7 @@ database, through its own server: names only, never a photo or a diary entry. Se
 | [**Sync**](./docs/sync.md) | Enabling sync across devices, the encryption, and the operator's escrowed recovery key |
 | [**Topologies**](./docs/topologies.md) | What to run, from a browser-only install up to a self-hosted household |
 | [**Family setup**](./docs/family-setup.md) | Sharing one AI bill across a household, with a spend limit and revocation per person |
-| [**Legal review**](./docs/legal-review.md) | Status of the German legal text, machine-translated and awaiting a lawyer |
+| [**Content pages**](./docs/content.md) | The legal pages as markdown files you mount (`CONTENT_DIR`): the folder, the file format, what is refused, and the named sections of the two statutory button pages |
 | [**Podman**](./docs/podman.md) | Running these compose files and containers under Podman instead of Docker: the `podman compose` vs. `podman-compose` distinction, and the rootless notes |
 
 Repository-level specifications live at the root: [`.adr/`](.adr/) (architecture decision

@@ -28,7 +28,14 @@ and is bought on the next run. Every other entry still resolves. A key added to
 
 ## Two voices
 
-`common.json` addresses the reader as "du"; `legal.json` as "Sie". The script
-buys the two in separate requests so one register never leaks into the other.
-Both share this one memory: an English sentence that appears in both catalogs
-is one entry, in the voice of whichever bundle bought it first.
+`common.json` addresses the reader as "du". There used to be a second bundle,
+`legal.json`, in "Sie", bought in separate requests so one register never
+leaked into the other. It left the repository in M246: the legal pages are
+markdown files an operator mounts (`docs/content.md`).
+
+ONE EXCEPTION IN `common.json`. The chrome of the two statutory forms
+(`declarations.*`, `content.lastUpdated`) moved there from `legal.json` with
+its hand-written "Sie" translations, because it sits on pages whose text is in
+"Sie". A run buys a changed English string in the `common` voice, so after an
+English edit under `declarations`, check the German answer for "du" and fix it
+here by hand.

@@ -1369,7 +1369,6 @@
     "fasting": "Fasten · openplate",
     "fastingSettings": "Fasten-Einstellungen · openplate",
     "foods": "Deine Lebensmittel · openplate",
-    "imprint": "Impressum · openplate",
     "join": "Beitreten · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
@@ -1384,7 +1383,6 @@
     "offline": "Du bist offline · openplate",
     "onboarding": "Willkommen bei openplate",
     "preferences": "Darstellung & Sprache · openplate",
-    "privacy": "Datenschutzerklärung · openplate",
     "recover": "Tagebuch wiederherstellen · openplate",
     "research": "Studien · openplate",
     "scan": "Teller scannen · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Anmelden · openplate",
     "study": "Studien-Konsole · openplate",
     "sync": "Konto · openplate",
-    "terms": "Nutzungsbedingungen · openplate",
     "trends": "Einblicke · openplate",
     "welcome": "Willkommen · openplate",
     "forgot": "Passwort vergessen",
@@ -1403,16 +1400,11 @@
     "admin": "Administration",
     "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
     "plan": "Dein Tarif · openplate",
-    "withdrawal": "Widerrufsbelehrung · openplate",
     "notifications": "Benachrichtigungen · openplate",
     "pantry": "Vorratskammer · openplate",
     "recipes": "Rezepte · openplate",
     "awards": "Deine Übersicht · openplate",
-    "whatsNew": "Was neu ist · openplate",
-    "kuendigung": "Vertrag kündigen · openplate",
-    "kuendigungBestaetigt": "Kündigung bestätigt · openplate",
-    "widerrufen": "Vertrag widerrufen · openplate",
-    "widerrufenBestaetigt": "Widerruf bestätigt · openplate"
+    "whatsNew": "Was neu ist · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -3611,6 +3603,47 @@
       "calories": "Kalorien",
       "netCarbs": "Netto-Kohlenhydrate",
       "protein": "Protein"
+    }
+  },
+  "content": {
+    "lastUpdated": "Stand: {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Art der Kündigung",
+      "terminationTypeOrdentlich": "Ordentliche Kündigung",
+      "terminationTypeAusserordentlich": "Außerordentliche Kündigung",
+      "reasonLabel": "Grund der außerordentlichen Kündigung",
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail-Adresse",
+      "contractReferenceLabel": "Kundennummer oder Vertrag (optional)",
+      "timingLabel": "Zeitpunkt der Kündigung",
+      "timingEarliest": "Zum nächstmöglichen Zeitpunkt",
+      "timingOnDate": "Zu einem bestimmten Datum",
+      "requestedDateLabel": "Gewünschtes Datum (optional)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail-Adresse",
+      "contractReferenceLabel": "Kundennummer oder Vertrag (optional)",
+      "requestedDateLabel": "Datum des Vertragsschlusses (optional)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "Beleg-Nr.: {{receiptId}}",
+      "kindCancel": "Art: Kündigung",
+      "kindWithdraw": "Art: Widerruf",
+      "addressLabel": "Gesendet an: {{email}}",
+      "receivedAtLabel": "Eingegangen am: {{instant}}",
+      "print": "Bestätigung drucken"
+    },
+    "errors": {
+      "nameRequired": "Bitte geben Sie Ihren Namen an.",
+      "emailInvalid": "Das sieht nicht wie eine E-Mail-Adresse aus.",
+      "reasonRequired": "Bitte nennen Sie den Grund für die außerordentliche Kündigung.",
+      "invalid": "Ein Feld konnte nicht verarbeitet werden. Bitte prüfen Sie Ihre Eingaben und versuchen Sie es erneut.",
+      "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es in ein paar Minuten erneut."
     }
   }
 }

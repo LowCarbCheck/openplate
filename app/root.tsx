@@ -13,6 +13,7 @@ import {
 } from 'react-router';
 import type { Route } from './+types/root';
 import { getToast } from '#app/utils/toast.server';
+import { hasLegalPages } from '#app/lib/content/content-route.server';
 import stylesheet from './app.css?url';
 import { combineHeaders } from '#app/utils/misc';
 import { useToast } from '#app/hooks/use-toast';
@@ -92,10 +93,17 @@ export async function loader({ request }: Route.LoaderArgs) {
     analytics: CONFIG.analytics,
   };
 
+  // Whether this instance shows legal pages at all (M246): the imprint exists
+  // in the mounted content folder. One stat, no parse. Every surface that
+  // links to a legal page reads this through `useHasLegalPages()`, so an
+  // instance with no `CONTENT_DIR` draws no link to a page that 404s.
+  const hasLegalPagesHere = await hasLegalPages({ request });
+
   return {
     toast,
     language,
     publicConfig,
+    hasLegalPages: hasLegalPagesHere,
     headers: combineHeaders(toastHeaders),
   };
 }

@@ -14,7 +14,9 @@
  * browser tier's question: `lcc-lineage-foundation.spec.ts` reads the painted face of `ı İ ş ğ ẞ`
  * off a real page through the devtools protocol, and is where a range that over-promises would show.
  *
- * WHAT IS EXCLUDED. The legal texts (`legal.json`) are long-form reading and are set in Inter.
+ * NOTHING IS EXCLUDED. The legal texts used to be a `legal.json` bundle set in Inter and left out
+ * here; since M246 they are markdown files an operator mounts, and no bundle in this tree is long-form
+ * reading any more. The statutory forms' chrome that stayed is in `common.json` and is audited.
  *
  * THE KNOWN GAPS ARE A FROZEN SET. `KNOWN_GAPS` lists the characters no range covers, each with the
  * reason it is allowed. It fails in both directions, like the colour literals in
@@ -39,9 +41,6 @@ import { z } from 'zod';
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const LOCALES_DIRECTORY = join(ROOT, 'app/i18n/locales');
 const FONT_CSS = join(ROOT, 'node_modules/@fontsource-variable/victor-mono/index.css');
-
-/** The bundle that is long-form reading and is left out. */
-const EXCLUDED_BUNDLE = 'legal.json';
 
 /** How many languages ship. A seventh must be added to the audit on purpose. */
 const LOCALE_COUNT = 6;
@@ -200,7 +199,7 @@ interface Bundle {
 }
 
 /**
- * Reads every locale bundle except the legal texts.
+ * Reads every locale bundle.
  *
  * @returns one entry per `app/i18n/locales/<locale>/<file>.json`.
  */
@@ -209,7 +208,7 @@ function readBundles(): Bundle[] {
   for (const locale of readdirSync(LOCALES_DIRECTORY).toSorted()) {
     const directory = join(LOCALES_DIRECTORY, locale);
     for (const file of readdirSync(directory).toSorted()) {
-      if (!file.endsWith('.json') || file === EXCLUDED_BUNDLE) continue;
+      if (!file.endsWith('.json')) continue;
       const strings: string[] = [];
       collectText(jsonSchema.parse(JSON.parse(readFileSync(join(directory, file), 'utf8'))), strings);
       bundles.push({ locale, file, text: strings.join('\n') });
@@ -323,13 +322,9 @@ describe('the font glyph audit reads the real font and the real bundles', () => 
     }
   });
 
-  it('reads all six locales and leaves the legal texts out', () => {
+  it('reads all six locales', () => {
     assert.equal(new Set(BUNDLES.map((bundle) => bundle.locale)).size, LOCALE_COUNT);
     assert.ok(BUNDLES.length >= LOCALE_COUNT * 2, 'each locale has at least a common and a releases bundle');
-    assert.ok(
-      BUNDLES.every((bundle) => bundle.file !== EXCLUDED_BUNDLE),
-      'the legal bundles must be excluded',
-    );
   });
 
   it('finds the characters the brief names, so the scan is not reading nothing', () => {

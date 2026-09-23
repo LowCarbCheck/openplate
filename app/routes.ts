@@ -117,16 +117,25 @@ export default [
   // =============================================================================
   layout('routes/_public.tsx', { id: '_public' }, [
     index('routes/index.tsx'),
+
+    // THE CONTENT PAGES (M246). Every route from here to `/widerrufen/bestaetigt`
+    // reads its text from the mounted content folder, `<CONTENT_DIR>/<lang>/<slug>.md`,
+    // in its loader (`#app/lib/content`, `docs/content.md`). None of the prose is in
+    // this repository. With `CONTENT_DIR` unset each one answers 404 and no link
+    // to them is drawn; a file that breaks the format answers 503.
     route('/terms', 'routes/legal/terms.tsx'),
     route('/privacy', 'routes/legal/privacy.tsx'),
+    // The website's own privacy text (openplate.de), served here so the site
+    // itself carries no legal prose (M246 spec 05 links to it).
+    route('/privacy/website', 'routes/legal/privacy-website.tsx'),
     // Section 5 DDG provider identification. Public and unauthenticated on
     // purpose, an imprint behind a login does not discharge the duty.
     route('/imprint', 'routes/legal/imprint.tsx'),
 
     // The statutory withdrawal instruction and model withdrawal form (Anlage 1
     // and Anlage 2 zu Artikel 246a § 1 Absatz 2 EGBGB). Always registered, not
-    // gated on whether this deployment sells anything: section 4a of the terms
-    // links here in every copy a reader may have saved.
+    // gated on whether this deployment sells anything: the terms link here in
+    // every copy a reader may have saved. Only a missing file makes it a 404.
     route('/withdrawal', 'routes/legal/withdrawal.tsx'),
 
     // The § 312k BGB cancellation button, `Verträge hier kündigen` (M214/09).
@@ -138,7 +147,7 @@ export default [
 
     // The § 356a BGB electronic withdrawal function, `Vertrag widerrufen`
     // (M214/09). Same no-gate rule as `/kuendigung` above, and it is the
-    // function `withdrawal.tsx`'s Gestaltungshinweis 3 now names.
+    // function the `/withdrawal` page names.
     route('/widerrufen', 'routes/legal/widerrufen.tsx'),
     route('/widerrufen/bestaetigt', 'routes/legal/widerrufen-bestaetigt.tsx'),
 

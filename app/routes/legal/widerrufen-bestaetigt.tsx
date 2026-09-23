@@ -15,21 +15,27 @@
  * the reader back to the form rather than fabricating a receipt.
  */
 import { useEffect } from 'react';
-import type { MetaFunction } from 'react-router';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import { H1, P } from '#app/components/typography';
+import type { Route } from './+types/widerrufen-bestaetigt';
+import { ContentArticle, ContentBlocks } from '#app/components/content-article';
+import { P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import { Button } from '#app/components/ui/button';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
-import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
+import { contentPageTitle } from '#app/lib/content/content-page-title';
+import { sectionBlocks } from '#app/lib/content/markdown';
 import '#app/i18n/i18n';
 
-export const meta: MetaFunction = ({ matches }) => [
-  { title: metaTitle(metaLanguage(matches), 'meta.widerrufenBestaetigt') },
-];
+/** SERVER: the receipt's title and its mail notice, from the mounted content folder. */
+export async function loader({ request }: Route.LoaderArgs) {
+  return { page: await loadContentPageOrThrow({ request, slug: 'widerrufen-bestaetigt' }) };
+}
+
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
 
 /** What `/widerrufen` hands over in router state, parsed rather than trusted — it is untyped at the router boundary. */
 const confirmationStateSchema = z.object({
@@ -38,8 +44,9 @@ const confirmationStateSchema = z.object({
   email: z.string().min(1),
 });
 
-export default function WiderrufenBestaetigt() {
-  const { t, i18n } = useTranslation('legal');
+export default function WiderrufenBestaetigt({ loaderData }: Route.ComponentProps) {
+  const { page } = loaderData;
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useAppNavigate();
   const parsed = confirmationStateSchema.safeParse(location.state);
@@ -59,19 +66,22 @@ export default function WiderrufenBestaetigt() {
 
   return (
     <PublicWrapper>
-      <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
-        <H1 variant="default" className="mb-8">
-          {t('declarations.confirmed.withdrawTitle')}
-        </H1>
+      <ContentArticle
+        title={page.title}
+        updated={page.updated}
+        language={page.language}
+        blocks={page.body}
+        hasUpdatedLine={false}
+      >
         <P>{t('declarations.confirmed.receiptIdLabel', { receiptId: parsed.data.receiptId })}</P>
         <P>{t('declarations.confirmed.kindWithdraw')}</P>
         <P>{t('declarations.confirmed.addressLabel', { email: parsed.data.email })}</P>
         <P>{t('declarations.confirmed.receivedAtLabel', { instant: receivedAtLabel })}</P>
-        <P>{t('declarations.confirmed.mailNotice')}</P>
+        <ContentBlocks blocks={sectionBlocks(page, 'mail-notice')} />
         <Button type="button" onClick={() => window.print()} className="not-prose">
           {t('declarations.confirmed.print')}
         </Button>
-      </article>
+      </ContentArticle>
     </PublicWrapper>
   );
 }

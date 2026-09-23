@@ -1369,7 +1369,6 @@
     "fasting": "Fasting · openplate",
     "fastingSettings": "Fasting settings · openplate",
     "foods": "Your foods · openplate",
-    "imprint": "Imprint · openplate",
     "join": "Join · openplate",
     "joinStudy": "Join a study · openplate",
     "landing": "openplate, a food tracker that stays on your device",
@@ -1384,7 +1383,6 @@
     "offline": "You're offline · openplate",
     "onboarding": "Welcome to openplate",
     "preferences": "Preferences · openplate",
-    "privacy": "Privacy policy · openplate",
     "recover": "Recover your diary · openplate",
     "research": "Research studies · openplate",
     "scan": "Scan your plate · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Sign in · openplate",
     "study": "Study console · openplate",
     "sync": "Account · openplate",
-    "terms": "Terms of service · openplate",
     "trends": "Insights · openplate",
     "welcome": "Welcome · openplate",
     "forgot": "Forgot password",
@@ -1403,16 +1400,11 @@
     "admin": "Administration",
     "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server.",
     "plan": "Your plan · openplate",
-    "withdrawal": "Right of withdrawal · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Pantry · openplate",
     "recipes": "Recipes · openplate",
     "awards": "Your record · openplate",
-    "whatsNew": "What's new · openplate",
-    "kuendigung": "Cancel a contract · openplate",
-    "kuendigungBestaetigt": "Cancellation confirmed · openplate",
-    "widerrufen": "Withdraw from a contract · openplate",
-    "widerrufenBestaetigt": "Withdrawal confirmed · openplate"
+    "whatsNew": "What's new · openplate"
   },
   "nav": {
     "add": "Add",
@@ -3611,6 +3603,47 @@
       "calories": "Calories",
       "netCarbs": "Net carbs",
       "protein": "Protein"
+    }
+  },
+  "content": {
+    "lastUpdated": "Last updated: {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Type of cancellation",
+      "terminationTypeOrdentlich": "Ordinary cancellation",
+      "terminationTypeAusserordentlich": "Extraordinary cancellation",
+      "reasonLabel": "Reason for the extraordinary cancellation",
+      "nameLabel": "Name",
+      "emailLabel": "Email address",
+      "contractReferenceLabel": "Customer number or contract (optional)",
+      "timingLabel": "When the cancellation should take effect",
+      "timingEarliest": "At the earliest possible date",
+      "timingOnDate": "On a specific date",
+      "requestedDateLabel": "Requested date (optional)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Name",
+      "emailLabel": "Email address",
+      "contractReferenceLabel": "Customer number or contract (optional)",
+      "requestedDateLabel": "Date the contract was made (optional)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "Receipt no.: {{receiptId}}",
+      "kindCancel": "Type: Cancellation",
+      "kindWithdraw": "Type: Withdrawal",
+      "addressLabel": "Sent to: {{email}}",
+      "receivedAtLabel": "Received at: {{instant}}",
+      "print": "Print confirmation"
+    },
+    "errors": {
+      "nameRequired": "Enter your name.",
+      "emailInvalid": "That does not look like an email address.",
+      "reasonRequired": "Name the reason for the extraordinary cancellation.",
+      "invalid": "One of the fields could not be processed. Check your entries and try again.",
+      "rateLimited": "Too many requests. Try again in a few minutes."
     }
   }
 }

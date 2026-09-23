@@ -17,16 +17,9 @@ import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { I18nextProvider } from 'react-i18next';
 
-import i18n from '../../app/i18n/i18n';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import deCommon from '../../app/i18n/locales/de/common.json';
-import enLegal from '../../app/i18n/locales/en/legal.json';
-import deLegal from '../../app/i18n/locales/de/legal.json';
-import { PrivacyContent } from '../../app/routes/legal/privacy';
 import {
   FEEDBACK_CONSENT_WORDING_VERSION,
   feedbackConsentCopyKeys,
@@ -41,7 +34,7 @@ const CONSENT_MODULE = fileURLToPath(new URL('../../app/lib/feedback/feedback-co
 /**
  * A window no constant in this repository has ever held.
  *
- * DELIBERATELY NOT 30. The number in the consent step and in the policy is the
+ * DELIBERATELY NOT 30. The number in the consent step is the
  * one the SYNC SERVER advertised on its `/health` handshake, and this app is
  * not entitled to one of its own. A test that fed 30 in would keep passing on
  * the day somebody restored a local default, because the copy would read the
@@ -61,8 +54,8 @@ const catalogSchema: z.ZodType<Catalog> = z.lazy(() => z.record(z.string(), z.un
 /**
  * A catalog reduced to dotted key paths, e.g. `entry.report.consent.agree`.
  *
- * A named contract rather than a bare `Record<string, string>`, matching
- * `legal-locales.test.ts`: what matters is that every bundle compared here is
+ * A named contract rather than a bare `Record<string, string>`: what matters
+ * is that every bundle compared here is
  * the same KIND of thing, and naming it says so.
  */
 interface FlatBundle {
@@ -82,8 +75,6 @@ function flatten(catalog: Catalog, prefix = ''): FlatBundle {
 
 const EN_COMMON = flatten(catalogSchema.parse(enCommon));
 const DE_COMMON = flatten(catalogSchema.parse(deCommon));
-const EN_LEGAL = flatten(catalogSchema.parse(enLegal));
-const DE_LEGAL = flatten(catalogSchema.parse(deLegal));
 
 function lookup(bundle: FlatBundle, path: string): string {
   const value = bundle[path];
@@ -204,97 +195,6 @@ describe('the consent step is separate from the button', () => {
 
   it('offers the decline as a first-class control, not a dismissal', () => {
     assert.match(source, /<AlertDialogCancel>\{consent\.decline\}<\/AlertDialogCancel>/);
-  });
-});
-
-/**
- * Markup, or a bundle string, reduced to plain text.
- *
- * A rendered claim is then compared against the SHIPPED string it came from,
- * instead of against a phrase typed into this file. Wordsmith owns the German
- * and rephrases it; an assertion that reads the bundle cannot go stale on a
- * rephrase, and it still fails when the claim stops being made at all.
- */
-function plainText(value: string): string {
-  return value
-    .replaceAll(/<[^>]+>/g, '')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#x27;', "'")
-    .replaceAll('&lt;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&amp;', '&');
-}
-
-/**
- * Words a hardcoded retention length would stand next to, in either language.
- *
- * WORDSMITH OWNS THIS WORDING, so this is an accepted SET rather than one
- * phrase: what is being checked is that no paragraph states a LENGTH of its
- * own, and the set grows when wordsmith reaches for a unit that is not in it.
- * A bare `\d` cannot be used instead, because these paragraphs legitimately
- * cross-reference numbered sections.
- */
-const TIME_UNITS = ['day', 'days', 'week', 'weeks', 'month', 'months', 'Tag', 'Tage', 'Tagen', 'Woche', 'Wochen', 'Monat', 'Monate', 'Monaten'];
-const HARDCODED_LENGTH = new RegExp(`\\d+\\s*(?:${TIME_UNITS.join('|')})\\b`);
-
-/** The policy, rendered in one language, with or without a window advertised by the server. */
-function renderPolicy(language: 'en' | 'de', reportRetentionDays: number | null): string {
-  const instance = i18n.cloneInstance({ lng: language });
-  return renderToStaticMarkup(
-    createElement(I18nextProvider, { i18n: instance }, createElement(PrivacyContent, { reportRetentionDays })),
-  );
-}
-
-describe('the published policy names the window the server advertised', () => {
-  it('interpolates the advertised window in both languages instead of printing a placeholder', () => {
-    for (const language of ['en', 'de'] as const) {
-      const markup = renderPolicy(language, ADVERTISED_DAYS);
-      assert.doesNotMatch(markup, /\{\{report/, `${language} printed the placeholder`);
-      assert.ok(markup.includes(`${ADVERTISED_DAYS}`), `${language} lost the retention window`);
-    }
-  });
-
-  /**
-   * THE DEFECT, STATED AS A TEST. The old policy printed a constant from this
-   * repository, so a document that is legally operative asserted a deletion
-   * schedule it had no way of knowing. With no window advertised the sentence
-   * must still make sense and must name no length at all.
-   */
-  it('states no length when the server has advertised none, and invents nothing', () => {
-    for (const [language, bundle] of [
-      ['en', EN_LEGAL],
-      ['de', DE_LEGAL],
-    ] as const) {
-      const markup = renderPolicy(language, null);
-      assert.doesNotMatch(markup, /\{\{report/, `${language} printed the placeholder`);
-      // The sentence is still there, checked STRUCTURALLY: with no window
-      // advertised the policy substitutes its own `reportWindowUnknown`, so
-      // this reads that string out of the shipped bundle rather than pinning
-      // a wording wordsmith is free to rewrite.
-      const unknown = lookup(bundle, 'privacy.reportWindowUnknown');
-      assert.ok(plainText(markup).includes(plainText(unknown)), `${language} lost the reporting sentence`);
-      // And it is a number-free claim: 30 was the old default, and any figure
-      // in that phrase would be a promise made up by this app.
-      assert.doesNotMatch(unknown, /\d/, `${language} states a length the server never advertised`);
-    }
-  });
-
-  it('states the reporting exception in every place that used to deny it', () => {
-    for (const [bundle, pattern] of [
-      [EN_LEGAL, /report/i],
-      [DE_LEGAL, /melde/i],
-    ] as const) {
-      for (const key of ['s1Item3', 's2Body2', 's3Outro', 's4Body', 's4BodyOnManaged']) {
-        const value = lookup(bundle, `privacy.${key}`);
-        assert.match(value, pattern, `privacy.${key} does not mention reporting`);
-        assert.ok(value.includes('{{reportWindow}}'), `privacy.${key} does not name the retention window`);
-        // The length may only arrive through `reportWindowDays`, never typed
-        // into the paragraph itself. An accepted set of units rather than one
-        // unit apiece: wordsmith owns the wording and may pick another word
-        // for the same period, and the meaning is what must survive.
-        assert.doesNotMatch(value, HARDCODED_LENGTH, `privacy.${key} carries a hardcoded retention length`);
-      }
-    }
   });
 });
 

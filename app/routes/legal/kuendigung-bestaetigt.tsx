@@ -6,7 +6,8 @@
  * Receipt id, kind, the typed address, the received instant (full date, time
  * and timezone, from the SERVER's own `receivedAt`, never `new Date()` on
  * this device), a print button, and one line that the same receipt went out
- * by mail. No retention offer, no pause, no discount, no survey, no support
+ * by mail. The title and that mail line come from the mounted
+ * `kuendigung-bestaetigt.md` (M246); the receipt lines are chrome and stay here. No retention offer, no pause, no discount, no survey, no support
  * link — M214/09's requirement, and the reason there is no navigation away
  * from a cancellation somebody just confirmed.
  *
@@ -20,21 +21,27 @@
  * the form rather than claiming a receipt it cannot show.
  */
 import { useEffect } from 'react';
-import type { MetaFunction } from 'react-router';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
-import { H1, P } from '#app/components/typography';
+import type { Route } from './+types/kuendigung-bestaetigt';
+import { ContentArticle, ContentBlocks } from '#app/components/content-article';
+import { P } from '#app/components/typography';
 import PublicWrapper from '#app/components/public-wrapper';
 import { Button } from '#app/components/ui/button';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
-import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
+import { contentPageTitle } from '#app/lib/content/content-page-title';
+import { sectionBlocks } from '#app/lib/content/markdown';
 import '#app/i18n/i18n';
 
-export const meta: MetaFunction = ({ matches }) => [
-  { title: metaTitle(metaLanguage(matches), 'meta.kuendigungBestaetigt') },
-];
+/** SERVER: the receipt's title and its mail notice, from the mounted content folder. */
+export async function loader({ request }: Route.LoaderArgs) {
+  return { page: await loadContentPageOrThrow({ request, slug: 'kuendigung-bestaetigt' }) };
+}
+
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
 
 /** What `/kuendigung` hands over in router state, parsed rather than trusted — it is untyped at the router boundary. */
 const confirmationStateSchema = z.object({
@@ -43,8 +50,9 @@ const confirmationStateSchema = z.object({
   email: z.string().min(1),
 });
 
-export default function KuendigungBestaetigt() {
-  const { t, i18n } = useTranslation('legal');
+export default function KuendigungBestaetigt({ loaderData }: Route.ComponentProps) {
+  const { page } = loaderData;
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useAppNavigate();
   const parsed = confirmationStateSchema.safeParse(location.state);
@@ -64,19 +72,22 @@ export default function KuendigungBestaetigt() {
 
   return (
     <PublicWrapper>
-      <article className="font-prose prose prose-zinc dark:prose-invert max-w-none">
-        <H1 variant="default" className="mb-8">
-          {t('declarations.confirmed.cancelTitle')}
-        </H1>
+      <ContentArticle
+        title={page.title}
+        updated={page.updated}
+        language={page.language}
+        blocks={page.body}
+        hasUpdatedLine={false}
+      >
         <P>{t('declarations.confirmed.receiptIdLabel', { receiptId: parsed.data.receiptId })}</P>
         <P>{t('declarations.confirmed.kindCancel')}</P>
         <P>{t('declarations.confirmed.addressLabel', { email: parsed.data.email })}</P>
         <P>{t('declarations.confirmed.receivedAtLabel', { instant: receivedAtLabel })}</P>
-        <P>{t('declarations.confirmed.mailNotice')}</P>
+        <ContentBlocks blocks={sectionBlocks(page, 'mail-notice')} />
         <Button type="button" onClick={() => window.print()} className="not-prose">
           {t('declarations.confirmed.print')}
         </Button>
-      </article>
+      </ContentArticle>
     </PublicWrapper>
   );
 }

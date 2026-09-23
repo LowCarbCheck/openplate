@@ -28,6 +28,22 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The plan page asks the sync server before it opens.** The page used to trust the answer the tab read first, so a tab that once saw plans on offer kept opening it after the operator switched the billing service off. The page now reads the server's `/health` again each time it opens, and answers 404 when plans are gone.
 
+## [0.41.0] - 2026-09-23
+
+### Added
+
+- **A new page carries the website's own privacy text.** The page at `/privacy/website` is read from the same mounted folder as the other legal pages, so openplate.de can link to it and keep no legal text of its own. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
+### Changed
+
+- **The release page credits the people a changelog entry thanks.** The GitHub release page previously showed only the bold first sentence of each entry. Any `Thanks @name` or `Reported by @name` later in the entry was omitted, and GitHub showed no contributors. Each line on the release page now ends with that credit. Only a handle directly after a credit phrase counts, so names inside code or running text are never included. ([7160b89](https://github.com/LowCarbCheck/openplate/commit/7160b89))
+
+- **The legal pages come from a folder you mount, and openplate ships none of its own.** The terms, the privacy policy, the imprint, the withdrawal page and the two pages to cancel or withdraw from a contract are now markdown files in the folder `CONTENT_DIR` names, one file per page and language, with English as the fallback. Without the variable these pages answer "not found" and the footer shows no legal links. A file that breaks the format is refused and logged with its line numbers, and its page shows an error instead of part of the text. The two statutory forms work as before; only their text moved into the files. `PLAN_PRICE_EUR` and `PLAN_TRIAL_DAYS` are no longer read. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
+### Docs
+
+- **A guide to the content folder.** [docs/content.md](docs/content.md) describes the folder layout, the file format, what the app refuses and the named sections of the two statutory pages, for anyone who runs their own instance. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
 ## [0.40.0] - 2026-09-23
 
 ### Added

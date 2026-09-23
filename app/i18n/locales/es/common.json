@@ -1369,7 +1369,6 @@
     "fasting": "Ayuno · openplate",
     "fastingSettings": "Ajustes de ayuno · openplate",
     "foods": "Tus alimentos · openplate",
-    "imprint": "Aviso legal · openplate",
     "join": "Unirte · openplate",
     "joinStudy": "Participar en un estudio · openplate",
     "landing": "openplate, un registro de comidas que no sale de tu dispositivo",
@@ -1384,7 +1383,6 @@
     "offline": "No tienes conexión · openplate",
     "onboarding": "Te damos la bienvenida a openplate",
     "preferences": "Preferencias · openplate",
-    "privacy": "Política de privacidad · openplate",
     "recover": "Recuperar tu diario · openplate",
     "research": "Investigación · openplate",
     "scan": "Escanea tu plato · openplate",
@@ -1394,7 +1392,6 @@
     "signIn": "Iniciar sesión · openplate",
     "study": "Consola del estudio · openplate",
     "sync": "Cuenta · openplate",
-    "terms": "Condiciones del servicio · openplate",
     "trends": "Análisis · openplate",
     "welcome": "Bienvenida · openplate",
     "forgot": "Contraseña olvidada",
@@ -1403,16 +1400,11 @@
     "admin": "Administración",
     "landingDescriptionManaged": "Haz una foto del plato o busca lo que has comido. openplate te muestra los carbohidratos en segundos y los compara con el objetivo diario que fijes. Esta instancia funciona solo por invitación, y tu diario se cifra en este dispositivo antes de que una copia llegue al servidor.",
     "plan": "Tu plan · openplate",
-    "withdrawal": "Derecho de desistimiento · openplate",
     "notifications": "Notificaciones · openplate",
     "pantry": "Despensa · openplate",
     "recipes": "Recetas · openplate",
     "awards": "Tu historial · openplate",
-    "whatsNew": "Novedades · openplate",
-    "kuendigung": "Cancelar un contrato · openplate",
-    "kuendigungBestaetigt": "Cancelación confirmada · openplate",
-    "widerrufen": "Revocar un contrato · openplate",
-    "widerrufenBestaetigt": "Revocación confirmada · openplate"
+    "whatsNew": "Novedades · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -3611,6 +3603,47 @@
       "calories": "Calorías",
       "netCarbs": "Carbohidratos netos",
       "protein": "Proteína"
+    }
+  },
+  "content": {
+    "lastUpdated": "Última actualización: {{date}}"
+  },
+  "declarations": {
+    "cancel": {
+      "terminationTypeLabel": "Tipo de cancelación",
+      "terminationTypeOrdentlich": "Cancelación ordinaria",
+      "terminationTypeAusserordentlich": "Cancelación extraordinaria",
+      "reasonLabel": "Motivo de la cancelación extraordinaria",
+      "nameLabel": "Nombre",
+      "emailLabel": "Dirección de correo electrónico",
+      "contractReferenceLabel": "Número de cliente o contrato (opcional)",
+      "timingLabel": "Cuándo debe surtir efecto la cancelación",
+      "timingEarliest": "En la fecha más temprana posible",
+      "timingOnDate": "En una fecha específica",
+      "requestedDateLabel": "Fecha solicitada (opcional)",
+      "submit": "jetzt kündigen"
+    },
+    "withdraw": {
+      "nameLabel": "Nombre",
+      "emailLabel": "Dirección de correo electrónico",
+      "contractReferenceLabel": "Número de cliente o contrato (opcional)",
+      "requestedDateLabel": "Fecha de celebración del contrato (opcional)",
+      "submit": "Widerruf bestätigen"
+    },
+    "confirmed": {
+      "receiptIdLabel": "N.º de recibo: {{receiptId}}",
+      "kindCancel": "Tipo: Cancelación",
+      "kindWithdraw": "Tipo: Desistimiento",
+      "addressLabel": "Enviado a: {{email}}",
+      "receivedAtLabel": "Recibido el: {{instant}}",
+      "print": "Imprimir confirmación"
+    },
+    "errors": {
+      "nameRequired": "Introduzca su nombre.",
+      "emailInvalid": "Eso no parece una dirección de correo electrónico.",
+      "reasonRequired": "Indique el motivo de la cancelación extraordinaria.",
+      "invalid": "Uno de los campos no pudo procesarse. Revise sus datos e inténtelo de nuevo.",
+      "rateLimited": "Demasiadas solicitudes. Inténtelo de nuevo en unos minutos."
     }
   }
 }
