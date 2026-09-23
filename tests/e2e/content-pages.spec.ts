@@ -80,9 +80,16 @@ interface Corner {
 /**
  * Every visible element under `selector` that draws a rounded corner and is
  * not a circle by design (square box, radius at least half its width).
+ *
+ * With `withProbe`, a rounded box is appended, read and removed INSIDE the
+ * same evaluation. Two evaluations would leave a gap in which a first-visit
+ * service-worker reload replaces the page and takes the probe with it.
  */
-async function roundedCornersIn(page: Page, selector: string): Promise<Corner[]> {
-  return page.evaluate((root) => {
+async function roundedCornersIn(page: Page, input: { selector: string; withProbe: boolean }): Promise<Corner[]> {
+  return page.evaluate(({ selector: root, withProbe }) => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'width:40px;height:20px;border-radius:6px;background:red';
+    if (withProbe) document.querySelector(root)?.append(probe);
     const found: { what: string; radii: number[] }[] = [];
     for (const element of document.querySelectorAll(`${root}, ${root} *`)) {
       const rect = element.getBoundingClientRect();
@@ -99,8 +106,9 @@ async function roundedCornersIn(page: Page, selector: string): Promise<Corner[]>
       if (isCircle) continue;
       found.push({ what: `${element.tagName.toLowerCase()}.${element.className}`.slice(0, 80), radii });
     }
+    probe.remove();
     return found;
-  }, selector);
+  }, input);
 }
 
 test.describe('content pages from the mounted folder', () => {
@@ -275,16 +283,9 @@ test.describe('/kuendigung around the file', () => {
     await expect(page.locator('input[name="name"]')).toBeVisible();
 
     // CONTROL: the reader reports a rounded box injected into the same article.
-    await page.evaluate(() => {
-      const probe = document.createElement('div');
-      probe.id = 'corner-probe';
-      probe.style.cssText = 'width:40px;height:20px;border-radius:6px;background:red';
-      document.querySelector('article')?.append(probe);
-    });
-    const withProbe = await roundedCornersIn(page, 'article');
+    const withProbe = await roundedCornersIn(page, { selector: 'article', withProbe: true });
     expect(withProbe.length, 'CONTROL: the injected rounded box must be reported').toBeGreaterThan(0);
-    await page.evaluate(() => document.querySelector('#corner-probe')?.remove());
 
-    expect(await roundedCornersIn(page, 'article')).toEqual([]);
+    expect(await roundedCornersIn(page, { selector: 'article', withProbe: false })).toEqual([]);
   });
 });
