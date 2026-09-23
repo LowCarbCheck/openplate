@@ -1418,7 +1418,8 @@
     "scan": "Escanear",
     "settings": "Ajustes",
     "trends": "Análisis",
-    "pantry": "Despensa"
+    "pantry": "Despensa",
+    "plan": "Plan"
   },
   "nutrients": {
     "amount": {

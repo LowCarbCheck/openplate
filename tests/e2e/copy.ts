@@ -24,6 +24,8 @@ const catalogSchema = z.object({
   }),
   nav: z.object({
     trends: z.string(),
+    plan: z.string(),
+    settings: z.string(),
   }),
   welcome: z.object({
     start: z.string(),

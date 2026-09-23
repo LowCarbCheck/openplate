@@ -97,6 +97,12 @@ export interface PlansStub {
   planViewGate?: Promise<void>;
   /** Holds every `GET /plans/offer` answer the same way, for a card that reads the offer lazily (M250/04). */
   offerGate?: Promise<void>;
+  /**
+   * Holds every `/health` answer, read PER REQUEST like `plans`, so a spec can
+   * take a layout reading before anything the handshake decides is drawn
+   * (the plan entry in the navigation, M250). Absent answers at once.
+   */
+  healthGate?: Promise<void>;
 }
 
 /** Every offer request the page sent, with the query it named, and how often the handshake was read. */
@@ -116,9 +122,12 @@ export interface OfferRequests {
  */
 export async function routePlansCore(page: Page, stub: PlansStub): Promise<OfferRequests> {
   const requests: OfferRequests = { locales: [], healthReads: 0, planViews: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => {
+  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
     requests.healthReads += 1;
-    return route.fulfill({ json: healthBody(stub.plans ?? true) });
+    await stub.healthGate;
+    // `plans` is read AFTER the gate, so what a held read answers is what the
+    // spec says when it lets the read through.
+    await route.fulfill({ json: healthBody(stub.plans ?? true) });
   });
   await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, async (route) => {
     requests.planViews += 1;
@@ -154,7 +163,9 @@ export async function openPlanPageSignedIn(page: Page, search = ''): Promise<voi
   await page.goto('/settings');
   await expect(page.getByText(E2E_ACCOUNT_EMAIL)).toBeVisible();
   if (search === '') {
-    await page.locator('a[href="/settings/plan"]').click();
+    // THE HUB'S ROW, inside `main`: on a desktop the sidebar carries a plan
+    // entry of its own (M250), and the two are the same address.
+    await page.locator('main a[href="/settings/plan"]').click();
   } else {
     await page.goto(`/settings/plan${search}`);
   }

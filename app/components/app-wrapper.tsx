@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Download, Share } from 'lucide-react';
 import {
   AppSidebar,
+  activeCatalog,
   activeNavigationHref,
   adminNavigationItem,
   footerNavigationItems,
+  planNavigationItem,
   primaryNavigationItems,
   type NavigationItem,
 } from './app-sidebar';
@@ -23,6 +25,7 @@ import { UpdateRibbon } from './update-ribbon';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from './ui/sidebar';
 import { Separator } from './ui/separator';
 import { useInstallAffordance } from '#app/hooks/use-install-affordance';
+import { usePlanNavigationEntry } from '#app/hooks/use-plan-navigation-entry';
 import { APP_NAME } from '#app/lib/brand';
 import { cn } from '#app/lib/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
@@ -119,19 +122,30 @@ function DrawerRow({
  * see one map of the app rather than two. `BottomNav` keeps only the daily
  * logging loop (Diary · Scan · Add); this drawer is the complete list.
  */
-function NavDrawer() {
+function NavDrawer({ showsPlanEntry }: { showsPlanEntry: boolean }) {
   const { t } = useTranslation();
   const location = useLocation();
   const [isOpen, setIsOpen] = React.useState(false);
+  /**
+   * The plan entry as it stood when the drawer OPENED. The list is anchored
+   * to the top, so an entry arriving while the drawer is open would push
+   * Settings and Install down under the finger reaching for them. The shell's
+   * answer is read again at the next open.
+   */
+  const [showsPlanWhileOpen, setShowsPlanWhileOpen] = React.useState(false);
+  const onOpenChange = (open: boolean): void => {
+    if (open) setShowsPlanWhileOpen(showsPlanEntry);
+    setIsOpen(open);
+  };
   const close = (): void => setIsOpen(false);
   const session = useSyncSession();
-  const activeHref = activeNavigationHref(location.pathname);
+  const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanWhileOpen));
   // Matched against the admin entry alone, so the catalog's own winner is
   // untouched: `/admin` is outside the catalog and would otherwise never win.
   const adminActiveHref = activeNavigationHref(location.pathname, [adminNavigationItem]);
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
         {/* Sized to the two-line lockup beside it (see `InnerContent`), not to
             an icon-button grid: at `size-9` the mark optically spans BOTH the
@@ -185,6 +199,16 @@ function NavDrawer() {
           {/* Same footer separation the desktop sidebar draws: configuration
               sits below a rule, not among the places you go every day. */}
           <Separator className="my-2" />
+          {/* The plan page, directly above Settings (M250): the owner looked
+              for it here first. Drawn for a signed-in person on an instance
+              that sells plans, and fixed for as long as the drawer is open. */}
+          {showsPlanWhileOpen && (
+            <DrawerRow
+              item={planNavigationItem}
+              isActive={activeHref === planNavigationItem.to}
+              onNavigate={close}
+            />
+          )}
           {footerNavigationItems.map((item) => (
             <DrawerRow key={item.to} item={item} isActive={activeHref === item.to} onNavigate={close} />
           ))}
@@ -252,11 +276,14 @@ export default function AppWrapper({
   backTo?: string;
   children: React.ReactNode;
 }) {
+  // ONE READ FOR BOTH NAVIGATIONS, in the shell, which mounts once per page
+  // load and survives every client navigation.
+  const showsPlanEntry = usePlanNavigationEntry();
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar showsPlanEntry={showsPlanEntry} />
       <SidebarInset>
-        <InnerContent title={title} backTo={backTo}>
+        <InnerContent title={title} backTo={backTo} showsPlanEntry={showsPlanEntry}>
           {children}
         </InnerContent>
       </SidebarInset>
@@ -265,7 +292,17 @@ export default function AppWrapper({
 }
 
 // Inner content component that can use useSidebar hook
-function InnerContent({ title, backTo, children }: { title?: string; backTo?: string; children: React.ReactNode }) {
+function InnerContent({
+  title,
+  backTo,
+  showsPlanEntry,
+  children,
+}: {
+  title?: string;
+  backTo?: string;
+  showsPlanEntry: boolean;
+  children: React.ReactNode;
+}) {
   // The top-right control is `AvatarMenu`. It was device-only because M128 spec
   // 03 says there are no accounts, and that premise is now conditional (M201):
   // an instance running `INSTANCE_MODE=managed` has accounts, and the menu
@@ -319,7 +356,7 @@ function InnerContent({ title, backTo, children }: { title?: string; backTo?: st
               this toggle. */}
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
-          <NavDrawer />
+          <NavDrawer showsPlanEntry={showsPlanEntry} />
           {/* `min-w-0` so this flex child can shrink below its status text's
               intrinsic width; without it a long status (a blocked-notification
               error, especially the longer German string) pushes the header

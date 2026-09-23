@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The sidebar and the phone menu carry an entry to the plan page.** On an instance that sells plans, a signed-in person finds Plan directly above Settings: at the foot of the list in the desktop sidebar, and in the menu behind the logo on a phone. It shows only while the sync server's `/health` answer, read fresh when the app loads and again whenever the plan page checks it, says plans are sold, so an instance that stops selling plans loses the entry instead of keeping a link to a missing page. It arrives without moving the rest of the menu, and a phone menu that is already open keeps its rows until the next time it opens.
+
 ### Fixed
 
 - **A cancelled plan no longer says it is paid and running.** A subscriber whose plan was set to stop read "Your plan is paid and running" right above "You cancelled". The status line on the plan card now says the plan is paid until its end date and does not renew, and a plan the billing service sends no end date for says it is paid and does not renew.

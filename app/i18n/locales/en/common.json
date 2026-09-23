@@ -1418,7 +1418,8 @@
     "scan": "Scan",
     "settings": "Settings",
     "trends": "Insights",
-    "pantry": "Pantry"
+    "pantry": "Pantry",
+    "plan": "Plan"
   },
   "nutrients": {
     "amount": {

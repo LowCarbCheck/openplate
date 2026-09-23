@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {
   Camera,
+  CreditCard,
   LayoutGrid,
   Plus,
   Refrigerator,
@@ -33,6 +34,7 @@ import { Link } from '#app/components/link';
 import { Wordmark } from '#app/components/wordmark';
 import { useSyncSession } from '#app/components/sync-status';
 import { AppBuildStamp } from '#app/components/build-stamp';
+import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -142,6 +144,30 @@ export const adminNavigationItem: NavigationItem = {
   group: 'footer',
 };
 
+/**
+ * The plan page's entry (M250), OUTSIDE `personalNavigationItems` for the
+ * admin row's reason: the catalog is static, and this entry exists only for a
+ * signed-in person on an instance whose FRESH handshake says a biller stands
+ * behind it (`hasPlanNavigationEntry`). One shared object, so the drawer and
+ * the sidebar draw one label and one address. It sits directly above Settings
+ * in both.
+ */
+export const planNavigationItem: NavigationItem = {
+  labelKey: 'nav.plan',
+  to: PLAN_PAGE_HREF,
+  icon: CreditCard,
+  group: 'footer',
+};
+
+/**
+ * The catalog the active row is chosen from: with the plan entry while it is
+ * drawn, so on `/settings/plan` the plan row lights up and the settings row,
+ * the shorter match, does not.
+ */
+export function activeCatalog(showsPlanEntry: boolean): readonly NavigationItem[] {
+  return showsPlanEntry ? [...personalNavigationItems, planNavigationItem] : personalNavigationItems;
+}
+
 /** The day-to-day destinations, in catalog order — the top block of the drawer and the sidebar. */
 export const primaryNavigationItems: NavigationItem[] = personalNavigationItems.filter(
   (item) => item.group === 'primary',
@@ -226,7 +252,12 @@ function NavigationRow({ item, isActive }: { item: NavigationItem; isActive: boo
   );
 }
 
-export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  /** Whether the plan entry is drawn, decided once in the shell (`usePlanNavigationEntry`). */
+  showsPlanEntry: boolean;
+}
+
+export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
   // The superadmin groups that used to sit above and below the tracker nav
   // went with `/super/*` and the account system itself (M128 spec 03), so the
   // catalog below is one flat list of the app's own destinations. The one
@@ -236,7 +267,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { t } = useTranslation();
   const session = useSyncSession();
-  const activeHref = activeNavigationHref(location.pathname);
+  const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanEntry));
   // Matched against the admin entry alone, so the catalog's own winner is
   // untouched: `/admin` is outside the catalog and would otherwise never win.
   const adminActiveHref = activeNavigationHref(location.pathname, [adminNavigationItem]);
@@ -261,6 +292,22 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             ))}
           </SidebarMenu>
         </SidebarGroup>
+        {/* THE PLAN ENTRY, AT THE FOOT OF THE LIST, directly above the rule
+            over Settings (M250). It is known only after the session and a
+            fresh handshake, so it arrives after the first paint, and it must
+            not move anything when it does. This group is the LAST child of a
+            box whose height the rail fixes, pushed down by `mt-auto` into
+            space that was empty: the list above keeps its place, and the
+            footer below is a different box that never learns of it. Put in
+            the footer instead, it grew the footer upward, and the footer's
+            own top edge moving is a layout shift the browser reports. */}
+        {showsPlanEntry && (
+          <SidebarGroup data-nav-entry="plan" className="mt-auto">
+            <SidebarMenu>
+              <NavigationRow item={planNavigationItem} isActive={activeHref === planNavigationItem.to} />
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       {/* Settings is configuration, not a destination you visit daily, so it
           sits below a rule at the bottom of the rail rather than as a sixth

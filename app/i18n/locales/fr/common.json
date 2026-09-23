@@ -1418,7 +1418,8 @@
     "scan": "Scanner",
     "settings": "Paramètres",
     "trends": "Analyses",
-    "pantry": "Garde-manger"
+    "pantry": "Garde-manger",
+    "plan": "Plan"
   },
   "nutrients": {
     "amount": {

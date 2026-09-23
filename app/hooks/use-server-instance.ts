@@ -38,6 +38,24 @@ interface InstanceRead {
 /** One in-flight or settled `/health` read per server URL. Shared by every mount in the tab. */
 const instanceCache = new Map<string, InstanceRead>();
 
+/** Told of every FRESH answer, for the one hook that must follow the gate: {@link useFreshServerInstance}. */
+type FreshAnswerListener = (serverUrl: string, instance: InstanceDescriptor | null) => void;
+
+/** The mounted {@link useFreshServerInstance} hooks, told whenever a read for their server answers. */
+const freshAnswerListeners = new Set<FreshAnswerListener>();
+
+/** Tells every following hook what a read answered. `readServerInstance` never rejects, so every read gets here. */
+async function announceAnswer({
+  serverUrl,
+  answer,
+}: {
+  serverUrl: string;
+  answer: Promise<InstanceDescriptor | null>;
+}): Promise<void> {
+  const instance = await answer;
+  for (const listener of freshAnswerListeners) listener(serverUrl, instance);
+}
+
 /** Sends one `/health` read and makes it the tab's answer for that server. */
 function startInstanceRead(serverUrl: string): InstanceRead {
   const read: InstanceRead = { promise: readServerInstance(serverUrl), isSettled: false };
@@ -45,6 +63,7 @@ function startInstanceRead(serverUrl: string): InstanceRead {
     read.isSettled = true;
   };
   read.promise.then(settle, settle);
+  void announceAnswer({ serverUrl, answer: read.promise });
   instanceCache.set(serverUrl, read);
   return read;
 }
@@ -94,6 +113,48 @@ export function useServerInstance(): InstanceDescriptor | null {
     void ask();
     return () => {
       isMounted = false;
+    };
+  }, [syncServerUrl]);
+
+  return instance;
+}
+
+/**
+ * What this app's sync server says about itself as of THIS mount, and as of
+ * every read after it, or `null` while the answer is unknown.
+ *
+ * For a DOOR that stays on screen, the navigation entry to the plan page
+ * (M250). {@link useServerInstance} may be as old as the tab, which is right
+ * for a hint and wrong for a door: after the operator switches the biller off,
+ * an entry drawn from the tab's first answer keeps leading to a 404. So this
+ * hook asks {@link readFreshServerInstance} once when it mounts, and then
+ * follows every later read for the same server, so a gate that finds the door
+ * shut takes the entry away with it.
+ *
+ * Mounted once, in the app shell, and not per drawer open: a read per open
+ * would send a request per tap and would draw the entry after the drawer was
+ * already on screen.
+ */
+export function useFreshServerInstance(): InstanceDescriptor | null {
+  const config = usePublicConfig();
+  const syncServerUrl = config?.syncServerUrl ?? null;
+  const [instance, setInstance] = useState<InstanceDescriptor | null>(null);
+
+  useEffect(() => {
+    if (syncServerUrl === null) return;
+    let isMounted = true;
+    const follow: FreshAnswerListener = (serverUrl, next) => {
+      if (isMounted && serverUrl === syncServerUrl) setInstance(next);
+    };
+    freshAnswerListeners.add(follow);
+    const ask = async (): Promise<void> => {
+      const next = await readFreshServerInstance(syncServerUrl);
+      if (isMounted) setInstance(next);
+    };
+    void ask();
+    return () => {
+      isMounted = false;
+      freshAnswerListeners.delete(follow);
     };
   }, [syncServerUrl]);
 
