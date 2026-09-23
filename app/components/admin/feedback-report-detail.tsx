@@ -28,6 +28,7 @@ import { Link } from '#app/components/link';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import type { AdminFeedbackReportDetail } from '#app/lib/admin/admin-wire';
 import { reportDeletesAt, reportedFigures, type ReportedFigure } from '#app/lib/admin/feedback-console';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export interface FeedbackReportViewProps {
   report: AdminFeedbackReportDetail;
@@ -38,7 +39,7 @@ export interface FeedbackReportViewProps {
 }
 
 export function FeedbackReportView({ report, photo, retentionDays, isDeleting, onDelete }: FeedbackReportViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const deletesAt = reportDeletesAt({ createdAt: report.createdAt, retentionDays });
 
   return (
@@ -52,11 +53,11 @@ export function FeedbackReportView({ report, photo, retentionDays, isDeleting, o
           <CardTitle>{t('admin.feedback.reportTitle', { id: report.id })}</CardTitle>
           <p className="text-sm text-muted-foreground">{t('admin.feedback.person', { id: report.accountId })}</p>
           <p className="text-sm text-muted-foreground">
-            {t('admin.feedback.reportedAt', { date: new Date(report.createdAt).toLocaleDateString() })}
+            {t('admin.feedback.reportedAt', { date: formatNumericDate(report.createdAt, i18n.language) })}
           </p>
           {deletesAt !== null && (
             <p className="text-sm text-muted-foreground">
-              {t('admin.feedback.deletesAt', { date: deletesAt.toLocaleDateString() })}
+              {t('admin.feedback.deletesAt', { date: formatNumericDate(deletesAt, i18n.language) })}
             </p>
           )}
         </CardHeader>
@@ -73,7 +74,7 @@ export function FeedbackReportView({ report, photo, retentionDays, isDeleting, o
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
             {t('admin.feedback.consentAgreed', {
-              date: new Date(report.consent.agreedAt).toLocaleDateString(),
+              date: formatNumericDate(report.consent.agreedAt, i18n.language),
             })}
           </p>
           <p>{t('admin.feedback.consentWording', { version: report.consent.wordingVersion })}</p>

@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The date picker and every printed date follow the app language.** The diary's date picker drew English weekdays and an English month on every screen, and the admin pages, the account and plan pages, the research and sharing pages and the scan's allowance notice printed dates in the browser's own format, `9/23/2026` on a German screen. They now use the app language, `23.9.2026` in German. In English the picker's week now starts on Monday, like every other week in the app, and dates read `23/09/2026`.
+
 ## [0.42.0] - 2026-09-23
 
 ### Added

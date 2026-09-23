@@ -46,6 +46,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import type { AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 interface NoAiIntakeNoticeProps {
   door: AiIntakeDoor;
@@ -73,7 +74,7 @@ const LINK_CLASS =
   'after:absolute after:inset-x-0 after:-inset-y-3.5 after:content-[""] md:after:content-none';
 
 export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }: NoAiIntakeNoticeProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // NO ALLOWANCE, in whichever of the three ways is true of this account. None
   // of them carries a link, because no page fixes any of them: on an
@@ -87,7 +88,7 @@ export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }:
   if (door.kind === 'allowance-ended') {
     return (
       <p className={NOTICE_CLASS}>
-        {t('aiIntake.allowanceEnded', { date: new Date(door.endedAt).toLocaleDateString() })}
+        {t('aiIntake.allowanceEnded', { date: formatNumericDate(door.endedAt, i18n.language) })}
       </p>
     );
   }
@@ -111,7 +112,7 @@ export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }:
         lead={
           door.endedAt === null ?
             t('aiIntake.plansNotSwitchedOn')
-          : t('aiIntake.plansEnded', { date: new Date(door.endedAt).toLocaleDateString() })
+          : t('aiIntake.plansEnded', { date: formatNumericDate(door.endedAt, i18n.language) })
         }
       />
     );

@@ -131,6 +131,7 @@ import {
 import type { LogInputPath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
 import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
+import { formatNumericDate } from '#app/i18n/date-locale';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -1863,6 +1864,8 @@ export function describeFailureBody(
      * dateless sentence is the fallback rather than an interpolated blank.
      */
     allowanceEndsAt?: string | null;
+    /** The app language, for the allowance end date. Never the browser's own (M251 spec 01). */
+    language: string;
   },
   t: Translate,
 ): string | undefined {
@@ -1872,7 +1875,7 @@ export function describeFailureBody(
   if (params.failureCause === 'allowance-expired') {
     const endsAt = params.allowanceEndsAt;
     if (endsAt !== null && endsAt !== undefined) {
-      return t('scan.errors.provider.allowanceExpiredOn', { date: new Date(endsAt).toLocaleDateString() });
+      return t('scan.errors.provider.allowanceExpiredOn', { date: formatNumericDate(endsAt, params.language) });
     }
   }
   // A MANAGED 429 IS TWO DIFFERENT SENTENCES, and only the header tells them
@@ -1968,7 +1971,7 @@ export function UploadForm({
   onCancel: () => void;
   onRetry: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const monthlyUsageLine = formatMonthlyUsageLine(monthlyUsage);
   const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const failedAttemptCostUsd =
@@ -2193,7 +2196,10 @@ export function UploadForm({
                     //, showing it as the main body, not a muted afterthought.
                     // `describeFailureBody` additionally swaps in OpenRouter-
                     // specific free-tier copy for a `rate-limit` failure.
-                  : describeFailureBody({ failureCause, provider, error, retryAfterSeconds, allowanceEndsAt }, t)
+                  : describeFailureBody(
+                      { failureCause, provider, error, retryAfterSeconds, allowanceEndsAt, language: i18n.language },
+                      t,
+                    )
                 }
               </IntakeFailureAlert>
             )}

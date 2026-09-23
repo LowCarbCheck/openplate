@@ -1,8 +1,10 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { DayPicker, type ChevronProps, type DayPickerProps } from 'react-day-picker';
 
 import { cn } from '#app/lib/utils';
 import { buttonVariants } from '#app/components/ui/button';
+import { calendarLocale } from '#app/i18n/calendar-locale';
 
 export type CalendarProps = DayPickerProps;
 
@@ -42,10 +44,17 @@ const CELL_WIDTH = 'w-[calc((100vw-3.5rem)/7)] max-w-11';
  * built directly against the installed v10.0.1 types rather than copied.
  * Selected day gets the app's teal primary; today gets a subtle ring rather
  * than a filled background, so "today" and "selected" stay visually distinct.
+ *
+ * THE LOCALE IS THE APP LANGUAGE BY DEFAULT, set here rather than at each call
+ * site so that no picker can forget it: without one, react-day-picker draws
+ * `Su Mo Tu` and an English month on every screen (M251 spec 01). A caller may
+ * still pass its own `locale`, which wins because `props` is spread last.
  */
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+  const { i18n } = useTranslation();
   return (
     <DayPicker
+      locale={calendarLocale(i18n.language)}
       showOutsideDays={showOutsideDays}
       className={cn('p-1 md:p-3', className)}
       classNames={{

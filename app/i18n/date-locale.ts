@@ -143,3 +143,24 @@ export function numberLocale(language: string | null | undefined): string {
 export function openGraphLocale(language: string | null | undefined): string {
   return OPEN_GRAPH_LOCALES[toLanguageCode(language)];
 }
+
+/**
+ * An instant as a short numeric calendar date in `language`: `23.9.2026` in
+ * German, `23/09/2026` in English.
+ *
+ * `toLocaleDateString()` with no argument asks the BROWSER for its locale, so a
+ * German screen on an English browser printed `9/23/2026` (M251 spec 01). The
+ * tag comes from {@link dateLabelLocale}, so a numeric date and a day label
+ * never disagree about the reader's language.
+ *
+ * FOR INSTANTS, not day keys: the date is read in the reader's own time zone,
+ * which is right for "joined" or "expires" and wrong for a bare `YYYY-MM-DD`,
+ * which `format-day-label.ts` handles instead.
+ *
+ * @param instant - an ISO timestamp, epoch milliseconds or a `Date`.
+ * @param language - the active UI language (`i18n.language`, or a stored code).
+ * @returns the date, formatted for that language.
+ */
+export function formatNumericDate(instant: string | number | Date, language: string | null | undefined): string {
+  return new Date(instant).toLocaleDateString(dateLabelLocale(language));
+}

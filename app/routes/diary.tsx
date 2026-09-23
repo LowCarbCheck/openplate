@@ -107,6 +107,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '#app/components/ui/popover';
 import { Calendar as CalendarPicker } from '#app/components/ui/calendar';
+import { calendarDayButtonLabel, calendarLocale, type DayButtonLabel } from '#app/i18n/calendar-locale';
 import { AdherenceLegend } from '#app/components/trends/adherence-legend';
 import { countConfiguredGoals } from '#app/models/adherence-grid';
 import type { AdherenceMode } from '#app/models/adherence-grid';
@@ -114,7 +115,6 @@ import { selectCalendarDayLevels } from '#app/lib/calendar-day-levels';
 import type { CalendarDayLevel } from '#app/lib/calendar-day-levels';
 import { CALENDAR_DAY_MODIFIER_CLASSNAMES, calendarDayModifierFor } from '#app/lib/adherence-cell-fill';
 import type { CalendarDayModifier } from '#app/lib/adherence-cell-fill';
-import { labelDayButton as defaultLabelDayButton } from 'react-day-picker';
 import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Copy } from 'lucide-react';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -1626,16 +1626,23 @@ function DateNav({
   // "4 of 4 goals" there would be false; saying "level 4 of 4" is the same
   // thing the legend's own ramp says. The grid's `metCount` string is the one
   // that may speak in goals, because the grid has the counts.
+  // THE PICKER'S LOCALE, named here as well as defaulted in the wrapper,
+  // because the day label below builds on it: react-day-picker's exported
+  // `labelDayButton` is the English one and appends "Today" and "selected" in
+  // English whatever the locale, so the base has to come from the locale's own
+  // labels (M251 spec 01).
+  const pickerLocale = calendarLocale(i18n.language);
+  const localeLabelDayButton = calendarDayButtonLabel(i18n.language);
   const labelDayButton = useCallback(
-    (...args: Parameters<typeof defaultLabelDayButton>): string => {
-      const base = defaultLabelDayButton(...args);
+    (...args: Parameters<DayButtonLabel>): string => {
+      const base = localeLabelDayButton(...args);
       const entry = calendarDayLevels[localDateToDayKey(args[0])];
       if (entry === undefined) return base;
       if (entry.status === 'logged') return `${base}. ${t('trends.grid.cell.logged')}`;
       if (entry.status === 'unrated') return `${base}. ${t('trends.grid.cell.unrated')}`;
       return `${base}. ${t('trends.grid.cell.level', { level: entry.level })}`;
     },
-    [calendarDayLevels, t],
+    [calendarDayLevels, localeLabelDayButton, t],
   );
 
   const hasUnratedCalendarDays = useMemo(
@@ -1678,6 +1685,7 @@ function DateNav({
               leaves (the mobile audit measured left 0, width 278). */}
           <PopoverContent className="w-auto p-0" align="center" collisionPadding={POPOVER_COLLISION_PADDING_PX}>
             <CalendarPicker
+              locale={pickerLocale}
               mode="single"
               selected={dayKeyToLocalDate(date)}
               month={dayKeyToLocalDate(date)}
