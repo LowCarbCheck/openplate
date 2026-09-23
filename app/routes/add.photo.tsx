@@ -106,7 +106,7 @@ import { cn } from '#app/lib/utils';
 import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
-import { newIntakeId } from '#app/lib/plans/trial-scans';
+import { bindingTrialScans, newIntakeId, type TrialScans } from '#app/lib/plans/trial-scans';
 import i18nSingleton from '#app/i18n/i18n';
 import type { Translate } from '#app/lib/macro-sanity';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -205,7 +205,6 @@ function currentLanguage(): string {
 export function HydrateFallback() {
   return <ScanLoading />;
 }
-
 
 /**
  * The one "we billed tokens but found nothing" message. The KEY (not the
@@ -911,7 +910,8 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       // ONE INTAKE ID PER SUBMISSION (M253/05): this action is one person
       // action, a photo (label folded in) or a typed meal, and every retry
       // the adapter makes for it carries the same id, so it costs one scan.
-      credential: managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential({ intakeId: newIntakeId() }),
+      credential:
+        managed === null ? { apiKey: settings?.apiKey ?? '' } : managedAiCredential({ intakeId: newIntakeId() }),
     });
     const attempt: IntakeAttemptContext = {
       visionProvider,
@@ -1477,6 +1477,18 @@ function ScanFlow({
   // THE NUMBER THE SCAN REFUSAL NAMES (M253/05), for the same reason: a prop,
   // so `UploadForm` stays hook-free. `null` without a scan trial.
   const trialScansGranted = sessionAccount?.trialScans?.granted ?? null;
+  // THE COUNT THE USAGE LINE STATES on a scan trial (M253/11 item 1). The
+  // account's, not this browser's: the device log only sees the scans this
+  // browser made since its storage was last cleared, and after ten trial
+  // scans on production it said two. Only a MANAGED scan spends the trial,
+  // and a paid or granted date lifts it (`bindingTrialScans`).
+  const accountTrialScans =
+    managedAi === null ? null : (
+      bindingTrialScans({
+        trialScans: sessionAccount?.trialScans,
+        allowanceExpiresAt: sessionAccount?.allowanceExpiresAt ?? null,
+      })
+    );
   // WHETHER THE REFUSAL HAS A DOOR (M213 spec 05). Read here for the same
   // reason the date is, so `UploadForm` keeps no hooks and stays renderable in
   // a test. `false` for an unreachable or older service, which leaves the
@@ -1811,6 +1823,7 @@ function ScanFlow({
         retryAfterSeconds={failedIdentify?.retryAfterSeconds}
         allowanceEndsAt={allowanceEndsAt}
         trialScansGranted={trialScansGranted}
+        accountTrialScans={accountTrialScans}
         plansAvailable={plansAvailable}
         provider={failedIdentify?.provider}
         usage={failedIdentify?.usage}
@@ -1937,8 +1950,7 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
  */
 export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause; plansAvailable: boolean }): boolean {
   return (
-    input.plansAvailable &&
-    (input.failureCause === 'allowance-expired' || input.failureCause === 'trial-scans-spent')
+    input.plansAvailable && (input.failureCause === 'allowance-expired' || input.failureCause === 'trial-scans-spent')
   );
 }
 
@@ -2020,6 +2032,7 @@ export function UploadForm({
   retryAfterSeconds,
   allowanceEndsAt,
   trialScansGranted,
+  accountTrialScans = null,
   plansAvailable,
   provider,
   usage,
@@ -2056,6 +2069,12 @@ export function UploadForm({
   /** How many free AI scans the account was given, or `null`. Names the count on `trial-scans-spent`. */
   trialScansGranted?: number | null;
   /**
+   * The account's scan trial when it binds a managed scan, or `null`. When
+   * set, the footer states the account's count instead of this device's
+   * monthly log (M253/11 item 1).
+   */
+  accountTrialScans?: TrialScans | null;
+  /**
    * Whether this instance sells a plan, so the expiry refusal has somewhere to
    * send a person (M213 spec 05).
    *
@@ -2077,7 +2096,13 @@ export function UploadForm({
   onRetry: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const monthlyUsageLine = formatMonthlyUsageLine(monthlyUsage);
+  const monthlyUsageLine =
+    accountTrialScans === null ?
+      formatMonthlyUsageLine(monthlyUsage)
+    : t('scan.capture.trialScansUsed', {
+        used: accountTrialScans.granted - accountTrialScans.left,
+        granted: accountTrialScans.granted,
+      });
   const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const failedAttemptCostUsd =
     usage && modelId && provider ? (estimateScanCostUsd(provider, modelId, usage) ?? null) : null;
@@ -2307,6 +2332,7 @@ export function UploadForm({
                       { failureCause, provider, error, retryAfterSeconds, allowanceEndsAt, language: i18n.language },
                       t,
                     )
+
                 }
               </IntakeFailureAlert>
             )}
@@ -2357,7 +2383,6 @@ export function UploadForm({
     </div>
   );
 }
-
 
 /** Compact honest per-100g summary for a curated match, null macros are skipped, never shown as 0. */
 function formatCuratedMacroSummary(match: FoodMatch, t: Translate, language: string): string {

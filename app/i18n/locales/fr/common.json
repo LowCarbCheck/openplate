@@ -1955,7 +1955,8 @@
       "previewAlt": "Photo d'assiette sélectionnée",
       "takePhoto": "Prends ton assiette en photo",
       "title": "Identifier les aliments à partir d'une photo d'assiette",
-      "managedDescription": "Ta photo est lue une seule fois pour déterminer ce qui se trouve dans ton assiette, sans être conservée. Elle reste ensuite uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Tu peux désactiver cette option ou la supprimer à tout moment sous Données et sauvegarde dans les paramètres."
+      "managedDescription": "Ta photo est lue une seule fois pour déterminer ce qui se trouve dans ton assiette, sans être conservée. Elle reste ensuite uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Tu peux désactiver cette option ou la supprimer à tout moment sous Données et sauvegarde dans les paramètres.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "Cette tentative a utilisé {{amount}} de tes crédits API. Elle est enregistrée dans ton utilisation.",

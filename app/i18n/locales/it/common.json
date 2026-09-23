@@ -1955,7 +1955,8 @@
       "previewAlt": "Foto del piatto selezionata",
       "takePhoto": "Fotografa il tuo piatto",
       "title": "Identifica i cibi da una foto del piatto",
-      "managedDescription": "La tua foto viene letta una volta per identificare cosa c'è nel piatto, e non viene conservata. In seguito resta solo su questo dispositivo, così puoi rivederla nella voce del diario. Puoi disattivare questa opzione o cancellarla in qualsiasi momento sotto Dati e backup nelle impostazioni."
+      "managedDescription": "La tua foto viene letta una volta per identificare cosa c'è nel piatto, e non viene conservata. In seguito resta solo su questo dispositivo, così puoi rivederla nella voce del diario. Puoi disattivare questa opzione o cancellarla in qualsiasi momento sotto Dati e backup nelle impostazioni.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "Questo tentativo ha consumato {{amount}} del tuo credito API. Viene registrato nei tuoi consumi.",

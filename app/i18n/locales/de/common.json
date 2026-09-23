@@ -1955,7 +1955,8 @@
       "previewAlt": "Ausgewähltes Teller-Foto",
       "takePhoto": "Teller-Foto aufnehmen",
       "title": "Lebensmittel aus einem Teller-Foto erkennen",
-      "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen."
+      "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",

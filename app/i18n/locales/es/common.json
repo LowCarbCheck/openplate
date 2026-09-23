@@ -1955,7 +1955,8 @@
       "previewAlt": "Foto del plato seleccionada",
       "takePhoto": "Haz una foto de tu plato",
       "title": "Identificar alimentos a partir de una foto del plato",
-      "managedDescription": "Tu foto se lee una vez para determinar qué hay en tu plato, y no se guarda. Después se queda solo en este dispositivo, para que puedas volver a verla en la entrada. Puedes desactivarlo o eliminarla en cualquier momento en Datos y copia de seguridad dentro de los ajustes."
+      "managedDescription": "Tu foto se lee una vez para determinar qué hay en tu plato, y no se guarda. Después se queda solo en este dispositivo, para que puedas volver a verla en la entrada. Puedes desactivarlo o eliminarla en cualquier momento en Datos y copia de seguridad dentro de los ajustes.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "Este intento ha consumido {{amount}} de tu crédito de API. Queda registrado en tu uso.",

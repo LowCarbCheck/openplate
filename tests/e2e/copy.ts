@@ -72,6 +72,7 @@ const catalogSchema = z.object({
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
+    capture: z.object({ trialScansUsed: z.string() }),
     errors: z.object({
       titles: z.object({ allowanceExpired: z.string(), trialScansSpent_other: z.string(), aiNotAllowed: z.string() }),
     }),

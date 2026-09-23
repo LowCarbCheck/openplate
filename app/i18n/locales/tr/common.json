@@ -1955,7 +1955,8 @@
       "previewAlt": "Seçilen tabak fotoğrafı",
       "takePhoto": "Tabağının fotoğrafını çek",
       "title": "Tabak fotoğrafından yiyecekleri belirle",
-      "managedDescription": "Tabağında ne olduğunu anlamak için fotoğrafın bir kez okunur ve saklanmaz. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda kalır. Bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin."
+      "managedDescription": "Tabağında ne olduğunu anlamak için fotoğrafın bir kez okunur ve saklanmaz. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda kalır. Bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "Bu deneme {{amount}} API kredini kullandı. Kullanımına kaydedildi.",

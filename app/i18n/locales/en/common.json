@@ -1955,7 +1955,8 @@
       "previewAlt": "Selected plate photo",
       "takePhoto": "Photograph your plate",
       "title": "Identify foods from a plate photo",
-      "managedDescription": "Your photo is read once to work out what is on your plate, and is not kept. Afterwards it stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings."
+      "managedDescription": "Your photo is read once to work out what is on your plate, and is not kept. Afterwards it stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
     },
     "errors": {
       "attemptCost": "This attempt used {{amount}} of your API credit. It's recorded in your usage.",
