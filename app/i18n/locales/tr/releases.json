@@ -1,4 +1,21 @@
 {
+  "v0_42_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Plan sayfası, sen başlamadan önce her iki planı da fiyatlarıyla birlikte gösterir.",
+      "02": "Analizler, bir plan teklifinden ödemeye kadar olan dört adımı sayar.",
+      "03": "Başlık alanı, bir denemedeki kalan yapay zeka tarama günlerini geriye doğru sayar.",
+      "04": "Denemenin son günleri, yapay zeka ile kaç öğün kaydettiğini belirtir."
+    },
+    "changed": {
+      "01": "Bir abonenin plan sayfası bir siparişi değil, sahip olduğu planı gösterir.",
+      "02": "Plan sayfası artık sipariş sayfasıdır, Stripe ise yalnızca ödemeyi alır.",
+      "03": "Biten bir yapay zeka kotası artık bir çıkmaz sokak değil, bir plan teklifi gösterir."
+    },
+    "fixed": {
+      "01": "Plan sayfası açılmadan önce eşitleme sunucusuna danışır."
+    }
+  },
   "v0_41_0": {
     "date": "2026-09-23",
     "added": {
@@ -22,29 +39,6 @@
     },
     "fixed": {
       "01": "İlk çalıştırma sorularında bir seçim yaptığında veya yazdığında hiçbir şey hareket etmez."
-    }
-  },
-  "v0_39_0": {
-    "date": "2026-09-22",
-    "added": {
-      "01": "Her zamanki bir öğün, günlüğe kaydetmeden önce artık porsiyonu onaylamanı ister.",
-      "02": "Gıda alerjilerini ilk gün veya daha sonra ayarlardan listeleyebilirsin.",
-      "03": "Fotoğrafını çektiğin veya tarif ettiğin yiyecekler; artık hamilelik, emzirme ve alerjilerin için küçük notlar içerir."
-    },
-    "changed": {
-      "01": "Ekle, Tara ve Tarif et artık tek bir adres altında toplanıyor: /add.",
-      "02": "Günlükteki \"Ne yedin\" kısmı artık her makroyu ikinci bir gram değeri olarak değil, günün bir payı olarak belirtir.",
-      "03": "İçgörüler artık geniş ekranlarda iki sütunlu bir düzen kullanır."
-    },
-    "fixed": {
-      "01": "openplate adı artık telefonda sayfa başlığının üzerinde yer almaz.",
-      "02": "Yapay zeka ayarları sayfası, sen istemedikçe açıklamalarını kapalı tutar.",
-      "03": "Her zamanki öğünlerin, artık son kaydedilen yiyecekler listesinden ayırt edilir.",
-      "04": "Kaydın, üç günlük bir seriyi yüz günlük olandan bir bakışta ayırır.",
-      "05": "İlk ekran artık openplate işaretini ve adını taşır.",
-      "06": "Kaydedilen öğünler artık bir sonrakinin nereden geldiğini sana bildirir.",
-      "07": "Tarif et, ileti kutusunu artık sayfanın en altına yerleştirir.",
-      "08": "Bildirimler, bildirimleri açamadığın durumlarda bile artık yarının iletisini gösterir."
     }
   }
 }

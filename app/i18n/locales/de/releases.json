@@ -1,4 +1,21 @@
 {
+  "v0_42_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Die Tarifseite zeigt beide Tarife mit ihren Preisen, bevor du beginnst.",
+      "02": "Analysen zählen die vier Schritte von einem Tarifangebot bis zu einer Zahlung.",
+      "03": "Die Kopfzeile zählt die verbleibenden Tage für KI-Scans im Testzeitraum herunter.",
+      "04": "Die letzten Tage des Testzeitraums zeigen, wie viele Mahlzeiten du mit KI protokolliert hast."
+    },
+    "changed": {
+      "01": "Die Tarifseite von Abonnenten zeigt den gebuchten Tarif an, keine Bestellung.",
+      "02": "Die Tarifseite dient jetzt als Bestellseite, und Stripe wickelt nur noch die Zahlung ab.",
+      "03": "Ein abgelaufenes KI-Kontingent zeigt nun ein Tarifangebot anstelle einer Sackgasse."
+    },
+    "fixed": {
+      "01": "Die Tarifseite fragt den Sync-Server ab, bevor sie sich öffnet."
+    }
+  },
   "v0_41_0": {
     "date": "2026-09-23",
     "added": {
@@ -22,29 +39,6 @@
     },
     "fixed": {
       "01": "Bei den Fragen zur Ersteinrichtung verschiebt sich nichts, wenn du eine Auswahl triffst oder tippst."
-    }
-  },
-  "v0_39_0": {
-    "date": "2026-09-22",
-    "added": {
-      "01": "Bei einer gewohnten Mahlzeit musst du die Portion jetzt bestätigen, bevor du sie einträgst.",
-      "02": "Du kannst deine Lebensmittelallergien angeben, direkt am ersten Tag oder später in den Einstellungen.",
-      "03": "Lebensmittel, die du fotografierst oder beschreibst, enthalten jetzt kurze Hinweise zu Schwangerschaft, Stillzeit und deinen Allergien."
-    },
-    "changed": {
-      "01": "Hinzufügen, Scannen und Beschreiben liegen jetzt gebündelt unter einer einzigen Adresse, /add.",
-      "02": "„Was du gegessen hast“ im Tagebuch weist jeden Makronährstoff jetzt als Anteil des Tages aus, nicht mehr als zweite Gramm-Angabe.",
-      "03": "Einblicke verwendet auf breiten Bildschirmen jetzt ein zweispaltiges Layout."
-    },
-    "fixed": {
-      "01": "Der Name openplate steht auf dem Smartphone nicht mehr über dem Seitentitel.",
-      "02": "Die Seite für KI-Einstellungen klappt Erklärungen erst aus, wenn du sie anforderst.",
-      "03": "Deine gewohnten Mahlzeiten heben sich jetzt von der Liste der kürzlich erfassten Lebensmittel ab.",
-      "04": "Deine Serie zeigt auf einen Blick den Unterschied zwischen drei Tagen und hundert Tagen.",
-      "05": "Der Startbildschirm enthält jetzt das Logo und den Namen von openplate.",
-      "06": "Gespeicherte Mahlzeiten zeigt dir jetzt, woher die nächste Mahlzeit stammt.",
-      "07": "Beschreiben platziert das Eingabefeld jetzt am unteren Rand der Seite.",
-      "08": "Benachrichtigungen zeigt die Nachricht von morgen jetzt auch dann, wenn du Benachrichtigungen nicht aktivieren kannst."
     }
   }
 }

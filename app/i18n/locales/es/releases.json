@@ -1,4 +1,21 @@
 {
+  "v0_42_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "La página de planes muestra ambos planes con sus precios antes de empezar.",
+      "02": "Las analíticas registran los cuatro pasos desde la oferta de un plan hasta el pago.",
+      "03": "La cabecera muestra la cuenta atrás de los días de análisis con IA que quedan en el periodo de prueba.",
+      "04": "Los últimos días de la prueba indican cuántas comidas registraste con la IA."
+    },
+    "changed": {
+      "01": "La página de planes de un suscriptor muestra el plan que tiene, no un pedido.",
+      "02": "La página de planes es ahora la página de pedidos, y Stripe solo procesa el pago.",
+      "03": "Al agotarse la cuota de IA se muestra una oferta de plan, no un callejón sin salida."
+    },
+    "fixed": {
+      "01": "La página de planes consulta al servidor de sincronización antes de abrirse."
+    }
+  },
   "v0_41_0": {
     "date": "2026-09-23",
     "added": {
@@ -22,29 +39,6 @@
     },
     "fixed": {
       "01": "Nada se mueve en las preguntas iniciales cuando eliges o escribes."
-    }
-  },
-  "v0_39_0": {
-    "date": "2026-09-22",
-    "added": {
-      "01": "Las comidas habituales ahora te piden confirmar la porción antes de registrarlas.",
-      "02": "Puedes indicar tus alergias alimentarias, desde el primer día o más tarde en los ajustes.",
-      "03": "Los alimentos que fotografías o describes ahora incluyen notas breves sobre embarazo, lactancia y tus alergias."
-    },
-    "changed": {
-      "01": "Añadir, Escanear y Describir se agrupan ahora bajo una misma dirección, /add.",
-      "02": "\"Qué comiste\" en el diario muestra ahora cada macronutriente como porcentaje del día, no como una segunda cifra en gramos.",
-      "03": "Análisis usa ahora un diseño de dos columnas en pantallas anchas."
-    },
-    "fixed": {
-      "01": "El nombre openplate ya no se superpone al título de la página en un teléfono.",
-      "02": "La página de ajustes de IA mantiene sus explicaciones plegadas hasta que las solicitas.",
-      "03": "Tus comidas habituales ahora se distinguen de la lista de alimentos registrados recientemente.",
-      "04": "Tu historial permite distinguir de un vistazo una racha de tres días de una de cien.",
-      "05": "La primera pantalla incluye ahora la marca y el nombre de openplate.",
-      "06": "Comidas guardadas indica ahora de dónde procede la siguiente.",
-      "07": "Describir sitúa ahora el cuadro de mensaje en la parte inferior de la página.",
-      "08": "Notificaciones muestra ahora el mensaje de mañana incluso si no puedes activarlas."
     }
   }
 }

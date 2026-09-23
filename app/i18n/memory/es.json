@@ -1693,6 +1693,13 @@
     "at": "2026-09-14",
     "es": "Estás usando la parte gratuita de openplate."
   },
+  "161b7adae032e1a7": {
+    "en": "A subscriber's plan page shows the plan they hold, not an order.",
+    "path": "releases:v0_42_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "La página de planes de un suscriptor muestra el plan que tiene, no un pedido."
+  },
   "161d0eb93476363f": {
     "en": "Folate",
     "path": "common:nutrients.name.vitaminB9",
@@ -2665,6 +2672,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Las entradas con IA no están activadas para esta cuenta. Las búsquedas en la base de datos de alimentos funcionan sin ellas."
+  },
+  "227b5437c95c69a5": {
+    "en": "The header counts down the days of AI scans left in a trial.",
+    "path": "releases:v0_42_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "La cabecera muestra la cuenta atrás de los días de análisis con IA que quedan en el periodo de prueba."
   },
   "22813a1bb51d9a40": {
     "en": "half a cabbage, six eggs, a tub of feta, 500 g of rice",
@@ -4955,6 +4969,13 @@
     "at": "2026-09-14",
     "es": "Omitir por ahora"
   },
+  "4579d0950c8d2a81": {
+    "en": "The trial's last days say how many meals you logged with AI.",
+    "path": "releases:v0_42_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Los últimos días de la prueba indican cuántas comidas registraste con la IA."
+  },
   "4591e5b5848989aa": {
     "en": "Carbs",
     "path": "common:diary.macros.carbs",
@@ -4982,6 +5003,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "La clave se copió con un espacio de más o le falta un carácter. Prueba a copiarla y pegarla de nuevo."
+  },
+  "461810dd45b71545": {
+    "en": "The plan page asks the sync server before it opens.",
+    "path": "releases:v0_42_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "La página de planes consulta al servidor de sincronización antes de abrirse."
   },
   "462c3284e3b90ad9": {
     "en": "Vertrag widerrufen",
@@ -6243,6 +6271,13 @@
     "at": "2026-09-14",
     "es": "Último inicio de sesión"
   },
+  "5726a3d630278172": {
+    "en": "The plan page shows both plans with their prices before you start.",
+    "path": "releases:v0_42_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "La página de planes muestra ambos planes con sus precios antes de empezar."
+  },
   "5741dc924900cac1": {
     "en": "Before a long fast",
     "path": "common:settings.fasting.care.title",
@@ -6522,6 +6557,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "De media, justo en tu objetivo."
+  },
+  "5acff1e4dbc86a50": {
+    "en": "An ended AI allowance now shows a plan offer, not a dead end.",
+    "path": "releases:v0_42_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Al agotarse la cuota de IA se muestra una oferta de plan, no un callejón sin salida."
   },
   "5afe0a1d82a23c7b": {
     "en": "How did it go?",
@@ -8399,6 +8441,13 @@
     "at": "2026-09-14",
     "es": "Desayuno"
   },
+  "748ce0d6e8022b72": {
+    "en": "The plan page is now the order page, and Stripe only takes the payment.",
+    "path": "releases:v0_42_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "La página de planes es ahora la página de pedidos, y Stripe solo procesa el pago."
+  },
   "748e7e058f1e2c02": {
     "en": "Carbs",
     "path": "common:entry.macro.carbs",
@@ -9511,6 +9560,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Deshacer"
+  },
+  "826b3d0934570441": {
+    "en": "Analytics count the four steps from a plan offer to a payment.",
+    "path": "releases:v0_42_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Las analíticas registran los cuatro pasos desde la oferta de un plan hasta el pago."
   },
   "826eb7de58571903": {
     "en": "Meals across the day",

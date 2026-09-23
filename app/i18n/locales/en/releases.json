@@ -1,4 +1,21 @@
 {
+  "v0_42_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "The plan page shows both plans with their prices before you start.",
+      "02": "Analytics count the four steps from a plan offer to a payment.",
+      "03": "The header counts down the days of AI scans left in a trial.",
+      "04": "The trial's last days say how many meals you logged with AI."
+    },
+    "changed": {
+      "01": "A subscriber's plan page shows the plan they hold, not an order.",
+      "02": "The plan page is now the order page, and Stripe only takes the payment.",
+      "03": "An ended AI allowance now shows a plan offer, not a dead end."
+    },
+    "fixed": {
+      "01": "The plan page asks the sync server before it opens."
+    }
+  },
   "v0_41_0": {
     "date": "2026-09-23",
     "added": {
@@ -22,29 +39,6 @@
     },
     "fixed": {
       "01": "Nothing moves on the first-run questions when you pick or type."
-    }
-  },
-  "v0_39_0": {
-    "date": "2026-09-22",
-    "added": {
-      "01": "A usual meal now asks you to confirm the portion before logging it.",
-      "02": "You can list your food allergies, on day one or later in settings.",
-      "03": "Foods you photograph or describe now carry small notes for pregnancy, breastfeeding and your allergies."
-    },
-    "changed": {
-      "01": "Add, Scan and Describe now nest under one address, /add.",
-      "02": "\"What you ate\" on the diary now states each macro as a share of the day, not a second gram figure.",
-      "03": "Trends now uses a two-column layout on wide screens."
-    },
-    "fixed": {
-      "01": "The name openplate no longer sits on top of the page title on a phone.",
-      "02": "The AI settings page keeps its explanations folded away until you ask for them.",
-      "03": "Your usual meals now stand out from the list of recently logged foods.",
-      "04": "Your record tells a three day streak from a hundred day one at a glance.",
-      "05": "The first screen now carries the openplate mark and name.",
-      "06": "Saved meals now tells you where the next one comes from.",
-      "07": "Describe now puts the message box at the bottom of the page.",
-      "08": "Notifications now shows tomorrow's message even when you cannot turn notifications on."
     }
   }
 }

@@ -1,4 +1,21 @@
 {
+  "v0_42_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "La pagina del piano mostra entrambi i piani con i relativi prezzi prima di iniziare.",
+      "02": "I dati analitici contano i quattro passaggi dalla proposta di un piano al pagamento.",
+      "03": "L'intestazione indica il conto alla rovescia dei giorni di scansioni IA rimasti nella prova.",
+      "04": "Gli ultimi giorni della prova indicano quanti pasti hai registrato con l'IA."
+    },
+    "changed": {
+      "01": "La pagina del piano di un abbonato mostra il piano sottoscritto, non un ordine.",
+      "02": "La pagina del piano ora funge da pagina dell'ordine, e Stripe elabora soltanto il pagamento.",
+      "03": "Una quota di IA esaurita mostra ora la proposta di un piano, non un vicolo cieco."
+    },
+    "fixed": {
+      "01": "La pagina del piano interroga il server di sincronizzazione prima di aprirsi."
+    }
+  },
   "v0_41_0": {
     "date": "2026-09-23",
     "added": {
@@ -22,29 +39,6 @@
     },
     "fixed": {
       "01": "Nelle domande al primo avvio non si muove nulla mentre scegli o digiti."
-    }
-  },
-  "v0_39_0": {
-    "date": "2026-09-22",
-    "added": {
-      "01": "I pasti abituali ora ti chiedono di confermare la porzione prima della registrazione.",
-      "02": "Puoi elencare le tue allergie alimentari, fin dal primo giorno o più tardi nelle impostazioni.",
-      "03": "Gli alimenti che fotografi o descrivi ora includono brevi note su gravidanza, allattamento e sulle tue allergie."
-    },
-    "changed": {
-      "01": "Aggiungi, Scansiona e Descrivi ora si trovano sotto un unico indirizzo, /add.",
-      "02": "Nel diario, \"Cosa hai mangiato\" ora indica ciascun macronutriente come percentuale della giornata, non come un secondo valore in grammi.",
-      "03": "Analisi ora usa un layout a due colonne sugli schermi ampi."
-    },
-    "fixed": {
-      "01": "Il nome openplate non si trova più sopra il titolo della pagina su smartphone.",
-      "02": "La pagina delle impostazioni dell'IA mantiene le spiegazioni compresse finché non le richiedi.",
-      "03": "I tuoi pasti abituali ora si distinguono dall'elenco degli alimenti registrati di recente.",
-      "04": "Il tuo storico permette di distinguere a colpo d'occhio una serie di tre giorni da una di cento.",
-      "05": "La prima schermata ora include il simbolo e il nome di openplate.",
-      "06": "I pasti salvati ora indicano l'origine del pasto successivo.",
-      "07": "Descrivi ora posiziona il riquadro del messaggio in fondo alla pagina.",
-      "08": "Notifiche ora mostra il messaggio di domani anche se non puoi attivare le notifiche."
     }
   }
 }
