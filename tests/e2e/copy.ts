@@ -19,6 +19,7 @@ import { z } from 'zod';
 const catalogSchema = z.object({
   chrome: z.object({
     logoMenuLabel: z.string(),
+    status: z.object({ dismiss: z.string() }),
   }),
   nav: z.object({
     trends: z.string(),
@@ -128,6 +129,7 @@ const catalogSchema = z.object({
   }),
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
+    countdown: z.object({ daysLeft_other: z.string(), lastDay: z.string(), action: z.string() }),
     start: z.string(),
     manage: z.string(),
     returned: z.object({ success: z.string() }),

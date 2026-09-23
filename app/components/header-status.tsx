@@ -138,7 +138,13 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
         <button
           type="button"
           aria-label={t('chrome.status.dismiss')}
-          onClick={() => clearStatus()}
+          onClick={() => {
+            // THE CLOSE IS REPORTED BEFORE IT HAPPENS, so a caller that
+            // records it (the trial countdown, closed for the day) has
+            // recorded it by the time the channel is empty.
+            status.onDismiss?.();
+            clearStatus();
+          }}
           className="flex size-11 shrink-0 items-center justify-center"
         >
           <X className="size-4 opacity-70" aria-hidden="true" />

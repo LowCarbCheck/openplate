@@ -3370,6 +3370,12 @@
         "year": "Forfait annuel"
       },
       "yearThenMonthly": "Ton année payée va jusqu'au {{date}}. Ensuite, le forfait continue au mois, et tu peux le résilier chaque mois."
+    },
+    "countdown": {
+      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
+      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
+      "lastDay": "Your trial's AI scans end today.",
+      "action": "See plans"
     }
   },
   "usual": {

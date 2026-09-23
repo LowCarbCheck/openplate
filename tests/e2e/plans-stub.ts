@@ -19,6 +19,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, type Page } from '@playwright/test';
+import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
@@ -77,11 +78,19 @@ export interface PlansStub {
   planView: object;
   /** The `GET /plans/offer` body as text, or `null` to answer the shut door's 404. */
   offerBody: string | null;
+  /**
+   * Holds every `GET /plans/me` answer until it settles, so a spec can take a
+   * layout reading BEFORE what the plan read draws arrives (M250/03). Absent
+   * answers at once.
+   */
+  planViewGate?: Promise<void>;
 }
 
 /** Every offer request the page sent, with the query it named. */
 export interface OfferRequests {
   locales: string[];
+  /** How many `GET /plans/me` requests arrived, answered or still held. */
+  planViews: number;
 }
 
 /**
@@ -92,9 +101,13 @@ export interface OfferRequests {
  * @returns the offer requests, recorded as they arrive.
  */
 export async function routePlansCore(page: Page, stub: PlansStub): Promise<OfferRequests> {
-  const requests: OfferRequests = { locales: [] };
+  const requests: OfferRequests = { locales: [], planViews: 0 };
   await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => route.fulfill({ json: HEALTH_WITH_PLANS }));
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, async (route) => {
+    requests.planViews += 1;
+    await stub.planViewGate;
+    await route.fulfill({ json: stub.planView });
+  });
   await page.route(
     (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
     (route) => {
@@ -141,4 +154,57 @@ export async function openPlanPageSignedIn(page: Page, search = ''): Promise<voi
  */
 export async function routeCheckout(page: Page, url: string): Promise<void> {
   await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => route.fulfill({ json: { url } }));
+}
+
+/** An auth answer that carries the account, every other key kept as the fake sent it. */
+const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.unknown()) });
+
+/** The allowance facts a spec gives the fixture account. */
+export interface AccountAllowance {
+  dailyAiLimit: number;
+  /** The ISO instant the allowance ends, or `null` for none. */
+  allowanceExpiresAt: string | null;
+}
+
+/**
+ * Gives the fixture account an allowance, on every auth answer that carries
+ * the account (the sign-in, the resume, the account read).
+ *
+ * THE FAKE SERVICE IS LEFT ALONE. It models the sync protocol and holds no
+ * allowance dates, which is right for it; a trial is a fact about a consumer
+ * instance, so it is written onto the wire here, the way the handshake's
+ * `plans: true` is. Everything else in the body is the fake's own answer.
+ *
+ * @param page - the page, before its first navigation.
+ * @param allowance - what the account answers.
+ */
+export async function routeAccountAllowance(page: Page, allowance: AccountAllowance): Promise<void> {
+  await page.route(
+    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    async (route) => {
+      const response = await route.fetch();
+      const text = await response.text();
+      const envelope = accountEnvelopeSchema.safeParse(text === '' ? null : JSON.parse(text));
+      if (!envelope.success) return route.fulfill({ response, body: text });
+      return route.fulfill({
+        response,
+        json: { ...envelope.data, account: { ...envelope.data.account, ...allowance } },
+      });
+    },
+  );
+}
+
+/** A promise a spec settles by hand, for `PlansStub.planViewGate`. */
+export interface Gate {
+  promise: Promise<void>;
+  open: () => void;
+}
+
+/** A closed gate. `open()` lets everything it holds through, once and for good. */
+export function createGate(): Gate {
+  let resolveGate: (() => void) | null = null;
+  const promise = new Promise<void>((settle) => {
+    resolveGate = settle;
+  });
+  return { promise, open: () => resolveGate?.() };
 }

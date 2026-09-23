@@ -3370,6 +3370,12 @@
         "year": "Jahrestarif"
       },
       "yearThenMonthly": "Dein bezahltes Jahr läuft bis {{date}}. Danach läuft der Tarif monatlich weiter, und du kannst ihn jeden Monat kündigen."
+    },
+    "countdown": {
+      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
+      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
+      "lastDay": "Your trial's AI scans end today.",
+      "action": "See plans"
     }
   },
   "usual": {

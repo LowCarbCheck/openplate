@@ -3370,6 +3370,12 @@
         "year": "Plan anual"
       },
       "yearThenMonthly": "Tu año de suscripción dura hasta el {{date}}. Después, el plan continúa de forma mensual y puedes cancelarlo cada mes."
+    },
+    "countdown": {
+      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
+      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
+      "lastDay": "Your trial's AI scans end today.",
+      "action": "See plans"
     }
   },
   "usual": {
