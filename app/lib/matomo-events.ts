@@ -71,6 +71,7 @@
  * is what keeps the feature flag out of forty components.
  */
 import type { AnalyticsEventLevel } from '#app/config/analytics';
+import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 
 declare global {
   interface Window {
@@ -481,6 +482,41 @@ export type LandingCta = 'hero' | 'setup' | 'mid' | 'footer';
 
 export function trackLandingCtaClicked(cta: LandingCta): void {
   trackEvent('product', 'Landing', 'cta-clicked', cta);
+}
+
+// ─── Plans ───────────────────────────────────────────────────────────────────
+// The conversion funnel on an instance that sells plans (M250/06). One event
+// per step, and every argument is a word from a fixed list: WHERE an offer was
+// seen, WHICH plan key was picked or ordered, and HOW a person came back from
+// the payment page. Never an account id, never an address, never a price and
+// never a date: a plan key names a row in the instance's catalogue, the way a
+// software slug does on SelfHostedWorld, and says nothing about the person.
+// Product tier, because buying the software is a fact about the software.
+
+/** Where an offer was drawn. A screen position, never a person. */
+export type OfferPlacement = 'countdown' | 'ai-limit' | 'plan-page' | 'account';
+
+/** How a person came back from the payment page, read off the address the biller sent them to. */
+export type PaymentReturn = 'paid' | 'cancelled';
+
+/** An offer was on screen. Fired once per page view per placement, when it became visible. */
+export function trackOfferSeen(placement: OfferPlacement): void {
+  trackEvent('product', 'Plans', 'offer-seen', placement);
+}
+
+/** A plan was picked in a plan choice. */
+export function trackPlanPicked(key: PlanKey): void {
+  trackEvent('product', 'Plans', 'plan-picked', key);
+}
+
+/** An order for a plan was sent, the press that leaves for the payment page. */
+export function trackOrderSent(key: PlanKey): void {
+  trackEvent('product', 'Plans', 'order-sent', key);
+}
+
+/** The person came back from the payment page. */
+export function trackPaymentReturned(outcome: PaymentReturn): void {
+  trackEvent('product', 'Plans', 'payment-returned', outcome);
 }
 
 // ─── Fasting (RESEARCH tier) ─────────────────────────────────────────────────

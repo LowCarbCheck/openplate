@@ -146,6 +146,20 @@ export const E2E_SYNC_SERVER_URL = `http://127.0.0.1:${E2E_SYNC_PORT}`;
 export const E2E_FOOD_DB_URL = `http://127.0.0.1:${E2E_FOOD_DB_PORT}`;
 
 /**
+ * The Matomo base URL, handed to the app as `MATOMO_URL` with site id 1
+ * (M250/06).
+ *
+ * ON THE FAKE FOOD DATABASE'S ORIGIN, which answers every path it does not
+ * know with a fast 404, so every spec that does not care about analytics loads
+ * no tracker and pays nothing: `matomo.js` 404s, the queue is never drained,
+ * and no request leaves. The funnel spec routes `matomo.js` and `matomo.php`
+ * on this origin itself. A loopback origin rather than an invented host,
+ * because a name nothing resolves could hold a page's load event for as long
+ * as a DNS lookup takes to fail.
+ */
+export const E2E_MATOMO_URL = `${E2E_FOOD_DB_URL}/matomo/`;
+
+/**
  * The fixture account, created once in `global-setup.ts`.
  *
  * An address in a reserved, undeliverable TLD (RFC 2606), like

@@ -56,7 +56,7 @@ describe('the formatted card figures', () => {
   it('formats in the reader language, from cents', () => {
     assert.equal(formatCents({ cents: 4000, currency: 'EUR', locale: 'en' }), '€40.00');
     // THE CONTROL: the same amount in German moves the symbol and the separator.
-    assert.equal(formatCents({ cents: 4000, currency: 'EUR', locale: 'de' }).replaceAll(' ', ' '), '40,00 €');
+    assert.equal(formatCents({ cents: 4000, currency: 'EUR', locale: 'de' }).replaceAll('\u00a0', ' '), '40,00 €');
   });
 
   it('gives the yearly card its equivalent and saving, and the monthly card neither', () => {

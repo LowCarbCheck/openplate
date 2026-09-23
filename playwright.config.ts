@@ -52,7 +52,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
 
-import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
+import { E2E_APP_PORT, E2E_APP_URL, E2E_FOOD_DB_URL, E2E_MATOMO_URL, E2E_SYNC_SERVER_URL } from './tests/e2e/env';
 
 /** The build artefact the production server serves. */
 const SERVER_BUNDLE = 'build/server/index.js';
@@ -120,7 +120,13 @@ export default defineConfig({
       // Left unset, the production server asks the real lowcarbcheck.org, so a
       // smoke tier would depend on somebody else's uptime and assert against
       // numbers this repository does not hold.
-      `FOOD_DB_API_URL=${E2E_FOOD_DB_URL} tsx ./server.ts`,
+      `FOOD_DB_API_URL=${E2E_FOOD_DB_URL} ` +
+      // ANALYTICS ARE ON IN THIS TIER, pointed at a loopback origin that
+      // serves nothing (`E2E_MATOMO_URL`), so the plans funnel spec can read
+      // the events off the wire. Every other spec loads no tracker, because
+      // `matomo.js` 404s there. The consumer instance runs with analytics on,
+      // so this is closer to production, not further from it.
+      `MATOMO_URL=${E2E_MATOMO_URL} MATOMO_SITE_ID=1 tsx ./server.ts`,
     url: `${E2E_APP_URL}/`,
     // NEVER REUSE. A server left over from an earlier run is serving an earlier
     // build, which is the "you verified yesterday's build" failure.

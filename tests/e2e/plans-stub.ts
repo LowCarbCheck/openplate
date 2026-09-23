@@ -129,3 +129,16 @@ export async function openPlanPageSignedIn(page: Page, search = ''): Promise<voi
   }
   await page.waitForURL('**/settings/plan**');
 }
+
+/**
+ * Routes `POST /v1/plans/checkout` to answer an address, standing in for the
+ * Stripe page the biller would open. The spec names where "Stripe" sends the
+ * browser back to, which is how a return from payment is reached without a
+ * payment.
+ *
+ * @param page - the page, before the button is pressed.
+ * @param url - the address the checkout answers.
+ */
+export async function routeCheckout(page: Page, url: string): Promise<void> {
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => route.fulfill({ json: { url } }));
+}

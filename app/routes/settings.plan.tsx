@@ -35,7 +35,7 @@
  * There is no DOM test library in this repository, so a state that can only be
  * reached by clicking is a state nothing checks.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
@@ -64,6 +64,7 @@ import { useSyncSession } from '#app/components/sync-status';
 import { planStanding } from '#app/lib/plans/plan-standing';
 import { offerLocaleFor } from '#app/lib/plans/plans-door';
 import { cn } from '#app/lib/utils';
+import { trackOrderSent, trackPaymentReturned } from '#app/lib/matomo-events';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -187,7 +188,7 @@ export function PlanScreen({
             it (`plan-prices.ts`), and the term under each is the biller's own
             sentence. */}
         {state.kind === 'ready' && offer !== null && (
-          <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} />
+          <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} placement="plan-page" />
         )}
 
         <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
@@ -271,8 +272,12 @@ export function readPlanParam(value: string | null): PlanKey | null {
 
 export default function SettingsPlan() {
   const { i18n } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const session = useSyncSession();
+  // READ ONCE, AT MOUNT. The marker the biller put on the address is taken
+  // off it below, and the page must go on saying what happened after that.
+  const [checkoutReturn] = useState<CheckoutReturn>(() => readCheckoutReturn(searchParams.get('checkout')));
+  const hasReportedReturn = useRef(false);
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
   const { instance } = useLoaderData<typeof clientLoader>();
@@ -300,6 +305,23 @@ export default function SettingsPlan() {
   const isWaitingForOffer = read.kind === 'ready' && standing.kind !== 'subscribed' && !offerRead.settled;
   const state: PlanReadState = isWaitingForOffer ? { kind: 'loading' } : read;
 
+  // ONE RETURN, ONE EVENT, ONE THANK-YOU. The `checkout` marker leaves the
+  // address, replacing the history entry, so a reload or a back navigation
+  // neither counts the return twice nor thanks somebody for a payment they
+  // made last week.
+  useEffect(() => {
+    if (checkoutReturn === 'none' || hasReportedReturn.current) return;
+    hasReportedReturn.current = true;
+    trackPaymentReturned(checkoutReturn === 'success' ? 'paid' : 'cancelled');
+    setSearchParams(
+      (params) => {
+        params.delete('checkout');
+        return params;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  }, [checkoutReturn, setSearchParams]);
+
   /**
    * Follows an address the biller answered.
    *
@@ -324,13 +346,16 @@ export default function SettingsPlan() {
   }, []);
 
   const onStart = useCallback(() => {
+    // The funnel names the plan the person asked for. Without an offer there
+    // was no choice to name, so there is no key and no event.
+    if (selectedPlan !== null) trackOrderSent(selectedPlan);
     void follow(async () => {
       const client = currentPlansClient();
       if (client === null) return null;
       const outcome = await client.startCheckout({ locale: checkoutLocaleFor(i18n.language) });
       return outcome.status === 'ok' ? outcome.value.url : null;
     }, 'checkout');
-  }, [follow, i18n.language]);
+  }, [follow, i18n.language, selectedPlan]);
 
   const onManage = useCallback(() => {
     void follow(async () => {
@@ -348,7 +373,7 @@ export default function SettingsPlan() {
       selectedPlan={selectedPlan}
       onSelectPlan={setPickedPlan}
       busy={busy}
-      checkoutReturn={readCheckoutReturn(searchParams.get('checkout'))}
+      checkoutReturn={checkoutReturn}
       actionFailed={actionFailed}
       onStart={onStart}
       onManage={onManage}

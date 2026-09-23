@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Added
 
 - **The plan page shows both plans with their prices before you start.** On an instance that sells plans, a person without a plan now sees the plans the billing service offers as cards, each with its price, the service's own sentence about how the plan runs, and for a yearly plan what it works out at per month and how much it saves against twelve monthly payments, rounded down. Nothing is picked for you: the start button waits until you pick a plan, and a link that names a plan (`/settings/plan?plan=yearly`) arrives with that one picked. Every price and every sentence about the order comes from the billing service; the app holds none. A billing service too old to send its offer leaves the page as it was.
+- **Analytics count the four steps from a plan offer to a payment.** On an instance with Matomo configured at the default `product` level, four events join the `Plans` category: `offer-seen` with where the offer was shown (`plan-page` today; `countdown`, `ai-limit` and `account` are reserved for the placements that follow), `plan-picked` and `order-sent` with the plan key (`monthly` or `yearly`), and `payment-returned` with `paid` or `cancelled`. An offer counts as seen once per page view, when it is actually on screen. No event carries an account, an address, a price or a date, and an instance at `pageviews` sends none of them.
 
 ## [0.40.0] - 2026-09-23
 

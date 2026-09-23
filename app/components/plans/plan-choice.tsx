@@ -30,9 +30,11 @@
  * Props only, apart from `t`: the offer is read by the page that places this,
  * so every state is reachable from `renderToStaticMarkup`.
  */
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useOfferSeen } from '#app/hooks/use-offer-seen';
+import { trackPlanPicked, type OfferPlacement } from '#app/lib/matomo-events';
 import { planCardFigures, type PlanCardFigures } from '#app/lib/plans/plan-prices';
 import type { OfferPlan, PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 import { cn } from '#app/lib/utils';
@@ -50,7 +52,7 @@ const PRICE_LINE_KEY = {
 } satisfies Record<PlanCardFigures['interval'], string>;
 
 /** A non-breaking space, so a reserved line keeps one line's height with nothing in it. */
-const EMPTY_LINE = ' ';
+const EMPTY_LINE = '\u00a0';
 
 export interface PlanChoiceProps {
   /** The offer's plans, in the order the biller sent them. */
@@ -60,6 +62,11 @@ export interface PlanChoiceProps {
   onSelect: (key: PlanKey) => void;
   /** The radio group's field name. */
   name?: string;
+  /**
+   * Where this choice is drawn, for the funnel's "offer seen" event, which
+   * fires once when the cards are on screen. `null` reports nothing.
+   */
+  placement?: OfferPlacement | null;
 }
 
 /** One card's border and fill. Bordered and tinted when picked, never a left rule. */
@@ -71,13 +78,15 @@ function cardClass(isSelected: boolean): string {
   );
 }
 
-export function PlanChoice({ plans, selectedKey, onSelect, name = 'plan' }: PlanChoiceProps) {
+export function PlanChoice({ plans, selectedKey, onSelect, name = 'plan', placement = null }: PlanChoiceProps) {
   const { t, i18n } = useTranslation();
   const baseId = useId();
+  const groupRef = useRef<HTMLFieldSetElement>(null);
+  useOfferSeen({ ref: groupRef, placement });
   const cards = planCardFigures({ plans, locale: i18n.resolvedLanguage ?? i18n.language });
 
   return (
-    <fieldset data-slot="plan-choice" className="space-y-2">
+    <fieldset ref={groupRef} data-slot="plan-choice" className="space-y-2">
       <legend className="text-sm font-medium">{t('plan.choice.legend')}</legend>
       <div className="space-y-2 pt-1">
         {cards.map((card) => {
@@ -94,7 +103,12 @@ export function PlanChoice({ plans, selectedKey, onSelect, name = 'plan' }: Plan
                 name={name}
                 value={card.key}
                 checked={isSelected}
-                onChange={() => onSelect(card.key)}
+                onChange={() => {
+                  // THE FUNNEL STEP BELONGS TO THE PICK, not to the caller, so
+                  // every place that draws these cards reports it the same way.
+                  trackPlanPicked(card.key);
+                  onSelect(card.key);
+                }}
                 aria-labelledby={`${id}-name ${id}-price ${id}-term`}
                 aria-describedby={described.length > 0 ? described.join(' ') : undefined}
                 className="sr-only"
