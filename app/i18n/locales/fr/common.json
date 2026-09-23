@@ -3370,16 +3370,16 @@
         "year": "Forfait annuel"
       },
       "yearThenMonthly": "Ton année payée va jusqu'au {{date}}. Ensuite, le forfait continue au mois, et tu peux le résilier chaque mois.",
-      "orderYearly": "Order the yearly plan",
-      "switchBooked": "Your yearly plan starts on {{date}}."
+      "orderYearly": "Commander le forfait annuel",
+      "switchBooked": "Ton forfait annuel commence le {{date}}."
     },
     "order": {
-      "confirmFirst": "Tick both boxes to order.",
-      "failed": "The order did not go through. Try again.",
-      "stale": "This page changed. Read it again and tick both boxes.",
-      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
-      "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "confirmFirst": "Coche les deux cases pour commander.",
+      "failed": "La commande n'a pas abouti. Réessaie.",
+      "stale": "Cette page a changé. Relis-la et coche les deux cases.",
+      "alreadySubscribed": "Ton compte a déjà un forfait, ou un changement est déjà prévu.",
+      "unavailable": "Impossible de charger la page de commande. Réessaie plus tard.",
+      "withdrawalLink": "Informations et formulaire de rétractation"
     },
     "countdown": {
       "daysLeft_one": "Il te reste {{count}} jour de scans IA dans ton essai.",

@@ -1280,6 +1280,13 @@
     "at": "2026-09-14",
     "es": "{{count}} entradas todavía no han llegado al servidor. Si borras, se perderán."
   },
+  "101be0e6022da2e7": {
+    "en": "The order page could not be loaded. Try again later.",
+    "path": "common:plan.order.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "No se ha podido cargar la página del pedido. Inténtalo más tarde."
+  },
   "102ec553b71cf9ab": {
     "en": "Theme and language, kept on this device.",
     "path": "common:preferences.cardDescription",
@@ -3086,6 +3093,13 @@
     "at": "2026-09-14",
     "es": "Intro envía. Mayús e Intro crean una línea nueva."
   },
+  "24d8b89b19b93be4": {
+    "en": "The order did not go through. Try again.",
+    "path": "common:plan.order.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "El pedido no se ha podido tramitar. Inténtalo de nuevo."
+  },
   "24d91e95af969e8a": {
     "en": "The daily counts could not be loaded. The people are still listed.",
     "path": "common:admin.activity.failed",
@@ -3534,6 +3548,13 @@
     "at": "2026-09-19",
     "es": "Todavía no has registrado nada en esta comida durante este periodo."
   },
+  "2b38a3c3bf245340": {
+    "en": "Withdrawal instruction and form",
+    "path": "common:plan.order.withdrawalLink",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Información y formulario de desistimiento"
+  },
   "2b48b7556ec2ba03": {
     "en": "Save goals",
     "path": "common:goals.save",
@@ -3974,6 +3995,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Macronutrientes desconocidos, se registró solo con el nombre."
+  },
+  "317745823452f2ab": {
+    "en": "Tick both boxes to order.",
+    "path": "common:plan.order.confirmFirst",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Marca las dos casillas para hacer el pedido."
   },
   "31d3af82e7bf77bb": {
     "en": "Dismiss this message",
@@ -6145,6 +6173,13 @@
     "at": "2026-09-14",
     "es": "Ninguno de estos puntos es una propuesta a futuro. Todos y cada uno de ellos están ya en el repositorio hoy."
   },
+  "4f581d20b984b558": {
+    "en": "Your yearly plan starts on {{date}}.",
+    "path": "common:plan.card.switchBooked",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Tu plan anual empieza el {{date}}."
+  },
   "4f5c602cd4d5a56e": {
     "en": "You are signed out",
     "path": "common:account.signedOut.title",
@@ -7173,6 +7208,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Horas esta semana"
+  },
+  "5b5555e1dd4e158d": {
+    "en": "This page changed. Read it again and tick both boxes.",
+    "path": "common:plan.order.stale",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Esta página ha cambiado. Léela de nuevo y marca las dos casillas."
   },
   "5b8de8b5e3c023d5": {
     "en": "Your account carries a daily allowance of plate scans and an end date. When you reach the daily limit, scanning stops until the next day. When the end date passes, plate scanning stops for your account until we extend it. The rest of openplate continues to work. Your diary stays on your device, and your account continues to sync it. We may change the daily limit or the end date. An administrator can view both, as described in the Privacy Policy.",
@@ -19333,6 +19375,13 @@
     "at": "2026-09-14",
     "es": "Este dispositivo olvida el estudio, así que unirte de nuevo requiere escribir otra vez la huella que figura en los materiales de consentimiento."
   },
+  "f5ca6cb05f8c2a6f": {
+    "en": "Your account already has a plan, or a change to it is booked.",
+    "path": "common:plan.order.alreadySubscribed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Tu cuenta ya tiene un plan o ya se ha programado un cambio."
+  },
   "f5caab9db2a786ad": {
     "en": "Join · openplate",
     "path": "common:meta.join",
@@ -20046,6 +20095,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Más pequeño"
+  },
+  "fec51a53b8cfeaac": {
+    "en": "Order the yearly plan",
+    "path": "common:plan.card.orderYearly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Contratar el plan anual"
   },
   "fed69827e75b7474": {
     "en": "Within your calorie goal",

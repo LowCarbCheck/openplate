@@ -3370,16 +3370,16 @@
         "year": "Jahrestarif"
       },
       "yearThenMonthly": "Dein bezahltes Jahr läuft bis {{date}}. Danach läuft der Tarif monatlich weiter, und du kannst ihn jeden Monat kündigen.",
-      "orderYearly": "Order the yearly plan",
-      "switchBooked": "Your yearly plan starts on {{date}}."
+      "orderYearly": "Jahrestarif bestellen",
+      "switchBooked": "Dein Jahrestarif beginnt am {{date}}."
     },
     "order": {
-      "confirmFirst": "Tick both boxes to order.",
-      "failed": "The order did not go through. Try again.",
-      "stale": "This page changed. Read it again and tick both boxes.",
-      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
-      "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "confirmFirst": "Setze beide Haken, um zu bestellen.",
+      "failed": "Die Bestellung hat nicht geklappt. Versuche es noch einmal.",
+      "stale": "Diese Seite hat sich geändert. Lies sie noch einmal und setze beide Haken.",
+      "alreadySubscribed": "Dein Konto hat bereits einen Tarif, oder ein Wechsel ist gebucht.",
+      "unavailable": "Die Bestellseite konnte nicht geladen werden. Versuche es später noch einmal.",
+      "withdrawalLink": "Widerrufsbelehrung und Widerrufsformular"
     },
     "countdown": {
       "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",

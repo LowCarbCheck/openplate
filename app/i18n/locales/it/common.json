@@ -3370,16 +3370,16 @@
         "year": "Piano annuale"
       },
       "yearThenMonthly": "Il tuo anno pagato dura fino al {{date}}. Dopodiché il piano prosegue mensilmente, e puoi disdirlo ogni mese.",
-      "orderYearly": "Order the yearly plan",
-      "switchBooked": "Your yearly plan starts on {{date}}."
+      "orderYearly": "Ordina il piano annuale",
+      "switchBooked": "Il tuo piano annuale inizia il {{date}}."
     },
     "order": {
-      "confirmFirst": "Tick both boxes to order.",
-      "failed": "The order did not go through. Try again.",
-      "stale": "This page changed. Read it again and tick both boxes.",
-      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
-      "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "confirmFirst": "Spunta entrambe le caselle per ordinare.",
+      "failed": "L'ordine non è andato a buon fine. Riprova.",
+      "stale": "Questa pagina è cambiata. Rileggila e spunta entrambe le caselle.",
+      "alreadySubscribed": "Il tuo account ha già un piano, oppure è già programmata una modifica.",
+      "unavailable": "Impossibile caricare la pagina dell'ordine. Riprova più tardi.",
+      "withdrawalLink": "Istruzioni e modulo di recesso"
     },
     "countdown": {
       "daysLeft_one": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova.",

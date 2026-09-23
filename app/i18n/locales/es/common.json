@@ -3370,16 +3370,16 @@
         "year": "Plan anual"
       },
       "yearThenMonthly": "Tu año de suscripción dura hasta el {{date}}. Después, el plan continúa de forma mensual y puedes cancelarlo cada mes.",
-      "orderYearly": "Order the yearly plan",
-      "switchBooked": "Your yearly plan starts on {{date}}."
+      "orderYearly": "Contratar el plan anual",
+      "switchBooked": "Tu plan anual empieza el {{date}}."
     },
     "order": {
-      "confirmFirst": "Tick both boxes to order.",
-      "failed": "The order did not go through. Try again.",
-      "stale": "This page changed. Read it again and tick both boxes.",
-      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
-      "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "confirmFirst": "Marca las dos casillas para hacer el pedido.",
+      "failed": "El pedido no se ha podido tramitar. Inténtalo de nuevo.",
+      "stale": "Esta página ha cambiado. Léela de nuevo y marca las dos casillas.",
+      "alreadySubscribed": "Tu cuenta ya tiene un plan o ya se ha programado un cambio.",
+      "unavailable": "No se ha podido cargar la página del pedido. Inténtalo más tarde.",
+      "withdrawalLink": "Información y formulario de desistimiento"
     },
     "countdown": {
       "daysLeft_one": "Te queda {{count}} día de escaneos con IA en tu prueba.",

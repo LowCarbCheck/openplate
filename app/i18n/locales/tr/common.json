@@ -3370,16 +3370,16 @@
         "year": "Yıllık plan"
       },
       "yearThenMonthly": "Ödediğin yıl {{date}} tarihine kadar geçerlidir. Sonrasında plan aylık olarak devam eder ve her ay iptal edebilirsin.",
-      "orderYearly": "Order the yearly plan",
-      "switchBooked": "Your yearly plan starts on {{date}}."
+      "orderYearly": "Yıllık planı sipariş et",
+      "switchBooked": "Yıllık planın {{date}} tarihinde başlıyor."
     },
     "order": {
-      "confirmFirst": "Tick both boxes to order.",
-      "failed": "The order did not go through. Try again.",
-      "stale": "This page changed. Read it again and tick both boxes.",
-      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
-      "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "confirmFirst": "Sipariş vermek için her iki kutuyu da işaretle.",
+      "failed": "Sipariş tamamlanamadı. Tekrar dene.",
+      "stale": "Bu sayfa değişti. Tekrar oku ve her iki kutuyu da işaretle.",
+      "alreadySubscribed": "Hesabında zaten bir plan var veya bir değişiklik planlandı.",
+      "unavailable": "Sipariş sayfası yüklenemedi. Daha sonra tekrar dene.",
+      "withdrawalLink": "Cayma hakkı bilgilendirmesi ve formu"
     },
     "countdown": {
       "daysLeft_one": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
