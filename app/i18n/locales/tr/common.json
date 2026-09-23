@@ -3372,17 +3372,17 @@
       "yearThenMonthly": "Ödediğin yıl {{date}} tarihine kadar geçerlidir. Sonrasında plan aylık olarak devam eder ve her ay iptal edebilirsin."
     },
     "countdown": {
-      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
-      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
-      "lastDay": "Your trial's AI scans end today.",
-      "action": "See plans"
+      "daysLeft_one": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
+      "daysLeft_other": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
+      "lastDay": "Deneme sürendeki yapay zeka taramaları bugün bitiyor.",
+      "action": "Planları gör"
     },
     "offer": {
-      "from": "Plans from {{price}} a month."
+      "from": "Ayda {{price}}'den başlayan planlar."
     },
     "recap": {
-      "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_one": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin.",
+      "meals_other": "Deneme sürende yapay zeka ile {{count}} öğün kaydettin."
     }
   },
   "usual": {

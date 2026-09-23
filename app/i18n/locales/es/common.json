@@ -3372,17 +3372,17 @@
       "yearThenMonthly": "Tu año de suscripción dura hasta el {{date}}. Después, el plan continúa de forma mensual y puedes cancelarlo cada mes."
     },
     "countdown": {
-      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
-      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
-      "lastDay": "Your trial's AI scans end today.",
-      "action": "See plans"
+      "daysLeft_one": "Te queda {{count}} día de escaneos con IA en tu prueba.",
+      "daysLeft_other": "Te quedan {{count}} días de escaneos con IA en tu prueba.",
+      "lastDay": "Los escaneos con IA de tu prueba terminan hoy.",
+      "action": "Ver planes"
     },
     "offer": {
-      "from": "Plans from {{price}} a month."
+      "from": "Planes desde {{price}} al mes."
     },
     "recap": {
-      "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_one": "En tu prueba registraste {{count}} comida con IA.",
+      "meals_other": "En tu prueba registraste {{count}} comidas con IA."
     }
   },
   "usual": {

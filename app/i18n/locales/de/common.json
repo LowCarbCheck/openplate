@@ -3372,17 +3372,17 @@
       "yearThenMonthly": "Dein bezahltes Jahr läuft bis {{date}}. Danach läuft der Tarif monatlich weiter, und du kannst ihn jeden Monat kündigen."
     },
     "countdown": {
-      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
-      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
-      "lastDay": "Your trial's AI scans end today.",
-      "action": "See plans"
+      "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",
+      "daysLeft_other": "Noch {{count}} Tage KI-Scans in deiner Testphase.",
+      "lastDay": "Die KI-Scans deiner Testphase enden heute.",
+      "action": "Tarife ansehen"
     },
     "offer": {
-      "from": "Plans from {{price}} a month."
+      "from": "Tarife ab {{price}} im Monat."
     },
     "recap": {
-      "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
+      "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst."
     }
   },
   "usual": {

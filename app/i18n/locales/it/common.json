@@ -3372,17 +3372,17 @@
       "yearThenMonthly": "Il tuo anno pagato dura fino al {{date}}. Dopodiché il piano prosegue mensilmente, e puoi disdirlo ogni mese."
     },
     "countdown": {
-      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
-      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
-      "lastDay": "Your trial's AI scans end today.",
-      "action": "See plans"
+      "daysLeft_one": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova.",
+      "daysLeft_other": "Ti restano {{count}} giorni di scansioni IA nel tuo periodo di prova.",
+      "lastDay": "Le scansioni IA del tuo periodo di prova terminano oggi.",
+      "action": "Vedi i piani"
     },
     "offer": {
-      "from": "Plans from {{price}} a month."
+      "from": "Piani da {{price}} al mese."
     },
     "recap": {
-      "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_one": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA.",
+      "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
     }
   },
   "usual": {

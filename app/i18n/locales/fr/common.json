@@ -3372,17 +3372,17 @@
       "yearThenMonthly": "Ton année payée va jusqu'au {{date}}. Ensuite, le forfait continue au mois, et tu peux le résilier chaque mois."
     },
     "countdown": {
-      "daysLeft_one": "{{count}} day of AI scans left in your trial.",
-      "daysLeft_other": "{{count}} days of AI scans left in your trial.",
-      "lastDay": "Your trial's AI scans end today.",
-      "action": "See plans"
+      "daysLeft_one": "Il te reste {{count}} jour de scans IA dans ton essai.",
+      "daysLeft_other": "Il te reste {{count}} jours de scans IA dans ton essai.",
+      "lastDay": "Les scans IA de ton essai se terminent aujourd’hui.",
+      "action": "Voir les forfaits"
     },
     "offer": {
-      "from": "Plans from {{price}} a month."
+      "from": "Forfaits à partir de {{price}} par mois."
     },
     "recap": {
-      "meals_one": "In your trial you logged {{count}} meal with AI.",
-      "meals_other": "In your trial you logged {{count}} meals with AI."
+      "meals_one": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
+      "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
     }
   },
   "usual": {
