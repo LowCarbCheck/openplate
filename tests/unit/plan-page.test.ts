@@ -72,6 +72,7 @@ function render(
     actionFailed?: boolean;
     offer?: PlanOffer | null;
     selectedPlan?: PlanKey | null;
+    recapMealCount?: number | null;
   } = {},
 ): string {
   return renderToStaticMarkup(
@@ -90,6 +91,7 @@ function render(
         busy: overrides.busy ?? 'none',
         checkoutReturn: overrides.checkoutReturn ?? 'none',
         actionFailed: overrides.actionFailed ?? false,
+        recapMealCount: overrides.recapMealCount ?? null,
         onStart: () => undefined,
         onManage: () => undefined,
       }),
@@ -281,5 +283,24 @@ describe('the status card for a subscriber', () => {
   it('thanks a returning subscriber above the card', () => {
     const markup = render({ kind: 'ready', plan: YEARLY }, { checkoutReturn: 'success' });
     assert.ok(markup.indexOf(enCommon.plan.returned.success) < markup.indexOf('data-slot="plan-status-card"'));
+  });
+});
+
+describe('the trial recap on the plan page (M250/05)', () => {
+  const NO_PLAN: PlanView = { ...PAID, plan: 'none', planKey: null, interval: null, currentPeriodEnd: null };
+  const RECAP = 'data-slot="plan-trial-recap"';
+
+  it('names the meals logged with AI, in the plural form the count asks for', () => {
+    const many = render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 12 });
+    assert.ok(many.includes(enCommon.plan.recap.meals_other.replace('{{count}}', '12')), many);
+    const one = render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 1 });
+    assert.ok(one.includes(enCommon.plan.recap.meals_one.replace('{{count}}', '1')), one);
+  });
+
+  it('draws no line for no count and for a count of zero', () => {
+    // THE CONTROLS for the render above, through the same slot.
+    assert.ok(!render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: null }).includes(RECAP));
+    assert.ok(!render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 0 }).includes(RECAP));
+    assert.ok(render({ kind: 'ready', plan: NO_PLAN }, { recapMealCount: 3 }).includes(RECAP));
   });
 });

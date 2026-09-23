@@ -31,10 +31,13 @@ import { useLocation } from 'react-router';
 
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { usePlanStanding } from '#app/hooks/use-plan-standing';
+import { useTrialRecap } from '#app/hooks/use-trial-recap';
+import { useSyncSession } from '#app/components/sync-status';
 import { localDateToDayKey } from '#app/lib/day-key-date';
 import { trackOfferSeen } from '#app/lib/matomo-events';
 import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { closeCountdownForDay, readCountdownClosedDay, resolveTrialCountdown } from '#app/lib/plans/trial-countdown';
+import { RECAP_NEAR_END_DAYS } from '#app/lib/plans/trial-recap';
 import { clearStatus, publishStatus, readStatus, useStatus } from '#app/lib/status';
 
 /**
@@ -55,6 +58,7 @@ export function TrialCountdown(): null {
   const navigateRef = useRef(navigate);
   const { pathname } = useLocation();
   const standing = usePlanStanding();
+  const session = useSyncSession();
   const status = useStatus();
   const [closedDay, setClosedDay] = useState<ClosedDayRead>(undefined);
   /** The id of the status this mount published, so it only ever withdraws its own. */
@@ -72,13 +76,27 @@ export function TrialCountdown(): null {
     closedDay === undefined ? null : resolveTrialCountdown({ standing, now: new Date(), closedDay, pathname });
   const daysLeft = countdown?.daysLeft ?? null;
   const isChannelFree = status === null;
+  // NEAR THE END, THE LINE SAYS WHAT THE TRIAL WAS USED FOR (M250/05), as the
+  // status's smaller second line. Earlier in the trial there is nothing worth
+  // summing up, so the diary is not read at all.
+  const recap = useTrialRecap({
+    standing,
+    accountCreatedAt: session.account?.createdAt,
+    isEnabled: daysLeft !== null && daysLeft <= RECAP_NEAR_END_DAYS,
+  });
+  const recapCount = recap.settled ? recap.mealCount : null;
 
   useEffect(() => {
     if (daysLeft === null || !isChannelFree || publishedId.current !== null) return;
+    // THE WHOLE LINE AT ONCE: a second line added after the first is drawn
+    // would be a status changing under the reader's eyes.
+    if (!recap.settled) return;
     publishStatus({
       // THE LAST DAY IS ITS OWN SENTENCE. "1 day left" on the day it ends
       // reads as "tomorrow too", which is not true.
       text: daysLeft === 1 ? t('plan.countdown.lastDay') : t('plan.countdown.daysLeft', { count: daysLeft }),
+      // No line for a count of zero: "you logged no meals" is a reproach.
+      description: recapCount === null || recapCount === 0 ? undefined : t('plan.recap.meals', { count: recapCount }),
       tone: 'info',
       // UNTIL CLOSED. A line that faded on its own could not be closed for
       // the day, and would come back on the next load as if never seen.
@@ -92,7 +110,7 @@ export function TrialCountdown(): null {
     });
     publishedId.current = readStatus()?.id ?? null;
     trackOfferSeen('countdown');
-  }, [daysLeft, isChannelFree, t]);
+  }, [daysLeft, isChannelFree, recap.settled, recapCount, t]);
 
   // WITHDRAWN WHEN IT STOPS BEING TRUE: on the plan page itself, after a
   // purchase turned the trial into a subscription, or once closed. Only this

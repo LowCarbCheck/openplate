@@ -53,6 +53,7 @@ import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/l
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
+import { useTrialRecap } from '#app/hooks/use-trial-recap';
 import { PlanChoice } from '#app/components/plans/plan-choice';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
@@ -132,6 +133,7 @@ export function PlanScreen({
   busy,
   checkoutReturn,
   actionFailed,
+  recapMealCount,
   onSelectPlan,
   onStart,
   onManage,
@@ -147,6 +149,11 @@ export function PlanScreen({
   checkoutReturn: CheckoutReturn;
   /** `true` when the last button press did not produce an address to follow. */
   actionFailed: boolean;
+  /**
+   * The meals logged with AI during the trial (M250/05), or `null` when there
+   * is no trial to sum up. Zero draws no line, like `null`.
+   */
+  recapMealCount: number | null;
   onSelectPlan: (key: PlanKey) => void;
   onStart: () => void;
   onManage: () => void;
@@ -192,6 +199,15 @@ export function PlanScreen({
           {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
           {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
           {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
+
+          {/* WHAT THE TRIAL WAS USED FOR, above the offer, counted from this
+              device's diary (M250/05). The page is held until the count is in,
+              so this line never arrives above cards already drawn. */}
+          {state.kind === 'ready' && recapMealCount !== null && recapMealCount > 0 && (
+            <p data-slot="plan-trial-recap" className="text-sm">
+              {t('plan.recap.meals', { count: recapMealCount })}
+            </p>
+          )}
 
           {/* THE PRICES ARE DATA. No number in this app is a price: every
               figure on the cards is the biller's `grossCents`, or arithmetic on
@@ -292,13 +308,21 @@ export default function SettingsPlan() {
   const [busy, setBusy] = useState<PlanAction>('none');
   const [actionFailed, setActionFailed] = useState(false);
 
+  const recap = useTrialRecap({
+    standing,
+    accountCreatedAt: session.account?.createdAt,
+    isEnabled: read.kind === 'ready',
+  });
+
   const offer = offerRead.settled ? offerRead.offer : null;
   // A linked plan the offer does not contain is no pick at all.
   const selectedPlan = offer?.plans.some((plan) => plan.key === pickedPlan) ? pickedPlan : null;
-  // HELD UNTIL THE OFFER IS IN, so the cards never arrive underneath a page
-  // that is already drawn and push its buttons down.
+  // HELD UNTIL THE OFFER AND THE TRIAL RECAP ARE IN, so neither the cards nor
+  // the recap line above them arrive underneath a page that is already drawn
+  // and push its buttons down.
   const isWaitingForOffer = read.kind === 'ready' && standing.kind !== 'subscribed' && !offerRead.settled;
-  const state: PlanReadState = isWaitingForOffer ? { kind: 'loading' } : read;
+  const isWaitingForRecap = read.kind === 'ready' && !recap.settled;
+  const state: PlanReadState = isWaitingForOffer || isWaitingForRecap ? { kind: 'loading' } : read;
 
   // ONE RETURN, ONE EVENT, ONE THANK-YOU. The `checkout` marker leaves the
   // address, replacing the history entry, so a reload or a back navigation
@@ -371,6 +395,7 @@ export default function SettingsPlan() {
       busy={busy}
       checkoutReturn={checkoutReturn}
       actionFailed={actionFailed}
+      recapMealCount={recap.settled ? recap.mealCount : null}
       onStart={onStart}
       onManage={onManage}
     />

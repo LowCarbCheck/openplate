@@ -159,6 +159,13 @@ export async function routeCheckout(page: Page, url: string): Promise<void> {
   await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => route.fulfill({ json: { url } }));
 }
 
+/** The fields an allowance sets, leaving an absent `createdAt` as the fake's own. */
+function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt }: AccountAllowance): AccountAllowance {
+  return createdAt === undefined ?
+      { dailyAiLimit, allowanceExpiresAt }
+    : { dailyAiLimit, allowanceExpiresAt, createdAt };
+}
+
 /** An auth answer that carries the account, every other key kept as the fake sent it. */
 const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.unknown()) });
 
@@ -167,6 +174,13 @@ export interface AccountAllowance {
   dailyAiLimit: number;
   /** The ISO instant the allowance ends, or `null` for none. */
   allowanceExpiresAt: string | null;
+  /**
+   * The ISO instant the account says it was created, or absent for the fake's
+   * own. The trial recap counts from it (M250/05), and the fixture account is
+   * shared by every spec in a run, so a spec that counts its own meals starts
+   * the account at its own start and leaves earlier specs' meals outside.
+   */
+  createdAt?: string;
 }
 
 /**
@@ -191,7 +205,7 @@ export async function routeAccountAllowance(page: Page, allowance: AccountAllowa
       if (!envelope.success) return route.fulfill({ response, body: text });
       return route.fulfill({
         response,
-        json: { ...envelope.data, account: { ...envelope.data.account, ...allowance } },
+        json: { ...envelope.data, account: { ...envelope.data.account, ...accountPatch(allowance) } },
       });
     },
   );

@@ -968,6 +968,7 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
       aiUsedToday: account.aiUsedToday,
       allowanceExpiresAt: account.allowanceExpiresAt ?? null,
       invitesLeft: account.invitesLeft ?? null,
+      createdAt: account.createdAt,
     },
   });
 }
@@ -1006,6 +1007,7 @@ export async function refreshSyncAccount(): Promise<void> {
         // account sends lowers the count by one.
         allowanceExpiresAt: account.allowanceExpiresAt ?? null,
         invitesLeft: account.invitesLeft ?? null,
+        createdAt: account.createdAt,
       },
     });
   } catch {

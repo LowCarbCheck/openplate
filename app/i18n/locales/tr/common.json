@@ -3379,6 +3379,10 @@
     },
     "offer": {
       "from": "Plans from {{price}} a month."
+    },
+    "recap": {
+      "meals_one": "In your trial you logged {{count}} meal with AI.",
+      "meals_other": "In your trial you logged {{count}} meals with AI."
     }
   },
   "usual": {

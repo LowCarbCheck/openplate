@@ -133,6 +133,7 @@ const catalogSchema = z.object({
   plan: z.object({
     countdown: z.object({ daysLeft_other: z.string(), lastDay: z.string(), action: z.string() }),
     offer: z.object({ from: z.string() }),
+    recap: z.object({ meals_one: z.string() }),
     start: z.string(),
     manage: z.string(),
     returned: z.object({ success: z.string() }),
