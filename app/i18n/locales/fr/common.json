@@ -1956,7 +1956,7 @@
       "takePhoto": "Prends ton assiette en photo",
       "title": "Identifier les aliments à partir d'une photo d'assiette",
       "managedDescription": "Ta photo est lue une seule fois pour déterminer ce qui se trouve dans ton assiette, sans être conservée. Elle reste ensuite uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Tu peux désactiver cette option ou la supprimer à tout moment sous Données et sauvegarde dans les paramètres.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "trialScansUsed": "{{used}} sur {{granted}} scans IA gratuits utilisés."
     },
     "errors": {
       "attemptCost": "Cette tentative a utilisé {{amount}} de tes crédits API. Elle est enregistrée dans ton utilisation.",
@@ -3132,8 +3132,8 @@
       "send": "Envoyer l'invitation",
       "sent": "Si cette adresse peut recevoir une invitation, le message est en route. Nous répondons toujours la même chose, afin que personne ne puisse utiliser cette fonction pour savoir qui a déjà un compte.",
       "failed": "L'invitation n'a pas pu être envoyée. Réessaie dans un instant.",
-      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
-      "needsPlanLink": "See plans"
+      "needsPlan": "Les invitations sont disponibles dès que tu as un forfait. Un essai gratuit ne permet d'inviter personne.",
+      "needsPlanLink": "Voir les forfaits"
     }
   },
   "admin": {
@@ -3428,7 +3428,7 @@
       "scansLeft_one": "Il te reste {{count}} scan IA gratuit.",
       "scansLeft_other": "Il te reste {{count}} scans IA gratuits.",
       "action": "Voir les forfaits",
-      "scansUsed": "Free AI scans used."
+      "scansUsed": "Scans IA gratuits utilisés."
     },
     "offer": {
       "from": "Forfaits à partir de {{price}} par mois."

@@ -1956,7 +1956,7 @@
       "takePhoto": "Haz una foto de tu plato",
       "title": "Identificar alimentos a partir de una foto del plato",
       "managedDescription": "Tu foto se lee una vez para determinar qué hay en tu plato, y no se guarda. Después se queda solo en este dispositivo, para que puedas volver a verla en la entrada. Puedes desactivarlo o eliminarla en cualquier momento en Datos y copia de seguridad dentro de los ajustes.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "trialScansUsed": "{{used}} de {{granted}} escaneos gratis con IA usados."
     },
     "errors": {
       "attemptCost": "Este intento ha consumido {{amount}} de tu crédito de API. Queda registrado en tu uso.",
@@ -3132,8 +3132,8 @@
       "send": "Enviar invitación",
       "sent": "Si esa dirección puede recibir invitaciones, la invitación va en camino. Respondemos siempre igual para que nadie pueda usar esto y averiguar quién ya tiene cuenta.",
       "failed": "No se pudo enviar la invitación. Inténtalo de nuevo en unos instantes.",
-      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
-      "needsPlanLink": "See plans"
+      "needsPlan": "Las invitaciones se activan cuando tienes un plan. Con una prueba gratuita no puedes invitar a nadie.",
+      "needsPlanLink": "Ver planes"
     }
   },
   "admin": {
@@ -3428,7 +3428,7 @@
       "scansLeft_one": "Te queda {{count}} escaneo gratis con IA.",
       "scansLeft_other": "Te quedan {{count}} escaneos gratis con IA.",
       "action": "Ver planes",
-      "scansUsed": "Free AI scans used."
+      "scansUsed": "Escaneos gratis con IA usados."
     },
     "offer": {
       "from": "Planes desde {{price}} al mes."

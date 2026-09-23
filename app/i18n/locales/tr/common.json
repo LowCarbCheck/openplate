@@ -1956,7 +1956,7 @@
       "takePhoto": "Tabağının fotoğrafını çek",
       "title": "Tabak fotoğrafından yiyecekleri belirle",
       "managedDescription": "Tabağında ne olduğunu anlamak için fotoğrafın bir kez okunur ve saklanmaz. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda kalır. Bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "trialScansUsed": "{{used}} / {{granted}} ücretsiz yapay zeka taramaları kullanıldı."
     },
     "errors": {
       "attemptCost": "Bu deneme {{amount}} API kredini kullandı. Kullanımına kaydedildi.",
@@ -3132,8 +3132,8 @@
       "send": "Davet gönder",
       "sent": "Bu adres davet edilebiliyorsa davetiye yola çıktı. Kimlerin zaten burada olduğunu kimse bu yolla öğrenemesin diye her seferinde aynı yanıtı veririz.",
       "failed": "Davet gönderilemedi. Birazdan tekrar dene.",
-      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
-      "needsPlanLink": "See plans"
+      "needsPlan": "Davetler bir planın olduğunda açılır. Ücretsiz denemeyle kimseyi davet edemezsin.",
+      "needsPlanLink": "Planları gör"
     }
   },
   "admin": {
@@ -3428,7 +3428,7 @@
       "scansLeft_one": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "scansLeft_other": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "action": "Planları gör",
-      "scansUsed": "Free AI scans used."
+      "scansUsed": "Ücretsiz yapay zeka taramaları kullanıldı."
     },
     "offer": {
       "from": "Ayda {{price}}'den başlayan planlar."

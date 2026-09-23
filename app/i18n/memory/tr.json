@@ -2729,6 +2729,13 @@
     "at": "2026-09-14",
     "tr": "Bu hesap için yapay zeka girdileri açık değil. Besin veri tabanında arama yapmak bunlar olmadan da çalışır."
   },
+  "22731bffd2d15bba": {
+    "en": "Free AI scans used.",
+    "path": "common:plan.countdown.scansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Ücretsiz yapay zeka taramaları kullanıldı."
+  },
   "227b5437c95c69a5": {
     "en": "The header counts down the days of AI scans left in a trial.",
     "path": "releases:v0_42_0.added.03",
@@ -7439,6 +7446,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Başlangıç zamanı"
+  },
+  "642ce734b7257ab2": {
+    "en": "See plans",
+    "path": "common:account.invites.needsPlanLink",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Planları gör"
   },
   "643a905ae460c3ac": {
     "en": "Open the tracker",
@@ -18745,6 +18759,13 @@
     "at": "2026-09-19",
     "tr": "Bu hedefle karşılaştırılacak tamamlanmış bir gün henüz yok."
   },
+  "faff67c3194e2aab": {
+    "en": "{{used}} of {{granted}} free AI scans used.",
+    "path": "common:scan.capture.trialScansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "{{used}} / {{granted}} ücretsiz yapay zeka taramaları kullanıldı."
+  },
   "fb0459da544a99a7": {
     "en": "per 100g: {{summary}}",
     "path": "common:scan.review.match.per100g",
@@ -18898,6 +18919,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Güncellemek için yeniden yükle"
+  },
+  "fc7af12352f050aa": {
+    "en": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+    "path": "common:account.invites.needsPlan",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "tr": "Davetler bir planın olduğunda açılır. Ücretsiz denemeyle kimseyi davet edemezsin."
   },
   "fca0ae222dd50337": {
     "en": "Confirm with your password",

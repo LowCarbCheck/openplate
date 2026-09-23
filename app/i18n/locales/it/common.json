@@ -1956,7 +1956,7 @@
       "takePhoto": "Fotografa il tuo piatto",
       "title": "Identifica i cibi da una foto del piatto",
       "managedDescription": "La tua foto viene letta una volta per identificare cosa c'è nel piatto, e non viene conservata. In seguito resta solo su questo dispositivo, così puoi rivederla nella voce del diario. Puoi disattivare questa opzione o cancellarla in qualsiasi momento sotto Dati e backup nelle impostazioni.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "trialScansUsed": "{{used}} su {{granted}} scansioni IA gratuite utilizzate."
     },
     "errors": {
       "attemptCost": "Questo tentativo ha consumato {{amount}} del tuo credito API. Viene registrato nei tuoi consumi.",
@@ -3132,8 +3132,8 @@
       "send": "Invia invito",
       "sent": "Se quell'indirizzo può essere invitato, l'invito è in arrivo. Rispondiamo sempre nello stesso modo, così nessuno può usare questa funzione per scoprire chi è già registrato.",
       "failed": "Impossibile inviare l'invito. Riprova tra poco.",
-      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
-      "needsPlanLink": "See plans"
+      "needsPlan": "Gli inviti si sbloccano quando hai un piano. Con la prova gratuita non puoi invitare nessuno.",
+      "needsPlanLink": "Vedi i piani"
     }
   },
   "admin": {
@@ -3428,7 +3428,7 @@
       "scansLeft_one": "{{count}} scansione IA gratuita rimasta.",
       "scansLeft_other": "{{count}} scansioni IA gratuite rimaste.",
       "action": "Vedi i piani",
-      "scansUsed": "Free AI scans used."
+      "scansUsed": "Scansioni IA gratuite utilizzate."
     },
     "offer": {
       "from": "Piani da {{price}} al mese."

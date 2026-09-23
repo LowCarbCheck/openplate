@@ -2729,6 +2729,13 @@
     "at": "2026-09-14",
     "es": "Las entradas con IA no están activadas para esta cuenta. Las búsquedas en la base de datos de alimentos funcionan sin ellas."
   },
+  "22731bffd2d15bba": {
+    "en": "Free AI scans used.",
+    "path": "common:plan.countdown.scansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Escaneos gratis con IA usados."
+  },
   "227b5437c95c69a5": {
     "en": "The header counts down the days of AI scans left in a trial.",
     "path": "releases:v0_42_0.added.03",
@@ -7439,6 +7446,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Hora de inicio"
+  },
+  "642ce734b7257ab2": {
+    "en": "See plans",
+    "path": "common:account.invites.needsPlanLink",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Ver planes"
   },
   "643a905ae460c3ac": {
     "en": "Open the tracker",
@@ -18745,6 +18759,13 @@
     "at": "2026-09-19",
     "es": "Aún no hay ningún día completado para comparar con este objetivo."
   },
+  "faff67c3194e2aab": {
+    "en": "{{used}} of {{granted}} free AI scans used.",
+    "path": "common:scan.capture.trialScansUsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "{{used}} de {{granted}} escaneos gratis con IA usados."
+  },
   "fb0459da544a99a7": {
     "en": "per 100g: {{summary}}",
     "path": "common:scan.review.match.per100g",
@@ -18898,6 +18919,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Recarga para actualizar"
+  },
+  "fc7af12352f050aa": {
+    "en": "Invitations open once you have a plan. A free trial cannot invite anybody.",
+    "path": "common:account.invites.needsPlan",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "es": "Las invitaciones se activan cuando tienes un plan. Con una prueba gratuita no puedes invitar a nadie."
   },
   "fca0ae222dd50337": {
     "en": "Confirm with your password",

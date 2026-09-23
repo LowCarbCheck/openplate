@@ -1956,7 +1956,7 @@
       "takePhoto": "Teller-Foto aufnehmen",
       "title": "Lebensmittel aus einem Teller-Foto erkennen",
       "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "trialScansUsed": "{{used}} von {{granted}} kostenlosen KI-Scans verbraucht."
     },
     "errors": {
       "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",
@@ -3132,8 +3132,8 @@
       "send": "Einladung senden",
       "sent": "Wenn an diese Adresse eine Einladung gesendet werden kann, ist sie unterwegs. Wir antworten jedes Mal auf dieselbe Weise, damit niemand herausfinden kann, wer bereits registriert ist.",
       "failed": "Die Einladung konnte nicht gesendet werden. Versuch es gleich noch einmal.",
-      "needsPlan": "Invitations open once you have a plan. A free trial cannot invite anybody.",
-      "needsPlanLink": "See plans"
+      "needsPlan": "Einladungen sind verfügbar, sobald du einen Tarif hast. In der kostenlosen Testphase kannst du niemanden einladen.",
+      "needsPlanLink": "Tarife ansehen"
     }
   },
   "admin": {
@@ -3428,7 +3428,7 @@
       "scansLeft_one": "Noch {{count}} kostenloser KI-Scan übrig.",
       "scansLeft_other": "Noch {{count}} kostenlose KI-Scans übrig.",
       "action": "Tarife ansehen",
-      "scansUsed": "Free AI scans used."
+      "scansUsed": "Kostenlose KI-Scans verbraucht."
     },
     "offer": {
       "from": "Tarife ab {{price}} im Monat."
