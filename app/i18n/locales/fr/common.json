@@ -3333,7 +3333,9 @@
       "trialing": "Ton essai est en cours.",
       "active": "Ton forfait est payé et actif.",
       "pastDue": "Ton dernier paiement n'a pas abouti.",
-      "canceled": "Ton forfait a pris fin."
+      "canceled": "Ton forfait a pris fin.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "Il se renouvelle le {{date}}, sauf si tu résilies.",
     "endsOn": "Tu as résilié. Ton accès reste valable jusqu'au {{date}}, puis s'arrête.",

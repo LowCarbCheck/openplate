@@ -3333,7 +3333,9 @@
       "trialing": "Deneme süren devam ediyor.",
       "active": "Planının ödemesi yapıldı ve devrede.",
       "pastDue": "Son ödemen gerçekleşmedi.",
-      "canceled": "Planın sona erdi."
+      "canceled": "Planın sona erdi.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "Sen iptal edene kadar {{date}} tarihinde yenilenir.",
     "endsOn": "İptal ettin. Erişimin {{date}} tarihine kadar devam eder ve ardından durur.",

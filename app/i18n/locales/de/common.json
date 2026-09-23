@@ -3333,7 +3333,9 @@
       "trialing": "Deine Testphase läuft.",
       "active": "Dein Tarif ist bezahlt und aktiv.",
       "pastDue": "Deine letzte Zahlung hat nicht geklappt.",
-      "canceled": "Dein Tarif ist beendet."
+      "canceled": "Dein Tarif ist beendet.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "Verlängert sich am {{date}}, solange du nicht kündigst.",
     "endsOn": "Du hast gekündigt. Dein Zugriff läuft noch bis zum {{date}} und endet dann.",

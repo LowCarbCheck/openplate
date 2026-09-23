@@ -81,6 +81,28 @@ function PeriodLine({ standing }: { standing: SubscribedStanding }) {
   return <p className="text-sm">{t('plan.renewsOn', { date })}</p>;
 }
 
+/**
+ * The status line under the heading.
+ *
+ * A PLAN SET TO STOP IS NOT "PAID AND RUNNING". Beside "You cancelled", that
+ * sentence read as a contradiction (operator, 2026-09-23). It says what is
+ * true of both halves: paid up to the end date, and no renewal after it.
+ */
+function statusLine({
+  standing,
+  t,
+  longDate,
+}: {
+  standing: SubscribedStanding;
+  t: (key: string, options?: Record<string, string>) => string;
+  longDate: (iso: string) => string;
+}): string {
+  if (standing.isPastDue) return t('plan.status.pastDue');
+  if (standing.renews) return t('plan.status.active');
+  if (standing.periodEnd === null) return t('plan.status.doesNotRenew');
+  return t('plan.status.paidUntil', { date: longDate(standing.periodEnd) });
+}
+
 /** A date the way this reader writes one. */
 function useLongDate(): (iso: string) => string {
   const { i18n } = useTranslation();
@@ -100,7 +122,7 @@ export function PlanStatusCard({
   const { t } = useTranslation();
   const longDate = useLongDate();
   const heading = standing.interval === null ? t('plan.title') : t(PLAN_NAME_KEY[standing.interval]);
-  const status = standing.isPastDue ? t('plan.status.pastDue') : t('plan.status.active');
+  const status = statusLine({ standing, t, longDate });
 
   return (
     <div data-slot="plan-status-card" data-plan-key={standing.planKey ?? 'unnamed'}>

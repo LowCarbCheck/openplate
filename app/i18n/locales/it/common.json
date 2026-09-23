@@ -3333,7 +3333,9 @@
       "trialing": "La tua prova è attiva.",
       "active": "Il tuo piano è pagato e attivo.",
       "pastDue": "L'ultimo pagamento non è andato a buon fine.",
-      "canceled": "Il tuo piano è terminato."
+      "canceled": "Il tuo piano è terminato.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "Si rinnova il {{date}} fino all'eventuale disdetta.",
     "endsOn": "Hai disdetto l'abbonamento. L'accesso rimane valido fino al {{date}}, poi si interrompe.",

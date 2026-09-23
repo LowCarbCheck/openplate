@@ -136,6 +136,8 @@ const catalogSchema = z.object({
     offer: z.object({ from: z.string() }),
     recap: z.object({ meals_one: z.string() }),
     manage: z.string(),
+    endsOn: z.string(),
+    status: z.object({ active: z.string(), paidUntil: z.string() }),
     returned: z.object({ success: z.string() }),
     card: z.object({
       name: z.object({ month: z.string(), year: z.string() }),

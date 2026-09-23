@@ -3333,7 +3333,9 @@
       "trialing": "Your trial is running.",
       "active": "Your plan is paid and running.",
       "pastDue": "Your last payment did not go through.",
-      "canceled": "Your plan has ended."
+      "canceled": "Your plan has ended.",
+      "paidUntil": "Your plan is paid until {{date}} and does not renew.",
+      "doesNotRenew": "Your plan is paid and does not renew."
     },
     "renewsOn": "It renews on {{date}} until you cancel.",
     "endsOn": "You cancelled. Your access runs to {{date}} and then stops.",

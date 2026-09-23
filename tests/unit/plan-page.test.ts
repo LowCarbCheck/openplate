@@ -391,6 +391,24 @@ describe('the status card for a subscriber', () => {
     assert.equal(markup.includes(lead(enCommon.plan.card.yearThenMonthly)), false);
   });
 
+  it('says a plan set to stop is paid until its end and does not renew, never that it is running', () => {
+    // THE REPORT (2026-09-23): "paid and running" beside "You cancelled" read
+    // as a contradiction.
+    const cancelled = render({ kind: 'ready', plan: { ...PAID, cancelAtPeriodEnd: true } });
+    assert.ok(cancelled.includes(lead(enCommon.plan.status.paidUntil)));
+    assert.equal(cancelled.includes(enCommon.plan.status.active), false);
+    // THE CONTROL: the same plan, renewing, is paid and running.
+    const renewing = render({ kind: 'ready', plan: PAID });
+    assert.ok(renewing.includes(enCommon.plan.status.active));
+    assert.equal(renewing.includes(lead(enCommon.plan.status.paidUntil)), false);
+  });
+
+  it('says a plan set to stop does not renew even when the biller sent no end date', () => {
+    const markup = render({ kind: 'ready', plan: { ...PAID, cancelAtPeriodEnd: true, currentPeriodEnd: null } });
+    assert.ok(markup.includes(enCommon.plan.status.doesNotRenew));
+    assert.equal(markup.includes(enCommon.plan.status.active), false);
+  });
+
   it('names a payment Stripe is retrying', () => {
     assert.ok(render({ kind: 'ready', plan: { ...YEARLY, plan: 'past_due' } }).includes(enCommon.plan.status.pastDue));
     assert.equal(render({ kind: 'ready', plan: YEARLY }).includes(enCommon.plan.status.pastDue), false);
