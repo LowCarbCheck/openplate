@@ -11,6 +11,18 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **A page at `/privacy/website` carries the website's own privacy text.** It is read from the same mounted folder as the other legal pages, so openplate.de can link to it and keep no legal text of its own. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
+### Changed
+
+- **The legal pages come from a folder you mount, and openplate ships none of its own.** The terms, the privacy policy, the imprint, the withdrawal page and the two pages to cancel or withdraw from a contract are now markdown files in the folder `CONTENT_DIR` names, one file per page and language, with English as the fallback. Without the variable these pages answer "not found" and the footer shows no legal links. A file that breaks the format is refused and logged with its line numbers, and its page shows an error instead of part of the text. The two statutory forms work as before; only their text moved into the files. `PLAN_PRICE_EUR` and `PLAN_TRIAL_DAYS` are no longer read. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
+### Docs
+
+- **A guide to the content folder.** [docs/content.md](docs/content.md) describes the folder layout, the file format, what the app refuses and the named sections of the two statutory pages, for anyone who runs their own instance. ([7656051](https://github.com/LowCarbCheck/openplate/commit/7656051))
+
 ## [0.40.0] - 2026-09-23
 
 ### Added
