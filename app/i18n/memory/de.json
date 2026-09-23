@@ -244,6 +244,13 @@
     "at": "2026-09-14",
     "de": "Wähl eine Zeit, die schon vorbei ist."
   },
+  "03633fc712c40a4a": {
+    "en": "The release page credits the people a changelog entry thanks.",
+    "path": "releases:v0_41_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Die Release-Seite nennt die Personen, denen ein Changelog-Eintrag dankt."
+  },
   "036c23b52a39cdb1": {
     "en": "Days logged, last 13 weeks",
     "path": "common:trends.grid.a11yLabelActivity",
@@ -7453,6 +7460,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Über openplate"
+  },
+  "694e6254f3955c8f": {
+    "en": "A new page carries the website's own privacy text.",
+    "path": "releases:v0_41_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Eine neue Seite enthält die eigene Datenschutzerklärung der Website."
   },
   "6976809a3c636423": {
     "en": "Signed in as {{handle}}.",
@@ -18366,6 +18380,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "Woche vom {{date}}, Tagesdurchschnitt"
+  },
+  "fe5a275fb4e1d870": {
+    "en": "The legal pages come from a folder you mount, and openplate ships none of its own.",
+    "path": "releases:v0_41_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-23",
+    "de": "Die rechtlichen Seiten stammen aus einem Ordner, den du einbindest, und openplate liefert keine eigenen mit."
   },
   "fe9061b2f72880ab": {
     "en": "People",

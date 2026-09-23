@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Une nouvelle page contient le texte de confidentialité propre au site web."
+    },
+    "changed": {
+      "01": "La page de version crédite les personnes remerciées dans une entrée du journal des modifications.",
+      "02": "Les pages légales proviennent d'un dossier que tu montes, et openplate n'en fournit aucune par défaut."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "Les repas enregistrés t'indiquent désormais la provenance du suivant.",
       "07": "Décrire place désormais la zone de message en bas de la page.",
       "08": "Notifications affiche désormais le message de demain, même si tu ne peux pas activer les notifications."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate propose désormais une page d'annulation et une page de rétractation accessibles sans connexion."
-    },
-    "changed": {
-      "01": "Les cartes sur Analyses, Vue d'ensemble et Jeûne s'affichent désormais dans un ordre clair.",
-      "02": "Le nom openplate s'affiche désormais avec une graisse fine, la première moitié en sarcelle, et centré sur le logo."
     }
   }
 }

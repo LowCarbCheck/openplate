@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "A new page carries the website's own privacy text."
+    },
+    "changed": {
+      "01": "The release page credits the people a changelog entry thanks.",
+      "02": "The legal pages come from a folder you mount, and openplate ships none of its own."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "Saved meals now tells you where the next one comes from.",
       "07": "Describe now puts the message box at the bottom of the page.",
       "08": "Notifications now shows tomorrow's message even when you cannot turn notifications on."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate now carries a cancellation page and a withdrawal page that need no login."
-    },
-    "changed": {
-      "01": "Cards on Insights, the dashboard and Fasting now read in a clear order.",
-      "02": "The name openplate is now set thin, with the first half in teal, and centred on the mark."
     }
   }
 }

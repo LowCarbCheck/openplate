@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Yeni bir sayfa, web sitesinin kendi gizlilik metnini taşır."
+    },
+    "changed": {
+      "01": "Sürüm sayfası, bir değişiklik günlüğü girdisinin teşekkür ettiği kişilere atıfta bulunur.",
+      "02": "Yasal sayfalar bağladığın bir klasörden gelir, openplate kendisinden hiçbir şey içermez."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "Kaydedilen öğünler artık bir sonrakinin nereden geldiğini sana bildirir.",
       "07": "Tarif et, ileti kutusunu artık sayfanın en altına yerleştirir.",
       "08": "Bildirimler, bildirimleri açamadığın durumlarda bile artık yarının iletisini gösterir."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate artık giriş gerektirmeyen bir iptal sayfası ve bir cayma sayfası içeriyor."
-    },
-    "changed": {
-      "01": "İçgörüler, Genel bakış ve Oruç bölümlerindeki kartlar artık belirgin bir sırada okunuyor.",
-      "02": "openplate adı artık ince yazılıyor, ilk yarısı deniz mavisi renkte ve işaretin üzerinde ortalanıyor."
     }
   }
 }

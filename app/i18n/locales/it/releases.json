@@ -1,4 +1,14 @@
 {
+  "v0_41_0": {
+    "date": "2026-09-23",
+    "added": {
+      "01": "Una nuova pagina contiene l'informativa sulla privacy del sito web."
+    },
+    "changed": {
+      "01": "La pagina della versione riconosce le persone ringraziate in una voce del changelog.",
+      "02": "Le pagine legali provengono da una cartella montata da te, e openplate non ne include di sue."
+    }
+  },
   "v0_40_0": {
     "date": "2026-09-23",
     "added": {
@@ -35,16 +45,6 @@
       "06": "I pasti salvati ora indicano l'origine del pasto successivo.",
       "07": "Descrivi ora posiziona il riquadro del messaggio in fondo alla pagina.",
       "08": "Notifiche ora mostra il messaggio di domani anche se non puoi attivare le notifiche."
-    }
-  },
-  "v0_38_0": {
-    "date": "2026-09-21",
-    "added": {
-      "01": "openplate include ora una pagina di cancellazione e una pagina di recesso che non richiedono l'accesso."
-    },
-    "changed": {
-      "01": "Le schede in Analisi, nella bacheca e in Digiuno seguono ora un ordine chiaro.",
-      "02": "Il nome openplate ora usa un carattere sottile, ha la prima metà in color foglia di tè ed è centrato rispetto al logo."
     }
   }
 }
