@@ -153,6 +153,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
   foods: [
     {
       name: 'Grilled salmon',
+      translations: { en: 'Grilled salmon' },
       estimatedGrams: 150,
       confidence: 'high',
       macroSource: 'estimated',
@@ -161,6 +162,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
     },
     {
       name: 'Green salad',
+      translations: { en: 'Green salad' },
       estimatedGrams: 80,
       confidence: 'medium',
       macroSource: 'estimated',
@@ -169,6 +171,7 @@ const AI_IDENTIFICATION: PlateIdentification = {
     },
     {
       name: 'Crispbread',
+      translations: { en: 'Crispbread' },
       estimatedGrams: 20,
       confidence: 'high',
       macroSource: 'label',

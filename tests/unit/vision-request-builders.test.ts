@@ -12,7 +12,10 @@ import { z } from 'zod';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildAnthropicRequestBody } from '../../app/services/vision/anthropic';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
-import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
+import { photoIntakeTask } from '../../app/services/vision/task';
+
+/** The request builders are language-blind; any app language builds a task for them. */
+const PHOTO_INTAKE_TASK = photoIntakeTask('en');
 
 /*
  * The builders return an untyped wire body (`Record<string, unknown>`), so the

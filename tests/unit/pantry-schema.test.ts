@@ -46,15 +46,15 @@ function wireResponse(items: UnvalidatedProviderJson[], notes: string | null = n
 
 describe('validatePantryIdentification', () => {
   it('accepts a complete reading and keeps the amount and the unit together', () => {
-    const result = validatePantryIdentification(wireResponse([wireItem()]));
+    const result = validatePantryIdentification(wireResponse([wireItem()]), 'en');
 
     assert.deepEqual(result.items, [
-      { name: 'Eggs', amount: 6, unit: 'piece', category: 'egg', confidence: 'high' },
+      { name: 'Eggs', amount: 6, unit: 'piece', category: 'egg', confidence: 'high', translations: { en: 'Eggs' } },
     ]);
   });
 
   it('keeps a null amount as NULL, never as 0', () => {
-    const result = validatePantryIdentification(wireResponse([wireItem({ amount: null, unit: null })]));
+    const result = validatePantryIdentification(wireResponse([wireItem({ amount: null, unit: null })]), 'en');
 
     // The control for this one is the assertion itself: `0` and `null` are
     // different values and `deepEqual` tells them apart, which is the whole
@@ -65,7 +65,7 @@ describe('validatePantryIdentification', () => {
   });
 
   it('drops a unit that arrived without an amount, so no row renders a bare unit', () => {
-    const result = validatePantryIdentification(wireResponse([wireItem({ amount: null, unit: 'g' })]));
+    const result = validatePantryIdentification(wireResponse([wireItem({ amount: null, unit: 'g' })]), 'en');
 
     assert.equal(result.items[0].unit, null);
   });
@@ -75,32 +75,32 @@ describe('validatePantryIdentification', () => {
     // prompt names four; a schema that let it through would store a row the
     // renderer has no label for and the recipe step cannot add up.
     assert.throws(
-      () => validatePantryIdentification(wireResponse([wireItem({ amount: 2, unit: 'kg' })])),
+      () => validatePantryIdentification(wireResponse([wireItem({ amount: 2, unit: 'kg' })]), 'en'),
       VisionProviderError,
     );
   });
 
   it('REJECTS an unknown category', () => {
     assert.throws(
-      () => validatePantryIdentification(wireResponse([wireItem({ category: 'frozen' })])),
+      () => validatePantryIdentification(wireResponse([wireItem({ category: 'frozen' })]), 'en'),
       VisionProviderError,
     );
   });
 
   it('REJECTS a response with the notes key missing, because every field is required', () => {
-    assert.throws(() => validatePantryIdentification({ items: [wireItem()] }), VisionProviderError);
+    assert.throws(() => validatePantryIdentification({ items: [wireItem()] }, 'en'), VisionProviderError);
   });
 
   it('turns an empty or whitespace-only note into an absent one', () => {
-    const blank = validatePantryIdentification(wireResponse([wireItem()], '   '));
-    const said = validatePantryIdentification(wireResponse([wireItem()], 'The back shelf was dark.'));
+    const blank = validatePantryIdentification(wireResponse([wireItem()], '   '), 'en');
+    const said = validatePantryIdentification(wireResponse([wireItem()], 'The back shelf was dark.'), 'en');
 
     assert.equal(blank.notes, undefined);
     assert.equal(said.notes, 'The back shelf was dark.');
   });
 
   it('accepts a reading that found nothing', () => {
-    const result = validatePantryIdentification(wireResponse([], 'No food in this picture.'));
+    const result = validatePantryIdentification(wireResponse([], 'No food in this picture.'), 'en');
 
     assert.deepEqual(result.items, []);
   });
@@ -112,15 +112,15 @@ describe('parsePantryIdentificationJson', () => {
       '\n',
     );
 
-    const result = parsePantryIdentificationJson(raw);
+    const result = parsePantryIdentificationJson(raw, 'en');
 
     assert.deepEqual(result.items, [
-      { name: 'Butter', amount: 250, unit: 'g', category: 'egg', confidence: 'high' },
+      { name: 'Butter', amount: 250, unit: 'g', category: 'egg', confidence: 'high', translations: { en: 'Butter' } },
     ]);
   });
 
   it('REJECTS text that is not JSON at all', () => {
-    assert.throws(() => parsePantryIdentificationJson('I could not see the shelf.'), VisionProviderError);
+    assert.throws(() => parsePantryIdentificationJson('I could not see the shelf.', 'en'), VisionProviderError);
   });
 });
 
@@ -131,7 +131,7 @@ describe('PANTRY_IDENTIFICATION_JSON_SCHEMA', () => {
 
     assert.deepEqual(PANTRY_IDENTIFICATION_JSON_SCHEMA.required?.toSorted(), ['items', 'notes']);
     assert.equal(PANTRY_IDENTIFICATION_JSON_SCHEMA.additionalProperties, false);
-    assert.deepEqual(item?.required?.toSorted(), ['amount', 'category', 'confidence', 'name', 'unit']);
+    assert.deepEqual(item?.required?.toSorted(), ['amount', 'category', 'confidence', 'name', 'translations', 'unit']);
     assert.equal(item?.additionalProperties, false);
   });
 

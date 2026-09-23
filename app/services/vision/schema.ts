@@ -22,6 +22,8 @@ import { z } from 'zod';
 import type { IdentifiedFood, IdentifiedFoodMacros, PlateIdentification, PrintedServingSize } from './types';
 import { MACRO_PROVENANCE_VALUES, MACRO_SOURCE_VALUES, VisionProviderError } from './types';
 import { CARB_BASES } from '#app/lib/net-carbs';
+import type { LanguageCode } from '#app/i18n/language-prefs';
+import { LenientFoodTranslationsSchema, RawFoodTranslationsSchema, normalizeFoodTranslations } from './translations';
 
 const RawMacrosSchema = z.object({
   carbs: z.number().nullable(),
@@ -189,6 +191,12 @@ const RawIdentifiedFoodSchema = z.object({
    * so a plate never fails over one invented category.
    */
   flags: RawFoodFlagsSchema,
+  /**
+   * The same food named in every app language (M251 spec 02). Strict HERE,
+   * every key demanded; the parse side is lenient (`RawIdentifiedFoodParseSchema`),
+   * so a model that drops it or a key costs the translation, never the plate.
+   */
+  translations: RawFoodTranslationsSchema,
 });
 
 /**
@@ -252,6 +260,7 @@ const RawIdentifiedFoodParseSchema = RawIdentifiedFoodSchema.extend({
   // THE JSON SCHEMA IS STRICT, THE ZOD SCHEMA IS LENIENT (D1d): the field is
   // demanded on the way out and tolerated on the way in.
   flags: LenientFoodFlagsSchema.nullish(),
+  translations: LenientFoodTranslationsSchema,
 });
 
 /**
@@ -364,7 +373,7 @@ function normalizeServingSize(serving: z.infer<typeof RawServingSizeSchema>): Pr
   return normalized;
 }
 
-function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
+function normalizeFood(food: RawIdentifiedFood, language: LanguageCode): IdentifiedFood {
   const normalized: IdentifiedFood = {
     name: food.name,
     estimatedGrams: food.estimatedGrams,
@@ -373,6 +382,7 @@ function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
     macrosPer100g: food.macrosPer100g ? stripNullMacros(food.macrosPer100g) : undefined,
     macroSource: food.macroSource,
     flags: normalizeFoodFlags(food.flags),
+    translations: normalizeFoodTranslations({ arrived: food.translations, name: food.name, language }),
   };
   // NULL BECOMES ABSENT, the same convention every other field here uses. A
   // brand of `''` or a `carbBasis` of `'total'` invented for an estimated item
@@ -385,9 +395,15 @@ function normalizeFood(food: RawIdentifiedFood): IdentifiedFood {
   return normalized;
 }
 
-export function normalizePlateIdentification(raw: RawPlateIdentification): PlateIdentification {
+/**
+ * The raw answer to the app-facing shape.
+ *
+ * @param raw - the parsed, lenient answer.
+ * @param language - the app language the call was made in; see `normalizeFoodTranslations`.
+ */
+export function normalizePlateIdentification(raw: RawPlateIdentification, language: LanguageCode): PlateIdentification {
   return {
-    foods: raw.foods.map(normalizeFood),
+    foods: raw.foods.map((food) => normalizeFood(food, language)),
     unreadable: raw.unreadable,
     unreadableReason: raw.unreadableReason ?? undefined,
     notes: raw.notes ?? undefined,
@@ -400,16 +416,18 @@ export function normalizePlateIdentification(raw: RawPlateIdentification): Plate
  * app-facing shape. Pure — no I/O — so both the text-parse path and the
  * enforced-output path funnel through the same validation.
  *
+ * @param value - the provider's answer, already parsed as JSON.
+ * @param language - the app language the call was made in.
  * @throws {VisionProviderError} when `value` doesn't match the expected shape.
  */
-export function validatePlateIdentification(value: UnvalidatedProviderJson): PlateIdentification {
+export function validatePlateIdentification(value: UnvalidatedProviderJson, language: LanguageCode): PlateIdentification {
   const result = PlateIdentificationParseSchema.safeParse(value);
   if (!result.success) {
     throw new VisionProviderError('Vision provider response did not match the expected shape', {
       cause: result.error,
     });
   }
-  return normalizePlateIdentification(result.data);
+  return normalizePlateIdentification(result.data, language);
 }
 
 /** Strips a leading/trailing markdown code fence (```json ... ``` or ``` ... ```) if present. */
@@ -425,9 +443,11 @@ function stripCodeFence(text: string): string {
  * testable without mocking `fetch`. This is the universal fallback path used
  * whenever a provider returns free-text JSON instead of enforced output.
  *
+ * @param rawText - the provider's answer as text.
+ * @param language - the app language the call was made in.
  * @throws {VisionProviderError} on non-JSON input or a shape mismatch.
  */
-export function parsePlateIdentificationJson(rawText: string): PlateIdentification {
+export function parsePlateIdentificationJson(rawText: string, language: LanguageCode): PlateIdentification {
   const jsonText = stripCodeFence(rawText);
 
   let parsedJson: UnvalidatedProviderJson;
@@ -439,7 +459,7 @@ export function parsePlateIdentificationJson(rawText: string): PlateIdentificati
     });
   }
 
-  return validatePlateIdentification(parsedJson);
+  return validatePlateIdentification(parsedJson, language);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

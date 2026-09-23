@@ -22,6 +22,13 @@
 import { z } from 'zod';
 import { VisionProviderError, type ScanResultBase } from './types';
 import { toStrictJsonSchema, type JsonSchemaNode, type UnvalidatedProviderJson } from './schema';
+import {
+  LenientFoodTranslationsSchema,
+  RawFoodTranslationsSchema,
+  normalizeFoodTranslations,
+  type FoodTranslations,
+} from './translations';
+import type { LanguageCode } from '#app/i18n/language-prefs';
 
 /**
  * The units a pantry row may carry, and there are only four.
@@ -58,7 +65,7 @@ export type PantryCategoryValue = (typeof PANTRY_CATEGORIES)[number];
 
 /** One ingredient the model says is present. All-required, nullable where it cannot know. */
 const RawPantryItemSchema = z.object({
-  /** Plain everyday name, in the language the person used when they typed one. */
+  /** Plain everyday name, in the app language the call was made in (M251 spec 02). */
   name: z.string(),
   /** How much, when it is readable or countable. Null rather than a guess. */
   amount: z.number().nullable(),
@@ -66,12 +73,25 @@ const RawPantryItemSchema = z.object({
   unit: z.enum(PANTRY_UNITS).nullable(),
   category: z.enum(PANTRY_CATEGORIES),
   confidence: z.enum(['high', 'medium', 'low']),
+  /** The same ingredient named in every app language. See `./translations`. */
+  translations: RawFoodTranslationsSchema,
 });
 
 /** THE WIRE CONTRACT: what every provider is told to return for a pantry reading. */
 export const PantryIdentificationSchema = z.object({
   items: z.array(RawPantryItemSchema),
   /** Anything worth saying about the reading as a whole. Null when there is nothing. */
+  notes: z.string().nullable(),
+});
+
+/**
+ * What a pantry reading is PARSED against: the wire shape with a lenient
+ * `translations`, the plate path's rule. A model that drops the translations,
+ * or one key of them, still gives the person their shelf. Never handed to a
+ * provider; `PANTRY_IDENTIFICATION_JSON_SCHEMA` is derived from the wire shape.
+ */
+const PantryIdentificationParseSchema = z.object({
+  items: z.array(RawPantryItemSchema.extend({ translations: LenientFoodTranslationsSchema })),
   notes: z.string().nullable(),
 });
 
@@ -82,6 +102,8 @@ export interface PantryItemReading {
   unit: PantryUnitValue | null;
   category: PantryCategoryValue;
   confidence: 'high' | 'medium' | 'low';
+  /** The same ingredient per app language, always carrying the call's language. See `./translations`. */
+  translations: FoodTranslations;
 }
 
 /**
@@ -95,15 +117,18 @@ export interface PantryIdentification extends ScanResultBase {
   notes?: string;
 }
 
-type RawPantryIdentification = z.infer<typeof PantryIdentificationSchema>;
+type RawPantryIdentification = z.infer<typeof PantryIdentificationParseSchema>;
 
 /**
  * The raw shape to the app-facing one. NULL BECOMES NULL for `amount`/`unit`
  * and ABSENT for `notes`, which is the same convention `./schema` uses: a
  * stored amount is a three-state fact a person can fill in, while a note is
  * either said or not said.
+ *
+ * @param raw - the parsed, lenient reading.
+ * @param language - the app language the call was made in; see `normalizeFoodTranslations`.
  */
-export function normalizePantryIdentification(raw: RawPantryIdentification): PantryIdentification {
+export function normalizePantryIdentification(raw: RawPantryIdentification, language: LanguageCode): PantryIdentification {
   const normalized: PantryIdentification = {
     items: raw.items.map((item) => ({
       name: item.name.trim(),
@@ -113,6 +138,7 @@ export function normalizePantryIdentification(raw: RawPantryIdentification): Pan
       unit: item.amount === null ? null : item.unit,
       category: item.category,
       confidence: item.confidence,
+      translations: normalizeFoodTranslations({ arrived: item.translations, name: item.name, language }),
     })),
   };
   if (raw.notes !== null && raw.notes.trim() !== '') normalized.notes = raw.notes.trim();
@@ -122,16 +148,18 @@ export function normalizePantryIdentification(raw: RawPantryIdentification): Pan
 /**
  * Validates an already-parsed value against the pantry schema.
  *
+ * @param value - the provider's answer, already parsed as JSON.
+ * @param language - the app language the call was made in.
  * @throws {VisionProviderError} when `value` does not match the expected shape.
  */
-export function validatePantryIdentification(value: UnvalidatedProviderJson): PantryIdentification {
-  const result = PantryIdentificationSchema.safeParse(value);
+export function validatePantryIdentification(value: UnvalidatedProviderJson, language: LanguageCode): PantryIdentification {
+  const result = PantryIdentificationParseSchema.safeParse(value);
   if (!result.success) {
     throw new VisionProviderError('Vision provider response did not match the expected pantry shape', {
       cause: result.error,
     });
   }
-  return normalizePantryIdentification(result.data);
+  return normalizePantryIdentification(result.data, language);
 }
 
 /** Strips a leading/trailing markdown code fence, exactly as the plate path does. */
@@ -145,9 +173,11 @@ function stripCodeFence(text: string): string {
  * Parses raw model output text into a validated `PantryIdentification`. The
  * universal fallback for a provider without enforced structured output.
  *
+ * @param rawText - the provider's answer as text.
+ * @param language - the app language the call was made in.
  * @throws {VisionProviderError} on non-JSON input or a shape mismatch.
  */
-export function parsePantryIdentificationJson(rawText: string): PantryIdentification {
+export function parsePantryIdentificationJson(rawText: string, language: LanguageCode): PantryIdentification {
   const jsonText = stripCodeFence(rawText);
 
   let parsedJson: UnvalidatedProviderJson;
@@ -157,7 +187,7 @@ export function parsePantryIdentificationJson(rawText: string): PantryIdentifica
     throw new VisionProviderError('Vision provider returned a response that was not valid JSON', { cause: error });
   }
 
-  return validatePantryIdentification(parsedJson);
+  return validatePantryIdentification(parsedJson, language);
 }
 
 /**

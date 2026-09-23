@@ -205,6 +205,7 @@ const AI_IDENTIFICATION = {
   foods: [
     {
       name: 'Wheat bran',
+      translations: { en: 'Wheat bran' },
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,

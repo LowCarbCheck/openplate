@@ -28,6 +28,7 @@
  * between two photographs, which is why nothing here is keyed by a UI mode any
  * more.
  */
+import type { LanguageCode } from '#app/i18n/language-prefs';
 import type { PlateIdentification, ScanResultBase, ScanTokenUsage } from './types';
 import type { PantryIdentification } from './pantry-schema';
 import type { RecipeProposals } from './recipe-schema';
@@ -43,17 +44,17 @@ import {
   validatePantryIdentification,
 } from './pantry-schema';
 import {
-  PANTRY_PHOTO_SYSTEM_PROMPT,
-  PANTRY_TEXT_SYSTEM_PROMPT,
+  buildPantryPhotoSystemPrompt,
   buildPantryPhotoUserPrompt,
+  buildPantryTextSystemPrompt,
   buildPantryTextUserPrompt,
 } from './pantry-prompt';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA, parsePlateIdentificationJson, validatePlateIdentification } from './schema';
 import type { JsonSchemaNode, UnvalidatedProviderJson } from './schema';
 import {
-  PLATE_IDENTIFICATION_SYSTEM_PROMPT,
-  TEXT_INTAKE_SYSTEM_PROMPT,
+  buildPlateIdentificationSystemPrompt,
   buildPlateIdentificationUserPrompt,
+  buildTextIntakeSystemPrompt,
   buildTextIntakeUserPrompt,
 } from './prompt';
 
@@ -102,17 +103,19 @@ export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
  * and a field that always answers the same thing would be a drift trap wearing
  * the look of a decision.
  */
-export const PHOTO_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
-  mode: 'photo',
-  systemPrompt: PLATE_IDENTIFICATION_SYSTEM_PROMPT,
-  userPrompt: buildPlateIdentificationUserPrompt(),
-  jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
-  schemaName: 'plate_identification',
-  toolName: 'record_plate_identification',
-  toolDescription: 'Record the foods identified in the photo.',
-  parse: parsePlateIdentificationJson,
-  validate: validatePlateIdentification,
-};
+export function photoIntakeTask(language: LanguageCode): IntakeTaskDescriptor<PlateIdentification> {
+  return {
+    mode: 'photo',
+    systemPrompt: buildPlateIdentificationSystemPrompt(language),
+    userPrompt: buildPlateIdentificationUserPrompt(),
+    jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
+    schemaName: 'plate_identification',
+    toolName: 'record_plate_identification',
+    toolDescription: 'Record the foods identified in the photo.',
+    parse: (rawText) => parsePlateIdentificationJson(rawText, language),
+    validate: (value) => validatePlateIdentification(value, language),
+  };
+}
 
 /**
  * The person's own words → the foods worth logging.
@@ -122,19 +125,21 @@ export const PHOTO_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
  * every downstream builder are reached unchanged. What differs is the subject
  * the model is reading, and that lives entirely in the prompt.
  */
-export const TEXT_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
-  mode: 'text',
-  systemPrompt: TEXT_INTAKE_SYSTEM_PROMPT,
-  userPrompt: buildTextIntakeUserPrompt(),
-  jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
-  // The SAME schema name and tool name the photo task uses, because it is the
-  // same schema. A second name for one shape would only invite a second shape.
-  schemaName: 'plate_identification',
-  toolName: 'record_plate_identification',
-  toolDescription: 'Record the foods the person described eating.',
-  parse: parsePlateIdentificationJson,
-  validate: validatePlateIdentification,
-};
+export function textIntakeTask(language: LanguageCode): IntakeTaskDescriptor<PlateIdentification> {
+  return {
+    mode: 'text',
+    systemPrompt: buildTextIntakeSystemPrompt(language),
+    userPrompt: buildTextIntakeUserPrompt(),
+    jsonSchema: PLATE_IDENTIFICATION_JSON_SCHEMA,
+    // The SAME schema name and tool name the photo task uses, because it is the
+    // same schema. A second name for one shape would only invite a second shape.
+    schemaName: 'plate_identification',
+    toolName: 'record_plate_identification',
+    toolDescription: 'Record the foods the person described eating.',
+    parse: (rawText) => parsePlateIdentificationJson(rawText, language),
+    validate: (value) => validatePlateIdentification(value, language),
+  };
+}
 
 /**
  * A photograph of a fridge, a shelf or a bag, into the list of ingredients a
@@ -147,17 +152,19 @@ export const TEXT_INTAKE_TASK: IntakeTaskDescriptor<PlateIdentification> = {
  * Every adapter reaches it unchanged, because everything that differs is data
  * on this object.
  */
-export const PANTRY_PHOTO_TASK: IntakeTaskDescriptor<PantryIdentification> = {
-  mode: 'photo',
-  systemPrompt: PANTRY_PHOTO_SYSTEM_PROMPT,
-  userPrompt: buildPantryPhotoUserPrompt(),
-  jsonSchema: PANTRY_IDENTIFICATION_JSON_SCHEMA,
-  schemaName: 'pantry_identification',
-  toolName: 'record_pantry_identification',
-  toolDescription: 'Record the ingredients visible in the photo of food storage.',
-  parse: parsePantryIdentificationJson,
-  validate: validatePantryIdentification,
-};
+export function pantryPhotoTask(language: LanguageCode): IntakeTaskDescriptor<PantryIdentification> {
+  return {
+    mode: 'photo',
+    systemPrompt: buildPantryPhotoSystemPrompt(language),
+    userPrompt: buildPantryPhotoUserPrompt(),
+    jsonSchema: PANTRY_IDENTIFICATION_JSON_SCHEMA,
+    schemaName: 'pantry_identification',
+    toolName: 'record_pantry_identification',
+    toolDescription: 'Record the ingredients visible in the photo of food storage.',
+    parse: (rawText) => parsePantryIdentificationJson(rawText, language),
+    validate: (value) => validatePantryIdentification(value, language),
+  };
+}
 
 /**
  * The person's own words, into the same list.
@@ -168,17 +175,19 @@ export const PANTRY_PHOTO_TASK: IntakeTaskDescriptor<PantryIdentification> = {
  * one rule inside it: a quantity somebody typed is honoured, while one that
  * could not be read off a package is null.
  */
-export const PANTRY_TEXT_TASK: IntakeTaskDescriptor<PantryIdentification> = {
-  mode: 'text',
-  systemPrompt: PANTRY_TEXT_SYSTEM_PROMPT,
-  userPrompt: buildPantryTextUserPrompt(),
-  jsonSchema: PANTRY_IDENTIFICATION_JSON_SCHEMA,
-  schemaName: 'pantry_identification',
-  toolName: 'record_pantry_identification',
-  toolDescription: 'Record the ingredients the person says they have at home.',
-  parse: parsePantryIdentificationJson,
-  validate: validatePantryIdentification,
-};
+export function pantryTextTask(language: LanguageCode): IntakeTaskDescriptor<PantryIdentification> {
+  return {
+    mode: 'text',
+    systemPrompt: buildPantryTextSystemPrompt(language),
+    userPrompt: buildPantryTextUserPrompt(),
+    jsonSchema: PANTRY_IDENTIFICATION_JSON_SCHEMA,
+    schemaName: 'pantry_identification',
+    toolName: 'record_pantry_identification',
+    toolDescription: 'Record the ingredients the person says they have at home.',
+    parse: (rawText) => parsePantryIdentificationJson(rawText, language),
+    validate: (value) => validatePantryIdentification(value, language),
+  };
+}
 
 /**
  * The shelf plus the rest of the day, into two or three things to cook next
@@ -209,18 +218,20 @@ export const RECIPE_PROPOSAL_TASK: IntakeTaskDescriptor<RecipeProposals> = {
 };
 
 /**
- * Every intake task, keyed by its mode: the single pairing of prompt with
- * schema, and the one place a mode is turned back into the task it names.
+ * Every intake task builder, keyed by its mode: the single pairing of prompt
+ * with schema, and the one place a mode is turned back into the task it names.
+ *
+ * BUILDERS, NOT TASKS (M251 spec 02): a task's prompt names the app language,
+ * so there is no task until a language is given, and a map of prebuilt tasks
+ * would be a map of English ones that a caller could reach for by mistake.
  *
  * `satisfies`, not an annotation: the constraint checks that every mode has a
- * task, while the inferred type keeps each key's OWN result type. Annotating
- * it as `Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>` would erase
- * which task returns which shape at every read site.
+ * builder, while the inferred type keeps each key's OWN result type.
  */
 export const INTAKE_TASK_BY_MODE = {
-  photo: PHOTO_INTAKE_TASK,
-  text: TEXT_INTAKE_TASK,
-} satisfies Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>;
+  photo: photoIntakeTask,
+  text: textIntakeTask,
+} satisfies Record<IntakeMode, (language: LanguageCode) => IntakeTaskDescriptor<ScanResultBase>>;
 
 /**
  * The same pairing for the PANTRY, and a second map rather than a widened one.
@@ -232,9 +243,9 @@ export const INTAKE_TASK_BY_MODE = {
  * a plate, the pantry asks for a pantry.
  */
 export const PANTRY_TASK_BY_MODE = {
-  photo: PANTRY_PHOTO_TASK,
-  text: PANTRY_TEXT_TASK,
-} satisfies Record<IntakeMode, IntakeTaskDescriptor<ScanResultBase>>;
+  photo: pantryPhotoTask,
+  text: pantryTextTask,
+} satisfies Record<IntakeMode, (language: LanguageCode) => IntakeTaskDescriptor<ScanResultBase>>;
 
 /**
  * Copies a result with the call's token usage attached, or returns it

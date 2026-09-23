@@ -48,6 +48,7 @@ const IDENTIFICATION = {
   foods: [
     {
       name: 'Fried egg',
+      translations: { en: 'Fried egg' },
       estimatedGrams: 60,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,

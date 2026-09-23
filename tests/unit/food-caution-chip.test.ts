@@ -83,6 +83,7 @@ const IDENTIFICATION: PlateIdentification = {
   foods: [
     {
       name: 'Cheese board',
+      translations: { en: 'Cheese board' },
       estimatedGrams: 120,
       confidence: 'high',
       macroSource: 'estimated',
@@ -91,6 +92,7 @@ const IDENTIFICATION: PlateIdentification = {
     },
     {
       name: 'Green salad',
+      translations: { en: 'Green salad' },
       estimatedGrams: 80,
       confidence: 'medium',
       macroSource: 'estimated',

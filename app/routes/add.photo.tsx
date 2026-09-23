@@ -19,7 +19,7 @@ import type {
   ScanTokenUsage,
   VisionFailureCause,
 } from '#app/services/vision';
-import { MACRO_SOURCE_VALUES, PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '#app/services/vision';
+import { MACRO_SOURCE_VALUES, photoIntakeTask, textIntakeTask } from '#app/services/vision';
 import type { PlateImageInput, VisionProvider } from '#app/services/vision';
 import { INTAKE_SOURCES } from '#app/lib/intake-source';
 import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
@@ -132,6 +132,7 @@ import type { LogInputPath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
 import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 import { formatNumericDate } from '#app/i18n/date-locale';
+import { toLanguageCode } from '#app/i18n/language-prefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -691,7 +692,9 @@ async function completePlateIntake({
  * (amends ADR-0005, 2026-09-08).
  */
 async function runPhotoIntake(context: ScanAttemptContext): Promise<IdentifyResult> {
-  const identification = await context.visionProvider.runScan({ task: PHOTO_INTAKE_TASK, image: context.image });
+  // THE APP LANGUAGE AT THE MOMENT OF THE CALL names the foods (M251 spec 02).
+  const task = photoIntakeTask(toLanguageCode(currentLanguage()));
+  const identification = await context.visionProvider.runScan({ task, image: context.image });
   return completePlateIntake({ identification, context });
 }
 
@@ -700,10 +703,11 @@ async function runPhotoIntake(context: ScanAttemptContext): Promise<IdentifyResu
  *
  * No photo is read, nothing is downscaled, and nothing else about the flow
  * changes: the descriptor carries the one thing that differs (see
- * `TEXT_INTAKE_TASK`), and the result rejoins the plate path immediately.
+ * `textIntakeTask`), and the result rejoins the plate path immediately.
  */
 async function runTextIntake(context: TextAttemptContext): Promise<IdentifyResult> {
-  const identification = await context.visionProvider.runTextIntake({ task: TEXT_INTAKE_TASK, text: context.text });
+  const task = textIntakeTask(toLanguageCode(currentLanguage()));
+  const identification = await context.visionProvider.runTextIntake({ task, text: context.text });
   return completePlateIntake({ identification, context });
 }
 

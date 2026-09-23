@@ -13,7 +13,10 @@ import assert from 'node:assert/strict';
 import { createOpenAiCompatibleProvider } from '../../app/services/vision/openai-compatible';
 import { createAnthropicProvider } from '../../app/services/vision/anthropic';
 import { VisionProviderFailure } from '../../app/services/vision/failure-cause';
-import { PHOTO_INTAKE_TASK } from '../../app/services/vision/task';
+import { photoIntakeTask } from '../../app/services/vision/task';
+
+/** The adapters are language-blind; any app language builds a task for them. */
+const PHOTO_INTAKE_TASK = photoIntakeTask('en');
 
 const originalFetch = globalThis.fetch;
 

@@ -73,8 +73,8 @@ import {
 import type { LocalPantryItem, PantryUnit } from '#app/lib/local-store';
 import {
   createVisionProvider,
-  PANTRY_PHOTO_TASK,
-  PANTRY_TEXT_TASK,
+  pantryPhotoTask,
+  pantryTextTask,
   PANTRY_UNITS,
   VisionProviderError,
   type PantryIdentification,
@@ -82,6 +82,7 @@ import {
 } from '#app/services/vision';
 import { estimateScanCostUsd } from '#app/services/vision/cost';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { toLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -127,10 +128,13 @@ type PantryReadResult = { ok: true; identification: PantryIdentification } | { o
 async function readPantry({
   handoff,
   effective,
+  language,
   failedMessage,
 }: {
   handoff: ScanHandoff;
   effective: EffectiveAiSettings;
+  /** The app language at the moment of the call: the names come back in it (M251 spec 02). */
+  language: LanguageCode;
   /** The generic "that did not work" sentence, already translated by the caller. */
   failedMessage: string;
 }): Promise<PantryReadResult> {
@@ -165,10 +169,10 @@ async function readPantry({
     const identification =
       handoff.kind === 'photo' ?
         await provider.runScan({
-          task: PANTRY_PHOTO_TASK,
+          task: pantryPhotoTask(language),
           image: { base64: await fileToBase64(handoff.file), mimeType: handoff.file.type },
         })
-      : await provider.runTextIntake({ task: PANTRY_TEXT_TASK, text: handoff.text });
+      : await provider.runTextIntake({ task: pantryTextTask(language), text: handoff.text });
     await record(identification.usage, identification.items.length === 0 ? 'no_foods' : 'identified');
     return { ok: true, identification };
   } catch (error) {
@@ -471,7 +475,7 @@ type PantryPhase =
   | { kind: 'failed'; subject: 'photo' | 'text'; message: string };
 
 export default function Pantry({ loaderData }: Route.ComponentProps): ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const effective = useEffectiveAiSettings(loaderData.settings);
   const [stored, setStored] = useState<LocalPantryItem[]>(loaderData.items);
@@ -497,7 +501,12 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
       if (settings === null) return;
       setPhase({ kind: 'reading', subject });
       void (async () => {
-        const result = await readPantry({ handoff, effective: settings, failedMessage: t('pantry.errors.failed') });
+        const result = await readPantry({
+          handoff,
+          effective: settings,
+          language: toLanguageCode(i18n.language),
+          failedMessage: t('pantry.errors.failed'),
+        });
         if (!result.ok) {
           setPhase({ kind: 'failed', subject, message: result.error });
           return;

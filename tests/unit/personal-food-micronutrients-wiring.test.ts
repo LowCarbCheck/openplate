@@ -136,6 +136,7 @@ const AI_IDENTIFICATION = {
   foods: [
     {
       name: 'Spinach',
+      translations: { en: 'Spinach' },
       estimatedGrams: SERVING_GRAMS,
       confidence: 'high' as const,
       macroSource: 'estimated' as const,

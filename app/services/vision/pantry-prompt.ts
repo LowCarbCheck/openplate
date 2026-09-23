@@ -16,8 +16,19 @@
  * with no enforced structured output. It is kept in sync with the Zod schema
  * in `./pantry-schema`, which is the maintainable source of truth.
  */
+import type { LanguageCode } from '#app/i18n/language-prefs';
 
-export const PANTRY_PHOTO_SYSTEM_PROMPT = `You are an assistant that turns a photograph of somebody's food storage into a plain list of ingredients they have at home.
+import { describeNamesForPrompt, translationsExampleForPrompt } from './translations';
+
+/**
+ * The pantry photo prompt, for the app language the call is made in. Names
+ * come back in `language` with `translations` beside them (M251 spec 02).
+ *
+ * @param language - the language the app renders in at the moment of the call.
+ * @returns the system prompt.
+ */
+export function buildPantryPhotoSystemPrompt(language: LanguageCode): string {
+  return `You are an assistant that turns a photograph of somebody's food storage into a plain list of ingredients they have at home.
 
 The photo may be an open fridge, a cupboard shelf, a worktop, a kitchen table, or an unpacked shopping bag. List what is visible and legible, and nothing else.
 
@@ -38,6 +49,8 @@ AMOUNTS ARE THE PART YOU MUST NOT INVENT:
 - In every other case set BOTH "amount" and "unit" to null. Never estimate how full a tub is, never convert between units, and never use 0 to mean "unknown". The person can type the number in from the package in their hand; a number they did not enter and cannot tell apart from one they did is worse than none.
 - The unit must be one of "g", "ml", "piece" or "pack". If what you can read is none of these, set both fields to null and put the wording in the name instead.
 
+${describeNamesForPrompt(language)}
+
 If the photograph shows no food at all, return an empty "items" list and say so briefly in "notes".
 
 Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary outside the JSON):
@@ -49,13 +62,15 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
       "amount": 0,
       "unit": "g | ml | piece | pack or null",
       "category": "produce | dairy | meat | fish | egg | grain | legume | nut | condiment | beverage | other",
-      "confidence": "high | medium | low"
+      "confidence": "high | medium | low",
+${translationsExampleForPrompt(6)}
     }
   ],
   "notes": "string or null"
 }
 
-Every field must be present. "amount" and "unit" may be null, and are null together. "notes" may be null if you have nothing to add.`;
+Every field must be present. "amount" and "unit" may be null, and are null together. "translations" and every one of its entries are never null. "notes" may be null if you have nothing to add.`;
+}
 
 export function buildPantryPhotoUserPrompt(): string {
   return 'List the ingredients you can see in the attached photo of food storage, leaving every amount you cannot read or count as null, and respond with the JSON shape described in the system prompt.';
@@ -64,23 +79,25 @@ export function buildPantryPhotoUserPrompt(): string {
 /**
  * The person's own words, into the same list.
  *
- * ANY LANGUAGE IN, THE SAME LANGUAGE OUT, exactly as `TEXT_INTAKE_SYSTEM_PROMPT`
- * has it for the diary: somebody who writes "Eier, Butter, Hafermilch" gets a
- * pantry that reads back in their own words. A silently translated shopping
- * list is a list they did not write.
+ * ANY LANGUAGE IN, THE APP LANGUAGE OUT (M251 spec 02), exactly as the diary's
+ * text prompt has it now: the pantry is read on a screen in the app language,
+ * and a list that mixes two languages reads as a broken one. The operator
+ * decided this on 2026-09-23 and it reverses the old "never translate their
+ * list" rule. What is still theirs is every amount they typed.
  *
  * The amount rule inverts here, and that is the whole difference from the
  * photo prompt: a quantity somebody TYPED is a statement, not a reading, so it
  * is honoured exactly. "2 kg Mehl" is 2000 g, because the conversion is
  * arithmetic on a number they gave, never an estimate of one they did not.
  */
-export const PANTRY_TEXT_SYSTEM_PROMPT = `You are an assistant that turns what somebody says they have at home into a plain list of ingredients.
+export function buildPantryTextSystemPrompt(language: LanguageCode): string {
+  return `You are an assistant that turns what somebody says they have at home into a plain list of ingredients.
 
 The text is what a person typed or dictated. It may be in any language, it may be a comma-separated list or a whole sentence, and it may be untidy. Read it as a list of things they have.
 
 WHAT TO LIST:
 - One row per distinct ingredient they named. Do not split a named product into its parts, and do not merge two things they listed separately.
-- NAME EACH ITEM IN THE SAME LANGUAGE THE PERSON USED, in plain words, close to how they wrote it. Never translate their list.
+- Name each item in plain words, close to what the person meant, written in the language the NAMES section below gives, even when they wrote in another one.
 - Give each item a category from the list in the shape below. Use "other" whenever nothing fits.
 - Rate your confidence in the identification as "high", "medium" or "low". A plainly named food is high; a vague one ("some cheese") is low.
 - Ignore anything that is not food or drink: greetings, times, plans, and remarks about what they intend to cook.
@@ -92,6 +109,8 @@ AMOUNTS:
 - When they gave no amount at all, set BOTH "amount" and "unit" to null. Do not assume a usual pack size, and never use 0 to mean "unknown".
 - The unit must be one of "g", "ml", "piece" or "pack". If their wording is none of these, set both fields to null and keep their wording in the name.
 
+${describeNamesForPrompt(language)}
+
 Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary outside the JSON):
 
 {
@@ -101,14 +120,16 @@ Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary 
       "amount": 0,
       "unit": "g | ml | piece | pack or null",
       "category": "produce | dairy | meat | fish | egg | grain | legume | nut | condiment | beverage | other",
-      "confidence": "high | medium | low"
+      "confidence": "high | medium | low",
+${translationsExampleForPrompt(6)}
     }
   ],
   "notes": "string or null"
 }
 
-Every field must be present. "amount" and "unit" may be null, and are null together. "notes" may be null if you have nothing to add.`;
+Every field must be present. "amount" and "unit" may be null, and are null together. "translations" and every one of its entries are never null. "notes" may be null if you have nothing to add.`;
+}
 
 export function buildPantryTextUserPrompt(): string {
-  return 'Here is what the person says they have at home. Turn it into the JSON shape described in the system prompt, keeping the amounts they gave and their own language.';
+  return 'Here is what the person says they have at home. Turn it into the JSON shape described in the system prompt, keeping the amounts they gave.';
 }

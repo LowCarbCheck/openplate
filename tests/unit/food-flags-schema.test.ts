@@ -28,8 +28,12 @@ import {
 import type { Allergen, JsonSchemaNode } from '../../app/services/vision/schema';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildAnthropicRequestBody } from '../../app/services/vision/anthropic';
-import { PHOTO_INTAKE_TASK, TEXT_INTAKE_TASK } from '../../app/services/vision/task';
+import { photoIntakeTask, textIntakeTask } from '../../app/services/vision/task';
 import type { ReproductiveStatus } from '../../app/lib/local-store/schema';
+
+/** The request builders are language-blind; any app language builds a task for them. */
+const PHOTO_INTAKE_TASK = photoIntakeTask('en');
+const TEXT_INTAKE_TASK = textIntakeTask('en');
 
 /** The `flags` object as it may arrive: any strings, any subset of keys, or null. */
 interface ArrivingFlags {
@@ -61,7 +65,7 @@ const EMPTY_FLAGS = { pregnancy: [], allergens: [], mayContain: [] };
 describe('the flags on a parsed food', () => {
   it('drops "made-up" and keeps the plate: ["raw-dairy","made-up"] parses to ["raw-dairy"]', () => {
     const result = parsePlateIdentificationJson(
-      plateWith({ ...BRIE, flags: { pregnancy: ['raw-dairy', 'made-up'], allergens: ['milk', 'made-up'], mayContain: [] } }),
+      plateWith({ ...BRIE, flags: { pregnancy: ['raw-dairy', 'made-up'], allergens: ['milk', 'made-up'], mayContain: [] } }), 'en',
     );
 
     assert.strictEqual(result.foods.length, 1);
@@ -69,37 +73,37 @@ describe('the flags on a parsed food', () => {
   });
 
   it('parses a plate with no flags at all to three empty arrays', () => {
-    const result = parsePlateIdentificationJson(plateWith(BRIE));
+    const result = parsePlateIdentificationJson(plateWith(BRIE), 'en');
     assert.deepStrictEqual(result.foods[0]?.flags, EMPTY_FLAGS);
 
     // Control: the same plate WITH a flag does not parse to empty arrays, so
     // the assertion above depends on the absence and not on a parser that
     // empties everything.
-    const flagged = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['soft-cheese'], allergens: [], mayContain: [] } }));
+    const flagged = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['soft-cheese'], allergens: [], mayContain: [] } }), 'en');
     assert.notDeepStrictEqual(flagged.foods[0]?.flags, EMPTY_FLAGS);
     assert.deepStrictEqual(flagged.foods[0]?.flags.pregnancy, ['soft-cheese']);
   });
 
   it('parses a null flags object the same way, for a fallback-prompt model that answers null', () => {
-    const result = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: null }));
+    const result = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: null }), 'en');
     assert.deepStrictEqual(result.foods[0]?.flags, EMPTY_FLAGS);
   });
 
   it('parses a flags object with no mayContain key to an empty mayContain', () => {
-    const result = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['soft-cheese'], allergens: ['milk'] } }));
+    const result = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['soft-cheese'], allergens: ['milk'] } }), 'en');
     assert.deepStrictEqual(result.foods[0]?.flags, { pregnancy: ['soft-cheese'], allergens: ['milk'], mayContain: [] });
   });
 
   it('keeps an allergen named in both lists in allergens only: mayContain ["milk","eggs"] parses to ["eggs"]', () => {
     const result = parsePlateIdentificationJson(
-      plateWith({ ...BRIE, flags: { pregnancy: [], allergens: ['milk'], mayContain: ['milk', 'eggs'] } }),
+      plateWith({ ...BRIE, flags: { pregnancy: [], allergens: ['milk'], mayContain: ['milk', 'eggs'] } }), 'en',
     );
     assert.deepStrictEqual(result.foods[0]?.flags.allergens, ['milk']);
     assert.deepStrictEqual(result.foods[0]?.flags.mayContain, ['eggs']);
 
     // Control: with milk absent from `allergens`, mayContain keeps it, so the
     // drop above is the overlap rule and not a filter that removes milk.
-    const doubtful = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: [], allergens: [], mayContain: ['milk', 'eggs'] } }));
+    const doubtful = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: [], allergens: [], mayContain: ['milk', 'eggs'] } }), 'en');
     assert.deepStrictEqual(doubtful.foods[0]?.flags.mayContain, ['milk', 'eggs']);
   });
 
@@ -129,7 +133,7 @@ describe('the flags on a parsed food', () => {
 
       // The real parse path under this tier: Node has no `import.meta.env`,
       // which the module reads as "not development", so it is silent too.
-      parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['made-up'], allergens: [], mayContain: [] } }));
+      parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['made-up'], allergens: [], mayContain: [] } }), 'en');
       assert.strictEqual(warn.mock.callCount(), 0);
     } finally {
       warn.mock.restore();

@@ -20,7 +20,10 @@ import { z } from 'zod';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildAnthropicRequestBody } from '../../app/services/vision/anthropic';
 import { PLATE_IDENTIFICATION_JSON_SCHEMA } from '../../app/services/vision/schema';
-import { TEXT_INTAKE_TASK } from '../../app/services/vision/task';
+import { textIntakeTask } from '../../app/services/vision/task';
+
+/** The request builders are language-blind; any app language builds a task for them. */
+const TEXT_INTAKE_TASK = textIntakeTask('en');
 
 const SPOKEN = '3 eggs, 2 slices of toast, a glass of orange juice';
 
