@@ -54,8 +54,11 @@ export function planViewOf(state: PlanReadState): PlanView | null {
  * @param input.isEnabled - `false` holds the read at `loading` and sends
  *   nothing. A placement passes the door here, so an instance with no biller
  *   never receives the request.
+ * @param input.refresh - a counter; a new value reads the plan again, keeping
+ *   the answer on screen until the new one is in. The order page bumps it when
+ *   the biller says the account already pays (M245/04).
  */
-export function usePlanRead({ isEnabled }: { isEnabled: boolean }): PlanReadState {
+export function usePlanRead({ isEnabled, refresh = 0 }: { isEnabled: boolean; refresh?: number }): PlanReadState {
   const session = useSyncSession();
   const [state, setState] = useState<PlanReadState>({ kind: 'loading' });
   const accountId = session.account?.id ?? null;
@@ -85,7 +88,7 @@ export function usePlanRead({ isEnabled }: { isEnabled: boolean }): PlanReadStat
     return () => {
       isMounted = false;
     };
-  }, [isEnabled, accountId]);
+  }, [isEnabled, accountId, refresh]);
 
   return state;
 }

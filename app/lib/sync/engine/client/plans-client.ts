@@ -30,17 +30,42 @@
  *
  * ── THE CLIENT NAMES NO PRICE ────────────────────────────────────────────
  *
- * There is no price, no plan id and no account id in any request below. The
+ * There is no price, no price id and no account id in any request below. The
  * catalogue lives in the biller's own configuration and the account comes from
  * a header the gateway builds from the session, so nothing a browser can
- * choose reaches either. The one field a request carries is the consent
- * language, which chooses which of two reviewed sentences a person reads.
+ * choose reaches either. An order names a plan KEY, the language and version
+ * of the page the person read, and the two consents.
+ *
+ * ── AN ORDER HAS MORE THAN TWO OUTCOMES ──────────────────────────────────
+ *
+ * `POST /plans/checkout` is gone (410 since M245/03); the order replaced it.
+ * Its answers are not "an address or nothing": a booked switch, a stale page
+ * and an account that already pays are each a thing the page says. So
+ * {@link PlansClient.placeOrder} answers {@link OrderOutcome}, decoded from the
+ * status AND the biller's machine code, and still throws what a person cannot
+ * act on beyond "try again" (a 502, a dead connection, a body it cannot read).
  */
-import { planOfferSchema, planViewSchema, redirectTargetSchema, PLANS_API_PREFIX } from './plans-wire';
-import type { CheckoutLocale, CheckoutRequestWire, PlanOffer, PlanView, RedirectTarget } from './plans-wire';
+import {
+  ORDER_ALREADY_SUBSCRIBED,
+  ORDER_STALE_VERSION,
+  orderAnswerSchema,
+  planOfferSchema,
+  planViewSchema,
+  redirectTargetSchema,
+  PLANS_API_PREFIX,
+} from './plans-wire';
+import type {
+  OrderAnswer,
+  OrderConsents,
+  OrderRequestWire,
+  PlanKey,
+  PlanOffer,
+  PlanView,
+  RedirectTarget,
+} from './plans-wire';
 import type { AuthorizedMethod } from './auth-client';
 import type { JsonValue } from '../protocol';
-import { isSyncRequestError } from './sync-error';
+import { isSyncRequestError, type SyncRequestError } from './sync-error';
 import { createComponentLogger } from '#app/lib/logger';
 import { z } from 'zod';
 
@@ -67,6 +92,25 @@ export type PlansOutcome<T> = { status: 'ok'; value: T } | { status: 'absent' };
 
 /** The single `absent` value, so no call site builds a second one. */
 export const PLANS_ABSENT: PlansOutcome<never> = { status: 'absent' };
+
+/**
+ * What one order came to.
+ *
+ * - `redirect`: a first order; Stripe takes the payment at `url`.
+ * - `switched`: a monthly subscription moves to the yearly plan at `startsAt`.
+ * - `stale`: the page the person read is no longer the offer. Read it again.
+ * - `already-subscribed`: the account pays for a plan this order cannot move.
+ * - `refused`: any other 400. The page let through something it should not
+ *   have, so it says the order failed and nothing more.
+ * - `absent`: the door shut between the handshake and the press.
+ */
+export type OrderOutcome =
+  | { kind: 'redirect'; url: string }
+  | { kind: 'switched'; plan: PlanKey; startsAt: string }
+  | { kind: 'stale' }
+  | { kind: 'already-subscribed' }
+  | { kind: 'refused'; code: string | null }
+  | { kind: 'absent' };
 
 export class PlansClient {
   private readonly transport: PlansTransport;
@@ -116,19 +160,46 @@ export class PlansClient {
   }
 
   /**
-   * Opens a checkout and answers the address to send the browser to.
+   * Places an order for one plan, with the consents the person ticked.
    *
-   * The locale is the ONLY thing the body carries, and it decides only which
-   * reviewed consumer acknowledgement is displayed. See `plans-wire.ts`.
+   * @param input.plan - the plan KEY, never a price.
+   * @param input.locale - the language of the offer the person read,
+   *   `offer.locale`, so the biller rebuilds the same page to compare.
+   * @param input.consentVersion - `offer.consentVersion`, opaque.
+   * @param input.consents - both `true`, by type.
+   * @throws a {@link SyncRequestError} for a 502 or any status not decoded
+   *   below, and a `ZodError` for a 200 body that is neither answer.
    */
-  async startCheckout(input: { locale: CheckoutLocale }): Promise<PlansOutcome<RedirectTarget>> {
-    const request: CheckoutRequestWire = { locale: input.locale };
-    return this.send({
-      path: `${PLANS_API_PREFIX}/checkout`,
-      method: 'POST',
-      body: request,
-      parse: (body) => redirectTargetSchema.parse(body),
-    });
+  async placeOrder(input: {
+    plan: PlanKey;
+    locale: string;
+    consentVersion: string;
+    consents: OrderConsents;
+  }): Promise<OrderOutcome> {
+    const request: OrderRequestWire = {
+      plan: input.plan,
+      locale: input.locale,
+      consentVersion: input.consentVersion,
+      consents: { terms: input.consents.terms, earlyStart: input.consents.earlyStart },
+    };
+    let outcome: PlansOutcome<OrderAnswer>;
+    try {
+      outcome = await this.send({
+        path: `${PLANS_API_PREFIX}/order`,
+        method: 'POST',
+        body: request,
+        parse: (body) => orderAnswerSchema.parse(body),
+      });
+    } catch (error) {
+      if (!isSyncRequestError(error)) throw error;
+      const refusal = orderRefusalOf(error);
+      if (refusal === null) throw error;
+      return refusal;
+    }
+    if (outcome.status === 'absent') return { kind: 'absent' };
+    const answer = outcome.value;
+    if ('switched' in answer) return { kind: 'switched', ...answer.switched };
+    return { kind: 'redirect', url: answer.url };
   }
 
   /**
@@ -179,4 +250,18 @@ export class PlansClient {
       throw error;
     }
   }
+}
+
+/**
+ * The order outcome a refused request stands for, or `null` for a failure
+ * that is not a refusal and must be thrown on.
+ *
+ * The status says which family; the biller's machine code says which member.
+ * Only these two codes change what the page does, so only they are named.
+ */
+function orderRefusalOf(error: SyncRequestError): OrderOutcome | null {
+  if (error.status === 409 && error.code === ORDER_ALREADY_SUBSCRIBED) return { kind: 'already-subscribed' };
+  if (error.status !== 400) return null;
+  if (error.code === ORDER_STALE_VERSION) return { kind: 'stale' };
+  return { kind: 'refused', code: error.code };
 }

@@ -9,7 +9,8 @@
  * openplate-billing, which is a separate, PRIVATE service on its own release
  * cycle. This client cannot import from it, and the protocol document does not
  * describe it either. So the shapes are copied here by hand, from
- * `openplate-billing/src/plans/me.ts`, `checkout.ts` and `portal.ts`, and
+ * `openplate-billing/src/plans/me.ts`, `offer.ts`, `order.ts` and `portal.ts`,
+ * and
  * `tests/unit/plans-client.test.ts` is the contract test that says out loud
  * what was copied, so a drift is a failing assertion rather than a screen that
  * renders "undefined".
@@ -92,7 +93,7 @@ export const planViewSchema = z.object({
 export type PlanView = z.infer<typeof planViewSchema>;
 
 /**
- * The answer of both `POST /plans/checkout` and `POST /plans/portal`: one
+ * The answer of `POST /plans/portal`, and of an order that goes to Stripe: one
  * address to send the browser to.
  *
  * ONE SCHEMA FOR BOTH because the biller really does answer the same shape
@@ -105,29 +106,13 @@ export type RedirectTarget = z.infer<typeof redirectTargetSchema>;
 
 /**
  * The languages the biller holds a reviewed consumer acknowledgement in
- * (`openplate-billing/src/plans/consumer-consent.ts`).
- *
- * IT DECIDES NOTHING THAT COSTS MONEY, and that is why it is the one thing
- * about a checkout a client may influence: it names no price, no account and
- * no customer, it chooses which of two reviewed sentences a person reads
- * before they consent, and an unknown value falls back to German at the
- * biller rather than refusing the payment.
+ * (`openplate-billing/src/plans/consumer-consent.ts`). The legal pages that
+ * name that acknowledgement still ask in one of these two; the order itself
+ * asks in the offer's own language.
  */
 export const CHECKOUT_LOCALES = ['de', 'en'] as const;
 
 export type CheckoutLocale = (typeof CHECKOUT_LOCALES)[number];
-
-/**
- * `POST /plans/checkout`. One field, and it is not the price.
- *
- * A TYPE ALIAS RATHER THAN AN INTERFACE, deliberately: an interface has no
- * implicit index signature, so it is not assignable to `JsonValue` and the
- * transport would have to be handed a re-typed literal that nothing checks
- * against this transcription.
- */
-export type CheckoutRequestWire = {
-  locale: CheckoutLocale;
-};
 
 /** Whether a UI language is one the biller holds a reviewed sentence for. */
 export function isCheckoutLocale(value: string): value is CheckoutLocale {
@@ -164,6 +149,12 @@ export const offerPlanSchema = z
 
 export type OfferPlan = z.infer<typeof offerPlanSchema>;
 
+/** The slot in `texts.termsConsent` the page replaces with a link, transcribed from `TERMS_SLOT` in the biller. */
+export const TERMS_SLOT = '{terms}';
+
+/** The slot in `texts.switchNote` the page replaces with a date, transcribed from `DATE_SLOT` in the biller. */
+export const DATE_SLOT = '{date}';
+
 /**
  * A link the offer names. AN APP PATH AND NOTHING ELSE: the body is relayed
  * from a service this repository never compiled against, and a page about
@@ -190,15 +181,65 @@ export const planOfferSchema = z.object({
       message: 'a plan key appears twice',
     }),
   texts: z.object({
-    heading: z.string(),
-    summary: z.array(z.string()),
-    withdrawal: z.string(),
-    termsConsent: z.string(),
-    earlyStartConsent: z.string(),
-    button: z.string(),
-    paymentNote: z.string(),
+    heading: z.string().min(1),
+    summary: z.array(z.string().min(1)),
+    withdrawal: z.string().min(1),
+    /** Carries {@link TERMS_SLOT}, which the page draws as the link to `links.terms`. */
+    termsConsent: z.string().refine((text) => text.includes(TERMS_SLOT), { message: 'termsConsent has no terms slot' }),
+    earlyStartConsent: z.string().min(1),
+    /** The label of the order button, and the only one it may carry. */
+    button: z.string().min(1),
+    paymentNote: z.string().min(1),
+    /**
+     * Shown INSTEAD of `paymentNote` to a monthly subscriber ordering the
+     * yearly plan (M245/07). Carries {@link DATE_SLOT}, the day the year starts.
+     */
+    switchNote: z.string().refine((text) => text.includes(DATE_SLOT), { message: 'switchNote has no date slot' }),
   }),
   links: z.object({ terms: appPathSchema, privacy: appPathSchema, withdrawal: appPathSchema }),
 });
 
 export type PlanOffer = z.infer<typeof planOfferSchema>;
+
+/**
+ * The two consents an order carries (`openplate-billing/src/plans/order.ts`).
+ *
+ * `true` AS A TYPE, not `boolean`: an order is only ever sent with both boxes
+ * ticked, and a caller has to prove that to build one. The biller refuses
+ * anything else with {@link ORDER_CONSENT_MISSING}.
+ */
+export type OrderConsents = { terms: true; earlyStart: true };
+
+/**
+ * `POST /plans/order`. A plan KEY, the language and version of the page the
+ * person read, and the two consents. Nothing here names a price, an account or
+ * a customer. A type alias for the reason `JsonValue` needs one.
+ */
+export type OrderRequestWire = {
+  plan: PlanKey;
+  locale: string;
+  consentVersion: string;
+  consents: OrderConsents;
+};
+
+/**
+ * `200` from `POST /plans/order`: Stripe's address for a first order, or the
+ * booked move of a monthly subscription to the yearly plan (M245/07).
+ */
+export const orderAnswerSchema = z.union([
+  redirectTargetSchema,
+  z.object({ switched: z.object({ plan: z.enum(PLAN_KEYS), startsAt: z.string().min(1) }) }),
+]);
+
+export type OrderAnswer = z.infer<typeof orderAnswerSchema>;
+
+/** 400: the body is not the shape of an order. */
+export const ORDER_INVALID = 'order-invalid';
+/** 400: the plan key is not one the biller sells. */
+export const ORDER_UNKNOWN_PLAN = 'order-unknown-plan';
+/** 400: a consent is absent or not `true`. */
+export const ORDER_CONSENT_MISSING = 'order-consent-missing';
+/** 400: the page the person read is not the current offer. The page reads the offer again. */
+export const ORDER_STALE_VERSION = 'order-stale-version';
+/** 409: the account already pays for a plan this order cannot move it to, or a move is booked. */
+export const ORDER_ALREADY_SUBSCRIBED = 'order-already-subscribed';

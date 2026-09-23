@@ -11,7 +11,9 @@
  *  - `GET /v1/plans/me`, answering the plan view the spec names;
  *  - `GET /v1/plans/offer`, answering `tests/fixtures/plan-offer.json`, whose
  *    texts are neutral placeholders. No real order or legal sentence and no
- *    real price reaches this tier.
+ *    real price reaches this tier;
+ *  - `POST /v1/plans/order`, through {@link routeOrder}, when a spec presses
+ *    the order button.
  *
  * Everything else, the account, the session and the sign-in, is the fake
  * service's own, so the page reads its plan over a real session.
@@ -143,15 +145,52 @@ export async function openPlanPageSignedIn(page: Page, search = ''): Promise<voi
   await page.waitForURL('**/settings/plan**');
 }
 
+/** The plan view of a monthly subscriber whose month renews. */
+export const MONTHLY_SUBSCRIBER_VIEW = {
+  plan: 'active',
+  planKey: 'monthly',
+  interval: 'month',
+  currentPeriodEnd: '2026-10-09T10:00:00.000Z',
+  cancelAtPeriodEnd: false,
+  portalAvailable: true,
+};
+
+/** One answer of the stubbed `POST /v1/plans/order`. */
+export interface OrderAnswer {
+  status: number;
+  json: object;
+}
+
+/** What the page posted to the order route, and whether it ever reached for the gone checkout route. */
+export interface OrderRequests {
+  bodies: unknown[];
+  checkoutCalls: number;
+}
+
 /**
- * Routes `POST /v1/plans/checkout` to answer an address, standing in for the
- * Stripe page the biller would open. The spec names where "Stripe" sends the
- * browser back to, which is how a return from payment is reached without a
- * payment.
+ * Routes `POST /v1/plans/order` (M245/03), and the checkout route it replaced.
+ *
+ * The answers are used in order, and the last one repeats, so a spec can
+ * answer "stale" once and "go to Stripe" after. The spec names where "Stripe"
+ * sends the browser back to, which is how a return from payment is reached
+ * without a payment. `POST /v1/plans/checkout` answers 410, as the biller
+ * does, and is counted: the page must never reach for it.
  *
  * @param page - the page, before the button is pressed.
- * @param url - the address the checkout answers.
+ * @param answers - what the biller answers, one per order.
+ * @returns the order bodies, recorded as they arrive.
  */
-export async function routeCheckout(page: Page, url: string): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => route.fulfill({ json: { url } }));
+export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): Promise<OrderRequests> {
+  const requests: OrderRequests = { bodies: [], checkoutCalls: 0 };
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/order`, (route) => {
+    requests.bodies.push(route.request().postDataJSON());
+    const answer = answers[Math.min(requests.bodies.length, answers.length) - 1];
+    if (answer === undefined) throw new Error('routeOrder was given no answer');
+    return route.fulfill({ status: answer.status, json: answer.json });
+  });
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => {
+    requests.checkoutCalls += 1;
+    return route.fulfill({ status: 410, json: { error: 'checkout-gone' } });
+  });
+  return requests;
 }

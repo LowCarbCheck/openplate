@@ -3369,7 +3369,17 @@
         "month": "Plan mensual",
         "year": "Plan anual"
       },
-      "yearThenMonthly": "Tu año de suscripción dura hasta el {{date}}. Después, el plan continúa de forma mensual y puedes cancelarlo cada mes."
+      "yearThenMonthly": "Tu año de suscripción dura hasta el {{date}}. Después, el plan continúa de forma mensual y puedes cancelarlo cada mes.",
+      "orderYearly": "Order the yearly plan",
+      "switchBooked": "Your yearly plan starts on {{date}}."
+    },
+    "order": {
+      "confirmFirst": "Tick both boxes to order.",
+      "failed": "The order did not go through. Try again.",
+      "stale": "This page changed. Read it again and tick both boxes.",
+      "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
+      "unavailable": "The order page could not be loaded. Try again later.",
+      "withdrawalLink": "Withdrawal instruction and form"
     }
   },
   "usual": {

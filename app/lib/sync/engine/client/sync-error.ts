@@ -50,23 +50,35 @@ export class SyncRequestError extends Error {
   readonly status: number | null;
   /** From `Retry-After`, in seconds — only ever set on `throttled`. */
   readonly retryAfterSeconds: number | null;
+  /**
+   * The body's `error` token, or `null` when the body carried none.
+   *
+   * FOR A CALLER WHOSE SERVICE DOCUMENTS MACHINE CODES, and only that. The
+   * sync protocol branches on the status (§4); the biller behind
+   * `/v1/plans/*` is not the protocol and answers one 400 for several reasons
+   * a page reacts to differently (`plans-wire.ts`, the order codes).
+   */
+  readonly code: string | null;
 
   constructor({
     kind,
     message,
     status = null,
     retryAfterSeconds = null,
+    code = null,
   }: {
     kind: SyncErrorKind;
     message: string;
     status?: number | null;
     retryAfterSeconds?: number | null;
+    code?: string | null;
   }) {
     super(message);
     this.name = 'SyncRequestError';
     this.kind = kind;
     this.status = status;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.code = code;
   }
 }
 

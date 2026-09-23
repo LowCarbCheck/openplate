@@ -19,6 +19,7 @@ import { z } from 'zod';
 const catalogSchema = z.object({
   chrome: z.object({
     logoMenuLabel: z.string(),
+    terms: z.string(),
   }),
   nav: z.object({
     trends: z.string(),
@@ -128,12 +129,19 @@ const catalogSchema = z.object({
   }),
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
-    start: z.string(),
     manage: z.string(),
     returned: z.object({ success: z.string() }),
     card: z.object({
       name: z.object({ month: z.string(), year: z.string() }),
       yearThenMonthly: z.string(),
+      orderYearly: z.string(),
+      switchBooked: z.string(),
+    }),
+    order: z.object({
+      failed: z.string(),
+      stale: z.string(),
+      alreadySubscribed: z.string(),
+      unavailable: z.string(),
     }),
     choice: z.object({
       legend: z.string(),

@@ -1,6 +1,6 @@
 /**
- * `/settings/plan` — what this account pays for, and the two buttons that
- * change it.
+ * `/settings/plan`: what this account pays for, and the order page that
+ * changes it.
  *
  * ── This route does not exist unless a biller stands behind the instance ──
  *
@@ -21,14 +21,23 @@
  * `plans-door.ts`): a tab that once saw the door open must not keep opening
  * the page after the server shut it.
  *
- * ── Two buttons, both of which leave ─────────────────────────────────────
+ * ── The contract is concluded HERE, and Stripe only takes the payment ────
  *
- * Neither Stripe surface is rebuilt here. "Start" opens a Checkout Session and
- * follows the address the biller answers; "Manage" opens the Customer Portal,
- * which is where cancelling, changing a card and downloading an invoice live.
- * Building those would be three more screens holding the same card and the
- * same address, in an app whose whole arrangement exists so that neither is
- * ever here.
+ * M245/04. Somebody without a plan gets the order page, drawn from
+ * `GET /plans/offer` (`plan-order.tsx`): the plans, the texts § 312j BGB wants
+ * read before the button, two unticked boxes, and the biller's own button
+ * label. The press posts `POST /plans/order`, and only its answer decides what
+ * happens next: an address to Stripe, a booked switch, a page that went stale,
+ * an account that already pays, or a failure the person can try again after.
+ *
+ * ── Plan changes happen on this page and only here ───────────────────────
+ *
+ * Owner decision, 2026-09-23 (M245/07). A monthly subscriber sees the status
+ * card with a link to order the yearly plan (`?plan=yearly`); the order page
+ * then shows the yearly plan alone and the biller's switch note in place of
+ * the payment note. The biller answers a booked switch, and the page stays.
+ * A yearly subscriber sees the status card only. "Manage" still opens the
+ * Stripe Customer Portal, which since M245/06 allows cancellation only.
  *
  * ── The view is props only ───────────────────────────────────────────────
  *
@@ -41,24 +50,32 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
-import { CreditCard, ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 
 import type { Route } from './+types/settings.plan';
 import { CONFIG } from '#app/config';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
-import { checkoutLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
+import { PLAN_PAGE_HREF, offerLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
+import type { OrderOutcome } from '#app/lib/sync/engine/client/plans-client';
 import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/lib/sync/engine/client/plans-wire';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
-import { PlanChoice } from '#app/components/plans/plan-choice';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
-import { PlanStatusCard } from '#app/components/plans/plan-status-card';
-import { offerLocaleFor } from '#app/lib/plans/plans-door';
+import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
+import {
+  NO_CONSENTS,
+  PlanOrder,
+  type ConsentKey,
+  type ConsentState,
+  type OrderMode,
+  type OrderNotice,
+  type PlanOrderProps,
+} from '#app/components/plans/plan-order';
 import { cn } from '#app/lib/utils';
 import { trackOrderSent, trackPaymentReturned } from '#app/lib/matomo-events';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -72,6 +89,9 @@ export const handle = {
   title: 'Plan',
   backTo: '/settings',
 };
+
+/** Where a monthly subscriber orders the yearly plan. The order page reads the same parameter a link to a plan uses. */
+export const ORDER_YEARLY_HREF = `${PLAN_PAGE_HREF}?plan=yearly`;
 
 /** @throws a 404 Response on an instance with no server configured, where there is no account to sell a plan to. */
 export function loader() {
@@ -102,8 +122,8 @@ export function HydrateFallback() {
 /** Where the plan read is. Owned by `use-plan-standing.ts`, re-exported for the screen's own tests. */
 export type { PlanReadState };
 
-/** Which button is busy, so neither can be pressed twice into two Stripe sessions. */
-export type PlanAction = 'none' | 'checkout' | 'portal';
+/** Which press is in flight, so neither can be pressed twice. */
+export type PlanAction = 'none' | 'order' | 'portal';
 
 /** What the person came back from, read off the address the biller sent them to. */
 export type CheckoutReturn = 'none' | 'success' | 'cancelled';
@@ -117,48 +137,77 @@ const STATUS_KEY_BY_PLAN = {
   canceled: 'plan.status.canceled',
 } satisfies Record<PlanStatus, string>;
 
-/**
- * The screen, props only.
- *
- * @param props.onStart - opens a checkout. Named for what a person does, not
- *   for the request it makes, because the same button is the trial's start and
- *   a lapsed subscription's restart.
- */
-export function PlanScreen({
-  state,
-  standing,
-  offer,
-  selectedPlan,
-  busy,
-  checkoutReturn,
-  actionFailed,
-  onSelectPlan,
-  onStart,
-  onManage,
-}: {
+/** What the order block needs from the page, minus the handlers the page adds. */
+export type OrderView = Omit<PlanOrderProps, 'onSelectPlan' | 'onConsentChange' | 'onOrder'>;
+
+export interface PlanScreenProps {
   state: PlanReadState;
-  /** Where the person stands, from `planStanding`. A subscriber gets the status card instead of the order. */
+  /** Where the person stands, from `planStanding`. A subscriber gets the status card. */
   standing: PlanStanding;
-  /** What this instance sells, or `null` when there is no offer to draw. */
-  offer: PlanOffer | null;
-  /** The picked plan, `null` until the person picks one or a link named one. */
-  selectedPlan: PlanKey | null;
+  /** The order block, or `null` when this page places no order. */
+  order: OrderView | null;
+  /** `true` when an order was wanted and the offer is still on its way. */
+  isOrderLoading: boolean;
+  /** `true` when an order was wanted and the offer could not be read. */
+  isOfferUnavailable: boolean;
   busy: PlanAction;
   checkoutReturn: CheckoutReturn;
-  /** `true` when the last button press did not produce an address to follow. */
-  actionFailed: boolean;
+  /** `true` when the last portal press did not produce an address to follow. */
+  portalFailed: boolean;
+  /** Where a monthly subscriber may order the yearly plan, or `null` when they may not. */
+  orderYearlyHref: string | null;
+  /** The ISO day a switch booked on this page starts, or `null`. */
+  switchStartsAt: string | null;
+  /** `true` after the biller said this account already pays, with no order block left to say it in. */
+  isAlreadySubscribed: boolean;
   onSelectPlan: (key: PlanKey) => void;
-  onStart: () => void;
+  onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
+  onOrder: () => void;
   onManage: () => void;
-}) {
+}
+
+/** The manage button and the one reserved line that says it failed. */
+function PortalControls({
+  busy,
+  portalFailed,
+  onManage,
+}: Pick<PlanScreenProps, 'busy' | 'portalFailed' | 'onManage'>) {
   const { t } = useTranslation();
-  // With an offer on screen the person picks first, so the plan they read is
-  // the plan they asked for. With none (a biller older than the offer) the
-  // button works as it always did.
-  const needsPick = offer !== null && selectedPlan === null;
-  const subscribed = state.kind === 'ready' && standing.kind === 'subscribed' ? standing : null;
+  return (
+    <>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
+          {busy === 'portal' ?
+            <Loader2 className="h-4 w-4 animate-spin" />
+          : <ExternalLink className="h-4 w-4" />}
+          {t('plan.manage')}
+        </Button>
+      </div>
+      <p
+        data-slot="plan-portal-line"
+        role={portalFailed ? 'alert' : undefined}
+        className={cn('min-h-5 text-sm text-destructive', !portalFailed && 'invisible')}
+      >
+        {portalFailed ? t('plan.actionFailed') : '\u00a0'}
+      </p>
+    </>
+  );
+}
+
+/** The screen, props only. */
+export function PlanScreen(props: PlanScreenProps) {
+  const { state, standing, order, checkoutReturn, busy } = props;
+  const { t } = useTranslation();
+  const subscribed: SubscribedStanding | null =
+    state.kind === 'ready' && standing.kind === 'subscribed' ? standing : null;
 
   if (state.kind === 'loading') return <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>;
+
+  const portalAvailable = state.kind === 'ready' && state.plan.portalAvailable;
+  // The account section above an order: drawn for every state that is not an
+  // answer, and for an answer with something to say besides the order.
+  const showsAccountSection =
+    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable);
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -170,20 +219,39 @@ export function PlanScreen({
       {checkoutReturn === 'cancelled' && (
         <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>
       )}
-
-      {/* A SUBSCRIBER IS NOT SOLD A SECOND PLAN. They get what they hold,
-          the date that matters next and the way to the portal. */}
-      {subscribed !== null && (
-        <PlanStatusCard
-          standing={subscribed}
-          portalAvailable={state.kind === 'ready' && state.plan.portalAvailable}
-          isOpeningPortal={busy === 'portal'}
-          isBusy={busy !== 'none'}
-          onManage={onManage}
-        />
+      {props.isAlreadySubscribed && order === null && (
+        <p data-slot="plan-already-subscribed" className="text-sm">
+          {t('plan.order.alreadySubscribed')}
+        </p>
       )}
 
-      {subscribed === null && (
+      {/* A SUBSCRIBER IS NOT SOLD A SECOND PLAN. They get what they hold, the
+          date that matters next, the way to the portal, and for a monthly
+          plan the one change this page offers. */}
+      {subscribed !== null && (
+        <div className="space-y-1">
+          <PlanStatusCard
+            standing={subscribed}
+            portalAvailable={portalAvailable}
+            isOpeningPortal={busy === 'portal'}
+            isBusy={busy !== 'none'}
+            onManage={props.onManage}
+            orderYearlyHref={order === null && !props.isOrderLoading ? props.orderYearlyHref : null}
+            switchStartsAt={props.switchStartsAt}
+          />
+          {portalAvailable && (
+            <p
+              data-slot="plan-portal-line"
+              role={props.portalFailed ? 'alert' : undefined}
+              className={cn('min-h-5 px-4 text-sm text-destructive', !props.portalFailed && 'invisible')}
+            >
+              {props.portalFailed ? t('plan.actionFailed') : '\u00a0'}
+            </p>
+          )}
+        </div>
+      )}
+
+      {showsAccountSection && (
         <SettingsSection
           label={t('plan.title')}
           description={state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
@@ -192,57 +260,31 @@ export function PlanScreen({
           {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}
           {state.kind === 'absent' && <p className="text-sm text-muted-foreground">{t('plan.absent')}</p>}
           {state.kind === 'failed' && <p className="text-sm text-muted-foreground">{t('plan.failed')}</p>}
-
-          {/* THE PRICES ARE DATA. No number in this app is a price: every
-              figure on the cards is the biller's `grossCents`, or arithmetic on
-              it (`plan-prices.ts`), and the term under each is the biller's own
-              sentence. */}
-          {state.kind === 'ready' && offer !== null && (
-            <PlanChoice plans={offer.plans} selectedKey={selectedPlan} onSelect={onSelectPlan} placement="plan-page" />
-          )}
-
-          <p className="text-xs text-muted-foreground">{t('plan.vatNote')}</p>
-
-          {/* ONE RESERVED LINE for the two things that can appear above the
-              buttons, so neither a failed press nor a pick moves them. */}
-          {state.kind === 'ready' && (
-            <p
-              data-slot="plan-action-line"
-              role={actionFailed ? 'alert' : undefined}
-              className={cn(
-                'min-h-5 text-sm',
-                actionFailed ? 'text-destructive' : 'text-muted-foreground',
-                !actionFailed && !needsPick && 'invisible',
-              )}
-            >
-              {actionFailed && t('plan.actionFailed')}
-              {!actionFailed && needsPick && t('plan.choice.pickFirst')}
-              {!actionFailed && !needsPick && '\u00a0'}
+          {state.kind === 'ready' && props.isOfferUnavailable && (
+            <p data-slot="plan-order-unavailable" className="text-sm text-muted-foreground">
+              {t('plan.order.unavailable')}
             </p>
           )}
-
-          {state.kind === 'ready' && (
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={onStart} disabled={busy !== 'none' || needsPick}>
-                {busy === 'checkout' ?
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                : <CreditCard className="h-4 w-4" />}
-                {t('plan.start')}
-              </Button>
-              {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
-                  biller answers a 404 for an account with no customer, and a
-                  button whose only outcome is that 404 is a button that lies. */}
-              {state.plan.portalAvailable && (
-                <Button type="button" variant="secondary" onClick={onManage} disabled={busy !== 'none'}>
-                  {busy === 'portal' ?
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  : <ExternalLink className="h-4 w-4" />}
-                  {t('plan.manage')}
-                </Button>
-              )}
-            </div>
+          {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
+              biller answers a 404 for an account with no customer, and a
+              button whose only outcome is that 404 is a button that lies. */}
+          {portalAvailable && (
+            <PortalControls busy={busy} portalFailed={props.portalFailed} onManage={props.onManage} />
           )}
         </SettingsSection>
+      )}
+
+      {props.isOrderLoading && subscribed !== null && (
+        <p className="text-sm text-muted-foreground">{t('plan.loading')}</p>
+      )}
+
+      {order !== null && (
+        <PlanOrder
+          {...order}
+          onSelectPlan={props.onSelectPlan}
+          onConsentChange={props.onConsentChange}
+          onOrder={props.onOrder}
+        />
       )}
     </div>
   );
@@ -265,6 +307,38 @@ export function readPlanParam(value: string | null): PlanKey | null {
   return PLAN_KEYS.find((key) => key === value) ?? null;
 }
 
+/**
+ * Whether this subscriber may order the yearly plan here, and from when it
+ * would start: the end of the paid month.
+ *
+ * Only a monthly plan that is paid up and has a period end. The biller refuses
+ * the rest with 409 anyway (`plan-switch.ts`: a debt is settled before a
+ * yearly charge is booked); drawing a link whose only outcome is that refusal
+ * would be a link that lies.
+ */
+export function switchStartFor(standing: PlanStanding): string | null {
+  if (standing.kind !== 'subscribed') return null;
+  if (standing.planKey !== 'monthly' || standing.isPastDue) return null;
+  return standing.periodEnd;
+}
+
+/** Places the order over the open session. `null` when nobody is signed in any more. */
+async function sendOrder(input: {
+  offer: PlanOffer;
+  plan: PlanKey;
+}): Promise<OrderOutcome | null> {
+  const client = currentPlansClient();
+  if (client === null) return null;
+  return await client.placeOrder({
+    plan: input.plan,
+    // THE OFFER'S OWN LANGUAGE, not the UI's: the biller rebuilds the page
+    // for this language to compare versions, so it must be the page read.
+    locale: input.offer.locale,
+    consentVersion: input.offer.consentVersion,
+    consents: { terms: true, earlyStart: true },
+  });
+}
+
 export default function SettingsPlan() {
   const { i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -273,32 +347,52 @@ export default function SettingsPlan() {
   // off it below, and the page must go on saying what happened after that.
   const [checkoutReturn] = useState<CheckoutReturn>(() => readCheckoutReturn(searchParams.get('checkout')));
   const hasReportedReturn = useRef(false);
+  const [planRefresh, setPlanRefresh] = useState(0);
+  const [offerRefresh, setOfferRefresh] = useState(0);
+  const [pickedPlan, setPickedPlan] = useState<PlanKey | null>(null);
+  const [consents, setConsents] = useState<ConsentState>(NO_CONSENTS);
+  const [notice, setNotice] = useState<OrderNotice>('none');
+  const [busy, setBusy] = useState<PlanAction>('none');
+  const [portalFailed, setPortalFailed] = useState(false);
+  const [switchStartsAt, setSwitchStartsAt] = useState<string | null>(null);
+
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
   const { instance } = useLoaderData<typeof clientLoader>();
-  const read = usePlanRead({ isEnabled: true });
+  const read = usePlanRead({ isEnabled: true, refresh: planRefresh });
   const standing = planStanding({
     instance,
     account: session.account,
     planView: planViewOf(read),
     now: new Date(),
   });
-  // A paying person is not sold a second plan, so their page never asks.
+  const isSubscribed = read.kind === 'ready' && standing.kind === 'subscribed';
+  // Read LIVE from the address, so the status card's link opens the order on
+  // the page that is already mounted.
+  const linkedPlan = readPlanParam(searchParams.get('plan'));
+  const switchStart = switchStartsAt === null ? switchStartFor(standing) : null;
+  const isSwitching = isSubscribed && switchStart !== null && linkedPlan === 'yearly';
+  const wantsOrder = read.kind === 'ready' && (!isSubscribed || isSwitching);
   const offerRead = usePlanOffer({
-    isEnabled: read.kind === 'ready' && standing.kind !== 'subscribed',
+    isEnabled: wantsOrder,
     locale: offerLocaleFor(i18n.language),
+    refresh: offerRefresh,
   });
-  const [pickedPlan, setPickedPlan] = useState<PlanKey | null>(() => readPlanParam(searchParams.get('plan')));
-  const [busy, setBusy] = useState<PlanAction>('none');
-  const [actionFailed, setActionFailed] = useState(false);
 
   const offer = offerRead.settled ? offerRead.offer : null;
+  const wantedPick = isSwitching ? 'yearly' : (pickedPlan ?? linkedPlan);
   // A linked plan the offer does not contain is no pick at all.
-  const selectedPlan = offer?.plans.some((plan) => plan.key === pickedPlan) ? pickedPlan : null;
-  // HELD UNTIL THE OFFER IS IN, so the cards never arrive underneath a page
-  // that is already drawn and push its buttons down.
-  const isWaitingForOffer = read.kind === 'ready' && standing.kind !== 'subscribed' && !offerRead.settled;
-  const state: PlanReadState = isWaitingForOffer ? { kind: 'loading' } : read;
+  const selectedPlan = offer?.plans.some((plan) => plan.key === wantedPick) ? wantedPick : null;
+  const mode: OrderMode =
+    isSwitching && switchStart !== null ? { kind: 'switch', startsAt: switchStart } : { kind: 'first' };
+  const isOrderLoading = wantsOrder && !offerRead.settled;
+  // HELD UNTIL THE OFFER IS IN for somebody without a plan, so the order
+  // never arrives underneath a page that is already drawn and pushes it down.
+  const state: PlanReadState = isOrderLoading && !isSubscribed ? { kind: 'loading' } : read;
+  const order: OrderView | null =
+    wantsOrder && offer !== null ?
+      { offer, mode, selectedPlan, consents, notice, isOrdering: busy === 'order' }
+    : null;
 
   // ONE RETURN, ONE EVENT, ONE THANK-YOU. The `checkout` marker leaves the
   // address, replacing the history entry, so a reload or a back navigation
@@ -317,61 +411,107 @@ export default function SettingsPlan() {
     );
   }, [checkoutReturn, setSearchParams]);
 
-  /**
-   * Follows an address the biller answered.
-   *
-   * `assign` AND NOT A ROUTER NAVIGATION: the address is Stripe's, on another
-   * origin, and this app's router has nothing to do with it.
-   */
-  const follow = useCallback(async (open: () => Promise<string | null>, action: PlanAction): Promise<void> => {
-    setBusy(action);
-    setActionFailed(false);
-    try {
-      const url = await open();
-      if (url === null) {
-        setActionFailed(true);
+  /** Takes the order link off the address, so the page shows the plan and not the order. */
+  const leaveOrder = useCallback(() => {
+    setSearchParams(
+      (params) => {
+        params.delete('plan');
+        return params;
+      },
+      { replace: true, preventScrollReset: true },
+    );
+  }, [setSearchParams]);
+
+  /** What the page does with each answer. See the route header. */
+  const settleOrder = useCallback(
+    (outcome: OrderOutcome | null): void => {
+      if (outcome === null) {
+        setNotice('failed');
+        setBusy('none');
         return;
       }
-      window.location.assign(url);
-    } catch {
-      setActionFailed(true);
-    } finally {
+      switch (outcome.kind) {
+        case 'redirect':
+          // `assign` AND NOT A ROUTER NAVIGATION: the address is Stripe's, on
+          // another origin. The button stays busy until the browser leaves.
+          window.location.assign(outcome.url);
+          return;
+        case 'switched':
+          setSwitchStartsAt(outcome.startsAt);
+          setConsents(NO_CONSENTS);
+          leaveOrder();
+          break;
+        case 'stale':
+          // NOTHING IS UNTICKED SILENTLY. The page the person agreed to is not
+          // the page the biller sells any more: read it again, clear both
+          // boxes, keep the pick, and say why.
+          setConsents(NO_CONSENTS);
+          setNotice('stale');
+          setOfferRefresh((count) => count + 1);
+          break;
+        case 'already-subscribed':
+          setNotice('already-subscribed');
+          setPlanRefresh((count) => count + 1);
+          leaveOrder();
+          break;
+        case 'refused':
+        case 'absent':
+          setNotice('failed');
+          break;
+      }
       setBusy('none');
-    }
+    },
+    [leaveOrder],
+  );
+
+  const onOrder = useCallback(() => {
+    if (offer === null || selectedPlan === null || !consents.terms || !consents.earlyStart) return;
+    trackOrderSent(selectedPlan);
+    setBusy('order');
+    setNotice('none');
+    void sendOrder({ offer, plan: selectedPlan }).then(settleOrder, () => settleOrder(null));
+  }, [offer, selectedPlan, consents, settleOrder]);
+
+  const onConsentChange = useCallback((key: ConsentKey, isTicked: boolean) => {
+    setConsents((current) => ({ ...current, [key]: isTicked }));
   }, []);
 
-  const onStart = useCallback(() => {
-    // The funnel names the plan the person asked for. Without an offer there
-    // was no choice to name, so there is no key and no event.
-    if (selectedPlan !== null) trackOrderSent(selectedPlan);
-    void follow(async () => {
-      const client = currentPlansClient();
-      if (client === null) return null;
-      const outcome = await client.startCheckout({ locale: checkoutLocaleFor(i18n.language) });
-      return outcome.status === 'ok' ? outcome.value.url : null;
-    }, 'checkout');
-  }, [follow, i18n.language, selectedPlan]);
-
   const onManage = useCallback(() => {
-    void follow(async () => {
-      const client = currentPlansClient();
-      if (client === null) return null;
-      const outcome = await client.openPortal();
-      return outcome.status === 'ok' ? outcome.value.url : null;
-    }, 'portal');
-  }, [follow]);
+    setBusy('portal');
+    setPortalFailed(false);
+    void (async () => {
+      try {
+        const client = currentPlansClient();
+        const outcome = client === null ? null : await client.openPortal();
+        if (outcome === null || outcome.status !== 'ok') {
+          setPortalFailed(true);
+          setBusy('none');
+          return;
+        }
+        window.location.assign(outcome.value.url);
+      } catch {
+        setPortalFailed(true);
+      }
+      setBusy('none');
+    })();
+  }, []);
 
   return (
     <PlanScreen
       state={state}
       standing={standing}
-      offer={offer}
-      selectedPlan={selectedPlan}
-      onSelectPlan={setPickedPlan}
+      order={order}
+      isOrderLoading={isOrderLoading}
+      isOfferUnavailable={wantsOrder && offerRead.settled && offer === null}
       busy={busy}
       checkoutReturn={checkoutReturn}
-      actionFailed={actionFailed}
-      onStart={onStart}
+      portalFailed={portalFailed}
+      orderYearlyHref={switchStart === null ? null : ORDER_YEARLY_HREF}
+      switchStartsAt={switchStartsAt}
+      isAlreadySubscribed={notice === 'already-subscribed'}
+      onSelectPlan={setPickedPlan}
+      onConsentChange={onConsentChange}
+      onOrder={onOrder}
       onManage={onManage}
     />
   );

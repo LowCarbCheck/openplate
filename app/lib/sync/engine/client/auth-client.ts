@@ -1116,6 +1116,7 @@ export async function toRequestError(response: Response): Promise<SyncRequestErr
     message,
     status: response.status,
     retryAfterSeconds: retryAfter === null ? null : Number.parseInt(retryAfter, 10),
+    code: errorText ?? null,
   });
 }
 

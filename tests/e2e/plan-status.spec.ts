@@ -41,7 +41,7 @@ test('a yearly subscriber sees their plan, the year turning monthly and the mana
 
   // Nothing is sold to somebody who already pays: no cards, no start button,
   // and the offer was never even asked for.
-  await expect(page.getByRole('button', { name: EN.plan.start })).toHaveCount(0);
+  await expect(page.locator('[data-slot="plan-order-button"]')).toHaveCount(0);
   await expect(page.locator('[data-slot="plan-card"]')).toHaveCount(0);
   expect(offerRequests.locales).toEqual([]);
 });
@@ -52,7 +52,7 @@ test('a person without a plan sees the order instead of a status card', async ({
   await openPlanPageSignedIn(page);
 
   await expect(page.locator('[data-slot="plan-card"]')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: EN.plan.start })).toBeVisible();
+  await expect(page.locator('[data-slot="plan-order-button"]')).toBeVisible();
   await expect(statusCard(page)).toHaveCount(0);
   expect(offerRequests.locales).toEqual(['en']);
 });

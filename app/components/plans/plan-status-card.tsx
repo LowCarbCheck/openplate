@@ -25,6 +25,7 @@
  *
  * Props only, apart from `t`, so every state renders in a unit test.
  */
+import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
@@ -51,6 +52,15 @@ export interface PlanStatusCardProps {
   /** `true` while any plan action is in flight, so the button cannot be pressed twice. */
   isBusy: boolean;
   onManage: () => void;
+  /**
+   * Where a monthly subscriber orders the yearly plan (M245/07), or `null`
+   * when this person cannot move: a yearly plan, a payment being retried, a
+   * move already booked. Plan changes happen on the order page and nowhere
+   * else (owner, 2026-09-23), so this is a link to it and not a button.
+   */
+  orderYearlyHref?: string | null;
+  /** The ISO day a booked move to the yearly plan starts, or `null` when none was booked on this page. */
+  switchStartsAt?: string | null;
 }
 
 /** The date line, one sentence for each of the three meanings of the period end. */
@@ -71,8 +81,24 @@ function PeriodLine({ standing }: { standing: SubscribedStanding }) {
   return <p className="text-sm">{t('plan.renewsOn', { date })}</p>;
 }
 
-export function PlanStatusCard({ standing, portalAvailable, isOpeningPortal, isBusy, onManage }: PlanStatusCardProps) {
+/** A date the way this reader writes one. */
+function useLongDate(): (iso: string) => string {
+  const { i18n } = useTranslation();
+  const format = new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, { dateStyle: 'long' });
+  return (iso) => format.format(new Date(iso));
+}
+
+export function PlanStatusCard({
+  standing,
+  portalAvailable,
+  isOpeningPortal,
+  isBusy,
+  onManage,
+  orderYearlyHref = null,
+  switchStartsAt = null,
+}: PlanStatusCardProps) {
   const { t } = useTranslation();
+  const longDate = useLongDate();
   const heading = standing.interval === null ? t('plan.title') : t(PLAN_NAME_KEY[standing.interval]);
   const status = standing.isPastDue ? t('plan.status.pastDue') : t('plan.status.active');
 
@@ -80,6 +106,22 @@ export function PlanStatusCard({ standing, portalAvailable, isOpeningPortal, isB
     <div data-slot="plan-status-card" data-plan-key={standing.planKey ?? 'unnamed'}>
       <SettingsSection label={heading} description={status} contentClassName="space-y-3">
         <PeriodLine standing={standing} />
+        {switchStartsAt !== null && (
+          <p data-slot="plan-switch-booked" className="text-sm">
+            {t('plan.card.switchBooked', { date: longDate(switchStartsAt) })}
+          </p>
+        )}
+        {orderYearlyHref !== null && switchStartsAt === null && (
+          <p>
+            <Link
+              to={orderYearlyHref}
+              data-slot="plan-order-yearly"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              {t('plan.card.orderYearly')}
+            </Link>
+          </p>
+        )}
         {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
             biller answers a 404 for an account with no customer, and a
             button whose only outcome is that 404 is a button that lies. */}

@@ -13,7 +13,8 @@
  * `undefined` on a page about money.
  *
  * The literals below were read from `openplate-billing/src/plans/me.ts`
- * (`PlanView`, `toPlanStatus`), `checkout.ts` and `portal.ts` on 2026-09-09.
+ * (`PlanView`, `toPlanStatus`) and `portal.ts` on 2026-09-09, and from
+ * `offer.ts` and `order.ts` (branch `feat/m245-two-plans`) on 2026-09-23.
  *
  * ── Every assertion has a control ────────────────────────────────────────
  *
@@ -27,13 +28,21 @@ import assert from 'node:assert/strict';
 
 import { PlansClient, type PlansTransport } from '../../app/lib/sync/engine/client/plans-client';
 import {
+  DATE_SLOT,
+  ORDER_ALREADY_SUBSCRIBED,
+  ORDER_CONSENT_MISSING,
+  ORDER_INVALID,
+  ORDER_STALE_VERSION,
+  ORDER_UNKNOWN_PLAN,
   PLANS_API_PREFIX,
   PLAN_INTERVALS,
   PLAN_KEYS,
   PLAN_STATUSES,
+  TERMS_SLOT,
   planOfferSchema,
   planViewSchema,
 } from '../../app/lib/sync/engine/client/plans-wire';
+import { toRequestError } from '../../app/lib/sync/engine/client/auth-client';
 import fixtureOffer from '../fixtures/plan-offer.json';
 import type { AuthorizedMethod } from '../../app/lib/sync/engine/client/auth-client';
 import type { JsonValue } from '../../app/lib/sync/engine/protocol';
@@ -70,6 +79,21 @@ function fakeTransport(behaviour: TransportBehaviour): FakeTransport {
 
 function notFound(): never {
   throw new SyncRequestError({ kind: 'not-found', message: 'not found', status: 404 });
+}
+
+/** One order as the page places it: a key, the offer's language and version, both consents. */
+const ORDER = {
+  plan: 'yearly',
+  locale: 'en',
+  consentVersion: 'fixture-consent-1',
+  consents: { terms: true, earlyStart: true },
+} as const;
+
+/** A refusal from the biller, as the session's transport builds it from the response. */
+function refusedWith(status: number, code: string): () => never {
+  return () => {
+    throw new SyncRequestError({ kind: status === 409 ? 'conflict' : 'invalid', message: code, status, code });
+  };
 }
 
 /** The plan view as the biller really writes it, field for field. */
@@ -156,23 +180,6 @@ describe('the plan client', () => {
     assert.equal(calls.length, 1, 'the plan read made more than one request');
   });
 
-  it('opens a checkout with a POST whose only field is the consent language', async () => {
-    const { transport, calls } = fakeTransport({ answers: { url: 'https://checkout.example.test/s/1' } });
-    const outcome = await new PlansClient({ transport }).startCheckout({ locale: 'de' });
-    assert.equal(outcome.status, 'ok');
-    assert.equal(outcome.status === 'ok' ? outcome.value.url : null, 'https://checkout.example.test/s/1');
-    assert.deepEqual(calls, [
-      { path: `${PLANS_API_PREFIX}/checkout`, method: 'POST', body: { locale: 'de' } },
-    ]);
-    // THE PROPERTY THE WHOLE ARRANGEMENT RESTS ON: no price, no account id and
-    // no email leaves this client. The account comes from a header the gateway
-    // builds from the session, and the price from the biller's own catalogue.
-    const sent = JSON.stringify(calls[0]?.body);
-    for (const forbidden of ['price', 'accountId', 'email', 'customer']) {
-      assert.equal(sent.includes(forbidden), false, `the checkout body named ${forbidden}`);
-    }
-  });
-
   it('opens the portal with a POST and no body at all', async () => {
     const { transport, calls } = fakeTransport({ answers: { url: 'https://portal.example.test/p/1' } });
     const outcome = await new PlansClient({ transport }).openPortal();
@@ -180,12 +187,20 @@ describe('the plan client', () => {
     assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/portal`, method: 'POST', body: undefined }]);
   });
 
-  it('reads a 404 as absent on all three routes, because that is the shut door', async () => {
+  it('reads a 404 as absent on every route, because that is the shut door', async () => {
     const { transport } = fakeTransport({ fails: notFound });
     const client = new PlansClient({ transport });
     assert.deepEqual(await client.readPlan(), { status: 'absent' });
-    assert.deepEqual(await client.startCheckout({ locale: 'en' }), { status: 'absent' });
     assert.deepEqual(await client.openPortal(), { status: 'absent' });
+    assert.deepEqual(await client.placeOrder(ORDER), { kind: 'absent' });
+  });
+
+  it('no longer knows the checkout route the order replaced', () => {
+    // `POST /plans/checkout` answers 410 since M245/03. A client that still
+    // had a way to call it would open a Stripe session with no consent row.
+    assert.equal('startCheckout' in PlansClient.prototype, false);
+    // THE CONTROL: the same reading finds a method the client does have.
+    assert.equal('placeOrder' in PlansClient.prototype, true);
   });
 
   it('still throws everything that is not a 404', async () => {
@@ -232,6 +247,7 @@ describe('the offer, the contract M250 and M245/03 share', () => {
       'heading',
       'paymentNote',
       'summary',
+      'switchNote',
       'termsConsent',
       'withdrawal',
     ]);
@@ -281,5 +297,116 @@ describe('the offer, the contract M250 and M245/03 share', () => {
       },
     });
     await assert.rejects(new PlansClient({ transport: broken.transport }).readOffer({ locale: 'en' }), /unreachable/);
+  });
+});
+
+describe('the order, transcribed from openplate-billing/src/plans/order.ts', () => {
+  it('names the five refusal codes the biller answers', () => {
+    assert.deepEqual(
+      [ORDER_INVALID, ORDER_UNKNOWN_PLAN, ORDER_CONSENT_MISSING, ORDER_STALE_VERSION, ORDER_ALREADY_SUBSCRIBED],
+      ['order-invalid', 'order-unknown-plan', 'order-consent-missing', 'order-stale-version', 'order-already-subscribed'],
+    );
+  });
+
+  it('posts the plan key, the offer language and version, and both consents, and nothing else', async () => {
+    const { transport, calls } = fakeTransport({ answers: { url: 'https://checkout.example.test/s/1' } });
+    const outcome = await new PlansClient({ transport }).placeOrder(ORDER);
+    assert.deepEqual(outcome, { kind: 'redirect', url: 'https://checkout.example.test/s/1' });
+    assert.deepEqual(calls, [
+      {
+        path: `${PLANS_API_PREFIX}/order`,
+        method: 'POST',
+        body: {
+          plan: 'yearly',
+          locale: 'en',
+          consentVersion: 'fixture-consent-1',
+          consents: { terms: true, earlyStart: true },
+        },
+      },
+    ]);
+    // THE PROPERTY THE WHOLE ARRANGEMENT RESTS ON: no price, no account id and
+    // no email leaves this client. The account comes from a header the gateway
+    // builds from the session, and the price from the biller's own catalogue.
+    const sent = JSON.stringify(calls[0]?.body);
+    for (const forbidden of ['price', 'accountId', 'email', 'customer', 'grossCents']) {
+      assert.equal(sent.includes(forbidden), false, `the order body named ${forbidden}`);
+    }
+  });
+
+  it('answers a booked switch as a switch, with the day the year starts', async () => {
+    const startsAt = '2026-10-09T00:00:00.000Z';
+    const { transport } = fakeTransport({ answers: { switched: { plan: 'yearly', startsAt } } });
+    assert.deepEqual(await new PlansClient({ transport }).placeOrder(ORDER), {
+      kind: 'switched',
+      plan: 'yearly',
+      startsAt,
+    });
+  });
+
+  it('throws on a 200 that is neither an address nor a switch', async () => {
+    // THE CONTROL for the two answers above: a decoder that accepted anything
+    // would send the browser to `undefined`.
+    const { transport } = fakeTransport({ answers: { switched: { plan: 'yearly' } } });
+    await assert.rejects(new PlansClient({ transport }).placeOrder(ORDER));
+  });
+
+  it('tells a stale page from every other 400', async () => {
+    const stale = fakeTransport({ fails: refusedWith(400, ORDER_STALE_VERSION) });
+    assert.deepEqual(await new PlansClient({ transport: stale.transport }).placeOrder(ORDER), { kind: 'stale' });
+    for (const code of [ORDER_INVALID, ORDER_UNKNOWN_PLAN, ORDER_CONSENT_MISSING]) {
+      const other = fakeTransport({ fails: refusedWith(400, code) });
+      assert.deepEqual(await new PlansClient({ transport: other.transport }).placeOrder(ORDER), {
+        kind: 'refused',
+        code,
+      });
+    }
+  });
+
+  it('reads the 409 as an account that already pays, and throws any other 409', async () => {
+    const paying = fakeTransport({ fails: refusedWith(409, ORDER_ALREADY_SUBSCRIBED) });
+    assert.deepEqual(await new PlansClient({ transport: paying.transport }).placeOrder(ORDER), {
+      kind: 'already-subscribed',
+    });
+    const other = fakeTransport({ fails: refusedWith(409, 'something-else') });
+    await assert.rejects(new PlansClient({ transport: other.transport }).placeOrder(ORDER), /something-else/);
+  });
+
+  it('throws a failed Stripe call, so the page can say so and let the person try again', async () => {
+    const { transport } = fakeTransport({ fails: refusedWith(502, 'checkout-failed') });
+    await assert.rejects(new PlansClient({ transport }).placeOrder(ORDER), /checkout-failed/);
+  });
+
+  it('carries the biller code off a real error response', async () => {
+    // The session builds the error from the response; the code must survive
+    // that step, or every 400 above would read as `refused`.
+    const stale = await toRequestError(
+      new Response(JSON.stringify({ error: ORDER_STALE_VERSION }), { status: 400 }),
+    );
+    assert.equal(stale.status, 400);
+    assert.equal(stale.code, ORDER_STALE_VERSION);
+    // THE CONTROL: a body with no token carries no code.
+    const bare = await toRequestError(new Response('not json', { status: 400 }));
+    assert.equal(bare.code, null);
+  });
+});
+
+describe('the order texts in the offer', () => {
+  it('carries the switch note and both slots the page fills', () => {
+    const offer = planOfferSchema.parse(fixtureOffer);
+    assert.ok(offer.texts.termsConsent.includes(TERMS_SLOT));
+    assert.ok(offer.texts.switchNote.includes(DATE_SLOT));
+    assert.equal(TERMS_SLOT, '{terms}');
+    assert.equal(DATE_SLOT, '{date}');
+  });
+
+  it('refuses an offer whose consent has no terms slot, or whose switch note has no date', () => {
+    // A consent without its link, or a switch note without its day, is a page
+    // that cannot be drawn honestly. Each differs from the fixture in one text.
+    const texts = fixtureOffer.texts;
+    assert.throws(() => planOfferSchema.parse({ ...fixtureOffer, texts: { ...texts, termsConsent: 'No slot.' } }));
+    assert.throws(() => planOfferSchema.parse({ ...fixtureOffer, texts: { ...texts, switchNote: 'No slot.' } }));
+    const { switchNote, ...withoutSwitchNote } = texts;
+    assert.ok(switchNote.length > 0);
+    assert.throws(() => planOfferSchema.parse({ ...fixtureOffer, texts: withoutSwitchNote }));
   });
 });

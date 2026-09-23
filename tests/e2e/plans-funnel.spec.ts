@@ -8,7 +8,7 @@
  * passes `MATOMO_URL` and `MATOMO_SITE_ID`), the tracker hook, the event level,
  * the production CSP, the account, the session and the plan page.
  *
- * STUBBED: the plan reads and the checkout (`plans-stub.ts`), and `matomo.js`
+ * STUBBED: the plan reads and the order (`plans-stub.ts`), and `matomo.js`
  * itself. The stub tracker below does what Matomo's does with the queue: it
  * drains what was pushed before it loaded, replaces `_paq` with an object
  * whose `push` sends, and sends every event as a GET to `matomo.php` with
@@ -26,13 +26,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { E2E_APP_URL, E2E_MATOMO_URL } from './env';
-import { EN } from './copy';
 import {
   FIXTURE_OFFER_BODY,
   NO_SUBSCRIPTION_VIEW,
   YEARLY_SUBSCRIBER_VIEW,
   openPlanPageSignedIn,
-  routeCheckout,
+  routeOrder,
   routePlansCore,
   type PlansStub,
 } from './plans-stub';
@@ -108,7 +107,7 @@ test('the funnel sends offer seen, plan picked, order sent and back from payment
   // "arrives" while the browser is away paying.
   const stub: PlansStub = { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY };
   await routePlansCore(page, stub);
-  await routeCheckout(page, `${E2E_APP_URL}/settings/plan?checkout=success`);
+  await routeOrder(page, [{ status: 200, json: { url: `${E2E_APP_URL}/settings/plan?checkout=success` } }]);
 
   await openPlanPageSignedIn(page);
   await expect(page.locator('[data-slot="plan-card"][data-plan-key="yearly"]')).toBeVisible();
@@ -122,8 +121,11 @@ test('the funnel sends offer seen, plan picked, order sent and back from payment
   await page.locator('[data-slot="plan-card"][data-plan-key="yearly"]').click();
   await expect.poll(() => funnel(events)).toEqual(['offer-seen:plan-page', 'plan-picked:yearly']);
 
+  // The two consents are not funnel steps; ticking them sends nothing.
+  await page.locator('[data-slot="plan-consent-terms"]').check();
+  await page.locator('[data-slot="plan-consent-early-start"]').check();
   stub.planView = YEARLY_SUBSCRIBER_VIEW;
-  await page.getByRole('button', { name: EN.plan.start }).click();
+  await page.locator('[data-slot="plan-order-button"]').click();
   await page.waitForURL('**/settings/plan?checkout=success');
 
   await expect

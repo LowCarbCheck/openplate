@@ -26,8 +26,20 @@ export type OfferReadState = { settled: false } | { settled: true; offer: PlanOf
  *   passes whether it would draw the offer at all, so a paying person's plan
  *   page never asks.
  * @param input.locale - the language the texts are wanted in.
+ * @param input.refresh - a counter; a new value reads the offer again. The
+ *   answer on screen stays until the new one is in, so a re-read never
+ *   blanks the page. The order page bumps it when the biller says the page
+ *   the person read is stale (M245/04).
  */
-export function usePlanOffer({ isEnabled, locale }: { isEnabled: boolean; locale: string }): OfferReadState {
+export function usePlanOffer({
+  isEnabled,
+  locale,
+  refresh = 0,
+}: {
+  isEnabled: boolean;
+  locale: string;
+  refresh?: number;
+}): OfferReadState {
   const [state, setState] = useState<OfferReadState>({ settled: false });
 
   useEffect(() => {
@@ -50,7 +62,7 @@ export function usePlanOffer({ isEnabled, locale }: { isEnabled: boolean; locale
     return () => {
       isMounted = false;
     };
-  }, [isEnabled, locale]);
+  }, [isEnabled, locale, refresh]);
 
   return state;
 }

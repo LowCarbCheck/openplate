@@ -55,8 +55,9 @@ function planCard(page: Page, key: string): Locator {
   return page.locator(`[data-slot="plan-card"][data-plan-key="${key}"]`);
 }
 
+/** The order button, named by the fixture offer's own label: the app writes none. */
 function startButton(page: Page): Locator {
-  return page.getByRole('button', { name: EN.plan.start });
+  return page.locator('[data-slot="plan-order-button"]');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -100,7 +101,7 @@ test('the plan cards show both plans, the monthly equivalent and the saving', as
   await expect(yearlyRadio).toHaveAccessibleName(/Fixture term text for the yearly plan\./);
 });
 
-test('picking a plan enables the button and moves nothing on the page', async ({ page }) => {
+test('picking a plan clears its hint and moves nothing on the page', async ({ page }) => {
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
   await openPlanPageSignedIn(page);
   await expect(planCard(page, 'yearly')).toBeVisible();
@@ -120,7 +121,8 @@ test('picking a plan enables the button and moves nothing on the page', async ({
   await settleAnimations(page);
 
   await expect(page.getByRole('radio', { name: EN.plan.choice.interval.year })).toBeChecked();
-  await expect(startButton(page)).toBeEnabled();
+  // Still held: the order also needs both boxes (`plan-order.spec.ts`).
+  await expect(startButton(page)).toBeDisabled();
   await expect(page.getByText(EN.plan.choice.pickFirst)).toBeHidden();
 
   const after = await readTops(page);
@@ -160,13 +162,16 @@ test('a link that names a plan arrives with that plan picked', async ({ page }) 
   await openPlanPageSignedIn(page, '?plan=yearly');
   await expect(page.getByRole('radio', { name: EN.plan.choice.interval.year })).toBeChecked();
   await expect(page.getByRole('radio', { name: EN.plan.choice.interval.month })).not.toBeChecked();
-  await expect(startButton(page)).toBeEnabled();
+  await expect(page.getByText(EN.plan.choice.pickFirst)).toBeHidden();
 });
 
-test('an offer that does not decode draws no cards and keeps the old button', async ({ page }) => {
+test('an offer that does not decode draws no cards and no order, and says so', async ({ page }) => {
+  // The checkout route the old button called is gone (410), so with no offer
+  // there is nothing honest to press: unknown must not sell.
   const broken = JSON.stringify({ ...JSON.parse(FIXTURE_OFFER_BODY), plans: [{ key: 'yearly' }] });
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: broken });
   await openPlanPageSignedIn(page);
-  await expect(startButton(page)).toBeEnabled();
+  await expect(page.getByText(EN.plan.order.unavailable)).toBeVisible();
+  await expect(startButton(page)).toHaveCount(0);
   await expect(page.locator('[data-slot="plan-card"]')).toHaveCount(0);
 });

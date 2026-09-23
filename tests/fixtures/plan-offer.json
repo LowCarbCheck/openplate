@@ -24,7 +24,8 @@
     "termsConsent": "Fixture terms consent with a {terms} slot.",
     "earlyStartConsent": "Fixture early start consent.",
     "button": "Fixture order button",
-    "paymentNote": "Fixture payment note."
+    "paymentNote": "Fixture payment note.",
+    "switchNote": "Fixture switch note, the year starts {date}."
   },
   "links": { "terms": "/terms", "privacy": "/privacy", "withdrawal": "/withdrawal" }
 }
