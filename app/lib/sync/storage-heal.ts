@@ -36,6 +36,7 @@
  * performs.
  */
 import type { Tombstone } from './engine/merge/types';
+import { SYNC_ENTITY_TYPES } from './snapshot-sync';
 import { readOriginStorageReport, requestPersistentStorageAgain } from '#app/lib/local-store/persist';
 import { createComponentLogger } from '#app/lib/logger';
 import { updateSyncSession } from './sync-session';
@@ -95,6 +96,34 @@ export function resolveStorageHealNotice({
 }
 
 /**
+ * The withheld tombstones that describe something this device may have LOST.
+ *
+ * A COMPARTMENT THIS CYCLE COULD NOT SEE IS LEFT OUT (M253/11 item 6). Every
+ * document load starts a session that has not opened the account's sealed
+ * compartment yet, so its first cycle seals `unknown` (see `sync-actions.ts`,
+ * "TRUE ON EVERY BOOT'S FIRST CYCLE") and the stamping rightly withholds the
+ * compartment's tombstone. That is ignorance by design, not an eviction, and
+ * reporting it logged a storage loss on every page load of every account made
+ * in a browser. The live ten-scan test counted 13.
+ *
+ * A compartment the cycle DID see and still withheld is kept: that is the held
+ * shrink (M226) or a device without its database, and both are losses.
+ *
+ * @param input.withheld - the cycle's withheld tombstones.
+ * @param input.isCompartmentKnown - whether the cycle's seal knew the compartment's state.
+ */
+export function reportableWithheld({
+  withheld,
+  isCompartmentKnown,
+}: {
+  withheld: readonly Tombstone[];
+  isCompartmentKnown: boolean;
+}): Tombstone[] {
+  if (isCompartmentKnown) return [...withheld];
+  return withheld.filter((tombstone) => tombstone.entityType !== SYNC_ENTITY_TYPES.privateStore);
+}
+
+/**
  * Logs the loss, asks for persistent storage again, and publishes the notice.
  *
  * IT FIRES ON A REFUSED PASS-THROUGH TABLE TOO, not only on a withheld
@@ -107,17 +136,21 @@ export function resolveStorageHealNotice({
  * failure to report must not be reported as a failure to sync.
  */
 export async function healAfterWithheldDeletes({
-  withheld,
+  withheld: allWithheld,
+  isCompartmentKnown,
   refusedTables,
   restoredCount,
   accountId,
 }: {
   withheld: readonly Tombstone[];
+  /** Whether this cycle's seal knew the compartment's state (`SnapshotIntegrity.isCompartmentKnown`). See {@link reportableWithheld}. */
+  isCompartmentKnown: boolean;
   /** The store tables whose remote list stood (`PassThroughOutcome.refused`). */
   refusedTables: readonly string[];
   restoredCount: number;
   accountId: number;
 }): Promise<void> {
+  const withheld = reportableWithheld({ withheld: allWithheld, isCompartmentKnown });
   if (withheld.length === 0 && refusedTables.length === 0) return;
   const notice = resolveStorageHealNotice({ restoredCount, accountId });
 

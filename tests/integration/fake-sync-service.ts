@@ -515,7 +515,10 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       return;
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] ?? 'Content-Type,Authorization');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      req.headers['access-control-request-headers'] ?? 'Content-Type,Authorization',
+    );
     res.setHeader('Access-Control-Max-Age', '600');
     res.status(204).end();
   });
@@ -671,6 +674,23 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
    * reachable over HTTP; the `__e2e__` prefix is there so nobody mistakes it
    * for a route a client may call.
    */
+  /**
+   * `createInvite` over HTTP, for the browser tier (M253/11).
+   *
+   * NOT PROTOCOL, like the route below, and for the same reason it exists: the
+   * runner holds this service and the specs run in another process. A spec
+   * that must create an account IN THE BROWSER, through `/join`, needs a live
+   * invite, and the fixture account's is already spent by the setup.
+   */
+  app.post('/__e2e__/invites', (req, res) => {
+    const parsed = z.object({ email: z.string().email() }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'email must be an address' });
+      return;
+    }
+    res.json({ inviteToken: mintInvite({ email: parsed.data.email }) });
+  });
+
   app.post('/__e2e__/instance-settings', (req, res) => {
     const parsed = z.object({ nutrientReferenceBasis: z.enum(['dge', 'efsa', 'us']) }).safeParse(req.body);
     if (!parsed.success) {

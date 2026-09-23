@@ -511,6 +511,10 @@ export async function syncNow(): Promise<void> {
   if (vault === null) return;
 
   updateSyncSession({ phase: 'syncing', error: null });
+  // WHETHER THE LAST READ KNEW THE COMPARTMENT, for the heal report below
+  // (M253/11 item 6). The cycle stamps from its last read, so the last one
+  // is the one that decided what was withheld.
+  let isCompartmentKnown = true;
   try {
     const result = await runSyncCycle({
       accountId: vault.accountId,
@@ -518,7 +522,11 @@ export async function syncNow(): Promise<void> {
       http: vault.http,
       state: vault.state,
       deviceId: vault.deviceId,
-      readSnapshot: () => readSyncedSnapshot(vault.privateStore),
+      readSnapshot: async () => {
+        const read = await readSyncedSnapshot(vault.privateStore);
+        isCompartmentKnown = read.integrity.isCompartmentKnown;
+        return read;
+      },
       applySnapshot: (input) => applySyncedSnapshot({ session: vault.privateStore, ...input }),
       forgetPublishedDeletes,
       // The refusal that has to precede the push. `applySyncedSnapshot` below
@@ -534,6 +542,7 @@ export async function syncNow(): Promise<void> {
     // that ran after this line would be the clean-sync update erasing it.
     await healAfterWithheldDeletes({
       withheld: result.withheldTombstones,
+      isCompartmentKnown,
       // THE SECOND SHAPE OF THE SAME LOSS: a `savedMeals` list this device
       // could not account for, replaced by the account's. It mints no
       // tombstone, so a heal keyed on `withheld` alone said nothing at all.

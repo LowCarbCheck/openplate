@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { resolveStorageHealNotice } from '../../app/lib/sync/storage-heal';
+import { reportableWithheld, resolveStorageHealNotice } from '../../app/lib/sync/storage-heal';
 import type { Tombstone } from '../../app/lib/sync/engine/merge/types';
 import { SyncRestoredNotice } from '../../app/components/sync-status';
 import type { StorageHealNotice } from '../../app/lib/sync/storage-heal';
@@ -30,7 +30,12 @@ import { countRestoredEntities, SYNC_ENTITY_TYPES } from '../../app/lib/sync/sna
 import { SAVED_MEALS_TABLE } from '../../app/lib/local-store/schema';
 import type { LocalFast, LocalFoodLog, LocalSavedMeal } from '../../app/lib/local-store/schema';
 import type { SealedPrivateStore, SyncedSnapshot } from '../../app/lib/sync/snapshot-partition';
-import { getSyncSessionSnapshot, openSyncSession, updateSyncSession, type SyncVault } from '../../app/lib/sync/sync-session';
+import {
+  getSyncSessionSnapshot,
+  openSyncSession,
+  updateSyncSession,
+  type SyncVault,
+} from '../../app/lib/sync/sync-session';
 import type { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
 import { withI18n } from './trends-i18n-harness';
 
@@ -148,6 +153,28 @@ function snapshot(overrides: Partial<SyncedSnapshot> = {}): SyncedSnapshot {
     ...overrides,
   };
 }
+
+describe('reportableWithheld (M253/11 item 6)', () => {
+  const compartment: Tombstone = {
+    entityType: SYNC_ENTITY_TYPES.privateStore,
+    entityId: 'owner',
+    lamport: 3,
+    deviceId: 'device-a',
+  };
+  const diaryRow: Tombstone = { entityType: 'diaryRow', entityId: 'log-1', lamport: 2, deviceId: 'device-a' };
+
+  it('leaves out a compartment the cycle could not see, which is every boot before the first pull', () => {
+    assert.deepEqual(reportableWithheld({ withheld: [compartment], isCompartmentKnown: false }), []);
+  });
+
+  it('keeps every diary row the same cycle withheld beside it', () => {
+    assert.deepEqual(reportableWithheld({ withheld: [compartment, diaryRow], isCompartmentKnown: false }), [diaryRow]);
+  });
+
+  it('CONTROL: keeps a compartment the cycle knew and still withheld, the held shrink', () => {
+    assert.deepEqual(reportableWithheld({ withheld: [compartment], isCompartmentKnown: true }), [compartment]);
+  });
+});
 
 describe('countRestoredEntities', () => {
   it('counts a withheld delete whose row is back in the agreed payload', () => {
