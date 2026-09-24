@@ -227,6 +227,7 @@ const catalogSchema = z.object({
       yazio: z.object({
         confirm: z.string(),
         success_other: z.string(),
+        overlap_one: z.string(),
         error: z.object({ missingProducts: z.string() }),
       }),
     }),

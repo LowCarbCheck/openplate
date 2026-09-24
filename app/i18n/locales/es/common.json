@@ -2177,6 +2177,8 @@
           "lastDay": "Último día",
           "nothing": "No se puede importar nada de estos archivos."
         },
+        "overlap_one": "{{count}} de estos días ya tiene entradas en tu diario. Tras la importación, mostrará tanto tus entradas como las importadas. No se combina ni se sustituye nada.",
+        "overlap_other": "{{count}} de estos días ya tienen entradas en tu diario. Tras la importación, mostrarán tanto tus entradas como las importadas. No se combina ni se sustituye nada.",
         "skipped": {
           "missingProduct_one": "Se ha omitido {{count}} alimento: no está en products.json.",
           "missingProduct_other": "Se han omitido {{count}} alimentos: no están en products.json.",

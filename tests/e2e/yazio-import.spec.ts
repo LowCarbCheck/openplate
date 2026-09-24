@@ -16,7 +16,7 @@ import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 import { formatContentDate } from '../../app/lib/content/format-content-date';
-import { completeOnboarding, expectPhoneLayout, headerStatusText } from './helpers';
+import { completeOnboarding, expectPhoneLayout, headerStatusText, logFoodManually } from './helpers';
 import { EN, fill } from './copy';
 
 /** The id the section carries (`yazio-import-section.tsx`); the component module loads JSON catalogs this runner cannot. */
@@ -137,6 +137,8 @@ test('a YAZIO export previews, imports into the right day and meal, and imports 
   );
   // One line per skip reason the fixture carries, five of them.
   await expect(preview.locator('[data-slot="yazio-skipped"]')).toHaveCount(5);
+  // A fresh diary holds nothing on these days, so there is no overlap line.
+  await expect(preview.locator('[data-slot="yazio-overlap"]')).toHaveCount(0);
 
   expect(await documentTop(page, '#import-backup'), 'the backup import must not move').toBe(backupTop);
   expect(await documentTop(page, SECTION), 'the section itself must not move').toBe(sectionTop);
@@ -170,6 +172,9 @@ test('a YAZIO export previews, imports into the right day and meal, and imports 
   await expect(section).toBeVisible();
   await input.setInputFiles([DAYS_FILE, PRODUCTS_FILE]);
   await expect(preview.locator('[data-slot="yazio-entry-count"]')).toHaveText('8');
+  // The days now hold only the first import's rows, which this one rewrites:
+  // still no overlap line.
+  await expect(preview.locator('[data-slot="yazio-overlap"]')).toHaveCount(0);
   await preview.getByRole('button', { name: EN.settings.data.yazio.confirm }).click();
   await expect.poll(() => headerStatusText(page)).toBe(fill(EN.settings.data.yazio.success_other, { count: '8' }));
   // The second write reached disk: a row carries the second import's stamp.
@@ -180,4 +185,30 @@ test('a YAZIO export previews, imports into the right day and meal, and imports 
   await page.goto(`/diary?date=${FIRST_DAY}`);
   await expect(breakfast.getByText('Rolled Oats')).toBeVisible();
   await expect(entryCards(page)).toHaveCount(ENTRIES_ON_FIRST_DAY);
+});
+
+test('a fixture day that already holds an entry of your own is named in the preview (M254/04)', async ({ page }) => {
+  await completeOnboarding(page);
+  // THE CONTROL FIRST: the same device, before it holds anything, shows no line.
+  await page.goto('/settings/data');
+  const section = page.locator(SECTION);
+  await expect(section).toBeVisible();
+  const input = section.locator('[data-slot="yazio-file-input"]');
+  const preview = section.locator('[data-slot="yazio-preview"]');
+  await input.setInputFiles([DAYS_FILE, PRODUCTS_FILE]);
+  await expect(preview.locator('[data-slot="yazio-entry-count"]')).toHaveText('8');
+  await expect(preview.locator('[data-slot="yazio-overlap"]')).toHaveCount(0);
+
+  // One food of the person's own on the first fixture day, through the real
+  // manual form. The page load below would race the save, so wait for the disk.
+  await logFoodManually(page, { name: 'Own breakfast eggs', grams: '120', mealType: 'breakfast', date: FIRST_DAY });
+  await expect.poll(async () => (await foodLogsOnDisk(page)).length).toBe(1);
+
+  await page.goto('/settings/data');
+  await expect(section).toBeVisible();
+  await input.setInputFiles([DAYS_FILE, PRODUCTS_FILE]);
+  await expect(preview.locator('[data-slot="yazio-overlap"]')).toHaveText(
+    fill(EN.settings.data.yazio.overlap_one, { count: '1' }),
+  );
+  await expectPhoneLayout(page);
 });

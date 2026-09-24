@@ -2177,6 +2177,8 @@
           "lastDay": "Last day",
           "nothing": "Nothing in these files can be imported."
         },
+        "overlap_one": "{{count}} of these days already has entries in your diary. After the import, it'll show both your entries and the imported entries. Nothing is merged or replaced.",
+        "overlap_other": "{{count}} of these days already have entries in your diary. After the import, they'll show both your entries and the imported entries. Nothing is merged or replaced.",
         "skipped": {
           "missingProduct_one": "{{count}} food skipped: it's not in products.json.",
           "missingProduct_other": "{{count}} foods skipped: they're not in products.json.",

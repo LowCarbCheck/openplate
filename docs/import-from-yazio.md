@@ -74,7 +74,9 @@ is at
    selection.
 4. openplate reads the two files on your device and displays a preview. It shows the number of
    entries it will add, the number of days they cover, the first and last day, and any skipped
-   items with the reason. Nothing is written to your diary yet.
+   items with the reason. If some of these days already have entries in your openplate diary,
+   the preview shows how many. After the import, those days show both your own entries and the
+   imported ones. Nothing is written to your diary yet.
 5. Review the preview, then select **Add to my diary**. Select **Cancel** to stop without
    changing anything.
 6. openplate confirms how many entries it imported. Open your diary and verify a day you

@@ -3191,6 +3191,13 @@
     "at": "2026-09-14",
     "tr": "{{hours}} sa"
   },
+  "27555a25b084a62c": {
+    "en": "{{count}} of these days already have entries in your diary. After the import, they'll show both your entries and the imported entries. Nothing is merged or replaced.",
+    "path": "common:settings.data.yazio.overlap_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Bu günlerden {{count}} tanesinde günlüğünde zaten girdiler var. İçe aktarmadan sonra hem senin girdilerini hem de içe aktarılan girdileri gösterirler. Hiçbir şey birleştirilmez veya değiştirilmez."
+  },
   "277d7428e579f7df": {
     "en": "Set a daily goal and this tab shows how often you reach it.",
     "path": "common:trends.goals.invite",
@@ -4226,6 +4233,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yükleniyor…"
+  },
+  "389e3ac4b99c8c65": {
+    "en": "{{count}} of these days already has entries in your diary. After the import, it'll show both your entries and the imported entries. Nothing is merged or replaced.",
+    "path": "common:settings.data.yazio.overlap_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Bu günlerden {{count}} tanesinde günlüğünde zaten girdiler var. İçe aktarmadan sonra hem senin girdilerini hem de içe aktarılan girdileri gösterir. Hiçbir şey birleştirilmez veya değiştirilmez."
   },
   "38a41a4a9d11fbfe": {
     "en": "Saved {{name}}, {{count}} food.",

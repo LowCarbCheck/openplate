@@ -20,11 +20,17 @@ import { Button } from '#app/components/ui/button';
 import { numberLocale } from '#app/i18n/date-locale';
 import { YAZIO_IMPORT_DOCS_URL } from '#app/lib/brand';
 import { formatContentDate } from '#app/lib/content/format-content-date';
-import { getLocalProfileGoals, putLocalFoodLog, resolveLocalTimezone } from '#app/lib/local-store';
+import {
+  getLocalProfileGoals,
+  listLocalFoodLogsInRange,
+  putLocalFoodLog,
+  resolveLocalTimezone,
+} from '#app/lib/local-store';
 import { trackYazioImported } from '#app/lib/matomo-events';
 import { publishStatus } from '#app/lib/status';
 import {
   YAZIO_SKIP_REASONS,
+  countDaysAlreadyLogged,
   parseYazioExport,
   sortYazioFiles,
   type YazioImport,
@@ -38,8 +44,14 @@ const YAZIO_IMPORT_ANCHOR = 'import-yazio';
 type SectionState =
   | { kind: 'idle' }
   | { kind: 'error'; error: YazioPickError }
-  | { kind: 'preview'; result: YazioImport }
-  | { kind: 'writing'; result: YazioImport };
+  | { kind: 'preview'; preview: Preview }
+  | { kind: 'writing'; preview: Preview };
+
+/** What the preview shows: the parsed import, and how many of its days the diary already holds entries on. */
+interface Preview {
+  result: YazioImport;
+  overlapDays: number;
+}
 
 const ERROR_KEYS = {
   unreadable: 'settings.data.yazio.error.unreadable',
@@ -68,10 +80,22 @@ async function readPick(files: readonly File[]): Promise<SectionState> {
     if (pick.kind === 'error') return { kind: 'error', error: pick.error };
     const timeZone = resolveLocalTimezone(await getLocalProfileGoals());
     const result = parseYazioExport({ days: pick.days, products: pick.products, timeZone, now: Date.now() });
-    return { kind: 'preview', result };
+    return { kind: 'preview', preview: { result, overlapDays: await countOverlapDays(result) } };
   } catch {
     return { kind: 'error', error: 'unreadable' };
   }
+}
+
+/**
+ * How many of the import's days already hold an entry of the person's own.
+ * Reads the diary for the import's day range only, and not at all when there
+ * is nothing to import.
+ */
+async function countOverlapDays(result: YazioImport): Promise<number> {
+  const { firstDay, lastDay } = result.report;
+  if (firstDay === null || lastDay === null) return 0;
+  const existingLogs = await listLocalFoodLogsInRange({ fromDate: firstDay, toDate: lastDay });
+  return countDaysAlreadyLogged({ importDayKeys: result.entries.map((entry) => entry.dayKey), existingLogs });
 }
 
 export function YazioImportSection() {
@@ -87,15 +111,16 @@ export function YazioImportSection() {
     setState(await readPick(files));
   }
 
-  async function handleConfirm(result: YazioImport): Promise<void> {
-    setState({ kind: 'writing', result });
+  async function handleConfirm(preview: Preview): Promise<void> {
+    const { result } = preview;
+    setState({ kind: 'writing', preview });
     try {
       // `restore`, like a backup import: these are old meals, not meals eaten now,
       // so the community pulse must not hear about them.
       for (const entry of result.entries) await putLocalFoodLog(entry, { origin: 'restore' });
     } catch {
       publishStatus({ text: t('settings.data.yazio.writeError'), tone: 'error' });
-      setState({ kind: 'preview', result });
+      setState({ kind: 'preview', preview });
       return;
     }
     trackYazioImported();
@@ -149,9 +174,9 @@ export function YazioImportSection() {
       )}
       {(state.kind === 'preview' || state.kind === 'writing') && (
         <YazioPreview
-          result={state.result}
+          preview={state.preview}
           isWriting={isWriting}
-          onConfirm={() => void handleConfirm(state.result)}
+          onConfirm={() => void handleConfirm(state.preview)}
           onCancel={() => setState({ kind: 'idle' })}
         />
       )}
@@ -160,18 +185,18 @@ export function YazioImportSection() {
 }
 
 function YazioPreview({
-  result,
+  preview,
   isWriting,
   onConfirm,
   onCancel,
 }: {
-  result: YazioImport;
+  preview: Preview;
   isWriting: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const { report } = result;
+  const { report } = preview.result;
   const formatCount = (count: number): string => count.toLocaleString(numberLocale(i18n.language));
   const formatDay = (isoDate: string): string => formatContentDate({ isoDate, language: i18n.language });
   const skippedReasons = YAZIO_SKIP_REASONS.filter((reason) => report.skipped[reason] > 0);
@@ -196,6 +221,11 @@ function YazioPreview({
           </>
         )}
       </dl>
+      {preview.overlapDays > 0 && (
+        <p data-slot="yazio-overlap" className="text-xs text-muted-foreground">
+          {t('settings.data.yazio.overlap', { count: preview.overlapDays })}
+        </p>
+      )}
       {skippedReasons.map((reason) => (
         <p key={reason} data-slot="yazio-skipped" data-reason={reason} className="text-xs text-muted-foreground">
           {t(SKIP_KEYS[reason], { count: report.skipped[reason] })}

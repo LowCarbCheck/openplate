@@ -2177,6 +2177,8 @@
           "lastDay": "Ultimo giorno",
           "nothing": "Nessun elemento in questi file può essere importato."
         },
+        "overlap_one": "{{count}} di questi giorni ha già delle voci nel tuo diario. Dopo l'importazione, mostrerà sia le tue voci sia quelle importate. Nulla viene unito o sostituito.",
+        "overlap_other": "{{count}} di questi giorni hanno già delle voci nel tuo diario. Dopo l'importazione, mostreranno sia le tue voci sia quelle importate. Nulla viene unito o sostituito.",
         "skipped": {
           "missingProduct_one": "{{count}} alimento saltato: non è presente in products.json.",
           "missingProduct_other": "{{count}} alimenti saltati: non sono presenti in products.json.",

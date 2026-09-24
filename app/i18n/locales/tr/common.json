@@ -2177,6 +2177,8 @@
           "lastDay": "Son gün",
           "nothing": "Bu dosyalarda içe aktarılabilecek hiçbir şey yok."
         },
+        "overlap_one": "Bu günlerden {{count}} tanesinde günlüğünde zaten girdiler var. İçe aktarmadan sonra hem senin girdilerini hem de içe aktarılan girdileri gösterir. Hiçbir şey birleştirilmez veya değiştirilmez.",
+        "overlap_other": "Bu günlerden {{count}} tanesinde günlüğünde zaten girdiler var. İçe aktarmadan sonra hem senin girdilerini hem de içe aktarılan girdileri gösterirler. Hiçbir şey birleştirilmez veya değiştirilmez.",
         "skipped": {
           "missingProduct_one": "{{count}} yiyecek atlandı: products.json dosyasında yok.",
           "missingProduct_other": "{{count}} yiyecek atlandı: products.json dosyasında değiller.",

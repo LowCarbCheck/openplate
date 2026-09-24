@@ -32,6 +32,12 @@ export const YAZIO_SKIP_REASONS = [
 ] as const;
 export type YazioSkipReason = (typeof YAZIO_SKIP_REASONS)[number];
 
+/**
+ * The prefix every imported entry id carries, `yazio-<consumed item id>`. It
+ * is how a later import tells its own rows from entries the person logged.
+ */
+export const YAZIO_ENTRY_ID_PREFIX = 'yazio-';
+
 /** What an import would write, for the preview before anything is written. */
 export interface YazioImportReport {
   entryCount: number;
@@ -216,6 +222,32 @@ export function sortYazioFiles({ texts }: { texts: readonly string[] }): YazioPi
 }
 
 /**
+ * How many of the import's days already hold an entry the person logged in
+ * openplate. Those days show both sets of entries after the import. A day
+ * whose only rows carry {@link YAZIO_ENTRY_ID_PREFIX} came from an earlier
+ * import of the same files, which this one rewrites, so it does not count.
+ *
+ * @param options.importDayKeys - the `dayKey` of every entry the import would write.
+ * @param options.existingLogs - the diary's entries, at least those on the import's days.
+ * @returns the number of import days with an entry of the person's own.
+ */
+export function countDaysAlreadyLogged({
+  importDayKeys,
+  existingLogs,
+}: {
+  importDayKeys: readonly string[];
+  existingLogs: readonly Pick<LocalFoodLog, 'id' | 'dayKey'>[];
+}): number {
+  const importDays = new Set(importDayKeys);
+  const loggedDays = new Set(
+    existingLogs
+      .filter((log) => !log.id.startsWith(YAZIO_ENTRY_ID_PREFIX) && importDays.has(log.dayKey))
+      .map((log) => log.dayKey),
+  );
+  return loggedDays.size;
+}
+
+/**
  * Turns the two exporter files into food-log entries and a preview report.
  *
  * @param options.days - the parsed `days.json`.
@@ -375,7 +407,7 @@ function buildEntry({
 }): LocalFoodLog {
   return {
     // Decision 9: the same export imported twice writes the same ids, so it updates instead of duplicating.
-    id: `yazio-${consumedId}`,
+    id: `${YAZIO_ENTRY_ID_PREFIX}${consumedId}`,
     name,
     quantityGrams,
     macros,

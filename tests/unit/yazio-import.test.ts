@@ -13,6 +13,8 @@ import productsFixture from '../fixtures/yazio/products.json';
 import { computeNetCarbsFromParts } from '../../app/lib/net-carbs';
 import type { LocalFoodLog } from '../../app/lib/local-store/schema';
 import {
+  YAZIO_ENTRY_ID_PREFIX,
+  countDaysAlreadyLogged,
   identifyYazioFile,
   parseYazioExport,
   sortYazioFiles,
@@ -478,5 +480,52 @@ describe('sortYazioFiles', () => {
     for (const { texts, error } of cases) {
       assert.deepStrictEqual(sortYazioFiles({ texts }), { kind: 'error', error }, `for ${texts.length} files`);
     }
+  });
+});
+
+describe('countDaysAlreadyLogged', () => {
+  const IMPORT_DAYS = ['2026-09-01', '2026-09-01', '2026-09-02'];
+
+  it('counts an import day that holds an entry the person logged', () => {
+    const existingLogs = [{ id: 'native-1', dayKey: '2026-09-01' }];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs }), 1);
+    // Control: the same diary with that entry removed counts nothing.
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs: [] }), 0);
+  });
+
+  it('counts a day once, however many native entries it holds', () => {
+    const existingLogs = [
+      { id: 'native-1', dayKey: '2026-09-01' },
+      { id: 'native-2', dayKey: '2026-09-01' },
+      { id: 'native-3', dayKey: '2026-09-02' },
+    ];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs }), 2);
+  });
+
+  it('does not count a day that holds only entries an earlier import wrote', () => {
+    const imported = [{ id: `${YAZIO_ENTRY_ID_PREFIX}abc`, dayKey: '2026-09-01' }];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs: imported }), 0);
+    // Control: a native entry beside it on the same day does count.
+    const mixed = [...imported, { id: 'native-1', dayKey: '2026-09-01' }];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs: mixed }), 1);
+  });
+
+  it('does not count a native entry on a day outside the import', () => {
+    const outside = [{ id: 'native-1', dayKey: '2026-08-31' }];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs: outside }), 0);
+    // Control: the same entry moved onto an import day counts.
+    const inside = [{ id: 'native-1', dayKey: '2026-09-02' }];
+    assert.strictEqual(countDaysAlreadyLogged({ importDayKeys: IMPORT_DAYS, existingLogs: inside }), 1);
+  });
+
+  it('uses the prefix the import itself writes', () => {
+    const [entry] = importFixture().entries;
+    assert.ok(entry?.id.startsWith(YAZIO_ENTRY_ID_PREFIX));
+    // The fixture's own entries, read back as the diary, overlap nothing.
+    const { entries } = importFixture();
+    assert.strictEqual(
+      countDaysAlreadyLogged({ importDayKeys: entries.map((each) => each.dayKey), existingLogs: entries }),
+      0,
+    );
   });
 });
