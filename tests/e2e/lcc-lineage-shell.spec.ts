@@ -32,8 +32,10 @@ import { completeOnboarding, HEADER_HEIGHT, PHONE_WIDTH } from './helpers';
 
 /**
  * The raised circle's box, frozen, read off the production build at the 390 px design width:
- * `h-12 w-12`, centred in the middle of the bar's three slots, raised by `-mt-5` so it stands
- * 17.5 px above the bar's own top edge.
+ * `h-12 w-12`, centred in the middle slot of the bar, raised by `-mt-5` so it stands 17.5 px above
+ * the bar's own top edge. The bar went from three slots to five on 2026-09-24 (the Menu tab) and
+ * this value did not change: the circle sits in slot three of five, every slot is an equal share,
+ * so its centre is still the viewport's, 195 px at 390.
  */
 const LAUNCHER_RECT = { x: 171, y: 769.5, width: 48, height: 48 } as const;
 
@@ -140,9 +142,11 @@ export function colouredShadowsIn(boxShadow: string): number {
 }
 
 /**
- * The raised launcher's circle: the first `span` inside the bottom bar's one button that is not
- * the chevron. It carries no slot of its own, and giving it one would be a source change this
- * spec's own subject does not need.
+ * The raised launcher's circle: the first `span` inside the bar's first button that opens no
+ * dialog. The flat tabs are links, and the one other button, the Menu tab, says
+ * `aria-haspopup="dialog"`, as the launcher's chevron did before it left the bar. The circle
+ * carries no slot of its own, and giving it one would be a source change this spec's own subject
+ * does not need.
  *
  * @param page - the page to read.
  * @returns the circle's locator.

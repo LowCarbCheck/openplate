@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronUp } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
 import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
@@ -23,8 +22,16 @@ import type { NavigationItem } from './app-sidebar';
  * shares; read that module for the browser rule it exists to obey. What stays
  * here is the shape around it: the long press, the sheet, and the geometry.
  *
- * The chevron beside it is the discoverable route to everything else. The
- * long press is a shortcut on top of it, never the only way in.
+ * THE LONG PRESS OPENS A SHEET, AND IT IS A SHORTCUT, NOT A DOOR. A chevron
+ * beside the circle used to be the visible way into that sheet. It left the
+ * bar when the bar went from three slots to five (2026-09-24): in a 72 px slot
+ * its 44 px box would have covered most of the 48 px circle and its camera.
+ * Nothing the sheet offers became unreachable. Its three keys are the composer
+ * strip, and every one is a tap away without it: the circle itself opens the
+ * camera; the Add tab's `/add/search` takes a typed meal with its AI button,
+ * links to `/add/photo`, and its field takes the keyboard's own dictation,
+ * which is all the speak key ever armed (`add.describe.tsx`); and `/diary` and
+ * `/dashboard` draw the same strip, all three keys, carrying the viewed day.
  *
  * IT CARRIES THE VIEWED DAY. This bar sits under every screen, including
  * `/diary?date=<an earlier day>`. It used to send all three of its doors to
@@ -118,6 +125,11 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
     setIsSheetOpen(false);
   };
 
+  const returnFocusToCircle = (event: Event): void => {
+    event.preventDefault();
+    triggerRef.current?.focus();
+  };
+
   /** This component's capture, wearing the sheet's own trigger and close. The strip renders no input for it. */
   const sheetCapture: CameraCapture = {
     ...launcherCapture,
@@ -178,31 +190,14 @@ export function AddLauncher({ tab }: { tab: NavigationItem }) {
           </span>
           <span>{t(tab.labelKey)}</span>
         </button>
-
-        {/* The discoverable way to everything else. Visible, labelled, and the
-            app's 44px tap floor wide and tall. The long press above is a
-            shortcut for people who already expect one, never the only door.
-
-            IT GREW LEFT AND DOWN, from 32px, and the anchor moved with it so
-            the chevron itself stays where it was. The bar has three slots, so
-            at 360px this box takes the outer 8px of the raised circle beside
-            it and nothing else: the circle's own camera icon is 24px wide on a
-            120px slot and is never covered. */}
-        <SheetTrigger asChild>
-          <button
-            type="button"
-            aria-label={t('launcher.moreOptions')}
-            aria-haspopup="dialog"
-            aria-expanded={isSheetOpen}
-            className="absolute right-0 bottom-5 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-          >
-            <ChevronUp className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </SheetTrigger>
       </div>
 
       <SheetContent
         side="bottom"
+        // No `SheetTrigger` opens this sheet any more, so Radix has nowhere to
+        // return focus to and would drop it on the body. The circle whose long
+        // press opened it takes it back.
+        onCloseAutoFocus={returnFocusToCircle}
         // Reduced motion keeps the sheet, drops the slide — the position is
         // the information, the travel is decoration.
         className="motion-reduce:transition-none motion-reduce:animate-none pb-[env(safe-area-inset-bottom)]"

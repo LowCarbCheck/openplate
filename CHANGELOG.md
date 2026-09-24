@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The phone's bottom bar has a Menu tab.** Users did not realize that tapping the logo at the top left opened the full app menu. The bar now includes five tabs: Diary, Insights, Scan, Add and Menu. Menu opens the same screen as the logo and slides it in from the right, while the logo still opens it from the left. Insights is back in the bar, and Scan stays in the exact centre. The small arrow beside Scan is gone, because in a five-tab bar it would cover the camera button. A long press on Scan still opens the same choices, which also remain available on the Add page and the diary. Tab labels are one pixel smaller so German "Hinzufügen" fits a 360 px phone. `tests/e2e/menu-is-found.spec.ts` opens the menu from both entry points and checks every label in six languages at 360 and 390 px.
+
 ### Fixed
 
 - **The administration page fits a phone.** Its five tabs sat in one row that did not wrap. On a 390 px phone, that row needed 456 px and pushed the page sideways, worse in German and French. Tabs now wrap onto a second row on narrow screens. Each tab is a 44 px tap target, and all of them stay visible. From 672 px of room, they return to the underlined row. Three other areas that ran past the edge now wrap: the activity squares, the "last sign-in" cells in Spanish, and report dates in Italian, Spanish and Turkish. The counts and the Reports tab no longer push the page down when they arrive. `tests/e2e/admin-console-fits-a-phone.spec.ts` walks every console page in six languages at 360, 390, 768 and 1280 px.

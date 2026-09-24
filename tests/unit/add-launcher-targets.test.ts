@@ -45,9 +45,8 @@ void i18next.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
-        nav: { diary: 'Diary', scan: 'Scan', add: 'Add' },
+        nav: { diary: 'Diary', trends: 'Insights', scan: 'Scan', add: 'Add', menu: 'Menu' },
         launcher: {
-          moreOptions: 'More ways to add food',
           sheetTitle: 'Add food',
           speak: 'Speak',
           type: 'Type',
@@ -155,7 +154,7 @@ describe('where the sheet doors go', () => {
 
 describe('how many capture inputs the bar has', () => {
   it('draws exactly one, on the bar itself', () => {
-    assert.equal(inputCount(render(createElement(BottomNav))), 1);
+    assert.equal(inputCount(render(createElement(BottomNav, { menu: { isOpen: false, onOpen: () => {} } }))), 1);
   });
 
   it('adds none when the sheet opens, because the strip was given a camera', () => {

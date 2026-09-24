@@ -110,34 +110,111 @@ function DrawerRow({
   );
 }
 
+/** The edge the drawer slides in from: the edge of the door that opened it. */
+type NavDrawerSide = 'left' | 'right';
+
 /**
- * Persistent top-left brand mark for the mobile header, always visible,
- * tappable to open the navigation drawer. `md:hidden`: at `md`+ the sidebar's
- * own `Logo()` already occupies this same top-left position, so this would
- * otherwise be a second, redundant brand mark next to it.
- *
- * It was a dropdown of four odd destinations; it's now a real left-slide
- * drawer rendering the SAME catalog the desktop sidebar does, in the same
- * order and with the same footer separation, a phone user and a laptop user
- * see one map of the app rather than two. `BottomNav` keeps only the daily
- * logging loop (Diary · Scan · Add); this drawer is the complete list.
+ * The navigation drawer's state, owned by the shell because it has TWO doors:
+ * the brand mark in the header (`NavDrawer`'s own trigger) and the Menu tab in
+ * the bottom bar (`BottomNav`). Both drive this one state, so there is one
+ * drawer and one copy of the catalog, never a second sheet for the second door.
  */
-function NavDrawer({ showsPlanEntry }: { showsPlanEntry: boolean }) {
-  const { t } = useTranslation();
-  const location = useLocation();
-  const [isOpen, setIsOpen] = React.useState(false);
+interface NavDrawerState {
+  isOpen: boolean;
+  side: NavDrawerSide;
   /**
    * The plan entry as it stood when the drawer OPENED. The list is anchored
    * to the top, so an entry arriving while the drawer is open would push
    * Settings and Install down under the finger reaching for them. The shell's
    * answer is read again at the next open.
    */
+  showsPlanWhileOpen: boolean;
+  /** Radix's own callback, for the header trigger, the overlay, the close key and Escape. */
+  onOpenChange: (open: boolean) => void;
+  /** The Menu tab's door, which opens the drawer from the right and wants focus back on close. */
+  openFromMenuTab: (trigger: HTMLElement) => void;
+  /** Where focus goes when the drawer closes, when that is not Radix's own trigger. */
+  returnFocusRef: React.RefObject<HTMLElement | null>;
+}
+
+/**
+ * One drawer, two doors.
+ *
+ * THE SIDE CHANGES ONLY ON OPEN, never on close: the panel slides back out to
+ * the edge it came from, so a close must leave the side where the open put it.
+ *
+ * THE HEADER DOOR IS RADIX'S OWN TRIGGER, so its open arrives through
+ * `onOpenChange(true)` and Radix returns focus to it. The Menu tab sits
+ * outside the `Sheet`, where a `SheetTrigger` cannot reach, so it calls
+ * `openFromMenuTab` and names itself as the place focus goes back to.
+ *
+ * @param showsPlanEntry - the shell's current answer on the plan entry.
+ * @returns the state both doors and the drawer read.
+ */
+function useNavDrawer(showsPlanEntry: boolean): NavDrawerState {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [side, setSide] = React.useState<NavDrawerSide>('left');
   const [showsPlanWhileOpen, setShowsPlanWhileOpen] = React.useState(false);
-  const onOpenChange = (open: boolean): void => {
-    if (open) setShowsPlanWhileOpen(showsPlanEntry);
-    setIsOpen(open);
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
+
+  const open = (from: NavDrawerSide): void => {
+    setSide(from);
+    setShowsPlanWhileOpen(showsPlanEntry);
+    setIsOpen(true);
   };
-  const close = (): void => setIsOpen(false);
+  const onOpenChange = (next: boolean): void => {
+    if (!next) {
+      setIsOpen(false);
+      return;
+    }
+    returnFocusRef.current = null;
+    open('left');
+  };
+  const openFromMenuTab = (trigger: HTMLElement): void => {
+    returnFocusRef.current = trigger;
+    open('right');
+  };
+
+  return { isOpen, side, showsPlanWhileOpen, onOpenChange, openFromMenuTab, returnFocusRef };
+}
+
+/**
+ * Persistent top-left brand mark for the mobile header, always visible,
+ * tappable to open the navigation drawer. `md:hidden`: at `md`+ the sidebar's
+ * own `Logo()` already occupies this same top-left position, so this would
+ * otherwise be a second, redundant brand mark next to it.
+ *
+ * It was a dropdown of four odd destinations; it's now a real drawer rendering
+ * the SAME catalog the desktop sidebar does, in the same order and with the
+ * same footer separation, a phone user and a laptop user see one map of the
+ * app rather than two. `BottomNav` carries the four most used destinations and
+ * a Menu tab, the second door into this drawer; this drawer is the complete
+ * list.
+ *
+ * TWO DOORS, ONE DRAWER (2026-09-24). A person did not find the drawer behind
+ * this mark, so the bottom bar gained a labelled Menu tab. The state lives in
+ * the shell (`useNavDrawer`) and both doors drive it. The panel comes in from
+ * the side of the door that opened it: from the left under this mark, from
+ * the right over the Menu tab, which sits at the bar's right end.
+ */
+function NavDrawer({ drawer }: { drawer: NavDrawerState }) {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const { isOpen, side, showsPlanWhileOpen, onOpenChange, returnFocusRef } = drawer;
+  const close = (): void => onOpenChange(false);
+  /**
+   * Focus back to the Menu tab after a drawer it opened. Radix would send it
+   * to its own trigger, the header mark, which is a jump across the screen
+   * for a keyboard or a screen reader. A drawer the mark opened leaves the
+   * ref empty and lets Radix do its default.
+   */
+  const onCloseAutoFocus = (event: Event): void => {
+    const trigger = returnFocusRef.current;
+    if (trigger === null) return;
+    event.preventDefault();
+    returnFocusRef.current = null;
+    trigger.focus();
+  };
   const session = useSyncSession();
   const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanWhileOpen));
   // Matched against the admin entry alone, so the catalog's own winner is
@@ -170,7 +247,7 @@ function NavDrawer({ showsPlanEntry }: { showsPlanEntry: boolean }) {
           <img src="/icons/icon-192.png?v=2" alt="" className="size-9" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 gap-0 p-0 md:hidden">
+      <SheetContent side={side} onCloseAutoFocus={onCloseAutoFocus} className="w-72 gap-0 p-0 md:hidden">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2 text-lg">
             <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7" />
@@ -310,6 +387,9 @@ function InnerContent({
   // layout stays out of it.
   const { t } = useTranslation();
   const isTypingOnAShortViewport = useTypingOnAShortViewport();
+  // HERE, not in `NavDrawer`: the drawer has a second door in `BottomNav`,
+  // and this component is the nearest one that renders both.
+  const drawer = useNavDrawer(showsPlanEntry);
 
   return (
     <>
@@ -350,13 +430,13 @@ function InnerContent({
       <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
         <div className="flex min-w-0 items-center gap-2.5 px-4 w-full">
           {/* Desktop only: below `md` the drawer's own brand-mark trigger (see
-              `NavDrawer`) opens the same list, and a second hamburger beside it
-              would just be two triggers for one sheet. Only the desktop sidebar
+              `NavDrawer`) and the bottom bar's Menu tab open the same list, and
+              a hamburger beside the mark would be a third door. Only the desktop sidebar
               (visible at `md`+, see `Sidebar`'s own `hidden md:block`) needs
               this toggle. */}
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
-          <NavDrawer showsPlanEntry={showsPlanEntry} />
+          <NavDrawer drawer={drawer} />
           {/* `min-w-0` so this flex child can shrink below its status text's
               intrinsic width; without it a long status (a blocked-notification
               error, especially the longer German string) pushes the header
@@ -516,7 +596,7 @@ function InnerContent({
           sheet mid-use, and the sheet is portalled to the body, so it stays on
           screen while its trigger is away. */}
       <div data-slot="bottom-nav-shell" className={cn(isTypingOnAShortViewport && 'hidden')}>
-        <BottomNav />
+        <BottomNav menu={{ isOpen: drawer.isOpen, onOpen: drawer.openFromMenuTab }} />
       </div>
     </>
   );

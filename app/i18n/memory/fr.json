@@ -265,6 +265,13 @@
     "at": "2026-09-14",
     "fr": "Jours consignés, 13 dernières semaines"
   },
+  "03a15cce73aa73e2": {
+    "en": "Menu",
+    "path": "common:nav.menu",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Menu"
+  },
   "03a8a8aac2b6b29b": {
     "en": "Start fresh",
     "path": "common:welcome.startFresh",
@@ -10498,13 +10505,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "blanc de poulet"
-  },
-  "8b5895044bd542c3": {
-    "en": "More ways to add food",
-    "path": "common:launcher.moreOptions",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "D'autres manières d'ajouter des aliments"
   },
   "8b6704c1e717ce16": {
     "en": "You reached your target weight.",

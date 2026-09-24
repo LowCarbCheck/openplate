@@ -1314,7 +1314,6 @@
     }
   },
   "launcher": {
-    "moreOptions": "Yiyecek eklemenin diğer yolları",
     "sheetTitle": "Yiyecek ekle",
     "platePhoto": "Tabak fotoğrafı",
     "speak": "Konuş",
@@ -1418,6 +1417,7 @@
     "fasting": "Aralıklı oruç",
     "goals": "Hedefler",
     "groupYourDay": "Günün",
+    "menu": "Menü",
     "nutrients": "Besin ögeleri",
     "scan": "Tara",
     "settings": "Ayarlar",

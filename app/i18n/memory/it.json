@@ -265,6 +265,13 @@
     "at": "2026-09-14",
     "it": "Giorni registrati, ultime 13 settimane"
   },
+  "03a15cce73aa73e2": {
+    "en": "Menu",
+    "path": "common:nav.menu",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Menu"
+  },
   "03a8a8aac2b6b29b": {
     "en": "Start fresh",
     "path": "common:welcome.startFresh",
@@ -10498,13 +10505,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "petto di pollo"
-  },
-  "8b5895044bd542c3": {
-    "en": "More ways to add food",
-    "path": "common:launcher.moreOptions",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "it": "Altri modi per aggiungere alimenti"
   },
   "8b6704c1e717ce16": {
     "en": "You reached your target weight.",

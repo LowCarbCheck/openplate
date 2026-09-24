@@ -414,6 +414,24 @@ The bottom tab bar's active tab spends THREE cues, `bg-primary/5` plus `text-pri
 `after:` top rule at `bg-primary`, so the state never depends on hue alone. It is one of the two
 teal marks every screen pays for (see the budget above).
 
+**The phone bottom bar** has five slots of equal width: Diary, Insights, the raised Scan circle,
+Add, and Menu. Scan is slot three of five, so its centre is the screen's centre. The first four
+come from the one catalog in `app-sidebar.tsx` (`tab.order`), so the bar, the drawer and the
+sidebar cannot name a destination two ways. Menu is not a destination and not in the catalog: it
+is a button that opens the navigation drawer. A flat slot is an icon over an 11 px label, the size
+of the Scan label under the circle. At 12 px the German "Hinzufügen" filled the whole 72 px slot
+at 360 px; at 11 px it takes 66. Menu never takes the active treatment, so one tab at most is lit.
+There is no hamburger, and no chevron beside Scan: a long press on the circle still opens the add
+sheet, as a shortcut to doors the Add page and the diary also offer.
+
+**The navigation drawer** has two doors and one state. The brand mark in the phone header opens
+it, and so does the Menu tab, which was added (2026-09-24) because a person did not know the mark
+was a door. The state lives in the shell (`useNavDrawer` in `app-wrapper.tsx`), so there is one
+drawer and one copy of the list. It slides in from the side of the door that opened it: from the
+left under the mark, from the right over the Menu tab. Focus goes back to that door on close.
+`tests/e2e/menu-is-found.spec.ts` checks both doors, the label fit in six languages at 360 and
+390 px, and the circle's centre.
+
 **Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
 buttons, switches, date-picker cells, filter chips, settings rows, footer links, the drawer close
 key. `tests/e2e/lcc-lineage-tap-targets.spec.ts` measures it per screen and carries exactly four

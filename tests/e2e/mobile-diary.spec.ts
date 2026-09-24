@@ -510,7 +510,10 @@ test('every control the diary offers a finger is at least 44 px', async ({ page 
     ['a day in the week strip', '[data-slot="habit-day"]'],
     ['a quick-add chip', '[data-slot="quick-add-chip"]'],
     ['the day arrows', '[data-slot="date-nav"] button, [data-slot="date-nav"] a'],
-    ['the "more ways to add" chevron', 'nav [aria-haspopup="dialog"]'],
+    // The five bar slots. This row read the launcher's chevron until the bar
+    // went to five slots and the chevron left it (2026-09-24); a 72 px slot
+    // at 360 px is the new narrow case, so every slot is read, not only one.
+    ['a bottom bar tab', '[data-slot="bottom-nav-shell"] nav :is(a, button)'],
   ] as const) {
     await expect
       .poll(() => tapReading(page, selector), {

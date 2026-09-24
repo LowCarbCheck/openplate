@@ -1314,7 +1314,6 @@
     }
   },
   "launcher": {
-    "moreOptions": "D'autres manières d'ajouter des aliments",
     "sheetTitle": "Ajouter un aliment",
     "platePhoto": "Photo d'assiette",
     "speak": "Parler",
@@ -1418,6 +1417,7 @@
     "fasting": "Jeûne",
     "goals": "Objectifs",
     "groupYourDay": "Ta journée",
+    "menu": "Menu",
     "nutrients": "Nutriments",
     "scan": "Scanner",
     "settings": "Paramètres",

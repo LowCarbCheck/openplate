@@ -265,6 +265,13 @@
     "at": "2026-09-14",
     "de": "Eingetragene Tage, letzte 13 Wochen"
   },
+  "03a15cce73aa73e2": {
+    "en": "Menu",
+    "path": "common:nav.menu",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "de": "Menü"
+  },
   "03a8a8aac2b6b29b": {
     "en": "Start fresh",
     "path": "common:welcome.startFresh",
@@ -10498,13 +10505,6 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Hähnchenbrust"
-  },
-  "8b5895044bd542c3": {
-    "en": "More ways to add food",
-    "path": "common:launcher.moreOptions",
-    "model": "hand-written",
-    "at": "2026-09-14",
-    "de": "Weitere Möglichkeiten, Essen einzutragen"
   },
   "8b6704c1e717ce16": {
     "en": "You reached your target weight.",

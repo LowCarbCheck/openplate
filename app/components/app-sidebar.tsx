@@ -55,6 +55,9 @@ export type NavigationItem = {
    * `order` is the tab-bar slot, which is deliberately not the catalog's own
    * order: the drawer/sidebar reads as a list (Diary, Add, Scan, …) while the
    * bar is a shape, and the raised Scan button has to sit in its middle slot.
+   * The bar's fifth slot, Menu, is not an entry here: it is a door to this
+   * whole list, not a destination in it, so `BottomNav` draws it after the
+   * four ordered ones.
    * Keeping the two orders as one field on one entry is what stops the bar and
    * the drawer drifting into two different labels for one destination.
    */
@@ -71,9 +74,10 @@ export type NavigationItem = {
  *
  * Each nav surface now has exactly one job, and all three read this catalog:
  *
- * - **Tab bar** (`BottomNav`, mobile) — the daily logging loop ONLY: the three
- *   entries carrying a `tab` field. Trends left the bar because reviewing is
- *   not logging; it is still one tap away in the drawer.
+ * - **Tab bar** (`BottomNav`, mobile): five slots, the four entries carrying
+ *   a `tab` field (Diary, Insights, the raised Scan, Add), then a Menu tab
+ *   that opens the drawer. Insights came back into the bar with that Menu tab
+ *   (2026-09-24), and five slots keep Scan a true centre just as three did.
  * - **Drawer** (`app-wrapper.tsx`'s `NavDrawer`, mobile) and **sidebar**
  *   (desktop) — the complete map, identical to each other: every `primary`
  *   entry, then a separated `footer` group.
@@ -87,39 +91,41 @@ export type NavigationItem = {
  * label/href check, and it costs no router harness.
  */
 export const personalNavigationItems: NavigationItem[] = [
-  // The app home (M134). No `tab` field on purpose: `BottomNav` carries the
-  // daily logging loop only, and its raised centre button needs exactly three
-  // slots — Overview is a review surface, like Trends, which left the bar for
-  // the same reason. It is one tap away in the drawer and a first-class row
-  // in the sidebar.
+  // The app home (M134). No `tab` field on purpose: the bar's five slots are
+  // taken, and a sixth would move the raised Scan button off the centre. It
+  // is one tap away in the drawer, through the Menu tab or the header mark,
+  // and a first-class row in the sidebar.
   { labelKey: 'nav.dashboard', to: '/dashboard', icon: LayoutGrid, group: 'primary' },
   { labelKey: 'nav.diary', to: '/diary', icon: UtensilsCrossed, group: 'primary', tab: { order: 1 } },
   // `/add/search` specifically (ADR-0019), not bare `/add`: `activeNavigationHref`
   // matches this exactly or one level under it, so the row lights up on the
   // database search and stays dark on `/add/photo`, a sibling rather than a
   // child of it.
-  { labelKey: 'nav.add', to: '/add/search', icon: Plus, group: 'primary', tab: { order: 3 } },
-  { labelKey: 'nav.scan', to: '/add/photo', icon: Camera, group: 'primary', tab: { order: 2, raised: true } },
-  // The fasting timer (M132). No `tab` field, for the same reason `/dashboard`
-  // and `/trends` have none: `BottomNav` carries the daily LOGGING loop and its
-  // raised centre button needs exactly three slots. A fast is something you
-  // start once and then watch — it is not a several-times-a-day tap.
+  { labelKey: 'nav.add', to: '/add/search', icon: Plus, group: 'primary', tab: { order: 4 } },
+  { labelKey: 'nav.scan', to: '/add/photo', icon: Camera, group: 'primary', tab: { order: 3, raised: true } },
+  // The fasting timer (M132). No `tab` field, for the reason `/dashboard` has
+  // none: the bar's five slots are taken and Scan has to stay their centre. A
+  // fast is something you start once and then watch, not a several-times-a-day
+  // tap.
   //
   // Placed after Scan and before Trends so the catalog reads as the
   // doing-surfaces (Overview, Diary, Add, Scan, Fasting) then the reviewing and
   // target-setting ones (Trends, Goals).
   // The pantry (M233/02), placed directly after Scan because it is the second
   // thing the camera is for: the same composer, pointed at a shelf instead of
-  // a plate. No `tab` field, for the reason Fasting below it has none, the tab
-  // bar carries the daily LOGGING loop and its raised centre button needs
-  // exactly three slots.
+  // a plate. No `tab` field, for the reason Fasting below it has none: the
+  // bar's five slots are taken and Scan has to stay their centre.
   { labelKey: 'nav.pantry', to: '/pantry', icon: Refrigerator, group: 'primary' },
   { labelKey: 'nav.fasting', to: '/fasting', icon: Timer, group: 'primary' },
-  { labelKey: 'nav.trends', to: '/trends', icon: TrendingUp, group: 'primary' },
-  // The nutrient screen (M135/06). No `tab` field, same reason as Overview,
-  // Trends and Fasting: `BottomNav` carries the daily LOGGING loop and its
-  // raised centre button needs exactly three slots. This is a reviewing
-  // surface — it sits next to Trends, which is what it is a sibling of.
+  // Insights, the bar's second slot (2026-09-24). It left the bar once, when
+  // the bar was the logging loop alone; it came back with the Menu tab, the
+  // operator's chosen fix for a drawer nobody found behind the header mark,
+  // and five slots keep Scan a true centre.
+  { labelKey: 'nav.trends', to: '/trends', icon: TrendingUp, group: 'primary', tab: { order: 2 } },
+  // The nutrient screen (M135/06). No `tab` field, same reason as Overview and
+  // Fasting: the bar's five slots are taken and Scan has to stay their centre.
+  // This is a reviewing surface, and it sits next to Trends, which is what it
+  // is a sibling of.
   { labelKey: 'nav.nutrients', to: '/nutrients', icon: Sprout, group: 'primary' },
   { labelKey: 'nav.goals', to: '/settings/nutrition', icon: Target, group: 'primary' },
   // The settings HUB, not one setting: this row used to point straight at

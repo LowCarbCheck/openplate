@@ -242,11 +242,16 @@ test('every control in the app shell is a 44px target at 360px, in en, de and tr
     await page.goto('/settings/nutrition');
 
     // Three controls whose DRAWN box is the target, so the box is the honest
-    // reading. They were 52x36, 57x20 and 32x32.
+    // reading. The first two were 52x36 and 57x20. The third was the launcher
+    // chevron, 32x32 before this spec; it left the bar with the move to five
+    // slots (2026-09-24), and the Menu tab took its place here, the newest
+    // control in the shell and one whose words must fit a 72 px slot.
     const drawn = {
       'the device menu': page.locator('header button[aria-haspopup="menu"]'),
       'the Back link': page.locator('[data-slot="back-link"]'),
-      'the launcher chevron': page.getByRole('button', { name: copy.launcher.moreOptions }),
+      'the Menu tab': page
+        .locator('[data-slot="bottom-nav-shell"] nav')
+        .getByRole('button', { name: copy.nav.menu, exact: true }),
     };
 
     for (const [what, control] of Object.entries(drawn)) {

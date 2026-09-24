@@ -5,10 +5,12 @@
  * fix — a first-class "Add" tab, and "Settings" pointing at Goals instead of
  * the AI-key page — can't silently regress.
  *
- * Goals moved out of this bar first (into the top-left navigation drawer), and
- * Trends followed in the nav-surfaces pass: the bar is now the DAILY LOGGING
- * LOOP only — Diary · Scan · Add — and the drawer/sidebar carry the complete
- * map. See the "still has exactly three slots" test.
+ * Goals moved out of this bar first (into the navigation drawer), and Trends
+ * followed in the nav-surfaces pass. Insights, the same `/trends`, came back
+ * on 2026-09-24 with a fifth slot, a Menu tab that opens the drawer, because a
+ * person did not find the drawer behind the header's brand mark. The bar is
+ * Diary, Insights, Scan, Add, Menu; the drawer and the sidebar carry the
+ * complete map. See the "has exactly five slots" test.
  *
  * The middle slot stopped being a link in the one-tap pass: it opens the
  * camera inside its own tap (`add-launcher.tsx`), so it renders as a button
@@ -22,7 +24,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { BottomNav } from '../../app/components/bottom-nav';
+import { BottomNav, type MenuTabProps } from '../../app/components/bottom-nav';
 import { personalNavigationItems, tabNavigationItems } from '../../app/components/app-sidebar';
 
 /**
@@ -37,8 +39,7 @@ void i18next.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
-        nav: { diary: 'Diary', scan: 'Scan', add: 'Add' },
-        launcher: { moreOptions: 'More ways to add food' },
+        nav: { diary: 'Diary', trends: 'Insights', scan: 'Scan', add: 'Add', menu: 'Menu' },
       },
     },
   },
@@ -50,6 +51,9 @@ function hrefsOf(html: string): string[] {
   return [...html.matchAll(/href="([^"]*)"/g)].map((match) => match[1]);
 }
 
+/** The Menu tab as the shell hands it over with the drawer shut. A static render never calls `onOpen`. */
+const CLOSED_MENU = { isOpen: false, onOpen: () => {} } satisfies MenuTabProps;
+
 /**
  * A DATA router, not a `MemoryRouter`. The Add launcher reads this instance's
  * policy through the root loader's public config (`usePublicConfig`), and that
@@ -57,9 +61,18 @@ function hrefsOf(html: string): string[] {
  * loader is registered here, so the policy resolves to the open-instance
  * default, which is what this file's navigation assertions describe.
  */
-function renderBottomNav(path = '/diary'): string {
-  const router = createMemoryRouter([{ path: '*', element: createElement(BottomNav) }], { initialEntries: [path] });
+function renderBottomNav(path = '/diary', menu: MenuTabProps = CLOSED_MENU): string {
+  const router = createMemoryRouter([{ path: '*', element: createElement(BottomNav, { menu }) }], {
+    initialEntries: [path],
+  });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** The one `<button ...>` opening tag carrying the Menu tab's slot, so its attributes can be read alone. */
+function menuTabTag(html: string): string {
+  const match = /<button[^>]*data-slot="bottom-nav-menu"[^>]*>/.exec(html);
+  assert.ok(match !== null, 'the bar must draw the Menu tab');
+  return match[0];
 }
 
 describe('BottomNav', () => {
@@ -71,16 +84,16 @@ describe('BottomNav', () => {
     assert.ok(!hrefsOf(renderBottomNav()).includes('/settings/ai'));
   });
 
-  it('still has exactly three slots, with the launcher in the middle', () => {
-    // Three slots is what makes the raised centre button a real center rather
-    // than the near-center M129/04 had to fake with four. The middle one is
-    // no longer a LINK: it opens the camera inside its own tap (see
-    // `add-launcher.tsx`), so it renders as a button and carries no href.
-    // The bar's two flat tabs are the only hrefs left.
-    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/add/search']);
-    assert.equal(tabNavigationItems.length, 3);
-    assert.equal(tabNavigationItems[1]?.to, '/add/photo');
-    assert.equal(tabNavigationItems[1]?.tab?.raised, true);
+  it('has exactly five slots, with the launcher in the middle', () => {
+    // An odd count is what makes the raised centre button a real centre
+    // rather than the near-centre M129/04 had to fake with four: three slots
+    // did it, and five do. The middle one is not a LINK: it opens the camera
+    // inside its own tap (see `add-launcher.tsx`), and the fifth, Menu, opens
+    // the drawer, so the three flat destinations are the only hrefs.
+    assert.deepEqual(hrefsOf(renderBottomNav()), ['/diary', '/trends', '/add/search']);
+    assert.equal(tabNavigationItems.length, 4, 'four catalog tabs, then the Menu tab');
+    assert.equal(tabNavigationItems[2]?.to, '/add/photo');
+    assert.equal(tabNavigationItems[2]?.tab?.raised, true);
   });
 
   it('opens the camera from the bar itself rather than travelling to /add/photo first', () => {
@@ -92,24 +105,52 @@ describe('BottomNav', () => {
     assert.ok(!hrefsOf(html).includes('/add/photo'), 'the launcher must not be a link any more');
   });
 
-  it('offers a visible, labelled way into the rest of the sheet', () => {
-    // A long press is a bonus path, never the only one — so there is a
-    // chevron button beside the launcher, and it says what it opens.
-    const html = renderBottomNav();
+  it('ends with a Menu tab that is a labelled button, never a link', () => {
+    // The report this answers: nobody could tell that the header's brand mark
+    // opens the drawer. So the door says "Menu" in words, and it is a button
+    // that announces a dialog, because it goes nowhere.
+    const tag = menuTabTag(renderBottomNav());
 
-    assert.ok(html.includes('aria-haspopup="dialog"'), 'the chevron announces the sheet');
-    assert.ok(html.includes('More ways to add food'), 'and it is labelled, not a bare glyph');
+    assert.ok(tag.includes('aria-haspopup="dialog"'), 'the Menu tab announces the drawer');
+    assert.ok(tag.includes('aria-expanded="false"'), 'and says the drawer is shut');
+    assert.ok(!tag.includes('href='), 'it opens a panel, it does not navigate');
+    assert.ok(renderBottomNav().includes('>Menu<'), 'it is labelled in words, not a bare glyph');
+  });
+
+  it('says the drawer is open while it is, whichever door opened it', () => {
+    // CONTROL for the line above: the attribute follows the shell's state
+    // rather than being written as a literal.
+    const tag = menuTabTag(renderBottomNav('/diary', { isOpen: true, onOpen: () => {} }));
+
+    assert.ok(tag.includes('aria-expanded="true"'));
+  });
+
+  it('draws the Menu tab LAST, after the four catalog tabs', () => {
+    const html = renderBottomNav();
+    const menuAt = html.indexOf('data-slot="bottom-nav-menu"');
+    const addAt = html.indexOf('href="/add/search"');
+
+    assert.notEqual(addAt, -1);
+    assert.ok(menuAt > addAt, 'Menu must be the fifth slot, at the right end of the bar');
+  });
+
+  it('has no chevron beside the launcher any more', () => {
+    // It left with the move to five slots: in a 72 px slot its 44 px box
+    // would have covered most of the circle. The Menu tab is now the bar's
+    // one `aria-haspopup` control, so exactly one is drawn.
+    assert.equal((renderBottomNav().match(/aria-haspopup="dialog"/g) ?? []).length, 1);
   });
 
   it('no longer has a Goals tab — it moved into the nav drawer', () => {
     assert.ok(!hrefsOf(renderBottomNav()).includes('/settings/nutrition'));
   });
 
-  it('no longer has a Trends tab — reviewing a week is not the daily logging loop', () => {
-    assert.ok(!hrefsOf(renderBottomNav()).includes('/trends'));
+  it('carries Insights in the second slot, from the catalog entry the drawer also draws', () => {
+    assert.equal(hrefsOf(renderBottomNav())[1], '/trends');
+    assert.ok(renderBottomNav().includes('>Insights<'));
   });
 
-  it('never promotes the app home into the bar — three slots is what makes Scan a real centre', () => {
+  it('never promotes the app home into the bar, a sixth slot would take Scan off the centre', () => {
     // Asserted on the CATALOG, not just the markup: this is the edit that
     // would quietly break the raised button's geometry, and it would break it
     // by adding a `tab` field over in `app-sidebar.tsx`, not here.
@@ -122,7 +163,7 @@ describe('BottomNav', () => {
 
   it('never shows the fasting timer in the bar', () => {
     // The markup-side half of `app-sidebar.test.ts`'s catalog guard: adding a
-    // destination must not touch the three-slot bar the raised Scan button's
+    // destination must not touch the five-slot bar the raised Scan button's
     // geometry depends on.
     assert.ok(!hrefsOf(renderBottomNav()).includes('/fasting'));
   });
@@ -146,7 +187,7 @@ describe('BottomNav', () => {
   it('keeps every tab labelled — the raised button is not an icon-only mystery', () => {
     const html = renderBottomNav();
 
-    for (const label of ['Diary', 'Scan', 'Add']) {
+    for (const label of ['Diary', 'Insights', 'Scan', 'Add', 'Menu']) {
       assert.ok(html.includes(`>${label}<`), `${label} must keep its visible text label`);
     }
   });

@@ -31,7 +31,7 @@ import {
 } from '../../app/components/app-sidebar';
 
 describe('personalNavigationItems', () => {
-  it('lists the ten drawer/sidebar destinations, in order, with the same catalog keys/hrefs BottomNav also uses for its three tabs', () => {
+  it('lists the ten drawer/sidebar destinations, in order, with the same catalog keys/hrefs BottomNav also uses for its four destination tabs', () => {
     // M129/05: both navs now carry catalog KEYS. Pinning the key (not the
     // rendered English) is what keeps the two navs from drifting — a wording
     // change now lands in one catalog entry and moves both.
@@ -48,8 +48,9 @@ describe('personalNavigationItems', () => {
         // thing the camera is for, the same composer pointed at a shelf.
         { labelKey: 'nav.pantry', to: '/pantry' },
         // The fasting timer (M132) sits with the doing-surfaces, before the
-        // reviewing ones — and deliberately never reaches the tab bar.
+        // reviewing ones, and deliberately never reaches the tab bar.
         { labelKey: 'nav.fasting', to: '/fasting' },
+        // Insights, which is also the tab bar's second slot (2026-09-24).
         { labelKey: 'nav.trends', to: '/trends' },
         // The nutrient screen (M135/06) is a reviewing surface, so it sits
         // beside Trends — and never reaches the tab bar either.
@@ -94,16 +95,18 @@ describe('navigation surfaces', () => {
     );
   });
 
-  it('gives the tab bar the daily logging loop only, in bar order', () => {
-    // Trends and Goals are review/configuration, so they live in the drawer
-    // and the sidebar — not in the bar a user taps several times a day.
+  it('gives the tab bar its four destinations, in bar order, with Scan in the middle of five', () => {
+    // Diary, Insights, Scan, Add. The fifth slot, Menu, is not a destination
+    // and so not a catalog entry: `BottomNav` draws it after these four,
+    // which puts Scan, the third of five, at the exact centre. Goals stays in
+    // the drawer and the sidebar.
     assert.deepEqual(
       tabNavigationItems.map((item) => item.to),
-      ['/diary', '/add/photo', '/add/search'],
+      ['/diary', '/trends', '/add/photo', '/add/search'],
     );
   });
 
-  it('never promotes the fasting timer into the bar — three slots is what makes Scan a real centre', () => {
+  it('never promotes the fasting timer into the bar, a sixth slot would take Scan off the centre', () => {
     const fasting = personalNavigationItems.find((item) => item.to === '/fasting');
 
     assert.ok(fasting !== undefined, 'the catalog must carry the fasting timer');

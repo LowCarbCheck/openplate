@@ -23,7 +23,11 @@ const catalogSchema = z.object({
     status: z.object({ dismiss: z.string() }),
   }),
   nav: z.object({
+    diary: z.string(),
     trends: z.string(),
+    scan: z.string(),
+    add: z.string(),
+    menu: z.string(),
     plan: z.string(),
     settings: z.string(),
   }),
@@ -62,7 +66,6 @@ const catalogSchema = z.object({
   }),
   bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
-    moreOptions: z.string(),
     photo: z.string(),
   }),
   entry: z.object({

@@ -1314,7 +1314,6 @@
     }
   },
   "launcher": {
-    "moreOptions": "More ways to add food",
     "sheetTitle": "Add food",
     "platePhoto": "Plate photo",
     "speak": "Speak",
@@ -1418,6 +1417,7 @@
     "fasting": "Fasting",
     "goals": "Goals",
     "groupYourDay": "Your day",
+    "menu": "Menu",
     "nutrients": "Nutrients",
     "scan": "Scan",
     "settings": "Settings",

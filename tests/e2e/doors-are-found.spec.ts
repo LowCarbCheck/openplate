@@ -34,6 +34,7 @@
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import { LONG_PRESS_MS } from '../../app/lib/long-press';
 import { EN } from './copy';
 import {
   PHONE_WIDTH,
@@ -233,6 +234,10 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
  * while the sheet is open, which the serial numbers read. Both were confirmed
  * red against exactly that implementation before this one was written.
  *
+ * THE SHEET IS OPENED BY A LONG PRESS on the raised circle. It was opened by
+ * the chevron beside the circle until that left the bar (2026-09-24), and the
+ * long press is the way in that is left, so this walk now also guards it.
+ *
  * A PROVIDER IS CONNECTED FIRST, because the gesture refuses to ask for a
  * camera on a device with no AI: it would navigate to `/scan` instead, and the
  * file chooser below, which is the proof the click reached a live input, would
@@ -264,8 +269,20 @@ test('the launcher sheet borrows the bar camera, and closing it keeps the input'
   );
   const before = await serials();
 
-  await page.getByRole('button', { name: EN.launcher.moreOptions, exact: true }).click();
+  // THE LONG PRESS, the one way into the sheet since the chevron beside the
+  // circle left the bar (2026-09-24). A real pointer held on the circle past
+  // `LONG_PRESS_MS`, not a synthetic open, so this also proves the gesture
+  // still reaches the sheet with no visible trigger left to fall back on.
+  const circle = page.locator('[data-slot="bottom-nav-shell"] nav button span.rounded-full');
+  const circleBox = await circle.boundingBox();
+  if (circleBox === null) throw new Error('the raised circle has no box to press');
+  await page.mouse.move(circleBox.x + circleBox.width / 2, circleBox.y + circleBox.height / 2);
+  await page.mouse.down();
   const sheet = page.locator('[data-slot="sheet-content"]');
+  await expect(sheet, 'a held press on the circle must open the sheet').toBeVisible({
+    timeout: LONG_PRESS_MS * 10,
+  });
+  await page.mouse.up();
   await expect(sheet).toBeVisible();
   await expectVisibleLabel(sheet.getByLabel(EN.launcher.photo, { exact: true }), "the sheet's photo key");
 

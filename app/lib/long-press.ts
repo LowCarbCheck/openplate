@@ -1,9 +1,11 @@
 /**
  * The bonus long-press path on the tab bar's launcher (`add-launcher.tsx`).
  *
- * A long press is never the only way to reach the sheet — the visible chevron
- * beside the launcher is — so this is a shortcut for people who already expect
- * one, not an affordance anything depends on. It lives here as pure functions
+ * The long press is the only way into the launcher's sheet since the chevron
+ * beside the circle left the bar (2026-09-24), and the sheet itself is the
+ * shortcut: every key in it is a tap away without it (`add-launcher.tsx` lists
+ * where). So this is still a gesture for people who already expect one, not an
+ * affordance anything depends on. It lives here as pure functions
  * because timing and slop tolerances are exactly the part worth pinning in a
  * test, and neither needs a pointer, a timer or a DOM to decide.
  */

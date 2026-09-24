@@ -1314,7 +1314,6 @@
     }
   },
   "launcher": {
-    "moreOptions": "Weitere Möglichkeiten, Essen einzutragen",
     "sheetTitle": "Essen eintragen",
     "platePhoto": "Tellerfoto",
     "speak": "Sprechen",
@@ -1418,6 +1417,7 @@
     "fasting": "Fasten",
     "goals": "Ziele",
     "groupYourDay": "Dein Tag",
+    "menu": "Menü",
     "nutrients": "Nährstoffe",
     "scan": "Scannen",
     "settings": "Einstellungen",

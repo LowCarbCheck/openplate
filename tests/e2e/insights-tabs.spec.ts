@@ -105,6 +105,8 @@ test('switching tabs keeps range and slot in the URL, and the drawer names the p
   // The drawer, the mobile menu this viewport shows, names the page Insights.
   ////////////////////////////////////////////////////////////////////////////
 
+  // IN THE DRAWER: the bottom bar carries an Insights tab too since
+  // 2026-09-24, so an unscoped lookup would no longer say which menu names it.
   await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
-  await expect(page.getByRole('link', { name: EN.nav.trends, exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('link', { name: EN.nav.trends, exact: true })).toBeVisible();
 });
