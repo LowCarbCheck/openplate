@@ -61,10 +61,10 @@ pantry verb outside the store.
 
 | Path | Who calls it | Before | Now |
 |---|---|---|---|
-| `replaceLocalPantry` reconcile (`primary-store.ts`) | `app/routes/pantry.tsx:530`, the ONE write the screen performs, for a list edit, a photo capture and a typed capture alike | bare `delRow` per dropped row inside one transaction, no journal | `deleteEntity` per dropped row inside the same transaction, which journals |
+| `replaceLocalPantry` reconcile (`primary-store.ts`) | `app/routes/pantry.tsx:572`, the ONE write the screen performs, for a list edit, a photo capture and a typed capture alike | bare `delRow` per dropped row inside one transaction, no journal | `deleteEntity` per dropped row inside the same transaction, which journals |
 | `deleteLocalPantryItem` (`primary-store.ts`) | no caller in `app/` today; exported on the barrel | `deleteEntity` on a table absent from the journal map, so no row written | unchanged code, and it journals now because the table entered the map |
 | `removeEntitiesWithoutJournal` (`primary-store.ts`) | `applyMergedSnapshot` only, pinned to one call site by `tests/unit/delete-journal-single-writer.test.ts` | had no pantry ids at all | gains `pantryItemIds`, deliberately UNjournalled, because those rows were removed by a peer |
-| `importSnapshot` (`backup.ts:903`) | a backup restore and every sync apply | `putLocalPantryItem` upsert only, removes nothing | unchanged, and correct: a restore is non-destructive and the apply's removals are done before it |
+| `importSnapshot` (`backup.ts:952`) | a backup restore and every sync apply | `putLocalPantryItem` upsert only, removes nothing | unchanged, and correct: a restore is non-destructive and the apply's removals are done before it |
 
 There is no consume-on-log path. Recipes read the pantry to size a suggestion
 and never write it; `git grep` finds no removal outside the four rows above.

@@ -83,10 +83,11 @@ Four parts are worth stating separately.
 3. **No hub page.** A screen that asks "how do you want to log?" before
    routing onward adds one tap to an action performed several times a day.
    The raised launcher button and its long-press sheet (Photo, Type, Speak)
-   already are that hub, one gesture away from every route above. A shared
-   method switcher on the three sibling screens, so a person can change
-   their mind mid-entry without losing a draft, is real product work and is
-   filed as its own follow-up (M244 area, not yet numbered), not built here.
+   already are that hub, one gesture away from every route above. The three
+   sibling screens share a Search / Describe / Photo switcher drawn by the
+   `/add` layout (M255), and each screen keeps its draft in memory
+   (`app/lib/add-drafts.ts`), so a person can change their mind mid-entry
+   without losing it; still no hub page.
 4. **Pantry recipes stay outside the hub.** They begin from an inventory,
    not from "I want to log a food right now," and they write the diary
    directly rather than passing through the shared review-and-confirm
@@ -104,17 +105,6 @@ much engineering this edge case gets: the redirect must exist and must
 forward the query, and a person who lands on a working `/add/photo` because
 the redirect did its job has recovered; the app does not owe a service-worker
 migration strategy beyond that.
-
-> **Update (2026-09-24, M255):** the method switcher in part 3 was never filed.
-> An ADR audit found no tracker item for it, and the number M244 had gone to a
-> website milestone. It is now M255 and ships with this note: the `/add`
-> layout draws a Search / Describe / Photo switcher above the three screens,
-> and each screen keeps its draft in memory (`app/lib/add-drafts.ts`), so a
-> switch, the bottom bar or the back gesture no longer throws a draft away.
-> A finished photo analysis is kept too, so coming back never pays for it
-> twice. The three "instead" links the screens carried are gone. Everything
-> else in this decision stands, including "no hub page": the switcher sits on
-> the screens themselves and adds no tap.
 
 ## Alternatives Considered
 

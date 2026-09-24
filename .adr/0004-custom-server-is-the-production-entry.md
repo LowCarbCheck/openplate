@@ -23,9 +23,8 @@ To make `tsx server.ts` resolve the built handler outside Vite, `#build/*` maps 
 
 ## Consequences
 
-- `trust proxy`, `apiJsonMiddleware`, the workflow producer, and graceful shutdown now all run in production — closing a latent gap, not just fixing CSRF. `req.ip` / `req.protocol` are also correct behind the proxy.
-- The production image must include the app source (`server.ts`, `app/`, `drizzle/`, `tsconfig.json`) and `tsx` (already a runtime dependency, and the Dockerfiles' `COPY . /app` already ships the source). Validate the Docker build + boot on first deploy.
-- Running the web process as producer means it initializes pg-boss. That exposed a bug in `@sprqvntrs/workflows` **≤ 0.2.3**: `createBoss` always passed `monitorStateIntervalSeconds` (as `undefined` when `debug` is off), and pg-boss asserts the value is `>= 1` whenever the key is _present_, crashing any `debug: false` (production) boot — the web process **and** `worker.ts`. Fixed upstream in **`@sprqvntrs/workflows@0.2.4`** (only spreads the key when enabled); this stack requires `^0.2.4` as its minimum. A short-lived local `pnpm patch` bridged the gap and has since been removed. Any app on this stack must stay on `>= 0.2.4`.
+- `trust proxy` and graceful shutdown now all run in production, closing a latent gap, not just fixing CSRF. `req.ip` / `req.protocol` are also correct behind the proxy.
+- The production image must include the app source (`server.ts`, `app/`, `tsconfig.json`) and `tsx` (already a runtime dependency, and the Dockerfiles' `COPY . /app` already ships the source). Validate the Docker build + boot on first deploy.
 - `TRUST_PROXY` is configurable for multi-proxy topologies (e.g. Cloudflare → Traefik → app = `2`).
 
 ## References

@@ -43,7 +43,7 @@ Three prior constraints bounded any answer:
 ## Consequences
 
 - We can measure the product. Onboarding completion, scan success rate, which input path logs food, and whether backups happen are all answerable without touching anyone's diary.
-- **We reversed a public promise.** Anyone who read the old card and self-hosts is unaffected; anyone who read it and uses openplate.de is now counted. The new copy says so plainly rather than burying it in the policy.
+- **We reversed a public promise.** Anyone who read the old card and self-hosts is unaffected; anyone who read it and uses app.openplate.de or beta.openplate.de is now counted. `openplate.de` itself is the product website, not the hosted app. The new copy says so plainly rather than burying it in the policy.
 - Campaign attribution is lost. `utm_*` parameters are dropped with the rest of the query string. That is a real cost and the right trade for a health app.
 - The Matomo side carries load-bearing configuration that this repository cannot enforce: IP anonymisation, honouring Do Not Track, visitor profiles off, and raw-log retention capped at 90 days. The privacy policy promises all four. **If the Matomo settings drift, the policy becomes false and nothing in this codebase will notice.**
 - M120's legal packet must carry an Art. 30 processing-record entry for this. No DPIA is required for this configuration; that assessment is recorded here.

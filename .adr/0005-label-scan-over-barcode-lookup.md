@@ -67,7 +67,7 @@ Concretely: the vision service gains a second *mode* (a label-reading prompt and
 
 ## References
 
-- Code touched by this decision: `app/services/vision/prompt.ts`, `app/services/vision/schema.ts`, `app/services/vision/task.ts`, `app/lib/photo-constraints.ts`, `app/lib/macro-sanity.ts`, `app/routes/scan.tsx`. (The 2026-08-04 version of this line described a per-call `maxDimension` override that let a label capture ask for more detail than a plate; the amendment above removed the second ceiling, so `downscaleToJpeg` is now called with no override anywhere.)
+- Code touched by this decision: `app/services/vision/prompt.ts`, `app/services/vision/schema.ts`, `app/services/vision/task.ts`, `app/lib/photo-constraints.ts`, `app/lib/macro-sanity.ts`, `app/routes/add.photo.tsx` (ADR-0019). (The 2026-08-04 version of this line described a per-call `maxDimension` override that let a label capture ask for more detail than a plate; the amendment above removed the second ceiling, so `downscaleToJpeg` is now called with no override anywhere.)
 - Internal tracker (workspace repo, not part of this repository): **M123/10** implements label scan and depends on **M123/06** for per-serving → per-100 g conversion; **M116** holds the deferred barcode/OFF design and the OFF API research; **M119** established that generic FDC data carries no polyol values.
 - Open Food Facts API documentation: <https://openfoodfacts.github.io/openfoodfacts-server/api/>
 - `BarcodeDetector` browser support: <https://caniuse.com/mdn-api_barcodedetector>

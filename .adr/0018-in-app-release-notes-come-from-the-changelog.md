@@ -138,8 +138,8 @@ the fourth part of the decision.
   first sentence of a bullet. Name it in the detail instead.
 - **Only the newest three releases are in the app.** Anything older is on the
   GitHub release page, which the About screen already links.
-- **There is now a third i18n namespace.** `app/i18n/i18n.ts` registers
-  `common`, `legal` and `releases`. Nothing else needed an edit:
+- **There is now a second i18n namespace.** `app/i18n/i18n.ts` registers
+  `common` and `releases`. Nothing else needed an edit:
   `scripts/lib/translate-ui.ts` discovers namespaces by listing
   `app/i18n/locales/en/*.json` rather than from a list, and a `releases`
   namespace is bought in the informal `common` register, which is the one the

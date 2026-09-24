@@ -26,10 +26,10 @@ A candidate provider is only *addable* if it clears both. These are not preferen
 
 ### Adding a provider, mechanically
 
-1. Add the enum member to `drizzle/types/enums.ts` (`AiProviderType`).
+1. Add the enum member to `types/enums.ts` (`AiProviderType`).
 2. Run `pnpm typecheck`. The compiler now *demands* a `PROVIDER_REGISTRY` entry — label key, auth methods, base URL, verification strategy, wire adapter, placement, key-console URL — and a `PROVIDER_IDS` tuple member.
 3. Add the model catalog (`app/services/vision/catalog.ts`, also a `Record<AiProviderType, …>`, so again compiler-demanded). An empty array is legal — that is what `openai-compatible` has, since the user's own endpoint serves whatever it serves. Pricing lives with the catalog entry, which is what makes the per-scan cost estimate non-blank.
-4. Add the label and model descriptions to **both** locales (`app/i18n/locales/{en,de}/common.json`). The registry stores a `labelKey`, never a display string.
+4. Add the label and model descriptions to `app/i18n/locales/en/common.json`, then run the translator (`pnpm translate:ui`) to carry them into the other locales (`app/i18n/memory`). The registry stores a `labelKey`, never a display string.
 5. Do nothing about the CSP. `server.ts` derives `connect-src` from the registry's fixed base URLs (M130/03); a new provider's origin appears automatically, and it is no longer possible to ship a provider the browser is forbidden to call.
 
 ### What is deliberately *not* generalised

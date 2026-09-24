@@ -73,15 +73,16 @@ a property of the code.**
 
 6. **The capability is documented and advertised, not buried.** `.env.example`
    and `docs/configuration.md` list every event in both tiers and say plainly
-   what the research tier reveals. openplate.de's front page carries a section
+   what the research tier reveals. The app's own landing page carries a section
    naming the three levels. An operator who turns on `research` is told, in the
    file where they turn it on, that they must say so in their own privacy policy.
 
 ## Consequences
 
-- 48 events across 15 categories, 36 at `product` and 12 at `research`, against
-  the 10 that shipped with ADR-0010. Every one has a live call site; the
-  dead-export assertion in `tests/unit/no-telemetry-wiring.test.ts` enforces it.
+- Every event this app can send, and the level it belongs to, is listed in
+  `app/lib/matomo-events.ts`, against the 10 that shipped with ADR-0010. Every
+  one has a live call site; the dead-export assertion in
+  `tests/unit/no-telemetry-wiring.test.ts` enforces it.
 - The hosted instances stay at `product`. Nothing about anyone's fasting,
   weight, clinician or study participation reaches SPRQVNTRS's Matomo, and §9a
   continues to describe them correctly.

@@ -111,9 +111,10 @@ not infer anything from what is missing.
   published.
 - What this does not cover: an EDIT made while a sync apply is in flight is
   overwritten by the cycle's copy. Closing it needs a per-row write clock or an
-  edit journal and is a separate decision. Two devices that both hold a fast
-  ping-pong a deleted one through the blob, because pass-through lists are not
-  merged; that is the deferred M132 merge design.
+  edit journal and is a separate decision. Fasts are now a merged entity
+  (ADR-0014); the one pass-through list left is saved meals, and two devices
+  that both hold one ping-pong a deleted one through the blob, because a
+  pass-through list is not merged.
 
 ## References
 

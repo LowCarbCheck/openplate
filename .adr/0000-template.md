@@ -1,6 +1,6 @@
 # NNNN — Title
 
-- **Status:** Proposed | Accepted | Superseded by [NNNN](NNNN-...md)
+- **Status:** Proposed | Accepted | Amended by [NNNN](NNNN-...md) | Superseded by [NNNN](NNNN-...md)
 - **Date:** YYYY-MM-DD
 - **Deciders:** names / roles
 

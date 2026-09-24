@@ -23,12 +23,8 @@ Removed entirely: the `users`, email-verification-token, password-reset-token an
 
 Two consequences of that removal are themselves decisions, and are the ones worth defending:
 
-1. **The app boots with zero secrets.** `SESSION_SECRET` and `ENCRYPTION_KEY` are gone from `CONFIG`, `.env.example` and the self-host compose file (today `docker/compose.yml`). A database connection is a complete boot; the self-hosting quickstart has no `.env` step. `app/config/index.ts` carries a note that anything added must keep this true. The one cookie that survives — the toast flash — signs itself with a per-boot random key (`app/utils/toast.server.ts`), which is correct precisely because its payload is a one-shot UI message with no identity in it.
-2. **The database keeps exactly one table:** `data_migrations`, the runner's own ledger. Adding a table is now a deliberate act to be justified against the "no personal data" promise, not a routine step.
-
-> **Update (2026-08-19):** that last table is gone too, and with it Drizzle, the connection pool, the data-migration runner, the CLI and the `DB_*` environment. The app is a single stateless container with no database at all. A production boot needs one variable, `APP_URL`, the public address of the instance, which is not a secret (`server.ts` refuses to start without it). Reintroducing persistence would need its own ADR. See ADR-0002 (superseded).
-
-> **Update (2026-09-19, M238):** "zero secrets" now means zero **required** secrets. The server can read one optional secret, `FOOD_DB_API_KEY`, a key for the LowCarbCheck food database that the server-side food lookups (`/api/food-matches`, `/api/nutrients`) send as a bearer token. It identifies the instance to LowCarbCheck, not a person, and it is not personal data. The key is not needed to boot: without it the lookups run on LowCarbCheck's anonymous tier. The key never reaches a browser and is logged only by its display prefix. Everything else in this decision stands.
+1. **The app boots with zero required secrets.** `SESSION_SECRET` and `ENCRYPTION_KEY` are gone from `CONFIG`, `.env.example` and the self-host compose file (today `docker/compose.yml`). A production boot needs only `APP_URL`, the public address of the instance, which is not a secret (`server.ts` refuses to start without it); the self-hosting quickstart has no other `.env` step. `app/config/index.ts` carries a note that anything added must keep this true. The one cookie that survives, the toast flash, signs itself with a per-boot random key (`app/utils/toast.server.ts`), which is correct precisely because its payload is a one-shot UI message with no identity in it. The server can also read one optional secret, `FOOD_DB_API_KEY`, a key for the LowCarbCheck food database that the server-side food lookups (`/api/food-matches`, `/api/nutrients`) send as a bearer token. It identifies the instance to LowCarbCheck, not a person, and it is not personal data. The key is not needed to boot: without it the lookups run on LowCarbCheck's anonymous tier. The key never reaches a browser and is logged only by its display prefix.
+2. **The app has no database at all.** No Drizzle, no connection pool, no migration runner, no CLI, no `DB_*` environment. The app is a single stateless container. Reintroducing persistence would need its own ADR. See ADR-0002 (superseded).
 
 Device-local state that was keyed by account id is re-keyed onto a single sentinel owner (`ANONYMOUS_USER_ID`). In practice that was only the plate-photo cache, whose row keys are `${userId}::${logBatchId}`; `app/lib/local-store/photo-rekey.ts` moves those rows at boot, idempotently. The primary tracker store never had per-user namespacing, so it needed no migration.
 
@@ -37,7 +33,7 @@ Device-local state that was keyed by account id is re-keyed onto a single sentin
 - **Keep accounts as an optional feature, gated off by default.** Rejected: "optional" still means the `users` table exists, the secrets are still required to boot, and the auth code still has to be maintained and reviewed. It would have preserved every cost of the system while none of its users had a reason to turn it on.
 - **Keep accounts purely so the future sync client has an identity to bind to.** Rejected: sync's identity belongs to the sync service, which already has its own account store. Two account systems that must agree with each other is strictly worse than one that lives where the feature does.
 - **Keep the `users` table but stop using it (soft removal).** Rejected as the worst of both: a dormant table of email addresses and password hashes is exactly the liability this decision exists to remove, and dead schema invites re-use.
-- **Keep a superadmin account for operational access.** Rejected: there is nothing left to administer through the browser. Operational access is the CLI and the database, both of which need shell access to the box anyway.
+- **Keep a superadmin account for operational access.** Rejected: there is nothing to administer. There is no CLI and no database; the app is a single stateless container with no state of its own to operate on.
 
 ## Consequences
 
@@ -45,16 +41,15 @@ Device-local state that was keyed by account id is re-keyed onto a single sentin
 
 - The privacy claim is now structural rather than a policy promise: there is no personal data on this server to leak, subpoena, or mishandle, and no credential store to breach.
 - Self-hosting is a single `docker compose up -d` with nothing to generate. The most common setup failure — a missing or weak secret — cannot happen.
-- Every route that used to make a server round trip purely to resolve "who is this" is now client-only. `/scan`, `/diary/entry/:id` and `/profile` lost their server loaders entirely.
-- A large, security-sensitive code surface is gone, along with four runtime dependencies (`remix-auth`, `remix-auth-form`, `bcryptjs`, `nodemailer`). ESLint now bans re-importing the first three, with the reason attached.
+- Every route that used to make a server round trip purely to resolve "who is this" is now client-only. `/diary/entry/:id` has only a `clientLoader`. The old `/scan` and `/profile` addresses are redirect routes whose server loaders only forward to `/add/photo` and `/settings`.
+- A large, security-sensitive code surface is gone, along with four runtime dependencies (`remix-auth`, `remix-auth-form`, `bcryptjs`, `nodemailer`).
 
 **Costs and constraints**
 
 - **This is a one-way migration.** Migration `0008` drops the `users` table and everything referencing it. Existing account rows are not recoverable after it runs; self-hosters are told to `pg_dump` first, and — more importantly — to take the per-device JSON export, which is where their actual diary lives.
 - **A device is the unit of identity.** Two people sharing one browser profile share one diary. Separate browser profiles are the only isolation boundary, and now the only one there could be.
-- **Moving data between devices is a manual export/import** until sync ships. The profile page says so plainly rather than implying an account would help.
+- **Moving a diary between devices is the optional sync service, or a manual JSON export/import.** The profile page says so plainly rather than implying an account would help.
 - **The food-lookup rate limiter buckets by IP only**, since there is no per-caller identifier left. Behind a shared NAT the budget is shared; the cache-miss-only accounting (M123/07) is what keeps that tolerable, and it is now load-bearing rather than an optimisation.
-- **`/privacy` and `/terms` still describe an account system that no longer exists.** That is knowingly deferred to a single legal pass alongside the sync service's own policies (M128 spec 07) rather than patched piecemeal here.
 
 ## References
 

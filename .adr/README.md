@@ -18,9 +18,9 @@ Skip it for routine local choices — naming a function, picking between two equ
 1. Copy `0000-template.md` to the next zero-padded number — `NNNN-kebab-case-title.md`.
 2. Fill in: **Status** (Proposed / Accepted / Superseded), **Context**, **Decision**, **Consequences**.
 3. Add the ADR to the index in [AGENTS.md](../AGENTS.md#index) and to the list below.
-4. If the new ADR supersedes an older one, set the older ADR's **Status** to `Superseded by NNNN`.
+4. If the new ADR supersedes an older one, set the older ADR's **Status** to `Superseded by NNNN`; if it amends one without replacing it, set the older ADR's **Status** to `Amended by NNNN` instead.
 
-ADRs are immutable once Accepted. To change a decision, write a new ADR that supersedes the old one — don't edit history.
+A changed decision gets a new ADR that supersedes the old one and sets the old one's Status. A stale fact in an ADR (a path, a name, a count, a hostname, a claim about current code) is corrected in place, with no dated note, because git keeps the old text.
 
 ## Index
 
