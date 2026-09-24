@@ -49,6 +49,7 @@ import type { GetCell, Indexes, Store } from 'tinybase';
 import { z } from 'zod';
 import { reportMealFromLog } from '#app/lib/pulse';
 import { randomUuid } from '#app/lib/uuid';
+import { isYazioImportId } from '#app/lib/yazio-ids';
 import { FAST_NOTE_MAX_LENGTH, selectCurrentFast } from '#app/models/fasting';
 import { EMPTY_BODY_METRICS, normalizeBodyMetrics, readBodyMetrics } from '#app/models/body-metrics';
 import { parseAllergens } from '#app/models/allergens';
@@ -421,6 +422,15 @@ export async function listLocalFoodLogs({ store }: StoreOption = {}): Promise<Lo
 }
 
 /**
+ * The id of every food log, unordered, with no row parsed. For a reader that
+ * decides by id alone, such as "Remove YAZIO entries" (M254/05) counting the
+ * rows an import wrote, and re-counting after every write.
+ */
+export async function listLocalFoodLogIds({ store }: StoreOption = {}): Promise<string[]> {
+  return (await resolveStore(store)).getRowIds(FOOD_LOGS_TABLE);
+}
+
+/**
  * The index that files every food log under its `dayKey`, so a read can ask for
  * a run of days without parsing the rest of the diary.
  *
@@ -546,6 +556,11 @@ export async function listLocalWeightEntries({ store }: StoreOption = {}): Promi
   return readEntities<LocalWeightEntry>(await resolveStore(store), WEIGHT_ENTRIES_TABLE).toSorted(byCreatedThenId);
 }
 
+/** The id of every weight entry, unordered, with no row parsed. The weigh-in twin of `listLocalFoodLogIds`. */
+export async function listLocalWeightEntryIds({ store }: StoreOption = {}): Promise<string[]> {
+  return (await resolveStore(store)).getRowIds(WEIGHT_ENTRIES_TABLE);
+}
+
 /** Removes one weight entry by id. */
 export async function deleteLocalWeightEntry(id: string, { store }: StoreOption = {}): Promise<void> {
   deleteEntity(await resolveStore(store), WEIGHT_ENTRIES_TABLE, id);
@@ -558,13 +573,23 @@ export async function deleteLocalWeightEntry(id: string, { store }: StoreOption 
  * (and original `createdAt`) when one exists for the day, so the row is
  * updated in place rather than duplicated; otherwise mints a fresh id. Shared
  * by every route that logs a weigh-in (`settings.goals.tsx`, `onboarding.tsx`).
+ *
+ * EXCEPT OVER AN IMPORTED WEIGH-IN (M254/05). A day holding a YAZIO import's
+ * row (`isYazioImportId`) gets the person's weigh-in as a NEW row: the
+ * imported one is deleted through `deleteLocalWeightEntry`, so the delete
+ * journal names it, and the new row takes a fresh id and `createdAt`. Reusing
+ * the imported id would make the person's own measurement look imported, and
+ * "Remove YAZIO entries" or a re-import of the same file would then take it.
  */
 export async function upsertLocalWeightEntryForDay(
   { dayKey, weightKg }: { dayKey: string; weightKg: number },
   { store }: StoreOption = {},
 ): Promise<LocalWeightEntry> {
   const resolved = await resolveStore(store);
-  const existing = (await listLocalWeightEntries({ store: resolved })).find((entry) => entry.dayKey === dayKey);
+  const onDay = (await listLocalWeightEntries({ store: resolved })).find((entry) => entry.dayKey === dayKey);
+  const isImported = onDay !== undefined && isYazioImportId(onDay.id);
+  if (onDay !== undefined && isImported) await deleteLocalWeightEntry(onDay.id, { store: resolved });
+  const existing = isImported ? undefined : onDay;
   const now = Date.now();
   const entry: LocalWeightEntry = {
     id: existing?.id ?? randomUuid(),

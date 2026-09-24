@@ -16,10 +16,13 @@ import {
   YAZIO_ENTRY_ID_PREFIX,
   countDaysAlreadyLogged,
   identifyYazioFile,
+  isYazioImportId,
   parseYazioExport,
+  planYazioWeighIns,
   sortYazioFiles,
   YazioFileError,
   type YazioImport,
+  type YazioWeightImport,
 } from '../../app/lib/yazio-import';
 
 const NOW = Date.UTC(2026, 8, 24, 12, 0);
@@ -113,12 +116,21 @@ describe('identifyYazioFile', () => {
   it('recognises each exporter file by its content', () => {
     assert.strictEqual(identifyYazioFile({ json: daysFixture }), 'days');
     assert.strictEqual(identifyYazioFile({ json: productsFixture }), 'products');
+    assert.strictEqual(identifyYazioFile({ json: { '2026-09-10': 81.2 } }), 'weight');
+    // An empty weight.json, a person with no weigh-ins, is still the weight file (M254/06).
+    assert.strictEqual(identifyYazioFile({ json: {} }), 'weight');
+  });
+
+  it('never reads a days file with one broken day as a weight file', () => {
+    // A day whose value is an object is not a weigh-in, so this is not weight.json.
+    assert.strictEqual(identifyYazioFile({ json: { '2026-09-10': { consumed: 'broken' } } }), null);
+    // Control: the same key with a number is.
+    assert.strictEqual(identifyYazioFile({ json: { '2026-09-10': 80 } }), 'weight');
   });
 
   it('recognises nothing else', () => {
-    // Controls: an openplate backup, an empty object, an array, a string, and a dictionary whose keys are not dates.
+    // Controls: an openplate backup, an array, a string, and a dictionary whose keys are not dates.
     assert.strictEqual(identifyYazioFile({ json: { version: 24, foodLogs: [] } }), null);
-    assert.strictEqual(identifyYazioFile({ json: {} }), null);
     assert.strictEqual(identifyYazioFile({ json: [] }), null);
     assert.strictEqual(identifyYazioFile({ json: 'days' }), null);
     assert.strictEqual(identifyYazioFile({ json: { yesterday: { consumed: {} } } }), null);
@@ -468,8 +480,19 @@ describe('sortYazioFiles', () => {
     }
   });
 
+  it('sorts an optional weight.json in beside them, and leaves weight null without one', () => {
+    const weight = { '2026-09-10': 81.2 };
+    const pick = sortYazioFiles({ texts: [JSON.stringify(weight), DAYS_TEXT, PRODUCTS_TEXT] });
+    assert.deepStrictEqual(pick, { kind: 'ready', days: daysFixture, products: productsFixture, weight });
+    // Control: the same pick without the weight file.
+    const withoutWeight = sortYazioFiles({ texts: [DAYS_TEXT, PRODUCTS_TEXT] });
+    assert.strictEqual(withoutWeight.kind === 'ready' ? withoutWeight.weight : 'not ready', null);
+  });
+
   it('names the first thing wrong with a pick', () => {
     const cases = [
+      { texts: [DAYS_TEXT, PRODUCTS_TEXT, '{}', '{"2026-09-10": 80}'], error: 'duplicate' },
+      { texts: ['{"2026-09-10": 80}'], error: 'missing-days' },
       { texts: [DAYS_TEXT, '{"products": '], error: 'unreadable' },
       { texts: [DAYS_TEXT, PRODUCTS_TEXT, '{"version": 24}'], error: 'unrecognised' },
       { texts: [DAYS_TEXT, DAYS_TEXT, PRODUCTS_TEXT], error: 'duplicate' },
@@ -527,5 +550,172 @@ describe('countDaysAlreadyLogged', () => {
       countDaysAlreadyLogged({ importDayKeys: entries.map((each) => each.dayKey), existingLogs: entries }),
       0,
     );
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// weight.json (M254/06)
+////////////////////////////////////////////////////////////////////////////////
+
+/** A value in a test weight file: a weight, a wrong type, or a day object that makes it not a weight file. */
+type WeightFileValue = number | string | boolean | null | { consumed: object };
+
+/** Imports only a weight file beside an inline days and products pair. */
+function importWeight(weight: Readonly<Record<string, WeightFileValue>>): YazioWeightImport {
+  const result = parseYazioExport({
+    days: oneDay({ products: [PRODUCT_ITEM] }),
+    products: PRODUCTS,
+    weight,
+    timeZone: BERLIN,
+    now: NOW,
+  });
+  assert.ok(result.weight, 'a weight file was passed, so the import must read it');
+  return result.weight;
+}
+
+/** The kept weigh-ins as `day: kg`, the whole observable result of a collapse. */
+function weighInsByDay(weight: YazioWeightImport): Record<string, number> {
+  return Object.fromEntries(weight.weighIns.map((entry) => [entry.dayKey, entry.weightKg]));
+}
+
+describe('parseYazioExport: weight.json', () => {
+  it('keeps a day only when its value differs from the day before, the first day always', () => {
+    // The exporter asks for "the latest weight on or before" each day, so one
+    // weigh-in repeats on every later day until the next one.
+    const weight = importWeight({
+      '2026-09-01': 81.2,
+      '2026-09-02': 81.2,
+      '2026-09-03': 80.6,
+      '2026-09-04': 80.6,
+      '2026-09-05': 80.6,
+      '2026-09-06': 79.4,
+    });
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-09-01': 81.2, '2026-09-03': 80.6, '2026-09-06': 79.4 });
+    assert.strictEqual(weight.skippedCount, 0);
+  });
+
+  it('keeps every day of a file with no repeats (control)', () => {
+    const weight = importWeight({ '2026-09-01': 81.2, '2026-09-02': 81.1, '2026-09-03': 81.2 });
+    // A return to an earlier value after a change is a new weigh-in.
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-09-01': 81.2, '2026-09-02': 81.1, '2026-09-03': 81.2 });
+  });
+
+  it('compares each day with the one before it by date, not by where it sits in the file', () => {
+    const weight = importWeight({ '2026-09-03': 80, '2026-09-01': 81, '2026-09-02': 81 });
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-09-01': 81, '2026-09-03': 80 });
+    // Control: read in file order, 09-01 would follow 09-03 (80) and 09-02 would be the repeat of it.
+    assert.deepStrictEqual(
+      weight.weighIns.map((entry) => entry.dayKey),
+      ['2026-09-01', '2026-09-03'],
+    );
+  });
+
+  it('skips and counts a value that is not a number of kilograms from 20 to 350', () => {
+    const weight = importWeight({
+      '2026-09-01': 19.9,
+      '2026-09-02': 20,
+      '2026-09-03': 350.1,
+      '2026-09-04': 350,
+      '2026-09-05': '80',
+      '2026-09-06': null,
+      '2026-09-07': true,
+    });
+    // Control: both ends of the range are kept.
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-09-02': 20, '2026-09-04': 350 });
+    assert.strictEqual(weight.skippedCount, 5);
+  });
+
+  it('counts a repeated implausible value once, as the one weigh-in it is', () => {
+    const weight = importWeight({ '2026-09-01': 999, '2026-09-02': 999, '2026-09-03': 999, '2026-09-04': 80 });
+    assert.strictEqual(weight.skippedCount, 1);
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-09-04': 80 });
+  });
+
+  it('skips a day that is not a real date', () => {
+    const weight = importWeight({ '2026-02-30': 80, '2026-03-01': 79 });
+    assert.deepStrictEqual(weighInsByDay(weight), { '2026-03-01': 79 });
+    assert.strictEqual(weight.skippedCount, 1);
+  });
+
+  it('reads an empty weight.json as no weigh-ins, and no weight.json as no weight at all', () => {
+    assert.deepStrictEqual(importWeight({}), { weighIns: [], skippedCount: 0 });
+    const withoutWeight = parseYazioExport({
+      days: oneDay({ products: [PRODUCT_ITEM] }),
+      products: PRODUCTS,
+      timeZone: BERLIN,
+      now: NOW,
+    });
+    assert.strictEqual(withoutWeight.weight, null);
+    // Control: the food entries do not depend on the weight file.
+    assert.strictEqual(withoutWeight.entries.length, 1);
+  });
+
+  it('names a weigh-in after its day, so the same file imported twice writes the same ids', () => {
+    const [first] = importWeight({ '2026-09-10': 81.2 }).weighIns;
+    assert.strictEqual(first?.id, 'yazio-weight-2026-09-10');
+    assert.ok(first && isYazioImportId(first.id));
+    assert.strictEqual(importWeight({ '2026-09-10': 70 }).weighIns[0]?.id, first.id);
+    // Control: another day is another id.
+    assert.strictEqual(importWeight({ '2026-09-11': 81.2 }).weighIns[0]?.id, 'yazio-weight-2026-09-11');
+  });
+
+  it('stamps the import time as createdAt and noon of the day, in the given zone, as loggedAt', () => {
+    const [entry] = importWeight({ '2026-09-10': 81.2 }).weighIns;
+    assert.strictEqual(entry?.createdAt, NOW);
+    // Berlin is UTC+2 in September.
+    assert.strictEqual(entry?.loggedAt, Date.UTC(2026, 8, 10, 10, 0));
+  });
+
+  it('throws, naming the weight file, when it is not one', () => {
+    assert.throws(
+      () => importWeight({ '2026-09-10': { consumed: {} } }),
+      (cause) => cause instanceof YazioFileError && cause.file === 'weight',
+    );
+    // Control: a well-formed file does not throw.
+    assert.doesNotThrow(() => importWeight({ '2026-09-10': 80 }));
+  });
+});
+
+describe('planYazioWeighIns', () => {
+  const FILE = importWeight({ '2026-09-01': 81.2, '2026-09-03': 80.6, '2026-09-06': 79.4 }).weighIns;
+
+  it('writes every weigh-in into an empty weight log, first and last by date', () => {
+    const plan = planYazioWeighIns({ weighIns: FILE, existingEntries: [] });
+    assert.strictEqual(plan.weighIns.length, 3);
+    assert.deepStrictEqual([plan.firstKg, plan.lastKg, plan.alreadyLoggedDays], [81.2, 79.4, 0]);
+  });
+
+  it("never overwrites a day that holds a weigh-in of the person's own, and counts it", () => {
+    const existingEntries = [{ id: 'native-weigh-in', dayKey: '2026-09-06' }];
+    const plan = planYazioWeighIns({ weighIns: FILE, existingEntries });
+    assert.deepStrictEqual(
+      plan.weighIns.map((entry) => entry.dayKey),
+      ['2026-09-01', '2026-09-03'],
+    );
+    assert.strictEqual(plan.alreadyLoggedDays, 1);
+    // The range follows what is written: the last written weigh-in is 80.6, not the skipped 79.4.
+    assert.deepStrictEqual([plan.firstKg, plan.lastKg], [81.2, 80.6]);
+  });
+
+  it('writes a day again that holds only an earlier import of it', () => {
+    const existingEntries = [{ id: 'yazio-weight-2026-09-06', dayKey: '2026-09-06' }];
+    const plan = planYazioWeighIns({ weighIns: FILE, existingEntries });
+    assert.strictEqual(plan.weighIns.length, 3);
+    assert.strictEqual(plan.alreadyLoggedDays, 0);
+  });
+
+  it('has no range when nothing is written', () => {
+    const plan = planYazioWeighIns({ weighIns: [], existingEntries: [] });
+    assert.deepStrictEqual([plan.weighIns.length, plan.firstKg, plan.lastKg], [0, null, null]);
+  });
+});
+
+describe('isYazioImportId', () => {
+  it('knows a diary entry and a weigh-in an import wrote, and nothing else', () => {
+    assert.ok(isYazioImportId(`${YAZIO_ENTRY_ID_PREFIX}${OATS_40G}`));
+    assert.ok(isYazioImportId('yazio-weight-2026-09-10'));
+    // Controls: a native id, and one that merely contains the word.
+    assert.ok(!isYazioImportId('3f2a9c10-yazio-0001'));
+    assert.ok(!isYazioImportId('native-weigh-in'));
   });
 });

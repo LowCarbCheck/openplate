@@ -216,6 +216,13 @@
     "at": "2026-09-14",
     "tr": "{{day}}, {{goal}} g net karbonhidrat üzerinden {{value}} g, bütçe dahilinde"
   },
+  "02ec9ae3aedb5422": {
+    "en": "{{count}} weigh-ins skipped: those days already have a weigh-in in your openplate weight log.",
+    "path": "common:settings.data.yazio.skipped.weightAlreadyLogged_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "{{count}} tartı kaydı atlandı: openplate ağırlık günlüğünde o günler için zaten bir tartı kaydı var."
+  },
   "02eeaf7b1fddf2fe": {
     "en": "Your usual snack",
     "path": "common:usual.title.snack",
@@ -3275,6 +3282,13 @@
     "at": "2026-09-14",
     "tr": "Davet kodu"
   },
+  "287f331377806f85": {
+    "en": "{{count}} weigh-in skipped: that day already has a weigh-in in your openplate weight log.",
+    "path": "common:settings.data.yazio.skipped.weightAlreadyLogged_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "{{count}} tartı kaydı atlandı: openplate ağırlık günlüğünde o gün için zaten bir tartı kaydı var."
+  },
   "28e04c0b74714979": {
     "en": "Welcome to openplate",
     "path": "common:welcome.title",
@@ -4458,6 +4472,13 @@
     "at": "2026-09-14",
     "tr": "Yiyecek"
   },
+  "3bafc24edfe928c9": {
+    "en": "Remove YAZIO entries",
+    "path": "common:settings.data.yazio.remove.button",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO girdilerini kaldır"
+  },
   "3bb310e3f73915a7": {
     "en": "Research studies · openplate",
     "path": "common:meta.research",
@@ -4562,6 +4583,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir tabak fotoğrafı çek, yapay zeka karbonhidratı senin için hesaplasın."
+  },
+  "3d7c6a2bfa82bf20": {
+    "en": "Removed the entries imported from YAZIO.",
+    "path": "common:settings.data.yazio.remove.success",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO üzerinden içe aktarılan girdiler kaldırıldı."
   },
   "3d9f2e0b091e26bb": {
     "en": "Describe your meal",
@@ -6012,6 +6040,13 @@
     "at": "2026-09-14",
     "tr": "Bu cihaz verileri ilk kez {{date}} tarihinde depoladı."
   },
+  "515b0f1ad96dcbaf": {
+    "en": "Weigh-ins from YAZIO",
+    "path": "common:settings.data.yazio.remove.weighIns",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO kaynaklı tartı kayıtları"
+  },
   "51865c2aeb536626": {
     "en": "The account screen on a phone, signed out, with a link to sign in.",
     "path": "common:landing.sync.shotAlt",
@@ -6095,6 +6130,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Şifreni mi unuttun?"
+  },
+  "5250576fee986193": {
+    "en": "Diary entries from YAZIO",
+    "path": "common:settings.data.yazio.remove.entries",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO kaynaklı günlük girdileri"
   },
   "5257d6c727af83c3": {
     "en": "Share your diary with a dietician",
@@ -7307,6 +7349,13 @@
     "at": "2026-09-14",
     "tr": "Anahtarları değişti"
   },
+  "60fec6a9c8bbcf19": {
+    "en": "Imported {{count}} weigh-ins from YAZIO.",
+    "path": "common:settings.data.yazio.successWeighIns_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO üzerinden {{count}} tartı kaydı içe aktarıldı."
+  },
   "6101f13d702f006b": {
     "en": "Use the app today to start a streak.",
     "path": "common:trends.streak.empty",
@@ -7880,6 +7929,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "tr": "Oturumu kapatma penceresi, adını değiştirdiğin kayıtlı bir öğünü artık fark eder."
+  },
+  "6928d4ffd98812c1": {
+    "en": "Removing the YAZIO entries…",
+    "path": "common:settings.data.yazio.remove.removing",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO girdileri kaldırılıyor…"
   },
   "694486f3ea9254ed": {
     "en": "Last sent {{at}} · version {{version}}",
@@ -8721,6 +8777,13 @@
     "at": "2026-09-14",
     "tr": "{{value}} kalori"
   },
+  "73fbea76eafbcead": {
+    "en": "This removes the diary entries and weigh-ins counted here from this device and, if you use sync, from your other devices. What you logged in openplate yourself stays.",
+    "path": "common:settings.data.yazio.remove.confirmDescription",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Bu işlem, burada sayılan günlük girdilerini ve tartı kayıtlarını bu cihazdan ve eşitleme kullanıyorsan diğer cihazlarından kaldırır. openplate içine kendi kaydettiğin veriler kalır."
+  },
   "74069c23fbe584c8": {
     "en": "New password",
     "path": "common:account.password.newLabel",
@@ -9238,6 +9301,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Planını yönet"
+  },
+  "7a0663e459f5f8cb": {
+    "en": "{{first}} to {{last}}",
+    "path": "common:settings.data.yazio.preview.weightRangeValue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "{{first}} - {{last}}"
   },
   "7a2bfb4fdf4d40cd": {
     "en": "Email address",
@@ -10814,6 +10884,13 @@
     "at": "2026-09-14",
     "tr": "{{count}} porsiyon"
   },
+  "8cf5639858a492c6": {
+    "en": "Remove every diary entry and weigh-in that a YAZIO import added. What you logged in openplate yourself stays.",
+    "path": "common:settings.data.yazio.remove.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO içe aktarımının eklediği her günlük girdisini ve tartı kaydını kaldır. openplate içine kendi kaydettiğin veriler kalır."
+  },
   "8cf5f143134da82b": {
     "en": "Used together with your weight to estimate the energy you burn in a day.",
     "path": "common:bodyMetrics.height.hint",
@@ -11332,6 +11409,13 @@
     "at": "2026-09-14",
     "tr": "Bu hesap için yapay zeka girdileri {{date}} tarihinde sona erdi. Besin veri tabanında arama yapmak halen çalışır."
   },
+  "9372d5810045f95c": {
+    "en": "Remove the YAZIO entries",
+    "path": "common:settings.data.yazio.remove.confirm",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO girdilerini kaldır"
+  },
   "93f11d1845def63d": {
     "en": "{{value}} g net carbs",
     "path": "common:scan.review.match.netCarbs",
@@ -11548,6 +11632,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Acele etme, bunları boş bırakabilir ve dilediğin zaman ekleyebilirsin."
+  },
+  "96da283c8edaa233": {
+    "en": "{{count}} weigh-ins skipped: their values aren't weights between 20 and 350 kg.",
+    "path": "common:settings.data.yazio.skipped.implausibleWeight_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "{{count}} tartı kaydı atlandı: değerleri 20 ile 350 kg arasında ağırlıklar değil."
   },
   "96f2a13fc09147c6": {
     "en": "Breastfeeding, {{count}} months",
@@ -13047,6 +13138,13 @@
     "at": "2026-09-14",
     "tr": "Veya kaynağı oku, MIT lisanslı"
   },
+  "aa0d5206f0aae3d5": {
+    "en": "Bring your YAZIO diary over. Export it with the open-source yazio-exporter tool, then pick its days.json and products.json together. Add its weight.json to bring your weigh-ins too.",
+    "path": "common:settings.data.yazio.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO günlüğünü aktar. Açık kaynaklı yazio-exporter aracıyla dışa aktar, ardından days.json ve products.json dosyalarını birlikte seç. Tartı kayıtlarını da getirmek için weight.json dosyasını ekle."
+  },
   "aa100b7281ae87ac": {
     "en": "Low-carb",
     "path": "common:onboarding.carbPreset.lowCarb.label",
@@ -13606,6 +13704,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Hesap silinemedi. Hiçbir şey değiştirilmedi."
+  },
+  "b1db5665d4755d71": {
+    "en": "First and last weigh-in",
+    "path": "common:settings.data.yazio.preview.weightRange",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "İlk ve son tartı kaydı"
   },
   "b1e8abaf5ac5a5d8": {
     "en": "AI estimates are not switched on for your account. Ask your administrator.",
@@ -14285,6 +14390,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kilo"
+  },
+  "bbbd4a967d55c7d1": {
+    "en": "{{count}} weigh-in skipped: its value isn't a weight between 20 and 350 kg.",
+    "path": "common:settings.data.yazio.skipped.implausibleWeight_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "{{count}} tartı kaydı atlandı: değeri 20 ile 350 kg arasında bir ağırlık değil."
   },
   "bbcc05096d991174": {
     "en": "Stop sharing with {{name}}?",
@@ -15140,6 +15252,13 @@
     "at": "2026-09-14",
     "tr": "Fotoğraf"
   },
+  "c87e0fe464c2b937": {
+    "en": "Weigh-ins to add",
+    "path": "common:settings.data.yazio.preview.weighIns",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Eklenecek tartı kayıtları"
+  },
   "c888d2d65fc562b7": {
     "en": "Open {{name}}",
     "path": "common:trends.overview.openInsights",
@@ -15279,6 +15398,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kişiler"
+  },
+  "ca499ff6604b5b4e": {
+    "en": "Keep the YAZIO entries",
+    "path": "common:settings.data.yazio.remove.cancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO girdilerini tut"
   },
   "ca9725b1aae72d07": {
     "en": "Your provider reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
@@ -15672,6 +15798,13 @@
     "at": "2026-09-14",
     "tr": "Kayıt işlemi şu anda yanıt vermiyor. Lütfen daha sonra tekrar dene."
   },
+  "d0287fce5e97e867": {
+    "en": "The removal stopped partway. Try again to remove the rest.",
+    "path": "common:settings.data.yazio.remove.error",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Kaldırma işlemi yarıda durdu. Kalanı kaldırmak için tekrar dene."
+  },
   "d0648f5f756e3c95": {
     "en": "Your plan could not be read. Try again in a moment.",
     "path": "common:plan.failed",
@@ -15874,6 +16007,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Araştırma"
+  },
+  "d2bd2576deb5394f": {
+    "en": "One of those files isn't a YAZIO export. Pick only days.json, products.json and, if you want your weigh-ins, weight.json.",
+    "path": "common:settings.data.yazio.error.unrecognised",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Bu dosyalardan biri YAZIO dışa aktarımı değil. Yalnızca days.json, products.json ve tartı kayıtlarını da istiyorsan weight.json dosyasını seç."
   },
   "d2bdb77f39331065": {
     "en": "One line per person, most recently here first.",
@@ -16301,6 +16441,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu bağlantı eksik"
+  },
+  "d76235f635b9bcb5": {
+    "en": "Imported {{count}} weigh-in from YAZIO.",
+    "path": "common:settings.data.yazio.successWeighIns_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO üzerinden {{count}} tartı kaydı içe aktarıldı."
   },
   "d7629ea1999d9a6b": {
     "en": "Snap a photo, get the macros",
@@ -16742,6 +16889,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu cihazda henüz veri yok. openplate uygulamasını başka bir yerde kullandın mı? Verilerini aktarmak için <backup>bir yedeği içe aktar</backup>."
+  },
+  "ddbcfd2f3fe4360d": {
+    "en": "Entries imported from YAZIO",
+    "path": "common:settings.data.yazio.remove.heading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO üzerinden içe aktarılan girdiler"
   },
   "ddc66ad3743b3cee": {
     "en": "Try again",
@@ -17253,6 +17407,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu uygulama ve eşitleme sunucusu henüz aynı sürümü konuşmuyor, bu nedenle eşitleme bilerek duraklatıldı."
+  },
+  "e4b8f65fc4a6ebad": {
+    "en": "Remove all entries imported from YAZIO?",
+    "path": "common:settings.data.yazio.remove.confirmTitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "YAZIO üzerinden içe aktarılan tüm girdiler kaldırılsın mı?"
   },
   "e50b6320a8b2a8b6": {
     "en": "No goal, only the numbers",

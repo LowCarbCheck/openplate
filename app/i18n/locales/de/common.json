@@ -2160,12 +2160,12 @@
       "title": "Daten & Sicherung",
       "yazio": {
         "heading": "Aus YAZIO importieren",
-        "description": "Übernimm dein YAZIO-Tagebuch. Exportiere es mit dem Open-Source-Tool yazio-exporter und wähle dann dessen days.json und products.json zusammen aus.",
+        "description": "Übernimm dein YAZIO-Tagebuch. Exportiere es mit dem Open-Source-Tool yazio-exporter und wähle dann days.json und products.json gemeinsam aus. Füge weight.json hinzu, um auch deine Wiegungen zu übernehmen.",
         "guideLink": "So exportierst du aus YAZIO",
         "pickButton": "YAZIO-Dateien auswählen",
         "error": {
           "unreadable": "Eine dieser Dateien ist kein gültiges JSON. Wähle die days.json und products.json aus, die der Exporter erstellt hat.",
-          "unrecognised": "Eine dieser Dateien ist kein YAZIO-Export. Wähle nur days.json und products.json aus.",
+          "unrecognised": "Eine dieser Dateien ist kein YAZIO-Export. Wähle nur days.json, products.json und, falls du deine Wiegungen übernehmen willst, weight.json aus.",
           "duplicate": "Du hast zwei Dateien derselben Art ausgewählt. Wähle eine days.json und eine products.json aus.",
           "missingDays": "days.json fehlt. Wähle sie zusammen mit products.json aus.",
           "missingProducts": "products.json fehlt. Wähle sie zusammen mit days.json aus."
@@ -2175,6 +2175,9 @@
           "days": "Abgedeckte Tage",
           "firstDay": "Erster Tag",
           "lastDay": "Letzter Tag",
+          "weighIns": "Hinzuzufügende Wiegungen",
+          "weightRange": "Erste und letzte Wiegung",
+          "weightRangeValue": "{{first}} bis {{last}}",
           "nothing": "In diesen Dateien kann nichts importiert werden."
         },
         "overlap_one": "{{count}} dieser Tage enthält bereits Einträge in deinem Tagebuch. Nach dem Import zeigt er sowohl deine Einträge als auch die importierten Einträge an. Nichts wird zusammengeführt oder ersetzt.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "{{count}} Schnelleintrag übersprungen: Schnelleinträge werden nicht importiert.",
           "quickEntry_other": "{{count}} Schnelleinträge übersprungen: Schnelleinträge werden nicht importiert.",
           "invalidItem_one": "{{count}} Eintrag übersprungen: Die Datei beschreibt ihn nicht eindeutig.",
-          "invalidItem_other": "{{count}} Einträge übersprungen: Die Datei beschreibt sie nicht eindeutig."
+          "invalidItem_other": "{{count}} Einträge übersprungen: Die Datei beschreibt sie nicht eindeutig.",
+          "implausibleWeight_one": "{{count}} Wiegung übersprungen: Der Wert ist kein Gewicht zwischen 20 und 350 kg.",
+          "implausibleWeight_other": "{{count}} Wiegungen übersprungen: Die Werte sind keine Gewichte zwischen 20 und 350 kg.",
+          "weightAlreadyLogged_one": "{{count}} Wiegung übersprungen: Dieser Tag enthält bereits eine Wiegung in deinem openplate-Gewichtsprotokoll.",
+          "weightAlreadyLogged_other": "{{count}} Wiegungen übersprungen: Diese Tage enthalten bereits eine Wiegung in deinem openplate-Gewichtsprotokoll."
         },
         "confirm": "Zu meinem Tagebuch hinzufügen",
         "cancel": "Abbrechen",
         "success_one": "{{count}} Eintrag aus YAZIO importiert.",
         "success_other": "{{count}} Einträge aus YAZIO importiert.",
-        "writeError": "Der Import wurde vorzeitig abgebrochen. Versuch es erneut: Bereits gespeicherte Einträge werden nicht doppelt hinzugefügt."
+        "successWeighIns_one": "{{count}} Wiegung aus YAZIO importiert.",
+        "successWeighIns_other": "{{count}} Wiegungen aus YAZIO importiert.",
+        "writeError": "Der Import wurde vorzeitig abgebrochen. Versuch es erneut: Bereits gespeicherte Einträge werden nicht doppelt hinzugefügt.",
+        "remove": {
+          "heading": "Aus YAZIO importierte Einträge",
+          "description": "Entferne alle Tagebucheinträge und Wiegungen, die durch einen YAZIO-Import hinzugefügt wurden. Was du selbst in openplate erfasst hast, bleibt erhalten.",
+          "entries": "Tagebucheinträge aus YAZIO",
+          "weighIns": "Wiegungen aus YAZIO",
+          "button": "YAZIO-Einträge entfernen",
+          "confirmTitle": "Alle aus YAZIO importierten Einträge entfernen?",
+          "confirmDescription": "Dies entfernt die hier gezählten Tagebucheinträge und Wiegungen von diesem Gerät und, falls du die Synchronisation nutzt, von deinen anderen Geräten. Was du selbst in openplate erfasst hast, bleibt erhalten.",
+          "confirm": "YAZIO-Einträge entfernen",
+          "cancel": "YAZIO-Einträge behalten",
+          "removing": "YAZIO-Einträge werden entfernt…",
+          "success": "Die aus YAZIO importierten Einträge wurden entfernt.",
+          "error": "Das Entfernen wurde vorzeitig abgebrochen. Versuche es erneut, um den Rest zu entfernen."
+        }
       }
     },
     "groups": {

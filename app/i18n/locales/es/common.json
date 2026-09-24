@@ -2160,12 +2160,12 @@
       "title": "Datos y respaldo",
       "yazio": {
         "heading": "Importar desde YAZIO",
-        "description": "Trae tu diario de YAZIO. Expórtalo con la herramienta de código abierto yazio-exporter y selecciona después sus archivos days.json y products.json a la vez.",
+        "description": "Trae tu diario de YAZIO. Expórtalo con la herramienta de código abierto yazio-exporter y selecciona juntos sus archivos days.json y products.json. Añade su archivo weight.json para traer también tus pesajes.",
         "guideLink": "Cómo exportar desde YAZIO",
         "pickButton": "Elige los archivos de YAZIO",
         "error": {
           "unreadable": "Uno de esos archivos no es un JSON válido. Selecciona los archivos days.json y products.json que generó el exportador.",
-          "unrecognised": "Uno de esos archivos no es una exportación de YAZIO. Selecciona únicamente days.json y products.json.",
+          "unrecognised": "Uno de esos archivos no es una exportación de YAZIO. Selecciona solo days.json, products.json y, si quieres tus pesajes, weight.json.",
           "duplicate": "Has seleccionado dos archivos del mismo tipo. Selecciona un archivo days.json y un archivo products.json.",
           "missingDays": "Falta days.json. Selecciónalo junto con products.json.",
           "missingProducts": "Falta products.json. Selecciónalo junto con days.json."
@@ -2175,6 +2175,9 @@
           "days": "Días incluidos",
           "firstDay": "Primer día",
           "lastDay": "Último día",
+          "weighIns": "Pesajes por añadir",
+          "weightRange": "Primer y último pesaje",
+          "weightRangeValue": "{{first}} a {{last}}",
           "nothing": "No se puede importar nada de estos archivos."
         },
         "overlap_one": "{{count}} de estos días ya tiene entradas en tu diario. Tras la importación, mostrará tanto tus entradas como las importadas. No se combina ni se sustituye nada.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "Se ha omitido {{count}} entrada rápida: las entradas rápidas no se importan.",
           "quickEntry_other": "Se han omitido {{count}} entradas rápidas: las entradas rápidas no se importan.",
           "invalidItem_one": "Se ha omitido {{count}} entrada: el archivo no la describe con claridad.",
-          "invalidItem_other": "Se han omitido {{count}} entradas: el archivo no las describe con claridad."
+          "invalidItem_other": "Se han omitido {{count}} entradas: el archivo no las describe con claridad.",
+          "implausibleWeight_one": "Se ha omitido {{count}} pesaje: su valor no es un peso entre 20 y 350 kg.",
+          "implausibleWeight_other": "Se han omitido {{count}} pesajes: sus valores no son pesos entre 20 y 350 kg.",
+          "weightAlreadyLogged_one": "Se ha omitido {{count}} pesaje: ese día ya tiene un pesaje en tu registro de peso de openplate.",
+          "weightAlreadyLogged_other": "Se han omitido {{count}} pesajes: esos días ya tienen un pesaje en tu registro de peso de openplate."
         },
         "confirm": "Añadir a mi diario",
         "cancel": "Cancelar",
         "success_one": "Se ha importado {{count}} entrada desde YAZIO.",
         "success_other": "Se han importado {{count}} entradas desde YAZIO.",
-        "writeError": "La importación se interrumpió antes de terminar. Inténtalo de nuevo: las entradas ya guardadas no se añadirán dos veces."
+        "successWeighIns_one": "Se ha importado {{count}} pesaje de YAZIO.",
+        "successWeighIns_other": "Se han importado {{count}} pesajes de YAZIO.",
+        "writeError": "La importación se interrumpió antes de terminar. Inténtalo de nuevo: las entradas ya guardadas no se añadirán dos veces.",
+        "remove": {
+          "heading": "Entradas importadas de YAZIO",
+          "description": "Elimina cada entrada del diario y cada pesaje que añadió una importación de YAZIO. Lo que registraste tú en openplate se mantiene.",
+          "entries": "Entradas del diario de YAZIO",
+          "weighIns": "Pesajes de YAZIO",
+          "button": "Eliminar entradas de YAZIO",
+          "confirmTitle": "¿Eliminar todas las entradas importadas de YAZIO?",
+          "confirmDescription": "Esto elimina las entradas del diario y los pesajes contabilizados aquí de este dispositivo y, si usas la sincronización, de tus otros dispositivos. Lo que registraste tú en openplate se mantiene.",
+          "confirm": "Eliminar las entradas de YAZIO",
+          "cancel": "Mantener las entradas de YAZIO",
+          "removing": "Eliminando las entradas de YAZIO…",
+          "success": "Se han eliminado las entradas importadas de YAZIO.",
+          "error": "La eliminación se detuvo a medias. Inténtalo de nuevo para eliminar el resto."
+        }
       }
     },
     "groups": {

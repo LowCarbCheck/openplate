@@ -2160,12 +2160,12 @@
       "title": "Data & backup",
       "yazio": {
         "heading": "Import from YAZIO",
-        "description": "Bring your YAZIO diary over. Export it with the open-source yazio-exporter tool, then pick its days.json and products.json together.",
+        "description": "Bring your YAZIO diary over. Export it with the open-source yazio-exporter tool, then pick its days.json and products.json together. Add its weight.json to bring your weigh-ins too.",
         "guideLink": "How to export from YAZIO",
         "pickButton": "Choose the YAZIO files",
         "error": {
           "unreadable": "One of those files isn't valid JSON. Pick the days.json and products.json the exporter wrote.",
-          "unrecognised": "One of those files isn't a YAZIO export. Pick only days.json and products.json.",
+          "unrecognised": "One of those files isn't a YAZIO export. Pick only days.json, products.json and, if you want your weigh-ins, weight.json.",
           "duplicate": "You picked two files of the same kind. Pick one days.json and one products.json.",
           "missingDays": "days.json is missing. Pick it together with products.json.",
           "missingProducts": "products.json is missing. Pick it together with days.json."
@@ -2175,6 +2175,9 @@
           "days": "Days covered",
           "firstDay": "First day",
           "lastDay": "Last day",
+          "weighIns": "Weigh-ins to add",
+          "weightRange": "First and last weigh-in",
+          "weightRangeValue": "{{first}} to {{last}}",
           "nothing": "Nothing in these files can be imported."
         },
         "overlap_one": "{{count}} of these days already has entries in your diary. After the import, it'll show both your entries and the imported entries. Nothing is merged or replaced.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "{{count}} quick entry skipped: quick entries aren't imported.",
           "quickEntry_other": "{{count}} quick entries skipped: quick entries aren't imported.",
           "invalidItem_one": "{{count}} entry skipped: the file doesn't describe it clearly.",
-          "invalidItem_other": "{{count}} entries skipped: the file doesn't describe them clearly."
+          "invalidItem_other": "{{count}} entries skipped: the file doesn't describe them clearly.",
+          "implausibleWeight_one": "{{count}} weigh-in skipped: its value isn't a weight between 20 and 350 kg.",
+          "implausibleWeight_other": "{{count}} weigh-ins skipped: their values aren't weights between 20 and 350 kg.",
+          "weightAlreadyLogged_one": "{{count}} weigh-in skipped: that day already has a weigh-in in your openplate weight log.",
+          "weightAlreadyLogged_other": "{{count}} weigh-ins skipped: those days already have a weigh-in in your openplate weight log."
         },
         "confirm": "Add to my diary",
         "cancel": "Cancel",
         "success_one": "Imported {{count}} entry from YAZIO.",
         "success_other": "Imported {{count}} entries from YAZIO.",
-        "writeError": "The import stopped partway. Try again: entries already saved won't be added twice."
+        "successWeighIns_one": "Imported {{count}} weigh-in from YAZIO.",
+        "successWeighIns_other": "Imported {{count}} weigh-ins from YAZIO.",
+        "writeError": "The import stopped partway. Try again: entries already saved won't be added twice.",
+        "remove": {
+          "heading": "Entries imported from YAZIO",
+          "description": "Remove every diary entry and weigh-in that a YAZIO import added. What you logged in openplate yourself stays.",
+          "entries": "Diary entries from YAZIO",
+          "weighIns": "Weigh-ins from YAZIO",
+          "button": "Remove YAZIO entries",
+          "confirmTitle": "Remove all entries imported from YAZIO?",
+          "confirmDescription": "This removes the diary entries and weigh-ins counted here from this device and, if you use sync, from your other devices. What you logged in openplate yourself stays.",
+          "confirm": "Remove the YAZIO entries",
+          "cancel": "Keep the YAZIO entries",
+          "removing": "Removing the YAZIO entries…",
+          "success": "Removed the entries imported from YAZIO.",
+          "error": "The removal stopped partway. Try again to remove the rest."
+        }
       }
     },
     "groups": {

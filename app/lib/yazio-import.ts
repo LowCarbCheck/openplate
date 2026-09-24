@@ -2,9 +2,10 @@
  * Reads a YAZIO diary export into openplate food-log entries (M254/01).
  *
  * The input is the two files the open-source `yazio-exporter` tool writes,
- * `days.json` and `products.json`, already parsed from JSON. Every key read
- * here is sourced in `.tracker/M254-openplate-yazio-import/research/PROVENANCE.md`
- * in the workspace; the synthetic copies in `tests/fixtures/yazio/` follow it.
+ * `days.json` and `products.json`, already parsed from JSON, plus its optional
+ * `weight.json` (M254/06). Every key read here is sourced in
+ * `.tracker/M254-openplate-yazio-import/research/PROVENANCE.md` in the
+ * workspace; the synthetic copies in `tests/fixtures/yazio/` follow it.
  *
  * Pure: no store, no DOM, no clock. The caller passes the time zone the
  * wall-clock dates are read in and the creation instant, and writes the
@@ -13,14 +14,15 @@
  */
 import { z } from 'zod';
 
-import type { LocalFoodLog } from '#app/lib/local-store/schema';
+import type { LocalFoodLog, LocalWeightEntry } from '#app/lib/local-store/schema';
 import type { Macros } from '#app/lib/macros';
 import { mealTypeForMinutes } from '#app/lib/meal-time';
 import { instantAtWallClock, isValidTimeZone, parseDateParam, type WallClockTime } from '#app/lib/user-days';
+import { YAZIO_ENTRY_ID_PREFIX, isYazioImportId } from '#app/lib/yazio-ids';
 import type { MealType } from '#types/enums';
 
-/** Which of the two exporter files a parsed JSON value is. */
-export type YazioFileKind = 'days' | 'products';
+/** Which of the three exporter files a parsed JSON value is. */
+export type YazioFileKind = 'days' | 'products' | 'weight';
 
 /** Why an eaten item did not become an entry. */
 export const YAZIO_SKIP_REASONS = [
@@ -32,11 +34,7 @@ export const YAZIO_SKIP_REASONS = [
 ] as const;
 export type YazioSkipReason = (typeof YAZIO_SKIP_REASONS)[number];
 
-/**
- * The prefix every imported entry id carries, `yazio-<consumed item id>`. It
- * is how a later import tells its own rows from entries the person logged.
- */
-export const YAZIO_ENTRY_ID_PREFIX = 'yazio-';
+export { YAZIO_ENTRY_ID_PREFIX, isYazioImportId };
 
 /** What an import would write, for the preview before anything is written. */
 export interface YazioImportReport {
@@ -53,6 +51,32 @@ export interface YazioImportReport {
 export interface YazioImport {
   entries: LocalFoodLog[];
   report: YazioImportReport;
+  /** The weigh-ins in `weight.json`, or null when no weight file was picked. */
+  weight: YazioWeightImport | null;
+}
+
+/**
+ * The weigh-ins a `weight.json` holds, before the diary is consulted: repeats
+ * collapsed, implausible values left out. {@link planYazioWeighIns} then drops
+ * the days that already hold a weigh-in of the person's own.
+ */
+export interface YazioWeightImport {
+  /** One per weigh-in, oldest day first, each id `yazio-weight-<dayKey>`. */
+  weighIns: LocalWeightEntry[];
+  /** Weigh-ins whose value is not a number of kilograms from 20 to 350, or whose day is not a date. */
+  skippedCount: number;
+}
+
+/** What the import will write to the weight log, once the diary's own weigh-ins are respected. */
+export interface YazioWeighInPlan {
+  /** The weigh-ins to write, oldest day first. */
+  weighIns: LocalWeightEntry[];
+  /** Import days skipped because they already hold a weigh-in the person logged in openplate. */
+  alreadyLoggedDays: number;
+  /** The weight of the oldest weigh-in to write, or null when there is none. */
+  firstKg: number | null;
+  /** The weight of the newest weigh-in to write, or null when there is none. */
+  lastKg: number | null;
 }
 
 /** A file that is not the exporter file it was passed as. The screen names `file` to the person. */
@@ -91,6 +115,26 @@ const productsFileSchema = z.object({
   products: z.record(z.string(), z.unknown()),
   recipes: z.record(z.string(), z.unknown()).default({}),
 });
+
+/**
+ * `weight.json`, `{ "YYYY-MM-DD": kilograms }` (PROVENANCE, "export-all").
+ * A value is kept unread here so one bad value is skipped alone. An object or
+ * an array as a value is not this file at all, which is what keeps a days
+ * file with one broken day from being read as weights. An empty file is a
+ * weight file with no weigh-ins.
+ */
+const weightFileSchema = z.record(
+  z.string().regex(DAY_KEY_PATTERN),
+  z.union([z.number(), z.string(), z.boolean(), z.null()]),
+);
+
+/** A weight openplate will believe, in kilograms. Outside this range it is a typo or another unit. */
+const MIN_PLAUSIBLE_WEIGHT_KG = 20;
+const MAX_PLAUSIBLE_WEIGHT_KG = 350;
+const plausibleWeightSchema = z.number().min(MIN_PLAUSIBLE_WEIGHT_KG).max(MAX_PLAUSIBLE_WEIGHT_KG);
+
+/** YAZIO keeps no time of day for a weigh-in; noon keeps the instant inside its day in any zone. */
+const WEIGH_IN_WALL_CLOCK: WallClockTime = { hour: 12, minute: 0, second: 0 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // One item
@@ -182,23 +226,29 @@ interface EntryContext {
 export function identifyYazioFile({ json }: { json: unknown }): YazioFileKind | null {
   if (productsFileSchema.safeParse(json).success) return 'products';
   if (daysFileSchema.safeParse(json).success) return 'days';
+  // Last, because an empty object is a weight file with no weigh-ins.
+  if (weightFileSchema.safeParse(json).success) return 'weight';
   return null;
 }
 
 /** Why a pick of files cannot be imported, in the order they are checked. */
 export type YazioPickError = 'unreadable' | 'unrecognised' | 'duplicate' | 'missing-days' | 'missing-products';
 
-/** A pick of files, sorted into the two the importer needs, or the first reason it cannot be. */
-export type YazioPick = { kind: 'ready'; days: unknown; products: unknown } | { kind: 'error'; error: YazioPickError };
+/**
+ * A pick of files, sorted into the two the importer needs and the optional
+ * weight file (null when it was not picked), or the first reason it cannot be.
+ */
+export type YazioPick =
+  { kind: 'ready'; days: unknown; products: unknown; weight: unknown } | { kind: 'error'; error: YazioPickError };
 
 /**
- * Sorts the text of every picked file into `days` and `products`, by content.
- * Any file that is not JSON makes the pick unreadable, any JSON that is
- * neither file makes it unrecognised, and two of one kind make it a duplicate;
- * only then is a missing file named.
+ * Sorts the text of every picked file into `days`, `products` and the
+ * optional `weight`, by content. Any file that is not JSON makes the pick
+ * unreadable, any JSON that is none of the three makes it unrecognised, and
+ * two of one kind make it a duplicate; only then is a missing file named.
  *
  * @param options.texts - the text of each picked file, in any order.
- * @returns both parsed files, or the reason the pick fails.
+ * @returns the parsed files, `weight` null when none was picked, or the reason the pick fails.
  */
 export function sortYazioFiles({ texts }: { texts: readonly string[] }): YazioPick {
   const parsed: unknown[] = [];
@@ -213,12 +263,11 @@ export function sortYazioFiles({ texts }: { texts: readonly string[] }): YazioPi
   if (kinds.includes(null)) return { kind: 'error', error: 'unrecognised' };
   const daysAt = kinds.indexOf('days');
   const productsAt = kinds.indexOf('products');
-  if (kinds.lastIndexOf('days') !== daysAt || kinds.lastIndexOf('products') !== productsAt) {
-    return { kind: 'error', error: 'duplicate' };
-  }
+  const weightAt = kinds.indexOf('weight');
+  if (new Set(kinds).size !== kinds.length) return { kind: 'error', error: 'duplicate' };
   if (daysAt === -1) return { kind: 'error', error: 'missing-days' };
   if (productsAt === -1) return { kind: 'error', error: 'missing-products' };
-  return { kind: 'ready', days: parsed[daysAt], products: parsed[productsAt] };
+  return { kind: 'ready', days: parsed[daysAt], products: parsed[productsAt], weight: parsed[weightAt] ?? null };
 }
 
 /**
@@ -240,31 +289,61 @@ export function countDaysAlreadyLogged({
 }): number {
   const importDays = new Set(importDayKeys);
   const loggedDays = new Set(
-    existingLogs
-      .filter((log) => !log.id.startsWith(YAZIO_ENTRY_ID_PREFIX) && importDays.has(log.dayKey))
-      .map((log) => log.dayKey),
+    existingLogs.filter((log) => !isYazioImportId(log.id) && importDays.has(log.dayKey)).map((log) => log.dayKey),
   );
   return loggedDays.size;
 }
 
 /**
- * Turns the two exporter files into food-log entries and a preview report.
+ * Which of the file's weigh-ins the import writes. A day that already holds a
+ * weigh-in the person logged in openplate is never overwritten; it is
+ * skipped and counted. A day holding only this import's own weigh-in (same
+ * id, an earlier import of the same file) is written again, like a food entry.
+ *
+ * @param options.weighIns - the file's weigh-ins, from {@link parseYazioExport}.
+ * @param options.existingEntries - every weigh-in in the weight log.
+ * @returns the weigh-ins to write and the numbers the preview shows.
+ */
+export function planYazioWeighIns({
+  weighIns,
+  existingEntries,
+}: {
+  weighIns: readonly LocalWeightEntry[];
+  existingEntries: readonly Pick<LocalWeightEntry, 'id' | 'dayKey'>[];
+}): YazioWeighInPlan {
+  const ownDays = new Set(existingEntries.filter((entry) => !isYazioImportId(entry.id)).map((entry) => entry.dayKey));
+  const toWrite = weighIns
+    .filter((entry) => !ownDays.has(entry.dayKey))
+    .toSorted((a, b) => a.dayKey.localeCompare(b.dayKey));
+  return {
+    weighIns: toWrite,
+    alreadyLoggedDays: weighIns.length - toWrite.length,
+    firstKg: toWrite[0]?.weightKg ?? null,
+    lastKg: toWrite.at(-1)?.weightKg ?? null,
+  };
+}
+
+/**
+ * Turns the exporter files into food-log entries, weigh-ins and a preview report.
  *
  * @param options.days - the parsed `days.json`.
  * @param options.products - the parsed `products.json`.
+ * @param options.weight - the parsed `weight.json`, or null (the default) when none was picked.
  * @param options.timeZone - the IANA zone the export's wall-clock dates are read in.
- * @param options.now - epoch ms, stamped as every entry's `createdAt`.
- * @returns the entries, ready for `putLocalFoodLog`, and the report.
- * @throws {YazioFileError} when either file is not the exporter file it was passed as.
+ * @param options.now - epoch ms, stamped as every entry's and weigh-in's `createdAt`.
+ * @returns the entries, ready for `putLocalFoodLog`, the report, and the weigh-ins.
+ * @throws {YazioFileError} when a file is not the exporter file it was passed as.
  */
 export function parseYazioExport({
   days,
   products,
+  weight = null,
   timeZone,
   now,
 }: {
   days: unknown;
   products: unknown;
+  weight?: unknown;
   timeZone: string;
   now: number;
 }): YazioImport {
@@ -272,6 +351,8 @@ export function parseYazioExport({
   if (!daysFile.success) throw new YazioFileError('days');
   const productsFile = productsFileSchema.safeParse(products);
   if (!productsFile.success) throw new YazioFileError('products');
+  const weightFile = weight === null ? null : weightFileSchema.safeParse(weight);
+  if (weightFile !== null && !weightFile.success) throw new YazioFileError('weight');
   if (!isValidTimeZone(timeZone)) throw new Error(`Invalid IANA time zone: ${timeZone}`);
 
   const catalog: Catalog = {
@@ -289,7 +370,8 @@ export function parseYazioExport({
     outcomes.push(...day.consumed.simple_products.map(() => skip('quick-entry')));
   }
 
-  return summarize(outcomes);
+  const weighIns = weightFile === null ? null : readWeighIns({ values: weightFile.data, context });
+  return { ...summarize(outcomes), weight: weighIns };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -425,8 +507,50 @@ function buildEntry({
   };
 }
 
+/**
+ * The weigh-ins in `weight.json`.
+ *
+ * THE FILE REPEATS ITSELF. The exporter asks YAZIO for "the latest weight on
+ * or before" each date, so one weigh-in is written again on every later day
+ * until the next one. A day is a weigh-in only when its value differs from
+ * the previous day's in the file, and the first day always is one. Repeats
+ * collapse BEFORE a value is judged, so a run of one implausible value counts
+ * as one skip, not one per day. Values are kilograms, the exporter's own
+ * reading; the preview's range is how a person spots a file in pounds.
+ */
+function readWeighIns({
+  values,
+  context,
+}: {
+  values: Readonly<Record<string, number | string | boolean | null>>;
+  context: EntryContext;
+}): YazioWeightImport {
+  const weighIns: LocalWeightEntry[] = [];
+  let skippedCount = 0;
+  let previous: number | string | boolean | null | undefined;
+  for (const [dayKey, value] of Object.entries(values).toSorted(([a], [b]) => a.localeCompare(b))) {
+    const isRepeat = previous !== undefined && Object.is(value, previous);
+    previous = value;
+    if (isRepeat) continue;
+    const weightKg = plausibleWeightSchema.safeParse(value);
+    if (!weightKg.success || parseDateParam(dayKey) === null) {
+      skippedCount += 1;
+      continue;
+    }
+    weighIns.push({
+      // Derived from the day, so the same file imported twice writes the same rows.
+      id: `${YAZIO_ENTRY_ID_PREFIX}weight-${dayKey}`,
+      dayKey,
+      weightKg: weightKg.data,
+      loggedAt: instantAtWallClock({ date: dayKey, time: WEIGH_IN_WALL_CLOCK, timeZone: context.timeZone }).getTime(),
+      createdAt: context.now,
+    });
+  }
+  return { weighIns, skippedCount };
+}
+
 /** Builds the report. A second item with an id already taken is malformed and skipped, so the count matches what lands. */
-function summarize(outcomes: readonly ItemOutcome[]): YazioImport {
+function summarize(outcomes: readonly ItemOutcome[]): Omit<YazioImport, 'weight'> {
   const entries: LocalFoodLog[] = [];
   const reasons: YazioSkipReason[] = [];
   const seenIds = new Set<string>();

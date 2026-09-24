@@ -2160,12 +2160,12 @@
       "title": "Données et sauvegarde",
       "yazio": {
         "heading": "Importer depuis YAZIO",
-        "description": "Récupère ton journal YAZIO. Exporte-le avec l'outil open source yazio-exporter, puis sélectionne à la fois ses fichiers days.json et products.json.",
+        "description": "Importe ton journal YAZIO. Exporte-le avec l'outil open source yazio-exporter, puis sélectionne à la fois ses fichiers days.json et products.json. Ajoute son fichier weight.json pour importer aussi tes pesées.",
         "guideLink": "Comment exporter depuis YAZIO",
         "pickButton": "Choisir les fichiers YAZIO",
         "error": {
           "unreadable": "L'un de ces fichiers n'est pas un JSON valide. Sélectionne les fichiers days.json et products.json générés par l'outil d'export.",
-          "unrecognised": "L'un de ces fichiers ne provient pas d'un export YAZIO. Sélectionne uniquement days.json et products.json.",
+          "unrecognised": "L'un de ces fichiers n'est pas un export YAZIO. Choisis uniquement days.json, products.json et, si tu veux tes pesées, weight.json.",
           "duplicate": "Tu as sélectionné deux fichiers du même type. Sélectionne un fichier days.json et un fichier products.json.",
           "missingDays": "Le fichier days.json est manquant. Sélectionne-le avec products.json.",
           "missingProducts": "Le fichier products.json est manquant. Sélectionne-le avec days.json."
@@ -2175,6 +2175,9 @@
           "days": "Jours couverts",
           "firstDay": "Premier jour",
           "lastDay": "Dernier jour",
+          "weighIns": "Pesées à ajouter",
+          "weightRange": "Première et dernière pesée",
+          "weightRangeValue": "Du {{first}} au {{last}}",
           "nothing": "Rien dans ces fichiers ne peut être importé."
         },
         "overlap_one": "{{count}} de ces jours contient déjà des entrées dans ton journal. Après l'importation, il affichera à la fois tes entrées et les entrées importées. Rien n'est fusionné ni remplacé.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "{{count}} saisie rapide ignorée : les saisies rapides ne sont pas importées.",
           "quickEntry_other": "{{count}} saisies rapides ignorées : les saisies rapides ne sont pas importées.",
           "invalidItem_one": "{{count}} entrée ignorée : le fichier ne la décrit pas clairement.",
-          "invalidItem_other": "{{count}} entrées ignorées : le fichier ne les décrit pas clairement."
+          "invalidItem_other": "{{count}} entrées ignorées : le fichier ne les décrit pas clairement.",
+          "implausibleWeight_one": "{{count}} pesée ignorée : sa valeur n'est pas un poids compris entre 20 et 350 kg.",
+          "implausibleWeight_other": "{{count}} pesées ignorées : leurs valeurs ne sont pas des poids compris entre 20 et 350 kg.",
+          "weightAlreadyLogged_one": "{{count}} pesée ignorée : ce jour compte déjà une pesée dans ton suivi de poids openplate.",
+          "weightAlreadyLogged_other": "{{count}} pesées ignorées : ces jours comptent déjà une pesée dans ton suivi de poids openplate."
         },
         "confirm": "Ajouter à mon journal",
         "cancel": "Annuler",
         "success_one": "{{count}} entrée importée depuis YAZIO.",
         "success_other": "{{count}} entrées importées depuis YAZIO.",
-        "writeError": "L'import s'est arrêté en cours de route. Réessaie : les entrées déjà enregistrées ne seront pas ajoutées en double."
+        "successWeighIns_one": "{{count}} pesée importée depuis YAZIO.",
+        "successWeighIns_other": "{{count}} pesées importées depuis YAZIO.",
+        "writeError": "L'import s'est arrêté en cours de route. Réessaie : les entrées déjà enregistrées ne seront pas ajoutées en double.",
+        "remove": {
+          "heading": "Entrées importées depuis YAZIO",
+          "description": "Supprime chaque entrée de journal et chaque pesée ajoutée par un import YAZIO. Ce que tu as saisi toi-même dans openplate reste conservé.",
+          "entries": "Entrées de journal provenant de YAZIO",
+          "weighIns": "Pesées provenant de YAZIO",
+          "button": "Supprimer les entrées YAZIO",
+          "confirmTitle": "Supprimer toutes les entrées importées depuis YAZIO ?",
+          "confirmDescription": "Cette action supprime de cet appareil, et de tes autres appareils si tu utilises la synchronisation, les entrées de journal et les pesées comptabilisées ici. Ce que tu as saisi toi-même dans openplate reste conservé.",
+          "confirm": "Supprimer les entrées YAZIO",
+          "cancel": "Conserver les entrées YAZIO",
+          "removing": "Suppression des entrées YAZIO…",
+          "success": "Entrées importées depuis YAZIO supprimées.",
+          "error": "La suppression s'est arrêtée en cours de route. Réessaie pour supprimer le reste."
+        }
       }
     },
     "groups": {

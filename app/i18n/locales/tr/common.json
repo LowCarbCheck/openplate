@@ -2160,12 +2160,12 @@
       "title": "Veriler ve yedekleme",
       "yazio": {
         "heading": "YAZIO'dan içe aktar",
-        "description": "YAZIO günlüğünü buraya aktar. Açık kaynaklı yazio-exporter aracıyla dışa aktar, ardından oluşturduğu days.json ve products.json dosyalarını birlikte seç.",
+        "description": "YAZIO günlüğünü aktar. Açık kaynaklı yazio-exporter aracıyla dışa aktar, ardından days.json ve products.json dosyalarını birlikte seç. Tartı kayıtlarını da getirmek için weight.json dosyasını ekle.",
         "guideLink": "YAZIO'dan nasıl dışa aktarılır?",
         "pickButton": "YAZIO dosyalarını seç",
         "error": {
           "unreadable": "Bu dosyalardan biri geçerli bir JSON değil. Dışa aktarma aracının oluşturduğu days.json ve products.json dosyalarını seç.",
-          "unrecognised": "Bu dosyalardan biri bir YAZIO dışa aktarımı değil. Yalnızca days.json ve products.json dosyalarını seç.",
+          "unrecognised": "Bu dosyalardan biri YAZIO dışa aktarımı değil. Yalnızca days.json, products.json ve tartı kayıtlarını da istiyorsan weight.json dosyasını seç.",
           "duplicate": "Aynı türde iki dosya seçtin. Bir days.json ve bir products.json seç.",
           "missingDays": "days.json eksik. products.json ile birlikte seç.",
           "missingProducts": "products.json eksik. days.json ile birlikte seç."
@@ -2175,6 +2175,9 @@
           "days": "Kapsanan gün sayısı",
           "firstDay": "İlk gün",
           "lastDay": "Son gün",
+          "weighIns": "Eklenecek tartı kayıtları",
+          "weightRange": "İlk ve son tartı kaydı",
+          "weightRangeValue": "{{first}} - {{last}}",
           "nothing": "Bu dosyalarda içe aktarılabilecek hiçbir şey yok."
         },
         "overlap_one": "Bu günlerden {{count}} tanesinde günlüğünde zaten girdiler var. İçe aktarmadan sonra hem senin girdilerini hem de içe aktarılan girdileri gösterir. Hiçbir şey birleştirilmez veya değiştirilmez.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "{{count}} hızlı girdi atlandı: hızlı girdiler içe aktarılmaz.",
           "quickEntry_other": "{{count}} hızlı girdi atlandı: hızlı girdiler içe aktarılmaz.",
           "invalidItem_one": "{{count}} girdi atlandı: dosya bunu net şekilde tanımlamıyor.",
-          "invalidItem_other": "{{count}} girdi atlandı: dosya bunları net şekilde tanımlamıyor."
+          "invalidItem_other": "{{count}} girdi atlandı: dosya bunları net şekilde tanımlamıyor.",
+          "implausibleWeight_one": "{{count}} tartı kaydı atlandı: değeri 20 ile 350 kg arasında bir ağırlık değil.",
+          "implausibleWeight_other": "{{count}} tartı kaydı atlandı: değerleri 20 ile 350 kg arasında ağırlıklar değil.",
+          "weightAlreadyLogged_one": "{{count}} tartı kaydı atlandı: openplate ağırlık günlüğünde o gün için zaten bir tartı kaydı var.",
+          "weightAlreadyLogged_other": "{{count}} tartı kaydı atlandı: openplate ağırlık günlüğünde o günler için zaten bir tartı kaydı var."
         },
         "confirm": "Günlüğüme ekle",
         "cancel": "İptal",
         "success_one": "YAZIO'dan {{count}} girdi içe aktarıldı.",
         "success_other": "YAZIO'dan {{count}} girdi içe aktarıldı.",
-        "writeError": "İçe aktarma işlemi yarıda durdu. Tekrar dene: önceden kaydedilmiş girdiler iki kez eklenmez."
+        "successWeighIns_one": "YAZIO üzerinden {{count}} tartı kaydı içe aktarıldı.",
+        "successWeighIns_other": "YAZIO üzerinden {{count}} tartı kaydı içe aktarıldı.",
+        "writeError": "İçe aktarma işlemi yarıda durdu. Tekrar dene: önceden kaydedilmiş girdiler iki kez eklenmez.",
+        "remove": {
+          "heading": "YAZIO üzerinden içe aktarılan girdiler",
+          "description": "YAZIO içe aktarımının eklediği her günlük girdisini ve tartı kaydını kaldır. openplate içine kendi kaydettiğin veriler kalır.",
+          "entries": "YAZIO kaynaklı günlük girdileri",
+          "weighIns": "YAZIO kaynaklı tartı kayıtları",
+          "button": "YAZIO girdilerini kaldır",
+          "confirmTitle": "YAZIO üzerinden içe aktarılan tüm girdiler kaldırılsın mı?",
+          "confirmDescription": "Bu işlem, burada sayılan günlük girdilerini ve tartı kayıtlarını bu cihazdan ve eşitleme kullanıyorsan diğer cihazlarından kaldırır. openplate içine kendi kaydettiğin veriler kalır.",
+          "confirm": "YAZIO girdilerini kaldır",
+          "cancel": "YAZIO girdilerini tut",
+          "removing": "YAZIO girdileri kaldırılıyor…",
+          "success": "YAZIO üzerinden içe aktarılan girdiler kaldırıldı.",
+          "error": "Kaldırma işlemi yarıda durdu. Kalanı kaldırmak için tekrar dene."
+        }
       }
     },
     "groups": {

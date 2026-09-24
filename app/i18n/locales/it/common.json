@@ -2160,12 +2160,12 @@
       "title": "Dati e backup",
       "yazio": {
         "heading": "Importa da YAZIO",
-        "description": "Trasferisci il tuo diario di YAZIO. Esportalo con lo strumento open source yazio-exporter, poi seleziona insieme i file days.json e products.json generati.",
+        "description": "Importa il tuo diario di YAZIO. Esportalo con lo strumento open source yazio-exporter, poi seleziona contemporaneamente i file days.json e products.json. Aggiungi il file weight.json per importare anche le tue pesate.",
         "guideLink": "Come esportare da YAZIO",
         "pickButton": "Scegli i file di YAZIO",
         "error": {
           "unreadable": "Uno di questi file non è un JSON valido. Seleziona i file days.json e products.json generati dall'esportatore.",
-          "unrecognised": "Uno di questi file non è un'esportazione di YAZIO. Seleziona solo days.json e products.json.",
+          "unrecognised": "Uno di questi file non proviene da un'esportazione di YAZIO. Seleziona solo days.json, products.json e, se vuoi includere le tue pesate, weight.json.",
           "duplicate": "Hai selezionato due file dello stesso tipo. Seleziona un file days.json e un file products.json.",
           "missingDays": "Manca days.json. Selezionalo insieme a products.json.",
           "missingProducts": "Manca products.json. Selezionalo insieme a days.json."
@@ -2175,6 +2175,9 @@
           "days": "Giorni inclusi",
           "firstDay": "Primo giorno",
           "lastDay": "Ultimo giorno",
+          "weighIns": "Pesate da aggiungere",
+          "weightRange": "Prima e ultima pesata",
+          "weightRangeValue": "Da {{first}} a {{last}}",
           "nothing": "Nessun elemento in questi file può essere importato."
         },
         "overlap_one": "{{count}} di questi giorni ha già delle voci nel tuo diario. Dopo l'importazione, mostrerà sia le tue voci sia quelle importate. Nulla viene unito o sostituito.",
@@ -2189,13 +2192,33 @@
           "quickEntry_one": "{{count}} voce rapida saltata: le voci rapide non vengono importate.",
           "quickEntry_other": "{{count}} voci rapide saltate: le voci rapide non vengono importate.",
           "invalidItem_one": "{{count}} voce saltata: il file non la descrive chiaramente.",
-          "invalidItem_other": "{{count}} voci saltate: il file non le descrive chiaramente."
+          "invalidItem_other": "{{count}} voci saltate: il file non le descrive chiaramente.",
+          "implausibleWeight_one": "{{count}} pesata saltata: il valore non è un peso compreso tra 20 e 350 kg.",
+          "implausibleWeight_other": "{{count}} pesate saltate: i valori non sono pesi compresi tra 20 e 350 kg.",
+          "weightAlreadyLogged_one": "{{count}} pesata saltata: quel giorno ha già una pesata nel registro del peso di openplate.",
+          "weightAlreadyLogged_other": "{{count}} pesate saltate: quei giorni hanno già una pesata nel registro del peso di openplate."
         },
         "confirm": "Aggiungi al mio diario",
         "cancel": "Annulla",
         "success_one": "Importata {{count}} voce da YAZIO.",
         "success_other": "Importate {{count}} voci da YAZIO.",
-        "writeError": "L'importazione si è interrotta prima del termine. Riprova: le voci già salvate non saranno aggiunte di nuovo."
+        "successWeighIns_one": "Importata {{count}} pesata da YAZIO.",
+        "successWeighIns_other": "Importate {{count}} pesate da YAZIO.",
+        "writeError": "L'importazione si è interrotta prima del termine. Riprova: le voci già salvate non saranno aggiunte di nuovo.",
+        "remove": {
+          "heading": "Voci importate da YAZIO",
+          "description": "Rimuovi tutte le voci del diario e le pesate aggiunte da un'importazione di YAZIO. Ciò che hai registrato direttamente in openplate rimane.",
+          "entries": "Voci del diario da YAZIO",
+          "weighIns": "Pesate da YAZIO",
+          "button": "Rimuovi le voci di YAZIO",
+          "confirmTitle": "Rimuovere tutte le voci importate da YAZIO?",
+          "confirmDescription": "Questa operazione rimuove le voci del diario e le pesate qui conteggiate da questo dispositivo e, se usi la sincronizzazione, dagli altri tuoi dispositivi. Ciò che hai registrato direttamente in openplate rimane.",
+          "confirm": "Rimuovi le voci di YAZIO",
+          "cancel": "Mantieni le voci di YAZIO",
+          "removing": "Rimozione delle voci di YAZIO in corso…",
+          "success": "Rimosse le voci importate da YAZIO.",
+          "error": "La rimozione si è interrotta a metà. Riprova per eliminare le rimanenti."
+        }
       }
     },
     "groups": {

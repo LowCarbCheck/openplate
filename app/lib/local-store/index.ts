@@ -53,6 +53,7 @@ export {
   deleteLocalFood,
   putLocalFoodLog,
   listLocalFoodLogs,
+  listLocalFoodLogIds,
   listLocalFoodLogsForDay,
   listLocalFoodLogsInRange,
   getEarliestLocalFoodLogDayKey,
@@ -60,6 +61,7 @@ export {
   deleteLocalFoodLog,
   putLocalWeightEntry,
   listLocalWeightEntries,
+  listLocalWeightEntryIds,
   deleteLocalWeightEntry,
   upsertLocalWeightEntryForDay,
   // The DELETE JOURNAL (M225). Every `delete*` verb above records the entity's

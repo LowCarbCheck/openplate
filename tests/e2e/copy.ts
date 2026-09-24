@@ -277,12 +277,30 @@ export function catalogFor(locale: string): Copy {
  * whole tier from starting. A key a locale walk needs moves up into
  * `catalogSchema` once all six catalogs carry it.
  */
-const englishCatalogSchema = catalogSchema.extend({
-  add: addCatalogSchema.extend({
-    /** The add screens' method switcher (M255/01). */
-    methods: z.object({ label: z.string(), search: z.string(), describe: z.string(), photo: z.string() }),
-  }),
-});
+const englishCatalogSchema = catalogSchema
+  .extend({
+    add: addCatalogSchema.extend({
+      /** The add screens' method switcher (M255/01). */
+      methods: z.object({ label: z.string(), search: z.string(), describe: z.string(), photo: z.string() }),
+    }),
+  })
+  // An intersection rather than an `extend`, because the keys sit three levels
+  // inside `settings`, and zod merges the two parses key by key.
+  .and(
+    z.object({
+      settings: z.object({
+        data: z.object({
+          /** YAZIO weigh-ins (M254/06) and "Remove YAZIO entries" (M254/05). */
+          yazio: z.object({
+            preview: z.object({ weightRangeValue: z.string() }),
+            skipped: z.object({ implausibleWeight_one: z.string(), weightAlreadyLogged_one: z.string() }),
+            successWeighIns_other: z.string(),
+            remove: z.object({ success: z.string() }),
+          }),
+        }),
+      }),
+    }),
+  );
 
 /** Every English string this tier reads, validated against the shipped bundle. */
 export const EN = englishCatalogSchema.parse(

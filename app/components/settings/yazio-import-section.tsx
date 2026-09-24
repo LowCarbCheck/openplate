@@ -1,15 +1,18 @@
 /**
  * "Import from YAZIO" on "Data & backup" (M254/02).
  *
- * Pick the two files the open-source yazio-exporter tool writes, read a
- * preview, confirm. Reading and sorting happen in `#app/lib/yazio-import`,
+ * Pick the two files the open-source yazio-exporter tool writes, and its
+ * optional weight.json (M254/06), read a preview, confirm. Reading and sorting happen in `#app/lib/yazio-import`,
  * which is pure; this component only reads the files, keeps the parsed result
  * in state and writes it on confirm. Nothing reaches the store before then.
  *
  * NO LAYOUT SHIFT ABOVE THE BUTTON. The error line and the preview render
  * below the pick button, only after the person picked, which is an expansion
- * they asked for. Success and write failure go through `publishStatus`, never
- * as a new line here.
+ * they asked for. Every line of the preview, the weigh-in rows included, is
+ * known before the preview's first paint (`readPick` finishes every read
+ * first), so nothing inside it arrives late and pushes its neighbours.
+ * Success and write failure go through `publishStatus`, never as a new line
+ * here.
  */
 import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
@@ -20,10 +23,13 @@ import { Button } from '#app/components/ui/button';
 import { numberLocale } from '#app/i18n/date-locale';
 import { YAZIO_IMPORT_DOCS_URL } from '#app/lib/brand';
 import { formatContentDate } from '#app/lib/content/format-content-date';
+import { formatMeasureIn } from '#app/lib/format-macro-number';
 import {
   getLocalProfileGoals,
   listLocalFoodLogsInRange,
+  listLocalWeightEntries,
   putLocalFoodLog,
+  putLocalWeightEntry,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
 import { trackYazioImported } from '#app/lib/matomo-events';
@@ -32,8 +38,10 @@ import {
   YAZIO_SKIP_REASONS,
   countDaysAlreadyLogged,
   parseYazioExport,
+  planYazioWeighIns,
   sortYazioFiles,
   type YazioImport,
+  type YazioWeighInPlan,
   type YazioPickError,
   type YazioSkipReason,
 } from '#app/lib/yazio-import';
@@ -47,10 +55,15 @@ type SectionState =
   | { kind: 'preview'; preview: Preview }
   | { kind: 'writing'; preview: Preview };
 
-/** What the preview shows: the parsed import, and how many of its days the diary already holds entries on. */
+/**
+ * What the preview shows: the parsed import, how many of its days the diary
+ * already holds entries on, and the weigh-ins it would write (null when no
+ * weight.json was picked).
+ */
 interface Preview {
   result: YazioImport;
   overlapDays: number;
+  weighInPlan: YazioWeighInPlan | null;
 }
 
 const ERROR_KEYS = {
@@ -79,8 +92,15 @@ async function readPick(files: readonly File[]): Promise<SectionState> {
     const pick = sortYazioFiles({ texts: await Promise.all(files.map((file) => file.text())) });
     if (pick.kind === 'error') return { kind: 'error', error: pick.error };
     const timeZone = resolveLocalTimezone(await getLocalProfileGoals());
-    const result = parseYazioExport({ days: pick.days, products: pick.products, timeZone, now: Date.now() });
-    return { kind: 'preview', preview: { result, overlapDays: await countOverlapDays(result) } };
+    const result = parseYazioExport({
+      days: pick.days,
+      products: pick.products,
+      weight: pick.weight,
+      timeZone,
+      now: Date.now(),
+    });
+    const [overlapDays, weighInPlan] = await Promise.all([countOverlapDays(result), planWeighIns(result)]);
+    return { kind: 'preview', preview: { result, overlapDays, weighInPlan } };
   } catch {
     return { kind: 'error', error: 'unreadable' };
   }
@@ -96,6 +116,41 @@ async function countOverlapDays(result: YazioImport): Promise<number> {
   if (firstDay === null || lastDay === null) return 0;
   const existingLogs = await listLocalFoodLogsInRange({ fromDate: firstDay, toDate: lastDay });
   return countDaysAlreadyLogged({ importDayKeys: result.entries.map((entry) => entry.dayKey), existingLogs });
+}
+
+/**
+ * The weigh-ins the import would write, against the weight log as it stands
+ * now. Called for the preview AND again on confirm, so a weigh-in the person
+ * logged in between is still never overwritten.
+ */
+async function planWeighIns(result: YazioImport): Promise<YazioWeighInPlan | null> {
+  if (result.weight === null) return null;
+  return planYazioWeighIns({ weighIns: result.weight.weighIns, existingEntries: await listLocalWeightEntries() });
+}
+
+/** Whether a preview has anything to write, a diary entry or a weigh-in. */
+function hasAnythingToWrite(preview: Preview): boolean {
+  return preview.result.entries.length > 0 || (preview.weighInPlan?.weighIns.length ?? 0) > 0;
+}
+
+/**
+ * The status line after a write: the entries sentence, then the weigh-ins
+ * sentence when any landed. With no entries and only weigh-ins, the weigh-ins
+ * sentence alone.
+ */
+function successText({
+  t,
+  entryCount,
+  weighInCount,
+}: {
+  t: (key: string, options: { count: number }) => string;
+  entryCount: number;
+  weighInCount: number;
+}): string {
+  const entries = t('settings.data.yazio.success', { count: entryCount });
+  if (weighInCount === 0) return entries;
+  const weighIns = t('settings.data.yazio.successWeighIns', { count: weighInCount });
+  return entryCount === 0 ? weighIns : `${entries} ${weighIns}`;
 }
 
 export function YazioImportSection() {
@@ -114,17 +169,22 @@ export function YazioImportSection() {
   async function handleConfirm(preview: Preview): Promise<void> {
     const { result } = preview;
     setState({ kind: 'writing', preview });
+    let weighInCount = 0;
     try {
       // `restore`, like a backup import: these are old meals, not meals eaten now,
       // so the community pulse must not hear about them.
       for (const entry of result.entries) await putLocalFoodLog(entry, { origin: 'restore' });
+      // A direct put with the import's own id, never the day upsert, which mints a random one.
+      const weighIns = (await planWeighIns(result))?.weighIns ?? [];
+      for (const entry of weighIns) await putLocalWeightEntry(entry);
+      weighInCount = weighIns.length;
     } catch {
       publishStatus({ text: t('settings.data.yazio.writeError'), tone: 'error' });
       setState({ kind: 'preview', preview });
       return;
     }
     trackYazioImported();
-    publishStatus({ text: t('settings.data.yazio.success', { count: result.entries.length }), tone: 'success' });
+    publishStatus({ text: successText({ t, entryCount: result.entries.length, weighInCount }), tone: 'success' });
     setState({ kind: 'idle' });
   }
 
@@ -200,6 +260,9 @@ function YazioPreview({
   const formatCount = (count: number): string => count.toLocaleString(numberLocale(i18n.language));
   const formatDay = (isoDate: string): string => formatContentDate({ isoDate, language: i18n.language });
   const skippedReasons = YAZIO_SKIP_REASONS.filter((reason) => report.skipped[reason] > 0);
+  const { weighInPlan } = preview;
+  const weightSkippedCount = preview.result.weight?.skippedCount ?? 0;
+  const formatKg = (kg: number): string => formatMeasureIn(i18n.language, kg, 'kg');
 
   return (
     <div data-slot="yazio-preview" className="space-y-2">
@@ -220,6 +283,25 @@ function YazioPreview({
             <dd data-slot="yazio-last-day">{formatDay(report.lastDay)}</dd>
           </>
         )}
+        {weighInPlan !== null && (
+          <>
+            <dt className="text-muted-foreground">{t('settings.data.yazio.preview.weighIns')}</dt>
+            <dd data-slot="yazio-weigh-in-count" className="tabular-nums">
+              {formatCount(weighInPlan.weighIns.length)}
+            </dd>
+          </>
+        )}
+        {weighInPlan !== null && weighInPlan.firstKg !== null && weighInPlan.lastKg !== null && (
+          <>
+            <dt className="text-muted-foreground">{t('settings.data.yazio.preview.weightRange')}</dt>
+            <dd data-slot="yazio-weight-range" className="tabular-nums">
+              {t('settings.data.yazio.preview.weightRangeValue', {
+                first: formatKg(weighInPlan.firstKg),
+                last: formatKg(weighInPlan.lastKg),
+              })}
+            </dd>
+          </>
+        )}
       </dl>
       {preview.overlapDays > 0 && (
         <p data-slot="yazio-overlap" className="text-xs text-muted-foreground">
@@ -231,13 +313,23 @@ function YazioPreview({
           {t(SKIP_KEYS[reason], { count: report.skipped[reason] })}
         </p>
       ))}
-      {report.entryCount === 0 && (
+      {weightSkippedCount > 0 && (
+        <p data-slot="yazio-weight-skipped" className="text-xs text-muted-foreground">
+          {t('settings.data.yazio.skipped.implausibleWeight', { count: weightSkippedCount })}
+        </p>
+      )}
+      {weighInPlan !== null && weighInPlan.alreadyLoggedDays > 0 && (
+        <p data-slot="yazio-weight-already-logged" className="text-xs text-muted-foreground">
+          {t('settings.data.yazio.skipped.weightAlreadyLogged', { count: weighInPlan.alreadyLoggedDays })}
+        </p>
+      )}
+      {!hasAnythingToWrite(preview) && (
         <p data-slot="yazio-nothing" className="text-sm">
           {t('settings.data.yazio.preview.nothing')}
         </p>
       )}
       <div className="flex flex-col gap-2 sm:flex-row">
-        {report.entryCount > 0 && (
+        {hasAnythingToWrite(preview) && (
           <Button
             type="button"
             className="h-11 w-full justify-center sm:h-10 sm:w-auto"
