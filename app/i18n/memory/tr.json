@@ -1336,6 +1336,13 @@
     "at": "2026-09-14",
     "tr": "İki katı"
   },
+  "110421e8dd07a365": {
+    "en": "Describe",
+    "path": "common:add.methods.describe",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Açıkla"
+  },
   "113a74a77d69048d": {
     "en": "Six claims you can check in the source",
     "path": "common:landing.features.title",
@@ -7503,6 +7510,13 @@
     "at": "2026-09-21",
     "tr": "E-posta adresi"
   },
+  "64a33577e9c8f39a": {
+    "en": "Photo",
+    "path": "common:add.methods.photo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Fotoğraf"
+  },
   "64ba6895e53fff75": {
     "en": "Your goal was {{target}}.",
     "path": "common:fasting.summary.targetWas",
@@ -9973,6 +9987,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu hiçbir kopyayı tutmaz: veritabanı bulunmaz, bu nedenle sunucuda sızdırılabilecek hiçbir bilgin yoktur. İstediğin zaman tümünü tek bir dosya olarak dışa aktar."
+  },
+  "84566ad98e6814f1": {
+    "en": "Ways to add food",
+    "path": "common:add.methods.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Yiyecek ekleme yolları"
   },
   "845950b12a7e9491": {
     "en": "Update",
@@ -16099,13 +16120,6 @@
     "at": "2026-09-14",
     "tr": "Seçtiysen, belirlediğin ad."
   },
-  "d744d9f590daf0d1": {
-    "en": "Search the food database instead",
-    "path": "common:describe.searchInstead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bunun yerine yiyecek veritabanında ara"
-  },
   "d748bdf8ea40664e": {
     "en": "Calories",
     "path": "common:scan.review.sanity.macro.kcal",
@@ -17121,6 +17135,13 @@
     "at": "2026-09-14",
     "tr": "Günlük bu cihazda tutulur ve sunucudaki kopya kilitlidir"
   },
+  "e5ac2d302b267136": {
+    "en": "Search",
+    "path": "common:add.methods.search",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Ara"
+  },
   "e5f500e2e687b392": {
     "en": "broccoli",
     "path": "common:catchUp.foods.broccoli",
@@ -17799,13 +17820,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-22",
     "tr": "Ekle, Tara ve Tarif et artık tek bir adres altında toplanıyor: /add."
-  },
-  "ee7f982901e36f35": {
-    "en": "Scan your plate instead",
-    "path": "common:add.search.scanInstead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Bunun yerine tabağını tara"
   },
   "ee84881689cbd329": {
     "en": "Protein",

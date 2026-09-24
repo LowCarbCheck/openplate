@@ -104,6 +104,12 @@
       "none": "No meal",
       "snack": "Snack"
     },
+    "methods": {
+      "label": "Ways to add food",
+      "search": "Search",
+      "describe": "Describe",
+      "photo": "Photo"
+    },
     "portion": {
       "back": "Back to search",
       "calories": "{{value}} calories",
@@ -161,7 +167,6 @@
         "seconds": "in a few seconds"
       },
       "placeholder": "Search for a food…",
-      "scanInstead": "Scan your plate instead",
       "sections": {
         "curated": "Search results",
         "custom": "Your foods",
@@ -529,7 +534,6 @@
     "dictateHint": "Tap the microphone key on your keyboard to dictate your meal.",
     "needsProvider": "Describing a meal needs an AI connection on this device.",
     "connect": "Connect a provider",
-    "searchInstead": "Search the food database instead",
     "pantry": {
       "title": "What do you have at home?",
       "placeholder": "half a cabbage, six eggs, a tub of feta, 500 g of rice"

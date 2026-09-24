@@ -104,6 +104,12 @@
       "none": "Nessun pasto",
       "snack": "Spuntino"
     },
+    "methods": {
+      "label": "Come aggiungere alimenti",
+      "search": "Cerca",
+      "describe": "Descrivi",
+      "photo": "Foto"
+    },
     "portion": {
       "back": "Torna alla ricerca",
       "calories": "{{value}} calorie",
@@ -161,7 +167,6 @@
         "seconds": "tra pochi secondi"
       },
       "placeholder": "Cerca un alimento…",
-      "scanInstead": "Scansiona invece il tuo piatto",
       "sections": {
         "curated": "Risultati della ricerca",
         "custom": "I tuoi alimenti",
@@ -529,7 +534,6 @@
     "dictateHint": "Tocca il tasto del microfono sulla tua tastiera per dettare il pasto.",
     "needsProvider": "Descrivere un pasto richiede una connessione a un'IA su questo dispositivo.",
     "connect": "Connetti un fornitore",
-    "searchInstead": "Cerca invece nel database degli alimenti",
     "pantry": {
       "title": "Cosa hai a casa?",
       "placeholder": "mezzo cavolo, sei uova, una vaschetta di feta, 500 g di riso"

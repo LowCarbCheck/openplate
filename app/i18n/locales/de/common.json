@@ -104,6 +104,12 @@
       "none": "Ohne Mahlzeit",
       "snack": "Snack"
     },
+    "methods": {
+      "label": "Möglichkeiten, Lebensmittel hinzuzufügen",
+      "search": "Suchen",
+      "describe": "Beschreiben",
+      "photo": "Foto"
+    },
     "portion": {
       "back": "Zurück zur Suche",
       "calories": "{{value}} Kalorien",
@@ -161,7 +167,6 @@
         "seconds": "in ein paar Sekunden"
       },
       "placeholder": "Nach einem Lebensmittel suchen…",
-      "scanInstead": "Lieber den Teller scannen",
       "sections": {
         "curated": "Suchergebnisse",
         "custom": "Deine Lebensmittel",
@@ -529,7 +534,6 @@
     "dictateHint": "Tippe auf die Mikrofontaste deiner Tastatur, um deine Mahlzeit zu diktieren.",
     "needsProvider": "Mahlzeiten beschreiben erfordert eine KI-Verbindung auf diesem Gerät.",
     "connect": "Anbieter verbinden",
-    "searchInstead": "Stattdessen Lebensmitteldatenbank durchsuchen",
     "pantry": {
       "title": "Was hast du zu Hause?",
       "placeholder": "ein halber Kohl, sechs Eier, eine Packung Feta, 500 g Reis"

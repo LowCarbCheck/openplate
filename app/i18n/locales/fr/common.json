@@ -104,6 +104,12 @@
       "none": "Aucun repas",
       "snack": "Collation"
     },
+    "methods": {
+      "label": "Façons d'ajouter des aliments",
+      "search": "Rechercher",
+      "describe": "Décrire",
+      "photo": "Photo"
+    },
     "portion": {
       "back": "Retour à la recherche",
       "calories": "{{value}} calories",
@@ -161,7 +167,6 @@
         "seconds": "dans quelques secondes"
       },
       "placeholder": "Rechercher un aliment…",
-      "scanInstead": "Scanne plutôt ton assiette",
       "sections": {
         "curated": "Résultats de recherche",
         "custom": "Tes aliments",
@@ -529,7 +534,6 @@
     "dictateHint": "Touche l'icône du micro sur ton clavier pour dicter ton repas.",
     "needsProvider": "Décrire un repas nécessite une connexion à une IA sur cet appareil.",
     "connect": "Connecter un fournisseur",
-    "searchInstead": "Rechercher plutôt dans la base de données alimentaire",
     "pantry": {
       "title": "Qu'est-ce que tu as chez toi ?",
       "placeholder": "un demi-chou, six œufs, un pot de feta, 500 g de riz"

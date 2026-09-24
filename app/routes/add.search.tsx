@@ -1,7 +1,6 @@
 import type { Route } from './+types/add.search';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form, redirect, useNavigation } from 'react-router';
-import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 // The singleton, not a hook: `clientAction` and the helpers it calls run
 // outside React, where `useTranslation` is unavailable. Importing it here also
@@ -28,7 +27,6 @@ import {
   localCuratedMatchToCandidate,
   localFoodToCandidate,
   localRecentFoodToCandidate,
-  type LocalQuickAddCandidate,
   type LocalQuickAddSource,
 } from '#app/lib/local-store/local-quick-add';
 import { computeMacroPreview, type MacroPreview } from '#app/lib/portion-preview';
@@ -55,7 +53,9 @@ import {
   type DisplayPortion,
   type MacroEntryBasis,
 } from '#app/lib/portions';
-import { isConfidentTier, matchTier, type MatchTier } from '#app/lib/match-quality';
+import { isConfidentTier, matchTier } from '#app/lib/match-quality';
+import type { AddSearchCandidate } from '#app/lib/add-search-candidate';
+import { clearAddDraft, readAddDraft, updateAddDraft, type SearchPortionDraft } from '#app/lib/add-drafts';
 import { createOptionalNonNegativeNumberSchema } from '#app/lib/zod-numeric';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -102,7 +102,7 @@ import { Label } from '#app/components/ui/label';
 import { SectionEyebrow } from '#app/components/typography';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
-import { Camera, ChevronDown, ChevronLeft, Search, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Search, Sparkles } from 'lucide-react';
 import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -506,18 +506,10 @@ function resolveLogDateContext({ url, today }: { url: URL; today: string }) {
 // Client loader (local-first: recents/custom foods local, curated search networked)
 ////////////////////////////////////////////////////////////////////////////////
 
-/**
- * A federated candidate decorated with the curated match's relevance tier
- * (defect: 10 curated results now return, up from 3 — an exact match and a
- * fuzzy typo-recovery guess must not look identical). `LocalQuickAddCandidate`
- * itself doesn't carry a raw score (it's a local-first, source-agnostic
- * shape), so the tier is computed once here, at candidate-build time, from
- * the `FoodMatch.score` that's still in scope — `null` for `'recent'`/
- * `'custom'` rows, which have no relevance score to tier.
- */
-export interface AddSearchCandidate extends LocalQuickAddCandidate {
-  matchTier: MatchTier | null;
-}
+// `AddSearchCandidate` is defined in `#app/lib/add-search-candidate`, because
+// the add drafts keep one too; it is re-exported here so every caller that
+// already reaches for it from this route keeps working.
+export type { AddSearchCandidate } from '#app/lib/add-search-candidate';
 
 /**
  * Cheap proxy for "this is an annotated/derivative preparation" rather than
@@ -736,6 +728,10 @@ async function addedToastRedirect({
     t: translate,
     language: currentLanguage(),
   });
+  // THE DRAFT IS NOW A DIARY ROW (M255/01). Only a write that landed reaches
+  // this line, so the box, the open food and its portion are cleared here and
+  // nowhere earlier: a validation failure keeps all three for the retry.
+  clearAddDraft('search');
   return redirect(returnTo);
 }
 
@@ -1231,6 +1227,8 @@ export function PortionStep({
   logContext,
   lastResult,
   onBack,
+  initialPortion = null,
+  onPortionChange,
 }: {
   candidate: AddSearchCandidate;
   defaultMealType: string;
@@ -1238,12 +1236,23 @@ export function PortionStep({
   logContext: LogDateContext;
   lastResult: SubmissionResult<string[]> | undefined;
   onBack: () => void;
+  /**
+   * The grams and the meal a person left on this step, from the search draft
+   * (M255/01), or `null` to open on the food's own defaults. Optional because
+   * only the route keeps a draft; a render in a test opens on the defaults.
+   */
+  initialPortion?: SearchPortionDraft | null;
+  /** Called with both inputs whenever either changes, so the route can keep them. */
+  onPortionChange?: (portion: SearchPortionDraft) => void;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const isSaving = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'log';
-  const [gramsInput, setGramsInput] = useState<string>(() => String(candidate.defaultGrams));
-  const [mealType, setMealType] = useState<string>(defaultMealType);
+  const [gramsInput, setGramsInput] = useState<string>(() => initialPortion?.grams ?? String(candidate.defaultGrams));
+  const [mealType, setMealType] = useState<string>(() => initialPortion?.mealType ?? defaultMealType);
+  useEffect(() => {
+    onPortionChange?.({ grams: gramsInput, mealType });
+  }, [gramsInput, mealType, onPortionChange]);
 
   const [form, fields] = useForm({
     id: 'quick-add-log',
@@ -1745,8 +1754,18 @@ function SearchStep({
   const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const isOnline = useOnlineStatus();
-  const [searchValue, setSearchValue] = useState(query);
-  const [showManual, setShowManual] = useState(manualResult !== undefined);
+  // THE DRAFT (M255/01), read once as the first value of each field. The
+  // address wins over it: `?q=` is what the loader searched, and a link that
+  // carries one (the method switcher's does) asked for exactly that. With no
+  // `?q=`, the words the person left in the box come back, and the debounce
+  // below turns them into a search the same way typing them would.
+  const [searchValue, setSearchValue] = useState(() => (query === '' ? (readAddDraft('search')?.q ?? '') : query));
+  const [showManual, setShowManual] = useState(
+    () => manualResult !== undefined || (readAddDraft('search')?.showManual ?? false),
+  );
+  useEffect(() => {
+    updateAddDraft('search', { q: searchValue, showManual });
+  }, [searchValue, showManual]);
 
   // Debounced navigation to `/add?q=…` — same-route, so the client loader
   // refreshes without a full-page flash and focus stays in the input. The
@@ -1912,12 +1931,6 @@ function SearchStep({
         <LoggingToBanner label={logContext.label} switchToTodayHref={logContext.switchToTodayHref} />
       )}
 
-      <Button asChild variant="outline" className="h-11 w-full justify-center gap-2 text-muted-foreground">
-        <Link to={scanHref}>
-          <Camera className="h-4 w-4" /> {t('add.search.scanInstead')}
-        </Link>
-      </Button>
-
       {candidates.length > 0 && (
         <div className="space-y-4">
           <CandidateSection title={t('add.search.sections.recent')} items={grouped.recent} onSelect={onSelect} />
@@ -1983,6 +1996,11 @@ function candidateKey(candidate: AddSearchCandidate): string {
   return `${candidate.source}:${candidate.name}`;
 }
 
+/** Keeps the portion step's two inputs in the search draft. One function, so the portion step's effect sees a stable callback. */
+function writeSearchPortionDraft(portion: SearchPortionDraft): void {
+  updateAddDraft('search', { portion });
+}
+
 export default function AddFood({ loaderData, actionData }: Route.ComponentProps) {
   const {
     query,
@@ -1998,7 +2016,15 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
     usualSlot,
     usualOffers,
   } = loaderData;
-  const [selected, setSelected] = useState<AddSearchCandidate | null>(null);
+  // The food whose portion step was open when the person left, if any
+  // (M255/01). Opening or closing a food writes the draft in the same handler
+  // that changes the screen, and drops the old portion with it, so a portion
+  // typed for one food is never offered to the next.
+  const [selected, setSelected] = useState<AddSearchCandidate | null>(() => readAddDraft('search')?.selected ?? null);
+  const selectCandidate = useCallback((candidate: AddSearchCandidate | null): void => {
+    setSelected(candidate);
+    updateAddDraft('search', { selected: candidate, portion: null });
+  }, []);
   const logResult = actionData?.intent === 'log' ? actionData.submission : undefined;
   const manualResult = actionData?.intent === 'manual' ? actionData.submission : undefined;
 
@@ -2018,7 +2044,12 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
         returnTo={returnTo}
         logContext={logContext}
         lastResult={logResult}
-        onBack={() => setSelected(null)}
+        onBack={() => selectCandidate(null)}
+        // Read at render, which is the moment the step mounts: after a fresh
+        // pick the handler above has already emptied it, so only a portion
+        // left for THIS food comes back.
+        initialPortion={readAddDraft('search')?.portion ?? null}
+        onPortionChange={writeSearchPortionDraft}
       />
     );
   }
@@ -2036,7 +2067,7 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
       usualSlot={usualSlot}
       usualOffers={usualOffers}
       manualResult={manualResult}
-      onSelect={setSelected}
+      onSelect={selectCandidate}
     />
   );
 }

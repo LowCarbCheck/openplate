@@ -16,6 +16,27 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 
+/** The `add` namespace, named on its own so the English list below can extend it. */
+const addCatalogSchema = z.object({
+  manual: z.object({
+    title: z.string(),
+    name: z.string(),
+    grams: z.string(),
+    submit: z.string(),
+    nutritionToggle: z.string(),
+  }),
+  errors: z.object({ nameRequired: z.string() }),
+  custom: z.object({ editAria: z.string(), removeAria: z.string() }),
+  search: z.object({ addManually: z.string() }),
+  portion: z.object({ submit: z.string() }),
+  meal: z.object({
+    breakfast: z.string(),
+    lunch: z.string(),
+    dinner: z.string(),
+    snack: z.string(),
+  }),
+});
+
 const catalogSchema = z.object({
   chrome: z.object({
     logoMenuLabel: z.string(),
@@ -45,25 +66,7 @@ const catalogSchema = z.object({
     }),
     firstFood: z.object({ later: z.string() }),
   }),
-  add: z.object({
-    manual: z.object({
-      title: z.string(),
-      name: z.string(),
-      grams: z.string(),
-      submit: z.string(),
-      nutritionToggle: z.string(),
-    }),
-    errors: z.object({ nameRequired: z.string() }),
-    custom: z.object({ editAria: z.string(), removeAria: z.string() }),
-    search: z.object({ addManually: z.string() }),
-    portion: z.object({ submit: z.string() }),
-    meal: z.object({
-      breakfast: z.string(),
-      lunch: z.string(),
-      dinner: z.string(),
-      snack: z.string(),
-    }),
-  }),
+  add: addCatalogSchema,
   bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
     photo: z.string(),
@@ -75,7 +78,12 @@ const catalogSchema = z.object({
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
-    capture: z.object({ trialScansUsed: z.string() }),
+    capture: z.object({
+      trialScansUsed: z.string(),
+      analyze: z.string(),
+      takePhoto: z.string(),
+      previewAlt: z.string(),
+    }),
     errors: z.object({
       titles: z.object({ allowanceExpired: z.string(), trialScansSpent_other: z.string(), aiNotAllowed: z.string() }),
     }),
@@ -179,7 +187,7 @@ const catalogSchema = z.object({
     }),
   }),
   catchUp: z.object({ yesterdayHeading: z.string() }),
-  describe: z.object({ title: z.string(), send: z.string() }),
+  describe: z.object({ title: z.string(), send: z.string(), pantry: z.object({ title: z.string() }) }),
   goals: z.object({ save: z.string() }),
   awards: z.object({
     title: z.string(),
@@ -250,8 +258,28 @@ export function catalogFor(locale: string): Copy {
   );
 }
 
+/**
+ * The keys only the English walks read, on top of `catalogSchema`.
+ *
+ * WHY A SEPARATE LIST. `catalogFor` parses every language against one schema,
+ * and a new English string reaches the other five catalogs only when the
+ * translation run buys it, after the English has landed. A key named in
+ * `catalogSchema` before then crashes every spec that reads another language,
+ * and `plan-page-column.spec.ts` reads German while it loads, which stops the
+ * whole tier from starting. A key a locale walk needs moves up into
+ * `catalogSchema` once all six catalogs carry it.
+ */
+const englishCatalogSchema = catalogSchema.extend({
+  add: addCatalogSchema.extend({
+    /** The add screens' method switcher (M255/01). */
+    methods: z.object({ label: z.string(), search: z.string(), describe: z.string(), photo: z.string() }),
+  }),
+});
+
 /** Every English string this tier reads, validated against the shipped bundle. */
-export const EN = catalogFor('en');
+export const EN = englishCatalogSchema.parse(
+  JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')),
+);
 
 /**
  * A catalog sentence with its `{{placeholders}}` filled, the way i18next would.

@@ -15,6 +15,7 @@
  * | usual | `/add` | `UsualAtSlot` | `usual.title.<slot>` |
  * | usual | `/scan` | `UsualAtSlot` | `usual.title.<slot>` |
  * | usual | `/settings` | the saved-meals hub row into `/meals` | `settings.rows.meals.title` |
+ * | switch method | `/add/search`, `/add/describe`, `/add/photo` | `AddMethodSwitcher`, drawn by the `/add` layout (M255/01) | `add.methods.search` / `.describe` / `.photo` |
  *
  * `/meals` itself is reached from ONE place, the settings hub row, which is
  * the finding that started this spec: both people who missed "save as meal"
@@ -163,6 +164,20 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
     'the usual offer itself',
   );
   await expectPhoneLayout(page);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // The method switcher on the same screen (M255/01). It replaced the three
+  // "instead" links, each of which reached one other screen, so it is now
+  // the one door from search to the composer and the camera.
+  ////////////////////////////////////////////////////////////////////////////
+
+  const switcher = page.getByRole('navigation', { name: EN.add.methods.label, exact: true });
+  for (const method of ['search', 'describe', 'photo'] as const) {
+    await expectVisibleLabel(
+      switcher.getByRole('link', { name: EN.add.methods[method], exact: true }),
+      `the switcher's ${method} door`,
+    );
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // The diary's copy-from-yesterday section

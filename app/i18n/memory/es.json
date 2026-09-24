@@ -1336,6 +1336,13 @@
     "at": "2026-09-14",
     "es": "Doble"
   },
+  "110421e8dd07a365": {
+    "en": "Describe",
+    "path": "common:add.methods.describe",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "es": "Describir"
+  },
   "113a74a77d69048d": {
     "en": "Six claims you can check in the source",
     "path": "common:landing.features.title",
@@ -7503,6 +7510,13 @@
     "at": "2026-09-21",
     "es": "Dirección de correo electrónico"
   },
+  "64a33577e9c8f39a": {
+    "en": "Photo",
+    "path": "common:add.methods.photo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "es": "Foto"
+  },
   "64ba6895e53fff75": {
     "en": "Your goal was {{target}}.",
     "path": "common:fasting.summary.targetWas",
@@ -9973,6 +9987,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor no conserva ninguna copia: no tiene base de datos alguna, por lo que no hay nada tuyo que pueda filtrarse. Exporta todo en un archivo cuando quieras."
+  },
+  "84566ad98e6814f1": {
+    "en": "Ways to add food",
+    "path": "common:add.methods.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "es": "Formas de añadir alimentos"
   },
   "845950b12a7e9491": {
     "en": "Update",
@@ -16099,13 +16120,6 @@
     "at": "2026-09-14",
     "es": "El nombre que elegiste, si elegiste uno."
   },
-  "d744d9f590daf0d1": {
-    "en": "Search the food database instead",
-    "path": "common:describe.searchInstead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "es": "Buscar en la base de datos de alimentos"
-  },
   "d748bdf8ea40664e": {
     "en": "Calories",
     "path": "common:scan.review.sanity.macro.kcal",
@@ -17121,6 +17135,13 @@
     "at": "2026-09-14",
     "es": "El diario reside en este dispositivo, y la copia del servidor está bloqueada"
   },
+  "e5ac2d302b267136": {
+    "en": "Search",
+    "path": "common:add.methods.search",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "es": "Buscar"
+  },
   "e5f500e2e687b392": {
     "en": "broccoli",
     "path": "common:catchUp.foods.broccoli",
@@ -17799,13 +17820,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-22",
     "es": "Añadir, Escanear y Describir se agrupan ahora bajo una misma dirección, /add."
-  },
-  "ee7f982901e36f35": {
-    "en": "Scan your plate instead",
-    "path": "common:add.search.scanInstead",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "es": "Escanea tu plato en su lugar"
   },
   "ee84881689cbd329": {
     "en": "Protein",

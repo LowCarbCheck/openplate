@@ -70,6 +70,20 @@ export function offerTypedText(text: string, source: TypedIntakeSource): void {
   pending = { kind: 'text', text, source };
 }
 
+/**
+ * Whether an intake is parked, WITHOUT taking it.
+ *
+ * `/add/photo` asks this before its first paint, to decide whether to draw the
+ * draft a person left there (`add-drafts.ts`) or an empty screen that the fresh
+ * intake is about to fill. It cannot take the intake to find out: the take is
+ * the once-only step, and it belongs to the screen's pickup effect, behind the
+ * guard that survives a `StrictMode` double mount. A read that consumes nothing
+ * leaves that contract exactly as it was.
+ */
+export function hasPendingIntakeHandoff(): boolean {
+  return pending !== null;
+}
+
 /** Takes the parked intake and empties the slot, or `null` when nothing is parked. */
 export function takeIntakeHandoff(): ScanHandoff | null {
   const held = pending;

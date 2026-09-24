@@ -104,6 +104,12 @@
       "none": "Sin comida asignada",
       "snack": "Tentempié"
     },
+    "methods": {
+      "label": "Formas de añadir alimentos",
+      "search": "Buscar",
+      "describe": "Describir",
+      "photo": "Foto"
+    },
     "portion": {
       "back": "Volver a la búsqueda",
       "calories": "{{value}} calorías",
@@ -161,7 +167,6 @@
         "seconds": "en unos segundos"
       },
       "placeholder": "Busca un alimento…",
-      "scanInstead": "Escanea tu plato en su lugar",
       "sections": {
         "curated": "Resultados de búsqueda",
         "custom": "Tus alimentos",
@@ -529,7 +534,6 @@
     "dictateHint": "Toca la tecla del micrófono en tu teclado para dictar tu comida.",
     "needsProvider": "Describir una comida requiere una conexión a una IA en este dispositivo.",
     "connect": "Conectar un proveedor",
-    "searchInstead": "Buscar en la base de datos de alimentos",
     "pantry": {
       "title": "¿Qué tienes en casa?",
       "placeholder": "medio repollo, seis huevos, una tarrina de feta, 500 g de arroz"

@@ -105,6 +105,17 @@ forward the query, and a person who lands on a working `/add/photo` because
 the redirect did its job has recovered; the app does not owe a service-worker
 migration strategy beyond that.
 
+> **Update (2026-09-24, M255):** the method switcher in part 3 was never filed.
+> An ADR audit found no tracker item for it, and the number M244 had gone to a
+> website milestone. It is now M255 and ships with this note: the `/add`
+> layout draws a Search / Describe / Photo switcher above the three screens,
+> and each screen keeps its draft in memory (`app/lib/add-drafts.ts`), so a
+> switch, the bottom bar or the back gesture no longer throws a draft away.
+> A finished photo analysis is kept too, so coming back never pays for it
+> twice. The three "instead" links the screens carried are gone. Everything
+> else in this decision stands, including "no hub page": the switcher sits on
+> the screens themselves and adds no tap.
+
 ## Alternatives Considered
 
 **`/add/text` and `/add/voice` as literal sibling routes, per the original

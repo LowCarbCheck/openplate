@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The add screens share one switcher and keep what you started.** Search, Describe and Photo now sit in one row at the top of all three add screens, in place of the three "instead" links that each led to one other screen. Each screen keeps its draft while the app stays open: the words in the composer, the food and portion opened from a search, and the chosen photo with a finished analysis and your changes to its review. Switching away and back, or leaving by the bottom bar, no longer throws that away, so an analysis is never paid for twice. Logging an entry clears its draft, and a reload starts clean. The row is inert while an analysis runs, and the pantry's `/add/describe?to=` composer has no row.
+
 ### Changed
 
 - **The phone's bottom bar has a Menu tab.** Users did not realize that tapping the logo at the top left opened the full app menu. The bar now includes five tabs: Diary, Insights, Scan, Add and Menu. Menu opens the same screen as the logo and slides it in from the right, while the logo still opens it from the left. Insights is back in the bar, and Scan stays in the exact centre. The small arrow beside Scan is gone, because in a five-tab bar it would cover the camera button. A long press on Scan still opens the same choices, which also remain available on the Add page and the diary. Tab labels are one pixel smaller so German "Hinzufügen" fits a 360 px phone. `tests/e2e/menu-is-found.spec.ts` opens the menu from both entry points and checks every label in six languages at 360 and 390 px.

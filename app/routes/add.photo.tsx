@@ -1,13 +1,12 @@
 import type { Route } from './+types/add.photo';
-import { useEffect, useReducer, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { Form, redirect, useFetcher, useNavigation } from 'react-router';
-import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import type { FieldMetadata } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
-import type { SubmissionResult } from '@conform-to/react';
+import type { DefaultValue, SubmissionResult } from '@conform-to/react';
 import type { AiProviderType, MealType } from '#types/enums';
 import { formatMonthlyUsageLine } from '#app/models/ai-usage';
 import type { MonthlyAiUsage } from '#app/models/ai-usage';
@@ -91,6 +90,16 @@ import {
   type PickSource,
 } from '#app/lib/scan-analyze';
 import { takeIntakeHandoff } from '#app/lib/intake-handoff';
+import {
+  clearAddDraft,
+  clearDraftsAfterPhotoLog,
+  readAddDraft,
+  readPhotoDraftOnArrival,
+  updateAddDraft,
+  type PhotoReviewDraft,
+  type SettledPhotoAnalysis,
+} from '#app/lib/add-drafts';
+import { useReportAddMethodBusy } from '#app/components/intake/add-method-switcher';
 import { ConnectCard, ScanLoading } from '#app/components/intake/intake-connect-card';
 import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert';
 import { fileToBase64 } from '#app/lib/file-to-base64';
@@ -132,7 +141,7 @@ import {
 } from '#app/lib/matomo-events';
 import type { LogInputPath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
-import { ADD_PHOTO_PATH, ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
+import { ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 import { formatNumericDate } from '#app/i18n/date-locale';
 import { toLanguageCode } from '#app/i18n/language-prefs';
 import {
@@ -461,6 +470,23 @@ export function makeConfirmDraftSchema(t: Translate) {
  * every real parse site builds its own with a live `t` instead.
  */
 export const ConfirmDraftSchema = makeConfirmDraftSchema(translate);
+
+/** What the review form holds before it is parsed: the type its defaults are written against. */
+type ConfirmDraftValues = z.input<typeof ConfirmDraftSchema>;
+
+/**
+ * The review form's starting values, from a draft this form wrote itself
+ * (M255/01).
+ *
+ * @param formValues - the JSON of the `form.value` the review reported before the person left it.
+ * @returns the same values, as the form's defaults again.
+ */
+function readRestoredConfirmDefaults(formValues: string): DefaultValue<ConfirmDraftValues> {
+  // SAFETY: the only writer of this JSON is `ConfirmDraftForm`'s own effect,
+  // which serialises `form.value` of this same form, built against this same
+  // schema, in this same page. It never came from storage or the network.
+  return JSON.parse(formValues) as DefaultValue<ConfirmDraftValues>;
+}
 
 type IdentifyResult =
   | {
@@ -1347,6 +1373,10 @@ async function handleConfirm(formData: FormData, timezone: string): Promise<Conf
     dayLabel: activeDate === null ? null : formatDayLabel(activeDate, currentLanguage()),
     language: currentLanguage(),
   });
+  // THE DRAFT IS NOW DIARY ROWS (M255/01), and so is the sentence it was read
+  // from, if a screen still holds that sentence. Only a confirm that wrote
+  // its rows reaches this line; a refused one keeps every draft for the retry.
+  clearDraftsAfterPhotoLog();
   return redirect(redirectTo);
 }
 
@@ -1431,6 +1461,21 @@ function formatFailedAttemptCreditLine(estimatedCostUsd: number | null, t: Trans
 }
 
 /**
+ * Keeps the review screen's edits in the photo draft (M255/01).
+ *
+ * Only while the slot still holds a draft. A confirm empties it in the
+ * action, before the navigation away has finished, and the review can render
+ * once more on the way out; a write then would bring back a draft of a plate
+ * that is already in the diary.
+ *
+ * @param review - the review form's values and the three pieces of state beside it.
+ */
+function writePhotoReviewDraft(review: PhotoReviewDraft): void {
+  if (readAddDraft('photo') === null) return;
+  updateAddDraft('photo', { review });
+}
+
+/**
  * The interactive scan flow for a connected user. Owns the photo pipeline, the
  * arm/dispatch state machine, and the identify `useFetcher`, auto-firing the
  * (paid) identification the moment a downscaled JPEG is ready, while keeping the
@@ -1494,8 +1539,26 @@ function ScanFlow({
   // a test. `false` for an unreachable or older service, which leaves the
   // refusal exactly as it was before plans existed.
   const plansAvailable = hasPlansDoor(useServerInstance());
+  /**
+   * THE DRAFT THIS SCREEN WAS LEFT WITH (M255/01), read once, before the
+   * first paint, so a person coming back sees their picture or their review
+   * at once rather than an empty capture card for a frame. `null` on a first
+   * visit, and on an arrival that carries a fresh intake of its own: a parked
+   * photo or sentence, or the share sheet's picture, replaces the draft rather
+   * than being drawn under it for a moment (`readPhotoDraftOnArrival`).
+   *
+   * NOTHING IS SENT ON THE WAY BACK. The machine below starts at `idle`
+   * whatever the draft holds, so a picture whose analysis never settled comes
+   * back at rest, with the quiet Analyze key this screen already offers after
+   * a cancel, and never as a second paid request.
+   */
+  const [arrival] = useState(() =>
+    readPhotoDraftOnArrival({
+      isSharedPhotoArriving: globalThis.window !== undefined && hasSharedPhotoFlag(window.location.search),
+    }),
+  );
   const [state, dispatch] = useReducer(analyzeReducer, initialAnalyzeState);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(() => arrival?.file ?? null);
   /**
    * The words this intake is about, or `null` when it is a photograph.
    *
@@ -1504,9 +1567,9 @@ function ScanFlow({
    * boolean is what lets the person SEE what is being analysed, which is the
    * text path's equivalent of the photo preview.
    */
-  const [typedText, setTypedText] = useState<string | null>(null);
+  const [typedText, setTypedText] = useState<string | null>(() => arrival?.typedText ?? null);
   /** How this intake started. Only ever read at confirm time; see `SCAN_LOG_PATH_BY_SOURCE`. */
-  const [intakeSource, setIntakeSource] = useState<IntakeSource>('photo');
+  const [intakeSource, setIntakeSource] = useState<IntakeSource>(() => arrival?.intakeSource ?? 'photo');
   /**
    * The meal slot the confirm step opens on, resolved AT PICK TIME rather than
    * at render: the answer depends on `Date.now()`, and a value that moved every
@@ -1514,7 +1577,18 @@ function ScanFlow({
    * picked, which is also the honest answer for a confirm step reached without
    * one (a reload after a failed confirm): "No meal", never a guess.
    */
-  const [captureMealType, setCaptureMealType] = useState<MealType | null>(null);
+  const [captureMealType, setCaptureMealType] = useState<MealType | null>(() => arrival?.mealType ?? null);
+  /**
+   * An identification that settled on an earlier visit, from the draft. It
+   * stands in for the fetcher's answer, which did not survive the unmount, and
+   * is dropped the moment a new intake starts, so it can never be drawn over
+   * the analysis of a different picture.
+   */
+  const [restoredAnalysis, setRestoredAnalysis] = useState<SettledPhotoAnalysis | null>(
+    () => arrival?.analysis ?? null,
+  );
+  /** What the person had changed on that identification's review. Read once, with it. */
+  const [restoredReview] = useState<PhotoReviewDraft | null>(() => arrival?.review ?? null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1661,8 +1735,10 @@ function ScanFlow({
     }
     setIsProcessing(false);
     // Drop any prior identify result, then arm: a camera capture dispatches now,
-    // a library pick waits out the cancellable grace window.
+    // a library pick waits out the cancellable grace window. A result restored
+    // from the draft is a prior result too.
     setSuppressedData(fetcher.data);
+    setRestoredAnalysis(null);
     // A photograph REPLACES any sentence that was being analysed: the two are
     // one screen's worth of state, and leaving both set would submit a form
     // carrying an intake the action does not run.
@@ -1689,6 +1765,7 @@ function ScanFlow({
     setSelectionError(null);
     setIsProcessing(false);
     setSuppressedData(fetcher.data);
+    setRestoredAnalysis(null);
     setFile(null);
     setTypedText(text);
     setIntakeSource(source);
@@ -1772,6 +1849,45 @@ function ScanFlow({
     activeData !== undefined && activeData.intent === 'identify' && 'identification' in activeData ?
       activeData
     : undefined;
+  // THE ANALYSIS ON SCREEN: this visit's answer, or the one a previous visit
+  // settled and the draft kept. Memoised on the fetcher's own answer, whose
+  // identity only changes when a new answer arrives, so the draft effect
+  // below runs on a new answer and not on every render.
+  const liveAnalysis = useMemo(
+    (): SettledPhotoAnalysis | null =>
+      identifyResult === undefined ? null : (
+        {
+          identification: identifyResult.identification,
+          intakeSource: identifyResult.intakeSource,
+          provider: identifyResult.provider,
+          modelId: identifyResult.modelId,
+          matches: identifyResult.matches,
+          foodDb: identifyResult.foodDb,
+        }
+      ),
+    [identifyResult],
+  );
+  const settledAnalysis = liveAnalysis ?? restoredAnalysis;
+
+  // THE DRAFT, written whenever the intake or its settled analysis changes
+  // (M255/01). An empty screen holds no draft at all, which is also how a
+  // fresh hand-off replaces an old one: its arrival renders empty, and this
+  // first write empties the slot before the new intake fills it. A review
+  // belongs to one analysis, so it is dropped whenever there is none.
+  useEffect(() => {
+    if (file === null && typedText === null) {
+      clearAddDraft('photo');
+      return;
+    }
+    updateAddDraft('photo', { file, typedText, intakeSource, mealType: captureMealType, analysis: settledAnalysis });
+    if (settledAnalysis === null) updateAddDraft('photo', { review: null });
+  }, [file, typedText, intakeSource, captureMealType, settledAnalysis]);
+
+  // THE SWITCHER WAITS for a paid request (M255/01): leaving now would throw
+  // its answer away. Preparing a picture counts too, because its result lands
+  // in this component's state and nowhere else. The grace window does not: it
+  // is free, and leaving during it simply cancels it.
+  useReportAddMethodBusy(isProcessing || state.phase === 'dispatching');
   const failedIdentify =
     activeData !== undefined && activeData.intent === 'identify' && 'error' in activeData ? activeData : undefined;
   // See the settle effect above: a dispatch that came back with nothing at all.
@@ -1781,23 +1897,27 @@ function ScanFlow({
   // A returned identification (or a confirm-step re-validation) swaps to the
   // draft. Passing both keeps the plate's portion chips + curated matches alive
   // across a failed confirm, the identification rides the still-mounted fetcher.
-  if (identifyResult || confirmResult) {
+  if (settledAnalysis !== null || confirmResult) {
     return (
       <ConfirmDraftForm
-        identification={identifyResult?.identification}
+        identification={settledAnalysis?.identification}
         typedText={typedText}
-        provider={identifyResult?.provider}
-        modelId={identifyResult?.modelId}
-        matches={identifyResult?.matches}
-        foodDb={identifyResult?.foodDb ?? FOOD_DB_STATUS_UNKNOWN}
+        provider={settledAnalysis?.provider}
+        modelId={settledAnalysis?.modelId}
+        matches={settledAnalysis?.matches}
+        foodDb={settledAnalysis?.foodDb ?? FOOD_DB_STATUS_UNKNOWN}
         lastResult={confirmResult}
         logDate={logDate}
         logDateLabel={logDateLabel}
         photoFile={file}
         userId={userId}
         defaultMealType={captureMealType}
-        intakeSource={identifyResult?.intakeSource ?? intakeSource}
+        intakeSource={settledAnalysis?.intakeSource ?? intakeSource}
         cautionProfile={cautionProfile}
+        // Only over the analysis it was made on: a review restored with an
+        // analysis from this visit's fetcher would be edits to another plate.
+        restoredReview={liveAnalysis === null ? restoredReview : null}
+        onReviewChange={writePhotoReviewDraft}
       />
     );
   }
@@ -2103,7 +2223,6 @@ export function UploadForm({
         used: accountTrialScans.granted - accountTrialScans.left,
         granted: accountTrialScans.granted,
       });
-  const addHref = logDate ? `${ADD_SEARCH_PATH}?date=${logDate}` : ADD_SEARCH_PATH;
   const failedAttemptCostUsd =
     usage && modelId && provider ? (estimateScanCostUsd(provider, modelId, usage) ?? null) : null;
   const failedAttemptCreditLine = usage ? formatFailedAttemptCreditLine(failedAttemptCostUsd, t) : null;
@@ -2356,21 +2475,6 @@ export function UploadForm({
               <Button type="button" variant="secondary" onClick={onRetry} className="h-11 w-full">
                 {t('scan.capture.analyze')}
               </Button>
-            )}
-
-            {/* Search is always one tap from scan, keyless-friendly, carries
-                the day. Not offered during a typed or spoken intake: the
-                person came FROM that screen, and "add food without a photo" is
-                a description of what they already did. */}
-            {!isTextIntake && (
-              <div className="pt-1 text-center">
-                <Link
-                  to={addHref}
-                  className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  {t('scan.capture.addWithoutPhoto')}
-                </Link>
-              </div>
             )}
           </div>
         </CardContent>
@@ -2722,6 +2826,8 @@ export function ConfirmDraftForm({
   intakeSource,
   typedText,
   cautionProfile,
+  restoredReview = null,
+  onReviewChange,
 }: {
   identification?: PlateIdentification;
   /** Provider of the attempt, pairs with `modelId` for the scan's cost estimate; without it there is no honest price to show. */
@@ -2777,6 +2883,14 @@ export function ConfirmDraftForm({
    * Pass `NO_CAUTION_PROFILE` where there is no person to decide for.
    */
   cautionProfile: CautionProfile;
+  /**
+   * What the person had changed on this same identification before they left
+   * the screen (M255/01), or `null` to open on the model's answer. Optional
+   * because only `ScanFlow` keeps a draft; a render in a test opens fresh.
+   */
+  restoredReview?: PhotoReviewDraft | null;
+  /** Called with the form's values and the state beside them whenever any of it changes. */
+  onReviewChange?: (review: PhotoReviewDraft) => void;
 }) {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation();
@@ -2823,10 +2937,16 @@ export function ConfirmDraftForm({
   // Local UI state (never submitted): which foods the user excluded and which
   // curated suggestions they dismissed. Keyed by item index, the draft list is
   // fixed for the life of this view, so the index is stable.
-  const [excludedIndexes, setExcludedIndexes] = useState<ReadonlySet<number>>(() => new Set<number>());
+  // All three seeded from the draft when the person is coming back to this
+  // same review (M255/01), and fresh otherwise.
+  const [excludedIndexes, setExcludedIndexes] = useState<ReadonlySet<number>>(
+    () => new Set<number>(restoredReview?.excludedIndexes ?? []),
+  );
   // Seeded once, from the capture time. Plate-wide, and editable. See the prop.
-  const [mealType, setMealType] = useState<string>(defaultMealType ?? '');
-  const [dismissedIndexes, setDismissedIndexes] = useState<ReadonlySet<number>>(() => new Set<number>());
+  const [mealType, setMealType] = useState<string>(() => restoredReview?.mealType ?? defaultMealType ?? '');
+  const [dismissedIndexes, setDismissedIndexes] = useState<ReadonlySet<number>>(
+    () => new Set<number>(restoredReview?.dismissedIndexes ?? []),
+  );
   const introHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // On entering the confirm step, jump to the top and focus the intro heading so
@@ -2856,7 +2976,8 @@ export function ConfirmDraftForm({
       return parseWithZod(formData, { schema: makeConfirmDraftSchema(t) });
     },
     defaultValue:
-      identification ?
+      restoredReview !== null ? readRestoredConfirmDefaults(restoredReview.formValues)
+      : identification ?
         {
           items: identification.foods.map((food) => ({
             include: true,
@@ -2893,6 +3014,19 @@ export function ConfirmDraftForm({
         }
       : undefined,
   });
+
+  // THE EDITS OUTLIVE THE SCREEN (M255/01). Everything a person changed here,
+  // the form's own values and the three pieces of state beside it, goes to
+  // the caller whenever any of it changes, so leaving for another method and
+  // coming back opens this same review with the same edits in it.
+  useEffect(() => {
+    onReviewChange?.({
+      formValues: JSON.stringify(form.value ?? {}),
+      mealType,
+      excludedIndexes: [...excludedIndexes],
+      dismissedIndexes: [...dismissedIndexes],
+    });
+  }, [form.value, mealType, excludedIndexes, dismissedIndexes, onReviewChange]);
 
   const itemFields = fields.items.getFieldList();
 

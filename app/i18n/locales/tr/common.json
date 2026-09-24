@@ -104,6 +104,12 @@
       "none": "Öğün yok",
       "snack": "Ara öğün"
     },
+    "methods": {
+      "label": "Yiyecek ekleme yolları",
+      "search": "Ara",
+      "describe": "Açıkla",
+      "photo": "Fotoğraf"
+    },
     "portion": {
       "back": "Aramaya dön",
       "calories": "{{value}} kalori",
@@ -161,7 +167,6 @@
         "seconds": "birkaç saniye içinde"
       },
       "placeholder": "Bir besin ara…",
-      "scanInstead": "Bunun yerine tabağını tara",
       "sections": {
         "curated": "Arama sonuçları",
         "custom": "Yiyeceklerin",
@@ -529,7 +534,6 @@
     "dictateHint": "Öğününü sesle yazdırmak için klavyendeki mikrofon tuşuna dokun.",
     "needsProvider": "Bir öğünü tarif etmek için bu cihazda bir yapay zeka bağlantısı gerekir.",
     "connect": "Bir sağlayıcı bağla",
-    "searchInstead": "Bunun yerine yiyecek veritabanında ara",
     "pantry": {
       "title": "Evinde ne var?",
       "placeholder": "yarım lahana, altı yumurta, bir kutu beyaz peynir, 500 g pirinç"

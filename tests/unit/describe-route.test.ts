@@ -72,7 +72,6 @@ const describeCopySchema = z.object({
     dictateHint: z.string(),
     needsProvider: z.string(),
     connect: z.string(),
-    searchInstead: z.string(),
   }),
   /** The sentence a managed instance shows instead, shared with `/add`. */
   aiIntake: z.object({
@@ -126,7 +125,6 @@ function renderComposer({
     door,
     speakArmed,
     consumer,
-    searchHref: '/add/search',
     repeatYesterday,
   });
   const router = createMemoryRouter([{ path: '/add/describe', element: withI18n(element) }], {
@@ -282,13 +280,16 @@ describe('dictation belongs to the keyboard, and this app never claims a microph
 });
 
 describe('with no AI provider on this device', () => {
-  it('says so, and offers both ways out', () => {
+  it('says so, and offers the way to connect one', () => {
     const markup = renderComposer({ aiConnection: 'absent' });
     assert.ok(markup.includes(COPY.needsProvider), 'the screen no longer explains why nothing can be sent');
     assert.ok(markup.includes(COPY.connect), 'the way to connect a provider is gone');
     assert.match(markup, /href="\/settings\/ai\?next=describe"/, 'the connect link no longer returns here');
-    assert.ok(markup.includes(COPY.searchInstead), 'the database search is no longer offered');
-    assert.match(markup, /href="\/add\/search"/, 'the search link no longer points at the search screen');
+    // The second way out, the database search, is the method switcher's now
+    // (M255/01): the `/add` layout draws it above this screen, so the
+    // composer carries no search link of its own. The connect link above,
+    // in the same markup, is the control that this reads a real render.
+    assert.doesNotMatch(markup, /href="\/add\/search/u, 'the composer draws a search link of its own again');
   });
 
   it('says none of that when a provider is connected', () => {
@@ -327,11 +328,10 @@ describe('on a managed instance, where nobody brings a provider', () => {
         );
       }
     }
-    // THE CONTROL. The same render DOES carry the two links it is supposed to,
-    // so the check above is reading real markup rather than an empty string.
+    // THE CONTROL. The same render DOES carry the link it is supposed to, so
+    // the check above is reading real markup rather than an empty string.
     const byok = renderComposer({ aiConnection: 'absent', door: { kind: 'byok' } });
     assert.match(byok, /href="\/settings\/ai\?next=describe"/);
-    assert.match(byok, /href="\/add\/search"/);
   });
 
   it('still offers the provider settings on an open instance', () => {
@@ -525,10 +525,14 @@ describe('the composer the pantry sends people to', () => {
   });
 
   it('offers no food search, because a search adds a food to the DIARY', () => {
+    // The composer carries no search link for anybody since the method
+    // switcher took that door (M255/01), and the `/add` layout leaves the
+    // switcher out on any `?to=`. The pantry heading is the anchor that this
+    // is the pantry's composer and not an empty render.
     const markup = renderComposer({ consumer: '/pantry' });
 
+    assert.ok(markup.includes(CATALOG.describe.pantry.title));
     assert.doesNotMatch(markup, /href="\/add\/search/u, 'the pantry composer links into the food search');
-    assert.ok(!markup.includes(COPY.searchInstead), 'the search sentence is on the pantry composer');
   });
 
   it('offers no repeat of yesterday, because that copies yesterday MEALS', () => {
@@ -538,13 +542,12 @@ describe('the composer the pantry sends people to', () => {
     assert.ok(!markup.includes(DOOR_COPY.door), 'the repeat label is on the pantry composer');
   });
 
-  it('offers both to the diary with the same inputs, which is the control', () => {
-    // Without this the two absences above would pass against a composer that
-    // had lost the search link and the door for everybody.
+  it('offers the repeat door to the diary with the same inputs, which is the control', () => {
+    // Without this the door's absence above would pass against a composer
+    // that had lost the door for everybody.
     const markup = renderComposer({ consumer: '/add/photo', repeatYesterday: REPEAT_OFFER });
 
-    assert.match(markup, /href="\/add\/search"/u);
-    assert.ok(markup.includes(COPY.searchInstead));
     assert.notEqual(doorFormIndex(markup), -1);
+    assert.ok(markup.includes(DOOR_COPY.door));
   });
 });

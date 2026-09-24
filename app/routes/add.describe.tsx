@@ -14,7 +14,18 @@
  *
  * So this route is the composer, and only the composer. NO results, NO food
  * list, NO lookup of any kind runs here. The database search still exists, at
- * `/add`, and this screen links to it for the person who wants one exact item.
+ * `/add/search`, one tap away in the method switcher the `/add` layout draws
+ * above this screen (M255/01), for the person who wants one exact item.
+ *
+ * ── The words outlive the screen ──────────────────────────────────────────
+ *
+ * What is in the box is a draft in `add-drafts.ts`, read when this screen
+ * mounts and written as it changes, so a person who switches to Photo or
+ * Search and comes back finds their sentence still there. Sending does not
+ * clear it: the words go on to `/add/photo`, and if that analysis fails the
+ * person comes back here to fix them. The photo screen clears it once the meal
+ * those words describe is logged. The pantry's composer (`?to=/pantry`) keeps
+ * no draft, because a list of what is on the shelf is not a meal.
  *
  * ── Dictation is the KEYBOARD's, not this app's (M203) ────────────────────
  *
@@ -56,13 +67,13 @@ import type { Route } from './+types/add.describe';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Link } from '#app/components/link';
 import { Send } from 'lucide-react';
 import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
 import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
-import { ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
+import { buildIntakeHref } from '#app/lib/intake-hrefs';
+import { readAddDraft, updateAddDraft } from '#app/lib/add-drafts';
 import { offerTypedText } from '#app/lib/intake-handoff';
 import { parseIntakeConsumer, type IntakeConsumer } from '#app/lib/intake-consumers';
 import { RepeatYesterdayDoor } from '#app/components/repeat-yesterday-door';
@@ -154,14 +165,13 @@ interface DescribeComposerProps {
    * The diary asks for a meal, the pantry asks for a shelf (M233/01), and the
    * two want different questions: "2 fried eggs and toast" is not a sentence
    * anybody writes about their fridge. It also decides which of the two doors
-   * below belong here at all, because both lead into the DIARY: the database
-   * search adds a food to the day, and the repeat of yesterday copies a day of
-   * meals. Offering either to somebody stocking a pantry is offering to do
-   * something else entirely.
+   * below belongs here at all, because it leads into the DIARY: the repeat of
+   * yesterday copies a day of meals. Offering it to somebody stocking a pantry
+   * is offering to do something else entirely. (The database search used to be
+   * a second such door on this screen; it is the switcher's now, which the
+   * `/add` layout leaves out for the pantry for the same reason.)
    */
   consumer: IntakeConsumer;
-  /** The database search, for one exact item. Not rendered for the pantry. */
-  searchHref: string;
   /**
    * The "Wie gestern" offer (M217), or null for no door. Optional because the
    * route resolves it in an effect: the screen renders at once without it and
@@ -195,7 +205,6 @@ export function DescribeComposer({
   door,
   speakArmed,
   consumer,
-  searchHref,
   repeatYesterday = null,
 }: DescribeComposerProps) {
   const { t } = useTranslation();
@@ -270,8 +279,8 @@ export function DescribeComposer({
         {/* NO AI, so nothing here can work. Said before the box rather than
             after the tap, and the way out depends on WHY: an own provider to
             connect, a session to reopen, or an allowance only an administrator
-            can raise. The search link below is the second way out either way,
-            and it needs no AI at all. */}
+            can raise. Search in the switcher above is the second way out either
+            way, and it needs no AI at all. */}
         {aiConnection === 'absent' && (
           <NoAiIntakeNotice
             door={door}
@@ -337,15 +346,6 @@ export function DescribeComposer({
             names the key that turns speech into text, which is the keyboard's
             own and not this app's. */}
         {speakArmed && <p className="text-xs text-muted-foreground">{t('describe.dictateHint')}</p>}
-
-        {/* THE FOOD DATABASE, which adds a food to the DIARY. Absent for the
-            pantry: a search that logs a meal is not a second way to say what
-            is in the fridge, it is a different screen wearing a link. */}
-        {!isForPantry && (
-          <Link to={searchHref} className="text-xs text-muted-foreground underline-offset-4 hover:underline">
-            {t('describe.searchInstead')}
-          </Link>
-        )}
       </div>
     </div>
   );
@@ -354,7 +354,6 @@ export function DescribeComposer({
 export default function DescribeRoute() {
   const [searchParams] = useSearchParams();
   const navigate = useAppNavigate();
-  const [text, setText] = useState('');
   // `?speak=1` came from the launcher's "Speak" entry. It focuses the field and
   // shows the dictation hint; there is nothing to start and nothing to stop.
   const speakArmed = searchParams.get('speak') === '1';
@@ -370,7 +369,16 @@ export default function DescribeRoute() {
   const intakeConsumer = parseIntakeConsumer(searchParams.get('to'));
   // Where the words go, carrying the day the person is looking at.
   const intakeHref = buildIntakeHref(intakeConsumer, { date: logDate });
-  const searchHref = logDate === null ? ADD_SEARCH_PATH : `${ADD_SEARCH_PATH}?date=${logDate}`;
+
+  // THE DRAFT, for a meal only (see this file's header). Read once, as the
+  // box's first value, so the words are there on the first paint rather than
+  // arriving a frame later and moving the composer.
+  const keepsDraft = intakeConsumer !== '/pantry';
+  const [text, setText] = useState(() => (keepsDraft ? (readAddDraft('describe')?.text ?? '') : ''));
+  useEffect(() => {
+    if (!keepsDraft) return;
+    updateAddDraft('describe', { text });
+  }, [keepsDraft, text]);
 
   const { connection: aiConnection, door } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';
@@ -415,7 +423,6 @@ export default function DescribeRoute() {
       door={door}
       speakArmed={speakArmed}
       consumer={intakeConsumer}
-      searchHref={searchHref}
       repeatYesterday={repeatYesterday}
     />
   );

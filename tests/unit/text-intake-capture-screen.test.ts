@@ -163,13 +163,16 @@ describe('the capture screen hides every photo control during a typed intake', (
     );
   });
 
-  it('does not offer the screen the person just came from', () => {
-    // "Add food without a photo" is a description of what they already did.
-    assert.ok(!TEXT_INTAKE.includes(COPY.capture.addWithoutPhoto));
-    assert.ok(
-      PHOTO_INTAKE.includes(COPY.capture.addWithoutPhoto),
-      'the photo intake lost its search link, so the check above proves nothing',
-    );
+  it('carries no search link of its own, for either intake', () => {
+    // "Add food without a photo" used to sit under the photo intake's
+    // pickers. The method switcher the `/add` layout draws above this card
+    // is that door now (M255/01), so the card links into the search for
+    // neither intake. The typed meal on the one and the shutter on the
+    // other, asserted above, are what say these read real markup.
+    for (const markup of [TEXT_INTAKE, PHOTO_INTAKE]) {
+      assert.ok(!markup.includes(COPY.capture.addWithoutPhoto), 'the capture card links into the search again');
+      assert.doesNotMatch(markup, /href="\/add\/search/u, 'the capture card links into the search again');
+    }
   });
 
   it('wears a text icon on the card and the alert, never a camera', () => {
