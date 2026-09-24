@@ -530,26 +530,15 @@ test('typing in the composer shifts nothing and leaves the switcher where it is'
   await expect(field).toBeVisible();
   await settleAnimations(page);
   const switcherAtRest = await switcherBox(page);
-
-  ////////////////////////////////////////////////////////////////////////////
-  // THE FIRST KEY IS NOT PART OF THE ZERO, and that is a known defect of the
-  // composer, not of this change. An empty composer sizes itself to its
-  // wrapped placeholder (84 px at 390 px, measured 2026-09-24) and collapses
-  // to one line (36 px) on the first keystroke, which moves the composer
-  // block. It predates the switcher and is filed as its own follow-up; the
-  // switcher sits above it and is checked across that key below.
-  ////////////////////////////////////////////////////////////////////////////
-  await field.pressSequentially('p', { delay: 20 });
-  await settleFrames(page);
-  expect(await switcherBox(page), 'the first key moved the switcher').toEqual(switcherAtRest);
-
   const topsBefore = await readTops(page);
   const entriesBefore = (await readShiftEntries(page)).length;
 
-  // The rest of a short line, key by key, the way a person types it: one line
-  // never grows the composer, so any movement here is a defect and not a
-  // request.
-  await field.pressSequentially('orridge and tea', { delay: 20 });
+  // FROM THE EMPTY BOX, the first key included. An empty composer keeps the
+  // height its wrapped placeholder gives it (M255/02), so the first key no
+  // longer drops the box from 84 px to one line, and a short line typed key
+  // by key, the way a person types it, never grows it: any movement here is a
+  // defect and not a request.
+  await field.pressSequentially('porridge and tea', { delay: 20 });
   await settleFrames(page);
 
   const entries = await readShiftEntries(page);

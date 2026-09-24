@@ -131,19 +131,31 @@ export function handOffDescription({
 }
 
 /**
- * Keeps the composer the height of what is in it, up to a ceiling.
+ * The two invisible copies that size the field (M255/02): one of the
+ * placeholder, one of what is typed. They share the field's grid cell, so the
+ * cell is as tall as the taller of the two, and the field stretches to fill it.
  *
- * A one-line box for a three-line meal hides two thirds of what the person
- * wrote at the moment they are checking it. The ceiling is about six lines,
- * which stops a long paste from pushing the Send button off the screen; past
+ * A FLOOR, AND THEN GROWTH. The empty box is as tall as its example meal, which
+ * wraps on a phone: 84 px at 390 px in English. It used to size itself to its
+ * content alone, so the first key hid the placeholder and the box dropped to
+ * one line, and the whole composer moved under the thumb that typed it
+ * (DESIGN.md section 7). With the placeholder's copy always in the cell, the
+ * box never shrinks below its empty height, whatever the language, and it grows
+ * once the words outgrow the example.
+ *
+ * THE CEILING is `max-h-42`, 168 px, about six lines, on the copies and on the
+ * field alike, which stops a long paste from pushing Send off the screen; past
  * it the field scrolls.
+ *
+ * CSS, NOT A MEASUREMENT. The height is right on the first paint and at every
+ * width, for a late font and a rotated phone alike, and dictated text that
+ * arrives in bursts sizes the box the same way a key does, because the copy
+ * follows the value and not the keystroke. Every class that decides where a
+ * line breaks (the font size, the vertical padding, the wrapping) has to match
+ * the field's, or the copy wraps where the field does not.
  */
-const COMPOSER_MAX_HEIGHT_PX = 168;
-
-function growComposer(field: HTMLTextAreaElement): void {
-  field.style.height = 'auto';
-  field.style.height = `${Math.min(field.scrollHeight, COMPOSER_MAX_HEIGHT_PX)}px`;
-}
+const COMPOSER_SIZER_CLASS =
+  'invisible col-start-1 row-start-1 max-h-42 overflow-hidden py-1.5 text-base break-words whitespace-pre-wrap';
 
 interface DescribeComposerProps {
   /** What is in the box. Controlled, so one value drives the height and the Send state. */
@@ -217,15 +229,6 @@ export function DescribeComposer({
   const placeholder = isForPantry ? t('describe.pantry.placeholder') : t('describe.placeholder');
   const canSend = hasAiProvider && text.trim() !== '';
   const fieldRef = useRef<HTMLTextAreaElement>(null);
-
-  // The height follows the CONTENT, not the keystroke: dictated text arrives in
-  // bursts, and a resize wired to `onChange` alone would leave three lines of a
-  // pasted meal hidden behind one row.
-  useEffect(() => {
-    const field = fieldRef.current;
-    if (field === null) return;
-    growComposer(field);
-  }, [text]);
 
   // Writing is the whole point of this screen, and reaching it is the
   // navigation the person just made, so the box takes focus once. `?speak=1`
@@ -305,24 +308,37 @@ export function DescribeComposer({
           data-slot="describe-composer"
           className="flex items-end gap-2 border border-input bg-card px-3 py-2 focus-within:ring-2 focus-within:ring-ring"
         >
-          <textarea
-            id="describe-meal"
-            ref={fieldRef}
-            name="description"
-            rows={1}
-            value={text}
-            onChange={(event) => onTextChange(event.target.value)}
-            // ENTER SENDS, because this is a message box and that is what a
-            // message box does. Shift and Enter still make a paragraph, for
-            // the person who writes a meal a line at a time.
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' || event.shiftKey) return;
-              event.preventDefault();
-              onSend();
-            }}
-            placeholder={placeholder}
-            className="max-h-42 min-h-9 flex-1 resize-none border-0 bg-transparent py-1.5 text-base outline-hidden focus-visible:outline-hidden"
-          />
+          {/* THE FIELD AND ITS TWO SIZERS share one grid cell, so the field is
+              never shorter than its placeholder and grows with its words
+              (`COMPOSER_SIZER_CLASS`). */}
+          <div data-slot="describe-field" className="grid min-w-0 flex-1">
+            <textarea
+              id="describe-meal"
+              ref={fieldRef}
+              name="description"
+              rows={1}
+              value={text}
+              onChange={(event) => onTextChange(event.target.value)}
+              // ENTER SENDS, because this is a message box and that is what a
+              // message box does. Shift and Enter still make a paragraph, for
+              // the person who writes a meal a line at a time.
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' || event.shiftKey) return;
+                event.preventDefault();
+                onSend();
+              }}
+              placeholder={placeholder}
+              className="col-start-1 row-start-1 max-h-42 min-h-9 resize-none self-stretch border-0 bg-transparent py-1.5 text-base outline-hidden focus-visible:outline-hidden"
+            />
+            <span aria-hidden="true" className={COMPOSER_SIZER_CLASS}>
+              {placeholder}
+            </span>
+            {/* The trailing space keeps a last empty line: a meal that ends in
+                a new line is one line taller, and without it the copy is not. */}
+            <span aria-hidden="true" className={COMPOSER_SIZER_CLASS}>
+              {`${text} `}
+            </span>
+          </div>
           {/* Round, icon-only, inside the box, at the bottom so it stays
               beside the last line as the field grows. Disabled rather than
               hidden while it cannot be used: a button that appears as you type

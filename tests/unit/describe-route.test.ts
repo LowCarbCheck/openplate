@@ -173,7 +173,12 @@ describe('the composer is a message box, not a form', () => {
     // FOUND BY ITS SLOT, not by its corners: the container drew a radius until
     // the operator squared every corner in the app on 2026-09-22, and what this
     // test is about is that there is ONE box, not what its corners measure.
-    const container = /<div data-slot="describe-composer" class="([^"]*)">\s*<textarea/u.exec(markup);
+    // The field sits in its own sizing cell inside the box (M255/02), which
+    // holds it at its placeholder's height; the box is still the one border.
+    const container =
+      /<div data-slot="describe-composer" class="([^"]*)">\s*<div data-slot="describe-field"[^>]*>\s*<textarea/u.exec(
+        markup,
+      );
     assert.ok(container !== null, 'the textarea no longer sits inside the describe-composer container');
     const className = container[1] ?? '';
     assert.match(className, /\bborder-input\b/, 'the container lost its border');
