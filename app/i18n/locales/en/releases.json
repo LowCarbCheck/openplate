@@ -1,4 +1,10 @@
 {
+  "v0_47_0": {
+    "date": "2026-09-24",
+    "changed": {
+      "01": "The phone bottom bar now has three tabs."
+    }
+  },
   "v0_46_0": {
     "date": "2026-09-24",
     "added": {
@@ -30,20 +36,6 @@
       "03": "The invitation and account pages no longer jump while they load.",
       "04": "A page load no longer reports a blocked eval.",
       "05": "The \"today\" shortcut on a past day fits the date bar again."
-    }
-  },
-  "v0_44_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "An instance with open sign-up offers a sign-up form.",
-      "02": "The app counts free AI scans down during a scan trial.",
-      "03": "The sidebar and the phone menu carry an entry to the plan page.",
-      "04": "The plan choice starts with a free card for running openplate yourself."
-    },
-    "fixed": {
-      "01": "The signed-out header fits a phone on a managed instance.",
-      "02": "Recipes on a managed instance are proposed when the screen opens.",
-      "03": "A cancelled plan no longer says it is paid and running."
     }
   }
 }

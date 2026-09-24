@@ -1,4 +1,10 @@
 {
+  "v0_47_0": {
+    "date": "2026-09-24",
+    "changed": {
+      "01": "La barra inferior del teléfono ahora tiene tres pestañas."
+    }
+  },
   "v0_46_0": {
     "date": "2026-09-24",
     "added": {
@@ -30,20 +36,6 @@
       "03": "Las páginas de invitaciones y de cuenta ya no dan saltos mientras se cargan.",
       "04": "La carga de una página ya no reporta un eval bloqueado.",
       "05": "El acceso directo \"hoy\" en un día pasado vuelve a encajar en la barra de fecha."
-    }
-  },
-  "v0_44_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Una instancia con registro abierto muestra un formulario de registro.",
-      "02": "La app descuenta los análisis de IA gratuitos durante una prueba de análisis.",
-      "03": "La barra lateral y el menú móvil incluyen un enlace a la página del plan.",
-      "04": "La selección de planes comienza con una tarjeta gratuita para autohospedar openplate."
-    },
-    "fixed": {
-      "01": "La cabecera de la sesión cerrada se ajusta a la pantalla de un móvil en una instancia administrada.",
-      "02": "Las recetas de una instancia administrada se sugieren al abrir la pantalla.",
-      "03": "Un plan cancelado ya no indica que está pagado y activo."
     }
   }
 }

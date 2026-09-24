@@ -1,4 +1,10 @@
 {
+  "v0_47_0": {
+    "date": "2026-09-24",
+    "changed": {
+      "01": "La barre inférieure sur téléphone comporte désormais trois onglets."
+    }
+  },
   "v0_46_0": {
     "date": "2026-09-24",
     "added": {
@@ -30,20 +36,6 @@
       "03": "Les pages d'invitation et de compte ne sautent plus pendant leur chargement.",
       "04": "Le chargement d'une page ne signale plus un eval bloqué.",
       "05": "Le raccourci « aujourd'hui » sur un jour passé s'ajuste de nouveau à la barre de date."
-    }
-  },
-  "v0_44_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Une instance avec inscription ouverte propose un formulaire d'inscription.",
-      "02": "L'application décompte les analyses IA gratuites pendant une période d'essai d'analyse.",
-      "03": "La barre latérale et le menu pour téléphone comportent une entrée vers la page des forfaits.",
-      "04": "Le choix du forfait commence par une carte gratuite pour faire tourner openplate toi-même."
-    },
-    "fixed": {
-      "01": "L'en-tête déconnecté s'adapte à un téléphone sur une instance infogérée.",
-      "02": "Les recettes sur une instance infogérée sont proposées dès l'ouverture de l'écran.",
-      "03": "Un forfait résilié n'indique plus qu'il est payé et actif."
     }
   }
 }

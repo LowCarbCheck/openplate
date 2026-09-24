@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-09-24
+
 ### Changed
 
-- **The phone bottom bar now has three tabs.** The bar holds Diary, a round plus button in the centre, and More. A tap on the plus button lets you search for a food, type a meal, speak it, or take a photo. More slides up a panel from the bottom with a tile for each other page: Overview, Insights, Pantry, Fasting, Nutrients and Goals, with Overview nearest the thumb. The open page is marked, and More stays lit while you view one of them. Settings, and Plan and Administration where your account has them, are in the menu behind your avatar at the top right. The logo at the top left is now only a logo, and the side menu is gone, so the other pages are in one place. Install app stays on the Settings page. `tests/e2e/three-tab-bar.spec.ts` walks the bar, and `tests/e2e/menu-is-found.spec.ts` checks every label and tile in six languages at 360 and 390 px and that neither panel moves the page.
+- **The phone bottom bar now has three tabs.** The bar holds Diary, a round plus button in the centre, and More. A tap on the plus button lets you search for a food, type a meal, speak it, or take a photo. More slides up a panel from the bottom with a tile for each other page: Overview, Insights, Pantry, Fasting, Nutrients and Goals, with Overview nearest the thumb. The open page is marked, and More stays lit while you view one of them. Settings, and Plan and Administration where your account has them, are in the menu behind your avatar at the top right. The logo at the top left is now only a logo, and the side menu is gone, so the other pages are in one place. Install app stays on the Settings page. `tests/e2e/three-tab-bar.spec.ts` walks the bar, and `tests/e2e/menu-is-found.spec.ts` checks every label and tile in six languages at 360 and 390 px and that neither panel moves the page. ([44c71e5](https://github.com/LowCarbCheck/openplate/commit/44c71e5))
 
 ## [0.46.0] - 2026-09-24
 

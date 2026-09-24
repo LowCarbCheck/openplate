@@ -15252,6 +15252,13 @@
     "at": "2026-09-14",
     "es": "Resumen diario a las {{time}} y objetivo de ayuno"
   },
+  "c7d4243df0efdc48": {
+    "en": "The phone bottom bar now has three tabs.",
+    "path": "releases:v0_47_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "es": "La barra inferior del teléfono ahora tiene tres pestañas."
+  },
   "c7ea42c3230a077e": {
     "en": "That is a lot of attempts in a short time. Wait a minute, then try again.",
     "path": "common:landing.newsletter.status.tooManyAttempts",
