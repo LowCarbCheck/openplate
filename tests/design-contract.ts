@@ -18,6 +18,12 @@ export const VICTOR_MONO = 'Victor Mono Variable';
 export const INTER = 'Inter Variable';
 
 /**
+ * The local face a page is painted in until Victor Mono arrives, declared by `@font-face` in
+ * `app/app.css` with Victor Mono's width and line metrics, so the swap moves nothing (M256 spec 03).
+ */
+export const VICTOR_MONO_FALLBACK = 'Victor Mono Fallback';
+
+/**
  * The serif the wordmark used to be set in, until 2026-09-21. It is no longer loaded or named
  * anywhere in the app. It stays here so a control can force a family that is not the body's, and
  * so a check can say that nothing on a screen computes it any more.
@@ -29,9 +35,10 @@ export const WORDMARK_WEIGHT = '100';
 
 /**
  * The stack the `body` font role declares, character for character, as `app/app.css` writes
- * it. Victor Mono first, Inter behind it, then the device's monospace faces.
+ * it. Victor Mono first, its metric-matched fallback next, Inter behind them, then the device's
+ * monospace faces.
  */
-export const BODY_STACK = `'${VICTOR_MONO}', '${INTER}', ui-monospace, monospace`;
+export const BODY_STACK = `'${VICTOR_MONO}', '${VICTOR_MONO_FALLBACK}', '${INTER}', ui-monospace, monospace`;
 
 /** The stack the `prose` font role declares. */
 export const PROSE_STACK = `'${INTER}', sans-serif`;
@@ -40,7 +47,7 @@ export const PROSE_STACK = `'${INTER}', sans-serif`;
  * The stack the brand role declares. Victor Mono, the same face as the body, because the wordmark
  * is told apart by its weight and its two colours and no longer by a face of its own.
  */
-export const BRAND_STACK = `'${VICTOR_MONO}', ui-monospace, monospace`;
+export const BRAND_STACK = `'${VICTOR_MONO}', '${VICTOR_MONO_FALLBACK}', ui-monospace, monospace`;
 
 /**
  * The section label's recipe, token by token: small, semibold, uppercase, lightly tracked and

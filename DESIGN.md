@@ -190,9 +190,9 @@ there instead of a sweep of the tree.
 
 | Role | Declares | Utility | Who asks for it |
 | --- | --- | --- | --- |
-| `--font-body` | `'Victor Mono Variable', 'Inter Variable', ui-monospace, monospace` | `font-body` | `<body>`, so the whole app |
+| `--font-body` | `'Victor Mono Variable', 'Victor Mono Fallback', 'Inter Variable', ui-monospace, monospace` | `font-body` | `<body>`, so the whole app |
 | `--font-prose` | `'Inter Variable', sans-serif` | `font-prose` | `.prose` and the four legal pages |
-| `--font-brand` | `'Victor Mono Variable', ui-monospace, monospace` | `font-display` | the `Wordmark` component, and nothing else |
+| `--font-brand` | `'Victor Mono Variable', 'Victor Mono Fallback', ui-monospace, monospace` | `font-display` | the `Wordmark` component, and nothing else |
 
 Three more `--font-*` names sit in the same block and are NOT roles. `--font-sans` and `--font-mono`
 are Tailwind's own variable names, read by the `font-sans` and `font-mono` utilities; they still
@@ -204,7 +204,17 @@ this document does not learn it.
 
 - **Body face: Victor Mono Variable (M243 spec 01).** The monospace voice is the single largest
   piece of the lowcarbcheck resemblance. Inter Variable sits behind it in the stack for a glyph
-  Victor Mono lacks, then the device's own monospace. Ligatures are off app-wide
+  Victor Mono lacks, then the device's own monospace.
+- **The swap to Victor Mono moves nothing (M256 spec 03).** A page painted before the Victor Mono
+  file arrives is painted in `Victor Mono Fallback`, which sits between Victor Mono and Inter in the
+  body and brand stacks. It is a `@font-face` in `app/app.css` over a fixed-width face the device
+  already has (Courier New, Liberation Mono, Cousine and a few more), with `size-adjust` and
+  line-metric overrides computed from both font files, so every glyph is as wide as Victor Mono's
+  and a line wraps at the same character in both faces. `root.tsx` also preloads the `latin` file
+  every page needs. A narrower first face once wrapped a card description on the swap and pushed
+  the card's content down 20 px. `tests/e2e/font-swap-moves-nothing.spec.ts` holds the file back
+  and requires a layout-shift total of 0. A new font file or a new face in a stack needs the same
+  treatment: a matched local fallback, and that check. Ligatures are off app-wide
   (`font-variant-ligatures: none` on `body`): Victor Mono joins `->` and `<=` into one glyph, and
   people type exactly those into food names.
 - **Long-form reading stays in Inter**, through the `prose` role. A monospace paragraph at 16px in

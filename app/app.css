@@ -8,6 +8,69 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+/* THE FACE A FIRST PAINT IS DRAWN IN, until Victor Mono arrives (M256 spec 03).
+
+   Victor Mono comes from `@fontsource-variable` with `font-display: swap`, so a page painted
+   before its file lands is painted in the next face of the stack, and the swap redraws it in
+   Victor Mono. When the two faces are different widths, a line that fitted wraps, and everything
+   below it moves. The GitHub runner painted in a narrower face every run: the invite card on
+   /join pushed its loading block down 20 px, and the build never passed there. A person on a first
+   visit with an empty cache meets the same swap.
+
+   So the next face is this one: a fixed-width font the device already has, scaled to Victor Mono's
+   width and given Victor Mono's line metrics. Every glyph is then as wide as Victor Mono's and every
+   line box as tall, so a line breaks at the same character in both faces and the swap moves no box.
+   It sits right after Victor Mono in the body and brand stacks, before Inter, so a proportional
+   face is never painted first.
+
+   THE NUMBERS, read from the font files with fontTools. Victor Mono (units per em 1000): every
+   glyph advances 600, ascent 1100, descent 250, line gap 0, at every weight. Liberation Mono,
+   Courier New and Cousine are metric twins (units per em 2048): every glyph advances 1229.
+     size-adjust      = 0.600 / (1229 / 2048)  = 99.9837%
+     ascent-override  = 1.100 / 0.999837      = 110.0179%
+     descent-override = 0.250 / 0.999837      = 25.0041%
+     line-gap-override = 0%
+   The overrides are divided by the size adjustment because the browser scales them by it.
+
+   THE SOURCES, in the order the browser tries them. First the faces that advance 0.6 em to within
+   0.02%: Courier New (Windows, macOS, iOS), Liberation Mono (most Linux desktops, and the test
+   machine, see `tests/e2e/fonts.conf`), Cousine (ChromeOS), Noto Sans Mono, Adwaita Mono and Droid
+   Sans Mono (Android). Last Menlo and DejaVu Sans Mono, which advance 1233/2048, 0.33% wider: a
+   line of 40 characters at 14 px comes out 1.1 px longer, far closer than any proportional face.
+   Each is named twice where its full name and its PostScript name differ, because a platform
+   matches `local()` against either. A device with none of them skips this face and paints Inter,
+   which is the state before this rule.
+
+   A bold face of its own from 600 up, so the browser never draws a synthetic bold, which is not
+   guaranteed to keep the advance. */
+@font-face {
+  font-family: 'Victor Mono Fallback';
+  font-style: normal;
+  font-weight: 100 500;
+  src:
+    local('Courier New'), local('CourierNewPSMT'), local('Liberation Mono'), local('LiberationMono'), local('Cousine'),
+    local('Noto Sans Mono'), local('NotoSansMono-Regular'), local('Adwaita Mono'), local('Droid Sans Mono'),
+    local('DroidSansMono'), local('Menlo'), local('Menlo-Regular'), local('DejaVu Sans Mono'), local('DejaVuSansMono');
+  size-adjust: 99.9837%;
+  ascent-override: 110.0179%;
+  descent-override: 25.0041%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Victor Mono Fallback';
+  font-style: normal;
+  font-weight: 600 900;
+  src:
+    local('Courier New Bold'), local('CourierNewPS-BoldMT'), local('Liberation Mono Bold'), local('LiberationMono-Bold'),
+    local('Cousine Bold'), local('Cousine-Bold'), local('Menlo Bold'), local('Menlo-Bold'), local('DejaVu Sans Mono Bold'),
+    local('DejaVuSansMono-Bold');
+  size-adjust: 99.9837%;
+  ascent-override: 110.0179%;
+  descent-override: 25.0041%;
+  line-gap-override: 0%;
+}
+
 @theme {
   /* Square corners everywhere (operator decision, 2026-09-22): every derived radius resolves to
      0, so a component that still asks Tailwind's default scale for `rounded-lg` or `rounded-md`
@@ -24,23 +87,27 @@
   --radius-3xl: var(--radius);
 
   --font-sans: 'Inter Variable', sans-serif;
-  --font-mono: 'Victor Mono Variable', monospace;
+  --font-mono: 'Victor Mono Variable', 'Victor Mono Fallback', monospace;
 
   /* The three font ROLES. A screen asks for a role, never for a face, so a taste
      reversal is one line here and not a sweep of the tree.
 
-     body:  the app's voice, on <body>. Victor Mono first. A glyph it lacks is
-            offered to Inter next, whose subsets carry a few more, and only then
-            to the device's own monospace face. To put the WHOLE app back in
-            Inter, change this one line to 'Inter Variable', sans-serif.
+     body:  the app's voice, on <body>. Victor Mono first. Until its file has
+            arrived, and for a glyph it lacks, `Victor Mono Fallback` (declared
+            above) is next: a local face as wide as Victor Mono, so the swap
+            moves nothing. A glyph neither has is offered to Inter, whose subsets
+            carry a few more, and only then to the device's own monospace face.
+            To put the WHOLE app back in Inter, change this one line to
+            'Inter Variable', sans-serif.
      prose: long-form reading, on the legal pages and on `.prose`. Inter.
      brand: the wordmark, and only the wordmark. Victor Mono, set at its lowest
-            weight by the `Wordmark` component. It was Fraunces, a self-hosted
+            weight by the `Wordmark` component, with the same fallback face
+            behind it. It was Fraunces, a self-hosted
             serif, until 2026-09-21. Exposed as the `font-display` Tailwind
             utility, which the `Wordmark` component owns. */
-  --font-body: 'Victor Mono Variable', 'Inter Variable', ui-monospace, monospace;
+  --font-body: 'Victor Mono Variable', 'Victor Mono Fallback', 'Inter Variable', ui-monospace, monospace;
   --font-prose: 'Inter Variable', sans-serif;
-  --font-brand: 'Victor Mono Variable', ui-monospace, monospace;
+  --font-brand: 'Victor Mono Variable', 'Victor Mono Fallback', ui-monospace, monospace;
   --font-display: var(--font-brand);
 
   --color-accent-amber: hsl(var(--accent-amber));

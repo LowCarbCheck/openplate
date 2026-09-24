@@ -131,6 +131,16 @@ jobs:
       # Chromium that is present and cannot start says so in one sentence.
       - name: Prove Chromium starts here
         run: pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))"
+      # `tests/e2e/fonts.conf` points `monospace` at Liberation Mono, and
+      # `Victor Mono Fallback` in `app/app.css` is computed from its metrics
+      # (M256 spec 03). Both come from `fonts-liberation`, which the Chromium
+      # install above puts here. Said in the log, and refused here if it is
+      # missing, so a runner image without it fails in one sentence instead of
+      # as a layout shift three stages later.
+      - name: The face the browser tier paints before the web fonts arrive
+        run: |
+          FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace
+          FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace | grep -q '"Liberation Mono"'
       - name: Browser smoke tier against the production build
         run: CI=true pnpm test:e2e
 

@@ -67,10 +67,13 @@ test('at zero free scans the header says so, links to the plans, and moves nothi
 
   await expect(headerStatus(page)).toContainText(EN.plan.countdown.scansUsed, { timeout: 10_000 });
   await settleReads(page);
+  // EVERY ENTRY, the wordmark's included. The header's brand word used to swap from the fallback
+  // face to Victor Mono on every document load and was filtered out here; since `Victor Mono
+  // Fallback` (M256 spec 03) the swap moves nothing, and `font-swap-moves-nothing.spec.ts` proves it
+  // with the font file held back.
   const entries = await readShiftEntries(page);
-  const moved = entries.filter((entry) => !entry.sources.every((source) => source.startsWith('span "openplate"')));
   expect(
-    moved.map((entry) => `${entry.value.toFixed(4)}: ${entry.sources.join('; ')}`),
+    entries.map((entry) => `${entry.value.toFixed(4)}: ${entry.sources.join('; ')}`),
     'something moved while the line arrived',
   ).toEqual([]);
 

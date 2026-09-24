@@ -35,7 +35,14 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import { BODY_STACK, BRAND_STACK, GRID_CELL_PX, GRID_LINE_ALPHA, PROSE_STACK } from '../design-contract';
+import {
+  BODY_STACK,
+  BRAND_STACK,
+  GRID_CELL_PX,
+  GRID_LINE_ALPHA,
+  PROSE_STACK,
+  VICTOR_MONO_FALLBACK,
+} from '../design-contract';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const ROOT_SOURCE = readFileSync(join(ROOT, 'app/root.tsx'), 'utf8');
@@ -62,6 +69,19 @@ function hasClassToken({ classList, token }: { classList: string | null; token: 
 /** The stylesheet with every block comment removed, so a rule written only in prose is not a rule. */
 function withoutComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+/**
+ * The stylesheet without its comments and without its `@font-face` blocks. A `font-family` inside
+ * `@font-face` names the face that block DECLARES; it sets no element's face.
+ */
+function withoutFontFaces(css: string): string {
+  return withoutComments(css).replace(/@font-face\s*\{[^}]*\}/g, '');
+}
+
+/** The body of every `@font-face` block, comments ignored, in file order. */
+function fontFaceBodiesOf(css: string): string[] {
+  return [...withoutComments(css).matchAll(/@font-face\s*\{([^}]*)\}/g)].map((match) => match[1]);
 }
 
 /** Escapes a string for use inside a RegExp. */
@@ -169,7 +189,7 @@ describe('the body face', () => {
 });
 
 describe('the three font roles', () => {
-  it('declares the body role once, as Victor Mono, then Inter, then the device monospace', () => {
+  it('declares the body role once, as Victor Mono, its fallback, then Inter, then the device monospace', () => {
     assert.equal(bodyRoleIs({ css: APP_CSS, stack: BODY_STACK }), true, `--font-body must be exactly: ${BODY_STACK}`);
   });
 
@@ -183,8 +203,25 @@ describe('the three font roles', () => {
   });
 
   it('lets no rule outside the roles set a face: the only font-family declaration is .prose', () => {
-    const families = valuesOf({ css: APP_CSS, property: 'font-family' });
+    const families = valuesOf({ css: withoutFontFaces(APP_CSS), property: 'font-family' });
     assert.deepEqual(families, ['var(--font-prose)']);
+  });
+
+  it('declares only the fallback face the stacks name, with every metric override, in its @font-face blocks', () => {
+    const bodies = fontFaceBodiesOf(APP_CSS);
+    assert.equal(bodies.length, 2, 'one regular and one bold face of the fallback');
+    for (const body of bodies) {
+      assert.deepEqual(valuesOf({ css: body, property: 'font-family' }), [`'${VICTOR_MONO_FALLBACK}'`]);
+      for (const descriptor of ['size-adjust', 'ascent-override', 'descent-override', 'line-gap-override']) {
+        assert.equal(valuesOf({ css: body, property: descriptor }).length, 1, `the fallback face needs ${descriptor}`);
+      }
+    }
+  });
+
+  it('CONTROL: a face set on an element next to an @font-face is still seen, and the declared face is not', () => {
+    const css = `@font-face { font-family: 'X'; src: local('Y'); }\n.a { font-family: 'Z'; }`;
+    assert.deepEqual(valuesOf({ css: withoutFontFaces(css), property: 'font-family' }), ["'Z'"]);
+    assert.deepEqual(fontFaceBodiesOf(`/* @font-face { font-family: 'X'; } */`), [], 'a block in a comment is not a block');
   });
 
   it('turns ligatures off on the body, so ->, <= and != typed in a food name are drawn as typed', () => {

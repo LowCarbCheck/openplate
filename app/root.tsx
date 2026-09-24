@@ -17,6 +17,7 @@ import type { Route } from './+types/root';
 import { getToast } from '#app/utils/toast.server';
 import { hasLegalPages } from '#app/lib/content/content-route.server';
 import stylesheet from './app.css?url';
+import victorMonoLatin from '@fontsource-variable/victor-mono/files/victor-mono-latin-wght-normal.woff2?url';
 import { combineHeaders } from '#app/utils/misc';
 import { useToast } from '#app/hooks/use-toast';
 import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
@@ -33,6 +34,13 @@ import type { PublicConfig } from '#app/config/public-config';
 
 export const links: Route.LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
+  // The one font file every page needs, fetched with the stylesheet instead of after the first
+  // layout has found a Latin letter, so the swap from `Victor Mono Fallback` comes sooner (M256
+  // spec 03). The same URL the stylesheet's `@font-face` names, so the browser fetches it once;
+  // `crossOrigin` because a font is always fetched in CORS mode, and a preload in another mode is
+  // a second download. The other five subsets stay lazy: a page asks for them only when it holds
+  // a character in their range.
+  { rel: 'preload', href: victorMonoLatin, as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
   { rel: 'manifest', href: '/site.webmanifest' },
   // Cache-busted (?v=2): the icon files were replaced in-place and browsers
   // cling to the old cached favicon otherwise.
