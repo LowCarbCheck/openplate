@@ -110,6 +110,51 @@ export function instantOnDate(date: string, timeZone: string, now: Date = new Da
   return new Date(target.start.getTime() + clampedOffset);
 }
 
+/** A local wall-clock time of day, 24-hour. */
+export interface WallClockTime {
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+/**
+ * The UTC instant a local wall-clock reading on `date` names in `timeZone`,
+ * for a source that records "2026-09-01 08:15:00" with no offset. DST-correct:
+ * the offset is read at the instant itself, not at local midnight, so 08:15 on
+ * a spring-forward day is 08:15 and not 09:15. A reading inside a
+ * spring-forward gap moves forward by the gap (02:30 becomes 03:30); one inside
+ * a fall-back hour takes the second occurrence.
+ *
+ * @param options.date - the local calendar day as `YYYY-MM-DD`.
+ * @param options.time - the wall-clock time on that day.
+ * @param options.timeZone - IANA time-zone name.
+ * @returns the instant.
+ * @throws if the date, the time or the zone is invalid.
+ */
+export function instantAtWallClock({
+  date,
+  time,
+  timeZone,
+}: {
+  date: string;
+  time: WallClockTime;
+  timeZone: string;
+}): Date {
+  if (!isValidTimeZone(timeZone)) throw new Error(`Invalid IANA time zone: ${timeZone}`);
+  const isInRange =
+    Number.isInteger(time.hour) &&
+    Number.isInteger(time.minute) &&
+    Number.isInteger(time.second) &&
+    time.hour >= 0 &&
+    time.hour <= 23 &&
+    time.minute >= 0 &&
+    time.minute <= 59 &&
+    time.second >= 0 &&
+    time.second <= 59;
+  if (!isInRange) throw new Error(`Invalid wall-clock time: ${time.hour}:${time.minute}:${time.second}`);
+  return _zonedWallClockUtc(date, time, timeZone);
+}
+
 /**
  * Shifts a `YYYY-MM-DD` calendar date by `days` (may be negative), returning
  * another `YYYY-MM-DD`. Pure calendar arithmetic — independent of any zone.
@@ -210,8 +255,13 @@ function _offsetMs(instant: Date, timeZone: string): number {
  * offset at the naive guess can differ from the offset at the true midnight).
  */
 function _zonedMidnightUtc(date: string, timeZone: string): Date {
+  return _zonedWallClockUtc(date, { hour: 0, minute: 0, second: 0 }, timeZone);
+}
+
+/** The general form of {@link _zonedMidnightUtc}: any wall-clock time on `date`, same single offset iteration. */
+function _zonedWallClockUtc(date: string, time: WallClockTime, timeZone: string): Date {
   const [year, month, day] = _parseDateParts(date);
-  const utcGuess = Date.UTC(year, month - 1, day, 0, 0, 0);
+  const utcGuess = Date.UTC(year, month - 1, day, time.hour, time.minute, time.second);
   const offset0 = _offsetMs(new Date(utcGuess), timeZone);
   const candidate = utcGuess - offset0;
   const offset1 = _offsetMs(new Date(candidate), timeZone);

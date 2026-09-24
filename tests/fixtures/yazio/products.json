@@ -1,0 +1,170 @@
+{
+  "products": {
+    "prod-milk-001": {
+      "base_unit": "ml",
+      "category": "milkproducts",
+      "countries": [
+        "de",
+        "at"
+      ],
+      "eans": [],
+      "has_ean": false,
+      "is_deleted": false,
+      "is_private": false,
+      "is_verified": true,
+      "language": "de",
+      "name": "Whole Milk",
+      "nutrients": {
+        "energy.energy": 0.64,
+        "mineral.calcium": 0.00012,
+        "nutrient.carb": 0.048,
+        "nutrient.fat": 0.036,
+        "nutrient.protein": 0.032,
+        "nutrient.saturated": 0.023,
+        "nutrient.sugar": 0.048
+      },
+      "producer": null,
+      "servings": [
+        {
+          "amount": 1,
+          "serving": "milliliter"
+        },
+        {
+          "amount": 250,
+          "serving": "glass"
+        }
+      ],
+      "updated_at": "2026-05-15T00:00:00Z"
+    },
+    "prod-oat-001": {
+      "base_unit": "g",
+      "category": "cerealproducts",
+      "countries": [
+        "de",
+        "us",
+        "gb"
+      ],
+      "eans": [
+        "4001234567890"
+      ],
+      "has_ean": true,
+      "is_deleted": false,
+      "is_private": false,
+      "is_verified": true,
+      "language": "en",
+      "name": "Rolled Oats",
+      "nutrients": {
+        "energy.energy": 3.89,
+        "mineral.iron": 0.0000417,
+        "nutrient.carb": 0.663,
+        "nutrient.dietaryfiber": 0.102,
+        "nutrient.fat": 0.069,
+        "nutrient.protein": 0.169,
+        "nutrient.saturated": 0.012,
+        "nutrient.sodium": 0.00002,
+        "nutrient.sugar": 0.011,
+        "vitamin.b1": 0.000006
+      },
+      "producer": "Golden Field Mills",
+      "servings": [
+        {
+          "amount": 1,
+          "serving": "gram"
+        },
+        {
+          "amount": 80,
+          "serving": "cup"
+        }
+      ],
+      "updated_at": "2026-06-01T00:00:00Z"
+    },
+    "prod-rice-001": {
+      "base_unit": "g",
+      "category": "cerealproducts",
+      "countries": [
+        "us"
+      ],
+      "eans": [],
+      "has_ean": false,
+      "is_deleted": false,
+      "is_private": false,
+      "is_verified": false,
+      "language": "en",
+      "name": "White Rice, cooked",
+      "nutrients": {
+        "energy.energy": 1.3,
+        "nutrient.carb": 0.28,
+        "nutrient.fat": 0.003,
+        "nutrient.protein": 0.027
+      },
+      "producer": null,
+      "servings": [],
+      "updated_at": "2026-04-10T00:00:00Z"
+    }
+  },
+  "recipes": {
+    "recipe-lentil-soup-001": {
+      "available_since": null,
+      "id": "recipe-lentil-soup-001",
+      "image": null,
+      "instructions": [],
+      "is_pro_recipe": false,
+      "is_yazio_recipe": false,
+      "locale": "en",
+      "name": "Lentil Soup",
+      "nutrients": {
+        "energy.energy": 145.2,
+        "mineral.iron": 0.0021,
+        "mineral.potassium": 0.35,
+        "nutrient.carb": 21.4,
+        "nutrient.dietaryfiber": 6.5,
+        "nutrient.fat": 3.2,
+        "nutrient.protein": 8.1,
+        "nutrient.sugar": 2.1
+      },
+      "portion_count": 4,
+      "servings": [
+        {
+          "amount": 200,
+          "base_unit": "g",
+          "name": "Red Lentils",
+          "note": null,
+          "producer": null,
+          "product_id": "prod-lentil-001",
+          "serving": "gram",
+          "serving_quantity": 200
+        },
+        {
+          "amount": 100,
+          "base_unit": "g",
+          "name": "Carrot",
+          "note": null,
+          "producer": null,
+          "product_id": "prod-carrot-001",
+          "serving": "gram",
+          "serving_quantity": 100
+        }
+      ],
+      "yazio_id": null
+    },
+    "recipe-no-ingredients-001": {
+      "available_since": null,
+      "id": "recipe-no-ingredients-001",
+      "image": null,
+      "instructions": [],
+      "is_pro_recipe": false,
+      "is_yazio_recipe": false,
+      "locale": "en",
+      "name": "Green Smoothie",
+      "nutrients": {
+        "energy.energy": 120,
+        "nutrient.carb": 18,
+        "nutrient.fat": 2,
+        "nutrient.protein": 4
+      },
+      "portion_count": 1,
+      "servings": [],
+      "yazio_id": null
+    }
+  }
+}

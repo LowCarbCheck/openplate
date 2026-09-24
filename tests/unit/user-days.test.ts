@@ -12,6 +12,7 @@ import {
   todayInTimezone,
   dayBoundsInTimezone,
   instantOnDate,
+  instantAtWallClock,
   parseDateParam,
   shiftDate,
   enumerateDates,
@@ -190,5 +191,53 @@ describe('enumerateDates', () => {
 
   it('returns an empty list when from is after to', () => {
     assert.deepStrictEqual(enumerateDates('2026-07-13', '2026-07-11'), []);
+  });
+});
+
+/** Epoch ms of a Berlin wall-clock reading. */
+function berlinInstant(date: string, hour: number, minute: number): number {
+  return instantAtWallClock({ date, time: { hour, minute, second: 0 }, timeZone: 'Europe/Berlin' }).getTime();
+}
+
+describe('instantAtWallClock', () => {
+  it('reads a winter reading at UTC+1 and a summer reading at UTC+2', () => {
+    // 08:15 CET is 07:15Z; 08:15 CEST is 06:15Z. The control is the pair: one offset for both would fail one of them.
+    assert.strictEqual(berlinInstant('2026-01-15', 8, 15), Date.UTC(2026, 0, 15, 7, 15));
+    assert.strictEqual(berlinInstant('2026-07-15', 8, 15), Date.UTC(2026, 6, 15, 6, 15));
+  });
+
+  it('uses the offset at the reading, not at midnight, on a spring-forward day', () => {
+    // 2026-03-29 local midnight is still CET, so midnight plus 8h15m would read 07:15Z (09:15 CEST).
+    const midnightPlusElapsed =
+      dayBoundsInTimezone('2026-03-29', 'Europe/Berlin').start.getTime() + 8 * HOUR_MS + 15 * 60 * 1000;
+    assert.strictEqual(berlinInstant('2026-03-29', 8, 15), Date.UTC(2026, 2, 29, 6, 15));
+    assert.notStrictEqual(berlinInstant('2026-03-29', 8, 15), midnightPlusElapsed);
+  });
+
+  it('moves a reading inside the spring-forward gap forward by the gap', () => {
+    // 02:30 does not exist on 2026-03-29 in Berlin; it lands on 03:30 CEST, 01:30Z.
+    assert.strictEqual(berlinInstant('2026-03-29', 2, 30), Date.UTC(2026, 2, 29, 1, 30));
+  });
+
+  it('takes the second occurrence of a fall-back hour', () => {
+    // 02:30 happens twice on 2026-10-25: 00:30Z (CEST) and 01:30Z (CET).
+    assert.strictEqual(berlinInstant('2026-10-25', 2, 30), Date.UTC(2026, 9, 25, 1, 30));
+  });
+
+  it('throws on an impossible time, date or zone', () => {
+    assert.throws(() =>
+      instantAtWallClock({ date: '2026-01-15', time: { hour: 24, minute: 0, second: 0 }, timeZone: 'UTC' }),
+    );
+    assert.throws(() =>
+      instantAtWallClock({ date: '2026-02-30', time: { hour: 8, minute: 0, second: 0 }, timeZone: 'UTC' }),
+    );
+    assert.throws(() =>
+      instantAtWallClock({ date: '2026-01-15', time: { hour: 8, minute: 0, second: 0 }, timeZone: 'Mars/Base' }),
+    );
+    // Control: the same call with valid parts does not throw.
+    assert.strictEqual(
+      instantAtWallClock({ date: '2026-01-15', time: { hour: 8, minute: 0, second: 0 }, timeZone: 'UTC' }).getTime(),
+      Date.UTC(2026, 0, 15, 8, 0),
+    );
   });
 });

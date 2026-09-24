@@ -1,0 +1,419 @@
+{
+  "2026-09-01": {
+    "consumed": {
+      "products": [
+        {
+          "amount": 40,
+          "date": "2026-09-01 08:15:00",
+          "daytime": "breakfast",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000001",
+          "product_id": "prod-oat-001",
+          "serving": "gram",
+          "serving_quantity": 40,
+          "type": "product"
+        },
+        {
+          "amount": 200,
+          "date": "2026-09-01 08:16:00",
+          "daytime": "breakfast",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000002",
+          "product_id": "prod-milk-001",
+          "serving": "milliliter",
+          "serving_quantity": 200,
+          "type": "product"
+        },
+        {
+          "amount": 150,
+          "date": "2026-09-01 12:30:00",
+          "daytime": "lunch",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000003",
+          "product_id": "prod-rice-001",
+          "serving": "gram",
+          "serving_quantity": 150,
+          "type": "product"
+        },
+        {
+          "amount": 80,
+          "date": "2026-09-01 19:05:00",
+          "daytime": "dinner",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000004",
+          "product_id": "prod-ghost-missing-001",
+          "serving": "gram",
+          "serving_quantity": 80,
+          "type": "product"
+        }
+      ],
+      "recipe_portions": [
+        {
+          "date": "2026-09-01 13:00:00",
+          "daytime": "lunch",
+          "id": "9c2a1a2e-0002-4a10-8a10-000000000001",
+          "portion_count": 2,
+          "recipe_id": "recipe-lentil-soup-001",
+          "type": "recipe_portion"
+        }
+      ],
+      "simple_products": [
+        {
+          "date": "2026-09-01 16:45:00",
+          "daytime": "snack",
+          "id": "9c2a1a2e-0003-4a10-8a10-000000000001",
+          "name": "Handful of almonds (quick add)",
+          "nutrients": {
+            "energy.energy": 90,
+            "nutrient.carb": 3,
+            "nutrient.fat": 8,
+            "nutrient.protein": 3
+          },
+          "type": "simple_product"
+        }
+      ]
+    },
+    "daily_summary": {
+      "activity_energy": 120,
+      "goals": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      },
+      "meals": {
+        "breakfast": {
+          "energy_goal": 500,
+          "nutrients": {
+            "energy.energy": 284,
+            "nutrient.carb": 36.2,
+            "nutrient.fat": 10,
+            "nutrient.protein": 13.2
+          }
+        },
+        "dinner": {
+          "energy_goal": 600,
+          "nutrients": {
+            "energy.energy": 0,
+            "nutrient.carb": 0,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          }
+        },
+        "lunch": {
+          "energy_goal": 700,
+          "nutrients": {
+            "energy.energy": 485.4,
+            "nutrient.carb": 82.9,
+            "nutrient.fat": 10.95,
+            "nutrient.protein": 20.25
+          }
+        },
+        "snack": {
+          "energy_goal": 200,
+          "nutrients": {
+            "energy.energy": 90,
+            "nutrient.carb": 3,
+            "nutrient.fat": 8,
+            "nutrient.protein": 3
+          }
+        }
+      },
+      "steps": 3200,
+      "units": {
+        "unit_energy": "kcal",
+        "unit_length": "cm",
+        "unit_mass": "kg",
+        "unit_serving": "metric"
+      },
+      "water_intake": 1800
+    },
+    "exercises": {
+      "activity": null,
+      "custom_training": [],
+      "training": [
+        {
+          "date": "2026-09-01",
+          "distance": 2.5,
+          "duration": 1800,
+          "energy": 120,
+          "gateway": null,
+          "id": "9c2a1a2e-0004-4a10-8a10-000000000001",
+          "name": "Walking",
+          "note": "Evening walk",
+          "source": "apple_health",
+          "steps": 3200
+        }
+      ]
+    },
+    "goals": {
+      "data": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      }
+    },
+    "water": {
+      "gateway": null,
+      "source": null,
+      "water_intake": 1800
+    }
+  },
+  "2026-09-02": {
+    "consumed": {
+      "products": [
+        {
+          "amount": 50,
+          "date": "2026-09-02 07:50:00",
+          "daytime": "breakfast",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000005",
+          "product_id": "prod-oat-001",
+          "serving": "gram",
+          "serving_quantity": 50,
+          "type": "product"
+        },
+        {
+          "amount": 200,
+          "date": "2026-09-02 19:20:00",
+          "daytime": "dinner",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000006",
+          "product_id": "prod-rice-001",
+          "serving": "gram",
+          "serving_quantity": 200,
+          "type": "product"
+        },
+        {
+          "amount": "a handful",
+          "date": "2026-09-02 10:30:00",
+          "daytime": "snack",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000008",
+          "product_id": "prod-rice-001",
+          "serving": "gram",
+          "serving_quantity": null,
+          "type": "product"
+        }
+      ],
+      "recipe_portions": [
+        {
+          "date": "2026-09-02 12:40:00",
+          "daytime": "lunch",
+          "id": "9c2a1a2e-0002-4a10-8a10-000000000003",
+          "portion_count": 1,
+          "recipe_id": "recipe-ghost-missing-001",
+          "type": "recipe_portion"
+        }
+      ],
+      "simple_products": [
+        {
+          "date": "2026-09-02 15:30:00",
+          "daytime": "snack",
+          "id": "9c2a1a2e-0003-4a10-8a10-000000000002",
+          "name": "Coffee with sugar (quick add)",
+          "nutrients": {
+            "energy.energy": 40,
+            "nutrient.carb": 10,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          },
+          "type": "simple_product"
+        }
+      ]
+    },
+    "daily_summary": {
+      "activity_energy": null,
+      "goals": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      },
+      "meals": {
+        "breakfast": {
+          "energy_goal": 500,
+          "nutrients": {
+            "energy.energy": 194.5,
+            "nutrient.carb": 33.15,
+            "nutrient.fat": 3.45,
+            "nutrient.protein": 8.45
+          }
+        },
+        "dinner": {
+          "energy_goal": 600,
+          "nutrients": {
+            "energy.energy": 260,
+            "nutrient.carb": 56,
+            "nutrient.fat": 0.6,
+            "nutrient.protein": 5.4
+          }
+        },
+        "lunch": {
+          "energy_goal": 700,
+          "nutrients": {
+            "energy.energy": 0,
+            "nutrient.carb": 0,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          }
+        },
+        "snack": {
+          "energy_goal": 200,
+          "nutrients": {
+            "energy.energy": 40,
+            "nutrient.carb": 10,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          }
+        }
+      },
+      "steps": null,
+      "units": {
+        "unit_energy": "kcal",
+        "unit_length": "cm",
+        "unit_mass": "kg",
+        "unit_serving": "metric"
+      },
+      "water_intake": 1500
+    },
+    "exercises": {
+      "activity": null,
+      "custom_training": [],
+      "training": []
+    },
+    "goals": {
+      "data": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      }
+    },
+    "water": {
+      "gateway": null,
+      "source": null,
+      "water_intake": 1500
+    }
+  },
+  "2026-09-03": {
+    "consumed": {
+      "products": [
+        {
+          "amount": 250,
+          "date": "2026-09-03 08:05:00",
+          "daytime": "breakfast",
+          "id": "9c2a1a2e-0001-4a10-8a10-000000000007",
+          "product_id": "prod-milk-001",
+          "serving": "milliliter",
+          "serving_quantity": 250,
+          "type": "product"
+        }
+      ],
+      "recipe_portions": [
+        {
+          "date": "2026-09-03 13:10:00",
+          "daytime": "lunch",
+          "id": "9c2a1a2e-0002-4a10-8a10-000000000002",
+          "portion_count": 1,
+          "recipe_id": "recipe-lentil-soup-001",
+          "type": "recipe_portion"
+        },
+        {
+          "date": "2026-09-03 19:00:00",
+          "daytime": "dinner",
+          "id": "9c2a1a2e-0002-4a10-8a10-000000000004",
+          "portion_count": 1,
+          "recipe_id": "recipe-no-ingredients-001",
+          "type": "recipe_portion"
+        }
+      ],
+      "simple_products": []
+    },
+    "daily_summary": {
+      "activity_energy": null,
+      "goals": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      },
+      "meals": {
+        "breakfast": {
+          "energy_goal": 500,
+          "nutrients": {
+            "energy.energy": 160,
+            "nutrient.carb": 12,
+            "nutrient.fat": 9,
+            "nutrient.protein": 8
+          }
+        },
+        "dinner": {
+          "energy_goal": 600,
+          "nutrients": {
+            "energy.energy": 0,
+            "nutrient.carb": 0,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          }
+        },
+        "lunch": {
+          "energy_goal": 700,
+          "nutrients": {
+            "energy.energy": 145.2,
+            "nutrient.carb": 21.4,
+            "nutrient.fat": 3.2,
+            "nutrient.protein": 8.1
+          }
+        },
+        "snack": {
+          "energy_goal": 200,
+          "nutrients": {
+            "energy.energy": 0,
+            "nutrient.carb": 0,
+            "nutrient.fat": 0,
+            "nutrient.protein": 0
+          }
+        }
+      },
+      "steps": null,
+      "units": {
+        "unit_energy": "kcal",
+        "unit_length": "cm",
+        "unit_mass": "kg",
+        "unit_serving": "metric"
+      },
+      "water_intake": 2100
+    },
+    "exercises": {
+      "activity": null,
+      "custom_training": [],
+      "training": []
+    },
+    "goals": {
+      "data": {
+        "activity.step": 10000,
+        "bodyvalue.weight": 75,
+        "energy.energy": 2000,
+        "nutrient.carb": 250,
+        "nutrient.fat": 65,
+        "nutrient.protein": 150,
+        "water": 2000
+      }
+    },
+    "water": {
+      "gateway": null,
+      "source": null,
+      "water_intake": 2100
+    }
+  }
+}
