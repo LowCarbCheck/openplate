@@ -24,6 +24,28 @@
  * `/admin/people/:id` lights PEOPLE: a person's page is somewhere the list
  * leads, not a fourth place. That is a rule worth a test rather than a
  * `startsWith` buried in a `className`.
+ *
+ * ── Every tab stays on screen, so a narrow bar wraps ─────────────────────
+ *
+ * Five labels in the body font (Victor Mono, 0.6em a character) need about
+ * 470 px in English and 556 px in German as one underlined row. A phone gives
+ * the bar 328 to 358 px, and a tablet with the sidebar open gives it about 464.
+ * The single row used to run off the right edge there and widen the whole
+ * page. A sideways scroller would hide the last tabs and a menu would hide all
+ * of them, and a tab nobody can see is the discoverability problem this bar
+ * exists to solve. So below {@link WIDE_BAR_MIN_PX} the bar wraps instead.
+ *
+ * A wrapped underline row reads as broken: the lit tab's underline floats in
+ * the middle of the block, and the bar's own hairline runs under the last row
+ * only. So the narrow bar has its own form. Each tab grows to fill its row,
+ * carries a hairline under itself, and is at least 44 px tall. Each row then
+ * reads as one ruled line, and the lit tab thickens its piece of that line in
+ * the primary colour. Corners stay square, like everything else in the app.
+ *
+ * The switch is a CONTAINER query, not a viewport one. What decides whether
+ * the labels fit is the width the bar gets, and the sidebar takes 256 px of
+ * the viewport from `md` up. A viewport breakpoint would draw the underline
+ * row at 768 px, where it does not fit in German.
  */
 import { useTranslation } from 'react-i18next';
 
@@ -74,6 +96,31 @@ export function activeAdminTab(pathname: string): AdminTab {
   return 'people';
 }
 
+/**
+ * The narrowest bar that draws the one underlined row: 42rem, Tailwind's
+ * `@2xl` container size, which the classes below name. The widest set of
+ * labels today is German at about 556 px, so this leaves room for a longer
+ * translation before the row would have to wrap. The browser tier reads this
+ * number to know which form it is measuring.
+ */
+export const WIDE_BAR_MIN_PX = 672;
+
+/** Every tab, in both forms. Narrow first; the `@2xl:` half restores the underlined row exactly as it was drawn before. */
+const TAB_CLASS =
+  'flex min-h-11 grow items-center justify-center px-3 text-sm font-medium @2xl:-mb-px @2xl:min-h-0 @2xl:grow-0 @2xl:border-b-2 @2xl:py-2';
+
+/**
+ * The lit tab: a 2 px primary rule in both forms.
+ *
+ * The narrow form's border WIDTH lives here and in {@link IDLE_TAB_CLASS}, never in
+ * {@link TAB_CLASS}, so no element carries two unprefixed widths whose order
+ * would decide which one wins.
+ */
+const ACTIVE_TAB_CLASS = 'border-b-2 border-primary text-foreground';
+
+/** Every other tab: a hairline in the narrow form, and the transparent 2 px rule of the underlined row. */
+const IDLE_TAB_CLASS = 'border-b text-muted-foreground hover:text-foreground @2xl:border-transparent';
+
 export interface AdminTabsProps {
   /** The current path. Passed in rather than read from a hook, so a render test can put the bar in any state. */
   pathname: string;
@@ -86,22 +133,23 @@ export function AdminTabs({ pathname, hasFeedback }: AdminTabsProps) {
   const active = activeAdminTab(pathname);
   const visible = ADMIN_TABS.filter((tab) => tab !== 'feedback' || hasFeedback);
 
+  // The wrapper is the container the `@2xl:` classes measure. The nav cannot
+  // be its own: a container query styles what is inside the container, and the
+  // nav's own hairline and gap change between the two forms.
   return (
-    <nav className="flex gap-1 border-b" aria-label={t('admin.tabs.label')}>
-      {visible.map((tab) => (
-        <Link
-          key={tab}
-          to={ADMIN_TAB_PATH[tab]}
-          aria-current={tab === active ? 'page' : undefined}
-          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-            tab === active ?
-              'border-primary text-foreground'
-            : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          {t(ADMIN_TAB_LABEL_KEY[tab])}
-        </Link>
-      ))}
-    </nav>
+    <div className="@container">
+      <nav className="flex flex-wrap @2xl:gap-1 @2xl:border-b" aria-label={t('admin.tabs.label')}>
+        {visible.map((tab) => (
+          <Link
+            key={tab}
+            to={ADMIN_TAB_PATH[tab]}
+            aria-current={tab === active ? 'page' : undefined}
+            className={`${TAB_CLASS} ${tab === active ? ACTIVE_TAB_CLASS : IDLE_TAB_CLASS}`}
+          >
+            {t(ADMIN_TAB_LABEL_KEY[tab])}
+          </Link>
+        ))}
+      </nav>
+    </div>
   );
 }

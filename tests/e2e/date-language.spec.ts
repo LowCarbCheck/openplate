@@ -142,7 +142,10 @@ async function readAdminDates(page: Page, language: LanguageCode): Promise<strin
   await signInFixtureAccount(page);
   await useLanguage(page, language);
   await page.goto(`/admin/people/${ADMIN_PERSON_ID}`);
-  const values = page.locator('dl dd');
+  // INSIDE THE CARD: the console's counts are a `dl` too, above this one, and
+  // they keep their box (with hidden stand-in numbers) even when the unrouted
+  // `/stats` read fails here.
+  const values = page.locator('[data-slot="card"] dl dd');
   // POLLED, because the person is read from the (routed) service after the
   // session reopens, and the first paint is the loading line.
   await expect.poll(() => values.count(), { message: 'the person page must draw its facts' }).toBeGreaterThanOrEqual(2);

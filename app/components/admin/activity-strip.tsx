@@ -15,6 +15,14 @@
  * Each square carries its day and its count as text, so the strip is readable
  * by somebody who cannot see the shading, and ninety of them are ninety `<li>`s
  * rather than a charting dependency.
+ *
+ * ── Both sizes WRAP ──────────────────────────────────────────────────────
+ *
+ * A row strip used to stay on one line. Seven squares fit anywhere, but the
+ * activity page draws thirty or ninety at row size, 418 and 1258 px, and one
+ * line of those ran off a phone and off a laptop alike. A strip that runs out
+ * of room now continues on the next line, in the same day order, so no square
+ * is ever clipped and the page never scrolls sideways.
  */
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +41,7 @@ export function ActivityStrip({ days, size = 'full' }: ActivityStripProps) {
   const { t } = useTranslation();
 
   return (
-    <ul className={`flex gap-0.5 ${size === 'full' ? 'flex-wrap gap-1' : ''}`}>
+    <ul className={`flex flex-wrap ${size === 'full' ? 'gap-1' : 'gap-0.5'}`}>
       {days.map((entry) => (
         <li
           key={entry.day}

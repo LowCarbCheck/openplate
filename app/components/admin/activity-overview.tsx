@@ -52,12 +52,19 @@ export const ACTIVITY_WINDOW_DAYS: readonly number[] = [7, 30, 90];
  * after it against the right edge of the header and of every row alike. The
  * strip in between takes whatever its window needs, and a wide window simply
  * moves where the squares start, not where the numbers are.
+ *
+ * The strip is capped at the row's width (`max-w-full`). A thirty or ninety
+ * day window is wider than a phone, and wider than a laptop at ninety, so the
+ * capped strip takes a line of its own and its squares wrap inside it
+ * (`activity-strip.tsx`) instead of pushing the page sideways. The two
+ * labelled cells are capped and wrap too, for the reason `people-table.tsx`
+ * gives: a long label and its value do not fit one line on a phone.
  */
 const COLUMN_CLASS = {
   person: 'min-w-0 flex-1 basis-56',
-  strip: 'flex shrink-0 items-center gap-2',
-  photosRead: 'flex shrink-0 items-center gap-2 sm:block sm:w-24 sm:text-right',
-  lastSeen: 'flex shrink-0 items-center gap-2 sm:block sm:w-28 sm:text-right',
+  strip: 'flex max-w-full shrink-0 items-center gap-2',
+  photosRead: 'flex max-w-full shrink-0 flex-wrap items-center gap-x-2 sm:block sm:w-24 sm:text-right',
+  lastSeen: 'flex max-w-full shrink-0 flex-wrap items-center gap-x-2 sm:block sm:w-28 sm:text-right',
 };
 
 /** Where the whole-instance activity read is. One `kind`, so a spinner and a list can never be on screen together. */
@@ -197,7 +204,12 @@ function ActivityHeader({ windowDays }: { windowDays: number | null }) {
   );
 }
 
-/** The name a value carries below the width the header needs. Same rule as the people list. */
+/**
+ * The name a value carries below the width the header needs. Same rule as the people list.
+ *
+ * `shrink-0`, because beside a capped strip it is the squares that should give
+ * way and wrap, not the label, which would otherwise break into one word a line.
+ */
 function InlineLabel({ children }: { children: ReactNode }) {
-  return <span className="text-xs text-muted-foreground sm:hidden">{children}</span>;
+  return <span className="shrink-0 text-xs text-muted-foreground sm:hidden">{children}</span>;
 }

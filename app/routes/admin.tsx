@@ -34,7 +34,7 @@
  * ── The frame: the heading and its one action, the counts, then the tabs ─
  *
  * Once the role is granted, this layout draws the instance's four counts and a
- * tab bar over the three lists (`admin-tabs.tsx`). The counts sit ABOVE the
+ * bar of up to five tabs (`admin-tabs.tsx`). The counts sit ABOVE the
  * tabs because they describe the instance rather than whichever list is open,
  * and they are read here once rather than once per tab.
  *
@@ -42,6 +42,17 @@
  * of them, alone in a wide empty band that pushed the list down, and inviting
  * somebody is a thing an operator does from wherever they happen to be, not a
  * property of whichever list is open.
+ *
+ * ── Nothing in the frame moves once it is drawn ──────────────────────────
+ *
+ * Two answers arrive after the session does: the instance descriptor, which
+ * says whether the reports tab exists, and the counts. The frame used to draw
+ * without either and then take both in, so a fifth tab appeared and pushed its
+ * neighbour along or onto a new row, and the counts appeared and pushed the
+ * tabs and the list down. Now the frame waits for the descriptor behind the
+ * same loading line the role check shows, and the counts keep their box from
+ * the first paint (`stats-row.tsx`). The descriptor is one cached read per
+ * tab, usually answered before the session is.
  *
  * ── Client-only past the loader ──────────────────────────────────────────
  *
@@ -64,7 +75,7 @@ import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrat
 import { StatsRow } from '#app/components/admin/stats-row';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import { hasFeedbackConsole } from '#app/lib/admin/feedback-console';
-import { useServerInstance } from '#app/hooks/use-server-instance';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import type { AdminStats } from '#app/lib/admin/admin-wire';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
@@ -117,7 +128,6 @@ export function resolveAdminViewState(
 }
 
 export default function AdminLayout() {
-  const { t } = useTranslation();
   // Read for its side effect on the loader: this route does not exist unless
   // the instance has a server, and the loader is what enforces that.
   useLoaderData<typeof loader>();
@@ -134,13 +144,7 @@ export default function AdminLayout() {
   // on an already-open session are the same fact from the person's side —
   // "wait, this is not settled yet" — and neither may fall through to the
   // deny card below (0.10.1 walk defect 2).
-  if (view === 'resuming' || view === 'unknown-role') {
-    return (
-      <div className="mx-auto max-w-3xl">
-        <p className="text-sm text-muted-foreground">{t('admin.people.loading')}</p>
-      </div>
-    );
-  }
+  if (view === 'resuming' || view === 'unknown-role') return <ConsoleLoading />;
 
   if (view === 'denied') {
     return (
@@ -165,9 +169,28 @@ export default function AdminLayout() {
  *
  * ── They still cannot break the page ─────────────────────────────────────
  *
- * A failed `/stats` leaves `stats` at `null` and draws nothing where the row
- * would be. That was true when this lived on the people tab and it has to stay
- * true here, where a throw would take all three tabs down instead of one.
+ * A failed `/stats` leaves `stats` at `null`, and the row keeps its box with
+ * nothing drawn in it. The page survived a failed read when this lived on the
+ * people tab, and it has to here, where a throw would take every tab down
+ * instead of one.
+ *
+ * ── It is contained, so no line in it can widen the shell ────────────────
+ *
+ * The shell's `main` is a flex item with no `min-w-0`, so it will not shrink
+ * below the widest unbreakable line inside it, and a `truncate` line reports
+ * its whole text for that purpose. A 51 character address in the people list
+ * held `main` at 558 px beside the 256 px sidebar, and a 768 px tablet
+ * scrolled sideways by 46 px in every language. Inline-size containment makes
+ * the console report no width of its own: it takes the width it is given, and
+ * the long line truncates inside it, as it was written to.
+ *
+ * ── It waits for the instance, so the tab bar is drawn once ──────────────
+ *
+ * Until the descriptor has answered, this draws the loading line and nothing
+ * else. Drawing the bar first and adding the reports tab later moved the tabs
+ * after them, and on a phone, where the bar wraps, it could add a row and push
+ * the whole list down. The counts start loading at once all the same; they do
+ * not wait for the descriptor.
  *
  * It is a component of its own rather than a branch inside `AdminLayout`
  * because the hooks below must not run for the three states above, where there
@@ -182,7 +205,7 @@ function AdminChrome() {
   // 404 on that whole subtree, so the tab is not drawn rather than drawn and
   // dead. The read is cached per tab (`use-server-instance`), so this costs no
   // request the app was not already making.
-  const instance = useServerInstance();
+  const { isSettled, instance } = useServerInstanceRead();
 
   const loadStats = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -195,8 +218,12 @@ function AdminChrome() {
     void loadStats();
   }, [loadStats]);
 
+  if (!isSettled) return <ConsoleLoading />;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    // `[contain:inline-size]`: nothing inside can make the console, and so the
+    // shell, wider than the room it is given. See "It is contained" above.
+    <div className="mx-auto max-w-3xl space-y-6 [contain:inline-size]">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-semibold">{t('admin.title')}</h1>
@@ -213,9 +240,24 @@ function AdminChrome() {
           </Button>
         )}
       </header>
-      {stats !== null && <StatsRow stats={stats} />}
+      <StatsRow stats={stats} />
       <AdminTabs pathname={location.pathname} hasFeedback={hasFeedbackConsole(instance)} />
       <Outlet />
+    </div>
+  );
+}
+
+/**
+ * The one loading line, for every state in which the console cannot be drawn
+ * yet: the session reopening, the role unread, and the instance descriptor
+ * unanswered. One component, so the three are the same box and the line does
+ * not jump when one of them hands over to the next.
+ */
+function ConsoleLoading() {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto max-w-3xl">
+      <p className="text-sm text-muted-foreground">{t('admin.people.loading')}</p>
     </div>
   );
 }

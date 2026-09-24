@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The administration page fits a phone.** Its five tabs sat in one row that did not wrap. On a 390 px phone, that row needed 456 px and pushed the page sideways, worse in German and French. Tabs now wrap onto a second row on narrow screens. Each tab is a 44 px tap target, and all of them stay visible. From 672 px of room, they return to the underlined row. Three other areas that ran past the edge now wrap: the activity squares, the "last sign-in" cells in Spanish, and report dates in Italian, Spanish and Turkish. The counts and the Reports tab no longer push the page down when they arrive. `tests/e2e/admin-console-fits-a-phone.spec.ts` walks every console page in six languages at 360, 390, 768 and 1280 px.
+
 ## [0.45.0] - 2026-09-23
 
 ### Added

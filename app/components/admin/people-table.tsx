@@ -80,12 +80,17 @@ export const ROW_STRIP_DAYS = 7;
  *
  * Below `sm` every cell is a flex line carrying its own label; at `sm` and up
  * the labels are hidden and the cells become the columns the header names.
+ *
+ * A LABELLED CELL WRAPS, capped at the row's width. "Último inicio de sesión"
+ * beside "Nunca inició sesión" is 321 px on one line, and a 360 px phone gives
+ * the row 294, so the value now drops under its label instead of pushing the
+ * page sideways.
  */
 const COLUMN_CLASS = {
   person: 'min-w-0 flex-1 basis-56',
   strip: 'flex shrink-0 items-center gap-2 sm:w-24',
-  usedToday: 'flex shrink-0 items-center gap-2 sm:block sm:w-24 sm:text-right',
-  lastSeen: 'flex shrink-0 items-center gap-2 sm:block sm:w-28 sm:text-right',
+  usedToday: 'flex max-w-full shrink-0 flex-wrap items-center gap-x-2 sm:block sm:w-24 sm:text-right',
+  lastSeen: 'flex max-w-full shrink-0 flex-wrap items-center gap-x-2 sm:block sm:w-28 sm:text-right',
 };
 
 export interface PeopleTableProps {

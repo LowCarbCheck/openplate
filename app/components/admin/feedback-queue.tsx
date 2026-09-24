@@ -101,7 +101,10 @@ function FeedbackRow({
           </>
         }
       </p>
-      <div className="shrink-0 space-y-1 text-sm text-muted-foreground sm:text-right">
+      {/* Capped at the row, so the two date lines wrap. "Si cancella
+          automaticamente il 20/10/2026" is 328 px on one line, and a 360 px
+          phone gives the row 294. */}
+      <div className="max-w-full shrink-0 space-y-1 text-sm text-muted-foreground sm:text-right">
         <p>{t('admin.feedback.reportedAt', { date: formatNumericDate(report.createdAt, i18n.language) })}</p>
         {deletesAt !== null && <p>{t('admin.feedback.deletesAt', { date: formatNumericDate(deletesAt, i18n.language) })}</p>}
       </div>
