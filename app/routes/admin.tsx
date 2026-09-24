@@ -174,15 +174,16 @@ export default function AdminLayout() {
  * people tab, and it has to here, where a throw would take every tab down
  * instead of one.
  *
- * ── It is contained, so no line in it can widen the shell ────────────────
+ * ── It stays contained, as a local guard ─────────────────────────────────
  *
- * The shell's `main` is a flex item with no `min-w-0`, so it will not shrink
- * below the widest unbreakable line inside it, and a `truncate` line reports
- * its whole text for that purpose. A 51 character address in the people list
- * held `main` at 558 px beside the 256 px sidebar, and a 768 px tablet
- * scrolled sideways by 46 px in every language. Inline-size containment makes
- * the console report no width of its own: it takes the width it is given, and
- * the long line truncates inside it, as it was written to.
+ * The shell's `main` (`SidebarInset`) now carries its own `min-w-0`, so it no
+ * longer grows to the widest unbreakable line inside it: a 51 character
+ * address in the people list once held `main` at 558 px beside the 256 px
+ * sidebar, and a 768 px tablet scrolled sideways by 46 px in every language,
+ * before that fix. The console keeps its own inline-size containment anyway:
+ * it reports no width of its own, takes the width it is given, and the long
+ * line truncates inside it, as it was written to. Harmless belt and braces,
+ * not a second copy of the shell's own fix.
  *
  * ── It waits for the instance, so the tab bar is drawn once ──────────────
  *
@@ -221,8 +222,9 @@ function AdminChrome() {
   if (!isSettled) return <ConsoleLoading />;
 
   return (
-    // `[contain:inline-size]`: nothing inside can make the console, and so the
-    // shell, wider than the room it is given. See "It is contained" above.
+    // `[contain:inline-size]`: nothing inside can make the console wider than
+    // the room it is given. See "It stays contained" above; the shell itself
+    // no longer needs this, but the console keeps it as its own local guard.
     <div className="mx-auto max-w-3xl space-y-6 [contain:inline-size]">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">

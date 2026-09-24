@@ -292,7 +292,14 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        'bg-background relative flex w-full flex-1 flex-col',
+        // `min-w-0`: without it, this flex row item's floor is its own
+        // min-content width, the widest unbreakable line anywhere inside it
+        // (a `truncate` element still counts at its full, unclipped width for
+        // that calculation), so one long line on any page could hold the
+        // whole shell wider than the viewport beside the desktop sidebar.
+        // `tests/e2e/shell-main-holds-its-width.spec.ts` fails on the old
+        // code without this line and passes with it.
+        'bg-background relative flex w-full min-w-0 flex-1 flex-col',
         'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
         className,
       )}
