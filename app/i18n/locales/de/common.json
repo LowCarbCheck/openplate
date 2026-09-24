@@ -2157,7 +2157,44 @@
       "photosNote": "Fotos von deinen Mahlzeiten sind in diesem Download nicht enthalten: Sie werden nur auf diesem Gerät gespeichert (siehe „Fotos auf diesem Gerät“ unten) und nie in ein Backup oder einen Export gepackt. Dein Download enthält nur die erfassten Werte.",
       "keysNote": "Dein JSON-Download enthält den privaten Schlüssel, der verwendet wird, wenn jemand sein Tagebuch mit dir teilt, sowie den Seed für dein Forschungspseudonym. Verwahre diese Datei sicher, genau wie dein Tagebuch.",
       "preparing": "Wird vorbereitet…",
-      "title": "Daten & Sicherung"
+      "title": "Daten & Sicherung",
+      "yazio": {
+        "heading": "Aus YAZIO importieren",
+        "description": "Übernimm dein YAZIO-Tagebuch. Exportiere es mit dem Open-Source-Tool yazio-exporter und wähle dann dessen days.json und products.json zusammen aus.",
+        "guideLink": "So exportierst du aus YAZIO",
+        "pickButton": "YAZIO-Dateien auswählen",
+        "error": {
+          "unreadable": "Eine dieser Dateien ist kein gültiges JSON. Wähle die days.json und products.json aus, die der Exporter erstellt hat.",
+          "unrecognised": "Eine dieser Dateien ist kein YAZIO-Export. Wähle nur days.json und products.json aus.",
+          "duplicate": "Du hast zwei Dateien derselben Art ausgewählt. Wähle eine days.json und eine products.json aus.",
+          "missingDays": "days.json fehlt. Wähle sie zusammen mit products.json aus.",
+          "missingProducts": "products.json fehlt. Wähle sie zusammen mit days.json aus."
+        },
+        "preview": {
+          "entries": "Hinzuzufügende Einträge",
+          "days": "Abgedeckte Tage",
+          "firstDay": "Erster Tag",
+          "lastDay": "Letzter Tag",
+          "nothing": "In diesen Dateien kann nichts importiert werden."
+        },
+        "skipped": {
+          "missingProduct_one": "{{count}} Lebensmittel übersprungen: Es ist nicht in products.json enthalten.",
+          "missingProduct_other": "{{count}} Lebensmittel übersprungen: Sie sind nicht in products.json enthalten.",
+          "missingRecipe_one": "{{count}} Rezept übersprungen: Es ist nicht in products.json enthalten.",
+          "missingRecipe_other": "{{count}} Rezepte übersprungen: Sie sind nicht in products.json enthalten.",
+          "recipeWithoutWeight_one": "{{count}} Rezeptportion übersprungen: Das zugehörige Rezept enthält keine Zutatengewichte.",
+          "recipeWithoutWeight_other": "{{count}} Rezeptportionen übersprungen: Die zugehörigen Rezepte enthalten keine Zutatengewichte.",
+          "quickEntry_one": "{{count}} Schnelleintrag übersprungen: Schnelleinträge werden nicht importiert.",
+          "quickEntry_other": "{{count}} Schnelleinträge übersprungen: Schnelleinträge werden nicht importiert.",
+          "invalidItem_one": "{{count}} Eintrag übersprungen: Die Datei beschreibt ihn nicht eindeutig.",
+          "invalidItem_other": "{{count}} Einträge übersprungen: Die Datei beschreibt sie nicht eindeutig."
+        },
+        "confirm": "Zu meinem Tagebuch hinzufügen",
+        "cancel": "Abbrechen",
+        "success_one": "{{count}} Eintrag aus YAZIO importiert.",
+        "success_other": "{{count}} Einträge aus YAZIO importiert.",
+        "writeError": "Der Import wurde vorzeitig abgebrochen. Versuch es erneut: Bereits gespeicherte Einträge werden nicht doppelt hinzugefügt."
+      }
     },
     "groups": {
       "profile": "Über dich",

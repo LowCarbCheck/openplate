@@ -12,7 +12,13 @@ import daysFixture from '../fixtures/yazio/days.json';
 import productsFixture from '../fixtures/yazio/products.json';
 import { computeNetCarbsFromParts } from '../../app/lib/net-carbs';
 import type { LocalFoodLog } from '../../app/lib/local-store/schema';
-import { identifyYazioFile, parseYazioExport, YazioFileError, type YazioImport } from '../../app/lib/yazio-import';
+import {
+  identifyYazioFile,
+  parseYazioExport,
+  sortYazioFiles,
+  YazioFileError,
+  type YazioImport,
+} from '../../app/lib/yazio-import';
 
 const NOW = Date.UTC(2026, 8, 24, 12, 0);
 const BERLIN = 'Europe/Berlin';
@@ -442,5 +448,35 @@ describe('parseYazioExport: the wrong file', () => {
     assert.throws(() =>
       parseYazioExport({ days: daysFixture, products: productsFixture, timeZone: 'Mars/Base', now: NOW }),
     );
+  });
+});
+
+describe('sortYazioFiles', () => {
+  const DAYS_TEXT = JSON.stringify(daysFixture);
+  const PRODUCTS_TEXT = JSON.stringify(productsFixture);
+
+  it('sorts the two files by content, in either order', () => {
+    for (const texts of [
+      [DAYS_TEXT, PRODUCTS_TEXT],
+      [PRODUCTS_TEXT, DAYS_TEXT],
+    ]) {
+      const pick = sortYazioFiles({ texts });
+      assert.strictEqual(pick.kind, 'ready');
+      assert.deepStrictEqual(pick.kind === 'ready' ? [pick.days, pick.products] : null, [daysFixture, productsFixture]);
+    }
+  });
+
+  it('names the first thing wrong with a pick', () => {
+    const cases = [
+      { texts: [DAYS_TEXT, '{"products": '], error: 'unreadable' },
+      { texts: [DAYS_TEXT, PRODUCTS_TEXT, '{"version": 24}'], error: 'unrecognised' },
+      { texts: [DAYS_TEXT, DAYS_TEXT, PRODUCTS_TEXT], error: 'duplicate' },
+      { texts: [PRODUCTS_TEXT], error: 'missing-days' },
+      { texts: [DAYS_TEXT], error: 'missing-products' },
+      { texts: [], error: 'missing-days' },
+    ] as const;
+    for (const { texts, error } of cases) {
+      assert.deepStrictEqual(sortYazioFiles({ texts }), { kind: 'error', error }, `for ${texts.length} files`);
+    }
   });
 });

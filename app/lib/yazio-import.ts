@@ -179,6 +179,42 @@ export function identifyYazioFile({ json }: { json: unknown }): YazioFileKind | 
   return null;
 }
 
+/** Why a pick of files cannot be imported, in the order they are checked. */
+export type YazioPickError = 'unreadable' | 'unrecognised' | 'duplicate' | 'missing-days' | 'missing-products';
+
+/** A pick of files, sorted into the two the importer needs, or the first reason it cannot be. */
+export type YazioPick = { kind: 'ready'; days: unknown; products: unknown } | { kind: 'error'; error: YazioPickError };
+
+/**
+ * Sorts the text of every picked file into `days` and `products`, by content.
+ * Any file that is not JSON makes the pick unreadable, any JSON that is
+ * neither file makes it unrecognised, and two of one kind make it a duplicate;
+ * only then is a missing file named.
+ *
+ * @param options.texts - the text of each picked file, in any order.
+ * @returns both parsed files, or the reason the pick fails.
+ */
+export function sortYazioFiles({ texts }: { texts: readonly string[] }): YazioPick {
+  const parsed: unknown[] = [];
+  for (const text of texts) {
+    try {
+      parsed.push(JSON.parse(text));
+    } catch {
+      return { kind: 'error', error: 'unreadable' };
+    }
+  }
+  const kinds = parsed.map((json) => identifyYazioFile({ json }));
+  if (kinds.includes(null)) return { kind: 'error', error: 'unrecognised' };
+  const daysAt = kinds.indexOf('days');
+  const productsAt = kinds.indexOf('products');
+  if (kinds.lastIndexOf('days') !== daysAt || kinds.lastIndexOf('products') !== productsAt) {
+    return { kind: 'error', error: 'duplicate' };
+  }
+  if (daysAt === -1) return { kind: 'error', error: 'missing-days' };
+  if (productsAt === -1) return { kind: 'error', error: 'missing-products' };
+  return { kind: 'ready', days: parsed[daysAt], products: parsed[productsAt] };
+}
+
 /**
  * Turns the two exporter files into food-log entries and a preview report.
  *

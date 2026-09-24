@@ -409,6 +409,11 @@ export function trackBackupImported(): void {
   trackEvent('product', 'Backup', 'imported');
 }
 
+/** A YAZIO diary was imported (M254/02). Never how many entries: that is diary content. */
+export function trackYazioImported(): void {
+  trackEvent('product', 'Backup', 'yazio-imported');
+}
+
 export function trackCsvExported(): void {
   trackEvent('product', 'Backup', 'csv-exported');
 }

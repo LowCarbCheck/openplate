@@ -230,6 +230,13 @@
     "at": "2026-09-14",
     "it": "Carboidrati, proteine e grassi sommano a {{sum}} g per 100 g, ricontrolla prima di salvare."
   },
+  "030b6a4fc69f3c1d": {
+    "en": "Nothing in these files can be imported.",
+    "path": "common:settings.data.yazio.preview.nothing",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Nessun elemento in questi file può essere importato."
+  },
   "033f80a81596ccf9": {
     "en": "Add your details",
     "path": "common:nutrients.reference.noBodyMetricsAction",
@@ -538,6 +545,13 @@
     "at": "2026-09-14",
     "it": "Sospendi"
   },
+  "07b51adca3745ded": {
+    "en": "{{count}} entries skipped: the file doesn't describe them clearly.",
+    "path": "common:settings.data.yazio.skipped.invalidItem_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} voci saltate: il file non le descrive chiaramente."
+  },
   "07b629b72b3f6976": {
     "en": "The AI settings page keeps its explanations folded away until you ask for them.",
     "path": "releases:v0_39_0.fixed.02",
@@ -642,6 +656,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "it": "Aggiunte"
+  },
+  "090c82971e61b219": {
+    "en": "products.json is missing. Pick it together with days.json.",
+    "path": "common:settings.data.yazio.error.missingProducts",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Manca products.json. Selezionalo insieme a days.json."
   },
   "09662ef923e7e14f": {
     "en": "Carbs",
@@ -1231,6 +1252,13 @@
     "at": "2026-09-14",
     "it": "Aggiunta di {{count}} alimento · ~{{netCarbs}} g di carboidrati netti"
   },
+  "0f745058b7ba1d00": {
+    "en": "Cancel",
+    "path": "common:settings.data.yazio.cancel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Annulla"
+  },
   "0fb1d7e65da55a57": {
     "en": "This server has no research lane, so nothing was withdrawn. You are still contributing here.",
     "path": "common:research.withdrawal.unavailable",
@@ -1343,6 +1371,13 @@
     "at": "2026-09-24",
     "it": "Descrivi"
   },
+  "112824a73cf4e589": {
+    "en": "You picked two files of the same kind. Pick one days.json and one products.json.",
+    "path": "common:settings.data.yazio.error.duplicate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Hai selezionato due file dello stesso tipo. Seleziona un file days.json e un file products.json."
+  },
   "113a74a77d69048d": {
     "en": "Six claims you can check in the source",
     "path": "common:landing.features.title",
@@ -1405,6 +1440,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Salva le impostazioni del digiuno"
+  },
+  "1245456e3cca1914": {
+    "en": "Imported {{count}} entries from YAZIO.",
+    "path": "common:settings.data.yazio.success_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Importate {{count}} voci da YAZIO."
   },
   "124fff1c0a465b0d": {
     "en": "Reached",
@@ -1489,6 +1531,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Hai registrato un peso."
+  },
+  "1350eeb26ba40fae": {
+    "en": "Days covered",
+    "path": "common:settings.data.yazio.preview.days",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Giorni inclusi"
   },
   "136302de06490cba": {
     "en": "Copied {{n}} foods",
@@ -1846,6 +1895,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ho dimenticato la password"
+  },
+  "174c82ddbfedc662": {
+    "en": "Entries to add",
+    "path": "common:settings.data.yazio.preview.entries",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Voci da aggiungere"
   },
   "17629b70eed5550e": {
     "en": "May contain celery",
@@ -2386,6 +2442,13 @@
     "at": "2026-09-14",
     "it": "Digiuno"
   },
+  "1d9961aea50d7c67": {
+    "en": "{{count}} recipe skipped: it's not in products.json.",
+    "path": "common:settings.data.yazio.skipped.missingRecipe_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} ricetta saltata: non è presente in products.json."
+  },
   "1d9e18590457e39b": {
     "en": "The link points somewhere this app does not know. Open it in the app you were invited to.",
     "path": "common:join.foreignServer.bodyUnknown",
@@ -2441,6 +2504,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il cambio ricarica la pagina per aggiornare tutto insieme."
+  },
+  "1e67f63513cd648a": {
+    "en": "One of those files isn't valid JSON. Pick the days.json and products.json the exporter wrote.",
+    "path": "common:settings.data.yazio.error.unreadable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Uno di questi file non è un JSON valido. Seleziona i file days.json e products.json generati dall'esportatore."
   },
   "1e6ec28b5f767400": {
     "en": "The overview screen on a phone, with the day ring, the last seven days and the latest weigh-in.",
@@ -5298,6 +5368,13 @@
     "at": "2026-09-14",
     "it": "Calorie registrate"
   },
+  "494e75c8659ed253": {
+    "en": "{{count}} recipes skipped: they're not in products.json.",
+    "path": "common:settings.data.yazio.skipped.missingRecipe_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} ricette saltate: non sono presenti in products.json."
+  },
   "495eed20590d96f5": {
     "en": "Photo estimates for this account run until {{date}}.",
     "path": "common:account.allowance.expires",
@@ -6334,6 +6411,13 @@
     "at": "2026-09-14",
     "it": "Vai alla scansione"
   },
+  "569743f658ecdf1f": {
+    "en": "Import from YAZIO",
+    "path": "common:settings.data.yazio.heading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Importa da YAZIO"
+  },
   "56af4b080dbe3748": {
     "en": "Your fast starts at {{time}}.",
     "path": "common:catchUp.fastScheduled",
@@ -6410,6 +6494,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Prima di un digiuno lungo"
+  },
+  "579e1c4491a5da66": {
+    "en": "One of those files isn't a YAZIO export. Pick only days.json and products.json.",
+    "path": "common:settings.data.yazio.error.unrecognised",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Uno di questi file non è un'esportazione di YAZIO. Seleziona solo days.json e products.json."
   },
   "57ae65f777236c44": {
     "en": "Close",
@@ -8763,6 +8854,13 @@
     "at": "2026-09-14",
     "it": "Appena aggiunto"
   },
+  "75ab72846cab11d4": {
+    "en": "How to export from YAZIO",
+    "path": "common:settings.data.yazio.guideLink",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Come esportare da YAZIO"
+  },
   "75b19339219e1b79": {
     "en": "Recommended",
     "path": "common:onboarding.focus.recommended",
@@ -10905,6 +11003,13 @@
     "at": "2026-09-14",
     "it": "Vai all'account"
   },
+  "8f26276c8ac1e9c9": {
+    "en": "{{count}} quick entry skipped: quick entries aren't imported.",
+    "path": "common:settings.data.yazio.skipped.quickEntry_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} voce rapida saltata: le voci rapide non vengono importate."
+  },
   "8f4605db30fd0516": {
     "en": "You are already on the list. Nothing more to do.",
     "path": "common:landing.newsletter.status.alreadySubscribed",
@@ -10925,6 +11030,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Quanti carboidrati al giorno?"
+  },
+  "8f7bcf79e47f678a": {
+    "en": "days.json is missing. Pick it together with products.json.",
+    "path": "common:settings.data.yazio.error.missingDays",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Manca days.json. Selezionalo insieme a products.json."
   },
   "8fb46498d49f16d5": {
     "en": "{{used}} of {{limit}}",
@@ -12171,6 +12283,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Rimuovi {{name}}"
+  },
+  "a071f56d7928576b": {
+    "en": "{{count}} food skipped: it's not in products.json.",
+    "path": "common:settings.data.yazio.skipped.missingProduct_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} alimento saltato: non è presente in products.json."
   },
   "a075b98eff054e0d": {
     "en": "Fiber came in under the 25 g reference on {{days}} of the last three days.",
@@ -13439,6 +13558,13 @@
     "at": "2026-09-14",
     "it": "{{value}} g carboidrati netti"
   },
+  "b18aaf1a4cba23a6": {
+    "en": "{{count}} foods skipped: they're not in products.json.",
+    "path": "common:settings.data.yazio.skipped.missingProduct_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} alimenti saltati: non sono presenti in products.json."
+  },
   "b19cde0bf6a7bce1": {
     "en": "Fat",
     "path": "common:scan.review.sanity.macro.fat",
@@ -13858,6 +13984,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "it": "Può contenere soia"
+  },
+  "b7695646879ab6b4": {
+    "en": "{{count}} recipe portions skipped: their recipes have no ingredient weights.",
+    "path": "common:settings.data.yazio.skipped.recipeWithoutWeight_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} porzioni di ricette saltate: le ricette non includono i pesi degli ingredienti."
   },
   "b77c67744a5df277": {
     "en": "{{count}} reports about wrong estimates have not been sent yet. If you erase, you will lose them.",
@@ -15021,6 +15154,13 @@
     "at": "2026-09-14",
     "it": "Inizia con il primo pasto di oggi"
   },
+  "c8eec08f9367212e": {
+    "en": "{{count}} recipe portion skipped: its recipe has no ingredient weights.",
+    "path": "common:settings.data.yazio.skipped.recipeWithoutWeight_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} porzione di ricetta saltata: la ricetta non include i pesi degli ingredienti."
+  },
   "c9319308baac6899": {
     "en": "Withdrawn and purged before this export: {{withdrawn}}. Their rows are not in this file and must not be recovered from an earlier one.",
     "path": "common:research.export.withdrawn",
@@ -15420,6 +15560,13 @@
     "at": "2026-09-21",
     "it": "Contiene pesce"
   },
+  "cf2fc879bbd0512d": {
+    "en": "Add to my diary",
+    "path": "common:settings.data.yazio.confirm",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Aggiungi al mio diario"
+  },
   "cf437b46b5990014": {
     "en": "Light, dark, or whatever your device is already set to.",
     "path": "common:preferences.theme.description",
@@ -15629,6 +15776,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Inserisci quanti grammi"
+  },
+  "d1e3bfccc366bfa9": {
+    "en": "The import stopped partway. Try again: entries already saved won't be added twice.",
+    "path": "common:settings.data.yazio.writeError",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "L'importazione si è interrotta prima del termine. Riprova: le voci già salvate non saranno aggiunte di nuovo."
   },
   "d1ea741131c0d8ab": {
     "en": "Create account",
@@ -16561,6 +16715,13 @@
     "at": "2026-09-14",
     "it": "{{count}} alimenti che colmerebbero il fabbisogno di fibre"
   },
+  "dd7bcd8ba2ccab0e": {
+    "en": "Last day",
+    "path": "common:settings.data.yazio.preview.lastDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Ultimo giorno"
+  },
   "dd894c9d349fc40b": {
     "en": "No data on this device yet. Already used openplate elsewhere? <backup>Import a backup</backup> to bring it over.",
     "path": "common:diary.empty.firstEver.noDataBackupOnly",
@@ -16812,6 +16973,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Oggi si riparte da zero."
+  },
+  "e11a948198fc4b1a": {
+    "en": "{{count}} quick entries skipped: quick entries aren't imported.",
+    "path": "common:settings.data.yazio.skipped.quickEntry_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} voci rapide saltate: le voci rapide non vengono importate."
   },
   "e1475547977d3450": {
     "en": "Insights · openplate",
@@ -17141,6 +17309,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "it": "Cerca"
+  },
+  "e5d43e91c619ecd2": {
+    "en": "Bring your YAZIO diary over. Export it with the open-source yazio-exporter tool, then pick its days.json and products.json together.",
+    "path": "common:settings.data.yazio.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Trasferisci il tuo diario di YAZIO. Esportalo con lo strumento open source yazio-exporter, poi seleziona insieme i file days.json e products.json generati."
   },
   "e5f500e2e687b392": {
     "en": "broccoli",
@@ -17576,6 +17751,13 @@
     "at": "2026-09-14",
     "it": "In giorni. Al massimo 30."
   },
+  "eb2164bbdcb9f012": {
+    "en": "Choose the YAZIO files",
+    "path": "common:settings.data.yazio.pickButton",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Scegli i file di YAZIO"
+  },
   "eb250e372d2b407e": {
     "en": "Delete this account?",
     "path": "common:sync.delete.confirmTitle",
@@ -17716,6 +17898,13 @@
     "at": "2026-09-17",
     "it": "Dispensa · openplate"
   },
+  "eccfe4f9c3e36417": {
+    "en": "{{count}} entry skipped: the file doesn't describe it clearly.",
+    "path": "common:settings.data.yazio.skipped.invalidItem_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "{{count}} voce saltata: il file non la descrive chiaramente."
+  },
   "ecd249f74ad3ef82": {
     "en": "Invite someone",
     "path": "common:admin.invite.cta",
@@ -17820,6 +18009,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-22",
     "it": "Aggiungi, Scansiona e Descrivi ora si trovano sotto un unico indirizzo, /add."
+  },
+  "ee5a4af01dc627eb": {
+    "en": "First day",
+    "path": "common:settings.data.yazio.preview.firstDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Primo giorno"
   },
   "ee84881689cbd329": {
     "en": "Protein",
@@ -18590,6 +18786,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Impossibile accodare la segnalazione. Riprova."
+  },
+  "f7f5e8452692fda8": {
+    "en": "Imported {{count}} entry from YAZIO.",
+    "path": "common:settings.data.yazio.success_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "it": "Importata {{count}} voce da YAZIO."
   },
   "f8333121df387e51": {
     "en": "Iron",

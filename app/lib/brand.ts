@@ -36,6 +36,16 @@ export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
  */
 export const SELF_HOSTING_DOCS_URL = 'https://openplate.de/docs/app/self-hosting';
 
+/**
+ * The guide to bringing a YAZIO diary over (M254/03), linked from the import
+ * section on "Data & backup". The site publishes `docs/import-from-yazio.md`
+ * from this repository at `/docs/app/<slug>` (`openplate-website`'s
+ * `doc-routes.ts`), German at the root and every other language under its
+ * prefix, with a trailing slash (without one the site answers 301). The app
+ * has no rule yet for picking the site language, so this names the English copy.
+ */
+export const YAZIO_IMPORT_DOCS_URL = 'https://openplate.de/en/docs/app/import-from-yazio/';
+
 /*
  * `APP_VERSION` used to live here: a hand-copied mirror of `package.json`'s
  * `version`, with a unit test to stop it drifting. It is gone. The version now

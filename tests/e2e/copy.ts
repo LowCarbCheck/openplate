@@ -223,6 +223,13 @@ const catalogSchema = z.object({
       toast: z.object({ on: z.string() }),
     }),
     mainGoal: z.object({ save: z.string(), saved: z.string() }),
+    data: z.object({
+      yazio: z.object({
+        confirm: z.string(),
+        success_other: z.string(),
+        error: z.object({ missingProducts: z.string() }),
+      }),
+    }),
   }),
   sync: z.object({
     emailLabel: z.string(),

@@ -22,6 +22,7 @@ const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
  */
 export function isValidTimeZone(timeZone: string): boolean {
   if (!timeZone) return false;
+  if (OFFSET_FORMATTERS.has(timeZone)) return true;
   try {
     // Locale fixed on purpose: nothing here is rendered — the formatter is
     // constructed solely to see whether `timeZone` is accepted.
@@ -218,15 +219,20 @@ function _partsToMap(parts: Intl.DateTimeFormatPart[]): Record<string, string> {
 }
 
 /**
- * The offset (local wall clock minus UTC, in ms) of `timeZone` at `instant`.
- * Positive east of UTC. Derived by reading the instant's wall clock in the zone
- * and diffing it against the same reading interpreted as UTC.
+ * One offset formatter per zone, built on first use and kept. Building an
+ * `Intl.DateTimeFormat` costs about 0.1 ms and reading one costs almost
+ * nothing, and an import of a few thousand dated entries asks for two per
+ * entry. The key space is the zones this device has actually used.
  */
-function _offsetMs(instant: Date, timeZone: string): number {
-  // Locale fixed on purpose: the parts below are read back as NUMBERS to
-  // compute a UTC offset — nothing is rendered. Following the UI language here
-  // would let a locale's own calendar/numbering shift every day boundary in
-  // the app. Do NOT "translate" this.
+const OFFSET_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function _offsetFormatter(timeZone: string): Intl.DateTimeFormat {
+  const cached = OFFSET_FORMATTERS.get(timeZone);
+  if (cached) return cached;
+  // Locale fixed on purpose: the parts are read back as NUMBERS to compute a
+  // UTC offset, nothing is rendered. Following the UI language here would let
+  // a locale's own calendar/numbering shift every day boundary in the app. Do
+  // NOT "translate" this.
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',
@@ -237,7 +243,17 @@ function _offsetMs(instant: Date, timeZone: string): number {
     minute: '2-digit',
     second: '2-digit',
   });
-  const parts = _partsToMap(formatter.formatToParts(instant));
+  OFFSET_FORMATTERS.set(timeZone, formatter);
+  return formatter;
+}
+
+/**
+ * The offset (local wall clock minus UTC, in ms) of `timeZone` at `instant`.
+ * Positive east of UTC. Derived by reading the instant's wall clock in the zone
+ * and diffing it against the same reading interpreted as UTC.
+ */
+function _offsetMs(instant: Date, timeZone: string): number {
+  const parts = _partsToMap(_offsetFormatter(timeZone).formatToParts(instant));
   const asUtc = Date.UTC(
     Number(parts.year),
     Number(parts.month) - 1,

@@ -2157,7 +2157,44 @@
       "photosNote": "Les photos d'assiette ne sont pas incluses dans ce téléchargement : elles sont conservées uniquement sur cet appareil (voir « Photos sur cet appareil » ci-dessous), sans jamais être intégrées dans une sauvegarde ou un export. Ton téléchargement ne contient que les chiffres saisis.",
       "keysNote": "Ton téléchargement JSON contient la clé privée utilisée quand quelqu'un partage son journal avec toi, ainsi que la graine de ton pseudonyme de recherche. Garde ce fichier en lieu sûr, tout comme ton journal.",
       "preparing": "Préparation…",
-      "title": "Données et sauvegarde"
+      "title": "Données et sauvegarde",
+      "yazio": {
+        "heading": "Importer depuis YAZIO",
+        "description": "Récupère ton journal YAZIO. Exporte-le avec l'outil open source yazio-exporter, puis sélectionne à la fois ses fichiers days.json et products.json.",
+        "guideLink": "Comment exporter depuis YAZIO",
+        "pickButton": "Choisir les fichiers YAZIO",
+        "error": {
+          "unreadable": "L'un de ces fichiers n'est pas un JSON valide. Sélectionne les fichiers days.json et products.json générés par l'outil d'export.",
+          "unrecognised": "L'un de ces fichiers ne provient pas d'un export YAZIO. Sélectionne uniquement days.json et products.json.",
+          "duplicate": "Tu as sélectionné deux fichiers du même type. Sélectionne un fichier days.json et un fichier products.json.",
+          "missingDays": "Le fichier days.json est manquant. Sélectionne-le avec products.json.",
+          "missingProducts": "Le fichier products.json est manquant. Sélectionne-le avec days.json."
+        },
+        "preview": {
+          "entries": "Entrées à ajouter",
+          "days": "Jours couverts",
+          "firstDay": "Premier jour",
+          "lastDay": "Dernier jour",
+          "nothing": "Rien dans ces fichiers ne peut être importé."
+        },
+        "skipped": {
+          "missingProduct_one": "{{count}} aliment ignoré : il ne figure pas dans products.json.",
+          "missingProduct_other": "{{count}} aliments ignorés : ils ne figurent pas dans products.json.",
+          "missingRecipe_one": "{{count}} recette ignorée : elle ne figure pas dans products.json.",
+          "missingRecipe_other": "{{count}} recettes ignorées : elles ne figurent pas dans products.json.",
+          "recipeWithoutWeight_one": "{{count}} portion de recette ignorée : sa recette n'indique aucun poids d'ingrédient.",
+          "recipeWithoutWeight_other": "{{count}} portions de recette ignorées : leurs recettes n'indiquent aucun poids d'ingrédient.",
+          "quickEntry_one": "{{count}} saisie rapide ignorée : les saisies rapides ne sont pas importées.",
+          "quickEntry_other": "{{count}} saisies rapides ignorées : les saisies rapides ne sont pas importées.",
+          "invalidItem_one": "{{count}} entrée ignorée : le fichier ne la décrit pas clairement.",
+          "invalidItem_other": "{{count}} entrées ignorées : le fichier ne les décrit pas clairement."
+        },
+        "confirm": "Ajouter à mon journal",
+        "cancel": "Annuler",
+        "success_one": "{{count}} entrée importée depuis YAZIO.",
+        "success_other": "{{count}} entrées importées depuis YAZIO.",
+        "writeError": "L'import s'est arrêté en cours de route. Réessaie : les entrées déjà enregistrées ne seront pas ajoutées en double."
+      }
     },
     "groups": {
       "profile": "À propos de toi",

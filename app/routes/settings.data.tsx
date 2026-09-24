@@ -2,7 +2,8 @@
  * settings.data.tsx — "Data & backup" (`/settings/data`).
  *
  * Everything the user can do with their own copy of their diary: download it
- * (CSV or the lossless JSON backup), restore one onto this device, and manage
+ * (CSV or the lossless JSON backup), restore one onto this device, bring a
+ * YAZIO diary over (`#import-yazio`, M254/02), and manage
  * the device-local plate-photo cache. Lifted out of the old `/profile` page
  * unchanged in behaviour — the anchors it was deep-linked by (`#your-data`
  * from the backup nudge banner, `#import-backup` from the diary's empty
@@ -38,6 +39,7 @@ import { PhotoCacheCard } from '#app/components/photo-cache-card';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
+import { YazioImportSection } from '#app/components/settings/yazio-import-section';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -258,6 +260,7 @@ export default function SettingsData() {
           <p className="text-xs text-muted-foreground">{t('settings.data.photosNote')}</p>
           <p className="text-xs text-muted-foreground">{t('settings.data.keysNote')}</p>
           <ImportBackupSection />
+          <YazioImportSection />
         </SettingsSection>
       </div>
 

@@ -2157,7 +2157,44 @@
       "photosNote": "Tabak fotoğrafları bu indirmeye dahil edilmez: yalnızca bu cihazda tutulurlar (aşağıdaki \"Bu cihazdaki fotoğraflar\" bölümüne bak), hiçbir zaman bir yedeğe veya dışa aktarıma eklenmezler. İndirdiğin dosya yalnızca kaydettiğin sayıları içerir.",
       "keysNote": "JSON indirmen, birisi günlüğünü seninle paylaştığında kullanılan özel anahtarı ve araştırma takma adının tohumunu içerir. Bu dosyayı tıpkı günlüğün gibi güvende tut.",
       "preparing": "Hazırlanıyor…",
-      "title": "Veriler ve yedekleme"
+      "title": "Veriler ve yedekleme",
+      "yazio": {
+        "heading": "YAZIO'dan içe aktar",
+        "description": "YAZIO günlüğünü buraya aktar. Açık kaynaklı yazio-exporter aracıyla dışa aktar, ardından oluşturduğu days.json ve products.json dosyalarını birlikte seç.",
+        "guideLink": "YAZIO'dan nasıl dışa aktarılır?",
+        "pickButton": "YAZIO dosyalarını seç",
+        "error": {
+          "unreadable": "Bu dosyalardan biri geçerli bir JSON değil. Dışa aktarma aracının oluşturduğu days.json ve products.json dosyalarını seç.",
+          "unrecognised": "Bu dosyalardan biri bir YAZIO dışa aktarımı değil. Yalnızca days.json ve products.json dosyalarını seç.",
+          "duplicate": "Aynı türde iki dosya seçtin. Bir days.json ve bir products.json seç.",
+          "missingDays": "days.json eksik. products.json ile birlikte seç.",
+          "missingProducts": "products.json eksik. days.json ile birlikte seç."
+        },
+        "preview": {
+          "entries": "Eklenecek girdiler",
+          "days": "Kapsanan gün sayısı",
+          "firstDay": "İlk gün",
+          "lastDay": "Son gün",
+          "nothing": "Bu dosyalarda içe aktarılabilecek hiçbir şey yok."
+        },
+        "skipped": {
+          "missingProduct_one": "{{count}} yiyecek atlandı: products.json dosyasında yok.",
+          "missingProduct_other": "{{count}} yiyecek atlandı: products.json dosyasında değiller.",
+          "missingRecipe_one": "{{count}} tarif atlandı: products.json dosyasında yok.",
+          "missingRecipe_other": "{{count}} tarif atlandı: products.json dosyasında değiller.",
+          "recipeWithoutWeight_one": "{{count}} tarif porsiyonu atlandı: tarifinde malzeme ağırlıkları yer almıyor.",
+          "recipeWithoutWeight_other": "{{count}} tarif porsiyonu atlandı: tariflerinde malzeme ağırlıkları yer almıyor.",
+          "quickEntry_one": "{{count}} hızlı girdi atlandı: hızlı girdiler içe aktarılmaz.",
+          "quickEntry_other": "{{count}} hızlı girdi atlandı: hızlı girdiler içe aktarılmaz.",
+          "invalidItem_one": "{{count}} girdi atlandı: dosya bunu net şekilde tanımlamıyor.",
+          "invalidItem_other": "{{count}} girdi atlandı: dosya bunları net şekilde tanımlamıyor."
+        },
+        "confirm": "Günlüğüme ekle",
+        "cancel": "İptal",
+        "success_one": "YAZIO'dan {{count}} girdi içe aktarıldı.",
+        "success_other": "YAZIO'dan {{count}} girdi içe aktarıldı.",
+        "writeError": "İçe aktarma işlemi yarıda durdu. Tekrar dene: önceden kaydedilmiş girdiler iki kez eklenmez."
+      }
     },
     "groups": {
       "profile": "Hakkında",

@@ -2157,7 +2157,44 @@
       "photosNote": "Le foto del piatto non sono incluse in questo download: restano solo su questo dispositivo (vedi \"Foto su questo dispositivo\" sotto), mai incluse in un backup o in un'esportazione. Il download contiene solo i numeri che hai registrato.",
       "keysNote": "Il file JSON che scarichi contiene la chiave privata usata quando qualcuno condivide il suo diario con te e il seed per il tuo pseudonimo di ricerca. Custodisci questo file al sicuro, proprio come il tuo diario.",
       "preparing": "Preparazione in corso…",
-      "title": "Dati e backup"
+      "title": "Dati e backup",
+      "yazio": {
+        "heading": "Importa da YAZIO",
+        "description": "Trasferisci il tuo diario di YAZIO. Esportalo con lo strumento open source yazio-exporter, poi seleziona insieme i file days.json e products.json generati.",
+        "guideLink": "Come esportare da YAZIO",
+        "pickButton": "Scegli i file di YAZIO",
+        "error": {
+          "unreadable": "Uno di questi file non è un JSON valido. Seleziona i file days.json e products.json generati dall'esportatore.",
+          "unrecognised": "Uno di questi file non è un'esportazione di YAZIO. Seleziona solo days.json e products.json.",
+          "duplicate": "Hai selezionato due file dello stesso tipo. Seleziona un file days.json e un file products.json.",
+          "missingDays": "Manca days.json. Selezionalo insieme a products.json.",
+          "missingProducts": "Manca products.json. Selezionalo insieme a days.json."
+        },
+        "preview": {
+          "entries": "Voci da aggiungere",
+          "days": "Giorni inclusi",
+          "firstDay": "Primo giorno",
+          "lastDay": "Ultimo giorno",
+          "nothing": "Nessun elemento in questi file può essere importato."
+        },
+        "skipped": {
+          "missingProduct_one": "{{count}} alimento saltato: non è presente in products.json.",
+          "missingProduct_other": "{{count}} alimenti saltati: non sono presenti in products.json.",
+          "missingRecipe_one": "{{count}} ricetta saltata: non è presente in products.json.",
+          "missingRecipe_other": "{{count}} ricette saltate: non sono presenti in products.json.",
+          "recipeWithoutWeight_one": "{{count}} porzione di ricetta saltata: la ricetta non include i pesi degli ingredienti.",
+          "recipeWithoutWeight_other": "{{count}} porzioni di ricette saltate: le ricette non includono i pesi degli ingredienti.",
+          "quickEntry_one": "{{count}} voce rapida saltata: le voci rapide non vengono importate.",
+          "quickEntry_other": "{{count}} voci rapide saltate: le voci rapide non vengono importate.",
+          "invalidItem_one": "{{count}} voce saltata: il file non la descrive chiaramente.",
+          "invalidItem_other": "{{count}} voci saltate: il file non le descrive chiaramente."
+        },
+        "confirm": "Aggiungi al mio diario",
+        "cancel": "Annulla",
+        "success_one": "Importata {{count}} voce da YAZIO.",
+        "success_other": "Importate {{count}} voci da YAZIO.",
+        "writeError": "L'importazione si è interrotta prima del termine. Riprova: le voci già salvate non saranno aggiunte di nuovo."
+      }
     },
     "groups": {
       "profile": "Informazioni personali",
