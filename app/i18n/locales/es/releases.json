@@ -1,4 +1,23 @@
 {
+  "v0_46_0": {
+    "date": "2026-09-24",
+    "added": {
+      "01": "Las pantallas de añadir comparten un único selector y conservan lo que empezaste.",
+      "02": "Puedes importar un diario de YAZIO en Datos y copia de seguridad.",
+      "03": "Los pesajes de YAZIO se transfieren junto con el diario.",
+      "04": "Puedes eliminar una importación de YAZIO en un solo paso."
+    },
+    "changed": {
+      "01": "La barra inferior del teléfono incluye una pestaña Menú.",
+      "02": "El menú de la cuenta elimina el selector de idioma."
+    },
+    "fixed": {
+      "01": "La página de administración se adapta a la pantalla de un teléfono.",
+      "02": "La interfaz de la app mantiene su propio ancho junto a la barra lateral de escritorio.",
+      "03": "Pulsar la primera tecla en el cuadro de descripción ya no lo desplaza.",
+      "04": "Las páginas ya no se desplazan cuando la tipografía tarda en cargar."
+    }
+  },
   "v0_45_0": {
     "date": "2026-09-23",
     "added": {
@@ -25,19 +44,6 @@
       "01": "La cabecera de la sesión cerrada se ajusta a la pantalla de un móvil en una instancia administrada.",
       "02": "Las recetas de una instancia administrada se sugieren al abrir la pantalla.",
       "03": "Un plan cancelado ya no indica que está pagado y activo."
-    }
-  },
-  "v0_43_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Los nombres de los alimentos siguen el idioma de la aplicación.",
-      "02": "Los servidores pueden proponer alimentos guardados a LowCarbCheck."
-    },
-    "changed": {
-      "01": "Los escaneos por foto, texto y despensa nombran cada alimento en el idioma de la aplicación."
-    },
-    "fixed": {
-      "01": "El selector de fechas y cada fecha mostrada siguen el idioma de la aplicación."
     }
   }
 }

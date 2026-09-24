@@ -1,4 +1,23 @@
 {
+  "v0_46_0": {
+    "date": "2026-09-24",
+    "added": {
+      "01": "Ekleme ekranları tek bir değiştiriciyi paylaşır ve başladığın şeyi korur.",
+      "02": "Veriler ve yedekleme bölümünden bir YAZIO günlüğü içe aktarılabilir.",
+      "03": "YAZIO tartımları günlükle birlikte aktarılır.",
+      "04": "Bir YAZIO içe aktarımı tek adımda kaldırılabilir."
+    },
+    "changed": {
+      "01": "Telefonun alt çubuğunda Menü sekmesi bulunur.",
+      "02": "Hesap menüsü dil seçiciyi kaldırır."
+    },
+    "fixed": {
+      "01": "Yönetim sayfası bir telefona sığar.",
+      "02": "Uygulama kabuğu, masaüstü kenar çubuğunun yanında kendi genişliğini korur.",
+      "03": "Açıklama kutusundaki ilk tuş artık kutuyu kaydırmaz.",
+      "04": "Yazı tipi geç geldiğinde bir sayfa artık kaymaz."
+    }
+  },
   "v0_45_0": {
     "date": "2026-09-23",
     "added": {
@@ -25,19 +44,6 @@
       "01": "Oturum açılmamış üst bilgi, yönetilen bir örnekte telefona sığar.",
       "02": "Yönetilen bir örnekteki tarifler, ekran açıldığında önerilir.",
       "03": "İptal edilen bir plan, artık ücretli ve çalışıyor olarak görünmez."
-    }
-  },
-  "v0_43_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Yiyecek adları uygulama dilini izler.",
-      "02": "Sunucular, kaydedilen yiyecekleri LowCarbCheck'e önerebilir."
-    },
-    "changed": {
-      "01": "Fotoğraf, yazılı ve kiler taramaları her yiyeceği uygulama dilinde adlandırır."
-    },
-    "fixed": {
-      "01": "Tarih seçici ve yazdırılan her tarih, uygulama dilini izler."
     }
   }
 }

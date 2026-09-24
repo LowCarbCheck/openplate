@@ -1,4 +1,23 @@
 {
+  "v0_46_0": {
+    "date": "2026-09-24",
+    "added": {
+      "01": "The add screens share one switcher and keep what you started.",
+      "02": "A YAZIO diary can be imported on Data & backup.",
+      "03": "YAZIO weigh-ins come across with the diary.",
+      "04": "A YAZIO import can be removed in one step."
+    },
+    "changed": {
+      "01": "The phone's bottom bar has a Menu tab.",
+      "02": "The account menu drops the language picker."
+    },
+    "fixed": {
+      "01": "The administration page fits a phone.",
+      "02": "The app shell holds its own width beside the desktop sidebar.",
+      "03": "The first key in the describe box no longer moves the box.",
+      "04": "A page no longer moves when its font arrives late."
+    }
+  },
   "v0_45_0": {
     "date": "2026-09-23",
     "added": {
@@ -25,19 +44,6 @@
       "01": "The signed-out header fits a phone on a managed instance.",
       "02": "Recipes on a managed instance are proposed when the screen opens.",
       "03": "A cancelled plan no longer says it is paid and running."
-    }
-  },
-  "v0_43_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Food names follow the app language.",
-      "02": "Servers can propose saved foods to LowCarbCheck."
-    },
-    "changed": {
-      "01": "Photo, typed and pantry scans name each food in the app language."
-    },
-    "fixed": {
-      "01": "The date picker and every printed date follow the app language."
     }
   }
 }

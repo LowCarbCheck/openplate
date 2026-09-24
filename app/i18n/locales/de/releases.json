@@ -1,4 +1,23 @@
 {
+  "v0_46_0": {
+    "date": "2026-09-24",
+    "added": {
+      "01": "Die Hinzufügen-Bildschirme teilen sich einen Umschalter und behalten das, was du angefangen hast.",
+      "02": "Ein YAZIO-Tagebuch lässt sich unter Daten & Sicherung importieren.",
+      "03": "YAZIO-Wiegungen werden zusammen mit dem Tagebuch übernommen.",
+      "04": "Ein YAZIO-Import lässt sich in einem Schritt entfernen."
+    },
+    "changed": {
+      "01": "Die untere Leiste des Telefons enthält einen Menü-Tab.",
+      "02": "Das Kontomenü entfernt die Sprachauswahl."
+    },
+    "fixed": {
+      "01": "Die Administrationsseite passt auf ein Telefon.",
+      "02": "Die App-Shell behält neben der Desktop-Seitenleiste ihre eigene Breite.",
+      "03": "Der erste Tastenanschlag im Beschreibungsfeld verschiebt das Feld nicht mehr.",
+      "04": "Eine Seite verschiebt sich nicht mehr, wenn ihre Schriftart verspätet geladen wird."
+    }
+  },
   "v0_45_0": {
     "date": "2026-09-23",
     "added": {
@@ -25,19 +44,6 @@
       "01": "Die Kopfzeile im abgemeldeten Zustand passt auf einer verwalteten Instanz auf ein Smartphone.",
       "02": "Rezepte auf einer verwalteten Instanz werden vorgeschlagen, sobald sich der Bildschirm öffnet.",
       "03": "Ein gekündigter Plan wird nicht mehr als bezahlt und aktiv angezeigt."
-    }
-  },
-  "v0_43_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Lebensmittelnamen richten sich nach der App-Sprache.",
-      "02": "Server können gespeicherte Lebensmittel für LowCarbCheck vorschlagen."
-    },
-    "changed": {
-      "01": "Foto-, Text- und Vorratskammer-Scans benennen jedes Lebensmittel in der App-Sprache."
-    },
-    "fixed": {
-      "01": "Die Datumsauswahl und jedes ausgegebene Datum richten sich nach der App-Sprache."
     }
   }
 }

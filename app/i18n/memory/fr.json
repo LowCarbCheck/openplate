@@ -9036,6 +9036,13 @@
     "at": "2026-09-14",
     "fr": "J'ai déjà un compte"
   },
+  "769ceb144170c0dc": {
+    "en": "YAZIO weigh-ins come across with the diary.",
+    "path": "releases:v0_46_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Les pesées YAZIO sont transférées avec le journal."
+  },
   "76a230f22f082263": {
     "en": "Photos read",
     "path": "common:admin.columns.photosRead",
@@ -9294,6 +9301,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Colle le lien entier, exactement comme tu l'as reçu."
+  },
+  "79f1e1ae7556b2d7": {
+    "en": "The phone's bottom bar has a Menu tab.",
+    "path": "releases:v0_46_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "La barre inférieure du téléphone comporte un onglet Menu."
   },
   "79f9447855e2d14d": {
     "en": "Manage your plan",
@@ -10813,6 +10827,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tu as atteint tous tes objectifs {{days}} jours sur les {{logged}} où tu as saisi des données."
+  },
+  "8c5572cdff48d2e1": {
+    "en": "The app shell holds its own width beside the desktop sidebar.",
+    "path": "releases:v0_46_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "L'enveloppe de l'application conserve sa largeur à côté de la barre latérale sur ordinateur."
   },
   "8c8780e3544e8d3e": {
     "en": "You're offline. Looking up new foods needs a connection. Your recent and saved foods still work.",
@@ -13754,6 +13775,13 @@
     "at": "2026-09-14",
     "fr": "Cette instance est accessible uniquement sur invitation"
   },
+  "b25f9be87429ab9a": {
+    "en": "The first key in the describe box no longer moves the box.",
+    "path": "releases:v0_46_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "La première frappe dans la zone de description ne déplace plus la zone."
+  },
   "b27e3d22cd9d65bc": {
     "en": "Never signed in",
     "path": "common:admin.lastSeen.never",
@@ -14615,6 +14643,13 @@
     "at": "2026-09-14",
     "fr": "Invitations restantes : {{left}}"
   },
+  "bed65221ba4a17c8": {
+    "en": "The administration page fits a phone.",
+    "path": "releases:v0_46_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "La page d'administration s'adapte à l'écran d'un téléphone."
+  },
   "bf26b6792b9ceea7": {
     "en": "Weigh-in removed.",
     "path": "common:goals.toast.weightRemoved",
@@ -15216,6 +15251,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Préférences"
+  },
+  "c77e3d06e6749be0": {
+    "en": "The add screens share one switcher and keep what you started.",
+    "path": "releases:v0_46_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Les écrans d'ajout partagent un sélecteur unique et conservent ce que tu as commencé."
   },
   "c78ad2d8e7425103": {
     "en": "Daily catch-up at {{time}} and fast target",
@@ -16414,6 +16456,13 @@
     "at": "2026-09-23",
     "fr": "Forfait annuel"
   },
+  "d72008253cb7904f": {
+    "en": "A page no longer moves when its font arrives late.",
+    "path": "releases:v0_46_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Une page ne saute plus lorsque sa police se charge tardivement."
+  },
   "d7344bd747de095d": {
     "en": "The name you chose, if you chose one.",
     "path": "common:account.operatorSees.displayName",
@@ -16826,6 +16875,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Redirection…"
+  },
+  "dc9d79d554016edf": {
+    "en": "The account menu drops the language picker.",
+    "path": "releases:v0_46_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Le menu du compte supprime le sélecteur de langue."
   },
   "dcac9046433b65c7": {
     "en": "The name openplate is now set thin, with the first half in teal, and centred on the mark.",
@@ -17786,6 +17842,13 @@
     "at": "2026-09-14",
     "fr": "Un compte existe déjà pour {{email}}. Connecte-toi avec le mot de passe que tu as choisi."
   },
+  "e91d1c93c9114536": {
+    "en": "A YAZIO import can be removed in one step.",
+    "path": "releases:v0_46_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Un import YAZIO peut être supprimé en une seule étape."
+  },
   "e923f2bf73831bcd": {
     "en": "Also erase the diary from this device",
     "path": "common:signOut.erase.label",
@@ -17890,6 +17953,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "fr": "Augmenter la portion"
+  },
+  "eacfb442925f3b12": {
+    "en": "A YAZIO diary can be imported on Data & backup.",
+    "path": "releases:v0_46_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "fr": "Un journal YAZIO peut être importé sur Données et sauvegarde."
   },
   "eae3dcb1a0fddfbd": {
     "en": "Started {{when}}, never ended.",
