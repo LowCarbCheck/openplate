@@ -118,6 +118,7 @@ database, through its own server: names only, never a photo or a diary entry. Se
 | [**Family setup**](./docs/family-setup.md) | Sharing one AI bill across a household, with a spend limit and revocation per person |
 | [**Content pages**](./docs/content.md) | The legal pages as markdown files you mount (`CONTENT_DIR`): the folder, the file format, what is refused, and the named sections of the two statutory button pages |
 | [**Podman**](./docs/podman.md) | Running these compose files and containers under Podman instead of Docker: the `podman compose` vs. `podman-compose` distinction, and the rootless notes |
+| [**Import from YAZIO**](./docs/import-from-yazio.md) | Bringing a YAZIO diary into openplate with the open-source `yazio-exporter` tool, and what does and does not come across |
 
 Repository-level specifications live at the root: [`.adr/`](.adr/) (architecture decision
 records). Start with
