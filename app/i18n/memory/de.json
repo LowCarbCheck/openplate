@@ -15952,13 +15952,6 @@
     "at": "2026-09-14",
     "de": "{{count}} Scheibe Brot"
   },
-  "d201674c14dae982": {
-    "en": "Language",
-    "path": "common:chrome.language",
-    "model": "wordsmith",
-    "at": "2026-09-14",
-    "de": "Sprache"
-  },
   "d21a2dde561a6557": {
     "en": "Snack",
     "path": "common:diary.meals.snack",

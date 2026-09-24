@@ -4,10 +4,16 @@
  * An OPEN instance has no account to put in a menu (AGENTS.md), so this is not
  * an account menu there: it is about the DEVICE. It answers "whose diary is this,
  * is it safe, and how does it look" without leaving the page. The label at the
- * top names the device, the theme row switches appearance in place, the
- * language strip under it reloads the page in another language (M230), and the
+ * top names the device, the theme row switches appearance in place, and the
  * foot carries the ACCOUNT STRIP (`avatar-account-strip.tsx`), which is where
  * the email, the sync state and the allowance all live now.
+ *
+ * THE LANGUAGE STRIP THAT USED TO SIT UNDER THE THEME (M230) IS GONE (M257).
+ * The operator's own words, from a phone screenshot of the German menu: it
+ * "can safely be put into another setting section, no need to put that into
+ * the overlay right away". The language choice now lives only on
+ * `/settings/preferences`, which already offered it through the same
+ * `selectLanguage` mechanism.
  *
  * THAT PREMISE IS NOW CONDITIONAL (M201). `INSTANCE_MODE=managed` gives an
  * instance accounts, and on one of those this menu is the menu a person
@@ -65,7 +71,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { THEME_OPTIONS, useThemePreference, type Theme } from './theme-selector';
-import { LanguageRow } from './language-switcher';
 import { AvatarAccountStrip } from './avatar-account-strip';
 import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
@@ -258,15 +263,6 @@ export function AvatarMenu() {
           {t('preferences.theme.title')}
         </DropdownMenuLabel>
         <ThemeRow />
-
-        {/* THE LANGUAGE, BESIDE THE THEME (M230). The other preference people
-            flip mid-task, and the operator asked for it "next to the theme
-            icon". Same strip grammar; the mechanism is `selectLanguage`, the
-            one `/settings/preferences` already uses. */}
-        <DropdownMenuLabel className="py-1 text-xs font-medium text-muted-foreground">
-          {t('chrome.language')}
-        </DropdownMenuLabel>
-        <LanguageRow />
 
         {/* THE ACCOUNT, AT THE FOOT. Not a row among rows: one strip that
             names who is signed in, how sync is doing and what the allowance

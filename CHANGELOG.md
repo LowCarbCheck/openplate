@@ -21,6 +21,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **The phone's bottom bar has a Menu tab.** Users did not realize that tapping the logo at the top left opened the full app menu. The bar now includes five tabs: Diary, Insights, Scan, Add and Menu. Menu opens the same screen as the logo and slides it in from the right, while the logo still opens it from the left. Insights is back in the bar, and Scan stays in the exact centre. The small arrow beside Scan is gone, because in a five-tab bar it would cover the camera button. A long press on Scan still opens the same choices, which also remain available on the Add page and the diary. Tab labels are one pixel smaller so German "Hinzufügen" fits a 360 px phone. `tests/e2e/menu-is-found.spec.ts` opens the menu from both entry points and checks every label in six languages at 360 and 390 px.
+- **The account menu drops the language picker.** The overlay under the avatar carried six language buttons beside the theme choice, which made it tall on a phone. Language now switches only in Settings, under "Appearance and language" (`/settings/preferences`), which already offered it. `tests/e2e/menu-has-no-language.spec.ts` opens the menu and checks it, then switches the language on that page and checks it took effect.
 
 ### Fixed
 

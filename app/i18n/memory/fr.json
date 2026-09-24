@@ -15952,13 +15952,6 @@
     "at": "2026-09-14",
     "fr": "{{count}} tranche de pain"
   },
-  "d201674c14dae982": {
-    "en": "Language",
-    "path": "common:chrome.language",
-    "model": "wordsmith",
-    "at": "2026-09-14",
-    "fr": "Langue"
-  },
   "d21a2dde561a6557": {
     "en": "Snack",
     "path": "common:diary.meals.snack",

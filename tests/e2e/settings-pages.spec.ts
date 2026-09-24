@@ -16,23 +16,24 @@
  * call is a selector that matches nothing the day the taste changes.
  *
  * THE THIRD WALK IS EVERY LANGUAGE (M230). A machine translation can be
- * correct and still overflow a row or a strip, and only a render at the phone
- * width sees that. The walk is measured, never photographed: the document's
- * `scrollWidth` on every page, and the device menu's language strip against
- * its own `clientWidth`. Both were shown red once before they were trusted: an
- * unbreakable 46-character row title pushed the document to 433px, and an
- * unbreakable 40-character language name pushed the strip to 317px inside its
- * 246px. A per-row `scrollHeight` check was tried and dropped: a settings row
- * has `min-h-13` and no height cap, and its status line's `line-clamp-2` is
- * overridden by the `block` beside it (`settings-section.tsx`), so a long
- * sentence grows the row instead of clipping and the check could not be made
- * to fail.
+ * correct and still overflow a row, and only a render at the phone width sees
+ * that. The walk is measured, never photographed: the document's
+ * `scrollWidth` on every page. It was shown red once before it was trusted: an
+ * unbreakable 46-character row title pushed the document to 433px. A per-row
+ * `scrollHeight` check was tried and dropped: a settings row has `min-h-13`
+ * and no height cap, and its status line's `line-clamp-2` is overridden by
+ * the `block` beside it (`settings-section.tsx`), so a long sentence grows
+ * the row instead of clipping and the check could not be made to fail.
+ *
+ * THE DEVICE MENU'S LANGUAGE STRIP THIS WALK ALSO USED TO MEASURE IS GONE
+ * (M257): the picker left the menu for `/settings/preferences` alone, which
+ * this walk already visits as one of the hub's destinations, and
+ * `tests/e2e/menu-has-no-language.spec.ts` is its control now.
  */
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
-import { LANGUAGE_STRIP_SLOT } from '../../app/components/language-switcher';
-import { PHONE_WIDTH, completeOnboarding, expectPhoneLayout, useLanguage } from './helpers';
+import { completeOnboarding, expectPhoneLayout, useLanguage } from './helpers';
 
 test('every settings row opens a titled page that still fits the phone', async ({ page }) => {
   await completeOnboarding(page);
@@ -166,23 +167,6 @@ test('the AI settings page keeps its reference prose behind a disclosure', async
   await expectPhoneLayout(page);
 });
 
-/** The device menu's language strip, opened from the header and measured. */
-async function measureLanguageStrip(
-  page: Page,
-): Promise<{ cells: number; scrollWidth: number; clientWidth: number; right: number }> {
-  await page.locator('header button[aria-haspopup="menu"]').first().click();
-  const strip = page.locator(`[data-slot="${LANGUAGE_STRIP_SLOT}"]`);
-  await expect(strip).toBeVisible();
-  const measured = await strip.evaluate((element) => ({
-    cells: element.querySelectorAll('[role="menuitemradio"]').length,
-    scrollWidth: element.scrollWidth,
-    clientWidth: element.clientWidth,
-    right: element.getBoundingClientRect().right,
-  }));
-  await page.keyboard.press('Escape');
-  return measured;
-}
-
 /**
  * ONE TEST PER LOCALE, not one test looping all six.
  *
@@ -194,7 +178,7 @@ async function measureLanguageStrip(
  * message below is the one the loop already ran.
  */
 for (const locale of SUPPORTED_LANGUAGES) {
-  test(`every settings page fits the phone in ${locale}, and so does the language strip`, async ({ page }) => {
+  test(`every settings page fits the phone in ${locale}`, async ({ page }) => {
     await completeOnboarding(page);
 
     await useLanguage(page, locale);
@@ -207,11 +191,6 @@ for (const locale of SUPPORTED_LANGUAGES) {
       .locator('a[href]')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
     expect(destinations.length, `${locale}: the hub must offer several rows`).toBeGreaterThan(3);
-
-    const strip = await measureLanguageStrip(page);
-    expect(strip.cells, `${locale}: one cell per language`).toBe(SUPPORTED_LANGUAGES.length);
-    expect(strip.scrollWidth, `${locale}: the language strip must not scroll sideways`).toBe(strip.clientWidth);
-    expect(strip.right, `${locale}: the language strip must end inside the phone`).toBeLessThanOrEqual(PHONE_WIDTH);
 
     for (const destination of destinations) {
       await page.goto(destination);
