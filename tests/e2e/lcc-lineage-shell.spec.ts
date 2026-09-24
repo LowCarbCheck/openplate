@@ -33,9 +33,10 @@ import { completeOnboarding, HEADER_HEIGHT, PHONE_WIDTH } from './helpers';
 /**
  * The raised circle's box, frozen, read off the production build at the 390 px design width:
  * `h-12 w-12`, centred in the middle slot of the bar, raised by `-mt-5` so it stands 17.5 px above
- * the bar's own top edge. The bar went from three slots to five on 2026-09-24 (the Menu tab) and
- * this value did not change: the circle sits in slot three of five, every slot is an equal share,
- * so its centre is still the viewport's, 195 px at 390.
+ * the bar's own top edge. The bar went from three slots to five on 2026-09-24 (the Menu tab), and
+ * back to three with M258, when the camera in the circle became a plus. This value did not change
+ * either time: the circle sits in the middle slot, every slot is an equal share, so its centre is
+ * still the viewport's, 195 px at 390.
  */
 const LAUNCHER_RECT = { x: 171, y: 769.5, width: 48, height: 48 } as const;
 
@@ -142,24 +143,18 @@ export function colouredShadowsIn(boxShadow: string): number {
 }
 
 /**
- * The raised launcher's circle: the first `span` inside the bar's first button that opens no
- * dialog. The flat tabs are links, and the one other button, the Menu tab, says
- * `aria-haspopup="dialog"`, as the launcher's chevron did before it left the bar. The circle
- * carries no slot of its own, and giving it one would be a source change this spec's own subject
- * does not need.
+ * The raised launcher's circle: the first `span` inside the bar's plus. The plus carries its own
+ * `data-slot` since M258, when it became one of two bar buttons that open a dialog (the other is
+ * More), so the old "the button that opens no dialog" reading had nothing left to find.
  *
  * @param page - the page to read.
  * @returns the circle's locator.
  */
 function launcherCircle(page: Page) {
-  return page
-    .locator('nav.fixed button:not([aria-haspopup="dialog"])')
-    .first()
-    .locator('span')
-    .first();
+  return page.locator('nav.fixed [data-slot="bottom-nav-add"]').locator('span').first();
 }
 
-test('the raised Scan button keeps its box and loses its teal glow', async ({ page }) => {
+test('the raised plus keeps its box and loses its teal glow', async ({ page }) => {
   await completeOnboarding(page);
   await page.goto('/diary');
 

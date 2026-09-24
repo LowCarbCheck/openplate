@@ -7,8 +7,8 @@
  * is not this file but `app/lib/add-drafts.ts`: each screen keeps its draft
  * there, so the person who leaves one to try another finds it where they left
  * it when they come back. There is still no hub SCREEN: bare `/add` redirects
- * to `/add/search` (`add._index.tsx`), and the launcher's raised button and
- * its long-press sheet stay the one-gesture way in from anywhere else.
+ * to `/add/search` (`add._index.tsx`), and the bar's raised plus and the sheet
+ * its tap opens stay the way in from anywhere else.
  *
  * NOT FOR A CONSUMER. `/add/describe?to=/pantry` is the pantry asking for a
  * list of what is on the shelf (M233/01), not a way to log a meal, so a row

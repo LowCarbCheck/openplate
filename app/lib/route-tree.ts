@@ -44,8 +44,8 @@ export interface RouteTreeEntry {
  */
 export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // ---------------------------------------------------------------------------
-  // Roots. Everything the sidebar, the drawer and the bottom tab bar reach in
-  // one tap (`personalNavigationItems` in `app/components/app-sidebar.tsx`,
+  // Roots. Everything the sidebar, the bottom tab bar and its More sheet reach
+  // in one tap (`personalNavigationItems` in `app/components/app-sidebar.tsx`,
   // plus `adminNavigationItem`), and nothing else. Tapping between two roots
   // must never grow the stack, or the tab bar becomes a Back treadmill.
   // ---------------------------------------------------------------------------

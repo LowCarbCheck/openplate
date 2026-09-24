@@ -194,8 +194,8 @@ export default [
     route('/diary/entry/:id', 'routes/diary.entry.$id.tsx'),
     // The intake hub (ADR-0019): three sibling screens for the three real ways
     // a food reaches the diary, nested under one address. The layout renders
-    // only an `<Outlet/>`; there is no hub SCREEN, the launcher's raised
-    // button and long-press sheet already serve that purpose in one gesture.
+    // only an `<Outlet/>`; there is no hub SCREEN, the bar's raised plus and
+    // the add sheet its tap opens already serve that purpose.
     route('/add', 'routes/add.tsx', [
       // Bare `/add` redirects to `/add/search`, the single most used of the
       // three, so the tree has no anonymous "the parent" slot.

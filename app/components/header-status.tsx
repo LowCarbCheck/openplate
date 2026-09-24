@@ -18,8 +18,8 @@ import { clearStatus, registerStatusHost, useStatus, type StatusMessage, type St
  * scrolled to. Its contents are also the least-read text in the app: nobody is
  * looking at "Diary" while their entry saves. A toast, by contrast, had to
  * float somewhere, and every candidate was somewhere a control already lived,
- * the bottom nav and the raised Scan button below, the device menu and the nav
- * drawer above.
+ * the bottom nav and its raised button below, the device menu and the brand
+ * mark above.
  *
  * THE HEADER NEVER MOVES. This component swaps `children` for the status row
  * inside the same box. An error persists until dismissed, so its text wraps
@@ -29,7 +29,7 @@ import { clearStatus, registerStatusHost, useStatus, type StatusMessage, type St
  * long sentence, in German especially, fits whole rather than clipping after
  * two lines of the larger size (M225 follow-up). Three lines at `leading-4`
  * (16px) plus a 16px description is 64px, so the bar's height is still fixed
- * by the header's own `min-h-16`, and the `AvatarMenu` and the drawer trigger
+ * by the header's own `min-h-16`, and the `AvatarMenu` and the brand mark
  * are siblings of this component rather than children of it, so neither
  * shifts by a pixel.
  *

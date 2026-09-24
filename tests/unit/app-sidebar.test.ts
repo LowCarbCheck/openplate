@@ -9,15 +9,12 @@
  *
  * The usability-overhaul fix this used to lock in: the sidebar used to say
  * "Scan Plate" / "Add food" / "AI Settings" while the mobile bottom nav said
- * "Scan" / "Add" / "Goals" for the same five destinations — a laptop user
+ * "Scan" / "Add" / "Goals" for the same five destinations, so a laptop user
  * and a phone user on the same account saw two different maps of the app.
- * `BottomNav` has since dropped its Goals tab (moved into `app-wrapper.tsx`'s
- * top-left logo menu, which also carries Profile/AI settings) to keep the
- * mobile footer to its four highest-frequency destinations, so the sidebar
- * and `BottomNav` deliberately no longer have identical destination counts —
- * only the labels/hrefs BOTH navs still share need to keep matching. Since
- * M129/05 that match is asserted on the i18n catalog KEY rather than the
- * English label, which is the thing that can now drift.
+ * Since M129/05 every surface reads catalog KEYS, and since M258 the phone
+ * splits the catalog three ways through each entry's `phone` field: Diary is
+ * the bar's one tab, Add and Scan sit behind the raised plus, and every other
+ * page is a More tile.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,11 +24,12 @@ import {
   footerNavigationItems,
   personalNavigationItems,
   primaryNavigationItems,
-  tabNavigationItems,
+  barTabNavigationItems,
+  moreSheetNavigationItems,
 } from '../../app/components/app-sidebar';
 
 describe('personalNavigationItems', () => {
-  it('lists the ten drawer/sidebar destinations, in order, with the same catalog keys/hrefs BottomNav also uses for its four destination tabs', () => {
+  it('lists the ten sidebar destinations, in order, with the same catalog keys/hrefs the phone surfaces use', () => {
     // M129/05: both navs now carry catalog KEYS. Pinning the key (not the
     // rendered English) is what keeps the two navs from drifting — a wording
     // change now lands in one catalog entry and moves both.
@@ -48,12 +46,12 @@ describe('personalNavigationItems', () => {
         // thing the camera is for, the same composer pointed at a shelf.
         { labelKey: 'nav.pantry', to: '/pantry' },
         // The fasting timer (M132) sits with the doing-surfaces, before the
-        // reviewing ones, and deliberately never reaches the tab bar.
+        // reviewing ones.
         { labelKey: 'nav.fasting', to: '/fasting' },
-        // Insights, which is also the tab bar's second slot (2026-09-24).
+        // Insights, a More tile on a phone since M258.
         { labelKey: 'nav.trends', to: '/trends' },
         // The nutrient screen (M135/06) is a reviewing surface, so it sits
-        // beside Trends — and never reaches the tab bar either.
+        // beside Insights.
         { labelKey: 'nav.nutrients', to: '/nutrients' },
         { labelKey: 'nav.goals', to: '/settings/nutrition' },
         // The settings HUB, not the Preferences page it used to point at —
@@ -74,7 +72,7 @@ describe('personalNavigationItems', () => {
 });
 
 describe('navigation surfaces', () => {
-  it('gives the drawer and the sidebar the same nine primary rows plus a Settings footer', () => {
+  it('gives the sidebar nine primary rows plus a Settings footer', () => {
     assert.deepEqual(
       primaryNavigationItems.map((item) => item.to),
       [
@@ -95,40 +93,65 @@ describe('navigation surfaces', () => {
     );
   });
 
-  it('gives the tab bar its four destinations, in bar order, with Scan in the middle of five', () => {
-    // Diary, Insights, Scan, Add. The fifth slot, Menu, is not a destination
-    // and so not a catalog entry: `BottomNav` draws it after these four,
-    // which puts Scan, the third of five, at the exact centre. Goals stays in
-    // the drawer and the sidebar.
+  it('gives the phone bar exactly one flat tab, Diary', () => {
+    // The other two slots are not destinations: the plus opens the add sheet
+    // and More opens the More sheet, so neither is a catalog entry.
     assert.deepEqual(
-      tabNavigationItems.map((item) => item.to),
-      ['/diary', '/trends', '/add/photo', '/add/search'],
+      barTabNavigationItems.map((item) => item.to),
+      ['/diary'],
     );
   });
 
-  it('never promotes the fasting timer into the bar, a sixth slot would take Scan off the centre', () => {
-    const fasting = personalNavigationItems.find((item) => item.to === '/fasting');
-
-    assert.ok(fasting !== undefined, 'the catalog must carry the fasting timer');
-    assert.equal(fasting.tab, undefined, '/fasting must never carry a tab field');
-  });
-
-  it('raises exactly one tab — the signature Scan action', () => {
+  it('puts Add and Scan behind the plus, and nothing else', () => {
     assert.deepEqual(
-      tabNavigationItems.filter((item) => item.tab?.raised === true).map((item) => item.to),
-      ['/add/photo'],
+      personalNavigationItems.filter((item) => item.phone === 'plus').map((item) => item.to),
+      ['/add/search', '/add/photo'],
     );
   });
 
-  it('splits the catalog exhaustively — every destination lands in exactly one drawer group', () => {
+  it('gives the More sheet the six other pages, the drawer order reversed', () => {
+    // Reversed so the most used page is nearest the thumb: the grid fills from
+    // the top left, so Overview, first in the catalog, lands bottom right.
+    assert.deepEqual(
+      moreSheetNavigationItems.map((item) => item.to),
+      ['/settings/nutrition', '/nutrients', '/trends', '/fasting', '/pantry', '/dashboard'],
+    );
+  });
+
+  it('keeps configuration out of the More sheet', () => {
+    // Settings, Plan and Administration are in the avatar menu on a phone.
+    const tiles = new Set(moreSheetNavigationItems.map((item) => item.to));
+    for (const href of ['/settings', '/settings/plan', '/admin']) {
+      assert.ok(!tiles.has(href), `${href} must not be a More tile`);
+    }
+  });
+
+  it('gives every primary page exactly one place on a phone', () => {
+    // A page in the bar AND in the sheet would be two doors to one room, and a
+    // page in neither would be unreachable on a phone. The split is total and
+    // disjoint.
+    const onPhone = [
+      ...barTabNavigationItems,
+      ...personalNavigationItems.filter((item) => item.phone === 'plus'),
+      ...moreSheetNavigationItems,
+    ].map((item) => item.to);
+    assert.deepEqual(onPhone.toSorted(), primaryNavigationItems.map((item) => item.to).toSorted());
+    assert.equal(new Set(onPhone).size, onPhone.length);
+  });
+
+  it('never gives a footer entry a phone place', () => {
+    assert.ok(footerNavigationItems.every((item) => item.phone === undefined));
+  });
+
+  it('splits the catalog exhaustively, every destination lands in exactly one sidebar group', () => {
     assert.deepEqual([...primaryNavigationItems, ...footerNavigationItems].length, personalNavigationItems.length);
   });
 
-  it('derives tabs from the catalog — a tab entry is the SAME object the drawer renders', () => {
-    // The anti-drift point of the whole catalog: a tab can't carry its own
-    // label or href, so the bar and the drawer cannot disagree.
-    for (const tab of tabNavigationItems) {
-      assert.ok(personalNavigationItems.includes(tab), `${tab.to} must be a catalog entry`);
+  it('derives the phone lists from the catalog, a tile is the SAME object the sidebar renders', () => {
+    // The anti-drift point of the whole catalog: a tab or a tile cannot carry
+    // its own label or href, so the phone and the sidebar cannot disagree.
+    for (const item of [...barTabNavigationItems, ...moreSheetNavigationItems]) {
+      assert.ok(personalNavigationItems.includes(item), `${item.to} must be a catalog entry`);
     }
   });
 });

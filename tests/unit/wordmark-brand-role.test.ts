@@ -202,11 +202,13 @@ describe('the places that draw the word', () => {
     };
   }
 
-  it('lifts the word wherever the mark is beside it: sidebar, public header, onboarding, the drawer', () => {
+  it('lifts the word wherever the mark is beside it: sidebar, public header, onboarding', () => {
     for (const path of ['app/components/app-sidebar.tsx', 'app/components/public-wrapper.tsx', 'app/routes/onboarding.tsx']) {
       assert.deepEqual(usesOf(path), { lifted: 1, alone: 0 }, `${path} draws the word beside the mark`);
     }
-    assert.equal(usesOf('app/components/app-wrapper.tsx').lifted, 1, 'the drawer header lifts the word');
+    // The phone drawer's header was the fourth place, and it went with the
+    // drawer (M258). The app header's own kicker below is the only word left.
+    assert.equal(usesOf('app/components/app-wrapper.tsx').lifted, 0, 'a lifted word is back in app-wrapper');
   });
 
   it('leaves the word alone where no mark is beside it: the phone kicker and the landing heading', () => {

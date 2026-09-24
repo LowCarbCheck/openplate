@@ -156,8 +156,8 @@ export function useServerInstanceRead(): ServerInstanceRead {
  * follows every later read for the same server, so a gate that finds the door
  * shut takes the entry away with it.
  *
- * Mounted once, in the app shell, and not per drawer open: a read per open
- * would send a request per tap and would draw the entry after the drawer was
+ * Mounted once, in the app shell, and not per menu open: a read per open
+ * would send a request per tap and would draw the entry after the menu was
  * already on screen.
  */
 export function useFreshServerInstance(): InstanceDescriptor | null {

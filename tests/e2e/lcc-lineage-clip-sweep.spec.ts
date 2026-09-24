@@ -199,7 +199,7 @@ const LONG_FOODS = [
 const FOOD_NAME_MIN_CHARS = 30;
 const FOOD_NAME_MAX_CHARS = 40;
 
-/** What the bottom bar holds today: the diary, the raised launcher and the add screen. */
+/** What the bottom bar holds today (M258): the diary, the raised plus and More. */
 const MIN_TAB_LABELS = 3;
 
 /** The route pattern of a food's own page, which the sweep reaches by tapping a diary row. */

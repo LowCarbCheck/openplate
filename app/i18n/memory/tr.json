@@ -279,13 +279,6 @@
     "at": "2026-09-14",
     "tr": "Kayıt yapılan günler, son 13 hafta"
   },
-  "03a15cce73aa73e2": {
-    "en": "Menu",
-    "path": "common:nav.menu",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-24",
-    "tr": "Menü"
-  },
   "03a8a8aac2b6b29b": {
     "en": "Start fresh",
     "path": "common:welcome.startFresh",
@@ -446,6 +439,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "tr": "Elle bir yiyecek eklerken neyin eksik olduğu artık kendi dilinde belirtilir."
+  },
+  "064d609654ea1ad0": {
+    "en": "More",
+    "path": "common:nav.more",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Daha fazla"
   },
   "0652cf0558b31ce6": {
     "en": "Empty plate so far. Log a few meals and this fills in.",
@@ -3015,13 +3015,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yalnızca senin cihazlarında tutulur. Sunucu bunu asla görmez."
-  },
-  "248a53b35a134c98": {
-    "en": "Everywhere you can go in openplate",
-    "path": "common:chrome.navDrawerDescription",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "openplate içinde gidebileceğin her yer"
   },
   "24a09bb6fcb19066": {
     "en": "Reset link sent to {{email}}.",
@@ -6410,6 +6403,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{count}} yiyecek"
+  },
+  "55e9a5aa4330338e": {
+    "en": "Search foods",
+    "path": "common:launcher.searchFoods",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-24",
+    "tr": "Yiyecekleri ara"
   },
   "56267cd6123822c2": {
     "en": "Sign in",
@@ -10856,13 +10856,6 @@
     "at": "2026-09-14",
     "tr": "Bu tarz için bir karbonhidrat sınırı seç."
   },
-  "8c9d3e44326260cb": {
-    "en": "Install app",
-    "path": "common:chrome.installApp",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "Uygulamayı yükle"
-  },
   "8c9dfae0379fa9d6": {
     "en": "Change the password you sign in with.",
     "path": "common:account.password.body",
@@ -13760,13 +13753,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Derleme tarihi"
-  },
-  "b251fb0ee661be9b": {
-    "en": "openplate menu",
-    "path": "common:chrome.logoMenuLabel",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "tr": "openplate menüsü"
   },
   "b2588c48eefae561": {
     "en": "This instance is invite-only",

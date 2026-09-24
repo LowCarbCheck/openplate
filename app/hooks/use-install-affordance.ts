@@ -35,9 +35,8 @@ export type InstallAffordanceControls = {
 };
 
 /**
- * The install affordance any piece of chrome (the settings hub's
- * `InstallCard`, the app-header nav drawer) should render, plus the action to
- * trigger it.
+ * The install affordance any piece of chrome (today the settings hub's
+ * `InstallCard`) should render, plus the action to trigger it.
  * Combines the pure platform detection in `#app/lib/pwa-install` with the
  * globally-captured `beforeinstallprompt` state from
  * `#app/lib/pwa-install-capture` (captured at app startup, not on this

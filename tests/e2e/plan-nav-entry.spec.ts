@@ -13,9 +13,11 @@
  *   reading is taken, then let through. The control injects a 32 px box under
  *   Settings and requires the same readers to report a move and a shift, so a
  *   reader that could not see one fails there.
- * - On a phone the drawer draws it directly above Settings. An entry that
- *   arrives while the drawer is open waits for the next open, so nothing in an
- *   open drawer is pushed under a finger.
+ * - On a phone the avatar menu draws it directly above Settings (M258: the
+ *   navigation drawer that carried it went, and the avatar menu carries the
+ *   configuration rows now). An entry that arrives while the menu is open
+ *   waits for the next open, so nothing in an open menu is pushed under a
+ *   finger.
  * - On an instance whose handshake says `plans: false` there is no entry, at
  *   either size. The present cases are its control: the same walk, the same
  *   selector, one fact changed.
@@ -36,14 +38,20 @@ const DESKTOP = { width: 1440, height: 900 } as const;
 /** The height the control's injected box takes, larger than any rounding. */
 const CONTROL_BOX_PX = 32;
 
-/** The desktop sidebar, never the drawer. */
+/** The desktop sidebar, never the avatar menu. */
 function sidebar(page: Page): Locator {
   return page.locator('[data-slot="sidebar-container"]');
 }
 
-/** The mobile drawer, open. */
-function drawer(page: Page): Locator {
-  return page.getByRole('dialog');
+/** The avatar menu, open. */
+function avatarMenu(page: Page): Locator {
+  return page.getByRole('menu');
+}
+
+/** Opens the avatar menu from its trigger in the header. */
+async function openAvatarMenu(page: Page): Promise<void> {
+  await page.getByRole('button', { name: EN.chrome.deviceMenuLabel }).click();
+  await expect(avatarMenu(page)).toBeVisible();
 }
 
 /** The two entries of one navigation this spec reads. */
@@ -181,17 +189,17 @@ test.describe('on a desktop', () => {
 });
 
 test.describe('on a phone', () => {
-  test('the drawer draws the plan entry directly above Settings', async ({ page }) => {
+  test('the avatar menu draws the plan entry directly above Settings', async ({ page }) => {
     await signedInOnSettings(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
     await expect(page.locator('main a[href="/settings/plan"]')).toBeVisible();
 
-    await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
-    const { plan, settings } = entries(drawer(page));
+    await openAvatarMenu(page);
+    const { plan, settings } = entries(avatarMenu(page));
     await expect(plan).toBeVisible();
     await expect(plan).toHaveText(EN.nav.plan);
     // The very next link after the plan entry is Settings.
-    const hrefs = await drawer(page)
-      .locator('nav a')
+    const hrefs = await avatarMenu(page)
+      .locator('a')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
     expect(hrefs.indexOf('/settings')).toBe(hrefs.indexOf('/settings/plan') + 1);
     expect(await topOf(plan)).toBeLessThan(await topOf(settings));
@@ -201,15 +209,15 @@ test.describe('on a phone', () => {
     await page.waitForURL('**/settings/plan');
   });
 
-  test('an entry that arrives while the drawer is open waits for the next open', async ({ page }) => {
+  test('an entry that arrives while the menu is open waits for the next open', async ({ page }) => {
     const stub: PlansStub = { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY };
     await signedInOnSettings(page, stub);
     const health = createGate();
     stub.healthGate = health.promise;
     await page.reload();
 
-    await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
-    const { plan, settings } = entries(drawer(page));
+    await openAvatarMenu(page);
+    const { plan, settings } = entries(avatarMenu(page));
     await expect(settings).toBeVisible();
     await settleAnimations(page);
     await expect(plan).toHaveCount(0);
@@ -224,16 +232,16 @@ test.describe('on a phone', () => {
 
     // THE CONTROL: the next open draws it.
     await page.keyboard.press('Escape');
-    await expect(drawer(page)).toHaveCount(0);
-    await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
+    await expect(avatarMenu(page)).toHaveCount(0);
+    await openAvatarMenu(page);
     await expect(plan).toBeVisible();
   });
 
   test('no entry on an instance that sells no plans', async ({ page }) => {
     await signedInOnSettings(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null, plans: false });
     await reloadUntilHandshakeAnswered(page);
-    await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
-    const { plan, settings } = entries(drawer(page));
+    await openAvatarMenu(page);
+    const { plan, settings } = entries(avatarMenu(page));
     await expect(settings).toBeVisible();
     await expect(plan).toHaveCount(0);
   });

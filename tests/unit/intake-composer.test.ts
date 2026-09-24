@@ -152,8 +152,8 @@ describe('the composer strip', () => {
  * The filled camera key was a deliberate call and it survives: a photo costs a
  * permission prompt, and on `/dashboard` and `/diary` this strip is the only
  * prominent camera a desktop or tablet has, because the tab bar's raised
- * circle is phone-only. The sheet is the single exception, since that circle
- * is already on screen a few pixels below it.
+ * circle is phone-only. The sheet is the single exception, since the filled
+ * plus circle that opened it is on screen a few pixels below it.
  *
  * So each half is asserted against the other: whatever says "filled" here must
  * be absent from the embedded render, and the reverse, and a single treatment
@@ -179,7 +179,7 @@ describe("the camera key's weight", () => {
     assert.ok(!classes.includes(OUTLINE), 'the standalone key is drawn as an outline');
   });
 
-  it('outlines the key inside the launcher sheet, where a filled camera is already on screen', () => {
+  it('outlines the key inside the launcher sheet, where the filled plus is already on screen', () => {
     const embedded = createElement(IntakeComposer, {
       describeTo: ADD_DESCRIBE_PATH,
       capture: BORROWED_CAPTURE,

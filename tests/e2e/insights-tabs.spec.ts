@@ -44,7 +44,7 @@ function shiftDay(day: string, days: number): string {
   return shifted.toISOString().slice(0, 10);
 }
 
-test('switching tabs keeps range and slot in the URL, and the drawer names the page Insights', async ({ page }) => {
+test('switching tabs keeps range and slot in the URL, and the More sheet names the page Insights', async ({ page }) => {
   await completeOnboarding(page);
 
   const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
@@ -102,11 +102,12 @@ test('switching tabs keeps range and slot in the URL, and the drawer names the p
     .toBe(true);
 
   ////////////////////////////////////////////////////////////////////////////
-  // The drawer, the mobile menu this viewport shows, names the page Insights.
+  // The More sheet, where this page lives on a phone, names it Insights and
+  // marks it as the page on screen.
   ////////////////////////////////////////////////////////////////////////////
 
-  // IN THE DRAWER: the bottom bar carries an Insights tab too since
-  // 2026-09-24, so an unscoped lookup would no longer say which menu names it.
-  await page.getByRole('button', { name: EN.chrome.logoMenuLabel }).click();
-  await expect(page.getByRole('dialog').getByRole('link', { name: EN.nav.trends, exact: true })).toBeVisible();
+  await page.locator('[data-slot="bottom-nav-shell"] nav').getByRole('button', { name: EN.nav.more, exact: true }).click();
+  const tile = page.getByRole('dialog').getByRole('link', { name: EN.nav.trends, exact: true });
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveAttribute('aria-current', 'page');
 });

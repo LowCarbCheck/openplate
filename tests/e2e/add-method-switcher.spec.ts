@@ -225,6 +225,23 @@ function bottomBarLink(page: Page, label: string): Locator {
   return page.locator('[data-slot="bottom-nav-shell"] nav').getByRole('link', { name: label, exact: true });
 }
 
+/**
+ * Comes back into the add search by the bottom bar, the way a person on a phone does since M258:
+ * the plus opens the add sheet, and its first door is the food search. Two client navigations
+ * and no `goto`, so the layout and its switcher really unmount and mount again, as they did when
+ * this was one tap on the bar's Add tab.
+ *
+ * @param page - a page with the bottom bar on screen.
+ */
+async function enterSearchByTheBar(page: Page): Promise<void> {
+  await page.locator('[data-slot="bottom-nav-shell"] nav').getByRole('button', { name: EN.nav.add, exact: true }).click();
+  await page
+    .locator('[data-slot="sheet-content"]')
+    .getByRole('link', { name: EN.launcher.searchFoods, exact: true })
+    .click();
+  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
+}
+
 /** The capture card on `/add/photo`: the card that holds the camera input. */
 function captureCard(page: Page): Locator {
   return page.locator('[data-slot="card"]').filter({ has: page.locator('input[type="file"][capture]') });
@@ -378,8 +395,7 @@ test('a finished analysis and its review edits survive a switch, and the confirm
   await page.getByRole('button', { name: EN.scan.review.confirmAndLog }).click();
   await page.waitForURL('**/diary**');
 
-  await bottomBarLink(page, EN.nav.add).click();
-  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
+  await enterSearchByTheBar(page);
   await switchTo(page, 'photo');
   // The empty capture card, anchored on its shutter, and no review.
   await expect(page.getByRole('button', { name: EN.scan.capture.takePhoto })).toBeVisible();
@@ -400,8 +416,7 @@ test('the composer and the search box keep their drafts across a trip to the dia
   // OUT OF /add ENTIRELY, so the layout and its switcher unmount too.
   await bottomBarLink(page, EN.nav.diary).click();
   await page.waitForURL('**/diary**');
-  await bottomBarLink(page, EN.nav.add).click();
-  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
+  await enterSearchByTheBar(page);
 
   // The search box, typed into on this visit, then left the same way.
   const searchBox = page.locator('#food-search');
@@ -412,10 +427,9 @@ test('the composer and the search box keep their drafts across a trip to the dia
 
   await bottomBarLink(page, EN.nav.diary).click();
   await page.waitForURL('**/diary**');
-  await bottomBarLink(page, EN.nav.add).click();
-  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
-  // The Add tab opens the bare `/add/search`, with no `?q=`: the words come
-  // from the draft, not from the address.
+  await enterSearchByTheBar(page);
+  // The way back reaches the bare `/add/search`, with no `?q=`: the words
+  // come from the draft, not from the address.
   await expect(searchBox).toHaveValue('porridge');
 });
 
@@ -436,8 +450,7 @@ test('logging the opened food clears the search draft', async ({ page }) => {
 
   // Back the way test (d) proved keeps a draft, so an empty screen here is
   // the log's doing and not the way back's.
-  await bottomBarLink(page, EN.nav.add).click();
-  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
+  await enterSearchByTheBar(page);
   const searchBox = page.locator('#food-search');
   await expect(searchBox).toBeVisible();
   await expect(searchBox).toHaveValue('');
@@ -468,8 +481,7 @@ test('logging a sentence from the composer clears the composer, and not before',
   await page.getByRole('button', { name: EN.scan.review.confirmAndLog }).click();
   await page.waitForURL('**/diary**');
 
-  await bottomBarLink(page, EN.nav.add).click();
-  await page.waitForURL((url) => url.pathname === METHOD_PATHS.search);
+  await enterSearchByTheBar(page);
   await switchTo(page, 'describe');
   await expect(composer).toBeVisible();
   await expect(composer).toHaveValue('');

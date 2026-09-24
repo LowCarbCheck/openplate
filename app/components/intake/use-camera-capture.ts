@@ -2,7 +2,7 @@
  * The camera capture gesture, in one place.
  *
  * Every surface that offers "photograph your food" goes through this hook: the
- * tab bar's raised launcher, and the in-page add-food actions on `/diary` and
+ * tab bar's add sheet, and the in-page add-food actions on `/diary` and
  * `/dashboard`. It was extracted from `add-launcher.tsx` so those surfaces
  * cannot drift apart on the one rule that makes the feature work at all.
  *

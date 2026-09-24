@@ -39,18 +39,24 @@ const addCatalogSchema = z.object({
 
 const catalogSchema = z.object({
   chrome: z.object({
-    logoMenuLabel: z.string(),
+    deviceMenuLabel: z.string(),
     terms: z.string(),
     status: z.object({ dismiss: z.string() }),
   }),
   nav: z.object({
+    dashboard: z.string(),
     diary: z.string(),
+    pantry: z.string(),
+    fasting: z.string(),
     trends: z.string(),
+    nutrients: z.string(),
+    goals: z.string(),
     scan: z.string(),
     add: z.string(),
-    menu: z.string(),
+    more: z.string(),
     plan: z.string(),
     settings: z.string(),
+    admin: z.string(),
   }),
   welcome: z.object({
     start: z.string(),
@@ -69,6 +75,9 @@ const catalogSchema = z.object({
   add: addCatalogSchema,
   bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
+    sheetTitle: z.string(),
+    searchFoods: z.string(),
+    type: z.string(),
     photo: z.string(),
   }),
   entry: z.object({

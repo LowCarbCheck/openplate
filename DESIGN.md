@@ -20,7 +20,7 @@ everywhere, see §5.
 
 **Refused on purpose:** LCC's emerald (openplate-brand owns the teal, and which teal wins is still
 an open question for a person), its polychrome pastel chip rows, and its tinted section bands. Two
-things a reader notices first are also out of scope: the raised round Scan button, whose geometry
+things a reader notices first are also out of scope: the raised round button in the bar, whose geometry
 carries three documented clearances, and `public/landing/*`, whose screenshots still show the
 pre-M243 look.
 
@@ -424,26 +424,27 @@ The bottom tab bar's active tab spends THREE cues, `bg-primary/5` plus `text-pri
 `after:` top rule at `bg-primary`, so the state never depends on hue alone. It is one of the two
 teal marks every screen pays for (see the budget above).
 
-**The phone bottom bar** has five slots of equal width: Diary, Insights, the raised Scan circle,
-Add, and Menu. Scan is slot three of five, so its centre is the screen's centre. The first four
-come from the one catalog in `app-sidebar.tsx` (`tab.order`), so the bar, the drawer and the
-sidebar cannot name a destination two ways. Menu is not a destination and not in the catalog: it
-is a button that opens the navigation drawer. A flat slot is an icon over an 11 px label, the size
-of the Scan label under the circle. At 12 px the German "Hinzufügen" filled the whole 72 px slot
-at 360 px; at 11 px it takes 66. Menu never takes the active treatment, so one tab at most is lit.
-There is no hamburger, and no chevron beside Scan: a long press on the circle still opens the add
-sheet, as a shortcut to doors the Add page and the diary also offer.
+**The phone bottom bar** has three slots of equal width (M258): Diary, the raised plus, and More.
+The plus is slot two of three, so its centre is the screen's centre. Diary comes from the one
+catalog in `app-sidebar.tsx` (its `phone` field is `'tab'`), so the bar, the More sheet and the
+sidebar cannot name a destination two ways. The plus and More are not destinations: a tap on the
+plus opens the add sheet, and a tap on More opens the More sheet. A flat slot is an icon over an
+11 px label, the size of the label under the plus. More takes the active treatment on the pages it
+holds, so exactly one slot is lit on those pages; the plus lifts on the add screens. There is no
+hamburger, and a long press on the plus does nothing a tap does not.
 
-**The navigation drawer** has two doors and one state. The brand mark in the phone header opens
-it, and so does the Menu tab, which was added (2026-09-24) because a person did not know the mark
-was a door. The state lives in the shell (`useNavDrawer` in `app-wrapper.tsx`), so there is one
-drawer and one copy of the list. It slides in from the side of the door that opened it: from the
-left under the mark, from the right over the Menu tab. Focus goes back to that door on close.
-`tests/e2e/menu-is-found.spec.ts` checks both doors, the label fit in six languages at 360 and
-390 px, and the circle's centre.
+**The More sheet** rises from the bottom and holds one square tile per page the bar does not carry:
+Overview, Insights, Pantry, Fasting, Nutrients and Goals. They run in the catalog's order reversed,
+filled from the top left, so Overview, the most used, sits bottom right under the thumb. The page
+on screen is the tile marked with `aria-current` and the primary tint. There is no Settings, Plan
+or Administration in it: on a phone those three live in the avatar menu. The brand mark in the
+header is a logo and opens nothing, so More is the one door to these pages, and focus goes back to
+it on close. `tests/e2e/menu-is-found.spec.ts` checks the bar labels and the tile labels in six
+languages at 360 and 390 px, that neither sheet moves the page, and the circle's centre;
+`tests/e2e/three-tab-bar.spec.ts` walks the bar.
 
 **Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
-buttons, switches, date-picker cells, filter chips, settings rows, footer links, the drawer close
+buttons, switches, date-picker cells, filter chips, settings rows, footer links, a sheet's close
 key. `tests/e2e/lcc-lineage-tap-targets.spec.ts` measures it per screen and carries exactly four
 reasoned exceptions, each named in that file. Desktop sizes are unchanged. A control that will not
 fit is made to wrap rather than shrink: the update ribbon wraps its sentence and keeps its two
@@ -467,8 +468,8 @@ keys at 44px, instead of cutting the version number off the end.
   mutates a list (logged foods, quick-add, delete, settings saved). Theme-aware — follows the
   active light/dark theme, never hardcoded. Position top-center in a band just below the header
   (safe-area-aware offsets; the container is `pointer-events-none` so only the toast box itself is
-  interactive and the header menu/drawer stay tappable), close button on. The bottom of the screen
-  belongs to the tab bar and the raised Scan button — toasts never cover them.
+  interactive and the header menu stays tappable), close button on. The bottom of the screen
+  belongs to the tab bar and its raised plus, and toasts never cover them.
 - **Destructive actions**: AlertDialog confirmation (`ConfirmAction`) with a destructive button and
   pending spinner — `window.confirm` is banned.
 - **No layout shift (operator rule, 2026-09-22).** Nothing on a screen moves because the person

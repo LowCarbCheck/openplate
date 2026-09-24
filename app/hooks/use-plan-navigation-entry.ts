@@ -1,6 +1,6 @@
 /**
  * WHETHER THE NAVIGATION DRAWS THE PLAN ENTRY (M250), asked once, in the app
- * shell, and handed to the sidebar and the drawer.
+ * shell, and handed to the sidebar and the avatar menu.
  *
  * Two facts, and both must hold. The person is signed in: a plan belongs to
  * an account, and the plan page says only "sign in" to anybody else. And the
@@ -15,7 +15,7 @@ import { useSyncSession } from '#app/components/sync-status';
 import { useFreshServerInstance } from '#app/hooks/use-server-instance';
 import { hasPlanNavigationEntry } from '#app/lib/plans/plans-door';
 
-/** `true` while the sidebar and the drawer draw the plan entry. */
+/** `true` while the sidebar and the avatar menu draw the plan entry. */
 export function usePlanNavigationEntry(): boolean {
   const instance = useFreshServerInstance();
   const session = useSyncSession();

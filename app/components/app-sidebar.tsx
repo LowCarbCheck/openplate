@@ -38,9 +38,9 @@ import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Where a destination sits in the drawer/sidebar: with the day-to-day
- * destinations, or in the visually separated footer group that carries
- * configuration (Settings, and — drawer only — Install app).
+ * Where a destination sits in the sidebar: with the day-to-day destinations,
+ * or in the visually separated footer group that carries configuration
+ * (Settings).
  */
 export type NavigationGroup = 'primary' | 'footer';
 
@@ -51,81 +51,77 @@ export type NavigationItem = {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>> | LucideIcon;
   group: NavigationGroup;
   /**
-   * Present only for the destinations the mobile tab bar ALSO carries. Its
-   * `order` is the tab-bar slot, which is deliberately not the catalog's own
-   * order: the drawer/sidebar reads as a list (Diary, Add, Scan, …) while the
-   * bar is a shape, and the raised Scan button has to sit in its middle slot.
-   * The bar's fifth slot, Menu, is not an entry here: it is a door to this
-   * whole list, not a destination in it, so `BottomNav` draws it after the
-   * four ordered ones.
-   * Keeping the two orders as one field on one entry is what stops the bar and
-   * the drawer drifting into two different labels for one destination.
+   * Where a `primary` destination lives on a phone (M258). The desktop sidebar
+   * ignores it and draws every entry.
+   *
+   * - `'tab'`: a flat tab of its own in the bottom bar. Diary is the only one.
+   * - `'plus'`: behind the bar's raised plus, whose add sheet reaches it. Add
+   *   and Scan, the two ways food comes in.
+   * - absent: a tile in the More sheet, which is every other page.
+   *
+   * One field on the entry, not a second list in `bottom-nav.tsx`, so the bar,
+   * the More sheet and the sidebar cannot drift into two labels or two
+   * addresses for one destination, and a page cannot be in the bar and in the
+   * sheet at once.
    */
-  tab?: { order: number; raised?: boolean };
+  phone?: 'tab' | 'plus';
 };
 
 /**
- * Personal food-tracker navigation. Shares labels/hrefs with `BottomNav`'s
- * mobile tabs for every destination the two navs have in common (see that
- * file's own doc comment for why "AI settings" isn't a top-level item here
- * either) — a laptop user used to see "Scan Plate"/"Add food"/"AI Settings"
- * here while a phone user on the same account saw "Scan"/"Add"/"Goals" for
- * the same destinations, same app, two different maps.
+ * Personal food-tracker navigation. Shares labels/hrefs with the phone's bottom
+ * bar and More sheet for every destination they have in common: a laptop user
+ * used to see "Scan Plate"/"Add food"/"AI Settings" here while a phone user on
+ * the same account saw "Scan"/"Add"/"Goals" for the same destinations, same
+ * app, two different maps.
  *
- * Each nav surface now has exactly one job, and all three read this catalog:
+ * Each nav surface has exactly one job, and all of them read this catalog:
  *
- * - **Tab bar** (`BottomNav`, mobile): five slots, the four entries carrying
- *   a `tab` field (Diary, Insights, the raised Scan, Add), then a Menu tab
- *   that opens the drawer. Insights came back into the bar with that Menu tab
- *   (2026-09-24), and five slots keep Scan a true centre just as three did.
- * - **Drawer** (`app-wrapper.tsx`'s `NavDrawer`, mobile) and **sidebar**
- *   (desktop) — the complete map, identical to each other: every `primary`
- *   entry, then a separated `footer` group.
+ * - **Bottom bar** (`BottomNav`, phone): three slots (M258). The one entry
+ *   whose `phone` is `'tab'` (Diary), the raised plus that opens the add
+ *   sheet (the two `'plus'` entries, Add and Scan, are what that sheet
+ *   reaches), and More.
+ * - **More sheet** (`more-sheet.tsx`, phone): every other `primary` entry, as
+ *   tiles. Settings, Plan and Administration are not in it; on a phone they
+ *   live in the avatar menu (`avatar-menu.tsx`).
+ * - **Sidebar** (desktop): the complete map, every `primary` entry, then a
+ *   separated `footer` group. Unchanged by M258.
  *
  * Since M129/05 every nav carries catalog KEYS rather than literal labels, so a
- * wording change lands in one catalog entry and all of them move together —
- * label drift is now only possible by using different keys for the same
+ * wording change lands in one catalog entry and all of them move together.
+ * Label drift is now only possible by using different keys for the same
  * destination, which is exactly what the unit test pins.
  * Exported so a unit test can assert keys/hrefs never drift apart again
- * without rendering anything — a data-only assertion is the right shape for a
+ * without rendering anything: a data-only assertion is the right shape for a
  * label/href check, and it costs no router harness.
  */
 export const personalNavigationItems: NavigationItem[] = [
-  // The app home (M134). No `tab` field on purpose: the bar's five slots are
-  // taken, and a sixth would move the raised Scan button off the centre. It
-  // is one tap away in the drawer, through the Menu tab or the header mark,
-  // and a first-class row in the sidebar.
+  // The app home (M134). A More tile, and the one nearest the thumb: the
+  // sheet reverses this order, so the first entry here lands bottom right.
   { labelKey: 'nav.dashboard', to: '/dashboard', icon: LayoutGrid, group: 'primary' },
-  { labelKey: 'nav.diary', to: '/diary', icon: UtensilsCrossed, group: 'primary', tab: { order: 1 } },
+  // The bar's one flat tab: the day is what a person opens the app for.
+  { labelKey: 'nav.diary', to: '/diary', icon: UtensilsCrossed, group: 'primary', phone: 'tab' },
   // `/add/search` specifically (ADR-0019), not bare `/add`: `activeNavigationHref`
   // matches this exactly or one level under it, so the row lights up on the
   // database search and stays dark on `/add/photo`, a sibling rather than a
-  // child of it.
-  { labelKey: 'nav.add', to: '/add/search', icon: Plus, group: 'primary', tab: { order: 4 } },
-  { labelKey: 'nav.scan', to: '/add/photo', icon: Camera, group: 'primary', tab: { order: 3, raised: true } },
-  // The fasting timer (M132). No `tab` field, for the reason `/dashboard` has
-  // none: the bar's five slots are taken and Scan has to stay their centre. A
-  // fast is something you start once and then watch, not a several-times-a-day
-  // tap.
-  //
-  // Placed after Scan and before Trends so the catalog reads as the
-  // doing-surfaces (Overview, Diary, Add, Scan, Fasting) then the reviewing and
-  // target-setting ones (Trends, Goals).
+  // child of it. On a phone, the plus reaches it and `/add/photo` below.
+  { labelKey: 'nav.add', to: '/add/search', icon: Plus, group: 'primary', phone: 'plus' },
+  { labelKey: 'nav.scan', to: '/add/photo', icon: Camera, group: 'primary', phone: 'plus' },
   // The pantry (M233/02), placed directly after Scan because it is the second
   // thing the camera is for: the same composer, pointed at a shelf instead of
-  // a plate. No `tab` field, for the reason Fasting below it has none: the
-  // bar's five slots are taken and Scan has to stay their centre.
+  // a plate.
+  //
+  // Then the fasting timer (M132): a fast is something you start once and then
+  // watch, not a several-times-a-day tap. The catalog reads as the
+  // doing-surfaces (Overview, Diary, Add, Scan, Pantry, Fasting) then the
+  // reviewing and target-setting ones (Insights, Nutrients, Goals).
   { labelKey: 'nav.pantry', to: '/pantry', icon: Refrigerator, group: 'primary' },
   { labelKey: 'nav.fasting', to: '/fasting', icon: Timer, group: 'primary' },
-  // Insights, the bar's second slot (2026-09-24). It left the bar once, when
-  // the bar was the logging loop alone; it came back with the Menu tab, the
-  // operator's chosen fix for a drawer nobody found behind the header mark,
-  // and five slots keep Scan a true centre.
-  { labelKey: 'nav.trends', to: '/trends', icon: TrendingUp, group: 'primary', tab: { order: 2 } },
-  // The nutrient screen (M135/06). No `tab` field, same reason as Overview and
-  // Fasting: the bar's five slots are taken and Scan has to stay their centre.
-  // This is a reviewing surface, and it sits next to Trends, which is what it
-  // is a sibling of.
+  // Insights. It was the bar's second slot for one release (0.46.0); with three
+  // slots it is a More tile, one tap further away, which is the cost the
+  // operator accepted for a calmer bar.
+  { labelKey: 'nav.trends', to: '/trends', icon: TrendingUp, group: 'primary' },
+  // The nutrient screen (M135/06), a reviewing surface beside Insights, which
+  // is what it is a sibling of.
   { labelKey: 'nav.nutrients', to: '/nutrients', icon: Sprout, group: 'primary' },
   { labelKey: 'nav.goals', to: '/settings/nutrition', icon: Target, group: 'primary' },
   // The settings HUB, not one setting: this row used to point straight at
@@ -137,11 +133,12 @@ export const personalNavigationItems: NavigationItem[] = [
 
 /**
  * The administrator entry, deliberately OUTSIDE `personalNavigationItems`.
- * The catalog is static: it is filtered into the mobile tab bar and pinned by
- * a unit test, while this row appears only for an account whose role is
- * `admin`. It still lives here, as one shared object, because the drawer and
- * the sidebar have to render the same label and the same href, two literals
- * in two files is the drift the catalog comment above exists to prevent.
+ * The catalog is static: it is filtered into the phone's bar and More sheet and
+ * pinned by a unit test, while this row appears only for an account whose role
+ * is `admin`. It still lives here, as one shared object, because the avatar
+ * menu and the sidebar have to render the same label and the same href, two
+ * literals in two files is the drift the catalog comment above exists to
+ * prevent.
  */
 export const adminNavigationItem: NavigationItem = {
   labelKey: 'nav.admin',
@@ -154,9 +151,9 @@ export const adminNavigationItem: NavigationItem = {
  * The plan page's entry (M250), OUTSIDE `personalNavigationItems` for the
  * admin row's reason: the catalog is static, and this entry exists only for a
  * signed-in person on an instance whose FRESH handshake says a biller stands
- * behind it (`hasPlanNavigationEntry`). One shared object, so the drawer and
- * the sidebar draw one label and one address. It sits directly above Settings
- * in both.
+ * behind it (`hasPlanNavigationEntry`). One shared object, so the avatar menu
+ * and the sidebar draw one label and one address. It sits directly above
+ * Settings in both.
  */
 export const planNavigationItem: NavigationItem = {
   labelKey: 'nav.plan',
@@ -174,24 +171,35 @@ export function activeCatalog(showsPlanEntry: boolean): readonly NavigationItem[
   return showsPlanEntry ? [...personalNavigationItems, planNavigationItem] : personalNavigationItems;
 }
 
-/** The day-to-day destinations, in catalog order — the top block of the drawer and the sidebar. */
+/** The day-to-day destinations, in catalog order: the top block of the sidebar. */
 export const primaryNavigationItems: NavigationItem[] = personalNavigationItems.filter(
   (item) => item.group === 'primary',
 );
 
-/** The separated configuration group at the bottom of the drawer and the sidebar. */
+/** The separated configuration group at the bottom of the sidebar. */
 export const footerNavigationItems: NavigationItem[] = personalNavigationItems.filter(
   (item) => item.group === 'footer',
 );
 
 /**
- * The mobile tab bar's destinations, in bar order (see `NavigationItem.tab`).
+ * The bottom bar's flat tabs, in catalog order (see `NavigationItem.phone`).
  * Derived rather than re-listed, so the bar cannot label a destination
- * differently from the drawer.
+ * differently from the sidebar.
  */
-export const tabNavigationItems: NavigationItem[] = personalNavigationItems
-  .filter((item) => item.tab !== undefined)
-  .toSorted((a, b) => (a.tab?.order ?? 0) - (b.tab?.order ?? 0));
+export const barTabNavigationItems: NavigationItem[] = personalNavigationItems.filter((item) => item.phone === 'tab');
+
+/**
+ * The More sheet's tiles: every `primary` destination the bar does not carry,
+ * neither as a tab nor behind the plus.
+ *
+ * REVERSED, so the most used page is nearest the thumb (the operator's
+ * choice, "most used near thumb"). The sheet fills its grid from the top left,
+ * so the catalog's first page, Overview, is the last tile and sits bottom
+ * right, and Goals, the last, sits top left.
+ */
+export const moreSheetNavigationItems: NavigationItem[] = primaryNavigationItems
+  .filter((item) => item.phone === undefined)
+  .toReversed();
 
 /**
  * Which nav item (if any) the current URL belongs to — the LONGEST matching
@@ -200,8 +208,8 @@ export const tabNavigationItems: NavigationItem[] = personalNavigationItems
  * A plain `startsWith` per item breaks now that the catalog carries both
  * `/settings` (the hub) and `/settings/nutrition`: on the targets page both rows
  * would match and both would highlight, which tells the user nothing. Pure
- * and exported so the sidebar and the mobile drawer share one rule, and so it
- * is testable without a router.
+ * and exported so the sidebar, the phone's bar and its More sheet share one
+ * rule, and so it is testable without a router.
  *
  * @param pathname - the current `location.pathname`.
  * @returns the winning item's `to`, or `null` when the URL is outside the catalog.
@@ -317,7 +325,7 @@ export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
       </SidebarContent>
       {/* Settings is configuration, not a destination you visit daily, so it
           sits below a rule at the bottom of the rail rather than as a sixth
-          equal row — the same separation the mobile drawer draws. */}
+          equal row. On a phone it is in the avatar menu instead. */}
       <SidebarFooter>
         {session.account?.role === 'admin' && (
           <>

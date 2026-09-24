@@ -226,6 +226,8 @@ describe('the app header hosts it', () => {
 
   it('leaves the device menu outside it, so nothing on the bar moves', () => {
     const closed = WRAPPER.indexOf('</HeaderStatus>');
-    assert.ok(WRAPPER.indexOf('<AvatarMenu />') > closed, 'the device menu is inside the status slot');
+    const menuAt = WRAPPER.search(/<AvatarMenu\b/);
+    assert.notEqual(menuAt, -1, 'the header no longer draws the device menu');
+    assert.ok(menuAt > closed, 'the device menu is inside the status slot');
   });
 });

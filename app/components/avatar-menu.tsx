@@ -50,13 +50,24 @@
  * one plain "Settings" shortcut leads there.
  *
  * The nav surfaces each have one job (see `app-sidebar.tsx`'s catalog comment):
- * tabs = the logging loop, drawer/sidebar = the whole map, and this = the
- * device and its state. Destinations here are deliberately NOT catalog items,
- * so it never grows into a third copy of the navigation.
+ * the phone's bar and its More sheet = the pages, the sidebar = the whole map,
+ * and this = the device, its state, and its configuration.
+ *
+ * M258 GAVE IT THE CONFIGURATION ROWS. The phone's navigation drawer ended
+ * with Settings, Plan and Administration, and the operator found Settings
+ * "closest to the thumb" odd. With the drawer gone, those three live here on a
+ * phone, and only here: the More sheet carries pages, not configuration. They
+ * are catalog items (`footerNavigationItems`, `planNavigationItem`,
+ * `adminNavigationItem`), so this menu and the sidebar draw one label and one
+ * address for each, and they appear on the same rules the sidebar uses: Plan
+ * by the shell's `usePlanNavigationEntry`, Administration by the session's
+ * `admin` role. Settings is there on every instance, open ones included,
+ * where this is the device menu.
  */
+import { useState } from 'react';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { LogIn, LogOut, Settings, User } from 'lucide-react';
+import { LogIn, LogOut, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
@@ -76,6 +87,7 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '#app/lib/sync/sync-menu-state';
 import { SignOutDialog } from './sign-out-dialog';
+import { adminNavigationItem, footerNavigationItems, planNavigationItem, type NavigationItem } from './app-sidebar';
 import { cn } from '#app/lib/utils';
 
 /** Narrows Radix's `string` callback value back to a theme. */
@@ -150,6 +162,47 @@ function SignInRow() {
   );
 }
 
+/** One configuration row: a catalog destination, drawn as a menu item. */
+function NavigationMenuRow({ item }: { item: NavigationItem }) {
+  const { t } = useTranslation();
+
+  return (
+    <DropdownMenuItem asChild className="cursor-pointer py-2">
+      <Link to={item.to}>
+        <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <span>{t(item.labelKey)}</span>
+      </Link>
+    </DropdownMenuItem>
+  );
+}
+
+/** Which configuration rows the menu draws, besides Settings, which it always draws. */
+export interface AvatarNavigationRowsProps {
+  /** The plan entry, on the shell's `usePlanNavigationEntry` answer. */
+  showsPlan: boolean;
+  /** The administrator entry, for an account whose role is `admin`. */
+  isAdmin: boolean;
+}
+
+/**
+ * The configuration rows (M258): Administration, Plan and Settings, in the
+ * sidebar's order, with Plan directly above Settings as the owner asked for it
+ * (M250).
+ *
+ * Exported for `tests/unit/avatar-menu-door.test.ts`, which renders it.
+ */
+export function AvatarNavigationRows({ showsPlan, isAdmin }: AvatarNavigationRowsProps) {
+  return (
+    <>
+      {isAdmin && <NavigationMenuRow item={adminNavigationItem} />}
+      {showsPlan && <NavigationMenuRow item={planNavigationItem} />}
+      {footerNavigationItems.map((item) => (
+        <NavigationMenuRow key={item.to} item={item} />
+      ))}
+    </>
+  );
+}
+
 /**
  * The theme choice as a segmented row at the foot of the menu.
  *
@@ -205,9 +258,26 @@ function ThemeRow() {
   );
 }
 
-export function AvatarMenu() {
+export interface AvatarMenuProps {
+  /** Whether the plan entry is drawn, decided once in the shell (`usePlanNavigationEntry`). */
+  showsPlanEntry: boolean;
+}
+
+export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
   const { t } = useTranslation();
   const session = useSyncSession();
+  const isAdmin = session.account?.role === 'admin';
+  /**
+   * The configuration rows as they stood when the menu OPENED. Plan arrives
+   * after a session and a fresh handshake, and Administration after the
+   * session, and either one arriving while the menu is open would push
+   * Settings and the theme row down under the finger reaching for them. The
+   * answer is read again at the next open, as the phone drawer did (M250).
+   */
+  const [rowsWhileOpen, setRowsWhileOpen] = useState<AvatarNavigationRowsProps>({
+    showsPlan: false,
+    isAdmin: false,
+  });
   // `null` unless the operator set `SYNC_SERVER_URL` — on every other instance
   // the sync row vanishes entirely (AGENTS.md).
   const syncServerUrl = useSyncServerUrl();
@@ -221,15 +291,19 @@ export function AvatarMenu() {
     requiresAccount,
   });
 
+  const onOpenChange = (isOpen: boolean): void => {
+    if (isOpen) setRowsWhileOpen({ showsPlan: showsPlanEntry, isAdmin });
+  };
+
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         {/* Below `sm` the trigger shrinks to the avatar circle alone, so the
             aria-label carries the meaning regardless of whether the text
             shows. `pr-2 -mr-2` cancels the ghost button's default `px-4`
             right padding so this trigger sits the same visual distance from
-            the header's right edge as the left drawer trigger (an `icon`-size
-            button) sits from the left edge — otherwise the default size's
+            the header's right edge as the brand mark sits from the left
+            edge. Otherwise the default size's
             16px right padding stacks on top of the header's own `px-4`. */}
         <Button variant="ghost" className="flex items-center gap-2 pr-2 -mr-2" aria-label={t('chrome.deviceMenuLabel')}>
           <Avatar className="h-7 w-7">
@@ -251,12 +325,7 @@ export function AvatarMenu() {
         <AccountDoor door={door} />
 
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="cursor-pointer py-2">
-          <Link to="/settings">
-            <Settings className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>{t('nav.settings')}</span>
-          </Link>
-        </DropdownMenuItem>
+        <AvatarNavigationRows showsPlan={rowsWhileOpen.showsPlan} isAdmin={rowsWhileOpen.isAdmin} />
 
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="py-1 text-xs font-medium text-muted-foreground">

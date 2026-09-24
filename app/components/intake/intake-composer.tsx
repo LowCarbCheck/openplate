@@ -41,7 +41,7 @@
  * The photo affordance is a `button`, not a `Link`, because a navigation
  * cannot open a camera: a browser only honours a programmatic `input.click()`
  * inside the gesture that asked for it, so the tap has to do the work itself.
- * That gesture lives in `useCameraCapture`, shared with the tab bar's raised
+ * That gesture lives in `useCameraCapture`, shared with the tab bar's add
  * launcher. One decision, every surface.
  *
  * Type goes to `describeTo` and speak to the same destination with `speak=1`,
@@ -57,7 +57,7 @@
  * ── WHOSE CAMERA IS IT (M232/03) ─────────────────────────────────────────
  *
  * The launcher's sheet renders this strip too, and that page ALREADY has a
- * capture: the raised circle in the tab bar owns one, hoisted outside the
+ * capture: the tab bar's add launcher owns one, hoisted outside the
  * sheet on purpose, because closing a sheet must not unmount the element whose
  * `click()` is still on the gesture stack (`use-camera-capture.ts`). So the
  * strip takes an optional `capture`: given one it uses it and renders no input
@@ -76,15 +76,14 @@
  *
  * Filled everywhere was the original, deliberate call: a photo costs a camera
  * permission prompt, so it is worth naming first, and on `/dashboard` and
- * `/diary` this strip is the only prominent camera on the page. The tab bar's
- * raised circle is `md:hidden`, and the desktop sidebar carries `/add/photo`
- * as a flat link, so demoting the key everywhere would leave desktop and
- * tablet with no camera worth seeing.
+ * `/diary` this strip is the only prominent camera on the page. The desktop
+ * sidebar carries `/add/photo` as a flat link, so demoting the key everywhere
+ * would leave desktop and tablet with no camera worth seeing.
  *
- * Inside the sheet the page already has that raised circle, a few pixels
- * outside the panel, filled and owning the camera-first language by itself.
- * A second filled camera there competes with it and says nothing new, so the
- * embedded variant draws an outline instead.
+ * Inside the sheet the page already has the tab bar's raised plus, a few
+ * pixels outside the panel, filled in the brand. A second filled key there
+ * competes with it and says nothing new, so the embedded variant draws an
+ * outline instead.
  *
  * The variant is an explicit prop rather than something read off `capture`,
  * so the treatment a call site gets can be audited at that call site.
@@ -123,7 +122,7 @@ interface IntakeComposerBaseProps {
   /**
    * How heavy the camera key is drawn. `'standalone'` fills it, which is what
    * `/dashboard` and `/diary` want; `'embedded'` outlines it, for the
-   * launcher's sheet, where the raised circle beside it is already filled.
+   * launcher's sheet, where the raised plus below it is already filled.
    */
   variant?: IntakeComposerVariant;
 }

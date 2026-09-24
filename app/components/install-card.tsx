@@ -65,9 +65,10 @@ export function InstallAffordanceAction({ affordance, promptInstall }: InstallAf
 /**
  * Quiet "Install openplate" affordance at the bottom of the settings hub
  * (`routes/settings._index.tsx`). The `beforeinstallprompt` capture and
- * platform detection both live in `useInstallAffordance` (shared with the
- * app-chrome nav drawer's "Install app" item, `app-wrapper.tsx`) — this
- * component is just its shell around `InstallAffordanceAction`.
+ * platform detection both live in `useInstallAffordance`, and this component
+ * is just its shell around `InstallAffordanceAction`. It is the app's one
+ * install door since the phone's nav drawer, which carried a second "Install
+ * app" row, went with M258.
  */
 export function InstallCard() {
   const { affordance, promptInstall } = useInstallAffordance();

@@ -1,18 +1,7 @@
-import { useLocation } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Download, Share } from 'lucide-react';
-import {
-  AppSidebar,
-  activeCatalog,
-  activeNavigationHref,
-  adminNavigationItem,
-  footerNavigationItems,
-  planNavigationItem,
-  primaryNavigationItems,
-  type NavigationItem,
-} from './app-sidebar';
-import { useSyncSession } from './sync-status';
+import { ArrowLeft } from 'lucide-react';
+import { AppSidebar } from './app-sidebar';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
 import { FastChipSlot } from './fast-chip';
@@ -24,276 +13,30 @@ import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from './ui/sidebar';
 import { Separator } from './ui/separator';
-import { useInstallAffordance } from '#app/hooks/use-install-affordance';
 import { usePlanNavigationEntry } from '#app/hooks/use-plan-navigation-entry';
 import { APP_NAME } from '#app/lib/brand';
 import { cn } from '#app/lib/utils';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
-import { Button } from './ui/button';
 import { Wordmark } from './wordmark';
 import * as React from 'react';
 
 /**
- * The install-app entry in the mobile nav drawer, rendered only when there's
- * an actual affordance to offer (see `useInstallAffordance`, mirrors
- * `InstallCard`'s logic so the drawer and the settings card can never
- * disagree about whether the app is installable). A native
- * `beforeinstallprompt` triggers directly; iOS has no install API, so that
- * case links to the settings hub's own step-by-step "Add to Home Screen"
- * instructions.
+ * The brand mark at the top left of the phone header: a LOGO, and nothing else
+ * (M258).
+ *
+ * It opened the navigation drawer until 0.46.0, first as the drawer's only
+ * door and then as one of two, beside the bottom bar's Menu tab. The operator
+ * found the second door "weird", and nobody had found the first. The bar's
+ * More tab is the one door to the pages the bar does not carry now, so this is
+ * a picture: no button, no link, no popup to announce.
+ *
+ * `md:hidden`: at `md`+ the sidebar's own `Logo()` already occupies this
+ * position, and a second mark next to it would be a duplicate. Sized to the
+ * two-line lockup beside it, `size-9`, so the mark optically spans BOTH the
+ * wordmark and the page title, which binds them into one brand-then-page unit.
+ * Decorative: the `h1` beside it names the page.
  */
-function InstallDrawerItem({ onNavigate }: { onNavigate: () => void }) {
-  const { affordance, promptInstall } = useInstallAffordance();
-  const { t } = useTranslation();
-
-  // Nothing to offer in a nav drawer for either silent state: an installed
-  // app has nothing left to install, and a browser that cannot install has no
-  // row that would do anything. The plain "it installs on a phone" sentence
-  // for `'cannot-install'` is taught once, in the onboarding lesson, not
-  // repeated as a dead drawer item.
-  if (affordance === 'already-installed' || affordance === 'cannot-install') return null;
-
-  if (affordance === 'ios-instructions') {
-    return (
-      <Link to="/settings#install" onClick={onNavigate} className={drawerItemClasses(false)}>
-        <Share className="h-4 w-4" aria-hidden="true" />
-        {t('chrome.installApp')}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        onNavigate();
-        void promptInstall();
-      }}
-      className={cn(drawerItemClasses(false), 'w-full text-left')}
-    >
-      <Download className="h-4 w-4" aria-hidden="true" />
-      {t('chrome.installApp')}
-    </button>
-  );
-}
-
-/** One drawer row's classes, active rows carry the brand the same way the sidebar's do. */
-function drawerItemClasses(isActive: boolean): string {
-  return cn(
-    'flex min-h-11 items-center gap-3 px-3 text-sm font-medium transition-colors',
-    isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted',
-  );
-}
-
-/** One drawer destination, the drawer's counterpart to the sidebar's `NavigationRow`. */
-function DrawerRow({
-  item,
-  isActive,
-  onNavigate,
-}: {
-  item: NavigationItem;
-  isActive: boolean;
-  onNavigate: () => void;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <Link
-      to={item.to}
-      onClick={onNavigate}
-      aria-current={isActive ? 'page' : undefined}
-      className={drawerItemClasses(isActive)}
-    >
-      <item.icon className="h-4 w-4" aria-hidden="true" />
-      <span>{t(item.labelKey)}</span>
-    </Link>
-  );
-}
-
-/** The edge the drawer slides in from: the edge of the door that opened it. */
-type NavDrawerSide = 'left' | 'right';
-
-/**
- * The navigation drawer's state, owned by the shell because it has TWO doors:
- * the brand mark in the header (`NavDrawer`'s own trigger) and the Menu tab in
- * the bottom bar (`BottomNav`). Both drive this one state, so there is one
- * drawer and one copy of the catalog, never a second sheet for the second door.
- */
-interface NavDrawerState {
-  isOpen: boolean;
-  side: NavDrawerSide;
-  /**
-   * The plan entry as it stood when the drawer OPENED. The list is anchored
-   * to the top, so an entry arriving while the drawer is open would push
-   * Settings and Install down under the finger reaching for them. The shell's
-   * answer is read again at the next open.
-   */
-  showsPlanWhileOpen: boolean;
-  /** Radix's own callback, for the header trigger, the overlay, the close key and Escape. */
-  onOpenChange: (open: boolean) => void;
-  /** The Menu tab's door, which opens the drawer from the right and wants focus back on close. */
-  openFromMenuTab: (trigger: HTMLElement) => void;
-  /** Where focus goes when the drawer closes, when that is not Radix's own trigger. */
-  returnFocusRef: React.RefObject<HTMLElement | null>;
-}
-
-/**
- * One drawer, two doors.
- *
- * THE SIDE CHANGES ONLY ON OPEN, never on close: the panel slides back out to
- * the edge it came from, so a close must leave the side where the open put it.
- *
- * THE HEADER DOOR IS RADIX'S OWN TRIGGER, so its open arrives through
- * `onOpenChange(true)` and Radix returns focus to it. The Menu tab sits
- * outside the `Sheet`, where a `SheetTrigger` cannot reach, so it calls
- * `openFromMenuTab` and names itself as the place focus goes back to.
- *
- * @param showsPlanEntry - the shell's current answer on the plan entry.
- * @returns the state both doors and the drawer read.
- */
-function useNavDrawer(showsPlanEntry: boolean): NavDrawerState {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [side, setSide] = React.useState<NavDrawerSide>('left');
-  const [showsPlanWhileOpen, setShowsPlanWhileOpen] = React.useState(false);
-  const returnFocusRef = React.useRef<HTMLElement | null>(null);
-
-  const open = (from: NavDrawerSide): void => {
-    setSide(from);
-    setShowsPlanWhileOpen(showsPlanEntry);
-    setIsOpen(true);
-  };
-  const onOpenChange = (next: boolean): void => {
-    if (!next) {
-      setIsOpen(false);
-      return;
-    }
-    returnFocusRef.current = null;
-    open('left');
-  };
-  const openFromMenuTab = (trigger: HTMLElement): void => {
-    returnFocusRef.current = trigger;
-    open('right');
-  };
-
-  return { isOpen, side, showsPlanWhileOpen, onOpenChange, openFromMenuTab, returnFocusRef };
-}
-
-/**
- * Persistent top-left brand mark for the mobile header, always visible,
- * tappable to open the navigation drawer. `md:hidden`: at `md`+ the sidebar's
- * own `Logo()` already occupies this same top-left position, so this would
- * otherwise be a second, redundant brand mark next to it.
- *
- * It was a dropdown of four odd destinations; it's now a real drawer rendering
- * the SAME catalog the desktop sidebar does, in the same order and with the
- * same footer separation, a phone user and a laptop user see one map of the
- * app rather than two. `BottomNav` carries the four most used destinations and
- * a Menu tab, the second door into this drawer; this drawer is the complete
- * list.
- *
- * TWO DOORS, ONE DRAWER (2026-09-24). A person did not find the drawer behind
- * this mark, so the bottom bar gained a labelled Menu tab. The state lives in
- * the shell (`useNavDrawer`) and both doors drive it. The panel comes in from
- * the side of the door that opened it: from the left under this mark, from
- * the right over the Menu tab, which sits at the bar's right end.
- */
-function NavDrawer({ drawer }: { drawer: NavDrawerState }) {
-  const { t } = useTranslation();
-  const location = useLocation();
-  const { isOpen, side, showsPlanWhileOpen, onOpenChange, returnFocusRef } = drawer;
-  const close = (): void => onOpenChange(false);
-  /**
-   * Focus back to the Menu tab after a drawer it opened. Radix would send it
-   * to its own trigger, the header mark, which is a jump across the screen
-   * for a keyboard or a screen reader. A drawer the mark opened leaves the
-   * ref empty and lets Radix do its default.
-   */
-  const onCloseAutoFocus = (event: Event): void => {
-    const trigger = returnFocusRef.current;
-    if (trigger === null) return;
-    event.preventDefault();
-    returnFocusRef.current = null;
-    trigger.focus();
-  };
-  const session = useSyncSession();
-  const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanWhileOpen));
-  // Matched against the admin entry alone, so the catalog's own winner is
-  // untouched: `/admin` is outside the catalog and would otherwise never win.
-  const adminActiveHref = activeNavigationHref(location.pathname, [adminNavigationItem]);
-
-  return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        {/* Sized to the two-line lockup beside it (see `InnerContent`), not to
-            an icon-button grid: at `size-9` the mark optically spans BOTH the
-            wordmark and the page title, which is what binds them into one
-            brand-then-page unit. `p-0` drops the ghost button's inset, so the
-            mark sits tight against the wordmark, that inset is what left the
-            first eyebrow attempt floating free of the mark.
-
-            The `after:` square is the TAP AREA, and it is a pseudo-element
-            because the drawing has to stay 36px for the reason above while a
-            thumb needs 44. `-inset-1` grows it 4px on every side, which lands
-            inside the header's own `px-4` gutter and inside the `gap-2.5` to
-            its right, so nothing else on the bar loses a pixel of its own
-            target. This trigger is `md:hidden`, so the box never exists on a
-            pointer device. */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative size-9 shrink-0 p-0 after:absolute after:-inset-1 after:content-[''] hover:bg-transparent md:hidden"
-          aria-label={t('chrome.logoMenuLabel')}
-        >
-          <img src="/icons/icon-192.png?v=2" alt="" className="size-9" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side={side} onCloseAutoFocus={onCloseAutoFocus} className="w-72 gap-0 p-0 md:hidden">
-        <SheetHeader className="border-b">
-          <SheetTitle className="flex items-center gap-2 text-lg">
-            <img src="/icons/icon-192.png?v=2" alt="" className="h-7 w-7" />
-            {/* The product name is a proper noun, never translated. */}
-            <Wordmark besideMark />
-          </SheetTitle>
-          <SheetDescription className="sr-only">{t('chrome.navDrawerDescription')}</SheetDescription>
-        </SheetHeader>
-        <nav className="flex flex-col gap-1 p-2">
-          {primaryNavigationItems.map((item) => (
-            <DrawerRow key={item.to} item={item} isActive={activeHref === item.to} onNavigate={close} />
-          ))}
-          {/* The administrator row, on the same terms as the sidebar's: shown
-              only to an account whose role is `admin`, and for discoverability
-              rather than access control. */}
-          {session.account?.role === 'admin' && (
-            <>
-              <Separator className="my-2" />
-              <DrawerRow
-                item={adminNavigationItem}
-                isActive={adminActiveHref === adminNavigationItem.to}
-                onNavigate={close}
-              />
-            </>
-          )}
-          {/* Same footer separation the desktop sidebar draws: configuration
-              sits below a rule, not among the places you go every day. */}
-          <Separator className="my-2" />
-          {/* The plan page, directly above Settings (M250): the owner looked
-              for it here first. Drawn for a signed-in person on an instance
-              that sells plans, and fixed for as long as the drawer is open. */}
-          {showsPlanWhileOpen && (
-            <DrawerRow
-              item={planNavigationItem}
-              isActive={activeHref === planNavigationItem.to}
-              onNavigate={close}
-            />
-          )}
-          {footerNavigationItems.map((item) => (
-            <DrawerRow key={item.to} item={item} isActive={activeHref === item.to} onNavigate={close} />
-          ))}
-          <InstallDrawerItem onNavigate={close} />
-        </nav>
-      </SheetContent>
-    </Sheet>
-  );
+function HeaderMark() {
+  return <img src="/icons/icon-192.png?v=2" alt="" className="size-9 shrink-0 md:hidden" />;
 }
 
 /** The tags a person types into, and the only focus this layout reacts to. */
@@ -353,8 +96,9 @@ export default function AppWrapper({
   backTo?: string;
   children: React.ReactNode;
 }) {
-  // ONE READ FOR BOTH NAVIGATIONS, in the shell, which mounts once per page
-  // load and survives every client navigation.
+  // ONE READ FOR BOTH NAVIGATIONS, the sidebar and the phone's avatar menu,
+  // in the shell, which mounts once per page load and survives every client
+  // navigation.
   const showsPlanEntry = usePlanNavigationEntry();
   return (
     <SidebarProvider>
@@ -387,9 +131,6 @@ function InnerContent({
   // layout stays out of it.
   const { t } = useTranslation();
   const isTypingOnAShortViewport = useTypingOnAShortViewport();
-  // HERE, not in `NavDrawer`: the drawer has a second door in `BottomNav`,
-  // and this component is the nearest one that renders both.
-  const drawer = useNavDrawer(showsPlanEntry);
 
   return (
     <>
@@ -429,14 +170,13 @@ function InnerContent({
           blur to stay readable over scrolling content. */}
       <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
         <div className="flex min-w-0 items-center gap-2.5 px-4 w-full">
-          {/* Desktop only: below `md` the drawer's own brand-mark trigger (see
-              `NavDrawer`) and the bottom bar's Menu tab open the same list, and
-              a hamburger beside the mark would be a third door. Only the desktop sidebar
-              (visible at `md`+, see `Sidebar`'s own `hidden md:block`) needs
-              this toggle. */}
+          {/* Desktop only: below `md` the bottom bar's More tab is the one door
+              to the pages the bar does not carry, and a hamburger here would be
+              a second. Only the desktop sidebar (visible at `md`+, see
+              `Sidebar`'s own `hidden md:block`) needs this toggle. */}
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
-          <NavDrawer drawer={drawer} />
+          <HeaderMark />
           {/* `min-w-0` so this flex child can shrink below its status text's
               intrinsic width; without it a long status (a blocked-notification
               error, especially the longer German string) pushes the header
@@ -498,7 +238,7 @@ function InnerContent({
                     `data-slot` because the gap above is now a measured contract
                     and a measurement needs a handle it cannot lose. Reading "the
                     span in the header that says openplate" would silently start
-                    reading the drawer's word the day that sheet renders inline. */}
+                    reading some other openplate the day a sheet renders one inline. */}
                 <Wordmark
                   aria-hidden="true"
                   data-slot="header-brand-kicker"
@@ -557,11 +297,12 @@ function InnerContent({
                   (M250/03). Mounted in the personal shell only, once, so the
                   line is published once per page load. */}
               <TrialCountdown />
-              {/* The device menu, at both breakpoints, identity, the theme
-                  inline, and the settings people revisit. See
-                  `avatar-menu.tsx` for why the theme lives in here rather than
-                  only on the Preferences page. */}
-              <AvatarMenu />
+              {/* The device menu, at both breakpoints: identity, the theme
+                  inline, and Settings, with Plan and Administration where
+                  they apply. On a phone it is the only door to those three
+                  (M258). See `avatar-menu.tsx` for why the theme lives in
+                  here rather than only on the Preferences page. */}
+              <AvatarMenu showsPlanEntry={showsPlanEntry} />
             </div>
           </div>
         </div>
@@ -585,18 +326,18 @@ function InnerContent({
       )}
       {/* Bottom padding clears the mobile `BottomNav` so page content is never
           occluded; the sidebar owns navigation at md+. 6rem = the h-14 bar plus
-          the safe area plus the raised Scan button's overhang and ring
+          the safe area plus the raised plus button's overhang and ring
           (M129/04), content must clear the circle, not just the bar. */}
       <div className="flex-1 p-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] md:p-6 md:pb-6">{children}</div>
       {/* HIDDEN, NOT UNMOUNTED, and hidden from a WRAPPER rather than from the
           bar itself. The bar is `fixed`, so `display: none` on this div takes
           it off the screen without moving a single pixel of the page: the
           bottom padding above is unchanged, so nothing reflows and nothing
-          scrolls when it comes back. Unmounting would also close the launcher's
-          sheet mid-use, and the sheet is portalled to the body, so it stays on
-          screen while its trigger is away. */}
+          scrolls when it comes back. Unmounting would also close the add
+          sheet or the More sheet mid-use, and both are portalled to the body,
+          so they stay on screen while their trigger is away. */}
       <div data-slot="bottom-nav-shell" className={cn(isTypingOnAShortViewport && 'hidden')}>
-        <BottomNav menu={{ isOpen: drawer.isOpen, onOpen: drawer.openFromMenuTab }} />
+        <BottomNav />
       </div>
     </>
   );

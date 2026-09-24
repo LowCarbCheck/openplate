@@ -57,7 +57,7 @@ function WaveLetters(): ReactElement[] {
  * tracking pulled in to -0.03em, "open" in brand teal and "plate" in the surrounding ink. Every
  * part of it lives HERE, so no caller passes a weight, a tracking or a colour for the word and no
  * two places can drift. Size stays with the caller through `className`, because the sidebar, the
- * drawer, the public header, onboarding and the landing hero each set the word at their own scale.
+ * app header, the public header, onboarding and the landing hero each set the word at their own scale.
  *
  * WHY A ROLE AND NOT THE BODY CLASS. `font-display` resolves to `--font-brand` in app.css, which
  * today names the same Victor Mono the body uses. It stays a role of its own so that changing the

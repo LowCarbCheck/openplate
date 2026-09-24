@@ -45,7 +45,7 @@ void i18next.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
-        nav: { diary: 'Diary', trends: 'Insights', scan: 'Scan', add: 'Add', menu: 'Menu' },
+        nav: { diary: 'Diary', add: 'Add', more: 'More' },
         launcher: {
           sheetTitle: 'Add food',
           speak: 'Speak',
@@ -152,9 +152,44 @@ describe('where the sheet doors go', () => {
   });
 });
 
+/**
+ * THE SHEET'S FIRST DOOR IS THE FOOD SEARCH (M258). The bar's Add tab was the
+ * way to `/add/search` until M258 took it away, and the strip above cannot be
+ * that way: its "Type" opens the composer. So the sheet carries a search door
+ * of its own, first, and it logs to the day on screen like every other door.
+ * Read out of the source, because the sheet's body is a portal and a static
+ * render draws a portal as nothing; `tests/e2e/three-tab-bar.spec.ts` taps it.
+ */
+describe('the search door', () => {
+  it('builds its address through the shared builder, carrying the viewed day', () => {
+    assert.match(LAUNCHER, /const searchTo = buildIntakeHref\(ADD_SEARCH_PATH, \{ date: viewedDate \}\);/);
+    assert.match(LAUNCHER, /<Link\s+to=\{searchTo\}/);
+    assert.equal(buildIntakeHref(ADD_SEARCH_PATH, { date: '2026-09-07' }), `${ADD_SEARCH_PATH}?date=2026-09-07`);
+    assert.equal(buildIntakeHref(ADD_SEARCH_PATH, { date: null }), ADD_SEARCH_PATH);
+  });
+
+  it('sits above the strip, inside the sheet', () => {
+    const sheetAt = LAUNCHER.indexOf('<SheetContent');
+    const searchAt = LAUNCHER.indexOf('to={searchTo}');
+    const stripAt = LAUNCHER.indexOf('<IntakeComposer describeTo=');
+    assert.ok(sheetAt !== -1 && searchAt > sheetAt, 'the search door is not inside the sheet');
+    assert.ok(stripAt > searchAt, 'the search door must come before the strip');
+  });
+
+  it('is labelled once, with its own key', () => {
+    assert.equal((LAUNCHER.match(/t\('launcher\.searchFoods'\)/g) ?? []).length, 1);
+  });
+
+  it('has no hardcoded search address beside the built one', () => {
+    // The control for the builder check above: a file that built `searchTo`
+    // and then rendered a literal would pass it and lose the day.
+    assert.doesNotMatch(LAUNCHER, /to="\/add\/search/);
+  });
+});
+
 describe('how many capture inputs the bar has', () => {
   it('draws exactly one, on the bar itself', () => {
-    assert.equal(inputCount(render(createElement(BottomNav, { menu: { isOpen: false, onOpen: () => {} } }))), 1);
+    assert.equal(inputCount(render(createElement(BottomNav))), 1);
   });
 
   it('adds none when the sheet opens, because the strip was given a camera', () => {

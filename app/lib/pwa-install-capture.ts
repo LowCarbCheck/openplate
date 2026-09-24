@@ -9,7 +9,7 @@
  * fired before the visitor ever navigated there, `event.preventDefault()`
  * never ran, the browser's own mini-infobar took over, and the deferred
  * prompt was gone by the time `InstallCard` (or any other UI wanting to
- * trigger it, e.g. the app-chrome nav drawer) finally mounted.
+ * trigger it) finally mounted.
  *
  * This module registers the listener exactly ONCE, at app startup — wired
  * from the same root `useEffect` that calls `registerServiceWorker`

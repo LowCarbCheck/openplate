@@ -180,12 +180,12 @@ export const LIST_ROW_PADDING_PX = 12;
  * | Screen       | Ceiling | What spends it                                                        |
  * | ------------ | ------- | --------------------------------------------------------------------- |
  * | `/settings`  |       2 | the wordmark, the launcher                                              |
- * | `/trends`    |       6 | the two, the active tab, "Log weight", and the bar's active Insights tab (icon and label). It was 4 until Insights came back into the bar with the Menu tab (2026-09-24); the two added are the same pair `/add/search` and `/diary` pay for their own bar tab, raised by count and not yet measured |
- * | `/add/search`|       5 | the two, the "Set up AI" link, the active tab's icon and its label      |
+ * | `/trends`    |       6 | the two, the active tab, "Log weight", and the bar's lit More tab (icon and label). Since M258 More is lit on the pages it holds; it took the place of the Insights bar tab, which spent the same two |
+ * | `/add/search`|       4 | the two, the "Set up AI" link, and the plus's label, lit on the add screens. It was 5 while the bar had a flat Add tab (icon and label); the plus's circle is already one of the two |
  * | `/diary`     |       8 | the two, the active tab (two), the camera key, two links, the habit day's dot. It was 9 until the lead figure (layout D, 2026-09-23) dropped the budget row's status dot |
- * | `/dashboard` |      12 | the two, the camera key, two hand-off links (four), the award mark, and four data marks: the status dot, an adherence cell, the streak legend dot and a ridge bar |
+ * | `/dashboard` |      14 | the two, the camera key, two hand-off links (four), the award mark, four data marks (the status dot, an adherence cell, the streak legend dot and a ridge bar), and the bar's lit More tab (two). It was 12 until M258: Overview is a More tile, and the playground the operator chose from lights More on the pages it holds, so a person on Overview sees where they are |
  *
- * The dashboard is the one screen far above LowCarbCheck's three, and every one of its twelve
+ * The dashboard is the one screen far above LowCarbCheck's three, and every one of its fourteen
  * carries meaning: four are the traffic-light language this app is built on (DESIGN.md section 3),
  * four are two links, and the rest are the chrome every screen pays. The decoration that used to
  * sit beside them is gone: the composer's microphone and keyboard keys, four card-title icons, a
@@ -194,10 +194,10 @@ export const LIST_ROW_PADDING_PX = 12;
  */
 export const TEAL_BUDGET_CEILING = {
   '/diary': 8,
-  '/dashboard': 12,
+  '/dashboard': 14,
   '/trends': 6,
   '/settings': 2,
-  '/add/search': 5,
+  '/add/search': 4,
 } as const;
 
 /** A screen the teal budget is frozen for. */

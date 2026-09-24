@@ -17,7 +17,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 
 import { withI18n } from './trends-i18n-harness';
-import { AccountDoor } from '../../app/components/avatar-menu';
+import { AccountDoor, AvatarNavigationRows, type AvatarNavigationRowsProps } from '../../app/components/avatar-menu';
 import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '../../app/lib/sync/sync-menu-state';
 
 const SIGN_IN_HREF = 'href="/sign-in"';
@@ -41,6 +41,25 @@ function renderDoor(door: AvatarMenuDoor): string {
   );
   const router = createMemoryRouter([{ path: '/', element: withI18n(content) }], { initialEntries: ['/'] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/**
+ * The configuration rows as real markup, with the same harness as the door:
+ * the primitive `Root` and `Content`, the portal skipped.
+ */
+function renderNavigationRows(props: AvatarNavigationRowsProps): string {
+  const content = createElement(
+    DropdownMenuPrimitive.Root,
+    { open: true },
+    createElement(DropdownMenuPrimitive.Content, { forceMount: true }, createElement(AvatarNavigationRows, props)),
+  );
+  const router = createMemoryRouter([{ path: '/', element: withI18n(content) }], { initialEntries: ['/'] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** Every `href` in the markup, in order. */
+function hrefsOf(markup: string): string[] {
+  return [...markup.matchAll(/href="([^"]*)"/g)].map((match) => match[1] ?? '');
 }
 
 /** How many menu rows the door put in the menu. */
@@ -127,12 +146,22 @@ describe('the menu renders the door it was given', () => {
     assert.doesNotMatch(source, /function SyncRow/);
   });
 
-  it('keeps exactly one row that opens the settings hub', () => {
+  it('draws its configuration rows from the catalog, never from a literal address', () => {
     // THE CONTROL for the two assertions above: removing rows must not have
-    // removed the one row this menu is supposed to keep, and a second copy of
-    // it would be the same defect wearing a different label.
-    assert.equal(source.split('to="/settings"').length - 1, 1, source);
-    assert.match(source, /nav\.settings/);
+    // removed the Settings row this menu keeps. Since M258 it is drawn from
+    // the catalog, with Plan and Administration, so the address is not a
+    // literal in this file any more; `the configuration rows` below renders it.
+    assert.match(source, /<AvatarNavigationRows showsPlan=\{rowsWhileOpen\.showsPlan\} isAdmin=\{rowsWhileOpen\.isAdmin\} \/>/);
+    assert.match(source, /footerNavigationItems\.map/);
+    assert.equal(source.split('to="/settings"').length - 1, 0, 'a hand-written Settings row is back beside the catalog one');
+  });
+
+  it('decides Plan and Administration on the sidebar\'s own rules, frozen while the menu is open', () => {
+    // The shell's `usePlanNavigationEntry` answer, handed down, and the
+    // session's admin role: the exact two facts `AppSidebar` reads.
+    assert.match(source, /const isAdmin = session\.account\?\.role === 'admin';/);
+    assert.match(source, /if \(isOpen\) setRowsWhileOpen\(\{ showsPlan: showsPlanEntry, isAdmin \}\);/);
+    assert.match(source, /<DropdownMenu onOpenChange=\{onOpenChange\}>/);
   });
 
   it('reaches the account through the strip, and only through the strip', () => {
@@ -215,5 +244,32 @@ describe('the rows the door renders', () => {
       assert.ok(!markup.includes('Sign in'));
       assert.ok(!markup.includes('Create account'));
     });
+  });
+});
+
+describe('the configuration rows (M258)', () => {
+  it('draws Settings alone on an open instance, where this is the device menu', () => {
+    const markup = renderNavigationRows({ showsPlan: false, isAdmin: false });
+    assert.deepEqual(hrefsOf(markup), ['/settings']);
+    assert.equal(countRows(markup), 1, markup.slice(0, 800));
+    assert.ok(markup.includes('>Settings<'), markup.slice(0, 800));
+  });
+
+  it('adds Plan directly above Settings when the shell says so', () => {
+    const markup = renderNavigationRows({ showsPlan: true, isAdmin: false });
+    assert.deepEqual(hrefsOf(markup), ['/settings/plan', '/settings']);
+    assert.ok(markup.includes('>Plan<'), markup.slice(0, 800));
+  });
+
+  it('adds Administration for an administrator, above Plan and Settings', () => {
+    const markup = renderNavigationRows({ showsPlan: true, isAdmin: true });
+    assert.deepEqual(hrefsOf(markup), ['/admin', '/settings/plan', '/settings']);
+    assert.equal(countRows(markup), 3, markup.slice(0, 800));
+    assert.ok(markup.includes('>Administration<'), markup.slice(0, 800));
+  });
+
+  it('draws Administration without Plan, the two are separate facts', () => {
+    // CONTROL for the case above: neither row rides in on the other's flag.
+    assert.deepEqual(hrefsOf(renderNavigationRows({ showsPlan: false, isAdmin: true })), ['/admin', '/settings']);
   });
 });

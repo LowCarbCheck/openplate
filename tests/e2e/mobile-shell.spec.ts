@@ -4,15 +4,12 @@
  * panel, and the two list surfaces that were drawn a different way from the
  * rest of the app.
  *
- * WHY GEOMETRY, AND WHY `elementFromPoint`. A bounding box says how big a
- * control DRAWS, which is the right question for a link or a row. It is the
- * wrong question for a control whose drawing must stay small: the header's
- * brand mark is sized to the lockup beside it and carries its extra 8px as an
- * `after:` square, which no `getBoundingClientRect` can see. So a target is
- * measured by asking the browser what a finger would land on at the edges of a
- * 44px box, which answers the same question for a real box and for a
- * pseudo-element one. The 60px probe below is the control: the same reader
- * says no when the box is not that big.
+ * WHY GEOMETRY. A bounding box says how big a control DRAWS, which is the
+ * right question for a link, a row or a tab. The header's brand mark used to
+ * be the one exception, a 36px drawing that opened the navigation drawer
+ * through an `after:` square, and a finger reader built on `elementFromPoint`
+ * measured it. The mark is a logo since M258 and opens nothing, so it is no
+ * longer a target and that reader went with it.
  *
  * WHAT WAS MEASURED BEFORE THE FIX (audit, /tmp/op-mobile-shots):
  * - FRONT-15: at scroll 0 on /diary the date bar's top was 80 and the header's
@@ -56,20 +53,6 @@ const KEYBOARD_VIEWPORT = { width: 390, height: 430 };
 /** The phone touch target floor this repo holds itself to. */
 const TOUCH_TARGET_PX = 44;
 
-/** A probe wider than any control here, so the reader that measures them can say no. */
-const OVERSIZED_PROBE_PX = 60;
-
-/**
- * How far short of a box's edge a hit probe has to stop.
- *
- * Measured on this tier's own 2x display: `elementFromPoint` at x 239.4, inside
- * a box ending at 240, came back as the element that starts at 240. So a point
- * within about a pixel of the right or bottom edge belongs to the neighbour,
- * and a probe that aimed at the exact edge would fail on a control that is the
- * right size.
- */
-const EDGE_ROUNDING_PX = 1;
-
 /** The languages this walk renders in: the source, the longest, and the one the audit broke in. */
 const LOCALES = ['en', 'de', 'tr'] as const;
 
@@ -111,63 +94,6 @@ async function aPhoneWithOneFood(page: Page): Promise<void> {
 ////////////////////////////////////////////////////////////////////////////////
 // Readers
 ////////////////////////////////////////////////////////////////////////////////
-
-/** One probe point that did not land on the control it was aimed at. */
-interface MissedPoint {
-  where: string;
-  hit: string;
-}
-
-/**
- * Which edges of a `size` box centred on this control a finger would MISS.
- *
- * THE EDGE MIDPOINTS AND THE CENTRE, not the corners, read with
- * `document.elementFromPoint`. Chromium clips hit testing to the border
- * radius, so the corners of a `rounded-full` control are not tappable at any
- * size and a corner probe would demand a square of every circle. The
- * midpoints ask the question that is actually being asked: is this control at
- * least `size` across, through its middle, in both directions.
- *
- * `elementFromPoint` rather than a bounding box, because a control whose
- * DRAWING must stay small carries its target as an `after:` pseudo-element,
- * which no box read can see and which the browser attributes to the same
- * element. A point off screen returns null and is spelled out as a miss rather
- * than left to an optional chain, which would quietly read as a hit.
- *
- * The probe stops `EDGE_ROUNDING_PX` short of each edge, so it under-reports
- * rather than flakes.
- *
- * @param control - the control to probe.
- * @param size - the box, in CSS pixels, a finger should be able to land in.
- * @returns the points that hit something else, empty when every point lands.
- */
-async function missedEdges(control: Locator, size: number): Promise<MissedPoint[]> {
-  await control.scrollIntoViewIfNeeded();
-  return control.evaluate(
-    (element, { probe, inset }) => {
-      const box = element.getBoundingClientRect();
-      const centreX = box.left + box.width / 2;
-      const centreY = box.top + box.height / 2;
-      const half = probe / 2 - inset;
-      const points = [
-        { where: 'left edge', x: centreX - half, y: centreY },
-        { where: 'right edge', x: centreX + half, y: centreY },
-        { where: 'top edge', x: centreX, y: centreY - half },
-        { where: 'bottom edge', x: centreX, y: centreY + half },
-        { where: 'centre', x: centreX, y: centreY },
-      ];
-      return points
-        .map((point) => {
-          const hit = document.elementFromPoint(point.x, point.y);
-          if (hit === null) return { where: point.where, hit: 'nothing, the point is off screen' };
-          if (hit === element || element.contains(hit)) return null;
-          return { where: point.where, hit: `${hit.tagName.toLowerCase()}.${hit.className.toString().slice(0, 30)}` };
-        })
-        .filter((miss) => miss !== null);
-    },
-    { probe: size, inset: EDGE_ROUNDING_PX },
-  );
-}
 
 /** The distance in CSS pixels between the app header's bottom and this element's top. */
 async function gapUnderTheHeader(page: Page, element: Locator): Promise<number> {
@@ -241,17 +167,17 @@ test('every control in the app shell is a 44px target at 360px, in en, de and tr
     const copy = catalogFor(locale);
     await page.goto('/settings/nutrition');
 
-    // Three controls whose DRAWN box is the target, so the box is the honest
-    // reading. The first two were 52x36 and 57x20. The third was the launcher
-    // chevron, 32x32 before this spec; it left the bar with the move to five
-    // slots (2026-09-24), and the Menu tab took its place here, the newest
-    // control in the shell and one whose words must fit a 72 px slot.
+    // Controls whose DRAWN box is the target, so the box is the honest
+    // reading. The first two were 52x36 and 57x20. The launcher chevron, 32x32
+    // before this spec, left the bar with the move to five slots, and the
+    // Menu tab that replaced it here left with the move to three (M258): the
+    // bar's two buttons now are the raised plus and More.
+    const bar = page.locator('[data-slot="bottom-nav-shell"] nav');
     const drawn = {
       'the device menu': page.locator('header button[aria-haspopup="menu"]'),
       'the Back link': page.locator('[data-slot="back-link"]'),
-      'the Menu tab': page
-        .locator('[data-slot="bottom-nav-shell"] nav')
-        .getByRole('button', { name: copy.nav.menu, exact: true }),
+      'the plus': bar.getByRole('button', { name: copy.nav.add, exact: true }),
+      'the More tab': bar.getByRole('button', { name: copy.nav.more, exact: true }),
     };
 
     for (const [what, control] of Object.entries(drawn)) {
@@ -265,37 +191,6 @@ test('every control in the app shell is a 44px target at 360px, in en, de and tr
         TOUCH_TARGET_PX,
       );
     }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // The drawer trigger is the one control here whose drawing must stay 36px:
-    // it is sized to the wordmark lockup beside it, and its target is an
-    // `after:` square. So the two readers are pointed at the same element and
-    // are each other's control. The box reader says 36, which is what makes it
-    // a reader that can report a number under the floor at all; the finger
-    // reader then says the target is there anyway.
-    //
-    // The finger reader stops one pixel short of each edge: on this 2x display
-    // a point within about a pixel of a box's right or bottom edge is
-    // attributed to the neighbour, which was measured on the launcher chevron
-    // (a hit at x 239.4 inside a box ending at 240 came back as the tab that
-    // starts there). So this proves 42 of the 44, against a drawing of 36.
-    ////////////////////////////////////////////////////////////////////////////
-    const trigger = page.getByRole('button', { name: copy.chrome.logoMenuLabel });
-    await expect(trigger, `${locale}: the drawer trigger must be on screen`).toBeVisible();
-    const triggerBox = await trigger.boundingBox();
-    if (triggerBox === null) throw new Error(`${locale}: the drawer trigger has no box to measure`);
-    expect(triggerBox.height, 'the drawer trigger draws smaller than the floor on purpose').toBeLessThan(
-      TOUCH_TARGET_PX,
-    );
-
-    expect(
-      await missedEdges(trigger, TOUCH_TARGET_PX),
-      `${locale}: the drawer trigger misses part of a ${TOUCH_TARGET_PX}px target`,
-    ).toEqual([]);
-    expect(
-      await missedEdges(trigger, OVERSIZED_PROBE_PX),
-      `${locale}: the finger reader must be able to report a miss`,
-    ).not.toEqual([]);
   }
 });
 

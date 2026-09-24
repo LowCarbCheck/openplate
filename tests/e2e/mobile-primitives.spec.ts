@@ -79,7 +79,7 @@ const extraCopySchema = z.object({
     nav: z.object({ previousDay: z.string(), jumpToToday: z.string() }),
   }),
   ui: z.object({ sheet: z.object({ close: z.string() }) }),
-  chrome: z.object({ logoMenuLabel: z.string() }),
+  nav: z.object({ more: z.string() }),
   awards: z.object({ hide: z.string() }),
   settings: z.object({
     fasting: z.object({ startTime: z.object({ label: z.string() }) }),
@@ -258,19 +258,21 @@ test(`the landing's large buttons are ${TAP_TARGET_PX} px targets`, async ({ pag
 ////////////////////////////////////////////////////////////////////////////////
 
 for (const locale of ['en', 'de'] as const) {
-  test(`the menu drawer closes with a ${TAP_TARGET_PX} px target in ${locale}`, async ({ page }) => {
+  test(`the More sheet closes with a ${TAP_TARGET_PX} px target in ${locale}`, async ({ page }) => {
     const copy = extraCopyFor(locale);
     await page.setViewportSize(NARROW_PHONE);
     await completeOnboarding(page);
     await useLanguage(page, locale);
     await page.goto('/diary');
 
-    await page.getByRole('button', { name: copy.chrome.logoMenuLabel }).click();
-    const drawer = page.getByRole('dialog');
-    await expect(drawer).toBeVisible();
+    // The navigation drawer this used to open went with M258; the More sheet
+    // is the sheet every phone page can open, and it carries the same close X.
+    await page.locator('[data-slot="bottom-nav-shell"] nav').getByRole('button', { name: copy.nav.more, exact: true }).click();
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
 
-    const close = drawer.getByRole('button', { name: copy.ui.sheet.close });
-    expectTapTarget(await boxOf(close), 'the drawer close button');
+    const close = sheet.getByRole('button', { name: copy.ui.sheet.close });
+    expectTapTarget(await boxOf(close), 'the More sheet close button');
   });
 }
 

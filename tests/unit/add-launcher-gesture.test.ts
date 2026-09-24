@@ -171,7 +171,7 @@ describe('the surfaces that capture', () => {
  * that follows the tap unmounts the very element whose `click()` is still on
  * the gesture stack. That is the exact failure `use-camera-capture.ts`'s header
  * names, so the wiring is pinned here: one hook call in the whole file, one
- * input, and the sheet's key driving the same `capture` the raised circle does.
+ * input, and the sheet's key driving the hook's own `capture`.
  *
  * `add-launcher-targets.test.ts` counts the inputs in real markup. This file
  * owns the other half, which no render can see: that nothing is awaited on the
@@ -210,9 +210,11 @@ describe("the sheet key opens the bar's own camera, inside the tap", () => {
     assert.ok(body.indexOf('setIsSheetOpen(false)') > captureIndex);
   });
 
-  it('gives the sheet key its own trigger ref, so a dismissed camera still finds the circle', () => {
-    // One ref cannot hold two elements. Sharing the hook's would leave the
-    // raised circle with nothing to focus once the sheet had been opened once.
+  it('gives the sheet key its own trigger ref, so a dismissed camera still finds the plus', () => {
+    // One ref cannot hold two elements. The hook's ref is on the plus, where
+    // focus goes back after a dismissed camera; sharing it with the sheet's
+    // key would leave the plus with nothing to focus once the sheet had been
+    // opened once, since the key is gone with the sheet.
     assert.match(launcher, /triggerRef: sheetPhotoRef,/);
     assert.match(launcher, /const sheetPhotoRef = useRef<HTMLButtonElement>\(null\);/);
   });
