@@ -346,17 +346,32 @@ test('a device that predates this build is told what the rule says, and nothing 
   expect(await onboardedAtOnDisk(page), 'the device must read as one that predates this build').toBe(beforeTheBuild);
   await settleWhatsNew(page);
 
-  // `count()` answers now, where `getAttribute()` on an absent card would wait
-  // out the whole spec timeout before reporting the absence this case expects.
-  const shown = (await whatsNewCard(page).count()) === 0 ? null : await whatsNewCard(page).getAttribute('data-version');
-  expect(shown, `an established device with no acknowledgement is shown ${EXPECTED_FOR_ESTABLISHED ?? 'nothing'}`).toBe(
-    EXPECTED_FOR_ESTABLISHED,
-  );
-  // The other half of the same rule: told nothing means recorded, told
-  // something means the record waits for the tap that says it was read.
-  expect(await acknowledgedVersion(page), 'a device told nothing is recorded, a device told something is not').toBe(
-    EXPECTED_FOR_ESTABLISHED === null ? BUILD.version : null,
-  );
+  // The card's decision is made in an effect that awaits a profile read, so it
+  // has not necessarily landed the moment settleWhatsNew returns; a one-shot
+  // read here raced that effect under load and read a card that had not
+  // decided yet as absent. Each branch below waits on the decision's own
+  // observable outcome first. A shown card proves itself by appearing. A card
+  // that stays away proves itself only through the write its branch makes, so
+  // that write is waited on before a one-shot read is trusted to answer.
+  if (EXPECTED_FOR_ESTABLISHED !== null) {
+    await expect(
+      whatsNewCard(page),
+      `an established device with no acknowledgement is shown ${EXPECTED_FOR_ESTABLISHED}`,
+    ).toHaveAttribute('data-version', EXPECTED_FOR_ESTABLISHED);
+    // The other half of the same rule: told something means the record waits
+    // for the tap that says it was read.
+    expect(await acknowledgedVersion(page), 'a device told something is not recorded until it is read').toBeNull();
+  } else {
+    // Told nothing means recorded, and that write is this branch's only
+    // observable trace, so it is waited on before the count of zero is asked.
+    await expect
+      .poll(() => acknowledgedVersion(page), { message: 'a device told nothing is recorded' })
+      .toBe(BUILD.version);
+    expect(
+      await whatsNewCard(page).count(),
+      'an established device with no acknowledgement is shown nothing',
+    ).toBe(0);
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // THE CONTROL: this same seeded device, given an older acknowledgement, is
