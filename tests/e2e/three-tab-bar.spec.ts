@@ -285,6 +285,32 @@ test('the search door comes after the photo, and it closes the sheet behind it',
   await expect(page.locator('#food-search'), 'the search screen is on').toBeVisible();
 });
 
+test('an add sheet closed by Back stays closed on Forward', async ({ page }) => {
+  // The More sheet came back on Forward in 9c82669, because React Router restores the old entry's
+  // key (counsel review). The add sheet closes on a key change instead of comparing keys, so it
+  // should not; this keeps it that way. History both ways by a client navigation.
+  // One level DEEPER, because only that pushes: this app replaces a sideways tap
+  // (`use-app-navigate.ts`), so a tile from /diary to /trends leaves nothing to go Forward to.
+  await page.goto('/settings');
+  await page.locator('main a[href="/settings/ai"]').first().click();
+  await page.waitForURL((url) => url.pathname === '/settings/ai');
+
+  await plusButton(page).tap();
+  await expect(addSheet(page), 'the add sheet must be open before the walk').toBeVisible();
+
+  await page.goBack();
+  await page.waitForURL((url) => url.pathname === '/settings');
+  await expect(page.locator('[role="dialog"]'), 'Back must close the add sheet').toHaveCount(0);
+
+  await page.goForward();
+  await page.waitForURL((url) => url.pathname === '/settings/ai');
+  await expect(plusButton(page), 'the Forward page is drawn').toBeVisible();
+  // Settled, then read once: a retrying count of 0 passes before a reopened sheet mounts.
+  await settleAnimations(page);
+  expect(await page.locator('[role="dialog"]').count(), 'Forward must not open the add sheet again').toBe(0);
+  expect(await plusButton(page).getAttribute('aria-expanded'), 'the plus must read shut').toBe('false');
+});
+
 test('the search door keeps the day the diary was showing', async ({ page }) => {
   // YESTERDAY, in the device's own calendar, the way the diary reads `?date=`.
   const yesterday = await page.evaluate(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Camera, Plus, Search } from 'lucide-react';
@@ -70,15 +70,6 @@ export function AddLauncher() {
   const searchTo = buildIntakeHref(ADD_SEARCH_PATH, { date: viewedDate });
   const scanTo = buildIntakeHref(ADD_PHOTO_PATH, { date: viewedDate });
   const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
-  /**
-   * The sheet's own photo door.
-   *
-   * A SECOND REF, deliberately, not the hook's. The hook's ref is on the plus,
-   * which is where focus goes back after a dismissed camera: by then the sheet
-   * has closed, and the door that asked for the camera is gone. One ref cannot
-   * hold two elements, so the sheet's door takes this one.
-   */
-  const sheetPhotoRef = useRef<HTMLButtonElement>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const isOnAddHub = location.pathname === ADD_HUB_PATH || location.pathname.startsWith(`${ADD_HUB_PATH}/`);
@@ -176,9 +167,12 @@ export function AddLauncher() {
               other door here, so rank comes from size as well as from colour.
               The glyph and the name in words, because a camera glyph alone was
               what the operator could not find. It is also the first control in
-              the sheet, so it takes the focus when the sheet opens. */}
+              the sheet, so it takes the focus when the sheet opens.
+
+              AT THE TOP ON PURPOSE, the opposite of the More sheet, which puts
+              its most used tile nearest the thumb. Here the size and the fill
+              carry the door, so do not move it down to match. */}
           <button
-            ref={sheetPhotoRef}
             type="button"
             onClick={capturePhotoFromSheet}
             data-slot="add-sheet-photo"

@@ -1,4 +1,14 @@
-import { createContext, useContext, useId, useMemo, useRef, useState, type MouseEvent, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PropsWithChildren,
+} from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
@@ -90,6 +100,12 @@ const ROW_CLASS = 'flex min-h-11 w-full min-w-0 items-center gap-3 border px-3 t
 const TILE_ACTIVE_CLASS = 'border-primary bg-primary/10 text-primary';
 
 const TILE_IDLE_CLASS = 'border-border bg-background text-foreground hover:bg-muted';
+
+/**
+ * Tailwind's `md`, written the way the stylesheet writes it, so the sheet
+ * closes at the exact width its own `md:hidden` hides it.
+ */
+const MD_AND_UP_QUERY = '(min-width: 48rem)';
 
 /** Every page the sheet reaches: the rows above the grid and the tiles in it. */
 const MORE_SHEET_HREFS = new Set([...footerNavigationItems, ...moreSheetNavigationItems].map((item) => item.to));
@@ -239,10 +255,26 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
   /**
    * The location the sheet was opened on, or `null` while it is shut. The
    * sheet is open only while that location is still the current one, so ANY
-   * navigation shuts it, a tile's, the phone's own Back, or a link elsewhere,
-   * with no effect to keep in step.
+   * navigation shuts it, a tile's, the phone's own Back, or a link elsewhere.
    */
   const [openedOnKey, setOpenedOnKey] = useState<string | null>(null);
+  /**
+   * The last location this provider rendered on. A key that differs from it
+   * means a navigation happened, and the sheet is FORGOTTEN, not only hidden.
+   *
+   * WHY BOTH. Comparing `openedOnKey` with the current key hid the sheet on a
+   * navigation but kept the key it was opened on, and React Router hands the
+   * old entry's key back on Forward: open More, go Back, go Forward, and the
+   * sheet was open again with no tap (counsel review of 9c82669, a defect
+   * carried from M258's More tab). Resetting during render, React's pattern
+   * for state that follows a changing value, drops it in the same render the
+   * key changes, with no effect and no frame in which the sheet shows.
+   */
+  const [lastSeenKey, setLastSeenKey] = useState(location.key);
+  if (location.key !== lastSeenKey) {
+    setLastSeenKey(location.key);
+    setOpenedOnKey(null);
+  }
   /** The door that opened the sheet last, where the focus goes back on close. */
   const openerRef = useRef<HTMLElement | null>(null);
   const isOpen = openedOnKey === location.key;
@@ -251,6 +283,25 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
   const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanEntry));
   const holdsCurrentPage = activeHref !== null && MORE_SHEET_HREFS.has(activeHref);
   const close = (): void => setOpenedOnKey(null);
+
+  /**
+   * SHUT AT `md`. The sheet is phone chrome and hides itself at `md` and up,
+   * but its overlay is the primitive's and has no such class, so a window
+   * widened past `md` with the sheet open kept a dark overlay over the desktop
+   * page with nothing on it to close (counsel review of 9c82669). Closing the
+   * sheet is the fix, rather than hiding the overlay too: a hidden open dialog
+   * still traps the focus, locks the page's scroll and hides the rest of the
+   * page from a screen reader. A media query listener, because the width is
+   * the browser's to change and nothing in React hears it.
+   */
+  useEffect(() => {
+    const mdAndUp = window.matchMedia(MD_AND_UP_QUERY);
+    const closeAtMd = (): void => {
+      if (mdAndUp.matches) setOpenedOnKey(null);
+    };
+    mdAndUp.addEventListener('change', closeAtMd);
+    return () => mdAndUp.removeEventListener('change', closeAtMd);
+  }, []);
 
   // Held across renders, so the two doors re-render when the sheet opens or
   // the page changes, and not on every render of the shell above them.

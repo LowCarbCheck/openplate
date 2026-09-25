@@ -189,11 +189,11 @@ describe("the sheet's photo door opens the bar's own camera, inside the tap", ()
 
   it("drives the hook's own capture from the photo door, and hands the strip none", () => {
     // THE HOOK'S `capture`, wrapped in the close, so the input, and therefore
-    // the `click()` target, is the one the bar already renders. Only the ref
-    // and the close are the door's own.
+    // the `click()` target, is the one the bar already renders. Only the close
+    // is the door's own.
     assert.match(
       launcher,
-      /<button\s+ref=\{sheetPhotoRef\}\s+type="button"\s+onClick=\{capturePhotoFromSheet\}\s+data-slot="add-sheet-photo"/,
+      /<button\s+type="button"\s+onClick=\{capturePhotoFromSheet\}\s+data-slot="add-sheet-photo"/,
     );
     assert.doesNotMatch(launcher, /<IntakeComposer[^>]*capture=/, 'the strip drives a second camera key again');
   });
@@ -214,14 +214,14 @@ describe("the sheet's photo door opens the bar's own camera, inside the tap", ()
     assert.ok(body.indexOf('setIsSheetOpen(false)') > captureIndex);
   });
 
-  it('gives the photo door its own ref, so a dismissed camera still finds the plus', () => {
+  it("keeps the hook's ref on the plus alone, so a dismissed camera still finds it", () => {
     // One ref cannot hold two elements. The hook's ref is on the plus, where
-    // focus goes back after a dismissed camera; sharing it with the sheet's
-    // door would leave the plus with nothing to focus once the sheet had been
-    // opened once, since the door is gone with the sheet.
-    assert.match(launcher, /const sheetPhotoRef = useRef<HTMLButtonElement>\(null\);/);
-    assert.equal((launcher.match(/ref=\{sheetPhotoRef\}/g) ?? []).length, 1, 'the door has its own ref');
+    // focus goes back after a dismissed camera; putting it on the sheet's door
+    // would leave the plus with nothing to focus once the sheet had been
+    // opened once, since the door is gone with the sheet. The door needs no
+    // ref of its own: nothing reads one.
     assert.equal((launcher.match(/ref=\{triggerRef\}/g) ?? []).length, 1, "the hook's ref is on the plus alone");
+    assert.match(launcher, /<SheetTrigger asChild>\s*<button\s+ref=\{triggerRef\}/, "the hook's ref left the plus");
   });
 });
 

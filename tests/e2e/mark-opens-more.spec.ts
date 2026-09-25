@@ -16,6 +16,13 @@
  *   More tab after the More tab. A tile opened from the mark still navigates and closes the sheet.
  * - Opening and closing it from the mark moves nothing: a `layout-shift` total of 0, and no top
  *   inside `main` changes.
+ * - A sheet that was closed stays closed. Back closes it (the page it was opened on is gone), and
+ *   Forward to that page must not open it again: React Router restores the old history entry's
+ *   key, and 9c82669 compared the key the sheet was opened on with the current one, so the sheet
+ *   came back with no tap (counsel review of 9c82669).
+ * - Widening the window past `md` while the sheet is open closes it. The sheet and the page's
+ *   phone chrome are `md:hidden`, but the overlay is not, so 9c82669 left a dark overlay over the
+ *   desktop page with no panel on it and no way to see what to close.
  * - The header did not move to make room for a button. The title and the wordmark have the rects
  *   they had on 0.47.0, read at 360 and 390 px, and the mark's picture is the same 36 px square in
  *   the same place, while the button around it is a 44 px target. A control pads the button
@@ -176,6 +183,48 @@ test('a tile in the sheet the mark opened navigates, and the sheet closes behind
   await page.waitForURL((url) => url.pathname === '/trends');
   await expect(page.getByRole('dialog'), 'the sheet must close behind the tile').toHaveCount(0);
   await expect(headerMark(page)).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a sheet closed by Back stays closed on Forward', async ({ page }) => {
+  // HISTORY BOTH WAYS, by a CLIENT navigation: a document load would reset the state this is
+  // about, and Forward would then prove nothing.
+  // One level DEEPER, because only that pushes: this app replaces a sideways tap
+  // (`use-app-navigate.ts`), so a tile from /diary to /trends leaves nothing to go Forward to.
+  await page.goto('/settings');
+  await page.locator('main a[href="/settings/ai"]').first().click();
+  await page.waitForURL((url) => url.pathname === '/settings/ai');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // Open it on /settings/ai, from the mark, then walk away and back.
+  await headerMark(page).tap();
+  await expect(moreSheet(page), 'the sheet must be open before the walk').toBeVisible();
+
+  await page.goBack();
+  await page.waitForURL((url) => url.pathname === '/settings');
+  await expect(page.locator('[role="dialog"]'), 'Back must close the sheet').toHaveCount(0);
+
+  await page.goForward();
+  await page.waitForURL((url) => url.pathname === '/settings/ai');
+  // THE CONTROL that the Forward page is really up, so the count below is read on it.
+  await expect(headerMark(page), 'the Forward page is drawn').toBeVisible();
+  // SETTLED, THEN READ ONCE. A retrying `toHaveCount(0)` passes in the instant before a reopened
+  // sheet mounts, which is exactly how the first draft of this check passed on 9c82669.
+  await settleAnimations(page);
+  expect(await page.locator('[role="dialog"]').count(), 'Forward must not open the sheet again').toBe(0);
+  expect(await headerMark(page).getAttribute('aria-expanded'), 'the mark must read shut').toBe('false');
+});
+
+test('widening past md closes the sheet, and leaves no overlay on the desktop page', async ({ page }) => {
+  await page.goto('/diary');
+  await headerMark(page).tap();
+  await expect(moreSheet(page)).toBeVisible();
+  // THE CONTROL: at phone width the overlay IS drawn, so the reader below can see one.
+  await expect(page.locator('[data-slot="sheet-overlay"]'), 'the overlay is drawn at phone width').toBeVisible();
+
+  await page.setViewportSize({ width: 1024, height: PHONE_HEIGHT });
+  // In the DOM, not by role: a `md:hidden` dialog is not visible, and a role query skips it.
+  await expect(page.locator('[role="dialog"]'), 'the sheet must close at md').toHaveCount(0);
+  await expect(page.locator('[data-slot="sheet-overlay"]'), 'no overlay may stay behind').toHaveCount(0);
 });
 
 test('opening and closing the sheet from the mark moves nothing', async ({ page }) => {
