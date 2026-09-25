@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search } from 'lucide-react';
+import { Camera, Plus, Search } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
-import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
+import { useCameraCapture } from '#app/components/intake/use-camera-capture';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { parseDateParam } from '#app/lib/user-days';
@@ -20,8 +20,8 @@ const ADD_HUB_PATH = '/add';
  * the camera inside its own gesture, and the sheet sat behind a long press,
  * which is a gesture nobody finds. The operator's three-slot bar makes the
  * circle a plus and the sheet its tap, so the add sheet is where every way to
- * log a food starts on a phone. The camera is one key inside it, still opened
- * inside the tap on that key.
+ * log a food starts on a phone. The camera is the sheet's first door, still
+ * opened inside the tap on that door.
  *
  * A LONG PRESS DOES NOTHING EXTRA NOW. It was the only way into the sheet, and
  * the tap is that way now, so the press timer, the drift tolerance and
@@ -43,16 +43,22 @@ const ADD_HUB_PATH = '/add';
  * threaded through `buildIntakeHref`, so the sheet logs to the day the person
  * is looking at.
  *
- * THE SHEET OPENS WITH THE FOOD SEARCH, then the composer strip. The search
- * door is a row drawn like the search field it leads to, and it goes to
- * `/add/search`, the database search. It was the bar's Add tab until M258
- * took that tab away; without it a search was three taps (plus, type, the
- * switcher), and the playground the operator approved listed "find a food by
- * name" first in this sheet.
+ * THE SHEET OPENS WITH THE CAMERA (M259). After a day with 0.47.0 the
+ * operator wrote: "clicking on add I think is better but the photo option
+ * needs to be much more prominent and the first thing you want to click on.
+ * it's currently almost hidden." It was a 44 px outlined key at the right end
+ * of the composer strip, on the sheet's third row. It is now the first door, a
+ * full-width button filled in the brand, taller than anything else in the
+ * sheet, with a camera glyph and its name in words. There is ONE camera in the
+ * sheet: the strip under it no longer draws its key.
  *
- * The strip below it (M232/03) is the same one `/dashboard` and `/diary`
- * draw, given THIS component's capture. Its three keys are type, speak and
- * photograph.
+ * THEN THE FOOD SEARCH, a row drawn like the search field it leads to, going
+ * to `/add/search`, the database search. It was the bar's Add tab until M258
+ * took that tab away; without it a search was three taps (plus, type, the
+ * switcher).
+ *
+ * THEN THE STRIP (M232/03), the same one `/dashboard` and `/diary` draw, in
+ * its words-only form: type and speak.
  */
 export function AddLauncher() {
   const { t } = useTranslation();
@@ -63,15 +69,14 @@ export function AddLauncher() {
   const describeTo = buildIntakeHref(ADD_DESCRIBE_PATH, { date: viewedDate });
   const searchTo = buildIntakeHref(ADD_SEARCH_PATH, { date: viewedDate });
   const scanTo = buildIntakeHref(ADD_PHOTO_PATH, { date: viewedDate });
-  const launcherCapture = useCameraCapture({ scanTo });
-  const { capture, triggerRef, inputRef, inputProps } = launcherCapture;
+  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
   /**
-   * The sheet's own photo key.
+   * The sheet's own photo door.
    *
    * A SECOND REF, deliberately, not the hook's. The hook's ref is on the plus,
    * which is where focus goes back after a dismissed camera: by then the sheet
-   * has closed, and the key that asked for the camera is gone. One ref cannot
-   * hold two elements, so the sheet's key takes this one.
+   * has closed, and the door that asked for the camera is gone. One ref cannot
+   * hold two elements, so the sheet's door takes this one.
    */
   const sheetPhotoRef = useRef<HTMLButtonElement>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -86,7 +91,7 @@ export function AddLauncher() {
   }, [location.key]);
 
   /**
-   * The sheet's photo key: the camera, and then the sheet gets out of the way.
+   * The sheet's photo door: the camera, and then the sheet gets out of the way.
    * `capture()` first and nothing awaited before it, so the camera still opens
    * inside the tap; the close that follows cannot reach the input, which lives
    * outside the sheet.
@@ -96,20 +101,13 @@ export function AddLauncher() {
     setIsSheetOpen(false);
   };
 
-  /** This component's capture, wearing the sheet's own trigger and close. The strip renders no input for it. */
-  const sheetCapture: CameraCapture = {
-    ...launcherCapture,
-    capture: capturePhotoFromSheet,
-    triggerRef: sheetPhotoRef,
-  };
-
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
       <div className="relative flex min-w-0 flex-1 flex-col items-center justify-end">
         {/* The single hidden capture input the bar's photo path goes through,
-            the strip's camera key in the sheet. It sits outside the sheet on
-            purpose, so closing the sheet cannot unmount the element whose
-            `click()` is still on the gesture stack. */}
+            the sheet's photo door. It sits outside the sheet on purpose, so
+            closing the sheet cannot unmount the element whose `click()` is
+            still on the gesture stack. */}
         <input ref={inputRef} {...inputProps} />
 
         {/* RADIX'S OWN TRIGGER, so the plus announces the sheet
@@ -170,7 +168,26 @@ export function AddLauncher() {
           <SheetTitle>{t('launcher.sheetTitle')}</SheetTitle>
         </SheetHeader>
         <div className="grid gap-3 px-4 pb-4">
-          {/* THE FOOD SEARCH, FIRST. A link drawn as the search field it opens
+          {/* THE PHOTO, FIRST (M259), and the one camera in this sheet. A
+              button, not a link: a navigation cannot open a camera, so the tap
+              does the work itself (`capturePhotoFromSheet`). Full width, filled
+              in the brand like the raised plus below the panel, square cornered
+              like every control in the app, and 64 px tall, 20 more than any
+              other door here, so rank comes from size as well as from colour.
+              The glyph and the name in words, because a camera glyph alone was
+              what the operator could not find. It is also the first control in
+              the sheet, so it takes the focus when the sheet opens. */}
+          <button
+            ref={sheetPhotoRef}
+            type="button"
+            onClick={capturePhotoFromSheet}
+            data-slot="add-sheet-photo"
+            className="flex min-h-16 w-full min-w-0 items-center justify-center gap-3 bg-primary text-primary-foreground px-4 text-base font-semibold shadow-sm transition-colors hover:bg-primary/90 active:bg-primary/85 motion-safe:active:scale-[0.99]"
+          >
+            <Camera className="size-6 shrink-0" aria-hidden="true" />
+            <span className="truncate">{t('launcher.platePhoto')}</span>
+          </button>
+          {/* THE FOOD SEARCH. A link drawn as the search field it opens
               (`/add/search`'s own `#food-search`: the input's border, height
               and muted placeholder ink, a search glyph on the left), so it
               reads as "type a food name here" and not as one more button.
@@ -185,29 +202,24 @@ export function AddLauncher() {
             <Search className="size-4 shrink-0" aria-hidden="true" />
             <span className="truncate">{t('launcher.searchFoods')}</span>
           </Link>
-          {/* THE SAME STRIP `/dashboard` AND `/diary` DRAW, given this
-              component's camera. Its three keys are the three doors the sheet
-              used to hand-roll: type, dictate, photograph. All three carry the
-              viewed day. None of them points at `/add/search`: the search
-              door above does, and the strip's "Type" opens the composer,
-              which takes a written meal rather than one food's name.
+          {/* THE SAME STRIP `/dashboard` AND `/diary` DRAW, words only: type
+              and dictate, both carrying the viewed day. None of them points at
+              `/add/search`: the search door above does, and the strip's "Type"
+              opens the composer, which takes a written meal rather than one
+              food's name.
 
               `label` is "Type" here, not the strip's own invitation: the
               heading above already says "Add food", and the same words twice,
               stacked, read as a mistake.
 
-              `variant` is "embedded" ONLY here (M232/04): the raised plus a
-              few pixels below this panel is already a filled brand circle,
-              so the strip's own camera key steps back to an outline rather
-              than competing with it. `/dashboard` and `/diary` pass no variant and
-              keep the filled key, which is the only prominent camera those
-              pages have on a desktop.
-
-              One line past the print width on purpose: three of these four
-              props are pinned as literals by the unit tier, and letting the
-              formatter split them would break those regexes for nothing. */}
-          {/* prettier-ignore */}
-          <IntakeComposer describeTo={describeTo} capture={sheetCapture} label={t('launcher.type')} variant="embedded" />
+              `variant="wordsOnly"` ONLY here (M259): the photo door above is
+              this sheet's camera, so the strip draws no camera key and opens no
+              camera of its own. Until M259 it drew an outlined key, driven by
+              this component's capture; that key was the camera the operator
+              called "almost hidden". `/dashboard` and `/diary` pass no variant
+              and keep the filled key, which is the only prominent camera those
+              pages have on a desktop. */}
+          <IntakeComposer describeTo={describeTo} label={t('launcher.type')} variant="wordsOnly" />
         </div>
       </SheetContent>
     </Sheet>

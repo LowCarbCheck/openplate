@@ -24,7 +24,6 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { IntakeComposer, type IntakeComposerProps } from '#app/components/intake/intake-composer';
-import type { CameraCapture } from '#app/components/intake/use-camera-capture';
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 const source = readFileSync(new URL('../../app/components/intake/intake-composer.tsx', import.meta.url), 'utf8');
@@ -81,33 +80,31 @@ describe('the composer strip', () => {
     assert.match(source, /const camera = useCameraCapture\(\{ scanTo \}\)/);
   });
 
-  it('takes a camera the caller already owns, and then opens none of its own', () => {
-    // The launcher's sheet hands one down (M232/03), because that page's
-    // capture input sits OUTSIDE the sheet: closing a sheet must not unmount
-    // the element whose `click()` is on the gesture stack. The counts are in
-    // `add-launcher-targets.test.ts`; this pins the seam they count through.
-    assert.match(source, /capture: CameraCapture;\s*\n\s*scanTo\?: never;/);
-    assert.match(source, /if \(props\.capture !== undefined\) \{/);
-    assert.match(source, /camera=\{props\.capture\} \/>;/);
+  it('draws the words-only strip with no camera behind it, and opens none', () => {
+    // The launcher's sheet asks for it (M259): its own photo door is that
+    // sheet's camera, and its capture input sits OUTSIDE the sheet, because
+    // closing a sheet must not unmount the element whose `click()` is on the
+    // gesture stack. The counts are in `add-launcher-targets.test.ts`; this
+    // pins the seam they count through.
+    assert.match(source, /variant: 'wordsOnly';\s*\n\s*scanTo\?: never;/);
+    assert.match(source, /if \(props\.variant === 'wordsOnly'\) \{\s*\n\s*return <ComposerStrip \{\.\.\.base\} \/>;/);
     // The hook is called in the branch that renders the input, and nowhere
     // else, so neither can exist without the other.
     assert.equal((source.match(/useCameraCapture\(/g) ?? []).length, 1);
   });
 
-  it('makes capture and scanTo mutually exclusive, a compile error rather than a silent drop', () => {
-    // Before M232/03's follow-up fix, `capture` and `scanTo` were two
-    // independent optional fields, so a caller could pass both and `scanTo`
-    // was quietly dropped mid-spread with no diagnostic anywhere. The
-    // discriminated union in `IntakeComposerProps` forbids the
-    // combination at the call site instead; the real assertion is the
-    // `@ts-expect-error` below, which `pnpm typecheck` enforces.
-    // SAFETY: an empty object stands in for a real capture here; only its type,
-    // never its shape, matters to the compile-time check below.
-    const capture = {} as CameraCapture;
-    // @ts-expect-error capture and scanTo cannot both be set; see the module's props union
-    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, capture, scanTo: ADD_PHOTO_PATH });
-    assert.match(source, /capture\?: never;/, 'the scanTo-branch of the union still forbids capture');
-    assert.match(source, /scanTo\?: string;/, 'the capture-branch of the union still forbids a non-never scanTo');
+  it('makes wordsOnly and scanTo mutually exclusive, a compile error rather than a silent drop', () => {
+    // A words-only strip has no camera, so a photo target handed to it would
+    // be dropped with no diagnostic anywhere. The discriminated union in
+    // `IntakeComposerProps` forbids the combination at the call site; the real
+    // assertion is the `@ts-expect-error` below, which `pnpm typecheck`
+    // enforces.
+    // @ts-expect-error a words-only strip takes no scanTo; see the module's props union
+    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, variant: 'wordsOnly', scanTo: ADD_PHOTO_PATH });
+    // The control: the standalone strip takes one.
+    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, scanTo: ADD_PHOTO_PATH });
+    assert.match(source, /scanTo\?: never;/, 'the words-only branch of the union still forbids scanTo');
+    assert.match(source, /scanTo\?: string;/, 'the standalone branch of the union takes a scanTo');
   });
 
   it('makes the photo key a button that captures, never a link', () => {
@@ -147,65 +144,54 @@ describe('the composer strip', () => {
 });
 
 /**
- * TWO INTENTIONAL STATES, NOT ONE GLOBAL CHANGE (M232/04).
+ * TWO INTENTIONAL STATES, NOT ONE GLOBAL CHANGE (M232/04, M259).
  *
  * The filled camera key was a deliberate call and it survives: a photo costs a
  * permission prompt, and on `/dashboard` and `/diary` this strip is the only
  * prominent camera a desktop or tablet has, because the tab bar's raised
- * circle is phone-only. The sheet is the single exception, since the filled
- * plus circle that opened it is on screen a few pixels below it.
+ * circle is phone-only. The launcher's sheet is the single exception, and
+ * since M259 it draws no key at all: the sheet leads with its own large photo
+ * door, and a second camera under it would say the same thing smaller. Until
+ * then the sheet drew an outlined key, the one the operator called "almost
+ * hidden".
  *
- * So each half is asserted against the other: whatever says "filled" here must
- * be absent from the embedded render, and the reverse, and a single treatment
- * applied everywhere would fail one of the two.
+ * So each half is asserted against the other: the key and its input that the
+ * standalone render draws must be absent from the words-only render, and a
+ * single treatment applied everywhere would fail one of the two.
  */
-describe("the camera key's weight", () => {
-  /** A capture the caller already owns, as the launcher's sheet hands one down. It opens nothing. */
-  const BORROWED_CAPTURE: CameraCapture = {
-    capture: () => {},
-    triggerRef: { current: null },
-    inputRef: { current: null },
-    inputProps: { type: 'file' },
-  };
-
-  // The pair, not `bg-primary` alone: the outline's own hover class contains
-  // that substring, so the looser literal would pass against either variant.
+describe('the camera key', () => {
+  // The pair, not `bg-primary` alone: an outline's hover class would contain
+  // that substring, so the looser literal would pass against either treatment.
   const FILLED = 'bg-primary text-primary-foreground';
-  const OUTLINE = 'border-primary/40';
 
   it('fills the key on a page that owns no camera, which is /dashboard and /diary', () => {
     const classes = cameraKeyClass(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH })));
     assert.ok(classes.includes(FILLED), `the standalone camera key lost its fill: ${classes}`);
-    assert.ok(!classes.includes(OUTLINE), 'the standalone key is drawn as an outline');
   });
 
-  it('outlines the key inside the launcher sheet, where the filled plus is already on screen', () => {
-    const embedded = createElement(IntakeComposer, {
-      describeTo: ADD_DESCRIBE_PATH,
-      capture: BORROWED_CAPTURE,
-      label: 'Type',
-      variant: 'embedded',
-    });
-    const classes = cameraKeyClass(render(embedded));
-    assert.ok(classes.includes(OUTLINE), `the embedded camera key is not an outline: ${classes}`);
-    assert.ok(!classes.includes(FILLED), 'the embedded key is still drawn filled');
+  it('draws no camera key and no capture input in the words-only strip', () => {
+    const wordsOnly = render(
+      createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH, label: 'Type', variant: 'wordsOnly' }),
+    );
+    assert.doesNotMatch(wordsOnly, /aria-label="Photo"/, 'the words-only strip still draws a camera key');
+    assert.doesNotMatch(wordsOnly, /lucide-camera/, 'the words-only strip still draws a camera glyph');
+    assert.doesNotMatch(wordsOnly, /<input\b/, 'the words-only strip renders a capture input');
+    // It still types and speaks: two links, the writing surface and the mic.
+    assert.equal((wordsOnly.match(/<a\b/g) ?? []).length, 2, 'the words-only strip lost type or speak');
   });
 
-  it('demotes the key only where the variant says so, never by borrowing a camera', () => {
-    // The control that makes the pair above mean something: a strip given a
-    // caller's capture but no variant is a `/dashboard`-weight key, so the
-    // demotion cannot ride in on `capture` by accident.
-    const borrowedButStandalone = createElement(IntakeComposer, {
-      describeTo: ADD_DESCRIBE_PATH,
-      capture: BORROWED_CAPTURE,
-    });
-    const classes = cameraKeyClass(render(borrowedButStandalone));
-    assert.ok(classes.includes(FILLED), 'borrowing a camera quietly demoted the key');
-    assert.ok(!classes.includes(OUTLINE), 'borrowing a camera quietly demoted the key');
+  it('draws both, the key and the input, in the standalone strip', () => {
+    // The CONTROL that makes the line above mean something: the same reader
+    // over the default strip finds the key, the glyph and the input.
+    const standalone = render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH }));
+    assert.match(standalone, /aria-label="Photo"/);
+    assert.match(standalone, /lucide-camera/);
+    assert.equal((standalone.match(/<input\b/g) ?? []).length, 1);
   });
 
-  it('asks for the outline at exactly one call site, the sheet', () => {
-    assert.match(LAUNCHER, /<IntakeComposer[^>]*variant="embedded"/, 'the sheet stopped asking for it');
+  it('asks for the words-only strip at exactly one call site, the sheet', () => {
+    assert.match(LAUNCHER, /<IntakeComposer[^>]*variant="wordsOnly"/, 'the sheet stopped asking for it');
+    assert.doesNotMatch(LAUNCHER, /variant="embedded"/, 'the outlined camera key is back in the sheet');
     assert.doesNotMatch(DASHBOARD, /<IntakeComposer[^>]*variant=/, '/dashboard took the sheet treatment');
     const diaryStrips = DIARY.match(/<IntakeComposer[^>]*\/>/g) ?? [];
     assert.equal(diaryStrips.length, 4, '/diary no longer has its four add-entry surfaces');

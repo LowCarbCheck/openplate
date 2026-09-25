@@ -10,6 +10,10 @@
  * the camera on a tap and the sheet on a long press. The sheets themselves are
  * Radix portals, which `renderToStaticMarkup` draws as nothing, so what is
  * asserted here is the bar; `tests/e2e/three-tab-bar.spec.ts` opens them.
+ *
+ * THE MORE SHEET IS NOT THE BAR'S SINCE M259. `MoreSheetProvider` renders it
+ * once for its two doors, the More tab and the header's brand mark, so the
+ * bar is rendered inside that provider here, as `AppWrapper` mounts it.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,6 +25,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import { BottomNav } from '../../app/components/bottom-nav';
+import { MoreSheetProvider, useMoreSheetDoor } from '../../app/components/more-sheet';
 import { barTabNavigationItems, personalNavigationItems } from '../../app/components/app-sidebar';
 
 /**
@@ -55,11 +60,16 @@ function hrefsOf(html: string): string[] {
  * loader is registered here, so the policy resolves to the open-instance
  * default.
  */
-function renderBottomNav(path = '/diary'): string {
-  const router = createMemoryRouter([{ path: '*', element: createElement(BottomNav) }], {
-    initialEntries: [path],
-  });
+function renderBottomNav(path = '/diary', { showsPlanEntry = false }: { showsPlanEntry?: boolean } = {}): string {
+  const element = createElement(MoreSheetProvider, { showsPlanEntry }, createElement(BottomNav));
+  const router = createMemoryRouter([{ path: '*', element }], { initialEntries: [path] });
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** A door rendered with no `MoreSheetProvider` above it. */
+function DoorWithoutSheet(): null {
+  useMoreSheetDoor();
+  return null;
 }
 
 /** The one `<button ...>` opening tag carrying a slot, so its attributes can be read alone. */
@@ -121,7 +131,19 @@ describe('BottomNav', () => {
 
     assert.ok(tag.includes('aria-haspopup="dialog"'));
     assert.ok(tag.includes('aria-expanded="false"'));
+    // A shut sheet has no element to name, as with Radix's own trigger.
+    assert.ok(!tag.includes('aria-controls'));
     assert.ok(!tag.includes('href='));
+  });
+
+  it('refuses a door outside the provider that holds its sheet', () => {
+    // A door to nothing fails loudly rather than rendering a dead button.
+    // Rendered bare, not through the router, whose error boundary would
+    // swallow the throw and draw an error page instead.
+    assert.throws(
+      () => renderToStaticMarkup(createElement(DoorWithoutSheet)),
+      (cause) => cause instanceof Error && cause.message.includes('MoreSheetProvider'),
+    );
   });
 
   it('opens the sheet on a tap and has no long press left', () => {
@@ -162,14 +184,24 @@ describe('BottomNav', () => {
     assert.ok(!buttonTag(renderBottomNav('/diary'), 'bottom-nav-add').includes('data-active'));
   });
 
-  it('lights More on the pages it holds, and not on the ones it does not', () => {
-    for (const path of ['/trends', '/dashboard', '/pantry', '/fasting', '/nutrients', '/settings/nutrition']) {
+  it('lights More on the pages it holds, Settings among them, and not on the ones it does not', () => {
+    // `/settings` and `/settings/ai` since M259: the Settings row is in the
+    // sheet, and the hub is the catalog's winner under it.
+    const held = ['/trends', '/dashboard', '/pantry', '/fasting', '/nutrients', '/settings/nutrition', '/settings'];
+    for (const path of [...held, '/settings/ai']) {
       assert.ok(buttonTag(renderBottomNav(path), 'bottom-nav-more').includes('data-active="true"'), path);
     }
-    // CONTROL: Diary is the bar's own tab, and Settings is the avatar menu's.
-    for (const path of ['/diary', '/settings', '/settings/ai', '/add/search']) {
+    // CONTROL: Diary is the bar's own tab, and the add screens are the plus's.
+    for (const path of ['/diary', '/add/search', '/add/photo']) {
       assert.ok(!buttonTag(renderBottomNav(path), 'bottom-nav-more').includes('data-active'), path);
     }
+  });
+
+  it("stays dark on the plan page where Plan is drawn, because Plan is the avatar menu's", () => {
+    const plan = buttonTag(renderBottomNav('/settings/plan', { showsPlanEntry: true }), 'bottom-nav-more');
+    assert.ok(!plan.includes('data-active'), 'Plan wins on its own page, and Plan is not in the sheet');
+    // CONTROL: without the plan entry, the hub is the winner there, and the hub is in the sheet.
+    assert.ok(buttonTag(renderBottomNav('/settings/plan'), 'bottom-nav-more').includes('data-active="true"'));
   });
 
   it('marks the Diary tab with aria-current on its page, and never a button', () => {

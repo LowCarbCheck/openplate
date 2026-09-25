@@ -54,39 +54,35 @@
  * back-dated log, typed OR photographed, lands on the day in front of the
  * person.
  *
- * ── WHOSE CAMERA IS IT (M232/03) ─────────────────────────────────────────
+ * ── WHERE THE STRIP HAS NO CAMERA (M259) ─────────────────────────────────
  *
- * The launcher's sheet renders this strip too, and that page ALREADY has a
- * capture: the tab bar's add launcher owns one, hoisted outside the
- * sheet on purpose, because closing a sheet must not unmount the element whose
- * `click()` is still on the gesture stack (`use-camera-capture.ts`). So the
- * strip takes an optional `capture`: given one it uses it and renders no input
- * at all, and given none it calls the hook itself, exactly as `/dashboard` and
- * `/diary` have always used it.
+ * The launcher's sheet renders this strip too, under the sheet's own photo
+ * door, and there the strip draws type and speak only: `variant="wordsOnly"`.
  *
- * THE CHOICE IS THE CALL SITE'S AND IT NEVER MOVES. A given call either passes
- * a capture or it does not, for the whole life of that mount, so the two cases
- * are two components underneath one signature. Nothing here can turn an input
- * off while the camera is opening, because nothing here ever turns one off.
+ * Until M259 the sheet's strip carried the camera, as an outlined key at its
+ * far end (M232/04 had stepped it back from the filled key so it would not
+ * compete with the raised plus below the panel), driven by a capture the
+ * launcher handed down. After a day with that on a phone the operator wrote:
+ * "the photo option needs to be much more prominent and the first thing you
+ * want to click on. it's currently almost hidden." So the sheet leads with a
+ * large filled photo door of its own (`add-launcher.tsx`), and a second
+ * camera in the strip under it would say the same thing twice, smaller. The
+ * words-only strip calls no capture hook and renders no input, so the sheet
+ * still has no capture input inside it: the bar's one input sits outside the
+ * sheet, where a close cannot unmount it (`use-camera-capture.ts`).
  *
- * ── HOW HEAVY THE CAMERA KEY IS (M232/04) ────────────────────────────────
+ * ── THE CAMERA KEY, EVERYWHERE ELSE ──────────────────────────────────────
  *
- * The key is filled by default and outlined inside the launcher's sheet, and
- * that is the ONLY difference between the two variants.
+ * On `/dashboard`, `/diary` and `/pantry` the key is drawn filled, which was
+ * the original, deliberate call: a photo costs a camera permission prompt, so
+ * it is worth naming first, and on those pages this strip is the only
+ * prominent camera. The desktop sidebar carries `/add/photo` as a flat link,
+ * so demoting the key there would leave desktop and tablet with no camera
+ * worth seeing. The strip owns that camera itself: it calls the capture hook
+ * and renders the input, in the one branch that draws the key.
  *
- * Filled everywhere was the original, deliberate call: a photo costs a camera
- * permission prompt, so it is worth naming first, and on `/dashboard` and
- * `/diary` this strip is the only prominent camera on the page. The desktop
- * sidebar carries `/add/photo` as a flat link, so demoting the key everywhere
- * would leave desktop and tablet with no camera worth seeing.
- *
- * Inside the sheet the page already has the tab bar's raised plus, a few
- * pixels outside the panel, filled in the brand. A second filled key there
- * competes with it and says nothing new, so the embedded variant draws an
- * outline instead.
- *
- * The variant is an explicit prop rather than something read off `capture`,
- * so the treatment a call site gets can be audited at that call site.
+ * The variant is an explicit prop rather than something inferred, so the
+ * strip a call site gets can be audited at that call site.
  */
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -97,17 +93,12 @@ import { useCameraCapture, type CameraCapture } from '#app/components/intake/use
 import { ADD_PHOTO_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
-/** Where this strip is drawn, which decides the camera key's weight and nothing else. */
-export type IntakeComposerVariant = 'standalone' | 'embedded';
-
 /**
- * The camera key's weight, per context. See the module header for why the
- * sheet is the one place that steps back.
+ * Which keys the strip draws. `'standalone'` draws all three and owns the
+ * camera behind the third; `'wordsOnly'` draws type and speak, for the
+ * launcher's sheet, whose own photo door leads it. See the module header.
  */
-const CAMERA_KEY_CLASS = {
-  standalone: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-primary/90',
-  embedded: 'border border-primary/40 text-primary hover:bg-primary/10 active:bg-primary/15',
-} satisfies Record<IntakeComposerVariant, string>;
+export type IntakeComposerVariant = 'standalone' | 'wordsOnly';
 
 interface IntakeComposerBaseProps {
   /** The composer, carrying the viewed day. Typing goes here; dictating goes here with the field focused. */
@@ -119,46 +110,34 @@ interface IntakeComposerBaseProps {
    * because its own heading already carries the invitation.
    */
   label?: string;
-  /**
-   * How heavy the camera key is drawn. `'standalone'` fills it, which is what
-   * `/dashboard` and `/diary` want; `'embedded'` outlines it, for the
-   * launcher's sheet, where the raised plus below it is already filled.
-   */
-  variant?: IntakeComposerVariant;
 }
 
 /**
- * `capture` and `scanTo` are mutually exclusive, not two independent optional
- * fields: a caller with its own capture has no use for a photo target, since
- * that capture already has its own, and a caller with neither gets the
- * default `/add/photo`. Modelling them as one flat object let a caller pass
- * both and lose `scanTo` in silence, so the choice is a discriminated union
- * instead, and passing both is a compile error at the call site.
+ * `variant` and `scanTo` in one union: a words-only strip has no camera, so a
+ * photo target given to it would be dropped in silence. Passing both is a
+ * compile error at the call site instead.
  */
 export type IntakeComposerProps = IntakeComposerBaseProps &
   (
     | {
-        /**
-         * A capture the CALLER owns, for a page that already has one. Given, this
-         * strip renders no input of its own; see the module header.
-         */
-        capture: CameraCapture;
+        /** Type and speak only; see the module header. */
+        variant: 'wordsOnly';
         scanTo?: never;
       }
     | {
-        capture?: never;
-        /** Where a photo is taken to. Only meaningful when this composer owns its own capture. */
+        variant?: 'standalone';
+        /** Where a photo is taken to. Left out, `/add/photo`. */
         scanTo?: string;
       }
   );
 
 export function IntakeComposer(props: IntakeComposerProps): ReactElement {
-  const { describeTo, className, label, variant } = props;
+  const { describeTo, className, label } = props;
   // The shared half of the props, named once so both branches carry the same
   // set and adding a base prop cannot reach one branch and miss the other.
-  const base = { describeTo, className, label, variant };
-  if (props.capture !== undefined) {
-    return <ComposerStrip {...base} camera={props.capture} />;
+  const base = { describeTo, className, label };
+  if (props.variant === 'wordsOnly') {
+    return <ComposerStrip {...base} />;
   }
   return <ComposerWithOwnCamera {...base} scanTo={props.scanTo} />;
 }
@@ -181,21 +160,44 @@ function ComposerWithOwnCamera({
   );
 }
 
-/** The strip itself. It draws the three keys and owns no camera, whoever's camera it is driving. */
+/**
+ * The camera key: a filled 44 px square that opens the camera inside the tap.
+ * A `button`, never a link, for the gesture rule in the module header.
+ */
+function CameraKey({ camera }: { camera: CameraCapture }): ReactElement {
+  const { t } = useTranslation();
+  const { capture, triggerRef } = camera;
+
+  return (
+    <button
+      ref={triggerRef}
+      type="button"
+      onClick={capture}
+      aria-label={t('launcher.photo')}
+      className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground shadow-sm shadow-primary/30 transition-colors hover:bg-primary/90 motion-safe:active:scale-95"
+    >
+      <Camera className="size-5" aria-hidden="true" />
+    </button>
+  );
+}
+
+/**
+ * The strip itself. It draws type and speak, and the camera key when it is
+ * handed the camera to drive; it owns no camera of its own.
+ */
 function ComposerStrip({
   describeTo,
   className,
   label,
-  variant = 'standalone',
   camera,
   children,
 }: IntakeComposerBaseProps & {
-  camera: CameraCapture;
+  /** The camera the key drives. Left out, the strip draws no camera key. */
+  camera?: CameraCapture;
   /** The capture input, rendered only by the caller that owns the camera. */
   children?: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
-  const { capture, triggerRef } = camera;
 
   return (
     <div className={cn('w-full', className)}>
@@ -233,18 +235,7 @@ function ComposerStrip({
         >
           <Mic className="size-5" aria-hidden="true" />
         </Link>
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={capture}
-          aria-label={t('launcher.photo')}
-          className={cn(
-            'flex size-11 shrink-0 items-center justify-center transition-colors motion-safe:active:scale-95',
-            CAMERA_KEY_CLASS[variant],
-          )}
-        >
-          <Camera className="size-5" aria-hidden="true" />
-        </button>
+        {camera !== undefined && <CameraKey camera={camera} />}
       </div>
       {children}
     </div>

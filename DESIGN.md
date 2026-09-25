@@ -366,13 +366,15 @@ Pending state (see §7) is built into `SubmitButton`.
 **The teal budget, counted per screen (M243 spec 05b).** "Use the accent sparingly" has never
 stopped a single teal icon from being added, because no one addition is the one that breaks the
 page. `TEAL_BUDGET_CEILING` in `tests/design-contract.ts` freezes the number each screen measured
-on the build that shipped: `/settings` 2, `/trends` 4, `/add` 5, `/diary` 9, `/dashboard` 12. A
-number counts one element inside `main` whose own text colour, background colour or drawn border
-resolves to `--primary` at any alpha above zero, and `tests/e2e/lcc-lineage-teal-budget.spec.ts`
-does the counting with an injection control that proves one more element breaks the ceiling. Every
-screen pays two before it draws anything of its own, the header wordmark and the raised launcher,
-and `/settings` is exactly those two. The next feature that wants the brand colour takes it away
-from something else, or moves a line in that file on purpose.
+on the build that shipped: `/settings` 4, `/trends` 6, `/add/search` 4, `/diary` 8, `/dashboard`
+14. A number counts one element inside `main` whose own text colour, background colour or drawn
+border resolves to `--primary` at any alpha above zero, and
+`tests/e2e/lcc-lineage-teal-budget.spec.ts` does the counting with an injection control that proves
+one more element breaks the ceiling. Every screen pays two before it draws anything of its own, the
+header wordmark and the raised launcher. `/settings` was exactly those two until M259 put Settings
+in the More sheet, which lights the More tab there as it does on every page the sheet holds. The
+next feature that wants the brand colour takes it away from something else, or moves a line in
+that file on purpose.
 
 **Rows.** Three named surfaces in `app/components/list-row.ts`, because four lists used to draw
 the same idea three ways:
@@ -435,13 +437,29 @@ hamburger, and a long press on the plus does nothing a tap does not.
 
 **The More sheet** rises from the bottom and holds one square tile per page the bar does not carry:
 Overview, Insights, Pantry, Fasting, Nutrients and Goals. They run in the catalog's order reversed,
-filled from the top left, so Overview, the most used, sits bottom right under the thumb. The page
-on screen is the tile marked with `aria-current` and the primary tint. There is no Settings, Plan
-or Administration in it: on a phone those three live in the avatar menu. The brand mark in the
-header is a logo and opens nothing, so More is the one door to these pages, and focus goes back to
-it on close. `tests/e2e/menu-is-found.spec.ts` checks the bar labels and the tile labels in six
-languages at 360 and 390 px, that neither sheet moves the page, and the circle's centre;
-`tests/e2e/three-tab-bar.spec.ts` walks the bar.
+filled from the top left, so Overview, the most used, sits bottom right under the thumb. Above the
+tiles, far from the thumb, is one full-width Settings row (M259): square cornered and bordered like
+a tile, icon, label, and a chevron at the right end. It is a row and not a seventh tile, because
+seven tiles in three columns leave two blank cells. The page on screen is the tile or row marked
+with `aria-current` and the primary tint, and More is lit on those pages, the settings hub
+included. Plan and Administration are not in it: on a phone they live in the avatar menu, which
+also keeps its Settings row.
+
+**Two doors, one sheet.** The bar's More tab and the brand mark at the top left of the header open
+the same sheet, one instance held by `MoreSheetProvider` in `more-sheet.tsx`, and it rises from the
+bottom whichever door was tapped. Each door is a button that announces the dialog
+(`aria-haspopup`, `aria-expanded`, `aria-controls` while open), and focus goes back to the door
+that opened it on close. The mark's picture stays a 36 px square; its button pads it to a 44 px
+target and gives the room back with a negative margin, so the header title and wordmark do not
+move. `tests/e2e/menu-is-found.spec.ts` checks the bar labels, the tile labels and the Settings row
+in six languages at 360 and 390 px, that no sheet moves the page from any door, and the circle's
+centre; `tests/e2e/three-tab-bar.spec.ts` walks the bar, and `tests/e2e/mark-opens-more.spec.ts`
+walks the mark.
+
+**The add sheet leads with the photo** (M259). Its first door is a full-width button filled in the
+brand like the raised plus, 64 px tall, a camera glyph and "Plate photo" in words: the one camera
+in the sheet. The search row follows, then the composer strip in its words-only form, type and
+speak. Everywhere else the strip keeps its filled camera key.
 
 **Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
 buttons, switches, date-picker cells, filter chips, settings rows, footer links, a sheet's close

@@ -169,7 +169,8 @@ export const LIST_ROW_PADDING_PX = 12;
  * double counting, and the injection control that proves one more element breaks the ceiling.
  *
  * EVERY SCREEN PAYS TWO before it draws anything of its own: the wordmark in the header, and the
- * raised launcher in the bottom bar. `/settings` is exactly those two, which is the floor.
+ * raised launcher in the bottom bar. `/settings` was exactly those two, the floor, until M259 put
+ * a Settings row in the More sheet and so lit the More tab on the hub.
  *
  * A LINK WITH A TRAILING ICON COSTS TWO, because it paints two teal marks. That is not an
  * accident of the reader, it is what a person sees, and it is why the dashboard's two hand-off
@@ -179,7 +180,7 @@ export const LIST_ROW_PADDING_PX = 12;
  *
  * | Screen       | Ceiling | What spends it                                                        |
  * | ------------ | ------- | --------------------------------------------------------------------- |
- * | `/settings`  |       2 | the wordmark, the launcher                                              |
+ * | `/settings`  |       4 | the wordmark, the launcher, and the bar's lit More tab (icon and label). It was 2 until M259: the More sheet holds a Settings row now, and More is lit on the pages it holds, as on `/trends` |
  * | `/trends`    |       6 | the two, the active tab, "Log weight", and the bar's lit More tab (icon and label). Since M258 More is lit on the pages it holds; it took the place of the Insights bar tab, which spent the same two |
  * | `/add/search`|       4 | the two, the "Set up AI" link, and the plus's label, lit on the add screens. It was 5 while the bar had a flat Add tab (icon and label); the plus's circle is already one of the two |
  * | `/diary`     |       8 | the two, the active tab (two), the camera key, two links, the habit day's dot. It was 9 until the lead figure (layout D, 2026-09-23) dropped the budget row's status dot |
@@ -196,7 +197,7 @@ export const TEAL_BUDGET_CEILING = {
   '/diary': 8,
   '/dashboard': 14,
   '/trends': 6,
-  '/settings': 2,
+  '/settings': 4,
   '/add/search': 4,
 } as const;
 

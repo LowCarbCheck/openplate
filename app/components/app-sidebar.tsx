@@ -59,6 +59,10 @@ export type NavigationItem = {
    *   and Scan, the two ways food comes in.
    * - absent: a tile in the More sheet, which is every other page.
    *
+   * A `footer` entry (Settings) has no `phone` field: on a phone it is a
+   * full-width row at the top of the More sheet since M259, above the tiles,
+   * and a row in the avatar menu.
+   *
    * One field on the entry, not a second list in `bottom-nav.tsx`, so the bar,
    * the More sheet and the sidebar cannot drift into two labels or two
    * addresses for one destination, and a page cannot be in the bar and in the
@@ -81,8 +85,10 @@ export type NavigationItem = {
  *   sheet (the two `'plus'` entries, Add and Scan, are what that sheet
  *   reaches), and More.
  * - **More sheet** (`more-sheet.tsx`, phone): every other `primary` entry, as
- *   tiles. Settings, Plan and Administration are not in it; on a phone they
- *   live in the avatar menu (`avatar-menu.tsx`).
+ *   tiles, under one full-width row per `footer` entry, which is Settings
+ *   (M259). Two doors open it, the bar's More tab and the header's brand mark.
+ *   Plan and Administration are not in it; on a phone they live in the avatar
+ *   menu (`avatar-menu.tsx`), which carries Settings too.
  * - **Sidebar** (desktop): the complete map, every `primary` entry, then a
  *   separated `footer` group. Unchanged by M258.
  *
@@ -190,7 +196,9 @@ export const barTabNavigationItems: NavigationItem[] = personalNavigationItems.f
 
 /**
  * The More sheet's tiles: every `primary` destination the bar does not carry,
- * neither as a tab nor behind the plus.
+ * neither as a tab nor behind the plus. The sheet draws the `footer` group,
+ * Settings, as a row above them (M259); that row is not a tile, so it is not
+ * in this list.
  *
  * REVERSED, so the most used page is nearest the thumb (the operator's
  * choice, "most used near thumb"). The sheet fills its grid from the top left,
@@ -325,7 +333,8 @@ export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
       </SidebarContent>
       {/* Settings is configuration, not a destination you visit daily, so it
           sits below a rule at the bottom of the rail rather than as a sixth
-          equal row. On a phone it is in the avatar menu instead. */}
+          equal row. On a phone it is in the avatar menu, and a row at the top
+          of the More sheet (M259). */}
       <SidebarFooter>
         {session.account?.role === 'admin' && (
           <>

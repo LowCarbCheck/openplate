@@ -10,17 +10,23 @@
  * `three-tab-bar.spec.ts` walks what the new bar does; this file holds the two things a wrong
  * word or a wrong box would break quietly.
  *
+ * M259 (operator, 2026-09-25) gave the More sheet a second door, the brand mark at the top left, and
+ * a Settings row above its tiles. `mark-opens-more.spec.ts` walks the door; this file adds the row
+ * to the fit check and the door to the no-shift check.
+ *
  * WHAT THIS PROVES:
  *
  * - At 360 and 390 px, in all six languages, each of the three bar labels sits on one line inside
  *   its own slot with nothing cut, and the three slots fit the viewport. The words read are that
  *   language's catalog, in bar order, so a page left in English cannot pass for a fit.
- * - At the same widths and in the same languages, each of the six More tiles holds its label on one
- *   line with nothing cut, sits inside the viewport, and is at least 44 by 44 px.
- * - Both readers are shown able to say no: an overlong label is injected into a bar slot and into a
- *   tile, and each must be reported, and only that one.
- * - Opening and closing the add sheet and the More sheet moves nothing on the page: a
- *   `layout-shift` total of 0, and no top inside `main` changes.
+ * - At the same widths and in the same languages, each of the six More tiles, and the Settings row
+ *   above them, holds its label on one line with nothing cut, sits inside the viewport, and is at
+ *   least 44 by 44 px.
+ * - The readers are shown able to say no: an overlong label is injected into a bar slot, into a
+ *   tile and into the Settings row, and each must be reported, and only that one.
+ * - Opening and closing the add sheet, the More sheet from the More tab, and the More sheet from
+ *   the brand mark moves nothing on the page: a `layout-shift` total of 0, no top inside `main`
+ *   changes, and the header's title and wordmark keep their rects.
  * - The raised plus's centre is the viewport's centre, a tap on that centre reaches the plus, and no
  *   other control in the bar overlaps the circle. Every control in the bar is at least 44 by 44 px.
  *
@@ -32,7 +38,9 @@
  *
  * RED ON THE OLD BAR. Against the 0.46.0 build the fit test counts five slots where three are
  * expected and reads "Insights" where the plus's label should be, the tile test finds no button
- * named `nav.more` to open, and the geometry test finds the circle inside a slot of five.
+ * named `nav.more` to open, and the geometry test finds the circle inside a slot of five. Against
+ * the 0.47.0 build the tile test found no Settings row in the sheet, the control found no row to
+ * lengthen, and the shift test found no button in the header to open the sheet from.
  *
  * WIDTHS ARE READ FROM `document.documentElement.clientWidth`, never from `innerWidth`: the phone
  * project runs with `isMobile`, and a mobile Chromium zooms out on an overflowing page, which would
@@ -77,6 +85,12 @@ const EDGE_TOLERANCE_PX = 0.5;
 
 /** A More tile, by the slot the sheet gives it. */
 const MORE_TILE = '[data-slot="more-tile"]';
+
+/** A full-width row above the tiles: the configuration rows, which is Settings (M259). */
+const MORE_ROW = '[data-slot="more-row"]';
+
+/** The brand mark, a button in the app header since M259, found by the picture it wraps. */
+const HEADER_MARK = 'header.sticky button:has(img[src^="/icons/icon-192"])';
 
 /** A rect, reduced to the numbers this spec compares. */
 interface Box {
@@ -189,6 +203,28 @@ function fitOffences(reading: Reading, what: string): string[] {
   return offences;
 }
 
+/**
+ * The header's title and wordmark rects, which a door in the header could push: the header is
+ * sticky, so `readTops` leaves it out.
+ */
+async function readHeaderText(page: Page): Promise<Box[]> {
+  return page.evaluate(() =>
+    ['header.sticky h1', 'header.sticky [data-slot="header-brand-kicker"]'].map((selector) => {
+      const element = document.querySelector(selector);
+      if (element === null) throw new Error(`the header has no ${selector}`);
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      };
+    }),
+  );
+}
+
 /** The bar's More tab, in one language. */
 function moreTab(page: Page, copy: Copy): Locator {
   return page.locator(BOTTOM_BAR).getByRole('button', { name: copy.nav.more, exact: true });
@@ -269,14 +305,23 @@ test('every More tile holds its label on one line at 360 and 390 px, in all six 
         copy.nav.dashboard,
       ]);
       expect(fitOffences(reading, 'tile'), `${locale} at ${width}: a tile label does not fit`).toEqual([]);
-      for (const entry of reading.boxes) {
+
+      // THE SETTINGS ROW ABOVE THEM, read by the same reader: one row, in this language.
+      const rows = await readLabelledBoxes(page, MORE_ROW);
+      expect(
+        rows.boxes.map((entry) => entry.label),
+        `${locale} at ${width}: the row above the tiles`,
+      ).toEqual([copy.nav.settings]);
+      expect(fitOffences(rows, 'row'), `${locale} at ${width}: the Settings label does not fit`).toEqual([]);
+
+      for (const entry of [...reading.boxes, ...rows.boxes]) {
         expect(
           Math.round(entry.box.width),
-          `${locale} at ${width}: tile "${entry.label}" is ${entry.box.width} px wide`,
+          `${locale} at ${width}: "${entry.label}" is ${entry.box.width} px wide`,
         ).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
         expect(
           Math.round(entry.box.height),
-          `${locale} at ${width}: tile "${entry.label}" is ${entry.box.height} px tall`,
+          `${locale} at ${width}: "${entry.label}" is ${entry.box.height} px tall`,
         ).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
       }
 
@@ -325,9 +370,23 @@ test('CONTROL: both fit readers report an overlong label, and only that one', as
     tileOffences.every((offence) => offence.startsWith('tile 1 ')),
     `only the lengthened tile may be reported:\n${tileOffences.join('\n')}`,
   ).toBe(true);
+
+  // And for the Settings row, "Einstellungen" written out six times: the row reader must report it.
+  expect(fitOffences(await readLabelledBoxes(page, MORE_ROW), 'row'), 'the shipped German row must fit').toEqual([]);
+  await page.evaluate((selector) => {
+    const label = [...(document.querySelector(selector)?.querySelectorAll('span') ?? [])].at(-1);
+    if (label === undefined) throw new Error('the Settings row has no label to lengthen');
+    label.textContent = (label.textContent ?? '').repeat(6);
+  }, MORE_ROW);
+  const rowOffences = fitOffences(await readLabelledBoxes(page, MORE_ROW), 'row');
+  expect(rowOffences.length, 'the row reader must report the overlong label').toBeGreaterThan(0);
+  expect(
+    rowOffences.every((offence) => offence.startsWith('row 1 ')),
+    `only the lengthened row may be reported:\n${rowOffences.join('\n')}`,
+  ).toBe(true);
 });
 
-test('opening and closing the add sheet and the More sheet moves nothing', async ({ page }) => {
+test('opening and closing the add sheet, and the More sheet from either door, moves nothing', async ({ page }) => {
   await installShiftObserver(page);
   await completeOnboarding(page);
   await page.goto('/diary');
@@ -337,6 +396,7 @@ test('opening and closing the add sheet and the More sheet moves nothing', async
   const topsBefore = await readTops(page);
   const shiftsBefore = (await readShiftEntries(page)).length;
   const barBefore = await page.locator(BOTTOM_BAR).boundingBox();
+  const headerTextBefore = await readHeaderText(page);
 
   // The add sheet, by the plus.
   await page.locator(BOTTOM_BAR).getByRole('button', { name: EN.nav.add, exact: true }).click();
@@ -353,12 +413,21 @@ test('opening and closing the add sheet and the More sheet moves nothing', async
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await settleAnimations(page);
 
+  // The same sheet, by the brand mark (M259).
+  await page.locator(HEADER_MARK).click();
+  await expect(page.getByRole('dialog', { name: EN.nav.more, exact: true })).toBeVisible();
+  await settleAnimations(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await settleAnimations(page);
+
   expect(movedBetween(topsBefore, await readTops(page)), 'opening and closing a sheet moved the page').toEqual([]);
   expect(
     shiftScoreAfter(await readShiftEntries(page), shiftsBefore),
     `layout-shift while the sheets opened and closed: ${JSON.stringify((await readShiftEntries(page)).slice(shiftsBefore))}`,
   ).toBe(0);
   expect(await page.locator(BOTTOM_BAR).boundingBox(), 'the bar itself must not move or resize').toEqual(barBefore);
+  expect(await readHeaderText(page), 'the header title and wordmark must not move').toEqual(headerTextBefore);
 });
 
 test('the raised plus stays the exact centre, and no other control covers it', async ({ page }) => {

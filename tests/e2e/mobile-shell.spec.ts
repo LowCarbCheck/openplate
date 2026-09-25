@@ -8,8 +8,10 @@
  * right question for a link, a row or a tab. The header's brand mark used to
  * be the one exception, a 36px drawing that opened the navigation drawer
  * through an `after:` square, and a finger reader built on `elementFromPoint`
- * measured it. The mark is a logo since M258 and opens nothing, so it is no
- * longer a target and that reader went with it.
+ * measured it. It was a logo that opened nothing in 0.47.0 (M258). Since M259
+ * it opens the More sheet again, and its button draws a 44px box of its own
+ * (4px of padding, given back by a negative margin), so the box reader below
+ * measures it like every other control.
  *
  * WHAT WAS MEASURED BEFORE THE FIX (audit, /tmp/op-mobile-shots):
  * - FRONT-15: at scroll 0 on /diary the date bar's top was 80 and the header's
@@ -175,6 +177,7 @@ test('every control in the app shell is a 44px target at 360px, in en, de and tr
     const bar = page.locator('[data-slot="bottom-nav-shell"] nav');
     const drawn = {
       'the device menu': page.locator('header button[aria-haspopup="menu"]'),
+      'the brand mark': page.locator('header.sticky button[data-slot="header-mark"]'),
       'the Back link': page.locator('[data-slot="back-link"]'),
       'the plus': bar.getByRole('button', { name: copy.nav.add, exact: true }),
       'the More tab': bar.getByRole('button', { name: copy.nav.more, exact: true }),

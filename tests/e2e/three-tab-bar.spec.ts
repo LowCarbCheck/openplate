@@ -1,13 +1,21 @@
 /**
- * The phone bar has three slots and one door (M258, operator decision 2026-09-24).
+ * The phone bar has three slots (M258, operator decision 2026-09-24), and M259's three corrections.
  *
  * THE REPORT. After a day with the 0.46.0 bar the operator wrote: "too many items in the bottom and
  * the way it opens from 2 spots is weird + settings being closest to the thumb is also weird". Five
  * slots (Diary, Insights, Scan, Add, Menu) and two doors into one drawer (the Menu tab and the brand
  * mark) became, in an interactive playground, this: Diary, a raised plus that opens the add sheet on
  * a TAP, and More, which opens a bottom sheet of tiles for every page the bar does not carry. The
- * most used page sits nearest the thumb. Settings, Plan and Administration live in the avatar menu
- * only. The brand mark is a logo and opens nothing.
+ * most used page sits nearest the thumb. Settings, Plan and Administration lived in the avatar menu
+ * only, and the brand mark opened nothing.
+ *
+ * THE SECOND REPORT (operator, 2026-09-25, a day with 0.47.0 on a phone) corrected three of those:
+ * "pressing on the top left icon should open the same menu that the bottom right button opens",
+ * "also it should show the settings page that's reachable via the profile menu", and of the add
+ * sheet, "the photo option needs to be much more prominent and the first thing you want to click
+ * on. it's currently almost hidden". So the mark opens the More sheet (`mark-opens-more.spec.ts`
+ * owns that door), the sheet carries a Settings row above its tiles, and the add sheet leads with a
+ * large filled photo door in place of the outlined camera key at the end of its strip.
  *
  * WHAT THIS PROVES:
  *
@@ -15,19 +23,23 @@
  *   `nav.more`, in that order.
  * - A tap on the plus opens the add sheet (a long press is no longer needed), and focus comes back
  *   to the plus when it closes.
- * - The add sheet's first door, above the type, speak and photo strip, is the food search. It
- *   lands on `/add/search` with the sheet closed, and it carries the `?date=` of a diary day that
- *   is not today. With the Add tab gone this is the two-tap way to a search the playground listed
- *   first; without it a search took three taps.
+ * - The add sheet's first door is the photo (M259): the first control the sheet focuses, above the
+ *   search row and as wide as it, at least 64 px tall and taller than every other door, filled in
+ *   the same colour as the raised plus, and the only camera in the sheet. The strip under it types
+ *   and speaks, and has no camera key of its own any more.
+ * - The door under it, above the type and speak strip, is the food search. It lands on
+ *   `/add/search` with the sheet closed, and it carries the `?date=` of a diary day that is not
+ *   today. With the Add tab gone this is the two-tap way to a search the playground listed first;
+ *   without it a search took three taps.
  * - A tap on More opens ONE dialog named `nav.more` that rests at the bottom of the screen: its top
  *   edge below the middle of the viewport, its bottom edge on the viewport's bottom edge.
  * - That sheet lists the six pages the bar does not carry, drawer order reversed, so Overview is the
- *   last tile and sits bottom right, and it lists no Settings, Plan or Administration. Every tile is
- *   at least 44 by 44 px. The page on screen is the one tile marked current.
- * - A tile navigates and the sheet closes behind it. Escape closes it and focus returns to More.
- * - The avatar menu carries Settings on an open instance, and it leads to `/settings`.
- * - The brand mark in the header is not a door: nothing around it is a button or a link, nothing in
- *   the header announces a dialog, and a tap on it opens nothing.
+ *   last tile and sits bottom right. Above the tiles, far from the thumb, is one full-width row to
+ *   Settings (M259), and there is no Plan or Administration. Every tile is at least 44 by 44 px.
+ *   The page on screen is the one tile or row marked current, and More is lit on `/settings`.
+ * - A tile or the Settings row navigates and the sheet closes behind it. Escape closes it and focus
+ *   returns to More.
+ * - The avatar menu still carries Settings on an open instance, and it leads to `/settings`.
  *
  * WHAT IT DOES NOT PROVE:
  *
@@ -36,11 +48,13 @@
  *   `tests/unit/avatar-menu-door.test.ts` renders the administrator row.
  * - Anything at `md` and wider, where the sidebar is unchanged and the bar is not drawn.
  *
- * RED ON THE OLD BAR. Run against the 0.46.0 build (origin/main 4a8d5ba) before the change, this
- * file failed on every test that reads the bar: five slots where three are expected, a tap on the
- * Scan circle that opened a camera instead of the sheet, no button named "More", and a header mark
- * that was a button announcing a dialog. Only the avatar menu's Settings row passed, because that
- * row already existed; it is here as the door the drawer's Settings row became.
+ * RED ON THE OLD BAR. Run against the 0.46.0 build (origin/main 4a8d5ba) before M258, this file
+ * failed on every test that reads the bar: five slots where three are expected, a tap on the Scan
+ * circle that opened a camera instead of the sheet, no button named "More", and a header mark that
+ * was a button announcing a dialog. Only the avatar menu's Settings row passed, because that row
+ * already existed. Run against the 0.47.0 build (openplate 2dc8719) before M259, the photo test
+ * found no photo door in the add sheet, the plus test found no "Plate photo" button, and both
+ * Settings tests found no way to `/settings` in the More sheet.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
@@ -51,6 +65,19 @@ import { settleAnimations } from './layout-shift';
 
 /** The phone touch target floor this repo holds itself to. */
 const TOUCH_TARGET_PX = 44;
+
+/** The least height the add sheet's photo door may have: it outranks every other door by size. */
+const PHOTO_DOOR_MIN_PX = 64;
+
+/** A More tile, by the slot the sheet gives it. */
+const MORE_TILE = '[data-slot="more-tile"]';
+
+/**
+ * A control that shows a camera, by the glyph it draws: the photo door's, and the strip's own
+ * icon-only key before M259. A glyph rather than a name, because the key carried only an
+ * `aria-label` and the door carries visible words, and one reader has to see both.
+ */
+const CAMERA_CONTROL = ':is(a, button):has(svg.lucide-camera)';
 
 /** Half a CSS pixel: a flex row splits a phone width into boxes that end on fractional pixels. */
 const EDGE_TOLERANCE_PX = 0.5;
@@ -158,14 +185,85 @@ test('a tap on the plus opens the add sheet, and focus comes back to the plus', 
   await plusButton(page).tap();
   const sheet = addSheet(page);
   await expect(sheet, 'a plain tap must open the add sheet').toBeVisible();
-  await expect(sheet.getByLabel(EN.launcher.photo, { exact: true }), "the sheet's photo key").toBeVisible();
+  await expect(
+    sheet.getByRole('button', { name: EN.launcher.platePhoto, exact: true }),
+    "the sheet's photo door",
+  ).toBeVisible();
 
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
   await expect(plusButton(page), 'focus must come back to the plus').toBeFocused();
 });
 
-test("the add sheet's first door is the food search, and it closes the sheet behind it", async ({ page }) => {
+test('the add sheet leads with the photo: first, as wide as the search, filled, tallest, and the one camera', async ({
+  page,
+}) => {
+  await page.goto('/diary');
+
+  // THE CONTROL for the camera count below, read first, while the sheet is shut: the same reader
+  // pointed at the diary's own strip must see its icon-only camera key. The sheet's strip drew
+  // exactly that key until M259, so a strip that grew it back would be counted.
+  const stripKey = page.locator('main').getByRole('button', { name: EN.launcher.photo, exact: true }).first();
+  await expect(stripKey, "CONTROL: the diary's own strip draws its camera key").toBeVisible();
+  expect(
+    await stripKey.evaluate((key, selector) => key.parentElement?.querySelectorAll(selector).length ?? 0, CAMERA_CONTROL),
+    "CONTROL: the camera reader must count the strip's icon-only key",
+  ).toBe(1);
+
+  await plusButton(page).tap();
+  const sheet = addSheet(page);
+  const photo = sheet.getByRole('button', { name: EN.launcher.platePhoto, exact: true });
+  await expect(photo, 'the sheet must offer the photo door').toBeVisible();
+  // FIRST FOR A KEYBOARD AND A SCREEN READER TOO: the sheet focuses its first control on opening.
+  await expect(photo, 'the photo door must be the first control in the sheet').toBeFocused();
+  await settleAnimations(page);
+
+  // Serialised into the page: its helper cannot live outside the callback.
+  // oxlint-disable unicorn/consistent-function-scoping
+  const read = await sheet.evaluate((content, selector) => {
+    const box = (element: Element, name = '') => {
+      const rect = element.getBoundingClientRect();
+      return { name, top: rect.top, width: rect.width, height: rect.height };
+    };
+    // The primitive's close key is always the content's last child; every other control is a door.
+    const doors = [...content.querySelectorAll('a[href], button')].filter(
+      (control) => control !== content.lastElementChild,
+    );
+    const photoDoor = content.querySelector('[data-slot="add-sheet-photo"]');
+    const search = content.querySelector('[data-slot="add-sheet-search"]');
+    const circle = document.querySelector('[data-slot="bottom-nav-add"] span.rounded-full');
+    if (photoDoor === null || search === null || circle === null) {
+      throw new Error('the sheet has no photo door or search row, or the bar no raised circle');
+    }
+    return {
+      firstDoor: doors[0] === photoDoor,
+      photo: box(photoDoor),
+      search: box(search),
+      others: doors
+        .filter((door) => door !== photoDoor)
+        .map((door) => box(door, (door.getAttribute('aria-label') ?? door.textContent ?? '').trim())),
+      photoFill: getComputedStyle(photoDoor).backgroundColor,
+      circleFill: getComputedStyle(circle).backgroundColor,
+      cameras: content.querySelectorAll(selector).length,
+    };
+  }, CAMERA_CONTROL);
+  // oxlint-enable unicorn/consistent-function-scoping
+
+  expect(read.firstDoor, 'the photo door must come first in the sheet').toBe(true);
+  expect(read.photo.top, 'the photo door must sit above the search row').toBeLessThan(read.search.top);
+  expect(Math.abs(read.photo.width - read.search.width), 'the photo door must be as wide as the search row').toBeLessThanOrEqual(1);
+  expect(read.photo.height, `the photo door is ${read.photo.height} px tall`).toBeGreaterThanOrEqual(PHOTO_DOOR_MIN_PX);
+  expect(read.others.length, 'the sheet must carry its other doors to compare against').toBeGreaterThanOrEqual(3);
+  for (const other of read.others) {
+    expect(other.height, `"${other.name}" must be shorter than the photo door`).toBeLessThan(read.photo.height);
+  }
+  // THE BRAND FILL, read off the raised plus rather than typed here as a colour, and not nothing.
+  expect(read.circleFill, 'the raised circle must be filled').not.toBe('rgba(0, 0, 0, 0)');
+  expect(read.photoFill, 'the photo door must wear the raised plus fill').toBe(read.circleFill);
+  expect(read.cameras, 'one camera in the sheet: the photo door, and no key in the strip beside it').toBe(1);
+});
+
+test('the search door comes after the photo, and it closes the sheet behind it', async ({ page }) => {
   await page.goto('/diary');
 
   await plusButton(page).tap();
@@ -173,7 +271,7 @@ test("the add sheet's first door is the food search, and it closes the sheet beh
   const search = sheet.getByRole('link', { name: EN.launcher.searchFoods, exact: true });
   await expect(search, 'the sheet must offer the food search').toBeVisible();
 
-  // FIRST, above the type, speak and photo strip, as the playground listed it.
+  // Above the type and speak strip, as the playground listed it: the photo door is the one above it.
   const strip = sheet.getByRole('link', { name: EN.launcher.type, exact: true });
   const [searchBox, stripBox] = await Promise.all([search.boundingBox(), strip.boundingBox()]);
   if (searchBox === null || stripBox === null) throw new Error('the search door or the strip has no box');
@@ -203,7 +301,9 @@ test('the search door keeps the day the diary was showing', async ({ page }) => 
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test('More opens a bottom sheet of six tiles, with no settings in it', async ({ page }) => {
+test('More opens a bottom sheet of six tiles under a Settings row, with no plan or administration', async ({
+  page,
+}) => {
   await page.goto('/diary');
 
   await moreTab(page).tap();
@@ -220,17 +320,25 @@ test('More opens a bottom sheet of six tiles, with no settings in it', async ({ 
     EDGE_TOLERANCE_PX,
   );
 
-  const tiles = sheet.getByRole('link');
+  const tiles = sheet.locator(MORE_TILE);
   await expect(tiles, 'six tiles, one per page the bar does not carry').toHaveCount(MORE_TILE_LABELS.length);
   const names = await tiles.evaluateAll((links) => links.map((link) => (link.textContent ?? '').trim()));
   expect(names, 'the tiles, top left to bottom right').toEqual([...MORE_TILE_LABELS]);
+  // Seven ways out in all: the six tiles and the Settings row. Nothing else is a link in here.
+  await expect(sheet.getByRole('link'), 'the tiles and the Settings row, and nothing else').toHaveCount(
+    MORE_TILE_LABELS.length + 1,
+  );
 
-  // NO CONFIGURATION IN HERE. By name and by address, so a renamed row cannot slip through either.
-  for (const label of [EN.nav.settings, EN.nav.plan, EN.nav.admin]) {
-    await expect(sheet.getByRole('link', { name: label, exact: true }), `${label} must not be a tile`).toHaveCount(0);
+  // SETTINGS IS IN HERE SINCE M259, the rest of the configuration is not. By name and by address,
+  // so a renamed row cannot slip through either.
+  await expect(sheet.getByRole('link', { name: EN.nav.settings, exact: true }), 'Settings is in the sheet').toHaveCount(1);
+  for (const label of [EN.nav.plan, EN.nav.admin]) {
+    await expect(sheet.getByRole('link', { name: label, exact: true }), `${label} must not be in the sheet`).toHaveCount(
+      0,
+    );
   }
-  for (const href of ['/settings', '/settings/plan', '/admin']) {
-    await expect(sheet.locator(`a[href="${href}"]`), `${href} must not be a tile`).toHaveCount(0);
+  for (const href of ['/settings/plan', '/admin']) {
+    await expect(sheet.locator(`a[href="${href}"]`), `${href} must not be in the sheet`).toHaveCount(0);
   }
 
   // Overview, the first page of the old drawer, is the tile nearest the thumb: bottom right.
@@ -286,6 +394,59 @@ test('a More tile navigates, closes the sheet, and is marked on its own page', a
   await expect(current).toHaveText(EN.nav.trends);
 });
 
+test('the Settings row sits above the tiles, full width, and leads to the settings hub', async ({ page }) => {
+  await page.goto('/diary');
+  // THE CONTROL for the lit line further down: on a page the bar carries, More is not lit.
+  await expect(moreTab(page), 'More is dark on the diary').not.toHaveAttribute('data-active', 'true');
+
+  await moreTab(page).tap();
+  const sheet = moreSheet(page);
+  await expect(sheet).toBeVisible();
+  await settleAnimations(page);
+
+  const settings = sheet.locator('a[href="/settings"]');
+  await expect(settings, 'exactly one way to /settings in the sheet').toHaveCount(1);
+  await expect(settings, 'named by the catalog, as the avatar menu names it').toHaveAccessibleName(EN.nav.settings);
+
+  // ABOVE THE GRID, FAR FROM THE THUMB: the operator found Settings "closest to the thumb" odd.
+  const row = await settings.evaluate((link) => {
+    const rect = link.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height };
+  });
+  const grid = await sheet.locator(MORE_TILE).evaluateAll((links) =>
+    links.map((link) => {
+      const rect = link.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top };
+    }),
+  );
+  expect(grid.length, 'the grid must be drawn to compare against').toBe(MORE_TILE_LABELS.length);
+  for (const tile of grid) {
+    expect(row.top, 'the Settings row must start above every tile').toBeLessThan(tile.top);
+    expect(row.bottom, 'the Settings row must end above every tile').toBeLessThanOrEqual(tile.top);
+  }
+  // As wide as the grid under it: one row, not a seventh tile.
+  expect(
+    Math.abs(row.left - Math.min(...grid.map((tile) => tile.left))),
+    'the row starts where the grid starts',
+  ).toBeLessThanOrEqual(EDGE_TOLERANCE_PX);
+  expect(
+    Math.abs(row.right - Math.max(...grid.map((tile) => tile.right))),
+    'the row ends where the grid ends',
+  ).toBeLessThanOrEqual(EDGE_TOLERANCE_PX);
+  expect(Math.round(row.height), `the Settings row is ${row.height} px tall`).toBeGreaterThanOrEqual(TOUCH_TARGET_PX);
+
+  await settings.tap();
+  await page.waitForURL((url) => url.pathname === '/settings');
+  await expect(page.getByRole('dialog'), 'the sheet must close behind the row').toHaveCount(0);
+
+  // ON THE HUB, More is lit and the row is the current page.
+  await expect(moreTab(page), 'More is lit on the settings hub').toHaveAttribute('data-active', 'true');
+  await moreTab(page).tap();
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('[aria-current="page"]'), 'one current page in the sheet').toHaveCount(1);
+  await expect(settings, 'and it is the Settings row').toHaveAttribute('aria-current', 'page');
+});
+
 test('the avatar menu carries Settings, and it leads to the settings hub', async ({ page }) => {
   await page.goto('/diary');
 
@@ -297,24 +458,4 @@ test('the avatar menu carries Settings, and it leads to the settings hub', async
 
   await settings.click();
   await page.waitForURL((url) => url.pathname === '/settings');
-});
-
-test('the brand mark in the header is a logo, not a door', async ({ page }) => {
-  await page.goto('/diary');
-
-  const mark = page.locator('header.sticky img[src^="/icons/icon-192"]').first();
-  await expect(mark, 'the mark is still drawn on a phone').toBeVisible();
-
-  const wrapper = await mark.evaluate((element) => {
-    const control = element.closest('button, a, [role="button"]');
-    return control === null ? null : control.outerHTML.slice(0, 160);
-  });
-  expect(wrapper, 'nothing around the mark may be a button or a link').toBeNull();
-  await expect(
-    page.locator('header.sticky [aria-haspopup="dialog"]'),
-    'nothing in the header announces a dialog',
-  ).toHaveCount(0);
-
-  await mark.tap();
-  await expect(page.getByRole('dialog'), 'a tap on the mark opens nothing').toHaveCount(0);
 });

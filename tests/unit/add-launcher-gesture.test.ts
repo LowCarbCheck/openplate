@@ -164,20 +164,22 @@ describe('the surfaces that capture', () => {
 });
 
 /**
- * THE SHEET'S PHOTO KEY IS THE BAR'S PHOTO KEY (M232/03).
+ * THE SHEET'S PHOTO DOOR IS THE BAR'S CAMERA (M232/03, M259).
  *
- * The sheet renders the composer strip now, and a strip that opened a camera
- * of its own would put a second hidden input INSIDE the sheet, where the close
- * that follows the tap unmounts the very element whose `click()` is still on
- * the gesture stack. That is the exact failure `use-camera-capture.ts`'s header
- * names, so the wiring is pinned here: one hook call in the whole file, one
- * input, and the sheet's key driving the hook's own `capture`.
+ * A door in the sheet that opened a camera of its own would put a second
+ * hidden input INSIDE the sheet, where the close that follows the tap unmounts
+ * the very element whose `click()` is still on the gesture stack. That is the
+ * exact failure `use-camera-capture.ts`'s header names, so the wiring is
+ * pinned here: one hook call in the whole file, one input, and the sheet's
+ * photo door driving the hook's own `capture`. Until M259 that door was the
+ * composer strip's key, handed this capture; it is the large "Plate photo"
+ * button that leads the sheet now, and the strip is words only.
  *
  * `add-launcher-targets.test.ts` counts the inputs in real markup. This file
  * owns the other half, which no render can see: that nothing is awaited on the
  * way from the sheet's tap to `.click()`.
  */
-describe("the sheet key opens the bar's own camera, inside the tap", () => {
+describe("the sheet's photo door opens the bar's own camera, inside the tap", () => {
   const launcher = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
 
   it('calls the hook once, so there is one capture and one input on the page', () => {
@@ -185,13 +187,15 @@ describe("the sheet key opens the bar's own camera, inside the tap", () => {
     assert.equal((launcher.match(/<input\b/g) ?? []).length, 1);
   });
 
-  it('hands the strip that same capture rather than a second one', () => {
-    // A SPREAD OF THE HOOK RESULT, so the input, and therefore the `click()`
-    // target, is the one the bar already renders. Only the trigger and the
-    // close are the sheet's own.
-    assert.match(launcher, /const sheetCapture: CameraCapture = \{\n\s*\.\.\.launcherCapture,/);
-    assert.match(launcher, /capture: capturePhotoFromSheet,/);
-    assert.match(launcher, /<IntakeComposer[^>]*capture=\{sheetCapture\}/);
+  it("drives the hook's own capture from the photo door, and hands the strip none", () => {
+    // THE HOOK'S `capture`, wrapped in the close, so the input, and therefore
+    // the `click()` target, is the one the bar already renders. Only the ref
+    // and the close are the door's own.
+    assert.match(
+      launcher,
+      /<button\s+ref=\{sheetPhotoRef\}\s+type="button"\s+onClick=\{capturePhotoFromSheet\}\s+data-slot="add-sheet-photo"/,
+    );
+    assert.doesNotMatch(launcher, /<IntakeComposer[^>]*capture=/, 'the strip drives a second camera key again');
   });
 
   it('awaits nothing between the sheet tap and the capture, and closes only after it', () => {
@@ -210,13 +214,14 @@ describe("the sheet key opens the bar's own camera, inside the tap", () => {
     assert.ok(body.indexOf('setIsSheetOpen(false)') > captureIndex);
   });
 
-  it('gives the sheet key its own trigger ref, so a dismissed camera still finds the plus', () => {
+  it('gives the photo door its own ref, so a dismissed camera still finds the plus', () => {
     // One ref cannot hold two elements. The hook's ref is on the plus, where
     // focus goes back after a dismissed camera; sharing it with the sheet's
-    // key would leave the plus with nothing to focus once the sheet had been
-    // opened once, since the key is gone with the sheet.
-    assert.match(launcher, /triggerRef: sheetPhotoRef,/);
+    // door would leave the plus with nothing to focus once the sheet had been
+    // opened once, since the door is gone with the sheet.
     assert.match(launcher, /const sheetPhotoRef = useRef<HTMLButtonElement>\(null\);/);
+    assert.equal((launcher.match(/ref=\{sheetPhotoRef\}/g) ?? []).length, 1, 'the door has its own ref');
+    assert.equal((launcher.match(/ref=\{triggerRef\}/g) ?? []).length, 1, "the hook's ref is on the plus alone");
   });
 });
 
@@ -245,7 +250,8 @@ describe('the launcher carries the day the person is looking at', () => {
   it('builds both doors it owns through the shared builder', () => {
     // TWO, not three: the sheet renders the composer strip now (M232/03), and
     // the strip derives the spoken door from the typed one. Where those two
-    // land is `add-launcher-targets.test.ts`, which renders them.
+    // land is `add-launcher-targets.test.ts`, which renders them. The photo
+    // door takes the scan target through the hook.
     assert.match(launcher, /const describeTo = buildIntakeHref\(ADD_DESCRIBE_PATH, \{ date: viewedDate \}\);/);
     assert.match(launcher, /const scanTo = buildIntakeHref\(ADD_PHOTO_PATH, \{ date: viewedDate \}\);/);
     assert.match(launcher, /useCameraCapture\(\{ scanTo \}\)/);

@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { AppSidebar } from './app-sidebar';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
+import { MoreSheetProvider, useMoreSheetDoor } from './more-sheet';
 import { FastChipSlot } from './fast-chip';
 import { CatchUpWriter } from './catch-up-writer';
 import { PulseHeartbeat } from './pulse-heartbeat';
@@ -20,23 +21,49 @@ import { Wordmark } from './wordmark';
 import * as React from 'react';
 
 /**
- * The brand mark at the top left of the phone header: a LOGO, and nothing else
- * (M258).
+ * The brand mark at the top left of the phone header, and the second door to
+ * the More sheet (M259).
  *
- * It opened the navigation drawer until 0.46.0, first as the drawer's only
- * door and then as one of two, beside the bottom bar's Menu tab. The operator
- * found the second door "weird", and nobody had found the first. The bar's
- * More tab is the one door to the pages the bar does not carry now, so this is
- * a picture: no button, no link, no popup to announce.
+ * TWO DOORS, ONE SHEET. The mark opened a side drawer until 0.46.0, and was a
+ * picture that opened nothing in 0.47.0 (M258), when the bar's More tab became
+ * the one door. After a day with that the operator wrote: "pressing on the top
+ * left icon should open the same menu that the bottom right button opens." So
+ * it opens exactly that sheet, the one instance `MoreSheetProvider` renders,
+ * which rises from the bottom whichever door was tapped. What made 0.46.0's
+ * two doors weird was a drawer that slid in from a different side for each;
+ * here the two doors cannot disagree, because there is one thing to open.
+ *
+ * A BUTTON AROUND THE SAME PICTURE. The door props (`useMoreSheetDoor`)
+ * announce the dialog and say whether it is open, and the sheet gives the
+ * focus back here when this door opened it. Its name is the sheet's own title,
+ * `nav.more`, since the picture says nothing a screen reader can read.
+ *
+ * A 44 px TARGET THAT MOVES NOTHING. The picture stays `size-9`, sized to the
+ * two-line lockup beside it so the mark optically spans BOTH the wordmark and
+ * the page title. The button pads it by 4 px on each side and takes the same
+ * 4 px back with a negative margin, so the header's flex row still lays out a
+ * 36 px box, and the title and the wordmark keep the rects they had in 0.47.0.
+ * `mark-opens-more.spec.ts` freezes those rects and reads the 44 px box.
  *
  * `md:hidden`: at `md`+ the sidebar's own `Logo()` already occupies this
- * position, and a second mark next to it would be a duplicate. Sized to the
- * two-line lockup beside it, `size-9`, so the mark optically spans BOTH the
- * wordmark and the page title, which binds them into one brand-then-page unit.
- * Decorative: the `h1` beside it names the page.
+ * position, and a second mark next to it would be a duplicate. The sheet it
+ * opens is phone-only too.
  */
 function HeaderMark() {
-  return <img src="/icons/icon-192.png?v=2" alt="" className="size-9 shrink-0 md:hidden" />;
+  const { t } = useTranslation();
+  const { doorProps } = useMoreSheetDoor();
+
+  return (
+    <button
+      type="button"
+      data-slot="header-mark"
+      aria-label={t('nav.more')}
+      {...doorProps}
+      className="-m-1 flex shrink-0 p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+    >
+      <img src="/icons/icon-192.png?v=2" alt="" className="size-9" />
+    </button>
+  );
 }
 
 /** The tags a person types into, and the only focus this layout reacts to. */
@@ -104,9 +131,17 @@ export default function AppWrapper({
     <SidebarProvider>
       <AppSidebar showsPlanEntry={showsPlanEntry} />
       <SidebarInset>
-        <InnerContent title={title} backTo={backTo} showsPlanEntry={showsPlanEntry}>
-          {children}
-        </InnerContent>
+        {/* THE MORE SHEET'S ONE INSTANCE, around both of its doors: the mark
+            in the header and the More tab in the bar (M259). It belongs to
+            neither door, so it sits above both, and never inside the bar's
+            wrapper, which is hidden while someone types on a short viewport
+            while the header stays. The sheet itself is portalled, so where
+            this sits moves no box. */}
+        <MoreSheetProvider showsPlanEntry={showsPlanEntry}>
+          <InnerContent title={title} backTo={backTo} showsPlanEntry={showsPlanEntry}>
+            {children}
+          </InnerContent>
+        </MoreSheetProvider>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -170,10 +205,11 @@ function InnerContent({
           blur to stay readable over scrolling content. */}
       <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
         <div className="flex min-w-0 items-center gap-2.5 px-4 w-full">
-          {/* Desktop only: below `md` the bottom bar's More tab is the one door
-              to the pages the bar does not carry, and a hamburger here would be
-              a second. Only the desktop sidebar (visible at `md`+, see
-              `Sidebar`'s own `hidden md:block`) needs this toggle. */}
+          {/* Desktop only: below `md` the mark beside it and the bottom bar's
+              More tab are the doors to the pages the bar does not carry, and a
+              hamburger here would be a third. Only the desktop sidebar (visible
+              at `md`+, see `Sidebar`'s own `hidden md:block`) needs this
+              toggle. */}
           <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
           <HeaderMark />
@@ -299,9 +335,10 @@ function InnerContent({
               <TrialCountdown />
               {/* The device menu, at both breakpoints: identity, the theme
                   inline, and Settings, with Plan and Administration where
-                  they apply. On a phone it is the only door to those three
-                  (M258). See `avatar-menu.tsx` for why the theme lives in
-                  here rather than only on the Preferences page. */}
+                  they apply. On a phone it is the only door to Plan and
+                  Administration (M258); Settings is also a row in the More
+                  sheet since M259. See `avatar-menu.tsx` for why the theme
+                  lives in here rather than only on the Preferences page. */}
               <AvatarMenu showsPlanEntry={showsPlanEntry} />
             </div>
           </div>
@@ -334,8 +371,10 @@ function InnerContent({
           it off the screen without moving a single pixel of the page: the
           bottom padding above is unchanged, so nothing reflows and nothing
           scrolls when it comes back. Unmounting would also close the add
-          sheet or the More sheet mid-use, and both are portalled to the body,
-          so they stay on screen while their trigger is away. */}
+          sheet mid-use; it is portalled to the body, so it stays on screen
+          while its door is away. The More sheet is not rendered in here at
+          all: `MoreSheetProvider` holds it, above the header and this wrapper
+          both. */}
       <div data-slot="bottom-nav-shell" className={cn(isTypingOnAShortViewport && 'hidden')}>
         <BottomNav />
       </div>

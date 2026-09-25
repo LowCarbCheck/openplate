@@ -2,10 +2,13 @@
  * Where the launcher sheet's doors go, and how many cameras the bar has.
  *
  * The sheet used to hand-roll three rows. It renders the composer strip now
- * (M232/03), the same one `/dashboard` and `/diary` draw, so the three doors
- * are one implementation instead of two. This file is rewritten against that
- * shape: the old version counted `LAUNCHER_ITEM_CLASS` occurrences and
- * `SheetClose` tags, which describe rows that no longer exist.
+ * (M232/03), the same one `/dashboard` and `/diary` draw, so typing and
+ * speaking are one implementation instead of two. Since M259 the strip in the
+ * sheet is words only, and the sheet leads with a photo door of its own, a
+ * large filled button, because the operator found the strip's camera key
+ * "almost hidden". The old version of this file counted
+ * `LAUNCHER_ITEM_CLASS` occurrences and `SheetClose` tags, which describe rows
+ * that no longer exist.
  *
  * MOSTLY RENDERED, NOT READ. The strip is an ordinary component, so its
  * destinations and its input can be counted in real markup. Only the wiring
@@ -18,7 +21,8 @@
  * not unmount the element whose `click()` is still on the gesture stack
  * (`app/components/intake/use-camera-capture.ts`). A strip that opened its own
  * camera inside the sheet would put a second one there, and the pair of counts
- * below is what says so.
+ * below is what says so. There is also exactly ONE camera control in the
+ * sheet, the photo door; the strip under it draws no key.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,7 +35,7 @@ import { initReactI18next } from 'react-i18next';
 
 import { IntakeComposer } from '../../app/components/intake/intake-composer';
 import { BottomNav } from '../../app/components/bottom-nav';
-import type { CameraCapture } from '../../app/components/intake/use-camera-capture';
+import { MoreSheetProvider } from '../../app/components/more-sheet';
 import { ADD_DESCRIBE_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '../../app/lib/intake-hrefs';
 
 /**
@@ -59,19 +63,6 @@ void i18next.use(initReactI18next).init({
 });
 
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
-
-/**
- * A capture the caller already owns, as the launcher hands one to the strip.
- *
- * It opens nothing: this file counts inputs and reads hrefs, and the gesture
- * itself is `add-launcher-gesture.test.ts`'s subject.
- */
-const BORROWED_CAPTURE: CameraCapture = {
-  capture: () => {},
-  triggerRef: { current: null },
-  inputRef: { current: null },
-  inputProps: { type: 'file' },
-};
 
 /**
  * One component's static markup, inside a DATA router.
@@ -104,15 +95,27 @@ function inputCount(html: string): number {
 function sheetStrip(date: string | null): ReactElement {
   return createElement(IntakeComposer, {
     describeTo: buildIntakeHref(ADD_DESCRIBE_PATH, { date }),
-    capture: BORROWED_CAPTURE,
     label: 'Type',
+    variant: 'wordsOnly',
   });
 }
 
+/** The bar, inside the More sheet's provider as `AppWrapper` mounts it: its More tab is a door to that sheet. */
+function bar(): ReactElement {
+  return createElement(MoreSheetProvider, { showsPlanEntry: false }, createElement(BottomNav));
+}
+
 describe('the launcher sheet renders the composer strip', () => {
-  it('hands the strip its own camera rather than letting it open a second one', () => {
-    assert.match(LAUNCHER, /<IntakeComposer[^>]*capture=\{sheetCapture\}/);
-    assert.match(LAUNCHER, /const sheetCapture: CameraCapture = \{/);
+  it('asks for the words-only strip, and hands it no camera to drive', () => {
+    assert.match(LAUNCHER, /<IntakeComposer[^>]*variant="wordsOnly"/);
+    assert.doesNotMatch(LAUNCHER, /<IntakeComposer[^>]*capture=/, 'the strip in the sheet drives a camera again');
+    assert.doesNotMatch(LAUNCHER, /sheetCapture/, 'the sheet builds a capture for its strip again');
+  });
+
+  it('draws no camera key in that strip, where the default strip draws one', () => {
+    assert.doesNotMatch(render(sheetStrip(null)), /lucide-camera/, 'the strip in the sheet draws a camera key');
+    // THE CONTROL: the same reader finds the key in the strip `/diary` draws.
+    assert.match(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH })), /lucide-camera/);
   });
 
   it('has no hand-rolled row list left', () => {
@@ -153,12 +156,51 @@ describe('where the sheet doors go', () => {
 });
 
 /**
- * THE SHEET'S FIRST DOOR IS THE FOOD SEARCH (M258). The bar's Add tab was the
- * way to `/add/search` until M258 took it away, and the strip above cannot be
- * that way: its "Type" opens the composer. So the sheet carries a search door
- * of its own, first, and it logs to the day on screen like every other door.
- * Read out of the source, because the sheet's body is a portal and a static
- * render draws a portal as nothing; `tests/e2e/three-tab-bar.spec.ts` taps it.
+ * THE SHEET'S FIRST DOOR IS THE PHOTO (M259), and the one camera in it. The
+ * operator: "the photo option needs to be much more prominent and the first
+ * thing you want to click on. it's currently almost hidden." Read out of the
+ * source, because the sheet's body is a portal and a static render draws a
+ * portal as nothing; `tests/e2e/three-tab-bar.spec.ts` measures it, and
+ * `add-launcher-gesture.test.ts` owns what happens between its tap and the
+ * camera.
+ */
+describe('the photo door', () => {
+  const sheetAt = LAUNCHER.indexOf('<SheetContent');
+  const photoAt = LAUNCHER.indexOf('data-slot="add-sheet-photo"');
+  const searchAt = LAUNCHER.indexOf('data-slot="add-sheet-search"');
+
+  it('comes first in the sheet, before the search door', () => {
+    assert.ok(sheetAt !== -1 && photoAt > sheetAt, 'the photo door is not inside the sheet');
+    assert.ok(searchAt > photoAt, 'the photo door must come before the search door');
+  });
+
+  it('is the one camera in the sheet', () => {
+    // The glyph is imported for the door and drawn once, and the strip is
+    // words only (checked above), so nothing else in the sheet shows a camera.
+    assert.equal((LAUNCHER.match(/<Camera\b/g) ?? []).length, 1);
+    assert.ok(LAUNCHER.indexOf('<Camera') > photoAt && LAUNCHER.indexOf('<Camera') < searchAt);
+  });
+
+  it('is named in words, with the key the catalog already translates', () => {
+    assert.equal((LAUNCHER.match(/t\('launcher\.platePhoto'\)/g) ?? []).length, 1);
+  });
+
+  it('is filled, full width and 64 px tall, square cornered', () => {
+    const tag = LAUNCHER.slice(LAUNCHER.lastIndexOf('<button', photoAt), LAUNCHER.indexOf('>', photoAt));
+    assert.match(tag, /\bbg-primary text-primary-foreground\b/, 'the photo door is not filled in the brand');
+    assert.match(tag, /\bmin-h-16\b/, 'the photo door is not 64 px tall');
+    assert.match(tag, /\bw-full\b/, 'the photo door is not full width');
+    assert.doesNotMatch(tag, /\brounded/, 'the photo door rounds its corners');
+  });
+});
+
+/**
+ * THE SEARCH DOOR COMES NEXT (M258). The bar's Add tab was the way to
+ * `/add/search` until M258 took it away, and the strip below cannot be that
+ * way: its "Type" opens the composer. So the sheet carries a search door of
+ * its own, under the photo door, and it logs to the day on screen like every
+ * other door. Read out of the source for the portal's reason above;
+ * `tests/e2e/three-tab-bar.spec.ts` taps it.
  */
 describe('the search door', () => {
   it('builds its address through the shared builder, carrying the viewed day', () => {
@@ -189,10 +231,10 @@ describe('the search door', () => {
 
 describe('how many capture inputs the bar has', () => {
   it('draws exactly one, on the bar itself', () => {
-    assert.equal(inputCount(render(createElement(BottomNav))), 1);
+    assert.equal(inputCount(render(bar())), 1);
   });
 
-  it('adds none when the sheet opens, because the strip was given a camera', () => {
+  it('adds none when the sheet opens, because the words-only strip opens no camera', () => {
     assert.equal(inputCount(render(sheetStrip(null))), 0);
   });
 

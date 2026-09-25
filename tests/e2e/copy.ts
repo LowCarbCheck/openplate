@@ -77,6 +77,7 @@ const catalogSchema = z.object({
   launcher: z.object({
     sheetTitle: z.string(),
     searchFoods: z.string(),
+    platePhoto: z.string(),
     type: z.string(),
     photo: z.string(),
   }),

@@ -232,17 +232,17 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
 });
 
 /**
- * The launcher sheet's own door, and the camera behind it (M232/03).
+ * The launcher sheet's photo door, and the camera behind it (M232/03, M259).
  *
- * The sheet renders the composer strip instead of three hand-rolled rows. The
- * strip normally opens its own camera, and inside a sheet that would be a
- * defect this repo already knows by name: a browser only honours a
- * programmatic `input.click()` while the gesture that asked for it is on the
- * stack, so the element that was clicked must not unmount while the camera is
- * opening, and closing a sheet unmounts everything inside it. The bar's input
- * therefore lives OUTSIDE the sheet and the strip is handed that capture.
+ * A browser only honours a programmatic `input.click()` while the gesture
+ * that asked for it is on the stack, so the element that was clicked must not
+ * unmount while the camera is opening, and closing a sheet unmounts everything
+ * inside it. The bar's input therefore lives OUTSIDE the sheet, and the sheet's
+ * photo door drives it. Until M259 that door was the composer strip's camera
+ * key, handed the bar's capture; since M259 it is the large "Plate photo"
+ * button that leads the sheet, and the strip under it has no camera key.
  *
- * THIS IS WRITTEN TO FAIL AGAINST THE NAIVE VERSION. A strip that opened a
+ * THIS IS WRITTEN TO FAIL AGAINST THE NAIVE VERSION. A door that opened a
  * camera of its own puts a second `input[type=file]` inside the sheet, which
  * the count below reads directly, and it changes the set of inputs on the page
  * while the sheet is open, which the serial numbers read. Both were confirmed
@@ -287,7 +287,8 @@ test('the launcher sheet borrows the bar camera, and closing it keeps the input'
   await page.locator('[data-slot="bottom-nav-shell"] nav').getByRole('button', { name: EN.nav.add, exact: true }).tap();
   const sheet = page.locator('[data-slot="sheet-content"]');
   await expect(sheet, 'a tap on the plus must open the sheet').toBeVisible();
-  await expectVisibleLabel(sheet.getByLabel(EN.launcher.photo, { exact: true }), "the sheet's photo key");
+  const photoDoor = sheet.getByRole('button', { name: EN.launcher.platePhoto, exact: true });
+  await expectVisibleLabel(photoDoor, "the sheet's photo door");
 
   // THE LINE THE NAIVE VERSION FAILS: the sheet carries no capture input of
   // its own, and opening it added none to the page.
@@ -298,7 +299,7 @@ test('the launcher sheet borrows the bar camera, and closing it keeps the input'
   // own gesture, which is the whole invariant, and it is the thing no unit
   // test can see.
   const chooser = page.waitForEvent('filechooser');
-  await sheet.getByLabel(EN.launcher.photo, { exact: true }).click();
+  await photoDoor.click();
   await chooser;
 
   // The sheet gets out of the way afterwards, and the input it never owned is
