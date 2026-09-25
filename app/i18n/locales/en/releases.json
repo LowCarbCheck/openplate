@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "The logo at the top left opens the More menu.",
+      "02": "More now holds Settings.",
+      "03": "The add panel leads with a large photo button."
+    },
+    "fixed": {
+      "01": "A closed More menu stays closed."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "The app shell holds its own width beside the desktop sidebar.",
       "03": "The first key in the describe box no longer moves the box.",
       "04": "A page no longer moves when its font arrives late."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "The header says when the free AI scans are used.",
-      "02": "A free trial is told that invitations open with a plan."
-    },
-    "fixed": {
-      "01": "An account made in the browser no longer logs a storage loss on every page load.",
-      "02": "The scan screen states the account's free AI scans on a scan trial.",
-      "03": "The invitation and account pages no longer jump while they load.",
-      "04": "A page load no longer reports a blocked eval.",
-      "05": "The \"today\" shortcut on a past day fits the date bar again."
     }
   }
 }

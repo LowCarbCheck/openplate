@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "Sol üstteki logo Daha menüsünü açar.",
+      "02": "Daha menüsü artık Ayarlar'ı içerir.",
+      "03": "Ekleme paneli büyük bir fotoğraf butonuyla başlar."
+    },
+    "fixed": {
+      "01": "Kapanan Daha menüsü kapalı kalır."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "Uygulama kabuğu, masaüstü kenar çubuğunun yanında kendi genişliğini korur.",
       "03": "Açıklama kutusundaki ilk tuş artık kutuyu kaydırmaz.",
       "04": "Yazı tipi geç geldiğinde bir sayfa artık kaymaz."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Başlık, ücretsiz yapay zeka taramalarının ne zaman kullanıldığını belirtir.",
-      "02": "Ücretsiz denemedeki bir kullanıcıya, davetlerin bir planla açıldığı bildirilir."
-    },
-    "fixed": {
-      "01": "Tarayıcıda oluşturulan bir hesap, artık her sayfa yüklendiğinde bir depolama kaybı kaydetmez.",
-      "02": "Tarama ekranı, tarama denemesindeki hesabın ücretsiz yapay zeka taramalarını belirtir.",
-      "03": "Davet ve hesap sayfaları yüklenirken artık kayma yapmaz.",
-      "04": "Bir sayfa yüklemesi artık engellenmiş bir eval bildirmez.",
-      "05": "Geçmiş bir gündeki \"bugün\" kısayolu, tarih çubuğuna yeniden sığar."
     }
   }
 }

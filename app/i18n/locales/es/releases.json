@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "El logotipo arriba a la izquierda abre el menú Más.",
+      "02": "Más contiene ahora Ajustes.",
+      "03": "El panel de añadir empieza con un botón grande de foto."
+    },
+    "fixed": {
+      "01": "Un menú Más cerrado permanece cerrado."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "La interfaz de la app mantiene su propio ancho junto a la barra lateral de escritorio.",
       "03": "Pulsar la primera tecla en el cuadro de descripción ya no lo desplaza.",
       "04": "Las páginas ya no se desplazan cuando la tipografía tarda en cargar."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "La cabecera indica cuándo se usan los escaneos de IA gratuitos.",
-      "02": "En un periodo de prueba gratis se indica que las invitaciones se desbloquean con un plan."
-    },
-    "fixed": {
-      "01": "Una cuenta creada en el navegador ya no registra una pérdida de almacenamiento cada vez que carga una página.",
-      "02": "La pantalla de escaneo muestra los escaneos de IA gratuitos de la cuenta durante una prueba de escaneo.",
-      "03": "Las páginas de invitaciones y de cuenta ya no dan saltos mientras se cargan.",
-      "04": "La carga de una página ya no reporta un eval bloqueado.",
-      "05": "El acceso directo \"hoy\" en un día pasado vuelve a encajar en la barra de fecha."
     }
   }
 }

@@ -12592,6 +12592,13 @@
     "at": "2026-09-14",
     "de": "Lade Personen ein, lege fest, wie viele Fotos sie am Tag auswerten dürfen, und verwalte ihre Konten."
   },
+  "a2d5765847319d60": {
+    "en": "The add panel leads with a large photo button.",
+    "path": "releases:v0_48_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-25",
+    "de": "Das Hinzufügen-Panel beginnt mit einem großen Foto-Button."
+  },
   "a30ed878a36a3e5a": {
     "en": "Meal name",
     "path": "common:diary.saveMeal.namePlaceholder",
@@ -15168,6 +15175,13 @@
     "at": "2026-09-14",
     "de": "{{minutes}} Min"
   },
+  "c6541dddc3947cc6": {
+    "en": "More now holds Settings.",
+    "path": "releases:v0_48_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-25",
+    "de": "„Mehr“ enthält jetzt die Einstellungen."
+  },
   "c657eda9fc7604f5": {
     "en": "You don't need any of this: this openplate provides its own AI, one tap above. The rest of this page is for bringing your own provider instead.",
     "path": "common:settingsAi.preset.explainerNote",
@@ -17520,6 +17534,13 @@
     "at": "2026-09-14",
     "de": "Das Tagebuch liegt auf diesem Gerät, und die Serverkopie ist verschlüsselt"
   },
+  "e5a9c8a4a8ae8bf2": {
+    "en": "A closed More menu stays closed.",
+    "path": "releases:v0_48_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-25",
+    "de": "Ein geschlossenes Menü „Mehr“ bleibt geschlossen."
+  },
   "e5ac2d302b267136": {
     "en": "Search",
     "path": "common:add.methods.search",
@@ -18590,6 +18611,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Wähl ein Datum und eine Uhrzeit."
+  },
+  "f26f1bc4af641fd4": {
+    "en": "The logo at the top left opens the More menu.",
+    "path": "releases:v0_48_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-25",
+    "de": "Das Logo oben links öffnet das Menü „Mehr“."
   },
   "f26fbad10a8b9fdb": {
     "en": "That address already has an account here. Sign in instead.",

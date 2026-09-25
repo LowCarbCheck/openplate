@@ -11,15 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-09-25
+
 ### Changed
 
-- **The logo at the top left opens the More menu.** On a phone, tapping the logo opens the same panel as the More button in the bottom bar. It slides up from the bottom either way, and closing it puts you back on the button you tapped. The header does not move to make room. The title and the openplate name stay where they were, and the logo stays the same size. `tests/e2e/mark-opens-more.spec.ts` checks it.
-- **More now holds Settings.** The More panel has a Settings row at the top, above the page tiles and away from your thumb. It opens the same Settings page as the menu behind your avatar, which keeps its own Settings row. More stays lit while you are in Settings, except on the Plan page. Plan and Administration stay in the avatar menu only. `tests/e2e/three-tab-bar.spec.ts` and `tests/e2e/menu-is-found.spec.ts` check it in six languages at 360 and 390 px.
-- **The add panel leads with a large photo button.** A tap on the plus shows "Plate photo" first, as a full-width button in the brand colour, taller than anything else in the panel. It does what the small camera key did. Search foods comes next, then the row to type or speak a meal, which no longer has its own small camera key. The diary and Overview keep theirs. `tests/e2e/three-tab-bar.spec.ts` checks it.
+- **The logo at the top left opens the More menu.** On a phone, tapping the logo opens the same panel as the More button in the bottom bar. It slides up from the bottom either way, and closing it puts you back on the button you tapped. The header does not move to make room. The title and the openplate name stay where they were, and the logo stays the same size. `tests/e2e/mark-opens-more.spec.ts` checks it. ([9c82669](https://github.com/LowCarbCheck/openplate/commit/9c82669))
+- **More now holds Settings.** The More panel has a Settings row at the top, above the page tiles and away from your thumb. It opens the same Settings page as the menu behind your avatar, which keeps its own Settings row. More stays lit while you are in Settings, except on the Plan page. Plan and Administration stay in the avatar menu only. `tests/e2e/three-tab-bar.spec.ts` and `tests/e2e/menu-is-found.spec.ts` check it in six languages at 360 and 390 px. ([9c82669](https://github.com/LowCarbCheck/openplate/commit/9c82669))
+- **The add panel leads with a large photo button.** A tap on the plus shows "Plate photo" first, as a full-width button in the brand colour, taller than anything else in the panel. It does what the small camera key did. Search foods comes next, then the row to type or speak a meal, which no longer has its own small camera key. The diary and Overview keep theirs. `tests/e2e/three-tab-bar.spec.ts` checks it. ([9c82669](https://github.com/LowCarbCheck/openplate/commit/9c82669))
 
 ### Fixed
 
-- **A closed More menu stays closed.** In 0.47.0, you could close the More menu with Back, then press Forward, and the menu opened again by itself. Now it stays closed. It also closes when the window gets wide enough to show the sidebar, so no dark cover is left behind. `tests/e2e/mark-opens-more.spec.ts` checks both.
+- **A closed More menu stays closed.** In 0.47.0, you could close the More menu with Back, then press Forward, and the menu opened again by itself. Now it stays closed. It also closes when the window gets wide enough to show the sidebar, so no dark cover is left behind. `tests/e2e/mark-opens-more.spec.ts` checks both. ([c64be45](https://github.com/LowCarbCheck/openplate/commit/c64be45))
 
 ## [0.47.0] - 2026-09-24
 

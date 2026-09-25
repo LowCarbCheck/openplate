@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "Das Logo oben links öffnet das Menü „Mehr“.",
+      "02": "„Mehr“ enthält jetzt die Einstellungen.",
+      "03": "Das Hinzufügen-Panel beginnt mit einem großen Foto-Button."
+    },
+    "fixed": {
+      "01": "Ein geschlossenes Menü „Mehr“ bleibt geschlossen."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "Die App-Shell behält neben der Desktop-Seitenleiste ihre eigene Breite.",
       "03": "Der erste Tastenanschlag im Beschreibungsfeld verschiebt das Feld nicht mehr.",
       "04": "Eine Seite verschiebt sich nicht mehr, wenn ihre Schriftart verspätet geladen wird."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "Die Kopfzeile zeigt an, wann die kostenlosen KI-Scans aufgebraucht sind.",
-      "02": "In einem kostenlosen Testzeitraum wird angezeigt, dass Einladungen mit einem Tarif verfügbar sind."
-    },
-    "fixed": {
-      "01": "Ein im Browser erstelltes Konto protokolliert nicht mehr bei jedem Laden der Seite einen Speicherverlust.",
-      "02": "Der Scan-Bildschirm nennt die kostenlosen KI-Scans des Kontos während eines Scan-Testzeitraums.",
-      "03": "Die Einladungs- und Kontoseiten springen beim Laden nicht mehr.",
-      "04": "Das Laden einer Seite meldet kein blockiertes eval mehr.",
-      "05": "Der Shortcut „Heute“ an einem vergangenen Tag passt wieder in die Datumsleiste."
     }
   }
 }

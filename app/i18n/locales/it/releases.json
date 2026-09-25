@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "Il logo in alto a sinistra apre il menu Altro.",
+      "02": "Altro ora include Impostazioni.",
+      "03": "Il pannello di aggiunta si apre con un pulsante grande per la foto."
+    },
+    "fixed": {
+      "01": "Un menu Altro chiuso rimane chiuso."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "La struttura dell'app mantiene la propria larghezza accanto alla barra laterale desktop.",
       "03": "Il primo tasto digitato nel riquadro di descrizione non ne sposta più la posizione.",
       "04": "Le pagine non si spostano più quando il relativo tipo di carattere viene caricato in ritardo."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "L'intestazione indica quando vengono usate le scansioni IA gratuite.",
-      "02": "Durante la prova gratuita viene indicato che gli inviti si sbloccano con un piano."
-    },
-    "fixed": {
-      "01": "Un account creato nel browser non registra più una perdita di archiviazione a ogni caricamento della pagina.",
-      "02": "La schermata di scansione indica le scansioni IA gratuite dell'account durante una prova di scansione.",
-      "03": "Le pagine degli inviti e dell'account non saltano più durante il caricamento.",
-      "04": "Il caricamento di una pagina non segnala più un eval bloccato.",
-      "05": "La scorciatoia \"oggi\" in un giorno passato rientra di nuovo nella barra della data."
     }
   }
 }

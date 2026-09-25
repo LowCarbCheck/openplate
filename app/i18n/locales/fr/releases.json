@@ -1,4 +1,15 @@
 {
+  "v0_48_0": {
+    "date": "2026-09-25",
+    "changed": {
+      "01": "Le logo en haut à gauche ouvre le menu Plus.",
+      "02": "Plus contient maintenant Réglages.",
+      "03": "Le panneau d'ajout s'ouvre sur un grand bouton photo."
+    },
+    "fixed": {
+      "01": "Un menu Plus fermé reste fermé."
+    }
+  },
   "v0_47_0": {
     "date": "2026-09-24",
     "changed": {
@@ -22,20 +33,6 @@
       "02": "L'enveloppe de l'application conserve sa largeur à côté de la barre latérale sur ordinateur.",
       "03": "La première frappe dans la zone de description ne déplace plus la zone.",
       "04": "Une page ne saute plus lorsque sa police se charge tardivement."
-    }
-  },
-  "v0_45_0": {
-    "date": "2026-09-23",
-    "added": {
-      "01": "L'en-tête indique quand les analyses IA gratuites sont utilisées.",
-      "02": "Un essai gratuit est informé que les invitations s'ouvrent avec un abonnement."
-    },
-    "fixed": {
-      "01": "Un compte créé dans le navigateur ne consigne plus de perte de stockage à chaque chargement de page.",
-      "02": "L'écran d'analyse indique les analyses IA gratuites du compte lors d'un essai d'analyse.",
-      "03": "Les pages d'invitation et de compte ne sautent plus pendant leur chargement.",
-      "04": "Le chargement d'une page ne signale plus un eval bloqué.",
-      "05": "Le raccourci « aujourd'hui » sur un jour passé s'ajuste de nouveau à la barre de date."
     }
   }
 }
