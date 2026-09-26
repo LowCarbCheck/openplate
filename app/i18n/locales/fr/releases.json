@@ -1,4 +1,11 @@
 {
+  "v0_49_0": {
+    "date": "2026-09-26",
+    "changed": {
+      "01": "Le journal, Vue d'ensemble et Garde-manger s'ouvrent sur un grand bouton photo.",
+      "02": "Le logo en haut à gauche indique qu'il ouvre un menu."
+    }
+  },
   "v0_48_0": {
     "date": "2026-09-25",
     "changed": {
@@ -14,25 +21,6 @@
     "date": "2026-09-24",
     "changed": {
       "01": "La barre inférieure sur téléphone comporte désormais trois onglets."
-    }
-  },
-  "v0_46_0": {
-    "date": "2026-09-24",
-    "added": {
-      "01": "Les écrans d'ajout partagent un sélecteur unique et conservent ce que tu as commencé.",
-      "02": "Un journal YAZIO peut être importé sur Données et sauvegarde.",
-      "03": "Les pesées YAZIO sont transférées avec le journal.",
-      "04": "Un import YAZIO peut être supprimé en une seule étape."
-    },
-    "changed": {
-      "01": "La barre inférieure du téléphone comporte un onglet Menu.",
-      "02": "Le menu du compte supprime le sélecteur de langue."
-    },
-    "fixed": {
-      "01": "La page d'administration s'adapte à l'écran d'un téléphone.",
-      "02": "L'enveloppe de l'application conserve sa largeur à côté de la barre latérale sur ordinateur.",
-      "03": "La première frappe dans la zone de description ne déplace plus la zone.",
-      "04": "Une page ne saute plus lorsque sa police se charge tardivement."
     }
   }
 }

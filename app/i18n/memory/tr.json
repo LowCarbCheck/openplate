@@ -9029,6 +9029,13 @@
     "at": "2026-09-14",
     "tr": "YZ tahmini"
   },
+  "7686e1f8092aa2b3": {
+    "en": "The diary, Overview and Pantry lead with a large photo button.",
+    "path": "releases:v0_49_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "tr": "Günlük, Genel bakış ve Kiler büyük bir fotoğraf düğmesiyle başlar."
+  },
   "7693ebd78884908c": {
     "en": "I already have an account",
     "path": "common:welcome.haveAccount",
@@ -9616,6 +9623,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "tr": "Hesabına giriş yap veya e-posta adresinle bir hesap oluştur."
+  },
+  "7da99d8f558a9ace": {
+    "en": "The logo at the top left shows that it opens a menu.",
+    "path": "releases:v0_49_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "tr": "Sol üstteki logo, bir menü açtığını gösterir."
   },
   "7daa324a10f747f6": {
     "en": "Log {{count}} serving",

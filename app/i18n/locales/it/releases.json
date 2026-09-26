@@ -1,4 +1,11 @@
 {
+  "v0_49_0": {
+    "date": "2026-09-26",
+    "changed": {
+      "01": "Il diario, Panoramica e Dispensa si aprono con un grande pulsante per la foto.",
+      "02": "Il logo in alto a sinistra indica che apre un menu."
+    }
+  },
   "v0_48_0": {
     "date": "2026-09-25",
     "changed": {
@@ -14,25 +21,6 @@
     "date": "2026-09-24",
     "changed": {
       "01": "La barra inferiore del telefono ora ha tre schede."
-    }
-  },
-  "v0_46_0": {
-    "date": "2026-09-24",
-    "added": {
-      "01": "Le schermate di aggiunta condividono lo stesso selettore e conservano quello che hai iniziato.",
-      "02": "Puoi importare un diario YAZIO da Dati e backup.",
-      "03": "Le pesate di YAZIO vengono importate insieme al diario.",
-      "04": "Puoi rimuovere un'importazione YAZIO in un unico passaggio."
-    },
-    "changed": {
-      "01": "La barra inferiore del telefono include una scheda Menu.",
-      "02": "Il menu dell'account non mostra più il selettore della lingua."
-    },
-    "fixed": {
-      "01": "La pagina di amministrazione si adatta allo schermo del telefono.",
-      "02": "La struttura dell'app mantiene la propria larghezza accanto alla barra laterale desktop.",
-      "03": "Il primo tasto digitato nel riquadro di descrizione non ne sposta più la posizione.",
-      "04": "Le pagine non si spostano più quando il relativo tipo di carattere viene caricato in ritardo."
     }
   }
 }

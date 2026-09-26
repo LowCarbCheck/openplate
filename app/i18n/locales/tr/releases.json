@@ -1,4 +1,11 @@
 {
+  "v0_49_0": {
+    "date": "2026-09-26",
+    "changed": {
+      "01": "Günlük, Genel bakış ve Kiler büyük bir fotoğraf düğmesiyle başlar.",
+      "02": "Sol üstteki logo, bir menü açtığını gösterir."
+    }
+  },
   "v0_48_0": {
     "date": "2026-09-25",
     "changed": {
@@ -14,25 +21,6 @@
     "date": "2026-09-24",
     "changed": {
       "01": "Telefonun alt çubuğunda artık üç sekme var."
-    }
-  },
-  "v0_46_0": {
-    "date": "2026-09-24",
-    "added": {
-      "01": "Ekleme ekranları tek bir değiştiriciyi paylaşır ve başladığın şeyi korur.",
-      "02": "Veriler ve yedekleme bölümünden bir YAZIO günlüğü içe aktarılabilir.",
-      "03": "YAZIO tartımları günlükle birlikte aktarılır.",
-      "04": "Bir YAZIO içe aktarımı tek adımda kaldırılabilir."
-    },
-    "changed": {
-      "01": "Telefonun alt çubuğunda Menü sekmesi bulunur.",
-      "02": "Hesap menüsü dil seçiciyi kaldırır."
-    },
-    "fixed": {
-      "01": "Yönetim sayfası bir telefona sığar.",
-      "02": "Uygulama kabuğu, masaüstü kenar çubuğunun yanında kendi genişliğini korur.",
-      "03": "Açıklama kutusundaki ilk tuş artık kutuyu kaydırmaz.",
-      "04": "Yazı tipi geç geldiğinde bir sayfa artık kaymaz."
     }
   }
 }

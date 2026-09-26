@@ -9029,6 +9029,13 @@
     "at": "2026-09-14",
     "es": "Estimado por IA"
   },
+  "7686e1f8092aa2b3": {
+    "en": "The diary, Overview and Pantry lead with a large photo button.",
+    "path": "releases:v0_49_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "es": "El diario, Resumen y Despensa se abren con un botón grande para fotos."
+  },
   "7693ebd78884908c": {
     "en": "I already have an account",
     "path": "common:welcome.haveAccount",
@@ -9616,6 +9623,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "Inicia sesión en tu cuenta o crea una con tu correo electrónico."
+  },
+  "7da99d8f558a9ace": {
+    "en": "The logo at the top left shows that it opens a menu.",
+    "path": "releases:v0_49_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "es": "El logotipo de la parte superior izquierda indica que abre un menú."
   },
   "7daa324a10f747f6": {
     "en": "Log {{count}} serving",

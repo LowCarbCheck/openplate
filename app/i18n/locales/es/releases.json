@@ -1,4 +1,11 @@
 {
+  "v0_49_0": {
+    "date": "2026-09-26",
+    "changed": {
+      "01": "El diario, Resumen y Despensa se abren con un botón grande para fotos.",
+      "02": "El logotipo de la parte superior izquierda indica que abre un menú."
+    }
+  },
   "v0_48_0": {
     "date": "2026-09-25",
     "changed": {
@@ -14,25 +21,6 @@
     "date": "2026-09-24",
     "changed": {
       "01": "La barra inferior del teléfono ahora tiene tres pestañas."
-    }
-  },
-  "v0_46_0": {
-    "date": "2026-09-24",
-    "added": {
-      "01": "Las pantallas de añadir comparten un único selector y conservan lo que empezaste.",
-      "02": "Puedes importar un diario de YAZIO en Datos y copia de seguridad.",
-      "03": "Los pesajes de YAZIO se transfieren junto con el diario.",
-      "04": "Puedes eliminar una importación de YAZIO en un solo paso."
-    },
-    "changed": {
-      "01": "La barra inferior del teléfono incluye una pestaña Menú.",
-      "02": "El menú de la cuenta elimina el selector de idioma."
-    },
-    "fixed": {
-      "01": "La página de administración se adapta a la pantalla de un teléfono.",
-      "02": "La interfaz de la app mantiene su propio ancho junto a la barra lateral de escritorio.",
-      "03": "Pulsar la primera tecla en el cuadro de descripción ya no lo desplaza.",
-      "04": "Las páginas ya no se desplazan cuando la tipografía tarda en cargar."
     }
   }
 }

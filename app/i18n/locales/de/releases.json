@@ -1,4 +1,11 @@
 {
+  "v0_49_0": {
+    "date": "2026-09-26",
+    "changed": {
+      "01": "Das Tagebuch, Übersicht und Vorratskammer beginnen jeweils mit einer großen Fototaste.",
+      "02": "Das Logo oben links zeigt, dass es ein Menü öffnet."
+    }
+  },
   "v0_48_0": {
     "date": "2026-09-25",
     "changed": {
@@ -14,25 +21,6 @@
     "date": "2026-09-24",
     "changed": {
       "01": "Die untere Leiste auf dem Smartphone hat jetzt drei Tabs."
-    }
-  },
-  "v0_46_0": {
-    "date": "2026-09-24",
-    "added": {
-      "01": "Die Hinzufügen-Bildschirme teilen sich einen Umschalter und behalten das, was du angefangen hast.",
-      "02": "Ein YAZIO-Tagebuch lässt sich unter Daten & Sicherung importieren.",
-      "03": "YAZIO-Wiegungen werden zusammen mit dem Tagebuch übernommen.",
-      "04": "Ein YAZIO-Import lässt sich in einem Schritt entfernen."
-    },
-    "changed": {
-      "01": "Die untere Leiste des Telefons enthält einen Menü-Tab.",
-      "02": "Das Kontomenü entfernt die Sprachauswahl."
-    },
-    "fixed": {
-      "01": "Die Administrationsseite passt auf ein Telefon.",
-      "02": "Die App-Shell behält neben der Desktop-Seitenleiste ihre eigene Breite.",
-      "03": "Der erste Tastenanschlag im Beschreibungsfeld verschiebt das Feld nicht mehr.",
-      "04": "Eine Seite verschiebt sich nicht mehr, wenn ihre Schriftart verspätet geladen wird."
     }
   }
 }
