@@ -40,6 +40,9 @@
  * - A tile or the Settings row navigates and the sheet closes behind it. Escape closes it and focus
  *   returns to More.
  * - The avatar menu still carries Settings on an open instance, and it leads to `/settings`.
+ * - A tap on More leaves the focus on the sheet's close key with no ring on it, and a keyboard open
+ *   rings it (M261). A tap on the plus still focuses the photo door, not the close key.
+ * - The More sheet draws no handle bar, and its close key shares the title's row (M261).
  *
  * WHAT IT DOES NOT PROVE:
  *
@@ -488,4 +491,198 @@ test('the avatar menu carries Settings, and it leads to the settings hub', async
 
   await settings.click();
   await page.waitForURL((url) => url.pathname === '/settings');
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The close key's ring and the More sheet's top (M261)
+////////////////////////////////////////////////////////////////////////////////
+
+/** How far apart, in CSS pixels, the title's and the close key's vertical centres may be. */
+const ROW_CENTRE_TOLERANCE_PX = 2;
+
+/** The primitive's close key inside a sheet, by the name it carries in words. */
+function closeKey(sheet: Locator): Locator {
+  return sheet.getByRole('button', { name: EN.ui.sheet.close, exact: true });
+}
+
+/** What a focus ring is drawn with: this key's own ring is a box shadow, a browser's is an outline. */
+interface RingReading {
+  boxShadow: string;
+  outlineStyle: string;
+  outlineWidth: string;
+}
+
+/** Reads the ring an element draws right now. */
+async function readRing(locator: Locator): Promise<RingReading> {
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { boxShadow: style.boxShadow, outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth };
+  });
+}
+
+/**
+ * Whether a reading draws any ring at all, a box shadow or an outline.
+ *
+ * @param reading - what {@link readRing} found.
+ * @returns true when either one is drawn.
+ */
+function drawsRing(reading: RingReading): boolean {
+  const drawsOutline = reading.outlineStyle !== 'none' && reading.outlineWidth !== '0px';
+  return reading.boxShadow !== 'none' || drawsOutline;
+}
+
+/*
+ * THE RING AFTER A TAP (operator screenshot, 2026-09-26): a teal square round the More sheet's close
+ * X, right after a tap opened the sheet. The sheet's body is all links, and Radix focuses the first
+ * control that is not a link when a dialog opens, which is the close key. The key drew its ring on
+ * ANY focus (`focus:ring-2`), where every other control in the app rings on `focus-visible` only.
+ * Red on 0.49.0 (openplate 97ad67c): the tap test read a box shadow on the focused key.
+ */
+test('a tap opens the More sheet with the focus on its close key, and the key draws no ring', async ({ page }) => {
+  await page.goto('/diary');
+
+  await moreTab(page).tap();
+  const sheet = moreSheet(page);
+  await expect(sheet).toBeVisible();
+  const close = closeKey(sheet);
+  // THE CASE APPLIES: without the focus on the key, a missing ring would prove nothing.
+  await expect(close, 'Radix must hand the focus to the close key, the first control not a link').toBeFocused();
+  await settleAnimations(page);
+
+  const reading = await readRing(close);
+  expect(drawsRing(reading), `a tap must not ring the close key: ${JSON.stringify(reading)}`).toBe(false);
+  expect(reading.boxShadow, 'no ring').toBe('none');
+});
+
+// THE CONTROL for the reader above: the same key, focused the same way, after a KEYBOARD open must
+// draw its ring, so the reader can see one and the fix did not take the ring away from the keyboard.
+test('the keyboard opens the More sheet with a ring on its close key', async ({ page }) => {
+  await page.goto('/diary');
+
+  await moreTab(page).focus();
+  await page.keyboard.press('Enter');
+  const sheet = moreSheet(page);
+  await expect(sheet).toBeVisible();
+  const close = closeKey(sheet);
+  await expect(close, 'the keyboard lands on the close key as the tap does').toBeFocused();
+
+  await expect
+    .poll(async () => drawsRing(await readRing(close)), { message: 'CONTROL: a keyboard focus must ring the close key' })
+    .toBe(true);
+  expect((await readRing(close)).boxShadow, 'the ring is a box shadow').not.toBe('none');
+});
+
+// THE GUARD against a "fix" that moves the first focus for every sheet: the add sheet, opened by a
+// tap, still hands the focus to its photo door and never to its close key.
+test('a tap on the plus still focuses the photo door, not the close key', async ({ page }) => {
+  await page.goto('/diary');
+
+  await plusButton(page).tap();
+  const sheet = addSheet(page);
+  await expect(sheet).toBeVisible();
+  await expect(
+    sheet.getByRole('button', { name: EN.launcher.platePhoto, exact: true }),
+    'the add sheet focuses its photo door',
+  ).toBeFocused();
+  await expect(closeKey(sheet), 'and not its close key').not.toBeFocused();
+});
+
+/** An element's top and bottom edges, the two numbers a row claim is about. */
+interface VerticalSpan {
+  top: number;
+  bottom: number;
+}
+
+/** The More sheet's top: its first child, any 40 by 4 bar in it, and the title and close key rows. */
+interface SheetTopReading {
+  firstChildSlot: string | null;
+  bars: number;
+  sheetTop: number;
+  title: VerticalSpan;
+  close: VerticalSpan;
+}
+
+/** Reads the top of the open More sheet, unrounded. */
+async function readSheetTop(sheet: Locator, closeName: string): Promise<SheetTopReading> {
+  // Serialised into the page: its helper cannot live outside the callback.
+  // oxlint-disable unicorn/consistent-function-scoping
+  return sheet.evaluate((content, name) => {
+    const rows = (element: Element): VerticalSpan => {
+      const rect = element.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom };
+    };
+    const title = content.querySelector('[data-slot="sheet-title"]');
+    const close = [...content.querySelectorAll('button')].find(
+      (button) => (button.textContent ?? '').trim() === name,
+    );
+    if (title === null || close === undefined) throw new Error('the sheet has no title or no close key');
+    // A HANDLE'S SIZE: a bar 40 wide and 4 tall, whatever element draws it.
+    const bars = [...content.querySelectorAll('*')].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return Math.round(rect.width) === 40 && Math.round(rect.height) === 4;
+    }).length;
+    return {
+      firstChildSlot: content.firstElementChild?.getAttribute('data-slot') ?? null,
+      bars,
+      sheetTop: content.getBoundingClientRect().top,
+      title: rows(title),
+      close: rows(close),
+    };
+  }, closeName);
+  // oxlint-enable unicorn/consistent-function-scoping
+}
+
+/** The vertical centre of a span. */
+function centreOf(span: VerticalSpan): number {
+  return (span.top + span.bottom) / 2;
+}
+
+/**
+ * How far apart the title's and the close key's vertical centres are.
+ *
+ * @param reading - what {@link readSheetTop} found.
+ * @returns the distance in CSS pixels.
+ */
+function rowCentreGap(reading: SheetTopReading): number {
+  return Math.abs(centreOf(reading.title) - centreOf(reading.close));
+}
+
+/*
+ * THE FALSE HANDLE (counsel, 2026-09-26): the More sheet drew a grey 40 by 4 bar at its top, the
+ * look of a drag handle, and the sheet has no drag gesture. The bar is gone, and the close key is
+ * re-seated so it still shares the title's row. Red on 0.49.0 (openplate 97ad67c): the sheet's
+ * first child was the handle's row, and the reader found the bar.
+ */
+test('the More sheet has no handle bar, and its close key shares the title row', async ({ page }) => {
+  await page.goto('/diary');
+
+  await moreTab(page).tap();
+  const sheet = moreSheet(page);
+  await expect(sheet).toBeVisible();
+  await settleAnimations(page);
+
+  const reading = await readSheetTop(sheet, EN.ui.sheet.close);
+  expect(reading.firstChildSlot, 'the sheet must open on its header').toBe('sheet-header');
+  expect(reading.bars, 'no bar the size of a handle may be drawn in the sheet').toBe(0);
+  expect(rowCentreGap(reading), `the title and the close key share a row: ${JSON.stringify(reading)}`).toBeLessThanOrEqual(
+    ROW_CENTRE_TOLERANCE_PX,
+  );
+  expect(reading.close.top, 'the close key sits inside the sheet').toBeGreaterThanOrEqual(reading.sheetTop);
+
+  // THE CONTROLS. A bar the size of the old handle, and a close key moved off the title's row, must
+  // both be reported.
+  await sheet.evaluate((content) => {
+    const bar = document.createElement('span');
+    bar.style.cssText = 'display:block;width:40px;height:4px';
+    content.append(bar);
+  });
+  expect((await readSheetTop(sheet, EN.ui.sheet.close)).bars, 'CONTROL: a 40 by 4 bar must be counted').toBe(1);
+  await closeKey(sheet).evaluate((button) => {
+    if (!(button instanceof HTMLElement)) throw new Error('the close key is not an element to move');
+    button.style.cssText = `top:${String(button.offsetTop + 24)}px;transition:none`;
+  });
+  expect(
+    rowCentreGap(await readSheetTop(sheet, EN.ui.sheet.close)),
+    'CONTROL: a close key 24 px off the title row must be reported',
+  ).toBeGreaterThan(ROW_CENTRE_TOLERANCE_PX);
 });

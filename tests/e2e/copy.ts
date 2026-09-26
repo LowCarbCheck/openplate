@@ -73,6 +73,8 @@ const catalogSchema = z.object({
     firstFood: z.object({ later: z.string() }),
   }),
   add: addCatalogSchema,
+  /** The sheet primitive's close key, named in words in all six catalogs. */
+  ui: z.object({ sheet: z.object({ close: z.string() }) }),
   bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
     sheetTitle: z.string(),

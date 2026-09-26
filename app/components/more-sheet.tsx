@@ -345,19 +345,13 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
           }}
           // Reduced motion keeps the sheet and drops the slide, as the add
           // sheet does: the position is the information, the travel is not.
-          // `top-6` on the last child moves the primitive's own close key (it
-          // is always the content's last element) down past the 24 px handle,
-          // onto the title's row, so the two share one line.
-          className="gap-0 p-0 pb-[env(safe-area-inset-bottom)] motion-reduce:animate-none motion-reduce:transition-none md:hidden [&>button:last-child]:top-6"
+          // The sheet has no drag gesture, so it shows no handle.
+          // `top-2` on the last child moves the primitive's own close key (it
+          // is always the content's last element) onto the title's row, which
+          // starts 8 px down (`pt-2`), so the two share one line.
+          className="gap-0 p-0 pb-[env(safe-area-inset-bottom)] motion-reduce:animate-none motion-reduce:transition-none md:hidden [&>button:last-child]:top-2"
         >
-          {/* A HANDLE'S LOOK, NOT A HANDLE. The sheet has no drag gesture: it
-              closes by Escape, the close key, the overlay, a row and a tile.
-              The bar says "this came up from the bottom and goes back there",
-              which is true whichever door opened it. */}
-          <div aria-hidden="true" className="flex h-6 shrink-0 items-center justify-center">
-            <span className="h-1 w-10 bg-border" />
-          </div>
-          <SheetHeader className="px-4 pt-0 pb-2">
+          <SheetHeader className="px-4 pt-2 pb-2">
             <SheetTitle className="flex min-h-11 items-center">{t('nav.more')}</SheetTitle>
           </SheetHeader>
           <MoreSheetBody activeHref={activeHref} onNavigate={close} />

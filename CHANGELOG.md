@@ -11,6 +11,14 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The More panel drops the grey bar at its top.** The bar looked like something to pull, but the panel cannot be dragged. It closes with its close button, a tap outside it, or a tap on a page. The close button still sits on the same line as the title. `tests/e2e/three-tab-bar.spec.ts` checks it.
+
+### Fixed
+
+- **The close button no longer shows a ring after a tap.** A panel that opens with only links in it puts the focus on its close button, and a tap on More drew a teal square around it. The ring now shows only when you use the keyboard, like every other button in the app. `tests/e2e/three-tab-bar.spec.ts` checks both cases.
+
 ## [0.49.0] - 2026-09-26
 
 ### Changed
