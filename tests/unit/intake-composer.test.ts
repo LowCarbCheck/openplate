@@ -9,7 +9,9 @@
  * THREE THINGS SURVIVE THE RESTRUCTURE, and each one is a defect this repo has
  * already paid for once: the camera opens inside the tap that asked for it,
  * typing and speaking reach the composer and never the database search, and
- * both icon-only keys carry a name a screen reader can read.
+ * the icon-only key carries a name a screen reader can read. Since M260 the
+ * camera is not an icon-only key any more: the strip leads with the add
+ * sheet's large photo button, named in words.
  *
  * Source-level for the same reason as `add-launcher-gesture.test.ts`: the
  * behaviour under test is a browser gesture and a hook, not a return value.
@@ -27,6 +29,7 @@ import { IntakeComposer, type IntakeComposerProps } from '#app/components/intake
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
 
 const source = readFileSync(new URL('../../app/components/intake/intake-composer.tsx', import.meta.url), 'utf8');
+const PHOTO_DOOR = readFileSync(new URL('../../app/components/intake/photo-door.tsx', import.meta.url), 'utf8');
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
 const DASHBOARD = readFileSync(new URL('../../app/routes/dashboard.tsx', import.meta.url), 'utf8');
 const DIARY = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url), 'utf8');
@@ -40,7 +43,11 @@ const DIARY = readFileSync(new URL('../../app/routes/diary.tsx', import.meta.url
 void i18next.use(initReactI18next).init({
   lng: 'en',
   resources: {
-    en: { translation: { launcher: { sheetTitle: 'Add food', speak: 'Speak', type: 'Type', photo: 'Photo' } } },
+    en: {
+      translation: {
+        launcher: { sheetTitle: 'Add food', speak: 'Speak', type: 'Type', photo: 'Photo', platePhoto: 'Plate photo' },
+      },
+    },
   },
   react: { useSuspense: false },
 });
@@ -55,12 +62,17 @@ function render(element: ReactElement): string {
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
-/** The camera key's class attribute, found by the only name it carries. */
-function cameraKeyClass(html: string): string {
-  const key = /<button[^>]*aria-label="Photo"[^>]*>/.exec(html);
-  assert.ok(key !== null, 'the camera key is gone from the rendered strip');
-  const classAttribute = /class="([^"]*)"/.exec(key[0]);
-  assert.ok(classAttribute !== null, 'the camera key carries no classes at all');
+/** The strip's photo button, whole, found by the slot the strip gives it. */
+function photoButton(html: string): string {
+  const button = /<button[^>]*data-slot="intake-composer-photo"[^>]*>[\s\S]*?<\/button>/.exec(html);
+  assert.ok(button !== null, 'the photo button is gone from the rendered strip');
+  return button[0];
+}
+
+/** The class attribute of the first tag in `html`. */
+function classOf(html: string): string {
+  const classAttribute = /class="([^"]*)"/.exec(html);
+  assert.ok(classAttribute !== null, 'the tag carries no classes at all');
   return classAttribute[1] ?? '';
 }
 
@@ -73,11 +85,8 @@ function typeCheckOnly(_props: IntakeComposerProps): void {}
 
 describe('the composer strip', () => {
   it('drives the camera through the shared hook, with the caller its scan target', () => {
-    assert.match(
-      source,
-      /import \{ useCameraCapture, type CameraCapture \} from '#app\/components\/intake\/use-camera-capture'/,
-    );
-    assert.match(source, /const camera = useCameraCapture\(\{ scanTo \}\)/);
+    assert.match(source, /import \{ useCameraCapture \} from '#app\/components\/intake\/use-camera-capture'/);
+    assert.match(source, /const \{ capture, triggerRef, inputRef, inputProps \} = useCameraCapture\(\{ scanTo \}\)/);
   });
 
   it('draws the words-only strip with no camera behind it, and opens none', () => {
@@ -101,17 +110,31 @@ describe('the composer strip', () => {
     // enforces.
     // @ts-expect-error a words-only strip takes no scanTo; see the module's props union
     typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, variant: 'wordsOnly', scanTo: ADD_PHOTO_PATH });
-    // The control: the standalone strip takes one.
-    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, scanTo: ADD_PHOTO_PATH });
+    // @ts-expect-error nor a photo label, since it draws no photo button (M260)
+    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, variant: 'wordsOnly', photoLabel: 'Photo' });
+    // The control: the standalone strip takes both.
+    typeCheckOnly({ describeTo: ADD_DESCRIBE_PATH, scanTo: ADD_PHOTO_PATH, photoLabel: 'Photo' });
     assert.match(source, /scanTo\?: never;/, 'the words-only branch of the union still forbids scanTo');
     assert.match(source, /scanTo\?: string;/, 'the standalone branch of the union takes a scanTo');
   });
 
-  it('makes the photo key a button that captures, never a link', () => {
-    const camera = /<button\s+ref=\{triggerRef\}[\s\S]*?<\/button>/.exec(source);
-    assert.ok(camera !== null, 'the photo key is gone from the strip');
-    assert.match(camera[0], /onClick=\{capture\}/);
-    assert.doesNotMatch(camera[0], /<Link/, 'a navigation cannot open a camera');
+  it("hands the hook's capture straight to the photo button, with the hook's ref on it", () => {
+    // `capture` itself, not a wrapper that could await something first: the
+    // camera must open inside the tap. The ref is where focus comes back after
+    // a dismissed camera.
+    const door = /<PhotoDoor\s[\s\S]*?\/>/.exec(source);
+    assert.ok(door !== null, 'the strip no longer draws the photo button');
+    assert.match(door[0], /ref=\{triggerRef\}/);
+    assert.match(door[0], /onClick=\{capture\}/);
+    assert.equal((source.match(/<PhotoDoor\b/g) ?? []).length, 1, 'one camera per strip');
+  });
+
+  it('draws the photo button as a button that runs the handler it is given, never a link', () => {
+    const button = /<button\s[\s\S]*?<\/button>/.exec(PHOTO_DOOR);
+    assert.ok(button !== null, 'the photo door is no longer a button');
+    assert.match(button[0], /onClick=\{onClick\}/);
+    assert.doesNotMatch(PHOTO_DOOR, /<Link|<a\b/, 'a navigation cannot open a camera');
+    assert.doesNotMatch(PHOTO_DOOR, /\bawait\b|\basync\b/, 'nothing may be awaited on the way to the camera');
   });
 
   it('sends both the wide surface and the mic key to the composer, never to the database search', () => {
@@ -122,18 +145,20 @@ describe('the composer strip', () => {
     assert.doesNotMatch(source, /to="\/add"/, 'an affordance points straight at the database search');
   });
 
-  it('names its two icon-only keys, which have no visible label to read', () => {
-    // The control for these: the wide surface DOES carry visible words, so a
-    // missing label there would not be caught by counting aria-labels alone.
+  it('names its one icon-only key, and names the camera in words', () => {
+    // The control for these: the wide surface and the photo button DO carry
+    // visible words, so a missing label there would not be caught by counting
+    // aria-labels alone.
     assert.match(source, /aria-label=\{t\('launcher\.speak'\)\}/);
-    assert.match(source, /aria-label=\{t\('launcher\.photo'\)\}/);
+    assert.match(source, /label=\{photoLabel \?\? t\('launcher\.platePhoto'\)\}/, 'the photo button says nothing');
+    assert.doesNotMatch(source, /aria-label=\{t\('launcher\.photo'\)\}/, 'the icon-only camera key is back');
     assert.match(source, /\{label \?\? t\('launcher\.sheetTitle'\)\}/, 'the writing surface says nothing');
   });
 
   it('gives every key a thumb-sized target, so the strip is not a row of hairlines', () => {
     // `size-11` is 44 px, the smallest target a phone should offer, and the
     // writing surface matches it with a min height rather than a fixed one.
-    assert.equal((source.match(/\bsize-11\b/g) ?? []).length, 2, 'an icon key is no longer 44 px square');
+    assert.equal((source.match(/\bsize-11\b/g) ?? []).length, 1, 'the mic key is no longer 44 px square');
     assert.match(source, /\bmin-h-11\b/, 'the writing surface is shorter than the keys beside it');
   });
 
@@ -144,49 +169,70 @@ describe('the composer strip', () => {
 });
 
 /**
- * TWO INTENTIONAL STATES, NOT ONE GLOBAL CHANGE (M232/04, M259).
+ * TWO INTENTIONAL STATES, NOT ONE GLOBAL CHANGE (M232/04, M259, M260).
  *
- * The filled camera key was a deliberate call and it survives: a photo costs a
- * permission prompt, and on `/dashboard` and `/diary` this strip is the only
- * prominent camera a desktop or tablet has, because the tab bar's raised
- * circle is phone-only. The launcher's sheet is the single exception, and
- * since M259 it draws no key at all: the sheet leads with its own large photo
- * door, and a second camera under it would say the same thing smaller. Until
- * then the sheet drew an outlined key, the one the operator called "almost
- * hidden".
+ * The strip on `/dashboard`, `/diary` and `/pantry` owns its camera, and since
+ * M260 it leads with the add sheet's own large photo button: filled, full
+ * width, 64 px tall, the glyph and the name in words. Until then it ended its
+ * row in a filled 44 px key, the shape the operator called "almost hidden" in
+ * the sheet, and the operator asked for the "same large button" here. The
+ * launcher's sheet is the one strip with no camera at all: its own photo door
+ * leads it, and a second camera under it would say the same thing twice.
  *
- * So each half is asserted against the other: the key and its input that the
- * standalone render draws must be absent from the words-only render, and a
- * single treatment applied everywhere would fail one of the two.
+ * So each half is asserted against the other: the button and its input that
+ * the standalone render draws must be absent from the words-only render, and
+ * a single treatment applied everywhere would fail one of the two.
  */
-describe('the camera key', () => {
+describe('the photo button', () => {
   // The pair, not `bg-primary` alone: an outline's hover class would contain
   // that substring, so the looser literal would pass against either treatment.
   const FILLED = 'bg-primary text-primary-foreground';
 
-  it('fills the key on a page that owns no camera, which is /dashboard and /diary', () => {
-    const classes = cameraKeyClass(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH })));
-    assert.ok(classes.includes(FILLED), `the standalone camera key lost its fill: ${classes}`);
+  it('leads the standalone strip, filled, full width, 64 px tall and named in words', () => {
+    const html = render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH }));
+    const button = photoButton(html);
+    const classes = classOf(button);
+    assert.ok(classes.includes(FILLED), `the photo button lost its fill: ${classes}`);
+    assert.match(classes, /\bmin-h-16\b/, 'the photo button is not 64 px tall');
+    assert.match(classes, /\bw-full\b/, 'the photo button is not full width');
+    assert.doesNotMatch(classes, /\brounded/, 'the photo button rounds its corners');
+    assert.match(button, /lucide-camera/, 'the photo button lost its glyph');
+    assert.match(button, />Plate photo<\/span>/, 'the photo button is not named in words');
+    // ABOVE the row: the first control in the strip, before either link.
+    assert.ok(html.indexOf('data-slot="intake-composer-photo"') < html.indexOf('<a '), 'the button is not first');
   });
 
-  it('draws no camera key and no capture input in the words-only strip', () => {
+  it('is the one camera in the standalone strip: the row has no key', () => {
+    const html = render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH }));
+    assert.equal((html.match(/lucide-camera/g) ?? []).length, 1, 'the strip draws more than one camera');
+    assert.doesNotMatch(html, /aria-label="Photo"/, 'the icon-only camera key is back in the row');
+    assert.equal((html.match(/<input\b/g) ?? []).length, 1);
+  });
+
+  it('takes the name the pantry gives it, which photographs a shelf and not a plate', () => {
+    const html = render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH, photoLabel: 'Photo' }));
+    assert.match(photoButton(html), />Photo<\/span>/);
+    // THE CONTROL: the default name is gone, so the match above is the given one.
+    assert.doesNotMatch(html, /Plate photo/);
+  });
+
+  it('draws no photo button and no capture input in the words-only strip', () => {
     const wordsOnly = render(
       createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH, label: 'Type', variant: 'wordsOnly' }),
     );
-    assert.doesNotMatch(wordsOnly, /aria-label="Photo"/, 'the words-only strip still draws a camera key');
+    assert.doesNotMatch(wordsOnly, /intake-composer-photo/, 'the words-only strip draws a photo button');
     assert.doesNotMatch(wordsOnly, /lucide-camera/, 'the words-only strip still draws a camera glyph');
     assert.doesNotMatch(wordsOnly, /<input\b/, 'the words-only strip renders a capture input');
     // It still types and speaks: two links, the writing surface and the mic.
     assert.equal((wordsOnly.match(/<a\b/g) ?? []).length, 2, 'the words-only strip lost type or speak');
   });
 
-  it('draws both, the key and the input, in the standalone strip', () => {
-    // The CONTROL that makes the line above mean something: the same reader
-    // over the default strip finds the key, the glyph and the input.
-    const standalone = render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH }));
-    assert.match(standalone, /aria-label="Photo"/);
-    assert.match(standalone, /lucide-camera/);
-    assert.equal((standalone.match(/<input\b/g) ?? []).length, 1);
+  it('is the same component the add sheet leads with, so the two cannot drift', () => {
+    assert.match(LAUNCHER, /<PhotoDoor\b/, "the sheet's door is no longer the shared component");
+    assert.match(source, /<PhotoDoor\b/, "the strip's button is no longer the shared component");
+    // THE CONTROL: neither file hand-rolls a camera of its own beside it.
+    assert.doesNotMatch(LAUNCHER, /<Camera\b/, 'the sheet draws a camera glyph of its own');
+    assert.doesNotMatch(source, /<Camera\b/, 'the strip draws a camera glyph of its own');
   });
 
   it('asks for the words-only strip at exactly one call site, the sheet', () => {

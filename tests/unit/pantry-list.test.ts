@@ -121,8 +121,9 @@ describe('the empty pantry', () => {
     const html = renderList({ hasStoredItems: false });
 
     assert.ok(html.includes('Nothing here yet.'));
-    // The composer is there: its camera key carries the only name it has.
-    assert.ok(html.includes('aria-label="Photo"'));
+    // The composer is there: it leads with its photo button, named for a shelf.
+    assert.ok(html.includes('data-slot="intake-composer-photo"'));
+    assert.ok(html.includes('>Photo</span>'));
     // And no list editor, because there is nothing to edit.
     assert.ok(!html.includes('Add a line'), 'an empty pantry must not draw an empty row editor');
   });

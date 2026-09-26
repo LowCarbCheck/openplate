@@ -459,7 +459,20 @@ walks the mark.
 **The add sheet leads with the photo** (M259). Its first door is a full-width button filled in the
 brand like the raised plus, 64 px tall, a camera glyph and "Plate photo" in words: the one camera
 in the sheet. The search row follows, then the composer strip in its words-only form, type and
-speak. Everywhere else the strip keeps its filled camera key.
+speak.
+
+**The strip leads with the same photo button** (M260). On `/diary`, `/dashboard` and `/pantry` the
+composer strip draws that button above its type and speak row, and the row has no camera key: one
+camera per strip, the same `PhotoDoor` component the sheet draws, so the two cannot drift. It is
+the one prominent camera on those pages at every width, since the raised plus is phone only. The
+pantry names it "Photo", because it photographs a shelf, not a plate. The strip is a column, so in
+the diary's side-by-side empty states it stays inside its 288 px. `tests/e2e/strip-photo-button.spec.ts`
+checks it, the label in six languages at 360 px.
+
+**The mark wears the More dots** (M260). A 16 px round badge on the mark's bottom right corner
+draws `Ellipsis`, the More tab's glyph, in muted ink on the page background with a hairline, never
+in the brand colour. It is absolutely placed inside the mark's 44 px button and hidden from
+assistive tech, so the header does not move. `tests/e2e/mark-opens-more.spec.ts` checks it.
 
 **Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
 buttons, switches, date-picker cells, filter chips, settings rows, footer links, a sheet's close

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Camera, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
 import { useCameraCapture } from '#app/components/intake/use-camera-capture';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
+import { PhotoDoor } from '#app/components/intake/photo-door';
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { parseDateParam } from '#app/lib/user-days';
 
@@ -169,18 +170,15 @@ export function AddLauncher() {
               what the operator could not find. It is also the first control in
               the sheet, so it takes the focus when the sheet opens.
 
+              `PhotoDoor` since M260: the composer strip on `/diary`,
+              `/dashboard` and `/pantry` leads with the same element, so the
+              two doors cannot drift. No ref here: the hook's ref stays on the
+              plus, which outlives the sheet.
+
               AT THE TOP ON PURPOSE, the opposite of the More sheet, which puts
               its most used tile nearest the thumb. Here the size and the fill
               carry the door, so do not move it down to match. */}
-          <button
-            type="button"
-            onClick={capturePhotoFromSheet}
-            data-slot="add-sheet-photo"
-            className="flex min-h-16 w-full min-w-0 items-center justify-center gap-3 bg-primary text-primary-foreground px-4 text-base font-semibold shadow-sm transition-colors hover:bg-primary/90 active:bg-primary/85 motion-safe:active:scale-[0.99]"
-          >
-            <Camera className="size-6 shrink-0" aria-hidden="true" />
-            <span className="truncate">{t('launcher.platePhoto')}</span>
-          </button>
+          <PhotoDoor onClick={capturePhotoFromSheet} dataSlot="add-sheet-photo" label={t('launcher.platePhoto')} />
           {/* THE FOOD SEARCH. A link drawn as the search field it opens
               (`/add/search`'s own `#food-search`: the input's border, height
               and muted placeholder ink, a search glyph on the left), so it
@@ -210,9 +208,9 @@ export function AddLauncher() {
               this sheet's camera, so the strip draws no camera key and opens no
               camera of its own. Until M259 it drew an outlined key, driven by
               this component's capture; that key was the camera the operator
-              called "almost hidden". `/dashboard` and `/diary` pass no variant
-              and keep the filled key, which is the only prominent camera those
-              pages have on a desktop. */}
+              called "almost hidden". `/dashboard`, `/diary` and `/pantry` pass
+              no variant, and since M260 their strip leads with the same large
+              `PhotoDoor` this sheet does. */}
           <IntakeComposer describeTo={describeTo} label={t('launcher.type')} variant="wordsOnly" />
         </div>
       </SheetContent>

@@ -399,7 +399,13 @@ export function PantryList({
     <div className="mx-auto max-w-xl space-y-4">
       {alert}
       <p className="text-sm text-muted-foreground">{hasStoredItems ? t('pantry.lead') : t('pantry.empty')}</p>
-      <IntakeComposer describeTo={PANTRY_DESCRIBE_HREF} scanTo="/pantry" label={t('pantry.composerLabel')} />
+      {/* "Photo", not the diary's "Plate photo": this camera reads a shelf. */}
+      <IntakeComposer
+        describeTo={PANTRY_DESCRIBE_HREF}
+        scanTo="/pantry"
+        label={t('pantry.composerLabel')}
+        photoLabel={t('launcher.photo')}
+      />
       {hasStoredItems && (
         <>
           <PantryRows rows={rows} onChange={onChange} />

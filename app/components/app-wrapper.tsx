@@ -1,6 +1,6 @@
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Ellipsis } from 'lucide-react';
 import { AppSidebar } from './app-sidebar';
 import { AvatarMenu } from './avatar-menu';
 import { BottomNav } from './bottom-nav';
@@ -45,6 +45,16 @@ import * as React from 'react';
  * 36 px box, and the title and the wordmark keep the rects they had in 0.47.0.
  * `mark-opens-more.spec.ts` freezes those rects and reads the 44 px box.
  *
+ * THE BADGE SAYS IT OPENS SOMETHING (M260). In 0.48.0 nothing on the mark
+ * said it could be tapped; counsel noted it and the operator answered "add
+ * the mark". A small round badge sits on the picture's bottom right corner,
+ * drawing `Ellipsis`, the More tab's own three dots, so the two doors to one
+ * sheet share one picture. Round, because the mark is round; the muted ink on
+ * the page's background with a hairline, NOT the brand colour, so it reads as
+ * a hint and not as a second offer. It is absolutely placed inside the
+ * button's 44 px box and `aria-hidden`, so the header lays out exactly as
+ * before and the button's name is still the sheet's title alone.
+ *
  * `md:hidden`: at `md`+ the sidebar's own `Logo()` already occupies this
  * position, and a second mark next to it would be a duplicate. The sheet it
  * opens is phone-only too.
@@ -59,9 +69,16 @@ function HeaderMark() {
       data-slot="header-mark"
       aria-label={t('nav.more')}
       {...doorProps}
-      className="-m-1 flex shrink-0 p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+      className="relative -m-1 flex shrink-0 p-1 outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
     >
       <img src="/icons/icon-192.png?v=2" alt="" className="size-9" />
+      <span
+        data-slot="header-mark-badge"
+        aria-hidden="true"
+        className="absolute right-0 bottom-0 flex size-4 items-center justify-center rounded-full border bg-background text-muted-foreground"
+      >
+        <Ellipsis className="size-3" />
+      </span>
     </button>
   );
 }

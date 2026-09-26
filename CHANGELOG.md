@@ -11,6 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The diary, Overview and Pantry lead with a large photo button.** The row to type or speak a meal used to end in a small camera key. It now sits under the same full-width photo button the add panel opens with, in the brand colour and named in words: "Plate photo" on the diary and Overview, "Photo" on the Pantry, which photographs a shelf. The small key is gone, so each row has one camera, at every screen width. `tests/e2e/strip-photo-button.spec.ts` checks it, with the label in six languages at 360 px.
+- **The logo at the top left shows that it opens a menu.** A small round badge with the three dots of the More button sits on the logo's lower right corner, in grey, not in the brand colour. The header does not move for it. `tests/e2e/mark-opens-more.spec.ts` checks it.
+
 ## [0.48.0] - 2026-09-25
 
 ### Changed

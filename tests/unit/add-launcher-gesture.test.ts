@@ -143,9 +143,9 @@ describe('a back-dated day survives the photo path', () => {
 describe('the surfaces that capture', () => {
   const surfaces = [
     '../../app/components/add-launcher.tsx',
-    // The composer strip `/dashboard` and `/diary` render. It carries its own
-    // camera key, so it is a capturing surface and the gesture rule applies to
-    // it too.
+    // The composer strip `/dashboard`, `/diary` and `/pantry` render. It leads
+    // with its own photo button (M260), so it is a capturing surface and the
+    // gesture rule applies to it too.
     '../../app/components/intake/intake-composer.tsx',
   ];
 
@@ -191,10 +191,7 @@ describe("the sheet's photo door opens the bar's own camera, inside the tap", ()
     // THE HOOK'S `capture`, wrapped in the close, so the input, and therefore
     // the `click()` target, is the one the bar already renders. Only the close
     // is the door's own.
-    assert.match(
-      launcher,
-      /<button\s+type="button"\s+onClick=\{capturePhotoFromSheet\}\s+data-slot="add-sheet-photo"/,
-    );
+    assert.match(launcher, /<PhotoDoor onClick=\{capturePhotoFromSheet\} dataSlot="add-sheet-photo"/);
     assert.doesNotMatch(launcher, /<IntakeComposer[^>]*capture=/, 'the strip drives a second camera key again');
   });
 

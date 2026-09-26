@@ -201,13 +201,17 @@ test('the add sheet leads with the photo: first, as wide as the search, filled, 
   await page.goto('/diary');
 
   // THE CONTROL for the camera count below, read first, while the sheet is shut: the same reader
-  // pointed at the diary's own strip must see its icon-only camera key. The sheet's strip drew
-  // exactly that key until M259, so a strip that grew it back would be counted.
-  const stripKey = page.locator('main').getByRole('button', { name: EN.launcher.photo, exact: true }).first();
-  await expect(stripKey, "CONTROL: the diary's own strip draws its camera key").toBeVisible();
+  // pointed at the diary's own strip must see its camera. That was an icon-only key until M260 and
+  // is the large photo button now (`strip-photo-button.spec.ts`); the sheet's strip drew the key
+  // until M259, so a strip in the sheet that grew a camera back would be counted.
+  const stripPhoto = page.locator('main').getByRole('button', { name: EN.launcher.platePhoto, exact: true }).first();
+  await expect(stripPhoto, "CONTROL: the diary's own strip draws its camera").toBeVisible();
   expect(
-    await stripKey.evaluate((key, selector) => key.parentElement?.querySelectorAll(selector).length ?? 0, CAMERA_CONTROL),
-    "CONTROL: the camera reader must count the strip's icon-only key",
+    await stripPhoto.evaluate(
+      (button, selector) => button.parentElement?.querySelectorAll(selector).length ?? 0,
+      CAMERA_CONTROL,
+    ),
+    "CONTROL: the camera reader must count the strip's photo button",
   ).toBe(1);
 
   await plusButton(page).tap();

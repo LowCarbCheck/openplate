@@ -25,10 +25,10 @@
  * `AddFoodActions` was three separate buttons with gaps between them, which the
  * eye reads as three competing offers. This strip collapses them into ONE
  * field-shaped object: the wide half is a writing surface that says what to do
- * and opens the composer, and the microphone and the camera are trim inside
- * the same frame, to the right of a hairline, the way a message composer
- * carries its dictation and attachment keys. Rank comes from area, not from
- * colour, so nothing is demoted to a consolation tile.
+ * and opens the composer, and the microphone is trim inside the same frame, to
+ * the right of a hairline, the way a message composer carries its dictation
+ * key. The camera sat beside it as a third key until M260; it leads the strip
+ * now, as a large button of its own (see THE PHOTO DOOR below).
  *
  * It shipped to `/dashboard` after a playground review, and `/diary` followed:
  * all four of its add-entry surfaces, the three empty states and the one under
@@ -71,32 +71,47 @@
  * still has no capture input inside it: the bar's one input sits outside the
  * sheet, where a close cannot unmount it (`use-camera-capture.ts`).
  *
- * ── THE CAMERA KEY, EVERYWHERE ELSE ──────────────────────────────────────
+ * ── THE PHOTO DOOR, EVERYWHERE ELSE (M260) ──────────────────────────────
  *
- * On `/dashboard`, `/diary` and `/pantry` the key is drawn filled, which was
- * the original, deliberate call: a photo costs a camera permission prompt, so
- * it is worth naming first, and on those pages this strip is the only
- * prominent camera. The desktop sidebar carries `/add/photo` as a flat link,
- * so demoting the key there would leave desktop and tablet with no camera
- * worth seeing. The strip owns that camera itself: it calls the capture hook
- * and renders the input, in the one branch that draws the key.
+ * On `/dashboard`, `/diary` and `/pantry` the strip leads with the sheet's own
+ * large photo button, `PhotoDoor`, above the type and speak row, and the row
+ * has no camera key. One camera per strip.
+ *
+ * Until M260 these pages ended the row in a filled 44 px camera key. Filled
+ * was the original, deliberate call and it still holds: a photo costs a camera
+ * permission prompt, so it is worth naming first, and on these pages the strip
+ * is the only prominent camera. The desktop sidebar carries `/add/photo` as a
+ * flat link, and the tab bar's plus is phone only, so on desktop and tablet
+ * the strip's camera is the one worth seeing. What changed is the size: 0.48.0
+ * put the large button in the sheet because the operator had called the key
+ * "almost hidden" there, counsel noted the strip still drew that same key, and
+ * the operator answered "yes same large button". So the button carries the
+ * job at every width now, and both doors render the one component.
+ *
+ * The strip owns that camera itself: it calls the capture hook, puts the
+ * hook's `triggerRef` on the button (focus comes back there after a dismissed
+ * camera), and renders the input, in the one branch that draws the button.
+ * The button's name is "Plate photo" by default, and the pantry passes
+ * `photoLabel`, because it photographs a shelf, not a plate.
  *
  * The variant is an explicit prop rather than something inferred, so the
  * strip a call site gets can be audited at that call site.
  */
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Keyboard, Mic } from 'lucide-react';
+import { Keyboard, Mic } from 'lucide-react';
 
 import { Link } from '#app/components/link';
-import { useCameraCapture, type CameraCapture } from '#app/components/intake/use-camera-capture';
+import { PhotoDoor } from '#app/components/intake/photo-door';
+import { useCameraCapture } from '#app/components/intake/use-camera-capture';
 import { ADD_PHOTO_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { cn } from '#app/lib/utils';
 
 /**
- * Which keys the strip draws. `'standalone'` draws all three and owns the
- * camera behind the third; `'wordsOnly'` draws type and speak, for the
- * launcher's sheet, whose own photo door leads it. See the module header.
+ * What the strip draws. `'standalone'` leads with the large photo button and
+ * owns the camera behind it, then type and speak; `'wordsOnly'` draws type and
+ * speak, for the launcher's sheet, whose own photo door leads it. See the
+ * module header.
  */
 export type IntakeComposerVariant = 'standalone' | 'wordsOnly';
 
@@ -123,11 +138,14 @@ export type IntakeComposerProps = IntakeComposerBaseProps &
         /** Type and speak only; see the module header. */
         variant: 'wordsOnly';
         scanTo?: never;
+        photoLabel?: never;
       }
     | {
         variant?: 'standalone';
         /** Where a photo is taken to. Left out, `/add/photo`. */
         scanTo?: string;
+        /** The photo button's name. Left out, "Plate photo"; the pantry photographs a shelf. */
+        photoLabel?: string;
       }
   );
 
@@ -139,19 +157,36 @@ export function IntakeComposer(props: IntakeComposerProps): ReactElement {
   if (props.variant === 'wordsOnly') {
     return <ComposerStrip {...base} />;
   }
-  return <ComposerWithOwnCamera {...base} scanTo={props.scanTo} />;
+  return <ComposerWithOwnCamera {...base} scanTo={props.scanTo} photoLabel={props.photoLabel} />;
 }
 
-/** The strip on a page with no camera of its own: it opens one, and it renders the input for it. */
+/**
+ * The strip on a page with no camera of its own: it opens one with the large
+ * photo button, and it renders the input for it.
+ */
 function ComposerWithOwnCamera({
   scanTo = ADD_PHOTO_PATH,
+  photoLabel,
   ...rest
-}: IntakeComposerBaseProps & { scanTo?: string }): ReactElement {
-  const camera = useCameraCapture({ scanTo });
-  const { inputRef, inputProps } = camera;
+}: IntakeComposerBaseProps & { scanTo?: string; photoLabel?: string }): ReactElement {
+  const { t } = useTranslation();
+  const { capture, triggerRef, inputRef, inputProps } = useCameraCapture({ scanTo });
 
   return (
-    <ComposerStrip {...rest} camera={camera}>
+    <ComposerStrip
+      {...rest}
+      // `capture` straight onto the tap, nothing awaited before it, for the
+      // gesture rule in the module header. The hook's ref rides here, where
+      // focus comes back after a dismissed camera.
+      photoDoor={
+        <PhotoDoor
+          ref={triggerRef}
+          onClick={capture}
+          dataSlot="intake-composer-photo"
+          label={photoLabel ?? t('launcher.platePhoto')}
+        />
+      }
+    >
       {/* The hidden capture input, outside every conditional above: the element
           whose `click()` is on the gesture stack must not be able to unmount
           while the camera is opening. */}
@@ -161,68 +196,52 @@ function ComposerWithOwnCamera({
 }
 
 /**
- * The camera key: a filled 44 px square that opens the camera inside the tap.
- * A `button`, never a link, for the gesture rule in the module header.
- */
-function CameraKey({ camera }: { camera: CameraCapture }): ReactElement {
-  const { t } = useTranslation();
-  const { capture, triggerRef } = camera;
-
-  return (
-    <button
-      ref={triggerRef}
-      type="button"
-      onClick={capture}
-      aria-label={t('launcher.photo')}
-      className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground shadow-sm shadow-primary/30 transition-colors hover:bg-primary/90 motion-safe:active:scale-95"
-    >
-      <Camera className="size-5" aria-hidden="true" />
-    </button>
-  );
-}
-
-/**
- * The strip itself. It draws type and speak, and the camera key when it is
- * handed the camera to drive; it owns no camera of its own.
+ * The strip itself. It draws type and speak, under the photo button when it is
+ * handed one; it owns no camera of its own.
  */
 function ComposerStrip({
   describeTo,
   className,
   label,
-  camera,
+  photoDoor,
   children,
 }: IntakeComposerBaseProps & {
-  /** The camera the key drives. Left out, the strip draws no camera key. */
-  camera?: CameraCapture;
+  /** The large photo button, drawn above the row. Left out, the strip draws no camera. */
+  photoDoor?: ReactNode;
   /** The capture input, rendered only by the caller that owns the camera. */
   children?: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
 
   return (
-    <div className={cn('w-full', className)}>
-      {/* THE STRIP IS A CONTROL, NOT A CARD. The box and its three keys draw
-          no radius, square corners app-wide (DESIGN.md section 5); it was
-          16px around 12px keys until M243 spec 03, which read as a card with
-          three smaller cards in it. Nothing about the geometry moved: the
-          keys are the same 44 px square. Do not name that class in a comment,
+    // A COLUMN: the photo button on top, the type and speak row under it. The
+    // button is in the first paint, so nothing moves when the page settles.
+    // The capture input is `sr-only`, out of the flow, so the gap is between
+    // the two visible children only.
+    <div data-slot="intake-composer" className={cn('flex w-full flex-col gap-2', className)}>
+      {photoDoor}
+      {/* THE ROW IS A CONTROL, NOT A CARD. The box and its keys draw no
+          radius, square corners app-wide (DESIGN.md section 5); it was 16px
+          around 12px keys until M243 spec 03, which read as a card with
+          smaller cards in it. Nothing about the geometry moved: the mic key
+          is the same 44 px square. Do not name that class in a comment,
           `intake-composer.test.ts` counts the literal and a mention makes it
-          three. */}
+          two. */}
       <div className="flex w-full items-center gap-1 border border-primary/25 bg-card/80 p-1.5 shadow-sm transition-shadow focus-within:border-primary/60 focus-within:shadow-md">
         {/* `min-w-0` is load-bearing (M243 spec 05b). The label's own box is an
             ellipsis box, but this link is the flex item, and a flex item's
             automatic minimum is its CONTENT's minimum, so the German "Essen
-            eintragen" held the link at 170 px and pushed the camera key 9 px
-            past the hero card on a 320 px phone. Shrinking the link is what
-            lets the ellipsis do its job. */}
+            eintragen" held the link at 170 px and pushed the row's last key
+            (the camera key, until M260) 9 px past the hero card on a 320 px
+            phone. Shrinking the link is what lets the ellipsis do its job. */}
         <Link
           to={describeTo}
           className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
         >
           {/* The two quiet keys take the label's own ink, not the brand colour
               (M243 spec 05b, the teal budget). The strip already spends the
-              accent once, on the filled camera key, and three teal marks in
-              one 44 px row left nothing to say which of the three is the
+              accent once, on the filled photo button above, and three teal
+              marks in one strip left nothing to say which of them is the
               offer. The hover still lights up, so the affordance is intact. */}
           <Keyboard className="size-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{label ?? t('launcher.sheetTitle')}</span>
@@ -235,7 +254,6 @@ function ComposerStrip({
         >
           <Mic className="size-5" aria-hidden="true" />
         </Link>
-        {camera !== undefined && <CameraKey camera={camera} />}
       </div>
       {children}
     </div>

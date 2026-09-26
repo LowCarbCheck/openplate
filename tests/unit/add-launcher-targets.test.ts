@@ -55,6 +55,7 @@ void i18next.use(initReactI18next).init({
           speak: 'Speak',
           type: 'Type',
           photo: 'Photo',
+          platePhoto: 'Plate photo',
         },
       },
     },
@@ -63,6 +64,7 @@ void i18next.use(initReactI18next).init({
 });
 
 const LAUNCHER = readFileSync(new URL('../../app/components/add-launcher.tsx', import.meta.url), 'utf8');
+const PHOTO_DOOR = readFileSync(new URL('../../app/components/intake/photo-door.tsx', import.meta.url), 'utf8');
 
 /**
  * One component's static markup, inside a DATA router.
@@ -112,9 +114,10 @@ describe('the launcher sheet renders the composer strip', () => {
     assert.doesNotMatch(LAUNCHER, /sheetCapture/, 'the sheet builds a capture for its strip again');
   });
 
-  it('draws no camera key in that strip, where the default strip draws one', () => {
-    assert.doesNotMatch(render(sheetStrip(null)), /lucide-camera/, 'the strip in the sheet draws a camera key');
-    // THE CONTROL: the same reader finds the key in the strip `/diary` draws.
+  it('draws no camera in that strip, where the default strip draws one', () => {
+    assert.doesNotMatch(render(sheetStrip(null)), /lucide-camera/, 'the strip in the sheet draws a camera');
+    // THE CONTROL: the same reader finds the camera in the strip `/diary` draws,
+    // its large photo button since M260.
     assert.match(render(createElement(IntakeComposer, { describeTo: ADD_DESCRIBE_PATH })), /lucide-camera/);
   });
 
@@ -162,11 +165,13 @@ describe('where the sheet doors go', () => {
  * source, because the sheet's body is a portal and a static render draws a
  * portal as nothing; `tests/e2e/three-tab-bar.spec.ts` measures it, and
  * `add-launcher-gesture.test.ts` owns what happens between its tap and the
- * camera.
+ * camera. Since M260 the door is `PhotoDoor`, which the composer strip on
+ * `/diary`, `/dashboard` and `/pantry` leads with too, so its look is read out
+ * of that component's source.
  */
 describe('the photo door', () => {
   const sheetAt = LAUNCHER.indexOf('<SheetContent');
-  const photoAt = LAUNCHER.indexOf('data-slot="add-sheet-photo"');
+  const photoAt = LAUNCHER.indexOf('dataSlot="add-sheet-photo"');
   const searchAt = LAUNCHER.indexOf('data-slot="add-sheet-search"');
 
   it('comes first in the sheet, before the search door', () => {
@@ -175,10 +180,11 @@ describe('the photo door', () => {
   });
 
   it('is the one camera in the sheet', () => {
-    // The glyph is imported for the door and drawn once, and the strip is
-    // words only (checked above), so nothing else in the sheet shows a camera.
-    assert.equal((LAUNCHER.match(/<Camera\b/g) ?? []).length, 1);
-    assert.ok(LAUNCHER.indexOf('<Camera') > photoAt && LAUNCHER.indexOf('<Camera') < searchAt);
+    // One door, drawn once, and no glyph of the sheet's own beside it; the
+    // strip is words only (checked above), so nothing else shows a camera.
+    assert.equal((LAUNCHER.match(/<PhotoDoor\b/g) ?? []).length, 1);
+    assert.doesNotMatch(LAUNCHER, /<Camera\b/, 'the sheet draws a camera glyph of its own');
+    assert.equal((PHOTO_DOOR.match(/<Camera\b/g) ?? []).length, 1, 'the door draws its camera glyph once');
   });
 
   it('is named in words, with the key the catalog already translates', () => {
@@ -186,7 +192,9 @@ describe('the photo door', () => {
   });
 
   it('is filled, full width and 64 px tall, square cornered', () => {
-    const tag = LAUNCHER.slice(LAUNCHER.lastIndexOf('<button', photoAt), LAUNCHER.indexOf('>', photoAt));
+    const doorAt = PHOTO_DOOR.indexOf('<button');
+    assert.notEqual(doorAt, -1, 'the photo door is no longer a button');
+    const tag = PHOTO_DOOR.slice(doorAt, PHOTO_DOOR.indexOf('>', PHOTO_DOOR.indexOf('className=', doorAt)));
     assert.match(tag, /\bbg-primary text-primary-foreground\b/, 'the photo door is not filled in the brand');
     assert.match(tag, /\bmin-h-16\b/, 'the photo door is not 64 px tall');
     assert.match(tag, /\bw-full\b/, 'the photo door is not full width');
