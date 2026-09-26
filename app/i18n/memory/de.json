@@ -9032,9 +9032,9 @@
   "7686e1f8092aa2b3": {
     "en": "The diary, Overview and Pantry lead with a large photo button.",
     "path": "releases:v0_49_0.changed.01",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-09-26",
-    "de": "Das Tagebuch, Übersicht und Vorratskammer beginnen jeweils mit einer großen Fototaste."
+    "de": "Tagebuch, Übersicht und Vorratskammer beginnen jeweils mit einer großen Fototaste."
   },
   "7693ebd78884908c": {
     "en": "I already have an account",
