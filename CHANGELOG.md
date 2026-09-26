@@ -11,13 +11,16 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.49.1] - 2026-09-26
+
 ### Changed
 
-- **The More panel drops the grey bar at its top.** The bar looked like something to pull, but the panel cannot be dragged. It closes with its close button, a tap outside it, or a tap on a page. The close button still sits on the same line as the title. `tests/e2e/three-tab-bar.spec.ts` checks it.
+- **The More panel drops the grey bar at its top.** The bar looked like something to pull, but the panel cannot be dragged. It closes with its close button, a tap outside it, or a tap on a page. The close button still sits on the same line as the title. `tests/e2e/three-tab-bar.spec.ts` checks it. ([b419144](https://github.com/LowCarbCheck/openplate/commit/b419144))
 
 ### Fixed
 
-- **The close button no longer shows a ring after a tap.** A panel that opens with only links in it puts the focus on its close button, and a tap on More drew a teal square around it. The ring now shows only when you use the keyboard, like every other button in the app. `tests/e2e/three-tab-bar.spec.ts` checks both cases.
+- **The close button no longer shows a ring after a tap.** A panel that opens with only links in it puts the focus on its close button, and a tap on More drew a teal square around it. The ring now shows only when you use the keyboard, like every other button in the app. `tests/e2e/three-tab-bar.spec.ts` checks both cases. ([b419144](https://github.com/LowCarbCheck/openplate/commit/b419144))
+- **The German notes for 0.49.0 read as one list.** The line about the photo button named two pages bare and one with an article. It now names all three the same way. ([9817afb](https://github.com/LowCarbCheck/openplate/commit/9817afb))
 
 ## [0.49.0] - 2026-09-26
 

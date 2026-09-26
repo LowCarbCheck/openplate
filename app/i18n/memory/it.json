@@ -1266,6 +1266,13 @@
     "at": "2026-09-24",
     "it": "Annulla"
   },
+  "0fa7394be82bb547": {
+    "en": "The close button no longer shows a ring after a tap.",
+    "path": "releases:v0_49_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "it": "Il pulsante di chiusura non mostra più un anello dopo un tocco."
+  },
   "0fb1d7e65da55a57": {
     "en": "This server has no research lane, so nothing was withdrawn. You are still contributing here.",
     "path": "common:research.withdrawal.unavailable",
@@ -2189,6 +2196,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Chiedi un nuovo link a chi ti ha invitato."
+  },
+  "1af2cfd99ea05cf0": {
+    "en": "The German notes for 0.49.0 read as one list.",
+    "path": "releases:v0_49_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "it": "Le note in tedesco per la versione 0.49.0 appaiono come un unico elenco."
   },
   "1af8fc83e279dd50": {
     "en": "Checking that gateway…",
@@ -12605,6 +12619,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Invita persone, definisci quante foto possono leggere al giorno e gestisci i loro account."
+  },
+  "a2d320bfa269e99b": {
+    "en": "The More panel drops the grey bar at its top.",
+    "path": "releases:v0_49_1.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-26",
+    "it": "Il pannello Altro rimuove la barra grigia in alto."
   },
   "a2d5765847319d60": {
     "en": "The add panel leads with a large photo button.",
