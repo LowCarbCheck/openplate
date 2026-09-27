@@ -7,6 +7,19 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **The Quadlet units read every setting from an env file you own.** The
+  units carried each compose default as an `Environment=` line, most of them
+  empty. Podman ranks those above `EnvironmentFile=`. An `ADMIN_TOKEN`, a
+  mail key or a link address in `openplate-core.env` never reached the
+  container, and Podman 4.9 reads no drop-in to change it. Each unit now
+  reads `<unit>.defaults.env`, which ships beside it, and then `<unit>.env`,
+  which is yours and wins. Before you copy the new units over an install,
+  rename `openplate-core.env` to `sync.env`, move any drop-in setting into
+  it, and create an empty `postgres.env`. The unit does not start without
+  both files.
+
 ### Fixed
 
 - **An instance with an AI key but no named model looked configured and never
