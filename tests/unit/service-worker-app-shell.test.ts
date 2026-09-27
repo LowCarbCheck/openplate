@@ -41,6 +41,10 @@ test('APP_SHELL precaches /onboarding, so a not-yet-onboarded device can reach i
   assert.ok(readAppShell().includes('/onboarding'));
 });
 
+test('APP_SHELL precaches /welcome, where the gate sends a device with no profile, so it opens offline', () => {
+  assert.ok(readAppShell().includes('/welcome'));
+});
+
 test('APP_SHELL still precaches the core navigation targets', () => {
   const shell = readAppShell();
   for (const path of ['/', '/dashboard', '/diary', '/add/search', '/offline']) {

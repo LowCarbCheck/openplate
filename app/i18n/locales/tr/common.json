@@ -381,6 +381,7 @@
   },
   "chrome": {
     "back": "Geri",
+    "bootFailed": "openplate yüklenemedi. Bağlantını kontrol et, ardından yeniden yükle.",
     "buildStamp": "Sürüm {{label}}",
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Bu cihaz, menüyü aç",

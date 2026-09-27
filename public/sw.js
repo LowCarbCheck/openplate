@@ -26,13 +26,24 @@
 // would never have populated it anyway (`!response.redirected`, same guard
 // `/` uses). The share-target redirect target also moved, from `/scan?shared=1`
 // to `/add/photo?shared=1`; see `handleShareTarget` below.
+// v6 (2026-09-27, the endless boot screen): a saved page is now saved WITH
+// the files it loads to start, and served only while they are all still
+// saved; a page that cannot be served that way sends the navigation to
+// `/offline` instead. `/welcome` joined APP_SHELL. The bump is what throws
+// away every pages-v5 entry, because those were saved as bare HTML: the
+// install fetched the page and never its scripts or its logo, and the first
+// visit had fetched those before this worker controlled the page, so offline
+// a v5 page answered with a boot screen whose every script was a 503.
 // The push decision (what a push shows, where a tap lands) lives apart from
 // this file so it can be unit tested without a service worker. This worker is
 // registered as a classic script, so it loads that copy with `importScripts`
 // rather than a static `import`. It attaches `self.openplatePushDecision`.
-importScripts('/sw-push-decision.js');
+// `/sw-page-assets.js` is the same kind of copy, for the same reason: it reads
+// a page's HTML for the files it loads to start, and attaches
+// `self.openplatePageAssets`.
+importScripts('/sw-push-decision.js', '/sw-page-assets.js');
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -53,7 +64,15 @@ const MAX_IMAGE_ENTRIES = 60;
 // Neither redirects when fetched directly (verified against the route source,
 // not assumed): `/recover` is a plain top-level page and `/onboarding`'s
 // server `loader` returns `{}` unconditionally, so both cache cleanly here.
-const APP_SHELL = ['/', '/dashboard', '/diary', '/add/search', '/offline', '/recover', '/onboarding'];
+//
+// `/welcome` (2026-09-27) for the same reason again: it is where the gate
+// sends a device that holds no profile, which is every device after its first
+// visit until it finishes onboarding. Without it, the saved `/dashboard` of
+// such a device booted offline and then had no screen to hand over to.
+const APP_SHELL = ['/', '/dashboard', '/diary', '/add/search', '/offline', '/recover', '/onboarding', '/welcome'];
+
+// Where a navigation goes when this worker has no page it can serve whole.
+const OFFLINE_PATH = '/offline';
 
 // ---------------------------------------------------------------------------
 // Install, precache the app shell (resiliently)
@@ -68,6 +87,16 @@ async function precacheAppShell() {
   // redirects at install time (e.g. the onboarding gate) or a transient network
   // blip must not abort the whole install. The runtime network-first handler
   // backfills any entry skipped here on the first successful visit.
+  //
+  // THE PAGES ONLY, and that is deliberate (v6). These pages are not served
+  // offline until their start-up files are saved too (`offlineDocument`), and
+  // that happens in `saveShellWithAssets`, after the app has started. NOT
+  // HERE: a script put into Cache Storage during the install event is one
+  // Chromium prepares for its code cache, and pages that later loaded those
+  // scripts through this worker had some of their module requests aborted, a
+  // boot screen that never ended, in 4 to 6 of 30 walks through
+  // `strip-photo-button.spec.ts`'s six languages. The same saves, run once per
+  // launch from a message after the start, failed 0 of 30.
   await Promise.all(
     APP_SHELL.map(async (path) => {
       try {
@@ -80,6 +109,30 @@ async function precacheAppShell() {
       }
     }),
   );
+}
+
+// Makes every shell page whole: a saved page whose start-up files are not all
+// saved is fetched again and saved with them (`savePageWithAssets`). Run on
+// `SAVE_SHELL`, which `app/lib/service-worker.ts` posts once the app has
+// started, so it never competes with a page that is still loading, and cheap
+// once done: a whole page is read from the cache and left alone.
+//
+// One page at a time, and a page that cannot be made whole (offline, a deploy
+// that retired a file) is skipped: it stays unservable offline, and the next
+// start tries again.
+async function saveShellWithAssets() {
+  for (const path of APP_SHELL) {
+    try {
+      const saved = await caches.match(path);
+      if (saved && (await isServableWhole(saved))) continue;
+      const response = await fetch(path, { credentials: 'same-origin' });
+      if (response.ok && !response.redirected && isHtml(response)) {
+        await savePageWithAssets(path, response);
+      }
+    } catch {
+      // Offline, or a file that would not come: the next start tries again.
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -130,15 +183,14 @@ self.addEventListener('fetch', (event) => {
   // store, not this cache, so these must always reach the network untouched.
   if (isRouteDataRequest(url)) return;
 
-  if (isStaticAsset(url, request)) {
+  if (isStaticAsset(url, request) || isBrandPicture(url)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
   } else if (isImage(url, request)) {
     event.respondWith(cacheFirstWithCap(request, IMAGE_CACHE, MAX_IMAGE_ENTRIES));
+  } else if (request.mode === 'navigate') {
+    event.respondWith(networkFirstPage(event));
   } else {
-    // Serve the /offline HTML fallback only for document navigations, never for
-    // background data fetches.
-    const fallback = request.mode === 'navigate' ? '/offline' : undefined;
-    event.respondWith(networkFirst(request, PAGES_CACHE, fallback));
+    event.respondWith(networkFirst(request, PAGES_CACHE));
   }
 });
 
@@ -183,6 +235,13 @@ function isStaticAsset(url, request) {
   );
 }
 
+// The synced brand pictures (the boot screen's logo, the icons). They go to the
+// static cache, uncapped, and not to the image cache below: a start-up file a
+// saved page needs must not be the entry a sixty-first food photo evicts.
+function isBrandPicture(url) {
+  return url.pathname.startsWith('/icons/');
+}
+
 function isImage(url, request) {
   return request.destination === 'image' || /\.(jpg|jpeg|png|gif|webp|svg|ico|avif)$/i.test(url.pathname);
 }
@@ -223,12 +282,11 @@ async function cacheFirstWithCap(request, cacheName, maxEntries) {
   }
 }
 
-async function networkFirst(request, cacheName, fallbackUrl) {
+// A same-origin GET that is not a document: kept for offline, served from the
+// cache when the network fails. Documents take `networkFirstPage` below.
+async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
-    // `!response.redirected` mirrors the guard `precacheAppShell` already has:
-    // `/` redirects into the app for a device carrying the home hint, and
-    // caching the followed response would store `/dashboard`'s HTML under `/`.
     if (response.ok && !response.redirected) {
       const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
@@ -237,14 +295,151 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-
-    if (fallbackUrl) {
-      const fallback = await caches.match(fallbackUrl);
-      if (fallback) return fallback;
-    }
-
     return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Documents, a page is kept and served together with the files it starts on
+// ---------------------------------------------------------------------------
+// THE RULE (v6, 2026-09-27): this worker never serves a saved page whose
+// start-up files it cannot also serve. The boot screen that hung forever was a
+// page saved on its own, its scripts never kept, so offline every one of them
+// was a 503 and nothing ever replaced the wordmark.
+//
+// TWO HALVES. Once the app has started, `saveShellWithAssets` saves each shell
+// page with its files, because the first visit loaded them before this worker
+// was there to keep them. A page visited later loads its files through this
+// worker, and `cacheFirst` keeps each one as it arrives, so the page itself is
+// stored as it always was. Serving is where the rule is enforced for both:
+// `offlineDocument` hands out a saved page only while every file it names is
+// in the static cache, and sends the navigation to `/offline` otherwise.
+//
+// A visited page is not checked or completed in the background of its own
+// navigation: its own requests store the same files a moment later, and work
+// beside a page that is still loading is what this worker keeps away from.
+
+// A document navigation: the network first, and a saved page after it.
+async function networkFirstPage(event) {
+  const { request } = event;
+  try {
+    const response = await fetch(request);
+    // `!response.redirected` mirrors the guard `precacheAppShell` already has:
+    // `/` redirects into the app for a device carrying the home hint, and
+    // caching the followed response would store `/dashboard`'s HTML under `/`.
+    if (response.ok && !response.redirected && isHtml(response)) {
+      const cache = await caches.open(PAGES_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return offlineDocument(request);
+  }
+}
+
+// What a navigation gets when the network failed.
+//
+// 1. The saved page for this address, if every file it starts on is saved.
+// 2. Otherwise a redirect to `/offline`, so the address and the document agree
+//    and nothing hydrates one route's markup as another.
+// 3. `/offline` itself is served even with its files gone: it is server
+//    rendered text that reads with no script at all, which is the one page
+//    where that holds.
+async function offlineDocument(request) {
+  const cached = await caches.match(request);
+  if (cached && (await isServableWhole(cached))) return cached;
+
+  const isOfflinePage = new URL(request.url).pathname === OFFLINE_PATH;
+  if (isOfflinePage && cached) return cached;
+  if (!isOfflinePage && (await caches.match(OFFLINE_PATH))) {
+    return Response.redirect(new URL(OFFLINE_PATH, self.location.origin).toString(), 302);
+  }
+
+  return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+}
+
+// Whether every start-up file a saved page names is saved too.
+async function isServableWhole(page) {
+  const html = await page.clone().text();
+  const assets = self.openplatePageAssets.listPageAssets(html);
+  const stored = await storedAddresses(await caches.open(STATIC_CACHE));
+  return assets.every((asset) => stored.has(absoluteAddress(asset)));
+}
+
+// Stores a page under `key`, but only after every start-up file it names is
+// stored in the static cache. Rejects, storing nothing, when one cannot be
+// fetched, so a half-kept page never replaces a whole one.
+// `saveShellWithAssets` is its caller. A page names about 150 files, so the
+// cache is asked once for its keys rather than once per file, and only the
+// files still missing are fetched, a few at a time (`ASSET_SAVES_AT_ONCE`).
+async function savePageWithAssets(key, response) {
+  const html = await response.clone().text();
+  const assets = self.openplatePageAssets.listPageAssets(html);
+  const staticCache = await caches.open(STATIC_CACHE);
+  const stored = await storedAddresses(staticCache);
+  const missing = assets.filter((asset) => !stored.has(absoluteAddress(asset)));
+  await Promise.all(missing.map((asset) => saveAsset(staticCache, asset)));
+  const pages = await caches.open(PAGES_CACHE);
+  await pages.put(key, response);
+}
+
+// Every address a cache holds, as absolute URLs.
+async function storedAddresses(cache) {
+  const requests = await cache.keys();
+  return new Set(requests.map((request) => request.url));
+}
+
+function absoluteAddress(asset) {
+  return new URL(asset, self.location.origin).toString();
+}
+
+// How many start-up files this worker fetches at once. The first shell save
+// fetches about 150 files, so without a cap it would open every request in one
+// burst, beside the requests of any page this worker controls.
+const ASSET_SAVES_AT_ONCE = 4;
+let assetSavesRunning = 0;
+const assetSavesWaiting = [];
+
+// Runs `task` once fewer than ASSET_SAVES_AT_ONCE saves are running.
+function inAssetSaveSlot(task) {
+  return new Promise((resolve, reject) => {
+    const run = () => {
+      assetSavesRunning += 1;
+      task()
+        .then(resolve, reject)
+        .finally(() => {
+          assetSavesRunning -= 1;
+          const next = assetSavesWaiting.shift();
+          if (next) next();
+        });
+    };
+    if (assetSavesRunning < ASSET_SAVES_AT_ONCE) run();
+    else assetSavesWaiting.push(run);
+  });
+}
+
+// One start-up file into the static cache, fetched once however many saves
+// ask for it at the same moment (two starts in two tabs share every file).
+const assetsInFlight = new Map();
+
+function saveAsset(cache, asset) {
+  const running = assetsInFlight.get(asset);
+  if (running) return running;
+  const saving = inAssetSaveSlot(async () => {
+    // The static cache, not any cache: a picture the capped image cache holds
+    // today can be evicted from it tomorrow, and this copy has to stay. Asked
+    // again here because another page's save may have stored it meanwhile.
+    if (await cache.match(asset)) return;
+    const response = await fetch(asset, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`${asset} answered ${response.status}`);
+    await cache.put(asset, response);
+  }).finally(() => assetsInFlight.delete(asset));
+  assetsInFlight.set(asset, saving);
+  return saving;
+}
+
+function isHtml(response) {
+  return (response.headers.get('Content-Type') || '').includes('text/html');
 }
 
 // FIFO eviction so a cache stays under `maxEntries`, oldest keys drop first.
@@ -257,7 +452,7 @@ async function trimCache(cache, maxEntries) {
 }
 
 // ---------------------------------------------------------------------------
-// Message handler, SKIP_WAITING (update flow) + CLEAR_CACHE
+// Message handler, SKIP_WAITING (update flow), SAVE_SHELL + CLEAR_CACHE
 // ---------------------------------------------------------------------------
 self.addEventListener('message', (event) => {
   const { data } = event;
@@ -265,6 +460,10 @@ self.addEventListener('message', (event) => {
 
   if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+
+  if (data.type === 'SAVE_SHELL') {
+    event.waitUntil(saveShellWithAssets());
   }
 
   if (data.type === 'CLEAR_CACHE') {

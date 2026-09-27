@@ -677,6 +677,13 @@
   .wordmark-wave {
     animation: wordmark-wave 1.8s ease-in-out infinite;
   }
+
+  /* The app could not load (`#app/lib/boot-failure`): the boot screen says so
+     under the name, and a wave that still suggests progress would contradict
+     it. */
+  [data-boot-failed] .wordmark-wave {
+    animation: none;
+  }
 }
 
 @keyframes wordmark-wave {

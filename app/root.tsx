@@ -23,6 +23,7 @@ import { combineHeaders } from '#app/utils/misc';
 import { useToast } from '#app/hooks/use-toast';
 import { useMatomoTracker } from '#app/hooks/use-matomo-tracker';
 import { registerServiceWorker } from '#app/lib/service-worker';
+import { BOOT_FAILURE_SCRIPT, markAppStarted } from '#app/lib/boot-failure';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
 import { reconcileFastWakeAtOnBoot } from '#app/lib/fast-wake';
 import { ErrorFallback } from '#app/components/route-error-boundary';
@@ -152,6 +153,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* FIRST, before any tag that loads a script: the boot screen's "could
+            not load" sentence is shown by this script alone, because a page
+            whose scripts never arrived has nothing else that can run. See
+            `#app/lib/boot-failure`. */}
+        <script dangerouslySetInnerHTML={{ __html: BOOT_FAILURE_SCRIPT }} />
         {/* PWA: brand-tint the browser UI and mark the app installable/standalone. */}
         <meta name="theme-color" content="#0d968b" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -197,6 +203,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const data = useLoaderData<typeof loader>();
+  // React has started, so a script that fails from here on (a lazy chunk, the
+  // analytics script) is not the boot failure the head script reports. First
+  // of the effects, so nothing this component loads can fail before it.
+  useEffect(() => {
+    markAppStarted();
+  }, []);
   useToast(data?.toast);
 
   // Analytics. `null` on every instance whose operator did not configure

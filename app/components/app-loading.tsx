@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
 
@@ -52,8 +53,20 @@ export function LoadingDots({ size = 'sm', className }: { size?: 'sm' | 'md'; cl
  * label would have to be translated for the sake of one word. The
  * `role="status"` region carries an `aria-label` instead, so screen readers
  * hear something while sighted users read nothing.
+ *
+ * ONE SENTENCE WAITS UNDER THE NAME, for the one honest thing there is to say:
+ * the app could not load (2026-09-27). When the page's scripts never arrive,
+ * offline or with the server down, nothing that needs a bundle can run, so
+ * this screen used to stay up forever with nobody saying why. The sentence is
+ * rendered by the server in the reader's language, like every other word of
+ * the first paint, and held with an inline `visibility: hidden`, so its box is
+ * there from the first frame and showing it moves nothing. The inline script
+ * in `root.tsx`'s head (`BOOT_FAILURE_SCRIPT`) shows it when a script fails to
+ * load before the app has started. Inline, not a class: the stylesheet may be
+ * one of the files that did not arrive.
  */
 export function AppLoading({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
     <output
       aria-live="polite"
@@ -66,6 +79,13 @@ export function AppLoading({ label }: { label: string }) {
       {/* `wave` hides the word from screen readers, so no reader spells it
           out letter by letter; the region's label speaks instead. */}
       <Wordmark wave className="text-[28px] leading-none" />
+      <p
+        data-boot-failed-line=""
+        style={{ visibility: 'hidden' }}
+        className="max-w-xs px-4 text-center text-sm text-muted-foreground"
+      >
+        {t('chrome.bootFailed')}
+      </p>
     </output>
   );
 }

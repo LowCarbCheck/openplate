@@ -39,6 +39,8 @@ const addCatalogSchema = z.object({
 
 const catalogSchema = z.object({
   chrome: z.object({
+    /** The boot screen's line for scripts that never arrived. */
+    bootFailed: z.string(),
     deviceMenuLabel: z.string(),
     terms: z.string(),
     status: z.object({ dismiss: z.string() }),
@@ -132,6 +134,8 @@ const catalogSchema = z.object({
   portions: z.object({
     unit: z.object({ serving_other: z.string() }),
   }),
+  /** The offline page the service worker falls back to. */
+  offline: z.object({ heading: z.string() }),
   diary: z.object({
     netCarbsValue: z.string(),
     meals: z.object({ breakfast: z.string(), dinner: z.string() }),

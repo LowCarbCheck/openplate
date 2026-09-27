@@ -381,6 +381,7 @@
   },
   "chrome": {
     "back": "Indietro",
+    "bootFailed": "Impossibile caricare openplate. Controlla la tua connessione, poi ricarica.",
     "buildStamp": "Build {{label}}",
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Questo dispositivo, apri menu",
