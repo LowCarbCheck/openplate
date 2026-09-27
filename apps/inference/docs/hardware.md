@@ -72,6 +72,15 @@ figure comes from a *different* run (2026-08-12: **62.1 %** core-item recall,
 which is why `lite` is documented as the constrained self-hoster's floor rather
 than the flagship). Two runs, two numbers, cited separately.
 
+**Latency grows with the plate as well as with the threads.** What a scan costs follows the length of its prompt, the tokens the model reads for that photo, and the prompt was four times longer for a full breakfast than for a simple plate. Two scans measured through the shipped service on the same CPU model, inside a 6-vCPU virtual machine with the default 4 threads (2026-09-27):
+
+| plate | prompt tokens | time |
+|---|---|---|
+| a simple plate | 547 | 9.5 s |
+| a full breakfast | 2084 | 50.1 s |
+
+So on an ordinary CPU box, plan for roughly 5 seconds to a minute per plate: the low end with many threads and a simple plate, the high end with few threads and a crowded one. Those are two single scans, not a distribution.
+
 **`quality` on the same CPU: ≈94 s / plate** (p50, 2026-08-12), measured under an earlier, more verbose pipeline at full image resolution, and not re-measured under the shipped pipeline, so treat it as an upper bound. `quality` is a GPU
 profile.
 
@@ -80,7 +89,7 @@ profile.
 **CPU throughput does not improve with concurrency.** Measured: two simultaneous requests cost 0.75 to 0.83× of the same two run back to back, a 1.2 to 1.3× throughput recovery on a 2× fan-out, paid for entirely in per-request latency (one request alone 2.5 s; two in flight, 3.7 s each). Plan capacity as if the box were serial.
 
 **Minimum CPU box for `lite`:** 8+ modern cores with AVX2, **4 GB free RAM**
-(1.55 GB for the model, headroom for everything else), ~2.5 GB disk. 8 threads
+(1.55 GB for the model, headroom for everything else), about 3 GB of disk (1.96 GiB of weights plus the image, about 1 GB). 8 threads
 instead of 14 roughly doubles per-plate latency. No GPU, no CUDA, no external call, verified by [`scripts/smoke-lite.sh`](../scripts/smoke-lite.sh), which builds the CPU image, boots it with no GPU, and puts a real photo through it.
 
 ## No latency ceiling by default

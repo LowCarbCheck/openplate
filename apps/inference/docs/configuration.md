@@ -9,7 +9,7 @@ process rather than degrading silently. The annotated master list is
 | `MODEL_PROFILE` | `lite` | `lite` \| `lite-apache` \| `quality` \| `external` |
 | `API_KEYS` | *(generated)* | Comma-separated bearer keys. Set this. |
 | `PORT` | `8300` | The only published port. |
-| `CONCURRENCY` | `2` | In-flight scans; also sets llama.cpp's KV slots. |
+| `CONCURRENCY` | `2` | In-flight scans; also sets llama.cpp's KV slots. It does not add CPU threads: the slots share the `LLAMA_THREADS` threads. |
 | `MAX_QUEUE_DEPTH` | `8` | Past this, callers get 429 + `Retry-After`. |
 | `RATE_LIMIT_RPM` | `60` | Per key. |
 | `LATENCY_CEILING_MS` | `0` | 0 = disabled. Admission policy: refuse work you cannot finish in time. See [Hardware](hardware.md#no-latency-ceiling-by-default). |
@@ -17,7 +17,7 @@ process rather than degrading silently. The annotated master list is
 | `IMAGE_MAX_LONG_EDGE` | `896` | Downscale target. Latency rises with the square. |
 | `FOOD_SOURCE` | `fdc` | See [Food data](#food-data-foodsource). |
 | `CONTEXT_SIZE` | `8192` | Context **per in-flight scan**. The container multiplies it by `CONCURRENCY` before handing it to llama.cpp, because llama.cpp's `-c` is the *total* it splits across slots. |
-| `LLAMA_THREADS` | `nproc - 2` | Two cores are left for the service, image decode, and the OS. Giving llama.cpp every core makes the box contended, not faster. |
+| `LLAMA_THREADS` | `nproc - 2` | CPU threads for llama.cpp (its `-t`). Two cores are left for the service, image decode, and the OS, so a 6-core box runs 4 threads and a 4-core box 2, whatever `CONCURRENCY` says. Giving llama.cpp every core makes the box contended, not faster. The startup log prints the value as `-t N`. Bundled mode only. |
 | `MODELS_DIR` | `/models` | The weights volume. |
 | `WEIGHTS_MIRROR_BASE` | *(empty)* | Optional mirror; Hugging Face is the fallback. |
 | `GPU_LAYERS` | *(auto)* | Override the GPU auto-detect. `0` forces CPU. |

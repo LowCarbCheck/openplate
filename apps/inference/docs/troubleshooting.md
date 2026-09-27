@@ -12,7 +12,7 @@ speed:
 ```
 ═══════════════════════════════════════════════════════════════════════
   openplate-inference: weights for MODEL_PROFILE=lite
-  destination: /models   total: 2.05 GiB
+  destination: /models   total: 1.96 GiB
 ═══════════════════════════════════════════════════════════════════════
 ▶ [model] downloading LFM2.5-VL-1.6B-Q8_0.gguf (1.16 GiB) from https://huggingface.co/...
    This is a one-time download into /models. It is resumable:
