@@ -1,6 +1,16 @@
+// FIRST, BEFORE ANY OTHER IMPORT. Modules run in the order they are imported,
+// and `react` picks its development or production build from `NODE_ENV` the
+// moment it loads, which `@react-router/express` triggers. With this line
+// second, a `NODE_ENV=production` that exists only in `.env` arrived after
+// React had chosen development, while the server bundle loaded later took the
+// production `react-dom`. The mix answered every page with a 500
+// (`dispatcher.getOwner is not a function`). `pnpm start` and the Docker image
+// set NODE_ENV in the process, which hid it; a systemd unit that runs
+// `node --import tsx ./server.ts` with only `.env` did not. Guarded by
+// `tests/e2e/node-env-from-dotenv.spec.ts`.
+import 'dotenv/config';
 import { createServer } from 'node:http';
 import { createRequestHandler } from '@react-router/express';
-import 'dotenv/config';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import compression from 'compression';

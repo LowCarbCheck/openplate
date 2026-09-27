@@ -83,8 +83,9 @@ describe('the browser tier servers keep the release check off', () => {
     assert.equal(parseUpdateCheck(readUpdateCheckFromCommand({ command: before, inherited: undefined })), true);
   });
 
-  it('builds both servers from server-env.ts', () => {
+  it('builds every server the tier spawns from server-env.ts', () => {
     assert.match(readSource('playwright.config.ts'), /command: buildTierServerCommand\(/);
     assert.match(readSource('tests/e2e/managed-app-server.ts'), /env: buildManagedServerEnv\(/);
+    assert.match(readSource('tests/e2e/node-env-from-dotenv.spec.ts'), /env = buildManagedServerEnv\(/);
   });
 });

@@ -56,7 +56,7 @@ export interface ManagedAppServer {
 }
 
 /** A port nothing on this host listens on right now, chosen by the kernel. */
-async function pickFreePort(): Promise<number> {
+export async function pickFreePort(): Promise<number> {
   return new Promise((settle, fail) => {
     const probe = createServer();
     probe.once('error', fail);
@@ -96,7 +96,7 @@ async function waitUntilAnswering(options: { url: string; child: ChildProcess })
 }
 
 /** Sends SIGTERM and waits for the exit. */
-async function stopChild(child: ChildProcess): Promise<void> {
+export async function stopChild(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null) return;
   await new Promise<void>((settle) => {
     child.once('exit', () => settle());
