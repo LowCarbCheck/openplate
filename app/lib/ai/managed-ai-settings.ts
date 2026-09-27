@@ -38,6 +38,22 @@ import type { OpenAiCompatibleCredential } from '#app/services/vision/openai-com
 /** The API namespace the instance's AI proxy is mounted under, appended to `SYNC_SERVER_URL`. */
 export const MANAGED_AI_API_PREFIX = '/v1';
 
+/**
+ * The sync server a managed base URL was built from, or `null` for a URL this
+ * module did not build.
+ *
+ * `resolveEffectiveAiSettings` writes the base as `${syncServerUrl}${MANAGED_AI_API_PREFIX}`,
+ * and the scan action, which runs outside React and cannot read the public
+ * config, reads it back to ask the handshake for the model when the screen
+ * posted before the handshake had answered (2026-09-27 install rehearsal).
+ *
+ * @param baseUrl - a `ManagedAiSettings.baseUrl`.
+ */
+export function syncServerUrlOfManagedBase(baseUrl: string): string | null {
+  if (!baseUrl.endsWith(MANAGED_AI_API_PREFIX)) return null;
+  return baseUrl.slice(0, -MANAGED_AI_API_PREFIX.length);
+}
+
 /** What this instance is, and what it says about its own AI — the facts the rule reads. */
 export interface ManagedInstanceFacts {
   /** `PublicConfig.managed`. */

@@ -1993,7 +1993,8 @@
         "allowanceExpired": "La tua quota per le stime da foto è terminata. Tutte le altre funzioni di openplate continuano a funzionare.",
         "trialScansSpent": "Scegli un piano per continuare a usare gli inserimenti con IA. La ricerca nel database degli alimenti rimane sempre attiva.",
         "allowanceExpiredOn": "La tua quota per le stime da foto è terminata il {{date}}. Tutte le altre funzioni di openplate continuano a funzionare.",
-        "instanceCeiling": "Questa istanza ha analizzato tutte le foto possibili per oggi. Riprova domani. Il tuo account non ha alcun problema."
+        "instanceCeiling": "Questa istanza ha analizzato tutte le foto possibili per oggi. Riprova domani. Il tuo account non ha alcun problema.",
+        "managedUpstream": "Il provider IA di questa istanza ha rifiutato la richiesta. Chiedi a chi la gestisce di verificare la configurazione del provider."
       },
       "readPhoto": "Impossibile leggere questa foto. Provane un'altra.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "Hai usato la tua {{count}} scansione gratuita con IA",
         "trialScansSpent_other": "Hai usato le tue {{count}} scansioni gratuite con IA",
         "trialScansSpentUncounted": "Hai usato le tue scansioni gratuite con IA",
-        "instanceCeiling": "Questa istanza ha esaurito la capacità disponibile oggi"
+        "instanceCeiling": "Questa istanza ha esaurito la capacità disponibile oggi",
+        "managedUpstream": "Il provider IA ha rifiutato la richiesta"
       },
       "text": {
         "empty": "Scrivi prima cosa hai mangiato.",
         "title": "Impossibile elaborare questa descrizione",
         "qualityBody": "Non è stato possibile identificare gli alimenti. Prova a indicare ciascun alimento e la relativa quantità, come 3 uova, 2 fette di pane tostato."
-      }
+      },
+      "managedNoModel": "Questa istanza non ha un modello IA configurato, quindi non può ancora leggere le foto. Chiedi a chi la gestisce di impostarne uno."
     },
     "loading": "Caricamento della scansione…",
     "offline": "Sei offline. La scansione del piatto richiede una connessione. Cerca tra gli alimenti recenti per registrarli subito.",
@@ -3097,7 +3100,11 @@
     "submit": "Invia il link",
     "sent": "Se esiste un account associato a questo indirizzo, il link sta arrivando.",
     "sentHint": "Il link è valido per un'ora. Controlla la cartella dello spam se non lo ricevi.",
-    "backToSignIn": "Torna all'accesso"
+    "backToSignIn": "Torna all'accesso",
+    "noMail": "Questo server non può inviare email. Non può inviarti un link di ripristino.",
+    "noMailHint": "Chiedi un link di ripristino a chi gestisce questo openplate. Può generarne uno in Amministrazione, sotto Persone.",
+    "unreachable": "Impossibile raggiungere il server. Controlla la tua connessione e riprova.",
+    "failed": "La richiesta non è andata a buon fine. Riprova tra qualche minuto."
   },
   "reset": {
     "title": "Imposta una nuova password",
@@ -3769,5 +3776,10 @@
       "invalid": "Non è stato possibile elaborare uno dei campi. Controlli i dati inseriti e riprovi.",
       "rateLimited": "Troppe richieste. Riprovi tra qualche minuto."
     }
+  },
+  "secureContext": {
+    "title": "Gli account richiedono una connessione sicura",
+    "body": "Questa pagina è stata caricata tramite HTTP semplice. Il tuo browser ha disattivato la crittografia richiesta dagli account. Apri openplate a un indirizzo https://, oppure su localhost nel computer che lo esegue.",
+    "guide": "Come configurare HTTPS"
   }
 }

@@ -1993,7 +1993,8 @@
         "allowanceExpired": "Fotoğraf tahminleri için kotan doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
         "trialScansSpent": "Yapay zeka ile kayıt eklemeye devam etmek için bir plan seç. Besin veritabanında arama yapmaya devam edebilirsin.",
         "allowanceExpiredOn": "Fotoğraf tahminleri için kotan {{date}} tarihinde doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
-        "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok."
+        "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok.",
+        "managedUpstream": "Bu kurulumun yapay zeka sağlayıcısı isteği reddetti. Burayı yöneten kişiden sağlayıcı yapılandırmasını kontrol etmesini iste."
       },
       "readPhoto": "Fotoğraf okunamadı. Başka bir tane dene.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın",
         "trialScansSpent_other": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın",
         "trialScansSpentUncounted": "Ücretsiz yapay zeka tarama haklarını kullandın",
-        "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu"
+        "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu",
+        "managedUpstream": "Yapay zeka sağlayıcısı isteği reddetti"
       },
       "text": {
         "empty": "Önce ne yediğini yaz.",
         "title": "Bu açıklama işlenemedi",
         "qualityBody": "Bunu yiyeceklere dönüştüremedik. 3 yumurta, 2 dilim tost ekmeği gibi her yiyeceği ve miktarını belirterek yazmayı dene."
-      }
+      },
+      "managedNoModel": "Bu kurulumda tanımlı bir yapay zeka modeli yok, bu yüzden henüz fotoğrafları okuyamaz. Burayı yöneten kişiden bir model belirlemesini iste."
     },
     "loading": "Tarama yükleniyor…",
     "offline": "Çevrimdışısın. Tabak taraması bağlantı gerektirir. Şimdi kaydetmek için son yiyeceklerinde arama yap.",
@@ -3097,7 +3100,11 @@
     "submit": "Bağlantıyı gönder",
     "sent": "Bu adrese ait bir hesap varsa, bağlantı yola çıktı bile.",
     "sentHint": "Bağlantı bir saat boyunca geçerlidir. Ulaşmazsa istenmeyen e-posta klasörünü kontrol et.",
-    "backToSignIn": "Giriş yapmaya geri dön"
+    "backToSignIn": "Giriş yapmaya geri dön",
+    "noMail": "Bu sunucu e-posta gönderemiyor. Sana bir sıfırlama bağlantısı iletemez.",
+    "noMailHint": "Bu openplate kurulumunu yöneten kişiden bir sıfırlama bağlantısı iste. Kendisi bu bağlantıyı Yönetim altındaki Kişiler bölümünden oluşturabilir.",
+    "unreachable": "Sunucuya ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
+    "failed": "İstek iletilemedi. Birkaç dakika sonra tekrar dene."
   },
   "reset": {
     "title": "Yeni bir parola belirle",
@@ -3769,5 +3776,10 @@
       "invalid": "Alanlardan biri işlenemedi. Girdilerinizi kontrol edin ve tekrar deneyin.",
       "rateLimited": "Çok fazla istek var. Birkaç dakika içinde tekrar deneyin."
     }
+  },
+  "secureContext": {
+    "title": "Hesaplar için güvenli bir bağlantı gerekir",
+    "body": "Bu sayfa düz HTTP üzerinden yüklendi. Tarayıcın hesapların ihtiyaç duyduğu şifrelemeyi kapattı. openplate uygulamasını bir https:// adresinde ya da sunucunun çalıştığı bilgisayarda localhost üzerinde aç.",
+    "guide": "HTTPS nasıl kurulur"
   }
 }

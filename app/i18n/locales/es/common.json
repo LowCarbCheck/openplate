@@ -1993,7 +1993,8 @@
         "allowanceExpired": "Tu cuota para estimaciones a partir de fotos ha terminado. Todo lo demás en openplate sigue funcionando.",
         "trialScansSpent": "Elige un plan para seguir usando las entradas con IA. La búsqueda en la base de datos de alimentos sigue funcionando.",
         "allowanceExpiredOn": "Tu cuota para estimaciones a partir de fotos terminó el {{date}}. Todo lo demás en openplate sigue funcionando.",
-        "instanceCeiling": "Esta instancia ya procesó todas las fotos posibles por hoy. Vuelve a intentarlo mañana. Tu cuenta no tiene ningún problema."
+        "instanceCeiling": "Esta instancia ya procesó todas las fotos posibles por hoy. Vuelve a intentarlo mañana. Tu cuenta no tiene ningún problema.",
+        "managedUpstream": "El proveedor de IA de esta instancia rechazó la solicitud. Pide a quien la administra que revise la configuración de su proveedor."
       },
       "readPhoto": "No se pudo leer esa foto. Prueba con otra.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "Has usado tu {{count}} escaneo con IA gratis",
         "trialScansSpent_other": "Has usado tus {{count}} escaneos con IA gratis",
         "trialScansSpentUncounted": "Has usado tus escaneos con IA gratis",
-        "instanceCeiling": "Esta instancia no tiene más capacidad por hoy"
+        "instanceCeiling": "Esta instancia no tiene más capacidad por hoy",
+        "managedUpstream": "El proveedor de IA rechazó la solicitud"
       },
       "text": {
         "empty": "Escribe primero qué comiste.",
         "title": "No hubo suerte con esa descripción",
         "qualityBody": "No pudimos convertir eso en alimentos. Intenta indicar cada alimento y su cantidad, como 3 huevos o 2 rebanadas de pan tostado."
-      }
+      },
+      "managedNoModel": "Esta instancia no tiene ningún modelo de IA configurado, así que todavía no puede leer fotos. Pide a quien la administra que configure uno."
     },
     "loading": "Cargando escaneo…",
     "offline": "Estás sin conexión. El escaneo de platos necesita conexión. Busca entre tus alimentos recientes para registrarlos ahora.",
@@ -3097,7 +3100,11 @@
     "submit": "Enviar el enlace",
     "sent": "Si existe una cuenta con esa dirección, el enlace va en camino.",
     "sentHint": "El enlace funciona durante una hora. Revisa la carpeta de spam si no te llega.",
-    "backToSignIn": "Volver a iniciar sesión"
+    "backToSignIn": "Volver a iniciar sesión",
+    "noMail": "Este servidor no puede enviar correos electrónicos. No puede enviarte un enlace de restablecimiento.",
+    "noMailHint": "Pide un enlace de restablecimiento a quien administra este openplate. Puede crear uno en Administración, dentro de Personas.",
+    "unreachable": "No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+    "failed": "La solicitud no se pudo procesar. Inténtalo de nuevo en unos minutos."
   },
   "reset": {
     "title": "Definir una nueva contraseña",
@@ -3769,5 +3776,10 @@
       "invalid": "Uno de los campos no pudo procesarse. Revise sus datos e inténtelo de nuevo.",
       "rateLimited": "Demasiadas solicitudes. Inténtelo de nuevo en unos minutos."
     }
+  },
+  "secureContext": {
+    "title": "Las cuentas necesitan una conexión segura",
+    "body": "Esta página se cargó mediante HTTP simple. Tu navegador desactivó el cifrado que necesitan las cuentas. Abre openplate en una dirección https://, o en localhost en el equipo que lo ejecuta.",
+    "guide": "Cómo configurar HTTPS"
   }
 }

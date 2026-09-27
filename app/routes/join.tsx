@@ -50,6 +50,7 @@ import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { AccountsNeedHttps } from '#app/components/accounts-need-https';
 import { Link } from '#app/components/link';
 import { CreateAccountPanel } from '#app/components/create-account-panel';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -58,6 +59,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { isForeignSyncServer, isJoinLinkEmpty, takeJoinLinkFromUrl } from '#app/lib/join-link';
 import { useSyncSession } from '#app/components/sync-status';
 import { signOutOfSync } from '#app/lib/sync/sync-actions';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { readSyncInvite, type SyncInviteDetails } from '#app/lib/sync/sync-actions';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -118,9 +120,19 @@ export default function Join() {
   // re-read a fragment that has already been stripped.
   const signedInAs = useRef(session.account?.email ?? null);
   signedInAs.current = session.account?.email ?? null;
+  // Creating an account is a key ceremony in `crypto.subtle`, which a
+  // plain-http page off this computer does not have. The link is still read
+  // and taken out of the address bar below; only the cards are withheld, and
+  // `shown` is the one value the markup reads.
+  const canRunAccounts = useCanRunAccounts();
+  const shown: Phase | { status: 'needs-https' } = canRunAccounts ? phase : { status: 'needs-https' };
+  const linkArrivals = useLinkArrivals();
 
   useEffect(() => {
     let isMounted = true;
+    // A SECOND LINK IN THE SAME TAB starts from the top, so the first link's
+    // card never stands beside the second link's answer.
+    setPhase({ status: 'reading' });
     // The fragment is read and stripped in the same call, and the token is
     // parked — so this effect running twice (a remount, or the service
     // worker's first-install reload) reads the parked copy rather than
@@ -167,7 +179,7 @@ export default function Join() {
     return () => {
       isMounted = false;
     };
-  }, [configuredSyncUrl]);
+  }, [configuredSyncUrl, linkArrivals]);
 
   return (
     // TOP-ALIGNED, NOT CENTRED (M253/11). The card starts on the small
@@ -180,27 +192,32 @@ export default function Join() {
           <CardTitle>{t('join.title')}</CardTitle>
           <CardDescription>{t('join.description')}</CardDescription>
         </CardHeader>
-        {phase.status === 'reading' && <LoadingCard />}
-        {phase.status === 'foreign-server' && <ForeignServerCard linkOrigin={phase.linkOrigin} />}
-        {phase.status === 'invalid-link' && <InvalidLinkCard />}
-        {phase.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
-        {phase.status === 'unreachable' && <UnreachableCard />}
-        {phase.status === 'signed-in-elsewhere' && (
-          <SignedInElsewhereCard signedInAs={phase.signedInAs} invitedEmail={phase.invitedEmail} />
+        {shown.status === 'needs-https' && (
+          <CardContent>
+            <AccountsNeedHttps />
+          </CardContent>
         )}
-        {phase.status === 'already-registered' && (
-          <AlreadyRegisteredCard email={phase.email} onSignIn={() => void navigate('/sign-in')} />
+        {shown.status === 'reading' && <LoadingCard />}
+        {shown.status === 'foreign-server' && <ForeignServerCard linkOrigin={shown.linkOrigin} />}
+        {shown.status === 'invalid-link' && <InvalidLinkCard />}
+        {shown.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
+        {shown.status === 'unreachable' && <UnreachableCard />}
+        {shown.status === 'signed-in-elsewhere' && (
+          <SignedInElsewhereCard signedInAs={shown.signedInAs} invitedEmail={shown.invitedEmail} />
         )}
-        {phase.status === 'ready' && configuredSyncUrl !== null && (
+        {shown.status === 'already-registered' && (
+          <AlreadyRegisteredCard email={shown.email} onSignIn={() => void navigate('/sign-in')} />
+        )}
+        {shown.status === 'ready' && configuredSyncUrl !== null && (
           <CardContent className="space-y-4">
             {/* The address is SHOWN, never asked for: an admin wrote it on the
                 invitation, and a field would let somebody create an account at
                 one nobody invited. */}
-            <p className="text-sm">{t('join.invitedAs', { email: phase.invite.email })}</p>
+            <p className="text-sm">{t('join.invitedAs', { email: shown.invite.email })}</p>
             <CreateAccountPanel
               serverUrl={configuredSyncUrl}
-              initialInvite={phase.inviteToken}
-              onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: phase.invite.email })}
+              initialInvite={shown.inviteToken}
+              onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: shown.invite.email })}
               onCeremonyComplete={() => void landAfterJoin(navigate)}
             />
           </CardContent>
@@ -230,6 +247,34 @@ async function landAfterJoin(navigate: (path: string) => void): Promise<void> {
   // invitation rather than once per render of the panel.
   trackJoinCompleted();
   navigate(resolveSignInDestination({ gate: await readOnboardingGateKind() }));
+}
+
+/**
+ * Counts the links that arrive while this page stays on screen.
+ *
+ * A link opened in a tab that is already on `/join` changes only the
+ * fragment, and a fragment change is a same-document navigation: no reload,
+ * no remount, and the mount effect above never runs again. The install
+ * rehearsal of 2026-09-27 met exactly that, a first link for another server,
+ * then the right one in the same tab, and the first link's "this link is for
+ * another openplate" stayed until a reload. The count is what the effect
+ * lists, so every new fragment is read the way the first one was.
+ *
+ * An EMPTY fragment is not a link. The read itself strips the fragment with
+ * `history.replaceState`, which fires no `hashchange`, but a person pressing
+ * Back past the page's own entry can produce one.
+ */
+function useLinkArrivals(): number {
+  const [arrivals, setArrivals] = useState(0);
+  useEffect(() => {
+    const onHashChange = (): void => {
+      if (globalThis.window.location.hash === '') return;
+      setArrivals((count) => count + 1);
+    };
+    globalThis.window.addEventListener('hashchange', onHashChange);
+    return () => globalThis.window.removeEventListener('hashchange', onHashChange);
+  }, []);
+  return arrivals;
 }
 
 /** The origin of a link's address, or `''` when it is not parseable — the card words the two differently. */

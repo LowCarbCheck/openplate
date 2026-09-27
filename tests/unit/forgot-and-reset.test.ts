@@ -88,14 +88,26 @@ describe('/forgot answers the same way for every address', () => {
     assert.doesNotMatch(forgotRoute, /notFound|unknownEmail|noSuchAccount/i);
   });
 
-  it('does not await the request, and swallows its failure', () => {
-    // Both halves of the same decision. The answer is `202` whatever happened,
-    // so there is nothing for the person to do differently and nothing true to
-    // tell them; awaiting it would only be a chance to render something that
-    // differs between the two cases.
-    assert.match(forgotRoute, /void requestSyncPasswordReset/);
-    assert.match(forgotRoute, /\.catch\(/);
-    assert.match(forgotRoute, /setIsSent\(true\)/);
+  it('decides every answer without the address', () => {
+    // WHAT CHANGED ON 2026-09-27, and why the old pin went. This file used to
+    // require that the request was fired and its failure swallowed, on the
+    // grounds that nothing true could be said. Two things can: the instance
+    // has no mail at all, and the request never reached the service. Neither
+    // depends on whether the address has an account, which is the property.
+    // So the route may await, but only these two decisions may shape the
+    // answer, and both take no address (`forgot-schema.ts`, and its tests in
+    // `forgot-schema.test.ts`).
+    assert.match(forgotRoute, /decideForgotRequest\(instance\)/);
+    assert.match(forgotRoute, /describeForgotFailure\(cause\)/);
+    assert.doesNotMatch(forgotRoute, /decideForgotRequest\([^)]*email/);
+    assert.doesNotMatch(forgotRoute, /describeForgotFailure\([^)]*email/);
+  });
+
+  it('never reads what the reset request answered', () => {
+    // A resolved request is ONE outcome. Reading its body or status would be
+    // the first step toward a screen that differs between the two cases.
+    assert.match(forgotRoute, /await requestSyncPasswordReset\(\{ serverUrl, email \}\);/);
+    assert.doesNotMatch(forgotRoute, /=\s*await requestSyncPasswordReset/);
   });
 
   it('is client-only: nothing about this address is this server’s business', () => {

@@ -16,6 +16,7 @@ import {
 import type { Route } from './+types/root';
 import { getToast } from '#app/utils/toast.server';
 import { hasLegalPages } from '#app/lib/content/content-route.server';
+import { isPotentiallyTrustworthyUrl } from '#app/lib/secure-context';
 import stylesheet from './app.css?url';
 import victorMonoLatin from '@fontsource-variable/victor-mono/files/victor-mono-latin-wght-normal.woff2?url';
 import { combineHeaders } from '#app/utils/misc';
@@ -112,11 +113,22 @@ export async function loader({ request }: Route.LoaderArgs) {
   // instance with no `CONTENT_DIR` draws no link to a page that 404s.
   const hasLegalPagesHere = await hasLegalPages({ request });
 
+  // WHETHER THE BROWSER WILL CALL THIS PAGE A SECURE CONTEXT, as far as the
+  // address the request came in on can tell (2026-09-27 install rehearsal).
+  // Every account ceremony needs `crypto.subtle`, which a plain-http LAN page
+  // does not have, and the account pages draw a notice instead of a form
+  // there. They draw it on the FIRST PAINT from this guess, so the notice is
+  // not swapped in under the reader after hydration; the browser's own answer
+  // still wins once it has one (`useCanRunAccounts`). Per request, not config:
+  // one instance is often reached both at `localhost` and at a LAN address.
+  const isSecureOrigin = isPotentiallyTrustworthyUrl(request.url);
+
   return {
     toast,
     language,
     publicConfig,
     hasLegalPages: hasLegalPagesHere,
+    isSecureOrigin,
     headers: combineHeaders(toastHeaders),
   };
 }

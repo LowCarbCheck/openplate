@@ -37,6 +37,15 @@ export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 export const SELF_HOSTING_DOCS_URL = 'https://openplate.de/docs/app/self-hosting';
 
 /**
+ * The HTTPS section of the same guide, where the account pages send somebody
+ * who opened them over plain http (2026-09-27 install rehearsal). The English
+ * copy, with the trailing slash the site needs, for the reason
+ * {@link YAZIO_IMPORT_DOCS_URL} records. `#https` is the anchor the site draws
+ * for the guide's `## HTTPS` heading.
+ */
+export const SELF_HOSTING_HTTPS_DOCS_URL = 'https://openplate.de/en/docs/app/self-hosting/#https';
+
+/**
  * The guide to bringing a YAZIO diary over (M254/03), linked from the import
  * section on "Data & backup". The site publishes `docs/import-from-yazio.md`
  * from this repository at `/docs/app/<slug>` (`openplate-website`'s

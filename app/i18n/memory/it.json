@@ -1399,6 +1399,13 @@
     "at": "2026-09-14",
     "it": "Sei affermazioni che puoi verificare nel codice sorgente"
   },
+  "115e312db3e02036": {
+    "en": "The AI provider rejected the request",
+    "path": "common:scan.errors.titles.managedUpstream",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Il provider IA ha rifiutato la richiesta"
+  },
   "115f4fd325c215a1": {
     "en": "e.g. 154",
     "path": "common:goals.targetWeight.placeholderLb",
@@ -1531,6 +1538,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "La condivisione non è attiva sul tuo server di sincronizzazione. La chiave che hai verificato rimane su questo dispositivo, quindi quando la funzione verrà attivata potrai condividere senza ripetere la verifica."
+  },
+  "1329df7750c4f752": {
+    "en": "The request did not go through. Try again in a few minutes.",
+    "path": "common:forgot.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "La richiesta non è andata a buon fine. Riprova tra qualche minuto."
   },
   "132d79dc0cf77e21": {
     "en": "Like yesterday",
@@ -5011,6 +5025,13 @@
     "at": "2026-09-14",
     "it": "Questo link non sembra corretto"
   },
+  "43bfbc9294203c2e": {
+    "en": "This server cannot send email. It cannot send you a reset link.",
+    "path": "common:forgot.noMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Questo server non può inviare email. Non può inviarti un link di ripristino."
+  },
   "43c2e1bfc5c7008e": {
     "en": "Male",
     "path": "common:bodyMetrics.sex.male",
@@ -5465,6 +5486,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Invia invito"
+  },
+  "4a093b032a1ae60f": {
+    "en": "This instance has no AI model set, so it cannot read photos yet. Ask the person who runs it to set one.",
+    "path": "common:scan.errors.managedNoModel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Questa istanza non ha un modello IA configurato, quindi non può ancora leggere le foto. Chiedi a chi la gestisce di impostarne uno."
   },
   "4a0e943d45eb3ca5": {
     "en": "Fasting window",
@@ -9393,6 +9421,13 @@
     "at": "2026-09-14",
     "it": "Lo stesso conteggio delle calorie che trovi sull'etichetta nutrizionale. Imposta un obiettivo giornaliero."
   },
+  "7ab1e082659398ae": {
+    "en": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup.",
+    "path": "common:scan.errors.provider.managedUpstream",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Il provider IA di questa istanza ha rifiutato la richiesta. Chiedi a chi la gestisce di verificare la configurazione del provider."
+  },
   "7acb8c38f867e59e": {
     "en": "Yesterday: {{meals}}, {{netCarbs}} g net carbs of your {{ceiling}} g ceiling, {{protein}} g protein of your {{floor}} g floor.",
     "path": "common:catchUp.yesterdayFull",
@@ -12711,6 +12746,13 @@
     "at": "2026-09-14",
     "it": "Impossibile eliminare l'account."
   },
+  "a406b7e580954a27": {
+    "en": "How to set up HTTPS",
+    "path": "common:secureContext.guide",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Come configurare HTTPS"
+  },
   "a4242cdc91e8620f": {
     "en": "Send",
     "path": "common:describe.send",
@@ -12752,6 +12794,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Come ieri"
+  },
+  "a47a850b4a669b7b": {
+    "en": "The server could not be reached. Check your connection and try again.",
+    "path": "common:forgot.unreachable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Impossibile raggiungere il server. Controlla la tua connessione e riprova."
   },
   "a4920492c300d295": {
     "en": "Details saved.",
@@ -12864,6 +12913,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Questo lo rimuove dai tuoi alimenti. Tutto ciò che hai già registrato con esso rimane nel tuo diario."
+  },
+  "a5e2cf6bb820db1d": {
+    "en": "Ask the person who runs this openplate for a reset link. They can make one in Administration, under People.",
+    "path": "common:forgot.noMailHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Chiedi un link di ripristino a chi gestisce questo openplate. Può generarne uno in Amministrazione, sotto Persone."
   },
   "a6114628eeab34fe": {
     "en": "{{duration}} past your {{target}} goal",
@@ -18955,6 +19011,13 @@
     "at": "2026-09-14",
     "it": "Unisciti · openplate"
   },
+  "f5eac39fb1aa2a8d": {
+    "en": "Accounts need a secure connection",
+    "path": "common:secureContext.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Gli account richiedono una connessione sicura"
+  },
   "f60026707d160925": {
     "en": "Food database",
     "path": "common:settingsAi.foodDb.title",
@@ -19136,6 +19199,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "it": "I nomi degli alimenti seguono la lingua dell'app."
+  },
+  "f8c068a701f4774b": {
+    "en": "This page loaded over plain HTTP. Your browser turned off the encryption accounts need. Open openplate at an https:// address, or at localhost on the computer that runs it.",
+    "path": "common:secureContext.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "it": "Questa pagina è stata caricata tramite HTTP semplice. Il tuo browser ha disattivato la crittografia richiesta dagli account. Apri openplate a un indirizzo https://, oppure su localhost nel computer che lo esegue."
   },
   "f8edde882f81f295": {
     "en": "Help the food database",

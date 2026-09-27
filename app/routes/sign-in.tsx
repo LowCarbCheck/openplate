@@ -37,10 +37,12 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
+import { AccountsNeedHttps } from '#app/components/accounts-need-https';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { FirstPullStatus } from '#app/components/first-pull-status';
 import { SignInPanel } from '#app/components/sign-in-panel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useFirstPull, type FirstPullPhase } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -59,6 +61,9 @@ export default function SignIn() {
   const { t } = useTranslation();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
+  // A plain-http page off this computer has no `crypto.subtle`, and signing
+  // in starts there. See `AccountsNeedHttps` for what is drawn instead.
+  const canRunAccounts = useCanRunAccounts();
   // THE PULL, and its two screens, shared with `/reset` (M192/06 fix). Both
   // routes open a session and then have to wait for the same snapshot; the
   // rule that they must wait lives in the hook, not in either of them.
@@ -108,9 +113,10 @@ export default function SignIn() {
           <CardDescription>{t('signIn.body')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {serverUrl === null ?
-            <p className="text-sm text-muted-foreground">{t('signIn.unavailable')}</p>
-          : <SignedOutBody
+          {serverUrl === null && <p className="text-sm text-muted-foreground">{t('signIn.unavailable')}</p>}
+          {serverUrl !== null && !canRunAccounts && <AccountsNeedHttps />}
+          {serverUrl !== null && canRunAccounts && (
+            <SignedOutBody
               phase={phase}
               serverUrl={serverUrl}
               knownEmail={knownEmail}
@@ -123,7 +129,7 @@ export default function SignIn() {
               onCeremonyComplete={handleCeremonyComplete}
               onRetryPull={startFirstPull}
             />
-          }
+          )}
         </CardContent>
       </Card>
     </main>

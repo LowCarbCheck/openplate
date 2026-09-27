@@ -1399,6 +1399,13 @@
     "at": "2026-09-14",
     "tr": "Kaynak kodunda kontrol edebileceğin altı iddia"
   },
+  "115e312db3e02036": {
+    "en": "The AI provider rejected the request",
+    "path": "common:scan.errors.titles.managedUpstream",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Yapay zeka sağlayıcısı isteği reddetti"
+  },
   "115f4fd325c215a1": {
     "en": "e.g. 154",
     "path": "common:goals.targetWeight.placeholderLb",
@@ -1531,6 +1538,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Eşitleme sunucunda paylaşım açık değil. Kontrol ettiğin anahtar bu cihazda tutulur, bu sayede özellik açıldığında kontrolü tekrar yapmadan paylaşabilirsin."
+  },
+  "1329df7750c4f752": {
+    "en": "The request did not go through. Try again in a few minutes.",
+    "path": "common:forgot.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "İstek iletilemedi. Birkaç dakika sonra tekrar dene."
   },
   "132d79dc0cf77e21": {
     "en": "Like yesterday",
@@ -5011,6 +5025,13 @@
     "at": "2026-09-14",
     "tr": "Bu bağlantı doğru görünmüyor"
   },
+  "43bfbc9294203c2e": {
+    "en": "This server cannot send email. It cannot send you a reset link.",
+    "path": "common:forgot.noMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu sunucu e-posta gönderemiyor. Sana bir sıfırlama bağlantısı iletemez."
+  },
   "43c2e1bfc5c7008e": {
     "en": "Male",
     "path": "common:bodyMetrics.sex.male",
@@ -5465,6 +5486,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Davet gönder"
+  },
+  "4a093b032a1ae60f": {
+    "en": "This instance has no AI model set, so it cannot read photos yet. Ask the person who runs it to set one.",
+    "path": "common:scan.errors.managedNoModel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu kurulumda tanımlı bir yapay zeka modeli yok, bu yüzden henüz fotoğrafları okuyamaz. Burayı yöneten kişiden bir model belirlemesini iste."
   },
   "4a0e943d45eb3ca5": {
     "en": "Fasting window",
@@ -9393,6 +9421,13 @@
     "at": "2026-09-14",
     "tr": "Besin etiketinde göreceğin kalori miktarının aynısı. Günlük bir hedef belirle."
   },
+  "7ab1e082659398ae": {
+    "en": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup.",
+    "path": "common:scan.errors.provider.managedUpstream",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu kurulumun yapay zeka sağlayıcısı isteği reddetti. Burayı yöneten kişiden sağlayıcı yapılandırmasını kontrol etmesini iste."
+  },
   "7acb8c38f867e59e": {
     "en": "Yesterday: {{meals}}, {{netCarbs}} g net carbs of your {{ceiling}} g ceiling, {{protein}} g protein of your {{floor}} g floor.",
     "path": "common:catchUp.yesterdayFull",
@@ -12711,6 +12746,13 @@
     "at": "2026-09-14",
     "tr": "Hesap silinemedi."
   },
+  "a406b7e580954a27": {
+    "en": "How to set up HTTPS",
+    "path": "common:secureContext.guide",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "HTTPS nasıl kurulur"
+  },
   "a4242cdc91e8620f": {
     "en": "Send",
     "path": "common:describe.send",
@@ -12752,6 +12794,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Dünkü gibi"
+  },
+  "a47a850b4a669b7b": {
+    "en": "The server could not be reached. Check your connection and try again.",
+    "path": "common:forgot.unreachable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Sunucuya ulaşılamadı. Bağlantını kontrol et ve tekrar dene."
   },
   "a4920492c300d295": {
     "en": "Details saved.",
@@ -12864,6 +12913,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu işlem ögeyi yiyeceklerinden kaldırır. Bununla günlüğüne daha önce kaydettiğin her şey günlüğünde kalır."
+  },
+  "a5e2cf6bb820db1d": {
+    "en": "Ask the person who runs this openplate for a reset link. They can make one in Administration, under People.",
+    "path": "common:forgot.noMailHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu openplate kurulumunu yöneten kişiden bir sıfırlama bağlantısı iste. Kendisi bu bağlantıyı Yönetim altındaki Kişiler bölümünden oluşturabilir."
   },
   "a6114628eeab34fe": {
     "en": "{{duration}} past your {{target}} goal",
@@ -18955,6 +19011,13 @@
     "at": "2026-09-14",
     "tr": "Katıl · openplate"
   },
+  "f5eac39fb1aa2a8d": {
+    "en": "Accounts need a secure connection",
+    "path": "common:secureContext.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Hesaplar için güvenli bir bağlantı gerekir"
+  },
   "f60026707d160925": {
     "en": "Food database",
     "path": "common:settingsAi.foodDb.title",
@@ -19136,6 +19199,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "tr": "Yiyecek adları uygulama dilini izler."
+  },
+  "f8c068a701f4774b": {
+    "en": "This page loaded over plain HTTP. Your browser turned off the encryption accounts need. Open openplate at an https:// address, or at localhost on the computer that runs it.",
+    "path": "common:secureContext.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu sayfa düz HTTP üzerinden yüklendi. Tarayıcın hesapların ihtiyaç duyduğu şifrelemeyi kapattı. openplate uygulamasını bir https:// adresinde ya da sunucunun çalıştığı bilgisayarda localhost üzerinde aç."
   },
   "f8edde882f81f295": {
     "en": "Help the food database",

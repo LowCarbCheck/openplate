@@ -40,8 +40,12 @@ import type { FoodDbStatus } from '#app/services/food-db/wire';
 import { randomUuid } from '#app/lib/uuid';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
-import { managedAiCredential, type ManagedAiSettings } from '#app/lib/ai/managed-ai-settings';
-import { useServerInstance } from '#app/hooks/use-server-instance';
+import {
+  managedAiCredential,
+  syncServerUrlOfManagedBase,
+  type ManagedAiSettings,
+} from '#app/lib/ai/managed-ai-settings';
+import { readCachedServerInstance, useServerInstance } from '#app/hooks/use-server-instance';
 import { LoadingDots } from '#app/components/app-loading';
 import { scaleMacrosPer100gToServing, type Macros } from '#app/lib/macros';
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
@@ -784,12 +788,19 @@ const MANAGED_AI_FIELDS = { source: 'aiSource', baseUrl: 'aiBaseUrl', model: 'ai
  * Nothing SECRET crosses: a base URL and a model id, both of which the server
  * already publishes to this browser. The bearer is never in the form, it is
  * fetched from the vault inside the action, one frame before the request.
+ *
+ * THE SOURCE IS WRITTEN EVEN WITHOUT A MODEL (2026-09-27 install rehearsal).
+ * It used to be all or nothing, so a managed instance whose handshake named no
+ * model posted an ordinary BYOK submission, and the action told a member of a
+ * managed instance to connect a provider of their own in settings that
+ * instance does not have. The action needs to know it is on a managed
+ * instance to say what is true there.
  */
 export function writeManagedAiFields(formData: FormData, managed: ManagedAiSettings | null): void {
-  if (managed === null || managed.model === null) return;
+  if (managed === null) return;
   formData.append(MANAGED_AI_FIELDS.source, 'managed');
   formData.append(MANAGED_AI_FIELDS.baseUrl, managed.baseUrl);
-  formData.append(MANAGED_AI_FIELDS.model, managed.model);
+  if (managed.model !== null) formData.append(MANAGED_AI_FIELDS.model, managed.model);
 }
 
 /**
@@ -803,7 +814,7 @@ export function writeManagedAiFields(formData: FormData, managed: ManagedAiSetti
 const managedAiFieldsSchema = z.object({
   [MANAGED_AI_FIELDS.source]: z.literal('managed'),
   [MANAGED_AI_FIELDS.baseUrl]: z.string().min(1),
-  [MANAGED_AI_FIELDS.model]: z.string().min(1),
+  [MANAGED_AI_FIELDS.model]: z.string().min(1).optional(),
 });
 
 /** Reads them back, or `null` when this submission is an ordinary BYOK scan. */
@@ -814,8 +825,26 @@ export function readManagedAiFields(formData: FormData): ManagedAiSettings | nul
     source: 'managed',
     provider: 'managed',
     baseUrl: parsed.data[MANAGED_AI_FIELDS.baseUrl],
-    model: parsed.data[MANAGED_AI_FIELDS.model],
+    model: parsed.data[MANAGED_AI_FIELDS.model] ?? null,
   };
+}
+
+/**
+ * The managed descriptor with the model the handshake names, asked for once
+ * more when the screen posted without one.
+ *
+ * The screen reads the model from `/health` after it mounts, so a photo picked
+ * in the first moment can post before the answer lands. The read is shared and
+ * cached for the tab (`readCachedServerInstance`), so asking here costs no
+ * second request: it waits for the one in flight, or answers from the one
+ * that finished. What it still cannot find, the instance does not name.
+ */
+async function withAdvertisedModel(managed: ManagedAiSettings | null): Promise<ManagedAiSettings | null> {
+  if (managed === null || managed.model !== null) return managed;
+  const syncServerUrl = syncServerUrlOfManagedBase(managed.baseUrl);
+  if (syncServerUrl === null) return managed;
+  const instance = await readCachedServerInstance(syncServerUrl);
+  return { ...managed, model: instance?.ai?.model ?? null };
 }
 
 async function handleClientIdentify(formData: FormData): Promise<IdentifyResult> {
@@ -848,7 +877,13 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   // resolves it with `useEffectiveAiSettings` and posts the answer as three
   // fields. Nothing secret travels, a base URL and a model id, and the
   // bearer is fetched from the vault here, in this frame.
-  const managed = readManagedAiFields(formData);
+  const managed = await withAdvertisedModel(readManagedAiFields(formData));
+  // A MANAGED INSTANCE THAT NAMES NO MODEL has nothing to send, and says so in
+  // its own words. The sentence below this one is about a provider of the
+  // person's own, which a managed instance does not let them add.
+  if (managed !== null && managed.model === null) {
+    return { intent: 'identify', error: translate('scan.errors.managedNoModel') };
+  }
   const settings = managed === null ? await getLocalAiSettings() : null;
   if (managed === null && !settings) {
     return {
@@ -874,10 +909,8 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
   const model = managed?.model ?? settings?.model ?? '';
   const baseUrl = managed?.baseUrl ?? settings?.baseUrl ?? null;
   if (model === '') {
-    // A managed instance with an upstream key but no advertised model. The
-    // proxy passes the body through untouched, so there is no model id to
-    // send, and inventing one would fail upstream with a message nobody on
-    // this side could explain.
+    // A device row saved with no model. The managed case (an instance that
+    // names none) returned above with its own sentence.
     return { intent: 'identify', error: translate('scan.errors.connectProvider') };
   }
 
@@ -1999,12 +2032,44 @@ export function getFailureAlertTitle(
   failureCause: VisionFailureCause | undefined,
   t: Translate,
   trialScansGranted?: number | null,
+  provider?: AiProviderType,
 ): string {
   if (failureCause === undefined || failureCause === 'genuinely-no-food') return t('scan.errors.titles.noLuck');
+  if (isOperatorProviderRefusal({ failureCause, provider })) return t('scan.errors.titles.managedUpstream');
   if (failureCause === 'trial-scans-spent' && trialScansGranted !== null && trialScansGranted !== undefined) {
     return t('scan.errors.titles.trialScansSpent', { count: trialScansGranted });
   }
   return t(FAILURE_TITLE_KEY_BY_CAUSE[failureCause]);
+}
+
+/**
+ * The refusals that, on a managed instance, belong to the OPERATOR's provider.
+ *
+ * On an open instance these three say "your key", "your credit", "your
+ * model", and the fix is on `/settings/ai`. On a managed instance the key,
+ * the credit and the model are the operator's, the proxy relays the upstream
+ * provider's own status (openplate-core's `relayUpstreamError`), and there is
+ * no AI settings page to send anybody to. The 2026-09-27 install rehearsal
+ * ran a managed instance with a placeholder upstream key: the scan reached
+ * the proxy, the provider answered 401, and the screen said to check "your"
+ * key in AI settings.
+ *
+ * A 401 the proxy gives for an ENDED SESSION looks the same on the wire. The
+ * adapter has already refreshed the token once and resent by the time a 401
+ * gets here, so a second one comes from behind the proxy in every case but a
+ * refused refresh, and a refused refresh clears the session in the auth client
+ * (`spendRefreshToken`).
+ */
+const OPERATOR_PROVIDER_CAUSES: ReadonlySet<VisionFailureCause> = new Set(['auth', 'credit', 'model-not-found']);
+
+/** Is this failure the managed instance's own provider refusing, rather than anything the person can fix? */
+export function isOperatorProviderRefusal(input: {
+  failureCause?: VisionFailureCause;
+  provider?: AiProviderType;
+}): boolean {
+  return (
+    input.provider === 'managed' && input.failureCause !== undefined && OPERATOR_PROVIDER_CAUSES.has(input.failureCause)
+  );
 }
 
 /**
@@ -2104,6 +2169,7 @@ export function describeFailureBody(
   t: Translate,
 ): string | undefined {
   if (params.failureCause === 'rate-limit' && params.provider === 'openrouter') return t(OPENROUTER_RATE_LIMIT_KEY);
+  if (isOperatorProviderRefusal(params)) return t('scan.errors.provider.managedUpstream');
   // THE DATE, WHEN THERE IS ONE. "Your access ended" is not checkable and a
   // date is, which is the whole reason this refusal is its own cause.
   if (params.failureCause === 'allowance-expired') {
@@ -2265,7 +2331,7 @@ export function UploadForm({
   const alertTitle =
     isPhotoQualityFailure && isTextIntake ?
       t('scan.errors.text.title')
-    : getFailureAlertTitle(failureCause, t, trialScansGranted);
+    : getFailureAlertTitle(failureCause, t, trialScansGranted, provider);
   const photoQualityBody = isTextIntake ? t('scan.errors.text.qualityBody') : t('scan.errors.photoQualityBody');
   // Only relevant for a photo-quality failure: whether there's extra detail
   // worth showing below the friendly headline (the plain NO_FOODS_ERROR case

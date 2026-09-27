@@ -11,6 +11,13 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Account pages say that accounts need HTTPS.** On a plain-http address that is not localhost, the browser turns off the Web Crypto that signing in, creating an account and setting a password all need. `/sign-in`, `/sign-up`, `/join`, `/forgot` and `/reset` now say so, with a link to the HTTPS section of the self-hosting guide, instead of offering a form that failed with the browser's own TypeError. The page decides this from the address it was opened on, so the sentence is there from the first paint. `tests/e2e/accounts-need-https.spec.ts` checks every page on a real plain-http origin.
+- **Forgot password sends its request again.** The page checked its one address field with the sign-in form's rules, which also ask for a password, so the button did nothing on every instance. It now sends the request and says the link is on its way. On an instance whose sync server cannot send mail it sends nothing and says to ask the administrator, who can make a reset link in Administration, under People. A request that cannot reach the server is said instead of hidden. `tests/e2e/forgot-password.spec.ts` checks all three answers.
+- **A second join link in the same tab replaces the first.** A link opened in a tab already on `/join` changes only the part after `#`, which does not reload the page, and the first link's card stayed on screen. The page now reads every new link. `tests/e2e/join-link-hash.spec.ts` checks it.
+- **A managed instance no longer sends members to AI settings.** With `AI_ADVERTISED_MODEL` unset on openplate-core, a photo scan said to connect an AI provider in settings, a page a managed instance does not have. It now says the instance names no AI model. When the provider behind the instance refuses its key, the scan says that instead of asking the member to check a key of their own. `tests/e2e/managed-scan-says-what-is-true.spec.ts` checks both.
+
 ## [0.49.1] - 2026-09-26
 
 ### Changed

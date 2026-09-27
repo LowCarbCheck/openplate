@@ -41,6 +41,7 @@ import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { Check, Loader2 } from 'lucide-react';
 
+import { AccountsNeedHttps } from '#app/components/accounts-need-https';
 import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { FieldError } from '#app/components/field-error';
 import { Link } from '#app/components/link';
@@ -48,6 +49,7 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { useHasLegalPages, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -71,6 +73,13 @@ export default function SignUp() {
   const { t } = useTranslation();
   const serverUrl = useSyncServerUrl();
   const { isSettled, instance } = useServerInstanceRead();
+  // THE LETTER'S LINK WOULD LAND ON A PAGE THAT CANNOT FINISH. The account is
+  // created at `/join` on this same address, and a plain-http page off this
+  // computer has no `crypto.subtle` to create it with, so the request is not
+  // offered at all there. `ready` is the one name for "sync exists and an
+  // account can be made on this page".
+  const canRunAccounts = useCanRunAccounts();
+  const ready = serverUrl !== null && canRunAccounts;
 
   return (
     // TOP-ALIGNED rather than centred like `/sign-in`: a centred card moves
@@ -84,13 +93,14 @@ export default function SignUp() {
         </CardHeader>
         <CardContent>
           {serverUrl === null && <p className="text-sm text-muted-foreground">{t('signIn.unavailable')}</p>}
-          {serverUrl !== null && !isSettled && (
+          {serverUrl !== null && !canRunAccounts && <AccountsNeedHttps />}
+          {ready && !isSettled && (
             <div className="flex justify-center py-4" aria-busy="true">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
               <span className="sr-only">{t('chrome.loading')}</span>
             </div>
           )}
-          {serverUrl !== null && isSettled && !hasOpenSignup(instance) && (
+          {ready && isSettled && !hasOpenSignup(instance) && (
             // AN INVITE-ONLY INSTANCE, reached by a typed or old address. The
             // same sentence the header's dialog says, and a way back.
             <div className="space-y-4">
@@ -98,7 +108,7 @@ export default function SignUp() {
               <SignInLink />
             </div>
           )}
-          {serverUrl !== null && isSettled && hasOpenSignup(instance) && (
+          {ready && isSettled && hasOpenSignup(instance) && (
             <SignUpForm
               serverUrl={serverUrl}
               trialScans={offeredTrialScans(instance)}

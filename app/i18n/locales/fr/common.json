@@ -1993,7 +1993,8 @@
         "allowanceExpired": "Ton quota d'estimations par photo est épuisé. Tout le reste fonctionne toujours dans openplate.",
         "trialScansSpent": "Choisis un forfait pour continuer à utiliser les saisies par IA. La recherche dans la base d'aliments fonctionne toujours.",
         "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
-        "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème."
+        "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème.",
+        "managedUpstream": "Le fournisseur d'IA de cette instance a rejeté la requête. Demande à la personne qui l'administre de vérifier sa configuration."
       },
       "readPhoto": "Impossible de lire cette photo. Essaie avec une autre.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "Tu as utilisé ton {{count}} scan IA gratuit",
         "trialScansSpent_other": "Tu as utilisé tes {{count}} scans IA gratuits",
         "trialScansSpentUncounted": "Tu as utilisé tes scans IA gratuits",
-        "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui"
+        "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui",
+        "managedUpstream": "Le fournisseur d'IA a rejeté la requête"
       },
       "text": {
         "empty": "Écris d'abord ce que tu as mangé.",
         "title": "Impossible d'exploiter cette description",
         "qualityBody": "Impossible d'en déduire des aliments. Essaie de nommer chaque aliment avec sa quantité, comme 3 œufs, 2 tranches de pain grillé."
-      }
+      },
+      "managedNoModel": "Cette instance n'a aucun modèle d'IA configuré et ne peut pas encore lire les photos. Demande à la personne qui l'administre d'en définir un."
     },
     "loading": "Chargement de l'analyse…",
     "offline": "Tu es hors ligne. L'analyse de l'assiette nécessite une connexion. Recherche dans tes aliments récents pour enregistrer maintenant.",
@@ -3097,7 +3100,11 @@
     "submit": "Envoyer le lien",
     "sent": "S'il existe un compte pour cette adresse, le lien est en route.",
     "sentHint": "Le lien fonctionne pendant une heure. Vérifie le dossier des indésirables s'il n'arrive pas.",
-    "backToSignIn": "Retour à la connexion"
+    "backToSignIn": "Retour à la connexion",
+    "noMail": "Ce serveur ne peut pas envoyer d'e-mails. Il ne peut pas t'envoyer de lien de réinitialisation.",
+    "noMailHint": "Demande un lien de réinitialisation à la personne qui administre cet openplate. Elle peut en créer un dans Administration, sous Utilisateurs.",
+    "unreachable": "Le serveur n'a pas pu être contacté. Vérifie ta connexion et réessaie.",
+    "failed": "La requête n'a pas abouti. Réessaie dans quelques minutes."
   },
   "reset": {
     "title": "Définir un nouveau mot de passe",
@@ -3769,5 +3776,10 @@
       "invalid": "L'un des champs n'a pas pu être traité. Vérifiez vos saisies et réessayez.",
       "rateLimited": "Trop de requêtes. Réessayez dans quelques minutes."
     }
+  },
+  "secureContext": {
+    "title": "Les comptes nécessitent une connexion sécurisée",
+    "body": "Cette page s'est chargée en HTTP simple. Ton navigateur a désactivé le chiffrement dont les comptes ont besoin. Ouvre openplate à une adresse https://, ou sur localhost depuis l'ordinateur qui l'exécute.",
+    "guide": "Configurer HTTPS"
   }
 }

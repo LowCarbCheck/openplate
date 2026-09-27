@@ -45,9 +45,11 @@ import { FieldError } from '#app/components/field-error';
 import { FirstPullStatus } from '#app/components/first-pull-status';
 import { Link } from '#app/components/link';
 import { PasswordFields } from '#app/components/password-fields';
+import { AccountsNeedHttps } from '#app/components/accounts-need-https';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useFirstPull } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -94,6 +96,10 @@ export default function Reset() {
   const { t } = useTranslation();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
+  // Setting a password is a key ceremony in `crypto.subtle`, which a
+  // plain-http page off this computer does not have. The link is still read
+  // and taken out of the address bar below; only the form is withheld.
+  const canRunAccounts = useCanRunAccounts();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });
   // THE SAME PULL `/sign-in` RUNS, from the same hook: wait for the snapshot,
   // then ask the gate. There is no parked invitation to spend here, which is
@@ -146,31 +152,36 @@ export default function Reset() {
         </CardHeader>
         <CardContent className="space-y-4">
           {serverUrl === null && <p className="text-sm text-muted-foreground">{t('signIn.unavailable')}</p>}
-          {phase.status === 'reading' && serverUrl !== null && (
-            <output className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('reset.working')}
-            </output>
-          )}
-          {phase.status === 'working' && (
-            <output className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('reset.working')}
-            </output>
-          )}
-          {/* The pull, and its retry, in the same words `/sign-in` uses. A
-              failed pull leaves the new password in place and the session
-              open: only the download failed, so the retry repeats the download
-              and never asks for a password again. */}
-          {phase.status === 'pulling' && firstPull.phase.status !== 'idle' && (
-            <FirstPullStatus phase={firstPull.phase} onRetry={firstPull.start} />
-          )}
-          {(phase.status === 'no-token' || phase.status === 'invalid-token' || phase.status === 'foreign-server') && (
-            <InvalidTokenCard reason={phase.status} />
-          )}
-          {(phase.status === 'form' || phase.status === 'failed') && (
-            <ResetForm
-              message={phase.status === 'failed' ? phase.message : null}
-              onSubmit={(passphrase) => void submit({ resetToken: phase.resetToken, passphrase })}
-            />
+          {serverUrl !== null && !canRunAccounts && <AccountsNeedHttps />}
+          {canRunAccounts && (
+            <>
+              {phase.status === 'reading' && serverUrl !== null && (
+                <output className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('reset.working')}
+                </output>
+              )}
+              {phase.status === 'working' && (
+                <output className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('reset.working')}
+                </output>
+              )}
+              {/* The pull, and its retry, in the same words `/sign-in` uses. A
+                  failed pull leaves the new password in place and the session
+                  open: only the download failed, so the retry repeats the download
+                  and never asks for a password again. */}
+              {phase.status === 'pulling' && firstPull.phase.status !== 'idle' && (
+                <FirstPullStatus phase={firstPull.phase} onRetry={firstPull.start} />
+              )}
+              {(phase.status === 'no-token' ||
+                phase.status === 'invalid-token' ||
+                phase.status === 'foreign-server') && <InvalidTokenCard reason={phase.status} />}
+              {(phase.status === 'form' || phase.status === 'failed') && (
+                <ResetForm
+                  message={phase.status === 'failed' ? phase.message : null}
+                  onSubmit={(passphrase) => void submit({ resetToken: phase.resetToken, passphrase })}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

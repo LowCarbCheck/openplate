@@ -94,6 +94,7 @@ const catalogSchema = z.object({
       trialScansUsed: z.string(),
       analyze: z.string(),
       takePhoto: z.string(),
+      chooseLibrary: z.string(),
       previewAlt: z.string(),
     }),
     errors: z.object({

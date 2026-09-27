@@ -1993,7 +1993,8 @@
         "allowanceExpired": "Your allowance for photo estimates has ended. Everything else in openplate keeps working.",
         "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Your allowance for photo estimates ended on {{date}}. Everything else in openplate keeps working.",
-        "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account."
+        "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.",
+        "managedUpstream": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "You used your {{count}} free AI scan",
         "trialScansSpent_other": "You used your {{count}} free AI scans",
         "trialScansSpentUncounted": "You used your free AI scans",
-        "instanceCeiling": "This instance is out of capacity today"
+        "instanceCeiling": "This instance is out of capacity today",
+        "managedUpstream": "The AI provider rejected the request"
       },
       "text": {
         "empty": "Write what you ate first.",
         "title": "No luck with that description",
         "qualityBody": "We could not turn that into foods. Try naming each food and how much, like 3 eggs, 2 slices of toast."
-      }
+      },
+      "managedNoModel": "This instance has no AI model set, so it cannot read photos yet. Ask the person who runs it to set one."
     },
     "loading": "Loading scan…",
     "offline": "You're offline. Plate scanning needs a connection. Search your recent foods to log now.",
@@ -3097,7 +3100,11 @@
     "submit": "Send the link",
     "sent": "If there is an account for that address, the link is on its way.",
     "sentHint": "The link works for one hour. Check the spam folder if it does not arrive.",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "noMail": "This server cannot send email. It cannot send you a reset link.",
+    "noMailHint": "Ask the person who runs this openplate for a reset link. They can make one in Administration, under People.",
+    "unreachable": "The server could not be reached. Check your connection and try again.",
+    "failed": "The request did not go through. Try again in a few minutes."
   },
   "reset": {
     "title": "Set a new password",
@@ -3769,5 +3776,10 @@
       "invalid": "One of the fields could not be processed. Check your entries and try again.",
       "rateLimited": "Too many requests. Try again in a few minutes."
     }
+  },
+  "secureContext": {
+    "title": "Accounts need a secure connection",
+    "body": "This page loaded over plain HTTP. Your browser turned off the encryption accounts need. Open openplate at an https:// address, or at localhost on the computer that runs it.",
+    "guide": "How to set up HTTPS"
   }
 }

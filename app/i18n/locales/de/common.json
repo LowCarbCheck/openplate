@@ -1993,7 +1993,8 @@
         "allowanceExpired": "Dein Kontingent für Foto-Schätzungen ist abgelaufen. Alles andere in openplate funktioniert weiterhin.",
         "trialScansSpent": "Wähle einen Tarif, um KI-Einträge weiter zu nutzen. Die Suche in der Lebensmitteldatenbank funktioniert weiterhin.",
         "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
-        "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung."
+        "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung.",
+        "managedUpstream": "Der KI-Anbieter für diese Instanz hat die Anfrage abgelehnt. Bitte die Person, die sie betreibt, ihre Anbieterkonfiguration zu prüfen."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -2011,13 +2012,15 @@
         "trialScansSpent_one": "Du hast deinen {{count}} kostenlosen KI-Scan aufgebraucht",
         "trialScansSpent_other": "Du hast deine {{count}} kostenlosen KI-Scans aufgebraucht",
         "trialScansSpentUncounted": "Du hast deine kostenlosen KI-Scans aufgebraucht",
-        "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr"
+        "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr",
+        "managedUpstream": "Der KI-Anbieter hat die Anfrage abgelehnt"
       },
       "text": {
         "empty": "Schreib zuerst, was du gegessen hast.",
         "title": "Mit dieser Beschreibung hat es nicht geklappt",
         "qualityBody": "Daraus konnten keine Lebensmittel erkannt werden. Nenne am besten jedes Lebensmittel und die Menge, zum Beispiel 3 Eier, 2 Scheiben Toast."
-      }
+      },
+      "managedNoModel": "Für diese Instanz ist kein KI-Modell festgelegt, daher kann sie noch keine Fotos lesen. Bitte die Person, die sie betreibt, eines einzurichten."
     },
     "loading": "Scan wird geladen…",
     "offline": "Du bist offline. Das Scannen von Tellern erfordert eine Internetverbindung. Durchsuche deine kürzlich genutzten Lebensmittel, um jetzt etwas einzutragen.",
@@ -3097,7 +3100,11 @@
     "submit": "Link senden",
     "sent": "Wenn ein Konto für diese Adresse existiert, ist der Link unterwegs.",
     "sentHint": "Der Link ist eine Stunde lang gültig. Prüfe deinen Spam-Ordner, falls er nicht ankommt.",
-    "backToSignIn": "Zurück zur Anmeldung"
+    "backToSignIn": "Zurück zur Anmeldung",
+    "noMail": "Dieser Server kann keine E-Mails senden. Er kann dir keinen Link zum Zurücksetzen senden.",
+    "noMailHint": "Bitte die Person, die dieses openplate betreibt, um einen Link zum Zurücksetzen. Sie kann unter Administration bei Personen einen erstellen.",
+    "unreachable": "Der Server konnte nicht erreicht werden. Prüfe deine Verbindung und versuche es erneut.",
+    "failed": "Die Anfrage wurde nicht übermittelt. Versuche es in ein paar Minuten erneut."
   },
   "reset": {
     "title": "Neues Passwort festlegen",
@@ -3769,5 +3776,10 @@
       "invalid": "Ein Feld konnte nicht verarbeitet werden. Bitte prüfen Sie Ihre Eingaben und versuchen Sie es erneut.",
       "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es in ein paar Minuten erneut."
     }
+  },
+  "secureContext": {
+    "title": "Konten erfordern eine sichere Verbindung",
+    "body": "Diese Seite wurde über einfaches HTTP geladen. Dein Browser hat die Verschlüsselung deaktiviert, die Konten benötigen. Öffne openplate über eine https://-Adresse oder über localhost auf dem Computer, auf dem es läuft.",
+    "guide": "So richtest du HTTPS ein"
   }
 }
