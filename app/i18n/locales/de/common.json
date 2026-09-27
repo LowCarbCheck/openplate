@@ -381,6 +381,7 @@
   },
   "chrome": {
     "back": "Zurück",
+    "bootFailed": "openplate konnte nicht geladen werden. Prüfe deine Verbindung und lade dann neu.",
     "buildStamp": "Build {{label}}",
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Dieses Gerät, Menü öffnen",

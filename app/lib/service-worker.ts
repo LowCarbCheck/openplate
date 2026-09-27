@@ -95,6 +95,47 @@ function healDevBrowser(): void {
 }
 
 /**
+ * The `sessionStorage` key that records that this tab has already asked the
+ * worker for a whole offline shell. Tab-scoped on purpose: once per launch.
+ */
+const OFFLINE_SHELL_ASKED_KEY = 'openplate.offline-shell-asked';
+
+/**
+ * Asks the active worker to make its offline shell whole, once per tab, now
+ * that the app has started (2026-09-27).
+ *
+ * The worker saves each shell page with the scripts, stylesheet and logo it
+ * starts on, and serves a saved page offline only once they are all saved. It
+ * does that on this message rather than in its install event, for the reason
+ * `public/sw.js` gives at `precacheAppShell`, and after the start so it never
+ * competes with a page still loading. `ready` resolves once a worker is
+ * active, which on a first visit is after its install.
+ *
+ * ONCE PER TAB, not on every document load. Even when the shell is already
+ * whole, the worker reads eight pages and its cache keys to find that out,
+ * and doing that beside every page load made Chromium cancel some of the
+ * loading page's module requests: a walk through six languages ended on a
+ * boot screen in 15 of 20 runs. Asked once, 0 of 30.
+ */
+async function askForAWholeOfflineShell(): Promise<void> {
+  const storage = sessionStorageOrNull();
+  if (storage?.getItem(OFFLINE_SHELL_ASKED_KEY) === '1') return;
+  storage?.setItem(OFFLINE_SHELL_ASKED_KEY, '1');
+  const ready = await navigator.serviceWorker.ready;
+  // oxlint-disable-next-line unicorn/require-post-message-target-origin -- `ServiceWorker.postMessage` has no target-origin parameter; its second argument is a transfer list.
+  ready.active?.postMessage({ type: 'SAVE_SHELL' });
+}
+
+/** `sessionStorage`, or `null` wherever it is blocked outright; then every launch asks. */
+function sessionStorageOrNull(): Storage | null {
+  try {
+    return globalThis.sessionStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Registers the production worker and keeps it checked for updates, silently
  * activating a new one. Swallows every failure: the app works without the
  * worker, it just loses offline support.
@@ -103,6 +144,8 @@ async function registerAndWatchForUpdates(): Promise<void> {
   try {
     const registration = await navigator.serviceWorker.register('/sw.js');
     currentRegistration = registration;
+
+    void askForAWholeOfflineShell();
 
     // Check for updates every 60 seconds.
     setInterval(() => {

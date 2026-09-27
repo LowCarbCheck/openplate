@@ -2025,6 +2025,28 @@ export default function AddFood({ loaderData, actionData }: Route.ComponentProps
     setSelected(candidate);
     updateAddDraft('search', { selected: candidate, portion: null });
   }, []);
+  // A LOG WHOSE WAY OUT WAS OVERTAKEN (2026-09-27). A successful log clears
+  // the draft and redirects to the diary. If the person taps another way back
+  // into this screen before that redirect lands, the switcher's Search or the
+  // bar's plus and its search door, React Router drops the redirect and this
+  // component is never unmounted: it is the same route. Its `selected` state
+  // then outlived the log, the portion step of a food already in the diary
+  // came back, and one more tap on "Add to diary" logged it twice. With the
+  // CPU slowed six times that happened in 5 of 20 runs of
+  // `add-method-switcher.spec.ts`; `add-search-after-an-overtaken-log.spec.ts`
+  // makes it certain. `selectCandidate` writes the draft and the state
+  // together, so a food on screen that the draft no longer holds was cleared
+  // by a log, and the screen follows the draft.
+  //
+  // ONLY ONCE THE ROUTER IS IDLE. The clear lands inside the action, and the
+  // redirect's loading phase re-renders this screen before the diary replaces
+  // it; resetting then would flash the result list under the person's thumb
+  // on the way out. Reset during render, React's pattern for state that
+  // follows another value, so no frame shows the stale step.
+  const isRouterIdle = useNavigation().state === 'idle';
+  if (selected !== null && isRouterIdle && (readAddDraft('search')?.selected ?? null) === null) {
+    setSelected(null);
+  }
   const logResult = actionData?.intent === 'log' ? actionData.submission : undefined;
   const manualResult = actionData?.intent === 'manual' ? actionData.submission : undefined;
 

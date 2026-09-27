@@ -381,6 +381,7 @@
   },
   "chrome": {
     "back": "Atrás",
+    "bootFailed": "openplate no se pudo cargar. Comprueba tu conexión y vuelve a cargar.",
     "buildStamp": "Compilación {{label}}",
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Este dispositivo, abrir menú",

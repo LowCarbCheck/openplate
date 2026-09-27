@@ -6054,6 +6054,13 @@
     "at": "2026-09-14",
     "es": "Te damos la bienvenida a openplate"
   },
+  "51252da19bc06b63": {
+    "en": "openplate couldn't load. Check your connection, then reload.",
+    "path": "common:chrome.bootFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "es": "openplate no se pudo cargar. Comprueba tu conexión y vuelve a cargar."
+  },
   "5141fa4ed5cad885": {
     "en": "A whole plate, one item, or the printed panel on a package. Point the camera and openplate works out the rest.",
     "path": "common:onboarding.waysToLog.photo.description",
