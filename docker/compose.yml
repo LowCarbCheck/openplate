@@ -1,11 +1,18 @@
 # openplate, self-hosted: one stateless container and nothing else.
 #
+#   mkdir -p ~/openplate && cd ~/openplate
 #   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 #   docker compose -f compose.yml up -d
 #
-# Run that from whatever directory you downloaded the file into. Compose treats
-# the compose file's OWN directory as the project directory, so a `.env` beside
-# this file is the one it reads -- not one somewhere further up.
+# Keep this file in a folder that lasts, like ~/openplate above, and run every
+# command from there. Compose treats the compose file's OWN directory as the
+# project directory, so a `.env` beside this file is the one it reads, not one
+# somewhere further up. A folder under /tmp can be emptied by a reboot.
+#
+# Only http://localhost:3000 on this machine counts as a secure page. Opened
+# from another device at http://<this machine's address>:3000, the diary and
+# plate photos work, but installing the app, offline use and the one-click
+# OpenRouter connect do not. See the HTTPS section of docs/self-hosting.md.
 #
 # There is no database and no secret to configure. The server stores nothing:
 # your diary lives in your browser's own IndexedDB on the device you use it
@@ -13,7 +20,7 @@
 # in-app JSON export, not with a database dump.
 #
 # If you also want the optional end-to-end-encrypted sync service, use
-# docker/topologies/compose.sync.yml instead -- THAT one needs a database,
+# docker/topologies/compose.sync.yml instead. THAT one needs a database,
 # because the sync service keeps accounts and ciphertext. The other shapes
 # (self-hosted AI, or everything at once) sit beside it; docker/topologies/
 # README.md is the one-page map.
@@ -40,31 +47,51 @@ services:
     #   dockerfile: Dockerfile.pnpm
     restart: unless-stopped
     ports:
+      # Published on EVERY network interface of this machine, so anyone on your
+      # network can open http://<this machine's address>:3000. Behind a reverse
+      # proxy on this machine, write '127.0.0.1:3000:3000' instead: then only
+      # the proxy can reach the app, and the plain HTTP port is gone.
       - '3000:3000'
     environment:
       NODE_ENV: production
       PORT: 3000
-      # Public URL this instance is reachable at. Update this if you put a
-      # reverse proxy in front (see docs/self-hosting.md -> HTTPS).
+      # Public URL this instance is reachable at. Set APP_URL in .env if you
+      # put a reverse proxy in front (see docs/self-hosting.md, HTTPS).
       APP_URL: ${APP_URL:-http://localhost:3000}
-      # ON by default -- queries the public LowCarbCheck food database for
+      # ON by default. Queries the public LowCarbCheck food database for
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
       FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
-      # Number of reverse proxies in front of this container. React Router's
-      # CSRF check compares the browser Origin against the host it thinks it
-      # is serving, so a wrong hop count breaks form posts behind a proxy.
-      # 1 = one proxy (Caddy, Traefik); 2 = Cloudflare in front of one.
+      # Optional free key for that database. Empty is the shared anonymous
+      # allowance; set one if more than one person scans on this instance.
+      FOOD_DB_API_KEY: ${FOOD_DB_API_KEY:-}
+      # "true" passes foods people save from an AI answer on to LowCarbCheck as
+      # proposals. Needs FOOD_DB_API_KEY. Empty means off.
+      FOOD_DB_BACKFILL: ${FOOD_DB_BACKFILL:-}
+      # Number of reverse proxies in front of this container. Behind one proxy
+      # (Caddy, nginx, Traefik) keep 1: React Router's CSRF check compares the
+      # browser Origin against the host it thinks it is serving, and without
+      # the proxy's X-Forwarded-* headers form posts fail. With NO proxy, set
+      # TRUST_PROXY=0 in .env: pages work either way, but 1 lets any visitor
+      # fake their address in X-Forwarded-For and dodge the per-address limit
+      # on food lookups. 2 = Cloudflare in front of one proxy.
       TRUST_PROXY: ${TRUST_PROXY:-1}
+      # The language a first-time visitor sees: en, de, fr, it, es or tr.
+      # Empty means en. Anyone can still switch in Settings.
+      DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
+      # "off" stops the six-hourly question to GitHub about a newer release.
+      # Empty means on.
+      UPDATE_CHECK: ${UPDATE_CHECK:-}
+      # Extra origins the browser may call, space separated, for example a
+      # remote AI endpoint of your own. Empty adds nothing.
+      CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
     healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      # A shell line with no quotes and no brackets, run by the image's busybox
+      # wget. Docker Compose, podman-compose and Quadlet all pass it through
+      # the same way; the old `node -e "fetch(...)"` form reached podman-compose
+      # 1.0.6 as a broken shell line and stayed unhealthy forever.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/healthcheck']
       interval: 30s
       timeout: 5s
       start_period: 30s

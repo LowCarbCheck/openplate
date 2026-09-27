@@ -1,37 +1,48 @@
 # openplate, everything at once: app + sync + Postgres + your own AI.
 #
 # Four containers: the stateless app, the optional account + E2EE sync service
-# (openplate-core), the Postgres that sync — and only sync — needs, and a
+# (openplate-core), the Postgres that sync, and only sync, needs, and a
 # self-hosted plate-identification endpoint (openplate-inference). The app
 # itself still keeps no database at all. Every image is open source under the
-# MIT License and is published to GHCR — nothing here builds from source.
+# MIT License and is published to GHCR; nothing here builds from source.
 #
 # This is the largest shape, and you now operate all four. If you only want one
 # of the two extras, take the smaller file instead: `compose.sync.yml` for sync,
 # `compose.inference.yml` for the AI. `../compose.yml` is the app alone.
 #
+#   mkdir -p ~/openplate && cd ~/openplate
 #   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.full.yml
 #
 #   # The sync service needs exactly one secret. Generate it once and keep it
-#   # with your database backups — see the SERVER_SECRET note below.
+#   # with your database backups, see the SERVER_SECRET note below.
 #   echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 #
-#   # The two URLs a BROWSER will use to reach each service. Defaults below
-#   # work for a local trial; set these for anything else.
-#   echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
-#   echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
+#   # Your key to the admin API, which is how you create the first account.
+#   echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 #
-#   # …then edit the four EDIT-ME values in the inference and app blocks.
+#   # One key for the inference service, which the app hands to browsers.
+#   echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+#
+#   # The three URLs a BROWSER will use to reach each service.
+#   echo "PUBLIC_APP_URL=https://openplate.example.com"      >> .env
+#   echo "PUBLIC_SYNC_URL=https://sync.example.com"          >> .env
+#   echo "PUBLIC_INFERENCE_URL=https://ai.example.com/v1"    >> .env
+#
 #   docker compose -f compose.full.yml up -d
 #
-# Run all of that from the directory you downloaded this file into. Compose
-# treats the compose file's OWN directory as the project directory, so the
-# `.env` you just wrote -- sitting beside this file -- is the one it reads.
+# Keep this file in a folder that lasts, like ~/openplate above, and run all of
+# that from there. Compose treats the compose file's OWN directory as the
+# project directory, so the `.env` you just wrote, sitting beside this file, is
+# the one it reads. Compose passes on only the variables named below.
 #
-# Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
-# SYNC_SERVER_URL is set below; create an account there and the two devices
-# you sign in on converge. The service still cannot read a single entry —
-# see openplate-core's PROTOCOL.md.
+# Signing in needs a secure page: https://, or http://localhost on the machine
+# you are sitting at. Over plain http://<LAN address> the sign-in, the sign-up
+# and the invite link all fail. See the HTTPS section of docs/self-hosting.md.
+#
+# Then create the first account with an invitation to yourself, minted on
+# THIS machine with ADMIN_TOKEN (docs/self-hosting.md has the curl command).
+# Open the link it returns, choose a password, and the devices you sign in on
+# converge. What the sync operator holds is explained in docs/sync.md.
 #
 # "README" in the inference block below always means openplate-inference's
 # README: https://github.com/LowCarbCheck/openplate-inference
@@ -39,7 +50,7 @@
 # ── THE ONE THING PEOPLE GET WRONG ─────────────────────────────────────────
 # `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or
 # laptop can open. The photo goes from the device straight to the inference
-# endpoint — openplate's server is never in the loop, which is what keeps the
+# endpoint; openplate's server is never in the loop, which is what keeps the
 # scan private. So `http://inference:8300/v1` (the container hostname) does NOT
 # work, even though the two containers can talk to each other that way. Use the
 # LAN address of this host, or a hostname on your reverse proxy / tailnet.
@@ -51,7 +62,7 @@ name: openplate-full
 
 services:
   # ── Postgres ──────────────────────────────────────────────────────────────
-  # Belongs to the sync service alone — it holds sync's accounts and the
+  # Belongs to the sync service alone: it holds sync's accounts and the
   # opaque ciphertext blobs. Neither the app nor the inference service connects
   # to it, and the app has no database of its own
   # (.adr/0006-the-app-server-holds-no-accounts.md).
@@ -77,7 +88,7 @@ services:
 
   # ── The inference service ─────────────────────────────────────────────────
   # A self-hosted, OpenAI-compatible plate-photo endpoint. Users of this
-  # instance tap ONE button to use it — no provider account, no API key of
+  # instance tap ONE button to use it: no provider account, no API key of
   # their own, no photo leaving your network.
   inference:
     image: ghcr.io/lowcarbcheck/openplate-inference:latest
@@ -93,19 +104,24 @@ services:
       # `docker compose down` does not throw the download away.
       - inference-models:/models
     environment:
-      # lite | lite-apache | quality — see README "Hardware & measured latency".
+      # lite | lite-apache | quality, see README "Hardware & measured latency".
       MODEL_PROFILE: lite
-      # ── EDIT ME (1/4) ── A stable key. Without it a new key is generated on
-      # every restart and every browser has to reconnect. Any random string:
-      #   openssl rand -base64 24
-      API_KEYS: 'opk_CHANGE_ME'
+      # The key callers must present. Set INFERENCE_API_KEY in .env (see the
+      # top of this file); the placeholder below only keeps a first trial
+      # booting. It must match DEFAULT_INFERENCE_API_KEY on the app.
+      API_KEYS: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
       LATENCY_CEILING_MS: '0'
+      # Scans in flight at once. It also sets llama.cpp's slot count; it does
+      # NOT add CPU threads, the slots share LLAMA_THREADS.
       CONCURRENCY: '2'
+      # CPU threads for the model. Empty means every core but two (nproc - 2),
+      # which leaves room for the service and the OS.
+      LLAMA_THREADS: ${LLAMA_THREADS:-}
       # Where macros come from. fdc = the bundled offline USDA-derived dataset.
       # See README "Food data" before switching to `off` (ODbL) or `lcc`.
       FOOD_SOURCE: fdc
-    # ── GPU (the `quality` profile) ── uncomment BOTH of these and switch the
+    # ── GPU (the `quality` profile): uncomment BOTH of these and switch the
     # image to the -cuda tag. The entrypoint detects the GPU and offloads every
     # layer automatically; there is no flag to set.
     # deploy:
@@ -118,7 +134,7 @@ services:
     #
     # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ─────────────────────────
     # Replace the `environment:` block above with the one below and this
-    # container downloads no weights and starts no second model — it just turns
+    # container downloads no weights and starts no second model; it just turns
     # your runtime into a plate scanner. You can drop the `volumes:` block and
     # the `inference-models` volume entirely. Read README "Bring your own
     # runtime" FIRST: your runtime must enforce grammar-constrained decoding,
@@ -143,7 +159,7 @@ services:
 
   # ── The app ───────────────────────────────────────────────────────────────
   # Stateless. No accounts, no personal data, no database: your diary lives in
-  # the browser. There is no secret to configure here — that is the design,
+  # the browser. There is no secret to configure here; that is the design,
   # not an omission (see .adr/0006-the-app-server-holds-no-accounts.md).
   app:
     image: ghcr.io/lowcarbcheck/openplate:latest
@@ -151,80 +167,95 @@ services:
     depends_on:
       - inference
     ports:
+      # Published on EVERY network interface. Behind a reverse proxy on this
+      # machine, write '127.0.0.1:3000:3000' so only the proxy can reach it.
       - '${APP_PORT:-3000}:3000'
     environment:
       NODE_ENV: production
       PORT: 3000
 
-      # ── EDIT ME (2/4) ── The URL a browser uses to reach THIS app. Behind a
-      # reverse proxy, that is the public https:// address, not the container
-      # port. Set PUBLIC_APP_URL in .env rather than editing this line.
+      # The URL a browser uses to reach THIS app: PUBLIC_APP_URL in .env.
+      # Behind a reverse proxy, that is the public https:// address, not the
+      # container port.
       APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
-      # The URL a BROWSER uses to reach the sync service — not `http://sync:3000`.
+      # The URL a BROWSER uses to reach the sync service, not `http://sync:3000`.
       # The sync client runs in the page, so this address has to resolve from
       # your users' devices. Setting it is what makes the sync interface exist
       # at all; remove this line and the app is a pure local tracker again.
       # The origin is added to the app's Content-Security-Policy automatically.
       SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
 
-      # ── EDIT ME (3/4) ── a BROWSER-reachable address for the inference
-      #    container. NOT http://inference:8300. Note the /v1 suffix. This is
-      #    what turns into openplate's one-tap "This openplate provides its own
-      #    AI" card; leave it unset and bring-your-own-key stays the only path.
-      DEFAULT_INFERENCE_BASE_URL: 'http://openplate.example.lan:8300/v1'
-      # ── EDIT ME (4/4) ── must match API_KEYS above.
+      # PUBLIC_INFERENCE_URL in .env: a BROWSER-reachable address for the
+      # inference container. NOT http://inference:8300. Note the /v1 suffix.
+      # This is what turns into openplate's one-tap "This openplate provides
+      # its own AI" card. Behind HTTPS it must be https:// too, or the browser
+      # blocks the call from the secure page.
+      DEFAULT_INFERENCE_BASE_URL: ${PUBLIC_INFERENCE_URL:-http://openplate.example.lan:8300/v1}
+      # The same INFERENCE_API_KEY as API_KEYS above.
       #
-      # ⚠ THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
+      # ! THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
       #   anyone who can open your openplate can read it with view-source. That
       #   is fine for a household or a tailnet. It is NOT fine on an instance
-      #   open to the internet without a VPN or auth proxy in front of it — in
+      #   open to the internet without a VPN or auth proxy in front of it; in
       #   that case leave this unset and let people paste the key themselves.
-      DEFAULT_INFERENCE_API_KEY: 'opk_CHANGE_ME'
+      DEFAULT_INFERENCE_API_KEY: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       DEFAULT_INFERENCE_MODEL: 'openplate-plate-1'
 
-      # Number of reverse proxies in front of this container (1 behind a single
-      # nginx/Traefik/Caddy). Required behind a proxy: React Router's CSRF check
-      # compares the browser Origin against the host it thinks it is serving.
+      # `open` (the default) or `managed`. See docs/configuration.md, Managed
+      # instances, and the AI proxy block on the sync service below.
+      INSTANCE_MODE: ${INSTANCE_MODE:-open}
+
+      # How many reverse proxies stand in front of the app AND the sync service.
+      # One value for both. With one proxy set TRUST_PROXY=1: the app's CSRF
+      # check needs the proxy's X-Forwarded-* headers or form posts fail. With
+      # NO proxy set TRUST_PROXY=0: 1 would let any visitor fake their address
+      # in X-Forwarded-For and dodge the per-address limits. The app's default
+      # of 1 assumes a proxy.
       TRUST_PROXY: ${TRUST_PROXY:-1}
 
-      # ON by default — queries the public LowCarbCheck food database for
+      # ON by default. Queries the public LowCarbCheck food database for
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
       FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
+      # Optional free key for that database. Empty is the shared anonymous
+      # allowance; set one if more than one person scans on this instance.
+      FOOD_DB_API_KEY: ${FOOD_DB_API_KEY:-}
+      # "true" passes foods people save from an AI answer on to LowCarbCheck as
+      # proposals. Needs FOOD_DB_API_KEY. Empty means off.
+      FOOD_DB_BACKFILL: ${FOOD_DB_BACKFILL:-}
+      # The language a first-time visitor sees: en, de, fr, it, es or tr.
+      # Empty means en.
+      DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
+      # "off" stops the six-hourly question to GitHub about a newer release.
+      UPDATE_CHECK: ${UPDATE_CHECK:-}
+      # Extra origins the browser may call, space separated. Empty adds nothing.
+      CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
     healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      # A shell line with no quotes and no brackets, run by the image's busybox
+      # wget, so Docker Compose, podman-compose and Quadlet all run it alike.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/healthcheck']
       interval: 30s
       timeout: 5s
       start_period: 30s
       retries: 3
 
   # ── The sync service ──────────────────────────────────────────────────────
-  # An account service that stores an email address and opaque ciphertext. It
-  # holds no key for that ciphertext and cannot be made to decrypt it.
+  # An account service that stores an email address and opaque ciphertext,
+  # plus each account's recovery code, sealed under SERVER_SECRET, so that a
+  # password reset brings the diary back. docs/sync.md states what that means
+  # for whoever runs this service.
   sync:
     image: ghcr.io/lowcarbcheck/openplate-core:latest
     restart: unless-stopped
     healthcheck:
-      # The image bakes the same check in, but Podman drops a HEALTHCHECK when
-      # it pulls an OCI manifest, which is what GHCR serves. Declared here it
+      # The image bakes a check in, but Podman drops a HEALTHCHECK when it
+      # pulls an OCI manifest, which is what GHCR serves. Declared here it
       # holds under both engines and Quadlet turns it into Notify=healthy.
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/health']
       interval: 30s
       timeout: 5s
       start_period: 20s
@@ -233,34 +264,88 @@ services:
       postgres:
         condition: service_healthy
     ports:
+      # Published on EVERY network interface, like the app. Behind a reverse
+      # proxy on this machine, write '127.0.0.1:3001:3000'.
       - '${SYNC_PORT:-3001}:3000'
     environment:
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${SYNC_DB_NAME:-openplate_sync}
 
-      # THE one secret in this file. Two subkeys are derived from it: the
-      # pepper mixed into every stored authentication verifier, and the key
-      # behind the anti-enumeration KDF responses.
+      # THE one secret in this file. Three subkeys are derived from it: the
+      # pepper mixed into every stored authentication verifier, the key behind
+      # the anti-enumeration KDF responses, and the key that seals each
+      # account's recovery code.
       #
       # Back it up WITH the database. A restored database with a lost secret
-      # is a database nobody can log into, and every account would need a
-      # passphrase reset. Changing it has the same effect as losing it.
+      # is a database nobody can log into, and no password reset works either.
+      # Changing it has the same effect as losing it.
       SERVER_SECRET: ${SERVER_SECRET:?generate one with `openssl rand -hex 32` and put it in .env}
 
-      # Signup is INVITE-ONLY, always: there is no mode to set. SIGNUP_MODE
-      # and the older SIGNUPS_OPEN are both boot failures in openplate-core,
-      # so neither is forwarded here. Mint an invite from /admin in the app
-      # or with `pnpm sync-api invites create --email ...` in openplate-core.
+      # Your key to the admin API at /v1/admin: minting invitations, handing out
+      # password-reset links, listing and removing accounts. Empty turns that
+      # API off unless an account with the admin role exists. At least 24
+      # characters: generate it with `openssl rand -hex 32`, never choose it.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
 
-      # GET THIS RIGHT — it is the other setting that can hurt you. Set it to
-      # the number of reverse proxies in front of this service. Left at 0
-      # behind a proxy, every request looks like it comes from the proxy and
-      # the per-IP throttle becomes one global bucket a single attacker can
-      # lock for all your users. Set above 0 with nothing in front, anyone can
-      # spoof X-Forwarded-For and skip the throttle entirely.
+      # The two halves of every invitation and reset link, taken from the same
+      # PUBLIC_* values the app uses, so you set each address once. A link
+      # reads PUBLIC_APP_URL/join#server=PUBLIC_SYNC_URL&invite=...
+      SERVER_PUBLIC_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
+      CLIENT_BASE_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+
+      # Signup is INVITE-ONLY: an account is created by redeeming an invitation
+      # addressed to one email address. SIGNUP_MODE and the older SIGNUPS_OPEN
+      # are both boot failures in openplate-core, so neither is forwarded here.
+
+      # The same TRUST_PROXY as the app above: the number of reverse proxies in
+      # front of this service. Left at 0 behind a proxy, every request looks
+      # like it comes from the proxy and the per-address throttle becomes one
+      # bucket a single attacker can lock for all your users. Set above 0 with
+      # nothing in front, anyone can fake X-Forwarded-For and skip the throttle.
       TRUST_PROXY: ${TRUST_PROXY:-0}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # What the instance calls itself in its letters, and which language they
+      # are written in (en, de, fr, it, es or tr). Empty means openplate, en.
+      INSTANCE_NAME: ${INSTANCE_NAME:-}
+      INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-}
+
+      # ── Mail (optional): all four or none ──
+      # Set, this service mails the invitation and the password reset itself,
+      # through an HTTP mail API that speaks pigeon's protocol. Empty, it sends
+      # nothing: the admin API hands the invitation link and the reset link to
+      # you, and you pass them on. "Forgot password" in the app then reaches
+      # nobody; see docs/self-hosting.md for what to do instead.
+      MAIL_API_URL: ${MAIL_API_URL:-}
+      MAIL_API_KEY: ${MAIL_API_KEY:-}
+      MAIL_API_FROM: ${MAIL_API_FROM:-}
+      # Who receives the operator's copy of a cancellation or a withdrawal.
+      MAIL_OPERATOR_EMAIL: ${MAIL_OPERATOR_EMAIL:-}
+
+      # ── The AI proxy (optional, for INSTANCE_MODE=managed) ──
+      # The provider every signed-in scan is forwarded to, and its key. Both or
+      # neither. Empty means this instance offers no AI of its own.
+      UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-}
+      UPSTREAM_API_KEY: ${UPSTREAM_API_KEY:-}
+      # The model every proxied request is sent to. The app scans with the
+      # model this names, so a managed instance with AI needs it set.
+      AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
+      # The whole instance's AI requests per UTC day. Empty means no ceiling.
+      AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+
+      # ── Members inviting people (optional) ──
+      # The first two together or neither; the cap only with them. Empty means
+      # only an administrator invites. See docs/configuration.md, Member invites.
+      MEMBER_INVITE_DAILY_AI_LIMIT: ${MEMBER_INVITE_DAILY_AI_LIMIT:-}
+      MEMBER_INVITE_ALLOWANCE_DAYS: ${MEMBER_INVITE_ALLOWANCE_DAYS:-}
+      MEMBER_INVITE_LIFETIME_CAP: ${MEMBER_INVITE_LIFETIME_CAP:-}
+
+      # "true" lets a person share their diary with a clinician. Off by default.
+      SYNC_SHARING: ${SYNC_SHARING:-false}
+      # "true" opens the research console at /study, and makes this server
+      # hold study data. Read openplate-core's .env.example first. Off by default.
+      SYNC_RESEARCH: ${SYNC_RESEARCH:-false}
 
       # ── The operator notice (optional) ──
       # One short sentence /health publishes and the client shows, for the
@@ -270,12 +355,10 @@ services:
       SYNC_NOTICE: ${SYNC_NOTICE:-}
       SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
 
-      # Signup is invite-only, and an account has an email address; mint one
-      # with `pnpm sync-api invites create --email ...` in openplate-core.
-      # Mail is optional: set MAIL_API_* and this service sends the invite
-      # and the password reset itself, leave it unset and both come back as
-      # links to paste. SERVER_PUBLIC_URL and CLIENT_BASE_URL are optional,
-      # needed together to build the link in an invitation and a reset mail.
+      # Everything else openplate-core reads (web push, open sign-up, the scan
+      # trial, reported estimates) is listed in openplate-core's
+      # docker/compose.yml and .env.example. To use one, add a line here in the
+      # same `NAME: ${NAME:-}` form.
       #
       # Setting SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, any SMTP_*, any
       # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION is a BOOT FAILURE, not a no-op.

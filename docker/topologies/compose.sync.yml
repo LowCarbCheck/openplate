@@ -1,35 +1,46 @@
-# openplate — the full experience, self-hosted end to end.
+# openplate, the full experience, self-hosted end to end.
 #
 # Three containers: the stateless app, the optional account + E2EE sync
-# service (openplate-core), and the Postgres that sync — and only sync — needs.
+# service (openplate-core), and the Postgres that sync, and only sync, needs.
 # The app itself keeps no database at all. Both images are open source under
-# the MIT License and are published to GHCR — nothing here builds from source.
+# the MIT License and are published to GHCR; nothing here builds from source.
 #
 # If you do not want sync, you do not want this file. Use `docker/compose.yml`
 # instead: the app alone needs no secrets and no accounts. The other shapes are
 # listed in `README.md` next to this file.
 #
+#   mkdir -p ~/openplate && cd ~/openplate
 #   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 #
 #   # The sync service needs exactly one secret. Generate it once and keep it
-#   # with your database backups — see the SERVER_SECRET note below.
+#   # with your database backups, see the SERVER_SECRET note below.
 #   echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 #
+#   # Your key to the admin API, which is how you create the first account.
+#   echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
+#
 #   # The two URLs a BROWSER will use to reach each service. Defaults below
-#   # work for a local trial; set these for anything else.
+#   # work for a trial on this machine; set these for anything else.
 #   echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 #   echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 #
 #   docker compose -f compose.sync.yml up -d
 #
-# Run all of that from the directory you downloaded this file into. Compose
-# treats the compose file's OWN directory as the project directory, so the
-# `.env` you just wrote -- sitting beside this file -- is the one it reads.
+# Keep this file in a folder that lasts, like ~/openplate above, and run all of
+# that from there. Compose treats the compose file's OWN directory as the
+# project directory, so the `.env` you just wrote, sitting beside this file, is
+# the one it reads. Compose passes on only the variables named below: a line in
+# `.env` that no `${...}` here mentions never reaches a container.
 #
-# Then open PUBLIC_APP_URL. A "Sync" section appears in the app because
-# SYNC_SERVER_URL is set below; create an account there and the two devices
-# you sign in on converge. The service still cannot read a single entry —
-# see openplate-core's PROTOCOL.md.
+# Signing in needs a secure page: https://, or http://localhost on the machine
+# you are sitting at. Over plain http://<LAN address> the sign-in, the sign-up
+# and the invite link all fail. See the HTTPS section of docs/self-hosting.md.
+#
+# Then create the first account with an invitation to yourself, minted on
+# THIS machine with ADMIN_TOKEN (docs/self-hosting.md has the curl command).
+# Open the link it returns, choose a password, and the two devices you sign in
+# on converge. The service stores ciphertext; what its operator holds is
+# explained in docs/sync.md.
 #
 # Fixes the project name, so containers and the pg-data volume are named after
 # the stack rather than after whatever directory the file sits in.
@@ -37,7 +48,7 @@ name: openplate-with-sync
 
 services:
   # ── Postgres ──────────────────────────────────────────────────────────────
-  # Belongs to the sync service alone — it holds sync's accounts and the
+  # Belongs to the sync service alone: it holds sync's accounts and the
   # opaque ciphertext blobs. The app never connects to it and has no database
   # of its own (.adr/0006-the-app-server-holds-no-accounts.md).
   postgres:
@@ -62,12 +73,14 @@ services:
 
   # ── The app ───────────────────────────────────────────────────────────────
   # Stateless. No accounts, no personal data, no database: your diary lives in
-  # the browser. There is no secret to configure here — that is the design,
+  # the browser. There is no secret to configure here; that is the design,
   # not an omission (see .adr/0006-the-app-server-holds-no-accounts.md).
   app:
     image: ghcr.io/lowcarbcheck/openplate:latest
     restart: unless-stopped
     ports:
+      # Published on EVERY network interface. Behind a reverse proxy on this
+      # machine, write '127.0.0.1:3000:3000' so only the proxy can reach it.
       - '${APP_PORT:-3000}:3000'
     environment:
       NODE_ENV: production
@@ -77,55 +90,71 @@ services:
       # is the public https:// address, not the container port.
       APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
-      # The URL a BROWSER uses to reach the sync service — not `http://sync:3000`.
+      # The URL a BROWSER uses to reach the sync service, not `http://sync:3000`.
       # The sync client runs in the page, so this address has to resolve from
       # your users' devices. Setting it is what makes the sync interface exist
       # at all; remove this line and the app is a pure local tracker again.
       # The origin is added to the app's Content-Security-Policy automatically.
       SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
 
-      # Number of reverse proxies in front of this container (1 behind a single
-      # nginx/Traefik/Caddy). Required behind a proxy: React Router's CSRF check
-      # compares the browser Origin against the host it thinks it is serving.
+      # `open` (the default): anyone can keep a diary on their own device, and
+      # sync is an extra. `managed`: an administrator invites every person,
+      # there is no diary without an account, and scans run through the sync
+      # service's AI proxy (set UPSTREAM_* and AI_ADVERTISED_MODEL below).
+      # See docs/configuration.md, Managed instances.
+      INSTANCE_MODE: ${INSTANCE_MODE:-open}
+
+      # How many reverse proxies stand in front of the app AND the sync service.
+      # One value for both, because they sit behind the same proxy or behind
+      # none. With one proxy (Caddy, nginx, Traefik) set TRUST_PROXY=1: the
+      # app's CSRF check needs the proxy's X-Forwarded-* headers or form posts
+      # fail. With NO proxy set TRUST_PROXY=0: 1 would let any visitor fake
+      # their address in X-Forwarded-For and dodge the per-address limits.
+      # The app's default of 1 assumes a proxy.
       TRUST_PROXY: ${TRUST_PROXY:-1}
 
-      # ON by default — queries the public LowCarbCheck food database for
+      # ON by default. Queries the public LowCarbCheck food database for
       # curated nutrition data (food NAMES only, never photos; fails open on
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
       FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
+      # Optional free key for that database. Empty is the shared anonymous
+      # allowance; set one if more than one person scans on this instance.
+      FOOD_DB_API_KEY: ${FOOD_DB_API_KEY:-}
+      # "true" passes foods people save from an AI answer on to LowCarbCheck as
+      # proposals. Needs FOOD_DB_API_KEY. Empty means off.
+      FOOD_DB_BACKFILL: ${FOOD_DB_BACKFILL:-}
+      # The language a first-time visitor sees: en, de, fr, it, es or tr.
+      # Empty means en.
+      DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
+      # "off" stops the six-hourly question to GitHub about a newer release.
+      UPDATE_CHECK: ${UPDATE_CHECK:-}
+      # Extra origins the browser may call, space separated. Empty adds nothing.
+      CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
     healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      # A shell line with no quotes and no brackets, run by the image's busybox
+      # wget, so Docker Compose, podman-compose and Quadlet all run it alike.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/healthcheck']
       interval: 30s
       timeout: 5s
       start_period: 30s
       retries: 3
 
   # ── The sync service ──────────────────────────────────────────────────────
-  # An account service that stores an email address and opaque ciphertext. It
-  # holds no key for that ciphertext and cannot be made to decrypt it.
+  # An account service that stores an email address and opaque ciphertext,
+  # plus each account's recovery code, sealed under SERVER_SECRET, so that a
+  # password reset brings the diary back. docs/sync.md states what that means
+  # for whoever runs this service.
   sync:
     image: ghcr.io/lowcarbcheck/openplate-core:latest
     restart: unless-stopped
     healthcheck:
-      # The image bakes the same check in, but Podman drops a HEALTHCHECK when
-      # it pulls an OCI manifest, which is what GHCR serves. Declared here it
+      # The image bakes a check in, but Podman drops a HEALTHCHECK when it
+      # pulls an OCI manifest, which is what GHCR serves. Declared here it
       # holds under both engines and Quadlet turns it into Notify=healthy.
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/health']
       interval: 30s
       timeout: 5s
       start_period: 20s
@@ -134,34 +163,88 @@ services:
       postgres:
         condition: service_healthy
     ports:
+      # Published on EVERY network interface, like the app. Behind a reverse
+      # proxy on this machine, write '127.0.0.1:3001:3000'.
       - '${SYNC_PORT:-3001}:3000'
     environment:
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${SYNC_DB_NAME:-openplate_sync}
 
-      # THE one secret in this file. Two subkeys are derived from it: the
-      # pepper mixed into every stored authentication verifier, and the key
-      # behind the anti-enumeration KDF responses.
+      # THE one secret in this file. Three subkeys are derived from it: the
+      # pepper mixed into every stored authentication verifier, the key behind
+      # the anti-enumeration KDF responses, and the key that seals each
+      # account's recovery code.
       #
       # Back it up WITH the database. A restored database with a lost secret
-      # is a database nobody can log into, and every account would need a
-      # passphrase reset. Changing it has the same effect as losing it.
+      # is a database nobody can log into, and no password reset works either.
+      # Changing it has the same effect as losing it.
       SERVER_SECRET: ${SERVER_SECRET:?generate one with `openssl rand -hex 32` and put it in .env}
 
-      # Signup is INVITE-ONLY, always: there is no mode to set. SIGNUP_MODE
-      # and the older SIGNUPS_OPEN are both boot failures in openplate-core,
-      # so neither is forwarded here. Mint an invite from /admin in the app
-      # or with `pnpm sync-api invites create --email ...` in openplate-core.
+      # Your key to the admin API at /v1/admin: minting invitations, handing out
+      # password-reset links, listing and removing accounts. Empty turns that
+      # API off unless an account with the admin role exists. At least 24
+      # characters: generate it with `openssl rand -hex 32`, never choose it.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
 
-      # GET THIS RIGHT — it is the other setting that can hurt you. Set it to
-      # the number of reverse proxies in front of this service. Left at 0
-      # behind a proxy, every request looks like it comes from the proxy and
-      # the per-IP throttle becomes one global bucket a single attacker can
-      # lock for all your users. Set above 0 with nothing in front, anyone can
-      # spoof X-Forwarded-For and skip the throttle entirely.
+      # The two halves of every invitation and reset link, taken from the same
+      # PUBLIC_* values the app uses, so you set each address once. A link
+      # reads PUBLIC_APP_URL/join#server=PUBLIC_SYNC_URL&invite=...
+      SERVER_PUBLIC_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
+      CLIENT_BASE_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
+
+      # Signup is INVITE-ONLY: an account is created by redeeming an invitation
+      # addressed to one email address. SIGNUP_MODE and the older SIGNUPS_OPEN
+      # are both boot failures in openplate-core, so neither is forwarded here.
+
+      # The same TRUST_PROXY as the app above: the number of reverse proxies in
+      # front of this service. Left at 0 behind a proxy, every request looks
+      # like it comes from the proxy and the per-address throttle becomes one
+      # bucket a single attacker can lock for all your users. Set above 0 with
+      # nothing in front, anyone can fake X-Forwarded-For and skip the throttle.
       TRUST_PROXY: ${TRUST_PROXY:-0}
 
       LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # What the instance calls itself in its letters, and which language they
+      # are written in (en, de, fr, it, es or tr). Empty means openplate, en.
+      INSTANCE_NAME: ${INSTANCE_NAME:-}
+      INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-}
+
+      # ── Mail (optional): all four or none ──
+      # Set, this service mails the invitation and the password reset itself,
+      # through an HTTP mail API that speaks pigeon's protocol. Empty, it sends
+      # nothing: the admin API hands the invitation link and the reset link to
+      # you, and you pass them on. "Forgot password" in the app then reaches
+      # nobody; see docs/self-hosting.md for what to do instead.
+      MAIL_API_URL: ${MAIL_API_URL:-}
+      MAIL_API_KEY: ${MAIL_API_KEY:-}
+      MAIL_API_FROM: ${MAIL_API_FROM:-}
+      # Who receives the operator's copy of a cancellation or a withdrawal.
+      MAIL_OPERATOR_EMAIL: ${MAIL_OPERATOR_EMAIL:-}
+
+      # ── The AI proxy (optional, for INSTANCE_MODE=managed) ──
+      # The provider every signed-in scan is forwarded to, and its key. Both or
+      # neither. Empty means this instance offers no AI of its own.
+      UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-}
+      UPSTREAM_API_KEY: ${UPSTREAM_API_KEY:-}
+      # The model every proxied request is sent to. The app scans with the
+      # model this names, so a managed instance with AI needs it set.
+      AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
+      # The whole instance's AI requests per UTC day. Empty means no ceiling.
+      AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+
+      # ── Members inviting people (optional) ──
+      # The first two together or neither; the cap only with them. Empty means
+      # only an administrator invites. See docs/configuration.md, Member invites.
+      MEMBER_INVITE_DAILY_AI_LIMIT: ${MEMBER_INVITE_DAILY_AI_LIMIT:-}
+      MEMBER_INVITE_ALLOWANCE_DAYS: ${MEMBER_INVITE_ALLOWANCE_DAYS:-}
+      MEMBER_INVITE_LIFETIME_CAP: ${MEMBER_INVITE_LIFETIME_CAP:-}
+
+      # "true" lets a person share their diary with a clinician. Off by default.
+      SYNC_SHARING: ${SYNC_SHARING:-false}
+      # "true" opens the research console at /study, and makes this server
+      # hold study data. Read openplate-core's .env.example first. Off by default.
+      SYNC_RESEARCH: ${SYNC_RESEARCH:-false}
 
       # ── The operator notice (optional) ──
       # One short sentence /health publishes and the client shows, for the
@@ -171,12 +254,10 @@ services:
       SYNC_NOTICE: ${SYNC_NOTICE:-}
       SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
 
-      # Signup is invite-only, and an account has an email address; mint one
-      # with `pnpm sync-api invites create --email ...` in openplate-core.
-      # Mail is optional: set MAIL_API_* and this service sends the invite
-      # and the password reset itself, leave it unset and both come back as
-      # links to paste. SERVER_PUBLIC_URL and CLIENT_BASE_URL are optional,
-      # needed together to build the link in an invitation and a reset mail.
+      # Everything else openplate-core reads (web push, open sign-up, the scan
+      # trial, reported estimates) is listed in openplate-core's
+      # docker/compose.yml and .env.example. To use one, add a line here in the
+      # same `NAME: ${NAME:-}` form.
       #
       # Setting SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, any SMTP_*, any
       # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION is a BOOT FAILURE, not a no-op.

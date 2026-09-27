@@ -1,12 +1,31 @@
 # openplate + openplate-inference: your own AI, on your own hardware.
 #
+#   mkdir -p ~/openplate && cd ~/openplate
 #   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.inference.yml
-#   # edit the four EDIT-ME values below, then:
+#
+#   # One key, used twice: the inference service accepts it, and the app
+#   # hands it to every browser. Generate it here, on this machine.
+#   echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+#
+#   # The two URLs a BROWSER will use. Replace 192.168.1.20 with this
+#   # machine's address, or with the names your reverse proxy serves.
+#   echo "PUBLIC_APP_URL=http://192.168.1.20:3000" >> .env
+#   echo "PUBLIC_INFERENCE_URL=http://192.168.1.20:8300/v1" >> .env
+#
 #   docker compose -f compose.inference.yml up -d
 #
-# Run that from the directory you downloaded this file into. Compose treats the
-# compose file's OWN directory as the project directory, so a `.env` beside this
-# file is the one it reads.
+# Keep this file in a folder that lasts, like ~/openplate above, and run all of
+# that from there. Compose treats the compose file's OWN directory as the
+# project directory, so a `.env` beside this file is the one it reads.
+#
+# The first start downloads about 2 GiB of weights before the first scan can
+# run. `logs -f inference` shows the progress; http://<this machine>:8300/readyz
+# answers 200 once the model is loaded.
+#
+# Plate photos work over plain http://. Installing the app needs a secure
+# page: https://, or http://localhost on this machine. See the HTTPS section
+# of docs/self-hosting.md. Once the app is on https://, the inference URL must
+# be https:// too, or the browser blocks the call from the secure page.
 #
 #   docker compose -f compose.inference.yml logs -f inference   # weight download + model load + ready
 #   docker compose -f compose.inference.yml logs -f openplate
@@ -40,7 +59,7 @@ services:
       # Published because the browser calls it directly. Bind to 0.0.0.0 (as
       # here) for LAN access; use "127.0.0.1:8300:8300" if a reverse proxy on
       # this host is the only thing that should reach it.
-      - '8300:8300'
+      - '${INFERENCE_PORT:-8300}:8300'
     volumes:
       # Weights land here on first boot (~2.0 GiB for lite, ~5.8 GiB for
       # quality) and are verified by sha256 on every start. Named, so
@@ -49,13 +68,18 @@ services:
     environment:
       # lite | lite-apache | quality -- see README "Hardware & measured latency".
       MODEL_PROFILE: lite
-      # -- EDIT ME (1/4) -- A stable key. Without it a new key is generated on
-      # every restart and every browser has to reconnect. Any random string:
-      #   openssl rand -base64 24
-      API_KEYS: 'opk_CHANGE_ME'
+      # The key callers must present. Set INFERENCE_API_KEY in .env (see the
+      # top of this file); the placeholder below only keeps a first trial
+      # booting. It must match DEFAULT_INFERENCE_API_KEY on the app.
+      API_KEYS: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
       LATENCY_CEILING_MS: '0'
+      # Scans in flight at once. It also sets llama.cpp's slot count; it does
+      # NOT add CPU threads, the slots share LLAMA_THREADS.
       CONCURRENCY: '2'
+      # CPU threads for the model. Empty means every core but two (nproc - 2),
+      # which leaves room for the service and the OS.
+      LLAMA_THREADS: ${LLAMA_THREADS:-}
       # Where macros come from. fdc = the bundled offline USDA-derived dataset.
       # See README "Food data" before switching to `off` (ODbL) or `lcc`.
       FOOD_SOURCE: fdc
@@ -113,6 +137,8 @@ services:
     image: ghcr.io/lowcarbcheck/openplate:latest
     restart: unless-stopped
     ports:
+      # Published on EVERY network interface. Behind a reverse proxy on this
+      # machine, write '127.0.0.1:3000:3000' so only the proxy can reach it.
       - '3000:3000'
     depends_on:
       - inference
@@ -120,10 +146,10 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-      # -- EDIT ME (2/4) -- the URL a browser uses to reach THIS app. Behind a
-      # reverse proxy, that is the public https:// address, not the container
-      # port.
-      APP_URL: 'http://openplate.example.lan:3000'
+      # The URL a browser uses to reach THIS app: PUBLIC_APP_URL in .env.
+      # Behind a reverse proxy, that is the public https:// address, not the
+      # container port.
+      APP_URL: ${PUBLIC_APP_URL:-http://openplate.example.lan:3000}
 
       # ON by default -- queries the public LowCarbCheck food database for
       # curated nutrition data (food NAMES only, never photos; fails open on
@@ -131,9 +157,12 @@ services:
       # leave your machine.
       FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
 
-      # Number of reverse proxies in front of this container. A wrong hop count
-      # breaks form posts: React Router compares the browser Origin against the
-      # host it thinks it serves. 0 = no proxy; 1 = one; 2 = Cloudflare in front.
+      # Number of reverse proxies in front of this container. Behind one proxy
+      # keep 1: React Router compares the browser Origin against the host it
+      # thinks it serves, and without the proxy's X-Forwarded-* headers form
+      # posts fail. With NO proxy set TRUST_PROXY=0 in .env: 1 would let any
+      # visitor fake their address in X-Forwarded-For and dodge the
+      # per-address limit on food lookups. 2 = Cloudflare in front of one.
       TRUST_PROXY: ${TRUST_PROXY:-1}
 
       # -- The instance preset: this is what turns into openplate's one-tap
@@ -141,26 +170,22 @@ services:
       #    and on the scan screen. Leave these unset and nothing renders --
       #    bring-your-own-key stays the only path.
       #
-      # -- EDIT ME (3/4) -- a BROWSER-reachable address for the inference
-      #    container. NOT http://inference:8300. Note the /v1 suffix.
-      DEFAULT_INFERENCE_BASE_URL: 'http://openplate.example.lan:8300/v1'
-      # -- EDIT ME (4/4) -- must match API_KEYS above.
+      # PUBLIC_INFERENCE_URL in .env: a BROWSER-reachable address for the
+      # inference container. NOT http://inference:8300. Note the /v1 suffix.
+      DEFAULT_INFERENCE_BASE_URL: ${PUBLIC_INFERENCE_URL:-http://openplate.example.lan:8300/v1}
+      # The same INFERENCE_API_KEY as API_KEYS above.
       #
       # ! THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
       #   anyone who can open your openplate can read it with view-source. That
       #   is fine for a household or a tailnet. It is NOT fine on an instance
       #   open to the internet without a VPN or auth proxy in front of it -- in
       #   that case leave this unset and let people paste the key themselves.
-      DEFAULT_INFERENCE_API_KEY: 'opk_CHANGE_ME'
+      DEFAULT_INFERENCE_API_KEY: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       DEFAULT_INFERENCE_MODEL: 'openplate-plate-1'
     healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      # A shell line with no quotes and no brackets, run by the image's busybox
+      # wget, so Docker Compose, podman-compose and Quadlet all run it alike.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/healthcheck']
       interval: 30s
       timeout: 5s
       start_period: 30s
