@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Set a password and your diary is ready.",
     "foreignServer": {
-      "body": "The link points at {{origin}}. Open it there instead.",
+      "body": "This invitation is for the server at {{linkOrigin}}. This openplate uses {{appServerOrigin}}. Open the invitation in the openplate that uses that server, or ask for an invitation to this one.",
+      "bodyNoServer": "This invitation is for the server at {{linkOrigin}}. This openplate has no account server set up. Open the invitation in the openplate that uses that server.",
       "bodyUnknown": "The link points somewhere this app does not know. Open it in the app you were invited to.",
       "title": "This link is for another openplate"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "You are signed in as somebody else",
       "body": "This device is signed in as {{signedInAs}}, and the invitation is for {{invitedEmail}}. Sign out first to use it.",
-      "signOut": "Sign out"
+      "signOut": "Sign out and continue"
     },
     "alreadyRegistered": {
       "title": "This address already has an account",

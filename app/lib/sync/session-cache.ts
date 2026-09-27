@@ -213,6 +213,75 @@ export async function hasDeviceSyncSession(): Promise<boolean> {
   return (await readSessionCache()) !== null;
 }
 
+/** Who this device is signed in as, and at which server. */
+export interface DeviceSessionIdentity {
+  email: string;
+  serverUrl: string;
+}
+
+/**
+ * Who this device is signed in as: the open session when there is one, else
+ * the cached one a reload would resume.
+ *
+ * The question `/join` asks before it offers a new account's form. That route
+ * sits outside `_personal`, so on a document load nothing has resumed the
+ * session and the snapshot alone says "signed out" about a device that is not.
+ * Like {@link hasDeviceSyncSession} this is a weaker claim than "signed in": a
+ * cached session the server has since revoked still answers here.
+ *
+ * @returns the account and its server, or `null` when this device holds no session.
+ */
+export async function readDeviceSessionIdentity(): Promise<DeviceSessionIdentity | null> {
+  const vault = getSyncVault();
+  if (vault !== null) return { email: vault.email, serverUrl: vault.serverUrl };
+  const cached = await readSessionCache();
+  return cached === null ? null : { email: cached.email, serverUrl: cached.serverUrl };
+}
+
+/**
+ * Signs out of the CACHED session without opening it: revokes its token family
+ * at the server when the server is this app's, then forgets it on this device.
+ *
+ * For a page that must sign a device out while no session is open, which is
+ * `/join` on a document load. Opening the vault first would do more than a
+ * sign-out needs, and its fire-and-forget cache write could land after the
+ * clear below and bring the session back.
+ *
+ * The refresh comes first because the cached access token is fifteen minutes
+ * old at best, and a logout with an expired one revokes nothing. Both calls are
+ * BEST EFFORT, like every sign-out: a device with no connection still signs
+ * out, and the family expires on its own. The cache is cleared whatever they
+ * answer, because that is the part the next reload reads.
+ *
+ * A session cached for ANOTHER server is not dialled at all. This client posts
+ * its tokens only to the server its operator configured.
+ */
+export async function revokeCachedSession({ serverUrl }: { serverUrl: string }): Promise<void> {
+  const cached = await readSessionCache();
+  if (cached === null) return;
+  try {
+    if (cached.serverUrl !== serverUrl) return;
+    const authClient = new SyncAuthClient({ baseUrl: serverUrl });
+    authClient.restoreSession({
+      account: { id: cached.accountId, email: cached.email },
+      tokens: {
+        accessToken: cached.accessToken,
+        accessTokenExpiresAt: cached.accessTokenExpiresAt,
+        refreshToken: cached.refreshToken,
+        refreshTokenExpiresAt: cached.refreshTokenExpiresAt,
+      },
+    });
+    await authClient.refreshAccessToken();
+    await authClient.logout();
+  } catch (cause) {
+    log.warn('could not revoke the cached sync session, forgetting it on this device', {
+      error: cause instanceof Error ? cause.message : String(cause),
+    });
+  } finally {
+    await clearSessionCache();
+  }
+}
+
 /** Drops the cached session. Called on sign-out, on account deletion, and on any refused refresh. */
 export async function clearSessionCache(): Promise<void> {
   const db = await openSessionDb();

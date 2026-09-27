@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Bir parola belirle, günlüğün hazır olsun.",
     "foreignServer": {
-      "body": "Bağlantı {{origin}} adresini gösteriyor. Bunun yerine orada aç.",
+      "body": "Bu davet {{linkOrigin}} adresindeki sunucu içindir. Bu openplate ise {{appServerOrigin}} sunucusunu kullanıyor. Daveti o sunucuyu kullanan openplate uygulamasında aç veya bu sunucu için bir davet iste.",
+      "bodyNoServer": "Bu davet {{linkOrigin}} adresindeki sunucu içindir. Bu openplate üzerinde ayarlanmış bir hesap sunucusu yok. Daveti o sunucuyu kullanan openplate uygulamasında aç.",
       "bodyUnknown": "Bağlantı bu uygulamanın bilmediği bir yeri gösteriyor. Davet edildiğin uygulamada aç.",
       "title": "Bu bağlantı başka bir openplate için"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "Başka biri olarak oturum açtın",
       "body": "Bu cihazda {{signedInAs}} olarak oturum açılmış, davet ise {{invitedEmail}} adresi için. Daveti kullanmak için önce oturumu kapat.",
-      "signOut": "Oturumu kapat"
+      "signOut": "Oturumu kapat ve devam et"
     },
     "alreadyRegistered": {
       "title": "Bu adresin zaten bir hesabı var",

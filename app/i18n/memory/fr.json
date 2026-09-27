@@ -5928,6 +5928,13 @@
     "at": "2026-09-14",
     "fr": "Continuer sans compte"
   },
+  "4f96a125b9d5d82b": {
+    "en": "This invitation is for the server at {{linkOrigin}}. This openplate has no account server set up. Open the invitation in the openplate that uses that server.",
+    "path": "common:join.foreignServer.bodyNoServer",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "fr": "Cette invitation est destinée au serveur situé à l'adresse {{linkOrigin}}. Cet openplate n'a aucun serveur de compte configuré. Ouvre l'invitation dans l'openplate qui utilise ce serveur."
+  },
   "4f9ee6c51a258687": {
     "en": "When to start",
     "path": "common:fasting.plan.startModeLabel",
@@ -8427,13 +8434,6 @@
     "at": "2026-09-14",
     "fr": "Impossible d'envoyer le lien de réinitialisation."
   },
-  "6f3bc41bb90c3149": {
-    "en": "Sign out",
-    "path": "common:join.signedInElsewhere.signOut",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Se déconnecter"
-  },
   "6f489bcfa895d07e": {
     "en": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
     "path": "common:diary.drilldown.netCarbsDefinition",
@@ -9518,13 +9518,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Retour à la connexion"
-  },
-  "7b98b041bc5cccbf": {
-    "en": "The link points at {{origin}}. Open it there instead.",
-    "path": "common:join.foreignServer.body",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-14",
-    "fr": "Le lien pointe vers {{origin}}. Ouvre-le plutôt à cette adresse."
   },
   "7bb00033667443bb": {
     "en": "What you get",
@@ -13880,6 +13873,13 @@
     "at": "2026-09-24",
     "fr": "La première frappe dans la zone de description ne déplace plus la zone."
   },
+  "b27d5844b630f524": {
+    "en": "This invitation is for the server at {{linkOrigin}}. This openplate uses {{appServerOrigin}}. Open the invitation in the openplate that uses that server, or ask for an invitation to this one.",
+    "path": "common:join.foreignServer.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "fr": "Cette invitation est destinée au serveur situé à l'adresse {{linkOrigin}}. Cet openplate utilise {{appServerOrigin}}. Ouvre l'invitation dans l'openplate qui utilise ce serveur, ou demande une invitation pour celui-ci."
+  },
   "b27e3d22cd9d65bc": {
     "en": "Never signed in",
     "path": "common:admin.lastSeen.never",
@@ -16070,6 +16070,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Jours avec objectifs atteints"
+  },
+  "d1cb74bf306fe98d": {
+    "en": "Sign out and continue",
+    "path": "common:join.signedInElsewhere.signOut",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "fr": "Se déconnecter et continuer"
   },
   "d1cc7e11c3a85000": {
     "en": "Enter how many grams",

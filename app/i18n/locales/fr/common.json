@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Définis un mot de passe et ton journal est prêt.",
     "foreignServer": {
-      "body": "Le lien pointe vers {{origin}}. Ouvre-le plutôt à cette adresse.",
+      "body": "Cette invitation est destinée au serveur situé à l'adresse {{linkOrigin}}. Cet openplate utilise {{appServerOrigin}}. Ouvre l'invitation dans l'openplate qui utilise ce serveur, ou demande une invitation pour celui-ci.",
+      "bodyNoServer": "Cette invitation est destinée au serveur situé à l'adresse {{linkOrigin}}. Cet openplate n'a aucun serveur de compte configuré. Ouvre l'invitation dans l'openplate qui utilise ce serveur.",
       "bodyUnknown": "Le lien pointe vers un emplacement inconnu de cette application. Ouvre-le dans l'application à laquelle tu as reçu une invitation.",
       "title": "Ce lien concerne un autre openplate"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "Tu es connecté sous un autre compte",
       "body": "Cet appareil est connecté en tant que {{signedInAs}}, alors que l'invitation s'adresse à {{invitedEmail}}. Déconnecte-toi d'abord pour l'utiliser.",
-      "signOut": "Se déconnecter"
+      "signOut": "Se déconnecter et continuer"
     },
     "alreadyRegistered": {
       "title": "Un compte existe déjà avec cette adresse",

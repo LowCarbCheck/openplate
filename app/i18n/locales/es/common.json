@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Configura una contraseña y tu diario estará listo.",
     "foreignServer": {
-      "body": "El enlace apunta a {{origin}}. Ábrelo allí.",
+      "body": "Esta invitación es para el servidor en {{linkOrigin}}. Este openplate usa {{appServerOrigin}}. Abre la invitación en el openplate que use ese servidor, o pide una invitación para este.",
+      "bodyNoServer": "Esta invitación es para el servidor en {{linkOrigin}}. Este openplate no tiene configurado ningún servidor de cuentas. Abre la invitación en el openplate que use ese servidor.",
       "bodyUnknown": "El enlace apunta a un sitio que esta aplicación desconoce. Ábrelo en la aplicación a la que te invitaron.",
       "title": "Este enlace es para otro openplate"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "Has iniciado sesión como otra persona",
       "body": "Este dispositivo tiene la sesión iniciada como {{signedInAs}}, y la invitación es para {{invitedEmail}}. Cierra sesión primero para usarla.",
-      "signOut": "Cerrar sesión"
+      "signOut": "Cerrar sesión y continuar"
     },
     "alreadyRegistered": {
       "title": "Esta dirección ya tiene una cuenta",

@@ -45,7 +45,7 @@
  * configured. A link cannot redirect that; a link naming a different server is
  * reported and nothing is dialled. See `isForeignSyncServer`.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -57,11 +57,12 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { isForeignSyncServer, isJoinLinkEmpty, takeJoinLinkFromUrl } from '#app/lib/join-link';
-import { useSyncSession } from '#app/components/sync-status';
-import { signOutOfSync } from '#app/lib/sync/sync-actions';
+import { judgeDeviceSession } from '#app/lib/join-device-session';
+import { clearSessionCache, readDeviceSessionIdentity } from '#app/lib/sync/session-cache';
+import { defaultSignOutSteps, runSignOut } from '#app/lib/sync/sign-out-flow';
 import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
-import { useSyncServerUrl } from '#app/hooks/use-public-config';
-import { readSyncInvite, type SyncInviteDetails } from '#app/lib/sync/sync-actions';
+import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
+import { readSyncInvite, signOutOfDeviceSession, type SyncInviteDetails } from '#app/lib/sync/sync-actions';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackJoinCompleted } from '#app/lib/matomo-events';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
@@ -90,18 +91,23 @@ export const handle = {
  */
 type Phase =
   | { status: 'reading' }
-  /** The link named a different service than this app is configured for. Nothing was dialled. */
-  | { status: 'foreign-server'; linkOrigin: string }
+  /**
+   * The link named a different service than this app is configured for.
+   * Nothing was dialled. Both origins are kept, because the card names both:
+   * the one without the other tells nobody which side is wrong.
+   */
+  | { status: 'foreign-server'; linkOrigin: string; appServerOrigin: string }
   /** No invite in the link at all. */
   | { status: 'invalid-link' }
   | { status: 'invite-invalid' }
   | { status: 'unreachable' }
   /**
-   * This device is signed in as somebody ELSE.
+   * This device is signed in as somebody ELSE on this app's server.
    *
    * A separate phase rather than a silent sign-out: two people share a laptop,
    * and redeeming the second one's invitation over the first one's open
    * session would move a diary out from under somebody who is still using it.
+   * The rules for which saved session counts are in `join-device-session.ts`.
    */
   | { status: 'signed-in-elsewhere'; signedInAs: string; invitedEmail: string }
   /** The service answered `409`: the invited address already has an account. */
@@ -112,14 +118,8 @@ export default function Join() {
   const { t } = useTranslation();
   const navigate = useAppNavigate();
   const configuredSyncUrl = useSyncServerUrl();
-  const session = useSyncSession();
+  const { signOutErasesDevice } = useInstancePolicy();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });
-  // The session as it was when the lookup ran. Read into a ref rather than
-  // listed as an effect dependency: `createSyncAccount` opens a session as
-  // part of provisioning, and re-running this effect on that change would
-  // re-read a fragment that has already been stripped.
-  const signedInAs = useRef(session.account?.email ?? null);
-  signedInAs.current = session.account?.email ?? null;
   // Creating an account is a key ceremony in `crypto.subtle`, which a
   // plain-http page off this computer does not have. The link is still read
   // and taken out of the address bar below; only the cards are withheld, and
@@ -140,7 +140,11 @@ export default function Join() {
     const link = takeJoinLinkFromUrl({ configuredSyncUrl });
 
     if (isForeignSyncServer({ linkServerUrl: link.serverUrl, configuredSyncUrl })) {
-      setPhase({ status: 'foreign-server', linkOrigin: originOf(link.serverUrl) });
+      setPhase({
+        status: 'foreign-server',
+        linkOrigin: originOf(link.serverUrl),
+        appServerOrigin: originOf(configuredSyncUrl),
+      });
       return;
     }
     if (isJoinLinkEmpty(link) || link.invite === null || configuredSyncUrl === null) {
@@ -159,12 +163,26 @@ export default function Join() {
         }
         // SIGNED IN AS SOMEBODY ELSE. Checked after the lookup so the card can
         // name both addresses: "you are signed in as X, this invitation is for
-        // Y" is actionable, and "you are signed in" is not.
-        const current = signedInAs.current;
-        if (current !== null && current !== invite.email) {
-          setPhase({ status: 'signed-in-elsewhere', signedInAs: current, invitedEmail: invite.email });
+        // Y" is actionable, and "you are signed in" is not. The session is read
+        // from the DEVICE, open or cached, and not from the snapshot: this
+        // route sits outside `_personal`, so on a document load, which is how
+        // a link from a mail app arrives, nothing has resumed it yet and the
+        // snapshot says "signed out" about a device that is not.
+        const verdict = judgeDeviceSession({
+          session: await readDeviceSessionIdentity(),
+          configuredSyncUrl,
+          invitedEmail: invite.email,
+        });
+        if (!isMounted) return;
+        if (verdict.kind === 'other-account') {
+          setPhase({ status: 'signed-in-elsewhere', signedInAs: verdict.signedInAs, invitedEmail: invite.email });
           return;
         }
+        // A session saved for ANOTHER server never blocks an invitation. It is
+        // forgotten here, the way a reload would discard it, so nothing about
+        // the old server outlives the new one's invitation.
+        if (verdict.kind === 'stale') await clearSessionCache();
+        if (!isMounted) return;
         setPhase({ status: 'ready', inviteToken, invite });
       } catch {
         if (!isMounted) return;
@@ -198,12 +216,18 @@ export default function Join() {
           </CardContent>
         )}
         {shown.status === 'reading' && <LoadingCard />}
-        {shown.status === 'foreign-server' && <ForeignServerCard linkOrigin={shown.linkOrigin} />}
+        {shown.status === 'foreign-server' && (
+          <ForeignServerCard linkOrigin={shown.linkOrigin} appServerOrigin={shown.appServerOrigin} />
+        )}
         {shown.status === 'invalid-link' && <InvalidLinkCard />}
         {shown.status === 'invite-invalid' && <InviteInvalidCard onContinue={() => void navigate('/diary')} />}
         {shown.status === 'unreachable' && <UnreachableCard />}
-        {shown.status === 'signed-in-elsewhere' && (
-          <SignedInElsewhereCard signedInAs={shown.signedInAs} invitedEmail={shown.invitedEmail} />
+        {shown.status === 'signed-in-elsewhere' && configuredSyncUrl !== null && (
+          <SignedInElsewhereCard
+            signedInAs={shown.signedInAs}
+            invitedEmail={shown.invitedEmail}
+            onSignOut={() => signOutAndContinue({ serverUrl: configuredSyncUrl, locksDevice: signOutErasesDevice })}
+          />
         )}
         {shown.status === 'already-registered' && (
           <AlreadyRegisteredCard email={shown.email} onSignIn={() => void navigate('/sign-in')} />
@@ -247,6 +271,29 @@ async function landAfterJoin(navigate: (path: string) => void): Promise<void> {
   // invitation rather than once per render of the panel.
   trackJoinCompleted();
   navigate(resolveSignInDestination({ gate: await readOnboardingGateKind() }));
+}
+
+/**
+ * Signs this device out and comes back to this page with the same invitation.
+ *
+ * The same sign-out the settings page runs (`runSignOut`): revoke, lock where
+ * this instance requires it, and leave by a DOCUMENT LOAD, so no in-memory
+ * diary or persister from the old session outlives it. Two steps differ. The
+ * revoke works without an open session (`signOutOfDeviceSession`), because a
+ * document load of `/join` has none. And the page it leaves for is this one:
+ * the invitation is parked in the tab's pending slot (`takeJoinLinkFromUrl`),
+ * so the fresh load reads it back with no second link. Nothing is erased; that
+ * stays the settings dialog's opt-in.
+ */
+async function signOutAndContinue({ serverUrl, locksDevice }: { serverUrl: string; locksDevice: boolean }): Promise<void> {
+  await runSignOut(
+    { eraseDevice: false, locksDevice },
+    {
+      ...defaultSignOutSteps(),
+      revokeAndCloseSession: () => signOutOfDeviceSession({ serverUrl }),
+      leaveTheApp: () => globalThis.window.location.assign('/join'),
+    },
+  );
 }
 
 /**
@@ -302,18 +349,25 @@ function LoadingCard() {
  *
  * Nothing was dialled, and nothing will be: this client posts its credentials
  * to the server its own operator configured, and a link cannot redirect that.
- * The likeliest cause is an ordinary mistake rather than an attack — an invite
- * for a different instance, or an app opened at the wrong address — and the
- * same link opened on the right instance works. Naming the origin is what
- * makes that actionable.
+ * The likeliest cause is an ordinary mistake rather than an attack: an invite
+ * for a different instance, an app opened at the wrong address, or an app
+ * whose `SYNC_SERVER_URL` does not match the address its server writes into
+ * invitations. The same link opened on the right instance works.
+ *
+ * BOTH ADDRESSES ARE NAMED. This card used to name only the link's server and
+ * say "open it there", which is a sync server and not a page anybody can
+ * open, and it never said which server this app uses. With both on screen the
+ * person can tell which side is wrong, and so can whoever runs the server.
  */
-function ForeignServerCard({ linkOrigin }: { linkOrigin: string }) {
+function ForeignServerCard({ linkOrigin, appServerOrigin }: { linkOrigin: string; appServerOrigin: string }) {
   const { t } = useTranslation();
   return (
     <CardContent className="space-y-4 py-6 text-center">
       <p className="text-sm font-medium">{t('join.foreignServer.title')}</p>
       <p className="text-sm text-muted-foreground">
-        {linkOrigin === '' ? t('join.foreignServer.bodyUnknown') : t('join.foreignServer.body', { origin: linkOrigin })}
+        {linkOrigin === '' && t('join.foreignServer.bodyUnknown')}
+        {linkOrigin !== '' && appServerOrigin === '' && t('join.foreignServer.bodyNoServer', { linkOrigin })}
+        {linkOrigin !== '' && appServerOrigin !== '' && t('join.foreignServer.body', { linkOrigin, appServerOrigin })}
       </p>
       <BackToWelcomeLink />
     </CardContent>
@@ -398,16 +452,39 @@ function UnreachableCard() {
  * SIGN OUT IS OFFERED, never performed. Two people share a laptop and the one
  * holding the invitation is not necessarily the one whose diary is open; doing
  * it for them would move somebody else's session out from under them with no
- * warning. Signing out leaves the invite parked, so this page picks it up
- * again on the very next render.
+ * warning. The press signs out and brings this page back by a document load
+ * with the same invitation (`signOutAndContinue`), so the way on is one press.
+ *
+ * Until 2026-09-27 this button called a sign-out that needed an open session,
+ * and a document load of this page never has one, so it did nothing.
  */
-function SignedInElsewhereCard({ signedInAs, invitedEmail }: { signedInAs: string; invitedEmail: string }) {
+function SignedInElsewhereCard({
+  signedInAs,
+  invitedEmail,
+  onSignOut,
+}: {
+  signedInAs: string;
+  invitedEmail: string;
+  onSignOut: () => Promise<void>;
+}) {
   const { t } = useTranslation();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   return (
-    <CardContent className="space-y-4 py-6 text-center">
+    <CardContent data-slot="join-signed-in-elsewhere" className="space-y-4 py-6 text-center">
       <p className="text-sm font-medium">{t('join.signedInElsewhere.title')}</p>
       <p className="text-sm text-muted-foreground">{t('join.signedInElsewhere.body', { signedInAs, invitedEmail })}</p>
-      <Button type="button" className="h-11 w-full" onClick={() => void signOutOfSync().catch(() => undefined)}>
+      <Button
+        type="button"
+        className="h-11 w-full"
+        disabled={isSigningOut}
+        onClick={() => {
+          setIsSigningOut(true);
+          // The page is replaced by a document load when this settles, so
+          // only a failure ever comes back here, and it gives the button back.
+          void onSignOut().catch(() => setIsSigningOut(false));
+        }}
+      >
+        {isSigningOut && <Loader2 className="animate-spin" aria-hidden="true" />}
         {t('join.signedInElsewhere.signOut')}
       </Button>
     </CardContent>

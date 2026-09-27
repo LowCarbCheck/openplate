@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Passwort festlegen, dann ist dein Tagebuch bereit.",
     "foreignServer": {
-      "body": "Der Link führt zu {{origin}}. Öffne ihn dort.",
+      "body": "Diese Einladung gilt für den Server unter {{linkOrigin}}. Dieses openplate nutzt {{appServerOrigin}}. Öffne die Einladung in dem openplate, das diesen Server nutzt, oder bitte um eine Einladung für diesen hier.",
+      "bodyNoServer": "Diese Einladung gilt für den Server unter {{linkOrigin}}. Dieses openplate hat keinen Account-Server eingerichtet. Öffne die Einladung in dem openplate, das diesen Server nutzt.",
       "bodyUnknown": "Der Link führt zu einem Ziel, das diese App nicht kennt. Öffne ihn in der App, zu der du eingeladen wurdest.",
       "title": "Dieser Link ist für ein anderes openplate"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "Du bist als jemand anderes angemeldet",
       "body": "Dieses Gerät ist als {{signedInAs}} angemeldet, die Einladung gilt aber für {{invitedEmail}}. Melde dich zuerst ab, um sie zu nutzen.",
-      "signOut": "Abmelden"
+      "signOut": "Abmelden und fortfahren"
     },
     "alreadyRegistered": {
       "title": "Diese Adresse hat bereits ein Konto",

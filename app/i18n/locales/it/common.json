@@ -1120,7 +1120,8 @@
   "join": {
     "description": "Imposta una password e il tuo diario è pronto.",
     "foreignServer": {
-      "body": "Il link punta a {{origin}}. Aprilo direttamente da lì.",
+      "body": "Questo invito è per il server su {{linkOrigin}}. Questa istanza di openplate usa {{appServerOrigin}}. Apri l'invito nell'istanza di openplate collegata a quel server, oppure richiedi un invito per questo.",
+      "bodyNoServer": "Questo invito è per il server su {{linkOrigin}}. Questa istanza di openplate non ha alcun server degli account configurato. Apri l'invito nell'istanza di openplate collegata a quel server.",
       "bodyUnknown": "Il link punta a una posizione sconosciuta per questa app. Aprilo nell'app a cui hai ricevuto l'invito.",
       "title": "Questo link è per un'altra istanza di openplate"
     },
@@ -1145,7 +1146,7 @@
     "signedInElsewhere": {
       "title": "Hai effettuato l'accesso come un altro utente",
       "body": "L'accesso su questo dispositivo è attivo come {{signedInAs}}, mentre l'invito è per {{invitedEmail}}. Esci prima per poterlo usare.",
-      "signOut": "Esci"
+      "signOut": "Esci e continua"
     },
     "alreadyRegistered": {
       "title": "Esiste già un account per questo indirizzo",

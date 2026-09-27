@@ -75,7 +75,13 @@ import {
   type SyncErrorReason,
   type SyncVault,
 } from './sync-session';
-import { cacheOpenSession, closeAndForgetSyncSession, endSessionRefused, openSyncVault } from './session-cache';
+import {
+  cacheOpenSession,
+  closeAndForgetSyncSession,
+  endSessionRefused,
+  openSyncVault,
+  revokeCachedSession,
+} from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
 import { decodeTrialScans } from '#app/lib/plans/trial-scans';
 
@@ -821,6 +827,25 @@ export async function signOutOfSync(): Promise<void> {
   // hard load and repairs itself immediately: `/`'s client loader finds local
   // rows, rewrites the hint and redirects, exactly as it does for a cookie
   // WebKit evicted. Nothing is lost, because the hint was only ever a shortcut.
+  clearHomeHint();
+}
+
+/**
+ * Signs this device out of whatever session it holds, open or only cached.
+ *
+ * {@link signOutOfSync} needs an open session, and `/join` on a document load
+ * has none: the session is resumed under `_personal`, which that route sits
+ * outside. So a device signed in as somebody else was offered a sign-out button
+ * that did nothing. With a session open this is exactly {@link signOutOfSync};
+ * without one, the cached session is revoked and forgotten
+ * (`revokeCachedSession`) and the home hint goes with it, as it does there.
+ */
+export async function signOutOfDeviceSession({ serverUrl }: { serverUrl: string }): Promise<void> {
+  if (getSyncVault() !== null) {
+    await signOutOfSync();
+    return;
+  }
+  await revokeCachedSession({ serverUrl });
   clearHomeHint();
 }
 
