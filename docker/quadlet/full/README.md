@@ -18,20 +18,33 @@ Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate
 
 - `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database.
 
-Everything else has a compose default written into the units. `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit must match. Set both with drop-ins. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
+Everything else has a compose default written into the units, and **an `Environment=` line beats the env file**, even an empty one. `sync.container` carries `Environment=ADMIN_TOKEN=`, so the install below deletes that line from your installed copy and puts the token in the env file; the first account needs it. `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit must match; the install below replaces the placeholder in both. On Podman 5 you can change any other value with a drop-in; Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units. The values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container`, and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
 
 ## Install
 
-Place the unit files in `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. Do not run `systemctl --user enable`. Every unit carries `WantedBy=default.target`, so the generator handles the links. Running `systemctl --user enable` on a generated unit fails by design.
+Place the unit files in `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+
+**Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate-full
 cp docker/quadlet/full/* ~/.config/containers/systemd/openplate-full/
-printf 'SERVER_SECRET=%s\n' "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-full/openplate-full.env
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-full/openplate-full.env
 chmod 600 ~/.config/containers/systemd/openplate-full/openplate-full.env
+sed -i '/^Environment=ADMIN_TOKEN=$/d' ~/.config/containers/systemd/openplate-full/sync.container
+KEY="opk_$(openssl rand -hex 24)"
+sed -i "s/opk_CHANGE_ME/$KEY/" ~/.config/containers/systemd/openplate-full/*.container
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
 ```
+
+**On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
+
+```sh
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
+```
+
+The first account: mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, with the token from `openplate-full.env`.
 
 Check it:
 
@@ -56,7 +69,15 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart app.service sync.service inference.service
 ```
 
-**Stop and remove.** Run `systemctl --user stop app.service sync.service` to stop the containers. Remove the unit files and run `systemctl --user daemon-reload` to drop the services. Host named volumes persist until you run `podman volume rm` (`systemd-pg-data` and `systemd-inference-models` here).
+**Stop and remove.** This is the whole undo. Stopping `app` and `sync` leaves Postgres and inference running, so name all four. The last line deletes every account and diary, and the downloaded weights:
+
+```sh
+systemctl --user stop app.service sync.service postgres.service inference.service
+rm -rf ~/.config/containers/systemd/openplate-full
+systemctl --user daemon-reload
+podman network rm systemd-openplate-full
+podman volume rm systemd-pg-data systemd-inference-models
+```
 
 ## CPU, and which runtimes can run this
 
@@ -64,7 +85,7 @@ The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights). It runs on 
 
 **Health.** The image defines a `HEALTHCHECK` with a 60 minute start period for downloading weights. Podman drops that check during pull because GHCR serves an OCI manifest without health fields. `podman ps` shows no health column for `systemd-inference`. The generator sets no `Notify=healthy` on it, so systemd does not wait on the initial download. Query the service directly instead. A `GET /readyz` request to the published port returns 200 with `{"status":"ready", ...}` once the model loads, and returns 503 before that. `/healthz` checks liveness only, and `/health` does not exist (404).
 
-**API key.** The compose default provides `API_KEYS=opk_CHANGE_ME`. Set your key with a drop-in file:
+**API key.** The compose default provides `API_KEYS=opk_CHANGE_ME`, and the install above replaces it in both units. On Podman 5 a drop-in file does the same without touching the units:
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate-full/inference.container.d
@@ -111,3 +132,5 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8300/readyz   # 200
 Outcome: clean start on the first try with the updated generator. This run marked the first time `systemd-sync` reported `(healthy)`, because the compose file now declares the `/health` check that Podman drops on pull. `systemd-inference` never displays a health column for the same reason, and the generator sets no `Notify=healthy` because the image specifies a 60 minute start window. The `/readyz` endpoint provides the health check.
 
 After verification, the units were stopped, both volumes and the network removed, unit files deleted, and `daemon-reload` executed. `podman ps -a`, `podman volume ls`, and `podman network ls` returned no remaining artifacts from the run.
+
+These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file.

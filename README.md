@@ -21,10 +21,20 @@ clears it. Self-hosting is the equally supported option, and it is the one below
 
 ## Quickstart
 
+You need Docker with its Compose plugin. See [Docker's install guide](https://docs.docker.com/engine/install/),
+or on Ubuntu 24.04 run `sudo apt install docker.io docker-compose-v2`. Keep the file in a permanent folder,
+because every later command runs from there:
+
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 docker compose -f compose.yml up -d
 ```
+
+> **Open it as `http://localhost:3000` on that machine, or over HTTPS.** From another device,
+> `http://<its address>:3000` shows the diary. App installation, offline use and the one-click
+> OpenRouter connect do not work there. [docs/self-hosting.md](docs/self-hosting.md#https) has the
+> fix.
 
 That is the whole setup: one container, no database, no `.env` step, no secret to generate.
 The app is reachable at `http://localhost:3000`.
@@ -42,11 +52,12 @@ request leaves the box. Details in
 
 ### Pick a language
 
-openplate ships English and German. A visitor who has not chosen yet sees
-English; set `DEFAULT_UI_LANGUAGE=de` to start them in German instead.
+openplate ships English, German, French, Italian, Spanish, and Turkish. A visitor who has
+not chosen a language sees English. Put `DEFAULT_UI_LANGUAGE=de` in the `.env` beside the compose
+file and run `docker compose -f compose.yml up -d` to start them in German instead.
 
 ```bash
-DEFAULT_UI_LANGUAGE=de
+echo "DEFAULT_UI_LANGUAGE=de" >> .env
 ```
 
 It is a starting language, not a lock: whatever you set, anyone can switch in
@@ -63,20 +74,27 @@ If you also want end-to-end-encrypted sync across devices,
 sync (and only sync) needs:
 
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 # The URLs a BROWSER will use. Skip these two only for a localhost trial.
 echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 docker compose -f compose.sync.yml up -d
 ```
 
-There are two larger shapes as well: self-hosted AI, and everything at once.
-[`docker/topologies/README.md`](docker/topologies/README.md) is the one-page map of all four,
-and `compose.full.yml` in particular needs four values edited inside the file before it will
-work.
+> **Accounts need HTTPS.** Signing in, signing up, and opening an invitation fail on plain
+> `http://<LAN address>`. Nobody can sign up on their own either. You mint the first
+> invitation on the server with `ADMIN_TOKEN`. Both steps are in
+> [docs/self-hosting.md](docs/self-hosting.md#create-the-first-account).
 
-Full walkthrough: [docs/self-hosting.md](docs/self-hosting.md) and [docs/sync.md](docs/sync.md).
+There are two larger shapes as well: self-hosted AI, and everything at once.
+[`docker/topologies/README.md`](docker/topologies/README.md) is the one-page map of all four setups.
+Each file's header lists the `.env` lines it needs.
+
+Full walkthrough, including a path with no Docker at all:
+[docs/self-hosting.md](docs/self-hosting.md) and [docs/sync.md](docs/sync.md).
 
 ## Using it
 
@@ -111,7 +129,7 @@ database, through its own server: names only, never a photo or a diary entry. Se
 | Guide | What it covers |
 | --- | --- |
 | [**Architecture**](./docs/architecture.md) | The three programs and the food database, what each one holds, and how they compose |
-| [**Self-hosting**](./docs/self-hosting.md) | Compose walkthroughs, first run, HTTPS, backups, upgrading |
+| [**Self-hosting**](./docs/self-hosting.md) | Compose walkthroughs, the first account, running without Docker, first run, HTTPS, backups, upgrading |
 | [**Configuration**](./docs/configuration.md) | Every environment variable, the Content-Security-Policy, custom and instance-provided AI endpoints |
 | [**Sync**](./docs/sync.md) | Enabling sync across devices, the encryption, and the operator's escrowed recovery key |
 | [**Topologies**](./docs/topologies.md) | What to run, from a browser-only install up to a self-hosted household |

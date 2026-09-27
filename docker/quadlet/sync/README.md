@@ -17,19 +17,36 @@ Generated from `docker/topologies/compose.sync.yml`, rung 2: Postgres, the openp
 
 - `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database; a restored database with a lost secret is one nobody can log into.
 
-Every other value has a compose default and is written into the units as `Environment=`. Override one with a drop-in (`sync.container.d/local.conf`, a `[Container]` section, one `Environment=KEY=value` per line). Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only, always.
+Every other value has a compose default and is written into the units as `Environment=`, and **an `Environment=` line beats the env file**, even an empty one. `sync.container` carries `Environment=ADMIN_TOKEN=`, so an `ADMIN_TOKEN` in the env file never reaches the container until you delete that line from your installed copy. The install below does that, because the first account needs the token.
+
+To change any other value on Podman 5, add a drop-in (`sync.container.d/local.conf`, a `[Container]` section, one `Environment=KEY=value` per line). Podman 4.9 (Ubuntu 24.04) reads no drop-in directory and ignores one silently, so there you edit the line in your installed unit. The values people change: `APP_URL` and `SYNC_SERVER_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container` (the same two addresses, which build every invitation link), and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
 
 ## Install
 
-The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. Every unit carries `WantedBy=default.target`, and the generator wires that up for you. A `systemctl --user enable` on a generated unit fails, and that is expected.
+The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+
+**Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate-sync
 cp docker/quadlet/sync/* ~/.config/containers/systemd/openplate-sync/
-printf 'SERVER_SECRET=%s\n' "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
 chmod 600 ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
+sed -i '/^Environment=ADMIN_TOKEN=$/d' ~/.config/containers/systemd/openplate-sync/sync.container
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
+```
+
+**On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
+
+```sh
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
+```
+
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from the env file here:
+
+```sh
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env | cut -d= -f2)
 ```
 
 Check it:
@@ -54,7 +71,15 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart app.service sync.service
 ```
 
-**Stop and remove.** `systemctl --user stop app.service sync.service` stops the containers. Remove the unit files and run `systemctl --user daemon-reload` to drop the services. Named volumes stay until you `podman volume rm` them (`systemd-pg-data` here).
+**Stop and remove.** This is the whole undo. Stopping `sync.service` does not stop Postgres, so name all three. The last line deletes every account and diary on the instance:
+
+```sh
+systemctl --user stop app.service sync.service postgres.service
+rm -rf ~/.config/containers/systemd/openplate-sync
+systemctl --user daemon-reload
+podman network rm systemd-openplate-with-sync
+podman volume rm systemd-pg-data
+```
 
 ## SELinux and rootless notes
 
@@ -67,6 +92,8 @@ systemctl --user restart app.service sync.service
 **Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` shows `systemd-postgres`. A named volume from a `.volume` unit becomes `systemd-<name>`. Inside the network every container also answers to its compose service name (`postgres, sync, app`), because the generator sets that name as a network alias. That alias is what `DATABASE_URL` and the like rely on.
 
 ## Tested on
+
+### Fedora, Podman 5.8.4
 
 - Date: 2026-09-14
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
@@ -99,3 +126,25 @@ Outcome: started clean with the units as committed now. It took four attempts to
 One more thing came out of the run: the openplate-core image bakes in a `HEALTHCHECK`. Podman drops it on pull because GHCR serves an OCI manifest, which has no health field. `podman ps` showed `systemd-sync` with no health at all. The compose file now declares the same check. The unit gets `Notify=healthy`, and `podman ps` reports `(healthy)`.
 
 Afterwards the units were stopped. The `systemd-pg-data` volume and the network were removed. The files were deleted. `daemon-reload` ran again. `podman ps -a`, `podman volume ls`, and `podman network ls` showed nothing from this run.
+
+### Ubuntu 24.04, Podman 4.9.3
+
+- Date: 2026-09-27
+- Host: a fresh Ubuntu 24.04.5 LTS VM, 4 vCPUs, 8 GiB RAM, AppArmor, no SELinux
+- Podman 4.9.3 from the Ubuntu archive, rootless, linger on; openplate-core 0.22.0; the units from this directory as committed
+
+```sh
+systemctl --user daemon-reload
+systemctl --user start app.service sync.service
+podman ps
+#   systemd-app       Up 51 seconds (healthy)
+#   systemd-postgres  Up 51 seconds (healthy)
+#   systemd-sync      Up 50 seconds (healthy)
+podman exec systemd-sync printenv ADMIN_TOKEN     # empty: the unit's Environment=ADMIN_TOKEN= beat the env file
+# a drop-in sync.container.d/local.conf with Environment=ADMIN_TOKEN=...: still empty, 4.9 reads no drop-in
+sed -i '/^Environment=ADMIN_TOKEN=$/d' sync.container && systemctl --user daemon-reload && systemctl --user restart sync.service
+curl -s -X POST http://127.0.0.1:3001/v1/admin/invites -H "Authorization: Bearer $ADMIN_TOKEN" ...
+#   "emailed":false,"link":"http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_..."
+```
+
+Outcome: the three units came up healthy. The env file reached the container only once the empty line was gone, which is why the install above deletes it. The undo steps above then left no unit, network or volume of this set behind.

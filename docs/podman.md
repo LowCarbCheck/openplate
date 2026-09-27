@@ -1,76 +1,38 @@
 # Podman
 
-Every `docker compose` and `docker run` command in these docs also works with
-[Podman](https://podman.io): swap `docker` for `podman`. This page states the
-one naming trap and the rootless differences once, so the other docs can link
-here instead of repeating them.
+Every `docker compose` and `docker run` command in these docs also works with [Podman](https://podman.io). Swap `docker` for `podman`. This page documents the naming trap and rootless differences once. Other docs link here directly instead of repeating them.
 
 ## `podman compose` is not `podman-compose`
 
-These are two different tools, and the wrong one runs a less compatible
-implementation with no warning.
+These are two different tools. The wrong one runs a less compatible implementation without warning.
 
-- **`podman compose`** (a space) is a subcommand built into Podman. It is a
-  thin wrapper: it finds an external compose provider on your machine, either
-  `docker-compose` or `podman-compose`, and hands the command to it. If
-  `docker-compose` is installed, Podman prefers it, because it is the
-  original implementation of the Compose spec. Run `podman compose --help`
-  and the provider it will use is printed once, in a banner.
-- **`podman-compose`** (a hyphen) is a separate, Python-based reimplementation
-  of the Compose spec. It runs on its own, with no Docker involved, and it
-  supports less of the spec: notably, its support for
-  `depends_on: condition: service_healthy` is weaker, and it names networks
-  differently by default.
+- **`podman compose`** (a space) is a subcommand built into Podman. It is a thin wrapper. It finds an external compose provider on your machine, either `docker-compose` or `podman-compose`, and hands the command to it. If you have `docker-compose` installed, Podman uses it first. It is the original implementation of the Compose spec. Run `podman compose version` to see the provider printed in a banner.
+- **`podman-compose`** (a hyphen) is a separate, Python-based implementation of the Compose spec. It runs on its own without Docker. It supports less of the spec. Its support for `depends_on: condition: service_healthy` is weaker, and it names networks differently by default.
 
-Every compose file that starts Postgres (`compose.sync.yml`, `compose.full.yml`, and
-openplate-core's quickstart `compose.yml`) uses
-`depends_on: condition: service_healthy` to gate a service on Postgres's
-healthcheck. Run `podman compose`, not `podman-compose`, unless you have
-confirmed your `podman-compose` install handles that condition.
+**With no provider, `podman compose` does nothing.** A clean Ubuntu 24.04 install with only `podman` answers every `podman compose` command with `Error: looking up compose provider failed`. Install a provider first:
+
+```bash
+sudo apt install podman podman-compose
+podman compose version     # names /usr/bin/podman-compose, version 1.0.6
+```
+
+On that machine, `podman compose` and `podman-compose` run the same program. The healthchecks in these compose files work under it. `compose.yml` and `compose.sync.yml` reported `healthy` with podman 4.9.3 and podman-compose 1.0.6, including the Postgres wait. The healthchecks use one plain shell line (`wget -q -O /dev/null http://127.0.0.1:3000/...`) for this reason. The older `node -e "fetch(...)"` syntax reached podman-compose 1.0.6 as a broken shell line. `podman ps` then reported `unhealthy` continuously while the app answered.
+
+Every compose file that starts Postgres (`compose.sync.yml`, `compose.full.yml`, and openplate-core's quickstart `compose.yml`) uses `depends_on: condition: service_healthy` to gate a service on the Postgres healthcheck. If you use a different provider, verify that it supports that condition.
 
 ## Rootless notes
 
-Podman runs rootless by default: your containers run as your own user, not
-root. That is safer, and it brings three differences from Docker worth
-knowing before you self-host.
+Podman runs rootless by default. Containers run as your own user, not root. This provides better security. It also introduces three differences from Docker to know before you self-host.
 
-**SELinux volume labels.** On a host with SELinux enforcing, which is
-Fedora's default, a container cannot read or write a bind-mounted host
-directory unless that directory carries a label for container access. Add
-`:Z` to the mount if only one container uses it, or `:z` if more than one
-does, for example `-v ./pg-data:/var/lib/postgresql/data:Z`. None of the
-compose files in these three repos bind-mount a host directory today; they
-all use named volumes, which Podman labels for you. This only applies if you
-change a `volumes:` entry to a host path. It touches the sync rungs (2 and 4,
-for Postgres) and the inference rung (3, for the model weights), if you make
-that change.
+**SELinux volume labels.** On a host with SELinux enforcing, which is default on Fedora, a container cannot read or write a bind-mounted host directory without a container access label. Add `:Z` to the mount if only one container uses it. Add `:z` if multiple containers share it, for example `-v ./pg-data:/var/lib/postgresql/data:Z`. None of the compose files in these three repositories bind-mount a host directory. All of them use named volumes, which Podman labels automatically. This note applies only if you edit a `volumes:` entry to use a host path. That change affects sync rungs 2 and 4 for Postgres, and inference rung 3 for model weights.
 
-**Ports below 1024.** A rootless container cannot bind a host port below
-1024 unless you allow it, for example with
-`sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. None of the ports these
-compose files publish by default (3000, 3001, 8300) are affected. This comes
-up only if you remap one of them to 80 or 443 to skip a reverse proxy.
-Because every rung publishes at least one port, it can touch any of the four.
+**Ports below 1024.** A rootless container cannot bind a host port below 1024 without permission, for example via `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. None of the default ports in these compose files (3000, 3001, 8300) need this. This issue occurs only if you remap a port to 80 or 443 to bypass a reverse proxy. Because each rung publishes at least one port, this can affect any of the 4 rungs.
 
-**Rootless Postgres.** Postgres's container runs as a non-root user inside
-the container, and that user needs to own its data directory. A named
-volume, which is what `openplate-core/docker/compose.yml` and openplate's
-`compose.sync.yml` and `compose.full.yml` already use, solves this
-automatically: Podman creates the volume with the right ownership. If you
-switch to a bind-mounted host directory instead, fix its ownership first,
-from the host, with `podman unshare chown -R 70:70 ./pg-data` (70 is the
-`postgres` user in the `postgres:17-alpine` image these files pin; the
-Debian-based image uses 999), or the container fails to start with a
-permissions error. Touches rungs 2 and 4.
+**Rootless Postgres.** The Postgres container runs as a non-root user. That user must own its data directory. A named volume solves this automatically, which `openplate-core/docker/compose.yml`, `compose.sync.yml`, and `compose.full.yml` already use. Podman creates the named volume with correct ownership. If you switch to a bind-mounted host directory, set ownership from the host first with `podman unshare chown -R 70:70 ./pg-data`. The user ID 70 matches the `postgres` user in the pinned `postgres:17-alpine` image; Debian images use 999. Without this step, the container fails on startup with a permissions error. This affects rungs 2 and 4.
 
 ## Quadlet units
 
-Every compose file above also ships as a set of rootless systemd units,
-generated from it by `scripts/quadlet.sh` and committed under
-`docker/quadlet/`. A unit set survives a reboot under `systemctl --user`
-with no compose process attached. Each directory has a README with the
-install steps, the `.env` it needs, and a record of the run that started
-it on a Fedora host with SELinux enforcing:
+Every compose file above also ships as rootless systemd units. They are generated by `scripts/quadlet.sh` and stored in `docker/quadlet/`. A unit set persists across reboots under `systemctl --user` without an active compose process. Each directory includes a README with installation steps, the required `.env` file, and test run logs:
 
 - [app](../docker/quadlet/app/README.md): rung 1, the app alone
 - [sync](../docker/quadlet/sync/README.md): rung 2, Postgres, the app and openplate-core
@@ -78,3 +40,21 @@ it on a Fedora host with SELinux enforcing:
 - [full](../docker/quadlet/full/README.md): rung 4, all four
 - [openplate-core](https://github.com/LowCarbCheck/openplate-core/blob/main/docker/quadlet/core/README.md): the sync service on its own
 - [openplate-inference](https://github.com/LowCarbCheck/openplate-inference/blob/main/docker/quadlet/inference/README.md): the inference endpoint on its own
+
+**Pick one path: compose or Quadlet, never both.** A custom systemd unit running `podman compose up` and a Quadlet unit set perform the same task. If you install both, they conflict at boot over port 3000. Remove the existing service before switching to Quadlet. To remove Quadlet, follow the uninstall steps in the scenario README.
+
+**Three things to know before you start, on any Podman:**
+
+- **There is no `systemctl --user enable` step.** Podman's generator creates the services. You cannot enable generated units. Running that command returns `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` This is normal behavior. Automatic startup relies on the `[Install] WantedBy=default.target` line in each unit, along with `loginctl enable-linger "$USER"`. That command starts your user systemd instance at boot instead of first login.
+- **A value in the `.env` file does not beat a value the unit already sets.** Podman gives an `Environment=` directive priority over `EnvironmentFile=`. The generator adds an `Environment=` line, often empty, for each variable in the compose file. Check the scenario README to modify one.
+- **The unit under `~/.config/containers/systemd/` is your copy.** Edit this file directly. The file in this repository is the generated template.
+
+**Podman 4.9, Ubuntu 24.04's version, differs from Podman 5 in two ways:**
+
+- **It ignores `Notify=healthy`**, which requires Podman 5.0 or newer. As a result, `systemctl --user start` exits roughly one second after container launch, before the healthcheck completes. A unit with `Requires=` will not wait for dependent health status. Test container status manually:
+
+  ```bash
+  until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-app)" = healthy ]; do sleep 5; done
+  ```
+
+- **It reads no drop-in directory** (`app.container.d/*.conf`). Files placed there produce no effect. Edit the installed unit directly instead.

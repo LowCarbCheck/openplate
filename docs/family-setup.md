@@ -79,10 +79,15 @@ five minutes ago and there is no service to keep alive.
 
 Setup: bring up openplate-core (see [sync.md](sync.md) and
 [topologies.md](topologies.md#rung-2-add-sync)), and set `INSTANCE_MODE=managed` on the
-openplate app. From there, invite people at `/admin` in the app, or from a terminal with
-openplate-core's `sync-api` CLI, giving each account a daily allowance. The invite is mailed
-to the person; the link is never printed to a console. Each person signs in and their account
-already carries the AI connection: there is no separate step and nothing to paste in.
+openplate app. Point the sync service at your provider with `UPSTREAM_BASE_URL`,
+`UPSTREAM_API_KEY` and `AI_ADVERTISED_MODEL` in `.env`. The last line is required. Without a model, the app will not scan. Mint the first invitation, for
+yourself, on the server with `ADMIN_TOKEN`, as an administrator
+([self-hosting.md](self-hosting.md#create-the-first-account) has the command). From there,
+invite people at `/admin` in the app, giving each account a daily allowance. With mail
+configured on the sync service, the invitation is mailed to the person. With none, `/admin`
+shows you the link, and you send it the way you would send a password. A forgotten password works the same way. With no mail configured, the user asks you, and you create the reset link under **People** in `/admin`. Each person signs in
+and their account already carries the AI connection. There is no separate step and nothing to
+paste in.
 Suspending or reactivating an account is the same admin screen, and takes effect immediately.
 
 Two things worth knowing before you rely on it. The allowance counts **requests, not

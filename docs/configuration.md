@@ -267,11 +267,25 @@ open app.
 the allowance together; declaring `managed` without a sync server stops the boot rather than
 half-enabling anything.
 
-An administrator invites people from the app itself, at `/admin`, or from a terminal through
-openplate-core's `sync-api` CLI (see the workspace's admin notes). The invite is mailed, never
-printed to a console. A forgotten password is reset by a mailed link; the server holds an
+An administrator invites people from the app itself, at `/admin`, or with openplate-core's
+admin API and `ADMIN_TOKEN`. The very first account, before any administrator exists, comes
+from that API. [self-hosting.md](self-hosting.md#create-the-first-account) has the command.
+With mail configured on the sync service, the invitation is mailed. With no mail configured, the answer
+carries the link and you pass it on. A forgotten password is reset by a link. That link is mailed or, with
+no mail, made by an administrator (see
+[self-hosting.md](self-hosting.md#when-someone-forgets-their-password)). The server holds an
 escrowed recovery code that unwraps the data key after the reset (see
 [sync.md](sync.md#encryption-and-what-the-operator-holds)).
+
+A managed instance with AI needs three values on the sync service as well: `UPSTREAM_BASE_URL`
+and `UPSTREAM_API_KEY` (the provider and its key) and `AI_ADVERTISED_MODEL`, the model every
+scan uses. **`AI_ADVERTISED_MODEL` is required for scans.** Without it, the sync service
+reports no model, and the app refuses to scan rather than pick a model on your bill. Name the
+model the way your provider does, for example `google/gemini-3.5-flash-lite` with
+`UPSTREAM_BASE_URL=https://openrouter.ai/api/v1`, or `openplate-plate-1` in front of
+openplate-inference. Each account then needs a daily allowance,
+which starts at 0. Give it with `"dailyAiLimit"` when you mint the invitation, or set it later in
+`/admin`.
 
 What changes when it is set:
 
@@ -295,7 +309,8 @@ pins both variants side by side.
 
 On a managed instance, an administrator is not the only person who can invite. Three
 openplate-core variables decide whether an ordinary member may invite someone, and on what terms.
-They are set on the sync server, not on the app.
+They are set on the sync server, not on the app. `compose.sync.yml` and `compose.full.yml`
+pass all three from `.env` to the sync service.
 
 | Variable                       | Default                | Description                                                                                                                    |
 | ------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -341,7 +356,7 @@ the OpenAI chat-completions protocol all connect the same way: in **Settings →
 
   ```bash
   echo "CSP_CONNECT_EXTRA=https://ai.example.com" >> .env
-  docker compose up -d
+  docker compose -f compose.yml up -d
   ```
 
 - **`api.openai.com` is never reachable from a browser**: OpenAI's API blocks cross-origin
@@ -409,9 +424,12 @@ that loop: it never sees, stores, or proxies the key.
 - Same guarantee as any other key: stored only in the device's local storage, excluded from
   the JSON backup/export, never sent to the openplate server.
 
-**It works from any origin.** The OAuth callback URL is derived at request time from
-`window.location.origin`, never hardcoded, never pre-registered with OpenRouter. The button
-works unmodified on `http://localhost:3000`, a LAN IP, or your own domain.
+**It works from any secure origin.** The OAuth callback URL is derived at request time from
+`window.location.origin`. It is never hardcoded and never pre-registered with OpenRouter. The button
+works without changes on `http://localhost:3000` or on your own `https://` domain. On a plain
+`http://` LAN address it fails, because it hashes its one-time code with the Web Crypto API,
+which browsers disable there. Paste a key by hand instead, or see
+[self-hosting.md](self-hosting.md#https).
 
 One note if you self-host behind a reverse proxy that logs request URLs: the callback URL
 (including its one-time `state` parameter) will appear in your access logs like any other
