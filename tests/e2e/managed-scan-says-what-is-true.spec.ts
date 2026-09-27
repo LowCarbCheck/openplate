@@ -160,7 +160,12 @@ async function signInManaged(page: Page): Promise<void> {
 /** Hands the scan screen one photo, which it analyses on its own, and returns the failure alert. */
 async function scanOnePhoto(page: Page) {
   await page.goto(`${server.url}/add/photo`);
-  await page
+  // SCOPED TO THE CAPTURE CARD, as every other scan spec is. The tab bar's
+  // photo button carries a capture input of its own, so a page-wide locator
+  // matches two elements whenever the bar has mounted it, and fails in strict
+  // mode on some runs and not others.
+  const captureCard = page.locator('[data-slot="card"]').filter({ has: page.locator('input[type="file"][capture]') });
+  await captureCard
     .locator('input[type="file"][capture]')
     .setInputFiles({ name: 'plate.png', mimeType: 'image/png', buffer: PIXEL_PNG });
   const alert = page.locator('main [role="alert"]');
