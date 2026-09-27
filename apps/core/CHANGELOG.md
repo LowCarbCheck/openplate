@@ -7,6 +7,19 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **An instance with an AI key but no named model looked configured and never
+  scanned.** `AI_ADVERTISED_MODEL` was documented as optional, but the
+  openplate app sends no model of its own on a managed instance and refuses
+  to scan rather than pick one on the operator's bill. Boot now warns when
+  `UPSTREAM_API_KEY` is set and `AI_ADVERTISED_MODEL` is not.
+- **The compose healthcheck reported unhealthy forever under podman-compose
+  1.0.6.** Its array-form `node -e "fetch(...)"` test translated into a
+  broken shell line. It is now one `wget` line the image's busybox already
+  carries (matching openplate's own compose files), and the generated
+  quadlet unit picked up the same change via `scripts/quadlet.sh generate`.
+
 ## [0.22.0] - 2026-09-24
 
 ### Changed

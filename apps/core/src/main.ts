@@ -210,6 +210,19 @@ async function main(): Promise<void> {
           bodyPolicy: { model: config.aiAdvertisedModel, maxOutputTokens: config.aiMaxOutputTokens },
         };
 
+  // AN UPSTREAM KEY WITH NO NAMED MODEL. Non-fatal, like the two warnings
+  // above: a self-built client that sends its own `model` still gets a proxied
+  // answer (`aiAdvertisedModel: null` passes it through, see `config.ts`). But
+  // openplate itself sends no model on a managed instance and refuses to scan
+  // rather than pick one on the operator's bill (README, "The AI proxy"), so a
+  // managed instance in this shape looks configured and never serves a scan.
+  if (ai !== null && config.aiAdvertisedModel === null) {
+    logger.warn(
+      'UPSTREAM_API_KEY is set but AI_ADVERTISED_MODEL is not: openplate will refuse to ' +
+        'scan until you set AI_ADVERTISED_MODEL, because it never sends a model of its own.',
+    );
+  }
+
   const instance: InstanceInfo = {
     name: config.instanceName,
     language: config.instanceLanguage,

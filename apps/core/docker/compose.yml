@@ -162,16 +162,17 @@ services:
       # TCP on the compose network.
       DATABASE_SSL: ${DATABASE_SSL:-false}
     healthcheck:
-      # The image bakes the same check in, but Podman drops a HEALTHCHECK when
-      # it pulls an OCI manifest, which is what GHCR serves. Declared here it
-      # holds under both engines and Quadlet turns it into Notify=healthy.
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
+      # The image bakes a similar check in, but Podman drops a HEALTHCHECK
+      # when it pulls an OCI manifest, which is what GHCR serves. Declared
+      # here it holds under both engines and Quadlet turns it into
+      # Notify=healthy.
+      #
+      # A shell line with no quotes and no brackets, run by the image's
+      # busybox wget. Docker Compose, podman-compose and Quadlet all pass it
+      # through the same way; the old `node -e "fetch(...)"` array form
+      # reached podman-compose 1.0.6 as a broken shell line and stayed
+      # unhealthy forever (the same fix as openplate's compose files).
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/health']
       interval: 30s
       timeout: 5s
       start_period: 20s
