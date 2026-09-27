@@ -40,6 +40,11 @@ Three things never travel, whatever you switch on:
   [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
 - `SYNC_SERVER_URL` set on the app, pointing at that service.
+- A secure page. Signing in derives your keys with the browser's Web Crypto API, which
+  browsers only offer over `https://` or on `localhost`. See
+  [self-hosting.md](self-hosting.md#https).
+- An account. Signup is by invitation only, so on your own instance you mint the first one
+  yourself: [self-hosting.md](self-hosting.md#create-the-first-account).
 
 ## Turning it on
 
@@ -83,8 +88,9 @@ it sees beside that is an email address plus the size and timing of your uploads
 **The operator holds a recovery key.** At signup the app generates a recovery code, wraps your
 data key under it, and sends the code to the server, which keeps it sealed under a secret of
 its own. That is what makes "forgot my password" return your diary rather than an empty
-account: the mailed link hands the code back to your browser, which uses it to unwrap the data
-key and re-wrap it under the new password.
+account: the reset link (mailed, or on an instance with no mail handed to you by the operator)
+hands the code back to your browser, which uses it to unwrap the data key and re-wrap it under
+the new password.
 
 Stated plainly, because it is the trade this design makes: the operator of an instance can
 restore, and therefore in principle read, a diary on it. On an instance you host yourself, you

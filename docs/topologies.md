@@ -20,9 +20,9 @@ the people using it. It sends names, never a photo or a diary entry. From rung 1
 your server doing it: if more than one person scans, give it a free key. See
 [architecture.md](architecture.md#the-food-database-is-a-lookup-by-name-through-the-app-server).
 
-Every command below also runs under [Podman](https://podman.io): use
-`podman compose`, not `podman-compose`, which is a different, less complete
-tool. See [podman.md](podman.md).
+Every command below also runs under [Podman](https://podman.io) as
+`podman compose`. On Ubuntu, that subcommand needs the `podman-compose` package
+installed beside it. See [podman.md](podman.md).
 
 ---
 
@@ -55,14 +55,20 @@ the JSON export from **Profile → Your data** regularly, or move to rung 1.
 ## Rung 1: the app on your own box
 
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 docker compose -f compose.yml up -d
 ```
 
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 podman compose -f compose.yml up -d
 ```
+
+> **Open it as `http://localhost:3000` on that machine, or over HTTPS.** From another device,
+> `http://<its address>:3000` shows the diary. App installation, offline use and the one-click
+> OpenRouter connect do not work there. See [self-hosting.md](self-hosting.md#https).
 
 Rung 1 changes one box. The page comes from a container you run, and the photo path is
 exactly the one above.
@@ -83,8 +89,7 @@ to migrate on upgrade. If it dies, nothing is lost, because it stores nothing.
 
 This is the recommended stopping point. Everything below adds real operational work.
 
-Full walkthrough, including HTTPS (which you need for PWA install and for camera capture),
-is in [self-hosting.md](self-hosting.md).
+The full walkthrough is in [self-hosting.md](self-hosting.md). It covers HTTPS, which you need for PWA install, the one-click OpenRouter connect, and signing in from rung 2 up.
 
 ## Rung 2: add sync
 
@@ -117,30 +122,41 @@ put it on the public internet.
 **Compose file:** [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml).
 
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 docker compose -f compose.sync.yml up -d
 ```
 
 ```bash
+mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 podman compose -f compose.sync.yml up -d
 ```
 
+> **Accounts need a secure page.** Signing in, signing up, and opening an invitation fail on
+> plain `http://<LAN address>`. Use HTTPS, or `localhost` through an ssh tunnel for a test.
+> Nobody signs up on their own. You mint the first invitation on the server with
+> `ADMIN_TOKEN`. Both are in [self-hosting.md](self-hosting.md#create-the-first-account) and
+> [self-hosting.md](self-hosting.md#https).
+
 The service stores each entry as ciphertext and never receives your password. It does hold
 each account's recovery code, sealed under a secret of its own, so a forgotten password is
-reset by a mailed link and the diary comes back. That also means the operator of the service
+reset by a link (mailed, or handed out by you on an instance with no mail) and the diary
+comes back. That also means the operator of the service
 can, in principle, open a diary on it. [sync.md](sync.md) states that trade-off in full, and
 so does the app before you finish setting sync up.
 
 **The same server also carries a shared AI bill, if you turn it on.** Set
 `INSTANCE_MODE=managed` and the instance becomes one an administrator runs for a household or
-an organization: they invite people by email from `/admin` (or the sync-api CLI), give each
+an organization: they invite people by email from `/admin` (or with the admin API), give each
 account a daily allowance, and every signed-in scan runs through the sync server's own AI
 proxy: no separate service, no separate invite link. See
 [configuration.md#managed-instances](configuration.md#managed-instances) and
@@ -187,7 +203,18 @@ make the endpoint reachable **from your browsers** (the photo goes device → en
 compose hostname does not work here).
 **Compose file:** [`docker/topologies/compose.inference.yml`](../docker/topologies/compose.inference.yml).
 
-Podman runs this the same way: `podman compose -f compose.inference.yml up -d`.
+```bash
+mkdir -p ~/openplate && cd ~/openplate
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.inference.yml
+echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+echo "PUBLIC_APP_URL=http://192.168.1.20:3000" >> .env
+echo "PUBLIC_INFERENCE_URL=http://192.168.1.20:8300/v1" >> .env
+docker compose -f compose.inference.yml up -d
+```
+
+Replace `192.168.1.20` with your server's address. Once the app is on HTTPS, the inference
+address must be `https://` too. [self-hosting.md](self-hosting.md#the-app-plus-self-hosted-inference)
+walks through it. Podman runs this the same way: `podman compose -f compose.inference.yml up -d`.
 
 This rung is for two kinds of people:
 
@@ -248,6 +275,7 @@ hardware, with nothing going to any third party).
 **You operate:** all of it. App, sync service, Postgres, model runtime, and browser-reachable
 addresses for two of them.
 **Compose file:** [`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml).
+Its header lists the `.env` lines: those of rung 2 and rung 3 together.
 
 Podman runs this the same way: `podman compose -f compose.full.yml up -d`.
 

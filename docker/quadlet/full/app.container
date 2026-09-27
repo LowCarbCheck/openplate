@@ -14,10 +14,11 @@ Environment=SYNC_SERVER_URL=http://localhost:3001
 Environment=DEFAULT_INFERENCE_BASE_URL=http://openplate.example.lan:8300/v1
 Environment=DEFAULT_INFERENCE_API_KEY=opk_CHANGE_ME
 Environment=DEFAULT_INFERENCE_MODEL=openplate-plate-1
+Environment=INSTANCE_MODE=open
 Environment=TRUST_PROXY=1
 Environment=FOOD_DB_API_URL=https://lowcarbcheck.org
 Environment=LOG_LEVEL=info
-HealthCmd=["node","-e","fetch('http://127.0.0.1:3000/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+HealthCmd=wget -q -O /dev/null http://127.0.0.1:3000/healthcheck
 HealthInterval=30s
 HealthRetries=3
 HealthStartPeriod=30s

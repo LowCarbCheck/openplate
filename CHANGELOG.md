@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Every compose file reads its settings from the env file.** The app service now passes on `DEFAULT_UI_LANGUAGE`, `UPDATE_CHECK`, `FOOD_DB_API_KEY`, `FOOD_DB_BACKFILL` and `CSP_CONNECT_EXTRA`, which the docs told people to set in `.env` but which never reached the container. `compose.inference.yml` and `compose.full.yml` take `INFERENCE_API_KEY`, `PUBLIC_APP_URL`, `PUBLIC_INFERENCE_URL` and `LLAMA_THREADS` from `.env` instead of values edited inside the file; the defaults are the old placeholders, so a Quadlet unit generated from them is unchanged there.
+
 ### Fixed
 
 - **Account pages say that accounts need HTTPS.** On a plain-http address that is not localhost, the browser turns off the Web Crypto that signing in, creating an account and setting a password all need. `/sign-in`, `/sign-up`, `/join`, `/forgot` and `/reset` now say so, with a link to the HTTPS section of the self-hosting guide, instead of offering a form that failed with the browser's own TypeError. The page decides this from the address it was opened on, so the sentence is there from the first paint. `tests/e2e/accounts-need-https.spec.ts` checks every page on a real plain-http origin.
@@ -18,6 +22,9 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **A second join link in the same tab replaces the first.** A link opened in a tab already on `/join` changes only the part after `#`, which does not reload the page, and the first link's card stayed on screen. The page now reads every new link. `tests/e2e/join-link-hash.spec.ts` checks it.
 - **A managed instance no longer sends members to AI settings.** With `AI_ADVERTISED_MODEL` unset on openplate-core, a photo scan said to connect an AI provider in settings, a page a managed instance does not have. It now says the instance names no AI model. When the provider behind the instance refuses its key, the scan says that instead of asking the member to check a key of their own. `tests/e2e/managed-scan-says-what-is-true.spec.ts` checks both.
 - **Connect with OpenRouter says it needs HTTPS on a plain-http page.** The connection hashes a code with the browser's Web Crypto, which a plain-http address that is not localhost does not have, so Continue failed and blamed your network. On such a page, AI settings and the scan screen now show a notice with a link to the HTTPS section of the self-hosting guide in place of the button, and pasting an API key still works. `tests/e2e/openrouter-connect-on-plain-http.spec.ts` checks both screens and walks a pasted key to the end.
+- **The sync compose files pass the admin token and the link addresses on.** `compose.sync.yml` and `compose.full.yml` now forward `ADMIN_TOKEN`, `INSTANCE_MODE`, the mail block, the AI proxy (`UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`, `AI_ADVERTISED_MODEL`, `AI_INSTANCE_DAILY_LIMIT`), the member-invite limits, `SYNC_SHARING` and `SYNC_RESEARCH`, and set `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` from `PUBLIC_SYNC_URL` and `PUBLIC_APP_URL`. Before, a fresh instance could not mint its first invitation, a minted one had no link, and managed mode stayed off whatever `.env` said. `docs/self-hosting.md` has the first-account steps.
+- **Healthchecks report healthy under podman-compose.** Every compose file and Quadlet unit checks health with one plain `wget` line. podman-compose 1.0.6 turned the old `node -e` line into broken shell, so `podman ps` said unhealthy forever while the app answered.
+- **A Quadlet env file now reaches the container.** The generated units no longer carry an empty `Environment=` line for every variable whose compose default is empty. Podman gives such a line precedence over `EnvironmentFile=`, so an `ADMIN_TOKEN` set in the env file never arrived, and Podman 4.9 reads no drop-in to override it. Empty and unset read the same in every service here.
 
 ## [0.49.1] - 2026-09-26
 

@@ -12,17 +12,27 @@ Generated from `docker/topologies/compose.inference.yml`, rung 3: openplate-infe
 
 ## The .env file
 
-None. Every value has a compose default, written into the units as `Environment=`. You will change two values: `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit. These must match. Use a drop-in for each, as shown below.
+None. Every value has a compose default, written into the units as `Environment=`. You will change two values: `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit. These must match, and the install below replaces the placeholder in both. On Podman 5 you can also use a drop-in, as shown further down. Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units.
 
 ## Install
 
-The unit files go to `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. Every unit carries `WantedBy=default.target`, and the generator wires that up for you. A `systemctl --user enable` command on a generated unit fails, and that is expected.
+The unit files go to `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+
+**Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate-inference
 cp docker/quadlet/inference/* ~/.config/containers/systemd/openplate-inference/
+KEY="opk_$(openssl rand -hex 24)"
+sed -i "s/opk_CHANGE_ME/$KEY/" ~/.config/containers/systemd/openplate-inference/*.container
 systemctl --user daemon-reload
 systemctl --user start openplate.service
+```
+
+**On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
+
+```sh
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-openplate)" = healthy ]; do sleep 5; done
 ```
 
 Check it:
@@ -47,7 +57,15 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart openplate.service inference.service
 ```
 
-**Stop and remove.** `systemctl --user stop openplate.service` stops the containers. Remove the unit files and run `systemctl --user daemon-reload` to drop the services. Named volumes stay until you run `podman volume rm` on them. That applies to `systemd-inference-models` here. Removing it means downloading the weights again.
+**Stop and remove.** This is the whole undo. Stopping `openplate.service` leaves inference running, so name both. The last line deletes the weights, so a new install downloads them again:
+
+```sh
+systemctl --user stop openplate.service inference.service
+rm -rf ~/.config/containers/systemd/openplate-inference
+systemctl --user daemon-reload
+podman network rm systemd-openplate-with-inference
+podman volume rm systemd-inference-models
+```
 
 ## CPU, and which runtimes can run this
 
@@ -55,7 +73,7 @@ The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights), and it runs
 
 **Health.** The image bakes in a `HEALTHCHECK` with a 60 minute start period, sized for the first-boot weight download. Podman drops that check when it pulls the image. GHCR serves an OCI manifest, which has no health field. Because of that, `podman ps` shows no health column for `systemd-inference`. The generator deliberately sets no `Notify=healthy` on it, or the unit would wait for the whole download. Query the service directly instead. A `GET /readyz` request on the published port answers 200 with `{"status":"ready", ...}` once the model is loaded, and 503 before that. `/healthz` provides liveness checks only, and `/health` does not exist (404).
 
-**API key.** `API_KEYS=opk_CHANGE_ME` comes from the compose default. Set your own key with a drop-in file, without touching the unit:
+**API key.** `API_KEYS=opk_CHANGE_ME` comes from the compose default, and the install above replaces it. On Podman 5 a drop-in file sets a key without touching the unit:
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate-inference/inference.container.d
@@ -98,3 +116,5 @@ podman exec systemd-openplate node -e "fetch('http://inference:8300/readyz').the
 Outcome: started clean. `systemd-inference` shows no health column (see the CPU section: Podman drops the baked-in check), which is why verification uses `/readyz`, not `podman ps`. The last line shows the app container reaching the inference container by its service name over the private network, through the alias the generator sets.
 
 Afterward, the units were stopped, the volume and network were removed, the files were deleted, and `daemon-reload` was run again. `podman ps -a`, `podman volume ls`, and `podman network ls` showed nothing remaining from this run.
+
+These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file. Only a non-empty default gets such a line; the generator drops empty ones.

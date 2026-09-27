@@ -10,17 +10,25 @@ Generated from `docker/compose.yml`, the one-container scenario: the openplate a
 
 ## The .env file
 
-None. Every value this scenario needs has a default in the compose file, and the generator wrote those defaults into the unit as `Environment=` lines. To change one, add a drop-in: `~/.config/containers/systemd/openplate/app.container.d/local.conf` with a `[Container]` section and one `Environment=KEY=value` line per key. A later `Environment=` for the same key replaces the earlier one.
+None. Every value this scenario needs has a default in the compose file, and the generator wrote the non-empty ones into the unit as `Environment=` lines. An empty default gets no line, so the variable is simply unset. To change one on Podman 5, add a drop-in: `~/.config/containers/systemd/openplate/app.container.d/local.conf` with a `[Container]` section and one `Environment=KEY=value` line per key. A later `Environment=` for the same key replaces the earlier one. Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, and ignores one silently: edit the `Environment=` line in your installed `app.container` instead. Typical changes are `APP_URL` behind a reverse proxy, and `TRUST_PROXY=0` with no proxy in front.
 
 ## Install
 
-The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step: every unit carries `WantedBy=default.target`, and the generator wires that up for you. A `systemctl --user enable` on a generated unit fails, and that is expected.
+The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+
+**Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
 ```sh
 mkdir -p ~/.config/containers/systemd/openplate
 cp docker/quadlet/app/* ~/.config/containers/systemd/openplate/
 systemctl --user daemon-reload
 systemctl --user start app.service
+```
+
+**On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
+
+```sh
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-app)" = healthy ]; do sleep 5; done
 ```
 
 Check it:
@@ -44,7 +52,16 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest
 systemctl --user restart app.service
 ```
 
-**Stop and remove.** `systemctl --user stop app.service` stops the containers. Remove the unit files and run `systemctl --user daemon-reload` to drop the services. Named volumes stay until you `podman volume rm` them.
+**Stop and remove.** This is the whole undo. Quadlet names the network `systemd-openplate`, after `openplate.network`:
+
+```sh
+systemctl --user stop app.service
+rm -rf ~/.config/containers/systemd/openplate
+systemctl --user daemon-reload
+podman network rm systemd-openplate
+```
+
+This scenario has no volume. Turn linger off with `loginctl disable-linger "$USER"` if nothing else of yours needs it.
 
 ## SELinux and rootless notes
 
@@ -55,6 +72,8 @@ systemctl --user restart app.service
 **Container names.** Quadlet names the container `systemd-app`, so that is what `podman ps` shows.
 
 ## Tested on
+
+### Fedora, Podman 5.8.4
 
 - Date: 2026-09-14
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
@@ -81,3 +100,23 @@ Two generator fixes from the other scenarios of the same test pass also reach th
 
 - Every unit that gets `Notify=healthy` also gets `TimeoutStartSec=300`. The user manager's default on this host is 45 seconds, which a first boot of Postgres in the sync scenario exceeded. The generator now writes both lines together.
 - The compose service name is set as a network alias, so the container is reachable as `app` inside its network, not only as `systemd-app`.
+
+### Ubuntu 24.04, Podman 4.9.3
+
+- Date: 2026-09-27
+- Host: a fresh Ubuntu 24.04.5 LTS VM, 4 vCPUs, 8 GiB RAM, AppArmor, no SELinux
+- Podman 4.9.3 from the Ubuntu archive, rootless, as an ordinary user; the units from this directory as committed
+
+```sh
+systemctl --user daemon-reload
+systemctl --user start app.service      # returned after 1 s: 4.9 ignores Notify=healthy
+podman ps                               # systemd-app  Up Less than a second (starting)
+systemctl --user enable app.service
+#   Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-app)" = healthy ]; do sleep 5; done   # 25 s later
+loginctl enable-linger "$USER"
+sudo systemctl reboot
+podman ps                               # after the reboot: systemd-app  Up 50 seconds (healthy)
+```
+
+Outcome: the unit came back after the reboot with no `enable`, from `WantedBy=default.target` and linger alone. The undo steps above then left no container and no network behind.
