@@ -18,7 +18,7 @@ Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate
 
 - `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database.
 
-Everything else has a compose default written into the units, and **an `Environment=` line beats the env file**, even an empty one. `sync.container` carries `Environment=ADMIN_TOKEN=`, so the install below deletes that line from your installed copy and puts the token in the env file; the first account needs it. `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit must match; the install below replaces the placeholder in both. On Podman 5 you can change any other value with a drop-in; Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units. The values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container`, and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
+A variable whose compose default is empty gets no line in the units, so you set it in the env file: `ADMIN_TOKEN`, the mail block, the AI proxy and the member-invite limits. The install below puts `ADMIN_TOKEN` there, because the first account needs it. A variable with a non-empty default is written into the units as `Environment=`, and **an `Environment=` line beats the env file**. `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit must match; the install below replaces the placeholder in both. On Podman 5 you can change any other value with a drop-in; Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units. The values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container`, and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
 
 ## Install
 
@@ -31,7 +31,6 @@ mkdir -p ~/.config/containers/systemd/openplate-full
 cp docker/quadlet/full/* ~/.config/containers/systemd/openplate-full/
 printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-full/openplate-full.env
 chmod 600 ~/.config/containers/systemd/openplate-full/openplate-full.env
-sed -i '/^Environment=ADMIN_TOKEN=$/d' ~/.config/containers/systemd/openplate-full/sync.container
 KEY="opk_$(openssl rand -hex 24)"
 sed -i "s/opk_CHANGE_ME/$KEY/" ~/.config/containers/systemd/openplate-full/*.container
 systemctl --user daemon-reload
@@ -133,4 +132,4 @@ Outcome: clean start on the first try with the updated generator. This run marke
 
 After verification, the units were stopped, both volumes and the network removed, unit files deleted, and `daemon-reload` executed. `podman ps -a`, `podman volume ls`, and `podman network ls` returned no remaining artifacts from the run.
 
-These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file.
+These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file. Only a non-empty default gets such a line; the generator drops empty ones.

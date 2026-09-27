@@ -10,11 +10,6 @@ Environment=SYNC_SERVER_URL=http://localhost:3001
 Environment=INSTANCE_MODE=open
 Environment=TRUST_PROXY=1
 Environment=FOOD_DB_API_URL=https://lowcarbcheck.org
-Environment=FOOD_DB_API_KEY=
-Environment=FOOD_DB_BACKFILL=
-Environment=DEFAULT_UI_LANGUAGE=
-Environment=UPDATE_CHECK=
-Environment=CSP_CONNECT_EXTRA=
 Environment=LOG_LEVEL=info
 HealthCmd=wget -q -O /dev/null http://127.0.0.1:3000/healthcheck
 HealthInterval=30s

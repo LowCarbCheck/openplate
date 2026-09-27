@@ -326,13 +326,17 @@ Your devices need a secure address. You can set one up in three ways.
 
 ### A quick test from one computer: an ssh tunnel
 
+> **This is a test for one computer, not a setup.** The tunnel serves only the computer that
+> runs it, and only while the command runs. A phone or a second device cannot sign in through
+> it. For those, set up HTTPS with [Caddy](#a-domain-name-caddy) below.
+
 To test accounts and sync before configuring a certificate, forward the two ports to your computer. Leave `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` unset so both keep their `localhost` defaults. Run this command on your computer, not on the server:
 
 ```bash
 ssh -N -L 3000:localhost:3000 -L 3001:localhost:3001 you@192.168.1.20
 ```
 
-While the command runs, open `http://localhost:3000` in your browser. This counts as a secure page, so signing in works. An invitation link from the server (`http://localhost:3000/join#...`) also opens there. This serves only that single computer, and only while the command runs. It works as a test, not as a permanent setup for a household. Add `-L 8300:localhost:8300` for the inference container.
+While the command runs, open `http://localhost:3000` in your browser. This counts as a secure page, so signing in works. An invitation link from the server (`http://localhost:3000/join#...`) also opens there. Add `-L 8300:localhost:8300` for the inference container.
 
 ### A domain name: Caddy
 
@@ -378,6 +382,8 @@ tailscale serve --bg 3000
 ```
 
 Tailscale issues and renews the certificate. The app becomes reachable at `https://<machine-name>.<tailnet>.ts.net`. Set `APP_URL` to that URL. Every device that opens this URL must run Tailscale on your tailnet.
+
+We have not tested this path ourselves, and the command above serves only the app on port 3000, not the sync service. [Tailscale's documentation](https://tailscale.com/docs/features/tailscale-serve) describes `tailscale serve`. The Caddy recipe above is the one we verified.
 
 ## Backups
 

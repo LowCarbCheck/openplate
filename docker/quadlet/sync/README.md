@@ -17,7 +17,7 @@ Generated from `docker/topologies/compose.sync.yml`, rung 2: Postgres, the openp
 
 - `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database; a restored database with a lost secret is one nobody can log into.
 
-Every other value has a compose default and is written into the units as `Environment=`, and **an `Environment=` line beats the env file**, even an empty one. `sync.container` carries `Environment=ADMIN_TOKEN=`, so an `ADMIN_TOKEN` in the env file never reaches the container until you delete that line from your installed copy. The install below does that, because the first account needs the token.
+A variable whose compose default is empty gets no line in the units, so you set it in the env file: `ADMIN_TOKEN`, the mail block, the AI proxy and the member-invite limits. The install below puts `ADMIN_TOKEN` there, because the first account needs it. A variable with a non-empty default is written into the units as `Environment=`, and **an `Environment=` line beats the env file**: the same key in the env file changes nothing.
 
 To change any other value on Podman 5, add a drop-in (`sync.container.d/local.conf`, a `[Container]` section, one `Environment=KEY=value` per line). Podman 4.9 (Ubuntu 24.04) reads no drop-in directory and ignores one silently, so there you edit the line in your installed unit. The values people change: `APP_URL` and `SYNC_SERVER_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container` (the same two addresses, which build every invitation link), and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
 
@@ -32,7 +32,6 @@ mkdir -p ~/.config/containers/systemd/openplate-sync
 cp docker/quadlet/sync/* ~/.config/containers/systemd/openplate-sync/
 printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
 chmod 600 ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
-sed -i '/^Environment=ADMIN_TOKEN=$/d' ~/.config/containers/systemd/openplate-sync/sync.container
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
 ```
@@ -129,22 +128,31 @@ Afterwards the units were stopped. The `systemd-pg-data` volume and the network 
 
 ### Ubuntu 24.04, Podman 4.9.3
 
-- Date: 2026-09-27
-- Host: a fresh Ubuntu 24.04.5 LTS VM, 4 vCPUs, 8 GiB RAM, AppArmor, no SELinux
-- Podman 4.9.3 from the Ubuntu archive, rootless, linger on; openplate-core 0.22.0; the units from this directory as committed
+- Dates: 2026-09-27, twice
+- Host: fresh Ubuntu 24.04.5 LTS VMs (4 vCPUs and 8 GiB, then 2 vCPUs and 4 GiB), AppArmor, no SELinux
+- Podman 4.9.3 from the Ubuntu archive, rootless, linger on; openplate-core 0.22.0
+
+The first run used units that still carried `Environment=ADMIN_TOKEN=` and friends, written by the generator for every empty compose default:
 
 ```sh
+podman exec systemd-sync printenv ADMIN_TOKEN     # empty: the unit's Environment=ADMIN_TOKEN= beat the env file
+# a drop-in sync.container.d/local.conf with Environment=ADMIN_TOKEN=...: still empty, 4.9 reads no drop-in
+```
+
+So the generator now drops every empty default. The second run used the units from this directory as committed, with `ADMIN_TOKEN` only in the env file:
+
+```sh
+grep -c ADMIN_TOKEN sync.container                # 0
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
 podman ps
-#   systemd-app       Up 51 seconds (healthy)
-#   systemd-postgres  Up 51 seconds (healthy)
-#   systemd-sync      Up 50 seconds (healthy)
-podman exec systemd-sync printenv ADMIN_TOKEN     # empty: the unit's Environment=ADMIN_TOKEN= beat the env file
-# a drop-in sync.container.d/local.conf with Environment=ADMIN_TOKEN=...: still empty, 4.9 reads no drop-in
-sed -i '/^Environment=ADMIN_TOKEN=$/d' sync.container && systemctl --user daemon-reload && systemctl --user restart sync.service
+#   systemd-app       Up 58 seconds (healthy)
+#   systemd-postgres  Up 42 seconds (healthy)
+#   systemd-sync      Up 36 seconds (healthy)
 curl -s -X POST http://127.0.0.1:3001/v1/admin/invites -H "Authorization: Bearer $ADMIN_TOKEN" ...
 #   "emailed":false,"link":"http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_..."
+echo CLIENT_BASE_URL=https://fromenvfile.example >> openplate-with-sync.env; systemctl --user restart sync.service
+podman exec systemd-sync printenv CLIENT_BASE_URL # http://localhost:3000: a non-empty default still wins
 ```
 
-Outcome: the three units came up healthy. The env file reached the container only once the empty line was gone, which is why the install above deletes it. The undo steps above then left no unit, network or volume of this set behind.
+Outcome: the three units came up healthy and the token in the env file minted an invitation. A value with a non-empty default still has to be changed in the unit. The undo steps above then left no unit, network or volume of this set behind.

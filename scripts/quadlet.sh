@@ -17,6 +17,19 @@
 #   * `${VAR:-default}` and `${VAR-default}` become `default`. podlet does not
 #     interpolate, and systemd does not expand `${VAR}` inside Environment=,
 #     so a literal would reach the container as the string "${VAR}".
+#   * `KEY: ${VAR:-}` (an EMPTY default) is dropped from `environment:`, so no
+#     unit carries `Environment=KEY=`. The empty line is this transform's own
+#     doing, not podlet's: it used to write `KEY: ""`, and podlet turned that
+#     into `Environment=KEY=`. Podman gives `--env` precedence over
+#     `--env-file` whatever their order, so that empty line silently beat the
+#     operator's value in `EnvironmentFile=` (an ADMIN_TOKEN set there never
+#     reached openplate-core, measured on Podman 4.9.3 and 5.x), and Podman
+#     4.9 reads no drop-in that could override it. Dropping the line is safe
+#     only because every service these files run reads an empty variable
+#     exactly as an unset one; check that before adding a `${VAR:-}` whose
+#     program tells the two apart. A NON-empty default still becomes an
+#     `Environment=` line and still beats the env file: change those in the
+#     installed unit (Podman 4.9) or with a drop-in (Podman 5).
 #   * `${VAR:?message}` (a value the operator MUST supply) is dropped from
 #     `environment:` and the service gains `env_file: <project>.env`, which
 #     podlet turns into `EnvironmentFile=<project>.env`. Quadlet resolves that
@@ -117,9 +130,10 @@ path = sys.argv[1]
 lines = open(path, encoding="utf-8").read().split("\n")
 
 DEFAULTED = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*:?-([^}]*)\}")
-# `KEY: ${VAR:-}` means "set, and empty". Left as a bare `KEY:` it would be
-# YAML null, which podlet writes as `Environment=KEY`, which podman reads as
-# "copy KEY from the host if set": a different contract.
+# `KEY: ${VAR:-}` means "set, and empty". It is DROPPED, see the header: as
+# `KEY: ""` it became `Environment=KEY=`, which beats `EnvironmentFile=`, and
+# as a bare `KEY:` it would be YAML null, which podlet writes as
+# `Environment=KEY`, which podman reads as "copy KEY from the host if set".
 EMPTY_DEFAULT = re.compile(r"^(\s+[A-Za-z_][A-Za-z0-9_]*:\s+)\$\{[A-Za-z_][A-Za-z0-9_]*:?-\}\s*$")
 REQUIRED = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*):\?[^}]*\}")
 
@@ -206,7 +220,12 @@ def transform_service(block):
             i += 1
             continue
 
-        out.append(DEFAULTED.sub(r"\1", EMPTY_DEFAULT.sub(r'\1""', line)))
+        # An empty default leaves the environment block, see the header.
+        if EMPTY_DEFAULT.match(line):
+            i += 1
+            continue
+
+        out.append(DEFAULTED.sub(r"\1", line))
         i += 1
 
     # Trailing blank lines belong between services, keep them last.

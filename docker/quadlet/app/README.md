@@ -10,7 +10,7 @@ Generated from `docker/compose.yml`, the one-container scenario: the openplate a
 
 ## The .env file
 
-None. Every value this scenario needs has a default in the compose file, and the generator wrote those defaults into the unit as `Environment=` lines. To change one on Podman 5, add a drop-in: `~/.config/containers/systemd/openplate/app.container.d/local.conf` with a `[Container]` section and one `Environment=KEY=value` line per key. A later `Environment=` for the same key replaces the earlier one. Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, and ignores one silently: edit the `Environment=` line in your installed `app.container` instead. Typical changes are `APP_URL` behind a reverse proxy, and `TRUST_PROXY=0` with no proxy in front.
+None. Every value this scenario needs has a default in the compose file, and the generator wrote the non-empty ones into the unit as `Environment=` lines. An empty default gets no line, so the variable is simply unset. To change one on Podman 5, add a drop-in: `~/.config/containers/systemd/openplate/app.container.d/local.conf` with a `[Container]` section and one `Environment=KEY=value` line per key. A later `Environment=` for the same key replaces the earlier one. Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, and ignores one silently: edit the `Environment=` line in your installed `app.container` instead. Typical changes are `APP_URL` behind a reverse proxy, and `TRUST_PROXY=0` with no proxy in front.
 
 ## Install
 

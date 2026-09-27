@@ -117,4 +117,4 @@ Outcome: started clean. `systemd-inference` shows no health column (see the CPU 
 
 Afterward, the units were stopped, the volume and network were removed, the files were deleted, and `daemon-reload` was run again. `podman ps -a`, `podman volume ls`, and `podman network ls` showed nothing remaining from this run.
 
-These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file.
+These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file. Only a non-empty default gets such a line; the generator drops empty ones.

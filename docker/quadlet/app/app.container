@@ -7,12 +7,7 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=APP_URL=http://localhost:3000
 Environment=FOOD_DB_API_URL=https://lowcarbcheck.org
-Environment=FOOD_DB_API_KEY=
-Environment=FOOD_DB_BACKFILL=
 Environment=TRUST_PROXY=1
-Environment=DEFAULT_UI_LANGUAGE=
-Environment=UPDATE_CHECK=
-Environment=CSP_CONNECT_EXTRA=
 HealthCmd=wget -q -O /dev/null http://127.0.0.1:3000/healthcheck
 HealthInterval=30s
 HealthRetries=3
