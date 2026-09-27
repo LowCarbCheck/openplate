@@ -138,6 +138,7 @@ const catalogSchema = z.object({
   offline: z.object({ heading: z.string() }),
   diary: z.object({
     netCarbsValue: z.string(),
+    nav: z.object({ previousDay: z.string() }),
     meals: z.object({ breakfast: z.string(), dinner: z.string() }),
     copy: z.object({ door: z.string(), title: z.string() }),
     saveMeal: z.object({

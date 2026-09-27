@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search } from 'lucide-react';
@@ -75,12 +75,33 @@ export function AddLauncher() {
 
   const isOnAddHub = location.pathname === ADD_HUB_PATH || location.pathname.startsWith(`${ADD_HUB_PATH}/`);
 
-  // The search door and the strip's type and speak keys are ordinary links, so
-  // nothing closes the sheet behind them. A navigation closes it, whichever
-  // door inside it started the navigation.
+  // THE SHEET CLOSES WHEN ONE OF ITS DOORS IS USED, not when a location
+  // commits. It used to close in an effect keyed on `location.key`, and that
+  // effect runs when React renders a new location, which on a slow phone is
+  // well after the navigation started: the person taps "Add to diary", the
+  // address changes, the old screen is still up with this bar under it, they
+  // tap the plus, and then the diary lands and shuts the sheet they have just
+  // opened (2026-09-27, `add-sheet-outlives-a-pending-navigation.spec.ts`).
+  // So the close follows the door instead. The search door and the strip's
+  // type and speak keys are ordinary links, and a click on any link inside the
+  // sheet closes it (`closeWhenALinkIsTaken`); the photo door closes it itself.
+  //
+  // BACK AND FORWARD STILL CLOSE IT: the page the sheet was opened on is gone.
+  // A history move fires `popstate` at once, before any render, so this
+  // listener has no window for the race above.
   useEffect(() => {
+    if (!isSheetOpen) return;
+    const close = (): void => setIsSheetOpen(false);
+    window.addEventListener('popstate', close);
+    return () => window.removeEventListener('popstate', close);
+  }, [isSheetOpen]);
+
+  /** A click that reached a link inside the sheet: its navigation is under way, so the sheet goes. */
+  const closeWhenALinkIsTaken = (event: MouseEvent<HTMLDivElement>): void => {
+    if (!(event.target instanceof Element)) return;
+    if (event.target.closest('a[href]') === null) return;
     setIsSheetOpen(false);
-  }, [location.key]);
+  };
 
   /**
    * The sheet's photo door: the camera, and then the sheet gets out of the way.
@@ -152,6 +173,7 @@ export function AddLauncher() {
 
       <SheetContent
         side="bottom"
+        onClick={closeWhenALinkIsTaken}
         // Reduced motion keeps the sheet, drops the slide: the position is
         // the information, the travel is decoration.
         className="motion-reduce:transition-none motion-reduce:animate-none pb-[env(safe-area-inset-bottom)]"
