@@ -18,7 +18,9 @@ import { useSearchParams } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
+import { NeedsHttpsNotice } from '#app/components/needs-https-notice';
 import { Button } from '#app/components/ui/button';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#app/components/ui/card';
 import { beginConnect, exchangeCode, OAuthPkceError, OPENROUTER_OAUTH_CONFIG } from '#app/lib/oauth-pkce';
 import type { OAuthPkceErrorCode } from '#app/lib/oauth-pkce';
@@ -168,17 +170,38 @@ function ConnectedCard({ verified }: { verified: boolean }) {
   );
 }
 
+/**
+ * A failed attempt, and the two ways on from it.
+ *
+ * ── Off a secure context, the retry is a notice ──────────────────────────
+ *
+ * "Try again" starts a new PKCE attempt (`beginConnect`), which hashes its
+ * verifier with `crypto.subtle.digest`, and a plain-http page off this
+ * computer has no `crypto.subtle`. The install rehearsal of 2026-09-27 found
+ * the press throwing there while the card above it promised the next attempt
+ * would go straight through. So the button gives way, in place, to the notice
+ * the connect button draws (`OAuthConnectButton`), with the same words, and the
+ * paste-a-key link below stays: it needs no `crypto.subtle`.
+ */
 function ErrorCard({ code, onRetry, isRetrying }: { code: OAuthPkceErrorCode; onRetry: () => void; isRetrying: boolean }) {
   const { t } = useTranslation();
+  const canUseWebCrypto = useCanRunAccounts();
   const copy = ERROR_COPY_KEYS[code];
   return (
     <CardContent className="space-y-4 py-6 text-center">
       <p className="text-sm font-medium">{t(copy.titleKey)}</p>
       <p className="text-sm text-muted-foreground">{t(copy.bodyKey)}</p>
       <div className="flex flex-col gap-2">
-        <Button type="button" className="h-11 w-full" onClick={onRetry} disabled={isRetrying}>
-          {isRetrying ? t('oauth.callback.redirecting') : t('oauth.callback.tryAgain')}
-        </Button>
+        {canUseWebCrypto ?
+          <Button type="button" className="h-11 w-full" onClick={onRetry} disabled={isRetrying}>
+            {isRetrying ? t('oauth.callback.redirecting') : t('oauth.callback.tryAgain')}
+          </Button>
+        : <NeedsHttpsNotice
+            slot="oauth-needs-https"
+            title={t('oauth.connect.needsHttps.title')}
+            body={t('oauth.connect.needsHttps.body')}
+          />
+        }
         <Link
           to="/settings/ai"
           className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
