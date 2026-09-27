@@ -3,11 +3,8 @@
 # `scripts/quadlet.sh generate`, and commit the result.
 
 [Container]
-Environment=MODEL_PROFILE=lite
-Environment=API_KEYS=opk_CHANGE_ME
-Environment=LATENCY_CEILING_MS=0
-Environment=CONCURRENCY=2
-Environment=FOOD_SOURCE=fdc
+EnvironmentFile=inference.defaults.env
+EnvironmentFile=inference.env
 Image=ghcr.io/lowcarbcheck/openplate-inference:latest
 Network=openplate-full.network:alias=inference
 PublishPort=8300:8300

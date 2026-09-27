@@ -4,27 +4,44 @@ Generated from `docker/topologies/compose.inference.yml`, rung 3: openplate-infe
 
 ## What is in this directory
 
-- `inference.container`: `ghcr.io/lowcarbcheck/openplate-inference:latest`, `MODEL_PROFILE=lite`, published on 8300, weights on the volume below.
-- `openplate.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, `Requires=` and `After=` the inference unit, with the compose healthcheck as `Notify=healthy`. `DEFAULT_INFERENCE_BASE_URL` points at `http://openplate.example.lan:8300/v1`: the browser calls the inference endpoint directly, so replace that host with an address your browsers resolve (a drop-in with `Environment=DEFAULT_INFERENCE_BASE_URL=...` and `Environment=APP_URL=...` does it).
+- `inference.container`: `ghcr.io/lowcarbcheck/openplate-inference:latest`, published on 8300, weights on the volume below.
+- `openplate.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, `Requires=` and `After=` the inference unit, with the compose healthcheck as `Notify=healthy`.
+- `inference.defaults.env` and `openplate.defaults.env`: the values the compose file sets, one file per unit. `MODEL_PROFILE=lite` is in the first. The second points `DEFAULT_INFERENCE_BASE_URL` at `http://openplate.example.lan:8300/v1`. The browser calls the inference endpoint directly, so set an address your browsers resolve in `openplate.env`, with `APP_URL` beside it.
 - `inference-models.volume`: the weights; Podman names it `systemd-inference-models`. About 2 GiB after the first boot.
 - `openplate-with-inference.network`: the private network both join.
 - `README.md`: this file.
 
-## The .env file
+## The env files
 
-None. Every value has a compose default, written into the units as `Environment=`. You will change two values: `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit. These must match, and the install below replaces the placeholder in both. On Podman 5 you can also use a drop-in, as shown further down. Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units.
+Every unit reads two env files. Quadlet looks for both in the directory where the unit sits.
+
+1. `<unit>.defaults.env` ships in this directory and holds every value set by the compose file. An update replaces it, so do not edit it.
+2. `<unit>.env` is yours: `openplate.env` and `inference.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
+
+Your files use the container's own variable names, not the names in the compose file's `.env`.
+
+- `API_KEYS` in `inference.env` and `DEFAULT_INFERENCE_API_KEY` in `openplate.env` must match. The install steps below write the same new key into both files.
+- Values people change: `APP_URL`, `DEFAULT_INFERENCE_BASE_URL` and `TRUST_PROXY` in `openplate.env`; `MODEL_PROFILE` and `LLAMA_THREADS` in `inference.env`.
+
+After you change a file, restart its unit, for example `systemctl --user restart inference.service`.
 
 ## Install
 
-The unit files go to `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+The unit files go to `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (the first line of the install), not from `enable`.
 
 **Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
+**Linger first.** A `systemctl --user` service stops when your last session ends, and it does not start at boot, unless linger is on for your user. The first line below turns it on. Without it, closing the terminal or the ssh session you installed from stops every container in this set. A weights download stopped that way resumes from where it paused, but only once you log in again.
+
 ```sh
-mkdir -p ~/.config/containers/systemd/openplate-inference
-cp docker/quadlet/inference/* ~/.config/containers/systemd/openplate-inference/
+loginctl enable-linger "$USER"
+D=~/.config/containers/systemd/openplate-inference
+mkdir -p "$D"
+cp docker/quadlet/inference/* "$D"/
 KEY="opk_$(openssl rand -hex 24)"
-sed -i "s/opk_CHANGE_ME/$KEY/" ~/.config/containers/systemd/openplate-inference/*.container
+printf 'API_KEYS=%s\n' "$KEY" > "$D/inference.env"
+printf 'DEFAULT_INFERENCE_API_KEY=%s\n' "$KEY" > "$D/openplate.env"
+chmod 600 "$D/openplate.env" "$D/inference.env"
 systemctl --user daemon-reload
 systemctl --user start openplate.service
 ```
@@ -44,12 +61,6 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
 curl -s http://127.0.0.1:8300/readyz
 ```
 
-**Linger.** A `systemctl --user` service stops when your last session ends. It does not start at boot unless the user's systemd instance starts at boot. Turn that on once:
-
-```sh
-loginctl enable-linger "$USER"
-```
-
 **Update.** Pull the new image, then restart the unit that runs it:
 
 ```sh
@@ -57,10 +68,14 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart openplate.service inference.service
 ```
 
-**Stop and remove.** This is the whole undo. Stopping `openplate.service` leaves inference running, so name both. The last line deletes the weights, so a new install downloads them again:
+To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your `openplate.env` and `inference.env` alone, because neither ships here.
+
+**Coming from an earlier install?** Installs before 2026-09-27 wrote the key directly into the units, so copying new units restores the placeholder value. Put your key into `inference.env` as `API_KEYS=` and into `openplate.env` as `DEFAULT_INFERENCE_API_KEY=` before you restart the services.
+
+**Stop and remove.** This is the whole undo. Stopping `openplate.service` leaves inference running, so name both. The last line deletes the weights, so a new install downloads them again. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
 
 ```sh
-systemctl --user stop openplate.service inference.service
+systemctl --user stop openplate.service inference.service openplate-with-inference-network.service inference-models-volume.service
 rm -rf ~/.config/containers/systemd/openplate-inference
 systemctl --user daemon-reload
 podman network rm systemd-openplate-with-inference
@@ -71,17 +86,9 @@ podman volume rm systemd-inference-models
 
 The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights), and it runs on a CPU, slowly. The test run below was on a CPU-only host. If you switch the profile or the runtime, read the [support matrix](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/runtimes.md#support-matrix) first. The compose docs state it in one line, and it holds here too: if you have llama.cpp, Ollama, or vLLM-on-GPU running today, set `MODEL_PROFILE=external` and `MODEL_RUNTIME_URL`. openplate-inference then downloads nothing and starts no second model. It wraps what you have. Check the support matrix first; vLLM's **CPU** build cannot run this. The matrix records the CPU build of vLLM as broken, not slow. A `json_schema` request kills the server, so it looks healthy until the first real scan takes the process down.
 
-**Health.** The image bakes in a `HEALTHCHECK` with a 60 minute start period, sized for the first-boot weight download. Podman drops that check when it pulls the image. GHCR serves an OCI manifest, which has no health field. Because of that, `podman ps` shows no health column for `systemd-inference`. The generator deliberately sets no `Notify=healthy` on it, or the unit would wait for the whole download. Query the service directly instead. A `GET /readyz` request on the published port answers 200 with `{"status":"ready", ...}` once the model is loaded, and 503 before that. `/healthz` provides liveness checks only, and `/health` does not exist (404).
+**Health.** The image bakes in a `HEALTHCHECK` with a 60 minute start period, sized for the first-boot weight download. Podman drops that check when it pulls the image. GHCR serves an OCI manifest, which has no health field. Because of that, `podman ps` shows no health column for `systemd-inference`. The generator deliberately sets no `Notify=healthy` on it, or the unit would wait for the whole download. Query the service directly instead. A `GET /readyz` request on the published port answers 200 with `{"status":"ready", ...}` once the model is loaded, and 503 before that. During the first-boot download, nothing answers on the port at all, and curl reports `000`. That means it is still downloading, not broken. `podman logs systemd-inference` shows the progress. `/healthz` provides liveness checks only, and `/health` does not exist (404).
 
-**API key.** `API_KEYS=opk_CHANGE_ME` comes from the compose default, and the install above replaces it. On Podman 5 a drop-in file sets a key without touching the unit:
-
-```sh
-mkdir -p ~/.config/containers/systemd/openplate-inference/inference.container.d
-printf '[Container]\nEnvironment=API_KEYS=%s\n' "$(openssl rand -base64 24)" > ~/.config/containers/systemd/openplate-inference/inference.container.d/keys.conf
-systemctl --user daemon-reload && systemctl --user restart inference.service
-```
-
-A later `Environment=` for the same key replaces the earlier one. This was confirmed on this host with the generator dry run.
+**API key and profile.** `inference.defaults.env` contains the defaults `API_KEYS=opk_CHANGE_ME` and `MODEL_PROFILE=lite`. The install steps above set an active key in `inference.env`. To select another profile, add a line to that file, such as `MODEL_PROFILE=external` alongside `MODEL_RUNTIME_URL` and `MODEL_ID`.
 
 ## SELinux and rootless notes
 
@@ -89,9 +96,11 @@ A later `Environment=` for the same key replaces the earlier one. This was confi
 
 **Rootless ports.** The units publish 3000 and 8300, both above 1024, so no extra privilege is needed. A rootless container cannot bind a host port below 1024 unless you allow it, for example with `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. If a port is taken on your host, change `PublishPort=` in your installed copy of the unit. The copy under `~/.config/containers/systemd/` is yours to edit; the copy in this repository is generated. A drop-in file cannot replace a port. Setting `PublishPort=` in a `<unit>.container.d/*.conf` file adds a second mapping next to the first.
 
-**Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` shows `systemd-inference`. A named volume from a `.volume` unit becomes `systemd-<name>`. Inside the network, every container also answers to its compose service name (`inference, openplate`), because the generator sets that name as a network alias. That alias is what `DATABASE_URL` and related settings rely on.
+**Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` shows `systemd-inference`. A named volume from a `.volume` unit becomes `systemd-<name>`. Inside the network, every container also answers to its compose service name (`inference, openplate`), because the generator sets that name as a network alias. That alias is how the app container reaches `http://inference:8300`.
 
 ## Tested on
+
+### Fedora, Podman 5.8.4
 
 - Date: 2026-09-14
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
@@ -117,4 +126,29 @@ Outcome: started clean. `systemd-inference` shows no health column (see the CPU 
 
 Afterward, the units were stopped, the volume and network were removed, the files were deleted, and `daemon-reload` was run again. `podman ps -a`, `podman volume ls`, and `podman network ls` showed nothing remaining from this run.
 
-These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file. Only a non-empty default gets such a line; the generator drops empty ones.
+### Ubuntu 24.04, Podman 4.9.3
+
+- Date: 2026-09-27
+- Host: a fresh Ubuntu 24.04.5 LTS VM, 4 vCPUs, 8 GiB RAM, 40 GB disk, AppArmor, no SELinux, no GPU
+- Podman 4.9.3 from the Ubuntu archive, rootless, as an ordinary user
+
+```sh
+systemctl --user start openplate.service   # returned after 2 min, the two image pulls included; Requires= pulled inference in
+until [ "$(podman inspect ...)" = healthy ]; ...   # 41 s more
+podman ps
+#   systemd-inference  Up About a minute             0.0.0.0:8300->8300/tcp
+#   systemd-openplate  Up 47 seconds (healthy)       0.0.0.0:3000->3000/tcp
+curl -s http://127.0.0.1:8300/readyz   # no answer during the 1.96 GiB download, then {"status":"ready","modelRuntimeReady":true,...} 200
+curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer <the key from inference.env>" http://127.0.0.1:8300/v1/models   # 200
+curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer opk_CHANGE_ME" http://127.0.0.1:8300/v1/models                # 401
+podman exec systemd-inference printenv LLAMA_THREADS   # empty, so the entrypoint takes every core but two
+sudo systemctl reboot
+# no login; 10 s after boot both containers were up
+systemctl --user is-active inference.service openplate.service   # active, active
+curl -s http://127.0.0.1:8300/readyz   # {"status":"ready",...} 200
+podman exec systemd-openplate wget -q -O - http://inference:8300/readyz   # {"status":"ready",...}
+```
+
+Outcome: both units started, the key in `inference.env` overrode the placeholder in `inference.defaults.env`, and both units recovered after reboot through `WantedBy=default.target` and linger alone. Two fixes from the full run apply here and appear in this README. First, linger is enabled on the first line of the install, because an ssh logout without it stopped the containers and restarted the weights download. Second, the undo stops the network and volume units, because the old undo left `openplate-with-inference-network.service` as `active (exited)` with no underlying network.
+
+Last, the install, health wait, check, and undo steps were copied from this committed README and run on the same VM with an empty weights volume. `/readyz` returned 200 after 338 s, including the download. The app was healthy. The undo left `units=0 containers=0 volumes=0 networks=0`.

@@ -5,34 +5,50 @@ Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate
 ## What is in this directory
 
 - `postgres.container`: `docker.io/library/postgres:17-alpine` on `pg-data.volume`, `pg_isready` healthcheck as `Notify=healthy`. Not published.
-- `inference.container`: `ghcr.io/lowcarbcheck/openplate-inference:latest`, `MODEL_PROFILE=lite`, published on 8300, weights on `inference-models.volume`.
+- `inference.container`: `ghcr.io/lowcarbcheck/openplate-inference:latest`, published on 8300, weights on `inference-models.volume`.
 - `app.container`: the app, published on 3000, `Requires=` the inference unit, compose healthcheck as `Notify=healthy`.
 - `sync.container`: openplate-core, published on 3001, `Requires=` Postgres, healthcheck against `/health` as `Notify=healthy`.
+- `app.defaults.env`, `sync.defaults.env`, `postgres.defaults.env`, `inference.defaults.env`: the values the compose file sets, one file per unit, `MODEL_PROFILE=lite` among them.
 - `pg-data.volume` and `inference-models.volume`: named volumes, `systemd-pg-data` and `systemd-inference-models` on the host.
 - `openplate-full.network`: the private network all four join.
 - `README.md`: this file.
 
-## The .env file
+## The env files
 
-`sync.container` sets `EnvironmentFile=openplate-full.env`. Quadlet resolves this path against the unit directory. Place the file beside the units. The unit will not start without it. One key is required:
+Every unit reads two env files. Quadlet looks for both in the directory where the unit sits.
 
-- `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database.
+1. `<unit>.defaults.env` ships in this directory and holds every value set by the compose file. An update replaces it, so do not edit it.
+2. `<unit>.env` is yours: `app.env`, `sync.env`, `postgres.env` and `inference.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
 
-A variable whose compose default is empty gets no line in the units, so you set it in the env file: `ADMIN_TOKEN`, the mail block, the AI proxy and the member-invite limits. The install below puts `ADMIN_TOKEN` there, because the first account needs it. A variable with a non-empty default is written into the units as `Environment=`, and **an `Environment=` line beats the env file**. `API_KEYS` on the inference unit and `DEFAULT_INFERENCE_API_KEY` on the app unit must match; the install below replaces the placeholder in both. On Podman 5 you can change any other value with a drop-in; Podman 4.9 (Ubuntu 24.04) reads no drop-in directory, so there you edit your installed units. The values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container`, and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
+Your files use the container's own variable names, not the names in the compose file's `.env`. What compose calls `PUBLIC_APP_URL` is `APP_URL` for the app and `CLIENT_BASE_URL` for sync.
+
+- `sync.env` needs `SERVER_SECRET` (`openssl rand -hex 32`). Back it up with the database. The first account also needs `ADMIN_TOKEN` there. The install below writes both.
+- `API_KEYS` in `inference.env` and `DEFAULT_INFERENCE_API_KEY` in `app.env` must match. The install below writes one new key into both.
+- Values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the two halves of every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both; `MODEL_PROFILE` in `inference.env`. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
+- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
+- Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
+
+After you change a file, restart its unit, for example `systemctl --user restart sync.service`.
 
 ## Install
 
-Place the unit files in `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+Place the unit files in `~/.config/containers/systemd/`, together in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (the first line of the install), not from `enable`.
 
 **Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
+**Linger first.** A `systemctl --user` service stops when your last session ends, and it does not start at boot, unless linger is on for your user. The first line below turns it on. Without it, closing the terminal or the ssh session you installed from stops every container in this set. A weights download stopped that way resumes from where it paused, but only once you log in again.
+
 ```sh
-mkdir -p ~/.config/containers/systemd/openplate-full
-cp docker/quadlet/full/* ~/.config/containers/systemd/openplate-full/
-printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-full/openplate-full.env
-chmod 600 ~/.config/containers/systemd/openplate-full/openplate-full.env
+loginctl enable-linger "$USER"
+D=~/.config/containers/systemd/openplate-full
+mkdir -p "$D"
+cp docker/quadlet/full/* "$D"/
 KEY="opk_$(openssl rand -hex 24)"
-sed -i "s/opk_CHANGE_ME/$KEY/" ~/.config/containers/systemd/openplate-full/*.container
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/sync.env"
+printf 'API_KEYS=%s\n' "$KEY" > "$D/inference.env"
+printf 'DEFAULT_INFERENCE_API_KEY=%s\n' "$KEY" > "$D/app.env"
+touch "$D/postgres.env"
+chmod 600 "$D/app.env" "$D/sync.env" "$D/postgres.env" "$D/inference.env"
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
 ```
@@ -43,7 +59,11 @@ systemctl --user start app.service sync.service
 until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
 ```
 
-The first account: mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, with the token from `openplate-full.env`.
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
+
+```sh
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-full/sync.env | cut -d= -f2)
+```
 
 Check it:
 
@@ -55,12 +75,6 @@ curl -s http://127.0.0.1:3001/health
 curl -s http://127.0.0.1:8300/readyz
 ```
 
-**Linger.** A `systemctl --user` service stops when your session closes. It will not start at boot unless the user's systemd manager runs at boot. Enable linger once:
-
-```sh
-loginctl enable-linger "$USER"
-```
-
 **Update.** Pull the new images, then restart the matching units:
 
 ```sh
@@ -68,10 +82,14 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart app.service sync.service inference.service
 ```
 
-**Stop and remove.** This is the whole undo. Stopping `app` and `sync` leaves Postgres and inference running, so name all four. The last line deletes every account and diary, and the downloaded weights:
+To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your four `<unit>.env` files alone, because none ships here.
+
+**Coming from an earlier install?** Units generated before 2026-09-27 read one file, `openplate-full.env`, and only on `sync.container`, and the install wrote the inference key into the units themselves. Rename `openplate-full.env` to `sync.env`, put your key in `inference.env` as `API_KEYS=` and in `app.env` as `DEFAULT_INFERENCE_API_KEY=`, and create an empty `postgres.env`.
+
+**Stop and remove.** This is the whole undo. Stopping `app` and `sync` leaves Postgres and inference running, so name all four. The last line deletes every account and diary, and the downloaded weights. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
 
 ```sh
-systemctl --user stop app.service sync.service postgres.service inference.service
+systemctl --user stop app.service sync.service postgres.service inference.service openplate-full-network.service pg-data-volume.service inference-models-volume.service
 rm -rf ~/.config/containers/systemd/openplate-full
 systemctl --user daemon-reload
 podman network rm systemd-openplate-full
@@ -82,17 +100,9 @@ podman volume rm systemd-pg-data systemd-inference-models
 
 The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights). It runs on CPU, slowly. The test run below ran on a CPU-only host. If you switch the profile or the runtime, read the [support matrix](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/runtimes.md#support-matrix) first. If you already run llama.cpp, Ollama, or vLLM on a GPU, set `MODEL_PROFILE=external` and `MODEL_RUNTIME_URL`. openplate-inference then downloads no files, starts no second model, and forwards requests to your existing runtime. Check the support matrix first; vLLM's **CPU** build cannot run this. The matrix records the vLLM CPU build as broken, not slow. A `json_schema` request crashes the server. It reports healthy until the first scan kills the process.
 
-**Health.** The image defines a `HEALTHCHECK` with a 60 minute start period for downloading weights. Podman drops that check during pull because GHCR serves an OCI manifest without health fields. `podman ps` shows no health column for `systemd-inference`. The generator sets no `Notify=healthy` on it, so systemd does not wait on the initial download. Query the service directly instead. A `GET /readyz` request to the published port returns 200 with `{"status":"ready", ...}` once the model loads, and returns 503 before that. `/healthz` checks liveness only, and `/health` does not exist (404).
+**Health.** The image defines a `HEALTHCHECK` with a 60 minute start period for downloading weights. Podman drops that check during pull because GHCR serves an OCI manifest without health fields. `podman ps` shows no health column for `systemd-inference`. The generator sets no `Notify=healthy` on it, so systemd does not wait on the initial download. Query the service directly instead. A `GET /readyz` request to the published port returns 200 with `{"status":"ready", ...}` once the model loads, and returns 503 before that. During the first-boot download, nothing answers on the port at all, and curl reports `000`. That means it is still downloading, not broken. `podman logs systemd-inference` shows the progress. `/healthz` checks liveness only, and `/health` does not exist (404).
 
-**API key.** The compose default provides `API_KEYS=opk_CHANGE_ME`, and the install above replaces it in both units. On Podman 5 a drop-in file does the same without touching the units:
-
-```sh
-mkdir -p ~/.config/containers/systemd/openplate-full/inference.container.d
-printf '[Container]\nEnvironment=API_KEYS=%s\n' "$(openssl rand -base64 24)" > ~/.config/containers/systemd/openplate-full/inference.container.d/keys.conf
-systemctl --user daemon-reload && systemctl --user restart inference.service
-```
-
-A subsequent `Environment=` line for the same variable overrides the earlier entry. The generator dry run on this host confirmed that behavior.
+**API key and profile.** `inference.defaults.env` contains the defaults `API_KEYS=opk_CHANGE_ME` and `MODEL_PROFILE=lite`. The install steps above set an active key in `inference.env`. To select another profile, add a line to that file, such as `MODEL_PROFILE=external` alongside `MODEL_RUNTIME_URL` and `MODEL_ID`.
 
 ## SELinux and rootless notes
 
@@ -105,6 +115,8 @@ A subsequent `Environment=` line for the same variable overrides the earlier ent
 **Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` lists `systemd-postgres`. Named volumes from `.volume` units become `systemd-<name>`. Containers also resolve each other across the network by their compose names (`postgres, inference, app, sync`) through network aliases added by the generator. Connection strings such as `DATABASE_URL` rely on these aliases.
 
 ## Tested on
+
+### Fedora, Podman 5.8.4
 
 - Date: 2026-09-14
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
@@ -132,4 +144,49 @@ Outcome: clean start on the first try with the updated generator. This run marke
 
 After verification, the units were stopped, both volumes and the network removed, unit files deleted, and `daemon-reload` executed. `podman ps -a`, `podman volume ls`, and `podman network ls` returned no remaining artifacts from the run.
 
-These units were not run on Podman 4.9. The app and sync sets were (see their READMEs), and what they found applies here too: `Notify=healthy` is ignored, drop-ins are not read, and an `Environment=` line beats the env file. Only a non-empty default gets such a line; the generator drops empty ones.
+### Ubuntu 24.04, Podman 4.9.3
+
+- Date: 2026-09-27
+- Host: a fresh Ubuntu 24.04.5 LTS VM, 4 vCPUs, 10 GiB RAM, 40 GB disk, AppArmor, no SELinux, no GPU
+- Podman 4.9.3 from the Ubuntu archive, rootless, as an ordinary user; openplate-core 0.22.0
+
+The first install used the blocks in this README as they stood that morning, with linger enabled after the check:
+
+```sh
+systemctl --user start app.service sync.service   # returned after 2 min 14 s, the four image pulls included
+until [ "$(podman inspect ...)" = healthy ]; ...   # 30 s more
+podman ps
+#   systemd-inference  Up About a minute             0.0.0.0:8300->8300/tcp
+#   systemd-postgres   Up About a minute (healthy)
+#   systemd-app        Up 41 seconds (healthy)       0.0.0.0:3000->3000/tcp
+#   systemd-sync       Up 36 seconds (healthy)       0.0.0.0:3001->3000/tcp
+grep -c ADMIN_TOKEN sync.container                # 0; the token is only in sync.env
+curl -s -X POST http://127.0.0.1:3001/v1/admin/invites -H "Authorization: Bearer $ADMIN_TOKEN" ...
+#   "emailed":false,"link":"http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_..."
+echo CLIENT_BASE_URL=https://fromenvfile.example >> sync.env
+echo TRUST_PROXY=0 >> app.env
+systemctl --user restart sync.service app.service
+podman exec systemd-sync printenv CLIENT_BASE_URL   # https://fromenvfile.example, over http://localhost:3000 in sync.defaults.env
+podman exec systemd-app printenv TRUST_PROXY        # 0, over 1 in app.defaults.env
+#   and the next invitation link began https://fromenvfile.example/join
+curl -s http://127.0.0.1:8300/readyz
+#   {"status":"ready","modelRuntimeReady":true,...} once the 1.96 GiB were in
+```
+
+Then the units in this directory as committed were copied over the install (the update path above). `sync.env` stayed byte-identical, and a new invitation minted with `ADMIN_TOKEN=` empty in `sync.defaults.env` and the real token in `sync.env`. Then the reboot, with linger on:
+
+```sh
+sudo systemctl reboot
+# no login; 10 s after boot all four containers were up
+systemctl --user is-active postgres.service inference.service app.service sync.service   # active, four times
+podman ps   # systemd-postgres (healthy), systemd-inference, systemd-sync (healthy), systemd-app (healthy)
+curl -s http://127.0.0.1:8300/readyz   # {"status":"ready",...} 200
+# and one more invitation minted with the token from sync.env
+```
+
+Two defects came out of the run, and this README carries both fixes:
+
+1. **Linger came too late.** Each ssh logout ended the user's systemd instance, which stopped all four containers. The weights download started again at every new login, three times in ten minutes. The journal shows a new user manager process for each. Linger is now the first line of the install.
+2. **The undo broke the next install.** After the old undo, an install in the same boot failed with `Error: unable to find network with name or ID systemd-openplate-full: network not found`, exit 125, because `openplate-full-network.service` was still `active (exited)` and systemd never created the network again. The undo now stops the network and volume units too.
+
+Last, the install, the health wait, the first account, the check and the undo were cut out of this README as committed and run word for word, twice in one boot. Both installs came up healthy and minted an invitation, and each undo left `units=0 containers=0 volumes=0 networks=0`.

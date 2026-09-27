@@ -6,32 +6,44 @@ Generated from `docker/topologies/compose.sync.yml`, rung 2: Postgres, the openp
 
 - `postgres.container`: `docker.io/library/postgres:17-alpine` on the volume below, with the `pg_isready` healthcheck as `Notify=healthy`. Not published to the host.
 - `sync.container`: openplate-core, `ghcr.io/lowcarbcheck/openplate-core:latest`, published on 3001, `Requires=` and `After=` Postgres, healthcheck against `/health` as `Notify=healthy`.
-- `app.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, with `SYNC_SERVER_URL=http://localhost:3001`. The browser talks to the sync service directly, so that address must be one your browser can reach.
+- `app.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, with `SYNC_SERVER_URL=http://localhost:3001` in its defaults file. The browser talks to the sync service directly, so that address must be one your browser can reach.
+- `app.defaults.env`, `sync.defaults.env`, `postgres.defaults.env`: the values the compose file sets, one file per unit.
 - `pg-data.volume`: the Postgres data volume; Podman names it `systemd-pg-data`.
 - `openplate-with-sync.network`: the private network all three join.
 - `README.md`: this file.
 
-## The .env file
+## The env files
 
-`sync.container` carries `EnvironmentFile=openplate-with-sync.env`. The path is relative. Quadlet resolves it against the directory the unit sits in, so the file goes beside the units. The unit refuses to start without it. One key is required:
+Every unit reads two env files. Quadlet looks for both in the directory where the unit sits.
 
-- `SERVER_SECRET`: `openssl rand -hex 32`. Back it up with the database; a restored database with a lost secret is one nobody can log into.
+1. `<unit>.defaults.env` ships in this directory and holds every value set by the compose file. An update replaces it, so do not edit it.
+2. `<unit>.env` is yours: `app.env`, `sync.env` and `postgres.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
 
-A variable whose compose default is empty gets no line in the units, so you set it in the env file: `ADMIN_TOKEN`, the mail block, the AI proxy and the member-invite limits. The install below puts `ADMIN_TOKEN` there, because the first account needs it. A variable with a non-empty default is written into the units as `Environment=`, and **an `Environment=` line beats the env file**: the same key in the env file changes nothing.
+Your files use the container's own variable names, not the names in the compose file's `.env`. What compose calls `PUBLIC_APP_URL` is `APP_URL` for the app and `CLIENT_BASE_URL` for sync.
 
-To change any other value on Podman 5, add a drop-in (`sync.container.d/local.conf`, a `[Container]` section, one `Environment=KEY=value` per line). Podman 4.9 (Ubuntu 24.04) reads no drop-in directory and ignores one silently, so there you edit the line in your installed unit. The values people change: `APP_URL` and `SYNC_SERVER_URL` in `app.container`, `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.container` (the same two addresses, which build every invitation link), and `TRUST_PROXY` in both. Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
+- `sync.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up alongside the database. If you restore the database without the secret, no user can log in. The first account also requires `ADMIN_TOKEN` in this file. The install instructions below generate and write both.
+- Values people change: `APP_URL` and `SYNC_SERVER_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the same two addresses, which build every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
+- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
+- Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
+
+After you change a file, restart its unit, for example `systemctl --user restart sync.service`.
 
 ## Install
 
-The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (below), not from `enable`.
+The unit files go to `~/.config/containers/systemd/`, together, in one directory. Podman's systemd generator turns them into services on the next `daemon-reload`. There is no `systemctl --user enable` step. If you run it, it prints, for example, `Failed to enable unit: Unit /run/user/1000/systemd/generator/app.service is transient or generated.` That is expected, and it does not mean Quadlet failed: the service exists and starts. Start at boot comes from the `[Install] WantedBy=default.target` line in every unit together with linger (the first line of the install), not from `enable`.
 
 **Pick one path.** These units and a compose stack (with or without a systemd unit of your own that runs it) are alternatives. Run both and they fight over the same ports after every reboot. Stop and remove the other one first.
 
+**Linger first.** A `systemctl --user` service stops when your last session ends, and it does not start at boot, unless linger is on for your user. The first line below turns it on. Without it, closing the terminal or the ssh session you installed from stops every container in this set.
+
 ```sh
-mkdir -p ~/.config/containers/systemd/openplate-sync
-cp docker/quadlet/sync/* ~/.config/containers/systemd/openplate-sync/
-printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
-chmod 600 ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env
+loginctl enable-linger "$USER"
+D=~/.config/containers/systemd/openplate-sync
+mkdir -p "$D"
+cp docker/quadlet/sync/* "$D"/
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/sync.env"
+touch "$D/app.env" "$D/postgres.env"
+chmod 600 "$D/app.env" "$D/sync.env" "$D/postgres.env"
 systemctl --user daemon-reload
 systemctl --user start app.service sync.service
 ```
@@ -42,10 +54,10 @@ systemctl --user start app.service sync.service
 until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
 ```
 
-**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from the env file here:
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
 
 ```sh
-ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-sync/openplate-with-sync.env | cut -d= -f2)
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-sync/sync.env | cut -d= -f2)
 ```
 
 Check it:
@@ -57,12 +69,6 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
 curl -s http://127.0.0.1:3001/health
 ```
 
-**Linger.** A `systemctl --user` service stops when your last session ends. It does not start at boot unless the user's systemd instance starts at boot. Turn that on once:
-
-```sh
-loginctl enable-linger "$USER"
-```
-
 **Update.** Pull the new image, then restart the unit that runs it:
 
 ```sh
@@ -70,10 +76,14 @@ podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate
 systemctl --user restart app.service sync.service
 ```
 
-**Stop and remove.** This is the whole undo. Stopping `sync.service` does not stop Postgres, so name all three. The last line deletes every account and diary on the instance:
+To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your three `<unit>.env` files alone, because none ships here.
+
+**Coming from an earlier install?** Units generated before 2026-09-27 read a single file, `openplate-with-sync.env`, and only on `sync.container`. Rename that file to `sync.env`, then create an empty `app.env` and `postgres.env` next to it.
+
+**Stop and remove.** This is the whole undo. Stopping `sync.service` does not stop Postgres, so name all three. The last line deletes every account and diary on the instance. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
 
 ```sh
-systemctl --user stop app.service sync.service postgres.service
+systemctl --user stop app.service sync.service postgres.service openplate-with-sync-network.service pg-data-volume.service
 rm -rf ~/.config/containers/systemd/openplate-sync
 systemctl --user daemon-reload
 podman network rm systemd-openplate-with-sync
@@ -128,7 +138,7 @@ Afterwards the units were stopped. The `systemd-pg-data` volume and the network 
 
 ### Ubuntu 24.04, Podman 4.9.3
 
-- Dates: 2026-09-27, twice
+- Dates: 2026-09-27, three times
 - Host: fresh Ubuntu 24.04.5 LTS VMs (4 vCPUs and 8 GiB, then 2 vCPUs and 4 GiB), AppArmor, no SELinux
 - Podman 4.9.3 from the Ubuntu archive, rootless, linger on; openplate-core 0.22.0
 
@@ -155,4 +165,18 @@ echo CLIENT_BASE_URL=https://fromenvfile.example >> openplate-with-sync.env; sys
 podman exec systemd-sync printenv CLIENT_BASE_URL # http://localhost:3000: a non-empty default still wins
 ```
 
-Outcome: the three units came up healthy and the token in the env file minted an invitation. A value with a non-empty default still has to be changed in the unit. The undo steps above then left no unit, network or volume of this set behind.
+Outcome of that second run: all three units came up healthy, and the token in the env file minted an invitation. A value with a non-empty default could still be changed only inside the unit.
+
+A third run on the same day used a fresh VM (4 vCPUs, 10 GiB). It used the units in this directory as committed, with every default moved to a `*.defaults.env` file and no `Environment=` line remaining. The install, the health wait, the first account, the check, and the undo were copied from this README and run word for word:
+
+```sh
+podman ps   # systemd-app, systemd-postgres, systemd-sync, all (healthy) after about 32 s
+curl -s -X POST http://127.0.0.1:3001/v1/admin/invites -H "Authorization: Bearer $ADMIN_TOKEN" ...
+#   "emailed":false,"link":"http://localhost:3000/join#server=..."
+echo CLIENT_BASE_URL=https://fromenvfile.example >> sync.env; systemctl --user restart sync.service
+podman exec systemd-sync printenv CLIENT_BASE_URL   # https://fromenvfile.example, over http://localhost:3000 in sync.defaults.env
+#   and the next invitation link began https://fromenvfile.example/join
+# the undo: units=0 containers=0 volumes=0 networks=0
+```
+
+Testing on the same day showed that the old undo left `openplate-with-sync-network.service` in state `active (exited)`. Because of that, the next install during the same boot could not find its network. The README for the full set records the error. The undo above now stops both the network and volume units.

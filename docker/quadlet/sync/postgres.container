@@ -3,9 +3,8 @@
 # `scripts/quadlet.sh generate`, and commit the result.
 
 [Container]
-Environment=POSTGRES_USER=openplate
-Environment=POSTGRES_PASSWORD=openplate
-Environment=POSTGRES_DB=openplate_sync
+EnvironmentFile=postgres.defaults.env
+EnvironmentFile=postgres.env
 ExposeHostPort=5432
 HealthCmd=pg_isready -U openplate -d openplate_sync
 HealthInterval=5s
