@@ -14,6 +14,14 @@ change moves the minor.
   food's name in each app language). The vendored contract accepts both as
   optional fields, and its JSON Schema lists them. This service does not fill
   them yet. openplate reads an answer without them as before.
+- **The Quadlet unit reads every setting from an env file you own.** The
+  unit carried each compose default as an `Environment=` line. Podman ranks
+  those above an env file. On Podman 4.9, which reads no drop-in, `API_KEYS`
+  and `MODEL_PROFILE` could only be changed by editing the installed unit.
+  The unit now reads `inference.defaults.env`, which ships beside it, and
+  then `inference.env`, which is yours and wins. Before you copy the new unit
+  over an install, put your key in `inference.env` as `API_KEYS=`. The unit
+  does not start without that file.
 
 ## [0.1.4] - 2026-09-20
 

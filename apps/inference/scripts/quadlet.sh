@@ -17,11 +17,16 @@
 #   * `${VAR:-default}` and `${VAR-default}` become `default`. podlet does not
 #     interpolate, and systemd does not expand `${VAR}` inside Environment=,
 #     so a literal would reach the container as the string "${VAR}".
+#   * `KEY: ${VAR:-}` (an EMPTY default) becomes `KEY: ""`, which podlet
+#     writes as `Environment=KEY=` and finish() moves into the defaults file
+#     as `KEY=`: set and empty, exactly what compose passes. A bare `KEY:`
+#     would be YAML null, which podlet writes as `Environment=KEY`, and podman
+#     reads that as "copy KEY from the host if set", a different contract.
+#     Until 2026-09-27 such an empty line stayed in the unit, where it beat
+#     the operator's env file (an ADMIN_TOKEN set there never reached
+#     openplate-core); in the defaults file it loses to it, see below.
 #   * `${VAR:?message}` (a value the operator MUST supply) is dropped from
-#     `environment:` and the service gains `env_file: <project>.env`, which
-#     podlet turns into `EnvironmentFile=<project>.env`. Quadlet resolves that
-#     path against the unit directory and refuses to start without the file,
-#     which is the same "set it or nothing starts" contract compose enforces.
+#     `environment:`. The operator's env file (below) supplies it.
 #   * `depends_on: { x: { condition: service_healthy } }` becomes the short
 #     list form, which podlet accepts and turns into After= and Requires=. The
 #     health wait comes back as `Notify=healthy` on every unit whose compose
@@ -43,6 +48,29 @@
 #     A bare quadlet unit with no Network= lands on the default bridge, which
 #     has no DNS, and one without the alias is only reachable as
 #     `systemd-postgres`, the container name Quadlet picks (M231 spec 03).
+#
+# WHAT HAPPENS AFTER PODLET. No unit keeps an `Environment=` line. Podman
+# passes `Environment=` as `--env`, and `--env` beats `--env-file` whatever
+# their order, so a value written that way could only be changed by editing
+# the installed unit on Podman 4.9, which reads no drop-in. finish() moves
+# every `Environment=KEY=value` podlet wrote into a shipped file beside the
+# unit, `<unit>.defaults.env`, and puts two lines in its place:
+#
+#   EnvironmentFile=<unit>.defaults.env    ours, replaced on every update
+#   EnvironmentFile=<unit>.env             the operator's, never shipped
+#
+# With two `--env-file`s the later file wins for a key both set, measured
+# through a Quadlet unit on Podman 4.9.3 (Ubuntu 24.04) and 5.8.4, and Quadlet
+# keeps the order of the lines. So the operator overrides any default, the
+# compose literals included (MODEL_PROFILE, CONCURRENCY), with one line in
+# `<unit>.env`. That file MUST exist: podman refuses a missing `--env-file`
+# and the unit fails to start. An empty file is fine. It is per unit, not per
+# set, so a secret meant for openplate-core never lands in the app, Postgres
+# or inference container. This runs inside generate_into, so `check` still
+# compares the committed files against a fresh podlet run. A value podlet
+# would quote (a space, a quote, a backslash) or one with leading or trailing
+# blanks is refused: podman reads an env file literally, so it would not
+# survive the move.
 #
 # Every unit starts with a header naming its source compose file and the
 # podlet version, so a reader knows where a change has to be made. The output
@@ -116,7 +144,7 @@ lines = open(path, encoding="utf-8").read().split("\n")
 DEFAULTED = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*:?-([^}]*)\}")
 # `KEY: ${VAR:-}` means "set, and empty". Left as a bare `KEY:` it would be
 # YAML null, which podlet writes as `Environment=KEY`, which podman reads as
-# "copy KEY from the host if set": a different contract.
+# "copy KEY from the host if set": a different contract. See the header.
 EMPTY_DEFAULT = re.compile(r"^(\s+[A-Za-z_][A-Za-z0-9_]*:\s+)\$\{[A-Za-z_][A-Za-z0-9_]*:?-\}\s*$")
 REQUIRED = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*):\?[^}]*\}")
 
@@ -156,7 +184,6 @@ if current:
 def transform_service(block):
     """block: the lines of one service, starting at its `  key:` line."""
     out = []
-    needs_env_file = False
     i = 0
     n = len(block)
     while i < n:
@@ -196,10 +223,9 @@ def transform_service(block):
                 i += 1
             continue
 
-        # A required variable leaves the environment block; the env file
-        # supplies it.
+        # A required variable leaves the environment block; the operator's
+        # env file supplies it.
         if not stripped.startswith("#") and REQUIRED.search(line):
-            needs_env_file = True
             i += 1
             continue
 
@@ -214,8 +240,6 @@ def transform_service(block):
     out.append("    networks:")
     out.append(f"      {name}:")
     out.append(f"        aliases: [{service}]")
-    if needs_env_file:
-        out.append(f"    env_file: [{name}.env]")
     return out + trailing
 
 
@@ -264,13 +288,67 @@ sys.stdout.write("\n".join(result).rstrip("\n") + "\n")
 PY
 }
 
-# finish <unit dir> <source compose file> : header, Notify=healthy and its start timeout, in place.
+# finish <unit dir> <source compose file> : header, Notify=healthy and its
+# start timeout, and the environment moved into <unit>.defaults.env, in place.
 finish() {
   python3 - "$1" "$2" "$PODLET_VERSION" <<'PY'
 import os
+import re
 import sys
 
 unit_dir, source, version = sys.argv[1:4]
+KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def fail(message):
+    sys.exit(f"quadlet: {message}")
+
+
+def move_environment(entry, body):
+    """Environment= lines out, the two EnvironmentFile= lines in their place.
+    Returns the new unit body and the lines of <unit>.defaults.env."""
+    stem = entry[: -len(".container")]
+    out = []
+    defaults = []
+    placed = False
+    in_container = False
+    for line in body:
+        if line.startswith("["):
+            in_container = line == "[Container]"
+        if line.startswith("EnvironmentFile="):
+            fail(f"{entry}: podlet wrote {line!r}. A compose file here must not carry env_file:, the generator owns both env files.")
+        if line.startswith("Environment="):
+            if not in_container:
+                fail(f"{entry}: {line!r} sits outside [Container].")
+            assignment = line[len("Environment="):]
+            key, sep, value = assignment.partition("=")
+            if not sep or not KEY.match(key):
+                fail(f"{entry}: podlet wrote a quoted or bare {line!r}. Teach finish() to unquote it before shipping it.")
+            if value != value.strip() or any(c in value for c in "\"'\\"):
+                fail(f"{entry}: {key}={value!r} would not read back literally from an env file.")
+            if any(d.partition("=")[0] == key for d in defaults):
+                fail(f"{entry}: {key} is set twice.")
+            defaults.append(f"{key}={value}")
+            continue
+        if in_container and not placed and not line.startswith("["):
+            # The first other line of [Container]: the env files go here,
+            # where podlet's Environment= block stood. Defaults FIRST.
+            out.append(f"EnvironmentFile={stem}.defaults.env")
+            out.append(f"EnvironmentFile={stem}.env")
+            placed = True
+        out.append(line)
+    if not placed:
+        fail(f"{entry}: no [Container] line to put the env files under.")
+    header = [
+        f"# GENERATED by scripts/quadlet.sh from {source} with podlet {version}.",
+        f"# The defaults for {entry}. Every update replaces this file, so do",
+        f"# not edit it: set the value in {stem}.env beside it. Podman reads that",
+        "# file after this one, and a line there wins over the same line here.",
+        "",
+    ]
+    return out, header + defaults
+
+
 for entry in sorted(os.listdir(unit_dir)):
     path = os.path.join(unit_dir, entry)
     body = open(path, encoding="utf-8").read().split("\n")
@@ -290,6 +368,11 @@ for entry in sorted(os.listdir(unit_dir)):
             out.insert(at + 1, "TimeoutStartSec=300")
         except ValueError:
             out.extend(["", "[Service]", "TimeoutStartSec=300"])
+    if entry.endswith(".container"):
+        out, defaults = move_environment(entry, out)
+        stem = entry[: -len(".container")]
+        with open(os.path.join(unit_dir, f"{stem}.defaults.env"), "w", encoding="utf-8") as f:
+            f.write("\n".join(defaults) + "\n")
     header = [
         f"# GENERATED by scripts/quadlet.sh from {source} with podlet {version}.",
         "# Do not edit by hand: change the compose file, run",
