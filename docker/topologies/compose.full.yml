@@ -23,10 +23,16 @@
 #   # One key for the inference service, which the app hands to browsers.
 #   echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
 #
-#   # The three URLs a BROWSER will use to reach each service.
+#   # The three URLs a BROWSER will use to reach each service. PUBLIC_APP_URL
+#   # and PUBLIC_SYNC_URL default to localhost, so skip both for a trial on
+#   # this machine. PUBLIC_INFERENCE_URL has no such default: set it even for
+#   # a local trial, for example to http://localhost:8300/v1.
 #   echo "PUBLIC_APP_URL=https://openplate.example.com"      >> .env
 #   echo "PUBLIC_SYNC_URL=https://sync.example.com"          >> .env
 #   echo "PUBLIC_INFERENCE_URL=https://ai.example.com/v1"    >> .env
+#
+#   # 1 behind one reverse proxy, 0 with none.
+#   echo "TRUST_PROXY=1" >> .env
 #
 #   docker compose -f compose.full.yml up -d
 #

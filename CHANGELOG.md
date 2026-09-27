@@ -35,6 +35,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Docs
 
 - **The install guides now name three steps that people missed.** The systemd unit in `docs/self-hosting.md` sets `Environment=NODE_ENV=production`, as `pnpm start` does. Each Quadlet README in `docker/quadlet/` now tells you to put `TRUST_PROXY=0` in the app's own env file when no reverse proxy stands in front. "Create the first account" now notes that a phone or second device can sign in only after HTTPS is set up.
+- **The self-hosting guide covers the full stack's env recipe.** `docs/self-hosting.md` gets a new section for `compose.full.yml`, with the same `TRUST_PROXY` explanation and localhost-trial note the sync and inference sections already had; `compose.full.yml`'s own header comment now carries that `TRUST_PROXY` line too.
 
 ## [0.49.1] - 2026-09-26
 

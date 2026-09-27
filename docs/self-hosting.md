@@ -15,7 +15,7 @@ service for you, and that is also open source, for you to run yourself.
 - **The app on its own.** Adds one container. You gain a fast setup with no database or secrets to manage. You risk losing your diary if you clear the browser, there is no sync across devices, and scans require a cloud AI key.
 - **The app plus the sync service.** Adds `openplate-core` and Postgres. You gain encrypted sync across devices and an optional shared AI bill. You risk data loss if you do not back up the database, the secret, and your recovery key.
 - **The app plus self-hosted inference.** Adds `openplate-inference`. You gain local plate scans with no cloud account and no photos leaving your network. You risk hardware strain, and every browser must reach the inference container directly.
-- **Everything.** Sync and inference together, four containers in all. You gain complete data privacy with multi-device sync. You risk the highest operational maintenance and resource load.
+- **[Everything](#the-app-plus-sync-and-self-hosted-inference).** Sync and inference together, four containers in all. You gain complete data privacy with multi-device sync. You risk the highest operational maintenance and resource load.
 
 Each shape is one compose file under [`docker/topologies/`](../docker/topologies/); [topologies.md](topologies.md) explains how to choose.
 
@@ -85,7 +85,7 @@ Every other setup (sync, self-hosted inference, or both) is a separate file unde
 
 ## The app plus your own sync service
 
-[`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, use [`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml) instead: same sync setup, plus the model runtime.)
+[`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -218,6 +218,39 @@ curl -s http://127.0.0.1:8300/readyz
 ```
 
 The key sits in the page every browser loads, so anyone who can open the app can read it. That is fine on a home network or a tailnet, and wrong on an instance open to the internet. [configuration.md](configuration.md#instance-provided-ai) has the full rule. The inference container uses every CPU core but two; set `LLAMA_THREADS` in `.env` to change that.
+
+## The app plus sync and self-hosted inference
+
+[`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml) runs four containers: the app, the sync service, Postgres, and self-hosted inference. Read [The app plus your own sync service](#the-app-plus-your-own-sync-service) and [The app plus self-hosted inference](#the-app-plus-self-hosted-inference) first. This section only covers what changes when every piece runs together.
+
+```bash
+mkdir -p ~/openplate && cd ~/openplate
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.full.yml
+
+# The sync service needs exactly one secret. Generate it and keep it with your backups.
+echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
+
+# Your key to the admin API. You need it to create the first account.
+echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
+
+# One key for the inference service, which the app hands to every browser.
+echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+
+# The URLs a BROWSER will use to reach each service. PUBLIC_APP_URL and
+# PUBLIC_SYNC_URL default to localhost, so skip both for a test on this
+# machine. PUBLIC_INFERENCE_URL has no such default: set it even for a
+# local test, for example to http://localhost:8300/v1.
+echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
+echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
+echo "PUBLIC_INFERENCE_URL=https://ai.example.com/v1" >> .env
+
+# 1 behind one reverse proxy, 0 with none.
+echo "TRUST_PROXY=1" >> .env
+
+docker compose -f compose.full.yml up -d
+```
+
+Create the first account the same way as [above](#create-the-first-account). The first start also downloads the inference weights, about 2 GiB. The model-loading log and the readiness check work the same way as in [The app plus self-hosted inference](#the-app-plus-self-hosted-inference). For real devices instead of a trial, put all three addresses behind HTTPS. See [HTTPS](#https).
 
 ## Without Docker
 
