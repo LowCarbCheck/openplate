@@ -11752,6 +11752,13 @@
     "at": "2026-09-20",
     "tr": "Ve {{count}} değişiklik daha."
   },
+  "974eb9b8f32f44e7": {
+    "en": "This page loaded over plain HTTP, so your browser turned off what this connection needs. Paste an API key instead, or open openplate at an https:// address or at localhost.",
+    "path": "common:oauth.connect.needsHttps.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "Bu sayfa düz HTTP üzerinden yüklendi, bu yüzden tarayıcın bu bağlantının ihtiyaç duyduğu özellikleri kapattı. Bunun yerine bir API anahtarı yapıştır veya openplate uygulamasını bir https:// adresinde ya da localhost üzerinde aç."
+  },
   "976ebf8986b4e834": {
     "en": "Contains milk",
     "path": "common:cautions.contains.milk",
@@ -11814,6 +11821,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Veri ve yedekleme"
+  },
+  "98537aa6ec449d48": {
+    "en": "Connecting with OpenRouter requires a secure connection",
+    "path": "common:oauth.connect.needsHttps.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-27",
+    "tr": "OpenRouter ile bağlantı kurmak güvenli bir bağlantı gerektirir"
   },
   "985a217166e91ecd": {
     "en": "{{day}}, {{count}} entry logged",

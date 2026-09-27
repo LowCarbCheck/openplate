@@ -4,7 +4,9 @@
  *
  * Every page that signs in, creates an account or sets a password asks this
  * before it draws its form, and draws `AccountsNeedHttps` instead when the
- * answer is no. The reasons, and the rules, are in `#app/lib/secure-context`.
+ * answer is no. The OpenRouter connect asks it too: its PKCE step hashes with
+ * `crypto.subtle.digest` (`OAuthConnectButton`). The reasons, and the rules,
+ * are in `#app/lib/secure-context`.
  *
  * ── Two snapshots, and why the server has one ────────────────────────────
  *

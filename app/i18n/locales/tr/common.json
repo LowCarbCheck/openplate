@@ -1550,7 +1550,11 @@
       "photoNote": "Sonrasında taradığın her fotoğraf seçtiğin sağlayıcı tarafından analiz edilir ve openplate tarafından asla saklanmaz.",
       "redirecting": "Yönlendiriliyor…",
       "spendingCap": "OpenRouter'ın kendi onay ekranı, devam etmeden önce bir harcama limiti belirlemene olanak tanır, kullanmaya değer.",
-      "startFailed": "Bağlantı başlatılamadı. Bağlantını kontrol et ve tekrar dene."
+      "startFailed": "Bağlantı başlatılamadı. Bağlantını kontrol et ve tekrar dene.",
+      "needsHttps": {
+        "title": "OpenRouter ile bağlantı kurmak güvenli bir bağlantı gerektirir",
+        "body": "Bu sayfa düz HTTP üzerinden yüklendi, bu yüzden tarayıcın bu bağlantının ihtiyaç duyduğu özellikleri kapattı. Bunun yerine bir API anahtarı yapıştır veya openplate uygulamasını bir https:// adresinde ya da localhost üzerinde aç."
+      }
     }
   },
   "offline": {

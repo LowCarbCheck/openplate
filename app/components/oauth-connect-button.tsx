@@ -11,7 +11,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
+import { NeedsHttpsNotice } from '#app/components/needs-https-notice';
 import { Button, buttonVariants } from '#app/components/ui/button';
+import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import type { VariantProps } from 'class-variance-authority';
 import { beginConnect, OPENROUTER_OAUTH_CONFIG } from '#app/lib/oauth-pkce';
 import { reportError } from '#app/lib/report-error';
@@ -34,6 +36,16 @@ interface OAuthConnectButtonProps {
  * (`#app/services/vision/registry`), so this component itself
  * stays OpenRouter-specific; a second OAuth-capable provider would get its
  * own button reading the same capability table, not a branch added here.
+ *
+ * ── Off a secure context it is a notice, not a button ────────────────────
+ *
+ * PKCE hashes its verifier with `crypto.subtle.digest`, and a plain-http page
+ * off this computer has no `crypto.subtle`. The install rehearsal of
+ * 2026-09-27 found "Continue to OpenRouter" throwing there and saying "check
+ * your connection", which blamed the network. So the button gives way, in
+ * place, to the same notice the account pages draw, worded for this door.
+ * Pasting a key needs no `crypto.subtle` (one `fetch` to the provider, one
+ * write to the device's store), so every caller keeps offering that path.
  */
 export function OAuthConnectButton({ className, variant = 'default', children }: OAuthConnectButtonProps) {
   // The label default lives here, not in the parameter list: a default value
@@ -41,6 +53,8 @@ export function OAuthConnectButton({ className, variant = 'default', children }:
   const { t } = useTranslation();
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  // The same question the account pages ask: is `crypto.subtle` here?
+  const canUseWebCrypto = useCanRunAccounts();
 
   async function handleConfirm(): Promise<void> {
     setIsStarting(true);
@@ -53,6 +67,17 @@ export function OAuthConnectButton({ className, variant = 'default', children }:
       setStartError(t('oauth.connect.startFailed'));
       setIsStarting(false);
     }
+  }
+
+  if (!canUseWebCrypto) {
+    return (
+      <NeedsHttpsNotice
+        slot="oauth-needs-https"
+        title={t('oauth.connect.needsHttps.title')}
+        body={t('oauth.connect.needsHttps.body')}
+        className="w-full sm:flex-1"
+      />
+    );
   }
 
   return (

@@ -1550,7 +1550,11 @@
       "photoNote": "Ogni foto che scansioni in seguito viene analizzata dal fornitore scelto e non viene mai memorizzata da openplate.",
       "redirecting": "Reindirizzamento in corso…",
       "spendingCap": "La schermata di approvazione di OpenRouter ti consente di impostare un limite di spesa prima di continuare, conviene usarla.",
-      "startFailed": "Impossibile avviare la connessione. Controlla la tua connessione e riprova."
+      "startFailed": "Impossibile avviare la connessione. Controlla la tua connessione e riprova.",
+      "needsHttps": {
+        "title": "La connessione a OpenRouter richiede una connessione sicura",
+        "body": "Questa pagina è stata caricata tramite HTTP non cifrato, quindi il browser ha disattivato le funzioni necessarie per la connessione. Incolla invece una chiave API, oppure apri openplate a un indirizzo https:// o su localhost."
+      }
     }
   },
   "offline": {

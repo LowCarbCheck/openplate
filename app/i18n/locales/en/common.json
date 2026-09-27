@@ -1550,7 +1550,11 @@
       "photoNote": "Each photo you scan afterward is analyzed by your chosen provider and is never stored by openplate.",
       "redirecting": "Redirecting…",
       "spendingCap": "OpenRouter's own approval screen lets you set a spending cap before you continue, worth using.",
-      "startFailed": "Couldn't start the connection. Check your connection and try again."
+      "startFailed": "Couldn't start the connection. Check your connection and try again.",
+      "needsHttps": {
+        "title": "Connecting with OpenRouter requires a secure connection",
+        "body": "This page loaded over plain HTTP, so your browser turned off what this connection needs. Paste an API key instead, or open openplate at an https:// address or at localhost."
+      }
     }
   },
   "offline": {

@@ -1550,7 +1550,11 @@
       "photoNote": "Chaque photo que tu numérises ensuite est analysée par le fournisseur choisi et n'est jamais stockée par openplate.",
       "redirecting": "Redirection…",
       "spendingCap": "L'écran de confirmation d'OpenRouter te permet de définir un plafond de dépenses avant de continuer, ce qui vaut la peine d'être utilisé.",
-      "startFailed": "Impossible de démarrer la connexion. Vérifie ta connexion et réessaie."
+      "startFailed": "Impossible de démarrer la connexion. Vérifie ta connexion et réessaie.",
+      "needsHttps": {
+        "title": "La connexion avec OpenRouter nécessite une connexion sécurisée",
+        "body": "Cette page a été chargée en HTTP non chiffré, donc ton navigateur a désactivé les fonctionnalités nécessaires à cette connexion. Colle plutôt une clé d'API, ou ouvre openplate à une adresse https:// ou sur localhost."
+      }
     }
   },
   "offline": {

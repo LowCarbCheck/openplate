@@ -1550,7 +1550,11 @@
       "photoNote": "Jedes Foto, das du danach scannst, wird von deinem gewählten Anbieter analysiert und niemals von openplate gespeichert.",
       "redirecting": "Weiterleitung…",
       "spendingCap": "Auf der Freigabeseite von OpenRouter kannst du vorab ein Ausgabenlimit festlegen, das lohnt sich.",
-      "startFailed": "Die Verbindung konnte nicht gestartet werden. Überprüfe deine Internetverbindung und versuche es erneut."
+      "startFailed": "Die Verbindung konnte nicht gestartet werden. Überprüfe deine Internetverbindung und versuche es erneut.",
+      "needsHttps": {
+        "title": "Das Verbinden mit OpenRouter erfordert eine sichere Verbindung",
+        "body": "Diese Seite wurde über unverschlüsseltes HTTP geladen, daher hat dein Browser die dafür erforderlichen Funktionen deaktiviert. Füge stattdessen einen API-Schlüssel ein, oder öffne openplate über eine https://-Adresse oder über localhost."
+      }
     }
   },
   "offline": {
