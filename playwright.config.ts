@@ -113,6 +113,17 @@ export default defineConfig({
   globalTeardown: './tests/e2e/global-teardown.ts',
   use: {
     baseURL: E2E_APP_URL,
+    // NO SERVICE WORKER unless a spec asks for one with `serviceWorkers: 'allow'`.
+    // Playwright switches the browser caches off in every page that has a
+    // `page.route`, and with the caches off, a worker answering scripts from
+    // Cache Storage, and a navigation overtaking a page still loading them,
+    // Chromium cancels some of the new page's module requests: the boot screen
+    // then says the app could not load. About 5 in 100 such navigations failed
+    // with the worker allowed, 0 of 1080 with it blocked, and 0 of 630 with the
+    // caches on as a real browser has them. `overtaken-page-boots.spec.ts`
+    // records the measurements and guards this default. It is also Playwright's
+    // own advice: a routed request that a worker answers never reaches the route.
+    serviceWorkers: 'block',
   },
   projects: [
     {

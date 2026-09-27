@@ -142,6 +142,10 @@ async function expectNoBrokenImage(page: Page): Promise<void> {
 }
 
 test.describe('offline after one visit', () => {
+  // The worker IS the subject here, so this block opts in: the tier blocks workers by default
+  // (`playwright.config.ts`). No request in it is routed, so the browser caches stay on.
+  test.use({ serviceWorkers: 'allow' });
+
   test('the app opens offline, not an endless boot screen, and no picture is broken', async ({ page, context }) => {
     await visitOnce(page);
 

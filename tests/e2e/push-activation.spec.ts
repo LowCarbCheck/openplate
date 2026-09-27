@@ -42,6 +42,12 @@ import {
 } from './helpers';
 import { EN } from './copy';
 
+// Push needs a registered worker, so this file opts in: the tier blocks workers by default
+// (`playwright.config.ts`). The routes below all go to the sync origin, which the worker never
+// answers, but a route still switches the browser caches off for the page, so this file keeps the
+// small chance of the cancelled boot `overtaken-page-boots.spec.ts` describes.
+test.use({ serviceWorkers: 'allow' });
+
 declare global {
   interface Window {
     /**
