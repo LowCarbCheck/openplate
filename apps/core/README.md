@@ -88,6 +88,18 @@ pnpm sync-api invites create --email anna@example.org --display-name "Anna"
 
 That prints a link (or, if you configured no `CLIENT_BASE_URL`, the raw token) **once**. It is not stored, only its digest is. One invite creates one account, at the address it names, and a failed attempt does not spend it.
 
+**The first account, on a server with only Docker.** The `sync-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then, on the server, in the folder that holds `.env`:
+
+```bash
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
+curl -s -X POST http://127.0.0.1:3000/v1/admin/invites \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","displayName":"You","role":"admin"}'
+```
+
+The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=...&invite=si_..."` on an instance with no mail; open the link yourself. With mail it holds `"emailed":true` and the same link, which is also on its way as a letter. `"role":"admin"` makes the account an administrator, so from then on you invite people from `/admin` in the app. The link runs out after seven days. Opening it needs a secure page (`https://`, or `localhost`): the client derives keys with the browser's Web Crypto API, which browsers switch off on plain `http://` addresses. The openplate app's [self-hosting guide](https://github.com/LowCarbCheck/openplate/blob/main/docs/self-hosting.md#create-the-first-account) walks through the same step for its combined compose file, where the port is 3001.
+
 **The invitation is the address verification.** `POST /v1/auth/signup` reads the address from the invite row, never from the request body, so the person who received the letter is the person who signs up. There is no confirmation link and nothing left to confirm afterwards.
 
 **You can let people ask for an invitation themselves.** With `OPEN_SIGNUP=true`, `POST /v1/auth/signup-request` takes an address, mints an ordinary invite for it and mails it there in a letter of its own, which says the person asked rather than that somebody invited them, so the letter is still the address check. It needs the mail block, and it refuses to boot without it. Every address gets the same `202`: an address that already has an account receives a short note with no link, and one that already holds a letter from you or a member receives nothing new. One source address may ask five times an hour, one mailbox receives one letter a day, and addresses at known throwaway mail services are refused (a vendored copy of the CC0 list at [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains), refreshed with `pnpm sync:disposable-domains`). Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_SITE_KEY` to require a Cloudflare Turnstile captcha as well; `/health` then publishes the site key for the app. `GET /v1/admin/stats` counts the invites this door minted today and in the last seven days, so a burst shows.
@@ -104,6 +116,15 @@ That prints a link (or, if you configured no `CLIENT_BASE_URL`, the raw token) *
 
 It works this way: the client generates the recovery code at signup and sends it to the server, which seals it into `accounts.recovery_code_escrow` under a subkey of `SERVER_SECRET`. `POST /v1/auth/reset/request` mails a link; `POST /v1/auth/reset/open` spends it once and hands the code back; the client then runs the ordinary recovery ceremony with it: new passphrase, re-wrapped data key, new code, re-sealed escrow, one transaction. **The reset endpoint writes nothing to the account.** Without the key records, what it returns is a string.
 
+**With no mail configured, "forgot password" reaches nobody.** `POST /v1/auth/reset/request` still answers `202`, the same answer it gives for an unknown address, but no letter goes. The openplate app tells the person to ask the administrator. Make the link in the app, under **Administration**, **People** (open the person, **Send a reset link**, and with no mail the page shows it), or with `ADMIN_TOKEN` on the server:
+
+```bash
+curl -s http://127.0.0.1:3000/v1/admin/accounts -H "Authorization: Bearer $ADMIN_TOKEN"   # find the id
+curl -s -X POST http://127.0.0.1:3000/v1/admin/accounts/1/reset-mail -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+The second call answers `{"emailed":false,"link":"<CLIENT_BASE_URL>/reset#server=...&token=sr_..."}`. Pass it on the way you would pass on a password: it opens that account's recovery code, once, within one hour. On an instance with mail the same call sends the letter and returns no link.
+
 **The cost, stated plainly: you, as the operator, hold what it takes to open any account on your instance.** Not through an endpoint (there is none, and no admin call ever prints a recovery code), but by reading that column with `SERVER_SECRET` in hand. If you run an instance for other people, they are trusting you and not only the cryptography, and they should be told so.
 
 If you are your own operator, which is what self-hosting means, the older promise is intact: nobody but you can open your diary, and you already could.
@@ -117,7 +138,7 @@ service is the thing that stands between your users and your bill.
 ```bash
 UPSTREAM_BASE_URL=https://openrouter.ai/api/v1
 UPSTREAM_API_KEY=sk-...            # both, or neither. One alone is a boot failure.
-AI_ADVERTISED_MODEL=some/model     # optional, the model every request is sent to
+AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite   # the model every request is sent to; openplate needs it
 AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 8192
 AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
 UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
@@ -132,8 +153,13 @@ learns your key. The provider never learns the account's token.
 
 **Your instance decides what one request costs, not the caller.** The body goes
 through as sent except for the fields that set its price. With
-`AI_ADVERTISED_MODEL` set, `model` is replaced by it, for every account. Leave
-it unset and the caller's model is sent, if you want your people to pick. With
+`AI_ADVERTISED_MODEL` set, `model` is replaced by it, for every account.
+**The openplate app needs it set.** On a managed instance, the app sends no
+model of its own. It scans with the model named by `/health`. Without one, it
+refuses to scan rather than pick a model on your bill. Name the model the way
+your provider does (`google/gemini-3.5-flash-lite` on OpenRouter,
+`openplate-plate-1` in front of openplate-inference). Leaving it unset passes
+the caller's model through, which only helps a client that sends one. With
 or without it, `max_tokens` and `max_completion_tokens` are capped at
 `AI_MAX_OUTPUT_TOKENS` (written in when the body has neither), so is
 `reasoning.max_tokens`, `n` becomes 1, and `models`, `route`, `provider`,
@@ -354,7 +380,7 @@ Your reverse proxy must also allow request bodies of about **2.75 MB**. Blobs ar
 
 Also worth knowing: **`ADMIN_TOKEN`** is the operator's break-glass credential, and it is optional. An account with `role: "admin"` reaches `/v1/admin` with its own access token, which is what puts the console in the app rather than in a shell. With neither configured nor existing, the whole `/v1/admin` tree answers the ordinary unknown-path 404, not a 401, which would announce that a credential exists here worth guessing.
 
-**`SERVER_PUBLIC_URL`** and **`CLIENT_BASE_URL`** are both optional and are needed together: they build the link in an invitation and in a reset mail. With neither, the admin API returns the raw token and you paste it yourself.
+**`SERVER_PUBLIC_URL`** and **`CLIENT_BASE_URL`** are both optional and are needed together: they build the link in an invitation and in a reset mail. With neither, the admin API returns the raw token instead of an invitation link, and no reset link at all, so set both unless you have a reason not to. Mail refuses to start without them.
 
 ### Backup and restore
 
@@ -388,7 +414,7 @@ The database lives in the `postgres-data` volume declared by `docker/compose.yml
 
 They sign in with the **address their invitation arrived at**, and a passphrase they choose. That is the whole of what they need to remember, which is the point: they will forget a username and they will forget a password, and they know their email.
 
-If they forget the passphrase, "forgot password" mails them a link and their diary survives. Tell them the other half too: that works because **you** hold their recovery code in escrow, so they are trusting you as well as the mathematics. If that is not a trust you want to be given, do not run an instance for anybody but yourself.
+If they forget the passphrase, "forgot password" mails them a link and their diary survives. On an instance with no mail they ask you for the link instead, as described in [The password reset](#the-password-reset-and-what-it-costs). Tell them the other half too: that works because **you** hold their recovery code in escrow, so they are trusting you as well as the mathematics. If that is not a trust you want to be given, do not run an instance for anybody but yourself.
 
 ### The admin API admits to nothing it is not asked with the right credential
 
