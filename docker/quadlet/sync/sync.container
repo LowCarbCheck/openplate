@@ -7,15 +7,8 @@ Requires=postgres.service
 After=postgres.service
 
 [Container]
-Environment=PORT=3000
-Environment=DATABASE_URL=postgres://openplate:openplate@postgres:5432/openplate_sync
-Environment=SERVER_PUBLIC_URL=http://localhost:3001
-Environment=CLIENT_BASE_URL=http://localhost:3000
-Environment=TRUST_PROXY=0
-Environment=LOG_LEVEL=info
-Environment=SYNC_SHARING=false
-Environment=SYNC_RESEARCH=false
-EnvironmentFile=openplate-with-sync.env
+EnvironmentFile=sync.defaults.env
+EnvironmentFile=sync.env
 HealthCmd=wget -q -O /dev/null http://127.0.0.1:3000/health
 HealthInterval=30s
 HealthRetries=3
