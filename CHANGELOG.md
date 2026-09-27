@@ -32,6 +32,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **A logged food no longer reopens on the search screen.** Tapping Search immediately after Add to diary kept the previous item open at the portion step, which made accidental duplicate logs easy. The search screen now opens empty. `tests/e2e/add-search-after-an-overtaken-log.spec.ts` checks it.
 - **A server started from source with only its .env file serves pages again.** `server.ts` loaded `.env` after React had already chosen its build. A `NODE_ENV=production` value that lived only in `.env` came too late. Every page answered 500 with `dispatcher.getOwner is not a function`. The documented systemd unit runs `node --import tsx ./server.ts` and hit this issue. `pnpm start` and the Docker image set `NODE_ENV` themselves and never did. `.env` now loads first. `tests/e2e/node-env-from-dotenv.spec.ts` checks it.
 
+### Docs
+
+- **The install guides now name three steps that people missed.** The systemd unit in `docs/self-hosting.md` sets `Environment=NODE_ENV=production`, as `pnpm start` does. Each Quadlet README in `docker/quadlet/` now tells you to put `TRUST_PROXY=0` in the app's own env file when no reverse proxy stands in front. "Create the first account" now notes that a phone or second device can sign in only after HTTPS is set up.
+
 ## [0.49.1] - 2026-09-26
 
 ### Changed

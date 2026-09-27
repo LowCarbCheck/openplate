@@ -151,7 +151,7 @@ The answer is one line of JSON. The part that matters looks like this:
 - **No mail configured** (the default): `"emailed": false`. Nobody was written to. Copy the `link` and open it yourself.
 - **Mail configured** (the `MAIL_API_*` and `MAIL_OPERATOR_EMAIL` values in `.env`): `"emailed": true`, and the same link is on its way to that address as a letter.
 
-Open the link in a browser on a secure page, choose a password, and the account exists. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member.
+Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member.
 
 On a managed instance, where the sync service pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without `AI_ADVERTISED_MODEL`, because the app will not choose a model on your bill:
 
@@ -269,6 +269,7 @@ Wants=network-online.target
 [Service]
 User=$USER
 WorkingDirectory=$HOME/openplate-src
+Environment=NODE_ENV=production
 ExecStart=/usr/bin/node --import tsx ./server.ts
 Restart=on-failure
 

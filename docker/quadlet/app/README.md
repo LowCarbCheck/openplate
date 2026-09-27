@@ -35,6 +35,13 @@ systemctl --user daemon-reload
 systemctl --user start app.service
 ```
 
+**No reverse proxy in front?** `app.defaults.env` sets `TRUST_PROXY=1`, which is correct behind a proxy. Without a proxy, any visitor can fake their address. Set `TRUST_PROXY=0` in your own file and restart:
+
+```sh
+echo TRUST_PROXY=0 >> ~/.config/containers/systemd/openplate/app.env
+systemctl --user restart app.service
+```
+
 **On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
 
 ```sh
