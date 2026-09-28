@@ -13516,6 +13516,13 @@
     "at": "2026-09-14",
     "tr": "Katkıda bulunduğun araştırmalar"
   },
+  "ab459374d6eceeea": {
+    "en": "This account was created, but its keys were never set up. We set them up now. Then you can sign in with your password on every device.",
+    "path": "common:sync.signIn.finishSetup",
+    "model": "hand-written",
+    "at": "2026-09-28",
+    "tr": "Bu hesap oluşturuldu ancak anahtarları hiç kurulmadı. Şimdi onları kuruyoruz. Ardından her cihazda parolanla giriş yapabilirsin."
+  },
   "ab52291c30be6c26": {
     "en": "Participants in this file: {{participants}}",
     "path": "common:research.export.participants",

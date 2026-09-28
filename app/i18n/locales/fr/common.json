@@ -2794,7 +2794,7 @@
       "cta": "Se connecter",
       "emailHint": "L'adresse utilisée pour créer ton compte. Les majuscules n'ont aucune importance.",
       "failed": "L'opération a échoué. Vérifie l'adresse e-mail et le mot de passe, puis réessaie.",
-      "finishSetup": "Ce compte a été créé, mais ses clés n'ont jamais été finalisées. Faisons-le maintenant. Cela se termine par un code de récupération qui te permet de te connecter sur un autre appareil, même si ce compte ne peut être ouvert qu'avec son mot de passe.",
+      "finishSetup": "Ce compte a été créé, mais ses clés n'ont jamais été configurées. Nous les configurons maintenant. Ensuite, tu pourras te connecter avec ton mot de passe sur tous tes appareils.",
       "forgot": "J'ai oublié mon mot de passe",
       "intro": "Saisis ton mot de passe une fois pour te connecter sur cet appareil. Tu restes connecté jusqu'à ta déconnexion explicite.",
       "submit": "Se connecter",
@@ -2822,7 +2822,6 @@
       "syncing": "Synchronisation en cours…"
     },
     "title": "Compte",
-    "passwordNote": "Ton mot de passe chiffre aussi ton journal. Nous ne pouvons pas le réinitialiser, conserve donc précieusement ton code de récupération.",
     "managed": {
       "inviteOnly": "Les comptes se créent ici avec un lien d'invitation. Si tu en as un, ouvre-le pour commencer."
     },

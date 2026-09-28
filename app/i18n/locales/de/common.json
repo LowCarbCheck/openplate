@@ -2794,7 +2794,7 @@
       "cta": "Anmelden",
       "emailHint": "Die Adresse, mit der dein Konto erstellt wurde. Groß- und Kleinschreibung spielt keine Rolle.",
       "failed": "Das hat nicht geklappt. Prüfe die E-Mail-Adresse und das Passwort, dann versuche es erneut.",
-      "finishSetup": "Dieses Konto wurde erstellt, aber die Schlüssel wurden nie fertig eingerichtet. Holen wir das jetzt nach. Am Ende erhältst du einen Wiederherstellungscode, mit dem du dich auf einem anderen Gerät anmelden kannst, auch wenn die Anmeldung bei diesem Konto nur mit seinem Passwort möglich ist.",
+      "finishSetup": "Dieses Konto wurde erstellt, aber seine Schlüssel wurden noch nicht eingerichtet. Wir richten sie jetzt ein. Danach kannst du dich auf jedem Gerät mit deinem Passwort anmelden.",
       "forgot": "Ich habe mein Passwort vergessen",
       "intro": "Gib dein Passwort ein, um dich auf diesem Gerät anzumelden. Du bleibst angemeldet, bis du dich abmeldest.",
       "submit": "Anmelden",
@@ -2822,7 +2822,6 @@
       "syncing": "Wird synchronisiert…"
     },
     "title": "Konto",
-    "passwordNote": "Dein Passwort verschlüsselt auch dein Tagebuch. Wir können es nicht zurücksetzen, bewahre daher deinen Wiederherstellungscode gut auf.",
     "managed": {
       "inviteOnly": "Konten werden hier mit einem Einladungslink erstellt. Wenn du einen hast, öffne ihn, um loszulegen."
     },

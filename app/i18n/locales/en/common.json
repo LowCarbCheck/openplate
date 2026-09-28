@@ -2794,7 +2794,7 @@
       "cta": "Sign in",
       "emailHint": "The address your account was created with. Capital letters make no difference.",
       "failed": "That did not work. Check the email address and the password, then try again.",
-      "finishSetup": "This account was created but its keys were never finished. Let us do that now. It ends with a recovery code that lets you sign in on another device, though this account can only be signed in to with its password.",
+      "finishSetup": "This account was created, but its keys were never set up. We set them up now. Then you can sign in with your password on every device.",
       "forgot": "I have forgotten my password",
       "intro": "Enter your password once to sign in on this device. You stay signed in until you sign out.",
       "submit": "Sign in",
@@ -2822,7 +2822,6 @@
       "syncing": "Syncing…"
     },
     "title": "Account",
-    "passwordNote": "Your password also encrypts your diary. We cannot reset it, so keep your recovery code.",
     "managed": {
       "inviteOnly": "Accounts here are created with an invite link. If you have one, open it to get started."
     },

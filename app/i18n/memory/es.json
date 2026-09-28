@@ -13516,6 +13516,13 @@
     "at": "2026-09-14",
     "es": "Estudios en los que colaboras"
   },
+  "ab459374d6eceeea": {
+    "en": "This account was created, but its keys were never set up. We set them up now. Then you can sign in with your password on every device.",
+    "path": "common:sync.signIn.finishSetup",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Esta cuenta se creó, pero nunca se configuraron sus claves. Las configuramos ahora. Después podrás iniciar sesión con tu contraseña en cualquier dispositivo."
+  },
   "ab52291c30be6c26": {
     "en": "Participants in this file: {{participants}}",
     "path": "common:research.export.participants",

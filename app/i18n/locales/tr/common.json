@@ -2794,7 +2794,7 @@
       "cta": "Giriş yap",
       "emailHint": "Hesabının oluşturulduğu adres. Büyük veya küçük harf fark etmez.",
       "failed": "İşe yaramadı. E-posta adresini ve parolayı kontrol edip tekrar dene.",
-      "finishSetup": "Bu hesap oluşturuldu ancak anahtarları hiçbir zaman tamamlanmadı. Bunu şimdi yapalım. İşlem başka bir cihazda oturum açmanı sağlayan bir kurtarma kodu ile biter, ancak bu hesaba yalnızca parolasıyla giriş yapılabilir.",
+      "finishSetup": "Bu hesap oluşturuldu ancak anahtarları hiç kurulmadı. Şimdi onları kuruyoruz. Ardından her cihazda parolanla giriş yapabilirsin.",
       "forgot": "Parolamı unuttum",
       "intro": "Bu cihazda oturum açmak için parolanı bir kez gir. Çıkış yapana kadar oturumun açık kalır.",
       "submit": "Giriş yap",
@@ -2822,7 +2822,6 @@
       "syncing": "Eşitleniyor…"
     },
     "title": "Hesap",
-    "passwordNote": "Parolan günlüğünü de şifreler. Parolayı biz sıfırlayamayız, bu yüzden kurtarma kodunu sakla.",
     "managed": {
       "inviteOnly": "Buradaki hesaplar bir davet bağlantısıyla oluşturulur. Bir bağlantın varsa başlamak için aç."
     },

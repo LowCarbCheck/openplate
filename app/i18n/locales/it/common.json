@@ -2794,7 +2794,7 @@
       "cta": "Accedi",
       "emailHint": "L'indirizzo usato per creare l'account. Le lettere maiuscole non fanno differenza.",
       "failed": "Non ha funzionato. Controlla l'indirizzo email e la password, poi riprova.",
-      "finishSetup": "Questo account è stato creato, ma la configurazione delle sue chiavi non è mai stata completata. Completiamola adesso. La procedura termina con un codice di recupero che ti permette di accedere su un altro dispositivo, anche se per accedere a questo account serve la sua password.",
+      "finishSetup": "Questo account è stato creato, ma le sue chiavi non sono mai state configurate. Le configuriamo ora. Poi potrai accedere con la tua password su ogni dispositivo.",
       "forgot": "Ho dimenticato la password",
       "intro": "Inserisci la password una volta sola per accedere su questo dispositivo. La sessione rimane attiva finché non esci.",
       "submit": "Accedi",
@@ -2822,7 +2822,6 @@
       "syncing": "Sincronizzazione in corso…"
     },
     "title": "Account",
-    "passwordNote": "La tua password cifra anche il tuo diario. Non possiamo reimpostarla, quindi conserva il tuo codice di recupero.",
     "managed": {
       "inviteOnly": "Gli account qui si creano con un link di invito. Se ne hai uno, aprilo per iniziare."
     },

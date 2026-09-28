@@ -2794,7 +2794,7 @@
       "cta": "Iniciar sesión",
       "emailHint": "La dirección con la que se creó tu cuenta. Las mayúsculas no importan.",
       "failed": "No funcionó. Revisa la dirección de correo y la contraseña, y vuelve a intentarlo.",
-      "finishSetup": "Esta cuenta se creó pero nunca se terminaron sus claves. Vamos a hacerlo ahora. Termina con un código de recuperación que te permite iniciar sesión en otro dispositivo, aunque en esta cuenta solo se puede iniciar sesión con su contraseña.",
+      "finishSetup": "Esta cuenta se creó, pero nunca se configuraron sus claves. Las configuramos ahora. Después podrás iniciar sesión con tu contraseña en cualquier dispositivo.",
       "forgot": "He olvidado mi contraseña",
       "intro": "Introduce tu contraseña una vez para iniciar sesión en este dispositivo. La sesión seguirá abierta hasta que la cierres.",
       "submit": "Iniciar sesión",
@@ -2822,7 +2822,6 @@
       "syncing": "Sincronizando…"
     },
     "title": "Cuenta",
-    "passwordNote": "Tu contraseña también cifra tu diario. No podemos restablecerla, así que guarda tu código de recuperación.",
     "managed": {
       "inviteOnly": "Las cuentas aquí se crean con un enlace de invitación. Si tienes uno, ábrelo para empezar."
     },
