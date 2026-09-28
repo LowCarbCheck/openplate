@@ -13,6 +13,8 @@
  *  - a throwaway domain and a failed captcha are refused before anything is
  *    minted;
  *  - the mailed token redeems into an ordinary account;
+ *  - a picked plan and language ride in the mailed link, an unknown value is
+ *    dropped without changing the answer, and neither is stored;
  *  - the operator's farming count moves, and no address reaches a log line.
  */
 import { test, before, after, beforeEach } from 'node:test';
@@ -34,6 +36,8 @@ import { signupInvites } from '../../src/db/schema.js';
 import { SIGNUP_REQUEST_IP_THROTTLE } from '../../src/accounts/open-signup.js';
 import type { CaptchaVerdict, CaptchaVerifier } from '../../src/accounts/captcha.js';
 import type { LogFields, Logger } from '../../src/logger.js';
+import type { SendSignupRequestInput } from '../../src/mail/mailer.js';
+import { buildSignupRequestMessage } from '../../src/mail/signup-message.js';
 
 const ADMIN_TOKEN = 'integration-admin-token-0123456789abcdef';
 
@@ -70,6 +74,9 @@ interface SignupRequestBody {
   captchaToken?: string;
   dailyAiLimit?: number;
   role?: string;
+  /** Typed wide on purpose: the door must drop every value that is not a plan key, whatever its type. */
+  plan?: unknown;
+  locale?: unknown;
 }
 
 /** The part of `/health` this suite reads. */
@@ -83,6 +90,24 @@ function requestSignup(
   headers?: Record<string, string>,
 ): Promise<HttpResponse<unknown>> {
   return service.request<unknown>({ method: 'POST', path: '/v1/auth/signup-request', body, headers });
+}
+
+/**
+ * The link one recorded letter carries, built by the SAME builder the HTTP
+ * mailer posts (`mail/mailer.ts` `sendSignupRequest`), fed exactly what the
+ * handler handed the mailer. The two link bases are this helper's own; the
+ * parameters after the invite are what the handler decided.
+ */
+function mailedLink(letter: SendSignupRequestInput | undefined): string {
+  assert.ok(letter !== undefined, 'a letter was mailed');
+  return buildSignupRequestMessage({
+    clientBaseUrl: 'https://app.example.org',
+    serverPublicUrl: 'https://core.example.org',
+    inviteToken: letter.inviteToken,
+    expiresAt: letter.expiresAt,
+    language: 'en',
+    intent: letter.intent,
+  }).link;
 }
 
 /** Every response header but `date`, which names the second the answer left and nothing about the address. */
@@ -181,6 +206,61 @@ test('the mailed invitation is an ordinary one: member, no AI, no inviter, and i
     assert.equal(signup.status, 201);
     assert.equal(signup.body.account.email, 'anna@example.org');
     assert.equal(signup.body.account.role, 'member');
+  });
+});
+
+test('a picked plan and language ride in the mailed link, and nothing about them is stored', async () => {
+  await withOpenDoor({}, async (service) => {
+    const response = await requestSignup(service, { email: 'anna@example.org', plan: 'yearly', locale: 'de' });
+    assert.equal(response.status, 202);
+    assert.deepEqual(response.body, {});
+
+    const link = mailedLink(service.mailer.signupRequests[0]);
+    assert.ok(link.endsWith('&plan=yearly&lang=de'), link);
+    assert.deepEqual(new URLSearchParams(link.split('#')[1]).getAll('plan'), ['yearly']);
+
+    // THE LINK IS THE ONLY PLACE: the invite row holds no trace of either value.
+    const [row] = await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'anna@example.org'));
+    assert.ok(row !== undefined, 'the door minted a row');
+    const stored = JSON.stringify(row);
+    assert.ok(!stored.includes('yearly') && !stored.includes('"de"'), stored);
+
+    // THE CONTROL: a monthly pick on another mailbox carries its own key.
+    await requestSignup(service, { email: 'bert@example.org', plan: 'monthly' });
+    assert.ok(mailedLink(service.mailer.signupRequests[1]).endsWith('&plan=monthly'));
+  });
+});
+
+test('an unknown plan or language is dropped silently: the same 202, and no parameter in the link', async () => {
+  await withOpenDoor({}, async (service) => {
+    const plain = await requestSignup(service, { email: 'plain@example.org' });
+    const odd: SignupRequestBody[] = [
+      { email: 'lifetime@example.org', plan: 'lifetime' },
+      { email: 'capital@example.org', plan: 'Yearly' },
+      { email: 'null@example.org', plan: null, locale: null },
+      { email: 'number@example.org', plan: 42, locale: 7 },
+      { email: 'object@example.org', plan: { key: 'yearly' }, locale: ['de'] },
+      { email: 'klingon@example.org', locale: 'tlh' },
+      { email: 'upper@example.org', locale: 'DE' },
+    ];
+    for (const body of odd) {
+      const response = await requestSignup(service, body);
+      assert.equal(response.status, plain.status, `${body.email}: never a 400, never an oracle`);
+      assert.deepEqual(response.body, plain.body);
+      assert.deepEqual(comparableHeaders(response.headers), comparableHeaders(plain.headers));
+    }
+
+    // Every letter went, one per address, and none of their links names a plan or a language.
+    assert.equal(service.mailer.signupRequests.length, odd.length + 1);
+    for (const letter of service.mailer.signupRequests) {
+      assert.deepEqual(letter.intent, { plan: null, locale: null }, letter.email);
+      const link = mailedLink(letter);
+      assert.ok(!link.includes('plan=') && !link.includes('lang='), `${letter.email}: ${link}`);
+    }
+
+    // THE CONTROL: the same door on the same instance does carry a valid pick.
+    await requestSignup(service, { email: 'valid@example.org', plan: 'yearly' });
+    assert.ok(mailedLink(service.mailer.signupRequests.at(-1)).includes('&plan=yearly'));
   });
 });
 

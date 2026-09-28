@@ -5,8 +5,11 @@
  *
  * THE LINK IS THE INVITATION'S LINK. What the person redeems is an ordinary
  * addressed invite (PROTOCOL.md §5.8.3), so the grammar is `/join#server=...&
- * invite=si_...`, built by the same `buildInviteLink`. Only the words differ.
+ * invite=si_...`, built by the same `buildInviteLink`. Only the words differ,
+ * and the two parameters a person's own request may add: `&plan=<key>` for
+ * the plan they picked and `&lang=<code>` for the language they asked in.
  */
+import type { SignupIntent } from '../accounts/open-signup.js';
 import type { InstanceLanguage } from '../protocol.js';
 import type { AccountNoticeMessage } from './account-notice-message.js';
 import { buildInviteLink, renderHtml, type BuiltMessage } from './invite-message.js';
@@ -20,6 +23,30 @@ export interface SignupRequestMessageInput {
   inviteToken: string;
   expiresAt: string;
   language: InstanceLanguage;
+  /** What the person picked before they asked. Each non-null field adds one parameter to the link. */
+  intent: SignupIntent;
+}
+
+/**
+ * The invitation's link, plus the intent's two parameters after the invite,
+ * `plan` first, each only when it is set. Both values come from closed lists
+ * (`readSignupIntent`), and they are encoded anyway, like every other value
+ * in the fragment.
+ */
+export function buildSignupRequestLink(parts: {
+  clientBaseUrl: string;
+  serverPublicUrl: string;
+  inviteToken: string;
+  intent: SignupIntent;
+}): string {
+  const link = buildInviteLink({
+    clientBaseUrl: parts.clientBaseUrl,
+    serverPublicUrl: parts.serverPublicUrl,
+    inviteToken: parts.inviteToken,
+  });
+  const plan = parts.intent.plan === null ? '' : `&plan=${encodeURIComponent(parts.intent.plan)}`;
+  const lang = parts.intent.locale === null ? '' : `&lang=${encodeURIComponent(parts.intent.locale)}`;
+  return `${link}${plan}${lang}`;
 }
 
 /**
@@ -30,10 +57,11 @@ export interface SignupRequestMessageInput {
  */
 export function buildSignupRequestMessage(input: SignupRequestMessageInput): BuiltMessage {
   const strings = SIGNUP_LETTER_STRINGS[input.language].request;
-  const link = buildInviteLink({
+  const link = buildSignupRequestLink({
     clientBaseUrl: input.clientBaseUrl,
     serverPublicUrl: input.serverPublicUrl,
     inviteToken: input.inviteToken,
+    intent: input.intent,
   });
   const expiry = fill(strings.expiry, {
     date: formatExpiryDate({ expiresAt: input.expiresAt, language: input.language }),

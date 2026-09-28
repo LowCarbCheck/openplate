@@ -7,6 +7,22 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **A paid instance can state its price before sign-in.**
+  `GET /v1/plans/prices` is the one anonymous route in the plans subtree: one
+  path, one method. It goes to the plans service with `X-Plans-Secret` alone,
+  never with an account header or the caller's token, and a token sent with it
+  is ignored. A `200` is kept for five minutes and carries
+  `Cache-Control: public, max-age=300`, and one source address may read it 60
+  times a minute. Every other plans path still needs a token, and without
+  `PLANS_UPSTREAM_URL` the path is the ordinary unknown-path 404.
+- **The sign-up letter carries the plan a person picked.**
+  `POST /v1/auth/signup-request` accepts an optional `plan` (`monthly` or
+  `yearly`) and `locale`. When valid, the mailed join link carries
+  `&plan=<key>` and `&lang=<code>`. Nothing is stored, and any other value is
+  ignored without an error, so the answer is still the same `202`.
+
 ### Changed
 
 - **The Quadlet units read every setting from an env file you own.** The

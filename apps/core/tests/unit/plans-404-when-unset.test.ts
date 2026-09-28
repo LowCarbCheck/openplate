@@ -33,6 +33,8 @@ let dark: PlansHarness;
 const PLANS_ROUTES: readonly { method: string; path: string; body?: string }[] = [
   { method: 'GET', path: '/v1/plans' },
   { method: 'GET', path: '/v1/plans/me' },
+  // The one anonymous path is dark too: without a biller there is no price to state.
+  { method: 'GET', path: '/v1/plans/prices' },
   { method: 'POST', path: '/v1/plans/checkout', body: '{"plan":"monthly"}' },
   { method: 'POST', path: '/v1/plans/portal', body: '{}' },
   { method: 'PUT', path: '/v1/plans/me', body: '{}' },
@@ -123,6 +125,9 @@ test('the same paths stop being 404 once an operator configures a biller', async
 
     const refusedVerb = await lit.request({ method: 'DELETE', path: '/v1/plans/me', token: lit.accessToken });
     assert.equal(refusedVerb.status, 405, 'a verb this subtree does not forward is a 405 here, not a 404');
+
+    const prices = await lit.request({ method: 'GET', path: '/v1/plans/prices' });
+    assert.equal(prices.status, 200, 'the price list exists here, and an anonymous caller reads it');
   } finally {
     await lit.close();
   }

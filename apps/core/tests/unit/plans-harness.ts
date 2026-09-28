@@ -48,6 +48,11 @@ export interface UpstreamReply {
   contentType: string | null;
   /** When `true` the upstream accepts the request and never answers, which is what a timeout looks like. */
   hang?: boolean;
+  /**
+   * Milliseconds the upstream waits before it answers, or absent for at once.
+   * A slow biller, so a test can put several readers on one cold entry.
+   */
+  delayMs?: number;
 }
 
 export interface PlansHarness {
@@ -62,6 +67,8 @@ export interface PlansHarness {
   reply: UpstreamReply;
   /** The upstream's base URL, so a test can prove the harness pointed the proxy somewhere real. */
   upstreamBaseUrl: string;
+  /** Moves the app's clock forward, which ages the cached price list and its rate limit window. */
+  advance(ms: number): void;
   request(input: {
     method: string;
     path: string;
@@ -123,8 +130,15 @@ export async function startPlansHarness(options: StartPlansHarnessOptions): Prom
       // A hang is an accepted request that is never answered, which is exactly
       // what a biller stuck on its own database looks like from here.
       if (reply.hang === true) return;
-      response.writeHead(reply.status, reply.contentType === null ? {} : { 'content-type': reply.contentType });
-      response.end(reply.body);
+      // Read now, not when the timer fires, so a test that changes the reply
+      // afterwards does not change an answer already on its way.
+      const { status, contentType, body } = reply;
+      const answer = (): void => {
+        response.writeHead(status, contentType === null ? {} : { 'content-type': contentType });
+        response.end(body);
+      };
+      if (reply.delayMs === undefined) answer();
+      else setTimeout(answer, reply.delayMs);
     });
   });
   upstream.on('connection', (socket: Socket) => {
@@ -198,6 +212,7 @@ export async function startPlansHarness(options: StartPlansHarnessOptions): Prom
     received,
     reply,
     upstreamBaseUrl,
+    advance: (ms: number): void => fixture.advance(ms),
     async request(input): Promise<Response> {
       const headers = { ...input.headers } satisfies Record<string, string>;
       const token = input.token ?? null;

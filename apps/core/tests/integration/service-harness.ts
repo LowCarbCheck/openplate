@@ -47,6 +47,7 @@ import type {
   SendDeclarationReceiptInput,
   SendInviteInput,
   SendResetInput,
+  SendSignupRequestInput,
 } from '../../src/mail/mailer.js';
 import { createDrizzleLegalDeclarationsStore } from '../../src/legal/legal-declarations-store.js';
 import type { SyncKeyRecordKind } from '../../src/protocol.js';
@@ -88,7 +89,7 @@ export interface RecordingMailer extends Mailer {
   /** The M212 notes, so a suite can assert that an invited address which already has an account got one INSTEAD. */
   accountNotices: SendAccountNoticeInput[];
   /** M253: the open sign-up door's own letter and its note to an existing account. */
-  signupRequests: SendInviteInput[];
+  signupRequests: SendSignupRequestInput[];
   signupAccountNotices: SendAccountNoticeInput[];
   /** M214/09. One entry per address a receipt went to — up to two per declaration, see `mail/mailer.ts`. */
   declarationReceipts: SendDeclarationReceiptInput[];
@@ -100,7 +101,7 @@ function createRecordingMailer(): RecordingMailer {
   const invites: SendInviteInput[] = [];
   const resets: SendResetInput[] = [];
   const accountNotices: SendAccountNoticeInput[] = [];
-  const signupRequests: SendInviteInput[] = [];
+  const signupRequests: SendSignupRequestInput[] = [];
   const signupAccountNotices: SendAccountNoticeInput[] = [];
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
@@ -121,7 +122,7 @@ function createRecordingMailer(): RecordingMailer {
     async sendAccountNotice(input: SendAccountNoticeInput): Promise<void> {
       accountNotices.push(input);
     },
-    async sendSignupRequest(input: SendInviteInput): Promise<void> {
+    async sendSignupRequest(input: SendSignupRequestInput): Promise<void> {
       signupRequests.push(input);
     },
     async sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void> {

@@ -23,6 +23,7 @@ import { MAIL_STRINGS, formatExpiryDate } from '../../src/mail/strings.js';
 import { buildSignupAccountNoticeMessage, buildSignupRequestMessage } from '../../src/mail/signup-message.js';
 import { SIGNUP_LETTERS_AWAITING_TRANSLATION, SIGNUP_LETTER_STRINGS } from '../../src/mail/signup-letter-strings.js';
 import { INSTANCE_LANGUAGES, type InstanceLanguage } from '../../src/protocol.js';
+import type { SignupIntent } from '../../src/accounts/open-signup.js';
 
 const CLIENT_BASE_URL = 'https://openplate.de';
 const SERVER_PUBLIC_URL = 'https://sync.openplate.de';
@@ -384,15 +385,35 @@ test('the invite letter tells the reader what happens next, in every language', 
 
 // ── The open sign-up door's own letters (M253) ─────────────────────────────
 
-function signupRequestFor(language: InstanceLanguage) {
+function signupRequestFor(language: InstanceLanguage, intent: SignupIntent = { plan: null, locale: null }) {
   return buildSignupRequestMessage({
     clientBaseUrl: CLIENT_BASE_URL,
     serverPublicUrl: SERVER_PUBLIC_URL,
     inviteToken: INVITE_TOKEN,
     expiresAt: EXPIRES_AT,
     language,
+    intent,
   });
 }
+
+test('the sign-up link adds the plan and then the language after the invite, and nothing when neither is set', () => {
+  const invite = buildInviteLink({
+    clientBaseUrl: CLIENT_BASE_URL,
+    serverPublicUrl: SERVER_PUBLIC_URL,
+    inviteToken: INVITE_TOKEN,
+  });
+  // THE CONTROL: with nothing picked, the letter's link is the invitation's link, byte for byte.
+  assert.equal(signupRequestFor('en').link, invite);
+  assert.equal(signupRequestFor('en', { plan: 'yearly', locale: 'de' }).link, `${invite}&plan=yearly&lang=de`);
+  assert.equal(signupRequestFor('en', { plan: 'monthly', locale: null }).link, `${invite}&plan=monthly`);
+  assert.equal(signupRequestFor('en', { plan: null, locale: 'tr' }).link, `${invite}&lang=tr`);
+
+  const withBoth = signupRequestFor('de', { plan: 'yearly', locale: 'fr' });
+  // Still a fragment, never a query string, so no access log on the way sees the plan either.
+  assert.ok(!withBoth.link.includes('?'), withBoth.link);
+  assert.equal(withBoth.text.split(withBoth.link).length - 1, 1, 'the text part carries the link once');
+  assert.ok(withBoth.html.includes(`href="${escapeHtml(withBoth.link)}"`), 'the HTML part carries the same link');
+});
 
 test('the sign-up letters name no service and use no dash, in any language', () => {
   for (const language of INSTANCE_LANGUAGES) {

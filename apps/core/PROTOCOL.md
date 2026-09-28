@@ -621,7 +621,13 @@ Unknown, malformed, wrong-service, expired, revoked and spent tokens are ONE `40
 
 Unauthenticated. **Present only where `instance.openSignup` is `true`**; everywhere else the path answers the ordinary unknown-path `404`. An instance needs mail configured to open it, because the letter is the address check.
 
-Request: `{"email": "anna@example.org", "captchaToken": "…"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise; nothing else in the body is read.
+Request: `{"email": "anna@example.org", "captchaToken": "…", "plan": "yearly", "locale": "de"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise. `plan` and `locale` are optional and say what the person picked on the sign-up screen before they asked; nothing else in the body is read.
+
+- `plan` is `"monthly"` or `"yearly"`. When it is one of those, the mailed link carries `&plan=<key>` after the invite.
+- `locale` is one of the six instance languages (`en`, `de`, `fr`, `it`, `es`, `tr`), the same list the push `locale` (§5.24) accepts. When it is one of those, the mailed link carries `&lang=<code>`. The letter itself is still written in the instance's language.
+- A missing value, `null`, a value of another type and any other string are **dropped silently**: never a `400`, and the answer below does not change. Neither field is stored; each rides only in the link, so a link opened on another device still knows the plan. The account-holder note carries no link, so it carries neither.
+
+A link with both reads `<client>/join#server=…&invite=si_…&plan=yearly&lang=de`.
 
 ```json
 {}
@@ -1448,7 +1454,7 @@ When the address already holds an account, the service mails **that person** a s
 
 **Nothing behind this prefix is part of this protocol.** The routes, the request bodies and the response bodies belong to the biller, which is a separate service on its own release cycle. This document specifies only what the gateway does to a request on its way there and to an answer on its way back. That is deliberate: the alternative is a normative document that self-hosters cannot use, churning on somebody else's VAT calendar.
 
-Authenticated with the account's ordinary **access token** (§4.1). An anonymous caller gets the ordinary `401`.
+Authenticated with the account's ordinary **access token** (§4.1). An anonymous caller gets the ordinary `401`. The one exception is `GET /v1/plans/prices`, below: one path and one method, and nothing else in the subtree.
 
 ```
 POST /v1/plans/order
@@ -1459,9 +1465,9 @@ Content-Type: application/json
 ```
 
 The example is illustrative: the biller's routes are its own. openplate's
-biller serves `GET /v1/plans/offer`, `POST /v1/plans/order`, `GET
-/v1/plans/me` and the portal route; its older `POST /v1/plans/checkout` now
-answers `410`.
+biller serves `GET /v1/plans/prices`, `GET /v1/plans/offer`, `POST
+/v1/plans/order`, `GET /v1/plans/me` and the portal route; its older `POST
+/v1/plans/checkout` now answers `410`.
 
 Five properties a conforming implementation MUST hold:
 
@@ -1476,6 +1482,35 @@ An upstream that is unreachable, times out, answers something that is not JSON, 
 The outbound call carries an explicit timeout. It is short, because every route here is a button somebody just pressed, and it exists as much to bound undici's hidden 300 second cap as to bound a slow biller.
 
 The operator configures `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET`, **both or neither**. A URL with no secret is a refusal to boot rather than a silent downgrade: the secret is the only thing that tells the biller the account id it is reading came from a gateway that authenticated somebody.
+
+#### `GET /v1/plans/prices`: the price list, before sign-in
+
+A sign-up screen states the price before anybody holds a token, so this ONE path, with this ONE method, is anonymous. No token is needed. A token that is sent anyway is not read and never forwarded, so a stale or foreign one cannot turn the read into a `401`. Every other path in the subtree, and a `POST` or a `HEAD` on this one, still answers an anonymous caller `401`.
+
+```
+GET /v1/plans/prices
+```
+
+→ `200` with `Cache-Control: public, max-age=300`:
+
+```json
+{
+  "currency": "EUR",
+  "plans": [
+    { "key": "monthly", "interval": "month", "grossCents": 500 },
+    { "key": "yearly", "interval": "year", "grossCents": 4000 }
+  ]
+}
+```
+
+The body is the biller's and is relayed unread, like every answer in this subtree. The example is what openplate's biller serves: the plans it sells, each with the amount charged per `interval` in the minor unit of `currency`, tax included, read from its payment provider at boot. The figures above are an example, never a price list.
+
+Four properties set this route apart from the rest of the subtree:
+
+1. **It goes out with `X-Plans-Secret` alone.** There is no account, so there is no `X-Account-Id` and no `X-Account-Email`, and nothing from the inbound request travels: not a header, not the query string.
+2. **A `200` is kept for five minutes** and served from memory, so a burst of readers is one call to the biller. A refusal from the biller and a failed call are relayed as above and not kept, so the next reader asks again.
+3. **One source address may read it 60 times in any trailing minute.** The next read is `429 {"error":"plans-prices-rate-limited"}` with `Retry-After` in seconds.
+4. **Without a biller it is the ordinary unknown-path `404`**, like the rest of the subtree, and `/health` publishes nothing new for it: a client that reads `instance.plans` already knows whether to ask.
 
 ### 5.23 `/v1/pulse/*`: the community pulse (ADR-0007)
 

@@ -16,9 +16,17 @@
  *  - the refused throwaway domains: a trial per ten-minute mailbox;
  *  - one letter per mailbox per day, keyed on the trial key so dots and tags
  *    do not multiply it: somebody filling a stranger's inbox.
+ *
+ * WHAT THE PERSON PICKED RIDES IN THE LINK AND NOWHERE ELSE. A paid instance
+ * shows its price before sign-up, so the request may name a plan and the
+ * language the person asked in ({@link SignupIntent}). Neither is stored, and
+ * neither changes the answer: an unknown value is dropped without a word, so
+ * the field can never be a `400` or tell a caller anything.
  */
 import type { InviteStore } from '../admin/invite-store.js';
+import type { JsonObject, JsonValue } from '../lib/json.js';
 import type { ThrottleConfig, ThrottleStore } from '../lib/throttle.js';
+import { isInstanceLanguage, type InstanceLanguage } from '../protocol.js';
 import type { CaptchaVerifier } from './captcha.js';
 
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -66,6 +74,42 @@ export const SIGNUP_REQUEST_REFUSALS = {
   /** Turnstile could not be asked. A `503`: the person retries later. */
   captchaUnavailable: 'captcha-unavailable',
 } as const;
+
+/**
+ * The plans a person may pick before they ask, which are the keys of the
+ * biller's catalogue. A key this list does not name is dropped, never refused.
+ */
+export const SIGNUP_PLAN_KEYS = ['monthly', 'yearly'] as const;
+
+export type SignupPlanKey = (typeof SIGNUP_PLAN_KEYS)[number];
+
+/**
+ * What the person picked on the sign-up screen before they asked. It rides
+ * only in the mailed join link, as `plan` and `lang`, so the app they open
+ * from the letter can carry on where they left off. The letter itself is still
+ * written in the instance's language.
+ */
+export interface SignupIntent {
+  plan: SignupPlanKey | null;
+  /** The language the person asked in, one of `INSTANCE_LANGUAGES`, or `null`. */
+  locale: InstanceLanguage | null;
+}
+
+function isSignupPlanKey(value: JsonValue | undefined): value is SignupPlanKey {
+  return SIGNUP_PLAN_KEYS.some((key) => key === value);
+}
+
+/**
+ * Reads `plan` and `locale` off a request body. A missing value, `null`, a
+ * wrong type and an unknown key all read as `null`, silently: the door answers
+ * the same `202` whatever these fields say.
+ */
+export function readSignupIntent(fields: JsonObject): SignupIntent {
+  return {
+    plan: isSignupPlanKey(fields.plan) ? fields.plan : null,
+    locale: isInstanceLanguage(fields.locale) ? fields.locale : null,
+  };
+}
 
 /** What the redeemed account is granted. The instance's, never the caller's. */
 export interface OpenSignupGrant {
