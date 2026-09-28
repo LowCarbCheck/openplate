@@ -23,6 +23,7 @@ import type {
   SendDeclarationReceiptInput,
   SendInviteInput,
   SendResetInput,
+  SendSignupRequestInput,
 } from '../../src/mail/mailer.js';
 import { createFakeAccountStore, type FakeAccountStore } from './fake-account-store.js';
 
@@ -33,7 +34,7 @@ export interface RecordingMailer extends Mailer {
   /** The M212 "you already have an account" notes, so a test can assert one went INSTEAD of an invitation. */
   accountNotices: SendAccountNoticeInput[];
   /** M253: the open sign-up door's own letter and its note to an existing account. */
-  signupRequests: SendInviteInput[];
+  signupRequests: SendSignupRequestInput[];
   signupAccountNotices: SendAccountNoticeInput[];
   /** M214/09, unused by the auth handlers themselves but required by `Mailer`. */
   declarationReceipts: SendDeclarationReceiptInput[];
@@ -44,7 +45,7 @@ export function createRecordingMailer(): RecordingMailer {
   const invites: SendInviteInput[] = [];
   const resets: SendResetInput[] = [];
   const accountNotices: SendAccountNoticeInput[] = [];
-  const signupRequests: SendInviteInput[] = [];
+  const signupRequests: SendSignupRequestInput[] = [];
   const signupAccountNotices: SendAccountNoticeInput[] = [];
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
@@ -65,7 +66,7 @@ export function createRecordingMailer(): RecordingMailer {
     async sendAccountNotice(input: SendAccountNoticeInput): Promise<void> {
       accountNotices.push(input);
     },
-    async sendSignupRequest(input: SendInviteInput): Promise<void> {
+    async sendSignupRequest(input: SendSignupRequestInput): Promise<void> {
       signupRequests.push(input);
     },
     async sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void> {

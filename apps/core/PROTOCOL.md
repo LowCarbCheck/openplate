@@ -621,7 +621,13 @@ Unknown, malformed, wrong-service, expired, revoked and spent tokens are ONE `40
 
 Unauthenticated. **Present only where `instance.openSignup` is `true`**; everywhere else the path answers the ordinary unknown-path `404`. An instance needs mail configured to open it, because the letter is the address check.
 
-Request: `{"email": "anna@example.org", "captchaToken": "…"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise; nothing else in the body is read.
+Request: `{"email": "anna@example.org", "captchaToken": "…", "plan": "yearly", "locale": "de"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise. `plan` and `locale` are optional and say what the person picked on the sign-up screen before they asked; nothing else in the body is read.
+
+- `plan` is `"monthly"` or `"yearly"`. When it is one of those, the mailed link carries `&plan=<key>` after the invite.
+- `locale` is one of the six instance languages (`en`, `de`, `fr`, `it`, `es`, `tr`), the same list the push `locale` (§5.24) accepts. When it is one of those, the mailed link carries `&lang=<code>`. The letter itself is still written in the instance's language.
+- A missing value, `null`, a value of another type and any other string are **dropped silently**: never a `400`, and the answer below does not change. Neither field is stored; each rides only in the link, so a link opened on another device still knows the plan. The account-holder note carries no link, so it carries neither.
+
+A link with both reads `<client>/join#server=…&invite=si_…&plan=yearly&lang=de`.
 
 ```json
 {}

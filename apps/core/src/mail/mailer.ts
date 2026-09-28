@@ -46,6 +46,7 @@
  * implementation logs its own failures and resolves.
  */
 import { buildSignupAccountNoticeMessage, buildSignupRequestMessage } from './signup-message.js';
+import type { SignupIntent } from '../accounts/open-signup.js';
 import type { InstanceLanguage, IsoTimestamp } from '../protocol.js';
 import type { Logger } from '../logger.js';
 import { buildAccountNoticeMessage } from './account-notice-message.js';
@@ -69,6 +70,15 @@ export interface SendInviteInput {
   /** The raw `si_` token. Held for as long as one letter takes to build, and never logged. */
   inviteToken: string;
   expiresAt: IsoTimestamp;
+}
+
+/**
+ * The open sign-up door's letter: the invitation's fields, plus what the
+ * person picked before they asked. The intent rides in the link and nowhere
+ * else (`signup-message.ts`).
+ */
+export interface SendSignupRequestInput extends SendInviteInput {
+  intent: SignupIntent;
 }
 
 /**
@@ -114,7 +124,7 @@ export interface Mailer {
    * person who asked for it themselves. Never the invitation, which says
    * somebody invited them. See `signup-message.ts`.
    */
-  sendSignupRequest(input: SendInviteInput): Promise<void>;
+  sendSignupRequest(input: SendSignupRequestInput): Promise<void>;
   /** The open sign-up door's note to an address that already holds an account (M253). No link. */
   sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void>;
   /** M214/09. See `SendDeclarationReceiptInput` above and the module header. */
@@ -328,13 +338,14 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
       logger.info('Account notice mailed');
     },
 
-    async sendSignupRequest(input: SendInviteInput): Promise<void> {
+    async sendSignupRequest(input: SendSignupRequestInput): Promise<void> {
       const message = buildSignupRequestMessage({
         clientBaseUrl: links.clientBaseUrl,
         serverPublicUrl: links.serverPublicUrl,
         inviteToken: input.inviteToken,
         expiresAt: input.expiresAt,
         language,
+        intent: input.intent,
       });
       await postMail({
         mail,

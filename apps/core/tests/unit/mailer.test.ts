@@ -193,6 +193,7 @@ test('the sign-up door posts its own letter and its own note, never the invitati
     displayName: null,
     inviteToken: 'si_a-token',
     expiresAt: '2026-09-11T10:00:00.000Z',
+    intent: { plan: null, locale: null },
   });
   await mailer.sendSignupAccountNotice({ email: 'bert@example.org' });
 
@@ -205,6 +206,40 @@ test('the sign-up door posts its own letter and its own note, never the invitati
   assert.ok(!letter.text.includes('invited'));
   assert.equal(note.subject, 'You already have an openplate account');
   assert.ok(!note.text.includes('http') && !note.text.includes('invited'));
+});
+
+test("the posted sign-up letter's link carries the plan and the language the person picked", async () => {
+  const api = await startFakeMailApi();
+  const captured = createCapturingLogger();
+  const mailer = mailerFor(api.url, captured.logger);
+
+  await mailer.sendSignupRequest({
+    email: 'anna@example.org',
+    displayName: null,
+    inviteToken: 'si_a-token',
+    expiresAt: '2026-09-11T10:00:00.000Z',
+    intent: { plan: 'yearly', locale: 'de' },
+  });
+  // THE CONTROL: the same adapter with nothing picked adds neither parameter.
+  await mailer.sendSignupRequest({
+    email: 'bert@example.org',
+    displayName: null,
+    inviteToken: 'si_b-token',
+    expiresAt: '2026-09-11T10:00:00.000Z',
+    intent: { plan: null, locale: null },
+  });
+
+  // SAFETY: as above, our own adapter posted these bodies.
+  const picked = JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
+  // SAFETY: as above, our own adapter posted this body.
+  const plain = JSON.parse(api.received[1]?.body ?? '{}') as MailPayload;
+  assert.ok(picked.text.includes('invite=si_a-token&plan=yearly&lang=de'), picked.text);
+  assert.ok(
+    picked.html.includes('invite=si_a-token&amp;plan=yearly&amp;lang=de'),
+    'the HTML part carries the same link',
+  );
+  assert.ok(plain.text.includes('invite=si_b-token'));
+  assert.ok(!plain.text.includes('plan=') && !plain.text.includes('lang='), plain.text);
 });
 
 test('an account-notice send posts the third letter, and posts no link with it', async () => {
