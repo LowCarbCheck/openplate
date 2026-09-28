@@ -1,0 +1,888 @@
+/**
+ * The AI proxy end to end: a real signed-in account, a real HTTP request to a
+ * real listening upstream, and a real `ai_usage_days` row counting it.
+ *
+ * WHY THIS SUITE EXISTS RATHER THAN MORE UNIT TESTS. `tests/unit/ai-proxy.test.ts`
+ * proves the handler's own decisions with fakes: what it spends, what it
+ * releases, which headers it rebuilds. What it CANNOT prove is that any of it
+ * is wired to anything. A proxy that reserved against a quota store nobody
+ * mounted, or that mounted behind the wrong auth, or that wrote a row keyed on
+ * a column the migration did not add, passes every unit test in the file.
+ *
+ * The three claims that only survive here:
+ *   1. THE ROW EXISTS. The reservation is a real `INSERT ... ON CONFLICT` into
+ *      a real table with a real composite key. Migration 0009 is what makes
+ *      that statement legal, and nothing but a database can say so.
+ *   2. THE LIMIT IS THE ROW'S. The refusal at the limit is the database
+ *      declining to update, not a number this test handed the handler.
+ *   3. THE ROUTE IS ABSENT WITHOUT A KEY. An instance with no provider key
+ *      answers the ordinary unknown-path 404, so the surface does not exist
+ *      rather than existing and refusing — the same bargain the admin, share
+ *      and research trees make.
+ *
+ * The upstream is a real server on an ephemeral port, so the service's `fetch`
+ * is the production `undici` one and what it sends is what a provider sees.
+ */
+import { test, before, after, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { eq } from 'drizzle-orm';
+import { aiInstanceDays, aiUsageDays, accounts } from '../../src/db/schema.js';
+import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import type { JsonObject } from '../../src/lib/json.js';
+import { setupTestDatabase, type TestDatabase } from './db-harness.js';
+import {
+  startService,
+  sampleCiphertext,
+  DEFAULT_AI_MAX_REQUEST_BYTES,
+  type HttpResponse,
+  type ServiceHarness,
+} from './service-harness.js';
+
+const UPSTREAM_KEY = 'sk-the-operators-own-provider-key';
+
+/** What the fake upstream did with the request it last received. */
+interface ReceivedCall {
+  authorization: string | undefined;
+  cookie: string | undefined;
+  apiKeyHeader: string | undefined;
+  path: string;
+  body: string;
+}
+
+/** What the fake upstream answers next. */
+interface UpstreamPlan {
+  status: number;
+  body: string;
+  /** When set, the body is written in these pieces with a gap between them, so the relay must stream. */
+  chunks?: string[];
+}
+
+let database: TestDatabase;
+let upstream: Server;
+let upstreamBaseUrl: string;
+let received: ReceivedCall[];
+let plan: UpstreamPlan;
+
+before(async () => {
+  database = await setupTestDatabase();
+
+  upstream = createServer((request: IncomingMessage, response: ServerResponse) => {
+    const pieces: Buffer[] = [];
+    request.on('data', (piece: Buffer) => pieces.push(piece));
+    request.on('end', () => {
+      received.push({
+        authorization: request.headers.authorization,
+        cookie: request.headers.cookie,
+        apiKeyHeader: request.headers['x-api-key']?.toString(),
+        path: request.url ?? '',
+        body: Buffer.concat(pieces).toString('utf8'),
+      });
+
+      if (plan.chunks === undefined) {
+        response.writeHead(plan.status, { 'content-type': 'application/json' });
+        response.end(plan.body);
+        return;
+      }
+
+      // A streaming answer: headers first, then pieces over time. A proxy that
+      // buffered would still pass every byte on, so the assertion that matters
+      // is on the reader side (see the streaming case).
+      response.writeHead(plan.status, { 'content-type': 'text/event-stream' });
+      const chunks = plan.chunks;
+      let index = 0;
+      const writeNext = (): void => {
+        if (index >= chunks.length) {
+          response.end();
+          return;
+        }
+        response.write(chunks[index]);
+        index += 1;
+        setTimeout(writeNext, 10);
+      };
+      writeNext();
+    });
+  });
+  upstream.listen(0);
+  await new Promise<void>((resolve) => upstream.once('listening', resolve));
+  const address = upstream.address();
+  if (address === null) throw new Error('expected a listening upstream');
+  // SAFETY: `listen(0)` binds a TCP port; Node returns the string form only
+  // for a Unix domain socket, which this never opens.
+  upstreamBaseUrl = `http://127.0.0.1:${(address as AddressInfo).port}`;
+});
+
+after(async () => {
+  await new Promise<void>((resolve, reject) => upstream.close((error) => (error ? reject(error) : resolve())));
+  await database.close();
+});
+
+beforeEach(async () => {
+  await database.reset();
+  received = [];
+  plan = {
+    status: 200,
+    body: JSON.stringify({ choices: [{ message: { content: 'a bowl of rice, about 45 g of carbs' } }] }),
+  };
+});
+
+async function startWithAi(perMinute?: number): Promise<ServiceHarness> {
+  return startService({
+    db: database.db,
+    ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, timeoutMs: 5_000, perMinute },
+  });
+}
+
+/** The same service, with the whole instance bounded to `instanceDailyLimit` requests a UTC day. */
+async function startWithCeiling(instanceDailyLimit: number): Promise<ServiceHarness> {
+  return startService({
+    db: database.db,
+    ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, timeoutMs: 5_000, instanceDailyLimit },
+  });
+}
+
+/** The body a client actually posts. Small, but shaped like the real thing. */
+interface CompletionRequest {
+  model: string;
+  messages: { role: string; content: string }[];
+}
+
+function completionRequest(): CompletionRequest {
+  return {
+    model: 'a-vision-model',
+    messages: [{ role: 'user', content: 'what is on this plate?' }],
+  };
+}
+
+/**
+ * Waits for `accounts.last_seen_at` to be written, with a bound.
+ *
+ * THE WRITE IS DELIBERATELY AFTER THE RESPONSE — the proxy relays first and
+ * stamps the row afterwards, so a failed request never reports the person as
+ * active. That means the client's `fetch` resolves BEFORE the `UPDATE` lands,
+ * and a test that read the row once would be racing the service rather than
+ * testing it. Polling is the honest shape here; the bound keeps a genuine
+ * regression to a few hundred milliseconds instead of a hung suite.
+ */
+async function waitForLastSeen(accountId: number): Promise<Date | null> {
+  const deadline = Date.now() + 2_000;
+  while (Date.now() < deadline) {
+    const [row] = await database.db.select().from(accounts).where(eq(accounts.id, accountId));
+    if (row?.lastSeenAt != null) return row.lastSeenAt;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return null;
+}
+
+/** Every `ai_instance_days` row there is. The whole table, because there is one row per UTC day. */
+async function instanceRows(): Promise<{ day: string; count: number }[]> {
+  return database.db.select().from(aiInstanceDays);
+}
+
+/** The instance's total for the day that has one, or 0 when the table is empty. */
+async function instanceCount(): Promise<number> {
+  const rows = await instanceRows();
+  return rows[0]?.count ?? 0;
+}
+
+/** The single `ai_usage_days` count for an account, or 0 when no row exists. */
+async function usageCount(accountId: number): Promise<number> {
+  const rows = await database.db.select().from(aiUsageDays).where(eq(aiUsageDays.accountId, accountId));
+  return rows[0]?.count ?? 0;
+}
+
+test("a signed-in account's completion is proxied, and the row counts it", async () => {
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+
+    const answered = await service.request<{ choices: unknown[] }>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: session.tokens.accessToken,
+      body: completionRequest(),
+    });
+
+    assert.equal(answered.status, 200);
+    assert.equal(answered.body.choices.length, 1);
+
+    // THE ROW. One request, one unit, on a real composite-keyed table.
+    assert.equal(await usageCount(session.account.id), 1);
+    assert.equal(answered.headers.get('x-quota-used'), '1');
+    assert.equal(answered.headers.get('x-quota-limit'), '5');
+
+    // The provider saw the OPERATOR's key and the caller's body, and never the
+    // caller's own token. The body carries one addition, the output ceiling,
+    // because this harness names no model (M256).
+    assert.equal(received.length, 1);
+    assert.equal(received[0]?.authorization, `Bearer ${UPSTREAM_KEY}`);
+    assert.ok(!received[0]?.authorization?.includes(session.tokens.accessToken));
+    assert.equal(received[0]?.path, '/chat/completions');
+    assert.deepEqual(JSON.parse(received[0]?.body ?? 'null'), {
+      ...completionRequest(),
+      max_tokens: DEFAULT_AI_MAX_OUTPUT_TOKENS,
+    });
+
+    // `last_seen_at` moves on a proxied call, which is what makes the admin
+    // list's "last seen" column mean anything on an instance where people use
+    // the camera more often than they sign in.
+    assert.notEqual(await waitForLastSeen(session.account.id), null);
+  } finally {
+    await service.close();
+  }
+});
+
+test('the account is refused at its limit, and the refusal is the DATABASE declining', async () => {
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 2 });
+    const send = () =>
+      service.request<{ error?: string }>({
+        method: 'POST',
+        path: '/v1/chat/completions',
+        accessToken: session.tokens.accessToken,
+        body: completionRequest(),
+      });
+
+    assert.equal((await send()).status, 200);
+    assert.equal((await send()).status, 200);
+
+    const refused = await send();
+    assert.equal(refused.status, 429);
+    // A SENTENCE, not a code, and it names both halves: how much of what, and
+    // when it comes back. This service answers codes only where a client has
+    // to BRANCH on the reason (`ai-not-allowed`, `account-suspended`); being
+    // out of allowance is something a person reads.
+    assert.match(refused.body.error ?? '', /daily quota spent: 2 of 2 requests used/);
+    assert.match(refused.body.error ?? '', /resets at \d{4}-\d{2}-\d{2}T00:00:00\.000Z/);
+    // The client is told WHEN in a header too, not merely in prose.
+    const retryAfter = Number(refused.headers.get('retry-after'));
+    assert.ok(Number.isInteger(retryAfter) && retryAfter > 0 && retryAfter <= 86_400, `retry-after was ${retryAfter}`);
+
+    // THE COUNT DID NOT MOVE and the upstream was never called: the refusal
+    // came from the reservation, before any request left this host.
+    assert.equal(await usageCount(session.account.id), 2);
+    assert.equal(received.length, 2);
+  } finally {
+    await service.close();
+  }
+});
+
+test('an account with an allowance of 0 is told it may not, and writes no usage row', async () => {
+  const service = await startWithAi();
+  try {
+    // Zero is the DEFAULT for a new invite: the AI is opt-in per account, so
+    // an operator who mints an ordinary invite has not handed out their
+    // provider key by accident.
+    const session = await service.signupThroughInvite({ email: 'anna@example.org' });
+
+    const refused = await service.request<{ error?: string }>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: session.tokens.accessToken,
+      body: completionRequest(),
+    });
+
+    assert.equal(refused.status, 403);
+    assert.equal(refused.body.error, 'ai-not-allowed');
+    // NO ROW AT ALL, not a row at zero. The guard runs before the reservation
+    // precisely because the reservation's insert branch is unguarded.
+    const rows = await database.db.select().from(aiUsageDays).where(eq(aiUsageDays.accountId, session.account.id));
+    assert.deepEqual(rows, []);
+    assert.equal(received.length, 0);
+  } finally {
+    await service.close();
+  }
+});
+
+test('an expired allowance is refused with its own code and writes NO ai_usage_days row', async () => {
+  // THE CLAIM THIS FILE EXISTS FOR, applied to the new rule: the refusal has
+  // to sit BEFORE the reservation, because `reserve`'s insert branch is
+  // unguarded and the first request of a UTC day writes `count = 1` with no
+  // predicate. A check moved below it would bill a day of AI to somebody who
+  // got no answer, and only a real table can say whether the row is there.
+  const service = await startWithAi();
+  try {
+    const expired = await service.signupThroughInvite({ email: 'lapsed@example.org', dailyAiLimit: 5 });
+    // The date is set through the real column, the way the admin PATCH sets it.
+    await database.db
+      .update(accounts)
+      .set({ allowanceExpiresAt: new Date(Date.now() - 60_000) })
+      .where(eq(accounts.id, expired.account.id));
+
+    const refused = await service.request<{ error?: string }>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: expired.tokens.accessToken,
+      body: completionRequest(),
+    });
+
+    assert.equal(refused.status, 403);
+    // A code of its own, never `ai-not-allowed`: this account HAS an allowance,
+    // it has simply run out of time, and the two call for different sentences.
+    assert.equal(refused.body.error, 'allowance-expired');
+    assert.notEqual(refused.body.error, 'ai-not-allowed');
+    // NO ROW AT ALL, not a row at zero.
+    const rows = await database.db.select().from(aiUsageDays).where(eq(aiUsageDays.accountId, expired.account.id));
+    assert.deepEqual(rows, [], 'an expired account must not have a usage row');
+    assert.equal(received.length, 0, 'and nothing may leave the host');
+
+    // ── THE CONTROL, in the same test and against the same table ────────────
+    // A second account with a date in the FUTURE, everything else identical.
+    // It must be answered and it must leave exactly one row behind. Without
+    // this half, a handler that refused every request would turn the
+    // assertions above green; with it, moving the expiry check below the
+    // reservation turns the `deepEqual(rows, [])` above red while this half
+    // stays green, which is exactly the defect the placement guards against.
+    const live = await service.signupThroughInvite({ email: 'still-paid@example.org', dailyAiLimit: 5 });
+    await database.db
+      .update(accounts)
+      .set({ allowanceExpiresAt: new Date(Date.now() + 86_400_000) })
+      .where(eq(accounts.id, live.account.id));
+
+    const answered = await service.request<{ choices: unknown[] }>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: live.tokens.accessToken,
+      body: completionRequest(),
+    });
+    assert.equal(answered.status, 200);
+    assert.equal(await usageCount(live.account.id), 1, 'an unexpired account spends exactly one usage row');
+    assert.equal(received.length, 1);
+    // And the expired account's row is STILL absent after a successful call by
+    // somebody else: the count is per account, so a shared row would show here.
+    assert.equal(await usageCount(expired.account.id), 0);
+  } finally {
+    await service.close();
+  }
+});
+
+test('a streaming answer arrives in pieces rather than at the end', async () => {
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    plan = {
+      status: 200,
+      body: '',
+      chunks: [
+        'data: {"choices":[{"delta":{"content":"a bowl"}}]}\n\n',
+        'data: {"choices":[{"delta":{"content":" of rice"}}]}\n\n',
+        'data: [DONE]\n\n',
+      ],
+    };
+
+    // Raw `fetch` rather than `service.request`, because the harness reads
+    // whole JSON bodies and the property under test is that the body is NOT
+    // whole when the headers arrive.
+    const response = await fetch(`${service.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.tokens.accessToken}` },
+      body: JSON.stringify({ ...completionRequest(), stream: true }),
+    });
+
+    assert.equal(response.status, 200);
+    // A buffering proxy answers with a `content-length`; a relaying one cannot
+    // know it. And `no-transform` is what stops a compressing intermediary
+    // from holding the stream until it ends.
+    assert.equal(response.headers.get('content-length'), null);
+    assert.match(response.headers.get('cache-control') ?? '', /no-transform/);
+
+    const reader = response.body?.getReader();
+    assert.ok(reader, 'a streamed response must have a readable body');
+    const pieces: string[] = [];
+    const decoder = new TextDecoder();
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) break;
+      pieces.push(decoder.decode(next.value, { stream: true }));
+    }
+
+    // MORE THAN ONE PIECE is the assertion. A proxy that awaited the whole
+    // upstream body and then wrote it would deliver exactly one, and every
+    // other assertion in this test would still pass.
+    assert.ok(pieces.length > 1, `expected several pieces, got ${pieces.length}`);
+    assert.equal(pieces.join(''), (plan.chunks ?? []).join(''));
+    assert.equal(await usageCount(session.account.id), 1);
+  } finally {
+    await service.close();
+  }
+});
+
+test('an upstream refusal releases the unit, so a misconfigured key costs nobody an allowance', async () => {
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 3 });
+    // The shape a provider answers with when the operator's key is wrong. It
+    // never reached a model, so nobody billed it.
+    plan = { status: 401, body: JSON.stringify({ error: { message: 'invalid api key' } }) };
+
+    const answered = await service.request<unknown>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: session.tokens.accessToken,
+      body: completionRequest(),
+    });
+
+    assert.equal(answered.status, 401);
+    // Reserved, then released: back to zero, in the real row, through the real
+    // floored `UPDATE`.
+    assert.equal(await usageCount(session.account.id), 0);
+  } finally {
+    await service.close();
+  }
+});
+
+test('at the instance ceiling a second account with allowance left is refused too', async () => {
+  // THE CLAIM THIS FILE EXISTS FOR, applied to the ceiling: the refusal is the
+  // DATABASE declining to update a real row, not a number this test handed the
+  // handler. Two accounts, because a per-account bound would let the second one
+  // through and every assertion about the first would still pass.
+  const service = await startWithCeiling(2);
+  try {
+    const first = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 50 });
+    const second = await service.signupThroughInvite({ email: 'bruno@example.org', dailyAiLimit: 50 });
+    const send = (accessToken: string) =>
+      service.request<{ error?: string }>({
+        method: 'POST',
+        path: '/v1/chat/completions',
+        accessToken,
+        body: completionRequest(),
+      });
+
+    assert.equal((await send(first.tokens.accessToken)).status, 200);
+    assert.equal((await send(first.tokens.accessToken)).status, 200);
+    assert.equal(await instanceCount(), 2, 'both accounts spend against ONE instance row');
+
+    // The second account has spent nothing of its own 50, and is refused
+    // anyway. That is the whole feature.
+    const refused = await send(second.tokens.accessToken);
+    assert.equal(refused.status, 503);
+    assert.equal(refused.body.error, 'ai-instance-ceiling');
+    const retryAfter = Number(refused.headers.get('retry-after'));
+    assert.ok(Number.isInteger(retryAfter) && retryAfter > 0 && retryAfter <= 86_400, `retry-after was ${retryAfter}`);
+
+    // NOTHING LEFT THE HOST and the refused account was not billed: the
+    // instance's reservation is taken before the account's, so a refusal here
+    // writes no `ai_usage_days` row at all.
+    assert.equal(received.length, 2);
+    assert.equal(await usageCount(second.account.id), 0);
+    const rows = await database.db.select().from(aiUsageDays).where(eq(aiUsageDays.accountId, second.account.id));
+    assert.deepEqual(rows, [], 'a request refused by the ceiling must not bill the caller');
+    // AND THE COUNTER DID NOT MOVE. A refused upsert updates nothing.
+    assert.equal(await instanceCount(), 2);
+  } finally {
+    await service.close();
+  }
+});
+
+test('with no ceiling configured NO ai_instance_days row is written and the refusal never fires', async () => {
+  // THE CONTROL FOR EVERY CEILING CASE, and the state every existing
+  // deployment upgrades into. "No ceiling" is not "a ceiling nobody reaches":
+  // no statement is issued, so the table stays empty. A handler that reserved
+  // unconditionally with a huge default would pass every other test in this
+  // file and fail here.
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    for (let sent = 0; sent < 3; sent += 1) {
+      const answered = await service.request<{ choices: unknown[] }>({
+        method: 'POST',
+        path: '/v1/chat/completions',
+        accessToken: session.tokens.accessToken,
+        body: completionRequest(),
+      });
+      assert.equal(answered.status, 200);
+    }
+
+    assert.equal(await usageCount(session.account.id), 3, 'the per-account counter still counts');
+    assert.deepEqual(await instanceRows(), [], 'an instance with no ceiling writes no instance row');
+  } finally {
+    await service.close();
+  }
+});
+
+test('a reservation the account cannot afford gives it back to the instance', async () => {
+  // The instance's unit is taken FIRST, so a per-account refusal after it is
+  // the one path where a unit has been taken for a request that will never
+  // reach the provider. Keeping it would let one account at its own limit eat
+  // the whole instance's ceiling by retrying.
+  const service = await startWithCeiling(100);
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 1 });
+    const send = () =>
+      service.request<{ error?: string }>({
+        method: 'POST',
+        path: '/v1/chat/completions',
+        accessToken: session.tokens.accessToken,
+        body: completionRequest(),
+      });
+
+    assert.equal((await send()).status, 200);
+    const spentBefore = await instanceCount();
+    assert.equal(spentBefore, 1);
+
+    for (let refused = 0; refused < 5; refused += 1) {
+      assert.equal((await send()).status, 429, "the account's own allowance is what refused this");
+    }
+
+    // FIVE REFUSALS LATER, THE SAME NUMBER, read out of the real floored
+    // `UPDATE` rather than out of a fake.
+    assert.equal(await instanceCount(), spentBefore, 'a refused account must not spend the instance');
+  } finally {
+    await service.close();
+  }
+});
+
+test('a suspended account cannot spend, and an unsigned request cannot reach the route at all', async () => {
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    await database.db.update(accounts).set({ suspendedAt: new Date() }).where(eq(accounts.id, session.account.id));
+
+    const suspended = await service.request<{ error?: string }>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: session.tokens.accessToken,
+      body: completionRequest(),
+    });
+    assert.equal(suspended.status, 403);
+    assert.equal(suspended.body.error, 'account-suspended');
+
+    const anonymous = await service.request<unknown>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      body: completionRequest(),
+    });
+    assert.equal(anonymous.status, 401);
+
+    assert.equal(await usageCount(session.account.id), 0);
+    assert.equal(received.length, 0);
+  } finally {
+    await service.close();
+  }
+});
+
+test('the minute limiter is per account: one caller is slowed, another is not', async () => {
+  const service = await startWithAi(2);
+  try {
+    const fast = await service.signupThroughInvite({ email: 'fast@example.org', dailyAiLimit: 50 });
+    const other = await service.signupThroughInvite({ email: 'other@example.org', dailyAiLimit: 50 });
+    const send = (accessToken: string) =>
+      service.request<{ error?: string }>({
+        method: 'POST',
+        path: '/v1/chat/completions',
+        accessToken,
+        body: completionRequest(),
+      });
+
+    assert.equal((await send(fast.tokens.accessToken)).status, 200);
+    assert.equal((await send(fast.tokens.accessToken)).status, 200);
+    const slowed = await send(fast.tokens.accessToken);
+    assert.equal(slowed.status, 429);
+    assert.match(slowed.body.error ?? '', /rate limit reached: 2 requests per minute/);
+
+    // THE OTHER ACCOUNT IS UNAFFECTED. A limiter keyed on the IP would refuse
+    // this one too, and on an instance behind one office router that is every
+    // account at once.
+    assert.equal((await send(other.tokens.accessToken)).status, 200);
+
+    // The refused request never reserved, so the daily allowance is intact.
+    assert.equal(await usageCount(fast.account.id), 2);
+  } finally {
+    await service.close();
+  }
+});
+
+test('a 3 MB photograph reaches the provider through the real app', async () => {
+  // THE DEFECT THIS PINS: the shipped route derived its body limit from
+  // `MAX_BLOB_BYTES`, giving 2.73 MB, so every real plate photograph came back
+  // 413 — through a green unit suite, a green integration suite and a green
+  // build, because nothing in either tier ever sent a body larger than a
+  // sentence. `tests/unit/ai-route-limits.test.ts` covers the arithmetic; this
+  // covers the wiring, with the app assembled exactly as `main.ts` assembles
+  // it.
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    const base64Image = 'A'.repeat(3 * 1024 * 1024);
+
+    // Raw `fetch`, because `service.request` serialises through the harness and
+    // the property under test is what crosses the wire.
+    const response = await fetch(`${service.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.tokens.accessToken}` },
+      body: JSON.stringify({
+        model: 'a-vision-model',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'what is on this plate?' },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+            ],
+          },
+        ],
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    // IT REACHED THE PROVIDER, whole. A 200 alone would not say so, and a byte
+    // count is what distinguishes "relayed" from "truncated at the parser".
+    assert.equal(received.length, 1);
+    assert.ok(
+      (received[0]?.body.length ?? 0) > 3 * 1024 * 1024,
+      `the provider saw ${received[0]?.body.length ?? 0} bytes, so the body did not survive the parser`,
+    );
+    assert.ok(received[0]?.body.includes(base64Image), 'the image must arrive unmodified');
+    assert.equal(await usageCount(session.account.id), 1);
+  } finally {
+    await service.close();
+  }
+});
+
+test('a body over AI_MAX_REQUEST_BYTES is refused in the OpenAI shape, before the provider', async () => {
+  // A small configured limit rather than a 9 MB fixture: it proves the app
+  // reads the variable, which is the half a large body cannot show.
+  const service = await startService({
+    db: database.db,
+    ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, maxRequestBytes: 500_000 },
+  });
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+
+    const response = await fetch(`${service.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.tokens.accessToken}` },
+      body: JSON.stringify({ model: 'a-vision-model', pad: 'A'.repeat(1024 * 1024) }),
+    });
+
+    assert.equal(response.status, 413);
+    // SAFETY: this route answers `application/json` on every path, and a body
+    // that did not parse would throw here rather than reach the assertions.
+    const body = (await response.json()) as { error?: { code?: string; type?: string } };
+    // An OBJECT, because the caller is an OpenAI-compatible client. The rest of
+    // this service answers `{"error": "<sentence>"}` and that shape reads as
+    // `undefined` to such a client.
+    assert.equal(body.error?.type, 'invalid_request_error');
+    assert.equal(body.error?.code, 'request_too_large');
+
+    // Nothing left the host, and no unit was reserved: the parser refused
+    // before auth, the limiter and the reservation.
+    assert.equal(received.length, 0);
+    assert.equal(await usageCount(session.account.id), 0);
+  } finally {
+    await service.close();
+  }
+});
+
+test("no other router's body parser reaches this route", async () => {
+  // THE ACTUAL CAUSE of the 413, and the reason the two tests above were not
+  // enough on their own. Every router in this service is mounted with
+  // `app.use(router)` at the ROOT, and each mounted its `express.json()` with
+  // no path. `express.json()` marks a request as parsed, so the FIRST parser
+  // to see a request wins and every later router's declared limit is dead
+  // code. In practice the auth router's 64 KB parser applied to the whole
+  // service, and after that the sync router's 2.67 MB one did.
+  //
+  // This case is deliberately sized BETWEEN the two neighbouring limits: over
+  // the sync router's, under the AI route's. It passes only if the AI route's
+  // own parser is the one that ran.
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    const body = JSON.stringify({ model: 'a-vision-model', pad: 'A'.repeat(4 * 1024 * 1024) });
+    assert.ok(body.length > 2_800_299, 'the fixture must exceed the sync router JSON_BODY_LIMIT');
+    assert.ok(body.length > 64 * 1024, 'and the auth router AUTH_JSON_BODY_LIMIT');
+    assert.ok(body.length < DEFAULT_AI_MAX_REQUEST_BYTES, 'and sit under the AI route limit');
+
+    const response = await fetch(`${service.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session.tokens.accessToken}` },
+      body,
+    });
+    assert.equal(response.status, 200);
+    assert.equal(received.length, 1);
+  } finally {
+    await service.close();
+  }
+});
+
+test('and the sync tree keeps its own, larger-than-auth limit', async () => {
+  // The other half of the same defect: a blob push over 64 KB was answered
+  // `413` by the AUTH router's parser even though `MAX_BLOB_BYTES` is 2 MiB.
+  // Nothing caught it because every existing fixture pushes 256 bytes.
+  const service = await startWithAi();
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org' });
+    const pushed = await service.request<{ error?: string }>({
+      method: 'POST',
+      path: '/v1/sync/blob',
+      accessToken: session.tokens.accessToken,
+      body: { ciphertext: sampleCiphertext(3, 512 * 1024), envelopeVersion: 1, expectedVersion: null },
+    });
+    // Whatever the handler decides about the SHAPE, it must be the handler
+    // deciding. A 413 here means a parser refused the body before routing.
+    assert.notEqual(pushed.status, 413, `a 512 KB blob push answered ${pushed.status} ${JSON.stringify(pushed.body)}`);
+  } finally {
+    await service.close();
+  }
+});
+
+test('an instance with no provider key does not have the route', async () => {
+  // The default: `UPSTREAM_API_KEY` unset, which is every deployment that has
+  // not bought one.
+  const service = await startService({ db: database.db });
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+
+    const missing = await service.request<unknown>({
+      method: 'POST',
+      path: '/v1/chat/completions',
+      accessToken: session.tokens.accessToken,
+      body: completionRequest(),
+    });
+    // 404, not 403: the surface is ABSENT, so a scan cannot tell this instance
+    // from one that never shipped the feature.
+    assert.equal(missing.status, 404);
+
+    const health = await service.request<{ instance: { ai: unknown } }>({ method: 'GET', path: '/health' });
+    assert.equal(health.body.instance.ai, null);
+  } finally {
+    await service.close();
+  }
+});
+
+test('/health advertises the model an instance WITH a key will use', async () => {
+  const service = await startWithAi();
+  try {
+    const health = await service.request<{ instance: { ai: { model: string | null } | null } }>({
+      method: 'GET',
+      path: '/health',
+    });
+    // Present, and it is a capability statement rather than a grant: it says
+    // the operator configured an upstream, never that this caller may use it.
+    assert.notEqual(health.body.instance.ai, null);
+    assert.equal(health.body.instance.ai?.model, null, 'this harness advertises no model name');
+  } finally {
+    await service.close();
+  }
+});
+
+// ── the instance decides what one request may cost (M256/01) ───────────────
+
+/** The model an instance under test names, and the ceiling it sets. Small, so a capped value is plainly not the caller's. */
+const INSTANCE_MODEL = 'google/the-instance-model';
+const OUTPUT_CEILING = 1_000;
+
+/** A body that asks for every cost multiplier the proxy knows about, and one ordinary field it must keep. */
+function expensiveRequest(): JsonObject {
+  return {
+    model: 'openai/a-very-expensive-model',
+    messages: [{ role: 'user', content: 'what is on this plate?' }],
+    max_tokens: 200_000,
+    max_completion_tokens: 150_000,
+    n: 5,
+    models: ['anthropic/another-expensive-model', 'openai/a-third-one'],
+    route: 'fallback',
+    provider: { order: ['the-dearest-endpoint'], allow_fallbacks: false },
+    plugins: [{ id: 'web', max_results: 20 }],
+    web_search_options: { search_context_size: 'high' },
+    prediction: { type: 'content', content: 'a long predicted answer' },
+    reasoning: { effort: 'high', max_tokens: 100_000 },
+    temperature: 0.2,
+  };
+}
+
+/** What the fake upstream received last, parsed. */
+function lastForwardedBody(): JsonObject {
+  const last = received.at(-1);
+  if (last === undefined) throw new Error('the upstream received nothing');
+  // SAFETY: the proxy serialises a JSON object and nothing else, which the
+  // assertions below then read field by field.
+  return JSON.parse(last.body) as JsonObject;
+}
+
+async function postAs(
+  service: ServiceHarness,
+  input: { token: string; body: JsonObject },
+): Promise<HttpResponse<unknown>> {
+  return service.request<unknown>({
+    method: 'POST',
+    path: '/v1/chat/completions',
+    accessToken: input.token,
+    body: input.body,
+  });
+}
+
+test('with a model set, a foreign model, a huge max_tokens, n=5, models and plugins reach the provider rewritten', async () => {
+  const service = await startService({
+    db: database.db,
+    ai: {
+      baseUrl: upstreamBaseUrl,
+      apiKey: UPSTREAM_KEY,
+      advertisedModel: INSTANCE_MODEL,
+      maxOutputTokens: OUTPUT_CEILING,
+    },
+  });
+  try {
+    // An administrator, the account the old pass-through trusted most: the
+    // rule is for every account, not only for a trial.
+    const session = await service.signupThroughInvite({ email: 'admin@example.org', dailyAiLimit: 5, role: 'admin' });
+    const answered = await postAs(service, { token: session.tokens.accessToken, body: expensiveRequest() });
+    // QUIETLY: the caller is answered, never refused for the fields it sent.
+    assert.equal(answered.status, 200);
+
+    const forwarded = lastForwardedBody();
+    assert.equal(forwarded.model, INSTANCE_MODEL, 'the caller picked the model');
+    assert.equal(forwarded.max_tokens, OUTPUT_CEILING, 'max_tokens was not capped');
+    assert.equal(forwarded.max_completion_tokens, OUTPUT_CEILING, 'max_completion_tokens was not capped');
+    assert.equal(forwarded.n, 1, 'n answers cost n times one');
+    assert.deepEqual(forwarded.reasoning, { effort: 'high', max_tokens: OUTPUT_CEILING });
+    for (const field of ['models', 'route', 'provider', 'plugins', 'web_search_options', 'prediction']) {
+      assert.equal(field in forwarded, false, `${field} reached the provider`);
+    }
+    // THE CONTROL for "rewritten, not rebuilt": what the proxy has no rule for
+    // arrives exactly as sent.
+    assert.deepEqual(forwarded.messages, expensiveRequest().messages);
+    assert.equal(forwarded.temperature, 0.2);
+
+    // And `/health` names the model the proxy sends: one binding for both.
+    const health = await service.request<{ instance: { ai: { model: string | null } | null } }>({
+      method: 'GET',
+      path: '/health',
+    });
+    assert.equal(health.body.instance.ai?.model, INSTANCE_MODEL);
+  } finally {
+    await service.close();
+  }
+});
+
+test('with no model set, the caller model passes through and the output ceiling still applies', async () => {
+  const service = await startService({
+    db: database.db,
+    ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, maxOutputTokens: OUTPUT_CEILING },
+  });
+  try {
+    const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    const token = session.tokens.accessToken;
+
+    assert.equal((await postAs(service, { token, body: expensiveRequest() })).status, 200);
+    const huge = lastForwardedBody();
+    // SELF-HOST FREEDOM: no model configured, so the caller's stands.
+    assert.equal(huge.model, 'openai/a-very-expensive-model');
+    assert.equal(huge.max_tokens, OUTPUT_CEILING);
+    assert.equal(huge.n, 1);
+    assert.equal('plugins' in huge, false);
+
+    // A body with no cap at all gets the ceiling written in, so no answer is unbounded.
+    await postAs(service, { token, body: { ...completionRequest() } });
+    assert.equal(lastForwardedBody().max_tokens, OUTPUT_CEILING);
+
+    // THE CONTROL for "capped, not replaced": a value under the ceiling is the caller's.
+    await postAs(service, { token, body: { ...completionRequest(), max_tokens: 300 } });
+    assert.equal(lastForwardedBody().max_tokens, 300);
+  } finally {
+    await service.close();
+  }
+});

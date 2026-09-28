@@ -1,0 +1,190 @@
+/**
+ * CROSS-REPO DRIFT GUARD for the sync wire contract (M128 spec 01).
+ *
+ * `src/protocol.ts` here and `app/lib/sync/engine/protocol.ts` in the
+ * `openplate` repo are hand-maintained duplicates of one contract. There is
+ * no shared package and no shared CI, so nothing structurally prevents one
+ * side from being edited alone — and a silent protocol split between a client
+ * and the server holding the user's only synced copy of their data is about
+ * the worst failure this system has.
+ *
+ * The defence is deliberately dumb: the EXPECTED values below are TRANSCRIBED
+ * literals, not imports. Both repos carry the same block
+ * (`tests/unit/sync-engine/protocol.test.ts` there). Changing the protocol
+ * therefore means editing four places — two sources and two tests — and
+ * forgetting any of them fails a test instead of shipping.
+ *
+ * When you DO intend to change the contract: update `PROTOCOL.md` first (it
+ * is the normative document), then both `protocol.ts` files, then both of
+ * these tests, in the same change.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { keyPaths, protocolExample } from './protocol-examples.js';
+import {
+  BLOB_DAILY_RETENTION_DAYS,
+  BLOB_PRE_SHRINK_PIN_DAYS,
+  BLOB_PRE_SHRINK_PIN_LIMIT,
+  BLOB_SHRINK_ACK_RATIO,
+  BLOB_VERSION_RETENTION,
+  ENVELOPE_VERSION,
+  MAX_BLOB_BYTES,
+  PROTOCOL_VERSION,
+  SYNC_API_PREFIX,
+  SYNC_KEY_RECORD_KINDS,
+  checkProtocolCompatibility,
+  isProtocolHandshake,
+  isSyncKeyRecordKind,
+} from '../../src/protocol.js';
+
+// --- Transcribed from openplate/app/lib/sync/engine/protocol.ts. Keep in lockstep. ---
+// M192 bumped this to 2: the account identifier changed from an opaque handle
+// to an email address, signup takes an addressed invite, and `signupMode` left
+// the handshake. Every one of those is a breaking change to a documented shape,
+// so a client speaking version 1 must refuse rather than half-work. Mirroring
+// it in the openplate copy is an explicit hand-off item — both guards assert
+// TRANSCRIBED literals, so neither can catch the other being stale.
+const EXPECTED_PROTOCOL_VERSION = 2;
+const EXPECTED_ENVELOPE_VERSION = 1;
+const EXPECTED_MAX_BLOB_BYTES = 2 * 1024 * 1024;
+const EXPECTED_BLOB_VERSION_RETENTION = 5;
+// M224. The flat count above is now one tier of three, and the other two are
+// part of the same contract: a client deciding whether to set
+// `shrinkAcknowledged` is deciding against `BLOB_SHRINK_ACK_RATIO`, and an
+// operator's restore window is the two day counts. Transcribed literals, under
+// the same rule as everything above: a change means four places, and forgetting
+// one fails a test.
+const EXPECTED_BLOB_DAILY_RETENTION_DAYS = 14;
+const EXPECTED_BLOB_PRE_SHRINK_PIN_DAYS = 14;
+const EXPECTED_BLOB_PRE_SHRINK_PIN_LIMIT = 14;
+const EXPECTED_BLOB_SHRINK_ACK_RATIO = 0.5;
+// M128 spec 02 moved this from '/api/sync' to '/v1/sync' (PROTOCOL.md §5).
+// The openplate copy still says '/api/sync' and, because both guards assert
+// TRANSCRIBED literals rather than each other, both will pass while
+// disagreeing. Mirroring it there is an explicit hand-off item, not something
+// either test can catch.
+const EXPECTED_SYNC_API_PREFIX = '/v1/sync';
+const EXPECTED_KEY_RECORD_KINDS = ['passphrase', 'recovery'];
+// -------------------------------------------------------------------------
+
+test('PROTOCOL_VERSION matches the value the client repo declares', () => {
+  assert.equal(PROTOCOL_VERSION, EXPECTED_PROTOCOL_VERSION);
+});
+
+test('ENVELOPE_VERSION matches the value the client repo declares', () => {
+  assert.equal(ENVELOPE_VERSION, EXPECTED_ENVELOPE_VERSION);
+});
+
+test('size and retention limits match the values the client repo transcribes', () => {
+  assert.equal(MAX_BLOB_BYTES, EXPECTED_MAX_BLOB_BYTES);
+  assert.equal(BLOB_VERSION_RETENTION, EXPECTED_BLOB_VERSION_RETENTION);
+});
+
+test('the shrink ratio and the two retention windows match the transcribed values (M224)', () => {
+  assert.equal(BLOB_SHRINK_ACK_RATIO, EXPECTED_BLOB_SHRINK_ACK_RATIO);
+  assert.equal(BLOB_DAILY_RETENTION_DAYS, EXPECTED_BLOB_DAILY_RETENTION_DAYS);
+  assert.equal(BLOB_PRE_SHRINK_PIN_DAYS, EXPECTED_BLOB_PRE_SHRINK_PIN_DAYS);
+  assert.equal(BLOB_PRE_SHRINK_PIN_LIMIT, EXPECTED_BLOB_PRE_SHRINK_PIN_LIMIT);
+});
+
+test('worst-case retained versions per account is the arithmetic the ADR states', () => {
+  // THE STORAGE BOUND, asserted rather than believed. Every tier is capped, so
+  // the most one account can hold is the sum, and `MAX_BLOB_BYTES` turns that
+  // into the 66 MiB ADR-0009 commits to. A tier made unbounded later fails here.
+  const worstCaseVersions = BLOB_VERSION_RETENTION + BLOB_DAILY_RETENTION_DAYS + BLOB_PRE_SHRINK_PIN_LIMIT;
+  assert.equal(worstCaseVersions, 33);
+  assert.equal(worstCaseVersions * MAX_BLOB_BYTES, 69_206_016);
+});
+
+test('the route prefix and key-record kinds match the client repo', () => {
+  assert.equal(SYNC_API_PREFIX, EXPECTED_SYNC_API_PREFIX);
+  assert.deepEqual([...SYNC_KEY_RECORD_KINDS], EXPECTED_KEY_RECORD_KINDS);
+});
+
+test('checkProtocolCompatibility accepts a client reporting our exact versions', () => {
+  const result = checkProtocolCompatibility({
+    protocolVersion: PROTOCOL_VERSION,
+    envelopeVersion: ENVELOPE_VERSION,
+    serviceVersion: '0.1.0',
+  });
+  assert.equal(result.status, 'compatible');
+});
+
+test('checkProtocolCompatibility REFUSES a protocol-version mismatch, with both versions named', () => {
+  const result = checkProtocolCompatibility({
+    protocolVersion: PROTOCOL_VERSION + 1,
+    envelopeVersion: ENVELOPE_VERSION,
+    serviceVersion: '0.2.0',
+  });
+  assert.equal(result.status, 'incompatible');
+  if (result.status !== 'incompatible') return;
+  assert.match(result.reason, new RegExp(String(PROTOCOL_VERSION + 1)));
+  assert.match(result.reason, new RegExp(String(PROTOCOL_VERSION)));
+});
+
+test('checkProtocolCompatibility REFUSES an envelope-version mismatch even when the protocol matches', () => {
+  const result = checkProtocolCompatibility({
+    protocolVersion: PROTOCOL_VERSION,
+    envelopeVersion: ENVELOPE_VERSION + 1,
+    serviceVersion: '0.2.0',
+  });
+  assert.equal(result.status, 'incompatible');
+});
+
+test('isProtocolHandshake rejects malformed handshake documents', () => {
+  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1, serviceVersion: '0.1.0' }), true);
+  assert.equal(isProtocolHandshake({ protocolVersion: '1', envelopeVersion: 1, serviceVersion: '0.1.0' }), false);
+  assert.equal(isProtocolHandshake({ protocolVersion: 1, envelopeVersion: 1 }), false);
+  assert.equal(isProtocolHandshake(null), false);
+  assert.equal(isProtocolHandshake('not a handshake'), false);
+});
+
+test('isSyncKeyRecordKind accepts exactly the two documented kinds', () => {
+  assert.equal(isSyncKeyRecordKind('passphrase'), true);
+  assert.equal(isSyncKeyRecordKind('recovery'), true);
+  assert.equal(isSyncKeyRecordKind('Passphrase'), false);
+  assert.equal(isSyncKeyRecordKind(undefined), false);
+});
+
+// ── M253: the new optional fields ──────────────────────────────────────────
+
+test('a handshake decodes with the M253 fields and without them: every one of them is optional to a client', () => {
+  const base = { protocolVersion: 2, envelopeVersion: 1, serviceVersion: '0.20.0' };
+  assert.equal(
+    isProtocolHandshake({
+      ...base,
+      instance: {
+        name: 'openplate',
+        language: 'en',
+        mail: true,
+        memberInvites: false,
+        openSignup: true,
+        signupCaptcha: { provider: 'turnstile', siteKey: 'site' },
+        trial: { scans: 10 },
+        plans: true,
+        push: false,
+        ai: null,
+      },
+    }),
+    true,
+  );
+  // An older service sends none of them, and is still a handshake.
+  assert.equal(
+    isProtocolHandshake({ ...base, instance: { name: 'openplate', language: 'en', mail: false, ai: null } }),
+    true,
+  );
+});
+
+test('the PROTOCOL.md examples name the M253 fields where a client reads them', () => {
+  const health = keyPaths(protocolExample('### 5.6'));
+  for (const path of [
+    'instance.openSignup',
+    'instance.signupCaptcha.provider',
+    'instance.signupCaptcha.siteKey',
+    'instance.trial.scans',
+  ]) {
+    assert.ok(health.includes(path), `the §5.6 example is missing ${path}`);
+  }
+  const account = keyPaths(protocolExample('### 5.15'));
+  assert.ok(account.includes('trialScans.granted') && account.includes('trialScans.left'));
+});

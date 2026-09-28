@@ -1,0 +1,1689 @@
+/**
+ * The operator's API: account metadata, aggregate storage, and erasure.
+ *
+ * Specified by `docs/adr/0001-an-admin-api-for-a-zero-knowledge-service.md`,
+ * which is the document to read before adding anything here. The three rules
+ * that shape this file:
+ *
+ * ── 404 WHEN THERE IS NO ADMIN CREDENTIAL, NOT 401 ──────────────────────────
+ * That decision is not made here, it belongs to `server/admin-auth.ts`, which
+ * answers the ordinary unknown-path 404 for the whole `/v1/admin` tree when no
+ * `ADMIN_TOKEN` is configured and the caller is not an admin ACCOUNT. A 401
+ * would confirm that an admin surface exists on this host and is merely
+ * locked, which is an invitation to come back with a wordlist. This service
+ * auto-deploys on push, so an unconfigured deployment must be
+ * indistinguishable from one where the feature was never written.
+ *
+ * M192 moved that judgement from the mount (`create-app.ts` used to leave the
+ * router off entirely) into the middleware, because the tree is now mounted
+ * ALWAYS: an admin account's own access token authenticates it, and whether
+ * one exists is not something a mount-time branch can know.
+ *
+ * ── NOTHING SECRET IS EVER IN A RESPONSE, BY PROJECTION ─────────────────────
+ * No ciphertext, no verifier, no KDF descriptor, no wrapped DEK, no token and
+ * no token digest. `toAccountView` is the only thing that builds an account
+ * body, and it names every field it emits, the way `toMemberView` does in the
+ * gateway. The store beneath it (`db/admin-store.ts`) never SELECTs the
+ * forbidden columns in the first place, so this is a second wall rather than
+ * the only one. `tests/unit/admin-no-forbidden-fields.test.ts` walks the full
+ * serialized body of every endpoint against a seeded account and fails if any
+ * of it appears.
+ *
+ * A blob is reported as a byte count and a timestamp because that is what an
+ * operator can act on: a storage bill, a capacity plan, an answer to "did my
+ * data reach the server". The bytes themselves are a data subject's, and the
+ * only path that yields them is the one that goes through their passphrase.
+ *
+ * ── DELETION REUSES THE STORE, NOT THE HANDLER ──────────────────────────────
+ * `AccountStore.deleteAccount` is called here, and it is the SAME method
+ * `handleDeleteAccount` calls for a self-service deletion, so DSAR erasure
+ * and self-erasure cannot drift apart and be found to differ during an audit.
+ *
+ * The self-service handler itself cannot be reused, and the reason is the
+ * interesting part: it requires the caller's `authHash` and checks it with
+ * `verifierMatches` first. An admin cannot supply that, not for want of a
+ * permission, but because the admin genuinely does not know the passphrase,
+ * which is the property this whole service is built on. Adding a bypass flag
+ * to that handler was considered and rejected in the ADR: it would put the
+ * bypass inside the function every self-service deletion runs through.
+ * Authorisation is what differs between the two paths; the erasure itself is
+ * one line, called from both.
+ *
+ * ── NO ENDPOINT HERE MUTATES AUTHENTICATION ─────────────────────────────────
+ * There is still no admin password reset: the passphrase wraps the data key on
+ * the client, so a server-side credential change would produce an account that
+ * logs in and decrypts nothing. What M192 adds is a mailed reset the ACCOUNT
+ * HOLDER runs (`POST /v1/auth/reset/request`), which hands them the escrowed
+ * recovery code so they can run the ordinary ceremony themselves. The admin's
+ * part of it is `POST /accounts/:id/reset-mail`, spec 03, and it sends the
+ * letter rather than changing anything.
+ */
+import express from 'express';
+import type { Request, Response, Router } from 'express';
+import { asyncHandler } from './async-handler.js';
+import type { AccountStore } from '../accounts/account-store.js';
+import type { AdminAccountSummary, AdminMetadataStore, AdminStats, ExpiringAllowance } from '../admin/admin-store.js';
+import type { SyncBlobRollbackStore } from '../contract-types.js';
+import type { BlobVersionSummary, RollbackRefusal } from '../lib/blob-rollback.js';
+import {
+  DEFAULT_INVITE_TTL_MS,
+  MAX_DAILY_AI_LIMIT,
+  inviteStatus,
+  type InviteStatus,
+  type InviteStore,
+  type InviteSummary,
+} from '../admin/invite-store.js';
+import { memberInviteFields, type MemberInvitePolicy } from '../accounts/member-invites.js';
+import {
+  NUTRIENT_REFERENCE_BASES,
+  isAccountRole,
+  isNutrientReferenceBasis,
+  type AccountRole,
+  type AccountView,
+  type SyncKeyRecordKind,
+} from '../protocol.js';
+import type { InstanceSettingsSurface } from '../instance/instance-settings.js';
+import { handleNotFound } from './error-middleware.js';
+import type { Logger } from '../logger.js';
+import type { Mailer } from '../mail/mailer.js';
+import { parseDisplayName, parseEmail } from '../accounts/auth-input.js';
+import { computeExpiry, RESET_TOKEN_TTL_MS, type GeneratedToken } from '../lib/tokens.js';
+import { utcDayKey } from '../lib/utc-day.js';
+import {
+  activityWindow,
+  clampActivityWindowDays,
+  zeroFillActivityDays,
+  zeroFillActivityStrips,
+  type AccountActivityStrip,
+  type ActivityDay,
+} from '../admin/account-activity.js';
+import { AI_USAGE_RETENTION_DAYS } from '../ai/usage-retention.js';
+import { asArray, asBoolean, asNumber, asObject, asString, type JsonObject, type JsonValue } from '../lib/json.js';
+import { isUnpaidTrial, MAX_TRIAL_SCANS, trialScansView, type TrialPolicy } from '../accounts/scan-trial.js';
+import { getAdminPrincipal } from './admin-auth.js';
+import { SERVICE_FIELD_REFUSAL, SERVICE_PRINCIPAL_PATCH_FIELDS } from './service-principal-scope.js';
+import { healthConsentView } from '../accounts/health-consent.js';
+
+/** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
+export const ADMIN_API_PREFIX = '/v1/admin';
+
+/** Page size when the caller does not ask for one. */
+export const DEFAULT_ADMIN_PAGE_LIMIT = 50;
+
+/**
+ * A ceiling, not a policy: it stops a mistyped `limit=100000` turning one
+ * operator's curiosity into a full-table read with a per-row fan-out.
+ */
+export const MAX_ADMIN_PAGE_LIMIT = 200;
+
+/**
+ * The one sentence every paged endpoint here refuses with. Named once so the
+ * four of them cannot drift into four different explanations of the same
+ * rule.
+ */
+export const PAGING_REFUSAL = `limit must be 0-${MAX_ADMIN_PAGE_LIMIT} and offset a non-negative integer`;
+
+/**
+ * The wire shape of one account. Every field is named here; nothing is spread
+ * in from a row.
+ *
+ * It EXTENDS the protocol's `AccountView` rather than redefining it, so the
+ * contract's "`accounts: AccountView[]`" is satisfied by construction and a
+ * field added to one is a compile error until it is added here too. The two
+ * extra fields are ADR-0001's operator facts, see `admin/admin-store.ts`.
+ */
+interface AdminAccountView extends AccountView {
+  blob: { sizeBytes: number; updatedAt: string } | null;
+  keyRecordKinds: SyncKeyRecordKind[];
+  /**
+   * When this person last did something on purpose, or `null` for an account
+   * that has never signed in.
+   *
+   * AN OPERATOR FACT, WHICH IS WHY IT IS HERE AND NOT ON `AccountView`. The
+   * protocol's account view is what a person is shown about themselves; this
+   * answers "has this participant gone quiet", which only an operator asks. It
+   * crosses the wire as a TIMESTAMP: "3 days ago" is a rendering decision, and
+   * an API that made it would be deciding it for every client at once, in one
+   * language, against the reader's clock rather than their own.
+   */
+  lastSeenAt: string | null;
+}
+
+/**
+ * The wire shape of one account's activity strip.
+ *
+ * `days` is EVERY day in the window, in order, including the ones with no row
+ * (`admin/account-activity.ts`). `window` reports what the server actually
+ * answered with, because the request may have asked for more.
+ */
+interface AdminAccountActivityView {
+  accountId: number;
+  lastSeenAt: string | null;
+  window: { days: number; fromDay: string; toDay: string };
+  days: ActivityDay[];
+}
+
+/**
+ * The wire shape of a page of strips.
+ *
+ * `accounts` is one entry per account on the page, in the order
+ * `GET /v1/admin/accounts` returns them for the same `limit` and `offset`, so
+ * a caller pages the two endpoints in lockstep and draws strip `n` beside
+ * person `n`. `total` is the same total that list reports, so it can page at
+ * all.
+ */
+interface AdminActivityPageView {
+  window: { days: number; fromDay: string; toDay: string };
+  accounts: AccountActivityStrip[];
+  total: number;
+}
+
+interface AdminStatsView {
+  accounts: number;
+  accountsWithBlob: number;
+  blobVersions: number;
+  keyRecords: number;
+  blobBytes: number;
+  pendingInvites: number;
+  admins: number;
+  aiRequestsToday: number;
+  /**
+   * The whole instance's ceiling in AI requests per UTC day
+   * (`AI_INSTANCE_DAILY_LIMIT`), or `null` for an instance that set none.
+   *
+   * IT SITS BESIDE `aiRequestsToday` SO THE TWO ARE READ TOGETHER. A count with
+   * no bound beside it is a number an operator cannot act on: 1400 is fine
+   * under a ceiling of 5000 and is an outage in an hour under one of 1500.
+   * This is the ONLY place the ceiling is published, and it is behind the admin
+   * credential: it is the operator's budget, not a client fact.
+   */
+  aiInstanceDailyLimit: number | null;
+  /**
+   * Today's community pulse (M222), the six numbers `GET /v1/pulse/today`
+   * serves every signed-in caller.
+   *
+   * THE DAY IS NOT REPEATED HERE. The store answers one, and it is today's by
+   * construction, so a second copy of it in this body would be a field an
+   * operator could read as a date the rest of the stats also belong to.
+   */
+  pulse: {
+    meals: number;
+    photos: number;
+    kcal: number;
+    protein: number;
+    contributors: number;
+    fastingNow: number;
+  };
+  /**
+   * Web push (M223): subscribed devices, and notifications sent today.
+   *
+   * NEVER AN ENDPOINT AND NEVER A KEY, which is why this is two integers rather
+   * than a list. See ADR-0008.
+   */
+  push: {
+    subscriptions: number;
+    sentToday: number;
+  };
+  /**
+   * The open sign-up door's farming signal (M253): invites it minted today
+   * (UTC) and in the last seven days. Counts, never addresses.
+   */
+  signup: {
+    openSignupInvitesToday: number;
+    openSignupInvitesLast7Days: number;
+    /** Invites redeemed in the last seven days that granted free scans (M253). */
+    trialsGrantedLast7Days: number;
+    /** Requests scan-trial accounts spent today, read beside `aiTrialInstanceDailyLimit`. */
+    trialRequestsToday: number;
+  };
+  /**
+   * What all scan-trial accounts together may spend per UTC day
+   * (`AI_TRIAL_INSTANCE_DAILY_LIMIT`, M253), or `null` for no sub-ceiling. The
+   * operator's budget, published here and never on `/health`, like
+   * `aiInstanceDailyLimit`.
+   */
+  aiTrialInstanceDailyLimit: number | null;
+}
+
+/**
+ * The ONLY function that turns an account into a response body. See the module
+ * header.
+ *
+ * `memberInvites` is THIS INSTANCE'S policy, or `null` where members cannot
+ * invite anybody. Nothing in it is about this account: it is what turns
+ * `invitesMinted` into `invitesLeft`, through the same function the caller's
+ * own account view uses (`accounts/member-invites.ts`), and it carries the
+ * configured `MEMBER_INVITE_LIFETIME_CAP`, so an operator's console can never
+ * show a number the route does not enforce.
+ */
+function toAccountView(input: {
+  summary: AdminAccountSummary;
+  memberInvites: MemberInvitePolicy | null;
+  now: Date;
+}): AdminAccountView {
+  const { summary, memberInvites, now } = input;
+  return {
+    id: summary.id,
+    email: summary.email,
+    displayName: summary.displayName,
+    role: summary.role,
+    dailyAiLimit: summary.dailyAiLimit,
+    aiUsedToday: summary.aiUsedToday,
+    allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
+    trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
+    suspendedAt: summary.suspendedAt?.toISOString() ?? null,
+    ...memberInviteFields({
+      role: summary.role,
+      minted: summary.invitesMinted,
+      policy: memberInvites,
+      isUnpaidTrial: isUnpaidTrial({
+        trialScans: summary.trialScans,
+        allowanceExpiresAt: summary.allowanceExpiresAt,
+        now,
+      }),
+    }),
+    // READ ONLY for the operator: the PATCH below names no such field, so a
+    // consent can only ever be the person's own act.
+    healthConsent: healthConsentView(summary.healthConsent),
+    createdAt: summary.createdAt.toISOString(),
+    lastSeenAt: summary.lastSeenAt?.toISOString() ?? null,
+    blob:
+      summary.blob === null
+        ? null
+        : { sizeBytes: summary.blob.sizeBytes, updatedAt: summary.blob.updatedAt.toISOString() },
+    keyRecordKinds: summary.keyRecordKinds,
+  };
+}
+
+/**
+ * The wire shape one account has for the BILLER, and the only one it ever
+ * sees.
+ *
+ * THREE FIELDS, NAMED HERE, AND NOT A NARROWED `AdminAccountView`. A `Pick<>`
+ * or a delete-the-keys projection would inherit every field added to the
+ * operator's view later, so an address that arrives on that view in some
+ * future milestone would arrive here silently. This shape grows only when
+ * somebody types into it.
+ *
+ * There is no `deletedAt` and there is no tombstone behind it: erasure on this
+ * service is a cascade, so an account that is gone is the ordinary `404` the
+ * route gives an id that never existed. See the handler.
+ */
+interface ServiceAccountView {
+  id: number;
+  allowanceExpiresAt: string | null;
+  dailyAiLimit: number;
+}
+
+/** The ONLY function that builds a body for the service principal. No address, no name, no role, no usage. */
+function toServiceAccountView(summary: AdminAccountSummary): ServiceAccountView {
+  return {
+    id: summary.id,
+    allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
+    dailyAiLimit: summary.dailyAiLimit,
+  };
+}
+
+/** One row of the reconciliation list. Two fields, and `allowanceExpiresAt` is never `null`: see `ExpiringAllowance`. */
+interface ExpiringAllowanceView {
+  id: number;
+  allowanceExpiresAt: string;
+}
+
+function toExpiringAllowanceView(row: ExpiringAllowance): ExpiringAllowanceView {
+  return { id: row.id, allowanceExpiresAt: row.allowanceExpiresAt.toISOString() };
+}
+
+function toStatsView(input: {
+  stats: AdminStats;
+  aiInstanceDailyLimit: number | null;
+  aiTrialInstanceDailyLimit: number | null;
+}): AdminStatsView {
+  const { stats } = input;
+  return {
+    accounts: stats.accounts,
+    accountsWithBlob: stats.accountsWithBlob,
+    blobVersions: stats.blobVersions,
+    keyRecords: stats.keyRecords,
+    blobBytes: stats.blobBytes,
+    pendingInvites: stats.pendingInvites,
+    admins: stats.admins,
+    aiRequestsToday: stats.aiRequestsToday,
+    // NOT from the store. Every other field here is something the database
+    // counted; this one is what the operator configured, and the store that
+    // reads rows has no business inventing it.
+    aiInstanceDailyLimit: input.aiInstanceDailyLimit,
+    // PROJECTED, not spread. The store's shape carries a `day` this body does
+    // not publish, and a spread would put it there the moment somebody adds a
+    // field to `PulseTotals`.
+    pulse: {
+      meals: stats.pulse.meals,
+      photos: stats.pulse.photos,
+      kcal: stats.pulse.kcal,
+      protein: stats.pulse.protein,
+      contributors: stats.pulse.contributors,
+      fastingNow: stats.pulse.fastingNow,
+    },
+    // PROJECTED, not spread, for the reason the pulse block above is.
+    push: {
+      subscriptions: stats.push.subscriptions,
+      sentToday: stats.push.sentToday,
+    },
+    // PROJECTED, not spread, for the reason the pulse block above is.
+    signup: {
+      openSignupInvitesToday: stats.signup.openSignupInvitesToday,
+      openSignupInvitesLast7Days: stats.signup.openSignupInvitesLast7Days,
+      trialsGrantedLast7Days: stats.signup.trialsGrantedLast7Days,
+      trialRequestsToday: stats.signup.trialRequestsToday,
+    },
+    // Configured, not counted, for the reason `aiInstanceDailyLimit` is.
+    aiTrialInstanceDailyLimit: input.aiTrialInstanceDailyLimit,
+  };
+}
+
+/**
+ * Reads one query parameter as a string.
+ *
+ * Express's `req.query` is a `ParsedQs` whose values are strings, arrays or
+ * nested objects depending on what the caller sent, which is exactly the
+ * "unproven shape" `lib/json.ts` exists to keep out of the code. Re-parsing
+ * the URL gives a `URLSearchParams`, whose `get` is `string | null` by
+ * contract, a decoded value, not a representation to inspect. A repeated
+ * parameter yields its first occurrence, which is the same answer as picking
+ * one out of an array and needs no branch.
+ */
+export function queryValue(req: Request, name: string): string | null {
+  return new URL(req.originalUrl, 'http://placeholder.invalid').searchParams.get(name);
+}
+
+export type PagingParameter = { ok: true; value: number } | { ok: false };
+
+/** A non-negative integer in range, or a rejection. An out-of-range value is a `400`, never a silent clamp. */
+export function parseBoundedInteger(raw: string | null, fallback: number, max: number): PagingParameter {
+  if (raw === null || raw === '') return { ok: true, value: fallback };
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) return { ok: false };
+  return { ok: true, value: parsed };
+}
+
+/**
+ * Reads the `days` query parameter of the activity endpoint.
+ *
+ * A GARBAGE VALUE IS A `400` AND AN OVER-LONG ONE IS CAPPED, and the asymmetry
+ * is deliberate. `days=banana` or `days=0` is a caller that does not know what
+ * it asked for, and answering it with a default would hide the bug. `days=365`
+ * is a caller asking a reasonable question about a window this server does not
+ * keep: the rows beyond ninety days have been pruned
+ * (`ai/usage-retention.ts`), so the honest answer is the ninety it has, and the
+ * response says which window it drew. See `admin/account-activity.ts`.
+ */
+function parseActivityWindowDays(raw: string | null): { ok: true; value: number } | { ok: false } {
+  if (raw === null || raw === '') return { ok: true, value: AI_USAGE_RETENTION_DAYS };
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) return { ok: false };
+  return { ok: true, value: clampActivityWindowDays(parsed) };
+}
+
+/** A path `:id` is an account's serial primary key: a positive integer and nothing else. */
+function parseAccountId(raw: string): number | null {
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function sendNotFound(res: Response): void {
+  // The same sentence for "no such account" everywhere, and never the id or
+  // the address that was asked about.
+  res.status(404).json({ error: 'no such account' });
+}
+
+/**
+ * Parses the optional `expiresInDays` field into a lifetime in milliseconds.
+ *
+ * An out-of-range value is REFUSED rather than clamped: clamping would hand
+ * back a capability with a lifetime the operator did not ask for and would
+ * have no reason to re-read.
+ */
+function parseInviteTtl(value: JsonValue | undefined): { ok: true; value: number } | { ok: false } {
+  if (value === undefined || value === null) return { ok: true, value: DEFAULT_INVITE_TTL_MS };
+  const days = asNumber(value);
+  if (days === null || !Number.isInteger(days) || days <= 0 || days > MAX_INVITE_TTL_DAYS) return { ok: false };
+  return { ok: true, value: days * 24 * 60 * 60 * 1000 };
+}
+
+/**
+ * A ceiling on `expiresInDays`, so a typo cannot mint a capability that
+ * outlives the operator's memory of it. Thirty days rather than M166's year,
+ * for the same reason the default shortened.
+ */
+export const MAX_INVITE_TTL_DAYS = 30;
+
+/** Default daily AI allowance for an invite that does not name one: none. */
+export const DEFAULT_INVITE_DAILY_AI_LIMIT = 0;
+
+/** What an admin mint grants: a standing allowance, or the instance's scan trial (M253). */
+type MintGrant = { ok: true; dailyAiLimit: number; trialScans: number | null } | { ok: false; reason: string };
+
+/**
+ * The AI half of an admin mint body.
+ *
+ * `"trial": true` IS THE INSTANCE'S PAIR OR A 400. On an instance with no
+ * `TRIAL_SCANS` it says so rather than minting a standing grant the operator
+ * did not ask for, and beside a `dailyAiLimit` it refuses the ambiguity: the
+ * trial's daily bound is the instance's, not a number typed next to it.
+ */
+function parseMintGrant(input: { body: JsonObject; trial: TrialPolicy | null }): MintGrant {
+  const { body } = input;
+  if (body.trial !== undefined && body.trial !== false) {
+    if (body.trial !== true) return { ok: false, reason: 'trial must be true or false' };
+    if (input.trial === null) {
+      return { ok: false, reason: 'this instance runs no scan trial: TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT are unset' };
+    }
+    if (body.dailyAiLimit !== undefined) {
+      return {
+        ok: false,
+        reason: 'trial and dailyAiLimit cannot both be named: the trial carries its own daily limit',
+      };
+    }
+    return { ok: true, dailyAiLimit: input.trial.dailyAiLimit, trialScans: input.trial.scans };
+  }
+  const limit = asNumber(body.dailyAiLimit ?? DEFAULT_INVITE_DAILY_AI_LIMIT);
+  if (limit === null || !Number.isInteger(limit) || limit < 0 || limit > MAX_DAILY_AI_LIMIT) {
+    return { ok: false, reason: `dailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
+  }
+  return { ok: true, dailyAiLimit: limit, trialScans: null };
+}
+
+/**
+ * The wire shape of one invite. Every field is named here, and `tokenHash` is
+ * not among them, nor is it fetched (`db/invite-store.ts`).
+ */
+interface AdminInviteView {
+  id: number;
+  email: string;
+  displayName: string | null;
+  role: AccountRole;
+  dailyAiLimit: number;
+  /** The free scans the invite carries, or `null` for none (M253). */
+  trialScans: number | null;
+  expiresAt: string;
+  /** Derived from the three lifecycle columns in ONE place (`admin/invite-store.ts`). */
+  status: InviteStatus;
+  createdAt: string;
+  redeemedAccountId: number | null;
+}
+
+function toInviteView(invite: InviteSummary, now: Date): AdminInviteView {
+  return {
+    id: invite.id,
+    email: invite.email,
+    displayName: invite.displayName,
+    role: invite.role,
+    dailyAiLimit: invite.dailyAiLimit,
+    trialScans: invite.trialScans,
+    expiresAt: invite.expiresAt.toISOString(),
+    status: inviteStatus(invite, now),
+    createdAt: invite.createdAt.toISOString(),
+    redeemedAccountId: invite.redeemedAccountId,
+  };
+}
+
+/**
+ * The link an invited person clicks, or `null` when this instance cannot build
+ * one.
+ *
+ * A FRAGMENT, NEVER A QUERY STRING. Everything after the `#` stays in the
+ * browser: it is not sent to the server, does not reach an access log, and does
+ * not land in a `Referer` header when the page loads a third-party asset. The
+ * token is a capability that creates an account, so where it travels matters
+ * as much as how long it lives.
+ *
+ * `null` when the operator configured neither a public URL for this service nor
+ * a base URL for the client, a self-hosted instance may legitimately have
+ * neither, and inventing one would produce a link that goes nowhere. The raw
+ * token is returned in its own field then, so the capability always reaches
+ * somebody.
+ */
+function buildJoinLink(input: { links: AdminLinkBases | null; token: string }): string | null {
+  if (input.links === null) return null;
+  const server = encodeURIComponent(input.links.serverPublicUrl);
+  return `${input.links.clientBaseUrl.replace(/\/+$/, '')}/join#server=${server}&invite=${input.token}`;
+}
+
+/**
+ * The link a password-reset letter carries, and the one
+ * `POST /accounts/:id/reset-mail` hands an operator when no letter went.
+ *
+ * A fragment, for the reason {@link buildJoinLink} gives: the token is a
+ * capability, and a fragment reaches no server's access log.
+ */
+function buildResetLink(input: { links: AdminLinkBases | null; token: string }): string | null {
+  if (input.links === null) return null;
+  const server = encodeURIComponent(input.links.serverPublicUrl);
+  return `${input.links.clientBaseUrl.replace(/\/+$/, '')}/reset#server=${server}&token=${input.token}`;
+}
+
+/** The two absolute URLs a join link is built from. Both or neither, see `config.ts`. */
+export interface AdminLinkBases {
+  clientBaseUrl: string;
+  serverPublicUrl: string;
+}
+
+/** The mint response. `token` is present ONLY when `link` is `null`, see the route. */
+interface MintInviteResponse {
+  invite: AdminInviteView;
+  emailed: boolean;
+  link: string | null;
+  token?: string;
+}
+
+/**
+ * The five fields an operator may change on an account, each optional and each
+ * meaning "leave it alone" when absent.
+ *
+ * `email` IS DELIBERATELY NOT HERE. It is the account's identity and what every
+ * mail is addressed to; moving it would silently redirect a person's password
+ * reset to somebody else's mailbox. An address change is a new invitation.
+ */
+interface AccountPatch {
+  role?: AccountRole;
+  dailyAiLimit?: number;
+  /**
+   * When the AI allowance ends. Absent leaves it alone; `null` clears it, so
+   * both are keyed on the property's PRESENCE rather than on its nullness.
+   */
+  allowanceExpiresAt?: Date | null;
+  /** The scans granted (M253), `0` to {@link MAX_TRIAL_SCANS}, or `null` to take the scan trial away. */
+  trialScans?: number | null;
+  suspended?: boolean;
+  displayName?: string | null;
+}
+
+type ParseAccountPatchResult = { ok: true; value: AccountPatch } | { ok: false; reason: string };
+
+type ParseAllowanceExpiresAtResult = { ok: true; value: Date | null } | { ok: false; reason: string };
+
+/**
+ * The `allowanceExpiresAt` field of a PATCH body: an ISO instant, or `null` to
+ * clear the date.
+ *
+ * IT REFUSES ANYTHING ELSE RATHER THAN COERCING IT. `new Date('tomorrow')` is
+ * an `Invalid Date` and `new Date(0)` is 1970, so a value this did not check
+ * would either be written as a NaN timestamp or silently expire an allowance
+ * the moment it was set. Only a string that round-trips through
+ * `Date.parse` is accepted.
+ */
+function parseAllowanceExpiresAt(value: JsonValue): ParseAllowanceExpiresAtResult {
+  if (value === null) return { ok: true, value: null };
+  const iso = asString(value);
+  if (iso === null) {
+    return { ok: false, reason: 'allowanceExpiresAt must be an ISO 8601 instant, or null to clear it' };
+  }
+  const parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) {
+    return { ok: false, reason: 'allowanceExpiresAt must be an ISO 8601 instant, or null to clear it' };
+  }
+  return { ok: true, value: new Date(parsed) };
+}
+
+/**
+ * The `trialScans` field of a PATCH body (M253): the scans GRANTED, an integer
+ * from 0 to {@link MAX_TRIAL_SCANS}, or `null` to take the scan trial away. It
+ * never touches how many are used, so raising it hands out exactly the
+ * difference.
+ */
+function parseTrialScans(value: JsonValue): { ok: true; value: number | null } | { ok: false; reason: string } {
+  if (value === null) return { ok: true, value: null };
+  const scans = asNumber(value);
+  if (scans === null || !Number.isInteger(scans) || scans < 0 || scans > MAX_TRIAL_SCANS) {
+    return { ok: false, reason: `trialScans must be an integer between 0 and ${MAX_TRIAL_SCANS}, or null` };
+  }
+  return { ok: true, value: scans };
+}
+
+/** The body of `POST /trials/grant-lapsed`, decoded. */
+type LapsedGrantRequest =
+  { ok: true; trialDays: number; apply: boolean; exclude: Set<number> } | { ok: false; reason: string };
+
+/** The longest day trial the grant looks for, the member-invite lifetime ceiling. */
+const MAX_LAPSED_TRIAL_DAYS = 30;
+
+function parseLapsedGrant(body: JsonObject): LapsedGrantRequest {
+  const trialDays = asNumber(body.trialDays ?? null);
+  if (trialDays === null || !Number.isInteger(trialDays) || trialDays < 1 || trialDays > MAX_LAPSED_TRIAL_DAYS) {
+    return {
+      ok: false,
+      reason: `trialDays must be the day trial's length, an integer from 1 to ${MAX_LAPSED_TRIAL_DAYS}`,
+    };
+  }
+  const apply = body.apply === undefined ? false : asBoolean(body.apply);
+  if (apply === null) return { ok: false, reason: 'apply must be true or false' };
+  const exclude = new Set<number>();
+  if (body.excludeAccountIds !== undefined) {
+    const ids = asArray(body.excludeAccountIds);
+    if (ids === null) return { ok: false, reason: 'excludeAccountIds must be an array of account ids' };
+    for (const raw of ids) {
+      const id = asNumber(raw);
+      if (id === null || !Number.isInteger(id) || id < 1) {
+        return { ok: false, reason: 'excludeAccountIds must be an array of account ids' };
+      }
+      exclude.add(id);
+    }
+  }
+  return { ok: true, trialDays, apply, exclude };
+}
+
+/** Decodes a PATCH body. Absent means untouched; present and malformed is a `400` that names the field. */
+function parseAccountPatch(body: JsonValue): ParseAccountPatchResult {
+  const fields = asObject(body) ?? {};
+  const patch: AccountPatch = {};
+
+  if (fields.role !== undefined) {
+    if (!isAccountRole(fields.role)) return { ok: false, reason: 'role must be "admin" or "member"' };
+    patch.role = fields.role;
+  }
+  if (fields.dailyAiLimit !== undefined) {
+    const limit = asNumber(fields.dailyAiLimit);
+    if (limit === null || !Number.isInteger(limit) || limit < 0 || limit > MAX_DAILY_AI_LIMIT) {
+      return { ok: false, reason: `dailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
+    }
+    patch.dailyAiLimit = limit;
+  }
+  if (fields.allowanceExpiresAt !== undefined) {
+    const expiry = parseAllowanceExpiresAt(fields.allowanceExpiresAt);
+    if (!expiry.ok) return { ok: false, reason: expiry.reason };
+    patch.allowanceExpiresAt = expiry.value;
+  }
+  if (fields.trialScans !== undefined) {
+    const trialScans = parseTrialScans(fields.trialScans);
+    if (!trialScans.ok) return { ok: false, reason: trialScans.reason };
+    patch.trialScans = trialScans.value;
+  }
+  if (fields.suspended !== undefined) {
+    const suspended = asBoolean(fields.suspended);
+    if (suspended === null) return { ok: false, reason: 'suspended must be true or false' };
+    patch.suspended = suspended;
+  }
+  if (fields.displayName !== undefined) {
+    const displayName = parseDisplayName(fields.displayName);
+    if (!displayName.ok) return { ok: false, reason: displayName.reason };
+    patch.displayName = displayName.value;
+  }
+
+  return { ok: true, value: patch };
+}
+
+/**
+ * The self-change guard.
+ *
+ * An admin ACCOUNT may not suspend, demote or delete itself: an organization
+ * with one administrator who demotes their own account has locked everybody out
+ * of `/v1/admin`, and the remedy is a shell on the container. Every other change
+ * to their own row is allowed, a display name is not a lockout.
+ *
+ * THE STATIC TOKEN IS EXEMPT BY CONSTRUCTION rather than by an exception: it
+ * belongs to whoever runs the container, it is not an account, and it has no
+ * self to change. It is also the credential that exists for exactly the
+ * situation this guard prevents.
+ */
+function isSelfLockout(input: { req: Request; targetAccountId: number; lockingOut: boolean }): boolean {
+  if (!input.lockingOut) return false;
+  const principal = getAdminPrincipal(input.req);
+  return principal?.kind === 'account' && principal.accountId === input.targetAccountId;
+}
+
+export interface AdminRoutesOptions {
+  /** Metadata reads. Deliberately not the account store, see `admin/admin-store.ts`. */
+  metadata: AdminMetadataStore;
+  /** Invite minting, reissue and revocation, see `admin/invite-store.ts`. */
+  invites: InviteStore;
+  /** The SAME store the self-service delete path uses. `deleteAccount` and the reset-mail write. */
+  accounts: AccountStore;
+  /**
+   * The blob restore path (M224, ADR-0009). It reaches `sync_blobs` and nothing
+   * else, and it is the only capability on this service that deletes an
+   * accepted write, see `contract-types.ts`.
+   */
+  blobs: SyncBlobRollbackStore;
+  /** The two letters. A no-op on an instance with no mail, which is what makes `link` load-bearing. */
+  mailer: Mailer;
+  /**
+   * Whether mail is CONFIGURED, which the mailer itself cannot tell a caller:
+   * `createNoopMailer` resolves, so a send that did nothing looks exactly like
+   * a send that worked. `emailed` in every response below is this AND a
+   * successful send, never one of the two.
+   */
+  mailConfigured: boolean;
+  /** Where a join link points, or `null` when this instance cannot build one. */
+  links: AdminLinkBases | null;
+  /**
+   * The whole instance's AI ceiling per UTC day, or `null` when it has none.
+   * Reported by `GET /v1/admin/stats` beside the count it bounds.
+   *
+   * IT IS NOT CONFIGURED HERE. `create-app.ts` reads it off the AI surface the
+   * proxy enforces, so the number in the console and the number in the
+   * predicate cannot be two different numbers.
+   */
+  aiInstanceDailyLimit: number | null;
+  /** The scan-trial sub-ceiling (M253), reported beside today's trial requests. Read off the AI surface. */
+  aiTrialInstanceDailyLimit: number | null;
+  /**
+   * The instance's scan trial (M253), or `null`. `"trial": true` on a mint and
+   * the lapsed-trial grant write exactly this pair.
+   */
+  trial: TrialPolicy | null;
+  /**
+   * This instance's member-invite policy (M212), or `null` where members
+   * cannot invite anybody. Its `lifetimeCap` is what turns each account's
+   * `invitesMinted` count into the `invitesLeft` the account view reports.
+   *
+   * IT IS NOT CONFIGURED HERE, for the reason `aiInstanceDailyLimit` above is
+   * not: `create-app.ts` derives it from the same surface
+   * `POST /v1/auth/invites` is mounted on, so the console cannot report a cap
+   * that no route enforces.
+   */
+  memberInvites: MemberInvitePolicy | null;
+  /**
+   * The instance's stored settings (M234), or `null` for a build that wires
+   * none, which takes `PATCH /settings` away and leaves it answering the
+   * ordinary unknown-path 404.
+   *
+   * IT IS NOT CONFIGURED HERE, for the reason `aiInstanceDailyLimit` is not:
+   * `create-app.ts` hands over the SAME surface `/health` publishes from, so a
+   * PATCH and the handshake that follows it on this process cannot report two
+   * different bases.
+   */
+  settings: InstanceSettingsSurface | null;
+  /** Mints the `sr_` token `POST /accounts/:id/reset-mail` writes. Injected so a test can name it. */
+  mintResetToken(): GeneratedToken;
+  /** Injected, like every clock in this repo, so a test can pin "today" and an invite's status. */
+  now(): Date;
+  logger: Logger;
+}
+
+/**
+ * One retained blob version, as an operator reads it.
+ *
+ * A BYTE COUNT, A TIME AND TWO VERSION NUMBERS, and never the ciphertext, which
+ * is the projection ADR-0001 fixes for every blob fact on this surface. What is
+ * new in M224 is `pinnedUntil`: an operator choosing what to restore needs to
+ * know which version the service is deliberately holding, because that is the
+ * one the shrink guard marked as the copy before somebody's diary got smaller.
+ */
+interface AdminBlobVersionView {
+  blobVersion: number;
+  envelopeVersion: number;
+  sizeBytes: number;
+  createdAt: string;
+  pinnedUntil: string | null;
+}
+
+function toBlobVersionView(version: BlobVersionSummary): AdminBlobVersionView {
+  return {
+    blobVersion: version.blobVersion,
+    envelopeVersion: version.envelopeVersion,
+    sizeBytes: version.sizeBytes,
+    createdAt: version.createdAt.toISOString(),
+    pinnedUntil: version.pinnedUntil === null ? null : version.pinnedUntil.toISOString(),
+  };
+}
+
+/**
+ * Why a rollback was refused, in words an operator can act on.
+ *
+ * ONE MAP, EXHAUSTIVE BY `satisfies`, so a refusal added to
+ * `lib/blob-rollback.ts` is a compile error here rather than a `undefined` in
+ * somebody's terminal at the moment they are restoring a diary.
+ */
+const ROLLBACK_REFUSALS = {
+  'no-blob': 'That account has never pushed a blob, so there is nothing to roll back to.',
+  'unknown-version':
+    'No retained version carries that number. Run the version list again: it may have been pruned since you read it.',
+  'already-current': 'That version is already the current one. Nothing was changed.',
+  'unreadable-envelope':
+    'That version was written with an envelope format this service no longer accepts, so no app could read it. Nothing was changed.',
+  'empty-ciphertext':
+    'That version holds no bytes, so restoring it would leave the account unreadable. Nothing was changed.',
+} satisfies Record<RollbackRefusal, string>;
+
+/**
+ * Builds the admin router. It does NOT include authentication, `create-app.ts`
+ * mounts `createAdminAuthMiddleware` in front of it, in the same branch that
+ * decides whether to mount anything at all.
+ */
+export function createAdminRoutes(options: AdminRoutesOptions): Router {
+  const { metadata, accounts, blobs, invites, mailer, links, logger } = options;
+  const router = express.Router();
+
+  /**
+   * Sends one letter and reports whether it went, without ever failing the
+   * request that triggered it.
+   *
+   * THE ROW IS ALREADY WRITTEN by the time this is called, and the link is in
+   * the response either way, so a send failure is a degradation and not an
+   * outage: the operator pastes the link instead. Turning it into a 500 would
+   * throw away a capability that was successfully minted.
+   *
+   * The log line carries the row id and NOTHING else. Not the address, not the
+   * subject, not the link, which is a credential.
+   */
+  async function trySend(input: { send: () => Promise<void>; what: string; id: number }): Promise<boolean> {
+    if (!options.mailConfigured) return false;
+    try {
+      await input.send();
+      return true;
+    } catch (cause) {
+      logger.warn('Mail send failed', {
+        what: input.what,
+        id: input.id,
+        error: cause instanceof Error ? cause.message : 'unknown error',
+      });
+      return false;
+    }
+  }
+
+  router.get(
+    '/accounts',
+    asyncHandler(async (req, res) => {
+      const limit = parseBoundedInteger(queryValue(req, 'limit'), DEFAULT_ADMIN_PAGE_LIMIT, MAX_ADMIN_PAGE_LIMIT);
+      const offset = parseBoundedInteger(queryValue(req, 'offset'), 0, Number.MAX_SAFE_INTEGER);
+      if (!limit.ok || !offset.ok) {
+        res.status(400).json({ error: PAGING_REFUSAL });
+        return;
+      }
+
+      const page = await metadata.listAccounts({
+        limit: limit.value,
+        offset: offset.value,
+        day: utcDayKey(options.now()),
+      });
+      res.status(200).json({
+        accounts: page.accounts.map((summary) =>
+          toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }),
+        ),
+        total: page.total,
+        limit: limit.value,
+        offset: offset.value,
+      });
+    }),
+  );
+
+  // REGISTERED BEFORE `/accounts/:id`, AND THE ORDER IS LOAD-BEARING. Express
+  // matches in registration order, and `expiring` is a literal segment that
+  // the parameterised route below would otherwise swallow and answer 404 for.
+  router.get(
+    '/accounts/expiring',
+    asyncHandler(async (req, res) => {
+      const limit = parseBoundedInteger(queryValue(req, 'limit'), DEFAULT_ADMIN_PAGE_LIMIT, MAX_ADMIN_PAGE_LIMIT);
+      const offset = parseBoundedInteger(queryValue(req, 'offset'), 0, Number.MAX_SAFE_INTEGER);
+      if (!limit.ok || !offset.ok) {
+        res.status(400).json({ error: PAGING_REFUSAL });
+        return;
+      }
+
+      // THE FUTURE IS THE PREDICATE, and the store applies it, so an expired
+      // date is not in the answer at all. A reconciliation reads this list
+      // against its own live subscriptions: an account whose allowance already
+      // ran out is not a disagreement, it is the ordinary end of a paid
+      // period.
+      const page = await metadata.listExpiringAllowances({
+        after: options.now(),
+        limit: limit.value,
+        offset: offset.value,
+      });
+      res.status(200).json({
+        accounts: page.accounts.map(toExpiringAllowanceView),
+        total: page.total,
+        limit: limit.value,
+        offset: offset.value,
+      });
+    }),
+  );
+
+  router.get(
+    '/accounts/:id',
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(options.now()) });
+      if (summary === null) {
+        // THE BILLER GETS THIS 404 TOO, for a deleted account as much as for an
+        // id that never existed, and the two are the same answer because there
+        // is nothing left to tell them apart with. `AccountStore.deleteAccount`
+        // is a cascade, not a tombstone: erasure is the DSAR path, so a
+        // `deletedAt` an admin read could report would be a record of a person
+        // kept after the erasure that was supposed to remove them. A biller
+        // reading 404 stops charging, which is the correct action for both
+        // cases.
+        sendNotFound(res);
+        return;
+      }
+      if (getAdminPrincipal(req)?.kind === 'service') {
+        res.status(200).json({ account: toServiceAccountView(summary) });
+        return;
+      }
+      res
+        .status(200)
+        .json({ account: toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }) });
+    }),
+  );
+
+  router.get(
+    '/accounts/:id/activity',
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const days = parseActivityWindowDays(queryValue(req, 'days'));
+      if (!days.ok) {
+        // A cap is not an error, so the sentence names only what was refused:
+        // a longer window is answered, and the answer says which one it drew.
+        res.status(400).json({ error: 'days must be an integer of at least 1' });
+        return;
+      }
+
+      const now = options.now();
+      // THE ACCOUNT IS READ FIRST, for two reasons: an unknown id must be the
+      // same 404 every other account route gives, and `lastSeenAt` comes off
+      // the same projection the account endpoints use rather than off a second
+      // query that could disagree with it.
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(now) });
+      if (summary === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const window = activityWindow({ now, days: days.value });
+      const counted = await metadata.accountActivity({
+        accountId,
+        fromDay: window.fromDay,
+        toDay: window.toDay,
+      });
+
+      const view: AdminAccountActivityView = {
+        accountId,
+        lastSeenAt: summary.lastSeenAt?.toISOString() ?? null,
+        window: { days: window.days, fromDay: window.fromDay, toDay: window.toDay },
+        // Zero-filled, so a day with no activity and a day outside the answer
+        // cannot look the same to whoever reads it.
+        days: zeroFillActivityDays({ window, counted }),
+      };
+      res.status(200).json(view);
+    }),
+  );
+
+  /**
+   * The same strip for a whole page of accounts, so a people list does not
+   * fetch one per row.
+   *
+   * IT PAGES LIKE `GET /accounts`, on purpose: same defaults, same bounds, same
+   * `400`. A caller holding page two of the accounts list asks for page two
+   * here and the two answers line up row by row, because both orders come from
+   * the same `listAccounts` call underneath.
+   *
+   * EVERY ACCOUNT ON THE PAGE IS IN THE ANSWER, even one that has never made a
+   * request. Omitting it would make "this person did nothing" and "this person
+   * was not in the answer" the same fact, which is the mistake the zero-fill
+   * exists to prevent, one level up. See `admin/account-activity.ts`.
+   */
+  router.get(
+    '/activity',
+    asyncHandler(async (req, res) => {
+      const limit = parseBoundedInteger(queryValue(req, 'limit'), DEFAULT_ADMIN_PAGE_LIMIT, MAX_ADMIN_PAGE_LIMIT);
+      const offset = parseBoundedInteger(queryValue(req, 'offset'), 0, Number.MAX_SAFE_INTEGER);
+      if (!limit.ok || !offset.ok) {
+        res.status(400).json({ error: PAGING_REFUSAL });
+        return;
+      }
+
+      const days = parseActivityWindowDays(queryValue(req, 'days'));
+      if (!days.ok) {
+        res.status(400).json({ error: 'days must be an integer of at least 1' });
+        return;
+      }
+
+      const now = options.now();
+      // THE ACCOUNTS COME FIRST, and their order is the answer's order: this
+      // endpoint reports on the page that list returns, so it must ask that
+      // list rather than assemble a page of its own.
+      const page = await metadata.listAccounts({
+        limit: limit.value,
+        offset: offset.value,
+        day: utcDayKey(now),
+      });
+      const accountIds = page.accounts.map((summary) => summary.id);
+
+      const window = activityWindow({ now, days: days.value });
+      // ONE call for the whole page, never one per account.
+      const counted = await metadata.activityForAccounts({
+        accountIds,
+        fromDay: window.fromDay,
+        toDay: window.toDay,
+      });
+
+      const view: AdminActivityPageView = {
+        window: { days: window.days, fromDay: window.fromDay, toDay: window.toDay },
+        accounts: zeroFillActivityStrips({ window, accountIds, counted }),
+        total: page.total,
+      };
+      res.status(200).json(view);
+    }),
+  );
+
+  router.patch(
+    '/accounts/:id',
+    express.json({ limit: 4 * 1024 }),
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      // SAFETY: `express.json()` above has already parsed this body, so it is
+      // JSON-shaped by construction; `asObject` re-establishes that at the type
+      // level and yields `null` for anything that is not an object.
+      const body = asObject(req.body as JsonValue) ?? {};
+
+      // THE BILLER'S FIELD SCOPE, BEFORE ANYTHING IS PARSED OR WRITTEN. A body
+      // that names `role`, `suspended` or `displayName` is refused WHOLE, and
+      // the two allowed keys beside it are not written either: a partial write
+      // would leave the caller believing it did the thing it was refused. The
+      // list lives in `server/service-principal-scope.ts` with the route allow
+      // list, so there is one answer to what this credential can change.
+      if (getAdminPrincipal(req)?.kind === 'service') {
+        const outOfScope = Object.keys(body).filter((key) => !SERVICE_PRINCIPAL_PATCH_FIELDS.includes(key));
+        if (outOfScope.length > 0) {
+          res.status(403).json({ error: SERVICE_FIELD_REFUSAL });
+          return;
+        }
+      }
+
+      const patch = parseAccountPatch(body);
+      if (!patch.ok) {
+        res.status(400).json({ error: patch.reason });
+        return;
+      }
+      if (Object.keys(patch.value).length === 0) {
+        // An empty PATCH is a caller that believes it changed something. Same
+        // rule the auth-side `PATCH /v1/auth/account` applies to an absent key:
+        // silence must never read as consent.
+        res.status(400).json({
+          error:
+            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, trialScans, suspended, displayName',
+        });
+        return;
+      }
+
+      const { allowanceExpiresAt, displayName, role, dailyAiLimit, suspended, trialScans } = patch.value;
+      // Demoting or suspending oneself is the lockout; a rename is not.
+      if (isSelfLockout({ req, targetAccountId: accountId, lockingOut: suspended === true || role === 'member' })) {
+        res.status(400).json({ error: 'self-change' });
+        return;
+      }
+
+      const now = options.now();
+      // Standing first, so a request that both suspends and renames leaves the
+      // account suspended even if a later write were to fail.
+      if (suspended === true) {
+        const changed = await accounts.suspendAccount({ accountId, suspendedAt: now });
+        if (changed === null) {
+          sendNotFound(res);
+          return;
+        }
+      }
+      if (suspended === false) {
+        const changed = await accounts.reactivateAccount(accountId);
+        if (changed === null) {
+          sendNotFound(res);
+          return;
+        }
+      }
+      if (
+        role !== undefined ||
+        dailyAiLimit !== undefined ||
+        allowanceExpiresAt !== undefined ||
+        trialScans !== undefined ||
+        displayName !== undefined
+      ) {
+        const changed = await accounts.updateStanding({
+          accountId,
+          role,
+          dailyAiLimit,
+          allowanceExpiresAt,
+          trialScans,
+          displayName,
+        });
+        if (changed === null) {
+          sendNotFound(res);
+          return;
+        }
+      }
+
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(now) });
+      if (summary === null) {
+        sendNotFound(res);
+        return;
+      }
+      // The account id, never the values: a display name is personal data and a
+      // role change is already legible from the row.
+      logger.info('Account changed by admin', { accountId });
+      res
+        .status(200)
+        .json({ account: toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }) });
+    }),
+  );
+
+  router.delete(
+    '/accounts/:id',
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      // Deleting oneself is the most complete lockout there is, and unlike a
+      // suspension it cannot be undone.
+      if (isSelfLockout({ req, targetAccountId: accountId, lockingOut: true })) {
+        res.status(400).json({ error: 'self-change' });
+        return;
+      }
+
+      // Read first, so a deletion of an id that never existed is a 404 rather
+      // than a 204 that an operator would read as "erased".
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(options.now()) });
+      if (summary === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      // THE SHARED ERASURE PATH. See the module header.
+      //
+      // erasure is one cascade. This route does not call openplate-billing on
+      // the delete path (M213/04): the gateway must not know a ledger
+      // exists, and a synchronous call here would make erasure depend on a
+      // remote. openplate-billing's nightly reconciliation (M213/06) finds a
+      // subscription with no covering account and cancels it, bounding the
+      // exposure to one night. The billing principal calling
+      // `GET /v1/admin/accounts/:id` for an erased id gets the ordinary 404
+      // above (see the comment at the GET route), and that 404 is the
+      // signal, not a field on this response.
+      await accounts.deleteAccount(accountId);
+      // The account id is the correlation handle; the address is not logged,
+      // here or anywhere (`logger.ts`).
+      logger.info('Account deleted by admin with all sync data', { accountId });
+      res.status(204).end();
+    }),
+  );
+
+  // ---------------------------------------------------------------------------
+  // The blob restore path (M224, ADR-0009)
+  // ---------------------------------------------------------------------------
+
+  router.get(
+    '/accounts/:id/blob/versions',
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+      // The account is read FIRST, so a version list for an id that never
+      // existed is the ordinary 404 and not an empty array an operator would
+      // read as "this person has never synced".
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(options.now()) });
+      if (summary === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const versions = await blobs.listBlobVersions(accountId);
+      res.status(200).json({ versions: versions.map(toBlobVersionView) });
+    }),
+  );
+
+  router.post(
+    '/accounts/:id/blob/rollback',
+    // PER ROUTE, like every other body on this router. There is no parser over
+    // the admin tree, so a route that forgets this one line reads `undefined`
+    // and refuses every well-formed request as a malformed one.
+    express.json({ limit: 4 * 1024 }),
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      // SAFETY: `express.json()` above has already parsed this body, so it is
+      // JSON-shaped by construction; `asObject` re-establishes that at the type
+      // level and yields `null` for anything that is not an object.
+      const body = asObject(req.body as JsonValue) ?? {};
+      const targetVersion = asNumber(body.targetVersion);
+      if (targetVersion === null || !Number.isInteger(targetVersion) || targetVersion < 1) {
+        res.status(400).json({ error: 'targetVersion must be a positive integer' });
+        return;
+      }
+
+      const summary = await metadata.getAccount({ accountId, day: utcDayKey(options.now()) });
+      if (summary === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const result = await blobs.rollbackToVersion({ accountId, targetVersion });
+      if (!result.ok) {
+        // A REFUSAL, NOT A 404. The account exists and the operator's request
+        // was understood; what it asked for would leave somebody's only copy
+        // unreadable, or was a no-op. Saying which is the whole value of this
+        // response, see `ROLLBACK_REFUSALS`.
+        res.status(400).json({ error: ROLLBACK_REFUSALS[result.reason] });
+        return;
+      }
+
+      // The account id and the numbers, never a byte and never an address.
+      // A restore deletes accepted writes, so it is the one operator action
+      // here that has to be legible in a log afterwards.
+      logger.info('Blob rolled back by admin', {
+        accountId,
+        blobVersion: result.blobVersion,
+        discarded: result.discardedVersions.length,
+      });
+      res.status(200).json({ blobVersion: result.blobVersion, discardedVersions: result.discardedVersions });
+    }),
+  );
+
+  router.post(
+    '/accounts/:id/reset-mail',
+    asyncHandler(async (req, res) => {
+      const accountId = parseAccountId(req.params.id ?? '');
+      if (accountId === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      const account = await accounts.findAccountById(accountId);
+      if (account === null) {
+        sendNotFound(res);
+        return;
+      }
+
+      // THE SAME WRITE `POST /v1/auth/reset/request` PERFORMS, through the
+      // same store method, so the two paths cannot drift about the TTL or
+      // about superseding an older live token. What differs is only who asked:
+      // there, the person; here, an operator on their behalf.
+      //
+      // It is NOT throttled and does not need to be: reaching this route
+      // already requires the admin credential.
+      const now = options.now();
+      const token = options.mintResetToken();
+      const expiresAt = computeExpiry(now, RESET_TOKEN_TTL_MS);
+      await accounts.createPasswordReset({ accountId, tokenHash: token.hash, expiresAt, now });
+
+      const emailed = await trySend({
+        what: 'reset',
+        id: accountId,
+        send: () =>
+          mailer.sendReset({ email: account.email, resetToken: token.raw, expiresAt: expiresAt.toISOString() }),
+      });
+
+      // THE LINK ONLY WHEN NO LETTER WENT. On an instance with mail the
+      // operator has no business holding a capability that opens somebody
+      // else's recovery code; on one without, handing it over is the only way
+      // the person gets back in.
+      const link = emailed ? null : buildResetLink({ links, token: token.raw });
+      logger.info('Password reset mailed by admin', { accountId, emailed });
+      res.status(202).json({ emailed, link });
+    }),
+  );
+
+  // ---------------------------------------------------------------------------
+  // The lapsed day trials (M253)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * `POST /trials/grant-lapsed`: gives the instance's scan trial to every
+   * account whose DAY trial ran out and was never paid for, once, at the
+   * switch from the three day trial to the ten free scans. The owner decided
+   * this on 2026-09-23.
+   *
+   * A DRY RUN UNLESS `apply` IS `true`. The dry run lists the account ids, so
+   * the operator can hold them against the biller's subscription table before
+   * anything is written, and pass the ones to spare in `excludeAccountIds`.
+   *
+   * IDEMPOTENT. A granted account has a scan trial, and the selection skips
+   * every account that has one, so a second run lists nothing. What "never
+   * paid" means, and why it errs toward the paying side, is on
+   * `AccountStore.findLapsedDayTrials`.
+   *
+   * A ROUTE AND NOT A MIGRATION, on purpose: a migration runs when the image
+   * boots, which is the dark release, days before the terms that promise the
+   * scans are live. This runs when the operator runs it.
+   */
+  router.post(
+    '/trials/grant-lapsed',
+    express.json({ limit: 16 * 1024 }),
+    asyncHandler(async (req, res) => {
+      if (options.trial === null) {
+        res
+          .status(409)
+          .json({ error: 'this instance runs no scan trial: set TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT first' });
+        return;
+      }
+      // SAFETY: `express.json()` above has already parsed this body, so it is
+      // JSON-shaped by construction; `asObject` re-establishes that at the type
+      // level and yields `null` for anything that is not an object.
+      const body = asObject(req.body as JsonValue) ?? {};
+      const parsed = parseLapsedGrant(body);
+      if (!parsed.ok) {
+        res.status(400).json({ error: parsed.reason });
+        return;
+      }
+
+      const now = options.now();
+      const found = await accounts.findLapsedDayTrials({ trialDays: parsed.trialDays, now });
+      const candidates = found.filter((id) => !parsed.exclude.has(id));
+      if (!parsed.apply) {
+        res.status(200).json({ accountIds: candidates, applied: false });
+        return;
+      }
+
+      const granted: number[] = [];
+      for (const accountId of candidates) {
+        const changed = await accounts.grantScanTrialToLapsedDayTrial({
+          accountId,
+          trialDays: parsed.trialDays,
+          now,
+          trial: options.trial,
+        });
+        if (changed) granted.push(accountId);
+      }
+      // A count, never the ids and never an address.
+      logger.info('Lapsed day trials given the scan trial', { granted: granted.length });
+      res.status(200).json({ accountIds: granted, applied: true });
+    }),
+  );
+
+  router.get(
+    '/stats',
+    asyncHandler(async (_req, res) => {
+      res.status(200).json({
+        stats: toStatsView({
+          stats: await metadata.stats({ now: options.now() }),
+          aiInstanceDailyLimit: options.aiInstanceDailyLimit,
+          aiTrialInstanceDailyLimit: options.aiTrialInstanceDailyLimit,
+        }),
+      });
+    }),
+  );
+
+  // ---------------------------------------------------------------------------
+  // Invites (M166)
+  // ---------------------------------------------------------------------------
+
+  router.post(
+    '/invites',
+    express.json({ limit: 4 * 1024 }),
+    asyncHandler(async (req, res) => {
+      // SAFETY: `express.json()` above has already parsed this body, so it is
+      // JSON-shaped by construction; `asObject` re-establishes that at the type
+      // level and yields `null` for anything that is not an object.
+      const body = asObject(req.body as JsonValue) ?? {};
+
+      // THE SAME PARSER THE SIGNUP PATH USES. An address canonicalised one way
+      // at mint and another way at lookup is an invite for an account nobody
+      // can find, so there is exactly one `parseEmail` in this repo.
+      const email = parseEmail(body.email);
+      if (!email.ok) {
+        res.status(400).json({ error: email.reason });
+        return;
+      }
+      const displayName = parseDisplayName(body.displayName);
+      if (!displayName.ok) {
+        res.status(400).json({ error: displayName.reason });
+        return;
+      }
+
+      const role = body.role ?? 'member';
+      if (!isAccountRole(role)) {
+        res.status(400).json({ error: 'role must be "admin" or "member"' });
+        return;
+      }
+
+      // THE SCAN TRIAL (M253): `"trial": true` writes the instance's pair,
+      // and nothing else about AI may be named beside it. Without the field
+      // this mint is exactly what it was: a standing grant.
+      const grant = parseMintGrant({ body, trial: options.trial });
+      if (!grant.ok) {
+        res.status(400).json({ error: grant.reason });
+        return;
+      }
+
+      const ttl = parseInviteTtl(body.expiresInDays);
+      if (!ttl.ok) {
+        res.status(400).json({ error: `expiresInDays must be an integer between 1 and ${MAX_INVITE_TTL_DAYS}` });
+        return;
+      }
+
+      const now = options.now();
+      const minted = await invites.mint({
+        email: email.value,
+        displayName: displayName.value,
+        role,
+        dailyAiLimit: grant.dailyAiLimit,
+        // The store writes `0` for a mailbox that already had its trial.
+        trialScans: grant.trialScans,
+        expiresAt: new Date(now.getTime() + ttl.value),
+        now,
+        // `null` IS THE OPERATOR, and it is what makes this door exempt from
+        // the member cap and from the re-invite rule (M212). An operator
+        // re-inviting somebody who left and came back is the case the
+        // exemption exists for.
+        invitedByAccountId: null,
+        source: null,
+      });
+      if (!minted.ok) {
+        // The one place this service confirms that an address holds an account,
+        // and it is behind the admin credential rather than in front of a
+        // stranger. Refusing is right: an invite for an existing account would
+        // redeem into a `409` the invited person could do nothing about.
+        res.status(409).json({ error: 'an account already exists for this email' });
+        return;
+      }
+
+      const link = buildJoinLink({ links, token: minted.minted.token });
+      const emailed = await trySend({
+        what: 'invite',
+        id: minted.minted.invite.id,
+        send: () =>
+          mailer.sendInvite({
+            email: email.value,
+            displayName: displayName.value,
+            inviteToken: minted.minted.token,
+            expiresAt: minted.minted.invite.expiresAt.toISOString(),
+          }),
+      });
+
+      // THE ONE RESPONSE IN THIS SERVICE THAT CARRIES A FRESH SECRET. It is an
+      // operator-born capability, born here and stored only as a digest, see
+      // ADR-0001. The token is never logged, here or in `logger.ts`.
+      logger.info('Signup invite minted', { inviteId: minted.minted.invite.id });
+
+      // THE RAW TOKEN ONLY WHEN THERE IS NO LINK TO CARRY IT. An instance with
+      // a link has already put the capability in a form the operator can paste;
+      // returning it twice would put the same secret in one more place. Built
+      // in two statements rather than as a conditional spread, so the omission
+      // is a line a reader sees rather than a `{}` they have to decode.
+      const mintResponse: MintInviteResponse = {
+        invite: toInviteView(minted.minted.invite, now),
+        emailed,
+        link,
+      };
+      if (link === null) mintResponse.token = minted.minted.token;
+      res.status(201).json(mintResponse);
+    }),
+  );
+
+  router.get(
+    '/invites',
+    asyncHandler(async (req, res) => {
+      const limit = parseBoundedInteger(queryValue(req, 'limit'), DEFAULT_ADMIN_PAGE_LIMIT, MAX_ADMIN_PAGE_LIMIT);
+      const offset = parseBoundedInteger(queryValue(req, 'offset'), 0, Number.MAX_SAFE_INTEGER);
+      if (!limit.ok || !offset.ok) {
+        res.status(400).json({ error: PAGING_REFUSAL });
+        return;
+      }
+
+      const now = options.now();
+      const page = await invites.list({ limit: limit.value, offset: offset.value });
+      res.status(200).json({
+        invites: page.invites.map((invite) => toInviteView(invite, now)),
+        total: page.total,
+        limit: limit.value,
+        offset: offset.value,
+      });
+    }),
+  );
+
+  router.post(
+    '/invites/:id/resend',
+    asyncHandler(async (req, res) => {
+      const inviteId = parseAccountId(req.params.id ?? '');
+      if (inviteId === null) {
+        res.status(404).json({ error: 'no such invite' });
+        return;
+      }
+
+      const now = options.now();
+      // A NEW token on the SAME row, which kills the old link: an operator
+      // resending is saying the first letter did not arrive, not "invite this
+      // person twice". The expiry restarts from now, because a link that
+      // arrives on the day the original would have died is not a resend.
+      const reissued = await invites.reissue({
+        inviteId,
+        expiresAt: new Date(now.getTime() + DEFAULT_INVITE_TTL_MS),
+      });
+      if (reissued === null) {
+        // Never existed, already redeemed, or already revoked. One answer for
+        // all three: a redeemed invite is an audit record with no capability
+        // left in it, and there is nothing to resend either way.
+        res.status(404).json({ error: 'no such unredeemed invite' });
+        return;
+      }
+
+      const link = buildJoinLink({ links, token: reissued.token });
+      const emailed = await trySend({
+        what: 'invite',
+        id: reissued.invite.id,
+        send: () =>
+          mailer.sendInvite({
+            email: reissued.invite.email,
+            displayName: reissued.invite.displayName,
+            inviteToken: reissued.token,
+            expiresAt: reissued.invite.expiresAt.toISOString(),
+          }),
+      });
+
+      logger.info('Signup invite resent', { inviteId: reissued.invite.id });
+      const resendResponse: MintInviteResponse = {
+        invite: toInviteView(reissued.invite, now),
+        emailed,
+        link,
+      };
+      // The raw token ONLY when there is no link to carry it, exactly as the
+      // mint route decides it.
+      if (link === null) resendResponse.token = reissued.token;
+      res.status(202).json(resendResponse);
+    }),
+  );
+
+  router.delete(
+    '/invites/:id',
+    asyncHandler(async (req, res) => {
+      const inviteId = parseAccountId(req.params.id ?? '');
+      if (inviteId === null) {
+        res.status(404).json({ error: 'no such invite' });
+        return;
+      }
+
+      // `false` covers "never existed", "already redeemed" and "already
+      // revoked". A spent invite is kept as the audit record of where an
+      // account came from, and there is no capability left in it to withdraw.
+      const revoked = await invites.revoke({ inviteId, revokedAt: options.now() });
+      if (!revoked) {
+        res.status(404).json({ error: 'no such unredeemed invite' });
+        return;
+      }
+      logger.info('Signup invite revoked', { inviteId });
+      res.status(204).end();
+    }),
+  );
+
+  /**
+   * `PATCH /v1/admin/settings`, the one endpoint on this service that changes
+   * what an instance is without a redeploy (M234).
+   *
+   * BEHIND THE SAME DOOR AS EVERYTHING ELSE HERE and behind nothing else: the
+   * admin middleware `create-app.ts` mounts in front of this router is what
+   * authenticates it, and the service-principal scope refuses it by default
+   * because it is not in that allow list. A biller may move an allowance; it
+   * may not decide which country's nutrition advice an instance shows.
+   *
+   * THE VALUE IS CHECKED AGAINST THE THREE NAMES, TWICE. Here, so a typo is a
+   * 400 with the alternatives in it and NOTHING is written, and again by the
+   * check constraint on the column, because what this decides is a set of
+   * numbers a person is shown beside their food.
+   *
+   * WHAT IT ANSWERS WITH IS WHAT THE PROCESS NOW HOLDS, read back off the same
+   * surface `/health` publishes from rather than echoed from the request body:
+   * a response that quoted the request would say "changed" for a write that
+   * did not land.
+   */
+  router.patch(
+    '/settings',
+    express.json({ limit: 4 * 1024 }),
+    asyncHandler(async (req, res) => {
+      const settings = options.settings;
+      if (settings === null) {
+        // This build wires no settings surface, so the endpoint does not exist
+        // here: the ordinary unknown-path answer, never a 501 announcing a
+        // feature that is merely off.
+        handleNotFound(req, res);
+        return;
+      }
+
+      // SAFETY: `express.json()` above has already parsed this body, so it is
+      // JSON-shaped by construction; `asObject` re-establishes that at the type
+      // level and yields `null` for anything that is not an object.
+      const body = asObject(req.body as JsonValue) ?? {};
+      const basis = body.nutrientReferenceBasis;
+      if (basis === undefined) {
+        // An empty PATCH is a caller that believes it changed something, and
+        // it is refused for the reason `PATCH /accounts/:id` refuses one.
+        res.status(400).json({ error: 'a patch must name nutrientReferenceBasis' });
+        return;
+      }
+      if (!isNutrientReferenceBasis(basis)) {
+        res.status(400).json({
+          error: `nutrientReferenceBasis must be one of ${NUTRIENT_REFERENCE_BASES.join(', ')}`,
+        });
+        return;
+      }
+
+      await settings.set({ nutrientReferenceBasis: basis });
+      // The choice, never who made it: this is an instance-wide setting and the
+      // value is published unauthenticated on `/health` anyway.
+      logger.info('Instance settings changed by admin', { nutrientReferenceBasis: basis });
+      res.status(200).json({ settings: { nutrientReferenceBasis: settings.current() } });
+    }),
+  );
+
+  return router;
+}

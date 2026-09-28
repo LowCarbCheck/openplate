@@ -1,0 +1,234 @@
+name: Release Image
+
+# Builds and publishes the self-host image to GHCR on every push to `main`
+# (moving `latest`) and on version tags (`v*`, e.g. `v0.1.0`).
+#
+# The package stays PRIVATE until this repo is flipped to public visibility.
+# The workflow needs no change when that happens, it already publishes to the
+# right place under the right name; only the package's visibility setting has
+# to move.
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ── Resolve the ref to the COMMIT it points at ─────────────────
+  # The build job below serialises on the commit, so it needs a value that is
+  # the same for the `main` push and for the `v*` tag push of one release.
+  # `github.sha` is NOT that value. For an ANNOTATED tag the ref points at a tag
+  # OBJECT with its own SHA, so the two runs would key on different values, land
+  # in different groups, and race exactly as they do today, while the workflow
+  # file still looked correct and every static check still passed.
+  #
+  # This is not hypothetical. Both repositories have shipped annotated tags
+  # recently: openplate v0.15.0 and v0.14.0, openplate-sync v0.8.0, v0.7.0,
+  # v0.6.2 and v0.6.1. There is no rule anywhere that says which style to use.
+  # Rather than making the fix depend on a habit, this job removes the variable.
+  #
+  # `actions/checkout` puts the target COMMIT at HEAD for a branch, a
+  # lightweight tag and an annotated tag alike, so `git rev-parse HEAD` is the
+  # one value all three agree on.
+  resolve-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve the ref to its commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    needs: resolve-commit
+    runs-on: ubuntu-latest
+
+    # ── Why this job queues ─────────────────────────────────────
+    # A coordinated release pushes `main` and then the `v*` tag seconds later.
+    # Both refs point at the SAME commit, so both start this job. On 2026-09-08
+    # the second one to start missed the first one's not yet exported buildx
+    # cache and rebuilt linux/arm64 under QEMU from nothing: openplate v0.17.0
+    # sat 42 minutes and never finished, openplate-sync v0.9.0 sat 26 minutes.
+    # A warm run of this step takes under 3 minutes.
+    #
+    # The group is keyed on the COMMIT, resolved by the job above rather than
+    # taken from `github.sha`. Not on the ref, because the branch push and the
+    # tag push carry different refs and must land in ONE group. Not on the
+    # repository, because that is wider than the problem: it would queue every
+    # ordinary push to `main` behind every other one, and GitHub keeps
+    # only ONE run waiting per group. A newer arrival evicts an older waiting
+    # run even when cancel-in-progress is false, so a wide key could DROP a
+    # release build rather than delay it. Keying on the commit bounds this
+    # queue at two, the branch run and the tag run, so nothing is ever evicted.
+    #
+    # cancel-in-progress MUST stay false. Cancelling a release run is the
+    # failure this block exists to prevent; see the dispatch-website note below.
+    #
+    # EXPECT a release to take about twice one build now, roughly 5 to 8 minutes
+    # end to end, because the tag run starts only after the branch run finishes.
+    # A job held here reads "Queued" in the Actions UI. Queued is not hung. Do
+    # not cancel it.
+    concurrency:
+      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      cancel-in-progress: false
+
+    # Ordering the two runs cannot stop a stall from a GHCR outage or a poisoned
+    # cache, and a stuck job now holds the group instead of only hurting itself.
+    # GitHub's own default would let it sit for six hours. 45 clears the slowest
+    # real cold arm64 build on record (42 minutes) and still fails a genuine
+    # hang inside the hour.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Derive image tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-,format=short
+
+      # ── Copy, do not rebuild ──────────────────────────────────
+      # A coordinated release pushes `main` and then the `v*` tag at the same commit,
+      # and the concurrency group makes the tag run start only after the branch run
+      # has finished or failed. So whatever the branch run published is a SETTLED
+      # fact by the time this runs, never a race, and a registry lookup here is
+      # exact. That is what makes copying safe at all.
+      #
+      # If the commit already has a two platform `sha-` image, the semver tag becomes
+      # a manifest COPY of it: seconds, no layers pushed, no cache exported. Every
+      # other case falls through to the build below and behaves exactly as it does
+      # today: no image, a pruned image, a single platform image, or a copy that
+      # failed. A SINGLE PLATFORM source is never copied, because that would silently
+      # drop `linux/arm64` from the release, and self-hosters on a Raspberry Pi or an
+      # ARM VPS pull that platform.
+      #
+      # Tagging an OLD commit lands here too, and copying is the more faithful answer
+      # than a fresh build: the `sha-` image is what that commit actually produced,
+      # against the base image of that day.
+      #
+      # The source is keyed on the RESOLVED commit, never on `github.sha`, for the
+      # same reason the group is: an annotated tag's `github.sha` is the tag OBJECT,
+      # and no `sha-` image is ever published under it.
+      #
+      # `latest` is untouched. It is emitted only with `enable={{is_default_branch}}`,
+      # so a tag run never moved it and still does not.
+      #
+      # A copy carries the source's OCI labels, whose version says the `sha-` tag.
+      # `--annotation` rewrites that one value on the new index so the semver tag
+      # states its own version.
+      #
+      # No wait is needed here, unlike in `openplate`: this one job does the
+      # whole build and it holds the plain group itself, so the tag run cannot
+      # start until the branch run has finished and the lookup below is already
+      # a settled answer.
+      - name: Reuse the branch image if it published
+        id: reuse
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          SHA: ${{ needs.resolve-commit.outputs.sha }}
+        run: |
+          set -uo pipefail
+          src="$IMAGE:sha-${SHA:0:7}"
+          version="${GITHUB_REF_NAME#v}"
+          plats=$(docker buildx imagetools inspect "$src" \
+            --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}' 2>/dev/null || true)
+          echo "source $src carries: ${plats:-<no image>}"
+          case "$plats" in
+            *linux/amd64*linux/arm64*|*linux/arm64*linux/amd64*) ;;
+            *)
+              echo "::notice::no two platform image at $src, so this release builds instead"
+              echo "done=false" >> "$GITHUB_OUTPUT"
+              exit 0 ;;
+          esac
+          if docker buildx imagetools create \
+            --annotation "index:org.opencontainers.image.version=$version" \
+            -t "$IMAGE:$version" "$src"; then
+            docker buildx imagetools inspect "$IMAGE:$version"
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::the copy of $src failed, so this release builds instead"
+            echo "done=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # arm64 matters here: a meaningful share of self-hosters run this on a
+      # Raspberry Pi or an ARM VPS.
+      - name: Build and push (linux/amd64, linux/arm64)
+        if: steps.reuse.outputs.done != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  # ── Tell the website ───────────────────────────────────────────────────────
+  # openplate.de quotes this repository's README table and `docs/*.md`, and it
+  # quotes them at the latest published release rather than at `main`, because
+  # the site documents what a reader can install. This dispatch is what makes
+  # that immediate instead of up to a day late; the site also syncs daily, so a
+  # missed dispatch heals itself.
+  #
+  # NO `needs:`. It runs beside the image build, not after it. The v0.10.0 and
+  # v0.10.1 tag runs of openplate both HUNG in "Build and push" (M192
+  # follow-up), and a dispatch waiting on that job would have been eaten by the
+  # hang. Nothing about re-quoting the docs depends on an image existing.
+  #
+  # IT CARRIES THE TAG FOR THE RECORD AND NOTHING ELSE READS IT. Which release
+  # the site documents is decided in one place, `highestTag` in the site's
+  # sync-docs.ts, which takes the highest vX.Y.Z tag. A tag passed as an
+  # instruction would be a second answer to that question.
+  #
+  # The credential is a fine-grained PAT and those expire inside a year; when it
+  # does, this 401s. Nothing depends on this job, so a marketing site not
+  # hearing about a release can never fail one.
+  dispatch-website:
+    runs-on: ubuntu-latest
+    # Tags only, and no prerelease: the site only ever quotes a released line.
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+    steps:
+      - name: Ask openplate.de to re-quote the docs
+        env:
+          GH_TOKEN: ${{ secrets.OPENPLATE_WEBSITE_DISPATCH_TOKEN }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY_OWNER}/openplate-website/dispatches" \
+            -f event_type=openplate-released \
+            -f "client_payload[repo]=${GITHUB_REPOSITORY#*/}" \
+            -f "client_payload[tag]=$GITHUB_REF_NAME"

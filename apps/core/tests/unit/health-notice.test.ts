@@ -1,0 +1,174 @@
+/**
+ * The `/health` handshake: the operator's notice (M181 spec 07) and the
+ * instance block (M192).
+ *
+ * Boots the REAL app with fake stores, because the property under test is a
+ * PUBLICATION property, "an instance with nothing to say sends no field at
+ * all", and a test that built the response object itself could not observe
+ * it. The absence branch is the one that matters: a client older than this
+ * field must parse the body exactly as before, and an `undefined` that
+ * survives `JSON.stringify` is the difference between that and a `null` an
+ * older decoder may reject.
+ */
+import { after, test } from 'node:test';
+import assert from 'node:assert/strict';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { createApp } from '../../src/server/create-app.js';
+import { isProtocolHandshake, PROTOCOL_VERSION, type InstanceInfo, type OperatorNotice } from '../../src/protocol.js';
+import { asObject, type JsonObject, type JsonValue } from '../../src/lib/json.js';
+import { createThrottleStore } from '../../src/lib/throttle.js';
+import { createSilentLogger } from '../../src/logger.js';
+import { createAuthFixture } from './auth-context-fixture.js';
+import { createFakeStorageAdapter } from './fake-storage-adapter.js';
+import { createFakeRotationStore } from './fake-rotation-store.js';
+import { createFakePulseStore } from './fake-pulse-store.js';
+import { createFakeLegalDeclarationsStore } from './fake-legal-declarations-store.js';
+import { createFakeAdminStore } from './fake-admin-store.js';
+import { createFakeInviteStore } from './fake-invite-store.js';
+import { createFakeBlobRollbackStore } from './fake-blob-rollback-store.js';
+
+const servers: Server[] = [];
+
+/** A minimal instance block with one field under test, so a case names only what it is about. */
+function instanceInfo({ plans }: { plans: boolean }): InstanceInfo {
+  return {
+    name: 'openplate',
+    language: 'en',
+    mail: false,
+    memberInvites: false,
+    openSignup: false,
+    healthConsent: null,
+    ai: null,
+    plans,
+    push: false,
+  };
+}
+
+after(async () => {
+  await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+});
+
+/** Reads `/health` off a real listening app configured with (or without) a notice and an instance block. */
+async function readHandshake(notice: OperatorNotice | null, instance: InstanceInfo | null = null): Promise<JsonObject> {
+  const fixture = createAuthFixture();
+  const app = createApp({
+    authContext: fixture.ctx,
+    storage: createFakeStorageAdapter(),
+    rotation: createFakeRotationStore(),
+    // Required on every app. The pulse has no operator flag, so a harness that
+    // is not about it still has to hand one over. See ADR-0007.
+    pulse: createFakePulseStore(),
+    legal: { store: createFakeLegalDeclarationsStore() },
+    throttle: createThrottleStore({ freeAttempts: 10_000, baseLockoutMs: 1, maxLockoutMs: 1, attemptResetMs: 1 }),
+    logger: createSilentLogger(),
+    trustProxy: false,
+    notice,
+    instance,
+    admin: {
+      token: null,
+      blobs: createFakeBlobRollbackStore(),
+      metadata: createFakeAdminStore(),
+      invites: createFakeInviteStore(),
+    },
+  });
+  const server = app.listen(0);
+  servers.push(server);
+  await new Promise<void>((resolve) => server.once('listening', resolve));
+  const address = server.address();
+  if (address === null) throw new Error('expected a listening server');
+  // SAFETY: `listen(0)` binds a TCP port; Node only returns a string address
+  // for a Unix domain socket, which this never opens.
+  const { port } = address as AddressInfo;
+
+  const response = await fetch(`http://127.0.0.1:${port}/health`);
+  assert.equal(response.status, 200);
+  const body: JsonValue = await response.json();
+  // Decoded at the boundary rather than asserted into shape: a body that is
+  // not a JSON object is a failure of this endpoint, not of the assertion
+  // below it.
+  const decoded = asObject(body);
+  assert.ok(decoded !== null, 'the handshake body must be a JSON object');
+  return decoded;
+}
+
+test('an instance with no notice sends no notice field, and stays readable to an older client', async () => {
+  const body = await readHandshake(null);
+
+  assert.ok(!('notice' in body), 'a configured-nothing instance must not add a field to the healthcheck body');
+  // The rest of the handshake is untouched, this is an additive change or it
+  // is a compatibility break wearing its clothes. `isProtocolHandshake` is the
+  // decoder a real client applies, so this asserts what a client would accept
+  // rather than re-deriving the shape here.
+  assert.ok(isProtocolHandshake(body), 'the body must still decode as a handshake');
+});
+
+test('a configured notice is published on the same unauthenticated handshake', async () => {
+  // Unauthenticated on purpose: the notice has to reach a person who cannot
+  // sign in, which is exactly the person a shutdown notice is written for.
+  const body = await readHandshake({ text: 'We move on 1 March.', url: 'https://example.org/moving' });
+
+  assert.deepEqual(body.notice, { text: 'We move on 1 March.', url: 'https://example.org/moving' });
+});
+
+test('a notice with no link publishes no url key', async () => {
+  const body = await readHandshake({ text: 'Read this before you sync again.' });
+
+  assert.deepEqual(body.notice, { text: 'Read this before you sync again.' });
+});
+
+test('the handshake reports protocol version 2 and no signupMode at all', async () => {
+  const body = await readHandshake(null);
+
+  assert.equal(body.protocolVersion, PROTOCOL_VERSION);
+  assert.equal(body.protocolVersion, 2);
+  // The field went with the setting. An instance that still published it would
+  // be describing a mode that no longer exists, and a client would draw a
+  // sign-up form for a door that is not there.
+  assert.ok(!('signupMode' in body), 'signupMode must be gone, not merely empty');
+});
+
+test('the handshake reports whether a biller stands behind this instance, both ways round', async () => {
+  // BOTH WAYS ROUND, because a field hard-coded to `false` would pass a
+  // one-sided test and would tell every client there is no plan door on the
+  // one instance that has one. `plans` is what a client reads to decide
+  // whether to draw that door, see PROTOCOL.md §5.6.
+  const withoutBiller = await readHandshake(null, instanceInfo({ plans: false }));
+  assert.equal(asObject(withoutBiller.instance)?.plans, false);
+
+  const withBiller = await readHandshake(null, instanceInfo({ plans: true }));
+  assert.equal(asObject(withBiller.instance)?.plans, true);
+});
+
+test('plans is a boolean and is never omitted, unlike the feedback promise beside it', async () => {
+  // `feedback` is a PROMISE and is absent when there is none. This is a
+  // description of a door, which every instance can make, so a missing key
+  // would leave a client guessing where `false` is the honest answer.
+  const body = await readHandshake(null, instanceInfo({ plans: false }));
+  const instance = asObject(body.instance);
+
+  assert.ok(instance !== null);
+  assert.ok('plans' in instance, 'the key must be present even when the answer is no');
+  assert.equal(instance.plans, false);
+});
+
+test('an instance block is published whole, and omitted entirely when there is none', async () => {
+  const withNone = await readHandshake(null, null);
+  // Omitted rather than sent as null, for the reason the notice is: a client
+  // older than protocol 2 must parse the body exactly as it always did.
+  assert.ok(!('instance' in withNone), 'an unconfigured instance must not add a field to the healthcheck body');
+
+  const instance: InstanceInfo = {
+    name: 'Praxis Nord',
+    language: 'de',
+    mail: false,
+    memberInvites: false,
+    openSignup: false,
+    healthConsent: null,
+    ai: null,
+    push: false,
+    plans: false,
+  };
+  const body = await readHandshake(null, instance);
+  assert.deepEqual(body.instance, instance);
+});

@@ -1,0 +1,765 @@
+/**
+ * `pnpm sync-api`, the operator's command line over `/v1/admin`.
+ *
+ * A THIN HTTP CLIENT AND NOTHING ELSE. It imports no store, no config module
+ * and no database driver, so it runs from a laptop that has never seen
+ * Postgres, the same shape `shw-api`, `np-api` and `lcc-api` have in this
+ * workspace. `tests/unit/sync-api-no-db-imports.test.ts` walks the static
+ * import graph from this file and fails if that stops being true.
+ *
+ * ── THE TOKEN COMES FROM THE ENVIRONMENT, AND ONLY FROM THERE ───────────────
+ * `ADMIN_TOKEN`. There is deliberately no `--token` flag: a credential on a
+ * command line lands in shell history and is visible in `ps` to every other
+ * user on the box for as long as the command runs. There is no dotenv loading
+ * and no `~/.config` file either, this is a credential that lists and erases
+ * accounts, and the fewer places it can come to rest, the better. Missing it
+ * is an error that names the variable, raised BEFORE any request is built.
+ *
+ * ── NO `--production` FLAG ──────────────────────────────────────────────────
+ * `--url`, then `SYNC_SERVER_URL`, then `http://localhost:3000`. A named
+ * shortcut for "the real one with the real accounts on it" is a shortcut for
+ * typing it by accident; on a self-hostable service there is no single
+ * production instance for such a flag to mean, either.
+ *
+ * ── A ROLLBACK ASKS TOO ─────────────────────────────────────────────────────
+ * `accounts rollback` requires `--yes`, under the rule below and for the same
+ * reason: it deletes blob versions the account's own devices wrote, and there
+ * is no undo. Run `accounts blob-versions` first, and read
+ * `docs/operations/restoring-a-wiped-diary.md` before either, because the
+ * rollback alone does not finish the job — the person's devices still hold the
+ * baseline that caused the loss.
+ *
+ * ── DELETION ASKS ───────────────────────────────────────────────────────────
+ * `accounts delete` requires `--yes`. Without it the command exits non-zero
+ * having sent nothing. The erasure is immediate, total and irreversible: no
+ * soft delete, no grace period, and the ciphertext is gone by cascade in the
+ * same statement. A confirmation flag is a very small price for the one
+ * command in this tool that cannot be undone.
+ */
+import { parseArgs } from 'node:util';
+import {
+  AdminClient,
+  CliError,
+  type AccountPatchBody,
+  type LapsedGrantBody,
+  type MintInviteRequestBody,
+} from './client.js';
+import { generateVapidKeys } from '../../src/push/vapid-keys.js';
+import {
+  decodeAccountPage,
+  decodeHandshake,
+  decodeSingleAccount,
+  decodeStats,
+  formatAccountDetail,
+  formatAccountTable,
+  formatStats,
+  decodeInvitePage,
+  decodeMintedInvite,
+  formatInviteTable,
+  formatMintedInvite,
+  decodeResetMail,
+  decodeBlobVersions,
+  decodeRollback,
+  formatBlobVersions,
+  formatRollback,
+  decodeSettings,
+  decodeLapsedGrant,
+  formatLapsedGrant,
+} from './views.js';
+
+const DEFAULT_BASE_URL = 'http://localhost:3000';
+
+const USAGE = `sync-api, the openplate-core admin CLI
+
+  Usage: pnpm sync-api <command> [options]
+
+  Commands:
+    status                     Version handshake and admin-API reachability
+    stats                      Aggregate account and storage counts
+    accounts list              List accounts (metadata only)
+    accounts get <id>          One account's metadata
+    accounts delete <id> --yes Erase an account and everything attached to it
+    accounts set-role <id> admin|member   Change what an account may do
+    accounts set-limit <id> <n>           Change its AI requests per UTC day
+    accounts set-expiry <id> --allowance-expires <iso|none>
+                               Set or clear the date its AI allowance ends
+    accounts set-trial <id> <n|none>      Set its free AI scans (0-100), or
+                               take the scan trial away
+    accounts suspend <id>      Lock it out and revoke every session, reversibly
+    accounts reactivate <id>   Let it back in
+    invites list               Outstanding and spent signup invites
+    invites create --email <address>   Mint one addressed invite; prints the link ONCE
+                               (--trial: the instance's free scans instead of an allowance)
+    invites resend <id>        Mint a NEW token for the same invite and send it
+    invites revoke <id> --yes  Withdraw an unredeemed invite
+    accounts reset-mail <id>   Send this account a password-reset letter
+    accounts blob-versions <id>        What blob versions the service still holds
+    accounts rollback <id> --to-version <n> --yes
+                               Make an older blob version current again, deleting
+                               every version above it. Read the playbook first:
+                               docs/operations/restoring-a-wiped-diary.md
+    trials grant-lapsed --trial-days <n> [--apply] [--exclude <id,id>]
+                               Give the scan trial to day trials that ran out
+                               unpaid. A dry run unless --apply
+    push keygen                Print a fresh VAPID key pair for the environment
+    settings get               What this instance's settings say
+    settings set nutrient-reference-basis dge|efsa|us
+                               Which body's reference values it shows
+
+  Options:
+    --url <base>   Service base URL (default: SYNC_SERVER_URL, else ${DEFAULT_BASE_URL})
+    --limit <n>    Page size for "accounts list" (default 50, max 200)
+    --offset <n>   Page offset for "accounts list" (default 0)
+    --json         Print the decoded response as JSON (read commands only)
+    --yes          Required by "accounts delete", "accounts rollback" and
+                   "invites revoke"
+    --to-version <n>       Which blob version "accounts rollback" restores
+    --email <address>      Who the invite is for. Becomes the account's identity
+    --display-name <text>  The person's name, carried onto the account
+    --role <admin|member>  What the redeemed account may do (default member)
+    --daily-ai-limit <n>   AI requests a day for the redeemed account (default 0)
+    --allowance-expires <iso|none>  When an account's AI allowance ends.
+                           "none" clears the date, so the allowance never ends
+    --expires-in-days <n>  Invite lifetime, 1-30 (default 7)
+    --trial                The invite carries the instance's free scans
+    --trial-days <n>       How long the old day trial was (for grant-lapsed)
+    --apply                Write the grant; without it, grant-lapsed only lists
+    --exclude <id,id>      Accounts grant-lapsed must leave alone
+
+  Authentication:
+    ADMIN_TOKEN must be set in the environment. There is no --token flag, on
+    purpose: a credential in argv is a credential in your shell history.
+
+    "push keygen" is the one exception, and it needs no credential: it talks to
+    nothing and prints locally generated key material.
+`;
+
+interface Invocation {
+  command: string[];
+  baseUrl: string;
+  limit: string | null;
+  offset: string | null;
+  email: string | null;
+  displayName: string | null;
+  role: string | null;
+  dailyAiLimit: string | null;
+  allowanceExpires: string | null;
+  expiresInDays: string | null;
+  toVersion: string | null;
+  trial: boolean;
+  trialDays: string | null;
+  apply: boolean;
+  exclude: string | null;
+  json: boolean;
+  yes: boolean;
+  help: boolean;
+}
+
+function parseInvocation(argv: string[]): Invocation {
+  const parsed = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      url: { type: 'string' },
+      limit: { type: 'string' },
+      offset: { type: 'string' },
+      email: { type: 'string' },
+      'display-name': { type: 'string' },
+      role: { type: 'string' },
+      'daily-ai-limit': { type: 'string' },
+      'allowance-expires': { type: 'string' },
+      'expires-in-days': { type: 'string' },
+      'to-version': { type: 'string' },
+      trial: { type: 'boolean', default: false },
+      'trial-days': { type: 'string' },
+      apply: { type: 'boolean', default: false },
+      exclude: { type: 'string' },
+      json: { type: 'boolean', default: false },
+      yes: { type: 'boolean', default: false },
+      help: { type: 'boolean', default: false },
+    },
+  });
+
+  return {
+    command: parsed.positionals,
+    // Flag beats environment beats default.
+    baseUrl: parsed.values.url ?? process.env.SYNC_SERVER_URL ?? DEFAULT_BASE_URL,
+    limit: parsed.values.limit ?? null,
+    offset: parsed.values.offset ?? null,
+    email: parsed.values.email ?? null,
+    displayName: parsed.values['display-name'] ?? null,
+    role: parsed.values.role ?? null,
+    dailyAiLimit: parsed.values['daily-ai-limit'] ?? null,
+    allowanceExpires: parsed.values['allowance-expires'] ?? null,
+    expiresInDays: parsed.values['expires-in-days'] ?? null,
+    toVersion: parsed.values['to-version'] ?? null,
+    trial: parsed.values.trial === true,
+    trialDays: parsed.values['trial-days'] ?? null,
+    apply: parsed.values.apply === true,
+    exclude: parsed.values.exclude ?? null,
+    json: parsed.values.json === true,
+    yes: parsed.values.yes === true,
+    help: parsed.values.help === true,
+  };
+}
+
+/** The credential, or a refusal. Called before any request is built, see the module header. */
+function requireAdminToken(): string {
+  const token = process.env.ADMIN_TOKEN?.trim();
+  if (token === undefined || token === '') {
+    throw new CliError(
+      'ADMIN_TOKEN is not set. Export it in your shell (the same value the service was started with); there is no --token flag.',
+    );
+  }
+  return token;
+}
+
+/** The role argument of `accounts set-role`, or a refusal. Checked here so an obvious typo costs no round trip. */
+function roleFrom(value: string): AccountPatchBody {
+  if (value !== 'admin' && value !== 'member') {
+    throw new CliError('accounts set-role needs a role: `accounts set-role <id> admin` or `... member`.');
+  }
+  return { role: value };
+}
+
+/** The allowance argument of `accounts set-limit`, or a refusal. `0` is meaningful: it turns AI off for the account. */
+function limitFrom(value: string): AccountPatchBody {
+  const limit = Number(value);
+  if (!Number.isInteger(limit) || limit < 0) {
+    throw new CliError('accounts set-limit needs a whole number of requests a day, 0 or more.');
+  }
+  return { dailyAiLimit: limit };
+}
+
+/**
+ * The count argument of `accounts set-trial` (M253), or a refusal. `none`
+ * takes the scan trial away, which is a different statement from `0`: an
+ * account with `0` is refused every scan, one with none is a standing grant.
+ */
+function trialFrom(value: string): AccountPatchBody {
+  if (value === 'none') return { trialScans: null };
+  const scans = Number(value);
+  if (!Number.isInteger(scans) || scans < 0 || scans > 100) {
+    throw new CliError('accounts set-trial needs a whole number of scans from 0 to 100, or "none".');
+  }
+  return { trialScans: scans };
+}
+
+/**
+ * The `--allowance-expires` value of `accounts set-expiry`, or a refusal.
+ *
+ * A FLAG RATHER THAN A POSITIONAL, unlike `set-role` and `set-limit`: an ISO
+ * instant is long enough that `accounts set-expiry 7 2026-12-01T00:00:00Z`
+ * reads as two ids, and clearing the date needs a word of its own. `none` is
+ * that word, and it becomes the `null` the service documents.
+ *
+ * The date is checked HERE as well as by the service, so an obvious typo costs
+ * no round trip and cannot be mistaken for a cleared allowance.
+ */
+function expiryFrom(value: string | null): AccountPatchBody {
+  if (value === null || value.trim() === '') {
+    throw new CliError(
+      'accounts set-expiry needs --allowance-expires <iso|none>, e.g. `--allowance-expires 2026-12-01T00:00:00Z` or `--allowance-expires none`.',
+    );
+  }
+  const raw = value.trim();
+  if (raw === 'none') return { allowanceExpiresAt: null };
+
+  const parsed = Date.parse(raw);
+  if (Number.isNaN(parsed)) {
+    throw new CliError(
+      'accounts set-expiry needs an ISO 8601 instant, e.g. `2026-12-01T00:00:00Z`, or the word "none" to clear the date.',
+    );
+  }
+  return { allowanceExpiresAt: new Date(parsed).toISOString() };
+}
+
+/**
+ * The `--to-version` value of `accounts rollback`, or a refusal.
+ *
+ * A FLAG RATHER THAN A POSITIONAL, for the reason `--allowance-expires` is one:
+ * `accounts rollback 7 4` is two bare integers side by side, and the wrong
+ * reading of them deletes a different person's versions.
+ *
+ * Checked HERE as well as by the service, so an obvious typo costs no round
+ * trip on the one command that cannot be undone.
+ */
+function rollbackTargetFrom(value: string | null): number {
+  if (value === null || value.trim() === '') {
+    throw new CliError(
+      'accounts rollback needs --to-version <n>, e.g. `accounts rollback 7 --to-version 4 --yes`. Run `accounts blob-versions 7` first to see what is still held.',
+    );
+  }
+  const version = Number(value.trim());
+  if (!Number.isInteger(version) || version < 1) {
+    throw new CliError('--to-version must be a whole blob version number, 1 or more.');
+  }
+  return version;
+}
+
+function inviteIdArgument(invocation: Invocation): string {
+  const raw = invocation.command[2];
+  if (raw === undefined || raw === '') {
+    throw new CliError('That command needs an invite id, e.g. `pnpm sync-api invites revoke 3 --yes`.');
+  }
+  return encodeURIComponent(raw);
+}
+
+function accountIdArgument(invocation: Invocation): string {
+  const raw = invocation.command[2];
+  if (raw === undefined || raw === '') {
+    throw new CliError('That command needs an account id, e.g. `pnpm sync-api accounts get 42`.');
+  }
+  return encodeURIComponent(raw);
+}
+
+function listQuery(invocation: Invocation): string {
+  const query = new URLSearchParams();
+  if (invocation.limit !== null) query.set('limit', invocation.limit);
+  if (invocation.offset !== null) query.set('offset', invocation.offset);
+  const rendered = query.toString();
+  return rendered === '' ? '' : `?${rendered}`;
+}
+
+function print(line: string): void {
+  process.stdout.write(`${line}\n`);
+}
+
+/** The PATCH body of the three one-value `accounts` commands. */
+function patchFor(input: { subcommand: 'set-role' | 'set-limit' | 'set-trial'; value: string }): AccountPatchBody {
+  if (input.subcommand === 'set-role') return roleFrom(input.value);
+  if (input.subcommand === 'set-limit') return limitFrom(input.value);
+  return trialFrom(input.value);
+}
+
+async function runAccounts(client: AdminClient, invocation: Invocation): Promise<void> {
+  const subcommand = invocation.command[1] ?? '';
+
+  if (subcommand === 'list') {
+    const page = decodeAccountPage(
+      await client.request({ method: 'GET', path: `/v1/admin/accounts${listQuery(invocation)}` }),
+    );
+    print(invocation.json ? JSON.stringify(page, null, 2) : formatAccountTable(page));
+    return;
+  }
+
+  if (subcommand === 'get') {
+    const id = accountIdArgument(invocation);
+    const account = decodeSingleAccount(await client.request({ method: 'GET', path: `/v1/admin/accounts/${id}` }));
+    print(invocation.json ? JSON.stringify(account, null, 2) : formatAccountDetail(account));
+    return;
+  }
+
+  if (subcommand === 'delete') {
+    const id = accountIdArgument(invocation);
+    // Checked BEFORE the request is built, so an unconfirmed delete sends nothing.
+    if (!invocation.yes) {
+      throw new CliError(
+        `Refusing to delete account ${decodeURIComponent(id)} without --yes. This erases the account, its blob and its key records immediately and irreversibly.`,
+      );
+    }
+    await client.request({ method: 'DELETE', path: `/v1/admin/accounts/${id}` });
+    print(`Deleted account ${decodeURIComponent(id)} and everything attached to it.`);
+    return;
+  }
+
+  if (subcommand === 'blob-versions') {
+    const id = accountIdArgument(invocation);
+    const versions = decodeBlobVersions(
+      await client.request({ method: 'GET', path: `/v1/admin/accounts/${id}/blob/versions` }),
+    );
+    print(invocation.json ? JSON.stringify(versions, null, 2) : formatBlobVersions(versions));
+    return;
+  }
+
+  if (subcommand === 'rollback') {
+    const id = accountIdArgument(invocation);
+    const targetVersion = rollbackTargetFrom(invocation.toVersion);
+    // Checked BEFORE the request is built, so an unconfirmed rollback sends
+    // nothing. The same rule `accounts delete` follows, and for a stronger
+    // reason: what this deletes is somebody's own writes, not an account they
+    // asked to be rid of.
+    if (!invocation.yes) {
+      throw new CliError(
+        `Refusing to roll account ${decodeURIComponent(id)} back to version ${targetVersion} without --yes. Every blob version above it is deleted immediately and irreversibly.`,
+      );
+    }
+    const rollback = decodeRollback(
+      await client.request({
+        method: 'POST',
+        path: `/v1/admin/accounts/${id}/blob/rollback`,
+        body: { targetVersion },
+      }),
+    );
+    print(
+      invocation.json
+        ? JSON.stringify(rollback, null, 2)
+        : formatRollback({ accountId: decodeURIComponent(id), rollback }),
+    );
+    return;
+  }
+
+  if (subcommand === 'reset-mail') {
+    const id = accountIdArgument(invocation);
+    const sent = decodeResetMail(await client.request({ method: 'POST', path: `/v1/admin/accounts/${id}/reset-mail` }));
+    if (sent.emailed) {
+      print(`A password-reset letter was sent to account ${decodeURIComponent(id)}.`);
+      return;
+    }
+    // No mail on this instance, so the operator carries the link. It opens the
+    // account's recovery code ONCE, so it goes to the account holder and to
+    // nobody else.
+    print(
+      [
+        `This instance sends no mail, so nothing was sent to account ${decodeURIComponent(id)}.`,
+        '',
+        'Give this link to the account holder and to nobody else. It works once.',
+        '',
+        sent.link ?? '(no link: set CLIENT_BASE_URL and SERVER_PUBLIC_URL on the service)',
+      ].join('\n'),
+    );
+    return;
+  }
+
+  if (subcommand === 'set-role' || subcommand === 'set-limit' || subcommand === 'set-trial') {
+    const id = accountIdArgument(invocation);
+    // The third positional, because a value this short is clearer beside the id
+    // than behind a flag: `accounts set-role 7 admin` reads as the sentence it is.
+    const value = invocation.command[3] ?? '';
+    const patch = patchFor({ subcommand, value });
+    const account = decodeSingleAccount(
+      await client.request({ method: 'PATCH', path: `/v1/admin/accounts/${id}`, body: patch }),
+    );
+    print(invocation.json ? JSON.stringify(account, null, 2) : formatAccountDetail(account));
+    return;
+  }
+
+  if (subcommand === 'set-expiry') {
+    const id = accountIdArgument(invocation);
+    const patch = expiryFrom(invocation.allowanceExpires);
+    const account = decodeSingleAccount(
+      await client.request({ method: 'PATCH', path: `/v1/admin/accounts/${id}`, body: patch }),
+    );
+    print(invocation.json ? JSON.stringify(account, null, 2) : formatAccountDetail(account));
+    return;
+  }
+
+  if (subcommand === 'suspend' || subcommand === 'reactivate') {
+    const id = accountIdArgument(invocation);
+    const account = decodeSingleAccount(
+      await client.request({
+        method: 'PATCH',
+        path: `/v1/admin/accounts/${id}`,
+        body: { suspended: subcommand === 'suspend' },
+      }),
+    );
+    if (subcommand === 'suspend') {
+      // Say what it did rather than only that it worked: revoking the sessions
+      // is the half an operator does not see in the row.
+      print(`Suspended account ${decodeURIComponent(id)}. Every session is revoked and its next request is refused.`);
+    } else {
+      print(`Reactivated account ${decodeURIComponent(id)}. It signs in again with its own password.`);
+    }
+    if (invocation.json) print(JSON.stringify(account, null, 2));
+    return;
+  }
+
+  throw new CliError(
+    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-expiry, set-trial, suspend, reactivate, reset-mail, blob-versions, rollback.`,
+  );
+}
+
+async function runInvites(client: AdminClient, invocation: Invocation): Promise<void> {
+  const subcommand = invocation.command[1] ?? '';
+
+  if (subcommand === 'list') {
+    const page = decodeInvitePage(
+      await client.request({ method: 'GET', path: `/v1/admin/invites${listQuery(invocation)}` }),
+    );
+    print(invocation.json ? JSON.stringify(page, null, 2) : formatInviteTable(page));
+    return;
+  }
+
+  if (subcommand === 'create') {
+    // Checked BEFORE the request is built. An invite with no address is not an
+    // invite: the address is what the letter goes to and what the account is
+    // identified by, and there is nothing sensible to default it to.
+    if (invocation.email === null || invocation.email.trim() === '') {
+      throw new CliError('invites create needs --email <address>: an invite is addressed to one person.');
+    }
+
+    const body: MintInviteRequestBody = { email: invocation.email.trim(), displayName: invocation.displayName };
+    if (invocation.role !== null) {
+      // Rejected here as well as by the service, so an obvious typo costs no
+      // round trip and cannot mint an invite nobody meant.
+      if (invocation.role !== 'admin' && invocation.role !== 'member') {
+        throw new CliError('--role must be "admin" or "member".');
+      }
+      body.role = invocation.role;
+    }
+    if (invocation.trial) {
+      // The service refuses a trial beside an allowance; say so before sending.
+      if (invocation.dailyAiLimit !== null) {
+        throw new CliError("--trial carries the instance's own daily limit: leave out --daily-ai-limit.");
+      }
+      body.trial = true;
+    }
+    if (invocation.dailyAiLimit !== null) {
+      const limit = Number(invocation.dailyAiLimit);
+      if (!Number.isInteger(limit) || limit < 0) {
+        throw new CliError('--daily-ai-limit must be a whole number of requests, 0 or more.');
+      }
+      body.dailyAiLimit = limit;
+    }
+    if (invocation.expiresInDays !== null) {
+      const days = Number(invocation.expiresInDays);
+      if (!Number.isInteger(days) || days <= 0) {
+        throw new CliError('--expires-in-days must be a whole number of days, 1-30.');
+      }
+      body.expiresInDays = days;
+    }
+
+    const minted = decodeMintedInvite(await client.request({ method: 'POST', path: '/v1/admin/invites', body }));
+    // The capability IS printed, this is the one command whose whole purpose
+    // is to hand the operator a secret. It is not logged by the service and
+    // cannot be fetched again.
+    print(invocation.json ? JSON.stringify(minted, null, 2) : formatMintedInvite(minted));
+    return;
+  }
+
+  if (subcommand === 'resend') {
+    const id = inviteIdArgument(invocation);
+    const resent = decodeMintedInvite(await client.request({ method: 'POST', path: `/v1/admin/invites/${id}/resend` }));
+    // A NEW token on the same invite, so the previous link is dead. Printed
+    // under the same rule `create` uses: the capability is shown once.
+    print(invocation.json ? JSON.stringify(resent, null, 2) : formatMintedInvite(resent));
+    return;
+  }
+
+  if (subcommand === 'revoke') {
+    const id = inviteIdArgument(invocation);
+    // Checked BEFORE the request is built, as with `accounts delete`.
+    if (!invocation.yes) {
+      throw new CliError(
+        `Refusing to revoke invite ${decodeURIComponent(id)} without --yes. Anyone already holding that token loses it.`,
+      );
+    }
+    await client.request({ method: 'DELETE', path: `/v1/admin/invites/${id}` });
+    print(`Revoked invite ${decodeURIComponent(id)}.`);
+    return;
+  }
+
+  throw new CliError(`Unknown invites subcommand "${subcommand}". Try: list, create, resend, revoke.`);
+}
+
+/**
+ * `push keygen`, a fresh VAPID pair, printed once, for the operator's vault.
+ *
+ * THE ONE COMMAND HERE THAT CONTACTS NOTHING, and therefore the one that needs
+ * no `ADMIN_TOKEN`. It is dispatched above `requireAdminToken` for that reason:
+ * an operator setting an instance up for the first time does not yet have a
+ * running service to authenticate against, and asking them for a credential to
+ * generate a keypair would be a door with no room behind it.
+ *
+ * THE PRIVATE KEY IS PRINTED, exactly as `invites create` prints a token: this
+ * command exists to hand the operator a secret. It is generated here, never
+ * stored, and never sent anywhere.
+ */
+function runPush(invocation: Invocation): void {
+  const subcommand = invocation.command[1] ?? '';
+  if (subcommand !== 'keygen') {
+    throw new CliError(`Unknown push subcommand "${subcommand}". Try: keygen.`);
+  }
+
+  const pair = generateVapidKeys();
+  if (invocation.json) {
+    print(JSON.stringify(pair, null, 2));
+    return;
+  }
+  print(
+    [
+      'A fresh VAPID pair. Put all three lines in the service environment, and the',
+      'private key in your vault. This is the only time it is printed.',
+      '',
+      `VAPID_PUBLIC_KEY=${pair.publicKey}`,
+      `VAPID_PRIVATE_KEY=${pair.privateKey}`,
+      'VAPID_SUBJECT=mailto:you@example.org',
+      '',
+      'All three or none: two of the three is a boot failure, and none means this',
+      'instance sends no notifications at all.',
+    ].join('\n'),
+  );
+}
+
+/**
+ * `trials grant-lapsed` (M253): the one-off grant of the scan trial to day
+ * trials that ran out unpaid. A DRY RUN UNLESS `--apply`, so the operator can
+ * hold the list against the biller before anything is written.
+ */
+async function runTrials(client: AdminClient, invocation: Invocation): Promise<void> {
+  const subcommand = invocation.command[1] ?? '';
+  if (subcommand !== 'grant-lapsed') {
+    throw new CliError(`Unknown trials subcommand "${subcommand}". Try: grant-lapsed.`);
+  }
+  const trialDays = Number(invocation.trialDays ?? '');
+  if (!Number.isInteger(trialDays) || trialDays < 1 || trialDays > 30) {
+    throw new CliError("trials grant-lapsed needs --trial-days <n>, the old day trial's length, e.g. 3.");
+  }
+  const excludeAccountIds = (invocation.exclude ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part !== '')
+    .map((part) => {
+      const id = Number(part);
+      if (!Number.isInteger(id) || id < 1) throw new CliError(`--exclude takes account ids, and "${part}" is not one.`);
+      return id;
+    });
+  const body: LapsedGrantBody = { trialDays, apply: invocation.apply, excludeAccountIds };
+  const grant = decodeLapsedGrant(
+    await client.request({ method: 'POST', path: '/v1/admin/trials/grant-lapsed', body }),
+  );
+  print(invocation.json ? JSON.stringify(grant, null, 2) : formatLapsedGrant(grant));
+}
+
+/** The one settings key this service has, as an operator types it, and the JSON field it becomes. */
+const NUTRIENT_REFERENCE_BASIS_KEY = 'nutrient-reference-basis';
+
+/** The three values `settings set` accepts. Checked here so an obvious typo costs no round trip, as `--role` is. */
+const NUTRIENT_REFERENCE_BASES = ['dge', 'efsa', 'us'];
+
+/**
+ * `settings get` and `settings set <key> <value>`, the operator's side of the
+ * instance setting M234 added.
+ *
+ * `get` READS `/health`, not an admin endpoint, and that is deliberate: the
+ * handshake is where the setting is PUBLISHED, so reading it here proves the
+ * thing a client will actually see rather than the thing the row says. A
+ * separate admin read would be a second answer to one question.
+ */
+async function runSettings(client: AdminClient, invocation: Invocation): Promise<void> {
+  const subcommand = invocation.command[1] ?? '';
+
+  if (subcommand === 'get') {
+    const handshake = decodeHandshake(await client.request({ method: 'GET', path: '/health' }));
+    if (invocation.json) {
+      print(JSON.stringify({ nutrientReferenceBasis: handshake.nutrientReferenceBasis }, null, 2));
+      return;
+    }
+    // A service older than the field says nothing, and so does this: an
+    // invented `dge` would be a setting nobody chose.
+    print(`${NUTRIENT_REFERENCE_BASIS_KEY}   ${handshake.nutrientReferenceBasis ?? '(this instance publishes none)'}`);
+    return;
+  }
+
+  if (subcommand === 'set') {
+    const key = invocation.command[2] ?? '';
+    const value = invocation.command[3] ?? '';
+    // Both checked BEFORE the request is built, so a typo sends nothing.
+    if (key !== NUTRIENT_REFERENCE_BASIS_KEY) {
+      throw new CliError(
+        `Unknown setting "${key}". This service has one: \`settings set ${NUTRIENT_REFERENCE_BASIS_KEY} <${NUTRIENT_REFERENCE_BASES.join('|')}>\`.`,
+      );
+    }
+    if (!NUTRIENT_REFERENCE_BASES.includes(value)) {
+      throw new CliError(`${NUTRIENT_REFERENCE_BASIS_KEY} must be one of ${NUTRIENT_REFERENCE_BASES.join(', ')}.`);
+    }
+
+    const settings = decodeSettings(
+      await client.request({
+        method: 'PATCH',
+        path: '/v1/admin/settings',
+        body: { nutrientReferenceBasis: value },
+      }),
+    );
+    if (invocation.json) {
+      print(JSON.stringify(settings, null, 2));
+      return;
+    }
+    // What the service answered, not what was asked for. Every client reads it
+    // from `/health` on its next connect.
+    print(`${NUTRIENT_REFERENCE_BASIS_KEY}   ${settings.nutrientReferenceBasis}`);
+    return;
+  }
+
+  throw new CliError(`Unknown settings subcommand "${subcommand}". Try: get, set.`);
+}
+
+async function runStatus(client: AdminClient, invocation: Invocation): Promise<void> {
+  const handshake = decodeHandshake(await client.request({ method: 'GET', path: '/health' }));
+  // The second call is the one that proves the ADMIN surface is reachable and
+  // the token is accepted: `/health` answers to anybody.
+  const stats = decodeStats(await client.request({ method: 'GET', path: '/v1/admin/stats' }));
+
+  if (invocation.json) {
+    print(JSON.stringify({ handshake, stats }, null, 2));
+    return;
+  }
+  print(
+    [
+      `instance        ${handshake.instanceName ?? 'unnamed'}`,
+      `service         ${handshake.serviceVersion}`,
+      `protocol        v${handshake.protocolVersion} (envelope v${handshake.envelopeVersion})`,
+      `admin API       reachable, token accepted`,
+      `accounts        ${stats.accounts}`,
+    ].join('\n'),
+  );
+}
+
+async function run(argv: string[]): Promise<void> {
+  const invocation = parseInvocation(argv);
+  if (invocation.help || invocation.command.length === 0) {
+    print(USAGE);
+    return;
+  }
+
+  const command = invocation.command[0] ?? '';
+
+  // AHEAD OF THE CREDENTIAL CHECK, and it is the only command that may be. It
+  // sends nothing, so there is nothing to authenticate; see `runPush`.
+  if (command === 'push') {
+    runPush(invocation);
+    return;
+  }
+
+  // Before the client exists, so a missing credential can never become a request.
+  const client = new AdminClient({ baseUrl: invocation.baseUrl, adminToken: requireAdminToken() });
+
+  if (command === 'invites') {
+    await runInvites(client, invocation);
+    return;
+  }
+
+  if (command === 'accounts') {
+    await runAccounts(client, invocation);
+    return;
+  }
+  if (command === 'settings') {
+    await runSettings(client, invocation);
+    return;
+  }
+  if (command === 'trials') {
+    await runTrials(client, invocation);
+    return;
+  }
+  if (command === 'stats') {
+    const stats = decodeStats(await client.request({ method: 'GET', path: '/v1/admin/stats' }));
+    print(invocation.json ? JSON.stringify(stats, null, 2) : formatStats(stats));
+    return;
+  }
+  if (command === 'status') {
+    await runStatus(client, invocation);
+    return;
+  }
+
+  throw new CliError(`Unknown command "${command}". Run \`pnpm sync-api --help\`.`);
+}
+
+run(process.argv.slice(2)).catch((cause: unknown) => {
+  // A `CliError` is already a sentence written for an operator. Anything else
+  // is a bug in this tool, and its message is scrubbed for the same reason the
+  // service scrubs a startup failure: it can carry a URL, and a URL can carry
+  // a query string somebody put a credential in.
+  const message = cause instanceof CliError ? cause.message : 'sync-api failed with an unexpected error';
+  process.stderr.write(`${message}\n`);
+  process.exitCode = 1;
+});

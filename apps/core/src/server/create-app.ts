@@ -1,0 +1,766 @@
+/**
+ * Composition root for the HTTP surface: assembles CORS, the health
+ * handshake, the account routes, the bearer-guarded sync routes, and the
+ * terminal error handler into one Express app.
+ *
+ * It takes a fully-built `AuthContext` and `SyncStorageAdapter` rather than a
+ * config object and a connection string, so the integration suite can boot
+ * the REAL app against a real database while still swapping the clock, the
+ * token minter, and the mailer. Everything that reads `process.env` lives in
+ * `main.ts`; nothing below does.
+ *
+ * ORDER MATTERS, in three places:
+ *  1. CORS first, so even a `401` and a preflight carry the headers.
+ *  2. The bearer middleware is mounted on the sync prefix BEFORE the sync
+ *     router, so an unauthenticated caller gets `401` instead of falling
+ *     through to `resolveEntitledUser`'s `403`.
+ *  3. The 404 and the error handler are last, Express only reaches a
+ *     four-argument handler after everything before it has passed along.
+ *
+ * THE ADMIN API IS ALWAYS MOUNTED, AND ITS MIDDLEWARE DECIDES WHAT TO ADMIT
+ * TO (M192). It used to be mounted only when `ADMIN_TOKEN` was set, so absence
+ * was expressed as a missing router; an admin ACCOUNT's own access token is
+ * now a second credential, and whether one exists is not something a
+ * mount-time branch can know. `server/admin-auth.ts` therefore answers the
+ * ordinary unknown-path 404 when no static token is configured AND the caller
+ * is not an admin account, the same answer `/wp-admin` gets, and the same
+ * property ADR-0001 bought. Not 401: a 401 confirms that an admin surface
+ * exists here and is merely locked, on a service whose threat model assumes
+ * the attacker can reach it. This service auto-deploys on push, so the commit
+ * that adds a route is the commit that puts it in production. See
+ * `docs/adr/0001-an-admin-api-for-a-zero-knowledge-service.md`.
+ *
+ * THE SHARE TREE IS THE SAME BARGAIN, WITH ONE EXTRA CONSTRAINT. `SYNC_SHARING`
+ * unset means `/v1/sync/shares*` and `/v1/sync/shared*` answer the ordinary
+ * unknown-path 404 to everybody. Its terminator is mounted BEFORE the bearer
+ * middleware rather than after it, because those paths sit inside
+ * `SYNC_API_PREFIX`: mounted after, an unconfigured tree would answer 401 to
+ * an anonymous caller and announce that a credential exists worth guessing.
+ * See `docs/adr/0002-sharing-a-diary-without-giving-the-server-a-key.md`.
+ *
+ * THE RESEARCH TREE IS THE SAME BARGAIN AGAIN, AND ON ITS OWN FLAG.
+ * `SYNC_RESEARCH` unset means `/v1/sync/contributions*` and
+ * `/v1/sync/study*` answer the ordinary unknown-path 404, to everybody, with
+ * the terminator mounted BEFORE the bearer middleware for the same reason.
+ * It is INDEPENDENT of `SYNC_SHARING`, neither flag implies the other, and
+ * a deployment may reasonably run either alone. See
+ * `docs/adr/0003-research-contributions-pseudonymous-but-never-anonymous.md`.
+ *
+ * THE FEEDBACK TREE IS THE SAME BARGAIN AND THE BIGGEST STAKE. `SYNC_FEEDBACK`
+ * unset means the whole `/v1/feedback` subtree answers the ordinary
+ * unknown-path 404, to everybody, credentialed or not. Its terminator can sit
+ * anywhere before the fallthrough, because the path is OUTSIDE
+ * `SYNC_API_PREFIX` and no bearer middleware stands over it; it is mounted
+ * whether or not the route is, so the answer for an unconfigured instance is
+ * pinned and cannot be turned into a 401 by some later middleware. What makes
+ * this one different from the three above is not the mechanism, it is the
+ * cost of getting it wrong: an instance with this on holds photographs of its
+ * users' food that the operator can look at. See
+ * `docs/adr/0006-a-reported-photograph-is-the-second-hole-in-the-claim.md`.
+ *
+ * THE PLANS SUBTREE IS THE SAME BARGAIN, AND ITS TERMINATOR IS THE STRICTEST
+ * ABOUT PLACEMENT. `PLANS_UPSTREAM_URL` unset means the whole `/v1/plans`
+ * subtree answers the ordinary unknown-path 404, to everybody, and the mount
+ * sits AHEAD of the bearer middleware below. Unlike the feedback tree, this
+ * one carries its own `requireAuth` when it is configured, so a terminator
+ * mounted lower down would be standing behind a gate and would answer 401 to
+ * an anonymous probe. A self-hoster who never configured a biller cannot tell
+ * this build has one. See `server/plans-proxy.ts`.
+ *
+ * THE OPERATOR'S SIDE OF THAT TREE IS `/v1/admin/feedback`, and it is gated
+ * TWICE: by the admin middleware every other operator route is behind, and by
+ * `SYNC_FEEDBACK` again. The second gate is a terminator inside that router
+ * rather than a mount-time branch here, so an authenticated administrator on an
+ * instance with the feature off gets the ordinary unknown-path 404 too. It is
+ * mounted in the SAME `app.use` as the account routes so one middleware
+ * instance runs per request. See `server/admin-feedback-routes.ts`.
+ */
+import express from 'express';
+import type { Express } from 'express';
+import { ENVELOPE_VERSION, PLANS_API_PREFIX, PROTOCOL_VERSION, SYNC_API_PREFIX } from '../protocol.js';
+import type { InstanceInfo, OperatorNotice, ProtocolHandshake } from '../protocol.js';
+import type { InstanceSettingsSurface } from '../instance/instance-settings.js';
+import type {
+  SyncBlobRollbackStore,
+  SyncResearchStore,
+  SyncRotationStore,
+  SyncShareStore,
+  SyncStorageAdapter,
+} from '../contract-types.js';
+import type { AuthContext } from '../accounts/auth-handlers.js';
+import { registerAuthRoutes } from '../accounts/register-auth-routes.js';
+import { ADMIN_API_PREFIX, createAdminRoutes, type AdminLinkBases } from './admin-routes.js';
+import { createAdminFeedbackRoutes } from './admin-feedback-routes.js';
+import { createAdminAuthMiddleware } from './admin-auth.js';
+import { enforceServicePrincipalScope } from './service-principal-scope.js';
+import { registerSyncRoutes } from './register-routes.js';
+import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
+import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
+import { registerRotateDekRoute } from './rotate-dek-route.js';
+import { CHAT_COMPLETIONS_PATH, registerAiRoute } from '../ai/register-ai-route.js';
+import { FEEDBACK_API_PREFIX, registerFeedbackRoute } from '../feedback/register-feedback-route.js';
+import { registerPulseRoutes } from './register-pulse-routes.js';
+import type { PulseStore } from '../pulse/pulse-store.js';
+import { PUSH_API_PREFIX, registerPushRoutes } from './register-push-routes.js';
+import type { PushStore } from '../push/push-store.js';
+import { registerPlansRoutes, type PlansUpstreamConfig } from './plans-proxy.js';
+import { registerLegalDeclarationsRoute } from './legal-declarations.js';
+import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
+import type { FeedbackAdminStore } from '../feedback/feedback-admin-store.js';
+import type { FeedbackImageStore } from '../feedback/feedback-image-store.js';
+import type { FeedbackStore } from '../feedback/feedback-store.js';
+import type { AiQuotaStore } from '../ai/quota-store.js';
+import type { AiUpstreamConfig } from '../ai/proxy.js';
+import type { ChatBodyPolicy } from '../ai/chat-body-policy.js';
+import { createBearerAuthMiddleware, createEntitledUserResolver } from './bearer-auth.js';
+import { createCorsMiddleware } from './cors.js';
+import { createErrorMiddleware, handleNotFound } from './error-middleware.js';
+import type { AdminMetadataStore } from '../admin/admin-store.js';
+import type { InviteStore } from '../admin/invite-store.js';
+import { createNoopMailer, type Mailer } from '../mail/mailer.js';
+import type { ThrottleStore } from '../lib/throttle.js';
+import type { TrialPolicy } from '../accounts/scan-trial.js';
+import type { Logger } from '../logger.js';
+import { SERVICE_VERSION } from '../version.js';
+
+/**
+ * What the admin API needs to exist.
+ *
+ * It is REQUIRED now, not optional. Signup is invite-only and always has been
+ * since M192, so an instance with no invite store is an instance nobody can
+ * ever join; and the tree is mounted whether or not a static `ADMIN_TOKEN` is
+ * configured, because an admin account's session is the other credential.
+ * `token: null` is what "no static token" looks like, and
+ * `server/admin-auth.ts` turns it into a 404 rather than a 401.
+ */
+export interface AdminSurfaceOptions {
+  /** Already length-validated by `parseConfig`, or `null` for an instance with no break-glass credential. */
+  token: string | null;
+  /**
+   * The biller's scoped service credential, or `null` for an instance no
+   * biller reaches, which is every instance until somebody sets
+   * `BILLING_TOKEN`. Optional here so a test that has no opinion about the
+   * third principal does not have to state one.
+   */
+  billingToken?: string | null;
+  /** Metadata reads. Erasure goes through `authContext.store`, the same method the self-service path calls. */
+  metadata: AdminMetadataStore;
+  /** Invite minting and revocation, the only door onto this service. */
+  invites: InviteStore;
+  /**
+   * The blob restore path (M224, ADR-0009). REQUIRED, unlike the share and
+   * research stores: a service that can refuse a wipe and cannot undo one is
+   * half a fix, and an instance where the second half is optional is an
+   * instance where it will be missing on the night it is needed.
+   */
+  blobs: SyncBlobRollbackStore;
+  /** Where a join link points, or `null` when this instance cannot build one. */
+  links?: AdminLinkBases | null;
+}
+
+/**
+ * What the reported-estimate route needs to exist. Absent is a 404 on the
+ * whole subtree, exactly as an absent share store is, and the ONE surface on
+ * this service whose absence protects a photograph rather than a ciphertext.
+ */
+export interface FeedbackSurfaceOptions {
+  reports: FeedbackStore;
+  /**
+   * The operator's side of the same table: list, read one, delete one, and the
+   * enumeration the retention sweep needs. SEPARATE FROM `reports` because the
+   * write path is a person acting on their own row and this is somebody acting
+   * on theirs, see `feedback/feedback-admin-store.ts`.
+   */
+  review: FeedbackAdminStore;
+  /** Where the photograph goes. Postgres today, one adapter away from anywhere else. */
+  images: FeedbackImageStore;
+  /** Reports per account per UTC day (`FEEDBACK_DAILY_LIMIT`). */
+  dailyLimit: number;
+  /** The largest body the route accepts, in bytes (`FEEDBACK_MAX_REQUEST_BYTES`). */
+  maxRequestBytes: number;
+}
+
+/** What the AI proxy needs to exist. Absent is a 404 on its path, exactly as an absent share store is. */
+export interface AiSurfaceOptions {
+  upstream: AiUpstreamConfig;
+  quota: AiQuotaStore;
+  /** Requests per account in any trailing 60 seconds (`AI_RATE_LIMIT_PER_MINUTE`). */
+  perMinute: number;
+  /** The largest body the proxy route accepts, in bytes (`AI_MAX_REQUEST_BYTES`, default 8 MB). */
+  maxRequestBytes: number;
+  /**
+   * The whole instance's ceiling in AI requests per UTC day
+   * (`AI_INSTANCE_DAILY_LIMIT`), or `null` for an instance that set none.
+   *
+   * IT LIVES ON THIS SURFACE AND NOWHERE ELSE, even though
+   * `GET /v1/admin/stats` also reports it. One value, one owner: a copy on the
+   * admin surface would be a second place to configure the same bound, and the
+   * failure it invites is an operator reading a number in the console that is
+   * not the number being enforced.
+   */
+  instanceDailyLimit: number | null;
+  /**
+   * What all scan-trial accounts together may spend per UTC day
+   * (`AI_TRIAL_INSTANCE_DAILY_LIMIT`, M253), or `null`/absent for no
+   * sub-ceiling. One owner, like `instanceDailyLimit`: the admin stats read it
+   * from here.
+   */
+  trialInstanceDailyLimit?: number | null;
+  /**
+   * The model and output ceiling every forwarded chat body gets (M256).
+   * Required: see `ChatCompletionsDeps.bodyPolicy`.
+   */
+  bodyPolicy: ChatBodyPolicy;
+}
+
+/**
+ * What web push needs to exist. Absent is a 404 on the whole subtree, exactly
+ * as an absent biller is, and for the same reason: this service auto-deploys on
+ * push, so the commit that adds a route is the commit that puts it in
+ * production.
+ */
+export interface PushSurfaceOptions {
+  store: PushStore;
+  /** The VAPID application server key `GET /v1/push/config` hands a browser. Public by definition. */
+  publicKey: string;
+}
+
+export interface CreateAppOptions {
+  authContext: AuthContext;
+  storage: SyncStorageAdapter;
+  /**
+   * The atomic DEK rotation of PROTOCOL.md §5.17. Required on every instance,
+   * deliberately unlike `shares`, see below, and `server/rotate-dek-route.ts`.
+   */
+  rotation: SyncRotationStore;
+  throttle: ThrottleStore;
+  /**
+   * The per-source bucket of the open sign-up door (M253), or absent for a
+   * fresh one on the production bound. A suite that is not ABOUT that bound
+   * passes a permissive store, as it does for {@link CreateAppOptions.throttle}.
+   */
+  signupRequestThrottle?: ThrottleStore;
+  logger: Logger;
+  /** Express `trust proxy`. Wrong here means `req.ip` is the proxy's and the whole throttle is one shared bucket. */
+  trustProxy: boolean | number;
+  /**
+   * The operator's message, published on the health handshake, or
+   * `null`/absent for an instance with nothing to say, the default. Static
+   * config (`SYNC_NOTICE`), never a stored record: see `config.ts`.
+   */
+  notice?: OperatorNotice | null;
+  /** The operator's API. Required, see {@link AdminSurfaceOptions}. */
+  admin: AdminSurfaceOptions;
+  /**
+   * What this instance calls itself on the handshake. Absent means the
+   * `instance` field is omitted entirely, which is what a client older than
+   * protocol 2 expects to see.
+   */
+  instance?: InstanceInfo | null;
+  /**
+   * The two letters this service sends. Absent means a no-op mailer, which is
+   * what an instance with no mail configuration gets, invites come back as
+   * links instead (`mail/mailer.ts`).
+   */
+  mailer?: Mailer;
+  /**
+   * Whether mail is CONFIGURED, which the mailer cannot report: the no-op
+   * resolves, so a send that did nothing looks like one that worked. Every
+   * `emailed` this service returns is this AND a successful send.
+   */
+  mailConfigured?: boolean;
+  /** Injected, like every clock in this repo, so a test can pin "today" for a quota and an invite's status. */
+  now?: () => Date;
+  /**
+   * The AI proxy, or `null`/absent for "this instance offers no AI", the
+   * default, and what every deployment without `UPSTREAM_API_KEY` gets.
+   * Absence is a 404 on `POST /v1/chat/completions`, not a mounted-but-refusing
+   * surface: see the module header on the same bargain for the admin and share
+   * trees.
+   */
+  ai?: AiSurfaceOptions | null;
+  /**
+   * The share graph's storage, or `null`/absent for "this instance does not
+   * do sharing", which is the default and what every deployment without
+   * `SYNC_SHARING` gets. Absence is a 404 on both share subtrees, not a
+   * mounted-but-refusing surface.
+   */
+  shares?: SyncShareStore | null;
+  /**
+   * The study graph's storage, or `null`/absent for "this instance does not
+   * host research contributions", the default, and what every deployment
+   * without `SYNC_RESEARCH` gets. Absence is a 404 on both contribution
+   * subtrees, not a mounted-but-refusing surface, and it is decided
+   * independently of `shares`.
+   */
+  research?: SyncResearchStore | null;
+  /**
+   * The reported-estimate surface, or `null`/absent for "this instance does
+   * not accept reports", the default, and what every deployment without
+   * `SYNC_FEEDBACK` gets. Absence is a 404 on the whole `/v1/feedback`
+   * subtree, not a mounted-but-refusing surface.
+   *
+   * IT IS THE ONE SURFACE HERE THAT KEEPS A PHOTOGRAPH. Read the module header
+   * before you default it to anything but `null`.
+   */
+  feedback?: FeedbackSurfaceOptions | null;
+  /**
+   * The community pulse's four tables (M222).
+   *
+   * REQUIRED, AND THERE IS NO FLAG, unlike every other surface above. What is
+   * opted in to here is a person's own data leaving their own phone, and that
+   * decision is made on the phone rather than in an operator's environment. An
+   * instance nobody opted in on holds empty tables and answers every field as
+   * zero. See `server/register-pulse-routes.ts` and ADR-0007.
+   */
+  pulse: PulseStore;
+  /**
+   * Web push (M223), or `null`/absent for "this instance sends no
+   * notifications", the default, and what every deployment without the three
+   * `VAPID_*` variables gets. Absence is a 404 on the whole `/v1/push`
+   * subtree, not a mounted-but-refusing surface.
+   *
+   * THE STORE AND THE PUBLIC KEY TRAVEL TOGETHER, because the routes are
+   * useless without either: a subscription nobody can send to is a row, and a
+   * key with nowhere to record a device is a string. `main.ts` builds this from
+   * the SAME config binding that decides `instance.push`, so an instance cannot
+   * advertise a door it does not have.
+   */
+  push?: PushSurfaceOptions | null;
+  /**
+   * The biller `/v1/plans/*` is forwarded to, or `null`/absent for "no biller
+   * stands behind this instance", the default, and what every deployment
+   * without `PLANS_UPSTREAM_URL` gets. Absence is a 404 on the whole subtree,
+   * not a mounted-but-refusing surface.
+   */
+  plans?: PlansUpstreamConfig | null;
+  /**
+   * The instance's stored settings (M234), or `null`/absent for a build that
+   * wires none, which is what an old test harness and nothing in production
+   * looks like.
+   *
+   * ABSENT IS A SILENT HANDSHAKE AND A 404, not a default. `/health` then omits
+   * `instance.nutrientReferenceBasis` entirely, exactly as a service older than
+   * the field does, and `PATCH /v1/admin/settings` answers the ordinary
+   * unknown-path 404. Publishing `dge` from a process that holds no row would
+   * be this service claiming a setting it cannot change.
+   *
+   * WHAT IS PASSED HERE IS A PROCESS-LOCAL READER, and `/health` calls it
+   * synchronously. See `instance/instance-settings.ts` for why that path must
+   * never reach the database.
+   */
+  settings?: InstanceSettingsSurface | null;
+  /**
+   * `POST /v1/legal/declarations` (M214/09), REQUIRED, AND THERE IS NO FLAG,
+   * unlike every optional surface above. §312k Absatz 6 BGB makes the absence
+   * of a working cancellation button the expensive outcome — it voids the
+   * notice-period term for every customer it touches — so this route is
+   * mounted on every instance whether or not a biller (`plans` above) stands
+   * behind it. See `server/legal-declarations.ts`.
+   */
+  legal: LegalDeclarationsSurfaceOptions;
+  /**
+   * The instance's scan trial (`TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`, M253), or
+   * `null`/absent for none. What the admin mint's `"trial": true` and the
+   * lapsed-trial grant write. `/health` promises it through `instance.trial`,
+   * which `main.ts` builds from the same binding.
+   */
+  trial?: TrialPolicy | null;
+}
+
+/** What the two statutory buttons need to exist. */
+export interface LegalDeclarationsSurfaceOptions {
+  store: LegalDeclarationsStore;
+  /**
+   * Requests one IP may file per minute. Absent means
+   * `LEGAL_DECLARATIONS_RATE_LIMIT_PER_MINUTE`, which is what every real
+   * instance runs on; a harness that is not ABOUT the limiter sets this high,
+   * exactly as `AiSurfaceOptions.perMinute` does.
+   */
+  rateLimitPerMinute?: number;
+}
+
+export function createApp(options: CreateAppOptions): Express {
+  const app = express();
+  const mailer = options.mailer ?? createNoopMailer();
+  const now = options.now ?? ((): Date => new Date());
+  // Absent means this build publishes no basis and mounts no settings route,
+  // see {@link CreateAppOptions.settings}.
+  const settings = options.settings ?? null;
+  app.set('trust proxy', options.trustProxy);
+  // Nothing here serves HTML or benefits from an ETag; both only add
+  // surface and a version banner.
+  app.disable('x-powered-by');
+  app.disable('etag');
+
+  app.use(createCorsMiddleware());
+
+  /**
+   * `GET /health`, the version handshake of PROTOCOL.md §6, and the container
+   * healthcheck. Unauthenticated on purpose: a client must be able to discover
+   * that it is incompatible BEFORE it has credentials, and a healthcheck that
+   * needed a token would report on the token, not the service.
+   */
+  app.get('/health', (_req, res) => {
+    const handshake: ProtocolHandshake = {
+      protocolVersion: PROTOCOL_VERSION,
+      envelopeVersion: ENVELOPE_VERSION,
+      serviceVersion: SERVICE_VERSION,
+    };
+    // What this instance calls itself, and what it can do. Descriptive, never
+    // a grant: `ai` says an upstream key is configured, not that the caller may
+    // use it. Omitted entirely when absent, so a client older than protocol 2
+    // parses the response exactly as before. See `InstanceInfo`.
+    // THE STORED SETTING IS MERGED HERE, PER REQUEST, AND FROM MEMORY. Merged
+    // rather than written into `options.instance` once at boot, because an
+    // administrator changes it while the process runs and a copy taken at boot
+    // would keep publishing the old value until a redeploy. Read from the
+    // process-local copy rather than from the row, because this path is the
+    // container's own healthcheck: see `instance/instance-settings.ts`.
+    if (options.instance != null) {
+      handshake.instance =
+        settings === null ? options.instance : { ...options.instance, nutrientReferenceBasis: settings.current() };
+    }
+    // The operator's notice rides on this same /health body, and only when
+    // there is one: an instance with nothing to say sends no field at all, so
+    // a client older than M181 parses the response exactly as before. It is
+    // PULL, this service holds no addresses and never initiates.
+    if (options.notice != null) handshake.notice = options.notice;
+    res.status(200).json(handshake);
+  });
+
+  const requireAuth = createBearerAuthMiddleware(options.authContext);
+  registerAuthRoutes(app, {
+    ctx: options.authContext,
+    throttle: options.throttle,
+    requireAuth,
+    signupRequestThrottle: options.signupRequestThrottle,
+  });
+
+  // THE SHARE TERMINATOR, AND WHY IT IS HERE AND NOT LOWER DOWN.
+  //
+  // `SYNC_SHARING` is unset on every deployment that has not deliberately
+  // turned sharing on. Both share subtrees then answer the ordinary
+  // unknown-path 404, to everybody, credentialed or not, the same bargain
+  // the admin tree makes, for the same reason (this service auto-deploys on
+  // push).
+  //
+  // The ORDER is the load-bearing part. These paths live inside
+  // `SYNC_API_PREFIX`, so the bearer middleware mounted just below would
+  // otherwise reach them first and answer 401 to an anonymous caller, which
+  // announces that a credential exists here worth guessing. Mounting the
+  // terminator ahead of authentication is what makes an unconfigured instance
+  // indistinguishable from one where the feature was never written.
+  const shares = options.shares ?? null;
+  if (shares === null) {
+    // No SYNC_SHARING on this instance: an explicit 404, never a bare absence.
+    for (const prefix of SHARE_API_PREFIXES) {
+      app.use(prefix, handleNotFound);
+    }
+  }
+
+  // THE RESEARCH TERMINATOR, same placement, same reason, SEPARATE FLAG.
+  //
+  // `SYNC_RESEARCH` is unset on every deployment that has not deliberately
+  // turned research contributions on, and it is decided independently of
+  // `SYNC_SHARING`: neither flag implies the other. Both contribution
+  // subtrees then answer the ordinary unknown-path 404, to everybody,
+  // credentialed or not.
+  //
+  // Mounted HERE, ahead of the bearer middleware below, for exactly the
+  // reason the share terminator is: these paths live inside
+  // `SYNC_API_PREFIX`, so a merely-unmounted tree would be reached by
+  // `requireAuth` first and answer 401 to an anonymous probe, announcing
+  // that a credential exists worth guessing, on a tree whose very existence
+  // would tell a prober this deployment holds a cohort.
+  const research = options.research ?? null;
+  if (research === null) {
+    // No SYNC_RESEARCH on this instance: an explicit 404, never a bare absence.
+    for (const prefix of RESEARCH_API_PREFIXES) {
+      app.use(prefix, handleNotFound);
+    }
+  }
+
+  // THE PLANS TERMINATOR, AND WHY IT IS UP HERE WITH THE OTHER TWO.
+  //
+  // `PLANS_UPSTREAM_URL` is unset on every deployment that has not
+  // deliberately pointed this service at a biller. The whole `/v1/plans`
+  // subtree then answers the ordinary unknown-path 404, to everybody,
+  // credentialed or not.
+  //
+  // The ORDER is load-bearing here for a reason the feedback terminator does
+  // not share. `/v1/plans` sits OUTSIDE `SYNC_API_PREFIX`, so no bearer
+  // middleware reaches it by inheritance; but the configured subtree mounts
+  // its own `requireAuth` further down, and a terminator placed after that
+  // mount would sit behind a gate and answer 401 to an anonymous probe.
+  // Ahead of it, an unconfigured instance stays indistinguishable from one
+  // where the feature was never written.
+  const plans = options.plans ?? null;
+  if (plans === null) {
+    app.use(PLANS_API_PREFIX, handleNotFound);
+  }
+
+  // THE PUSH TERMINATOR, AND IT IS UP HERE FOR THE PLANS SUBTREE'S REASON.
+  //
+  // The three `VAPID_*` variables are unset on every deployment whose operator
+  // has not generated a pair. The whole `/v1/push` subtree then answers the
+  // ordinary unknown-path 404, to everybody, credentialed or not.
+  //
+  // `/v1/push` sits OUTSIDE `SYNC_API_PREFIX`, so no bearer middleware reaches
+  // it by inheritance; but the configured subtree mounts its own `requireAuth`
+  // further down, and a terminator placed after that mount would sit behind a
+  // gate and answer 401 to an anonymous probe. Ahead of it, an instance that
+  // sends no notifications stays indistinguishable from one where the feature
+  // was never written. See ADR-0008.
+  const push = options.push ?? null;
+  if (push === null) {
+    app.use(PUSH_API_PREFIX, handleNotFound);
+  }
+
+  // Every blob/key-record route is behind the bearer gate. `registerSyncRoutes`
+  // still does its own `resolveEntitledUser` check, defence in depth, and the
+  // seam a future entitlement rule would use.
+  app.use(SYNC_API_PREFIX, requireAuth);
+  const resolveEntitledUser = createEntitledUserResolver();
+  registerSyncRoutes(app, {
+    storage: options.storage,
+    resolveEntitledUser,
+    logger: options.logger,
+  });
+
+  // `POST /v1/sync/rotate-dek`, on EVERY instance, it is not part of the
+  // dark share surface. It rewrites the caller's own blob and their own two
+  // key records, rows that exist on every account everywhere, and an owner
+  // who has never shared anything still needs a way to retire a DEK they
+  // believe leaked. `sharingEnabled` only decides whether a keep list may say
+  // anything; the route itself is never gated. See that module's header.
+  registerRotateDekRoute(app, {
+    rotation: options.rotation,
+    resolveEntitledUser,
+    sharingEnabled: shares !== null,
+    // A rotation mints a new recovery code, so this route needs the same two
+    // subkeys the auth handlers hold to store it (M192 addendum).
+    recoveryCredentials: {
+      pepper: options.authContext.pepper,
+      escrowKey: options.authContext.escrowKey,
+    },
+  });
+
+  // The share family, when this instance has one. It is handed the same
+  // caller resolver, and deliberately NOT a way to turn a caller into a
+  // target, see `share-routes.ts`'s header on the confused deputy that
+  // reusing this resolver for target selection would create.
+  if (shares !== null) {
+    registerShareRoutes(app, { shares, storage: options.storage, resolveEntitledUser });
+  }
+
+  // The research family, when this instance has one. It is deliberately NOT
+  // handed `storage`: this lane never reads a blob, and giving it the adapter
+  // would create the one seam a study-side route could use to reach a
+  // contributor's diary, the "share with a smaller UI" ADR-0003 forbids.
+  if (research !== null) {
+    registerResearchRoutes(app, { research, resolveEntitledUser });
+  }
+
+  // THE AI PROXY, OR NOTHING THAT ADMITS TO BEING ONE.
+  //
+  // `UPSTREAM_API_KEY` is unset on every deployment that has not deliberately
+  // pointed this service at a provider. `POST /v1/chat/completions` then
+  // answers the ordinary unknown-path 404, to everybody, credentialed or not ,
+  // the same bargain the admin and share trees make, for the same reason (this
+  // service auto-deploys on push).
+  //
+  // The terminator is mounted whether or not the route is, so the answer for
+  // that path is pinned to the 404 and cannot be turned into a 401 by some
+  // future middleware between here and the fallthrough below.
+  const ai = options.ai ?? null;
+  if (ai === null) {
+    app.use(CHAT_COMPLETIONS_PATH, handleNotFound);
+  } else {
+    registerAiRoute(app, {
+      upstream: ai.upstream,
+      quota: ai.quota,
+      accounts: options.authContext.store,
+      logger: options.logger,
+      now,
+      requireAuth,
+      perMinute: ai.perMinute,
+      maxRequestBytes: ai.maxRequestBytes,
+      instanceDailyLimit: ai.instanceDailyLimit,
+      trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
+      bodyPolicy: ai.bodyPolicy,
+    });
+  }
+
+  // THE REPORTED-ESTIMATE ROUTE, OR NOTHING THAT ADMITS TO BEING ONE.
+  //
+  // `SYNC_FEEDBACK` is unset on every deployment whose operator has not
+  // deliberately decided to hold their users' photographs. The whole
+  // `/v1/feedback` subtree then answers the ordinary unknown-path 404, to
+  // everybody, credentialed or not.
+  //
+  // The terminator is on the PREFIX rather than on the one path the route
+  // occupies, so a second verb added later is dark by default rather than by
+  // somebody remembering to add it here.
+  //
+  // AN HONEST NOTE, so nobody deletes this line believing it is dead. Today
+  // the fallthrough `handleNotFound` at the bottom of this function would give
+  // the same answer, because `/v1/feedback` sits outside `SYNC_API_PREFIX` and
+  // no bearer middleware stands over it. This mount is a PIN, not the
+  // mechanism: it fixes the answer for the whole subtree ahead of anything a
+  // later change might put between here and the fallthrough, which is exactly
+  // the mistake the share and research terminators exist to prevent. Verified
+  // by defect injection: mounting `requireAuth` on this prefix ABOVE the line
+  // below turns every anonymous probe into a 401 and fails
+  // `tests/unit/feedback-route-gating.test.ts`.
+  const feedback = options.feedback ?? null;
+  if (feedback === null) {
+    app.use(FEEDBACK_API_PREFIX, handleNotFound);
+  } else {
+    registerFeedbackRoute(app, {
+      reports: feedback.reports,
+      images: feedback.images,
+      requireAuth,
+      dailyLimit: feedback.dailyLimit,
+      maxRequestBytes: feedback.maxRequestBytes,
+      now,
+    });
+  }
+
+  // THE COMMUNITY PULSE, on every instance, and behind the bearer gate it
+  // mounts itself. There is no operator flag to read here: the opt in is on the
+  // device, and an instance nobody opted in on answers every number as zero.
+  // See `server/register-pulse-routes.ts` and ADR-0007.
+  registerPulseRoutes(app, {
+    pulse: options.pulse,
+    requireAuth,
+    logger: options.logger,
+    now,
+  });
+
+  // WEB PUSH, when this instance has keys to sign with. The unconfigured case
+  // was pinned to a 404 above, ahead of everything. The routes carry their own
+  // scoped body parser and their own access log, which writes no account id;
+  // see `server/register-push-routes.ts`.
+  if (push !== null) {
+    registerPushRoutes(app, {
+      store: push.store,
+      publicKey: push.publicKey,
+      requireAuth,
+      logger: options.logger,
+      now,
+    });
+  }
+
+  // THE PLANS PASS-THROUGH, when a biller stands behind this instance. It is
+  // handed the account store because `X-Account-Email` is read from the row
+  // and never from the request, and the bearer middleware because the subtree
+  // is authenticated: an anonymous caller here gets the ordinary 401 the rest
+  // of the authenticated surface gives. The ONE exception is `GET
+  // /v1/plans/prices`, the price list a sign-up screen shows, which the router
+  // mounts ahead of its own gate and forwards with no account header. The
+  // clock ages that list's cache. The unconfigured case was pinned to a 404
+  // above, ahead of everything, and it covers the price list too. See
+  // `server/plans-proxy.ts`.
+  if (plans !== null) {
+    registerPlansRoutes(app, {
+      upstream: plans,
+      requireAuth,
+      accounts: options.authContext.store,
+      logger: options.logger,
+      now,
+    });
+  }
+
+  // THE TWO STATUTORY BUTTONS (M214/09), ALWAYS MOUNTED. Unlike the plans
+  // pass-through just above, this route does not need one configured: an
+  // absent `plans` here means every declaration is still persisted and
+  // mailed, and stamped `forward_error: 'plans-not-configured'`, not a 404.
+  // See `server/legal-declarations.ts`.
+  registerLegalDeclarationsRoute(app, {
+    store: options.legal.store,
+    accounts: options.authContext.store,
+    mailer,
+    plans,
+    logger: options.logger,
+    now,
+    rateLimitPerMinute: options.legal.rateLimitPerMinute,
+  });
+
+  // The admin API, ALWAYS mounted, and its middleware decides what to admit
+  // to. An instance with no `ADMIN_TOKEN` and no admin account is
+  // indistinguishable from one where the feature was never written, because
+  // `createAdminAuthMiddleware` answers the ordinary unknown-path 404 in that
+  // case rather than a 401. See its header and this module's.
+  //
+  // THE OPERATOR'S FEEDBACK ROUTER IS MOUNTED IN THE SAME `app.use`, ahead of
+  // the account routes, so ONE admin middleware instance runs per request. Two
+  // separate `app.use(ADMIN_API_PREFIX, adminAuth, ...)` mounts would
+  // authenticate every account request twice, which on the account-token
+  // credential is a second database round trip for nothing. It carries its own
+  // `SYNC_FEEDBACK` terminator, so with the feature off the whole
+  // `/v1/admin/feedback` subtree is the ordinary unknown-path 404 even for an
+  // authenticated administrator. See `server/admin-feedback-routes.ts`.
+  app.use(
+    ADMIN_API_PREFIX,
+    createAdminAuthMiddleware({
+      adminToken: options.admin.token,
+      billingToken: options.admin.billingToken ?? null,
+      authContext: options.authContext,
+      logger: options.logger,
+    }),
+    // THE BILLER'S SCOPE, DIRECTLY BEHIND THE DOOR AND AHEAD OF BOTH ROUTERS.
+    // Its position is the property: a service principal calling anything
+    // outside three routes is refused here, so no handler runs and no row is
+    // read, and a route added to either router later is refused because it was
+    // never named rather than because somebody remembered it. A no-op for the
+    // operator's two credentials. See `server/service-principal-scope.ts`.
+    enforceServicePrincipalScope,
+    createAdminFeedbackRoutes({
+      surface: feedback === null ? null : { reports: feedback.review, images: feedback.images },
+      logger: options.logger,
+    }),
+    createAdminRoutes({
+      metadata: options.admin.metadata,
+      invites: options.admin.invites,
+      accounts: options.authContext.store,
+      blobs: options.admin.blobs,
+      mailer,
+      // The mailer itself cannot answer this: the no-op resolves, so a send
+      // that did nothing is indistinguishable from one that worked.
+      mailConfigured: options.mailConfigured ?? false,
+      links: options.admin.links ?? null,
+      // The SAME value the proxy enforces, read off the AI surface rather than
+      // configured again here, see `AiSurfaceOptions.instanceDailyLimit`. An
+      // instance with no AI surface at all reports `null`, which is honest:
+      // `POST /v1/chat/completions` does not exist on it, so no ceiling
+      // applies whatever the environment says.
+      aiInstanceDailyLimit: ai?.instanceDailyLimit ?? null,
+      // The same number the proxy enforces, read off the same surface (M253).
+      aiTrialInstanceDailyLimit: ai?.trialInstanceDailyLimit ?? null,
+      // The instance's scan trial, which `"trial": true` and the lapsed-trial
+      // grant write. `null` refuses both with a sentence that says why.
+      trial: options.trial ?? null,
+      // The SAME policy `POST /v1/auth/invites` enforces, read off the auth
+      // context rather than configured again here (M212), so the `invitesLeft`
+      // an operator reads in the console is counted against the same
+      // `MEMBER_INVITE_LIFETIME_CAP` the route refuses on.
+      memberInvites: options.authContext.memberInvites?.policy ?? null,
+      // The SAME minter the auth handlers use, so an operator-sent reset and a
+      // self-service one produce tokens of the same shape.
+      mintResetToken: options.authContext.mintResetToken,
+      // The SAME surface `/health` publishes from, so a PATCH and the next
+      // handshake on this process cannot report two different bases. `null`
+      // takes `PATCH /settings` away entirely, see
+      // {@link CreateAppOptions.settings}.
+      settings,
+      now,
+      logger: options.logger,
+    }),
+  );
+
+  app.use(handleNotFound);
+  app.use(createErrorMiddleware(options.logger));
+
+  return app;
+}

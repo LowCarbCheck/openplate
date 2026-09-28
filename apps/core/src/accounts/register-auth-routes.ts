@@ -1,0 +1,510 @@
+/**
+ * Express glue for the `/v1/auth/*` endpoints — mapping only. Every decision
+ * lives in `auth-handlers.ts`; this file turns a typed `AuthOutcome` into a
+ * status code and wires the per-IP throttle, which is the one concern that
+ * genuinely needs the request object (`req.ip`).
+ *
+ * The JSON body parser is applied to the `/v1/auth` PREFIX only, with a small
+ * limit. Other routers mount their own, far larger ones
+ * (`server/register-routes.ts`, `ai/register-ai-route.ts`) — a multi-megabyte
+ * body limit has no business anywhere near a login endpoint.
+ *
+ * THE PREFIX ON THAT `use` IS LOAD-BEARING, and its absence was a live defect
+ * until M192/03. This router is mounted with `app.use(router)` — at the ROOT,
+ * with no path — so a `router.use(parser)` with no path of its own ran the
+ * 64 KB parser on EVERY request to EVERY path in the service, before routing.
+ * A JSON parser marks a request as parsed, so the second parser on the
+ * blob, share, research and AI routers found the work already done and their
+ * own declared limits were unreachable. The observable effect: a blob push
+ * over 64 KB answered `413` even though `MAX_BLOB_BYTES` is 2 MiB, and every
+ * plate photograph posted to `/v1/chat/completions` did too. Nothing caught
+ * it because no test in either tier ever sent a body larger than a sentence.
+ *
+ * THROTTLE POLICY, per route and deliberately different:
+ *  - **login** — keyed by IP **and** email, cleared on success. Slows a
+ *    single-source brute force without letting anyone lock a victim out of
+ *    their own account from a different IP.
+ *  - **recover** and **recover-rotate** — keyed by IP **and** email, exactly
+ *    like login and for the same reason, but they matter more: both accept a
+ *    guess at the ONE authenticator left to a user who has lost their
+ *    passphrase, and a success on either hands over the account. Neither is
+ *    cleared on success — a legitimate recovery happens once, so there is no
+ *    honest client that needs its allowance back.
+ *  - **reset/request** — keyed by IP **and** email, never cleared, for the
+ *    same reason. It does not accept a guess at anything, but it is the one
+ *    endpoint whose two branches do measurably different work (one INSERT and
+ *    one mail send on the known branch), and a residual timing signal that
+ *    small only emerges from many samples per address. It is also what a
+ *    caller would use to fill somebody's mailbox.
+ *  - **signup**, **kdf**, **invite-lookup**, **invites** and **reset/open**,
+ *    keyed by IP ALONE, and every attempt counts, successful or not. These are
+ *    volume controls (account-farming, bulk address probing, token guessing),
+ *    not credential guards, and keying them by a submitted value would let an
+ *    attacker evade them by simply rotating it — which is precisely the
+ *    attack, in the `kdf` case. The member mint is on this list even though it
+ *    is authenticated: VOLUME is the attack there too, because every accepted
+ *    call sends a letter to an address the caller chose, and a bucket keyed by
+ *    that address would hand out a fresh allowance per mailbox.
+ *
+ * `kdf` is throttled for two reasons that are easy to miss because its
+ * RESPONSE already gives nothing away (unknown addresses get a real-shaped
+ * dummy). First, it is an unauthenticated endpoint that hits the database on
+ * every call, so without a bound it is free amplification. Second, the
+ * indistinguishability is statistical, not absolute: `handleGetKdfDescriptor`
+ * equalises the work both branches do, but no server-side measure makes two
+ * paths bit-identical in wall-clock terms, and a timing signal that small only
+ * emerges from many samples per address. Denying the samples is what closes
+ * the gap. Its traffic is genuinely low — a client fetches a descriptor on a
+ * fresh login, and refresh tokens last 30 days — so the shared allowance is
+ * not a burden on a household behind one NAT.
+ */
+import express from 'express';
+import type { Express, Request, RequestHandler, Response } from 'express';
+import type { AuthContext, AuthOutcome } from './auth-handlers.js';
+import {
+  handleChangePassphrase,
+  handleDeleteAccount,
+  handleGetAccount,
+  handleGetKdfDescriptor,
+  handleInviteLookup,
+  handleLogin,
+  handleLogout,
+  handleMintMemberInvite,
+  handleRecordHealthConsent,
+  handleRecover,
+  handleRecoverRotate,
+  handleRefresh,
+  handleResetOpen,
+  handleResetRequest,
+  handleSignup,
+  handleSignupRequest,
+  handleUpdateAccount,
+} from './auth-handlers.js';
+import { handleNotFound } from '../server/error-middleware.js';
+import { getRequestSession } from '../server/bearer-auth.js';
+import { createThrottleStore, throttleKey, type ThrottleStore } from '../lib/throttle.js';
+import { SIGNUP_REQUEST_IP_THROTTLE } from './open-signup.js';
+import { asFields } from './auth-input.js';
+import { asString } from '../lib/json.js';
+
+/** Mount prefix for the account endpoints. The sync endpoints live beside it under `/v1/sync`. */
+export const AUTH_API_PREFIX = '/v1/auth';
+
+/** Auth bodies are small; only the blob endpoint has any business being large. */
+const AUTH_JSON_BODY_LIMIT = 64 * 1024;
+
+export interface AuthRoutesOptions {
+  ctx: AuthContext;
+  throttle: ThrottleStore;
+  /** The bearer middleware — injected so this module never reaches for a singleton. */
+  requireAuth: RequestHandler;
+  /**
+   * The per-source bucket of `POST /v1/auth/signup-request` (M253), or absent
+   * for a fresh one on {@link SIGNUP_REQUEST_IP_THROTTLE}.
+   *
+   * ITS OWN STORE, NOT {@link AuthRoutesOptions.throttle}. That store runs on
+   * one config for every route (fifteen minutes of memory), and this door
+   * counts per HOUR. A bucket's config is fixed by its store, so a second
+   * bound needs a second store.
+   */
+  signupRequestThrottle?: ThrottleStore;
+}
+
+/** Maps a handler outcome onto the wire. The only place status codes are chosen. */
+function sendOutcome<T>(res: Response, outcome: AuthOutcome<T>): void {
+  switch (outcome.status) {
+    case 'ok':
+      res.status(200).json(outcome.body);
+      return;
+    case 'created':
+      res.status(201).json(outcome.body);
+      return;
+    case 'accepted':
+      res.status(202).json(outcome.body);
+      return;
+    case 'no-content':
+      res.status(204).end();
+      return;
+    case 'invalid':
+      res.status(400).json({ error: outcome.reason });
+      return;
+    case 'unauthorized':
+      res.status(401).json({ error: outcome.reason });
+      return;
+    case 'forbidden':
+      res.status(403).json({ error: outcome.reason });
+      return;
+    case 'not-found':
+      res.status(404).json({ error: outcome.reason });
+      return;
+    case 'conflict':
+      res.status(409).json({ error: outcome.reason });
+      return;
+    case 'unavailable':
+      res.status(503).json({ error: outcome.reason });
+      return;
+  }
+}
+
+/** `429` with a `Retry-After` in whole seconds, rounded up so a client never retries a millisecond too early. */
+function sendThrottled(res: Response, retryAfterMs: number): void {
+  const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+  res.setHeader('Retry-After', String(retryAfterSeconds));
+  res.status(429).json({ error: `too many attempts; try again in ${retryAfterSeconds}s` });
+}
+
+/**
+ * `req.ip` is `undefined` only when Express cannot determine it at all; the
+ * literal fallback keeps every such request in ONE bucket rather than
+ * silently exempting them from the throttle.
+ */
+function clientIp(req: Request): string {
+  return req.ip ?? 'unknown';
+}
+
+export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): void {
+  const { ctx, throttle, requireAuth } = options;
+  const router = express.Router();
+  // SCOPED TO THE PREFIX. See the module header: unscoped, this parser applies
+  // to every path in the service and silently caps them all at 64 KB.
+  router.use(AUTH_API_PREFIX, express.json({ limit: AUTH_JSON_BODY_LIMIT }));
+
+  router.post(`${AUTH_API_PREFIX}/kdf`, async (req, res, next) => {
+    try {
+      const key = throttleKey({ namespace: 'kdf', ip: clientIp(req) });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      // Counts every attempt. Keying this by the submitted address would be
+      // worse than useless: probing many addresses is the attack, so a
+      // per-address bucket would hand the attacker a fresh allowance for each
+      // one he wants to test.
+      throttle.recordFailure(key);
+      sendOutcome(res, await handleGetKdfDescriptor({ email: asFields(req.body).email }, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/invite-lookup`, async (req, res, next) => {
+    try {
+      // By IP alone, and every attempt counts. Guessing invite tokens is the
+      // attack, so a bucket keyed by the submitted token would hand out a fresh
+      // allowance for every guess.
+      const key = throttleKey({ namespace: 'invite-lookup', ip: clientIp(req) });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      throttle.recordFailure(key);
+      sendOutcome(res, await handleInviteLookup(req.body, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/signup`, async (req, res, next) => {
+    try {
+      const key = throttleKey({ namespace: 'signup', ip: clientIp(req) });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      // Counts every attempt: this is a volume control, not a credential guard.
+      throttle.recordFailure(key);
+      sendOutcome(res, await handleSignup(req.body, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/login`, async (req, res, next) => {
+    try {
+      const submittedEmail = asString(asFields(req.body).email);
+      const key = throttleKey({
+        namespace: 'login',
+        ip: clientIp(req),
+        identifier: submittedEmail ?? undefined,
+      });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+
+      const outcome = await handleLogin(req.body, ctx);
+      if (outcome.status === 'unauthorized') {
+        throttle.recordFailure(key);
+      } else if (outcome.status === 'ok') {
+        throttle.clear(key);
+      }
+      sendOutcome(res, outcome);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Both recovery routes share ONE throttle bucket per (IP, email), on
+  // purpose: they authenticate the same secret, so letting an attacker spend a
+  // fresh allowance on each would halve the cost of guessing it.
+  const recoveryThrottleKey = (req: Request): string =>
+    throttleKey({
+      namespace: 'recover',
+      ip: clientIp(req),
+      identifier: asString(asFields(req.body).email) ?? undefined,
+    });
+
+  router.post(`${AUTH_API_PREFIX}/recover`, async (req, res, next) => {
+    try {
+      const key = recoveryThrottleKey(req);
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+
+      const outcome = await handleRecover(req.body, ctx);
+      // Counts every attempt, successful or not, and is never cleared. A
+      // recovery is a once-in-an-account's-life event; a caller making a
+      // second one within the window is far more likely to be guessing than
+      // to be the owner.
+      throttle.recordFailure(key);
+      sendOutcome(res, outcome);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/recover-rotate`, async (req, res, next) => {
+    try {
+      const key = recoveryThrottleKey(req);
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+
+      const outcome = await handleRecoverRotate(req.body, ctx);
+      throttle.recordFailure(key);
+      sendOutcome(res, outcome);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/reset/request`, async (req, res, next) => {
+    try {
+      // Per (IP, email), and NEVER cleared. A person forgets their password
+      // once; a caller measuring the difference between a known and an unknown
+      // address, or filling somebody's mailbox, does it thousands of times.
+      const key = throttleKey({
+        namespace: 'reset-request',
+        ip: clientIp(req),
+        identifier: asString(asFields(req.body).email) ?? undefined,
+      });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      throttle.recordFailure(key);
+      sendOutcome(res, await handleResetRequest(req.body, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/reset/open`, async (req, res, next) => {
+    try {
+      // By IP alone: the submitted value IS the secret being guessed, so a
+      // bucket keyed by it would reset on every guess.
+      const key = throttleKey({ namespace: 'reset-open', ip: clientIp(req) });
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      throttle.recordFailure(key);
+      sendOutcome(res, await handleResetOpen(req.body, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/refresh`, async (req, res, next) => {
+    try {
+      sendOutcome(res, await handleRefresh(req.body, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/logout`, requireAuth, async (req, res, next) => {
+    try {
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
+      sendOutcome(res, await handleLogout(session, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(`${AUTH_API_PREFIX}/change-passphrase`, requireAuth, async (req, res, next) => {
+    try {
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
+      sendOutcome(res, await handleChangePassphrase({ accountId: session.accountId, body: req.body }, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get(`${AUTH_API_PREFIX}/account`, requireAuth, async (req, res, next) => {
+    try {
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
+      sendOutcome(res, await handleGetAccount({ accountId: session.accountId }, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.patch(`${AUTH_API_PREFIX}/account`, requireAuth, async (req, res, next) => {
+    try {
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
+      sendOutcome(res, await handleUpdateAccount({ accountId: session.accountId, body: req.body }, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // THE HEALTH-DATA CONSENT PROMPT, OR NOTHING THAT ADMITS TO BEING ONE.
+  //
+  // `HEALTH_CONSENT_VERSION` is unset on every instance whose operator asks
+  // for no consent, which is the self-hosted default. The path then answers
+  // the ordinary unknown-path 404, to everybody, signed in or not, with the
+  // terminator in the same position the route would occupy, for the reason
+  // the member mint below gives. Bearer when mounted, like `PATCH /account`,
+  // and unthrottled like it: it writes one row the caller owns and sends
+  // nothing anywhere.
+  if (ctx.healthConsent != null) {
+    router.post(`${AUTH_API_PREFIX}/account/health-consent`, requireAuth, async (req, res, next) => {
+      try {
+        const session = getRequestSession(req);
+        if (session === null) {
+          res.status(401).json({ error: 'authentication required' });
+          return;
+        }
+        sendOutcome(res, await handleRecordHealthConsent({ accountId: session.accountId, body: req.body }, ctx));
+      } catch (error) {
+        next(error);
+      }
+    });
+  } else {
+    router.use(`${AUTH_API_PREFIX}/account/health-consent`, handleNotFound);
+  }
+
+  // THE MEMBER MINT, OR NOTHING THAT ADMITS TO BEING ONE (M212).
+  //
+  // `MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS` are
+  // unset on every deployment whose operator has not decided to let members
+  // invite people. The member mint then answers the ordinary unknown-path
+  // 404 on its path, to everybody, signed in or not, which is the same
+  // bargain the admin, share, research, feedback and AI surfaces make, for the
+  // same reason: this service auto-deploys on push, so the commit that adds a
+  // route is the commit that puts it in production.
+  //
+  // The terminator sits in the SAME position the real route would occupy, so
+  // it is reached before the fallthrough and cannot be turned into a 401 by
+  // anything mounted later. It is mounted on the path rather than wrapped
+  // around a registered-but-refusing handler, so a second verb added here
+  // later is dark by default.
+  if (ctx.memberInvites != null) {
+    router.post(`${AUTH_API_PREFIX}/invites`, requireAuth, async (req, res, next) => {
+      try {
+        const session = getRequestSession(req);
+        if (session === null) {
+          res.status(401).json({ error: 'authentication required' });
+          return;
+        }
+        // By IP alone, and every attempt counts, see the module header. It is
+        // checked BEFORE the handler, so a caller who is already locked out
+        // costs no database read and, more importantly, causes no letter.
+        const key = throttleKey({ namespace: 'member-invite', ip: clientIp(req) });
+        const decision = throttle.check(key);
+        if (decision.locked) {
+          sendThrottled(res, decision.retryAfterMs);
+          return;
+        }
+        throttle.recordFailure(key);
+        sendOutcome(res, await handleMintMemberInvite({ accountId: session.accountId, body: req.body }, ctx));
+      } catch (error) {
+        next(error);
+      }
+    });
+  } else {
+    router.use(`${AUTH_API_PREFIX}/invites`, handleNotFound);
+  }
+
+  // THE OPEN SIGN-UP DOOR, OR NOTHING THAT ADMITS TO BEING ONE (M253).
+  //
+  // `OPEN_SIGNUP` is unset on every invite-only instance. The path then
+  // answers the ordinary unknown-path 404, with the terminator in the same
+  // position the route would occupy, for the reason the member mint above
+  // gives. Unauthenticated when mounted, like `/signup` and `/invite-lookup`.
+  if (ctx.openSignup != null) {
+    const signupRequestThrottle = options.signupRequestThrottle ?? createThrottleStore(SIGNUP_REQUEST_IP_THROTTLE);
+    router.post(`${AUTH_API_PREFIX}/signup-request`, async (req, res, next) => {
+      try {
+        // By IP alone, and every attempt counts, BEFORE the handler: a caller
+        // who is locked out costs no captcha call, no database read and no
+        // letter. Keying it by the submitted address would hand out a fresh
+        // allowance per address, which is the attack.
+        const key = throttleKey({ namespace: 'signup-request', ip: clientIp(req) });
+        const decision = signupRequestThrottle.check(key);
+        if (decision.locked) {
+          sendThrottled(res, decision.retryAfterMs);
+          return;
+        }
+        signupRequestThrottle.recordFailure(key);
+        sendOutcome(res, await handleSignupRequest(req.body, ctx));
+      } catch (error) {
+        next(error);
+      }
+    });
+  } else {
+    router.use(`${AUTH_API_PREFIX}/signup-request`, handleNotFound);
+  }
+
+  router.post(`${AUTH_API_PREFIX}/delete`, requireAuth, async (req, res, next) => {
+    try {
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
+      sendOutcome(res, await handleDeleteAccount({ accountId: session.accountId, body: req.body }, ctx));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use(router);
+}

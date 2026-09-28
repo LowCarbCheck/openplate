@@ -1,0 +1,679 @@
+/**
+ * Config parsing — every assertion here is a boot that MUST fail rather than
+ * a service that starts half-configured and takes real accounts.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  MAX_SYNC_NOTICE_LENGTH,
+  MIN_ADMIN_TOKEN_LENGTH,
+  MIN_SERVER_SECRET_LENGTH,
+  parseConfig,
+} from '../../src/config.js';
+import { INSTANCE_LANGUAGES, NUTRIENT_REFERENCE_BASES } from '../../src/protocol.js';
+
+const SECRET = 'x'.repeat(MIN_SERVER_SECRET_LENGTH);
+
+function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  return {
+    DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+    SERVER_SECRET: SECRET,
+    ...overrides,
+  };
+}
+
+test('a minimal valid environment parses with sane defaults', () => {
+  const config = parseConfig(baseEnv());
+  assert.equal(config.port, 3000);
+  assert.equal(config.trustProxy, false);
+  assert.equal(config.logLevel, 'info');
+  assert.equal(config.instanceName, 'openplate');
+  assert.equal(config.instanceLanguage, 'en');
+  // No link bases and no mail: a self-hosted instance that configured neither
+  // still boots, and its invites come back as raw tokens.
+  assert.equal(config.serverPublicUrl, null);
+  assert.equal(config.clientBaseUrl, null);
+  assert.equal(config.mail, null);
+  // Both dark features are OFF unless an operator opts in. This is the
+  // default every deployment runs on, and it is what makes shipping the
+  // routes before anyone opts in safe (ADR-0002 / ADR-0003).
+  assert.equal(config.sharingEnabled, false);
+  assert.equal(config.researchEnabled, false);
+  // And the one whose absence protects a photograph rather than a ciphertext.
+  assert.equal(config.feedbackEnabled, false);
+  // And no biller: the whole /v1/plans subtree is the ordinary unknown-path
+  // 404 until an operator sets both plans variables (M213).
+  assert.equal(config.plans, null);
+  assert.equal(config.feedbackDailyLimit, 5);
+  assert.equal(config.feedbackMaxRequestBytes, 8_000_000);
+  // NO INSTANCE-WIDE AI CEILING unless an operator asks for one. A default
+  // here would be a bound arriving on a running instance during an ordinary
+  // upgrade, and the first anybody would hear of it is users being refused.
+  assert.equal(config.aiInstanceDailyLimit, null);
+});
+
+test('a missing DATABASE_URL or SERVER_SECRET is fatal', () => {
+  for (const key of ['DATABASE_URL', 'SERVER_SECRET']) {
+    const env = baseEnv();
+    delete env[key];
+    assert.throws(() => parseConfig(env), new RegExp(key));
+  }
+});
+
+test('a short SERVER_SECRET is fatal', () => {
+  // The pepper derived from this is the only thing standing between a stolen
+  // table and offline verification of guessed auth-hashes.
+  assert.throws(() => parseConfig(baseEnv({ SERVER_SECRET: 'too-short' })), /SERVER_SECRET/);
+});
+
+test('SIGNUP_MODE is fatal, and the message says signup is invite-only', () => {
+  // The direction matters more than the rejection. An instance booting with a
+  // stale `SIGNUP_MODE=closed` would be an operator believing they had shut a
+  // door that is not implemented at all; one with `open` would be an operator
+  // believing public registration is on. Both spellings throw, and the message
+  // names the replacement so the fix is one line.
+  for (const value of ['open', 'invite', 'closed', 'inviteonly']) {
+    assert.throws(() => parseConfig(baseEnv({ SIGNUP_MODE: value })), /invite-only/, `SIGNUP_MODE=${value}`);
+  }
+  assert.throws(() => parseConfig(baseEnv({ SIGNUPS_OPEN: 'false' })), /invite-only/);
+  assert.throws(() => parseConfig(baseEnv({ SIGNUPS_OPEN: 'true' })), /invite-only/);
+});
+
+test('INSTANCE_NAME and INSTANCE_LANGUAGE are read, and a bad language is fatal', () => {
+  const config = parseConfig(baseEnv({ INSTANCE_NAME: 'Praxis Nord', INSTANCE_LANGUAGE: 'de' }));
+  assert.equal(config.instanceName, 'Praxis Nord');
+  assert.equal(config.instanceLanguage, 'de');
+  // Only the languages the mails exist in. Another would silently fall back
+  // to English on the day somebody needs it. Every one the protocol names is
+  // accepted, so a language that has letters is never a boot failure.
+  for (const language of INSTANCE_LANGUAGES) {
+    assert.equal(parseConfig(baseEnv({ INSTANCE_LANGUAGE: language })).instanceLanguage, language);
+  }
+  assert.throws(() => parseConfig(baseEnv({ INSTANCE_LANGUAGE: 'xx' })), /INSTANCE_LANGUAGE/);
+});
+
+test('NUTRIENT_REFERENCE_BASIS defaults to dge, accepts the three, and a typo is fatal', () => {
+  // The default is the one this milestone decided on, and it is what every
+  // instance that says nothing runs on.
+  assert.equal(parseConfig(baseEnv()).nutrientReferenceBasis, 'dge');
+  for (const basis of NUTRIENT_REFERENCE_BASES) {
+    assert.equal(parseConfig(baseEnv({ NUTRIENT_REFERENCE_BASIS: basis })).nutrientReferenceBasis, basis);
+  }
+  // `dach` is the plausible wrong one: a typo here would otherwise show a
+  // person a different country's nutrition targets without saying so.
+  assert.throws(() => parseConfig(baseEnv({ NUTRIENT_REFERENCE_BASIS: 'dach' })), /NUTRIENT_REFERENCE_BASIS/);
+});
+
+test('HEALTH_CONSENT_VERSION is unset by default, takes 1 to 32 safe characters, and anything else is fatal', () => {
+  // Unset and blank both mean "ask for no consent", the self-hosted default.
+  assert.equal(parseConfig(baseEnv()).healthConsentVersion, null);
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: '   ' })).healthConsentVersion, null);
+  // The intended shape, the edges of the length, and every allowed character.
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: '2026-09-28' })).healthConsentVersion, '2026-09-28');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: ' v2 ' })).healthConsentVersion, 'v2');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'a' })).healthConsentVersion, 'a');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'x'.repeat(32) })).healthConsentVersion, 'x'.repeat(32));
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'A.b_C-9' })).healthConsentVersion, 'A.b_C-9');
+  // A value a client could never echo back byte for byte is a boot failure,
+  // never a live instance where every signup answers health-consent-required.
+  for (const bad of ['x'.repeat(33), '2026 09 28', '"2026-09-28"', 'v1/2', 'versión']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: bad })),
+      /HEALTH_CONSENT_VERSION/,
+      `"${bad}" must be refused`,
+    );
+  }
+});
+
+test('CLIENT_BASE_URL and SERVER_PUBLIC_URL are absolute http(s) URLs, or fatal', () => {
+  // They end up in a letter somebody clicks. A relative or misspelled value
+  // must be discovered by the operator at boot, not by the invited person.
+  const config = parseConfig(
+    baseEnv({ CLIENT_BASE_URL: 'https://openplate.de/', SERVER_PUBLIC_URL: 'https://sync.openplate.de' }),
+  );
+  // The trailing slash is stripped once, here, so no caller has to decide.
+  assert.equal(config.clientBaseUrl, 'https://openplate.de');
+  assert.equal(config.serverPublicUrl, 'https://sync.openplate.de');
+
+  assert.throws(() => parseConfig(baseEnv({ CLIENT_BASE_URL: '/join' })), /CLIENT_BASE_URL/);
+  assert.throws(() => parseConfig(baseEnv({ SERVER_PUBLIC_URL: 'javascript:alert(1)' })), /SERVER_PUBLIC_URL/);
+});
+
+test('TRUST_PROXY accepts a hop count as well as a boolean', () => {
+  assert.equal(parseConfig(baseEnv({ TRUST_PROXY: '1' })).trustProxy, 1);
+  assert.equal(parseConfig(baseEnv({ TRUST_PROXY: 'true' })).trustProxy, true);
+  assert.throws(() => parseConfig(baseEnv({ TRUST_PROXY: 'maybe' })), /TRUST_PROXY/);
+});
+
+test('HOST is unset by default, and unset means every interface', () => {
+  // THE PRODUCTION DEFAULT, FROZEN. This service runs in a container behind
+  // Traefik and the only route in is the container network address, so a
+  // future "hardening" that made this loopback would take production down.
+  assert.equal(parseConfig(baseEnv()).host, null);
+});
+
+test('an empty or whitespace-only HOST is null, never a bind to the empty string', () => {
+  // A commented-out `HOST=` left in an env file, or one with a stray space
+  // after it, must mean exactly what an absent one means. The empty string is
+  // not an address, and passing it on would be an operator who thinks they
+  // switched something off getting something else.
+  assert.equal(parseConfig(baseEnv({ HOST: '' })).host, null);
+  assert.equal(parseConfig(baseEnv({ HOST: '   ' })).host, null);
+  assert.equal(parseConfig(baseEnv({ HOST: '\t\n' })).host, null);
+});
+
+test('HOST is carried through trimmed, for IPv4, IPv6 and a tailnet address', () => {
+  // The three shapes a developer actually types. None of them is validated
+  // here on purpose: Node refuses an address it cannot bind, at listen time,
+  // and a pattern in this file would reject working values.
+  assert.equal(parseConfig(baseEnv({ HOST: '127.0.0.1' })).host, '127.0.0.1');
+  assert.equal(parseConfig(baseEnv({ HOST: '::1' })).host, '::1');
+  assert.equal(parseConfig(baseEnv({ HOST: '100.64.0.3' })).host, '100.64.0.3');
+  // Surrounding whitespace is stripped, so a value pasted with a trailing
+  // space still binds rather than failing with EADDRNOTAVAIL on " 127.0.0.1".
+  assert.equal(parseConfig(baseEnv({ HOST: '  127.0.0.1  ' })).host, '127.0.0.1');
+});
+
+test('an invalid PORT or LOG_LEVEL is fatal', () => {
+  assert.throws(() => parseConfig(baseEnv({ PORT: '0' })), /PORT/);
+  assert.throws(() => parseConfig(baseEnv({ PORT: 'http' })), /PORT/);
+  assert.throws(() => parseConfig(baseEnv({ LOG_LEVEL: 'chatty' })), /LOG_LEVEL/);
+});
+
+test('the mail block is all-or-nothing, and a gap names the missing variable', () => {
+  const complete = {
+    MAIL_API_URL: 'http://pigeon:3601/v1/emails',
+    MAIL_API_KEY: 'a-pigeon-tenant-key',
+    MAIL_API_FROM: 'openplate <openplate@mail.openplate.de>',
+    MAIL_OPERATOR_EMAIL: 'operator@example.org',
+    SERVER_PUBLIC_URL: 'https://sync.openplate.de',
+    CLIENT_BASE_URL: 'https://openplate.de',
+  };
+  assert.deepEqual(parseConfig(baseEnv(complete)).mail, {
+    url: 'http://pigeon:3601/v1/emails',
+    apiKey: 'a-pigeon-tenant-key',
+    from: 'openplate <openplate@mail.openplate.de>',
+    operatorEmail: 'operator@example.org',
+  });
+
+  // A HALF-CONFIGURED BLOCK IS A BOOT FAILURE, and the message NAMES the
+  // missing variable. The alternative is an operator who believes invitations
+  // are being delivered while every one of them silently comes back as a link
+  // nobody looks at.
+  for (const missing of ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM', 'MAIL_OPERATOR_EMAIL'] as const) {
+    const env = baseEnv(complete);
+    delete env[missing];
+    assert.throws(() => parseConfig(env), new RegExp(missing), `${missing} missing must be fatal`);
+  }
+
+  // ...and it names the VARIABLE, never a value: a key or a URL in a startup
+  // log is a credential in a log.
+  const withoutKey = baseEnv(complete);
+  delete withoutKey.MAIL_API_KEY;
+  assert.throws(
+    () => parseConfig(withoutKey),
+    (error: Error) => {
+      assert.ok(!error.message.includes('a-pigeon-tenant-key'), 'the message must not quote a configured value');
+      return true;
+    },
+  );
+});
+
+test('configured mail without the two link bases is a boot failure', () => {
+  // Both account letters exist to carry a link, so mail with nowhere to point
+  // is a letter with nothing in it to click.
+  const mailOnly = {
+    MAIL_API_URL: 'http://pigeon:3601/v1/emails',
+    MAIL_API_KEY: 'k',
+    MAIL_API_FROM: 'f',
+    MAIL_OPERATOR_EMAIL: 'operator@example.org',
+  };
+  assert.throws(() => parseConfig(baseEnv(mailOnly)), /SERVER_PUBLIC_URL/);
+  assert.throws(
+    () => parseConfig(baseEnv({ ...mailOnly, SERVER_PUBLIC_URL: 'https://sync.openplate.de' })),
+    /CLIENT_BASE_URL/,
+  );
+  // Without mail, neither is required: a self-hoster who configured no mail
+  // still boots and hands out links themselves.
+  assert.equal(parseConfig(baseEnv()).mail, null);
+});
+
+test('every removed variable is fatal rather than ignored', () => {
+  // The same asymmetry SIGNUP_MODE is rejected under, applied to the old mail
+  // plumbing. A variable that is quietly ignored lets an operator believe mail
+  // is configured under a name this service does not read — a false belief
+  // discovered by whoever needs it most, on the day they need it. Refusing to
+  // boot costs one deploy.
+  //
+  // CLIENT_BASE_URL is deliberately NOT on this list any more: M181 made it
+  // fatal because nothing linked into the client, and M192 mails invitations
+  // and resets again, so it is read again.
+  const removed = [
+    'REQUIRE_EMAIL_VERIFICATION',
+    'EMAIL_FROM',
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASSWORD',
+    'SMTP_SECURE',
+    'PIGEON_API_KEY',
+    'PIGEON_BASE_URL',
+  ];
+  for (const key of removed) {
+    // The message must NAME the variable, or an operator reading one line of
+    // container output cannot tell which of ten it was.
+    assert.throws(() => parseConfig(baseEnv({ [key]: 'anything' })), new RegExp(key), `${key} must be fatal`);
+  }
+});
+
+test('a removed variable is fatal even when set to its old default', () => {
+  // The trap this closes: an operator who left REQUIRE_EMAIL_VERIFICATION at
+  // `false` reads it as "off, therefore harmless". It is not harmless, it is
+  // stale, and an empty-looking value must not slip past the guard.
+  assert.throws(() => parseConfig(baseEnv({ REQUIRE_EMAIL_VERIFICATION: 'false' })), /REQUIRE_EMAIL_VERIFICATION/);
+  assert.throws(() => parseConfig(baseEnv({ SMTP_HOST: '' })), /SMTP_HOST/);
+});
+
+test('SYNC_RESEARCH and SYNC_SHARING are independent flags', () => {
+  // PROTOCOL.md §5.18: neither implies the other. A clinic instance may want
+  // sharing and no cohort graph; a study host may want the reverse. Folding
+  // them into one variable would silently widen every sharing deployment into
+  // a research deployment, and vice versa.
+  const researchOnly = parseConfig(baseEnv({ SYNC_RESEARCH: 'true' }));
+  assert.equal(researchOnly.researchEnabled, true);
+  assert.equal(researchOnly.sharingEnabled, false);
+
+  const sharingOnly = parseConfig(baseEnv({ SYNC_SHARING: '1' }));
+  assert.equal(sharingOnly.sharingEnabled, true);
+  assert.equal(sharingOnly.researchEnabled, false);
+
+  // A typo must not silently mean "off" on a flag whose absence is a 404.
+  assert.throws(() => parseConfig(baseEnv({ SYNC_RESEARCH: 'yes' })), /SYNC_RESEARCH/);
+});
+
+test('SYNC_FEEDBACK is off by default and implies nothing, and nothing implies it', () => {
+  // THE COST OF THIS ONE IS DIFFERENT IN KIND. Turning sharing or research on
+  // leaves this service holding more bytes it has no key for. Turning this on
+  // means the operator holds photographs of their users' food that they can
+  // look at (ADR-0006), so it must never arrive as a side effect of another
+  // flag.
+  const sharingAndResearch = parseConfig(baseEnv({ SYNC_SHARING: 'true', SYNC_RESEARCH: 'true' }));
+  assert.equal(sharingAndResearch.feedbackEnabled, false);
+
+  const feedbackOnly = parseConfig(baseEnv({ SYNC_FEEDBACK: 'true' }));
+  assert.equal(feedbackOnly.feedbackEnabled, true);
+  assert.equal(feedbackOnly.sharingEnabled, false);
+  assert.equal(feedbackOnly.researchEnabled, false);
+
+  // A typo must not silently mean "off" on a flag whose absence is a 404, and
+  // it must not silently mean "on" either.
+  assert.throws(() => parseConfig(baseEnv({ SYNC_FEEDBACK: 'yes' })), /SYNC_FEEDBACK/);
+});
+
+test('the two feedback bounds are operator knobs with sane defaults', () => {
+  const tuned = parseConfig(baseEnv({ FEEDBACK_DAILY_LIMIT: '20', FEEDBACK_MAX_REQUEST_BYTES: '2000000' }));
+  assert.equal(tuned.feedbackDailyLimit, 20);
+  assert.equal(tuned.feedbackMaxRequestBytes, 2_000_000);
+
+  // Zero is not "unlimited" and not "off": both are a misconfiguration that
+  // would read as a working instance refusing every report.
+  assert.throws(() => parseConfig(baseEnv({ FEEDBACK_DAILY_LIMIT: '0' })), /FEEDBACK_DAILY_LIMIT/);
+  assert.throws(() => parseConfig(baseEnv({ FEEDBACK_MAX_REQUEST_BYTES: '-1' })), /FEEDBACK_MAX_REQUEST_BYTES/);
+});
+
+test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says why', () => {
+  // THE CONTROL FIRST: a real value parses and is carried whole, so the
+  // assertions below cannot pass by the parser refusing everything.
+  assert.equal(parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: '1500' })).aiInstanceDailyLimit, 1500);
+  // Unset and empty both mean NO ceiling, which is not the same as a number.
+  assert.equal(parseConfig(baseEnv()).aiInstanceDailyLimit, null);
+  assert.equal(parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: '   ' })).aiInstanceDailyLimit, null);
+
+  // ZERO IS THE DANGEROUS ONE. It reads like "no ceiling" and means the
+  // opposite: every request refused on an instance that still has a provider
+  // key, which an operator debugs as a provider outage. The message has to
+  // name the remedy, so a person reading a boot log knows what to unset.
+  const zero = (): void => {
+    parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: '0' }));
+  };
+  assert.throws(zero, /AI_INSTANCE_DAILY_LIMIT/);
+  // The remedy is named, so a person reading a boot log knows what to unset.
+  assert.throws(zero, /UPSTREAM_API_KEY/);
+  // And nothing else silently becomes a number either.
+  assert.throws(() => parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: '-1' })), /AI_INSTANCE_DAILY_LIMIT/);
+  assert.throws(() => parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: '1.5' })), /AI_INSTANCE_DAILY_LIMIT/);
+  assert.throws(() => parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: 'lots' })), /AI_INSTANCE_DAILY_LIMIT/);
+});
+
+test('the two member-invite settings are all-or-nothing, and the allowance has a ceiling', () => {
+  // THE CONTROL FIRST: both set parse into the policy whole, so the refusals
+  // below cannot pass by the parser rejecting everything.
+  assert.deepEqual(
+    parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '50', MEMBER_INVITE_ALLOWANCE_DAYS: '30' })).memberInvites,
+    { dailyAiLimit: 50, allowanceDays: 30, lifetimeCap: 5 },
+  );
+  // Neither set is the default: members cannot invite anybody, and
+  // `POST /v1/auth/invites` answers 404.
+  assert.equal(parseConfig(baseEnv()).memberInvites, null);
+  assert.equal(parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '  ' })).memberInvites, null);
+
+  // HALF THE PAIR IS A BOOT FAILURE THAT NAMES THE MISSING ONE. An allowance
+  // with no end date is a trial that never ends, and an end date with no
+  // allowance is a letter that grants nothing.
+  assert.throws(() => parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '50' })), /MEMBER_INVITE_ALLOWANCE_DAYS/);
+  assert.throws(() => parseConfig(baseEnv({ MEMBER_INVITE_ALLOWANCE_DAYS: '30' })), /MEMBER_INVITE_DAILY_AI_LIMIT/);
+
+  // ONE MISTYPED DIGIT IS THE LARGEST BILL THIS FILE CAN WRITE: the allowance
+  // is multiplied by every member times five invitations.
+  assert.throws(
+    () => parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '500000', MEMBER_INVITE_ALLOWANCE_DAYS: '30' })),
+    /MEMBER_INVITE_DAILY_AI_LIMIT/,
+  );
+  // And zero is refused for either, rather than read as "off".
+  assert.throws(
+    () => parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '0', MEMBER_INVITE_ALLOWANCE_DAYS: '30' })),
+    /MEMBER_INVITE_DAILY_AI_LIMIT/,
+  );
+  assert.throws(
+    () => parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '50', MEMBER_INVITE_ALLOWANCE_DAYS: '0' })),
+    /MEMBER_INVITE_ALLOWANCE_DAYS/,
+  );
+});
+
+test('the lifetime cap comes from the environment, and it needs the pair to stand on', () => {
+  const pair = { MEMBER_INVITE_DAILY_AI_LIMIT: '50', MEMBER_INVITE_ALLOWANCE_DAYS: '30' };
+
+  // THE CONTROL FIRST: unset, the cap is five, which is what every instance
+  // has run on since M212. An upgrade must not change what a member may do.
+  assert.equal(parseConfig(baseEnv(pair)).memberInvites?.lifetimeCap, 5);
+
+  // Two, which is what a managed instance whose administrator pays for the
+  // provider key asks for.
+  assert.deepEqual(parseConfig(baseEnv({ ...pair, MEMBER_INVITE_LIFETIME_CAP: '2' })).memberInvites, {
+    dailyAiLimit: 50,
+    allowanceDays: 30,
+    lifetimeCap: 2,
+  });
+
+  // ZERO IS A VALUE HERE AND NOT A MISTAKE, unlike the pair. It leaves the
+  // route mounted and gives every member nothing to spend, which is what an
+  // operator wants while they watch the bill. Unsetting the pair is the other
+  // move, and it takes the route away instead.
+  assert.equal(parseConfig(baseEnv({ ...pair, MEMBER_INVITE_LIFETIME_CAP: '0' })).memberInvites?.lifetimeCap, 0);
+
+  // Nothing else silently becomes a number.
+  for (const bad of ['-1', '1.5', 'a few']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ ...pair, MEMBER_INVITE_LIFETIME_CAP: bad })),
+      /MEMBER_INVITE_LIFETIME_CAP/,
+      `MEMBER_INVITE_LIFETIME_CAP="${bad}" must be refused`,
+    );
+  }
+
+  // THE CAP WITHOUT THE PAIR IS A BOOT FAILURE NAMING IT, for the reason the
+  // half-pair refusal above exists: an operator who set only this one believes
+  // they have narrowed a door that is not open, on an instance where
+  // `POST /v1/auth/invites` answers 404 to everybody.
+  assert.throws(() => parseConfig(baseEnv({ MEMBER_INVITE_LIFETIME_CAP: '2' })), /MEMBER_INVITE_LIFETIME_CAP/);
+});
+
+test('an instance with nothing to say publishes no notice at all', () => {
+  // ABSENCE IS THE DEFAULT AND IT IS A SHAPE, not just a value: `null` here is
+  // what keeps the field off the /health body entirely, so a client older than
+  // M181 parses the response exactly as it always did.
+  assert.equal(parseConfig(baseEnv()).notice, null);
+  assert.equal(parseConfig(baseEnv({ SYNC_NOTICE: '   ' })).notice, null);
+});
+
+test('SYNC_NOTICE is carried whole, with its optional link', () => {
+  assert.deepEqual(parseConfig(baseEnv({ SYNC_NOTICE: '  We move on 1 March.  ' })).notice, {
+    text: 'We move on 1 March.',
+  });
+  assert.deepEqual(
+    parseConfig(baseEnv({ SYNC_NOTICE: 'We move on 1 March.', SYNC_NOTICE_URL: 'https://example.org/moving' })).notice,
+    { text: 'We move on 1 March.', url: 'https://example.org/moving' },
+  );
+});
+
+test('an over-long SYNC_NOTICE is a boot failure, never a truncation', () => {
+  // /health is this container's own HEALTHCHECK path and is polled forever, so
+  // the cap is real. Failing to boot is the only honest answer: quietly cutting
+  // a shutdown notice in half ships a sentence the operator never wrote.
+  const tooLong = 'n'.repeat(MAX_SYNC_NOTICE_LENGTH + 1);
+  assert.throws(() => parseConfig(baseEnv({ SYNC_NOTICE: tooLong })), /SYNC_NOTICE/);
+  // The boundary itself is accepted, so the cap is a limit and not an off-by-one.
+  const atCap = 'n'.repeat(MAX_SYNC_NOTICE_LENGTH);
+  assert.deepEqual(parseConfig(baseEnv({ SYNC_NOTICE: atCap })).notice, { text: atCap });
+});
+
+test('SYNC_NOTICE_URL must be an absolute http(s) URL, and must have something to link from', () => {
+  const withNotice = (url: string): NodeJS.ProcessEnv => baseEnv({ SYNC_NOTICE: 'Read this.', SYNC_NOTICE_URL: url });
+  // The client refuses these schemes too; refusing them at boot means the
+  // operator hears about it instead of wondering why no link appears.
+  assert.throws(() => parseConfig(withNotice('javascript:alert(1)')), /SYNC_NOTICE_URL/);
+  assert.throws(() => parseConfig(withNotice('data:text/html,hi')), /SYNC_NOTICE_URL/);
+  assert.throws(() => parseConfig(withNotice('/moving')), /SYNC_NOTICE_URL/);
+  // A link with no message is far more likely a typo in the variable name than
+  // an intention, and it would publish nothing either way.
+  assert.throws(() => parseConfig(baseEnv({ SYNC_NOTICE_URL: 'https://example.org/moving' })), /SYNC_NOTICE_URL/);
+});
+
+test('BILLING_TOKEN is unset by default, so the service principal does not exist', () => {
+  // THE DEFAULT IS THE PROPERTY. A self-hoster who configured nothing must
+  // gain no admin surface at all, so `null` here is what keeps the whole
+  // `/v1/admin` tree answering the ordinary unknown-path 404 on their
+  // instance. See `server/admin-auth.ts`.
+  assert.equal(parseConfig(baseEnv()).billingToken, null);
+  assert.equal(parseConfig(baseEnv({ BILLING_TOKEN: '' })).billingToken, null);
+  assert.equal(parseConfig(baseEnv({ BILLING_TOKEN: '   ' })).billingToken, null);
+});
+
+test('a short BILLING_TOKEN is fatal, on the same floor ADMIN_TOKEN has', () => {
+  // Not a warning. What this credential moves is what somebody paid for, so a
+  // guessable value is a free allowance for anybody who finds the host, and a
+  // boot failure is the only refusal an operator cannot ignore.
+  assert.throws(() => parseConfig(baseEnv({ BILLING_TOKEN: 'short' })), /BILLING_TOKEN/);
+  assert.throws(() => parseConfig(baseEnv({ BILLING_TOKEN: 'a'.repeat(MIN_ADMIN_TOKEN_LENGTH - 1) })), /BILLING_TOKEN/);
+
+  const generated = 'a'.repeat(MIN_ADMIN_TOKEN_LENGTH);
+  assert.equal(parseConfig(baseEnv({ BILLING_TOKEN: generated })).billingToken, generated);
+});
+
+test('BILLING_TOKEN and ADMIN_TOKEN are two independent variables', () => {
+  // Neither implies the other, and setting one alone is a supported shape: a
+  // paid instance may run a biller without a break-glass token, and every
+  // instance today runs a break-glass token without a biller.
+  const billingOnly = parseConfig(baseEnv({ BILLING_TOKEN: 'b'.repeat(MIN_ADMIN_TOKEN_LENGTH) }));
+  assert.equal(billingOnly.adminToken, null);
+  assert.notEqual(billingOnly.billingToken, null);
+
+  const adminOnly = parseConfig(baseEnv({ ADMIN_TOKEN: 'c'.repeat(MIN_ADMIN_TOKEN_LENGTH) }));
+  assert.equal(adminOnly.billingToken, null);
+  assert.notEqual(adminOnly.adminToken, null);
+});
+
+test('a plans URL with no secret refuses to boot, and names the missing variable', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans' })),
+    /PLANS_UPSTREAM_SECRET/,
+  );
+});
+
+test('a plans secret with no URL refuses to boot too, because it is a typo far more often than an intention', () => {
+  assert.throws(() => parseConfig(baseEnv({ PLANS_UPSTREAM_SECRET: 'a-shared-secret' })), /PLANS_UPSTREAM_URL/);
+});
+
+test('the refusal never prints the secret it refused', () => {
+  // A message that quoted the value would put a shared secret in a startup
+  // log, which is the one place an operator pastes into an issue.
+  const secret = 'the-secret-that-must-not-be-logged';
+  assert.throws(
+    () => parseConfig(baseEnv({ PLANS_UPSTREAM_SECRET: secret })),
+    (error: Error) => !error.message.includes(secret),
+  );
+});
+
+test('a relative or misspelled plans URL is a boot failure, not an upstream that goes nowhere', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'openplate-billing/plans', PLANS_UPSTREAM_SECRET: 's' })),
+    /PLANS_UPSTREAM_URL/,
+  );
+});
+
+test('both set is the feature on, with the trailing slash stripped once', () => {
+  // THE CONTROL for the four refusals above: without it they would all pass
+  // against a parser that refused every plans configuration.
+  const config = parseConfig(
+    baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans/', PLANS_UPSTREAM_SECRET: 'a-shared-secret' }),
+  );
+
+  assert.deepEqual(config.plans, { baseUrl: 'http://openplate-billing:3000/plans', secret: 'a-shared-secret' });
+});
+
+// ── open sign-up (M253) ────────────────────────────────────────────────────
+
+/** A complete mail block, which `OPEN_SIGNUP=true` needs beside it. */
+const MAIL_ENV = {
+  MAIL_API_URL: 'http://pigeon:3601/v1/emails',
+  MAIL_API_KEY: 'a-pigeon-tenant-key',
+  MAIL_API_FROM: 'openplate <openplate@mail.openplate.de>',
+  MAIL_OPERATOR_EMAIL: 'operator@example.org',
+  SERVER_PUBLIC_URL: 'https://sync.openplate.de',
+  CLIENT_BASE_URL: 'https://openplate.de',
+};
+
+test('open sign-up is off unless set, and every instance that says nothing stays invite-only', () => {
+  const config = parseConfig(baseEnv());
+  assert.equal(config.openSignup, false);
+  assert.equal(config.turnstile, null);
+});
+
+test('OPEN_SIGNUP=true without mail refuses to boot and says why', () => {
+  assert.throws(() => parseConfig(baseEnv({ OPEN_SIGNUP: 'true' })), /OPEN_SIGNUP=true needs mail/);
+});
+
+test('OPEN_SIGNUP=true with mail boots with the door open', () => {
+  // THE CONTROL for the refusal above: without it that test would pass against
+  // a parser that refused every open instance.
+  assert.equal(parseConfig(baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: 'true' })).openSignup, true);
+});
+
+test('OPEN_SIGNUP accepts "true" or nothing, and names any other value', () => {
+  for (const value of ['false', '1', 'yes', 'TRUE ']) {
+    // `TRUE ` is trimmed to `TRUE`, which is still not the one spelling.
+    assert.throws(() => parseConfig(baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: value })), /Invalid OPEN_SIGNUP/, value);
+  }
+  assert.equal(parseConfig(baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: '' })).openSignup, false);
+});
+
+test('the Turnstile pair is both or neither, and a gap names the missing key and never a value', () => {
+  const secret = 'turnstile-secret-that-must-not-be-logged';
+  assert.throws(
+    () => parseConfig(baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: 'true', TURNSTILE_SECRET_KEY: secret })),
+    (error: Error) => /TURNSTILE_SITE_KEY/.test(error.message) && !error.message.includes(secret),
+  );
+  assert.throws(
+    () => parseConfig(baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: 'true', TURNSTILE_SITE_KEY: 'site' })),
+    /TURNSTILE_SECRET_KEY/,
+  );
+});
+
+test('a Turnstile pair on an invite-only instance refuses to boot: there is no door for it to guard', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ TURNSTILE_SECRET_KEY: 'secret', TURNSTILE_SITE_KEY: 'site' })),
+    /OPEN_SIGNUP is not/,
+  );
+});
+
+test('the Turnstile pair beside an open door is the captcha on', () => {
+  // THE CONTROL for the three refusals above.
+  const config = parseConfig(
+    baseEnv({ ...MAIL_ENV, OPEN_SIGNUP: 'true', TURNSTILE_SECRET_KEY: 'secret', TURNSTILE_SITE_KEY: 'site' }),
+  );
+  assert.deepEqual(config.turnstile, { secretKey: 'secret', siteKey: 'site' });
+});
+
+// ── the scan trial (M253) ──────────────────────────────────────────────────
+
+const PEPPER_ENV = { TRIAL_ADDRESS_PEPPER: 'p'.repeat(MIN_SERVER_SECRET_LENGTH) };
+const TRIAL_ENV = { TRIAL_SCANS: '10', TRIAL_DAILY_AI_LIMIT: '50', ...PEPPER_ENV };
+
+test('no new variable boots exactly as before: no trial, no sub-ceiling, no pepper', () => {
+  const config = parseConfig(baseEnv());
+  assert.equal(config.trial, null);
+  assert.equal(config.aiTrialInstanceDailyLimit, null);
+  assert.equal(config.trialAddressPepper, null);
+  assert.equal(config.memberInvites, null);
+});
+
+test('the trial pair is both or neither, and a gap names the missing one', () => {
+  assert.throws(() => parseConfig(baseEnv({ TRIAL_SCANS: '10', ...PEPPER_ENV })), /TRIAL_DAILY_AI_LIMIT is not set/);
+  assert.throws(() => parseConfig(baseEnv({ TRIAL_DAILY_AI_LIMIT: '50', ...PEPPER_ENV })), /TRIAL_SCANS is not set/);
+});
+
+test('the trial count is 1 to 100 and its daily bound is positive', () => {
+  for (const scans of ['0', '101', 'ten', '1.5']) {
+    assert.throws(() => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_SCANS: scans })), /TRIAL_SCANS/, scans);
+  }
+  assert.throws(() => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAILY_AI_LIMIT: '0' })), /TRIAL_DAILY_AI_LIMIT/);
+});
+
+test('the trial needs its pepper, and a short one is refused without being printed', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ TRIAL_SCANS: '10', TRIAL_DAILY_AI_LIMIT: '50' })),
+    /need TRIAL_ADDRESS_PEPPER/,
+  );
+  const short = 'short-pepper-value';
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_ADDRESS_PEPPER: short })),
+    (error: Error) => /TRIAL_ADDRESS_PEPPER/.test(error.message) && !error.message.includes(short),
+  );
+});
+
+test('the trial pair with its pepper is the trial on', () => {
+  // THE CONTROL for the refusals above.
+  const config = parseConfig(baseEnv(TRIAL_ENV));
+  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50 });
+  assert.equal(config.trialAddressPepper, PEPPER_ENV.TRIAL_ADDRESS_PEPPER);
+});
+
+test('MEMBER_INVITE_TRIAL refuses to stand beside the day pair or without the trial', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_ALLOWANCE_DAYS: '3' })),
+    /never both/,
+  );
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_DAILY_AI_LIMIT: '50' })),
+    /never both/,
+  );
+  assert.throws(() => parseConfig(baseEnv({ MEMBER_INVITE_TRIAL: 'true' })), /needs the trial it grants/);
+});
+
+test('MEMBER_INVITE_TRIAL with the trial opens the member door on the scan trial, narrowed by the cap', () => {
+  // THE CONTROL for the refusals above.
+  const config = parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_LIFETIME_CAP: '2' }));
+  assert.deepEqual(config.memberInvites, { kind: 'trial', dailyAiLimit: 50, trialScans: 10, lifetimeCap: 2 });
+  // And the day door still boots on its own, unchanged.
+  const days = parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '50', MEMBER_INVITE_ALLOWANCE_DAYS: '3' }));
+  assert.deepEqual(days.memberInvites, { dailyAiLimit: 50, allowanceDays: 3, lifetimeCap: 5 });
+});
+
+test('the trial sub-ceiling refuses zero and refuses an instance with no trial to bound', () => {
+  assert.throws(() => parseConfig(baseEnv({ ...TRIAL_ENV, AI_TRIAL_INSTANCE_DAILY_LIMIT: '0' })), /AI_TRIAL_INSTANCE/);
+  assert.throws(() => parseConfig(baseEnv({ AI_TRIAL_INSTANCE_DAILY_LIMIT: '1000' })), /nothing for it to bound/);
+  // THE CONTROL.
+  assert.equal(
+    parseConfig(baseEnv({ ...TRIAL_ENV, AI_TRIAL_INSTANCE_DAILY_LIMIT: '1000' })).aiTrialInstanceDailyLimit,
+    1000,
+  );
+});
+
+test('AI_MAX_OUTPUT_TOKENS defaults to 8192, takes a positive integer, and refuses anything else', () => {
+  // ALWAYS SET, unlike the instance ceiling above: an unbounded answer is the
+  // cost path M256 closes, so there is no "off" (M256/01).
+  assert.equal(parseConfig(baseEnv()).aiMaxOutputTokens, 8192);
+  assert.equal(parseConfig(baseEnv({ AI_MAX_OUTPUT_TOKENS: '2048' })).aiMaxOutputTokens, 2048);
+  for (const invalid of ['0', '-1', '1.5', 'lots']) {
+    assert.throws(() => parseConfig(baseEnv({ AI_MAX_OUTPUT_TOKENS: invalid })), /AI_MAX_OUTPUT_TOKENS/, invalid);
+  }
+});

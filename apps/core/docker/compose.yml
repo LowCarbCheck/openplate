@@ -1,0 +1,189 @@
+# Self-hoster quickstart: Postgres + the sync service, nothing else.
+#
+# If you pulled the published image you can copy this one file anywhere and
+# run `docker compose up -d` beside it. From a checkout, the file lives in
+# `docker/`, so run it from the repository root like this:
+#
+#   cp .env.example .env
+#   # edit .env, SERVER_SECRET is the only mandatory value
+#   docker compose --project-directory . -f docker/compose.yml up -d
+#
+# `--project-directory .` is not decoration. Without it, Compose treats
+# `docker/` as the project directory: it looks for `.env` there instead of at
+# the repository root, and resolves `build: .` to `docker/` instead of to the
+# checkout. With it, both point at the repository root, which is what the
+# quickstart above assumes. (The project name is pinned below, so that part
+# does not depend on where you run from.)
+#
+# An account is an EMAIL ADDRESS plus a passphrase, and it is created by
+# redeeming an invite you addressed to somebody. Signup is invite-only,
+# always. Mail is optional: with none configured, an invitation comes back as a
+# link for you to paste rather than as a letter. The old SMTP and PIGEON_*
+# names are boot failures, not no-ops. See .env.example.
+#
+#   docker compose --project-directory . -f docker/compose.yml logs -f sync
+#
+# NOTE FOR CONTRIBUTORS: this file is for SELF-HOSTERS. Local development and
+# the integration suite use the shared workspace Postgres (see
+# `tests/integration/db-harness.ts`), never this database. If you are an
+# outside contributor with no shared Postgres to point at, bring up
+# `docker/compose.dev.yml` instead. It is a test database only, and it is the
+# one thing in `docker/` a self-hoster can ignore entirely.
+
+# Pin the Compose project name. Without it Compose names the project after
+# this file's parent directory, "docker", and every container and volume
+# inherits that.
+name: openplate-core
+
+services:
+  postgres:
+    image: docker.io/library/postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-openplate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openplate}
+      POSTGRES_DB: ${POSTGRES_DB:-openplate_sync}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openplate} -d ${POSTGRES_DB:-openplate_sync}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Not published by default: nothing outside this compose network has any
+    # business reaching the database.
+    expose:
+      - '5432'
+
+  sync:
+    build: .
+    # Or pull the published image instead of building:
+    # image: ghcr.io/lowcarbcheck/openplate-core:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Fixed: the published mapping below targets container port 3000, so a
+      # PORT set in .env would only move the listener away from it. Change the
+      # host side with SYNC_PORT instead.
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${POSTGRES_DB:-openplate_sync}
+      SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env, see .env.example}
+      # Signup is INVITE-ONLY, always: there is no mode to set. SIGNUP_MODE and
+      # the older SIGNUPS_OPEN are both boot failures, so neither is forwarded
+      # here. Mint an invite with `pnpm sync-api invites create --email …`.
+      #
+      # What the instance calls itself, and which language its two letters are
+      # written in (en | de).
+      INSTANCE_NAME: ${INSTANCE_NAME:-openplate}
+      INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-en}
+      # Which body's micronutrient reference values it shows: dge | efsa | us.
+      # Only the BOOT default: an administrator changes the live setting with
+      # `pnpm sync-api settings set nutrient-reference-basis efsa`, and the
+      # stored row wins from then on.
+      NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
+      # The version of the health-data consent every account must agree to, a
+      # short string such as 2026-09-28. Empty, the self-hosted default, asks
+      # for no consent. Changing it asks every account again.
+      HEALTH_CONSENT_VERSION: ${HEALTH_CONSENT_VERSION:-}
+      # Both or neither: they build the link in an invitation and in a
+      # password-reset mail. With neither, the admin API returns the raw token.
+      SERVER_PUBLIC_URL: ${SERVER_PUBLIC_URL:-}
+      CLIENT_BASE_URL: ${CLIENT_BASE_URL:-}
+      # Set to the number of reverse proxies in front of this service, or the
+      # per-IP throttle collapses into one bucket anyone can lock for everyone.
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Off by default, and each is inert until forwarded here: Compose passes
+      # only what this block names, so a variable set in `.env` alone never
+      # reaches the container.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      SYNC_SHARING: ${SYNC_SHARING:-false}
+      SYNC_RESEARCH: ${SYNC_RESEARCH:-false}
+      # Reported estimates. On, this service KEEPS the photograph and the
+      # figures a person reports, readable, for its retention window. The two
+      # limits are per account per UTC day, and per request.
+      SYNC_FEEDBACK: ${SYNC_FEEDBACK:-false}
+      FEEDBACK_DAILY_LIMIT: ${FEEDBACK_DAILY_LIMIT:-5}
+      FEEDBACK_MAX_REQUEST_BYTES: ${FEEDBACK_MAX_REQUEST_BYTES:-8000000}
+      # The operator notice: one short sentence /health publishes and the
+      # client shows. Empty means no notice. SYNC_NOTICE_URL without
+      # SYNC_NOTICE is a boot failure. See .env.example for the length cap.
+      SYNC_NOTICE: ${SYNC_NOTICE:-}
+      SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
+      # Mail: all four or none. Unset means invitations and resets come back
+      # to you as links instead of being posted, and a cancellation or a
+      # withdrawal is recorded but mailed to nobody. See .env.example.
+      MAIL_API_URL: ${MAIL_API_URL:-}
+      MAIL_API_KEY: ${MAIL_API_KEY:-}
+      MAIL_API_FROM: ${MAIL_API_FROM:-}
+      MAIL_OPERATOR_EMAIL: ${MAIL_OPERATOR_EMAIL:-}
+      # The AI proxy: both or neither. Unset means POST /v1/chat/completions
+      # answers the ordinary unknown-path 404 and /health reports no AI at all.
+      # The per-account daily allowance is in the database, not here.
+      UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-}
+      UPSTREAM_API_KEY: ${UPSTREAM_API_KEY:-}
+      UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-120000}
+      # The model the proxy sends every request to. Empty passes the caller's.
+      AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
+      # The most output tokens one request may ask for, with or without a model.
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-8192}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      # Sized for a camera photograph after base64, NOT for a stored blob.
+      AI_MAX_REQUEST_BYTES: ${AI_MAX_REQUEST_BYTES:-8000000}
+      # The whole instance's AI requests per UTC day. Empty means no ceiling.
+      AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+      # Members inviting people: the first two together or neither, and the
+      # cap only with the pair. Empty means only an administrator invites.
+      MEMBER_INVITE_DAILY_AI_LIMIT: ${MEMBER_INVITE_DAILY_AI_LIMIT:-}
+      MEMBER_INVITE_ALLOWANCE_DAYS: ${MEMBER_INVITE_ALLOWANCE_DAYS:-}
+      MEMBER_INVITE_LIFETIME_CAP: ${MEMBER_INVITE_LIFETIME_CAP:-}
+      # Open sign-up: empty means invite-only. "true" needs the mail block
+      # above. The Turnstile pair is both or neither, and only with it.
+      OPEN_SIGNUP: ${OPEN_SIGNUP:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      # Free AI scans for new accounts: the pair together or neither, and the
+      # pepper with them. MEMBER_INVITE_TRIAL=true makes a member invitation
+      # grant the scans instead of the day pair above. Empty means no trial.
+      TRIAL_SCANS: ${TRIAL_SCANS:-}
+      TRIAL_DAILY_AI_LIMIT: ${TRIAL_DAILY_AI_LIMIT:-}
+      TRIAL_ADDRESS_PEPPER: ${TRIAL_ADDRESS_PEPPER:-}
+      MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
+      AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
+      # Web push: all three or none. Empty means no notifications.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # Paid plans: the URL and the secret together or neither, and only with
+      # a billing service behind this instance. BILLING_TOKEN is that service's
+      # own scoped credential. Empty means no plans.
+      PLANS_UPSTREAM_URL: ${PLANS_UPSTREAM_URL:-}
+      PLANS_UPSTREAM_SECRET: ${PLANS_UPSTREAM_SECRET:-}
+      BILLING_TOKEN: ${BILLING_TOKEN:-}
+      # Only for an EXTERNAL database. The bundled Postgres above speaks plain
+      # TCP on the compose network.
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+    healthcheck:
+      # The image bakes a similar check in, but Podman drops a HEALTHCHECK
+      # when it pulls an OCI manifest, which is what GHCR serves. Declared
+      # here it holds under both engines and Quadlet turns it into
+      # Notify=healthy.
+      #
+      # A shell line with no quotes and no brackets, run by the image's
+      # busybox wget. Docker Compose, podman-compose and Quadlet all pass it
+      # through the same way; the old `node -e "fetch(...)"` array form
+      # reached podman-compose 1.0.6 as a broken shell line and stayed
+      # unhealthy forever (the same fix as openplate's compose files).
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3000/health']
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    ports:
+      - '${SYNC_PORT:-3000}:3000'
+
+volumes:
+  postgres-data:
+    driver: local

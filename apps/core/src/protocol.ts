@@ -1,0 +1,802 @@
+/**
+ * The E2EE sync WIRE CONTRACT, the entire shared surface between an openplate
+ * client and a sync service (M128 spec 01).
+ *
+ * THIS FILE IS MAINTAINED IN TWO REPOS AND MUST STAY IDENTICAL IN SUBSTANCE:
+ *  - `openplate/app/lib/sync/engine/protocol.ts`   (the client half)
+ *  - `openplate-core/src/protocol.ts`              (this file, the service half)
+ *
+ * They are deliberately NOT a shared package: the two repos ship and version
+ * independently, and a third party must be able to implement either side from
+ * `openplate-core/PROTOCOL.md` alone without depending on our code. The price
+ * of that independence is hand-maintained duplication, so each repo carries a
+ * unit test that asserts its local `PROTOCOL_VERSION` (and the size/retention
+ * limits) against TRANSCRIBED literals, there is no shared CI, so drift has
+ * to fail a test rather than rely on a promise in a doc comment
+ * (`tests/unit/protocol.test.ts` here,
+ * `tests/unit/sync-engine/protocol.test.ts` there).
+ *
+ * The service stores OPAQUE BYTES. It never sees a key, never parses an
+ * envelope, and never learns anything about the plaintext beyond its length.
+ * Everything below is therefore either transport framing or non-secret
+ * metadata the service legitimately needs (versions, sizes, CAS tokens).
+ */
+import { asNumber, asObject, asString, type JsonObject, type JsonValue } from './lib/json.js';
+
+/**
+ * The wire-protocol version a client and service must agree on before any
+ * sync traffic flows (see {@link checkProtocolCompatibility}).
+ *
+ * Bump this for ANY breaking change to the endpoints, request/response
+ * shapes, auth scheme, or CAS semantics documented in `PROTOCOL.md`.
+ * Purely additive changes (a new optional response field, a new endpoint that
+ * older clients simply never call) do not require a bump.
+ */
+export const PROTOCOL_VERSION = 2;
+
+/**
+ * The encrypted-blob wire format version, INDEPENDENT of
+ * {@link PROTOCOL_VERSION}. This one describes what is inside
+ * `ciphertext`: `gzip(JSON(payload))` sealed with AES-256-GCM, the 12-byte IV
+ * packed as the leading bytes (`openplate`'s `app/lib/sync/engine/envelope/build-envelope.ts`).
+ *
+ * Bump ONLY for a genuine crypto/framing change (a different cipher, a
+ * different compression codec, a different IV packing). Never bump it for a
+ * payload SCHEMA change, that is the local store's own
+ * `payloadSchemaVersion`, which travels through this protocol as an opaque
+ * number bound into the AAD.
+ */
+export const ENVELOPE_VERSION = 1;
+
+/**
+ * Hard cap on one account's encrypted blob, enforced by the service and
+ * mirrored by the client so it can fail early with a useful message instead
+ * of eating a 413.
+ *
+ * CAPACITY PLAN (counsel, 2026-08-03): food-log JSON runs ~400-700 bytes per
+ * entry BEFORE compression, so an un-gzipped whole-store blob would reach
+ * this cap within 2-4 years of daily use. `ENVELOPE_VERSION` 1 gzips the
+ * plaintext before encrypting, which buys roughly an order of magnitude of
+ * headroom on highly-repetitive JSON. The long-term fix (chunked/per-entity
+ * blobs) is a FUTURE PROTOCOL VERSION BUMP, deliberately deferred and
+ * recorded in `PROTOCOL.md` so it is planned rather than discovered under
+ * pressure.
+ */
+export const MAX_BLOB_BYTES = 2 * 1024 * 1024;
+
+/**
+ * The RECENT tier of blob retention: how many of the newest versions are kept
+ * whatever else is true. Unchanged since M128, and still the tier that covers
+ * ordinary churn.
+ *
+ * IT IS NO LONGER THE WHOLE RULE. Two devices disagreeing burn five versions in
+ * a minute, and the only reason the M224 data loss was recoverable at all is
+ * that the pre-wipe blob happened to still be inside the window. The full rule
+ * is this tier plus {@link BLOB_DAILY_RETENTION_DAYS} plus the pins of
+ * {@link BLOB_PRE_SHRINK_PIN_DAYS}; `lib/blob-retention.ts` is where the three
+ * are combined, and `docs/adr/0009-a-shrinking-blob-is-acknowledged-or-refused.md`
+ * is why.
+ */
+export const BLOB_VERSION_RETENTION = 5;
+
+/**
+ * The DAILY tier: at most one version per UTC calendar day is kept for this
+ * many days back, on top of {@link BLOB_VERSION_RETENTION}.
+ *
+ * A CALENDAR DAY, NOT A COUNT, and that is the point. A loop between two
+ * devices can produce a thousand versions in an hour and still occupies one
+ * slot here, so the tier bounds itself: at most this many extra blobs per
+ * account, whatever a client does.
+ */
+export const BLOB_DAILY_RETENTION_DAYS = 14;
+
+/**
+ * The PIN tier: how long the version immediately before an ACKNOWLEDGED shrink
+ * is held, whatever the two tiers above would have done with it.
+ *
+ * The refusal of {@link BLOB_SHRINK_ACK_RATIO} protects the copy a client never
+ * meant to overwrite. This protects the copy a client DID mean to overwrite and
+ * was wrong about, which is the same fortnight an operator needs to hear about
+ * it, be asked, and act.
+ */
+export const BLOB_PRE_SHRINK_PIN_DAYS = 14;
+
+/**
+ * How many pinned versions one account may hold at once. The oldest pins past
+ * this many are prunable again.
+ *
+ * A CAP RATHER THAN A TRUST. Without it a client that acknowledges every shrink
+ * pins one row per shrink, and storage per account has no bound at all. With
+ * it the worst case is arithmetic: {@link BLOB_VERSION_RETENTION} plus
+ * {@link BLOB_DAILY_RETENTION_DAYS} plus this, times {@link MAX_BLOB_BYTES}.
+ */
+export const BLOB_PRE_SHRINK_PIN_LIMIT = 14;
+
+/**
+ * The fraction of the stored blob's `size_bytes` below which a push counts as a
+ * LARGE SHRINK and must carry {@link PushBlobRequest.shrinkAcknowledged}.
+ *
+ * HALF, chosen for what it does NOT catch. Deleting a month out of two years of
+ * diary is a few percent; the M224 incident went from 5310 bytes to 1588 in one
+ * push, which is thirty. A ratio this coarse never fires on ordinary editing,
+ * and fires on every shape of "this device thinks the diary is nearly empty".
+ */
+export const BLOB_SHRINK_ACK_RATIO = 0.5;
+
+/**
+ * The sentence the service refuses an unacknowledged large shrink with.
+ *
+ * PROSE, NOT A TOKEN, unlike `account-suspended`. A client is not being asked to
+ * branch on it: the status already says "this request was refused and nothing
+ * was written", and the only thing left to do with the text is show it to a
+ * person whose app is older than the field. So it says what happened and what to
+ * do, in words somebody can act on.
+ */
+export const SHRINK_REFUSED_ERROR =
+  'This push would delete more than half of the stored diary, and this app did not confirm that the deletion was intended. Nothing was changed on the server. Update the app, then sync again.';
+
+/**
+ * Path prefix the blob/key-record endpoints are mounted under.
+ *
+ * CHANGED IN M128 SPEC 02, from `/api/sync` to `/v1/sync`: the standalone
+ * service owns its whole URL space now and versions it as a whole, so the
+ * blob routes sit beside `/v1/auth/*` under one namespace rather than in a
+ * leftover mount path from the era when they were grafted onto the openplate
+ * app's Express server.
+ *
+ * `PROTOCOL.md` §7 records this as a pre-1.0 change that does NOT bump
+ * `PROTOCOL_VERSION`, zero production blobs exist, there are no third-party
+ * implementations, and no deployed client can be broken by it.
+ *
+ * CROSS-REPO NOTE: `openplate/app/lib/sync/engine/protocol.ts` is the
+ * hand-maintained duplicate of this file and still carries the old value.
+ * Its drift-guard test asserts against a transcribed literal, so it will keep
+ * passing while disagreeing, nothing in either repo can catch this
+ * automatically. The client half of the move belongs to the spec that wires
+ * the client to a real service.
+ */
+export const SYNC_API_PREFIX = '/v1/sync';
+
+/**
+ * Path prefix the plans pass-through is mounted under (M213 spec 02).
+ *
+ * OUTSIDE {@link SYNC_API_PREFIX} ON PURPOSE, and that is the fact a reader
+ * needs before touching `server/create-app.ts`: no bearer middleware stands
+ * over this subtree by inheritance, so the mount itself has to put one there.
+ *
+ * The routes behind it belong to the biller, not to this protocol. This
+ * service forwards `GET` and `POST` under the prefix to one configured
+ * upstream and reads none of the bodies; an instance with no
+ * `PLANS_UPSTREAM_URL` answers the ordinary unknown-path 404 on the whole
+ * subtree. See PROTOCOL.md §5.22.
+ */
+export const PLANS_API_PREFIX = '/v1/plans';
+
+// ---------------------------------------------------------------------------
+// Key records
+// ---------------------------------------------------------------------------
+
+/**
+ * The two ways an account's DEK is wrapped: under the passphrase-derived KEK
+ * (Argon2id → HKDF) and under the recovery-code-derived KEK (HKDF only).
+ * Exactly one record of each kind may exist per account.
+ */
+export type SyncKeyRecordKind = 'passphrase' | 'recovery';
+
+/** Every valid {@link SyncKeyRecordKind}, for validation and exhaustive iteration. */
+export const SYNC_KEY_RECORD_KINDS: readonly SyncKeyRecordKind[] = ['passphrase', 'recovery'];
+
+export function isSyncKeyRecordKind(value: JsonValue | undefined): value is SyncKeyRecordKind {
+  return value === 'passphrase' || value === 'recovery';
+}
+
+// ---------------------------------------------------------------------------
+// Accounts
+// ---------------------------------------------------------------------------
+
+/**
+ * What an account may do on this instance.
+ *
+ *  - `'member'`, the default, and what every invite that says nothing grants.
+ *  - `'admin'`, may also call `/v1/admin`, authenticated by its OWN access
+ *    token. That is the whole difference; an admin holds no key an ordinary
+ *    account does not, and cannot read anybody's diary.
+ *
+ * There is no third role and no permission matrix, deliberately. One server,
+ * one organization (M192 non-goal: multi-tenancy).
+ */
+export type AccountRole = 'admin' | 'member';
+
+/** Every valid {@link AccountRole}, for validation and exhaustive iteration. */
+export const ACCOUNT_ROLES: readonly AccountRole[] = ['admin', 'member'];
+
+export function isAccountRole(value: JsonValue | undefined): value is AccountRole {
+  return value === 'admin' || value === 'member';
+}
+
+/**
+ * WHAT USED TO BE HERE, AND WHY IT IS NOT (M192).
+ *
+ * `SignupMode` (`open` | `invite` | `closed`) stood here, was published on the
+ * handshake, and was read from `SIGNUP_MODE`. Signup is now invite-only,
+ * always: an account is created by redeeming an addressed invite an operator
+ * minted, and there is no other door. A mode that has one value is not a mode,
+ * so the type, the env var and the handshake field are gone together. Setting
+ * `SIGNUP_MODE` is a boot failure (`config.ts`), never a silent no-op.
+ */
+
+/** An account's free scans, see {@link AccountView.trialScans}. `left` is never negative. */
+export interface TrialScansView {
+  granted: number;
+  left: number;
+}
+
+/**
+ * One account, as every endpoint that returns one reports it. The same shape
+ * comes back from `POST /signup`, `POST /login`, `GET /account`,
+ * `PATCH /account`, `POST /recover`, `POST /recover-rotate` and the admin
+ * account endpoints, so a client has exactly one account decoder.
+ *
+ * NOTHING SECRET IS IN IT, and nothing can be: no verifier, no KDF
+ * descriptor, no wrapped DEK, no escrow, no token. Every field below is
+ * either the person's own information or the standing an operator granted
+ * them.
+ */
+export interface AccountView {
+  id: number;
+  /** The canonical address, NFKC, trimmed, lowercased (see `PROTOCOL.md` §5.8). */
+  email: string;
+  displayName: string | null;
+  role: AccountRole;
+  /** AI requests allowed per UTC day. `0` means this account has no AI. */
+  dailyAiLimit: number;
+  /** AI requests already spent on the current UTC day. */
+  aiUsedToday: number;
+  /**
+   * When this account's AI allowance ends, or `null` for no end at all.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. Past this instant the
+   * proxy answers `403 allowance-expired` (PROTOCOL.md §5.19), which is the
+   * only place the rule lives; sync keeps working, because the diary belongs
+   * to the account.
+   */
+  allowanceExpiresAt: IsoTimestamp | null;
+  /**
+   * The account's free AI scans (M253): `{granted, left}`, or `null` for an
+   * account with no scan trial, which is every account on an instance that
+   * runs none.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. The proxy counts the
+   * scans and answers `403 trial-scans-spent` after the last one
+   * (PROTOCOL.md §5.19); `left` is a snapshot taken when this view was built,
+   * and every proxied response carries the fresh number in
+   * `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the gate, so a
+   * paid account may still carry this field.
+   */
+  trialScans: TrialScansView | null;
+  /** Non-`null` while the account is suspended; every authenticated call then answers `403 account-suspended`. */
+  suspendedAt: IsoTimestamp | null;
+  /**
+   * How many invitations this account may still cause through
+   * `POST /v1/auth/invites`, or `null` when that cap is not about it.
+   *
+   * `null` RATHER THAN `0`, AND THIS IS THE FIELD'S WHOLE SUBTLETY. `0` reads
+   * to a client as "you have used them all". An administrator has used none:
+   * they mint through the admin API, which is exempt from the cap and from the
+   * re-invite rule, so `0` would be the exact opposite of the truth. `null`
+   * means "this cap does not apply to you", and a client draws no invite card
+   * for it. An instance where the feature is off sends `null` for the same
+   * reason: there is no cap there, because there is no route, and a `0` would
+   * announce a spent allowance that never existed.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. The count is a
+   * property of the `signup_invites` rows the account caused, read at the
+   * moment this view was built; the server refuses the sixth mint whatever a
+   * client believes.
+   */
+  invitesLeft: number | null;
+  /**
+   * `true` when `invitesLeft` is `0` only because this account is a scan
+   * trial nobody has paid for yet (M253/11), and `POST /v1/auth/invites`
+   * answers `403 invites-need-a-plan`. `false` in every other case, an
+   * administrator and an instance with the feature off included.
+   *
+   * ADDITIVE. An older client ignores it and reads `invitesLeft: 0`, which is
+   * still true. A client that reads it can say "invitations open once you
+   * have a plan" instead of "you have used them all". A future
+   * `allowanceExpiresAt` is what turns it `false`.
+   */
+  invitesNeedAPlan: boolean;
+  /**
+   * The account's explicit consent to the processing of its health data, or
+   * `null` when it has none on record: `{version, at}`, where `version` is the
+   * wording the person agreed to and `at` is the server's instant.
+   *
+   * WHY IT EXISTS. A hosted instance names Art. 9(2)(a) GDPR, explicit
+   * consent, as the legal basis for the diary, because its operator holds the
+   * escrowed recovery code that can open it (ADR-0005). The operator has to be
+   * able to show that consent was given, and when, and to which wording.
+   *
+   * A CLIENT COMPARES `version` WITH `instance.healthConsent.version` and asks
+   * again when they differ, or when this is `null` on an instance that asks.
+   * `null` is also what every account on an instance that asks for no consent
+   * carries. ADDITIVE: an older client ignores the key.
+   *
+   * WITHDRAWAL IS DELETION. There is no route that clears this field; deleting
+   * the account removes it with the row.
+   */
+  healthConsent: HealthConsentView | null;
+  createdAt: IsoTimestamp;
+}
+
+/** What {@link AccountView.healthConsent} records: the version agreed to, and the server's instant. */
+export interface HealthConsentView {
+  version: string;
+  at: IsoTimestamp;
+}
+
+/**
+ * What an instance says about itself on the handshake, beside the version
+ * numbers. Descriptive only: a client renders it, and never authorizes on it.
+ *
+ * IT DOES NOT CARRY THE INSTANCE'S AI CEILING, and this is where a reader
+ * looking for `AI_INSTANCE_DAILY_LIMIT` will look. That number is the
+ * operator's BUDGET and `/health` is unauthenticated, so publishing it would
+ * tell a stranger what the operator is willing to spend in a day. A client
+ * could not act on it either: it never learns how much of the ceiling is
+ * spent, so it can neither warn nor plan, and the one fact it needs, "this
+ * instance is out of capacity right now", arrives as the proxy's
+ * `503 ai-instance-ceiling` (PROTOCOL.md §5.19). The operator reads the
+ * ceiling from `GET /v1/admin/stats`, behind the admin credential.
+ */
+export interface InstanceInfo {
+  /** The operator's name for this instance (`INSTANCE_NAME`, default `openplate`). */
+  name: string;
+  /** The language its mail is written in (`INSTANCE_LANGUAGE`, one of `INSTANCE_LANGUAGES`). */
+  language: InstanceLanguage;
+  /** Whether this instance can send mail at all. `false` means invites and resets are printed as links instead. */
+  mail: boolean;
+  /**
+   * Whether an ordinary member may invite people on this instance
+   * (`MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS`, both
+   * or neither, or since M253 `MEMBER_INVITE_TRIAL` beside the scan trial).
+   *
+   * DESCRIPTIVE, NEVER A GRANT, like every other field here. A client reads it
+   * to decide whether to draw an invite card at all, and never to decide
+   * whether it may mint: `false` means `POST /v1/auth/invites` answers the
+   * ordinary unknown-path 404, and `true` still leaves the cap, the re-invite
+   * rule and the throttle to the server.
+   */
+  memberInvites: boolean;
+  /**
+   * Whether anybody may ask this instance for an account with their own
+   * address (`OPEN_SIGNUP=true`, M253), at `POST /v1/auth/signup-request`.
+   *
+   * A BOOLEAN, LIKE `memberInvites` AND `plans`: it says only whether a door
+   * exists. `false` is the honest answer for an invite-only instance and for
+   * every service older than the field, and a client that finds `false` or no
+   * field draws the invite wording, not a sign-up form.
+   *
+   * DESCRIPTIVE, NEVER A GRANT. `false` means the route answers the ordinary
+   * unknown-path 404; `true` still leaves the throttles, the captcha, the
+   * refused domains and the one letter per address per day on the server.
+   */
+  openSignup: boolean;
+  /**
+   * What a client renders before it posts to the sign-up request, or ABSENT
+   * when the door asks for no captcha (M253).
+   *
+   * PRESENT ONLY WHILE {@link InstanceInfo.openSignup} IS `true` AND the
+   * operator configured Turnstile. The site key is public by design: it is
+   * what a browser renders the widget with, and it grants nothing.
+   */
+  signupCaptcha?: InstanceSignupCaptcha;
+  /**
+   * The free scans a new account gets here (`TRIAL_SCANS`, M253), or ABSENT
+   * on an instance that runs no scan trial.
+   *
+   * A PROMISE, LIKE `feedback`, SO ABSENT RATHER THAN NULL. An instance with
+   * nothing to promise adds no key, and a client that finds none MUST NOT
+   * state a number of free scans.
+   */
+  trial?: InstanceTrial;
+  /**
+   * Whether this instance has a biller behind it, so `/v1/plans/*` exists
+   * here (`PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET`, both or neither).
+   *
+   * A BOOLEAN AND NOT AN OPTIONAL PROMISE, which is the choice `feedback`
+   * below makes and the opposite one. `feedback` is a promise about what
+   * happens to a photograph, and an instance with nothing to promise says
+   * nothing. This field promises nothing at all: it says only whether a door
+   * exists, which is the same kind of statement `mail` and `memberInvites`
+   * make, so `false` is the honest answer for every instance that has no
+   * biller and for every build older than the field.
+   *
+   * DESCRIPTIVE, NEVER A GRANT. `false` means the whole subtree answers the
+   * ordinary unknown-path 404, so a client draws no plan door; `true` still
+   * leaves the bearer gate, the account's own state and the biller's own
+   * refusals where they are.
+   */
+  plans: boolean;
+  /**
+   * Whether this instance can send web push notifications, so `/v1/push/*`
+   * exists here (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`,
+   * all three or none).
+   *
+   * THE `plans` PRECEDENT, AND FOR THE SAME REASON. It is a boolean rather
+   * than an optional promise: it says only whether a door exists, never what
+   * comes through it, so `false` is the honest answer both for an instance
+   * with no keys and for a build older than the field.
+   *
+   * DESCRIPTIVE, NEVER A GRANT. `false` means the whole subtree answers the
+   * ordinary unknown-path 404, so a client draws no notification settings;
+   * `true` still leaves the bearer gate, the seven day pause and the daily cap
+   * on the server. What it never says is what a push contains: the payload
+   * carries a kind and the device writes the words. See ADR-0008.
+   */
+  push: boolean;
+  /**
+   * The explicit consent to health data this instance asks of every account
+   * (`HEALTH_CONSENT_VERSION`), or `null` when it asks for none, which is the
+   * self-hosted default: an instance whose operator is the person has nobody
+   * to ask.
+   *
+   * `null` RATHER THAN ABSENT, like `ai`: "this instance asks for no consent"
+   * is a statement every instance makes. A client that finds the key missing,
+   * which is every service older than the field, reads it as `null`.
+   *
+   * THE ONE FIELD HERE THE SERVICE ENFORCES. While it is non-`null`,
+   * `POST /v1/auth/signup` refuses a body without the matching
+   * `healthConsent` (`400 health-consent-required`), and
+   * `POST /v1/auth/account/health-consent` records it for an account that has
+   * none or an older version. See PROTOCOL.md §5.15.1.
+   */
+  healthConsent: InstanceHealthConsent | null;
+  /** The AI proxy this instance offers, or `null` when it has no upstream key. Wired by spec 03. */
+  ai: InstanceAi | null;
+  /**
+   * What this instance does with a reported photograph, or ABSENT when it
+   * accepts no reports, see {@link InstanceFeedback}.
+   *
+   * OPTIONAL, AND NOT NULLABLE, which is the opposite of the choice `ai`
+   * makes above, on purpose. `ai: null` is a statement ("no AI here") that
+   * every instance makes. This field is a PROMISE, and an instance with
+   * `SYNC_FEEDBACK` unset has none to make: it omits the key entirely, so it
+   * stays indistinguishable from an instance built before the field existed,
+   * exactly as its `/v1/feedback` subtree stays indistinguishable from one
+   * where the feature was never written.
+   */
+  feedback?: InstanceFeedback;
+  /**
+   * Which body's micronutrient reference values this instance shows
+   * (`NUTRIENT_REFERENCE_BASIS`, default `dge`), or ABSENT on a service that
+   * has no answer to give.
+   *
+   * OPTIONAL, LIKE `feedback` AND UNLIKE `plans`, and for the reason the whole
+   * handshake is additive: a client older than M234 has never heard of the
+   * field and must keep parsing this body exactly as it did, and a service
+   * older than the field says nothing rather than claiming a default it does
+   * not hold.
+   *
+   * IT IS THE ONE FIELD HERE AN ADMINISTRATOR CAN CHANGE WITHOUT A REDEPLOY.
+   * Everything else on this object is env config read once at boot; this is a
+   * stored row (`db/schema.ts`, `instance_settings`) that
+   * `PATCH /v1/admin/settings` writes. What `/health` publishes is the
+   * PROCESS-LOCAL copy of it, never a query: this path is the container's own
+   * healthcheck and is polled continuously, so a database hiccup here would
+   * restart the container. See `instance/instance-settings.ts`.
+   */
+  nutrientReferenceBasis?: NutrientReferenceBasis;
+}
+
+/**
+ * What an instance promises about a reported photograph. One number, because
+ * `/health` is the container's own healthcheck path and is polled forever.
+ *
+ * THE CLIENT SHOWS THIS NUMBER TO A PERSON, in the consent step they read
+ * before they hand over a photograph of their food. It is therefore the number
+ * the service's own retention sweep deletes on
+ * (`feedback/feedback-retention.ts`), read across rather than written out
+ * again: two copies is one wrong sentence shown to somebody at the moment they
+ * are deciding.
+ */
+export interface InstanceFeedback {
+  /** How many days a report and its image are kept before the sweep deletes them. */
+  retentionDays: number;
+}
+
+/**
+ * The six languages the invite and reset mails exist in (M230). `en` and `de`
+ * are hand-written in `mail/strings.ts`; the other four are bought by
+ * `scripts/translate-mail.ts` into `mail/strings.<lang>.ts`, one module each.
+ */
+export type InstanceLanguage = 'en' | 'de' | 'fr' | 'it' | 'es' | 'tr';
+
+/** Every valid {@link InstanceLanguage}, for validation and exhaustive iteration. */
+export const INSTANCE_LANGUAGES: readonly InstanceLanguage[] = ['en', 'de', 'fr', 'it', 'es', 'tr'];
+
+export function isInstanceLanguage(value: JsonValue | undefined): value is InstanceLanguage {
+  return INSTANCE_LANGUAGES.some((language) => language === value);
+}
+
+/**
+ * Which body's micronutrient reference values this instance shows: the German
+ * DGE, the EU's EFSA, or the US NASEM figures (M234).
+ *
+ * ONE BASIS PER INSTANCE, NEVER PER LANGUAGE AND NEVER PER PERSON. Language
+ * and reference body are orthogonal: a Turkish speaker living in Germany is
+ * advised by the same body a German speaker is, so a locale-following default
+ * would be a per-person basis wearing a translation's clothes.
+ */
+export type NutrientReferenceBasis = 'dge' | 'efsa' | 'us';
+
+/** Every valid {@link NutrientReferenceBasis}, for validation and exhaustive iteration. */
+export const NUTRIENT_REFERENCE_BASES: readonly NutrientReferenceBasis[] = ['dge', 'efsa', 'us'];
+
+export function isNutrientReferenceBasis(value: JsonValue | undefined): value is NutrientReferenceBasis {
+  return NUTRIENT_REFERENCE_BASES.some((basis) => basis === value);
+}
+
+/** What {@link InstanceInfo.healthConsent} asks for: the version of the wording a person agrees to. */
+export interface InstanceHealthConsent {
+  version: string;
+}
+
+/** What {@link InstanceInfo.trial} promises: how many free scans a new account gets. */
+export interface InstanceTrial {
+  scans: number;
+}
+
+/** The captcha the sign-up request needs (M253). One provider today, named so a second is additive. */
+export interface InstanceSignupCaptcha {
+  provider: 'turnstile';
+  /** The public Turnstile site key. The token the widget produces travels as `captchaToken`. */
+  siteKey: string;
+}
+
+/**
+ * What the instance's AI proxy advertises. Diagnostics and UI copy only, never
+ * a routing decision: `instance.ai` being non-`null` says an upstream is
+ * configured, not that the caller may use it.
+ */
+export interface InstanceAi {
+  /** `AI_ADVERTISED_MODEL`, or `null` when the operator named none. Never the upstream URL and never a key. */
+  model: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Version handshake
+// ---------------------------------------------------------------------------
+
+/**
+ * What a service reports about itself, read by the client BEFORE its first
+ * sync of a session. This replaces the same-process `HOOK_VERSION` check that
+ * died with M117's build-time composition seam: client and service are now
+ * separately deployed artifacts that can drift by a release, and the only
+ * safe way to notice is to ask.
+ */
+export interface ProtocolHandshake {
+  /** The service's {@link PROTOCOL_VERSION}. */
+  protocolVersion: number;
+  /** The highest {@link ENVELOPE_VERSION} the service is willing to accept on a push. */
+  envelopeVersion: number;
+  /** Human-readable build identifier, diagnostics only, never compared. */
+  serviceVersion: string;
+  /**
+   * What this instance calls itself, what language it writes in, whether it
+   * can send mail, and what AI it offers, see {@link InstanceInfo}.
+   *
+   * OPTIONAL, and it must stay optional. A service older than this field omits
+   * it entirely, and a client that required it would refuse to talk to every
+   * such instance: a compatibility break wearing the clothes of an additive
+   * change. It replaced `signupMode`, which described a setting that no longer
+   * exists: an account is created by redeeming an invite, and
+   * {@link InstanceInfo.openSignup} says whether a person may ask for one.
+   *
+   * It is DESCRIPTIVE, never authoritative. `mail: true` does not promise a
+   * letter arrives, and `ai` is what the operator configured rather than a
+   * capability grant, an account with `dailyAiLimit: 0` gets `403` whatever
+   * this says.
+   */
+  instance?: InstanceInfo;
+  /**
+   * A short message the operator wants every client to show, a planned
+   * migration, a shutdown date, a "read this before you sync again".
+   *
+   * WHY IT LIVES ON THE HANDSHAKE. This service holds no addresses (M181), so
+   * it has no channel to write to anybody. The notice is PULL, never push: the
+   * client already reads `/health` on every connect, so a person who opens the
+   * app sees the message and a person who does not, does not. That limitation
+   * is real and is written down rather than papered over, it is not a
+   * notification system and must never be relied on as one.
+   *
+   * OPTIONAL, for the same reason {@link ProtocolHandshake.instance} is: an
+   * instance with nothing to say omits it, and an older client that has never
+   * heard of it ignores it.
+   * Its text is bounded by the service's config (`MAX_SYNC_NOTICE_LENGTH`)
+   * because `/health` is the container's own HEALTHCHECK path and is polled
+   * continuously.
+   *
+   * IT IS HOSTILE INPUT ON THE CLIENT SIDE. It arrives from whatever server
+   * the user pointed at, which is not necessarily the operator they think it
+   * is: render it as TEXT, never as markup, and never build a link from
+   * {@link OperatorNotice.url} without checking its scheme first.
+   */
+  notice?: OperatorNotice;
+}
+
+/** The optional operator message of {@link ProtocolHandshake.notice}. `url` is absent when the notice links nowhere. */
+export interface OperatorNotice {
+  text: string;
+  url?: string;
+}
+
+/** Result of {@link checkProtocolCompatibility}, `reason` is a user-presentable sentence. */
+export type ProtocolCompatibility = { status: 'compatible' } | { status: 'incompatible'; reason: string };
+
+export function isProtocolHandshake(value: JsonValue | undefined): boolean {
+  const candidate = asObject(value);
+  if (candidate === null) return false;
+  // `instance` is deliberately absent from this check. It is optional on the
+  // wire, so demanding it here would reject every service older than the field.
+  return (
+    asNumber(candidate.protocolVersion) !== null &&
+    asNumber(candidate.envelopeVersion) !== null &&
+    asString(candidate.serviceVersion) !== null
+  );
+}
+
+/**
+ * Decides whether this build may talk to the service that returned `remote`.
+ *
+ * Pure and total, it never throws and never guesses. A mismatch is REFUSAL
+ * with a clear message, never a best-effort attempt: pushing an envelope a
+ * service can't store, or decrypting one framed by rules this build doesn't
+ * know, corrupts an account's only copy of its data. Silent wrongness is the
+ * one outcome this whole handshake exists to prevent.
+ */
+export function checkProtocolCompatibility(remote: ProtocolHandshake): ProtocolCompatibility {
+  if (remote.protocolVersion !== PROTOCOL_VERSION) {
+    return {
+      status: 'incompatible',
+      reason: `This sync server speaks protocol version ${remote.protocolVersion}; this app speaks version ${PROTOCOL_VERSION}. Update whichever side is older before syncing.`,
+    };
+  }
+  if (remote.envelopeVersion !== ENVELOPE_VERSION) {
+    return {
+      status: 'incompatible',
+      reason: `This sync server expects envelope version ${remote.envelopeVersion}; this app produces version ${ENVELOPE_VERSION}. Update whichever side is older before syncing.`,
+    };
+  }
+  return { status: 'compatible' };
+}
+
+// ---------------------------------------------------------------------------
+// Wire shapes, blobs
+// ---------------------------------------------------------------------------
+
+/**
+ * A base64-encoded byte string. Binary fields (`ciphertext`, `wrappedDek`)
+ * travel as base64 inside JSON bodies rather than as a binary content type,
+ * so that every field of every request is inspectable by a self-hoster
+ * debugging their own instance.
+ */
+export type Base64Bytes = string;
+
+/** An ISO-8601 UTC timestamp string, e.g. `2026-08-04T10:11:12.000Z`. */
+export type IsoTimestamp = string;
+
+/** `POST {prefix}/blob`, a compare-and-swap write of the account's single encrypted blob. */
+export interface PushBlobRequest {
+  /**
+   * The `blobVersion` this client believes is currently stored (`0` for "no
+   * blob exists yet"). The write succeeds only if it still matches, this is
+   * the entire concurrency model, and it is never a blind overwrite.
+   */
+  baseVersion: number;
+  envelopeVersion: number;
+  ciphertext: Base64Bytes;
+  /**
+   * `true` when this client MEANS the deletion it is pushing: it emitted those
+   * tombstones from state it positively trusts, and it is willing to have the
+   * server act on that. Absent and `false` mean the same thing, so every client
+   * older than the field says "no".
+   *
+   * IT IS ONLY EVER READ ON A LARGE SHRINK (`BLOB_SHRINK_ACK_RATIO`), and it is
+   * an ACKNOWLEDGEMENT rather than a verdict: saying `true` does not make a
+   * deletion correct, it makes it this client's claim. An ordinary push sets
+   * nothing and is unaffected.
+   *
+   * A BODY FIELD AND NOT A HEADER, on purpose. A new custom request header must
+   * be added to `server/cors.ts`'s allow list or a browser silently drops the
+   * request after a clean preflight, and no Node test can see that; this service
+   * shipped exactly that defect in M222. See `tests/integration/cors-preflight.test.ts`.
+   */
+  shrinkAcknowledged?: boolean;
+}
+
+/** `200`, the CAS write won. */
+export interface PushBlobAcceptedResponse {
+  newVersion: number;
+}
+
+/**
+ * `409`, the CAS write lost: another device wrote first. The client must
+ * pull `currentVersion`, merge (`openplate`'s `app/lib/sync/engine/merge/merge-entities.ts`), and retry
+ * with `baseVersion: currentVersion`.
+ */
+export interface PushBlobConflictResponse {
+  currentVersion: number;
+}
+
+/** `200` from `GET {prefix}/blob`. A `404` means this account has never pushed. */
+export interface PullBlobResponse {
+  blobVersion: number;
+  envelopeVersion: number;
+  ciphertext: Base64Bytes;
+  createdAt: IsoTimestamp;
+}
+
+// ---------------------------------------------------------------------------
+// Wire shapes, key records
+// ---------------------------------------------------------------------------
+
+/** One wrapped-DEK record as it appears on the wire. */
+export interface KeyRecordWire {
+  kind: SyncKeyRecordKind;
+  /**
+   * Argon2id salt + m/t/p parameters for the `passphrase` kind so any device
+   * can re-derive the KEK; ALWAYS `null` for `recovery` (HKDF-only, a
+   * ≥128-bit random code needs no memory-hard stretch and therefore has no
+   * parameters to record). Non-secret by design.
+   */
+  kdfDescriptor: JsonObject | null;
+  wrappedDek: Base64Bytes;
+  updatedAt: IsoTimestamp;
+}
+
+/** `200` from `GET {prefix}/key-records`. */
+export interface ListKeyRecordsResponse {
+  records: KeyRecordWire[];
+}
+
+/** `PUT {prefix}/key-records/:kind`, also CAS-gated, mirroring the blob endpoint. */
+export interface PutKeyRecordRequest {
+  kdfDescriptor: JsonObject | null;
+  wrappedDek: Base64Bytes;
+  /**
+   * `null` asserts "no record of this kind exists yet" (first-time setup);
+   * any other value asserts "the record I last read had exactly this
+   * `updatedAt`" (rotation).
+   *
+   * The key MUST be present. An ABSENT key is a `400`, deliberately, a
+   * caller must not be able to skip the concurrency check by forgetting a
+   * field.
+   */
+  expectedUpdatedAt: IsoTimestamp | null;
+}
+
+/** `409` from a key-record PUT whose `expectedUpdatedAt` no longer matches. */
+export interface PutKeyRecordConflictResponse {
+  currentUpdatedAt: IsoTimestamp | null;
+}
+
+/** Every non-2xx response body shape. `error` is diagnostic text, never a machine-readable code. */
+export interface ProtocolErrorResponse {
+  error: string;
+}
+
+/**
+ * The status codes that carry protocol meaning. Anything else is a transport
+ * or infrastructure failure and should be retried or surfaced as such.
+ */
+export const PROTOCOL_STATUS = {
+  ok: 200,
+  noContent: 204,
+  badRequest: 400,
+  unauthorized: 401,
+  forbidden: 403,
+  notFound: 404,
+  conflict: 409,
+  payloadTooLarge: 413,
+} as const;

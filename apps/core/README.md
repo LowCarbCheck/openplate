@@ -1,0 +1,677 @@
+# openplate-core
+
+The account service for [openplate](https://github.com/LowCarbCheck/openplate). Its first feature is encrypted sync between your devices: the diary is encrypted on each device before it is uploaded, and the operator keeps a sealed copy of each recovery code, so the operator can restore a forgotten password and can also read the diary.
+
+**What this server holds, in one paragraph.** An email address, an opaque ciphertext blob per account, wrapped key records it cannot unwrap, and each account's recovery code sealed under a key in the environment. It cannot read the ciphertext, not as a policy, but as a consequence of never receiving a key: your passphrase never leaves your device, and what reaches the server is a derived value that authenticates you and decrypts nothing. The escrowed recovery code is the deliberate exception, and it is what makes "forgot password" restore the diary rather than only the login. **It also means the operator of a hosted instance can open any account on it**, not through an endpoint, there is none, but by reading that column with `SERVER_SECRET` in hand. A self-hosted instance is its own operator. The full argument, including what it costs and why it was taken, is [ADR-0005](./docs/adr/0005-organization-accounts-and-escrowed-recovery.md).
+
+**And five places the zero-knowledge claim does not hold.** All five are optional, all five are off until somebody turns them on, and they are not the same kind of thing.
+
+The first is the AI proxy. If the operator configures a provider key, this service proxies the app's food-photo requests to that provider at `POST /v1/chat/completions`, so the photograph and the model's answer cross this process. Neither is written, cached or logged: not the body, not a prefix, not a decoded buffer. What a log line carries is an account id, an upstream status, byte counts and a duration. It SEES a photograph and keeps nothing. Leave `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY` unset, and the route does not exist.
+
+The second is reported estimates. With `SYNC_FEEDBACK` on, a person who saw a wrong measurement can send that entry's figures and its photograph here, having agreed to it in plain words, and this service KEEPS what it is given: the photograph sits in the operator's database and the operator can look at it. That is a different undertaking from holding ciphertext nobody can read, and [ADR-0006](./docs/adr/0006-a-reported-photograph-is-the-second-hole-in-the-claim.md) states both holes side by side. Leave `SYNC_FEEDBACK` unset and the whole `/v1/feedback` subtree answers the ordinary unknown-path 404.
+
+The third is the community pulse. A person who turns it on in the app sends three kinds of small delta to `/v1/pulse`: a meal as the count 1 with its calories rounded to 50 and its protein rounded to 5 g, a parsed photograph as the count 1, and a fasting heartbeat that carries nothing beyond their bearer token. The server keeps instance-wide day sums for 30 days, one row per contributing account per day beside them, and a presence row that expires 30 minutes after the last heartbeat, so `GET /v1/pulse/today` can tell a person how many others are here today. The routes log a status code and a byte count and never an account id. [ADR-0007](./docs/adr/0007-the-pulse-is-a-named-exception.md) states all three holes side by side, including the fact that a fasting heartbeat and M223's `wake_at` describe the same fast. Nothing leaves a device until the person turns the toggle on.
+
+The fourth is push scheduling. With `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` set, a person can register a device at `/v1/push` and ask for two things: a morning catch-up at a minute of their own local day, and an alert when a fast reaches its target. The server stores one row per device: where to send, in which zone, at which minute, when it was last seen, and the instant it asked to be woken. What it never stores is a word of what the notification says. Every push carries a kind, `{"kind":"catch-up"}` or `{"kind":"fast-target"}`, and the device writes the sentence out of the diary only it can read. At most two pushes a day per device, nothing at all for somebody who has not opened the app in seven days, and a subscription the push service disowns is deleted. [ADR-0008](./docs/adr/0008-push-is-a-scheduling-exception.md) states all four holes side by side, including the fact that a `wake_at` row and the pulse's presence row describe the same fast. Leave the three variables unset and the whole `/v1/push` subtree answers the ordinary unknown-path 404.
+
+The fifth is the plans pass-through. With `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET` both set, a signed-in request to `/v1/plans/*` goes on to the one plans service the operator configured. This service tells that plans service who is asking. Every forwarded request carries `X-Account-Id`, `X-Account-Email` read from the account row, and `X-Plans-Secret`. All three are built here, and none are copied from the request. The caller's own token is never forwarded. An address stored here is sent, on every call, to a second service. One read needs no sign-in: `GET /v1/plans/prices`, the price list a sign-up screen shows, which goes out with the secret alone. Leave both variables unset, and the whole `/v1/plans` subtree answers the ordinary unknown-path 404. [Paid plans](#paid-plans-and-what-the-plans-service-can-reach) has the details.
+
+**One opinion about a blob, and it is not a sixth hole.** This service used to accept any correctly versioned blob without looking at it at all. Since M224 it refuses one shape: a push whose ciphertext is under half the size of the stored one, unless the request explicitly says the deletion is intended. A person lost her whole diary to a client that found its local store evicted, concluded she had deleted everything, and pushed a tombstone per entry, and a second device then pulled that blob and deleted its own rows. The guard compares two byte counts this service already stored for the storage figure it already reports, so it learns nothing new about anybody; what it gives up is the claim to be a store with no opinion. An operator can put an account back with `pnpm sync-api accounts rollback`, and [`docs/operations/restoring-a-wiped-diary.md`](./docs/operations/restoring-a-wiped-diary.md) is the procedure, including the step on the person's own devices that the rollback cannot do. [ADR-0009](./docs/adr/0009-a-shrinking-blob-is-acknowledged-or-refused.md) states what it costs when it is wrong.
+
+**Start with [`PROTOCOL.md`](./PROTOCOL.md).** It is the normative specification of the wire protocol, written so a third party can implement either side of it without reading this code: an alternative client against this service, or an alternative server that an openplate client can be pointed at with `SYNC_SERVER_URL`.
+
+**This service is optional.** openplate is a complete, fully functional tracker without it: your diary lives in the browser, exports to JSON, and imports again on another device. Sync removes the manual step; it does not unlock anything.
+
+> **Open source.** openplate-core is licensed under the [MIT License](./LICENSE) (SPDX: `MIT`), the same license as the openplate app. Self-hosting is explicitly one of the things it supports. See [License](#license).
+
+---
+
+## Documentation
+
+`docs/` holds the architecture decision records ([`docs/adr/`](./docs/adr/)) and
+the operator playbooks ([`docs/operations/`](./docs/operations/)); this README's Self-hosting, The AI proxy, Backup and restore,
+and The admin API sections read like standalone guides and are candidates for splitting into
+`docs/` files later.
+
+### Reference
+
+| Guide                         | What it covers                       |
+| ----------------------------- | ------------------------------------ |
+| [**Protocol**](./PROTOCOL.md) | The wire and key protocol, version 2 |
+
+---
+
+## Self-hosting
+
+```bash
+git clone https://github.com/LowCarbCheck/openplate-core.git
+cd openplate-core
+cp .env.example .env
+
+# Generate the one secret you must not lose:
+openssl rand -hex 32     # → paste into SERVER_SECRET in .env
+# That is the only value you must set.
+
+docker compose --project-directory . -f docker/compose.yml up -d
+curl http://localhost:3000/health
+```
+
+```bash
+git clone https://github.com/LowCarbCheck/openplate-core.git
+cd openplate-core
+cp .env.example .env
+
+openssl rand -hex 32
+
+podman compose --project-directory . -f docker/compose.yml up -d
+curl http://localhost:3000/health
+```
+
+Podman needs the `compose` subcommand, not the separate `podman-compose`
+tool. This file's Postgres volume is already a named volume, so rootless
+Podman needs no ownership fix for it. See openplate's
+[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/docs/podman.md).
+
+That is the whole install. Postgres comes up alongside the service, the schema migrates itself on boot, and there is nothing else to run.
+
+`--project-directory .` is what keeps the repository root as the project root, so `.env` is read from where you created it and the image builds from the checkout rather than from `docker/`. If you would rather run the published image than build from source, copy `docker/compose.yml` out on its own, uncomment the `image:` line, and plain `docker compose up -d` beside it works.
+
+Then point your openplate app at it by setting `SYNC_SERVER_URL` to this service's public URL, the one a **browser** can reach, since the sync client runs in the page. If you want both halves in one file, openplate ships a combined [`docker/topologies/compose.sync.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.sync.yml) that brings up the app, this service and a shared Postgres together.
+
+### Signup is by invitation, and mail is optional
+
+An account is an **email address plus a passphrase**, and it is created by redeeming an invite addressed to somebody. By default you mint every invite yourself, and the instance is invite-only.
+
+```bash
+pnpm sync-api invites create --email anna@example.org --display-name "Anna"
+```
+
+That prints a link (or, if you configured no `CLIENT_BASE_URL`, the raw token) **once**. It is not stored, only its digest is. One invite creates one account, at the address it names, and a failed attempt does not spend it.
+
+**The first account, on a server with only Docker.** The `sync-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then, on the server, in the folder that holds `.env`:
+
+```bash
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
+curl -s -X POST http://127.0.0.1:3000/v1/admin/invites \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","displayName":"You","role":"admin"}'
+```
+
+The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=...&invite=si_..."` on an instance with no mail; open the link yourself. With mail it holds `"emailed":true` and the same link, which is also on its way as a letter. `"role":"admin"` makes the account an administrator, so from then on you invite people from `/admin` in the app. The link runs out after seven days. Opening it needs a secure page (`https://`, or `localhost`): the client derives keys with the browser's Web Crypto API, which browsers switch off on plain `http://` addresses. The openplate app's [self-hosting guide](https://github.com/LowCarbCheck/openplate/blob/main/docs/self-hosting.md#create-the-first-account) walks through the same step for its combined compose file, where the port is 3001.
+
+**The invitation is the address verification.** `POST /v1/auth/signup` reads the address from the invite row, never from the request body, so the person who received the letter is the person who signs up. There is no confirmation link and nothing left to confirm afterwards.
+
+**You can let people ask for an invitation themselves.** With `OPEN_SIGNUP=true`, `POST /v1/auth/signup-request` takes an address, mints an ordinary invite for it and mails it there in a letter of its own, which says the person asked rather than that somebody invited them, so the letter is still the address check. It needs the mail block, and it refuses to boot without it. Every address gets the same `202`: an address that already has an account receives a short note with no link, and one that already holds a letter from you or a member receives nothing new. The request may name the plan the person picked (`"plan": "monthly"` or `"yearly"`) and the language they asked in (`"locale"`); the mailed link then carries `&plan=` and `&lang=`, nothing is stored, and any other value is ignored. One source address may ask five times an hour, one mailbox receives one letter a day, and addresses at known throwaway mail services are refused (a vendored copy of the CC0 list at [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains), refreshed with `pnpm sync:disposable-domains`). Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_SITE_KEY` to require a Cloudflare Turnstile captcha as well; `/health` then publishes the site key for the app. `GET /v1/admin/stats` counts the invites this door minted today and in the last seven days, so a burst shows.
+
+**Mail is optional.** Set `MAIL_API_*` and this service sends the invitation and the password reset itself; leave it unset and both come back to you as links to paste. Nothing is silently dropped either way. `SMTP_*` and `PIGEON_*` are boot failures rather than no-ops: this service speaks pigeon's HTTP API and nothing else.
+
+**A declaration is kept until the end of the third calendar year after the year it arrived.** Every cancellation or withdrawal `POST /v1/legal/declarations` records stays in `legal_declarations` for that long, counted in Europe/Berlin time, and the hourly sweep then deletes it: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. Deleting an account does not delete its declarations earlier; the row only loses its account id. The sweep logs how many rows it deleted, never a row.
+
+**The declaration letters take their words from your files.** The receipt for a cancellation or a withdrawal, and the operator's copy, are read from `CONTENT_DIR` (a folder you mount read-only, the same one the app's legal pages can come from). This repo ships no letter text: unset, the letters state only the kind, the receipt number, the time of receipt and the fields the person gave. [`docs/operations/declaration-mail-text.md`](./docs/operations/declaration-mail-text.md) has the file format and the exact fallback.
+
+### The password reset, and what it costs
+
+"Forgot password" works, and unlike the mailed reset this service used to have, it **restores the diary rather than only the login**.
+
+It works this way: the client generates the recovery code at signup and sends it to the server, which seals it into `accounts.recovery_code_escrow` under a subkey of `SERVER_SECRET`. `POST /v1/auth/reset/request` mails a link; `POST /v1/auth/reset/open` spends it once and hands the code back; the client then runs the ordinary recovery ceremony with it: new passphrase, re-wrapped data key, new code, re-sealed escrow, one transaction. **The reset endpoint writes nothing to the account.** Without the key records, what it returns is a string.
+
+**With no mail configured, "forgot password" reaches nobody.** `POST /v1/auth/reset/request` still answers `202`, the same answer it gives for an unknown address, but no letter goes. The openplate app tells the person to ask the administrator. Make the link in the app, under **Administration**, **People** (open the person, **Send a reset link**, and with no mail the page shows it), or with `ADMIN_TOKEN` on the server:
+
+```bash
+curl -s http://127.0.0.1:3000/v1/admin/accounts -H "Authorization: Bearer $ADMIN_TOKEN"   # find the id
+curl -s -X POST http://127.0.0.1:3000/v1/admin/accounts/1/reset-mail -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+The second call answers `{"emailed":false,"link":"<CLIENT_BASE_URL>/reset#server=...&token=sr_..."}`. Pass it on the way you would pass on a password: it opens that account's recovery code, once, within one hour. On an instance with mail the same call sends the letter and returns no link.
+
+**The cost, stated plainly: you, as the operator, hold what it takes to open any account on your instance.** Not through an endpoint (there is none, and no admin call ever prints a recovery code), but by reading that column with `SERVER_SECRET` in hand. If you run an instance for other people, they are trusting you and not only the cryptography, and they should be told so.
+
+If you are your own operator, which is what self-hosting means, the older promise is intact: nobody but you can open your diary, and you already could.
+
+### Explicit consent to health data, when you run an instance for others
+
+A diary is health data: foods, weight, fasting. Because you hold the escrowed recovery code, a privacy notice for an instance you run for other people may name **explicit consent** (Art. 9(2)(a) GDPR) as the legal basis, and you then have to be able to show that each person gave it. Set a version for the wording they agree to:
+
+```bash
+HEALTH_CONSENT_VERSION=2026-09-28   # 1 to 32 letters, digits, ".", "_" or "-"; empty asks for nothing
+```
+
+`/health` publishes it as `instance.healthConsent`, and the app shows a checkbox on the account-creation step. `POST /v1/auth/signup` then refuses a body without the matching consent with `400 health-consent-required` and spends nothing, so the invitation still works once the box is ticked. Every account stores the version it agreed to and the server's time of agreement, and the account view carries both as `healthConsent`. An account created before you set the version, or before you changed it, has none or an older one; the app asks that person once and records the answer at `POST /v1/auth/account/health-consent`. You read the version and the time in the admin account view, and no admin call can write them. A person who withdraws deletes their account, which removes the diary and the record together.
+
+**Leave it empty if you are your own operator.** An instance that holds only your own diary has nobody to ask. **Changing the version asks everybody again**, so change it when the wording changes. [PROTOCOL.md §5.15.1](./PROTOCOL.md#5151-post-v1authaccounthealth-consent-explicit-consent-to-health-data) is the contract.
+
+### The AI proxy, and the allowance that bounds it
+
+openplate can name a plate from a photograph. The model that does it is not in
+this repository and not on your server: it is a provider you pay, and this
+service is the thing that stands between your users and your bill.
+
+```bash
+UPSTREAM_BASE_URL=https://openrouter.ai/api/v1
+UPSTREAM_API_KEY=sk-...            # both, or neither. One alone is a boot failure.
+AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite   # the model every request is sent to; openplate needs it
+AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 8192
+AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
+UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
+AI_INSTANCE_DAILY_LIMIT=2000       # optional, whole instance, per UTC day
+```
+
+With both set, a signed-in account posts an ordinary OpenAI-compatible request
+to `POST /v1/chat/completions` **with its own access token**. This service
+spends one unit of that account's daily allowance, replaces the token with your
+provider key, forwards the body, and streams the answer back. The account never
+learns your key. The provider never learns the account's token.
+
+**Your instance decides what one request costs, not the caller.** The body goes
+through as sent except for the fields that set its price. With
+`AI_ADVERTISED_MODEL` set, `model` is replaced by it, for every account.
+**The openplate app needs it set.** On a managed instance, the app sends no
+model of its own. It scans with the model named by `/health`. Without one, it
+refuses to scan rather than pick a model on your bill. Name the model the way
+your provider does (`google/gemini-3.5-flash-lite` on OpenRouter,
+`openplate-plate-1` in front of openplate-inference). Leaving it unset passes
+the caller's model through, which only helps a client that sends one. With
+or without it, `max_tokens` and `max_completion_tokens` are capped at
+`AI_MAX_OUTPUT_TOKENS` (written in when the body has neither), so is
+`reasoning.max_tokens`, `n` becomes 1, and `models`, `route`, `provider`,
+`plugins`, `web_search_options` and `prediction` are removed. On OpenRouter
+the service writes its own `provider` field instead,
+`{"data_collection":"deny"}`, so a photo only goes to endpoints that do not
+store it or train on it. Nothing is refused for these fields, so a client that
+sends them still gets an answer.
+PROTOCOL.md §5.19 has the table.
+
+**The allowance is per account, per UTC day, and it defaults to zero.** A new
+invite hands out no AI at all unless you say otherwise, so an operator who
+mints an ordinary invitation has not given away their provider key by accident:
+
+```bash
+pnpm sync-api invites create --email anna@example.org --display-name Anna --daily-ai-limit 200
+pnpm sync-api accounts set-limit 42 200      # or change it later
+pnpm sync-api accounts set-limit 42 0        # or turn it off
+```
+
+Every proxied answer carries `X-Quota-Used` and `X-Quota-Limit`. An account at
+its limit gets a `429` naming the UTC midnight it resets at, with `Retry-After`
+in seconds. An account with an allowance of zero gets `403 ai-not-allowed`
+before any request leaves your host.
+
+**A unit is reserved before the call and given back only when the provider
+cannot have billed you.** A connection that never opened, a provider that
+refused the request outright, or a bound of yours that expired before any byte
+arrived: released. A provider that accepted the request and then failed while
+serving it: spent, because generation may have run and a released unit there is
+a free retry loop against exactly the provider that is flaking.
+
+There is also a per-account limiter of twenty requests a minute, which is a
+different bound for a different failure: a stuck client that retries on every
+error would otherwise spend a whole day's allowance in ten seconds, and the
+first thing the person sees is that the feature stopped working.
+
+**The whole instance can have a ceiling as well.** The allowance and the minute
+limiter both count per account. Ten accounts at 200 requests a day equal 2000
+requests a day on your provider key. `AI_INSTANCE_DAILY_LIMIT` caps the instance
+in requests per UTC day. A request consumes from the instance ceiling first and
+from the account allowance second. A full instance never spends an individual
+user's allowance. At the ceiling, the proxy answers `503 ai-instance-ceiling`,
+with `Retry-After` naming the next UTC midnight. Unset means no ceiling, which
+is the default. `0` stops the boot rather than turning AI off. To disable AI
+completely, unset `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY`. The ceiling is not
+published on `/health`. `GET /v1/admin/stats` reports it to you.
+
+**New accounts can get free AI scans.** Set `TRIAL_SCANS` and
+`TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
+them. An account from open sign-up, from an invite minted with
+`pnpm sync-api invites create --trial`, or (with `MEMBER_INVITE_TRIAL=true`)
+from a member's invitation gets that many scans with no end date. A scan is one
+AI action the person started: the app sends one `X-Intake-Id` per action, a
+retry of it rides on the same scan until an answer is delivered, and an action
+that got no answer gives its scan back. One scan buys one answer: a request
+after an answer claims a new scan, even under the same id. After the last scan the proxy answers `403 trial-scans-spent`. A
+future allowance date, which a payment writes, lifts the count. One mailbox gets
+one trial, also after the account is deleted: deleting an account then keeps
+only a keyed hash of the mailbox and scrubs the address from its invite rows.
+`AI_TRIAL_INSTANCE_DAILY_LIMIT` caps what all trial accounts together spend per
+UTC day. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
+day trials that ran out unpaid, as a dry run until you add `--apply`.
+
+**Members can hand out an AI trial, if you let them.** Set
+`MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS`, both or
+neither. An ordinary member can then invite someone through
+`POST /v1/auth/invites`. The invited account receives that many AI requests per
+UTC day, for that many days after signup. `MEMBER_INVITE_LIFETIME_CAP`, default
+5, sets how many invitations one member may create. Once an allowance expires,
+the proxy answers `403 allowance-expired`, while sync keeps working. With
+neither variable set, the route answers the ordinary unknown-path 404. With
+`MEMBER_INVITE_TRIAL=true` instead of the pair, a member's invitation grants the
+free scans above rather than a number of days.
+openplate's
+[configuration guide](https://github.com/LowCarbCheck/openplate/blob/main/docs/configuration.md#member-invites)
+has the full rules.
+
+**The counters are kept for 90 days and then deleted.** Spending is recorded as
+one integer per account per UTC day, and nothing else: no prompt, no response,
+no model, no time of day. An hourly sweep inside the service deletes every row
+older than 90 days, on every instance, whether or not you have a provider key
+configured today. You need no cron entry and no maintenance command. Deleting
+an account takes its counters and its last-seen timestamp with it, in the same
+statement as the rest of the erasure. Ninety days is also the longest activity
+window `/admin` will show you for one person, so a strip you read is never
+zeroes standing in for rows that expired.
+
+Leave `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY` unset, and none of this exists.
+If you set one without the other, the service refuses to boot. The route answers
+with the same `404` any unknown path returns. `/health` reports
+`instance.ai: null`, so the app knows not to offer a scan.
+
+Setting any of the removed variables (`SIGNUP_MODE`, `SIGNUPS_OPEN`, `EMAIL_FROM`, `SMTP_*`, `PIGEON_*`, `REQUIRE_EMAIL_VERIFICATION`) is a **boot failure**, not a no-op. See [`.env.example`](./.env.example) for why refusing to start is the safer answer.
+
+### Reported estimates, and what holding one costs you
+
+**Off by default. Read this whole section before you change that.**
+
+openplate can name a plate from a photograph, and sometimes it is wrong. With
+`SYNC_FEEDBACK=true`, a person looking at a wrong measurement can send you that
+entry's figures and the photograph they came from:
+
+```bash
+SYNC_FEEDBACK=true
+FEEDBACK_DAILY_LIMIT=5          # reports per account per UTC day, default 5
+FEEDBACK_MAX_REQUEST_BYTES=8000000   # per report, default 8 MB
+```
+
+They agree to it first, in a separate step with plain wording that names who can
+see the photograph and how long it is kept, and what they agreed to travels with
+the report: the timestamp and the version of the wording they were shown are
+stored on the row. A flag on their own device would prove nothing to anybody
+looking at that image afterwards.
+
+**What is stored, exhaustively.** The photograph, the figures from the entry
+being disputed, and the consent record. Not the diary, not a food name beyond
+what the reported entry itself carries, not an IP address, not a user agent, not
+a device identifier. An entry whose photograph the app had already evicted still
+reports, flagged as having no image, because the figures alone are still worth
+reading.
+
+**WHAT THIS COSTS YOU, PLAINLY.** You hold photographs of your users' food, in
+your database, and you can look at them. Every other write path on this service
+stores something nobody can read. This one does not, and no amount of care in
+the code changes that: it is the point of the feature. If you run an instance
+for other people, this is a promise you are now making to them, it belongs in
+whatever you told them about this server, and it is a change you should make
+deliberately rather than because a flag was there.
+
+**The bounds.** A report is capped in size and an account may store only so many
+a day, so a compromised client cannot drain your disk or your bandwidth. A
+retried report is one report: the client sends an idempotency key and a repeat
+stores nothing new, which is what lets the app queue a report durably and drain
+the queue when the phone finds a connection.
+
+The images go in the Postgres you already run and already back up. There is no
+S3 client here and no object-storage secret to hold: storage sits behind a
+`FeedbackImageStore` interface with `put`, `get` and `delete`, so a later move is
+one adapter and no change anywhere else.
+
+**Reading a report, and what that leaves behind.** The queue is
+`GET /v1/admin/feedback` behind your admin credential, one report is
+`GET /v1/admin/feedback/<id>`, the photograph is
+`GET /v1/admin/feedback/<id>/image`, and `DELETE /v1/admin/feedback/<id>` removes
+a report and its image now. The openplate app renders all of this at `/admin`.
+Every read of an IMAGE writes one line to this service's log naming who opened
+which report and when. That line is for you as much as for the person whose meal
+it is: it is what turns "the operator can see everything" into something that can
+be checked afterwards. Opening the figures is not logged, because a line per row
+scanned would bury the one that matters.
+
+**Thirty days, and it is not a setting.** A report and its photograph are deleted
+thirty days after they arrive, by a sweep inside the service, on every instance
+with the feature on. No cron entry, no operator action, nothing to remember. The
+number is `FEEDBACK_RETENTION_DAYS`, it is the same number the app shows a person
+in the consent step, and there is deliberately no variable to raise it: that
+would extend a promise somebody else made on your behalf. Deleting sooner is
+always yours to do.
+
+**Erasing an account erases their reports and their photographs**, in the same
+statement as everything else. `DELETE /v1/admin/accounts/<id>` is the DSAR path,
+and `tests/integration/account-erasure-feedback.test.ts` proves it by asking the
+image store for the bytes afterwards rather than by trusting the cascade.
+
+Leave `SYNC_FEEDBACK` unset and none of this exists. The whole `/v1/feedback`
+subtree answers the same `404` any unknown path does, to everybody, with or
+without a valid token.
+
+Under Compose, set them in `.env`. The shipped `docker/compose.yml` forwards
+`SYNC_FEEDBACK` and both limits to the service.
+
+### The two letters are the whole of what it sends
+
+An invitation and a password reset. Neither is a channel for anything else:
+there is no breach notification, no "this instance is moving", no "your account
+will be deleted on Friday". The bound is deliberate rather than unfinished. A
+service that can send arbitrary mail grows a notification system, and a
+notification system is a reason to keep reaching for the address column beside
+an encrypted diary.
+
+**So if you need to reach your users about anything else, keep that list
+yourself, outside this service.** You already know who they are: you addressed
+their invitations. A household has a chat, a clinic has a patient record, an
+employer has a directory.
+
+The one thing the service does offer in between is a **notice on the
+handshake**. Set
+`SYNC_NOTICE` (and optionally `SYNC_NOTICE_URL`) and every client that connects
+shows the message as a dismissible banner:
+
+```bash
+SYNC_NOTICE="This instance moves to sync.example.org on 1 March. Sign in there with the same address."
+SYNC_NOTICE_URL="https://example.org/moving"
+```
+
+Know exactly what that is and is not. It is **pull, not push**: the client reads
+it from `GET /health` when it connects, so it reaches only the people who open
+the app, it does not reach anybody who has stopped using it, and the server never
+learns who read it. Changing it is a redeploy. The
+text is capped at 280 characters because `/health` is also the container's
+healthcheck path and is polled continuously. For anything that must actually
+arrive, use your own contact list.
+
+### Three settings that matter more than the rest
+
+- **`SERVER_SECRET`**: back it up _with your database_. Three subkeys are derived from it: the pepper mixed into every stored auth verifier, the key behind the anti-enumeration KDF responses, and the AES key that seals each account's escrowed recovery code. A restored database with a lost secret is a database nobody can log into, **no recovery code gets anybody back in** (the pepper keys both verifiers), and **no password reset works either** (the escrow cannot be opened). The same is true of a deliberate rotation. There is no path that repairs this from the server side, so treat the secret as part of the backup, not as a setting.
+- **`TRUST_PROXY`**: set it to the number of reverse proxies in front of the service (`1` behind a single nginx or Traefik). Left at `false` behind a proxy, every request appears to come from the proxy's address and the per-IP throttle becomes one global bucket a single attacker can lock for all your users. Set to `true` with nothing in front, anyone can spoof `X-Forwarded-For` and skip the throttle entirely.
+
+Your reverse proxy must also allow request bodies of about **2.75 MB**. Blobs are capped at 2 MB, base64 inflates them by a third, and nginx's default `client_max_body_size` is 1 MB: left at the default it rejects legitimate maximum-size syncs before this service ever sees or logs them. In nginx that is `client_max_body_size 3m;`.
+
+- **`SYNC_FEEDBACK`**: off by default, and the one flag here that changes what kind of service
+  this is. Turning it on means you hold photographs of your users' food that you can read. See
+  [Reported estimates](#reported-estimates-and-what-holding-one-costs-you) above and
+  [ADR-0006](./docs/adr/0006-a-reported-photograph-is-the-second-hole-in-the-claim.md).
+- **`SYNC_RESEARCH`**: off by default. Turning it on opens the `/v1/sync/contributions` and
+  `/v1/sync/study` endpoints, which is what brings the openplate client's `/study` console to
+  life, and makes this server hold a study graph of health-adjacent personal data.
+  Read [`.env.example`](./.env.example) before you set it; it is a different undertaking from
+  holding ciphertext.
+
+Also worth knowing: **`ADMIN_TOKEN`** is the operator's break-glass credential, and it is optional. An account with `role: "admin"` reaches `/v1/admin` with its own access token, which is what puts the console in the app rather than in a shell. With neither configured nor existing, the whole `/v1/admin` tree answers the ordinary unknown-path 404, not a 401, which would announce that a credential exists here worth guessing.
+
+**`SERVER_PUBLIC_URL`** and **`CLIENT_BASE_URL`** are both optional and are needed together: they build the link in an invitation and in a reset mail. With neither, the admin API returns the raw token instead of an invitation link, and no reset link at all, so set both unless you have a reason not to. Mail refuses to start without them.
+
+### Backup and restore
+
+Two things must survive together: the Postgres data and `SERVER_SECRET`. Either one alone
+restores nothing usable.
+
+```bash
+# Back up
+docker compose --project-directory . -f docker/compose.yml exec -T postgres \
+  pg_dump -U openplate openplate_sync > sync-backup.sql
+
+# Restore, into a stopped-then-started stack, before users reconnect
+docker compose --project-directory . -f docker/compose.yml exec -T postgres \
+  psql -U openplate openplate_sync < sync-backup.sql
+```
+
+```bash
+# Back up
+podman compose --project-directory . -f docker/compose.yml exec -T postgres \
+  pg_dump -U openplate openplate_sync > sync-backup.sql
+
+# Restore, into a stopped-then-started stack, before users reconnect
+podman compose --project-directory . -f docker/compose.yml exec -T postgres \
+  psql -U openplate openplate_sync < sync-backup.sql
+```
+
+The database lives in the `postgres-data` volume declared by `docker/compose.yml`. Keep
+`SERVER_SECRET` with the dump, in whatever holds your other secrets, not in the dump itself.
+
+### What your users should understand
+
+They sign in with the **address their invitation arrived at**, and a passphrase they choose. That is the whole of what they need to remember, which is the point: they will forget a username and they will forget a password, and they know their email.
+
+If they forget the passphrase, "forgot password" mails them a link and their diary survives. On an instance with no mail they ask you for the link instead, as described in [The password reset](#the-password-reset-and-what-it-costs). Tell them the other half too: that works because **you** hold their recovery code in escrow, so they are trusting you as well as the mathematics. If that is not a trust you want to be given, do not run an instance for anybody but yourself.
+
+### The admin API admits to nothing it is not asked with the right credential
+
+There is an operator API at `/v1/admin`: list accounts and invitations, read
+one account's metadata, read one account's activity over the last 90 days,
+read the same activity for a whole page of accounts in one request,
+aggregate storage counts, change what an account may do
+(`role`, its AI allowance, its display name), suspend and reactivate it, send it
+a password-reset letter, resend an invitation, and **delete an account with
+everything attached to it**. That last one is why it exists at all: an erasure
+request is an obligation, and a service whose only erasure mechanism is a
+hand-written `DELETE` in a SQL client is a service that will eventually get it
+wrong.
+
+**The activity view is bounded metadata, and it is metadata about a person.** It
+answers when somebody last signed in and how many AI requests they made on each
+of the last 90 days, which is the question an operator running a study has to
+answer and today would answer by opening Postgres. It shows no diary content,
+because there is none to show: the blobs are encrypted and this service holds no
+key. Every day in the window is returned, so a day with no activity is a zero
+rather than a hole, and the window never runs past the 90 days of counters the
+service keeps.
+
+**The same view comes in bulk, because a list of people needs a strip each.**
+`GET /v1/admin/activity` returns one strip per account on a page of the account
+list, in that list's order and paged with the same `limit` and `offset`, so a
+console draws fifty rows with one request instead of fifty. Every account on
+the page is in the answer, including one that has never used AI, whose strip is
+zeroes: leaving it out would turn "this person did nothing" into "this person
+was not in the answer", which are different facts and the whole reason the days
+are zero-filled.
+
+**Suspending revokes every session in the same act.** A `suspended_at` on its own
+would leave the phone in somebody's pocket syncing for another quarter of an
+hour, which is not what an operator means by the word. Reactivating restores no
+session: the person signs in again.
+
+**An administrator cannot suspend, demote or delete their own account.** An
+organization with one administrator who does that has locked everybody out of
+`/v1/admin`, and the remedy is a shell on the container. The static `ADMIN_TOKEN`
+is exempt, because it has no self and it is the credential that exists for
+exactly that situation.
+
+Two credentials reach it: the static `ADMIN_TOKEN`, which is yours as the
+operator and keeps working when every account is locked out, and an account
+whose `role` is `admin`, using its own access token. The second is what puts the
+console in the app at `/admin`, behind the same sign-in as everything else.
+
+With **neither** (no `ADMIN_TOKEN`, and the caller not an admin account), the
+whole `/v1/admin` tree answers the same `404` any unknown path does, to
+everybody. An instance that never configured it is indistinguishable from one
+built before the feature existed. A `401` there would announce that a
+credential exists and is merely locked.
+
+Under Compose, put the value in `.env`: `docker/compose.yml` already forwards
+`ADMIN_TOKEN` into the container. Compose passes only the variables that file's
+`environment:` block names, so a variable you add to `.env` and nowhere else
+never reaches the service. `INSTANCE_NAME`, `INSTANCE_LANGUAGE`,
+`NUTRIENT_REFERENCE_BASIS`,
+`SERVER_PUBLIC_URL`, `CLIENT_BASE_URL`, `TRUST_PROXY`, `LOG_LEVEL`,
+`SYNC_SHARING`, `SYNC_RESEARCH`, `DATABASE_SSL`, `SYNC_NOTICE`,
+`SYNC_NOTICE_URL`, `MAIL_API_*`, `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`,
+`UPSTREAM_TIMEOUT_MS`, `AI_ADVERTISED_MODEL`, `AI_MAX_OUTPUT_TOKENS`, `AI_RATE_LIMIT_PER_MINUTE`,
+`AI_MAX_REQUEST_BYTES`, `SYNC_FEEDBACK`, `FEEDBACK_DAILY_LIMIT`,
+`FEEDBACK_MAX_REQUEST_BYTES`, `AI_INSTANCE_DAILY_LIMIT`,
+`MEMBER_INVITE_DAILY_AI_LIMIT`, `MEMBER_INVITE_ALLOWANCE_DAYS`,
+`MEMBER_INVITE_LIFETIME_CAP`, `OPEN_SIGNUP`, `TURNSTILE_SECRET_KEY`,
+`TURNSTILE_SITE_KEY`, `TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`,
+`TRIAL_ADDRESS_PEPPER`, `MEMBER_INVITE_TRIAL`,
+`AI_TRIAL_INSTANCE_DAILY_LIMIT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+`VAPID_SUBJECT`, `PLANS_UPSTREAM_URL`, `PLANS_UPSTREAM_SECRET` and
+`BILLING_TOKEN` are forwarded there too. If you run your own Compose file
+rather than the one in `docker/`, name each variable you rely on in its
+`environment:` block.
+
+What it can never do, by design rather than by default:
+
+- **Read a blob.** Ciphertext is not exported through the admin surface in any
+  form. A blob is reported as a byte count and a timestamp.
+- **Return a verifier or a KDF descriptor.** Neither has an operational use
+  that justifies putting it where a screenshot or a paste can carry it.
+- **Set anyone's passphrase.** It can send a reset _letter_, which starts the
+  ceremony the client performs; it cannot choose the new passphrase. The
+  passphrase wraps the data key on the client, so a server-side credential
+  change would produce an account that logs in and decrypts nothing.
+- **Print a recovery code.** The escrow is opened by the reset ceremony, at the
+  request of the person holding the letter. No admin call returns one.
+- **Read a request to the AI proxy.** No admin endpoint reports what was asked
+  or answered. `aiUsedToday` is a count.
+
+The reasoning in full is in
+[`docs/adr/0001-an-admin-api-for-a-zero-knowledge-service.md`](./docs/adr/0001-an-admin-api-for-a-zero-knowledge-service.md).
+
+### Paid plans, and what the plans service can reach
+
+**Off by default, and nothing in this repository takes a payment.** If you sell
+plans, run a plans service of your own. This service handles two tasks for it.
+
+**It forwards `/v1/plans/*`.** Set `PLANS_UPSTREAM_URL` and
+`PLANS_UPSTREAM_SECRET`, both or neither. A signed-in account's `GET` or `POST`
+under that prefix goes to your plans service, and the answer returns. Any other
+method returns a `405` that never leaves this host. With neither set, the whole
+subtree answers the ordinary unknown-path `404`. The headers sent upstream are
+built here, never copied from the request: `X-Account-Id` from the session,
+`X-Account-Email` from the account row, `X-Plans-Secret` from
+`PLANS_UPSTREAM_SECRET`, and the request's `Content-Type`. The caller's own
+token is never forwarded, so a stolen token cannot be used there. `/health`
+reports `instance.plans: true` when the subtree exists. The app reads that
+before it shows a plan screen.
+
+**One read needs no sign-in.** `GET /v1/plans/prices` is the price list a
+sign-up screen shows before anybody has an account. It is the only anonymous
+path, and only for `GET`. It goes to your plans service with `X-Plans-Secret`
+alone, never with an account header or the caller's token. The answer is kept
+here for five minutes, so your plans service sees one call however many people
+open the screen, and one source address may read it 60 times a minute.
+[PROTOCOL.md §5.22](./PROTOCOL.md#522-v1plans-the-pass-through-to-a-biller) is the contract.
+
+**It gives the plans service a narrow admin credential.** `BILLING_TOKEN`
+provides a third credential for `/v1/admin`, beside the two above. An allowlist
+limits everything it can do: `GET /v1/admin/accounts/expiring`,
+`GET /v1/admin/accounts/:id`, and `PATCH /v1/admin/accounts/:id` naming only
+`allowanceExpiresAt` and `dailyAiLimit`. Every other admin route answers it
+`403 service-scope`. A `PATCH` naming any other field is refused completely and
+writes nothing. It can change an allowance and its end date. It cannot suspend,
+erase or promote accounts. Generate it as you would `ADMIN_TOKEN`. Values under
+24 characters cause a boot failure. Once set, an invalid credential on
+`/v1/admin` gets a `401` rather than the `404` described above.
+
+---
+
+## How it works
+
+The client encrypts your data before it leaves the device, under a key derived from your passphrase. The server stores opaque ciphertext blobs and wrapped key records. It never receives your passphrase or a key that decrypts them. It does hold one thing that can open them: each account's recovery code, sealed under `SERVER_SECRET`, so that a forgotten password restores the diary. Whoever holds both the database and that secret can open any account on the instance. On a self-hosted instance, that is you. No code path in this service decrypts a diary.
+
+Full detail, including the exact protocol, HKDF labels, and token lifetimes: [`PROTOCOL.md`](./PROTOCOL.md).
+
+---
+
+## License
+
+openplate-core is **open source** under the [MIT License](./LICENSE) (SPDX: `MIT`), matching the [openplate](https://github.com/LowCarbCheck/openplate) app. MIT is one of the most permissive licenses available: run it, read it, change it, fork it, redistribute it, host it for others (commercially or not) with no restrictions beyond keeping the copyright and license notice attached to any copy you distribute. Self-hosting this service is a first-class use, and so is running it as a hosted product for others.
+
+---
+
+## Development
+
+```bash
+pnpm install
+pnpm run typecheck
+pnpm run test:unit          # node:test, handler cores, auth policy, protocol drift guard. No DB.
+pnpm run test:integration   # boots the real app against a real Postgres
+pnpm run lint               # oxlint, zero warnings
+pnpm run build              # esbuild → dist/server.js
+pnpm run dev                # tsx watch
+```
+
+`pnpm sync-api` is a thin HTTP client over the admin API: it imports no
+database code, so it runs from a machine with no Postgres:
+
+```bash
+ADMIN_TOKEN=... pnpm sync-api status
+ADMIN_TOKEN=... pnpm sync-api accounts list --limit 20
+ADMIN_TOKEN=... pnpm sync-api accounts get 42 --json
+ADMIN_TOKEN=... pnpm sync-api accounts set-role 42 admin
+ADMIN_TOKEN=... pnpm sync-api accounts set-limit 42 200
+ADMIN_TOKEN=... pnpm sync-api accounts suspend 42
+ADMIN_TOKEN=... pnpm sync-api accounts reset-mail 42
+ADMIN_TOKEN=... pnpm sync-api accounts delete 42 --yes
+ADMIN_TOKEN=... pnpm sync-api accounts blob-versions 42
+ADMIN_TOKEN=... pnpm sync-api accounts rollback 42 --to-version 5 --yes
+ADMIN_TOKEN=... pnpm sync-api invites create --email anna@example.org --daily-ai-limit 200
+ADMIN_TOKEN=... pnpm sync-api invites resend 7
+ADMIN_TOKEN=... pnpm sync-api settings get
+ADMIN_TOKEN=... pnpm sync-api settings set nutrient-reference-basis efsa
+pnpm sync-api push keygen
+```
+
+`settings` is the one thing here that changes what the instance IS rather than
+what one account may do, and it is the only setting on this service an
+administrator changes without a redeploy. It decides which body's micronutrient
+reference values every client shows, `dge` (the German DGE, the default),
+`efsa` (the EU) or `us` (NASEM). The value is stored in one row, published on
+`GET /health` as `instance.nutrientReferenceBasis`, and read there by each
+client on its next connect. `NUTRIENT_REFERENCE_BASIS` in the environment is
+only the boot default.
+
+`accounts blob-versions` and `accounts rollback` restore a diary that a client
+wiped. The first lists the blob versions the service still holds. The second
+makes an older version current again and deletes every version above it. Read
+[`docs/operations/restoring-a-wiped-diary.md`](./docs/operations/restoring-a-wiped-diary.md)
+before you run the rollback, because the server side alone does not finish the
+repair. `push keygen` prints a fresh VAPID key pair for `VAPID_PUBLIC_KEY` and
+`VAPID_PRIVATE_KEY`, once. It contacts nothing and is the one command that needs
+no `ADMIN_TOKEN`.
+
+The token comes from `ADMIN_TOKEN` and nowhere else: there is no `--token`
+flag, because a credential in argv lands in shell history and is visible in
+`ps`. The target is `--url`, then `SYNC_SERVER_URL`, then
+`http://localhost:3000`. `accounts delete`, `accounts rollback` and
+`invites revoke` require `--yes`. The CLI is not part of the Docker image.
+
+Two optional conveniences:
+
+- `nix develop` gives you a shell with the expected Node 22 and pnpm, if you have Nix with flakes enabled.
+- `docker compose -f docker/compose.dev.yml up -d` starts the contributor test database on port 5433, for the integration suite. Skip it if something already answers on that port. `podman compose -f docker/compose.dev.yml up -d` works the same way.
+
+Linting is [oxlint](https://oxc.rs) plus a vendored `anti-slop` plugin under
+`tools/oxlint/anti-slop/` (MIT, © Dillon Mulroy, its own LICENSE ships beside
+it). The gate is zero warnings, and `pnpm lint` runs first in the pre-push
+hook. The rule that shapes this codebase most is the one against unparsed
+input: request bodies enter as `JsonValue` and are decoded through
+`src/lib/json.ts`, which is the only module that inspects a JSON primitive at
+runtime.
+
+The integration suite targets a local Postgres at `localhost:5433` (user `postgres`, password `postgres`) and creates `openplate_sync_test` on first run. Override with `TEST_DATABASE_URL`. It deliberately does **not** use the self-hosting database in `docker/compose.yml`: that one is for self-hosters. If you have no Postgres on 5433, `docker/compose.dev.yml` is a one-service file that provides exactly that and nothing else.
+
+### Layout
+
+| Path                  | What lives there                                                                                                                                                                                                       |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/protocol.ts`     | The wire contract: versions, limits, request/response types, handshake check.                                                                                                                                          |
+| `src/server/`         | Express glue, the sync handler cores, CORS, bearer auth, error handling.                                                                                                                                               |
+| `src/accounts/`       | Account policy as pure handlers over an injected `AccountStore`.                                                                                                                                                       |
+| `src/db/`             | Drizzle schema and the two store implementations.                                                                                                                                                                      |
+| `src/admin/`          | The admin metadata read contract, deliberately not part of `AccountStore`.                                                                                                                                             |
+| `src/ai/`             | The completion proxy, its quota store, the minute limiter, the scrubber and the usage retention sweep.                                                                                                                 |
+| `src/feedback/`       | Reported estimates: submit, the operator's read side, image storage, retention.                                                                                                                                        |
+| `src/pulse/`          | The community pulse: its store, the rounding, the per account limits, the cache and the retention sweep.                                                                                                               |
+| `src/mail/`           | The letters in six languages, their strings, and the HTTP mailer that sends them. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
+| `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                          |
+| `scripts/sync-api/`   | The `pnpm sync-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                 |
+| `scripts/lib/`        | The translator, a vendored copy of `openplate-website`'s written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                |
+| `drizzle/migrations/` | Generated migrations. Never hand-written: see `src/db/schema.ts`.                                                                                                                                                      |
+
+### Invariants
+
+- **No `@sprqvntrs/*` or private-registry dependencies.** This repo must be buildable by anyone.
+- **Four runtime dependencies**: `express`, `pg`, `dotenv` and `undici`. The last is the AI
+  proxy's, and it is not a preference: Node's global `fetch` applies a 300-second header
+  timeout that an `AbortSignal` can only tighten, so an operator who set
+  `UPSTREAM_TIMEOUT_MS=600000` would still be cut off at 300 with an error naming no knob.
+- **Handler cores stay pure and dependency-injected.** The shell owns Express, the database and the environment; the cores take a store, a clock and a token minter. That is why the auth suite tests rotation, reuse detection and revocation without a database.
+- **`src/protocol.ts` is a hand-maintained duplicate** of `openplate/app/lib/sync/engine/protocol.ts`. There is no shared package and no shared CI, so both repos carry a unit test asserting the constants against _transcribed literals_. Changing the protocol means editing four places (two sources and two tests), starting with PROTOCOL.md.
+- **Migrations are generated, never written.** And journal timestamps are never hand-edited: the migrator applies only migrations newer than the last applied one, so an out-of-order value causes a later migration to be silently skipped at boot.

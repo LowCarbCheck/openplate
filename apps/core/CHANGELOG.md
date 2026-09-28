@@ -1,0 +1,766 @@
+# Changelog
+
+All notable changes to `openplate-core` are recorded here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
+[semantic versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0, a breaking
+change moves the minor.
+
+## [Unreleased]
+
+### Added
+
+- **A paid instance can state its price before sign-in.**
+  `GET /v1/plans/prices` is the one anonymous route in the plans subtree: one
+  path, one method. It goes to the plans service with `X-Plans-Secret` alone,
+  never with an account header or the caller's token, and a token sent with it
+  is ignored. A `200` is kept for five minutes and carries
+  `Cache-Control: public, max-age=300`, and one source address may read it 60
+  times a minute. Every other plans path still needs a token, and without
+  `PLANS_UPSTREAM_URL` the path is the ordinary unknown-path 404.
+- **The sign-up letter carries the plan a person picked.**
+  `POST /v1/auth/signup-request` accepts an optional `plan` (`monthly` or
+  `yearly`) and `locale`. When valid, the mailed join link carries
+  `&plan=<key>` and `&lang=<code>`. Nothing is stored, and any other value is
+  ignored without an error, so the answer is still the same `202`.
+- **An instance can ask for explicit consent to health data.** The hosted
+  privacy notice names Art. 9(2)(a) GDPR as the basis for the diary, because
+  the operator holds a recovery key that can open it, and until now no consent
+  was asked or recorded. Set `HEALTH_CONSENT_VERSION` (1 to 32 letters, digits,
+  `.`, `_` or `-`, such as `2026-09-28`) and `/health` publishes it as
+  `instance.healthConsent`. `POST /v1/auth/signup` then needs
+  `"healthConsent": {"version": "<v>"}` and answers
+  `400 health-consent-required` without it, spending nothing, so the invitation
+  still works. The account row stores the version and the server's instant,
+  two new nullable columns that existing accounts get as `null`. The account
+  view carries them as `healthConsent`, and the admin view shows them read
+  only. `POST /v1/auth/account/health-consent` records the consent for an
+  existing account, keeps the first instant on a repeat, and takes a new
+  version. Unset, the self-hosted default, changes nothing and the new route
+  is the ordinary unknown-path 404. Withdrawal is account deletion.
+
+### Changed
+
+- **The Quadlet units read every setting from an env file you own.** The
+  units carried each compose default as an `Environment=` line, most of them
+  empty. Podman ranks those above `EnvironmentFile=`. An `ADMIN_TOKEN`, a
+  mail key or a link address in `openplate-core.env` never reached the
+  container, and Podman 4.9 reads no drop-in to change it. Each unit now
+  reads `<unit>.defaults.env`, which ships beside it, and then `<unit>.env`,
+  which is yours and wins. Before you copy the new units over an install,
+  rename `openplate-core.env` to `sync.env`, move any drop-in setting into
+  it, and create an empty `postgres.env`. The unit does not start without
+  both files.
+
+### Fixed
+
+- **The security policy and the README no longer call the sync end-to-end encrypted.** The operator keeps a sealed copy of each recovery code (the escrow), so whoever holds the database and `SERVER_SECRET` can read the diary. `SECURITY.md` still described the 0.5 design, with handles, no email and no recovery by anyone. It now describes the current one, and the README's first line says what is true.
+- **Finished invitations lose their address.** The hosted privacy notice
+  promises that an invitation's address is deleted once it is redeemed,
+  revoked or expired, and every finished row still held one. An hourly sweep
+  now clears the address and name of every revoked or expired invitation, and
+  of every redeemed one on an instance with `TRIAL_ADDRESS_PEPPER`, keeping
+  only the keyed trial hash. A resend refuses an invitation whose address is
+  gone.
+- **On OpenRouter, photos only go to endpoints that keep nothing.** The proxy
+  removed every `provider` field, so nothing asked OpenRouter to avoid
+  endpoints that store requests or train on them. On an OpenRouter upstream
+  the forwarded body now carries `provider: {"data_collection":"deny"}`.
+- **An instance with an AI key but no named model looked configured and never
+  scanned.** `AI_ADVERTISED_MODEL` was documented as optional, but the
+  openplate app sends no model of its own on a managed instance and refuses
+  to scan rather than pick one on the operator's bill. Boot now warns when
+  `UPSTREAM_API_KEY` is set and `AI_ADVERTISED_MODEL` is not.
+- **The compose healthcheck reported unhealthy forever under podman-compose
+  1.0.6.** Its array-form `node -e "fetch(...)"` test translated into a
+  broken shell line. It is now one `wget` line the image's busybox already
+  carries (matching openplate's own compose files), and the generated
+  quadlet unit picked up the same change via `scripts/quadlet.sh generate`.
+
+## [0.22.0] - 2026-09-24
+
+### Changed
+
+- **The instance decides what one AI request costs, not the caller** (M256/01).
+  The proxy used to forward the chat body unchanged, so with open sign-up any
+  stranger could pick an expensive model or a huge answer on the operator's
+  key and drain it for every account. Now, for every account:
+  `AI_ADVERTISED_MODEL`, when set, replaces `model` in every forwarded body
+  (unset still passes the caller's model, for a self-hosted instance that wants
+  that); `max_tokens`, `max_completion_tokens` and `reasoning.max_tokens` are
+  capped at the new `AI_MAX_OUTPUT_TOKENS` (default 8192), and a body with no
+  cap gets `max_tokens` written in; `n` becomes 1; `models`, `route`,
+  `provider`, `plugins`, `web_search_options` and `prediction` are removed.
+  Nothing is refused for these fields. PROTOCOL.md §5.19 has the table.
+- **One scan buys one delivered answer** (M256/02). An intake id whose request
+  delivered an answer is no longer reused: the next request on it claims a new
+  scan, or is refused with `403 trial-scans-spent` when none is left. A retry
+  after an attempt that got no answer still costs nothing more. One id now
+  carries at most two overlapping requests on one scan, not three: the app
+  sends at most two per action, and its retry after a stale bearer never
+  reaches the claim.
+- **A late give-back cannot return a newer scan** (M256/02). Each intake row
+  carries a claim number (migration `0021_petite_black_tarantula`, one new
+  column `ai_trial_intakes.claim`), and a give-back or a delivery only acts on
+  the claim it belongs to.
+- **One mailbox gets one trial under a race** (M256/02). Redemption and the
+  lapsed-trial grant take a transaction-scoped advisory lock on the mailbox
+  hash before they ask whether the mailbox had a trial, so two spellings
+  redeemed at the same moment grant one trial.
+
+### Added
+
+- **`AI_MAX_OUTPUT_TOKENS`**, the most output tokens one proxied request may ask
+  for, default 8192. Forwarded by `docker/compose.yml` and the quadlet.
+
+## [0.21.0] - 2026-09-23
+
+### Changed
+
+- **A scan trial nobody has paid for cannot invite anybody** (M253/11, owner
+  decision 2026-09-23). Each member invitation on an instance with
+  `MEMBER_INVITE_TRIAL` is a new ten-scan trial, so a free account that could
+  invite would mint more free accounts. `POST /v1/auth/invites` now answers
+  `403 invites-need-a-plan` for an account that carries `trialScans` and has
+  no `allowanceExpiresAt` in the future. The date the biller writes on payment
+  opens it, the same rule that lifts the scan gate. The lifetime cap is asked
+  first and is unchanged; administrators and the admin mint are unaffected.
+
+### Added
+
+- **`AccountView.invitesNeedAPlan`**, `true` when `invitesLeft` is `0` only
+  because the account has not paid yet, on the caller's own view and the
+  operator's. Additive: an older client reads `invitesLeft: 0`, which is true.
+
+## [0.20.0] - 2026-09-23
+
+### Added
+
+- **A person can ask an instance for an account.** With `OPEN_SIGNUP=true`,
+  `POST /v1/auth/signup-request` takes an address, mints an ordinary addressed
+  invite with the operator's own mint code and mails it there, so the letter
+  is still the address check, in its own letter: "you, or someone using this
+  address, asked to create an account", the link, its expiry, and that
+  ignoring it changes nothing. The English is final; the other five languages
+  carry the English until they are translated, listed in
+  `SIGNUP_LETTERS_AWAITING_TRANSLATION`. It needs mail configured and refuses
+  to boot without it. Every address gets the same `202`: an address with an
+  account gets the door's own note with no link, and one that already holds a letter from
+  the operator or a member gets nothing new. Five requests per source per hour,
+  one letter per mailbox per day, and addresses at known throwaway mail
+  services are refused with `400 email-domain-refused` (a vendored CC0 list,
+  refreshed with `pnpm sync:disposable-domains`). An optional Cloudflare
+  Turnstile captcha (`TURNSTILE_SECRET_KEY`, `TURNSTILE_SITE_KEY`) answers
+  `400 captcha-failed` or `503 captcha-unavailable`. `/health` gains
+  `instance.openSignup` and, with a captcha, `instance.signupCaptcha`.
+  `GET /v1/admin/stats` gains `signup`, the invites this door minted today and
+  in the last seven days. Migration `0019` adds `source` and `trial_key` to
+  `signup_invites`. Every instance that does not set the variable stays
+  invite-only and unchanged.
+- **Ten free scans instead of a trial of days.** With `TRIAL_SCANS` and
+  `TRIAL_DAILY_AI_LIMIT` (and `TRIAL_ADDRESS_PEPPER` beside them), a new
+  account from open sign-up, an invite minted with `"trial": true`, or a member
+  invitation under `MEMBER_INVITE_TRIAL=true` gets that many free AI scans with
+  no end date. The proxy counts one scan per `X-Intake-Id` (a retry of the same
+  action rides on it, a request without one is its own scan), gives it back when
+  the person got no answer, including an upstream 5xx, and refuses the next
+  action with `403 trial-scans-spent`. A future allowance date lifts the count.
+  `AccountView.trialScans` is `{granted, left}` or `null`, every proxied
+  response carries `X-Trial-Scans-Left`, and `/health` promises
+  `instance.trial`. One mailbox gets one trial, also after a deletion: with the
+  pepper, invite rows carry a keyed hash of the mailbox, and deleting an account
+  scrubs its address from them and keeps only that hash.
+  `AI_TRIAL_INSTANCE_DAILY_LIMIT` caps what trial accounts spend per day. The
+  operator PATCH takes `trialScans`, the stats report trials granted and trial
+  requests, and `POST /v1/admin/trials/grant-lapsed` (`pnpm sync-api trials
+grant-lapsed`) gives the scans to day trials that ran out unpaid. CORS now
+  allows `X-Intake-Id` and exposes `X-Trial-Scans-Left`, `X-Quota-Used` and
+  `X-Quota-Limit`. Migration `0020` adds the counts, the intake table and the
+  hash table. Running three day trials keep their date, and an instance that
+  sets none of this behaves as before.
+
+- **Statutory declarations are deleted after their retention period.** A row
+  in `legal_declarations` is kept until the end of the third calendar year
+  after the year it arrived, in Europe/Berlin time (received 2026-09-21,
+  deleted from 2030-01-01 00:00 in Berlin), and the hourly usage sweep deletes
+  it then and logs only the count. Deleting an account still does not delete
+  its declarations earlier.
+
+### Changed
+
+- **PROTOCOL.md describes open sign-up and the scan trial.** §5.6 gains
+  `openSignup`, `signupCaptcha` and `trial`, §5.8 no longer says an invite is
+  the only door (it is still the only thing that creates an account), the new
+  §5.8.3 specifies `POST /v1/auth/signup-request`, §5.15 gains `trialScans`
+  and what a deletion keeps, §5.19 specifies `X-Intake-Id`,
+  `X-Trial-Scans-Left`, `403 trial-scans-spent`, the order of the refusals and
+  a give-back table for the scan beside the daily unit's, §5.20 the new admin
+  fields and route, §5.21 the member door's scan trial, and §9.2 what the trial
+  stores. Every change is additive, so `PROTOCOL_VERSION` stays 2. The §5.6 and
+  §5.15 examples are now held against the running service by a test.
+
+## [0.19.0] - 2026-09-23
+
+### Changed
+
+- **The declaration letters take their words from a mounted folder.** The
+  receipt for a cancellation or a withdrawal, and the operator alert, now read
+  their subject and body from `<CONTENT_DIR>/<lang>/mail/`, in a small markdown
+  subset with `{{date}}`, `{{receiptId}}`, `{{details}}` and `{{matched}}`
+  placeholders. The German and English letter text is gone from this repo.
+  With `CONTENT_DIR` unset, or a file missing or refused, a neutral letter goes
+  out that states the kind, the receipt number, the time of receipt and every
+  field the person gave. The receipt now carries the receipt number in that
+  case. See `docs/operations/declaration-mail-text.md`.
+
+## [0.18.0] - 2026-09-21
+
+### Added
+
+- **The service now takes a cancellation or a withdrawal from anyone, with no
+  login.** `POST /v1/legal/declarations` is always mounted, and it accepts the
+  two declarations German law obliges a seller to accept, the cancellation of
+  § 312k BGB and the withdrawal of § 356a BGB. The declaration is written to a
+  new `legal_declarations` table before anything else runs, so nothing later
+  can lose it, and a lookup by the typed address records the matching account
+  when there is one. The forward to the billing service and the two letters, a
+  receipt to the person and an alert to the operator, are all best effort. The
+  answer is the same `202` whether or not an address matched an account, so it
+  tells a caller nothing about who holds an account. Migration `0018` creates
+  the table and a rate limit caps what one address and one address range can
+  send. ([77e84cd](https://github.com/LowCarbCheck/openplate-core/commit/77e84cd))
+
+### Changed
+
+- **The mail block takes a fourth variable, `MAIL_OPERATOR_EMAIL`.** The block
+  is all or nothing, so an instance that sends mail must now set this address
+  as well, and it is where the alert for each declaration goes. An instance
+  that sends no mail is unaffected. The shipped `docker/compose.yml` and the
+  generated Quadlet unit both carry the
+  line. ([77e84cd](https://github.com/LowCarbCheck/openplate-core/commit/77e84cd)) ([35ed53c](https://github.com/LowCarbCheck/openplate-core/commit/35ed53c))
+
+## [0.17.1] - 2026-09-20
+
+### Fixed
+
+- **The compose file forwards every optional setting.**
+  The service read thirteen variables that the shipped `docker/compose.yml`
+  never passed on: `SYNC_FEEDBACK`, `FEEDBACK_DAILY_LIMIT`,
+  `FEEDBACK_MAX_REQUEST_BYTES`, `AI_INSTANCE_DAILY_LIMIT`, the three
+  `MEMBER_INVITE_*`, the three `VAPID_*`, `PLANS_UPSTREAM_URL`,
+  `PLANS_UPSTREAM_SECRET` and `BILLING_TOKEN`. A value set for one of them in
+  `.env` was ignored without a word. Each now has a line in the `sync`
+  service's `environment:` block. Its default parses exactly like the
+  unset variable. The generated Quadlet unit carries the same lines. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+- **The Quadlet README said the wrong file wins.** It said a value in
+  `openplate-core.env` overrides a unit's `Environment=` line. Podman does the
+  opposite, so a setting put there had no effect. It now tells you to change a
+  setting with a drop-in. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+- **`PROTOCOL.md` documents reported estimates, and no longer says the server
+  cannot decrypt.** §5.25 specifies `POST /v1/feedback`. §5.20 lists the four
+  `/v1/admin/feedback` routes. §1, §5.23 and §9.1 said the server cannot
+  decrypt a diary and never receives the recovery code. Since protocol 2 the
+  server keeps that code sealed, and those sections now match §3.1 and §9.2.
+  §9.2 also lists reported estimates among what the server knows. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+
+## [0.17.0] - 2026-09-18
+
+### Added
+
+- **The instance chooses whose reference values it shows.**
+  A new `instance_settings` row holds one setting, the micronutrient reference
+  basis: `dge` (the German DGE, the default), `efsa` (the EU) or `us` (NASEM).
+  `PATCH /v1/admin/settings` changes it, `pnpm sync-api settings set
+nutrient-reference-basis efsa` is the operator's command for it, and every
+  client reads it from `GET /health` as `instance.nutrientReferenceBasis` on
+  its next connect. It is the first setting on this service an administrator
+  can change without a redeploy; `NUTRIENT_REFERENCE_BASIS` in the environment
+  is now only the boot default. `/health` serves a process-local copy of the
+  value and never queries the row: that path is the container's own
+  healthcheck, so a read there would turn a database hiccup into a restart.
+
+## [0.16.0] - 2026-09-14
+
+### Added
+
+- **The letters exist in four more languages.**
+  `INSTANCE_LANGUAGE` accepts `fr`, `it`, `es` and `tr` beside `en` and `de`,
+  and a push subscription's `locale` accepts the same six. The invitation, the
+  password reset and the account notice were bought in the four new languages
+  from the English by the same model under the same style contract the
+  website and the app use, addressing the reader informally as the German
+  does, and they live in `src/mail/strings.<lang>.ts`, one generated module
+  each, checked by the compiler with the hand-written two. The expiry date in
+  an invitation now renders in the reader's own language for every one of the
+  six; before this, every language but German got an English date. ([bf04ca4](https://github.com/LowCarbCheck/openplate-core/commit/bf04ca4))
+
+## [0.15.0] - 2026-09-14
+
+### Added
+
+- **The member invite cap comes from the environment.**
+  `MEMBER_INVITE_LIFETIME_CAP` sets how many invitations one member may cause
+  in their whole life. It is optional, it takes an integer of 0 or more, and it
+  defaults to 5, which is the number every instance has enforced since the
+  feature shipped, so an upgrade changes nothing. Set it to 2 on a managed
+  instance whose administrator pays for the provider key. Zero keeps
+  `POST /v1/auth/invites` mounted and leaves every member with nothing to
+  spend. Setting it while `MEMBER_INVITE_DAILY_AI_LIMIT` and
+  `MEMBER_INVITE_ALLOWANCE_DAYS` are unset is a boot failure naming it, because
+  members cannot invite anybody there and the cap would narrow a door that is
+  not open. Administrators stay exempt, and `AI_INSTANCE_DAILY_LIMIT` still
+  bounds what the whole instance may spend per day whatever the cap is. ([62f6564](https://github.com/LowCarbCheck/openplate-core/commit/62f6564))
+
+## [0.14.0] - 2026-09-12
+
+### Added
+
+- **A shrinking blob is acknowledged, or it is refused.**
+  A push whose ciphertext is under half the stored version's `size_bytes` is
+  now answered `400` unless the request body carries
+  `"shrinkAcknowledged": true`. Absent means false, so every deployed client
+  says no and none of them can wipe an account. A person lost her whole diary
+  on 2026-09-12 to a client that found its local store evicted, concluded she
+  had deleted every entry, and pushed a tombstone for each one, 5310 bytes to
+  1588 in one accepted write; a second device then pulled that blob and deleted
+  its own rows. A client fix reaches nobody who has not updated, and an
+  installed progressive web app cannot be made to update, so the refusal lives
+  here. The guard reads `size_bytes`, which this service already stored and
+  already reported, so it discloses nothing new. What it gives up is the claim
+  to be a store with no opinion about what it holds. `400` and not `409`,
+  because `409` already means "another device wrote first" on this route and
+  obliges a client to push the same bytes again. A body field and not a header,
+  because a new header must be named in the CORS allow list or browsers drop
+  the request after a clean preflight.
+  ADR 0009 states the trade: the false positives cost a field, the false
+  negatives cost data. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+
+- **Tiered blob retention, and a pin on the version before an acknowledged shrink.**
+  `BLOB_VERSION_RETENTION` keeps its name and its five, and becomes one tier of
+  three: the newest 5 versions, the newest version of each UTC calendar day for
+  14 days, and up to 14 versions held for 14 days because an acknowledged large
+  shrink replaced them. At most 33 versions and 66 MiB per account, and the
+  daily tier is per calendar day rather than per count so two devices in a merge
+  loop cannot burn through it. The flat five was the only reason the wiped diary
+  above was recoverable at all, and by luck. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+
+- **An operator can roll a blob back.**
+  `GET /v1/admin/accounts/:id/blob/versions` lists every retained version with
+  its byte count, its time and its pin, and never its bytes.
+  `POST /v1/admin/accounts/:id/blob/rollback` makes an older version current
+  again by deleting the versions above it, refusing an unknown version, the
+  current version, an envelope format this build cannot accept and a zero-byte
+  row. A rollback rather than a re-upload because the envelope binds
+  `blobVersion` into its AAD: re-inserting old bytes as a new version yields
+  something no client could ever decrypt.
+  `pnpm sync-api accounts blob-versions <id>` and
+  `pnpm sync-api accounts rollback <id> --to-version <n> --yes`.
+  `docs/operations/restoring-a-wiped-diary.md` is the playbook, and its
+  non-negotiable step is the one the rollback cannot do: every device the person
+  signed into still holds the baseline that caused the loss, and has to have its
+  local data erased before it syncs again. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+
+### Changed
+
+- `sync_blobs` gains a nullable `pinned_until`. Migration `0016`. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+
+## [0.13.0] - 2026-09-12
+
+### Added
+
+- **Web push, carrying a kind and never a sentence.**
+  Four member routes under `/v1/push` let a device register where to reach it,
+  the minute of its own local day it wants a morning catch-up, and the instant
+  a fast reaches its target. A minute tick sends at most two pushes per
+  subscription per UTC day, pauses for anybody who has not opened the app in
+  seven local days, and deletes a subscription the push service answers 404 or
+  410 for. The payload is `{"kind":"catch-up"}` or `{"kind":"fast-target"}`:
+  the device writes the words, because this server cannot read the diary they
+  describe. Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+  together, or none of them and the whole subtree answers the ordinary 404 and
+  `/health` reports `push: false`. `pnpm sync-api push keygen` prints a pair.
+  ADR 0008 names push scheduling as the fourth exception to zero knowledge and
+  the `wake_at` correlation with the pulse's presence row.
+  `GET /v1/admin/stats` gains `push: { subscriptions, sentToday }`.
+
+- **An opt-in pulse: instance-wide counts for the day, and who is fasting right now.**
+  Four member routes under `/v1/pulse` take small rounded deltas from devices
+  whose owner turned the pulse on (a meal with its calories rounded to 50 and
+  protein to 5 g, a photo, a "still fasting" heartbeat) and answer today's sums
+  plus the live fasting count from a 5 minute cache. Day sums keep 30 days,
+  presence rows expire 30 minutes after the last heartbeat, idempotency keys
+  24 hours, all swept hourly. The routes log no account id. ADR 0007 names the
+  pulse as the third exception to zero knowledge; `PROTOCOL.md` §5.23 has the
+  wire shapes. `GET /v1/admin/stats` gains the same numbers.
+
+### Fixed
+
+- **Browsers could not send a pulse write, or read a Retry-After.**
+  `Access-Control-Allow-Headers` never named `Idempotency-Key`, which every
+  write under `/v1/pulse` carries, so a browser read the preflight and refused
+  to send the request at all: no request arrived, no log line was written, and
+  the app saw a write that never answered. The same response now also sends
+  `Access-Control-Expose-Headers: Retry-After`, so a rate-limited client can
+  read the wait this service computed instead of guessing one. Both were
+  invisible to `curl` and to the test suite, because neither enforces CORS;
+  operators need no configuration change, only the new image.
+
+## [0.12.0] - 2026-09-09
+
+### Added
+
+- **A billing principal reaches two fields and nothing else.** `BILLING_TOKEN`
+  authenticates a caller scoped to reading and writing only `dailyAiLimit` and
+  `allowanceExpiresAt` on one account, off unless you set it.
+- **`/v1/plans` passes an authenticated caller through to one upstream.**
+  `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET` turn it on; unset, the
+  whole subtree answers the ordinary unknown-path 404.
+
+## [0.11.0] - 2026-09-09
+
+### Added
+
+- **An account's AI allowance can carry an expiry date.** `allowanceExpiresAt` is
+  nullable and stays off unless an admin sets one on an account; sync never
+  gates on it, only the AI proxy does.
+- **The instance can cap its own total AI spend.** `AI_INSTANCE_DAILY_LIMIT`
+  bounds every account together in requests per UTC day, and it is off unless
+  you set it.
+- **A member can invite up to five people on the instance's own terms.**
+  `MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS` set the
+  allowance a member's invitation carries, and the whole feature is off unless
+  both are configured.
+
+## [0.10.0] - 2026-09-09
+
+### Changed
+
+- **The repo, the package and the published image are now `openplate-core`.**
+  The hostname `sync.openplate.de`, the `/v1/sync` routes, the
+  `SYNC_SERVER_URL` env var and the `pnpm sync-api` CLI are unchanged; only
+  the project's own name moved. A self-hoster's only action is to repoint
+  their image reference to `ghcr.io/lowcarbcheck/openplate-core`.
+
+## [0.9.0] - 2026-09-08
+
+### Added
+
+- **One activity read for a whole page of accounts.** `GET /v1/admin/activity`
+  returns the same daily photo counts as the single account endpoint, for every
+  account on a page, in the order `GET /v1/admin/accounts` returns them. The
+  console draws a strip beside every row of its people list, and the only way
+  to do that before was one request per person. It pages exactly like the
+  accounts list, same defaults, same bounds, same refusal, so a caller reads
+  the two in lockstep. The store beneath it reads the whole page in one query
+  rather than moving the N+1 down a layer.
+
+  Every account on the page is in the answer, including one that has never made
+  a request, whose strip is zeroes. Leaving it out would make "this person did
+  nothing" and "this person was not in the answer" the same fact, which is the
+  distinction the zero fill exists to keep.
+
+### Changed
+
+- The paging refusal that `GET /v1/admin/accounts`, `GET /v1/admin/activity`
+  and the feedback list all answer with is now one sentence in one place. It
+  also drops an en dash for a hyphen.
+
+## [0.8.0] - 2026-09-08
+
+### Added
+
+- **An operator can see who is actually using the instance.** `last_seen_at`
+  now reaches the admin account view, and `GET /v1/admin/accounts/:id/activity`
+  returns a bounded, zero-filled strip of daily photo counts. Both facts were
+  already in the database and read by nothing, so this is a read path and not a
+  new collection: no migration, no new write, and nothing about a person that
+  was not already recorded. The blobs stay end to end encrypted and no endpoint
+  added here exposes any diary content.
+
+  The window is zero filled on purpose. A day with no activity and a day
+  outside the window must not look the same to whoever reads the strip, because
+  "they stopped" is exactly the question the strip is for.
+
+### Changed
+
+- **`ai_usage_days` now expires at ninety days.** Nothing pruned it before, and
+  the schema said so. A per-day activity log kept for the life of a deployment
+  is health-revealing on its own, so the retention limit landed together with
+  the screen that reads it rather than after it. `AI_USAGE_RETENTION_DAYS` is
+  one definition, shared by the prune and by the longest activity window the API
+  will draw, so a pruned row can never be served as a quiet day.
+
+- **The usage sweep runs on every instance, not only where AI is configured.**
+  It used to sit behind `config.ai`, which left exactly the wrong case
+  unswept: an instance that had an upstream key once and none today kept those
+  rows forever.
+
+- `last_seen_at`'s comment no longer claims the AI proxy is its only writer.
+  A login writes it too, and the comment had been wrong since login was added.
+
+## [0.7.0] - 2026-09-07
+
+### Added
+
+- **A person can report a wrong estimate, and this service can hold what they
+  send.** `POST /v1/feedback` takes an entry's figures, its consent record and
+  optionally the photograph. `GET`/`DELETE /v1/admin/feedback` let an
+  administrator read and remove one. A sweep deletes anything past the retention
+  window without an operator remembering to.
+
+  **This is the second place this service's zero-knowledge position does not
+  hold, and it is not the same shape as the first.** The AI proxy sees a
+  photograph and keeps nothing. This KEEPS what it is given, and an
+  administrator can look at it. Read
+  `docs/adr/0006-a-reported-photograph-is-the-second-hole-in-the-claim.md`
+  before you turn it on.
+
+- **`SYNC_FEEDBACK`, off by default.** Unset, the whole `/v1/feedback` and
+  `/v1/admin/feedback` tree answers the ordinary 404 any unknown path answers,
+  to everybody, with or without a valid token. An instance without it is
+  indistinguishable from one built before the feature existed, which is the same
+  bargain `SYNC_SHARING` and `SYNC_RESEARCH` make. `FEEDBACK_DAILY_LIMIT` and
+  `FEEDBACK_MAX_REQUEST_BYTES` bound it.
+
+- **The retention window is advertised on `GET /health`** (`instance.feedback.retentionDays`,
+  PROTOCOL.md 5.6), so the client shows the window this server will actually
+  apply rather than a number of its own. With the feature off the key is absent,
+  not null. The window is one constant here; there is no second copy anywhere to
+  drift from it.
+
+- **Migration `0010`.** `feedback_reports` and `feedback_images`, both cascading
+  from the account, so erasing an account removes its reports and its
+  photographs. The idempotency key is unique PER ACCOUNT, so one account cannot
+  burn a key value for another.
+
+- The image is stored in this Postgres, behind a `FeedbackImageStore` interface
+  with `put`, `get` and `delete`. There is no S3 client and no AWS dependency;
+  the interface exists so a later move is one adapter and no caller change.
+
+- Every read of a reported photograph is logged: which administrator, which
+  report, when.
+
+## [0.6.2] - 2026-09-07
+
+- `PROTOCOL.md` now carries a sequence diagram of one session. It shows the
+  version handshake, a sign-in, and a push, including the conflict path where
+  the client fetches, merges and pushes again. The handshake is drawn failing
+  closed.
+- The README and the protocol were reworded to drop every em dash and en dash.
+  No obligation changed, and every code span is byte for byte what it was.
+
+## [0.6.1] - 2026-09-05
+
+- The README now lists the published documentation (`PROTOCOL.md`) in a
+  Documentation table, so the project site at openplate.de can quote it.
+- A release now tells the site to re-quote the docs.
+
+## [0.6.0] - 2026-09-04
+
+One server. This service is now the whole backend an openplate deployment
+needs: identity by email address, organization roles, an escrowed password
+reset that restores the diary, and the AI proxy that used to live in a separate
+gateway. The gateway is retired.
+
+### BREAKING
+
+- **`accounts.handle` is `accounts.email` again** (migration `0009`), unique per
+  server, canonicalised with NFKC then trim then lowercase. `PROTOCOL.md` calls
+  the field `email` everywhere, and the server rejects an address with no `@`.
+  0.5.0's handles were a five-week detour; the reason for the return is that a
+  password reset needs somewhere to send the letter.
+- **PROTOCOL_VERSION is 2.** A 0.5.0 client sends a `handle` this server does
+  not accept, and a 0.6.0 client sends an `email` a 0.5.0 server does not. The
+  `/health` handshake (§6) turns that into a clear refusal rather than a
+  partial failure. **The openplate client must be 0.10.0 or newer.**
+- **Signup takes an ADDRESSED invite.** `POST /v1/auth/signup` reads the email
+  from the invite row and ignores any address in the body, so the person who
+  received the letter is the person who signs up. There is no confirmation
+  link, because there is nothing left to confirm.
+- **Signup writes both key records itself**, the passphrase-wrapped one and the
+  recovery-wrapped one, in the same transaction as the account. A first
+  `PUT /v1/sync/key-records` with `expectedUpdatedAt: null` is therefore a
+  genuine `409` on any account created by this version: every put is a
+  rotation now.
+- **`SIGNUP_MODE` is removed and is a boot failure**, along with the older
+  `SIGNUPS_OPEN`. Signup is invite-only, always; there is no mode to set and
+  therefore no mode to get wrong. `EMAIL_FROM`, `SMTP_*`, `PIGEON_*` and
+  `REQUIRE_EMAIL_VERIFICATION` remain boot failures, mail is `MAIL_API_*` now.
+- **`POST /v1/sync/rotate-dek` requires `newRecoveryAuthHash` and
+  `recoveryCode`.** The recovery verifier and the escrow are replaced in the
+  same transaction as the wraps. Without that, a rotation left the old recovery
+  code able to open the new data key, which is the opposite of what a rotation
+  is for.
+- **The openplate gateway is retired.** Its `/v1/chat/completions`, its family
+  invites and its own account model are gone. Point the client's AI at this
+  service instead; the request shape is unchanged, and the token is now the
+  ordinary sync access token.
+
+### Added
+
+- **The AI proxy.** `POST /v1/chat/completions` forwards a signed-in account's
+  completion request to the operator's provider, spending one unit of that
+  account's daily allowance. The caller's token is replaced by the operator's
+  key rather than merged with it, inbound headers are rebuilt rather than
+  copied, responses stream, and **no body is ever logged**. Every string that
+  came off the upstream wire passes through a scrubber before it reaches a log
+  line or a response, because a provider that rejects a request routinely
+  echoes the image back inside its error body. Configured with
+  `UPSTREAM_BASE_URL` + `UPSTREAM_API_KEY`; unset, the route answers the
+  ordinary unknown-path 404.
+- **A per-account daily allowance** in `ai_usage_days`, reserved before the
+  upstream call in one atomic statement and released only when the provider
+  cannot have billed us. `X-Quota-Used` and `X-Quota-Limit` on every proxied
+  answer; `429` with `Retry-After` to the next UTC midnight at the limit;
+  `403 ai-not-allowed` for an allowance of zero, before anything leaves the
+  host. Plus a per-account limiter of `AI_RATE_LIMIT_PER_MINUTE` (default 20),
+  which is a different bound for a different failure: a stuck client retrying
+  on every error.
+- **A password reset that restores the diary.** The client's recovery code is
+  sealed at signup into `accounts.recovery_code_escrow` under a subkey of
+  `SERVER_SECRET`. `POST /v1/auth/reset/request` sends a link,
+  `POST /v1/auth/reset/open` spends it once and returns the code, and the
+  client then runs the ordinary recovery ceremony. **The reset endpoint writes
+  nothing to the account.** The cost is stated in the README and argued in
+  ADR-0005: the operator of a hosted instance can open any account on it.
+- **Roles and standing.** `role` (`admin` | `member`), `daily_ai_limit`,
+  `suspended_at` and `last_seen_at` on the account. An admin account reaches
+  `/v1/admin` with its own access token, which is what puts the console in the
+  app at `/admin` rather than in a shell; `ADMIN_TOKEN` remains as the
+  break-glass credential and is still optional.
+- **Mail.** `MAIL_API_URL` + `MAIL_API_KEY` + `MAIL_API_FROM`, all three or
+  none, over pigeon's HTTP API. Two letters exist and no more: an invitation
+  and a password reset, in English or German per `INSTANCE_LANGUAGE`. Unset,
+  both come back to the operator as links to paste.
+- **Admin writes.** `PATCH /v1/admin/accounts/:id` (role, allowance, display
+  name, suspension), `POST /v1/admin/accounts/:id/reset-mail`,
+  `POST /v1/admin/invites/:id/resend`, `total` on both lists, and
+  `pendingInvites` / `admins` / `aiRequestsToday` on stats. Suspending revokes
+  every session in the same act. An administrator cannot suspend, demote or
+  delete **their own** account; the static token is exempt because it has no
+  self and is the way back in.
+- **CLI**: `accounts set-role`, `accounts set-limit`, `accounts suspend`,
+  `accounts reactivate`, `accounts reset-mail`, `invites resend`, and
+  `--daily-limit` on `invites create`.
+- **`/health` reports `instance`**: the instance name, its language, whether it
+  can send mail, and `ai`, `{ "model": … }` when an upstream is configured and
+  `null` otherwise. Descriptive, never a grant: an account with an allowance of
+  zero gets a 403 whatever it says.
+- **`AI_MAX_REQUEST_BYTES`, default 8 MB**, the proxy route's body limit,
+  sized for a camera photograph after base64 rather than for a stored blob. In
+  the same change, every router's `express.json()` was scoped to its own path
+  prefix: they are all mounted at the root, so an unscoped parser applied to
+  the whole service and whichever ran first silently capped every other route.
+  The visible effects were a `413` on every plate photograph and on any blob
+  push over 64 KB.
+- **`undici` as a runtime dependency**, the fourth after express, pg and
+  dotenv. Node's global `fetch` applies a 300-second header timeout that an
+  `AbortSignal` can only tighten, so an operator setting
+  `UPSTREAM_TIMEOUT_MS=600000` would be cut off at 300 with an error naming no
+  knob. It is external to the bundle.
+
+### Removed
+
+- `POST /v1/auth/verify-email` stays gone, and the 0.5.0 handle endpoints are
+  replaced rather than renumbered. `SIGNUP_MODE` and `SIGNUPS_OPEN` are gone
+  from the code and are boot failures if set.
+- `signup_invites.note` is gone; the row carries `email`, `display_name`,
+  `role`, `daily_ai_limit` and `revoked_at` instead. An invitation is addressed
+  now, so an operator's private note has no place to be.
+
+### Upgrading
+
+1. **Back up the database and `SERVER_SECRET` together.** Migration `0009`
+   renames a column and adds two tables. Neither half restores anything usable
+   without the other, and this release makes that more true rather than less:
+   the escrow is sealed under a subkey of that secret.
+2. **Every account needs an email address.** The rename carries the handle over
+   as-is, so any handle that is not an address must be corrected before the
+   person can be sent a reset. `pnpm sync-api accounts list` shows what you
+   have.
+3. **Upgrade the client to 0.10.0 or newer, at the same time.** The protocol
+   version moved, so a mixed pair refuses to talk rather than half-working.
+4. **Set `MAIL_API_*` if you want the letters posted.** Unset, invitations and
+   resets are returned to you as links, which is a complete and supported way
+   to run this.
+5. **Retire the gateway.** Move `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY` onto
+   this service, give each account an allowance
+   (`pnpm sync-api accounts set-limit <id> <n>`, it defaults to 0), and stop
+   the gateway container. Its family invites have no equivalent here: a person
+   gets a signup invitation instead, and one account covers both sync and AI.
+6. **If you run your own Compose file**, add the new variables to its
+   `environment:` block. Compose forwards only what that block names, so a
+   variable set in `.env` alone never reaches the container.
+
+## [0.5.0] - 2026-09-02
+
+Identity without email. An account is a **handle** plus a passphrase, and a lost
+passphrase is recovered with the recovery code the client showed the user at
+signup. The service sends no mail and stores no email address.
+
+### BREAKING
+
+- **`accounts.email` is now `accounts.handle`** (migration `0007`), and
+  `email_verified_at` is dropped. The server rejects any handle containing `@`,
+  canonicalises with NFKC then trim then lowercase, and keeps it unique per
+  server.
+- **Removed endpoints**: `POST /v1/auth/verify-email`,
+  `POST /v1/auth/request-reset`, `POST /v1/auth/reset`. They answer `404`.
+  `PROTOCOL.md` §5.12 and §5.13 are marked REMOVED rather than renumbered, so
+  section references in both repos still resolve.
+- **Removed env vars, and each is a boot failure rather than a no-op**:
+  `REQUIRE_EMAIL_VERIFICATION`, `CLIENT_BASE_URL`, `EMAIL_FROM`, `SMTP_HOST`,
+  `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`, `PIGEON_API_KEY`,
+  `PIGEON_BASE_URL`. A container that refuses to start costs one deploy; a
+  variable that is quietly ignored lets an operator believe mail is configured
+  on a service that has no mailer.
+- **A pre-0.5.0 client cannot talk to a 0.5.0 server.** It sends an `email`
+  field that no longer exists and calls endpoints that are gone. The `/health`
+  handshake (`PROTOCOL.md` §6) is what turns that into a clear refusal instead
+  of a partial failure.
+- **Signup invites now carry an `si_` prefix.** A token of the wrong shape is
+  refused by a shape gate before any lookup, with the same answer an unknown or
+  spent invite gets. A gateway `gi_` token can no longer be posted here.
+
+### Added
+
+- **The recovery code is the second authenticator.** `POST /v1/auth/recover`
+  and `POST /v1/auth/recover-rotate` let a user who holds their recovery code
+  set a new passphrase. The client derives its proof under a new frozen HKDF
+  label, `openplate-sync:recovery-auth:v1`, which is deliberately never the
+  recovery-KEK label. Both endpoints are throttled per IP and handle, and both
+  answer every failure identically.
+- `accounts.recovery_verifier` (migration `0008`), stored with the same peppered
+  `computeVerifier` the passphrase uses.
+- **The operator notice.** `SYNC_NOTICE` and the optional `SYNC_NOTICE_URL` are
+  published on the `/health` handshake and shown by the client. It is pull, not
+  push: the service still has no way to contact anyone. A notice over 280
+  characters, or a URL whose scheme is not http(s), or a URL without a notice,
+  is a boot failure.
+
+### Removed
+
+- `src/mail/` and all three transports (pigeon, SMTP, console), the
+  email-verification and auth-reset token kinds, and the reset-link plumbing.
+  The mailed reset was an account-takeover path that returned no recovery: the
+  DEK is wrapped under keys the server never sees, so whoever redeemed a link
+  got a login to a diary they still could not read.
+
+### Changed
+
+- Anti-enumeration is unchanged. The signup `409` stays the one accepted oracle,
+  and it now leaks an opaque per-server handle rather than a person's address,
+  which is strictly less.
+- `docker/compose.yml` forwards `SYNC_NOTICE` and `SYNC_NOTICE_URL`, which the
+  README and `.env.example` already documented as operator settings.
+- Docs: `PROTOCOL.md`, `SECURITY.md`, `README.md` and `.env.example` match the
+  service. `docs/adr/0004-identity-without-email.md` records the decision.
+
+### Upgrading
+
+Losing both the passphrase and the recovery code ends an account. There is no
+third path, because a reset the server could perform would mean a server that
+can open your data. Say this to your users before you upgrade.
+
+## [0.4.1] and earlier
+
+Not recorded here. See the git history.
