@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import {
   PLAN_GATE_FACTS_TTL_MS,
   forgetPlanGateFacts,
+  newerHeldPlanView,
   notePlanGateRenderedPath,
   peekPlanGateFacts,
   planGateAt,
@@ -21,6 +22,7 @@ import {
   requestPlanGateCheck,
   resolvePlanGateForNavigation,
   shouldCheckPlanGate,
+  type PlanGateFacts,
   type PlanGateReaders,
   type PlanGateSession,
 } from '../../app/lib/plans/plan-gate-facts';
@@ -409,5 +411,39 @@ describe('the background refresh', () => {
       refreshPlanGateFacts({ session: SPENT, now: NOW, readers }),
     ]);
     assert.equal(calls.instance, 1);
+  });
+});
+
+describe('a placement that read the plan at mount, after a payment (the buyer walk, 2026-09-28)', () => {
+  const WHO = { accountId: SPENT.accountId, serverUrl: SERVER_URL };
+  /** What the payment confirmation records: the live plan, read after the placement's own read. */
+  const CONFIRMED: PlanGateFacts = { ...WHO, instance: SELLING, planView: ACTIVE, readAt: NOW.getTime() + 5_000 };
+
+  it('draws the held live plan when it was read after its own', () => {
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: WHO, ownReadStartedAt: NOW.getTime() }), ACTIVE);
+  });
+
+  it('CONTROL: keeps its own read when that one started later', () => {
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: WHO, ownReadStartedAt: CONFIRMED.readAt + 1 }), null);
+    // The same instant is not newer: `store` keeps the first of two equal reads too.
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: WHO, ownReadStartedAt: CONFIRMED.readAt }), null);
+  });
+
+  it('draws the held plan before its own read has answered', () => {
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: WHO, ownReadStartedAt: null }), ACTIVE);
+  });
+
+  it('never draws a plan held for another account or another server', () => {
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: { ...WHO, accountId: 8 }, ownReadStartedAt: null }), null);
+    assert.equal(
+      newerHeldPlanView({ held: CONFIRMED, who: { ...WHO, serverUrl: 'https://other.example.test' }, ownReadStartedAt: null }),
+      null,
+    );
+  });
+
+  it('draws nothing with no session, no facts, or facts without a plan view', () => {
+    assert.equal(newerHeldPlanView({ held: CONFIRMED, who: null, ownReadStartedAt: null }), null);
+    assert.equal(newerHeldPlanView({ held: null, who: WHO, ownReadStartedAt: null }), null);
+    assert.equal(newerHeldPlanView({ held: { ...CONFIRMED, planView: null }, who: WHO, ownReadStartedAt: null }), null);
   });
 });

@@ -556,7 +556,7 @@ describe('the free card before the plans (M250/10)', () => {
 function returnStateOf(markup: string, text: string): string {
   const states = [
     ...markup.matchAll(
-      /<div aria-hidden="(?:true|false)" class="[^"]*col-start-1 row-start-1[^"]*">(?:(?!<div aria-hidden).)*/gs,
+      /<div aria-hidden="(?:true|false)"(?: inert="")? class="[^"]*col-start-1 row-start-1[^"]*">(?:(?!<div aria-hidden).)*/gs,
     ),
   ].map((match) => match[0]);
   const found = states.find((state) => state.includes(text));
@@ -593,6 +593,24 @@ describe('a return from the payment page (2026-09-28)', () => {
         assert.equal(state.includes('invisible'), text !== shown, `${confirmation}: "${text}"`);
       }
     }
+  });
+
+  it('hides a state in the same frame, its button included, and lets nothing in it take a tap (the buyer walk)', () => {
+    // The slow state's "Check again", pressed, went on painting over "Open
+    // your diary": `invisible` reached it by inheritance, and its own
+    // `transition-all` animated `visibility` for 150 ms. The browser tier
+    // watches every frame; this pins the two attributes that stop it.
+    const markup = returning('confirmed');
+    for (const text of [enCommon.plan.returned.success, enCommon.paywall.returned.slow]) {
+      const hidden = returnStateOf(markup, text);
+      assert.ok(hidden.includes('[&amp;_*]:transition-none'), `"${text}" keeps its transitions while hidden`);
+      assert.ok(hidden.startsWith('<div aria-hidden="true" inert=""'), `"${text}" is hidden but not inert`);
+    }
+    // CONTROL: the state on screen keeps both, or its button would lose its
+    // hover and focus transitions and could not be pressed.
+    const shown = returnStateOf(markup, enCommon.paywall.returned.active);
+    assert.equal(shown.includes('transition-none'), false);
+    assert.equal(shown.includes('inert'), false);
   });
 
   it('sells nothing while the payment is being confirmed, and says nothing about a lock', () => {

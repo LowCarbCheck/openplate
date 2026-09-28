@@ -272,10 +272,31 @@ function PaywallNoticeView({ notice }: { notice: PaywallNotice }) {
   );
 }
 
-/** One state of the payment return line. Hidden states keep their size, so the box is the tallest of them. */
+/**
+ * One state of the payment return line. Hidden states keep their size, so the
+ * box is the tallest of them.
+ *
+ * A HIDDEN STATE IS HIDDEN IN THE SAME FRAME, BUTTONS INCLUDED (the buyer
+ * walk, 2026-09-28). `invisible` reaches a state's button by inheritance, and
+ * the button's own `transition-all` then animates `visibility` like any other
+ * property: a discrete transition whose value stays `visible` for its whole
+ * run. So the slow state's "Check again", pressed, went on painting over "Open
+ * your diary" once the plan was active: for the 150 ms of the transition in
+ * the browser tier, and in the buyer's screenshot besides. A hidden state
+ * therefore switches every transition inside it off, and is `inert` too, so
+ * nothing in it takes a tap or the focus while it is only there for its size.
+ * `paywall-plan-page.spec.ts` watches every frame of that change.
+ */
 function ReturnState({ isShown, children }: { isShown: boolean; children: ReactNode }) {
   return (
-    <div aria-hidden={!isShown} className={cn('col-start-1 row-start-1 flex flex-col gap-3', !isShown && 'invisible')}>
+    <div
+      aria-hidden={!isShown}
+      inert={!isShown}
+      className={cn(
+        'col-start-1 row-start-1 flex flex-col gap-3',
+        !isShown && 'invisible [&_*]:transition-none',
+      )}
+    >
       {children}
     </div>
   );
