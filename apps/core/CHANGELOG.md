@@ -7,6 +7,8 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-09-28
+
 ### Added
 
 - **A paid instance can state its price before sign-in.**
