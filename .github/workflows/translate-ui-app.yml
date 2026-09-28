@@ -95,6 +95,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        # FULL HISTORY. `tests/unit/translate-lib-provenance.test.ts` hashes
+        # the vendored translator against `apps/website/...` at the commit
+        # its TRANSLATE_SOURCE.json records. A depth-1 checkout has no such
+        # commit, and the unit tier failed on the first monorepo push. The
+        # test stays strict; the checkout brings the history it reads.
+        with:
+          fetch-depth: 0
 
       # `with:` paths are read from the repository root, not from the
       # `defaults` folder, so each one names `apps/app`.
