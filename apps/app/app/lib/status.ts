@@ -35,6 +35,7 @@
  * effect, or a `clientAction`, all of which run in the browser. Do not publish
  * from a `loader` or from a component body.
  */
+import type { LucideIcon } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 
 /** How loud the message is, and which colour and icon carry it. */
@@ -44,6 +45,17 @@ export type StatusTone = 'info' | 'success' | 'warning' | 'error';
 export interface StatusAction {
   label: string;
   onClick: () => void;
+  /**
+   * OPT IN to a control of its own: this icon and the label in a bordered
+   * button beside the sentence (M265/07). Left out, the label is drawn as
+   * the sentence's last words, underlined, which is what every other action
+   * gets. The diary's Undo after a delete is the one caller that sets it: it
+   * is the action a person reaches for in a hurry, and the operator wanted it
+   * to look like a control again. The plan action beside the trial countdown
+   * must not set it, because a button beside the sentence left the German
+   * countdown about 40 px at 390 px (`header-status.tsx`).
+   */
+  icon?: LucideIcon;
 }
 
 /** What a host renders. `id` is monotone per publish, so a republish is always a new key. */

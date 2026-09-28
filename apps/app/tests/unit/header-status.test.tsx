@@ -17,6 +17,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { Undo2 } from 'lucide-react';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -261,6 +262,33 @@ describe('HeaderStatus', () => {
     assert.match(markup, /data-slot="header-status-action" class="[^"]*after:absolute after:inset-0/);
     assert.match(markup, /<div class="relative flex min-w-0 flex-1 flex-col justify-center self-stretch /);
     assert.match(markup, /data-slot="header-status" class="flex min-h-11 /);
+  });
+
+  it('draws an action that brings an icon as a bordered control beside the sentence, the icon inside it (M265/07)', () => {
+    // THE DIARY'S UNDO opts in with `icon`. The control sits between the text
+    // column and the close control, holds the icon and the label, and the
+    // sentence carries no inline label of its own.
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
+    const markup = render();
+    const columnClosesAt = markup.indexOf('</output></div>');
+    const controlAt = markup.indexOf('<button data-slot="button"');
+    const iconAt = markup.indexOf('lucide-undo2', controlAt);
+    const labelAt = markup.indexOf('>Undo</button>', controlAt);
+    const closeAt = markup.indexOf('aria-label="Dismiss this message"');
+    assert.ok(columnClosesAt !== -1 && controlAt > columnClosesAt, 'the control is not beside the text column');
+    assert.ok(iconAt > controlAt && labelAt > iconAt, 'the control does not hold its icon before its label');
+    assert.ok(closeAt > labelAt, 'the control is not before the close control');
+    assert.match(markup.slice(controlAt, labelAt), /class="[^"]*\bborder\b[^"]*\bh-11\b/, 'the control lost its border or its 44 px');
+    assert.equal(countOf(markup, 'data-slot="header-status-action"'), 0, 'the sentence still ends in an inline label');
+
+    // CONTROL: the same action without an icon is the sentence's last words,
+    // and the same two reads find no bordered control and no icon.
+    resetStatusChannel();
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
+    const inline = render();
+    assert.equal(countOf(inline, 'data-slot="button"'), 0, 'an action with no icon grew a bordered control');
+    assert.equal(countOf(inline, 'lucide-undo2'), 0, 'an action with no icon grew an icon');
+    assert.equal(countOf(inline, 'data-slot="header-status-action"'), 1, 'the inline label read matches nothing');
   });
 
   it('CONTROL: a status with no action draws no action label', () => {

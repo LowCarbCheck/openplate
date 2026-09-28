@@ -1,7 +1,8 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X, type LucideIcon } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '#app/components/ui/button';
 import { cn } from '#app/lib/utils';
 import {
   clearStatus,
@@ -113,6 +114,47 @@ function StatusActionLabel({ action }: { action: StatusAction }): ReactNode {
 }
 
 /**
+ * An action drawn as a control of its own: its icon and its label in a
+ * bordered button beside the sentence (M265/07).
+ *
+ * ONLY A CALLER THAT SETS `icon` GETS THIS, and today that is the diary's
+ * Undo after a delete. The operator wanted Undo to look like a control again
+ * after the buyer walk turned every action into the sentence's last words.
+ * The plan action beside the trial countdown keeps those words: the reason
+ * they exist is that a button beside the sentence left the German countdown
+ * about 40 px (`StatusActionLabel`).
+ *
+ * COMPACT, BECAUSE IT TAKES ITS WIDTH OUT OF THE SENTENCE. The label is
+ * `text-xs`, the padding is `px-2` and the gap to the icon is `gap-1`, so the
+ * German "Rückgängig", the longest label, costs about 108 px, about what the
+ * `text-sm` button before 2026-09-28 cost. At 390 px that leaves the sentence
+ * about 92 px, three lines of the compact size for "{{name}} entfernt.".
+ * `tests/e2e/undo-control-look.spec.ts` walks the delete in all six
+ * languages and measures the row, the label and the sentence.
+ *
+ * THE TAP AREA IS THE BUTTON. `ui/button`'s `sm` is 44 px tall below `md`, as
+ * tall as the row's `min-h-11`, so the row keeps its height and the header its
+ * 64 px. The icon is decoration; the accessible name is the label.
+ */
+function StatusActionControl({ action, icon: ActionIcon }: { action: StatusAction; icon: LucideIcon }): ReactNode {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => {
+        action.onClick();
+        clearStatus();
+      }}
+      className="gap-1 px-2 text-xs has-[>svg]:px-2"
+    >
+      <ActionIcon aria-hidden="true" />
+      {action.label}
+    </Button>
+  );
+}
+
+/**
  * The status row itself, props only, so a static render can be handed a
  * message without driving the store.
  */
@@ -125,6 +167,9 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   const isDismissable = status.tone === 'error' || status.action !== null;
   const isError = status.tone === 'error';
   const hasDescription = status.description !== null;
+  // An action with an icon is drawn as a control beside the sentence
+  // (`StatusActionControl`); every other action is the sentence's last words.
+  const ControlIcon = status.action?.icon;
   // An error is smaller AND taller than every other tone: dropping to
   // `text-xs` buys a third line before the header's `min-h-16` is at risk, so
   // a long sentence (the German notifications-blocked copy is the one that
@@ -189,11 +234,12 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
                 them: with the icon, the German, French and Turkish scan counts
                 plus their labels took a third line in the two lines a recap
                 line leaves them (measured, 2026-09-28). The tone stays in the
-                colour, and the underlined label says there is something to do. */}
+                colour, and the underlined label (or, for Undo, its own control)
+                says there is something to do. */}
             {status.action === null && <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
             <span data-slot="header-status-text" className={cn(textClampClass, 'text-balance break-words')}>
               <span data-slot="header-status-sentence">{status.text}</span>
-              {status.action !== null && (
+              {status.action !== null && ControlIcon === undefined && (
                 <>
                   {' '}
                   <StatusActionLabel action={status.action} />
@@ -208,6 +254,9 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
           )}
         </output>
       </div>
+      {status.action !== null && ControlIcon !== undefined && (
+        <StatusActionControl action={status.action} icon={ControlIcon} />
+      )}
       {isDismissable && (
         // `size-11` is the app's 44px tap floor. The text of a persisting error
         // opens nothing, tapping it is not a gesture, this button is the exit.

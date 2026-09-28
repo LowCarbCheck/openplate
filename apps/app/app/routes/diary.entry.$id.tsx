@@ -63,7 +63,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#app/components/ui/select';
-import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw, Star, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw, Star, Trash2, Undo2 } from 'lucide-react';
 import {
   ANONYMOUS_USER_ID,
   deleteLocalFoodLog,
@@ -976,7 +976,9 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
     setIsDeleting(true);
     publishStatus({
       text: t('entry.toast.removed', { name: displayFoodName(log, i18n.language) }),
-      action: { label: t('entry.toast.undo'), onClick: handleUndo },
+      // `icon` opts Undo into a control of its own beside the sentence
+      // (M265/07); every other status action stays the sentence's last words.
+      action: { label: t('entry.toast.undo'), onClick: handleUndo, icon: Undo2 },
     });
     // Device-local photo cache: when this is the batch's last remaining entry,
     // drop its cached photo too. Best-effort — an undo-restored entry simply has
