@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Create an account",
     "body": "Type your email address. We send you an email, and the link in it creates your account.",
-    "trial_one": "{{count}} free AI scan, no time limit.",
-    "trial_other": "{{count}} free AI scans, no time limit.",
     "emailRequired": "Type your email address.",
     "submit": "Send the email",
     "sent": "Check your inbox. The link in the email creates your account.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
     "failed": "The request did not go through. Try again in a moment.",
     "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} free AI scan. No card needed.",
+    "scans_other": "{{count}} free AI scans. No card needed.",
+    "prices": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
+    "noPrices": "When they are used up, you need a paid plan to keep using openplate.",
+    "chosenMonthly": "You chose the monthly plan. You can pay for it right after you create your account, or use your free scans first.",
+    "chosenYearly": "You chose the yearly plan. You can pay for it right after you create your account, or use your free scans first."
   },
   "signOut": {
     "menuItem": "Sign out",

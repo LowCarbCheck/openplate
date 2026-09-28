@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Créer un compte",
     "body": "Saisis ton adresse e-mail. Nous t'envoyons un e-mail, et le lien qu'il contient crée ton compte.",
-    "trial_one": "{{count}} scan IA gratuit, sans limite de temps.",
-    "trial_other": "{{count}} scans IA gratuits, sans limite de temps.",
     "emailRequired": "Saisis ton adresse e-mail.",
     "submit": "Envoyer l'e-mail",
     "sent": "Vérifie ta boîte de réception. Le lien dans l'e-mail crée ton compte.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "Nous ne pouvons pas accepter d'inscription avec ce domaine d'e-mail. Utilise une autre adresse.",
     "failed": "La demande n'a pas abouti. Réessaie dans un instant.",
     "legal": "Consulte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy> avant de t'inscrire."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} scan IA gratuit. Pas besoin de carte.",
+    "scans_other": "{{count}} scans IA gratuits. Pas besoin de carte.",
+    "prices": "Une fois ces scans épuisés, openplate coûte {{monthly}} par mois ou {{yearly}} par an. Les prix incluent la TVA.",
+    "noPrices": "Une fois ces scans épuisés, il te faudra un forfait payant pour continuer à utiliser openplate.",
+    "chosenMonthly": "Tu as choisi le forfait mensuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits.",
+    "chosenYearly": "Tu as choisi le forfait annuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits."
   },
   "signOut": {
     "menuItem": "Se déconnecter",

@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Hesap oluştur",
     "body": "E-posta adresini yaz. Sana bir e-posta göndereceğiz, içindeki bağlantı hesabını oluşturacak.",
-    "trial_one": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok.",
-    "trial_other": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok.",
     "emailRequired": "E-posta adresini yaz.",
     "submit": "E-postayı gönder",
     "sent": "Gelen kutunu kontrol et. E-postadaki bağlantı hesabını oluşturacak.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "Bu e-posta alan adından kayıt kabul edemiyoruz. Başka bir adres kullan.",
     "failed": "İstek tamamlanamadı. Birazdan tekrar dene.",
     "legal": "Kayıt olmadan önce <terms>şartları</terms> ve <privacy>gizlilik bildirimini</privacy> oku."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez.",
+    "scans_other": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez.",
+    "prices": "Ücretsiz tarama hakların bittiğinde openplate aylık {{monthly}} veya yıllık {{yearly}}. Fiyatlara KDV dahildir.",
+    "noPrices": "Ücretsiz tarama hakların bittiğinde openplate kullanmaya devam etmek için ücretli bir plana geçmen gerekir.",
+    "chosenMonthly": "Aylık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin.",
+    "chosenYearly": "Yıllık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin."
   },
   "signOut": {
     "menuItem": "Çıkış yap",

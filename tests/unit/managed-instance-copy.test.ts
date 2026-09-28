@@ -98,8 +98,12 @@ describe('landing page — the three claims that are false on a managed instance
 
   it('sends the closing call to action to the sign-in door rather than the anonymous one', () => {
     // `/dashboard` bounces to `/welcome` on a managed instance anyway; naming
-    // the real door is what makes the button's label true.
-    assert.match(source, /requiresAccount \? '\/welcome' : '\/dashboard'/);
+    // the real door is what makes the button's label true. Since 2026-09-28
+    // the managed branch draws `ManagedDoorLink`, which is `/welcome` unless
+    // the handshake says anybody may sign up and a plan is sold, where it is
+    // the sign-up form (`tests/unit/landing-doors.test.ts` renders the count).
+    assert.match(source, /requiresAccount \?\s*<ManagedDoorLink placement="footer"/);
+    assert.match(source, /isSignUp \? door\.signUpHref : '\/welcome'/);
   });
 });
 

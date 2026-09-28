@@ -9,9 +9,12 @@
  *
  * ── NOTHING IS PICKED FOR THE PERSON ─────────────────────────────────────
  *
- * `selectedKey` is `null` unless the caller had a reason to set it, and the
- * only reason is a link that named a plan. A pre-selected yearly plan is the
- * nudge German consumer law and this app's own voice both refuse.
+ * `selectedKey` is `null` unless the caller had a reason to set it, and there
+ * are two, both the person's own: a link that named a plan, and the plan they
+ * chose on the pricing page before they had an account (`intended-plan.ts`,
+ * offered by `plan-order.tsx`). A yearly plan pre-selected for somebody who
+ * named neither is the nudge German consumer law and this app's own voice
+ * both refuse.
  *
  * ── ONE RADIO GROUP, READ ALOUD ONCE ─────────────────────────────────────
  *

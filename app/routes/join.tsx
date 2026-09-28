@@ -66,8 +66,13 @@ import { readSyncInvite, signOutOfDeviceSession, type SyncInviteDetails } from '
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackJoinCompleted } from '#app/lib/matomo-events';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
-import { resolveSignInDestination } from '#app/lib/sign-in-flow';
+import { resolveJoinDestination } from '#app/lib/sign-in-flow';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
+import { readCachedServerInstance } from '#app/hooks/use-server-instance';
+import { captureIntendedPlan, readIntendedPlan } from '#app/lib/plans/intended-plan';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { addressWithoutLanguage, applyLanguageLink, decideLanguageLink, languageParamOf } from '#app/i18n/language-link';
+import { browserLanguageLinkEffects } from '#app/hooks/use-language-from-link';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -115,7 +120,8 @@ type Phase =
   | { status: 'ready'; inviteToken: string; invite: SyncInviteDetails };
 
 export default function Join() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const shownLanguage = i18n.resolvedLanguage ?? i18n.language;
   const navigate = useAppNavigate();
   const configuredSyncUrl = useSyncServerUrl();
   const { signOutErasesDevice } = useInstancePolicy();
@@ -133,11 +139,36 @@ export default function Join() {
     // A SECOND LINK IN THE SAME TAB starts from the top, so the first link's
     // card never stands beside the second link's answer.
     setPhase({ status: 'reading' });
+    // A SNAPSHOT, taken before the strip below rewrites the live `location`.
+    const { pathname, search, hash } = globalThis.window.location;
+    // THE PLAN CHOSEN ON THE PRICING PAGE rides in the same fragment when the
+    // core mailed the link (`&plan=yearly`), or in the query string. It is
+    // stored BEFORE the strip below destroys the only copy, and it is not a
+    // capability, so it goes to `localStorage` rather than the pending slot
+    // (`intended-plan.ts`). A second run of this effect finds no parameter and
+    // reads it back from storage.
+    captureIntendedPlan({ search, hash });
+    // THE LANGUAGE the person signed up in rides in the same fragment
+    // (`&lang=fr`), so it too is read before the strip.
+    const linkLanguage = languageParamOf({ search, hash });
     // The fragment is read and stripped in the same call, and the token is
     // parked — so this effect running twice (a remount, or the service
     // worker's first-install reload) reads the parked copy rather than
     // nothing.
     const link = takeJoinLinkFromUrl({ configuredSyncUrl });
+    // A DIFFERENT LANGUAGE RELOADS THE DOCUMENT, the way the language switch
+    // does, and it reloads BEFORE a single request: the invite is parked, so
+    // the reloaded page reads it back, and the address it reloads carries no
+    // fragment, so the token does not come back to the bar.
+    const isReloading = applyLanguageLink(
+      decideLanguageLink({
+        code: linkLanguage,
+        shownLanguage,
+        address: addressWithoutLanguage({ pathname, search, hash: '' }),
+      }),
+      browserLanguageLinkEffects(),
+    );
+    if (isReloading) return;
 
     if (isForeignSyncServer({ linkServerUrl: link.serverUrl, configuredSyncUrl })) {
       setPhase({
@@ -197,7 +228,7 @@ export default function Join() {
     return () => {
       isMounted = false;
     };
-  }, [configuredSyncUrl, linkArrivals]);
+  }, [configuredSyncUrl, linkArrivals, shownLanguage]);
 
   return (
     // TOP-ALIGNED, NOT CENTRED (M253/11). The card starts on the small
@@ -248,7 +279,7 @@ export default function Join() {
               serverUrl={configuredSyncUrl}
               initialInvite={shown.inviteToken}
               onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: shown.invite.email })}
-              onCeremonyComplete={() => void landAfterJoin(navigate)}
+              onCeremonyComplete={() => void landAfterJoin({ navigate, serverUrl: configuredSyncUrl })}
             />
           </CardContent>
         )}
@@ -267,16 +298,30 @@ export default function Join() {
  * app on the NEXT visit, which is no help on this one.
  *
  * The two flows ask the same question ("does this account already hold a
- * diary?") and must not answer it twice, so this calls the same pair
- * `/sign-in` does: read the gate, resolve the destination.
+ * diary?") and must not answer it twice, so this reads the same gate
+ * `/sign-in` does and resolves it through the same rule.
  *
- * @param navigate - the router's navigate, passed in so this stays testable.
+ * ONE DOOR IN FRONT (2026-09-28): somebody who chose a plan on the pricing
+ * page before they had an account lands on the order page with that plan
+ * picked (`resolveJoinDestination`). The handshake is read only then, because
+ * only then does it matter whether this instance sells plans.
+ *
+ * @param input.navigate - the router's navigate, passed in so this stays testable.
+ * @param input.serverUrl - the sync server the account was created on.
  */
-async function landAfterJoin(navigate: (path: string) => void): Promise<void> {
+async function landAfterJoin({
+  navigate,
+  serverUrl,
+}: {
+  navigate: (path: string) => void;
+  serverUrl: string;
+}): Promise<void> {
   // The ceremony reports completion once, so this runs once per redeemed
   // invitation rather than once per render of the panel.
   trackJoinCompleted();
-  navigate(resolveSignInDestination({ gate: await readOnboardingGateKind() }));
+  const intendedPlan = readIntendedPlan();
+  const sellsPlans = intendedPlan !== null && hasPlansDoor(await readCachedServerInstance(serverUrl));
+  navigate(resolveJoinDestination({ gate: await readOnboardingGateKind(), intendedPlan, sellsPlans }));
 }
 
 /**

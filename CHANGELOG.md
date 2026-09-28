@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Sign-up on a paid instance states the price and keeps the chosen plan.** A pricing-page link such as `/sign-up?plan=yearly&lang=fr` opens the form in that language and sends the plan and the language with the request, so the mailed join link carries both. Under the free scans the form says what openplate costs once they are used up, read from openplate-core's anonymous `GET /v1/plans/prices` and formatted for the reader, or that a paid plan is needed when the prices cannot be read. After the account is created, `/join` opens the plan page with that plan picked, and the plan page picks a plan chosen before sign-in too. The logged-out landing leads with Sign up and states the same offer on an instance that takes sign-ups and sells plans, and `/welcome` leads with Create an account where anybody may sign up. Invite-only and self-hosted instances keep their landing. An openplate-core without the prices route shows the sentence without a price. `tests/e2e/signup-plan-intent.spec.ts` checks it.
+
 ### Changed
 
 - **Every compose file reads its settings from the env file.** The app service now passes on `DEFAULT_UI_LANGUAGE`, `UPDATE_CHECK`, `FOOD_DB_API_KEY`, `FOOD_DB_BACKFILL` and `CSP_CONNECT_EXTRA`, which the docs told people to set in `.env` but which never reached the container. `compose.inference.yml` and `compose.full.yml` take `INFERENCE_API_KEY`, `PUBLIC_APP_URL`, `PUBLIC_INFERENCE_URL` and `LLAMA_THREADS` from `.env` instead of values edited inside the file; the defaults are the old placeholders, so a Quadlet unit generated from them is unchanged there.

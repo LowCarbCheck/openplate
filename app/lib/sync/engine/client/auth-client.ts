@@ -75,6 +75,8 @@ import {
 } from './auth-wire';
 import { errorKindForStatus, SyncRequestError } from './sync-error';
 import { defaultFetchImpl } from './fetch-impl';
+import type { PlanKey } from './plans-wire';
+import type { LanguageCode } from '#app/i18n/language-prefs';
 import {
   checkProtocolCompatibility,
   isProtocolHandshake,
@@ -876,10 +878,20 @@ export class SyncAuthClient implements SyncTokenProvider {
    * account alike. A throttle (`429`, with `Retry-After`), a refused challenge
    * and a blocked domain still throw, because each one asks the person to do
    * something different, and none of them says anything about the address.
+   *
+   * Each optional field is LEFT OUT rather than sent as `null`, so a caller
+   * that passes none of them sends exactly `{ email }`, as before.
    */
-  async signupRequest(input: { email: string; captchaToken: string | null }): Promise<void> {
-    const request: SignupRequestRequestWire =
-      input.captchaToken === null ? { email: input.email } : { email: input.email, captchaToken: input.captchaToken };
+  async signupRequest(input: {
+    email: string;
+    captchaToken: string | null;
+    plan: PlanKey | null;
+    locale: LanguageCode | null;
+  }): Promise<void> {
+    const request: SignupRequestRequestWire = { email: input.email };
+    if (input.captchaToken !== null) request.captchaToken = input.captchaToken;
+    if (input.plan !== null) request.plan = input.plan;
+    if (input.locale !== null) request.locale = input.locale;
     await this.requestJson<unknown>({
       path: `${AUTH_API_PREFIX}/signup-request`,
       method: 'POST',

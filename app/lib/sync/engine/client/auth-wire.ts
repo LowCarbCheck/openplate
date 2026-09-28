@@ -29,6 +29,8 @@
  *    login to an unreadable one.
  */
 import type { Base64Bytes, IsoTimestamp, KdfDescriptor, SyncKeyRecordKind } from '../protocol';
+import type { PlanKey } from './plans-wire';
+import type { LanguageCode } from '#app/i18n/language-prefs';
 
 /** Mount prefix for the account endpoints; the blob endpoints live beside it under `SYNC_API_PREFIX`. */
 export const AUTH_API_PREFIX = '/v1/auth';
@@ -306,10 +308,19 @@ export interface ResetRequestWire {
  *
  * `captchaToken` rides along only when the handshake names a challenge
  * (`instance.signupCaptcha`); an instance without one never reads it.
+ *
+ * `plan` rides along only when the person arrived with a plan chosen on the
+ * pricing page (`app/lib/plans/intended-plan.ts`) and the instance sells
+ * plans. `locale` is the language the form was drawn in, one of the six app
+ * languages. The core appends `&plan=<key>` and `&lang=<code>` to the mailed
+ * join link, so the choice and the language survive the mail app. A missing
+ * or unknown value is dropped there, never an error (2026-09-28).
  */
 export interface SignupRequestRequestWire {
   email: string;
   captchaToken?: string;
+  plan?: PlanKey;
+  locale?: LanguageCode;
 }
 
 /**

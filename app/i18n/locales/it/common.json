@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Crea un account",
     "body": "Inserisci il tuo indirizzo email. Ti invieremo un'email con il link per creare il tuo account.",
-    "trial_one": "{{count}} scansione gratuita con IA, senza limiti di tempo.",
-    "trial_other": "{{count}} scansioni gratuite con IA, senza limiti di tempo.",
     "emailRequired": "Inserisci il tuo indirizzo email.",
     "submit": "Invia l'email",
     "sent": "Controlla la posta in arrivo. Il link nell'email creerà il tuo account.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "Non possiamo accettare registrazioni da questo dominio email. Usa un altro indirizzo.",
     "failed": "La richiesta non è andata a buon fine. Riprova tra poco.",
     "legal": "Leggi i <terms>termini di servizio</terms> e l'<privacy>informativa sulla privacy</privacy> prima di registrarti."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} scansione con IA gratuita. Nessuna carta richiesta.",
+    "scans_other": "{{count}} scansioni con IA gratuite. Nessuna carta richiesta.",
+    "prices": "Una volta esaurite le scansioni gratuite, openplate costa {{monthly}} al mese o {{yearly}} all'anno. I prezzi includono l'IVA.",
+    "noPrices": "Una volta esaurite le scansioni gratuite, serve un piano a pagamento per continuare a usare openplate.",
+    "chosenMonthly": "Hai scelto il piano mensile. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite.",
+    "chosenYearly": "Hai scelto il piano annuale. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite."
   },
   "signOut": {
     "menuItem": "Disconnettiti",

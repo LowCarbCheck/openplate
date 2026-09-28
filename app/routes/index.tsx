@@ -1,7 +1,7 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { Route } from './+types/index';
-import { data, redirect } from 'react-router';
+import { data, redirect, useLocation } from 'react-router';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import {
@@ -26,7 +26,12 @@ import { PlateGlyph } from '#app/components/plate-glyph';
 import { NewsletterSignup } from '#app/components/newsletter-signup';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
-import { hasOpenSignup } from '#app/lib/plans/signup-door';
+import { hasOpenSignup, offeredTrialScans } from '#app/lib/plans/signup-door';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { SIGN_UP_PATH } from '#app/components/account-door';
+import { SignupOffer } from '#app/components/plans/signup-offer';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
+import { usePublicPlanPrices } from '#app/hooks/use-public-plan-prices';
 import { REPO_URL } from '#app/lib/brand';
 import { CONFIG } from '#app/config';
 import type { AnalyticsEventLevel } from '#app/config/analytics';
@@ -1276,29 +1281,166 @@ function LadderCard({
  */
 /**
  * The small print under the hero on an instance whose AI comes with the
- * account (M253/02).
+ * account (M253/02), and the offer where the instance sells one (2026-09-28).
  *
  * "Invitation only" is true of an invite-only instance and false of one with
  * open sign-up, and only the handshake knows which, after the first paint. So
- * the line is held `invisible` until the handshake answers, and its box keeps
- * two lines from the first paint, so neither the wait nor the answer moves the
- * picture under it.
+ * the line is held `invisible` until the handshake answers, so neither the
+ * wait nor the answer moves the picture under it.
+ *
+ * ON AN INSTANCE THAT TAKES SIGN-UPS AND SELLS PLANS the ticks give way to the
+ * offer: the free scans and what openplate costs after them (`SignupOffer`),
+ * the same lines `/sign-up` draws. They are taller than the ticks, and they
+ * arrive after the handshake and then after the price read, so the box is
+ * RESERVED at their height from the first paint on every managed instance
+ * ({@link SMALL_PRINT_RESERVE}). An invite-only instance shows its ticks in
+ * that box; the room under them stays empty rather than being taken away
+ * after the handshake, which would move the picture up.
  */
-function ManagedHeroTicks({ requiresAccount }: { requiresAccount: boolean }) {
+function ManagedHeroSmallPrint({ requiresAccount }: { requiresAccount: boolean }) {
   const { t } = useTranslation();
   const { isSettled, instance } = useServerInstanceRead();
   const isKnown = !requiresAccount || isSettled;
   const offersSignUp = requiresAccount && hasOpenSignup(instance);
+  const trialScans = offeredTrialScans(instance);
+  const showsOffer = isSettled && offersSignUp && hasPlansDoor(instance) && trialScans !== null;
+  const prices = usePublicPlanPrices({ isEnabled: showsOffer });
   return (
-    <p className={cn('mt-4 min-h-8 text-xs text-muted-foreground', !isKnown && 'invisible')}>
-      {offersSignUp ? t('landing.hero.ticksManagedOpen') : t('landing.hero.ticksManaged')}
-    </p>
+    <div
+      data-slot="landing-small-print"
+      className={cn(
+        'mt-4 grid w-full text-xs text-muted-foreground [&>*]:col-start-1 [&>*]:row-start-1',
+        requiresAccount ? SMALL_PRINT_RESERVE : 'min-h-8',
+      )}
+    >
+      <p className={cn((!isKnown || showsOffer) && 'invisible')} aria-hidden={showsOffer ? true : undefined}>
+        {offersSignUp ? t('landing.hero.ticksManagedOpen') : t('landing.hero.ticksManaged')}
+      </p>
+      {showsOffer && <SignupOffer trialScans={trialScans} prices={prices} chosenPlan={null} size="xs" />}
+    </div>
+  );
+}
+
+/**
+ * The height the managed small print keeps from the first paint: the offer's
+ * two paragraphs at their tallest. MEASURED, 2026-09-28, in the production
+ * build: below 412 px they need six lines of `text-xs` and the gap between the
+ * paragraphs (German, French, Italian and Spanish at 320 px, Italian at
+ * 360 px), and from 412 px four lines in every language.
+ * `tests/e2e/signup-plan-intent.spec.ts` holds the handshake and the price
+ * read, lets them through, and requires a layout-shift total of 0 in all six
+ * languages at 320, 390 and 412 px, so a longer translation fails there.
+ */
+const SMALL_PRINT_RESERVE = 'min-h-[6.25rem] min-[412px]:min-h-[4.25rem]';
+
+/**
+ * Which door a managed landing leads with, once the handshake has answered.
+ *
+ * - `unknown`: not answered yet. Nothing is drawn in the door's place.
+ * - `welcome`: the landing as it was, "Sign in" to `/welcome`. An invite-only
+ *   instance, and an open one that sells no plan (its `/welcome` offers the
+ *   sign-up form beside signing in).
+ * - `sign-up`: open sign-up on an instance that sells plans. "Sign up" to the
+ *   form, keeping the query string, so `?plan=` from the pricing page reaches
+ *   it.
+ */
+type ManagedLandingDoor = { kind: 'unknown' } | { kind: 'welcome' } | { kind: 'sign-up'; signUpHref: string };
+
+function useManagedLandingDoor(): ManagedLandingDoor {
+  const { isSettled, instance } = useServerInstanceRead();
+  const { search } = useLocation();
+  if (!isSettled) return { kind: 'unknown' };
+  if (!hasOpenSignup(instance) || !hasPlansDoor(instance)) return { kind: 'welcome' };
+  return { kind: 'sign-up', signUpHref: `${SIGN_UP_PATH}${search}` };
+}
+
+/** The classes of the hero's one filled button. See the comments where the hero draws it. */
+const HERO_PRIMARY_CLASS =
+  'h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-lg shadow-primary/20';
+
+/** The hero's row of one button and one quieter link. */
+const HERO_ROW_CLASS = 'flex w-full flex-wrap items-center justify-center gap-4';
+
+/**
+ * The hero's doors on a managed instance (2026-09-28).
+ *
+ * ONE CELL, TWO ROWS. The row the landing always drew, "Sign in" and "See how
+ * it works", is always in the cell, so its box is there from the first paint
+ * and the answer moves nothing. It is invisible and inert until the handshake
+ * answers, and stays so where "Sign up" leads. The sign-up row is drawn into
+ * the same cell only then, so the markup of an instance that takes no
+ * sign-ups never carries a "Sign up" at all (`tests/unit/landing-doors.test.ts`).
+ * The welcome row is the wider of the two in every language this app ships,
+ * so the reserve holds the sign-up row too.
+ */
+function ManagedHeroDoors() {
+  const { t } = useTranslation();
+  const door = useManagedLandingDoor();
+  const isWelcomeShown = door.kind === 'welcome';
+  return (
+    <div data-slot="landing-hero-doors" className="mt-8 grid w-full [&>*]:col-start-1 [&>*]:row-start-1">
+      <div className={cn(HERO_ROW_CLASS, !isWelcomeShown && 'invisible')} inert={!isWelcomeShown}>
+        <Button asChild size="lg" className={HERO_PRIMARY_CLASS}>
+          <Link to="/welcome" onClick={() => trackLandingCtaClicked('hero')}>
+            {t('landing.cta.tryItFreeManaged')}
+          </Link>
+        </Button>
+        <a href="#how" className={SECONDARY_ACTION}>
+          {t('landing.cta.howItWorks')}
+        </a>
+      </div>
+      {door.kind === 'sign-up' && (
+        <div className={HERO_ROW_CLASS}>
+          <Button asChild size="lg" className={HERO_PRIMARY_CLASS}>
+            <Link to={door.signUpHref} onClick={() => trackLandingCtaClicked('hero')}>
+              {t('chrome.signUp')}
+            </Link>
+          </Button>
+          <Link to="/sign-in" className={SECONDARY_ACTION}>
+            {t('chrome.signIn')}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The mid-page and closing buttons' link on a managed instance: the hero's
+ * door restated, so all three name one destination. Drawn inside a `Button`
+ * with `asChild`, so the button's classes arrive here and go on the link.
+ *
+ * These two sit far below the fold, so the label follows the handshake when
+ * it answers rather than holding a box: nobody has scrolled to them yet.
+ */
+function ManagedDoorLink({
+  placement,
+  welcomeLabel,
+  ...slotProps
+}: {
+  placement: 'mid' | 'footer';
+  /** The label while the door is `/welcome`, which differs between the two. */
+  welcomeLabel: string;
+} & Omit<ComponentProps<typeof Link>, 'to' | 'children' | 'onClick'>) {
+  const { t } = useTranslation();
+  const door = useManagedLandingDoor();
+  const isSignUp = door.kind === 'sign-up';
+  return (
+    <Link
+      {...slotProps}
+      to={isSignUp ? door.signUpHref : '/welcome'}
+      onClick={() => trackLandingCtaClicked(placement)}
+    >
+      {isSignUp ? t('chrome.signUp') : welcomeLabel}
+    </Link>
   );
 }
 
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { t } = useTranslation();
   useHomeHintRepair();
+  // `?lang=` from openplate.de makes the page, and the device, speak that language.
+  useLanguageFromLink();
   const { syncEnabled, newsletter, analyticsLevel } = loaderData;
   // THREE DIFFERENT QUESTIONS, and this page used to ask one boolean for all
   // of them (M201/07). The AI sentences said "bring your own key", which is a
@@ -1424,7 +1566,9 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               this row was 376 px wide inside a 288 px column and its button
               never had a reason to shrink. Widening the row to the column is
               what lets the wrapping label below actually wrap. */}
-          <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-4">
+          {requiresAccount ?
+            <ManagedHeroDoors />
+          : <div className={cn('mt-8', HERO_ROW_CLASS)}>
             {/* AND THE OFFER IS CONDITIONAL (M201/08). "Try it now, it's
                 completely free" sat about a hundred pixels above the hero's own
                 "Invitation only" small print, over a header saying an
@@ -1444,19 +1588,20 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 other half: `Button` is `shrink-0`, so a flex item made of one
                 never gives width back, and a cap is the only thing that makes
                 it take the second line. */}
-            <Button
-              asChild
-              size="lg"
-              className="h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-lg shadow-primary/20"
-            >
-              <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('hero')}>
-                {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
+            {/* ON A MANAGED INSTANCE the doors wait for the handshake
+                (`ManagedHeroDoors`): where anybody may sign up and a plan is
+                sold, "Sign up" leads and "Sign in" is the quieter link. This
+                branch is the open instance, unchanged. */}
+            <Button asChild size="lg" className={HERO_PRIMARY_CLASS}>
+              <Link to="/dashboard" onClick={() => trackLandingCtaClicked('hero')}>
+                {t('landing.cta.tryIt')}
               </Link>
             </Button>
             <a href="#how" className={SECONDARY_ACTION}>
               {t('landing.cta.howItWorks')}
             </a>
           </div>
+          }
           {/* The second half of the pair, on its own line rather than in the
               row above it. Three things side by side read as three offers of
               equal weight; a filled button with one link beside it and one
@@ -1478,7 +1623,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
               wrapped line is better than the horizontal scroll that forcing it
               onto one would produce on the narrowest phones. */}
           {aiComesFromTheInstance ?
-            <ManagedHeroTicks requiresAccount={requiresAccount} />
+            <ManagedHeroSmallPrint requiresAccount={requiresAccount} />
           : <p className="mt-4 text-xs text-muted-foreground">{t('landing.hero.ticks')}</p>}
         </div>
         <HeroShot />
@@ -1776,9 +1921,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
                 on a managed instance, where an account is the only way in.
                 The destination changes with the label: `/dashboard` bounces to
                 `/welcome` there anyway, and naming the real door is honest. */}
-            <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('mid')}>
-              {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryItFree')}
-            </Link>
+            {requiresAccount ?
+              <ManagedDoorLink placement="mid" welcomeLabel={t('landing.cta.tryItFreeManaged')} />
+            : <Link to="/dashboard" onClick={() => trackLandingCtaClicked('mid')}>
+                {t('landing.cta.tryItFree')}
+              </Link>
+            }
           </Button>
           <SourceLink label={t('landing.cta.readSourcePlain')} />
         </div>
@@ -1934,9 +2082,12 @@ export default function Index({ loaderData }: Route.ComponentProps) {
           size="lg"
           className="mt-7 h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-md shadow-primary/20"
         >
-          <Link to={requiresAccount ? '/welcome' : '/dashboard'} onClick={() => trackLandingCtaClicked('footer')}>
-            {requiresAccount ? t('landing.cta.tryItFreeManaged') : t('landing.cta.tryIt')}
-          </Link>
+          {requiresAccount ?
+            <ManagedDoorLink placement="footer" welcomeLabel={t('landing.cta.tryItFreeManaged')} />
+          : <Link to="/dashboard" onClick={() => trackLandingCtaClicked('footer')}>
+              {t('landing.cta.tryIt')}
+            </Link>
+          }
         </Button>
         {/* Rung 5, now written as the same "or read the source" second action
             the hero and the feature grid carry, rather than as a small muted

@@ -33,9 +33,20 @@
  * stale page or a ticked box changes words and never moves the button
  * (DESIGN.md section 7).
  *
- * Props only, apart from `t`, so every state renders in a unit test.
+ * ── A PLAN CHOSEN BEFORE THE ACCOUNT IS PICKED HERE (2026-09-28) ─────────
+ *
+ * The order page takes a pick it did not make in two ways, in this order: a
+ * `?plan=` link, which the caller reads (a monthly subscriber moving to yearly
+ * arrives that way), and the plan the person chose on the pricing page before
+ * they had an account (`intended-plan.ts`). The second is offered once, when
+ * the page opens with no pick at all, through `onSelectPlan`, so the caller's
+ * state is the one truth and the button's hold reads it. A plan the offer does
+ * not sell is not picked. Nothing else is picked, and no box is ticked.
+ *
+ * Props only, apart from `t` and that one read of the stored choice, so every
+ * state renders in a unit test.
  */
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Link } from '#app/components/link';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -44,7 +55,8 @@ import { PlanChoice } from '#app/components/plans/plan-choice';
 import { SelfHostCard } from '#app/components/plans/self-host-card';
 import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
-import { DATE_SLOT, TERMS_SLOT, type PlanKey, type PlanOffer } from '#app/lib/sync/engine/client/plans-wire';
+import { readIntendedPlan } from '#app/lib/plans/intended-plan';
+import { DATE_SLOT, TERMS_SLOT, type OfferPlan, type PlanKey, type PlanOffer } from '#app/lib/sync/engine/client/plans-wire';
 import { cn } from '#app/lib/utils';
 
 /** The two boxes, as the page holds them. */
@@ -121,10 +133,38 @@ function holdReason(input: { selectedPlan: PlanKey | null; consents: ConsentStat
   return null;
 }
 
+/**
+ * Offers the plan chosen before sign-up as the pick, once per mount, when the
+ * page has none: no link named a plan and the person has not picked. See the
+ * file header.
+ */
+function useIntendedPlanPick({
+  plans,
+  mode,
+  selectedPlan,
+  onSelectPlan,
+}: {
+  plans: readonly OfferPlan[];
+  mode: OrderMode;
+  selectedPlan: PlanKey | null;
+  onSelectPlan: (key: PlanKey) => void;
+}): void {
+  const hasOffered = useRef(false);
+  useEffect(() => {
+    if (hasOffered.current) return;
+    hasOffered.current = true;
+    // A switch is the yearly plan by construction, and a pick already made wins.
+    if (mode.kind !== 'first' || selectedPlan !== null) return;
+    const intended = readIntendedPlan();
+    if (intended === null || !plans.some((plan) => plan.key === intended)) return;
+    onSelectPlan(intended);
+  }, [plans, mode, selectedPlan, onSelectPlan]);
+}
+
 export interface PlanOrderProps {
   offer: PlanOffer;
   mode: OrderMode;
-  /** The picked plan, `null` until the person picks one or a link named one. */
+  /** The picked plan, `null` until the person picks one, a link named one, or the plan chosen before sign-up is offered. */
   selectedPlan: PlanKey | null;
   consents: ConsentState;
   notice: OrderNotice;
@@ -149,6 +189,7 @@ export function PlanOrder({
   const { t, i18n } = useTranslation();
   const baseId = useId();
   const plans = mode.kind === 'switch' ? offer.plans.filter((plan) => plan.key === 'yearly') : offer.plans;
+  useIntendedPlanPick({ plans, mode, selectedPlan, onSelectPlan });
   const held = holdReason({ selectedPlan, consents });
   const noticeKey = NOTICE_KEY[notice];
   const line = noticeKey ?? held;

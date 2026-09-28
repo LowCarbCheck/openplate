@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Konto erstellen",
     "body": "Gib deine E-Mail-Adresse ein. Wir schicken dir eine E-Mail, und der Link darin erstellt dein Konto.",
-    "trial_one": "{{count}} kostenloser KI-Scan, ohne Zeitlimit.",
-    "trial_other": "{{count}} kostenlose KI-Scans, ohne Zeitlimit.",
     "emailRequired": "Gib deine E-Mail-Adresse ein.",
     "submit": "E-Mail senden",
     "sent": "Schau in dein Postfach. Der Link in der E-Mail erstellt dein Konto.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "Wir können keine Registrierungen von dieser E-Mail-Domain annehmen. Nutze eine andere Adresse.",
     "failed": "Die Anfrage hat nicht geklappt. Versuche es gleich noch einmal.",
     "legal": "Lies die <terms>Nutzungsbedingungen</terms> und die <privacy>Datenschutzhinweise</privacy>, bevor du dich registrierst."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} kostenloser KI-Scan. Keine Karte nötig.",
+    "scans_other": "{{count}} kostenlose KI-Scans. Keine Karte nötig.",
+    "prices": "Wenn deine kostenlosen KI-Scans aufgebraucht sind, kostet openplate {{monthly}} im Monat oder {{yearly}} im Jahr. Preise inkl. MwSt.",
+    "noPrices": "Wenn deine kostenlosen KI-Scans aufgebraucht sind, brauchst du einen kostenpflichtigen Tarif, um openplate weiterzunutzen.",
+    "chosenMonthly": "Du hast den Monatstarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen.",
+    "chosenYearly": "Du hast den Jahrestarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen."
   },
   "signOut": {
     "menuItem": "Abmelden",

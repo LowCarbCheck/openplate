@@ -233,6 +233,46 @@ export const orderAnswerSchema = z.union([
 
 export type OrderAnswer = z.infer<typeof orderAnswerSchema>;
 
+/**
+ * `GET /v1/plans/prices`, the one ANONYMOUS route under the prefix
+ * (2026-09-28).
+ *
+ * WHY IT EXISTS BESIDE THE OFFER. The offer is read over the account's session
+ * and carries the order texts; a person on `/sign-up` has no account yet, and
+ * the owner's model is that the sign-up screen says what openplate costs once
+ * the free scans are used up. So the core serves the two gross prices with no
+ * token and a public cache header, and nothing else: no term, no text, no link.
+ *
+ * TRANSCRIBED FROM THE CORE'S CONTRACT, like every shape here:
+ * `{ "currency": "EUR", "plans": [ { "key", "interval", "grossCents" } ] }`,
+ * and the ordinary 404 on an instance that sells no plans. A client reads
+ * `instance.plans` before it asks (`plans-door.ts`), so a 404 here means a core
+ * older than the route, and the screen says the price-free sentence.
+ *
+ * `grossCents` is data, exactly as in {@link offerPlanSchema}: the price lives
+ * in the biller's configuration and nowhere in this repository.
+ */
+export const PLAN_PRICES_PATH = `${PLANS_API_PREFIX}/prices`;
+
+/** One plan in {@link planPricesSchema}. The key and the interval must agree, as in the offer. */
+export const pricedPlanSchema = z
+  .object({
+    key: z.enum(PLAN_KEYS),
+    interval: z.enum(PLAN_INTERVALS),
+    grossCents: z.number().int().positive(),
+  })
+  .refine((plan) => PLAN_INTERVAL_BY_KEY[plan.key] === plan.interval, { message: 'key and interval disagree' });
+
+/** The body of {@link PLAN_PRICES_PATH}. A plan key that appears twice is refused, as in the offer. */
+export const planPricesSchema = z.object({
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  plans: z.array(pricedPlanSchema).refine((plans) => new Set(plans.map((plan) => plan.key)).size === plans.length, {
+    message: 'a plan key appears twice',
+  }),
+});
+
+export type PlanPrices = z.infer<typeof planPricesSchema>;
+
 /** 400: the body is not the shape of an order. */
 export const ORDER_INVALID = 'order-invalid';
 /** 400: the plan key is not one the biller sells. */

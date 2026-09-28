@@ -8,6 +8,7 @@
  * vault, and keeping the reach here means the client never grows a hidden
  * dependency on a signed-in session that a test would have to fake.
  */
+import { clearIntendedPlan } from '#app/lib/plans/intended-plan';
 import { PlansClient } from '#app/lib/sync/engine/client/plans-client';
 import { getSyncVault } from '#app/lib/sync/sync-session';
 
@@ -22,5 +23,6 @@ import { getSyncVault } from '#app/lib/sync/sync-session';
 export function currentPlansClient(): PlansClient | null {
   const vault = getSyncVault();
   if (vault === null) return null;
-  return new PlansClient({ transport: vault.authClient });
+  // An accepted order forgets the plan chosen before sign-up (`intended-plan.ts`).
+  return new PlansClient({ transport: vault.authClient, onOrderPlaced: () => clearIntendedPlan() });
 }
