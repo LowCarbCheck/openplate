@@ -33,6 +33,18 @@
  * AN EXPLICIT `AbortSignal.timeout`, because Node's `fetch` otherwise waits
  * five minutes (undici caps a non-streaming call at 300 s and names no knob
  * when it fires), and a person staring at a checkout button will not.
+ *
+ * ONE ROUTE IS ANONYMOUS, AND IT IS ONE PATH AND ONE METHOD: `GET
+ * /v1/plans/prices`. A sign-up screen has to state the price before anybody
+ * has an account, so nothing that needs a token can tell it. It is mounted
+ * AHEAD of the bearer middleware and it is the only thing that is; every other
+ * path and every other method in the subtree still meets `requireAuth` first.
+ * It goes out with ONE header, `X-Plans-Secret`, and never with the two
+ * account headers, because there is no account: a token the caller sent is
+ * not read, not resolved and not forwarded. The biller's answer is kept here
+ * for {@link PLANS_PRICES_CACHE_TTL_MS}, so a burst of readers is one call to
+ * the biller, and each source address is held to
+ * {@link PLANS_PRICES_RATE_LIMIT_PER_MINUTE} requests a minute.
  */
 import express from 'express';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
@@ -40,6 +52,7 @@ import { PLANS_API_PREFIX } from '../protocol.js';
 import type { AccountStore } from '../accounts/account-store.js';
 import type { Logger } from '../logger.js';
 import { asString } from '../lib/json.js';
+import { createIpRateLimit } from '../lib/ip-rate-limit.js';
 import { getRequestSession } from './bearer-auth.js';
 import { handleNotFound } from './error-middleware.js';
 
@@ -100,6 +113,42 @@ export const PLANS_UPSTREAM_UNREACHABLE = 'plans-upstream-unreachable';
 export const PLANS_UPSTREAM_TIMEOUT = 'plans-upstream-timeout';
 export const PLANS_UPSTREAM_INVALID = 'plans-upstream-invalid';
 
+/**
+ * The one anonymous path, relative to {@link PLANS_API_PREFIX}. The biller
+ * serves the same suffix under its own base, so `GET /v1/plans/prices` is
+ * `GET <PLANS_UPSTREAM_URL>/prices` there.
+ */
+export const PLANS_PRICES_PATH = '/prices';
+
+/**
+ * How long a price list from the biller is kept here, in milliseconds.
+ *
+ * FIVE MINUTES, and the same five minutes a browser is told it may keep the
+ * answer ({@link PLANS_PRICES_CACHE_CONTROL} is built from this number, so the
+ * two cannot drift). A price changes when somebody edits it at the payment
+ * provider and restarts the biller, which is rare; a sign-up screen is opened far more
+ * often. Only a `200` is kept: a refusal or a broken biller is asked again on
+ * the next request.
+ */
+export const PLANS_PRICES_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/** The `Cache-Control` a `200` price list carries. Public: the answer is the same for everybody. */
+export const PLANS_PRICES_CACHE_CONTROL = `public, max-age=${PLANS_PRICES_CACHE_TTL_MS / 1000}`;
+
+/**
+ * Price list reads one source address may make in any trailing minute.
+ *
+ * ONE A SECOND, which is generous on purpose. The read is anonymous, so many
+ * people behind one mobile carrier's address share the bucket, and the answer
+ * is served from memory, so a read costs this service almost nothing. The
+ * bound is there to stop a loop or a script, not a person opening the screen
+ * twice.
+ */
+export const PLANS_PRICES_RATE_LIMIT_PER_MINUTE = 60;
+
+/** The `429` code of the price list, in the §4 envelope. Its own, so a client can tell it from any other limit. */
+export const PLANS_PRICES_RATE_LIMITED = 'plans-prices-rate-limited';
+
 /** What an operator configured, already validated both-or-neither by `config.ts`. */
 export interface PlansUpstreamConfig {
   /** Absolute http(s) base URL of the biller's internal plans surface, with no trailing slash. */
@@ -129,6 +178,8 @@ export interface PlansRouteOptions {
    */
   accounts: AccountStore;
   logger: Logger;
+  /** The app's clock, which ages the cached price list and drives its rate limit. Injected so a test moves time instead of waiting. */
+  now: () => Date;
 }
 
 /** `body-parser` marks its own failures with this `type`. */
@@ -330,6 +381,101 @@ function createPlansForwarder(options: PlansRouteOptions): RequestHandler {
   };
 }
 
+/** A relayed answer the price list keeps: always a `200`, see {@link PLANS_PRICES_CACHE_TTL_MS}. */
+interface CachedPrices {
+  at: number;
+  outcome: Extract<UpstreamOutcome, { ok: true }>;
+}
+
+/**
+ * Reads the biller's price list, from memory when a `200` younger than
+ * {@link PLANS_PRICES_CACHE_TTL_MS} is held.
+ *
+ * ONE LOAD IN FLIGHT IS SHARED, so readers who arrive together on a cold
+ * entry are one call to the biller, not one each. The load is cleared on every
+ * outcome, so a biller that failed once is asked again by the next reader.
+ *
+ * THE OUTBOUND HEADERS ARE BUILT FROM NOTHING, per call, and carry the secret
+ * alone. There is no request to copy from here: the reader never sees one.
+ */
+function createPlansPricesReader(input: {
+  upstream: PlansUpstreamConfig;
+  timeoutMs: number;
+  now: () => number;
+}): () => Promise<UpstreamOutcome> {
+  const resolved = resolveUpstreamTarget({ baseUrl: input.upstream.baseUrl, suffix: PLANS_PRICES_PATH });
+  // Unreachable with a base `config.ts` accepted; a boot failure rather than a
+  // price list that silently never loads.
+  if (resolved === null) throw new Error('PLANS_UPSTREAM_URL cannot carry the price list path');
+  const target: string = resolved;
+  let cached: CachedPrices | null = null;
+  let inFlight: Promise<UpstreamOutcome> | null = null;
+
+  async function load(): Promise<UpstreamOutcome> {
+    const headers = new Headers();
+    headers.set('X-Plans-Secret', input.upstream.secret);
+    const outcome = await callUpstream({ target, timeoutMs: input.timeoutMs, method: 'GET', headers, body: null });
+    if (outcome.ok && outcome.status === 200) cached = { at: input.now(), outcome };
+    return outcome;
+  }
+
+  return async function readPlansPrices(): Promise<UpstreamOutcome> {
+    if (cached !== null && input.now() - cached.at < PLANS_PRICES_CACHE_TTL_MS) return cached.outcome;
+    if (inFlight !== null) return inFlight;
+    inFlight = load();
+    try {
+      return await inFlight;
+    } finally {
+      inFlight = null;
+    }
+  };
+}
+
+/**
+ * Lets only `GET` into the anonymous route. Express answers a `HEAD` with a
+ * `GET` route, and a `HEAD` here would be a second anonymous method; it is
+ * sent on to the authenticated subtree instead, which answers it exactly as it
+ * answered before this route existed.
+ */
+function admitOnlyGet(req: Request, _res: Response, next: NextFunction): void {
+  if (req.method !== 'GET') {
+    next('route');
+    return;
+  }
+  next();
+}
+
+/**
+ * `GET /v1/plans/prices`: the biller's answer, its status and its JSON body,
+ * with `Content-Type` and, on a `200`, {@link PLANS_PRICES_CACHE_CONTROL}. A
+ * biller that cannot be read is the same `502` envelope the rest of the
+ * subtree gives.
+ */
+function createPlansPricesHandler(options: { read: () => Promise<UpstreamOutcome>; logger: Logger }): RequestHandler {
+  return function servePlansPrices(_req: Request, res: Response, next: NextFunction): void {
+    void (async () => {
+      try {
+        const outcome = await options.read();
+        if (!outcome.ok) {
+          // The status and the path, as the forwarder logs a refusal.
+          options.logger.warn('Plans upstream refused', {
+            status: 502,
+            path: `${PLANS_API_PREFIX}${PLANS_PRICES_PATH}`,
+          });
+          res.status(502).json({ error: outcome.code });
+          return;
+        }
+        if (outcome.contentType !== null) res.setHeader('Content-Type', outcome.contentType);
+        if (outcome.status === 200) res.setHeader('Cache-Control', PLANS_PRICES_CACHE_CONTROL);
+        // `end`, not `send`, for the reason the forwarder gives.
+        res.status(outcome.status).end(outcome.body);
+      } catch (cause) {
+        next(cause);
+      }
+    })();
+  };
+}
+
 /** The 405 for every verb that is not forwarded. It never reaches the upstream, and it never reads a body. */
 function refuseMethod(req: Request, res: Response, next: NextFunction): void {
   if (FORWARDED_METHODS.has(req.method)) {
@@ -368,12 +514,30 @@ function handlePlansBodyError(cause: unknown, _req: Request, res: Response, next
 export function registerPlansRoutes(app: Express, options: PlansRouteOptions): void {
   const router = express.Router();
   const forward = createPlansForwarder(options);
+  const nowMs = (): number => options.now().getTime();
+  const readPrices = createPlansPricesReader({
+    upstream: options.upstream,
+    timeoutMs: options.upstream.timeoutMs ?? PLANS_UPSTREAM_TIMEOUT_MS,
+    now: nowMs,
+  });
 
-  // THE ORDER IS THE POLICY. Authentication first, so an anonymous probe gets
+  // THE ORDER IS THE POLICY. The one anonymous route first, and it is one
+  // path and one method: the price list a sign-up screen shows before anybody
+  // has an account. Authentication next, so every other anonymous probe gets
   // the ordinary 401 the rest of the authenticated surface gives and learns
-  // nothing about which verbs exist. The method refusal second, so a `DELETE`
-  // is answered before any parser has read a byte of it. The parser third,
+  // nothing about which verbs exist. The method refusal third, so a `DELETE`
+  // is answered before any parser has read a byte of it. The parser last,
   // and only on the route that can carry a body.
+  router.get(
+    PLANS_PRICES_PATH,
+    admitOnlyGet,
+    createIpRateLimit({
+      perMinute: PLANS_PRICES_RATE_LIMIT_PER_MINUTE,
+      refusal: PLANS_PRICES_RATE_LIMITED,
+      now: nowMs,
+    }),
+    createPlansPricesHandler({ read: readPrices, logger: options.logger }),
+  );
   router.use(options.requireAuth);
   router.use(refuseMethod);
   router.get('/*', forward);

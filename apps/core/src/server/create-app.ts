@@ -656,14 +656,19 @@ export function createApp(options: CreateAppOptions): Express {
   // handed the account store because `X-Account-Email` is read from the row
   // and never from the request, and the bearer middleware because the subtree
   // is authenticated: an anonymous caller here gets the ordinary 401 the rest
-  // of the authenticated surface gives. The unconfigured case was pinned to a
-  // 404 above, ahead of everything. See `server/plans-proxy.ts`.
+  // of the authenticated surface gives. The ONE exception is `GET
+  // /v1/plans/prices`, the price list a sign-up screen shows, which the router
+  // mounts ahead of its own gate and forwards with no account header. The
+  // clock ages that list's cache. The unconfigured case was pinned to a 404
+  // above, ahead of everything, and it covers the price list too. See
+  // `server/plans-proxy.ts`.
   if (plans !== null) {
     registerPlansRoutes(app, {
       upstream: plans,
       requireAuth,
       accounts: options.authContext.store,
       logger: options.logger,
+      now,
     });
   }
 
