@@ -1,0 +1,3592 @@
+{
+  "01": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "whole wheat toast",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a slice",
+          "macrosPer100g": {
+            "carbs": 67,
+            "fiber": 7,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 10,
+            "fat": 1,
+            "kcal": 267
+          }
+        },
+        {
+          "name": "bacon",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 27,
+            "fat": 46,
+            "kcal": 400
+          }
+        },
+        {
+          "name": "baked beans",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 20,
+            "fiber": 6,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 4,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "scrambled eggs",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a serving",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 13,
+            "fat": 10,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "cucumber slices",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0.7,
+            "sugars": 0.6,
+            "polyols": null,
+            "protein": 0.8,
+            "fat": 0.1,
+            "kcal": 15
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a few links",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 15,
+            "fat": 35,
+            "kcal": 300
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 146590.9460510593,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 672,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 10876
+    }
+  },
+  "02": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "Yorkshire pudding",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a medium-sized portion",
+          "macrosPer100g": {
+            "carbs": 23,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 6,
+            "fat": 8,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "roast beef",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 26,
+            "fat": 20,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "mixed vegetables",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 30
+          }
+        },
+        {
+          "name": "gravy",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small spoonful",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 2,
+            "fat": 1,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 101052.24594299216,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1907,
+      "completion_tokens": 449,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 10528
+    }
+  },
+  "03": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled salmon",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 13,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 2,
+            "kcal": 20
+          }
+        },
+        {
+          "name": "feta cheese",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 25,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "avocado",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small slice",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 6,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 15,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "black olives",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a few olives",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 93995.96988293342,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1287,
+      "completion_tokens": 561,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 10181
+    }
+  },
+  "04": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "cheeseburger",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "a large burger",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 20,
+            "fat": 30,
+            "kcal": 400
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 90,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 2,
+            "fat": 3,
+            "kcal": 360
+          }
+        },
+        {
+          "name": "pickles",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "two pickle spears",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 20
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 72006.95017992985,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1547,
+      "completion_tokens": 342,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 9931
+    }
+  },
+  "05": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "white rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 78,
+            "fiber": 0.4,
+            "sugars": 0.4,
+            "polyols": null,
+            "protein": 2.7,
+            "fat": 0.2,
+            "kcal": 365
+          }
+        },
+        {
+          "name": "chicken curry with greens",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 1.5,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 20,
+            "fat": 10,
+            "kcal": 170
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 73584.9995049648,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 249,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 9347
+    }
+  },
+  "06": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "sushi roll",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 27,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 5,
+            "fat": 5,
+            "kcal": 210
+          }
+        },
+        {
+          "name": "sashimi",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 20,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "wasabi",
+          "estimatedGrams": 5,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 0
+          }
+        },
+        {
+          "name": "pickled ginger",
+          "estimatedGrams": 10,
+          "confidence": "high",
+          "portionHint": "a small piece",
+          "macrosPer100g": {
+            "carbs": 9,
+            "fiber": 0,
+            "sugars": 8,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 34
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 140093.4475690592,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 439,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 8984
+    }
+  },
+  "07": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "spaghetti with meat sauce and vegetables",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 70,
+            "fiber": 3,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 12,
+            "fat": 5,
+            "kcal": 160
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 93797.65656602103,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 131,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 8603
+    }
+  },
+  "08": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "yogurt",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 4,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 0,
+            "kcal": 59
+          }
+        },
+        {
+          "name": "granola",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 50,
+            "fiber": 3,
+            "sugars": 15,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 10,
+            "kcal": 245
+          }
+        },
+        {
+          "name": "apple slices",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 13,
+            "fiber": 2,
+            "sugars": 11,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 52
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 87805.49901502673,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 343,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 7830
+    }
+  },
+  "09": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "pizza",
+          "estimatedGrams": 1200,
+          "confidence": "high",
+          "portionHint": "entire pizza",
+          "macrosPer100g": {
+            "carbs": 47,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 15,
+            "fat": 26,
+            "kcal": 279
+          }
+        },
+        {
+          "name": "cola",
+          "estimatedGrams": 355,
+          "confidence": "high",
+          "portionHint": "one can",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 0,
+            "sugars": 10,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 42
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 109631.46265596151,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 232,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 7593
+    }
+  },
+  "10": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "club sandwich",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "one half of a sandwich",
+          "macrosPer100g": {
+            "carbs": 32,
+            "fiber": 3,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 15,
+            "fat": 18,
+            "kcal": 320
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        },
+        {
+          "name": "pepsi max",
+          "estimatedGrams": 450,
+          "confidence": "high",
+          "portionHint": "a bottle",
+          "macrosPer100g": {
+            "carbs": 104,
+            "fiber": 0,
+            "sugars": 104,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 410
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 156203.26201501302,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 3507,
+      "completion_tokens": 344,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 6975
+    }
+  },
+  "11": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fried fish",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large portion",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 15,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 97,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 3,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 2,
+            "kcal": 35
+          }
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 25,
+          "confidence": "medium",
+          "portionHint": "a small dollop",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 15,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 114660.35186697263,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 454,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 6586
+    }
+  },
+  "12": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled sausages",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 30,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "mashed potatoes",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 17,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "sauerkraut",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 104615.33321707975,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 350,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 6301
+    }
+  },
+  "13": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "macaroni and cheese",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 56,
+            "fiber": 1,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 12,
+            "fat": 12,
+            "kcal": 330
+          }
+        },
+        {
+          "name": "caramelized onions",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 1,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 26
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 120,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 3,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 278775.0102300197,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 343,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 6040
+    }
+  },
+  "14": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "beef stew with potatoes",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 22,
+            "fat": 14,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 25
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 596702.2350140614,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 235,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 5686
+    }
+  },
+  "18": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "potato salad",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "dumplings",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 5,
+            "fat": 2,
+            "kcal": 150
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 94695.66809100001,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 235,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 44530
+    }
+  },
+  "19": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fried french fries",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 93,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 4,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "grilled pork",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 27,
+            "fat": 26,
+            "kcal": 292
+          }
+        },
+        {
+          "name": "sausage in sauce",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 12,
+            "fat": 30,
+            "kcal": 220
+          }
+        },
+        {
+          "name": "yogurt sauce",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "two spoonfuls",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 5,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 0,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 110366.15800699996,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1627,
+      "completion_tokens": 461,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 44560
+    }
+  },
+  "20": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "ramen noodles",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 75,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 10,
+            "fat": 0,
+            "kcal": 360
+          }
+        },
+        {
+          "name": "chicken breast",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 31,
+            "fat": 1.5,
+            "kcal": 165
+          }
+        },
+        {
+          "name": "herbs",
+          "estimatedGrams": 10,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 10,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 103228.30272700003,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2387,
+      "completion_tokens": 343,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 44046
+    }
+  },
+  "21": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "pho",
+          "estimatedGrams": 450,
+          "confidence": "high",
+          "portionHint": "a large bowl",
+          "macrosPer100g": {
+            "carbs": 60,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "bean sprouts",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        },
+        {
+          "name": "fresh herbs",
+          "estimatedGrams": 30,
+          "confidence": "medium",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 79950.96877299988,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 337,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 43671
+    }
+  },
+  "22": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "tacos",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "three tacos",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "grilled corn on the cob",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "one cob",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 2,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 2,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "soda",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "one glass",
+          "macrosPer100g": {
+            "carbs": 11,
+            "fiber": null,
+            "sugars": 11,
+            "polyols": null,
+            "protein": null,
+            "fat": null,
+            "kcal": 42
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 81611.0726190002,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 340,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 43204
+    }
+  },
+  "23": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "enchilada",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "a large burrito-sized portion",
+          "macrosPer100g": {
+            "carbs": 30,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 15,
+            "fat": 18,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "salsa",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 30
+          }
+        },
+        {
+          "name": "shredded cheese",
+          "estimatedGrams": 60,
+          "confidence": "medium",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 25,
+            "fat": 33,
+            "kcal": 340
+          }
+        },
+        {
+          "name": "lettuce",
+          "estimatedGrams": 50,
+          "confidence": "medium",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 15
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 81007.35009200002,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1387,
+      "completion_tokens": 451,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 42739
+    }
+  },
+  "24": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fish and chips",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "a large portion",
+          "macrosPer100g": {
+            "carbs": 78,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 28,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "green peas",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 2,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 40
+          }
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 30,
+          "confidence": "medium",
+          "portionHint": "a small serving",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 4,
+            "kcal": 40
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 90950.92398399994,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 342,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 42546
+    }
+  },
+  "25": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "pancakes",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 37,
+            "fiber": 1,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 5,
+            "fat": 2,
+            "kcal": 170
+          }
+        },
+        {
+          "name": "fried egg",
+          "estimatedGrams": 70,
+          "confidence": "high",
+          "portionHint": "a single large egg",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": null,
+            "sugars": null,
+            "polyols": null,
+            "protein": 13,
+            "fat": 11,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "bacon",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a few slices",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": null,
+            "sugars": null,
+            "polyols": null,
+            "protein": 25,
+            "fat": 45,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 90,
+          "confidence": "high",
+          "portionHint": "two sausages",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": null,
+            "sugars": null,
+            "polyols": null,
+            "protein": 18,
+            "fat": 35,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "toast",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 3,
+            "fat": 1,
+            "kcal": 200
+          }
+        },
+        {
+          "name": "hash browns",
+          "estimatedGrams": 70,
+          "confidence": "high",
+          "portionHint": "a small portion",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2,
+            "fat": 10,
+            "kcal": 140
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 119405.46527200013,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 659,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 42182
+    }
+  },
+  "26": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fried rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 27,
+            "fiber": 0.4,
+            "sugars": 0.1,
+            "polyols": null,
+            "protein": 2.6,
+            "fat": 1.6,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "roti",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small stack",
+          "macrosPer100g": {
+            "carbs": 75,
+            "fiber": 1,
+            "sugars": 0.1,
+            "polyols": null,
+            "protein": 5,
+            "fat": 1.5,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "dal",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 60,
+            "fiber": 5,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 8,
+            "fat": 3,
+            "kcal": 170
+          }
+        },
+        {
+          "name": "curry",
+          "estimatedGrams": 60,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 2,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 6,
+            "fat": 10,
+            "kcal": 120
+          }
+        },
+        {
+          "name": "yogurt",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 3,
+            "fat": 0,
+            "kcal": 50
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 104151.62145699991,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1707,
+      "completion_tokens": 567,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 41795
+    }
+  },
+  "27": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "chicken with sauce and vegetables",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 8,
+            "fiber": 1,
+            "sugars": 6,
+            "polyols": null,
+            "protein": 25,
+            "fat": 10,
+            "kcal": 170
+          }
+        },
+        {
+          "name": "white rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large scoop",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 130
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 63506.0529079999,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1707,
+      "completion_tokens": 237,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 41455
+    }
+  },
+  "28": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "falafel",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "about half a plate",
+          "macrosPer100g": {
+            "carbs": 22,
+            "fiber": 6,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 12,
+            "fat": 10,
+            "kcal": 230
+          }
+        },
+        {
+          "name": "yellow lentils",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 70,
+            "fiber": 12,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 9,
+            "fat": 0,
+            "kcal": 170
+          }
+        },
+        {
+          "name": "beetroot",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 9,
+            "fiber": 3,
+            "sugars": 5,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 45
+          }
+        },
+        {
+          "name": "white bean salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 4,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 6,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "pita bread",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 6,
+            "fat": 2,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "tahini sauce",
+          "estimatedGrams": 30,
+          "confidence": "medium",
+          "portionHint": "a small dollop",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 6,
+            "fat": 55,
+            "kcal": 450
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 119621.21692600021,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 670,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 41059
+    }
+  },
+  "29": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "sliced salami",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 35,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "cubed cheese",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 35,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "green olives",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 20,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "pickled vegetables",
+          "estimatedGrams": 30,
+          "confidence": "medium",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1,
+            "sugars": 4,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 93079.08088099999,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 454,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 40666
+    }
+  },
+  "30": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled chicken breast",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a medium-sized portion",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 31,
+            "fat": 14,
+            "kcal": 239
+          }
+        },
+        {
+          "name": "grilled pork chop",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large portion",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 26,
+            "fat": 30,
+            "kcal": 296
+          }
+        },
+        {
+          "name": "baked potato",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a medium-sized potato",
+          "macrosPer100g": {
+            "carbs": 17,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 77
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 15
+          }
+        },
+        {
+          "name": "grilled sausage",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "a small link",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 15,
+            "fat": 40,
+            "kcal": 240
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 104045.59245799987,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1707,
+      "completion_tokens": 568,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 40320
+    }
+  },
+  "31": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "beef stew",
+          "estimatedGrams": 300,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 26,
+            "fat": 22,
+            "kcal": 260
+          }
+        },
+        {
+          "name": "whole wheat toast",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 49,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 9,
+            "fat": 1,
+            "kcal": 216
+          }
+        },
+        {
+          "name": "butter",
+          "estimatedGrams": 20,
+          "confidence": "medium",
+          "portionHint": "a small pat",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 81,
+            "kcal": 710
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 69068.66809999975,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1547,
+      "completion_tokens": 345,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 39929
+    }
+  },
+  "32": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "olives",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "about half the top section",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 20,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "vegetable sticks",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 25
+          }
+        },
+        {
+          "name": "hard-boiled eggs",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about 6 halves",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 13,
+            "fat": 11,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "cheese",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 35,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "meat",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "about half the right section",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 25,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "dip",
+          "estimatedGrams": 50,
+          "confidence": "medium",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 0,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 7,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 193055.41417199993,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 3467,
+      "completion_tokens": 677,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 38855
+    }
+  },
+  "33": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "oatmeal",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "a large bowl",
+          "macrosPer100g": {
+            "carbs": 76,
+            "fiber": 4,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 6,
+            "fat": 4,
+            "kcal": 389
+          }
+        },
+        {
+          "name": "maple syrup",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a spoonful",
+          "macrosPer100g": {
+            "carbs": 81,
+            "fiber": 0,
+            "sugars": 81,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "raisins",
+          "estimatedGrams": 20,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 81,
+            "fiber": 6,
+            "sugars": 69,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 256
+          }
+        },
+        {
+          "name": "peanut butter",
+          "estimatedGrams": 25,
+          "confidence": "high",
+          "portionHint": "a dollop",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 9,
+            "fat": 50,
+            "kcal": 588
+          }
+        },
+        {
+          "name": "cinnamon",
+          "estimatedGrams": 5,
+          "confidence": "medium",
+          "portionHint": null,
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 0
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 105470.69763700028,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 551,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 38408
+    }
+  },
+  "34": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "waffles",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 1,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 5,
+            "fat": 3,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "strawberry sauce",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 1,
+            "sugars": 8,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 50
+          }
+        },
+        {
+          "name": "whipped cream",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "three dollops",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0,
+            "fat": 35,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "strawberries",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 131099.68877300026,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2747,
+      "completion_tokens": 447,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 38034
+    }
+  },
+  "35": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled meat",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 20,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 18,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 30
+          }
+        },
+        {
+          "name": "yogurt sauce",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a small dollop",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 3,
+            "fat": 0,
+            "kcal": 60
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 82737.53015800002,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1587,
+      "completion_tokens": 454,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 37561
+    }
+  },
+  "36": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "seafood paella",
+          "estimatedGrams": 500,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 12,
+            "fat": 3,
+            "kcal": 170
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 53300.50159300026,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 128,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 37321
+    }
+  },
+  "37": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "potsticker dumplings",
+          "estimatedGrams": 350,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 28,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 10,
+            "fat": 2,
+            "kcal": 140
+          }
+        },
+        {
+          "name": "coleslaw",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 1,
+            "sugars": 3,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 66907.51441099973,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 235,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 36934
+    }
+  },
+  "38": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "hamburger",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 20,
+            "fiber": 3,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 20,
+            "fat": 25,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 95,
+            "fiber": 3,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 2,
+            "fat": 16,
+            "kcal": 360
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 63881.00857000018,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1707,
+      "completion_tokens": 237,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 36639
+    }
+  },
+  "39": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "baked beans",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 23,
+            "fiber": 5,
+            "sugars": 11,
+            "polyols": null,
+            "protein": 6,
+            "fat": 1,
+            "kcal": 130
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 75,
+          "confidence": "high",
+          "portionHint": "a few pieces",
+          "macrosPer100g": {
+            "carbs": 1,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 17,
+            "fat": 37,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "bacon",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a few strips",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 26,
+            "fat": 55,
+            "kcal": 410
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 79132.42426099986,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1787,
+      "completion_tokens": 342,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 36397
+    }
+  },
+  "40": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "beef stew",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 5,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 25,
+            "fat": 15,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a fist-sized portion",
+          "macrosPer100g": {
+            "carbs": 95,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 4,
+            "kcal": 365
+          }
+        },
+        {
+          "name": "fried egg",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small half",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 13,
+            "fat": 10,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "tomato",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small slice",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 18
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 92849.28757800025,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 450,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 36128
+    }
+  },
+  "41": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fried fish",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 20,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "potato wedges",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 17,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 120
+          }
+        },
+        {
+          "name": "tartar sauce",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a large spoonful",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 0,
+            "sugars": 3,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 15,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 82757.51441900001,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1907,
+      "completion_tokens": 349,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35603
+    }
+  },
+  "42": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "breaded chicken breast",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a large piece",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 31,
+            "fat": 16,
+            "kcal": 285
+          }
+        },
+        {
+          "name": "rice",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 77,
+            "fiber": 0.4,
+            "sugars": 0.1,
+            "polyols": 0,
+            "protein": 7,
+            "fat": 0.3,
+            "kcal": 365
+          }
+        },
+        {
+          "name": "curry with chickpeas",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 12,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 1,
+            "kcal": 135
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a few links",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 16,
+            "fat": 42,
+            "kcal": 360
+          }
+        },
+        {
+          "name": "corn and onion salad",
+          "estimatedGrams": 80,
+          "confidence": "medium",
+          "portionHint": "a small portion",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 1,
+            "sugars": 5,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 90
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 107946.02383900019,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 573,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35369
+    }
+  },
+  "43": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "bread",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "one slice",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 7,
+            "fat": 1,
+            "kcal": 265
+          }
+        },
+        {
+          "name": "rice",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 76,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 350
+          }
+        },
+        {
+          "name": "green beans",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 3,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 32
+          }
+        },
+        {
+          "name": "fried fish cake",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "two pieces",
+          "macrosPer100g": {
+            "carbs": 13,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 16,
+            "fat": 11,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "creamed sauce",
+          "estimatedGrams": 30,
+          "confidence": "medium",
+          "portionHint": "a small dollop",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 0,
+            "fat": 10,
+            "kcal": 90
+          }
+        },
+        {
+          "name": "bowl of grits with bacon",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 76,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0,
+            "kcal": 350
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 119470.56534000012,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 663,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35073
+    }
+  },
+  "44": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "stewed meat with cabbage",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1,
+            "sugars": 2,
+            "polyols": null,
+            "protein": 20,
+            "fat": 10,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "yellow rice",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 75,
+            "fiber": 0.5,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 2,
+            "fat": 0.5,
+            "kcal": 300
+          }
+        },
+        {
+          "name": "black beans",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 21,
+            "fiber": 7,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 8,
+            "fat": 0.5,
+            "kcal": 120
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 2,
+            "sugars": 0.5,
+            "polyols": null,
+            "protein": 0.5,
+            "fat": 0.2,
+            "kcal": 25
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 95328.35018300012,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 462,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 34891
+    }
+  },
+  "45": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "kimchi",
+          "estimatedGrams": 50,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 27
+          }
+        },
+        {
+          "name": "steamed rice",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 77,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 346
+          }
+        },
+        {
+          "name": "grilled fish",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 1,
+            "kcal": 100
+          }
+        },
+        {
+          "name": "tofu",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 17,
+            "fat": 5,
+            "kcal": 120
+          }
+        },
+        {
+          "name": "stew",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 10,
+            "fiber": 2,
+            "sugars": 2,
+            "polyols": 0,
+            "protein": 8,
+            "fat": 3,
+            "kcal": 90
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 60,
+          "confidence": "high",
+          "portionHint": "a small plate",
+          "macrosPer100g": {
+            "carbs": 2,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 30
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 119052.10820599996,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 663,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35380
+    }
+  },
+  "46": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "steamed beef tripe",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 15,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "steamed beef offal",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 15,
+            "kcal": 150
+          }
+        },
+        {
+          "name": "steamed tofu skin",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 15,
+            "fiber": 5,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 5,
+            "kcal": 100
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 80899.12200400022,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 354,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 34972
+    }
+  },
+  "47": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "avocado toast",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "two slices",
+          "macrosPer100g": {
+            "carbs": 6,
+            "fiber": 6,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 6,
+            "kcal": 160
+          }
+        },
+        {
+          "name": "bowl of granola with kiwi and berry compote",
+          "estimatedGrams": 150,
+          "confidence": "medium",
+          "portionHint": "small bowl",
+          "macrosPer100g": {
+            "carbs": 65,
+            "fiber": 5,
+            "sugars": 15,
+            "polyols": 0,
+            "protein": 5,
+            "fat": 4,
+            "kcal": 270
+          }
+        },
+        {
+          "name": "chocolate sesame donut",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "small donut",
+          "macrosPer100g": {
+            "carbs": 60,
+            "fiber": 0,
+            "sugars": 40,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 8,
+            "kcal": 400
+          }
+        },
+        {
+          "name": "iced coffee with latte art",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "small cup",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 0
+          }
+        },
+        {
+          "name": "iced coffee with coffee beans",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "small glass",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 0
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 124990.90649899971,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 2227,
+      "completion_tokens": 572,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 34793
+    }
+  },
+  "48": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "slice of cake",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 24,
+            "fiber": 0,
+            "sugars": 16,
+            "polyols": null,
+            "protein": 2,
+            "fat": 4,
+            "kcal": 330
+          }
+        },
+        {
+          "name": "potato chips",
+          "estimatedGrams": 80,
+          "confidence": "high",
+          "portionHint": "a small handful",
+          "macrosPer100g": {
+            "carbs": 63,
+            "fiber": 1,
+            "sugars": 0,
+            "polyols": null,
+            "protein": 1,
+            "fat": 26,
+            "kcal": 540
+          }
+        },
+        {
+          "name": "sandwich",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "one triangular slice",
+          "macrosPer100g": {
+            "carbs": 32,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 8,
+            "fat": 5,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "fried samosas",
+          "estimatedGrams": 40,
+          "confidence": "high",
+          "portionHint": "a few small pieces",
+          "macrosPer100g": {
+            "carbs": 25,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": null,
+            "protein": 5,
+            "fat": 18,
+            "kcal": 220
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 79023.73685600015,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1395,
+      "completion_tokens": 454,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35076
+    }
+  },
+  "49": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "steak with sauce",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 26,
+            "fat": 15,
+            "kcal": 280
+          }
+        },
+        {
+          "name": "spaghetti with sauce and cherry tomatoes",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 75,
+            "fiber": 2,
+            "sugars": 6,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 2,
+            "kcal": 155
+          }
+        },
+        {
+          "name": "bread roll",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small roll",
+          "macrosPer100g": {
+            "carbs": 48,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 7,
+            "fat": 2,
+            "kcal": 240
+          }
+        },
+        {
+          "name": "soup",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 1,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 2,
+            "kcal": 25
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 94807.89646199992,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 459,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35146
+    }
+  },
+  "50": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled lamb",
+          "estimatedGrams": 250,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 26,
+            "fat": 28,
+            "kcal": 285
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a fist-sized portion",
+          "macrosPer100g": {
+            "carbs": 97,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 4,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 20
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 80790.42159600022,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 346,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 35090
+    }
+  },
+  "15": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "white sausage",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 30,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "pretzel",
+          "estimatedGrams": 120,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 45,
+            "fiber": 3,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 10,
+            "fat": 2,
+            "kcal": 340
+          }
+        },
+        {
+          "name": "beer",
+          "estimatedGrams": 500,
+          "confidence": "high",
+          "portionHint": "a pint glass",
+          "macrosPer100g": {
+            "carbs": 4,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 0,
+            "fat": 0,
+            "kcal": 43
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 90887.94392599993,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1587,
+      "completion_tokens": 343,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 46291
+    }
+  },
+  "16": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "grilled meat with sauce",
+          "estimatedGrams": 200,
+          "confidence": "high",
+          "portionHint": "about half the plate",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 25,
+            "fat": 30,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "french fries",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 93,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 2,
+            "fat": 3,
+            "kcal": 360
+          }
+        },
+        {
+          "name": "side salad",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a small bowl",
+          "macrosPer100g": {
+            "carbs": 3,
+            "fiber": 2,
+            "sugars": 1,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 2,
+            "kcal": 35
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 82433.00263899982,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1827,
+      "completion_tokens": 347,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 45998
+    }
+  },
+  "17": {
+    "single_qwen_vl": {
+      "foods": [
+        {
+          "name": "fried potato sticks",
+          "estimatedGrams": 150,
+          "confidence": "high",
+          "portionHint": "a large handful",
+          "macrosPer100g": {
+            "carbs": 77,
+            "fiber": 2,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 1,
+            "kcal": 310
+          }
+        },
+        {
+          "name": "sausage",
+          "estimatedGrams": 100,
+          "confidence": "high",
+          "portionHint": "a large bite",
+          "macrosPer100g": {
+            "carbs": 0,
+            "fiber": 0,
+            "sugars": 0,
+            "polyols": 0,
+            "protein": 20,
+            "fat": 30,
+            "kcal": 250
+          }
+        },
+        {
+          "name": "tomato sauce",
+          "estimatedGrams": 30,
+          "confidence": "high",
+          "portionHint": "a small spoonful",
+          "macrosPer100g": {
+            "carbs": 7,
+            "fiber": 2,
+            "sugars": 4,
+            "polyols": 0,
+            "protein": 1,
+            "fat": 0,
+            "kcal": 25
+          }
+        }
+      ],
+      "notes": null,
+      "latency_ms": 78052.64058300054,
+      "cost_usd": 0.0,
+      "raw_ok": true,
+      "prompt_tokens": 1707,
+      "completion_tokens": 344,
+      "raw_text": null,
+      "model": "qwen-vl",
+      "mem_available_mb_after": 45649
+    }
+  },
+  "_summary": {
+    "total_cost_usd": 0.0,
+    "per_approach_cost_usd": {
+      "single_qwen_vl": 0.0
+    },
+    "failures": [],
+    "config_name": "local-cpu-v2",
+    "config_path": "configs/local-cpu-v2.json",
+    "approaches": [
+      "single_qwen_vl"
+    ],
+    "approach_configs": {
+      "single_qwen_vl": {
+        "type": "single",
+        "model": "qwen_vl",
+        "label": "Qwen3-VL-8B single-shot (production prompt), CPU"
+      }
+    },
+    "models": {
+      "lfm_vl": {
+        "id": "lfm-vl",
+        "provider": "local_lfm_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-VL-1.6B Q8_0 via llama-server --jinja --mmproj. Held constant across every ensemble in this config so the judge is the only variable."
+      },
+      "lfm_judge": {
+        "id": "lfm-judge",
+        "provider": "local_lfm_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "LFM2.5-2.6B Q8_0, text-only, reasoning OFF. Same server as local-cpu.json \u2014 what changes vs the 2026-08-11 run is the harness side: hardened judge prompt + bounded judge schema (maxItems 6), which llama-server compiles into the GBNF."
+      },
+      "qwen_vl": {
+        "id": "qwen-vl",
+        "provider": "local_qwen_vl",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-VL-8B, single-shot only. The cloud pilot's best single-shot row (92.9% recall) was this model \u2014 this measures what it costs on CPU locally."
+      },
+      "qwen_judge": {
+        "id": "qwen-judge",
+        "provider": "local_qwen_judge",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Qwen3-4B, text-only judge \u2014 the 'try a stronger judge' lever from runs/2026-08-11-local-lfm/SCORING.md finding 2."
+      },
+      "lfm_judge_think": {
+        "id": "lfm-judge-think",
+        "provider": "local_lfm_judge_think",
+        "price_per_mtok_in": 0,
+        "price_per_mtok_out": 0,
+        "use_json_schema": true,
+        "_note": "Same LFM2.5-2.6B weights as lfm_judge but served with bounded reasoning ENABLED \u2014 the 'judge is only 1 call, spend the ~60s there' lever. Longer timeout because the reasoning trace precedes the JSON."
+      }
+    },
+    "fan_out_override": null,
+    "images": [
+      "01.jpg",
+      "02.jpg",
+      "03.jpg",
+      "04.jpg",
+      "05.jpg",
+      "06.jpg",
+      "07.jpg",
+      "08.jpg",
+      "09.jpg",
+      "10.jpg",
+      "11.jpg",
+      "12.jpg",
+      "13.jpg",
+      "14.jpg",
+      "15.jpg",
+      "16.jpg",
+      "17.jpg",
+      "18.jpg",
+      "19.jpg",
+      "20.jpg",
+      "21.jpg",
+      "22.jpg",
+      "23.jpg",
+      "24.jpg",
+      "25.jpg",
+      "26.jpg",
+      "27.jpg",
+      "28.jpg",
+      "29.jpg",
+      "30.jpg",
+      "31.jpg",
+      "32.jpg",
+      "33.jpg",
+      "34.jpg",
+      "35.jpg",
+      "36.jpg",
+      "37.jpg",
+      "38.jpg",
+      "39.jpg",
+      "40.jpg",
+      "41.jpg",
+      "42.jpg",
+      "43.jpg",
+      "44.jpg",
+      "45.jpg",
+      "46.jpg",
+      "47.jpg",
+      "48.jpg",
+      "49.jpg",
+      "50.jpg"
+    ],
+    "started_at": "2026-08-12T14:39:43.896179+00:00",
+    "wall_seconds": 251.4,
+    "host": {
+      "hostname": "bluefin",
+      "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+      "python": "3.14.6",
+      "cpu_model": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cpu_count": 16,
+      "mem_total_mb": 62053,
+      "mem_available_mb_at_start": 45686
+    }
+  }
+}

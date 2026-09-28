@@ -1,0 +1,819 @@
+#!/usr/bin/env python3
+"""
+Benchmark three plate-identification approaches over a folder of plate photos,
+calling OpenRouter for vision inference. Stdlib only (urllib, json, base64,
+concurrent.futures, time) -- no pip installs.
+
+Approaches:
+  1. baseline        -- google/gemini-3.1-flash-lite, single call, production prompt.
+  2. single_qwen8b    -- qwen/qwen3-vl-8b-instruct, single call, production prompt.
+  3. ensemble_judge   -- google/gemma-4-26b-a4b-it, 5 parallel diverse-prompt calls,
+                         then a text-only judge call that merges the 5 candidates.
+
+The production system prompt and output JSON schema are ported verbatim/faithfully
+from openplate's app/services/vision/{prompt,schema}.ts so the benchmark reflects
+what actually ships.
+
+Usage:
+  python3 run_bench.py [--images-dir DIR] [--only IMAGE_ID] [--approach NAME]
+
+  --images-dir DIR   Directory containing NN.jpg images (default: ./images next to
+                      this script).
+  --only IMAGE_ID     Only run a single image, e.g. --only 03 (matches 03.jpg).
+  --approach NAME      Only run one approach: baseline | single_qwen8b | ensemble_judge
+                        (default: all three).
+
+Requires OPENROUTER_API_KEY in the environment. Respects https_proxy automatically
+via urllib -- do not strip it in the sandbox.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import concurrent.futures
+import json
+import mimetypes
+import os
+import re
+import socket
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Constants: models, pricing, endpoints
+# ---------------------------------------------------------------------------
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+MODEL_BASELINE = "google/gemini-3.1-flash-lite"
+MODEL_QWEN = "qwen/qwen3-vl-8b-instruct"
+MODEL_ENSEMBLE = "google/gemma-4-26b-a4b-it"
+
+# USD price per single token (not per million) -- computed from the per-million
+# figures given in the task so cost math downstream is a plain multiply.
+PRICING_PER_TOKEN = {
+    MODEL_BASELINE: {"in": 0.25 / 1_000_000, "out": 1.5 / 1_000_000},
+    MODEL_QWEN: {"in": 0.117 / 1_000_000, "out": 0.455 / 1_000_000},
+    MODEL_ENSEMBLE: {"in": 0.12 / 1_000_000, "out": 0.4 / 1_000_000},
+}
+
+HTTP_TIMEOUT_SECONDS = 120
+MAX_RETRIES = 3
+RETRY_BACKOFF_BASE_SECONDS = 2.0
+
+# ---------------------------------------------------------------------------
+# Ported verbatim from openplate/app/services/vision/prompt.ts
+# ---------------------------------------------------------------------------
+
+PLATE_IDENTIFICATION_SYSTEM_PROMPT = """You are a nutrition assistant that turns a single photo of a plate into a concise, useful food log.
+
+Log foods the way a person would, not the way a lab would:
+- Only list foods that meaningfully affect nutrition. Fold garnishes, herb sprigs, and decorations (e.g. a parsley garnish, a lemon wedge, a dusting of herbs) into the dish they sit on, or omit them -- never list them as separate items.
+- A sauce or dressing joins the dish it's on, unless it's clearly a substantial side of its own.
+- Prefer fewer, consolidated items. Aim for 6 or fewer. Combine components that are eaten together into one natural item when that better matches how someone would log it.
+- Name each item in plain language (e.g. "grilled chicken breast", not "protein"; "side salad", not "mixed leaves, tomato, cucumber").
+
+For each item you keep:
+- Estimate its portion size in grams. Be conservative -- when unsure, estimate on the lower end rather than overestimating.
+- Add a short everyday-size comparison in "portionHint" -- how a normal person would describe the amount, e.g. "about half the plate", "a fist-sized portion", "a small bowl", "two slices", "a large handful". Use null when nothing natural fits.
+- Rate your confidence in the identification as "high", "medium", or "low".
+- Estimate macronutrients per 100g (carbs, fiber, sugars, polyols, protein, fat, kcal) ONLY when you are reasonably confident. If you are not confident about a specific macro field, set it to null -- never guess a number, and never use 0 to mean "unknown". This matters most for fiber and sugar alcohols (polyols), which are easy to miss.
+
+Respond with JSON ONLY, matching exactly this shape (no markdown, no commentary outside the JSON):
+
+{
+  "foods": [
+    {
+      "name": "string",
+      "estimatedGrams": 0,
+      "confidence": "high | medium | low",
+      "portionHint": "string or null",
+      "macrosPer100g": {
+        "carbs": 0,
+        "fiber": 0,
+        "sugars": 0,
+        "polyols": 0,
+        "protein": 0,
+        "fat": 0,
+        "kcal": 0
+      }
+    }
+  ],
+  "notes": "string or null"
+}
+
+Every field must be present. "portionHint" may be null when no natural comparison fits. Each macro field must be present but may be null. "macrosPer100g" itself may be null if you cannot estimate any macros for that item. "notes" may be null if you have nothing to add."""
+
+PRODUCTION_USER_PROMPT = (
+    "Identify the foods worth logging on the plate in the attached photo and "
+    "respond with the JSON shape described in the system prompt."
+)
+
+# ---------------------------------------------------------------------------
+# Ported faithfully from openplate/app/services/vision/schema.ts
+# (PlateIdentificationSchema -> strict-mode JSON Schema)
+# ---------------------------------------------------------------------------
+
+_MACROS_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "carbs": {"type": ["number", "null"]},
+        "fiber": {"type": ["number", "null"]},
+        "sugars": {"type": ["number", "null"]},
+        "polyols": {"type": ["number", "null"]},
+        "protein": {"type": ["number", "null"]},
+        "fat": {"type": ["number", "null"]},
+        "kcal": {"type": ["number", "null"]},
+    },
+    "required": ["carbs", "fiber", "sugars", "polyols", "protein", "fat", "kcal"],
+    "additionalProperties": False,
+}
+
+_FOOD_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "estimatedGrams": {"type": "number"},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+        "portionHint": {"type": ["string", "null"]},
+        "macrosPer100g": {"anyOf": [_MACROS_JSON_SCHEMA, {"type": "null"}]},
+    },
+    "required": ["name", "estimatedGrams", "confidence", "portionHint", "macrosPer100g"],
+    "additionalProperties": False,
+}
+
+PLATE_IDENTIFICATION_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "foods": {"type": "array", "items": _FOOD_JSON_SCHEMA},
+        "notes": {"type": ["string", "null"]},
+    },
+    "required": ["foods", "notes"],
+    "additionalProperties": False,
+}
+
+JSON_SCHEMA_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "plate_identification",
+        "strict": True,
+        "schema": PLATE_IDENTIFICATION_JSON_SCHEMA,
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Ensemble prompt variants (approach 3)
+# ---------------------------------------------------------------------------
+
+_SCHEMA_INSTRUCTIONS = (
+    "\n\nRespond with JSON ONLY, matching exactly this shape (no markdown, no "
+    "commentary outside the JSON):\n\n"
+    "{\n"
+    '  "foods": [\n'
+    "    {\n"
+    '      "name": "string",\n'
+    '      "estimatedGrams": 0,\n'
+    '      "confidence": "high | medium | low",\n'
+    '      "portionHint": "string or null",\n'
+    '      "macrosPer100g": {\n'
+    '        "carbs": 0, "fiber": 0, "sugars": 0, "polyols": 0,\n'
+    '        "protein": 0, "fat": 0, "kcal": 0\n'
+    "      }\n"
+    "    }\n"
+    "  ],\n"
+    '  "notes": "string or null"\n'
+    "}\n\n"
+    'Every field must be present. "portionHint" may be null when no natural '
+    'comparison fits. Each macro field must be present but may be null. '
+    '"macrosPer100g" itself may be null if you cannot estimate any macros for '
+    'that item. "notes" may be null if you have nothing to add.'
+)
+
+ENSEMBLE_VARIANTS = [
+    {
+        "id": "a_production",
+        "system_prompt": PLATE_IDENTIFICATION_SYSTEM_PROMPT,
+        "temperature": None,
+    },
+    {
+        "id": "b_production_hot",
+        "system_prompt": PLATE_IDENTIFICATION_SYSTEM_PROMPT,
+        "temperature": 0.9,
+    },
+    {
+        "id": "c_detection",
+        "system_prompt": (
+            "You are a nutrition assistant analyzing a photo of a plate/table of food.\n\n"
+            "Enumerate every visually distinct food item on the plate/table, including "
+            "sides, sauces, garnishes and drinks. Be exhaustive first, then consolidate "
+            "to the schema (max 6 items)." + _SCHEMA_INSTRUCTIONS
+        ),
+        "temperature": None,
+    },
+    {
+        "id": "d_taxonomy_first",
+        "system_prompt": (
+            "You are a nutrition assistant analyzing a photo of a plate/table of food.\n\n"
+            "First decide the meal category (breakfast / lunch-dinner plate / salad / "
+            "sandwich-burger / dessert / snack / drink / mixed). Then, within that "
+            "category, identify each component food." + _SCHEMA_INSTRUCTIONS
+        ),
+        "temperature": None,
+    },
+    {
+        "id": "e_skeptic",
+        "system_prompt": (
+            "You are a nutrition assistant analyzing a photo of a plate/table of food.\n\n"
+            "Identify the foods, then critically re-examine: what might be misidentified "
+            "(e.g. rice vs couscous, yogurt vs cream)? Output your final corrected "
+            "identification." + _SCHEMA_INSTRUCTIONS
+        ),
+        "temperature": None,
+    },
+]
+
+JUDGE_SYSTEM_PROMPT = (
+    "You are a judge that merges multiple independent food-identification candidates "
+    "for the same plate photo into one final, high-confidence result.\n\n"
+    "You will be given 5 candidate JSON food lists, each produced independently by "
+    "a vision model looking at the same photo. Merge them into ONE final result:\n"
+    "- Deduplicate synonyms (e.g. \"rice\" and \"white rice\" are the same item) into a "
+    "single plain-language name.\n"
+    "- Keep an item only if it appears in at least 2 of the 5 candidates, UNLESS a "
+    "single candidate's item is clearly a major component of the plate (e.g. the main "
+    "protein), in which case keep it even if only one candidate listed it.\n"
+    "- For each kept item, set \"confidence\" to reflect the fraction of candidates that "
+    'agreed it is present: 5/5 or 4/5 -> "high", 3/5 or 2/5 -> "medium", 1/5 -> "low".\n'
+    "- For \"estimatedGrams\", take the median across the candidates that included the "
+    "item.\n"
+    "- For each field of \"macrosPer100g\", take the median across the candidates that "
+    "included the item AND provided a non-null value for that field; if none provided a "
+    "non-null value, use null.\n"
+    "- Prefer fewer, consolidated items, aiming for 6 or fewer, as the underlying "
+    "product prompt instructs.\n\n"
+    "Output ONLY the merged result in the exact same JSON schema used by the "
+    "candidates -- no markdown, no commentary outside the JSON."
+    + _SCHEMA_INSTRUCTIONS
+)
+
+
+# ---------------------------------------------------------------------------
+# HTTP plumbing
+# ---------------------------------------------------------------------------
+
+
+def get_api_key() -> str:
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        print(
+            "ERROR: OPENROUTER_API_KEY is not set. Source it from the workspace "
+            ".env before running, e.g.:\n"
+            "  export OPENROUTER_API_KEY=...",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return key
+
+
+def build_headers(api_key: str) -> dict:
+    return {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate plate-id bench",
+    }
+
+
+def image_to_data_url(image_path: Path) -> str:
+    mime_type, _ = mimetypes.guess_type(str(image_path))
+    if mime_type is None:
+        mime_type = "image/jpeg"
+    raw_bytes = image_path.read_bytes()
+    b64 = base64.b64encode(raw_bytes).decode("ascii")
+    return f"data:{mime_type};base64,{b64}"
+
+
+def openrouter_request(payload: dict, headers: dict) -> dict:
+    """POST to OpenRouter with retry on 429/5xx and transient network errors."""
+    data = json.dumps(payload).encode("utf-8")
+    last_error: Exception | None = None
+
+    for attempt in range(MAX_RETRIES + 1):
+        req = urllib.request.Request(OPENROUTER_URL, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_SECONDS) as resp:
+                body = resp.read()
+                return json.loads(body)
+        except urllib.error.HTTPError as e:
+            body = e.read()
+            body_text = body.decode("utf-8", errors="replace")[:800]
+            if e.code == 429 or e.code >= 500:
+                last_error = RuntimeError(f"HTTP {e.code}: {body_text}")
+                if attempt < MAX_RETRIES:
+                    sleep_seconds = RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
+                    time.sleep(sleep_seconds)
+                    continue
+                raise last_error
+            # 4xx other than 429: not retryable, but let caller inspect the body
+            # (e.g. to detect an unsupported response_format and retry without it).
+            raise OpenRouterHttpError(e.code, body_text) from e
+        except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                sleep_seconds = RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
+                time.sleep(sleep_seconds)
+                continue
+            raise
+
+    assert last_error is not None
+    raise last_error
+
+
+class OpenRouterHttpError(Exception):
+    def __init__(self, status: int, body_text: str):
+        super().__init__(f"HTTP {status}: {body_text}")
+        self.status = status
+        self.body_text = body_text
+
+
+# ---------------------------------------------------------------------------
+# Tolerant JSON extraction / schema validation
+# ---------------------------------------------------------------------------
+
+
+def strip_code_fence(text: str) -> str:
+    trimmed = text.strip()
+    match = re.match(r"^```(?:json)?\s*([\s\S]*?)\s*```$", trimmed)
+    return match.group(1) if match else trimmed
+
+
+def extract_first_json_object(text: str) -> str | None:
+    """Find the first balanced {...} block in text, tolerant of surrounding prose."""
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return None
+
+
+def tolerant_parse_json(raw_text: str) -> dict | None:
+    """Try, in order: whole-text parse, fenced-block parse, first {...} block parse."""
+    candidates = []
+    stripped = strip_code_fence(raw_text)
+    candidates.append(stripped)
+    first_obj = extract_first_json_object(stripped)
+    if first_obj is not None:
+        candidates.append(first_obj)
+    first_obj_raw = extract_first_json_object(raw_text)
+    if first_obj_raw is not None:
+        candidates.append(first_obj_raw)
+
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            continue
+    return None
+
+
+def validate_plate_identification(value) -> tuple[bool, list[str]]:
+    """Loose structural validation mirroring PlateIdentificationSchema. Returns
+    (ok, errors). Not a full Zod port -- just enough to catch a malformed
+    response so we know when to retry."""
+    errors: list[str] = []
+    if not isinstance(value, dict):
+        return False, ["response is not a JSON object"]
+    if "foods" not in value or not isinstance(value["foods"], list):
+        errors.append("missing or non-array 'foods'")
+    else:
+        for i, food in enumerate(value["foods"]):
+            if not isinstance(food, dict):
+                errors.append(f"foods[{i}] is not an object")
+                continue
+            for required_key in ("name", "estimatedGrams", "confidence", "portionHint", "macrosPer100g"):
+                if required_key not in food:
+                    errors.append(f"foods[{i}] missing '{required_key}'")
+            if "name" in food and not isinstance(food["name"], str):
+                errors.append(f"foods[{i}].name is not a string")
+            if "estimatedGrams" in food and not isinstance(food["estimatedGrams"], (int, float)):
+                errors.append(f"foods[{i}].estimatedGrams is not a number")
+            if "confidence" in food and food["confidence"] not in ("high", "medium", "low"):
+                errors.append(f"foods[{i}].confidence is not high|medium|low")
+    if "notes" in value:
+        if value["notes"] is not None and not isinstance(value["notes"], str):
+            errors.append("'notes' is not a string or null")
+    else:
+        errors.append("missing 'notes'")
+    return (len(errors) == 0), errors
+
+
+# ---------------------------------------------------------------------------
+# Cost / usage helpers
+# ---------------------------------------------------------------------------
+
+
+def compute_cost_usd(model: str, usage: dict) -> float:
+    pricing = PRICING_PER_TOKEN.get(model)
+    if pricing is None:
+        return 0.0
+    prompt_tokens = usage.get("prompt_tokens", 0) or 0
+    completion_tokens = usage.get("completion_tokens", 0) or 0
+    return prompt_tokens * pricing["in"] + completion_tokens * pricing["out"]
+
+
+def merge_usage(a: dict, b: dict) -> dict:
+    return {
+        "prompt_tokens": (a.get("prompt_tokens", 0) or 0) + (b.get("prompt_tokens", 0) or 0),
+        "completion_tokens": (a.get("completion_tokens", 0) or 0) + (b.get("completion_tokens", 0) or 0),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Core call: one model call with retry, schema-nudge retry, tolerant parse
+# ---------------------------------------------------------------------------
+
+
+def build_vision_messages(system_prompt: str, user_text: str, image_data_url: str) -> list:
+    return [
+        {"role": "system", "content": system_prompt},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_text},
+                {"type": "image_url", "image_url": {"url": image_data_url}},
+            ],
+        },
+    ]
+
+
+def build_text_messages(system_prompt: str, user_text: str) -> list:
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_text},
+    ]
+
+
+def call_model_once(
+    model: str,
+    messages: list,
+    headers: dict,
+    temperature: float | None,
+    use_json_schema: bool,
+) -> tuple[dict, float]:
+    """Single HTTP call. Returns (response_json, latency_ms). Falls back to no
+    response_format if the provider rejects json_schema for this model."""
+    payload: dict = {"model": model, "messages": messages}
+    if temperature is not None:
+        payload["temperature"] = temperature
+    if use_json_schema:
+        payload["response_format"] = JSON_SCHEMA_RESPONSE_FORMAT
+
+    t0 = time.monotonic()
+    try:
+        resp = openrouter_request(payload, headers)
+    except OpenRouterHttpError as e:
+        if use_json_schema and 400 <= e.status < 500:
+            # Some models/providers 400 on an unsupported response_format schema.
+            # Retry once without it -- we still tolerant-parse the free text.
+            payload.pop("response_format", None)
+            resp = openrouter_request(payload, headers)
+        else:
+            raise
+    latency_ms = (time.monotonic() - t0) * 1000
+    return resp, latency_ms
+
+
+def run_call_with_full_retry(
+    model: str,
+    messages: list,
+    headers: dict,
+    temperature: float | None = None,
+    use_json_schema: bool = True,
+) -> dict:
+    """Runs one logical "get me a PlateIdentification" call: initial call, plus
+    one schema-nudge retry if the first response doesn't parse/validate.
+    Returns a normalized result dict (foods, notes, latency_ms, cost_usd,
+    raw_ok, prompt_tokens, completion_tokens, raw_text, error)."""
+    error: str | None = None
+    try:
+        resp, latency_ms = call_model_once(model, messages, headers, temperature, use_json_schema)
+    except Exception as e:  # noqa: BLE001 - benchmark script, surface all failures
+        return {
+            "foods": [],
+            "notes": None,
+            "latency_ms": 0.0,
+            "cost_usd": 0.0,
+            "raw_ok": False,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "raw_text": None,
+            "error": f"call failed: {e}",
+        }
+
+    content = _extract_content(resp)
+    usage = resp.get("usage", {}) or {}
+    parsed = tolerant_parse_json(content) if content else None
+    ok, validation_errors = (False, ["empty content"]) if not content else validate_plate_identification(parsed)
+
+    if not ok:
+        nudge_messages = list(messages) + [
+            {"role": "assistant", "content": content or ""},
+            {"role": "user", "content": "Return ONLY valid JSON matching the schema."},
+        ]
+        try:
+            resp2, latency_ms2 = call_model_once(model, nudge_messages, headers, temperature, use_json_schema)
+            latency_ms += latency_ms2
+            content2 = _extract_content(resp2)
+            usage2 = resp2.get("usage", {}) or {}
+            usage = merge_usage(usage, usage2)
+            parsed2 = tolerant_parse_json(content2) if content2 else None
+            ok2, validation_errors2 = (
+                (False, ["empty content"]) if not content2 else validate_plate_identification(parsed2)
+            )
+            if ok2:
+                content, parsed, ok, validation_errors = content2, parsed2, ok2, validation_errors2
+            else:
+                # keep first attempt's content for debugging, but note nudge also failed
+                error = f"schema validation failed twice: {validation_errors2}"
+        except Exception as e:  # noqa: BLE001
+            error = f"nudge retry failed: {e}"
+
+    cost = compute_cost_usd(model, usage)
+    result = {
+        "foods": (parsed or {}).get("foods", []) if ok else [],
+        "notes": (parsed or {}).get("notes") if ok else None,
+        "latency_ms": latency_ms,
+        "cost_usd": cost,
+        "raw_ok": ok,
+        "prompt_tokens": usage.get("prompt_tokens", 0) or 0,
+        "completion_tokens": usage.get("completion_tokens", 0) or 0,
+        "raw_text": None if ok else content,
+    }
+    if error and not ok:
+        result["error"] = error
+    return result
+
+
+def _extract_content(resp: dict) -> str | None:
+    try:
+        return resp["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Approach 1 & 2: single-call baselines
+# ---------------------------------------------------------------------------
+
+
+def run_single_call_approach(model: str, image_data_url: str, headers: dict) -> dict:
+    messages = build_vision_messages(PLATE_IDENTIFICATION_SYSTEM_PROMPT, PRODUCTION_USER_PROMPT, image_data_url)
+    return run_call_with_full_retry(model, messages, headers)
+
+
+# ---------------------------------------------------------------------------
+# Approach 3: ensemble + judge
+# ---------------------------------------------------------------------------
+
+
+def run_ensemble_variant(variant: dict, image_data_url: str, headers: dict) -> dict:
+    messages = build_vision_messages(variant["system_prompt"], PRODUCTION_USER_PROMPT, image_data_url)
+    result = run_call_with_full_retry(MODEL_ENSEMBLE, messages, headers, temperature=variant["temperature"])
+    result["variant_id"] = variant["id"]
+    return result
+
+
+def run_judge_call(candidates: list, headers: dict) -> dict:
+    candidate_blocks = []
+    for i, cand in enumerate(candidates):
+        payload_for_judge = {"foods": cand["foods"], "notes": cand["notes"]}
+        candidate_blocks.append(f"Candidate {i + 1} ({cand.get('variant_id', '?')}):\n{json.dumps(payload_for_judge)}")
+    user_text = (
+        "Here are 5 independent candidate identifications of the same plate photo:\n\n"
+        + "\n\n".join(candidate_blocks)
+        + "\n\nMerge them into one final result per your instructions."
+    )
+    messages = build_text_messages(JUDGE_SYSTEM_PROMPT, user_text)
+    return run_call_with_full_retry(MODEL_ENSEMBLE, messages, headers)
+
+
+def run_ensemble_judge_approach(image_data_url: str, headers: dict) -> dict:
+    wall_t0 = time.monotonic()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [
+            executor.submit(run_ensemble_variant, variant, image_data_url, headers) for variant in ENSEMBLE_VARIANTS
+        ]
+        candidates = [f.result() for f in futures]
+
+    judge_result = run_judge_call(candidates, headers)
+    wall_latency_ms = (time.monotonic() - wall_t0) * 1000
+
+    total_cost = sum(c["cost_usd"] for c in candidates) + judge_result["cost_usd"]
+
+    return {
+        "final": {
+            "foods": judge_result["foods"],
+            "notes": judge_result["notes"],
+            "raw_ok": judge_result["raw_ok"],
+        },
+        "candidates": candidates,
+        "judge_latency_ms": judge_result["latency_ms"],
+        "total_latency_ms": wall_latency_ms,
+        "total_cost_usd": total_cost,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Driver
+# ---------------------------------------------------------------------------
+
+APPROACH_NAMES = ["baseline", "single_qwen8b", "ensemble_judge"]
+
+
+def discover_images(images_dir: Path, only: str | None) -> list[Path]:
+    if not images_dir.is_dir():
+        print(f"ERROR: images dir not found: {images_dir}", file=sys.stderr)
+        sys.exit(1)
+    paths = sorted(images_dir.glob("*.jpg"))
+    if only:
+        paths = [p for p in paths if p.stem == only or p.name == only]
+        if not paths:
+            print(f"ERROR: no image matching --only {only} in {images_dir}", file=sys.stderr)
+            sys.exit(1)
+    return paths
+
+
+def run_for_image(image_path: Path, approaches: list[str], headers: dict, failures: list) -> dict:
+    image_id = image_path.stem
+    print(f"[{image_id}] loading image...")
+    image_data_url = image_to_data_url(image_path)
+
+    result: dict = {}
+
+    if "baseline" in approaches:
+        print(f"[{image_id}] baseline ({MODEL_BASELINE})...")
+        t0 = time.monotonic()
+        try:
+            result["baseline"] = run_single_call_approach(MODEL_BASELINE, image_data_url, headers)
+        except Exception as e:  # noqa: BLE001
+            print(f"[{image_id}] baseline FAILED: {e}")
+            failures.append({"image_id": image_id, "approach": "baseline", "error": str(e)})
+            result["baseline"] = {"error": str(e)}
+        print(f"[{image_id}] baseline done in {time.monotonic() - t0:.1f}s")
+
+    if "single_qwen8b" in approaches:
+        print(f"[{image_id}] single_qwen8b ({MODEL_QWEN})...")
+        t0 = time.monotonic()
+        try:
+            result["single_qwen8b"] = run_single_call_approach(MODEL_QWEN, image_data_url, headers)
+        except Exception as e:  # noqa: BLE001
+            print(f"[{image_id}] single_qwen8b FAILED: {e}")
+            failures.append({"image_id": image_id, "approach": "single_qwen8b", "error": str(e)})
+            result["single_qwen8b"] = {"error": str(e)}
+        print(f"[{image_id}] single_qwen8b done in {time.monotonic() - t0:.1f}s")
+
+    if "ensemble_judge" in approaches:
+        print(f"[{image_id}] ensemble_judge ({MODEL_ENSEMBLE}, 5 candidates + judge)...")
+        t0 = time.monotonic()
+        try:
+            result["ensemble_judge"] = run_ensemble_judge_approach(image_data_url, headers)
+        except Exception as e:  # noqa: BLE001
+            print(f"[{image_id}] ensemble_judge FAILED: {e}")
+            failures.append({"image_id": image_id, "approach": "ensemble_judge", "error": str(e)})
+            result["ensemble_judge"] = {"error": str(e)}
+        print(f"[{image_id}] ensemble_judge done in {time.monotonic() - t0:.1f}s")
+
+    return result
+
+
+def food_names(foods: list) -> str:
+    names = []
+    for f in foods:
+        if isinstance(f, dict) and "name" in f:
+            names.append(str(f["name"]))
+    return ", ".join(names) if names else "(none)"
+
+
+def write_summary_markdown(all_results: dict, out_path: Path) -> None:
+    lines = ["# Plate identification bench -- food lists by approach", ""]
+    for image_id, per_image in all_results.items():
+        if image_id == "_summary":
+            continue
+        lines.append(f"## {image_id}")
+        lines.append("")
+        lines.append("| approach | foods |")
+        lines.append("|---|---|")
+
+        baseline = per_image.get("baseline", {})
+        lines.append(f"| baseline | {food_names(baseline.get('foods', []))} |")
+
+        qwen = per_image.get("single_qwen8b", {})
+        lines.append(f"| single_qwen8b | {food_names(qwen.get('foods', []))} |")
+
+        ensemble = per_image.get("ensemble_judge", {})
+        final = ensemble.get("final", {})
+        lines.append(f"| ensemble_judge (final) | {food_names(final.get('foods', []))} |")
+
+        for cand in ensemble.get("candidates", []):
+            vid = cand.get("variant_id", "?")
+            lines.append(f"| ensemble candidate: {vid} | {food_names(cand.get('foods', []))} |")
+
+        lines.append("")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Benchmark plate-identification approaches via OpenRouter.")
+    default_images_dir = Path(__file__).resolve().parent / "images"
+    parser.add_argument("--images-dir", type=Path, default=default_images_dir, help="Directory of NN.jpg images.")
+    parser.add_argument("--only", type=str, default=None, help="Only run one image id, e.g. 03.")
+    parser.add_argument(
+        "--approach",
+        type=str,
+        default=None,
+        choices=APPROACH_NAMES,
+        help="Only run one approach (default: all three).",
+    )
+    args = parser.parse_args()
+
+    approaches = [args.approach] if args.approach else list(APPROACH_NAMES)
+
+    api_key = get_api_key()
+    headers = build_headers(api_key)
+
+    images = discover_images(args.images_dir, args.only)
+    print(f"Found {len(images)} image(s) in {args.images_dir}: {[p.name for p in images]}")
+    print(f"Running approaches: {approaches}")
+
+    all_results: dict = {}
+    failures: list = []
+
+    for image_path in images:
+        image_id = image_path.stem
+        all_results[image_id] = run_for_image(image_path, approaches, headers, failures)
+
+    per_approach_cost = {name: 0.0 for name in APPROACH_NAMES}
+    total_cost = 0.0
+    for per_image in all_results.values():
+        baseline = per_image.get("baseline")
+        if baseline and "cost_usd" in baseline:
+            per_approach_cost["baseline"] += baseline["cost_usd"]
+            total_cost += baseline["cost_usd"]
+        qwen = per_image.get("single_qwen8b")
+        if qwen and "cost_usd" in qwen:
+            per_approach_cost["single_qwen8b"] += qwen["cost_usd"]
+            total_cost += qwen["cost_usd"]
+        ensemble = per_image.get("ensemble_judge")
+        if ensemble and "total_cost_usd" in ensemble:
+            per_approach_cost["ensemble_judge"] += ensemble["total_cost_usd"]
+            total_cost += ensemble["total_cost_usd"]
+
+    all_results["_summary"] = {
+        "total_cost_usd": total_cost,
+        "per_approach_cost_usd": per_approach_cost,
+        "failures": failures,
+    }
+
+    out_dir = args.images_dir.parent
+    results_path = out_dir / "results.json"
+    results_path.write_text(json.dumps(all_results, indent=2), encoding="utf-8")
+    print(f"Wrote {results_path}")
+
+    summary_path = out_dir / "results_summary.md"
+    write_summary_markdown(all_results, summary_path)
+    print(f"Wrote {summary_path}")
+
+    print(f"Total cost: ${total_cost:.4f}")
+    print(f"Per-approach cost: {json.dumps(per_approach_cost, indent=2)}")
+    if failures:
+        print(f"Failures: {len(failures)} -- see results.json._summary.failures")
+
+
+if __name__ == "__main__":
+    main()

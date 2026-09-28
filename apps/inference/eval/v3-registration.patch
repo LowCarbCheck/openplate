@@ -1,0 +1,112 @@
+--- a/eval/harness/approaches.py
++++ b/eval/harness/approaches.py
+@@ -23,6 +23,7 @@
+ import time
+ 
+ from . import providers
++from . import approaches_v3
+ from . import schema as plate_schema
+ 
+ 
+@@ -204,6 +205,11 @@
+             judge_max_tokens=approach_cfg.get("judge_max_tokens"),
+         )
+ 
++    if kind in ("single_v3", "ensemble_judge_v3"):
++        return approaches_v3.run_approach_v3(
++            kind, approach_cfg, image_data_url, models, clients, fan_out_override
++        )
++
+     raise ValueError(f"approach {approach_key!r} has unknown type {kind!r}")
+ 
+ 
+--- a/eval/harness/runner.py
++++ b/eval/harness/runner.py
+@@ -164,7 +164,9 @@
+ ) -> dict:
+     image_id = image_path.stem
+     print(f"[{image_id}] loading image...")
+-    image_data_url = providers.image_to_data_url(image_path)
++    image_data_url = providers.image_to_data_url(
++        image_path, max_long_edge=config.get("image_max_long_edge")
++    )
+ 
+     models = config.get("models") or {}
+     declared = config.get("approaches") or {}
+--- a/eval/harness/providers.py
++++ b/eval/harness/providers.py
+@@ -17,6 +17,7 @@
+ from __future__ import annotations
+ 
+ import base64
++import io
+ import json
+ import mimetypes
+ import os
+@@ -47,11 +48,64 @@
+         self.body_text = body_text
+ 
+ 
+-def image_to_data_url(image_path: Path) -> str:
++_RESIZE_UNAVAILABLE_WARNED = False
++
++#: Downscale target alignment. 112 == lcm(16, 28): LFM2.5-VL uses 16 px patches,
++#: Qwen3-VL 14 px with a 2x2 merge (28), so a multiple of 112 lands on an exact
++#: patch boundary for both and avoids a padded partial patch.
++_PATCH_ALIGNMENT = 112
++
++
++def _downscale_to_jpeg(raw: bytes, max_long_edge: int, quality: int = 85) -> bytes | None:
++    """Shrink an image so the vision tower emits fewer image tokens.
++
++    Returns None when no resize happened (already small enough, or Pillow is not
++    installed) so the caller keeps the original bytes and mime type. Pillow is
++    deliberately optional: a full-resolution run is a slow run, but a missing
++    dependency must not be a failed run.
++    """
++    global _RESIZE_UNAVAILABLE_WARNED
++    try:
++        from PIL import Image
++    except ImportError:
++        if not _RESIZE_UNAVAILABLE_WARNED:
++            print(
++                "WARN: image_max_long_edge is set but Pillow is not installed; "
++                "sending full-resolution images (latency projections assume the downscale)",
++                file=sys.stderr,
++            )
++            _RESIZE_UNAVAILABLE_WARNED = True
++        return None
++    with Image.open(io.BytesIO(raw)) as image:
++        if max(image.size) <= max_long_edge:
++            return None
++        scale = max_long_edge / max(image.size)
++        size = tuple(
++            max(_PATCH_ALIGNMENT, round(dim * scale / _PATCH_ALIGNMENT) * _PATCH_ALIGNMENT)
++            for dim in image.size
++        )
++        resized = image.convert("RGB").resize(size, Image.LANCZOS)
++    buffer = io.BytesIO()
++    resized.save(buffer, format="JPEG", quality=quality)
++    return buffer.getvalue()
++
++
++def image_to_data_url(image_path: Path, max_long_edge: int | None = None) -> str:
++    """Base64 data URL for an image, optionally downscaled first.
++
++    `max_long_edge` comes from a config's `image_max_long_edge`. It is a run-level
++    knob: it changes prompt_tokens for every model in the run, so a run that
++    enables it is not single-variable against a run that does not.
++    """
+     mime_type, _ = mimetypes.guess_type(str(image_path))
+     if mime_type is None:
+         mime_type = "image/jpeg"
+-    b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
++    raw = image_path.read_bytes()
++    if max_long_edge:
++        downscaled = _downscale_to_jpeg(raw, int(max_long_edge))
++        if downscaled is not None:
++            raw, mime_type = downscaled, "image/jpeg"
++    b64 = base64.b64encode(raw).decode("ascii")
+     return f"data:{mime_type};base64,{b64}"
+ 
+ 

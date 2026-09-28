@@ -1,0 +1,95 @@
+#!/usr/bin/env sh
+# Pre-push quality gate — this repo's ONLY test gate.
+#
+# There is no cloud CI: pushes from the workstation are what trigger the
+# build/deploy, so the tests belong in front of the push rather than after it.
+#
+# Runs: docs manifest -> quadlet units -> lint -> typecheck -> doc claims -> unit tests -> build.
+#
+# The build is a REQUIRED gate, not a formality: `pnpm build` bundles with
+# esbuild and asserts the bundle contains no dynamic-require shim (see
+# scripts/build.ts). Typecheck and the unit suite both run TypeScript sources
+# and cannot see that failure — it produces a green test run and an artifact
+# that throws on its first line.
+#
+# NOT run here: `pnpm test:integration` (a live model runtime is optional but
+# slow) and `scripts/smoke-lite.sh` (builds an image and downloads GBs of
+# weights). Both are deliberate, occasional, human-invoked checks.
+#
+# Escape hatch (use deliberately, it pushes untested code):
+#   SKIP_TESTS=1 git push
+set -e
+
+if [ "${SKIP_TESTS:-0}" = "1" ]; then
+  echo "⚠ pre-push: gate SKIPPED explicitly (SKIP_TESTS=1)"
+  exit 0
+fi
+
+# Branch/tag deletions push no content — nothing to test. stdin gives one line
+# per ref: "<local_ref> <local_sha> <remote_ref> <remote_sha>"; an all-zero
+# local_sha means "delete this remote ref".
+has_content=0
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  case "$local_sha" in
+    '' | *[!0]*) has_content=1 ;;
+  esac
+done
+if [ "$has_content" = "0" ]; then
+  echo "▶ pre-push: deletion-only push, no tests to run"
+  exit 0
+fi
+
+# ── FIRST TIER: the documentation manifest ──────────────────────────────────
+# No network, no node, no install: POSIX shell over the README's `##
+# Documentation` table and the `docs/` directory. It is first because it is the
+# cheapest, and because openplate.de reads that table as its manifest — a broken
+# row here fails a workflow in another repository, hours later, with nobody
+# watching. M193 spec 05.
+echo "▶ pre-push: the README Documentation table against docs/"
+./scripts/check-docs-manifest.sh
+
+# ── QUADLET UNITS: generated, never hand-edited ─────────────────────────────
+# docker/quadlet/<scenario>/ is what podlet writes from the compose files.
+# This regenerates every scenario into a temp dir and diffs it against the
+# committed copy, so a compose edit without `scripts/quadlet.sh generate`, or a
+# unit somebody touched by hand, stops here. podlet is a HOST tool (Homebrew),
+# not a toolbox one, like the browser tier; the script says how to install it.
+# M231 spec 02.
+echo "▶ pre-push: the quadlet units against a fresh podlet run"
+./scripts/quadlet.sh check
+
+# TS commands need the ts-dev toolbox (the host lacks native build tools), but
+# must run bare when the hook itself is already executing inside a container.
+if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
+  run() { CI=true "$@"; }
+elif command -v toolbox >/dev/null 2>&1; then
+  run() { toolbox run -c ts-dev env CI=true "$@"; }
+else
+  echo "✖ pre-push: no ts-dev toolbox and not inside a container — cannot run the gate."
+  echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
+  exit 1
+fi
+
+echo "▶ pre-push: lint"
+run pnpm lint
+
+echo "▶ pre-push: typecheck"
+run pnpm typecheck
+
+# The published docs against the schema. It needs node, so it cannot sit in the
+# first tier beside the manifest check, but it belongs before the unit suite for
+# the same reason that one does: a wrong sentence in README.md or docs/*.md is
+# republished by openplate.de in three languages, and nothing downstream can
+# notice. M199 spec 01; the header of the script says what it cannot check.
+echo "▶ pre-push: the published docs against the schema"
+run pnpm check:doc-claims
+
+# `--run` is load-bearing: bare `vitest` starts a watcher and the hook hangs
+# forever with no output.
+echo "▶ pre-push: unit tests"
+run pnpm test --run
+
+echo "▶ pre-push: production build"
+run pnpm build
+
+echo "✅ pre-push: all gates passed"

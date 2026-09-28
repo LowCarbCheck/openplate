@@ -1,0 +1,295 @@
+{
+  "_comment": "Local model registry for the openplate-inference eval harness. Paths are relative to the repo root. ram_gb_observed / tokens_per_sec_observed are measured on this host (Fedora, 16 cores, AVX2+AVX512, no GPU) via eval/serve/serve.sh + smoke test.",
+  "_host": {
+    "cpu_cores": 16,
+    "simd": "AVX2 + AVX512",
+    "gpu": false,
+    "threads_used": 14
+  },
+  "models": {
+    "lfm-vl": {
+      "label": "LiquidAI LFM2.5-VL-1.6B (vision)",
+      "hf_repo": "LiquidAI/LFM2.5-VL-1.6B-GGUF",
+      "files": {
+        "model": "eval/models/LFM2.5-VL-1.6B-Q8_0.gguf",
+        "mmproj": "eval/models/mmproj-LFM2.5-VL-1.6b-F16.gguf"
+      },
+      "quant": "Q8_0",
+      "mmproj_precision": "F16",
+      "mmproj_note": "mmproj-LFM2.5-VL-1.6b-F16.gguf — the only mmproj the LiquidAI repo publishes, so the vision tower is unquantized F16 by default.",
+      "port": 8081,
+      "vision": true,
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/LFM2.5-VL-1.6B-Q8_0.gguf --mmproj eval/models/mmproj-LFM2.5-VL-1.6b-F16.gguf -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8081 --jinja",
+      "chat_template_notes": "Built-in Jinja template ships in the GGUF; pass --jinja so llama-server uses it (ChatML-like <|im_start|> turns). Images go in the OpenAI multimodal form: content: [{type:'text'...},{type:'image_url',image_url:{url:'data:image/jpeg;base64,...'}}]. mmproj MUST be passed or /v1/chat/completions rejects image parts.",
+      "status": "WORKS",
+      "disk_gb": 1.16,
+      "mmproj_disk_gb": 0.79,
+      "load_seconds": 4,
+      "ram_gb_observed": 1.55,
+      "tokens_per_sec_observed": {
+        "generation": 29.9,
+        "prompt_prefill": 120.1
+      },
+      "image_prompt_tokens_observed": 1813,
+      "cold_request_wall_seconds": 15.8,
+      "json_schema_supported": true,
+      "smoke_test": {
+        "image": "eval/images/01.jpg",
+        "prompt": "List every food item you can see on this plate.",
+        "response": "Ham, bacon, sausage, eggs, beans, cucumber, bread, butter",
+        "json_schema_response": {
+          "foods": ["ham", "bacon", "sausages", "eggs", "beans", "cucumber", "bread"]
+        },
+        "verdict": "PASS — breakfast foods correctly identified, both free-text and json_schema modes"
+      }
+    },
+    "lfm-judge": {
+      "label": "LiquidAI LFM2.5-2.6B (text, judge)",
+      "hf_repo": "LiquidAI/LFM2.5-2.6B-GGUF",
+      "files": {
+        "model": "eval/models/LFM2.5-2.6B-Q8_0.gguf"
+      },
+      "quant": "Q8_0",
+      "port": 8082,
+      "vision": false,
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/LFM2.5-2.6B-Q8_0.gguf --reasoning-budget 0 -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8082 --jinja",
+      "chat_template_notes": "Built-in Jinja template; --jinja required. HYBRID REASONING MODEL: by default it emits 200-950 tokens of chain-of-thought into message.reasoning_content and leaves message.content EMPTY until the think block closes — a small max_tokens silently returns ''. Serve with --reasoning-budget 0 (serve.sh default) to force-close thinking: 27x faster, same answer. Note --reasoning off and per-request chat_template_kwargs.enable_thinking=false are BOTH ignored by this template; only --reasoning-budget works. Supports response_format json_schema (llama-server converts JSON Schema to GBNF).",
+      "status": "WORKS",
+      "disk_gb": 2.68,
+      "load_seconds": 2,
+      "ram_gb_observed": 3.03,
+      "tokens_per_sec_observed": {
+        "generation": 16.1,
+        "prompt_prefill": 34.5
+      },
+      "reasoning_budget_default": 0,
+      "reasoning_budget_env_override": "REASONING_BUDGET=-1 restores full chain-of-thought",
+      "json_schema_supported": true,
+      "latency_seconds_observed": {
+        "reasoning_disabled": 4.5,
+        "reasoning_unbounded": 66.8
+      },
+      "smoke_test": {
+        "prompt": "Extract the foods from this meal description into JSON (full English breakfast: two fried eggs, baked beans, grilled sausage, bacon, toast)",
+        "json_schema_response": {
+          "foods": ["fried eggs", "baked beans", "grilled sausage", "bacon", "toast"]
+        },
+        "verdict": "PASS — correct extraction, valid schema-conformant JSON, 40 completion tokens in 4.5s"
+      }
+    },
+    "qwen-vl": {
+      "label": "Qwen3-VL-8B-Instruct (vision, quality profile)",
+      "hf_repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+      "hf_repo_note": "Official Qwen repo — it exists and ships both the quant and a matching mmproj, so no third-party quant was needed. Note the filenames drop the second hyphen: Qwen3VL-8B-Instruct-*, not Qwen3-VL-8B-Instruct-*.",
+      "files": {
+        "model": "eval/models/Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+        "mmproj": "eval/models/mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+      },
+      "quant": "Q4_K_M",
+      "quant_scope": "LM weights only — the vision tower (mmproj) is F16 regardless.",
+      "mmproj_precision": "F16",
+      "mmproj_note": "mmproj-Qwen3VL-8B-Instruct-F16.gguf (1159029824 bytes) — ALREADY the highest precision the official repo publishes. The repo ships exactly two mmproj files: F16 and Q8_0 (752289728 bytes); there is no BF16. So the Q4_K_M run was NOT handicapped by a low-precision vision tower, and qwen-vl vs qwen-vl-q8 is a clean LM-weights-quant A/B on an identical F16 vision tower.",
+      "port": 8084,
+      "vision": true,
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/Qwen3VL-8B-Instruct-Q4_K_M.gguf --mmproj eval/models/mmproj-Qwen3VL-8B-Instruct-F16.gguf -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8084 --jinja",
+      "chat_template_notes": "Built-in Jinja template ships in the GGUF; --jinja required. Standard OpenAI multimodal content parts (image_url with a data: URI). --mmproj is mandatory, same as lfm-vl. NOT a reasoning model — the -Instruct variant emits `content` directly, so no --reasoning-budget treatment is needed. response_format json_schema works.",
+      "status": "WORKS",
+      "disk_gb": 4.68,
+      "mmproj_disk_gb": 1.08,
+      "load_seconds": 8,
+      "ram_gb_observed": 6.31,
+      "tokens_per_sec_observed": {
+        "generation": 7.5,
+        "prompt_prefill": 32.5
+      },
+      "image_prompt_tokens_observed": "681-1301 (varies with image resolution; Qwen3-VL uses dynamic patching, unlike lfm-vl's fixed 1813)",
+      "cold_request_wall_seconds": 40.3,
+      "fresh_image_latency_seconds": {
+        "mean": 36.6,
+        "min": 29.0,
+        "max": 46.4,
+        "n": 4
+      },
+      "json_schema_supported": true,
+      "co_resident_warning": "At 6.31 GB this does NOT fit alongside any judge inside the ~8 GB budget (6.31 + 3.03 = 9.3 GB). The quality profile must serialize: run extraction, stop qwen-vl, then start the judge.",
+      "smoke_test": {
+        "image": "eval/images/01.jpg",
+        "prompt": "List every food item you can see on this plate.",
+        "response": "bread, sausages, ham, baked beans, scrambled eggs, cucumber",
+        "json_schema_response": {
+          "foods": ["bread", "sausage", "ham", "baked beans", "scrambled eggs", "cucumber"]
+        },
+        "additional_images": {
+          "02.jpg": ["Yorkshire pudding", "roast beef", "broccoli", "cabbage", "potatoes", "gravy"],
+          "03.jpg": ["salmon", "lettuce", "cucumber", "tomato", "avocado", "feta cheese", "olives", "red onion", "lemon wedge"],
+          "04.jpg": ["hamburger", "cheese", "tomato", "onion", "pickles", "fries", "ketchup"]
+        },
+        "verdict": "PASS — CPU-feasible at ~37 s/image (well inside the 90 s brutally-slow bar) and visibly more precise than lfm-vl (distinguishes scrambled vs fried eggs, names Yorkshire pudding, feta, avocado)."
+      }
+    },
+    "qwen-vl-q8": {
+      "label": "Qwen3-VL-8B-Instruct at Q8_0 (vision, quant A/B against qwen-vl)",
+      "hf_repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+      "hf_repo_note": "Same official repo as qwen-vl. Repo README: LM comes in FP16 / Q8_0 / Q4_K_M, mmproj in FP16 / Q8_0 only. Filenames drop the second hyphen (Qwen3VL-8B-Instruct-*). Q8_0 LM content-length is 8709519456 bytes — verify the local file matches exactly; a truncated GGUF fails at load with a confusing tensor error.",
+      "files": {
+        "model": "eval/models/Qwen3VL-8B-Instruct-Q8_0.gguf",
+        "mmproj": "eval/models/mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+      },
+      "quant": "Q8_0",
+      "quant_scope": "LM weights only.",
+      "mmproj_precision": "F16",
+      "mmproj_note": "BYTE-IDENTICAL to the mmproj qwen-vl uses (same file on disk, 1159029824 bytes). F16 is the highest precision the repo publishes — there is no BF16 mmproj. Consequence: qwen-vl (Q4_K_M) and qwen-vl-q8 (Q8_0) differ ONLY in LM-weight quantization, so this pair isolates LM quant with the vision tower held constant. It also means the vision tower was never a suspect for qwen-vl's accuracy — it was already unquantized.",
+      "shares_mmproj_with": "qwen-vl",
+      "port": 8087,
+      "vision": true,
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/Qwen3VL-8B-Instruct-Q8_0.gguf --mmproj eval/models/mmproj-Qwen3VL-8B-Instruct-F16.gguf -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8087 --jinja",
+      "chat_template_notes": "Identical to qwen-vl — built-in Jinja template, --jinja required, --mmproj mandatory, standard OpenAI multimodal content parts, NOT a reasoning model (content emitted directly, no --reasoning-budget needed). response_format json_schema works.",
+      "status": "WORKS",
+      "disk_gb": 8.11,
+      "mmproj_disk_gb": 1.08,
+      "mmproj_disk_gb_note": "Shared with qwen-vl — adding this key costs 8.11 GB of NEW disk, not 9.19.",
+      "load_seconds": 10,
+      "ram_gb_observed": 9.69,
+      "ram_gb_peak_observed": 11.36,
+      "ram_note": "9.69 GB right after load + first image; grows to 11.36 GB peak (VmHWM) over ~8 images as llama-server fills all 4 KV slots at n_ctx_slot 8192. Budget on the peak. Cannot be co-resident with ANY other model here.",
+      "tokens_per_sec_observed": {
+        "generation": 3.4,
+        "generation_note": "Measured over a 400-token free-text generation, not the ~30-token schema outputs (those are timing noise — they scattered 2.8-4.6). This is 2.2x SLOWER than qwen-vl's 7.5.",
+        "prompt_prefill": 25.4,
+        "prompt_prefill_note": "Mean of 7 fresh images, range 18.1-30.1; qwen-vl measured 32.5."
+      },
+      "image_prompt_tokens_observed": "692-2152 across eval/images/01-08 (dynamic patching, same as qwen-vl — but the wider corpus sample here shows the range is much larger than the 681-1301 recorded for qwen-vl, which only sampled 01-04)",
+      "cold_request_wall_seconds": 47.4,
+      "fresh_image_latency_seconds": {
+        "mean": 65.9,
+        "min": 42.5,
+        "max": 100.4,
+        "n": 8,
+        "images": {
+          "01.jpg": 47.4, "02.jpg": 85.1, "03.jpg": 42.5, "04.jpg": 46.2,
+          "05.jpg": 57.0, "06.jpg": 99.4, "07.jpg": 100.4, "08.jpg": 48.8
+        },
+        "note": "Latency tracks prompt tokens almost linearly — the 2152-token images (06, 07) cost ~100 s and BREACH the 90 s brutally-slow bar. 02 at 85.1 s is an outlier for its 1312 tokens (compare 08 at 1232 tokens / 48.8 s); the host had 0 GB free and swap fully consumed at the time, so treat it as memory-pressure noise rather than a model property."
+      },
+      "json_schema_supported": true,
+      "co_resident_warning": "9.7-11.4 GB resident. Nothing else can run alongside it, not even lfm-vl. Any profile using this key must serialize extraction and judging with a serve.sh stop between phases.",
+      "smoke_test": {
+        "image": "eval/images/01.jpg",
+        "prompt": "List every food item you can see on this plate.",
+        "response": "bread, sausages, ham, baked beans, scrambled eggs, cucumber",
+        "json_schema_response": {
+          "foods": ["bread", "sausage", "ham", "baked beans", "scrambled eggs", "cucumber"]
+        },
+        "additional_images": {
+          "02.jpg": ["Yorkshire pudding", "roast beef", "potatoes", "broccoli", "cabbage", "gravy"],
+          "03.jpg": ["salmon", "lettuce", "cucumber", "tomato", "avocado", "feta cheese", "olives", "red onion"],
+          "04.jpg": ["burger", "cheese", "tomato", "onion", "pickle", "fries", "ketchup"],
+          "05.jpg": ["rice", "chicken", "vegetables", "carrots"],
+          "06.jpg": ["sushi", "sashimi", "wasabi", "pickled ginger", "soy sauce"],
+          "07.jpg": ["spaghetti", "ground meat", "green beans", "corn", "carrots"],
+          "08.jpg": ["yogurt", "granola", "apple"]
+        },
+        "verdict": "PASS — correct breakfast foods on 01, distinct items (bread / sausages / ham / baked beans / scrambled eggs / cucumber), byte-for-byte the same answer qwen-vl gave in free text and schema mode.",
+        "quant_ab_verdict": "NO measurable accuracy gain over Q4_K_M on the 4 overlapping plates: 01 and 02 identical, 04 identical modulo singular/plural ('burger'/'pickle' vs 'hamburger'/'pickles'), and on 03 Q8 actually returned ONE ITEM FEWER — it dropped the 'lemon wedge' that Q4_K_M caught. Cost of the upgrade: 2.2x slower generation, ~1.3x slower prefill, +3.4 GB RAM, +8.11 GB disk. On this evidence LM-weight quantization is NOT the accuracy culprit, and since the vision tower was already F16 in both runs, quantization is ruled out as an explanation on both axes. Look elsewhere (prompt, image resolution/patching, model scale)."
+      }
+    },
+    "qwen-judge": {
+      "label": "Qwen3-4B-Instruct-2507 (text, alternate judge)",
+      "hf_repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+      "hf_repo_note": "No official Qwen/Qwen3-4B-Instruct-2507-GGUF repo exists (HF API returns 401/not-found), so unsloth's quant was used; bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF is an equivalent fallback.",
+      "files": {
+        "model": "eval/models/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+      },
+      "quant": "Q4_K_M",
+      "port": 8085,
+      "vision": false,
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/Qwen3-4B-Instruct-2507-Q4_K_M.gguf -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8085 --jinja",
+      "chat_template_notes": "Built-in Jinja template; --jinja required. NON-THINKING by design — the -2507 Instruct refresh split Qwen3's hybrid reasoning into separate Instruct and Thinking lines, so this needs NO --reasoning-budget flag and never strands the answer in reasoning_content. Prefer it over plain Qwen3-4B, which IS hybrid-reasoning. response_format json_schema works; free-text mode returned bare JSON without ```json fences.",
+      "status": "WORKS",
+      "disk_gb": 2.33,
+      "load_seconds": 3,
+      "ram_gb_observed": 3.68,
+      "tokens_per_sec_observed": {
+        "generation": 11.6,
+        "prompt_prefill": 60.0
+      },
+      "reasoning_budget_default": null,
+      "json_schema_supported": true,
+      "latency_seconds_observed": {
+        "cold": 6.5,
+        "warm_prefix_cached": 3.0,
+        "long_gen_421_tokens": 36.7
+      },
+      "smoke_test": {
+        "prompt": "Extract the foods from this meal description into JSON (full English breakfast: two fried eggs, baked beans, grilled sausage, bacon, toast)",
+        "json_schema_response": {
+          "foods": ["fried eggs", "baked beans", "grilled sausage", "bacon", "toast"]
+        },
+        "verdict": "PASS — 36 completion tokens in 6.5 s cold, schema-conformant, and it preserved the descriptive modifiers ('fried eggs', 'grilled sausage') that lfm-judge dropped to bare nouns."
+      }
+    },
+    "lfm-judge-think": {
+      "label": "LiquidAI LFM2.5-2.6B (text judge, bounded chain-of-thought)",
+      "hf_repo": "LiquidAI/LFM2.5-2.6B-GGUF",
+      "files": {
+        "model": "eval/models/LFM2.5-2.6B-Q8_0.gguf"
+      },
+      "quant": "Q8_0",
+      "port": 8086,
+      "vision": false,
+      "shares_weights_with": "lfm-judge — identical GGUF, different reasoning flags. Do not run both at once (2x 3 GB) unless you mean to.",
+      "runtime": "llama.cpp (llama-server b10330, brew)",
+      "serve_cmd": "llama-server -m eval/models/LFM2.5-2.6B-Q8_0.gguf --reasoning-budget 256 --reasoning-budget-message 'Answer now.' -t 14 -c 8192 -ngl 0 --host 127.0.0.1 --port 8086 --jinja",
+      "chat_template_notes": "Same template as lfm-judge. CORRECTION to the earlier lfm-judge finding: --reasoning-budget N for N>0 IS honoured — the think block is force-closed after N reasoning tokens and `content` is then emitted normally. Only --reasoning off and per-request chat_template_kwargs are ignored. --reasoning-budget-message is injected at the cut point and does NOT disable the budget.",
+      "status": "WORKS",
+      "disk_gb": 2.68,
+      "load_seconds": 2,
+      "ram_gb_observed": 3.03,
+      "tokens_per_sec_observed": {
+        "generation": 14.2,
+        "prompt_prefill": 29.8
+      },
+      "reasoning_budget_default": 256,
+      "reasoning_budget_env_override": "REASONING_BUDGET=N re-tunes the think budget (0 = off, i.e. equivalent to lfm-judge; -1 = unbounded)",
+      "reasoning_budget_curve": {
+        "_note": "Same prompt/schema each time, max_tokens 2048. completion_tokens = budget + ~28 answer tokens, so wall time is linear in the budget at ~14.5 gen tok/s.",
+        "0": {"completion_tokens": 40, "wall_seconds": 4.5, "content_ok": true},
+        "128": {"completion_tokens": 157, "wall_seconds": 13.1, "content_ok": true},
+        "256": {"completion_tokens": 283, "wall_seconds": 21.6, "content_ok": true},
+        "384": {"completion_tokens": 411, "wall_seconds": 30.3, "content_ok": true},
+        "-1": {"completion_tokens": 982, "wall_seconds": 79.1, "content_ok": true},
+        "-1 + max_tokens 160": {"completion_tokens": 160, "wall_seconds": 11.6, "content_ok": false, "finish_reason": "length", "note": "The max_tokens-ceiling approach does NOT work: it truncates mid-thought and returns HTTP 200 with content ''. Use a real budget, not a token ceiling."}
+      },
+      "json_schema_supported": true,
+      "latency_seconds_observed": {
+        "budget_256": 22.5
+      },
+      "smoke_test": {
+        "prompt": "Extract the foods from this meal description into JSON (full English breakfast: two fried eggs, baked beans, grilled sausage, bacon, toast)",
+        "json_schema_response": {
+          "foods": ["eggs", "baked beans", "sausage", "bacon", "toast"]
+        },
+        "verdict": "PASS — 286 completion tokens (256 thinking + 30 answer) in 22.5 s, schema-conformant. Meets the ~<=30 s/call goal, so a judge-with-thinking option IS available at tolerable latency."
+      }
+    },
+    "moondream": {
+      "label": "Moondream 3 preview (MoE 9B/2B-active, vision)",
+      "hf_repo": "moondream/moondream3-preview",
+      "files": {},
+      "port": 8083,
+      "vision": true,
+      "runtime": null,
+      "serve_cmd": null,
+      "chat_template_notes": "n/a",
+      "status": "FAILED",
+      "failure_reason": "No GGUF exists and no runtime supports the architecture CPU-only. See eval/SERVING.md for the full evidence trail.",
+      "ram_gb_observed": null,
+      "tokens_per_sec_observed": null
+    }
+  }
+}

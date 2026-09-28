@@ -1,0 +1,707 @@
+{
+  "_note": "Gold labels authored by hand from direct image inspection (Fable, 2026-08-11). 'core' = items a correct identification must include (synonyms/consolidations acceptable, e.g. 'Greek salad' may cover lettuce+cucumber+tomato). 'optional' = visible but acceptable to omit (garnish, condiments, off-plate drinks). Hallucination = any reported food not visible at all. Entries 11-50 (added 2026-08-11): drafted by two opus vision agents under the same protocol, spot-verified by Fable against images 12/19/22/39/45/46 before merge; manifest descriptions for 32/46/47 corrected to match images.",
+  "01": {
+    "meal": "Continental/English-style breakfast plate",
+    "core": [
+      "scrambled eggs",
+      "bacon/ham slices",
+      "frankfurter sausages",
+      "baked beans in tomato sauce",
+      "brown bread slice",
+      "cucumber slices"
+    ],
+    "optional": [
+      "butter/margarine packets"
+    ]
+  },
+  "02": {
+    "meal": "Roast (Sunday) dinner",
+    "core": [
+      "roast meat (lamb/beef) in gravy",
+      "Yorkshire pudding",
+      "roast potatoes",
+      "broccoli",
+      "cabbage/greens"
+    ],
+    "optional": [
+      "gravy as separate item"
+    ]
+  },
+  "03": {
+    "meal": "Greek-style salad with grilled salmon",
+    "core": [
+      "grilled salmon fillets",
+      "feta cheese",
+      "kalamata olives",
+      "avocado",
+      "cherry tomatoes",
+      "cucumber",
+      "lettuce/romaine",
+      "red onion"
+    ],
+    "optional": [
+      "lemon wedge",
+      "side bowl of olives",
+      "dressing"
+    ]
+  },
+  "04": {
+    "meal": "Cheeseburger with fries",
+    "core": [
+      "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+      "thick-cut fries/steak fries",
+      "ketchup",
+      "pickles/gherkins"
+    ],
+    "optional": [
+      "lettuce in burger",
+      "beer in background"
+    ]
+  },
+  "05": {
+    "meal": "Chicken in creamy leafy-green sauce with white rice",
+    "core": [
+      "chicken pieces in creamy sauce with leafy greens (spinach-type)",
+      "white rice"
+    ],
+    "optional": [
+      "red bell pepper bits in rice"
+    ]
+  },
+  "06": {
+    "meal": "Sushi platter (restaurant table)",
+    "core": [
+      "sushi rolls (salmon+avocado uramaki, sesame)",
+      "tuna nigiri",
+      "white-fish nigiri (1-2 pcs, e.g. yellowtail/sea bream)",
+      "pickled ginger",
+      "wasabi",
+      "soy sauce"
+    ],
+    "optional": [
+      "white wine / water glasses in background"
+    ]
+  },
+  "07": {
+    "meal": "Spaghetti with meat-vegetable sauce",
+    "core": [
+      "spaghetti",
+      "ground beef/meat tomato sauce",
+      "corn kernels",
+      "green beans",
+      "carrot pieces"
+    ],
+    "optional": []
+  },
+  "08": {
+    "meal": "Yogurt granola bowl with apple",
+    "core": [
+      "yogurt",
+      "granola (oats/puffed grains, nuts)",
+      "apple slices"
+    ],
+    "optional": [
+      "raisins/dried fruit in granola",
+      "honey"
+    ]
+  },
+  "09": {
+    "meal": "Whole chicken pizza in delivery box",
+    "core": [
+      "pizza with chicken pieces and cheese"
+    ],
+    "optional": [
+      "cola drink at table edge"
+    ]
+  },
+  "10": {
+    "meal": "Club sandwich with side salad (cafe table)",
+    "core": [
+      "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+      "green side salad (rocket/mixed leaves)"
+    ],
+    "optional": [
+      "Pepsi Max bottle",
+      "hot drink cup"
+    ],
+    "trap": "menu poster in background shows OTHER dishes (burrito, quesadilla, fritter) — reporting those = hallucination"
+  },
+  "11": {
+    "meal": "Wiener Schnitzel with fries and side salad",
+    "core": [
+      "breaded fried schnitzel (pork/veal cutlet)",
+      "thick-cut fries/potato wedges",
+      "mixed side salad (lettuce, cherry tomato, red onion, dressing)"
+    ],
+    "optional": [
+      "capers",
+      "lemon wedge",
+      "ketchup in ramekin",
+      "parsley garnish",
+      "water glass in background"
+    ]
+  },
+  "12": {
+    "meal": "Bratwurst plate with sauerkraut and mashed potatoes",
+    "core": [
+      "bratwurst sausages",
+      "sauerkraut",
+      "mashed potatoes"
+    ],
+    "optional": [
+      "mustard/onion-gravy drizzle on the sausages",
+      "drink glass in background"
+    ],
+    "trap": "a SECOND plate in the top-left background holds different food (shredded carrot/cabbage salad, cucumber slices, a filled roll) — those belong to another dish, not this plate"
+  },
+  "13": {
+    "meal": "Käsespätzle (cheese spätzle) in a cast-iron pan with a side salad",
+    "core": [
+      "Käsespätzle (spätzle noodles in melted cheese)",
+      "fried/caramelised onions"
+    ],
+    "optional": [
+      "side plate of iceberg lettuce salad with tomato and onion (separate plate behind)",
+      "parsley garnish"
+    ],
+    "trap": "the lettuce salad is on a separate plate in the background — reporting it is acceptable-but-optional; inventing meat/bacon in the spätzle is hallucination"
+  },
+  "14": {
+    "meal": "Beef gulasch with boiled potatoes and a side bowl of lettuce",
+    "core": [
+      "beef gulasch/stew in dark gravy",
+      "boiled potatoes",
+      "green leaf lettuce (butterhead) in a separate glass bowl"
+    ],
+    "optional": [
+      "mushrooms in the stew",
+      "gravy as separate item"
+    ]
+  },
+  "15": {
+    "meal": "Bavarian Weisswurst breakfast",
+    "core": [
+      "Weisswurst sausages in hot water",
+      "pretzel (Brezel)",
+      "sweet mustard"
+    ],
+    "optional": [
+      "wheat beer (Weissbier) glass",
+      "parsley in the pot"
+    ]
+  },
+  "16": {
+    "meal": "Döner/gyros plate with fries and salad",
+    "core": [
+      "döner/gyros sliced meat",
+      "tomato sauce over the meat",
+      "French fries",
+      "side salad (lettuce, tomato, cucumber, red onion) with dressing"
+    ],
+    "optional": [
+      "pepperoncini/green pickled pepper",
+      "glass of beer",
+      "beer bottle"
+    ]
+  },
+  "17": {
+    "meal": "Currywurst with French fries",
+    "core": [
+      "currywurst (sausage)",
+      "curry ketchup sauce",
+      "curry powder",
+      "French fries"
+    ],
+    "optional": []
+  },
+  "18": {
+    "meal": "Swabian Maultaschen with potato salad",
+    "core": [
+      "Maultaschen (filled pasta pockets with meat filling)",
+      "potato salad"
+    ],
+    "optional": [
+      "thyme sprig garnish",
+      "bacon/speck bits in the potato salad"
+    ]
+  },
+  "19": {
+    "meal": "German fast-food mixed plate (Taxiteller)",
+    "core": [
+      "French fries",
+      "gyros/döner sliced meat",
+      "sliced sausage in curry/shashlik sauce",
+      "tzatziki/garlic yogurt sauce",
+      "mayonnaise"
+    ],
+    "optional": []
+  },
+  "20": {
+    "meal": "Bowl of shio ramen",
+    "core": [
+      "ramen noodles",
+      "clear (shio) broth",
+      "sliced chashu pork",
+      "leafy green herb topping (mizuna/mitsuba)"
+    ],
+    "optional": [
+      "minced fat/garlic granules in the broth",
+      "fried onion/garlic bits"
+    ]
+  },
+  "21": {
+    "meal": "Vietnamese pho with a side plate of herb garnishes",
+    "core": [
+      "pho noodle soup (rice noodles in beef broth)",
+      "sliced beef and beef meatballs",
+      "bean sprouts",
+      "Thai basil",
+      "sliced green chilli/jalapeño",
+      "spring onion"
+    ],
+    "optional": [
+      "extra bowl of rice noodles",
+      "hoisin/chilli sauce dish",
+      "iced drink glass"
+    ]
+  },
+  "22": {
+    "meal": "Three soft tacos with a corn cob",
+    "core": [
+      "soft corn tortilla tacos with seasoned ground beef",
+      "grated cheese",
+      "red salsa",
+      "green salsa/tomatillo",
+      "coriander/cilantro",
+      "grilled corn on the cob"
+    ],
+    "optional": [
+      "glass of cola"
+    ]
+  },
+  "23": {
+    "meal": "Smothered beef burrito",
+    "core": [
+      "burrito (flour tortilla)",
+      "green chile sauce",
+      "shredded cheddar/jack cheese",
+      "shredded lettuce"
+    ],
+    "optional": [
+      "diced tomato"
+    ]
+  },
+  "24": {
+    "meal": "Fish and chips with peas",
+    "core": [
+      "battered fried fish fillet",
+      "chips/thick-cut fries",
+      "green peas",
+      "tartar sauce"
+    ],
+    "optional": [
+      "lemon wedge"
+    ]
+  },
+  "25": {
+    "meal": "American breakfast platter",
+    "core": [
+      "pancakes with icing sugar",
+      "back bacon rashers",
+      "fried egg (sunny side up)",
+      "breakfast sausages",
+      "hash brown/potato croquettes",
+      "toast slices",
+      "maple syrup in a shot glass"
+    ],
+    "optional": [
+      "butter packet"
+    ],
+    "trap": "a separate plate at the top of the frame holds another meal (toasted sandwich + leafy salad) — not part of this breakfast plate"
+  },
+  "26": {
+    "meal": "Indian thali on a steel tray",
+    "core": [
+      "rice pilaf/vegetable fried rice",
+      "chapati/roti",
+      "papad (papadum)",
+      "curd/raita",
+      "dal (lentil curry)",
+      "kofta/dumpling curry in orange gravy",
+      "paneer or fish curry in pale gravy",
+      "brinjal/eggplant curry"
+    ],
+    "optional": [
+      "shredded cabbage-and-tomato salad",
+      "clear vegetable stew/soup bowl"
+    ]
+  },
+  "27": {
+    "meal": "Stir-fried chicken with peppers and steamed rice",
+    "core": [
+      "stir-fried chicken pieces in brown sauce",
+      "red bell pepper strips",
+      "onion",
+      "spring onion/green onion",
+      "steamed white rice"
+    ],
+    "optional": [
+      "dried chilli bits"
+    ]
+  },
+  "28": {
+    "meal": "Middle-Eastern mezze spread — four composed plates plus flatbread",
+    "core": [
+      "falafel balls",
+      "grilled flatbread",
+      "hummus/creamy white dip",
+      "green herb-chilli sauce",
+      "yellow bulgur or couscous",
+      "black beluga lentils",
+      "pickled white cabbage slaw",
+      "green olives"
+    ],
+    "optional": [
+      "pickled pink turnip/watermelon radish",
+      "diced beetroot",
+      "tomato/pepper salsa salad",
+      "grated carrot salad",
+      "pomegranate seeds",
+      "parsley/herb garnish",
+      "sesame seeds",
+      "empty water glass"
+    ]
+  },
+  "29": {
+    "meal": "Tapas/snack flight with a wheat beer",
+    "core": [
+      "pickled gherkin slices",
+      "salami slices",
+      "cheese cubes",
+      "green olives"
+    ],
+    "optional": [
+      "creamy dip/cream cheese with the pickles",
+      "glass of Weissbier"
+    ]
+  },
+  "30": {
+    "meal": "Mixed grill board (plancha de grillades)",
+    "core": [
+      "pork spare ribs slab",
+      "grilled beef steak",
+      "grilled sausage",
+      "grilled meat skewer with green pepper and tomato",
+      "baked/roasted potato with browned cheese topping",
+      "mixed leaf salad"
+    ],
+    "optional": [
+      "cherry tomato",
+      "steak knife"
+    ]
+  },
+  "31": {
+    "meal": "Bowl of beef/oxtail soup with buttered bread",
+    "core": [
+      "thick brown meat soup/stew broth",
+      "beef (oxtail) chunks",
+      "buttered bread slices (dark/whole-grain)"
+    ],
+    "optional": [
+      "parsley garnish",
+      "butter as separate item"
+    ]
+  },
+  "32": {
+    "meal": "Charcuterie/snack board (compartmented bamboo tray, top-down)",
+    "core": [
+      "green olives",
+      "cucumber sticks",
+      "carrot sticks",
+      "bell pepper strips",
+      "pan-fried spiced hard-boiled egg halves",
+      "hummus dip",
+      "salami/cured meat slices",
+      "cheese slices"
+    ],
+    "optional": [
+      "herb crackers",
+      "paper towel/liner (non-food)"
+    ]
+  },
+  "33": {
+    "meal": "Bowl of oatmeal porridge with toppings",
+    "core": [
+      "oatmeal/oat porridge",
+      "peanut butter",
+      "raisins",
+      "ground cinnamon",
+      "milk"
+    ],
+    "optional": [
+      "honey/syrup drizzle",
+      "spoon (non-food)"
+    ]
+  },
+  "34": {
+    "meal": "Waffles with strawberries and whipped cream",
+    "core": [
+      "waffles",
+      "strawberries (sliced fresh)",
+      "strawberry/berry syrup-compote",
+      "whipped cream"
+    ],
+    "optional": [
+      "orange juice glass at top edge"
+    ]
+  },
+  "35": {
+    "meal": "Gyros/döner plate with fries and salad",
+    "core": [
+      "gyros/döner sliced meat",
+      "French fries",
+      "white garlic-yogurt sauce (tzatziki) with oregano",
+      "shredded white cabbage",
+      "tomato slices",
+      "sweetcorn",
+      "cucumber slices",
+      "shredded carrot"
+    ],
+    "optional": [
+      "pickled green chili pepper",
+      "black olive",
+      "lettuce leaves",
+      "flatbread in basket at right edge"
+    ],
+    "trap": "a basket of grilled flatbread sits off-plate at the right edge — background/optional, not part of the plate"
+  },
+  "36": {
+    "meal": "Seafood paella in the pan",
+    "core": [
+      "saffron/paella rice",
+      "whole prawns (langostinos)",
+      "mantis shrimp (galeras)",
+      "artichoke pieces"
+    ],
+    "optional": [
+      "red pepper/tomato bits in the rice"
+    ]
+  },
+  "37": {
+    "meal": "Pierogi ruskie with carrot-cabbage salad",
+    "core": [
+      "pierogi/boiled dumplings (potato-cheese filling)",
+      "fried caramelised onion topping",
+      "grated carrot and cabbage salad"
+    ],
+    "optional": [
+      "radish/beet sprouts garnish"
+    ]
+  },
+  "38": {
+    "meal": "Half-eaten beefburger with fries",
+    "core": [
+      "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+      "French fries"
+    ],
+    "optional": [
+      "cheese slice in burger",
+      "sauce/ketchup smear on plate"
+    ]
+  },
+  "39": {
+    "meal": "Remains of a fried breakfast (mostly eaten)",
+    "core": [
+      "baked beans in tomato sauce",
+      "sausage pieces",
+      "bacon rasher"
+    ],
+    "optional": [
+      "egg-yolk smears",
+      "cutlery (non-food)"
+    ],
+    "trap": "plate is largely empty and smeared — reporting eggs/toast/tomato/mushrooms as present would be hallucination; only beans, sausage and bacon remain"
+  },
+  "40": {
+    "meal": "Half-eaten liver-and-bacon fry-up with chips",
+    "core": [
+      "liver pieces in gravy",
+      "chips/French fries",
+      "bacon/gammon slice",
+      "fried egg (remnant, yolk visible)",
+      "sausage",
+      "grilled tomato half"
+    ],
+    "optional": [
+      "gravy as separate item",
+      "small blob of butter/mash"
+    ]
+  },
+  "41": {
+    "meal": "Leftovers of battered fish and potato wedges",
+    "core": [
+      "battered fried fish (cod) — partly eaten",
+      "potato wedges/skin-on roast potatoes",
+      "tartar sauce / mayonnaise dollop"
+    ],
+    "optional": [
+      "cracked black pepper sachets",
+      "paper napkin (non-food)"
+    ],
+    "trap": "printed napkin text and condiment sachets in frame are not food items"
+  },
+  "42": {
+    "meal": "Buffet lunch plate (many components)",
+    "core": [
+      "breaded fried fish fillet",
+      "sour cream / remoulade dollop",
+      "meatballs in brown gravy",
+      "chickpea-and-cauliflower curry",
+      "white rice",
+      "red cabbage and sweetcorn salad",
+      "cucumber and lettuce salad"
+    ],
+    "optional": [
+      "tomato-sauced bake at the back of the plate",
+      "water glass",
+      "pickled red onion",
+      "green chili pepper"
+    ]
+  },
+  "43": {
+    "meal": "Buffet lunch set — main plate, soup bowl, bread plate",
+    "core": [
+      "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+      "herbed green rice",
+      "green beans",
+      "cheese-topped quiche/gratin square",
+      "creamy meat-and-vegetable stew",
+      "creamy soup (bowl, with bacon bits)",
+      "bread roll with butter"
+    ],
+    "optional": [
+      "coleslaw/cabbage salad",
+      "lemon wedge",
+      "green olives",
+      "water glass"
+    ]
+  },
+  "44": {
+    "meal": "Brazilian buffet lunch plate (top-down)",
+    "core": [
+      "green salad (lettuce, grated carrot, coriander)",
+      "brown beans (feijão) in broth",
+      "yellow seasoned rice",
+      "braised cabbage with tomato",
+      "stewed meat in onion gravy",
+      "mashed cassava/potato purée"
+    ],
+    "optional": [
+      "cutlery and placemat (non-food)"
+    ]
+  },
+  "45": {
+    "meal": "Korean hanjeongsik table spread (dozens of banchan, top-down)",
+    "core": [
+      "japchae (glass noodles with vegetables)",
+      "steamed egg (gyeranjjim) in stone pot",
+      "grilled mackerel/fish",
+      "stir-fried beef in a hot stone pot",
+      "glazed spicy braised ribs/pork",
+      "sliced raw fish (hoe/sashimi) on shredded radish",
+      "vegetable fritters/jeon platter",
+      "kimchi"
+    ],
+    "optional": [
+      "tofu slices",
+      "white creamy soup/porridge in stone pot",
+      "perilla-leaf wrapped pickles",
+      "seasoned greens (namul)",
+      "lotus root",
+      "pickled cucumber/radish",
+      "green chili peppers with dipping paste",
+      "spring onion salad in chili sauce",
+      "seasoned peanuts/beans",
+      "mushroom-and-noodle soup",
+      "chili paste and soy dipping bowls",
+      "empty bowls, glasses, spoons (non-food)"
+    ],
+    "trap": "many bowls/plates are empty tableware — counting them as dishes, or naming rice/soup that isn't served yet, is hallucination"
+  },
+  "46": {
+    "meal": "Hong Kong steamer basket of small offal dishes (dai pai dong)",
+    "core": [
+      "honeycomb beef tripe in curry sauce",
+      "white boiled tripe/omasum slices in broth",
+      "fried beancurd-skin rolls (tofu skin rolls)"
+    ],
+    "optional": [
+      "carrot and vegetable pieces in the broth cups",
+      "steamer basket, tongs, kitchen cloth (non-food)"
+    ],
+    "trap": "these are offal and beancurd portions, NOT dumplings/buns — reporting siu mai, har gow, dumplings or buns is hallucination"
+  },
+  "47": {
+    "meal": "Café brunch table spread (top-down)",
+    "core": [
+      "avocado toast/bagel halves with poached eggs",
+      "eggs benedict with hollandaise on avocado toast",
+      "yogurt bowl with granola, kiwi slices and berry compote",
+      "cherry tomato salad with balsamic drizzle",
+      "seeded bagel (dark, sesame-topped)"
+    ],
+    "optional": [
+      "beetroot latte",
+      "iced coffee",
+      "orange/passionfruit drink",
+      "white wine glass",
+      "microgreens/sprout garnish"
+    ],
+    "trap": "printed menu cards under the plates list many other dishes (bagels, croissant, goulash soup, macarons) — reporting those = hallucination"
+  },
+  "48": {
+    "meal": "Disposable plate of party snacks (partly eaten)",
+    "core": [
+      "cucumber sandwich (white bread triangle)",
+      "potato chips/crisps",
+      "samosas (small fried triangles)",
+      "slice of white/vanilla cake with icing — partly eaten"
+    ],
+    "optional": [
+      "plastic fork and foil (non-food)"
+    ]
+  },
+  "49": {
+    "meal": "Cafe sizzling-plate dinner set",
+    "core": [
+      "grilled steak/pork chop in brown sauce",
+      "spaghetti (plain, buttered)",
+      "sausage/frankfurter",
+      "cherry tomatoes",
+      "red cabbage soup (borscht-style, bowl)",
+      "bread bun"
+    ],
+    "optional": [
+      "onion/cabbage under the meat",
+      "gravy as separate item"
+    ]
+  },
+  "50": {
+    "meal": "Late-night döner kebab plate with fries and salad",
+    "core": [
+      "döner kebab sliced meat",
+      "tomato/chili sauce over the meat",
+      "French fries",
+      "iceberg lettuce salad",
+      "sliced red onion",
+      "cucumber slices",
+      "pickled gherkin and pepperoncini"
+    ],
+    "optional": [
+      "glass of beer",
+      "Pepsi cup",
+      "napkins/cutlery (non-food)"
+    ],
+    "trap": "a second plate in the background holds another meal (fries, tomato, cucumber, fried items) — reporting its contents as part of this plate = hallucination"
+  }
+}

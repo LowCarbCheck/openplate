@@ -1,0 +1,126 @@
+{
+  "name": "local-cpu-v2",
+  "description": "Round 2 of the local CPU bench (2026-08-11): the judge is the bottleneck, so this config isolates the judge variable. Vision is held constant across all three ensembles (LFM2.5-VL x3, variants a/c/d — the n=3 lite profile) and only the judge changes: hardened prompt + bounded schema on the same LFM2.5-2.6B, then a Qwen3-4B judge, then the same LFM judge with bounded reasoning ON. Plus a Qwen3-VL-8B single-shot row so a local model is measured against the cloud pilot's strongest single-shot. Ports MUST match eval/serve/models.json: lfm-vl 8081, lfm-judge 8082, qwen-vl 8084, qwen-judge 8085, lfm-judge-think 8086. Start the servers with eval/serve/serve.sh first (see eval/SERVING.md). Cost fields are 0 by construction — latency and RAM are the currency.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/local-cpu-v2",
+  "providers": {
+    "local_lfm_vl": {
+      "base_url": "http://127.0.0.1:8081/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_lfm_judge": {
+      "base_url": "http://127.0.0.1:8082/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_qwen_vl": {
+      "base_url": "http://127.0.0.1:8084/v1",
+      "timeout_seconds": 900,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_qwen_judge": {
+      "base_url": "http://127.0.0.1:8085/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_lfm_judge_think": {
+      "base_url": "http://127.0.0.1:8086/v1",
+      "timeout_seconds": 900,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    }
+  },
+  "models": {
+    "lfm_vl": {
+      "id": "lfm-vl",
+      "provider": "local_lfm_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "LFM2.5-VL-1.6B Q8_0 via llama-server --jinja --mmproj. Held constant across every ensemble in this config so the judge is the only variable."
+    },
+    "lfm_judge": {
+      "id": "lfm-judge",
+      "provider": "local_lfm_judge",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "LFM2.5-2.6B Q8_0, text-only, reasoning OFF. Same server as local-cpu.json — what changes vs the 2026-08-11 run is the harness side: hardened judge prompt + bounded judge schema (maxItems 6), which llama-server compiles into the GBNF."
+    },
+    "qwen_vl": {
+      "id": "qwen-vl",
+      "provider": "local_qwen_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "Qwen3-VL-8B, single-shot only. The cloud pilot's best single-shot row (92.9% recall) was this model — this measures what it costs on CPU locally."
+    },
+    "qwen_judge": {
+      "id": "qwen-judge",
+      "provider": "local_qwen_judge",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "Qwen3-4B, text-only judge — the 'try a stronger judge' lever from runs/2026-08-11-local-lfm/SCORING.md finding 2."
+    },
+    "lfm_judge_think": {
+      "id": "lfm-judge-think",
+      "provider": "local_lfm_judge_think",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "Same LFM2.5-2.6B weights as lfm_judge but served with bounded reasoning ENABLED — the 'judge is only 1 call, spend the ~60s there' lever. Longer timeout because the reasoning trace precedes the JSON."
+    }
+  },
+  "approach_order": [
+    "single_qwen_vl",
+    "ensemble_lfm_hardjudge",
+    "ensemble_lfm_qwenjudge",
+    "ensemble_lfm_thinkjudge"
+  ],
+  "approaches": {
+    "single_qwen_vl": {
+      "type": "single",
+      "model": "qwen_vl",
+      "label": "Qwen3-VL-8B single-shot (production prompt), CPU"
+    },
+    "ensemble_lfm_hardjudge": {
+      "type": "ensemble_judge",
+      "vision_model": "lfm_vl",
+      "judge_model": "lfm_judge",
+      "variants": ["a_production", "c_detection", "d_taxonomy_first"],
+      "max_parallel": 2,
+      "judge_temperature": 0,
+      "label": "LFM2.5-VL x3 (a/c/d) + LFM2.5-2.6B judge, hardened prompt + bounded schema, CPU"
+    },
+    "ensemble_lfm_qwenjudge": {
+      "type": "ensemble_judge",
+      "vision_model": "lfm_vl",
+      "judge_model": "qwen_judge",
+      "variants": ["a_production", "c_detection", "d_taxonomy_first"],
+      "max_parallel": 2,
+      "judge_temperature": 0,
+      "label": "LFM2.5-VL x3 (a/c/d) + Qwen3-4B judge, hardened prompt + bounded schema, CPU"
+    },
+    "ensemble_lfm_thinkjudge": {
+      "type": "ensemble_judge",
+      "vision_model": "lfm_vl",
+      "judge_model": "lfm_judge_think",
+      "variants": ["a_production", "c_detection", "d_taxonomy_first"],
+      "max_parallel": 2,
+      "judge_temperature": 0,
+      "label": "LFM2.5-VL x3 (a/c/d) + LFM2.5-2.6B judge with reasoning ON, hardened prompt + bounded schema, CPU"
+    }
+  }
+}

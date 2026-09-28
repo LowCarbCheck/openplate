@@ -1,0 +1,512 @@
+[
+  {
+    "id": "01",
+    "filename": "01.jpg",
+    "commons_title": "File:Full English breakfast on a plate.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Full_English_breakfast_on_a_plate.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Full English breakfast on a white plate with multicereal bread (eggs, bacon, sausage, beans, tomato, toast)"
+  },
+  {
+    "id": "02",
+    "filename": "02.jpg",
+    "commons_title": "File:A roast lamb Sunday dinner at Green Man pub, Takeley Street, Essex, England.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:A_roast_lamb_Sunday_dinner_at_Green_Man_pub,_Takeley_Street,_Essex,_England.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Roast lamb Sunday dinner plate — roast meat with potatoes and mixed vegetables"
+  },
+  {
+    "id": "03",
+    "filename": "03.jpg",
+    "commons_title": "File:Grilled salmon Greek salad.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Grilled_salmon_Greek_salad.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Grilled salmon fillet served over a Greek salad (tomato, cucumber, feta, olives)"
+  },
+  {
+    "id": "04",
+    "filename": "04.jpg",
+    "commons_title": "File:Cheeseburger and steak fries at Rentier-Burger.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Cheeseburger_and_steak_fries_at_Rentier-Burger.jpg",
+    "license": "CC BY-SA 3.0",
+    "short_description": "Cheeseburger with a side of steak fries on a plate"
+  },
+  {
+    "id": "05",
+    "filename": "05.jpg",
+    "commons_title": "File:Chicken curry and rice.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Chicken_curry_and_rice.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Chicken curry served with a portion of white rice"
+  },
+  {
+    "id": "06",
+    "filename": "06.jpg",
+    "commons_title": "File:Assorted Sushi Platter from Nobu.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Assorted_Sushi_Platter_from_Nobu.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Assorted sushi platter with multiple nigiri and roll varieties"
+  },
+  {
+    "id": "07",
+    "filename": "07.jpg",
+    "commons_title": "File:Liat Portal for Foodie Disorder - Spaghetti Bolognese with vegetables.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Spaghetti_Bolognese_with_vegetables.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Spaghetti Bolognese plated with a side of mixed vegetables"
+  },
+  {
+    "id": "08",
+    "filename": "08.jpg",
+    "commons_title": "File:Yogurt, fruit, granola bowl (34999358091).jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Yogurt,_fruit,_granola_bowl_(34999358091).jpg",
+    "license": "CC BY 2.0",
+    "short_description": "Yogurt bowl topped with mixed fruit and granola"
+  },
+  {
+    "id": "09",
+    "filename": "09.jpg",
+    "commons_title": "File:Chicken pizza 01 02.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Chicken_pizza_01_02.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Whole chicken pizza with visible toppings, uncut/sliced on a plate or pan"
+  },
+  {
+    "id": "10",
+    "filename": "10.jpg",
+    "commons_title": "File:Classic Club Sandwich with Leafy Green Salad, Jamaica Blue Carousel, 2025 (01).jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Classic_Club_Sandwich_with_Leafy_Green_Salad,_Jamaica_Blue_Carousel,_2025_(01).jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Club sandwich (multiple layers, toothpick-skewered halves) served with a leafy green side salad"
+  },
+  {
+    "id": "11",
+    "filename": "11.jpg",
+    "commons_title": "File:Wiener Schnitzel at West Side Story in December 2024.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Wiener_Schnitzel_at_West_Side_Story_in_December_2024.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Wiener Schnitzel (pork) with French fries, mixed side salad, capers and lemon on a dark plate",
+    "difficulty_tags": []
+  },
+  {
+    "id": "12",
+    "filename": "12.jpg",
+    "commons_title": "File:Bratwurst at Antell Martintalo.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Bratwurst_at_Antell_Martintalo.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Plate of bratwurst with sauerkraut and mashed potatoes; a second plate of pickled vegetables sits behind it",
+    "difficulty_tags": [
+      "background-food"
+    ]
+  },
+  {
+    "id": "13",
+    "filename": "13.jpg",
+    "commons_title": "File:Käsespätzle mit Zwiebeln und Beilagensalat.JPG",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Käsespätzle_mit_Zwiebeln_und_Beilagensalat.JPG",
+    "license": "CC BY-SA 3.0",
+    "short_description": "Käsespätzle topped with fried onions in a cast-iron pan, with a separate side-salad plate in the background",
+    "difficulty_tags": [
+      "background-food"
+    ]
+  },
+  {
+    "id": "14",
+    "filename": "14.jpg",
+    "commons_title": "File:Gulasch, Theenhausen.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Gulasch,_Theenhausen.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Beef gulasch with potatoes on a gold-rimmed plate, lettuce served on a separate side plate",
+    "difficulty_tags": [
+      "multi-dish"
+    ]
+  },
+  {
+    "id": "15",
+    "filename": "15.jpg",
+    "commons_title": "File:Weisswurst Fruehstueck 20171012 111840a.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Weisswurst_Fruehstueck_20171012_111840a.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Bavarian Weisswurst breakfast — sausages in a pot of water with pretzel, sweet mustard and a glass of wheat beer",
+    "difficulty_tags": [
+      "multi-dish",
+      "drinks-in-frame"
+    ]
+  },
+  {
+    "id": "16",
+    "filename": "16.jpg",
+    "commons_title": "File:Döner kebab at restaurant La Sirena.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Döner_kebab_at_restaurant_La_Sirena.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Döner kebab plate with French fries and salad, served with a glass of beer",
+    "difficulty_tags": [
+      "drinks-in-frame"
+    ]
+  },
+  {
+    "id": "17",
+    "filename": "17.jpg",
+    "commons_title": "File:Currywurst im Gasthof Neuer in Prien.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Currywurst_im_Gasthof_Neuer_in_Prien.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Currywurst with curry sauce and a large portion of French fries",
+    "difficulty_tags": []
+  },
+  {
+    "id": "18",
+    "filename": "18.jpg",
+    "commons_title": "File:Maultaschen, Aulhausen.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Maultaschen,_Aulhausen.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Swabian Maultaschen served with potato salad on a white plate",
+    "difficulty_tags": []
+  },
+  {
+    "id": "19",
+    "filename": "19.jpg",
+    "commons_title": "File:Taxiteller.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Taxiteller.jpg",
+    "license": "CC BY-SA 3.0",
+    "short_description": "German fast-food \"Taxiteller\" — French fries, currywurst, gyros meat, tzatziki, mayonnaise and shashlik sauce on one plate",
+    "difficulty_tags": [
+      "many-components"
+    ]
+  },
+  {
+    "id": "20",
+    "filename": "20.jpg",
+    "commons_title": "File:Shio ramen from Ryukyu Ramen Tondou, Shin-Yokohama.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Shio_ramen_from_Ryukyu_Ramen_Tondou,_Shin-Yokohama.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Bowl of shio ramen with chashu pork slices and greens",
+    "difficulty_tags": []
+  },
+  {
+    "id": "21",
+    "filename": "21.jpg",
+    "commons_title": "File:Pho Xe Lua with rau thom at Pho 79.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Pho_Xe_Lua_with_rau_thom_at_Pho_79.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Bowl of Vietnamese pho with a separate plate of herb garnishes, shot through steam in a restaurant",
+    "difficulty_tags": [
+      "multi-dish",
+      "low-light"
+    ]
+  },
+  {
+    "id": "22",
+    "filename": "22.jpg",
+    "commons_title": "File:Tacos at restaurant Chalupa.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Tacos_at_restaurant_Chalupa.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Three beef tacos with beans and coriander plus a corn cob, served with a glass of cola",
+    "difficulty_tags": [
+      "drinks-in-frame"
+    ]
+  },
+  {
+    "id": "23",
+    "filename": "23.jpg",
+    "commons_title": "File:Smothered beef burrito.JPG",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Smothered_beef_burrito.JPG",
+    "license": "CC BY 4.0",
+    "short_description": "Beef burrito smothered in green chile sauce, topped with cheese and shredded lettuce",
+    "difficulty_tags": []
+  },
+  {
+    "id": "24",
+    "filename": "24.jpg",
+    "commons_title": "File:Fish and chips plate with peas.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Fish_and_chips_plate_with_peas.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Battered fish with chips, peas, tartar sauce and lemon on a white plate",
+    "difficulty_tags": []
+  },
+  {
+    "id": "25",
+    "filename": "25.jpg",
+    "commons_title": "File:The American Breakfast - The Orchard Cafe 2025-12-04.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:The_American_Breakfast_-_The_Orchard_Cafe_2025-12-04.jpg",
+    "license": "CC0",
+    "short_description": "American breakfast plate — mini pancakes, bacon, sausage, fried egg, hash browns, toast and maple syrup; another plate visible in the background",
+    "difficulty_tags": [
+      "many-components",
+      "background-food",
+      "low-light"
+    ]
+  },
+  {
+    "id": "26",
+    "filename": "26.jpg",
+    "commons_title": "File:Darjeeling, India, Indian Thali meal.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Darjeeling,_India,_Indian_Thali_meal.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Indian thali on a steel tray — rice, papad, raita and six small bowls of curry and dal",
+    "difficulty_tags": [
+      "many-components"
+    ]
+  },
+  {
+    "id": "27",
+    "filename": "27.jpg",
+    "commons_title": "File:DFC 2428 Sizzling stir-fried chicken with red peppers and onions served alongside a mound of steamed white rice.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:DFC_2428_Sizzling_stir-fried_chicken_with_red_peppers_and_onions_served_alongside_a_mound_of_steamed_white_rice.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Stir-fried chicken with red peppers and onions served alongside steamed white rice",
+    "difficulty_tags": []
+  },
+  {
+    "id": "28",
+    "filename": "28.jpg",
+    "commons_title": "File:Mezze, Münchner Volkstheater.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Mezze,_Münchner_Volkstheater.jpg",
+    "license": "CC0",
+    "short_description": "Four mezze plates in frame — falafel, dips, salads, pickles and flatbread with sauce bowls",
+    "difficulty_tags": [
+      "multi-dish",
+      "many-components"
+    ]
+  },
+  {
+    "id": "29",
+    "filename": "29.jpg",
+    "commons_title": "File:Tapas and beer at restaurant Solmu.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Tapas_and_beer_at_restaurant_Solmu.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Four small tapas dishes (pickles, sausage, cheese, olives) on a tray with a tall glass of Weissbier",
+    "difficulty_tags": [
+      "multi-dish",
+      "drinks-in-frame"
+    ]
+  },
+  {
+    "id": "30",
+    "filename": "30.jpg",
+    "commons_title": "File:Plancha de grillades du Baron à Gussignies.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Plancha_de_grillades_du_Baron_à_Gussignies.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Mixed grill board — spare rib, beef steak, sausage, baked potato and salad",
+    "difficulty_tags": [
+      "many-components"
+    ]
+  },
+  {
+    "id": "31",
+    "filename": "31.jpg",
+    "commons_title": "File:Oxtail soup with sliced bread-93321.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Oxtail_soup_with_sliced_bread-93321.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Bowl of oxtail soup with beef chunks, served with two slices of buttered bread",
+    "difficulty_tags": []
+  },
+  {
+    "id": "32",
+    "filename": "32.jpg",
+    "commons_title": "File:A charcuterie board with cheese and crackers.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:A_charcuterie_board_with_cheese_and_crackers.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Snack board: olives, crudités, fried boiled-egg halves, hummus, salami, cheese (manifest previously said stuffed pastries)",
+    "difficulty_tags": [
+      "many-components"
+    ]
+  },
+  {
+    "id": "33",
+    "filename": "33.jpg",
+    "commons_title": "File:Oatmeal porridge 1-minute with additional ingredients.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Oatmeal_porridge_1-minute_with_additional_ingredients.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Bowl of oatmeal porridge topped with peanut butter, raisins, cinnamon and milk, spoon in bowl",
+    "difficulty_tags": []
+  },
+  {
+    "id": "34",
+    "filename": "34.jpg",
+    "commons_title": "File:Tutti-Frutti waffles.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Tutti-Frutti_waffles.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Waffles with strawberries, berry syrup and three scoops of whipped cream",
+    "difficulty_tags": []
+  },
+  {
+    "id": "35",
+    "filename": "35.jpg",
+    "commons_title": "File:Plate with Gyros Vegetables.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Plate_with_Gyros_Vegetables.jpg",
+    "license": "CC BY 3.0",
+    "short_description": "Gyros plate — sliced meat with tzatziki, French fries, tomato, cucumber and salad",
+    "difficulty_tags": []
+  },
+  {
+    "id": "36",
+    "filename": "36.jpg",
+    "commons_title": "File:Paella marinera con galeras y langostinos.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Paella_marinera_con_galeras_y_langostinos.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Seafood paella in the pan with prawns and mantis shrimp",
+    "difficulty_tags": []
+  },
+  {
+    "id": "37",
+    "filename": "37.jpg",
+    "commons_title": "File:Pierogi ruskie Słupsk.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Pierogi_ruskie_Słupsk.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Plate of pierogi ruskie with grated carrot salad and beet sprouts",
+    "difficulty_tags": []
+  },
+  {
+    "id": "38",
+    "filename": "38.jpg",
+    "commons_title": "File:Beefburger and fries half eaten at Highgate Cricket Club, Crouch End London.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Beefburger_and_fries_half_eaten_at_Highgate_Cricket_Club,_Crouch_End_London.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Half-eaten beefburger with scattered leftover fries on a plate",
+    "difficulty_tags": [
+      "partially-eaten"
+    ]
+  },
+  {
+    "id": "39",
+    "filename": "39.jpg",
+    "commons_title": "File:Fifteen restaurant fried breakfast eaten George Street Stroud Gloucestershire England.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Fifteen_restaurant_fried_breakfast_eaten_George_Street_Stroud_Gloucestershire_England.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Remains of a fried breakfast — leftover beans, sausage and bacon with cutlery resting on a smeared plate",
+    "difficulty_tags": [
+      "partially-eaten"
+    ]
+  },
+  {
+    "id": "40",
+    "filename": "40.jpg",
+    "commons_title": "File:Liver bacon and chips sausage egg tomato half-eaten at Starmugs Cafe on Lordship Lane Tottenham London England.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Liver_bacon_and_chips_sausage_egg_tomato_half-eaten_at_Starmugs_Cafe_on_Lordship_Lane_Tottenham_London_England.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Half-eaten plate of liver, bacon, sausage, egg and chips in gravy on a dark marble table",
+    "difficulty_tags": [
+      "partially-eaten"
+    ]
+  },
+  {
+    "id": "41",
+    "filename": "41.jpg",
+    "commons_title": "File:Battered cod potato wedges leftovers Capel Manor College café Enfield London England 01.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Battered_cod_potato_wedges_leftovers_Capel_Manor_College_café_Enfield_London_England_01.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Leftovers of battered cod and potato wedges with tartar sauce; printed menu card in frame",
+    "difficulty_tags": [
+      "partially-eaten",
+      "background-clutter"
+    ]
+  },
+  {
+    "id": "42",
+    "filename": "42.jpg",
+    "commons_title": "File:Buffet lunch at restaurant Puisto.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Buffet_lunch_at_restaurant_Puisto.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Buffet lunch plate with breaded fish, meatballs, potato, cabbage salad, pickled onion and sauce, water glass in frame",
+    "difficulty_tags": [
+      "many-components",
+      "drinks-in-frame"
+    ]
+  },
+  {
+    "id": "43",
+    "filename": "43.jpg",
+    "commons_title": "File:Buffet lunch, soup and bread at Wanda's in December 2024.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Buffet_lunch,_soup_and_bread_at_Wanda's_in_December_2024.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Buffet lunch — a main plate with croquettes and rice, a separate soup bowl and a bread plate, on a dark restaurant table",
+    "difficulty_tags": [
+      "multi-dish",
+      "low-light"
+    ]
+  },
+  {
+    "id": "44",
+    "filename": "44.jpg",
+    "commons_title": "File:Residencia Franciscana, Teresina, buffet lunch plate.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Residencia_Franciscana,_Teresina,_buffet_lunch_plate.jpg",
+    "license": "CC0",
+    "short_description": "Buffet lunch plate with cassava, rice, beans, salad and stew, shot top-down on a placemat",
+    "difficulty_tags": [
+      "many-components"
+    ]
+  },
+  {
+    "id": "45",
+    "filename": "45.jpg",
+    "commons_title": "File:Korean cuisine-Hanjeongsik-05.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Korean_cuisine-Hanjeongsik-05.jpg",
+    "license": "CC BY-SA 2.0",
+    "short_description": "Korean hanjeongsik table spread — dozens of small banchan dishes across the whole table",
+    "difficulty_tags": [
+      "multi-dish",
+      "many-components"
+    ]
+  },
+  {
+    "id": "46",
+    "filename": "46.jpg",
+    "commons_title": "File:Dim Sum on Duen Kee.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Dim_Sum_on_Duen_Kee.jpg",
+    "license": "CC BY-SA 4.0",
+    "short_description": "Steamer basket of tripe/offal portions and beancurd-skin rolls, dai pai dong (NOT dumplings)",
+    "difficulty_tags": [
+      "multi-dish",
+      "many-components"
+    ]
+  },
+  {
+    "id": "47",
+    "filename": "47.jpg",
+    "commons_title": "File:Smúz Café brunch table Budapest - bowls, eggs benedict, specialty coffee.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Smúz_Café_brunch_table_Budapest_-_bowls,_eggs_benedict,_specialty_coffee.jpg",
+    "license": "CC BY 4.0",
+    "short_description": "Café brunch spread: avocado toast/eggs benedict, yogurt bowl, tomato salad, seeded bagel (not a donut)",
+    "difficulty_tags": [
+      "multi-dish",
+      "drinks-in-frame",
+      "background-clutter"
+    ]
+  },
+  {
+    "id": "48",
+    "filename": "48.jpg",
+    "commons_title": "File:Cucumber sandwich, samosas, potato chips and cake on a plate - 20110622.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Cucumber_sandwich,_samosas,_potato_chips_and_cake_on_a_plate_-_20110622.jpg",
+    "license": "CC BY-SA 3.0",
+    "short_description": "Disposable plate with a cucumber sandwich, samosas, potato chips and a half-eaten slice of cake",
+    "difficulty_tags": [
+      "partially-eaten",
+      "many-components"
+    ]
+  },
+  {
+    "id": "49",
+    "filename": "49.jpg",
+    "commons_title": "File:Sizzling Plate Dinner Set with Soup and Bun.JPG",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Sizzling_Plate_Dinner_Set_with_Soup_and_Bun.JPG",
+    "license": "CC BY-SA 3.0",
+    "short_description": "Cafe dinner set — sizzling plate of sirloin steak, sausage and spaghetti, plus a bowl of borscht and a bun",
+    "difficulty_tags": [
+      "multi-dish"
+    ]
+  },
+  {
+    "id": "50",
+    "filename": "50.jpg",
+    "commons_title": "File:Döner kebab in the middle of the night.jpg",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Döner_kebab_in_the_middle_of_the_night.jpg",
+    "license": "CC BY-SA 3.0",
+    "short_description": "Late-night döner kebab plate with fries and salad, drinks and another plate of food in frame",
+    "difficulty_tags": [
+      "low-light",
+      "drinks-in-frame",
+      "background-food"
+    ]
+  }
+]

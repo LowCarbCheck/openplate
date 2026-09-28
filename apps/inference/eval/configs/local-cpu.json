@@ -1,0 +1,83 @@
+{
+  "name": "local-cpu",
+  "description": "Local CPU-only run against llama-server instances (no GPU, no API cost). Ports MUST match eval/serve/models.json: lfm-vl 8081, lfm-judge 8082, moondream 8083. Start the servers with eval/serve/serve.sh first (see eval/SERVING.md). Cost fields are 0 by construction — the currency here is wall-clock latency and RAM, which the runner records in results.json._summary.host and per-approach mem_available_mb_after.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "out_dir": "runs/local-cpu",
+  "providers": {
+    "local_lfm_vl": {
+      "base_url": "http://127.0.0.1:8081/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_lfm_judge": {
+      "base_url": "http://127.0.0.1:8082/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    },
+    "local_moondream": {
+      "base_url": "http://127.0.0.1:8083/v1",
+      "timeout_seconds": 600,
+      "max_retries": 2,
+      "retry_backoff_base_seconds": 2.0,
+      "no_proxy": true
+    }
+  },
+  "models": {
+    "lfm_vl": {
+      "id": "lfm-vl",
+      "provider": "local_lfm_vl",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "LFM2.5-VL-1.6B Q8_0 via llama-server --jinja --mmproj. llama-server ignores the model id, so any value routes to the loaded model. If it 400s on response_format, the client retries without it automatically."
+    },
+    "lfm_judge": {
+      "id": "lfm-judge",
+      "provider": "local_lfm_judge",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": true,
+      "_note": "LFM2.5-2.6B Q8_0, text-only judge. llama-server converts JSON Schema to GBNF, so json_schema is expected to hold here."
+    },
+    "moondream": {
+      "id": "moondream",
+      "provider": "local_moondream",
+      "price_per_mtok_in": 0,
+      "price_per_mtok_out": 0,
+      "use_json_schema": false,
+      "_note": "BLOCKED as of 2026-08-11: eval/serve/models.json records status FAILED — no GGUF exists and no CPU-only runtime supports the architecture. Kept here so the approach is one served port away from runnable."
+    }
+  },
+  "approach_order": ["single_lfm_vl", "ensemble_lfm"],
+  "approaches": {
+    "single_lfm_vl": {
+      "type": "single",
+      "model": "lfm_vl",
+      "label": "LFM2.5-VL-1.6B single-shot (production prompt), CPU"
+    },
+    "single_moondream": {
+      "type": "single",
+      "model": "moondream",
+      "label": "Moondream 3 single-shot — BLOCKED, not in approach_order; run explicitly with --approach single_moondream once a server exists on :8083"
+    },
+    "ensemble_lfm": {
+      "type": "ensemble_judge",
+      "vision_model": "lfm_vl",
+      "judge_model": "lfm_judge",
+      "variants": [
+        "a_production",
+        "b_production_hot",
+        "c_detection",
+        "d_taxonomy_first",
+        "e_skeptic"
+      ],
+      "max_parallel": 2,
+      "label": "LFM2.5-VL x5 diverse prompts (2 in flight) + LFM2.5-2.6B judge merge, CPU"
+    }
+  }
+}
