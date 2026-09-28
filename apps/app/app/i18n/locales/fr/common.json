@@ -3788,14 +3788,16 @@
       "timingEarliest": "Dès que possible",
       "timingOnDate": "À une date précise",
       "requestedDateLabel": "Date souhaitée (facultatif)",
-      "submit": "jetzt kündigen"
+      "submit": "jetzt kündigen",
+      "subtitle": "Résilier un contrat"
     },
     "withdraw": {
       "nameLabel": "Nom",
       "emailLabel": "Adresse e-mail",
       "contractReferenceLabel": "Numéro de client ou de contrat (facultatif)",
       "requestedDateLabel": "Date de conclusion du contrat (facultatif)",
-      "submit": "Widerruf bestätigen"
+      "submit": "Widerruf bestätigen",
+      "subtitle": "Se rétracter d'un contrat"
     },
     "confirmed": {
       "receiptIdLabel": "Récépissé n° : {{receiptId}}",

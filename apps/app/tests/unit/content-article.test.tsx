@@ -19,6 +19,10 @@ import { createElement, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
+import { z } from 'zod';
+
 import { ContentArticle, ContentBlocks } from '../../app/components/content-article';
 import { parseContentDocument, type ContentBlock, type ContentInline } from '../../app/lib/content/markdown';
 import { withI18n } from './trends-i18n-harness';
@@ -128,5 +132,77 @@ describe('the article', () => {
   it('leaves the date out where the page asks, as a receipt does', () => {
     const markup = render(createElement(ContentArticle, { ...props, hasUpdatedLine: false }));
     assert.doesNotMatch(markup, /Last updated/);
+  });
+});
+
+/** The part of a shipped catalog the subtitle checks read, parsed so a renamed key fails here. */
+const subtitleCatalogSchema = z.looseObject({
+  declarations: z.looseObject({
+    withdraw: z.looseObject({ subtitle: z.string() }),
+    cancel: z.looseObject({ subtitle: z.string() }),
+  }),
+});
+
+/** One shipped catalog, read off disk and checked for the two subtitle keys. */
+function shippedCatalog(locale: string): z.infer<typeof subtitleCatalogSchema> {
+  const url = new URL(`../../app/i18n/locales/${locale}/common.json`, import.meta.url);
+  return subtitleCatalogSchema.parse(JSON.parse(readFileSync(fileURLToPath(url), 'utf8')));
+}
+
+const CATALOGS = { en: shippedCatalog('en'), de: shippedCatalog('de'), fr: shippedCatalog('fr') };
+
+/** An English reader's i18n, holding three catalogs, so a page in another language can be drawn in it. */
+const threeLanguages = createInstance();
+void threeLanguages.init({
+  lng: 'en',
+  fallbackLng: 'en',
+  defaultNS: 'common',
+  ns: ['common'],
+  resources: { en: { common: CATALOGS.en }, de: { common: CATALOGS.de }, fr: { common: CATALOGS.fr } },
+  interpolation: { escapeValue: false },
+  react: { useSuspense: false },
+});
+
+function renderInThreeLanguages(element: ReactElement): string {
+  const wrapped = createElement(I18nextProvider, { i18n: threeLanguages }, element);
+  const router = createMemoryRouter([{ path: '*', element: wrapped }], { initialEntries: ['/widerrufen'] });
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+}
+
+/** The text of the subtitle drawn right after the h1, or `null` when there is none. */
+function subtitleAfterHeading(markup: string): string | null {
+  return /<\/h1><p [^>]*data-slot="content-subtitle"[^>]*>([^<]*)<\/p>/.exec(markup)?.[1] ?? null;
+}
+
+describe('the subtitle under a statutory German heading (M265/06)', () => {
+  const page = { title: 'Vertrag widerrufen', updated: '2026-01-15', blocks: [] };
+
+  it('draws the catalog line right after the h1 on an English page', () => {
+    const markup = renderInThreeLanguages(
+      createElement(ContentArticle, { ...page, language: 'en', subtitleKey: 'declarations.withdraw.subtitle' }),
+    );
+    assert.equal(subtitleAfterHeading(markup), CATALOGS.en.declarations.withdraw.subtitle);
+  });
+
+  it('speaks the page language, not the reader language', () => {
+    const markup = renderInThreeLanguages(
+      createElement(ContentArticle, { ...page, language: 'fr', subtitleKey: 'declarations.cancel.subtitle' }),
+    );
+    assert.equal(subtitleAfterHeading(markup), CATALOGS.fr.declarations.cancel.subtitle);
+    // CONTROL: the French line is not the English one, so the check above can tell them apart.
+    assert.notEqual(CATALOGS.fr.declarations.cancel.subtitle, CATALOGS.en.declarations.cancel.subtitle);
+  });
+
+  it('CONTROL: a German page draws no subtitle, because its heading already says it', () => {
+    const markup = renderInThreeLanguages(
+      createElement(ContentArticle, { ...page, language: 'de', subtitleKey: 'declarations.withdraw.subtitle' }),
+    );
+    assert.doesNotMatch(markup, /data-slot="content-subtitle"/);
+    assert.match(markup, /<h1 [^>]*>Vertrag widerrufen<\/h1>/);
+  });
+
+  it('CONTROL: a page that names no subtitle draws none', () => {
+    const markup = renderInThreeLanguages(createElement(ContentArticle, { ...page, language: 'en' }));
+    assert.doesNotMatch(markup, /data-slot="content-subtitle"/);
   });
 });

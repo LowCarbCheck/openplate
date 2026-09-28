@@ -10,7 +10,10 @@
  * `title` of the mounted `widerrufen.md` (M246, `docs/content.md`), and the
  * submit label is `declarations.withdraw.submit` in
  * each locale's `common.json`. Neither is wordsmith's to rephrase. The
- * `/withdrawal` page names this one as the online withdrawal function.
+ * `/withdrawal` page names this one as the online withdrawal function. On a
+ * page in any language but German, one line under the title says what the
+ * page does: `declarations.withdraw.subtitle`, drawn by `ContentArticle`
+ * (M265 spec 06).
  *
  * ── THE PROSE IS MOUNTED, THE MECHANISM IS HERE ──
  *
@@ -194,7 +197,13 @@ export default function Widerrufen({ loaderData }: Route.ComponentProps) {
 
   return (
     <PublicWrapper>
-      <ContentArticle title={page.title} updated={page.updated} language={page.language} blocks={page.body}>
+      <ContentArticle
+        title={page.title}
+        updated={page.updated}
+        language={page.language}
+        blocks={page.body}
+        subtitleKey="declarations.withdraw.subtitle"
+      >
         {serverUrl === null ?
           <ContentBlocks blocks={unavailable} />
         : <form {...getFormProps(form)} className="not-prose mt-8 space-y-6">

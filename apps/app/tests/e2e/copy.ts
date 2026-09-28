@@ -270,6 +270,11 @@ const catalogSchema = z.object({
       needsPlanLink: z.string(),
     }),
   }),
+  /** The two statutory forms: the German button labels and the subtitle under their German heading (M265/06). */
+  declarations: z.object({
+    withdraw: z.object({ submit: z.string(), subtitle: z.string() }),
+    cancel: z.object({ submit: z.string(), subtitle: z.string() }),
+  }),
 });
 
 /** Every string this tier reads, in one language, validated against that language's shipped bundle. */

@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **The order page links to the online withdrawal page.** The withdrawal notice on the order page names the page "Vertrag widerrufen" and prints its address. The address was plain text. It is now a link to `/widerrufen` that opens beside the order. The notice still reads exactly as openplate-core serves it. `tests/e2e/order-page-links-widerrufen.spec.ts` checks it.
+- **The withdrawal and cancellation pages explain what their German headings mean.** The law fixes the headings "Vertrag widerrufen" and "Verträge hier kündigen" in German, so they stay German in every language. On an English, French, Spanish, Italian or Turkish page, one line under the heading now says what the page does. German pages are unchanged. `tests/e2e/legal-page-english-subtitle.spec.ts` checks it.
 
 ## [0.50.0] - 2026-09-28
 

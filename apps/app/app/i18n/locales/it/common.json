@@ -3788,14 +3788,16 @@
       "timingEarliest": "Alla prima data utile",
       "timingOnDate": "In una data specifica",
       "requestedDateLabel": "Data richiesta (facoltativo)",
-      "submit": "jetzt kündigen"
+      "submit": "jetzt kündigen",
+      "subtitle": "Disdire un contratto"
     },
     "withdraw": {
       "nameLabel": "Nome",
       "emailLabel": "Indirizzo e-mail",
       "contractReferenceLabel": "Numero cliente o contratto (facoltativo)",
       "requestedDateLabel": "Data di stipula del contratto (facoltativo)",
-      "submit": "Widerruf bestätigen"
+      "submit": "Widerruf bestätigen",
+      "subtitle": "Recedere da un contratto"
     },
     "confirmed": {
       "receiptIdLabel": "Ricevuta n.: {{receiptId}}",
