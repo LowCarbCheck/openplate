@@ -1,26 +1,56 @@
-name: Release Image
+name: Release Image (core)
 
-# Builds and publishes the self-host image to GHCR on every push to `main`
-# (moving `latest`) and on version tags (`v*`, e.g. `v0.1.0`).
+# Builds and publishes the core self-host image to GHCR on every push to `main`
+# that touches core (moving `latest`) and on version tags (`core-v*`, e.g.
+# `core-v0.1.0`).
 #
 # The package stays PRIVATE until this repo is flipped to public visibility.
 # The workflow needs no change when that happens, it already publishes to the
 # right place under the right name; only the package's visibility setting has
 # to move.
+#
+# ── ONE REPOSITORY, THREE RELEASE WORKFLOWS (M262) ──
+# `apps/core` lives beside `apps/app` and `apps/inference` in one repository,
+# and each has a release workflow of its own. Core's tags carry a `core-`
+# prefix, because the app keeps the bare `v*`. A glob here matches from the
+# first character, so `core-v*` never matches `v0.50.0` or `inference-v0.2.0`.
+#
+# The PUBLISHED image tag is still a bare `X.Y.Z`: Bay pins
+# `ghcr.io/lowcarbcheck/openplate-core:0.22.0`, and a `core-` prefix in the
+# image tag would break that pin. `docker/metadata-action` cannot parse
+# `core-v0.22.0` as semver, so the `version` step below strips the prefix and
+# hands the action a bare value.
+#
+# The `paths` filter is what keeps an app-only push to `main` from rebuilding
+# this image and moving its `latest`. GitHub does NOT evaluate `paths` for a
+# tag push ("Path filters are not evaluated for pushes of tags", workflow
+# syntax reference), so a `core-v*` tag always releases.
+#
+# This workflow publishes NO GitHub Release page. If one is ever added it must
+# pass `--latest=false`: installed apps ask GitHub for the latest release of
+# this repository to find an update, and a core release must never be it.
 on:
   push:
     branches:
       - main
     tags:
-      - 'v*'
+      - 'core-v*'
+    paths:
+      - 'apps/core/**'
+      - '.github/workflows/release-core.yml'
 
 env:
   REGISTRY: ghcr.io
+  # Hardcoded, no longer derived from the repository name: that is
+  # `LowCarbCheck/openplate` for all three release workflows now, so deriving
+  # it would publish core into the app's package. Lowercase, because GHCR
+  # rejects uppercase paths.
+  IMAGE_NAME: lowcarbcheck/openplate-core
 
 jobs:
   # ── Resolve the ref to the COMMIT it points at ─────────────────
   # The build job below serialises on the commit, so it needs a value that is
-  # the same for the `main` push and for the `v*` tag push of one release.
+  # the same for the `main` push and for the `core-v*` tag push of one release.
   # `github.sha` is NOT that value. For an ANNOTATED tag the ref points at a tag
   # OBJECT with its own SHA, so the two runs would key on different values, land
   # in different groups, and race exactly as they do today, while the workflow
@@ -52,8 +82,8 @@ jobs:
     runs-on: ubuntu-latest
 
     # ── Why this job queues ─────────────────────────────────────
-    # A coordinated release pushes `main` and then the `v*` tag seconds later.
-    # Both refs point at the SAME commit, so both start this job. On 2026-09-08
+    # A coordinated release pushes `main` and then the `core-v*` tag seconds
+    # later. Both refs point at the SAME commit, so both start this job. On 2026-09-08
     # the second one to start missed the first one's not yet exported buildx
     # cache and rebuilt linux/arm64 under QEMU from nothing: openplate v0.17.0
     # sat 42 minutes and never finished, openplate-sync v0.9.0 sat 26 minutes.
@@ -69,6 +99,11 @@ jobs:
     # release build rather than delay it. Keying on the commit bounds this
     # queue at two, the branch run and the tag run, so nothing is ever evicted.
     #
+    # The WORKFLOW is part of the key too, as `release-core-`. Since M262 one
+    # push to `main` can start the app and inference release workflows on the
+    # same commit, and a group they shared would serialise the three apps, or
+    # evict a waiting release of another app.
+    #
     # cancel-in-progress MUST stay false. Cancelling a release run is the
     # failure this block exists to prevent; see the dispatch-website note below.
     #
@@ -77,7 +112,7 @@ jobs:
     # A job held here reads "Queued" in the Actions UI. Queued is not hung. Do
     # not cancel it.
     concurrency:
-      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      group: release-core-${{ needs.resolve-commit.outputs.sha }}
       cancel-in-progress: false
 
     # Ordering the two runs cannot stop a stall from a GHCR outage or a poisoned
@@ -106,8 +141,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+      # `core-v0.22.0` is not semver, so `type=semver` would skip it with a
+      # warning and the release would publish no version tag at all. The bare
+      # `0.22.0` goes in through `value=` instead. It stays EMPTY on a branch
+      # push, because a `type=semver` with a value is emitted on any event.
+      - name: Strip the tag prefix
+        id: version
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/core-v*) echo "semver=${GITHUB_REF_NAME#core-v}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "semver=" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       - name: Derive image tags and labels
         id: meta
@@ -116,11 +160,11 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.semver }}
             type=sha,prefix=sha-,format=short
 
       # ── Copy, do not rebuild ──────────────────────────────────
-      # A coordinated release pushes `main` and then the `v*` tag at the same commit,
+      # A coordinated release pushes `main` and then the `core-v*` tag at the same commit,
       # and the concurrency group makes the tag run start only after the branch run
       # has finished or failed. So whatever the branch run published is a SETTLED
       # fact by the time this runs, never a race, and a registry lookup here is
@@ -149,7 +193,11 @@ jobs:
       # `--annotation` rewrites that one value on the new index so the semver tag
       # states its own version.
       #
-      # No wait is needed here, unlike in `openplate`: this one job does the
+      # A tag on a commit whose `main` push touched nothing under `apps/core`
+      # finds no `sha-` image, because the `paths` filter skipped that branch
+      # run. It builds, which is the fallback above.
+      #
+      # No wait is needed here, unlike in release-app.yml: this one job does the
       # whole build and it holds the plain group itself, so the tag run cannot
       # start until the branch run has finished and the lookup below is already
       # a settled answer.
@@ -162,7 +210,7 @@ jobs:
         run: |
           set -uo pipefail
           src="$IMAGE:sha-${SHA:0:7}"
-          version="${GITHUB_REF_NAME#v}"
+          version="${GITHUB_REF_NAME#core-v}"
           plats=$(docker buildx imagetools inspect "$src" \
             --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}' 2>/dev/null || true)
           echo "source $src carries: ${plats:-<no image>}"
@@ -189,22 +237,24 @@ jobs:
         if: steps.reuse.outputs.done != 'true'
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: apps/core
+          file: apps/core/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # A named scope, because the Actions cache is shared by the whole
+          # repository since M262 and the default scope is not named for core.
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=max,scope=core
 
 
   # ── Tell the website ───────────────────────────────────────────────────────
-  # openplate.de quotes this repository's README table and `docs/*.md`, and it
-  # quotes them at the latest published release rather than at `main`, because
-  # the site documents what a reader can install. This dispatch is what makes
-  # that immediate instead of up to a day late; the site also syncs daily, so a
-  # missed dispatch heals itself.
+  # openplate.de quotes core's README table and `docs/*.md`, and it quotes them
+  # at the latest published release rather than at `main`, because the site
+  # documents what a reader can install. This trigger is what makes that
+  # immediate instead of up to a day late; the site also syncs daily, so a
+  # missed trigger heals itself.
   #
   # NO `needs:`. It runs beside the image build, not after it. The v0.10.0 and
   # v0.10.1 tag runs of openplate both HUNG in "Build and push" (M192
@@ -213,22 +263,36 @@ jobs:
   #
   # IT CARRIES THE TAG FOR THE RECORD AND NOTHING ELSE READS IT. Which release
   # the site documents is decided in one place, `highestTag` in the site's
-  # sync-docs.ts, which takes the highest vX.Y.Z tag. A tag passed as an
-  # instruction would be a second answer to that question.
+  # sync-docs.ts, which takes the highest tag under each app's own prefix. A tag
+  # passed as an instruction would be a second answer to that question.
   #
-  # The credential is a fine-grained PAT and those expire inside a year; when it
-  # does, this 401s. Nothing depends on this job, so a marketing site not
-  # hearing about a release can never fail one.
-  dispatch-website:
+  # ── IN-REPO SINCE M262 ──
+  # The site lives in this repository now, so this starts `sync-docs.yml` with
+  # `gh workflow run` instead of a `repository_dispatch` to another repository.
+  # `GITHUB_TOKEN` is enough, because a `workflow_dispatch` is the one kind of
+  # event it may start a run with; release-app.yml says more. Nothing depends
+  # on this job, so a marketing site not hearing about a release can never fail
+  # one.
+  dispatch-docs:
     runs-on: ubuntu-latest
-    # Tags only, and no prerelease: the site only ever quotes a released line.
-    if: ${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+    timeout-minutes: 5
+    # Tags only. `if:` can only test the ref's start; the prerelease test is in
+    # the shell, because `core-v0.23.0` already carries a hyphen and the old
+    # `!contains(github.ref_name, '-')` would have skipped every core release.
+    if: ${{ startsWith(github.ref, 'refs/tags/core-v') }}
+    permissions:
+      # `gh workflow run` creates a workflow_dispatch event.
+      actions: write
     steps:
       - name: Ask openplate.de to re-quote the docs
         env:
-          GH_TOKEN: ${{ secrets.OPENPLATE_WEBSITE_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/${GITHUB_REPOSITORY_OWNER}/openplate-website/dispatches" \
-            -f event_type=openplate-released \
-            -f "client_payload[repo]=${GITHUB_REPOSITORY#*/}" \
-            -f "client_payload[tag]=$GITHUB_REF_NAME"
+          set -euo pipefail
+          # No prerelease: the site only ever quotes a released line.
+          case "${GITHUB_REF_NAME#core-v}" in
+            *-*) echo "prerelease $GITHUB_REF_NAME, the site does not quote it"; exit 0 ;;
+          esac
+          gh workflow run sync-docs.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            -f repo=openplate-core \
+            -f "tag=$GITHUB_REF_NAME"

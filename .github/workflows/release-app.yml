@@ -1,21 +1,45 @@
-name: Release Image
+name: Release Image (app)
 
-# Builds and publishes the self-host image to GHCR on every push to `main`
-# (moving `latest`) and on version tags (`v*`, e.g. `v1.2.0`).
+# Builds and publishes the app's self-host image to GHCR on every push to `main`
+# that touches the app (moving `latest`) and on version tags (`v*`, e.g.
+# `v1.2.0`).
 #
 # Public `docker pull` access is gated on this repo (and the resulting
 # package) being flipped to public visibility, see README "Self-hosting".
 # Until then this workflow still runs and publishes to the private package;
 # it's ready to go the moment visibility flips, no workflow change needed.
+#
+# ── ONE REPOSITORY, THREE RELEASE WORKFLOWS (M262) ──
+# `apps/app`, `apps/core` and `apps/inference` live in one repository now, and
+# each has a release workflow of its own. The app keeps the bare `v*` tags;
+# core tags `core-v*` and inference tags `inference-v*`. A glob here matches
+# from the first character, so `v*` never matches `core-v0.23.0` or
+# `inference-v0.2.0`.
+#
+# The `paths` filter is what keeps a core-only push to `main` from rebuilding
+# this image and moving its `latest`. `docker/**` is in it because the app's
+# compose files live at the repository root, where self-hosters fetch them.
+# GitHub does NOT evaluate `paths` for a tag push ("Path filters are not
+# evaluated for pushes of tags", workflow syntax reference), so a `v*` tag
+# always releases, whatever its commit touched.
 on:
   push:
     branches:
       - main
     tags:
       - 'v*'
+    paths:
+      - 'apps/app/**'
+      - 'docker/**'
+      - '.github/workflows/release-app.yml'
 
 env:
   REGISTRY: ghcr.io
+  # Hardcoded, no longer derived from the repository name: that is
+  # `LowCarbCheck/openplate` for all three release workflows now, so deriving
+  # it would publish core and inference into this package. Lowercase, because
+  # GHCR rejects uppercase paths.
+  IMAGE_NAME: lowcarbcheck/openplate
 
 jobs:
   # ── Resolve the ref to the COMMIT it points at ─────────────────
@@ -61,6 +85,11 @@ jobs:
   # `gh` is preinstalled on hosted runners. This job runs NO checkout, so `gh`
   # has no repository to infer, and `GH_REPO` is what names it.
   #
+  # `--workflow` names this FILE, not `$GITHUB_WORKFLOW`. In the monorepo the
+  # core and inference release workflows run on the same commits, and a
+  # name that two workflows share would make `gh` refuse or, worse, wait on a
+  # run of another app.
+  #
   # A sibling that FAILED must not stop the release, so `--exit-status` is
   # swallowed: the point is only that the sibling is finished, so the registry
   # lookup in `reuse` reads a settled answer either way.
@@ -80,11 +109,11 @@ jobs:
       - name: Wait for the branch run of this commit
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           SHA: ${{ needs.resolve-commit.outputs.sha }}
         run: |
           set -uo pipefail
-          ids=$(gh run list --workflow "$GITHUB_WORKFLOW" --commit "$SHA" --limit 50 \
+          export GH_REPO="$GITHUB_REPOSITORY"
+          ids=$(gh run list --workflow release-app.yml --commit "$SHA" --limit 50 \
             --json databaseId,status \
             --jq '.[] | select(.status != "completed") | .databaseId' \
             | grep -vx "$GITHUB_RUN_ID" || true)
@@ -118,6 +147,10 @@ jobs:
   # than a fresh build: the `sha-` image is what that commit actually produced,
   # against the base image of that day.
   #
+  # A tag on a commit whose `main` push touched no app path finds no `sha-`
+  # image either, because the `paths` filter skipped that branch run. It
+  # builds, which is the fallback above and costs one build, never a release.
+  #
   # The source is keyed on the RESOLVED commit, never on `github.sha`, for the
   # same reason the group is: an annotated tag's `github.sha` is the tag OBJECT,
   # and no `sha-` image is ever published under it.
@@ -130,7 +163,7 @@ jobs:
   # states its own version.
   #
   # This lives at JOB level here, not at step level as it does in
-  # openplate-core, because this workflow builds each platform in a matrix job
+  # release-core.yml, because this workflow builds each platform in a matrix job
   # of its own. Gating a single step would leave both legs running, and the
   # second build is the whole thing this removes.
   #
@@ -161,7 +194,7 @@ jobs:
     # that commit's manifest list, and the lookup would be a race again, which
     # is exactly what the queue exists to remove.
     concurrency:
-      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      group: release-app-${{ needs.resolve-commit.outputs.sha }}
       cancel-in-progress: false
 
     # No build and no waiting happen here. The wait is a job of its own now, so
@@ -184,9 +217,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
 
       - name: Reuse the branch image if it published
         id: reuse
@@ -290,15 +320,20 @@ jobs:
     # each other. Serialising is per platform, so a stuck amd64 leg holds only
     # the amd64 slot.
     #
+    # The WORKFLOW is part of the key too, as `release-app-`. Since M262 one
+    # push to `main` can start the core and inference release workflows on the
+    # same commit, and a group they shared would serialise the three apps, or
+    # evict a waiting release of another app.
+    #
     # cancel-in-progress MUST stay false. Cancelling a release run is the
-    # failure this block exists to prevent; see the dispatch-website note below.
+    # failure this block exists to prevent; see the dispatch-docs note below.
     #
     # EXPECT a release to take about twice one build, roughly 5 to 8 minutes end
     # to end, because the tag run starts only after the branch run finishes. A
     # job held here reads "Queued" in the Actions UI. Queued is not hung. Do not
     # cancel it.
     concurrency:
-      group: release-image-${{ needs.resolve-commit.outputs.sha }}-${{ matrix.slug }}
+      group: release-app-${{ needs.resolve-commit.outputs.sha }}-${{ matrix.slug }}
       cancel-in-progress: false
 
     # Ordering the two runs cannot stop a stall from a GHCR outage or a poisoned
@@ -325,9 +360,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
-
       # Only the LABELS are read here. The tags are decided once, in the merge
       # job, because a leg pushes no tag at all.
       - name: Derive image labels
@@ -353,8 +385,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile.pnpm
+          context: apps/app
+          file: apps/app/Dockerfile.pnpm
           platforms: ${{ matrix.platform }}
           # The commit the bundle is stamped with. The build cannot read it
           # itself: `.dockerignore` excludes `.git` and the base image has no
@@ -431,7 +463,7 @@ jobs:
     # commit must not write the same tags at the same time, and for the same
     # reasons as the legs: keyed on the resolved commit, never cancelling.
     concurrency:
-      group: release-image-${{ needs.resolve-commit.outputs.sha }}
+      group: release-app-${{ needs.resolve-commit.outputs.sha }}
       cancel-in-progress: false
 
     # No build happens here. This is a few registry calls.
@@ -482,9 +514,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set lowercase image name
-        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
-
       - name: Derive image tags
         id: meta
         uses: docker/metadata-action@v5
@@ -520,11 +549,11 @@ jobs:
           docker buildx imagetools inspect "${REGISTRY}/${IMAGE_NAME}:${{ steps.meta.outputs.version }}"
 
   # ── Tell the website ───────────────────────────────────────────────────────
-  # openplate.de quotes this repository's README table and `docs/*.md`, and it
+  # openplate.de quotes this app's README table and `docs/*.md`, and it
   # quotes them at the latest published release rather than at `main`, because
-  # the site documents what a reader can install. This dispatch is what makes
+  # the site documents what a reader can install. This trigger is what makes
   # that immediate instead of up to a day late; the site also syncs daily, so a
-  # missed dispatch heals itself.
+  # missed trigger heals itself.
   #
   # NO `needs:`. It runs beside the image build, not after it. The v0.10.0 and
   # v0.10.1 tag runs of openplate both HUNG in the image build (M192
@@ -534,25 +563,37 @@ jobs:
   #
   # IT CARRIES THE TAG FOR THE RECORD AND NOTHING ELSE READS IT. Which release
   # the site documents is decided in one place, `highestTag` in the site's
-  # sync-docs.ts, which takes the highest vX.Y.Z tag. A tag passed as an
-  # instruction would be a second answer to that question.
+  # sync-docs.ts, which takes the highest tag under each app's own prefix. A tag
+  # passed as an instruction would be a second answer to that question.
   #
-  # The credential is a fine-grained PAT and those expire inside a year; when it
-  # does, this 401s. Nothing depends on this job, so a marketing site not
-  # hearing about a release can never fail one.
-  dispatch-website:
+  # ── IN-REPO SINCE M262 ──
+  # The site lives in this repository now, so this starts `sync-docs.yml` with
+  # `gh workflow run` instead of a `repository_dispatch` to another repository.
+  # `GITHUB_TOKEN` is enough: GitHub's loop guard stops a `GITHUB_TOKEN` event
+  # from starting a run, EXCEPT `workflow_dispatch` and `repository_dispatch`,
+  # which always do ("Triggering a workflow", GitHub docs). No PAT, so nothing
+  # here expires. `--ref main` runs the sync from `main`, where it commits.
+  # A separate run, not a `workflow_call`, so the sync keeps its own
+  # `sync-docs` concurrency group, and two releases cut minutes apart queue
+  # there, as they did when three repositories dispatched.
+  # Nothing depends on this job, so a marketing site not hearing about a
+  # release can never fail one.
+  dispatch-docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Tags only, and no prerelease: the site only ever quotes a released line.
     if: ${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+    permissions:
+      # `gh workflow run` creates a workflow_dispatch event.
+      actions: write
     steps:
       - name: Ask openplate.de to re-quote the docs
         env:
-          GH_TOKEN: ${{ secrets.OPENPLATE_WEBSITE_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/${GITHUB_REPOSITORY_OWNER}/openplate-website/dispatches" \
-            -f event_type=openplate-released \
-            -f "client_payload[repo]=${GITHUB_REPOSITORY#*/}" \
-            -f "client_payload[tag]=$GITHUB_REF_NAME"
+          gh workflow run sync-docs.yml --repo "$GITHUB_REPOSITORY" --ref main \
+            -f repo=openplate \
+            -f "tag=$GITHUB_REF_NAME"
 
   # ── The GitHub Release page ────────────────────────────────────────────────
   # The page an operator reads to decide whether to pin the new image tag. Its
@@ -562,7 +603,7 @@ jobs:
   # previous tag.
   #
   # NO `needs:`, and outside the build's concurrency groups, for the same reason
-  # `dispatch-website` above is: the v0.10.0, v0.10.1, v0.21.0 and v0.22.0 tag
+  # `dispatch-docs` above is: the v0.10.0, v0.10.1, v0.21.0 and v0.22.0 tag
   # runs all HUNG in the image build, and a release page waiting on it would
   # have been eaten by the hang. Nothing about publishing the notes depends on
   # an image existing, and the image is found by tag whenever it lands.
@@ -600,22 +641,30 @@ jobs:
           # every release page.
           fetch-depth: 0
 
+      # The app is one of four folders now, each with its own `package.json`
+      # and lockfile, and no workspace at the root. Every path below names
+      # `apps/app` for that reason.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/app/package.json
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
+          cache-dependency-path: apps/app/pnpm-lock.yaml
 
       # The script needs `tsx` and nothing else, and it runs no build, so the
       # lifecycle scripts of the dependency tree are dead weight here.
       - name: Install dependencies
+        working-directory: apps/app
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Assemble the release notes from CHANGELOG.md
         id: notes
+        working-directory: apps/app
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
@@ -625,7 +674,11 @@ jobs:
           # was cut and never tagged, and a link built from it would 404.
           # `describe` starts at the tagged commit's parent, so it names the tag
           # before this one; an empty answer means no compare line.
-          previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          #
+          # `--match 'v[0-9]*'`, because this repository also carries
+          # `core-v*` and `inference-v*` tags (M262). Without it the app's
+          # compare link would point at a core or inference release.
+          previous=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)
           echo "compare base: ${previous:-<none>}"
           args=(--version "$version" --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME")
           [ -z "$previous" ] || args+=(--previous-tag "$previous")
@@ -644,6 +697,11 @@ jobs:
           # defaults to prerelease:false, which also moves the Latest badge. A
           # `-beta` or `-rc` tag must never take that badge from the shipped
           # line, so mark it explicitly.
+          #
+          # Only THIS workflow may take the Latest badge. Installed apps ask
+          # GitHub for the latest release of this repository to find an update,
+          # so release-core.yml and release-inference.yml, if they ever publish
+          # a page, must pass `--latest=false`.
           flags=()
           case "$GITHUB_REF_NAME" in *-*) flags=(--prerelease) ;; esac
           # `--verify-tag` refuses to create the tag as a side effect: this job

@@ -1,7 +1,8 @@
 # Translate the app's own UI catalogs after an English string changes.
 #
 # ── A COPY OF THE WEBSITE'S WORKFLOW, BEHIND A GATE ──
-# `openplate-website/.github/workflows/translate-ui.yml` is the specification
+# `translate-ui-website.yml` (until M262 `openplate-website/.github/workflows/
+# translate-ui.yml`) is the specification
 # for this file (M229 spec 03). The translate step, the per-language loop, the
 # exit-code handling, the bot identity and the fetch-rebase-regenerate recovery
 # are that workflow's, deliberately. What differs is written down below: this
@@ -22,6 +23,15 @@
 # `latest`. The `paths` filter below is a second, independent guard: the bot
 # never writes under `app/i18n/locales/en/`.
 #
+# ── ONE REPOSITORY SINCE M262 ──
+# The app is `apps/app` in one repository with core, inference and the site.
+# Every shell step here runs in `apps/app` (the `defaults` block), and every
+# path an action reads names that folder. The loop guard above still holds:
+# a `GITHUB_TOKEN` push starts no workflow in this repository, not this one,
+# not the release workflows, not the site's. The concurrency group carries the
+# app's name, so this run and translate-ui-website.yml never queue behind each
+# other.
+#
 # ── WHY THE GATE RUNS THE BROWSER TIER ──
 # The hook's last stage is five Playwright specs against the production build.
 # Before this file it had only ever run on a host with a cached Chromium; a
@@ -34,7 +44,7 @@
 # commit is the trigger. The `workflow_dispatch` below covers a run somebody
 # wants on purpose: approving a spend that was refused on cost, or the one bulk
 # buy that brings in a new language.
-name: Translate UI
+name: Translate UI (app)
 
 on:
   push:
@@ -43,7 +53,7 @@ on:
       # The SOURCE bundle only. A change to a translated bundle is this job's own
       # output, or a hand edit somebody made deliberately, and re-running on
       # either would be a loop or an overwrite.
-      - 'app/i18n/locales/en/**'
+      - 'apps/app/app/i18n/locales/en/**'
   workflow_dispatch:
     inputs:
       budget:
@@ -59,13 +69,19 @@ on:
 
 # Never two at once, and never cancel one mid-flight: a cancelled run has already
 # paid for the strings it bought, and they are only saved at the end of each
-# chunk.
+# chunk. Its own group, separate from translate-ui-website.yml, because GitHub
+# keeps only ONE run waiting per group and a shared group could evict one app's
+# waiting run.
 concurrency:
-  group: translate-ui
+  group: translate-ui-app
   cancel-in-progress: false
 
 permissions:
   contents: write
+
+defaults:
+  run:
+    working-directory: apps/app
 
 jobs:
   # ── THE PRE-PUSH HOOK, STAGE FOR STAGE ──
@@ -80,11 +96,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `with:` paths are read from the repository root, not from the
+      # `defaults` folder, so each one names `apps/app`.
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/app/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: apps/app/.nvmrc
           cache: pnpm
+          cache-dependency-path: apps/app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
 
       # POSIX shell over the README table and docs/. No node, no install.
@@ -154,11 +175,16 @@ jobs:
         # the checkout, and that is the token the push below uses. See the
         # header for why a PAT is not wanted here.
 
+      # `with:` paths are read from the repository root, not from the
+      # `defaults` folder, so each one names `apps/app`.
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/app/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: apps/app/.nvmrc
           cache: pnpm
+          cache-dependency-path: apps/app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
 
       # ── ONE PASS PER LANGUAGE, AND THE BUDGET IS PER LANGUAGE TOO ──
@@ -282,9 +308,15 @@ jobs:
           # empty side. Unquoted on purpose, twice over: `$(git ls-tree ...)` is
           # one path per line and the file names carry no spaces, and
           # `$merge_memory` is a command with arguments.
+          #
+          # `./` in `git show`, because this step runs in `apps/app` since M262:
+          # `ls-tree` answers paths relative to the working directory, and
+          # `<commit>:<path>` reads from the repository ROOT unless the path
+          # starts with `./`. Without it every recovery would fail on a root
+          # `app/i18n/memory` that does not exist.
           export_memory() {
             for path in $(git ls-tree -r --name-only "$1" -- "$memory"); do
-              git show "$1:$path" > "$2/$(basename "$path")"
+              git show "$1:./$path" > "$2/$(basename "$path")"
             done
           }
 
