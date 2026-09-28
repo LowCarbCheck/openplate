@@ -82,6 +82,16 @@ export interface SendSignupRequestInput extends SendInviteInput {
 }
 
 /**
+ * The open sign-up door's note to an address that already holds an account.
+ * The account notice's one field, plus the language the request was made in,
+ * which is the only pick a letter with no link can use.
+ */
+export interface SendSignupAccountNoticeInput extends SendAccountNoticeInput {
+  /** The language the person asked in (`SignupIntent.locale`), or `null` for the instance's own. */
+  language: InstanceLanguage | null;
+}
+
+/**
  * The note for an address that already holds an account. It carries the
  * address and nothing else: no token, no link, and above all not the member
  * who typed it, who must not be named to the reader and must not learn that
@@ -126,7 +136,7 @@ export interface Mailer {
    */
   sendSignupRequest(input: SendSignupRequestInput): Promise<void>;
   /** The open sign-up door's note to an address that already holds an account (M253). No link. */
-  sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void>;
+  sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void>;
   /** M214/09. See `SendDeclarationReceiptInput` above and the module header. */
   sendDeclarationReceipt(input: SendDeclarationReceiptInput): Promise<void>;
   /** M214/09. See `SendDeclarationOperatorAlertInput` above and the module header. */
@@ -362,8 +372,9 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
       logger.info('Sign-up letter mailed');
     },
 
-    async sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void> {
-      const message = buildSignupAccountNoticeMessage({ language });
+    async sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void> {
+      // As for the letter above: the language the person asked in, then the instance's.
+      const message = buildSignupAccountNoticeMessage({ language: input.language ?? language });
       await postMail({
         mail,
         timeoutMs,

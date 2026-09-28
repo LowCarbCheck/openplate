@@ -17,10 +17,10 @@
  *  - one letter per mailbox per day, keyed on the trial key so dots and tags
  *    do not multiply it: somebody filling a stranger's inbox.
  *
- * WHAT THE PERSON PICKED REACHES THE LETTER AND NOWHERE ELSE. A paid instance
+ * WHAT THE PERSON PICKED REACHES THE LETTERS AND NOWHERE ELSE. A paid instance
  * shows its price before sign-up, so the request may name a plan and the
  * language the person asked in ({@link SignupIntent}). Both ride in the mailed
- * link, and the language also picks the words the letter is written in.
+ * link, and the language also picks the words the letters are written in.
  * Neither is stored, and neither changes the answer: an unknown value is
  * dropped without a word, so the field can never be a `400` or tell a caller
  * anything.
@@ -89,8 +89,8 @@ export type SignupPlanKey = (typeof SIGNUP_PLAN_KEYS)[number];
  * What the person picked on the sign-up screen before they asked. It rides in
  * the mailed join link, as `plan` and `lang`, so the app they open from the
  * letter can carry on where they left off. `locale` also picks the language
- * the letter is written in; with none, it is written in the instance's
- * language.
+ * the letter, or the note to an existing account, is written in; with none,
+ * both are written in the instance's language.
  */
 export interface SignupIntent {
   plan: SignupPlanKey | null;

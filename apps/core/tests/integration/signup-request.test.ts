@@ -15,6 +15,7 @@
  *  - the mailed token redeems into an ordinary account;
  *  - a picked plan and language ride in the mailed link, an unknown value is
  *    dropped without changing the answer, and neither is stored;
+ *  - the note to an existing account is handed the language the person asked in;
  *  - the operator's farming count moves, and no address reaches a log line.
  */
 import { test, before, after, beforeEach } from 'node:test';
@@ -310,6 +311,26 @@ test('a new address, a pending letter from another door and an existing account 
     assert.equal(pendingRows.length, 1);
     assert.equal(pendingRows[0]?.revokedAt, null);
     assert.equal(pendingRows[0]?.dailyAiLimit, 200);
+  });
+});
+
+test('the note to an existing account is handed the language the person asked in', async () => {
+  await withOpenDoor({}, async (service) => {
+    await service.signupThroughInvite({ email: 'anna@example.org' });
+    await service.signupThroughInvite({ email: 'bert@example.org' });
+
+    await requestSignup(service, { email: 'anna@example.org', locale: 'en' });
+    // THE CONTROL: a request that names no language hands the mailer `null`,
+    // which it reads as the instance's own language.
+    await requestSignup(service, { email: 'bert@example.org' });
+
+    assert.deepEqual(
+      service.mailer.signupAccountNotices.map((note) => ({ email: note.email, language: note.language })),
+      [
+        { email: 'anna@example.org', language: 'en' },
+        { email: 'bert@example.org', language: null },
+      ],
+    );
   });
 });
 

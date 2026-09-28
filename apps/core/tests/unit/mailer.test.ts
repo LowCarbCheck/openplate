@@ -207,7 +207,7 @@ test('the sign-up door posts its own letter and its own note, never the invitati
     expiresAt: '2026-09-11T10:00:00.000Z',
     intent: { plan: null, locale: null },
   });
-  await mailer.sendSignupAccountNotice({ email: 'bert@example.org' });
+  await mailer.sendSignupAccountNotice({ email: 'bert@example.org', language: null });
 
   // SAFETY: as above, our own adapter posted these bodies.
   const letter = JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
@@ -284,6 +284,25 @@ test('the sign-up letter is written in the language the person asked in, and in 
   assert.equal(german?.subject, 'Erstelle dein openplate-Konto');
   assert.equal(unnamed?.subject, 'Erstelle dein openplate-Konto');
   assert.equal(french?.subject, 'Crée ton compte openplate');
+});
+
+test('the sign-up note to an existing account is written in the language the person asked in, and in the instance language when they named none', async () => {
+  const api = await startFakeMailApi();
+  const captured = createCapturingLogger();
+  const mailer = mailerIn({ url: api.url, logger: captured.logger, language: 'de' });
+
+  await mailer.sendSignupAccountNotice({ email: 'anna@example.org', language: 'en' });
+  // THE CONTROLS, as for the letter above.
+  await mailer.sendSignupAccountNotice({ email: 'anna@example.org', language: 'de' });
+  await mailer.sendSignupAccountNotice({ email: 'anna@example.org', language: null });
+
+  assert.equal(api.received.length, 3);
+  // SAFETY: as above, our own adapter posted these bodies.
+  const [english, german, unnamed] = api.received.map((request) => JSON.parse(request.body) as MailPayload);
+  assert.equal(english?.subject, 'You already have an openplate account');
+  assert.ok(english?.html.includes('<html lang="en">'), 'the HTML part names the language it is written in');
+  assert.equal(german?.subject, 'Du hast bereits ein openplate-Konto');
+  assert.equal(unnamed?.subject, 'Du hast bereits ein openplate-Konto');
 });
 
 test('an account-notice send posts the third letter, and posts no link with it', async () => {
