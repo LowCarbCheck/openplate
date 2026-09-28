@@ -13,7 +13,7 @@
  * gone; nothing here puts the old one back, and the old value is printed
  * before the write so a person can restore it by hand:
  *
- *   cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
+ *   cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
  *
  * ── THE TWO CREDENTIALS, BOTH FROM THE ENVIRONMENT AND ONLY FROM THERE ──────
  * `OPENPLATE_SYNC_ADMIN_TOKEN`, or `ADMIN_TOKEN` under the name
@@ -97,7 +97,7 @@ const USAGE = `walk-trial-expiry, move a trial's end date to yesterday and read 
   IT OVERWRITES A REAL DATE ON A REAL ACCOUNT. The old value is printed before
   the write, and putting it back is a person's job:
 
-    cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
+    cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
 `;
 
 /** A failure with a sentence for the operator and no stack trace worth printing. */

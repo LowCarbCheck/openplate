@@ -3,7 +3,7 @@
  *
  * A DEVELOPER TOOL, run by hand, whose output is COMMITTED.
  *
- *   pnpm sync:translate-lib                                        # the sibling checkout, ../openplate-website
+ *   pnpm sync:translate-lib                                        # the website in this checkout, ../website
  *   OPENPLATE_WEBSITE_REPO=/some/checkout pnpm sync:translate-lib  # any checkout
  *
  * ── ONE TRANSLATOR, THREE REPOSITORIES ──
@@ -49,7 +49,8 @@ import { dirname, relative, resolve } from 'node:path';
 
 const ENV_REPO = 'OPENPLATE_WEBSITE_REPO';
 const ROOT = resolve(import.meta.dirname, '..');
-const WEBSITE = resolve(process.env[ENV_REPO] ?? resolve(ROOT, '../openplate-website'));
+// `../website`: since M262 the website is `apps/website`, beside this app in the same checkout.
+const WEBSITE = resolve(process.env[ENV_REPO] ?? resolve(ROOT, '../website'));
 const PROVENANCE = 'scripts/lib/TRANSLATE_SOURCE.json';
 const REPO = 'LowCarbCheck/openplate-website';
 

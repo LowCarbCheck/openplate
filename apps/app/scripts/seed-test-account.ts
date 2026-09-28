@@ -20,7 +20,7 @@
  * Nothing about it is a test double. It occupies an address, it holds a blob,
  * and it stays there until somebody removes it. Delete it when you are done:
  *
- *   cd ../openplate-core
+ *   cd ../core
  *   ADMIN_TOKEN=… pnpm sync-api accounts list
  *   ADMIN_TOKEN=… pnpm sync-api accounts delete <id> --yes
  *
@@ -112,7 +112,7 @@ const USAGE = `seed-test-account — a test account and a diary worth looking at
   THE ACCOUNT THIS CREATES IS A REAL ACCOUNT. It is not a test double and
   nothing removes it for you. When you are done:
 
-    cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts delete <id> --yes
+    cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts delete <id> --yes
 
   Restoring the diary on a device: open /settings/data and upload the written
   file. A fresh browser must be walked past onboarding first, or /settings/data
@@ -514,7 +514,7 @@ async function main(): Promise<void> {
   }
 
   process.stdout.write(
-    `\nDelete it when you are done:\n  cd ../openplate-core && ADMIN_TOKEN=... pnpm sync-api accounts delete ${account.accountId} --yes\n`,
+    `\nDelete it when you are done:\n  cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts delete ${account.accountId} --yes\n`,
   );
 }
 
