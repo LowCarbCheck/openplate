@@ -41,7 +41,12 @@ import { establishPrivateStore } from './engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } from './engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
-import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
+import type {
+  AccountViewWire,
+  HealthConsentRequestWire,
+  KdfDescriptorWire,
+  KeyRecordSubmissionWire,
+} from './engine/client/auth-wire';
 import type { PlanKey } from './engine/client/plans-wire';
 import type { LanguageCode } from '#app/i18n/language-prefs';
 import type { InstanceDescriptor, OperatorNotice } from './engine/protocol';
@@ -86,6 +91,7 @@ import {
 } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
 import { decodeTrialScans } from '#app/lib/plans/trial-scans';
+import { decodeHealthConsent } from '#app/lib/health-consent/health-consent';
 
 /** Overridable seams. Production passes none of these; tests pass all of them. */
 export interface SyncActionOptions {
@@ -227,6 +233,7 @@ export async function createSyncAccount({
   inviteToken,
   passphrase,
   displayName,
+  healthConsent = null,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
@@ -244,6 +251,13 @@ export async function createSyncAccount({
   inviteToken: string;
   passphrase: string;
   displayName?: string | null;
+  /**
+   * The consent the person ticked, with the version the box was drawn for, or
+   * `null` on an instance that asks for none (`PROTOCOL.md` §5.8). The service
+   * refuses a missing or stale one with `400 health-consent-required` and
+   * spends nothing, so the invite is still good for the next try.
+   */
+  healthConsent?: HealthConsentRequestWire | null;
 } & SyncActionOptions): Promise<SyncSetupOutcome> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
@@ -283,6 +297,7 @@ export async function createSyncAccount({
       },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
+    healthConsent,
   });
 
   openSyncVault({
@@ -994,7 +1009,20 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
   const account = await vault.authClient.patchAccount({ displayName });
   // The SNAPSHOT is what React reads, and the auth client cannot publish to
   // it: the vault is deliberately unreachable from a snapshot (see
-  // `sync-session.ts`). So the one field that changed is copied across here.
+  // `sync-session.ts`). So the view that came back is copied across here.
+  publishAccountView(account);
+}
+
+/**
+ * Copies a freshly read `AccountView` into the session snapshot.
+ *
+ * ONE MAPPING for every read that returns the whole view (the name change, the
+ * refresh and the consent below), because three hand-written copies are how
+ * one of them forgets a field. `?? null` answers a core older than a field,
+ * which sends no key at all and would otherwise put `undefined` where every
+ * reader tests for `null`.
+ */
+function publishAccountView(account: AccountViewWire): void {
   updateSyncSession({
     account: {
       id: account.id,
@@ -1008,8 +1036,27 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
       invitesNeedAPlan: account.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(account.trialScans),
       createdAt: account.createdAt,
+      healthConsent: decodeHealthConsent(account.healthConsent),
     },
   });
+}
+
+/**
+ * Records the signed-in account's explicit consent to health data
+ * (`PROTOCOL.md` §5.15.1) and publishes the view that comes back, so the
+ * consent gate in `_personal.tsx` reads it at the very next navigation.
+ *
+ * `version` is the one the instance published. A version it no longer asks
+ * for throws `400 health-consent-required`, and an instance that asks for none
+ * throws the ordinary `404`; the consent screen tells the two apart
+ * (`#app/lib/health-consent/health-consent`). Both leave the snapshot alone.
+ *
+ * @throws when no session is open, and on every refusal and transport failure.
+ */
+export async function recordHealthConsent({ version }: { version: string }): Promise<void> {
+  const vault = getSyncVault();
+  if (vault === null) throw new Error('recordHealthConsent called without an open sync session');
+  publishAccountView(await vault.authClient.recordHealthConsent({ version }));
 }
 
 /**
@@ -1032,26 +1079,11 @@ export async function refreshSyncAccount(): Promise<void> {
   const vault = getSyncVault();
   if (vault === null) return;
   try {
-    const account = await vault.authClient.getAccount();
-    updateSyncSession({
-      account: {
-        id: account.id,
-        email: account.email,
-        displayName: account.displayName,
-        role: account.role,
-        dailyAiLimit: account.dailyAiLimit,
-        aiUsedToday: account.aiUsedToday,
-        // BOTH MOVE ON THE SERVER TOO, which is why they ride this refresh:
-        // an administrator extends an allowance, and every invitation this
-        // account sends lowers the count by one.
-        allowanceExpiresAt: account.allowanceExpiresAt ?? null,
-        invitesLeft: account.invitesLeft ?? null,
-        invitesNeedAPlan: account.invitesNeedAPlan === true,
-        // THE SCAN COUNT MOVES ON THE SERVER TOO (M253/05), with every scan.
-        trialScans: decodeTrialScans(account.trialScans),
-        createdAt: account.createdAt,
-      },
-    });
+    // Every field moves on the server here, which is why the whole view rides
+    // this refresh: an administrator extends an allowance, every invitation
+    // this account sends lowers the count by one, and every scan spends one of
+    // the free ones (M253/05).
+    publishAccountView(await vault.authClient.getAccount());
   } catch {
     // Offline, or a service mid-deploy. The numbers already on screen stay.
   }

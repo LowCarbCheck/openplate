@@ -53,6 +53,7 @@ import {
   type AccountViewWire,
   type ChangePassphraseRequestWire,
   type DeleteAccountRequestWire,
+  type HealthConsentRequestWire,
   type InviteLookupResponseWire,
   type KdfDescriptorResponse,
   type KdfDescriptorWire,
@@ -481,6 +482,10 @@ export class SyncAuthClient implements SyncTokenProvider {
    *
    * The email is NOT in this body. It comes from the invite, server-side,
    * which is what makes the invite the address verification.
+   *
+   * `healthConsent` is the consent the person ticked, or `null` on an
+   * instance that asks for none. `null` LEAVES THE KEY OUT, so that body is
+   * byte for byte what it was before the field existed (`PROTOCOL.md` §5.8).
    */
   async signup(input: {
     inviteToken: string;
@@ -491,6 +496,7 @@ export class SyncAuthClient implements SyncTokenProvider {
     /** The RAW code, escrowed by the service. See `auth-wire.ts` on why this is here. */
     recoveryCode: string;
     keyRecords: KeyRecordSubmissionWire[];
+    healthConsent: HealthConsentRequestWire | null;
   }): Promise<SessionResponseWire> {
     const request: SignupRequestWire = {
       inviteToken: input.inviteToken,
@@ -501,6 +507,7 @@ export class SyncAuthClient implements SyncTokenProvider {
       recoveryCode: input.recoveryCode,
       keyRecords: input.keyRecords,
     };
+    if (input.healthConsent !== null) request.healthConsent = { version: input.healthConsent.version };
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/signup`,
       method: 'POST',
@@ -811,6 +818,33 @@ export class SyncAuthClient implements SyncTokenProvider {
     const body = await this.requestJson<AccountResponseWire>({
       path: `${AUTH_API_PREFIX}/account`,
       method: 'PATCH',
+      body: request,
+      authenticated: true,
+    });
+    const tokens = this.session?.tokens;
+    if (tokens !== undefined) this.session = { account: body.account, tokens };
+    return body.account;
+  }
+
+  /**
+   * Records this account's explicit consent to health data
+   * (`POST /v1/auth/account/health-consent`, `PROTOCOL.md` §5.15.1).
+   *
+   * `version` is the one `/health` published. The service compares it byte
+   * for byte, writes its own instant, and keeps the first instant on a repeat,
+   * so a second call is harmless. A different version is
+   * `400 health-consent-required`, and an instance that asks for no consent
+   * answers the ordinary `404`; both throw, and the caller tells them apart.
+   *
+   * The returned view is ADOPTED into the session, for the reason
+   * {@link patchAccount} gives: the next read of the account must already
+   * carry the consent, or the app would ask again.
+   */
+  async recordHealthConsent(input: { version: string }): Promise<AccountViewWire> {
+    const request: HealthConsentRequestWire = { version: input.version };
+    const body = await this.requestJson<AccountResponseWire>({
+      path: `${AUTH_API_PREFIX}/account/health-consent`,
+      method: 'POST',
       body: request,
       authenticated: true,
     });

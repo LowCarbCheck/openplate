@@ -339,6 +339,10 @@ async function createAccount({
       },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
+    // No consent to health data: a seeded test account is not a person
+    // agreeing to anything, so this tool seeds only an instance that asks for
+    // none. One that asks refuses it with `400 health-consent-required`.
+    healthConsent: null,
   });
 
   // The owner-private compartment, sealed with the one this setup just minted.

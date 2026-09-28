@@ -1411,7 +1411,8 @@
     "pantry": "Kiler · openplate",
     "recipes": "Tarifler · openplate",
     "awards": "Kayıtların · openplate",
-    "whatsNew": "Yenilikler · openplate"
+    "whatsNew": "Yenilikler · openplate",
+    "healthConsent": "Açık rızan · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -3817,5 +3818,18 @@
     "title": "Hesaplar için güvenli bir bağlantı gerekir",
     "body": "Bu sayfa düz HTTP üzerinden yüklendi. Tarayıcın hesapların ihtiyaç duyduğu şifrelemeyi kapattı. openplate uygulamasını bir https:// adresinde ya da sunucunun çalıştığı bilgisayarda localhost üzerinde aç.",
     "guide": "HTTPS nasıl kurulur"
+  },
+  "healthConsent": {
+    "title": "Açık rızan",
+    "checkbox": "openplate'in hesabımı yönetmek ve günlüğümü senkronize etmek için ne yediğim, kilom ve oruç sürelerim gibi sağlık verilerimi işlemesini kabul ediyorum. <privacy>Gizlilik bildirimi</privacy> bunun nasıl yapıldığını açıklar. Rızamı dilediğim zaman hesabımı silerek geri çekebilirim.",
+    "requiredToCreate": "Hesabını oluşturmak için lütfen kutuyu işaretle.",
+    "requiredToContinue": "Devam etmek için lütfen kutuyu işaretle.",
+    "heading": "Son bir adım: açık rızan",
+    "body": "Günlüğün sağlık verileri içerir. Gizlilik bildiriminde açıklandığı gibi, sunucumuzda şifrelenmiş bir kopyasını saklamak için açık rızana ihtiyacımız var.",
+    "agree": "Kabul et ve devam et",
+    "saving": "Kaydediliyor…",
+    "failed": "Rızan kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
+    "exportDiary": "Günlüğümü dışa aktar",
+    "deleteAccount": "Hesabımı sil"
   }
 }

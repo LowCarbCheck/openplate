@@ -41,6 +41,20 @@ export interface ManagedCoreStub {
   plans?: boolean;
   /** `AccountView.role`, or absent to keep the fake's own (a member). */
   role?: 'admin' | 'member';
+  /**
+   * `instance.healthConsent` on the handshake (`PROTOCOL.md` §5.6): the
+   * version of the wording a person agrees to, `null` for an instance that
+   * asks nothing, or absent to leave the key out as a core older than the
+   * field does. Read per request, so a spec can change the wording while a
+   * page is open.
+   */
+  healthConsent?: { version: string } | null;
+  /**
+   * `AccountView.healthConsent`: the consent on record, `null` for none, or
+   * absent to leave the key out. The consent route below writes it, the way
+   * the core does, so a reload reads what was agreed to.
+   */
+  accountHealthConsent?: { version: string; at: string } | null;
 }
 
 /** A trial account that has scans left, on an instance with member invites. */
@@ -59,6 +73,12 @@ export function trialAccountStub(left: number): ManagedCoreStub {
 /** An auth answer that carries the account, every other key kept as the fake sent it. */
 const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.unknown()) });
 
+/** The body of `POST /v1/auth/account/health-consent` (`PROTOCOL.md` §5.15.1). */
+const healthConsentBodySchema = z.object({ version: z.string() });
+
+/** The one refusal of both consent paths, transcribed from `PROTOCOL.md` §5.15.1. */
+export const HEALTH_CONSENT_REQUIRED = 'health-consent-required';
+
 /** The account fields the stub writes. */
 function accountPatch(stub: ManagedCoreStub) {
   const base = {
@@ -68,7 +88,27 @@ function accountPatch(stub: ManagedCoreStub) {
     trialScans: stub.trialScans,
   };
   const withRole = stub.role === undefined ? base : { ...base, role: stub.role };
-  return stub.invitesNeedAPlan === undefined ? withRole : { ...withRole, invitesNeedAPlan: stub.invitesNeedAPlan };
+  const withInvites =
+    stub.invitesNeedAPlan === undefined ? withRole : { ...withRole, invitesNeedAPlan: stub.invitesNeedAPlan };
+  return stub.accountHealthConsent === undefined ?
+      withInvites
+    : { ...withInvites, healthConsent: stub.accountHealthConsent };
+}
+
+/** The handshake's instance block, with `healthConsent` only when the stub names one. */
+function instanceBlock(stub: ManagedCoreStub) {
+  const instance = new Map<string, unknown>([
+    ['name', 'openplate-e2e'],
+    ['language', 'en'],
+    ['mail', true],
+    ['memberInvites', stub.memberInvites],
+    ['plans', stub.plans ?? true],
+    ['openSignup', true],
+    ['ai', { model: 'e2e-model' }],
+    ['trial', { scans: 10 }],
+  ]);
+  if (stub.healthConsent !== undefined) instance.set('healthConsent', stub.healthConsent);
+  return Object.fromEntries(instance);
 }
 
 /**
@@ -85,16 +125,7 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
         protocolVersion: PROTOCOL_VERSION,
         envelopeVersion: ENVELOPE_VERSION,
         serviceVersion: 'fake-e2e',
-        instance: {
-          name: 'openplate-e2e',
-          language: 'en',
-          mail: true,
-          memberInvites: stub.memberInvites,
-          plans: stub.plans ?? true,
-          openSignup: true,
-          ai: { model: 'e2e-model' },
-          trial: { scans: 10 },
-        },
+        instance: instanceBlock(stub),
       },
     });
   });
@@ -116,6 +147,33 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       });
     },
   );
+  // REGISTERED AFTER the route above, so it answers first (`PROTOCOL.md`
+  // §5.15.1). The fake service has no such route; this is the core's rule:
+  // 404 where the instance asks nothing, 400 for another version, and 200
+  // with the account otherwise, keeping the first instant on a repeat.
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/account/health-consent`, async (route) => {
+    const request = route.request();
+    // The preflight goes on to the fake service, which answers it for every path.
+    if (request.method() !== 'POST') return route.fallback();
+    const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
+    const asked = stub.healthConsent ?? null;
+    if (asked === null) return route.fulfill({ status: 404, headers: cors, json: { error: 'not found' } });
+    const body = healthConsentBodySchema.safeParse(request.postDataJSON());
+    if (!body.success || body.data.version !== asked.version) {
+      return route.fulfill({ status: 400, headers: cors, json: { error: HEALTH_CONSENT_REQUIRED } });
+    }
+    if (stub.accountHealthConsent?.version !== asked.version) {
+      stub.accountHealthConsent = { version: asked.version, at: new Date().toISOString() };
+    }
+    const authorization = request.headers().authorization ?? '';
+    const read = await fetch(`${E2E_SYNC_SERVER_URL}/v1/auth/account`, { headers: { authorization } });
+    const envelope = accountEnvelopeSchema.parse(await read.json());
+    return route.fulfill({
+      status: read.status,
+      headers: cors,
+      json: { ...envelope, account: { ...envelope.account, ...accountPatch(stub) } },
+    });
+  });
 }
 
 /** A valid 1 x 1 PNG, the smallest thing the photo checks accept. */

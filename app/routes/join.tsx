@@ -68,7 +68,9 @@ import { trackJoinCompleted } from '#app/lib/matomo-events';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { resolveJoinDestination } from '#app/lib/sign-in-flow';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
-import { readCachedServerInstance } from '#app/hooks/use-server-instance';
+import { readCachedServerInstance, readFreshServerInstance } from '#app/hooks/use-server-instance';
+import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
+import { withTimeout } from '#app/lib/with-timeout';
 import { captureIntendedPlan, readIntendedPlan } from '#app/lib/plans/intended-plan';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { addressWithoutLanguage, applyLanguageLink, decideLanguageLink, languageParamOf } from '#app/i18n/language-link';
@@ -85,6 +87,9 @@ export const handle = {
   title: 'Join',
   titleKey: 'join.title',
 };
+
+/** The longest the form waits for the handshake that says whether to draw the consent box. */
+const HANDSHAKE_WAIT_MS = 5_000;
 
 /**
  * Every screen this route can be on.
@@ -117,7 +122,13 @@ type Phase =
   | { status: 'signed-in-elsewhere'; signedInAs: string; invitedEmail: string }
   /** The service answered `409`: the invited address already has an account. */
   | { status: 'already-registered'; email: string }
-  | { status: 'ready'; inviteToken: string; invite: SyncInviteDetails };
+  /**
+   * The form. `healthConsent` is the consent the instance asks of a new
+   * account, read off a FRESH handshake beside the invite lookup, or `null`
+   * when it asks for none or the handshake could not be read. Read before the
+   * form is drawn, so the box is there from the form's first paint.
+   */
+  | { status: 'ready'; inviteToken: string; invite: SyncInviteDetails; healthConsent: InstanceHealthConsent | null };
 
 export default function Join() {
   const { t, i18n } = useTranslation();
@@ -185,6 +196,13 @@ export default function Join() {
 
     const inviteToken = link.invite;
     const look = async (): Promise<void> => {
+      // THE HANDSHAKE, BESIDE THE LOOKUP, not after it: whether this instance
+      // asks for a consent to health data decides whether the form draws a
+      // box (`PROTOCOL.md` §5.6). FRESH, because it decides a door. It never
+      // rejects, and it is waited for no longer than `HANDSHAKE_WAIT_MS`: an
+      // unreadable or silent one is `null`, the form is drawn without a box,
+      // and the core's refusal brings the box back if it was needed after all.
+      const instanceRead = withTimeout(readFreshServerInstance(configuredSyncUrl), HANDSHAKE_WAIT_MS);
       try {
         const invite = await readSyncInvite({ serverUrl: configuredSyncUrl, inviteToken });
         if (!isMounted) return;
@@ -213,8 +231,9 @@ export default function Join() {
         // forgotten here, the way a reload would discard it, so nothing about
         // the old server outlives the new one's invitation.
         if (verdict.kind === 'stale') await clearSessionCache();
+        const instance = await instanceRead;
         if (!isMounted) return;
-        setPhase({ status: 'ready', inviteToken, invite });
+        setPhase({ status: 'ready', inviteToken, invite, healthConsent: instance?.healthConsent ?? null });
       } catch {
         if (!isMounted) return;
         // "We could not reach the server" is NOT "your invitation is not
@@ -278,6 +297,7 @@ export default function Join() {
             <CreateAccountPanel
               serverUrl={configuredSyncUrl}
               initialInvite={shown.inviteToken}
+              healthConsent={shown.healthConsent}
               onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: shown.invite.email })}
               onCeremonyComplete={() => void landAfterJoin({ navigate, serverUrl: configuredSyncUrl })}
             />

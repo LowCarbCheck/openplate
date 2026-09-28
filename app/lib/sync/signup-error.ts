@@ -22,6 +22,7 @@
  * new invitation".
  */
 import { SyncRequestError } from './engine/client/sync-error';
+import { isHealthConsentRefusal } from '#app/lib/health-consent/health-consent';
 
 export type SignupFailure =
   /** `403` — the invite is missing, or is not (or no longer) valid. One outcome, by design. */
@@ -36,12 +37,20 @@ export type SignupFailure =
   | 'account-exists'
   /** `403 account-suspended` — the invited address has a suspended account. Not a signup problem to solve on this form. */
   | 'suspended'
+  /**
+   * `400 health-consent-required`: the instance asks for a consent to health
+   * data and the body had none, or carried a version it no longer asks for
+   * (`PROTOCOL.md` §5.8, 2026-09-28). Nothing was created and the invite is
+   * still good, so the form reads the handshake again and shows its box.
+   */
+  | 'health-consent-required'
   /** Anything else: transport, an incompatible service, a malformed request. Show what it said. */
   | 'other';
 
 /** @param cause - anything the signup call threw. */
 export function classifySignupFailure(cause: unknown): SignupFailure {
   if (!(cause instanceof SyncRequestError)) return 'other';
+  if (isHealthConsentRefusal(cause)) return 'health-consent-required';
   if (cause.kind === 'conflict') return 'account-exists';
   if (cause.kind === 'suspended') return 'suspended';
   if (cause.kind === 'forbidden') return 'invite-required';

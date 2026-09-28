@@ -122,6 +122,17 @@ export interface AccountViewWire {
    * `decodeTrialScans`, because this interface is a cast, not a parse.
    */
   trialScans?: TrialScansWire | null;
+  /**
+   * The account's explicit consent to health data, or `null` for none on
+   * record (2026-09-28, `PROTOCOL.md` §5.15). ABSENT on a core older than the
+   * field, which means the same thing: that core asks for no consent either.
+   *
+   * COMPARED, NEVER RENDERED. `version` is set against
+   * `instance.healthConsent.version`, and the app asks once when they differ.
+   * Read only through `decodeHealthConsent`, because this interface is a cast,
+   * not a parse.
+   */
+  healthConsent?: HealthConsentWire | null;
   createdAt: IsoTimestamp;
 }
 
@@ -130,6 +141,30 @@ export interface TrialScansWire {
   granted: number;
   left: number;
 }
+
+/** `AccountView.healthConsent` on the wire: the wording agreed to, and the service's instant. */
+export interface HealthConsentWire {
+  version: string;
+  at: IsoTimestamp;
+}
+
+/**
+ * What a person agrees to, as both consent paths send it (`PROTOCOL.md`
+ * §5.8 and §5.15.1): the version `/health` published, and nothing else. The
+ * service writes its own instant, so a client sends no time.
+ */
+export interface HealthConsentRequestWire {
+  version: string;
+}
+
+/**
+ * The one refusal of both consent paths, transcribed from `PROTOCOL.md`
+ * §5.15.1 (`openplate-core` `src/accounts/health-consent.ts`): `400` when the
+ * instance asks for a consent and the body has none, or another version. On
+ * the signup path the invite is NOT spent, so the person ticks the box and
+ * posts again.
+ */
+export const HEALTH_CONSENT_REQUIRED = 'health-consent-required';
 
 /**
  * `POST /v1/auth/invites`, a member invites somebody (`PROTOCOL.md` §5.21).
@@ -206,6 +241,13 @@ export interface SignupRequestWire {
   recoveryCode: string;
   /** Both records, `passphrase` and `recovery`, written in the same transaction as the account. */
   keyRecords: KeyRecordSubmissionWire[];
+  /**
+   * The consent the person ticked, REQUIRED where `instance.healthConsent` is
+   * set and ignored everywhere else (`PROTOCOL.md` §5.8). LEFT OUT rather
+   * than sent as `null` on an instance that asks for none, so that body is
+   * exactly what it was before the field existed.
+   */
+  healthConsent?: HealthConsentRequestWire;
 }
 
 export interface LoginRequestWire {

@@ -1411,7 +1411,8 @@
     "pantry": "Vorratskammer · openplate",
     "recipes": "Rezepte · openplate",
     "awards": "Deine Übersicht · openplate",
-    "whatsNew": "Was neu ist · openplate"
+    "whatsNew": "Was neu ist · openplate",
+    "healthConsent": "Deine Einwilligung · openplate"
   },
   "nav": {
     "add": "Hinzufügen",
@@ -3817,5 +3818,18 @@
     "title": "Konten erfordern eine sichere Verbindung",
     "body": "Diese Seite wurde über einfaches HTTP geladen. Dein Browser hat die Verschlüsselung deaktiviert, die Konten benötigen. Öffne openplate über eine https://-Adresse oder über localhost auf dem Computer, auf dem es läuft.",
     "guide": "So richtest du HTTPS ein"
+  },
+  "healthConsent": {
+    "title": "Deine Einwilligung",
+    "checkbox": "Ich willige ein, dass openplate meine Gesundheitsdaten, wie meine Mahlzeiten, mein Gewicht und meine Fastenzeiten, verarbeitet, um mein Konto zu führen und mein Tagebuch zu synchronisieren. Die <privacy>Datenschutzhinweise</privacy> erklären die Einzelheiten. Ich kann meine Einwilligung jederzeit widerrufen, indem ich mein Konto lösche.",
+    "requiredToCreate": "Bitte setze das Häkchen, um dein Konto zu erstellen.",
+    "requiredToContinue": "Bitte setze das Häkchen, um fortzufahren.",
+    "heading": "Noch ein Schritt: deine Einwilligung",
+    "body": "Dein Tagebuch enthält Gesundheitsdaten. Wir benötigen deine ausdrückliche Einwilligung, um eine verschlüsselte Kopie davon auf unserem Server zu speichern, wie in den Datenschutzhinweisen beschrieben.",
+    "agree": "Einwilligen und weiter",
+    "saving": "Wird gespeichert…",
+    "failed": "Deine Einwilligung wurde nicht gespeichert. Prüfe deine Verbindung und versuche es erneut.",
+    "exportDiary": "Mein Tagebuch exportieren",
+    "deleteAccount": "Mein Konto löschen"
   }
 }

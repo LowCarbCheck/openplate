@@ -256,7 +256,26 @@ export type InstanceDescriptor = {
    * so.
    */
   nutrientReferenceBasis?: NutrientReferenceBasis;
+  /**
+   * The explicit consent to health data this instance asks of every account,
+   * or `null` when it asks for none, which is the self-hosted default
+   * (`PROTOCOL.md` §5.6, §5.15.1, 2026-09-28).
+   *
+   * THE ONE FIELD HERE THE SERVICE ENFORCES. While it is set,
+   * `POST /v1/auth/signup` refuses a body without the matching
+   * `healthConsent` (`400 health-consent-required`), and an account without
+   * it is asked once by this client and recorded through
+   * `POST /v1/auth/account/health-consent`.
+   *
+   * OPTIONAL IN THE TYPE, but the decoder always writes it, answering `null`
+   * for a service older than the field, like `memberInvites` answers `false`.
+   * Absent and `null` are the same fact for every reader: draw no box.
+   */
+  healthConsent?: InstanceHealthConsent | null;
 };
+
+/** What {@link InstanceDescriptor.healthConsent} asks for: the version of the wording a person agrees to. */
+export type InstanceHealthConsent = { version: string };
 
 /** The sign-up challenge of {@link InstanceDescriptor.signupCaptcha}. */
 export type SignupCaptcha = { provider: 'turnstile'; siteKey: string };
@@ -395,6 +414,12 @@ const instanceDescriptorSchema = z.object({
   // degradation, and it must not fail the whole descriptor and take the AI
   // model down with it.
   nutrientReferenceBasis: z.enum(['dge', 'efsa', 'us']).optional().catch(undefined),
+  // `.catch(null)` answers a missing key (a core older than the field) and a
+  // nonsense value alike with "asks for no consent", and never fails the whole
+  // descriptor. Any non-empty string is accepted as the version: it is never
+  // shown, only compared and sent back byte for byte, and a client stricter
+  // than the core would draw no box where the core then refuses the sign-up.
+  healthConsent: z.object({ version: z.string().min(1) }).nullable().catch(null),
 });
 
 /** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */

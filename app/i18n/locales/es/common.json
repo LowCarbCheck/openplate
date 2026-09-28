@@ -1411,7 +1411,8 @@
     "pantry": "Despensa · openplate",
     "recipes": "Recetas · openplate",
     "awards": "Tu historial · openplate",
-    "whatsNew": "Novedades · openplate"
+    "whatsNew": "Novedades · openplate",
+    "healthConsent": "Tu consentimiento · openplate"
   },
   "nav": {
     "add": "Añadir",
@@ -3817,5 +3818,18 @@
     "title": "Las cuentas necesitan una conexión segura",
     "body": "Esta página se cargó mediante HTTP simple. Tu navegador desactivó el cifrado que necesitan las cuentas. Abre openplate en una dirección https://, o en localhost en el equipo que lo ejecuta.",
     "guide": "Cómo configurar HTTPS"
+  },
+  "healthConsent": {
+    "title": "Tu consentimiento",
+    "checkbox": "Acepto que openplate procese mis datos de salud, como lo que como, mi peso y mis horas de ayuno, para gestionar mi cuenta y sincronizar mi diario. El <privacy>aviso de privacidad</privacy> explica cómo. Puedo retirar mi consentimiento en cualquier momento eliminando mi cuenta.",
+    "requiredToCreate": "Marca la casilla para crear tu cuenta.",
+    "requiredToContinue": "Marca la casilla para continuar.",
+    "heading": "Un paso más: tu consentimiento",
+    "body": "Tu diario contiene datos de salud. Necesitamos tu consentimiento explícito para guardar una copia cifrada en nuestro servidor, tal como explica el aviso de privacidad.",
+    "agree": "Aceptar y continuar",
+    "saving": "Guardando…",
+    "failed": "No se guardó tu consentimiento. Comprueba tu conexión e inténtalo de nuevo.",
+    "exportDiary": "Exportar mi diario",
+    "deleteAccount": "Eliminar mi cuenta"
   }
 }

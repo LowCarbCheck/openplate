@@ -1411,7 +1411,8 @@
     "pantry": "Garde-manger · openplate",
     "recipes": "Recettes · openplate",
     "awards": "Ton historique · openplate",
-    "whatsNew": "Nouveautés · openplate"
+    "whatsNew": "Nouveautés · openplate",
+    "healthConsent": "Ton consentement · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -3817,5 +3818,18 @@
     "title": "Les comptes nécessitent une connexion sécurisée",
     "body": "Cette page s'est chargée en HTTP simple. Ton navigateur a désactivé le chiffrement dont les comptes ont besoin. Ouvre openplate à une adresse https://, ou sur localhost depuis l'ordinateur qui l'exécute.",
     "guide": "Configurer HTTPS"
+  },
+  "healthConsent": {
+    "title": "Ton consentement",
+    "checkbox": "J'accepte que openplate traite mes données de santé, comme ce que je mange, mon poids et mes périodes de jeûne, pour faire fonctionner mon compte et synchroniser mon journal. La <privacy>politique de confidentialité</privacy> explique comment. Je peux retirer mon consentement à tout moment en supprimant mon compte.",
+    "requiredToCreate": "Coche la case pour créer ton compte.",
+    "requiredToContinue": "Coche la case pour continuer.",
+    "heading": "Encore une étape : ton consentement",
+    "body": "Ton journal contient des données de santé. Nous avons besoin de ton consentement explicite pour en conserver une copie chiffrée sur notre serveur, comme l'explique la politique de confidentialité.",
+    "agree": "Accepter et continuer",
+    "saving": "Enregistrement…",
+    "failed": "Ton consentement n'a pas été enregistré. Vérifie ta connexion et réessaie.",
+    "exportDiary": "Exporter mon journal",
+    "deleteAccount": "Supprimer mon compte"
   }
 }

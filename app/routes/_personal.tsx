@@ -41,10 +41,19 @@ import {
   shouldCheckPlanGate,
   subscribePlanGateFacts,
 } from '#app/lib/plans/plan-gate-facts';
+import {
+  consentGateAt,
+  getConsentGateFactsSnapshot,
+  refreshConsentGateFacts,
+  resolveConsentGateForNavigation,
+  subscribeConsentGateFacts,
+  type ConsentGateFacts,
+} from '#app/lib/health-consent/consent-gate-facts';
 
 /**
- * The onboarding gate, which is purely local (M128 spec 03), and after it the
- * paywall (2026-09-28), which the comment above its branch below describes.
+ * The onboarding gate, which is purely local (M128 spec 03), after it the
+ * consent to health data, and after that the paywall (both 2026-09-28), which
+ * the comment above their branch below describes.
  * The account-scoped server → device migration gate that
  * used to sit in front of it is gone with the account system itself: there is
  * no `users` table, no session, and no server-side health data left to migrate,
@@ -174,8 +183,23 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // action on it, a session settling) is left alone, or the last free scan's
   // own action would replace the review of that plate with the plan page. See
   // `shouldCheckPlanGate`.
-  const pathname = new URL(request.url).pathname;
+  //
+  // THE CONSENT TO HEALTH DATA, BEFORE THE PAYWALL (2026-09-28). On an
+  // instance that asks every account for it, an account that never agreed to
+  // the wording it asks for now is sent to `/consent` from every page but the
+  // export, the account page and the consent screen itself, administrators
+  // included. It comes first, so a locked account agrees first and meets the
+  // plan page after; `/consent` is exempt from the paywall for the same
+  // reason. Unknown never asks: see `#app/lib/health-consent/consent-gate`.
+  //
+  // ONE DECISION FOR BOTH DOORS. `shouldCheckPlanGate` spends the one-time
+  // request the watchers below make, so it is asked once and its answer
+  // covers both gates; `ConsentGateWatcher` asks through the same request.
+  const url = new URL(request.url);
+  const pathname = url.pathname;
   if (shouldCheckPlanGate(pathname)) {
+    const consentGate = await resolveConsentGateForNavigation({ pathname, search: url.search });
+    if (consentGate.kind === 'consent') throw redirect(consentGate.destination);
     const planGate = await resolvePlanGateForNavigation({ pathname });
     if (planGate.kind === 'paywall') throw redirect(planGate.destination);
   }
@@ -230,7 +254,9 @@ export function shouldRevalidate({
   // A TAP ONTO A LOCKED PAGE runs the loader, so the paywall above can send it
   // to the plan page. Decided from the facts already held, synchronously and
   // without the network, which is why every other plain navigation keeps
-  // skipping the loader as before.
+  // skipping the loader as before. The same holds for a page the consent
+  // gate would ask on, from the export or the account page.
+  if (consentGateAt({ pathname: nextUrl.pathname, search: nextUrl.search }).kind === 'consent') return true;
   if (planGateAt({ pathname: nextUrl.pathname }).kind === 'paywall') return true;
   return formMethod ? defaultShouldRevalidate : false;
 }
@@ -319,6 +345,9 @@ export default function PersonalLayout() {
           nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set.
           MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
+      {/* Asks the consent gate again once the account and the instance's
+          consent version arrive; renders nothing. */}
+      <ConsentGateWatcher />
       {/* Asks the paywall again once the account and its plan facts arrive;
           renders nothing. */}
       <PlanGateWatcher />
@@ -440,6 +469,63 @@ function PlanGateWatcher(): null {
     requestPlanGateCheck();
     void revalidator.revalidate();
   }, [accountId, hasReadAccount, facts, pathname, revalidator]);
+
+  return null;
+}
+
+/** The server snapshot of the consent facts: none, ever, so a server render can never ask anything. */
+function getServerConsentGateFacts(): ConsentGateFacts | null {
+  return null;
+}
+
+/**
+ * Keeps the consent gate's facts read, and asks the gate again the moment the
+ * first facts for an account arrive.
+ *
+ * WHY IT IS NEEDED, and why it is `PlanGateWatcher`'s twin. On a document load
+ * the session is still reopening when `clientLoader` runs, so the loader has
+ * no account to ask about and answers open. The page is drawn, the session
+ * reopens, and only then can the instance's consent version be read. This is
+ * what reads it, keyed on the ACCOUNT ID, and what revalidates when the page
+ * on screen is one the gate would ask on: the loader then answers with the
+ * redirect to `/consent`.
+ *
+ * ONCE PER ACCOUNT. A wording that changes later is asked at the next
+ * navigation, by `shouldRevalidate`, never in the middle of a page.
+ */
+function ConsentGateWatcher(): null {
+  const session = useSyncSession();
+  const accountId = session.account?.id ?? null;
+  // `role === null` is the placeholder before the account view is read, which
+  // says nothing about a consent.
+  const hasReadAccount = session.account !== null && session.account.role !== null;
+  const facts = useSyncExternalStore(subscribeConsentGateFacts, getConsentGateFactsSnapshot, getServerConsentGateFacts);
+  const { pathname, search } = useLocation();
+  const revalidator = useRevalidator();
+  const settledFor = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (accountId === null || !hasReadAccount) return;
+    void refreshConsentGateFacts();
+  }, [accountId, hasReadAccount, pathname]);
+
+  useEffect(() => {
+    if (accountId === null || !hasReadAccount || facts === null) return;
+    if (settledFor.current === accountId) return;
+    if (consentGateAt({ pathname, search }).kind === 'open') {
+      settledFor.current = accountId;
+      return;
+    }
+    // A revalidation already running will run the loader anyway; this effect
+    // runs again when it settles.
+    if (revalidator.state !== 'idle') return;
+    settledFor.current = accountId;
+    // The loader leaves the page on screen alone unless asked, and this is
+    // the one time it is asked. The request is the plan gate's, shared: the
+    // loader decides both gates on it, consent first.
+    requestPlanGateCheck();
+    void revalidator.revalidate();
+  }, [accountId, hasReadAccount, facts, pathname, search, revalidator]);
 
   return null;
 }

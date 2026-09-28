@@ -72,6 +72,10 @@ const PAYWALL: PlanGateOutcome = { kind: 'paywall', destination: PLAN_PAGE_HREF 
  * - `/settings/sharing`, where a clinician share is revoked.
  * - `/settings/notifications`, where the daily notification is switched off,
  *   so a locked person is not sent a message they cannot open.
+ * - `/consent`, the one-time consent to health data
+ *   (`#app/lib/health-consent/consent-gate`). A consent is never paid for, and
+ *   the consent gate runs first, so a locked account that never agreed is
+ *   asked there and sees the plan page after.
  *
  * `/admin` and every page below it are open as well, see
  * {@link isPlanGateExempt}: an administrator runs the instance whatever their
@@ -90,6 +94,7 @@ export const PLAN_GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   '/settings/research',
   '/settings/sharing',
   '/settings/notifications',
+  '/consent',
 ]);
 
 /** The one prefix the gate opens a whole subtree for. */

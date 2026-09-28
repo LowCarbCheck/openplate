@@ -250,6 +250,13 @@ export default [
     // live in the on-device primary store and their status is derived from
     // timestamps, so there is nothing for a server loader to do.
     route('/fasting', 'routes/fasting.tsx'),
+    // The one-time consent to health data (2026-09-28). Where the consent gate
+    // in this layout's loader sends an account that never agreed to the
+    // wording its instance asks for. INSIDE the layout, so the header and the
+    // way to sign out stay on screen; exempt from the consent gate (it is the
+    // gate's destination) and from the plan gate, so it is asked before the
+    // plan page. See `#app/lib/health-consent/consent-gate`.
+    route('/consent', 'routes/consent.tsx'),
     // The settings hub: compact rows with live status, one per destination
     // below. Replaced the old `/profile` card hub (which now redirects here).
     route('/settings', 'routes/settings._index.tsx'),

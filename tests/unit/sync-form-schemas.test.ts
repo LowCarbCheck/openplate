@@ -49,8 +49,12 @@ function erroredFields(submission: ParsedSubmission): string[] {
   return Object.keys(errorsOf(submission)).toSorted();
 }
 
-function parseSignup(values: Record<string, string>, invite: 'none' | 'optional' | 'required' = 'none') {
-  return parseWithZod(formDataOf(values), { schema: makeSyncSignupSchema(fakeT, { invite }) });
+function parseSignup(
+  values: Record<string, string>,
+  invite: 'none' | 'optional' | 'required' = 'none',
+  isHealthConsentAsked = false,
+) {
+  return parseWithZod(formDataOf(values), { schema: makeSyncSignupSchema(fakeT, { invite, isHealthConsentAsked }) });
 }
 
 describe('makeSyncSignupSchema', () => {
@@ -104,6 +108,43 @@ describe('makeSyncSignupSchema', () => {
   it('reports every broken rule at once, each under its own field', () => {
     const submission = parseSignup({ invite: 'nope', passphrase: 'short', confirmPassphrase: 'other' }, 'required');
     assert.deepEqual(erroredFields(submission), ['confirmPassphrase', 'invite', 'passphrase']);
+  });
+
+  // THE CONSENT BOX (2026-09-28). On an instance that asks for it, an unticked
+  // box is refused under the box and nothing is sent; the twin below differs
+  // only in the tick, and the one after only in the instance asking.
+  it('refuses an unticked consent box under that box, on an instance that asks for it', () => {
+    const submission = parseSignup(
+      { invite: `${SYNC_INVITE_PREFIX}TESTTOKENONLY`, passphrase: GOOD_PASSPHRASE, confirmPassphrase: GOOD_PASSPHRASE },
+      'required',
+      true,
+    );
+    assert.equal(submission.status, 'error');
+    assert.deepEqual(erroredFields(submission), ['healthConsent']);
+    assert.deepEqual(errorsOf(submission).healthConsent, ['healthConsent.requiredToCreate']);
+  });
+
+  it('accepts a ticked consent box on an instance that asks for it', () => {
+    const submission = parseSignup(
+      {
+        invite: `${SYNC_INVITE_PREFIX}TESTTOKENONLY`,
+        passphrase: GOOD_PASSPHRASE,
+        confirmPassphrase: GOOD_PASSPHRASE,
+        healthConsent: 'on',
+      },
+      'required',
+      true,
+    );
+    assert.equal(submission.status, 'success');
+  });
+
+  it('asks nothing about consent on an instance that asks for none', () => {
+    const submission = parseSignup(
+      { invite: `${SYNC_INVITE_PREFIX}TESTTOKENONLY`, passphrase: GOOD_PASSPHRASE, confirmPassphrase: GOOD_PASSPHRASE },
+      'required',
+      false,
+    );
+    assert.equal(submission.status, 'success');
   });
 
   it('demands an invite when the instance is invite-only, which every instance now is', () => {
