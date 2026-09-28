@@ -1,8 +1,8 @@
 /**
  * A LANGUAGE NAMED BY A LINK, `lang=fr` (2026-09-28).
  *
- * openplate.de links to `/sign-up?lang=<code>` and `/?lang=<code>`, and the
- * core appends `&lang=<code>` to the join link it mails, so a visitor who read
+ * openplate.de links to `/sign-up?lang=<code>`, `/sign-in?lang=<code>` and
+ * `/?lang=<code>`, and the core appends `&lang=<code>` to the join link it mails, so a visitor who read
  * the pricing page in French fills in a French form and opens a French join
  * page. The app has one way to set its language, the switch on the
  * preferences screen (`selectLanguage` in `language-prefs.ts`): write the
