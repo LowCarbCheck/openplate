@@ -24,6 +24,7 @@ import { createHttpMailer, createMailer, createNoopMailer } from '../../src/mail
 import type { CreateHttpMailerOptions, Mailer } from '../../src/mail/mailer.js';
 import { createDeclarationTemplateSource } from '../../src/mail/declaration-templates.js';
 import type { LogFields, Logger } from '../../src/logger.js';
+import type { InstanceLanguage } from '../../src/protocol.js';
 
 /** The neutral stand-in for a mounted `CONTENT_DIR`, see its README. */
 const FIXTURE_CONTENT = fileURLToPath(new URL('../fixtures/content', import.meta.url));
@@ -133,6 +134,17 @@ function mailerFor(url: string, logger: Logger, timeoutMs?: number): Mailer {
   return createHttpMailer(options);
 }
 
+/** An adapter on an instance whose own language is `language`, the way `INSTANCE_LANGUAGE` sets it. */
+function mailerIn(input: { url: string; logger: Logger; language: InstanceLanguage }): Mailer {
+  return createHttpMailer({
+    mail: { url: input.url, apiKey: 'k', from: 'f', operatorEmail: 'operator@example.org' },
+    links: LINKS,
+    language: input.language,
+    templates: createDeclarationTemplateSource({ contentDir: null, logger: input.logger }),
+    logger: input.logger,
+  });
+}
+
 // ── What it posts ──────────────────────────────────────────────────────────
 
 test('an invite send posts the Resend-shaped payload, with the recipient as an array', async () => {
@@ -240,6 +252,38 @@ test("the posted sign-up letter's link carries the plan and the language the per
   );
   assert.ok(plain.text.includes('invite=si_b-token'));
   assert.ok(!plain.text.includes('plan=') && !plain.text.includes('lang='), plain.text);
+});
+
+test('the sign-up letter is written in the language the person asked in, and in the instance language when they named none', async () => {
+  const api = await startFakeMailApi();
+  const captured = createCapturingLogger();
+  // A German instance, the way app.openplate.de runs, asked by a visitor who wrote in English.
+  const mailer = mailerIn({ url: api.url, logger: captured.logger, language: 'de' });
+  const askIn = (locale: InstanceLanguage | null): Promise<void> =>
+    mailer.sendSignupRequest({
+      email: 'anna@example.org',
+      displayName: null,
+      inviteToken: 'si_a-token',
+      expiresAt: '2026-09-11T10:00:00.000Z',
+      intent: { plan: null, locale },
+    });
+
+  await askIn('en');
+  // THE CONTROLS: German asked for is German, nothing asked for is the
+  // instance's own language, and a third language shows this is no English toggle.
+  await askIn('de');
+  await askIn(null);
+  await askIn('fr');
+
+  assert.equal(api.received.length, 4);
+  // SAFETY: as above, our own adapter posted these bodies.
+  const [english, german, unnamed, french] = api.received.map((request) => JSON.parse(request.body) as MailPayload);
+  assert.equal(english?.subject, 'Create your openplate account');
+  assert.ok(english?.text.includes('it expires on 11 September 2026'), 'the body and its date follow the subject');
+  assert.ok(english?.html.includes('<html lang="en">'), 'the HTML part names the language it is written in');
+  assert.equal(german?.subject, 'Erstelle dein openplate-Konto');
+  assert.equal(unnamed?.subject, 'Erstelle dein openplate-Konto');
+  assert.equal(french?.subject, 'Crée ton compte openplate');
 });
 
 test('an account-notice send posts the third letter, and posts no link with it', async () => {

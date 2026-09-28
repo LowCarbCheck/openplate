@@ -74,8 +74,8 @@ export interface SendInviteInput {
 
 /**
  * The open sign-up door's letter: the invitation's fields, plus what the
- * person picked before they asked. The intent rides in the link and nowhere
- * else (`signup-message.ts`).
+ * person picked before they asked. Both picks ride in the link
+ * (`signup-message.ts`), and the language also chooses the letter's words.
  */
 export interface SendSignupRequestInput extends SendInviteInput {
   intent: SignupIntent;
@@ -207,7 +207,11 @@ export interface CreateHttpMailerOptions {
   mail: HttpMailConfig;
   /** The two base URLs a link is built from. Required whenever mail is configured (`config.ts`). */
   links: { clientBaseUrl: string; serverPublicUrl: string };
-  /** Which language both letters are written in (`INSTANCE_LANGUAGE`). */
+  /**
+   * The instance's own language (`INSTANCE_LANGUAGE`). A letter whose request
+   * names the reader's language is written in that one instead; every other
+   * letter, and a request that names none, is written in this.
+   */
   language: InstanceLanguage;
   /** Where the two declaration letters find their text (M246/04). See `declaration-templates.ts`. */
   templates: DeclarationTemplateSource;
@@ -344,7 +348,10 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         serverPublicUrl: links.serverPublicUrl,
         inviteToken: input.inviteToken,
         expiresAt: input.expiresAt,
-        language,
+        // The language the person asked in, then the instance's. Every
+        // `InstanceLanguage` has a sign-up letter (`signup-letter-strings.ts`),
+        // so no language needs a fallback past this one.
+        language: input.intent.locale ?? language,
         intent: input.intent,
       });
       await postMail({
