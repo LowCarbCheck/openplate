@@ -2,9 +2,15 @@ import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '#app/components/ui/button';
 import { cn } from '#app/lib/utils';
-import { clearStatus, registerStatusHost, useStatus, type StatusMessage, type StatusTone } from '#app/lib/status';
+import {
+  clearStatus,
+  registerStatusHost,
+  useStatus,
+  type StatusAction,
+  type StatusMessage,
+  type StatusTone,
+} from '#app/lib/status';
 
 /**
  * The app's notifications, rendered in the header's TITLE SLOT.
@@ -60,6 +66,39 @@ const TONE_ICON = {
 } as const;
 
 /**
+ * The action's words and its tap area.
+ *
+ * THE LABEL IS THE LAST WORDS OF THE SENTENCE, NOT A BUTTON BESIDE IT (the
+ * buyer walk, 2026-09-28). A bordered button beside the text took its width
+ * out of the sentence: at 390 px the German "Tarife ansehen" plus the close
+ * control left the countdown about 40 px, and it read "Noch 10 kost…". The
+ * French "Voir les forfaits" would have left less. Drawn inline, the label
+ * costs its own words and nothing more, and the sentence keeps the whole
+ * column.
+ *
+ * THE TAP AREA IS THE WHOLE COLUMN. The label is a line of `text-xs`, far
+ * under the 44 px floor, so its `after:` box is stretched over the text
+ * column (`relative`, as tall as the row's `min-h-11`): a finger anywhere on
+ * the sentence takes the action, and the close control beside the column
+ * stays its own target. The accessible name is the label alone.
+ */
+function StatusActionLabel({ action }: { action: StatusAction }): ReactNode {
+  return (
+    <button
+      type="button"
+      data-slot="header-status-action"
+      onClick={() => {
+        action.onClick();
+        clearStatus();
+      }}
+      className="cursor-pointer whitespace-nowrap underline underline-offset-2 outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring"
+    >
+      {action.label}
+    </button>
+  );
+}
+
+/**
  * The status row itself, props only, so a static render can be handed a
  * message without driving the store.
  */
@@ -80,10 +119,11 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   // the two together still fit the same budget.
   //
   // A status WITH AN ACTION gets the same compact treatment (M230): the
-  // action button and the dismiss control take width from the sentence, and
+  // action's words and the dismiss control take width from the sentence, and
   // the German "{{name}} entfernt." beside "Rückgängig" needed a third line
   // at 390px, which `line-clamp-2` cut. The browser tier walks that delete in
-  // every language (`tests/e2e/header-status.spec.ts`).
+  // every language (`tests/e2e/header-status.spec.ts`), and the trial
+  // countdown in the three longest (`tests/e2e/trial-countdown.spec.ts`).
   const isCompact = isError || status.action !== null;
   const textRowClass = isCompact ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
   const textClampClass = isCompact && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
@@ -93,45 +133,52 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
       data-slot="header-status"
       className="flex min-h-11 min-w-0 flex-1 items-center gap-2 opacity-100 transition-opacity duration-150 motion-reduce:transition-none"
     >
-      {/* `<output>` carries an implicit ARIA role of "status", which is the
-          polite live region this needs. A `role` or an `aria-live` beside it
-          would be a second, redundant declaration of the same thing. */}
-      <output className={cn('flex min-w-0 flex-1 flex-col justify-center gap-px', TONE_CLASS[status.tone])}>
-        {/* `items-start`, not `items-center`: the text below can wrap to a
-            second or third line, and the icon sits on the first line rather
-            than centering across all of them. `line-clamp-2`/`line-clamp-3`
-            plus `break-words` replaces `truncate` here (M225): an error stays
-            on screen until dismissed, so cutting it to one line with an
-            ellipsis made it unreadable. The description below keeps
-            `truncate`, it is supplementary, never the whole message.
+      {/* THE TEXT COLUMN. `relative` and `self-stretch` only matter when the
+          status carries an action: that is the box the action's tap area
+          fills, as tall as the row (see `StatusActionLabel`). */}
+      <div className={cn('relative flex min-w-0 flex-1 flex-col justify-center self-stretch', TONE_CLASS[status.tone])}>
+        {/* `<output>` carries an implicit ARIA role of "status", which is the
+            polite live region this needs. A `role` or an `aria-live` beside it
+            would be a second, redundant declaration of the same thing. */}
+        <output className="flex min-w-0 flex-col justify-center gap-px">
+          {/* `items-start`, not `items-center`: the text below can wrap to a
+              second or third line, and the icon sits on the first line rather
+              than centering across all of them. `line-clamp-2`/`line-clamp-3`
+              plus `break-words` replaces `truncate` here (M225): an error stays
+              on screen until dismissed, so cutting it to one line with an
+              ellipsis made it unreadable. The description below keeps
+              `truncate`, it is supplementary, never the whole message.
 
-            `text-balance` is the mobile audit's fix for the orphan: at 390 px
-            "That's seven days logged in a row." broke after "in a" and left
-            "row." alone on the second line, and German did the same with
-            "Folge.". Balancing evens the two lines out instead. It changes no
-            copy and adds no line: a sentence that already fits stays on one. */}
-        <span className={cn('flex min-w-0 items-start gap-1.5', textRowClass)}>
-          <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span className={cn(textClampClass, 'text-balance break-words')}>{status.text}</span>
-        </span>
-        {status.description !== null && (
-          <span className="truncate text-xs leading-4 text-muted-foreground">{status.description}</span>
-        )}
-      </output>
-      {status.action !== null && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0"
-          onClick={() => {
-            status.action?.onClick();
-            clearStatus();
-          }}
-        >
-          {status.action.label}
-        </Button>
-      )}
+              `text-balance` is the mobile audit's fix for the orphan: at 390 px
+              "That's seven days logged in a row." broke after "in a" and left
+              "row." alone on the second line, and German did the same with
+              "Folge.". Balancing evens the two lines out instead. It changes no
+              copy and adds no line: a sentence that already fits stays on one. */}
+          <span className={cn('flex min-w-0 items-start gap-1.5', textRowClass)}>
+            {/* NO TONE ICON BESIDE AN ACTION. Its 22 px are a ninth of the
+                208 px column at 390 px, and the sentence with its action needs
+                them: with the icon, the German, French and Turkish scan counts
+                plus their labels took a third line in the two lines a recap
+                line leaves them (measured, 2026-09-28). The tone stays in the
+                colour, and the underlined label says there is something to do. */}
+            {status.action === null && <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
+            <span data-slot="header-status-text" className={cn(textClampClass, 'text-balance break-words')}>
+              <span data-slot="header-status-sentence">{status.text}</span>
+              {status.action !== null && (
+                <>
+                  {' '}
+                  <StatusActionLabel action={status.action} />
+                </>
+              )}
+            </span>
+          </span>
+          {status.description !== null && (
+            <span data-slot="header-status-description" className="truncate text-xs leading-4 text-muted-foreground">
+              {status.description}
+            </span>
+          )}
+        </output>
+      </div>
       {isDismissable && (
         // `size-11` is the app's 44px tap floor. The text of a persisting error
         // opens nothing, tapping it is not a gesture, this button is the exit.

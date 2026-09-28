@@ -13,9 +13,16 @@
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { EN, fill } from './copy';
+import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { EN, catalogFor, fill } from './copy';
 import { E2E_APP_URL } from './env';
-import { completeOnboarding, connectStubAiProvider, logFoodManually, signInFixtureAccount } from './helpers';
+import {
+  completeOnboarding,
+  connectStubAiProvider,
+  doesStatusRowFit,
+  logFoodManually,
+  signInFixtureAccount,
+} from './helpers';
 import { FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW, routeAccountAllowance, routePlansCore } from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
@@ -135,22 +142,25 @@ test('with no meal logged with AI there is no recap line, on the plan page or in
   await expect(headerStatus(page)).toContainText(fill(EN.plan.countdown.daysLeft_other, { count: '3' }), {
     timeout: 10_000,
   });
-  // No second line at all: the status row's text is the countdown's alone.
-  const countdownOnly = fill(EN.plan.countdown.daysLeft_other, { count: '3' }) + EN.plan.countdown.action;
+  // No second line at all: the status row's text is the countdown's alone,
+  // its action's words following the sentence after one space (2026-09-28).
+  const countdownOnly = `${fill(EN.plan.countdown.daysLeft_other, { count: '3' })} ${EN.plan.countdown.action}`;
   await expect(headerStatus(page)).toHaveText(countdownOnly);
 
   await openPlanPage(page);
   await expect(recapLine(page)).toHaveCount(0);
 });
 
-test('on a scan trial with three scans or fewer left, the countdown sums up the meals so far (M253/05)', async ({
-  page,
-}) => {
+/** The free scans left in the scan-trial cases: three, the most the recap line is drawn for. */
+const SCANS_LEFT_NEAR_THE_END = 3;
+
+/** A signed-in device on a scan trial with three scans left, one plate already logged with AI. */
+async function startScanTrialDeviceWithOneAiMeal(page: Page): Promise<void> {
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
   await routeAccountAllowance(page, {
     dailyAiLimit: 20,
     allowanceExpiresAt: null,
-    trialScans: { granted: 10, left: 3 },
+    trialScans: { granted: 10, left: SCANS_LEFT_NEAR_THE_END },
     createdAt: new Date().toISOString(),
   });
   await page.route(`${STUB_PROVIDER_URL}/chat/completions`, (route) =>
@@ -167,6 +177,12 @@ test('on a scan trial with three scans or fewer left, the countdown sums up the 
   await signInFixtureAccount(page);
   await connectStubAiProvider(page);
   await logOnePlateWithAi(page);
+}
+
+test('on a scan trial with three scans or fewer left, the countdown sums up the meals so far (M253/05)', async ({
+  page,
+}) => {
+  await startScanTrialDeviceWithOneAiMeal(page);
 
   const recap = fill(EN.plan.recap.mealsSoFar_one, { count: '1' });
   await page.goto('/diary');
@@ -179,4 +195,36 @@ test('on a scan trial with three scans or fewer left, the countdown sums up the 
 
   await openPlanPage(page);
   await expect(recapLine(page)).toHaveText(recap);
+});
+
+test('with its recap line below, the scan count and its action fit two lines at 390 px in all six languages', async ({
+  page,
+}) => {
+  // THE TWO-LINE LAYOUT, drawn for real: three scans left and one meal logged
+  // with AI give the countdown its recap line, which leaves the sentence two
+  // lines instead of three (the buyer walk, 2026-09-28). Each language's
+  // sentence and label are then written into that row.
+  await startScanTrialDeviceWithOneAiMeal(page);
+  await page.goto('/diary');
+  await expect(headerStatus(page)).toContainText(fill(EN.plan.recap.mealsSoFar_one, { count: '1' }), {
+    timeout: 10_000,
+  });
+
+  const clipped: string[] = [];
+  for (const locale of SUPPORTED_LANGUAGES) {
+    const countdown = catalogFor(locale).plan.countdown;
+    const words = {
+      sentence: fill(countdown.scansLeft_other, { count: String(SCANS_LEFT_NEAR_THE_END) }),
+      label: countdown.action,
+    };
+    if (!(await doesStatusRowFit(page, words))) clipped.push(`${locale}: ${words.sentence} ${words.label}`);
+  }
+  expect(clipped, 'these counts are cut off beside a recap line at 390 px').toEqual([]);
+
+  // THE CONTROL: the English sentence four times over does not fit two lines.
+  const fourTimes = fill(EN.plan.countdown.scansLeft_other, { count: String(SCANS_LEFT_NEAR_THE_END) }).repeat(4);
+  expect(
+    await doesStatusRowFit(page, { sentence: fourTimes, label: EN.plan.countdown.action }),
+    'the fit reading cannot see a clipped line',
+  ).toBe(false);
 });

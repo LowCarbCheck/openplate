@@ -10,8 +10,13 @@
  * A failed read is one more poll, never the end: the payment went through, and
  * a network blip must not tell the person otherwise.
  *
- * When the plan turns live, the view is handed to the paywall's facts, so the
- * next navigation is decided from it and the diary opens.
+ * WHEN THE PLAN TURNS LIVE, EVERY CACHED PLAN FACT HEARS OF IT. The view is
+ * handed to the paywall's facts, so the next navigation is decided from it and
+ * the diary opens, and the header's standing (`usePlanStanding`) reads it from
+ * there, so the trial countdown it read at mount is withdrawn instead of
+ * greeting a subscriber on the diary with "See plans" (the buyer walk,
+ * 2026-09-28). The account view is read again too: the biller has just moved
+ * the allowance, and the session snapshot still holds the trial's numbers.
  *
  * NOT KEYED ON THE DESCRIPTOR. Taking the `checkout` marker off the address
  * revalidates the page's loader, which hands back a new descriptor object for
@@ -32,6 +37,7 @@ import {
 } from '#app/lib/plans/payment-return';
 import type { PlanView } from '#app/lib/sync/engine/client/plans-wire';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
+import { refreshSyncAccount } from '#app/lib/sync/sync-actions';
 
 /** Where the poll is, and the live plan it found. */
 export interface PaymentConfirmationState {
@@ -100,6 +106,8 @@ export function usePaymentConfirmation({
       if (next === 'confirmed' && plan !== null) {
         hasConfirmed.current = true;
         notePlanViewForSession({ instance: door, planView: plan, readAt });
+        // Fail-open by its own contract: a refused read leaves the old numbers.
+        void refreshSyncAccount();
         setConfirmedPlan(plan);
       }
       setConfirmation(next);

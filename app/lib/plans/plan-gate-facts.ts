@@ -217,6 +217,43 @@ export function notePlanViewForSession({
 }
 
 /**
+ * The plan view the gate holds, when it is NEWER than a component's own read.
+ *
+ * A placement that reads the plan once per mount (the header's trial
+ * countdown) would otherwise go on drawing the answer it got at mount after
+ * the plan page has confirmed a payment: the buyer walk of 2026-09-28 saw
+ * "Free AI scans used" and "See plans" on the diary right after "Your plan is
+ * active", until a reload. The confirmed view is recorded here
+ * ({@link notePlanViewForSession}), so a placement that asks this question
+ * draws the new standing on the next screen without a read of its own.
+ *
+ * Newer means the read STARTED later, the rule {@link store} keeps. A held
+ * entry for another account or another server is nobody's answer, and a held
+ * entry with no plan view (no door, or the biller had none) says nothing a
+ * placement's own read does not.
+ *
+ * @param input.held - the gate's facts, from {@link getPlanGateFactsSnapshot}.
+ * @param input.who - the open session, or `null` with none.
+ * @param input.ownReadStartedAt - when the placement's own read started, or
+ *   `null` when it has not read yet.
+ * @returns the held plan view, or `null` when the placement's own read stands.
+ */
+export function newerHeldPlanView({
+  held,
+  who,
+  ownReadStartedAt,
+}: {
+  held: PlanGateFacts | null;
+  who: { accountId: number; serverUrl: string } | null;
+  ownReadStartedAt: number | null;
+}): PlanView | null {
+  if (held === null || who === null || keyOf(held) !== keyOf(who)) return null;
+  if (held.planView === null) return null;
+  if (ownReadStartedAt !== null && held.readAt <= ownReadStartedAt) return null;
+  return held.planView;
+}
+
+/**
  * Drops every fact and any read in flight.
  *
  * For the plan page finding the door shut: a gate still holding `plans: true`

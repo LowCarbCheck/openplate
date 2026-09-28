@@ -40,6 +40,13 @@ function countOf(markup: string, needle: string): number {
   return markup.split(needle).length - 1;
 }
 
+/**
+ * What sits between the text span's class list and the words: the sentence has
+ * its own span (2026-09-28), so an action's label can follow it inline and a
+ * reader can still take the sentence alone.
+ */
+const SENTENCE = '"><span data-slot="header-status-sentence">';
+
 describe('HeaderStatus', () => {
   beforeEach(() => resetStatusChannel());
   afterEach(() => resetStatusChannel());
@@ -67,14 +74,14 @@ describe('HeaderStatus', () => {
     });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-3 text-balance break-words">Notifications are blocked'),
+      markup.includes(`line-clamp-3 text-balance break-words${SENTENCE}Notifications are blocked`),
       'an error with no description lost its line-clamp-3 wrap treatment',
     );
     // CONTROL: an error with no description must not still carry the two-line
     // clamp from the previous round, or the fix regressed to the case this
     // follow-up exists to close.
     assert.equal(
-      countOf(markup, 'line-clamp-2 text-balance break-words">Notifications are blocked'),
+      countOf(markup, `line-clamp-2 text-balance break-words${SENTENCE}Notifications are blocked`),
       0,
       'the error text span is still clamped to two lines instead of three',
     );
@@ -86,7 +93,7 @@ describe('HeaderStatus', () => {
     // the literals above name it: it is what stops a wrapped sentence leaving
     // one word alone on the last line. Nothing else about this row moved.
     assert.equal(
-      countOf(markup, 'truncate">Notifications are blocked'),
+      countOf(markup, `truncate${SENTENCE}Notifications are blocked`),
       0,
       'the status text span still truncates to one line',
     );
@@ -100,14 +107,14 @@ describe('HeaderStatus', () => {
     });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-2 text-balance break-words">Notifications are blocked'),
+      markup.includes(`line-clamp-2 text-balance break-words${SENTENCE}Notifications are blocked`),
       'an error carrying a description did not drop to line-clamp-2',
     );
     // CONTROL: without a description the same text gets a third line (the
     // test above), so this asserting line-clamp-2 is a real branch, not the
     // only value this component ever renders.
     assert.equal(
-      countOf(markup, 'line-clamp-3 text-balance break-words">Notifications are blocked'),
+      countOf(markup, `line-clamp-3 text-balance break-words${SENTENCE}Notifications are blocked`),
       0,
       'an error with a description still clamped to three lines',
     );
@@ -117,13 +124,13 @@ describe('HeaderStatus', () => {
     publishStatus({ text: 'Entry saved', tone: 'success' });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-2 text-balance break-words">Entry saved'),
+      markup.includes(`line-clamp-2 text-balance break-words${SENTENCE}Entry saved`),
       'a success status lost its line-clamp-2 wrap treatment',
     );
     // CONTROL: a success status must not drop to the error tone's smaller,
     // three-line treatment.
     assert.equal(
-      countOf(markup, 'line-clamp-3 text-balance break-words">Entry saved'),
+      countOf(markup, `line-clamp-3 text-balance break-words${SENTENCE}Entry saved`),
       0,
       'a success status is clamped to three lines, the error-only treatment',
     );
@@ -134,13 +141,13 @@ describe('HeaderStatus', () => {
     publishStatus({ text: 'Removed Greek yogurt', tone: 'success', action: { label: 'Undo', onClick: () => {} } });
     const markup = render();
     assert.ok(
-      markup.includes('line-clamp-3 text-balance break-words">Removed Greek yogurt'),
+      markup.includes(`line-clamp-3 text-balance break-words${SENTENCE}Removed Greek yogurt`),
       'a status with an action did not get the third line the button costs it',
     );
     assert.ok(markup.includes('text-xs font-semibold leading-4'), 'a status with an action stayed at text-sm');
     // CONTROL: the same text with no action keeps the full-size two-line row,
     // which the case above this one asserts directly.
-    assert.equal(countOf(markup, 'line-clamp-2 text-balance break-words">Removed Greek yogurt'), 0);
+    assert.equal(countOf(markup, `line-clamp-2 text-balance break-words${SENTENCE}Removed Greek yogurt`), 0);
   });
 
   it('renders the description as a second line', () => {
@@ -193,6 +200,51 @@ describe('HeaderStatus', () => {
     const markup = render();
     assert.ok(markup.includes('>Undo</button>'), 'the action button did not render its label');
     assert.ok(markup.includes('Dismiss this message'), 'a status offering a choice must also offer neither');
+  });
+
+  it('draws the action as the last words of the sentence, inside the text span, not as a button beside it', () => {
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
+    const markup = render();
+    // THE BUYER WALK (2026-09-28): a bordered button beside the text left the
+    // German countdown about 40 px at 390 px. The label now follows the
+    // sentence in the same clamped span, so it costs its words and no more.
+    const textAt = markup.indexOf('data-slot="header-status-text"');
+    const sentenceAt = markup.indexOf('>Removed Greek yogurt</span>');
+    const actionAt = markup.indexOf('data-slot="header-status-action"');
+    const textClosesAt = markup.indexOf('</span></span>', actionAt);
+    assert.ok(textAt !== -1 && sentenceAt > textAt, 'the sentence is not inside the text span');
+    assert.ok(actionAt > sentenceAt, 'the action label does not follow the sentence');
+    assert.ok(textClosesAt > actionAt, 'the action label is outside the text span');
+    // CONTROL: the old markup drew the label in the shared `ui/button`, whose
+    // `data-slot="button"` is the handle this reads. It must be gone.
+    assert.equal(countOf(markup, 'data-slot="button"'), 0, 'the action is still a bordered button beside the text');
+  });
+
+  it("stretches the action's tap area over the text column, never under the 44 px floor", () => {
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
+    const markup = render();
+    // The label's own box is one line of text-xs. Its `after:` box fills the
+    // nearest positioned ancestor, the column, which stretches to the row's
+    // `min-h-11`. The browser tier hit-tests it; this pins the two halves.
+    assert.match(markup, /data-slot="header-status-action" class="[^"]*after:absolute after:inset-0/);
+    assert.match(markup, /<div class="relative flex min-w-0 flex-1 flex-col justify-center self-stretch /);
+    assert.match(markup, /data-slot="header-status" class="flex min-h-11 /);
+  });
+
+  it('CONTROL: a status with no action draws no action label', () => {
+    publishStatus({ text: 'Entry saved', tone: 'success' });
+    assert.equal(countOf(render(), 'data-slot="header-status-action"'), 0);
+  });
+
+  it('gives the sentence the tone icon\'s width when it carries an action', () => {
+    publishStatus({ text: 'Removed Greek yogurt', tone: 'success', action: { label: 'Undo', onClick: () => {} } });
+    // The close control's X is the one icon left in the row.
+    assert.equal(countOf(render(), 'lucide-circle-check'), 0, 'a status with an action still drew its tone icon');
+    assert.equal(countOf(render(), 'lucide-x'), 1, 'the close control lost its icon');
+    // CONTROL: the same tone with no action draws the icon, through the same read.
+    resetStatusChannel();
+    publishStatus({ text: 'Removed Greek yogurt', tone: 'success' });
+    assert.equal(countOf(render(), 'lucide-circle-check'), 1, 'the tone icon read matches nothing');
   });
 
   it('carries the tone through to a palette class the app already paints with', () => {
