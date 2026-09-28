@@ -1,6 +1,6 @@
 # openplate-core
 
-The account service for [openplate](https://github.com/LowCarbCheck/openplate). Its first feature is end-to-end-encrypted sync between your devices.
+The account service for [openplate](https://github.com/LowCarbCheck/openplate). Its first feature is encrypted sync between your devices: the diary is encrypted on each device before it is uploaded, and the operator keeps a sealed copy of each recovery code, so the operator can restore a forgotten password and can also read the diary.
 
 **What this server holds, in one paragraph.** An email address, an opaque ciphertext blob per account, wrapped key records it cannot unwrap, and each account's recovery code sealed under a key in the environment. It cannot read the ciphertext, not as a policy, but as a consequence of never receiving a key: your passphrase never leaves your device, and what reaches the server is a derived value that authenticates you and decrypts nothing. The escrowed recovery code is the deliberate exception, and it is what makes "forgot password" restore the diary rather than only the login. **It also means the operator of a hosted instance can open any account on it**, not through an endpoint, there is none, but by reading that column with `SERVER_SECRET` in hand. A self-hosted instance is its own operator. The full argument, including what it costs and why it was taken, is [ADR-0005](./docs/adr/0005-organization-accounts-and-escrowed-recovery.md).
 

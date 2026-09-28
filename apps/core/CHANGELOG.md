@@ -22,6 +22,7 @@ change moves the minor.
 
 ### Fixed
 
+- **The security policy and the README no longer call the sync end-to-end encrypted.** The operator keeps a sealed copy of each recovery code (the escrow), so whoever holds the database and `SERVER_SECRET` can read the diary. `SECURITY.md` still described the 0.5 design, with handles, no email and no recovery by anyone. It now describes the current one, and the README's first line says what is true.
 - **Finished invitations lose their address.** The hosted privacy notice
   promises that an invitation's address is deleted once it is redeemed,
   revoked or expired, and every finished row still held one. An hourly sweep
