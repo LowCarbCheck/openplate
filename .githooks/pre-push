@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Root pre-push dispatcher. The local pre-push hook is the ONLY test gate in
+# this repository; there is no cloud CI. M262 spec 05.
+#
+# Git runs hooks only from the root core.hooksPath (`.githooks`, set by
+# `make hooks`), so the gates the four apps carry in apps/<x>/.githooks/pre-push
+# never run on their own. This file runs them. It decides nothing about HOW an
+# app is tested: each app's own hook stays the unit of truth, with its own
+# stages in its own order, run from inside apps/<x> so that it reads its own
+# lockfile, pnpm-workspace.yaml and tsconfig.json.
+#
+# What it decides is WHICH apps run:
+#   * a path under apps/app/, apps/core/, apps/inference/ or apps/website/
+#     runs that app's gate;
+#   * any other path (root files, .github/, .githooks/, packages/, docker/, a
+#     new folder under apps/) runs ALL four gates, because it can affect any
+#     of them. docker/ holds the app's compose files and quadlet units since
+#     M262, so the app gate is always among the four it runs.
+#   * an app with no changed path is skipped, and the skip is logged by name.
+#   * when the range cannot be computed (no origin/main, a remote sha this
+#     clone does not have), it runs all four and says why. Guessing "nothing
+#     changed" would push untested code with a green hook.
+#
+# The pushed range, per stdin line "<local_ref> <local_sha> <remote_ref>
+# <remote_sha>":
+#   * all-zero local_sha: a deletion, nothing to test;
+#   * all-zero remote_sha: a new branch or tag, diffed from its merge-base
+#     with origin/main;
+#   * otherwise: git diff --name-only <remote_sha> <local_sha>.
+# Stdin is read ONCE and replayed to every app hook, which reads it again for
+# its own deletion-only check.
+#
+# Test seam: GIT_DIFF_OVERRIDE, a newline-separated path list used instead of
+# git diff. The stdin lines still decide whether the push is deletion-only.
+# .githooks/test-dispatch.sh proves the app selection in a scratch repo.
+#
+# Escape hatch (use deliberately, it pushes unverified code):
+#   SKIP_TESTS=1 git push        skip the whole gate
+set -euo pipefail
+
+if [ "${SKIP_TESTS:-0}" = "1" ]; then
+  echo "⚠ pre-push: gate SKIPPED explicitly (SKIP_TESTS=1)"
+  exit 0
+fi
+
+APPS=(app core inference website)
+ZERO_SHA_PATTERN='^0+$'
+
+toplevel=$(git rev-parse --show-toplevel)
+apps_root=$toplevel/apps
+
+# In a linked worktree git exports GIT_DIR, and a git command run with GIT_DIR
+# but no GIT_WORK_TREE takes its CURRENT DIRECTORY as the top of the working
+# tree. Every app hook runs from apps/<x>, so without this its `git status`
+# (the website's staleness check) saw the whole tree as deleted and untracked.
+# Pin both to absolute values before the first cd.
+if [ -n "${GIT_DIR:-}" ]; then
+  GIT_DIR=$(git rev-parse --absolute-git-dir)
+  GIT_WORK_TREE=$toplevel
+  export GIT_DIR GIT_WORK_TREE
+fi
+
+stdin_lines=$(cat)
+
+has_content=0
+run_all_reason=""
+changed=""
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ -n "${local_sha:-}" ] || continue
+  if [[ $local_sha =~ $ZERO_SHA_PATTERN ]]; then
+    continue
+  fi
+  has_content=1
+  [ -z "${GIT_DIFF_OVERRIDE:-}" ] || continue
+  [ -z "$run_all_reason" ] || continue
+
+  if [[ ${remote_sha:-0} =~ $ZERO_SHA_PATTERN ]]; then
+    if ! base=$(git merge-base refs/remotes/origin/main "$local_sha" 2>/dev/null); then
+      run_all_reason="no merge-base between origin/main and $local_sha"
+      continue
+    fi
+  elif git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base=$remote_sha
+  else
+    run_all_reason="the remote sha $remote_sha is not in this clone"
+    continue
+  fi
+  changed+=$(git diff --name-only "$base" "$local_sha")$'\n'
+done <<<"$stdin_lines"
+
+if [ "$has_content" = "0" ]; then
+  echo "▶ pre-push: deletion-only push, no tests to run"
+  exit 0
+fi
+
+if [ -n "${GIT_DIFF_OVERRIDE:-}" ]; then
+  echo "⚠ pre-push: GIT_DIFF_OVERRIDE is set, using its path list instead of git diff"
+  changed=$GIT_DIFF_OVERRIDE
+fi
+
+declare -A touched=()
+mark_all() {
+  local app
+  for app in "${APPS[@]}"; do touched[$app]=1; done
+}
+
+if [ -n "$run_all_reason" ]; then
+  echo "⚠ pre-push: cannot compute the pushed range ($run_all_reason), running every app gate"
+  mark_all
+else
+  outside=""
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    case "$path" in
+      apps/app/*) touched[app]=1 ;;
+      apps/core/*) touched[core]=1 ;;
+      apps/inference/*) touched[inference]=1 ;;
+      apps/website/*) touched[website]=1 ;;
+      *) outside=${outside:-$path} ;;
+    esac
+  done <<<"$changed"
+  if [ -n "$outside" ]; then
+    echo "▶ pre-push: $outside is outside the four apps, running every app gate"
+    mark_all
+  fi
+fi
+
+for app in "${APPS[@]}"; do
+  if [ -z "${touched[$app]:-}" ]; then
+    echo "▷ pre-push: apps/$app skipped, no changed path under apps/$app/"
+    continue
+  fi
+  hook="$apps_root/$app/.githooks/pre-push"
+  if [ ! -x "$hook" ]; then
+    echo "✖ pre-push: apps/$app is touched but $hook is missing or not executable"
+    exit 1
+  fi
+  echo "▶ pre-push: apps/$app gate"
+  status=0
+  (cd "$apps_root/$app" && ./.githooks/pre-push) <<<"$stdin_lines" || status=$?
+  if [ "$status" != "0" ]; then
+    echo "✖ pre-push: apps/$app gate failed with exit $status, the gates after it did not run"
+    exit "$status"
+  fi
+done
+
+echo "✅ pre-push: every touched app gate passed"

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Root pre-commit dispatcher. M262 spec 05.
+#
+# Git runs hooks only from the root core.hooksPath, so an app's own
+# pre-commit never runs on its own. Today one app carries one:
+# apps/website/.githooks/pre-commit, oxlint on the staged files. This runs it
+# from inside apps/website when the staged paths touch apps/website/, and
+# does nothing otherwise. That hook asks git for the staged list with
+# `--relative`, so its paths come back relative to apps/website, where oxlint
+# runs.
+set -euo pipefail
+
+if [ -z "$(git diff --cached --name-only -- apps/website/)" ]; then
+  exit 0
+fi
+
+# In a linked worktree git exports GIT_DIR, and a git command run with GIT_DIR
+# but no GIT_WORK_TREE takes its CURRENT DIRECTORY as the top of the working
+# tree. From apps/website that made `git diff --cached --relative` print
+# apps/website/... paths that do not exist there. Pin both before the cd.
+if [ -n "${GIT_DIR:-}" ]; then
+  GIT_WORK_TREE=$(git rev-parse --show-toplevel)
+  GIT_DIR=$(git rev-parse --absolute-git-dir)
+  export GIT_DIR GIT_WORK_TREE
+fi
+
+cd "$(git rev-parse --show-toplevel)/apps/website"
+exec ./.githooks/pre-commit
