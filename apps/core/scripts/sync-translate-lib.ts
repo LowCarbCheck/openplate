@@ -52,7 +52,14 @@ const ROOT = resolve(import.meta.dirname, '..');
 // `../website`: since M262 the website is `apps/website`, beside this app in the same checkout.
 const WEBSITE = resolve(process.env[ENV_REPO] ?? resolve(ROOT, '../website'));
 const PROVENANCE = 'scripts/lib/TRANSLATE_SOURCE.json';
-const REPO = 'LowCarbCheck/openplate-website';
+/**
+ * The repository and the folder the translator is copied from. Since M262 the website is
+ * `apps/website` in `LowCarbCheck/openplate`, so the pair is what names a file at a commit:
+ * `<commit>:apps/website/<from>`. The folder is READ from the checkout, not assumed, and a checkout
+ * where the website is not at `apps/website` is refused rather than recorded under this name.
+ */
+const REPO = 'LowCarbCheck/openplate';
+const PATH_IN_REPO = 'apps/website';
 
 /** One vendored file: where it is in the website, and where the copy lands here. Both repo-relative. */
 interface Copy {
@@ -168,6 +175,12 @@ interface VendoredFile {
 
 refuseDirty();
 const commit = git(['rev-parse', 'HEAD']);
+const prefix = git(['rev-parse', '--show-prefix']).replace(/\/$/, '');
+if (prefix !== PATH_IN_REPO) {
+  throw new Error(
+    `sync-translate-lib: ${WEBSITE} is ${prefix === '' ? 'a repository root' : prefix} in its repository, not ${PATH_IN_REPO}`,
+  );
+}
 if (!/^[0-9a-f]{40}$/.test(commit)) throw new Error(`sync-translate-lib: ${WEBSITE} is not a git checkout`);
 
 function vendor(copy: Copy): VendoredFile {
@@ -181,6 +194,7 @@ function vendor(copy: Copy): VendoredFile {
 
 const provenance = {
   repo: REPO,
+  path: PATH_IN_REPO,
   commit,
   producedBy: 'openplate-core, scripts/sync-translate-lib.ts',
   rewrites: REWRITES,
@@ -189,4 +203,4 @@ const provenance = {
   shimmed: Object.fromEntries(SHIMMED.map((path) => [path, sha256(readFileSync(resolve(WEBSITE, path), 'utf8'))])),
 };
 writeFileSync(resolve(ROOT, PROVENANCE), `${JSON.stringify(provenance, null, 2)}\n`, 'utf8');
-console.log(`sync-translate-lib: ${PROVENANCE} records ${REPO}@${commit.slice(0, 12)}.`);
+console.log(`sync-translate-lib: ${PROVENANCE} records ${REPO}@${commit.slice(0, 12)}:${PATH_IN_REPO}.`);

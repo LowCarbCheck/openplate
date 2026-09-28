@@ -2,7 +2,7 @@
  * The vendored translator, against the provenance the sync left behind, M229 spec 02.
  *
  * `scripts/lib/translate.ts`, `translate-ui.ts`, `translate-language.ts` and `merge-memory.ts` are
- * copies of `openplate-website`'s, written by `pnpm sync:translate-lib` and by nothing else. The
+ * copies of `apps/website`'s, written by `pnpm sync:translate-lib` and by nothing else. The
  * spec's worry is that a copy edited in place becomes a second client in substance, one convenient
  * fix at a time, and no diff ever says so. This is the check that says so: it re-hashes every vendored
  * file against `scripts/lib/TRANSLATE_SOURCE.json` and fails when a byte differs. Fix the library
@@ -20,6 +20,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -34,7 +35,8 @@ const Sha256 = z.string().regex(/^[0-9a-f]{64}$/);
 
 /** `TRANSLATE_SOURCE.json` as the sync writes it, decoded so a moved shape fails here and not as an empty loop. */
 const ProvenanceSchema = z.object({
-  repo: z.literal('LowCarbCheck/openplate-website'),
+  repo: z.literal('LowCarbCheck/openplate'),
+  path: z.literal('apps/website'),
   commit: z.string().regex(/^[0-9a-f]{40}$/),
   producedBy: z.literal('openplate, scripts/sync-translate-lib.ts'),
   rewrites: z.array(z.object({ from: z.string().min(1), to: z.string().min(1) })).min(1),
@@ -87,7 +89,7 @@ describe('the vendored translator', () => {
         sha256Of(text),
         expected.vendored,
         `${path} is not the file TRANSLATE_SOURCE.json records. The translator is not edited here: fix it in ` +
-          `openplate-website (${expected.from}), then run \`pnpm sync:translate-lib\`.`,
+          `apps/website (${expected.from}), then run \`pnpm sync:translate-lib\`.`,
       );
     });
 
@@ -117,6 +119,37 @@ function unexplainedImports(path: string, text: string): string[] {
     return !vendored.has(resolve(dirname(resolve(ROOT, path)), `${specifier}.ts`));
   });
 }
+
+/**
+ * The bytes the provenance names, read from this repository's own history.
+ *
+ * SINCE M262 THE UPSTREAM IS IN THE SAME REPOSITORY. `repo`, `path` and `commit` together name a
+ * file: `<commit>:apps/website/<from>`. Reading it back and hashing it is what makes the record a
+ * fact rather than a claim, and it needs no network. `null` when git cannot produce the file.
+ */
+function upstreamAt(options: { commit: string; path: string }): string | null {
+  try {
+    return execFileSync('git', ['show', `${options.commit}:${options.path}`], { cwd: ROOT, encoding: 'utf8' });
+  } catch {
+    return null;
+  }
+}
+
+describe('the upstream the provenance names', () => {
+  for (const [path, expected] of Object.entries(provenance.files)) {
+    it(`${path} hashes to its recorded upstream at ${provenance.path}/${expected.from} in the recorded commit`, () => {
+      const upstream = upstreamAt({ commit: provenance.commit, path: `${provenance.path}/${expected.from}` });
+      assert.notEqual(upstream, null, `${provenance.commit} has no ${provenance.path}/${expected.from} in this clone`);
+      assert.equal(sha256Of(upstream ?? ''), expected.upstream);
+    });
+  }
+
+  it('control: the same file at the repository root, the pre-merge layout, is not there', () => {
+    const [, first] = Object.entries(provenance.files)[0] ?? [];
+    assert.ok(first !== undefined, 'the provenance names at least one file');
+    assert.equal(upstreamAt({ commit: provenance.commit, path: first.from }), null);
+  });
+});
 
 describe('the checks themselves', () => {
   const [path, expected] = Object.entries(provenance.files)[0] ?? [];
