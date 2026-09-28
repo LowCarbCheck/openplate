@@ -64,6 +64,10 @@ echo "▶ pre-push: the README Documentation table against docs/"
 # unit somebody touched by hand, stops here. podlet is a HOST tool (Homebrew),
 # not a toolbox one, like the browser tier; the script says how to install it.
 # M231 spec 02.
+# Since M262 the units and compose files live in the repository root docker/,
+# not apps/app/docker/ (the self-host URLs on raw.githubusercontent point
+# there). scripts/quadlet.sh reads ../../docker by running from the root; this
+# line stays as it was, because the script finds the root from its own path.
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 

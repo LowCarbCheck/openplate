@@ -77,7 +77,12 @@
 # is byte-deterministic: podlet sorts its keys, and the transform is pure.
 set -eu
 
-cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+# Since M262 this app lives at apps/app in a monorepo, and its docker/ folder
+# moved to the repository root so the self-host URLs on raw.githubusercontent
+# (README.md) keep working. Run from the root, three levels up, so every
+# docker/... path below and the source path written into each unit header stay
+# byte-identical to the units committed before the move.
+cd "$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)"
 
 PODLET_VERSION=0.3.2
 PODLET_TARBALL=podlet-x86_64-unknown-linux-gnu.tar.xz
@@ -479,7 +484,7 @@ cmd_check() {
 # fixture. If that does not fail and name the file, the check proves nothing.
 cmd_self_test_drift() {
   require_podlet
-  fixture=scripts/quadlet-drift-fixture.container
+  fixture=apps/app/scripts/quadlet-drift-fixture.container
   [ -f "$fixture" ] || fail "the drift fixture $fixture is missing."
   fresh=$(mktemp -d)
   planted=$(mktemp -d)
