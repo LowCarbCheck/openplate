@@ -153,6 +153,19 @@ describe('isOnboardingGateExempt', () => {
     }
   });
 
+  // The paywall's destination (2026-09-28): a new account pays before it
+  // onboards, and a locked account with no profile must not bounce between
+  // the two gates.
+  it('exempts the plan page, with or without a trailing slash', () => {
+    assert.equal(isOnboardingGateExempt('/settings/plan'), true);
+    assert.equal(isOnboardingGateExempt('/settings/plan/'), true);
+  });
+
+  it('CONTROL: a page that only starts like the plan page is still gated', () => {
+    assert.equal(isOnboardingGateExempt('/settings/plans'), false);
+    assert.equal(isOnboardingGateExempt('/settings/plan-order'), false);
+  });
+
   it('still gates the settings hub itself', () => {
     assert.equal(isOnboardingGateExempt('/settings'), false);
   });

@@ -39,6 +39,19 @@
  * A yearly subscriber sees the status card only. "Manage" still opens the
  * Stripe Customer Portal, which since M245/06 allows cancellation only.
  *
+ * ── It is also where the paywall sends a locked person (2026-09-28) ──────
+ *
+ * When the free scans are used up, a trial has ended or a plan has lapsed, the
+ * `_personal` layout sends every feature screen here (`plan-gate.ts`). So the
+ * page says why ABOVE the plans, and says that the data stays the person's,
+ * with the export and the account deletion one tap away. A person who still
+ * has free scans is offered the way back to them instead.
+ *
+ * A return from a payment polls `GET /plans/me` until the plan is live
+ * (`payment-return.ts`), and hands the live view to the paywall, so "Open
+ * your diary" opens it. While the payment is being confirmed nothing is sold:
+ * the order block would invite a second payment for the first one.
+ *
  * ── The view is props only ───────────────────────────────────────────────
  *
  * `PlanScreen` takes everything it draws and holds no hook but `t`, so every
@@ -46,17 +59,18 @@
  * There is no DOM test library in this repository, so a state that can only be
  * reached by clicking is a state nothing checks.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
 import type { Route } from './+types/settings.plan';
 import { CONFIG } from '#app/config';
+import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Button } from '#app/components/ui/button';
-import { SettingsSection } from '#app/components/settings/settings-section';
+import { SETTINGS_INSET_CLASS, SettingsSection } from '#app/components/settings/settings-section';
 import { PLAN_PAGE_HREF, offerLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
 import type { OrderOutcome } from '#app/lib/sync/engine/client/plans-client';
@@ -67,6 +81,11 @@ import { usePlanOffer } from '#app/hooks/use-plan-offer';
 import { useTrialRecap } from '#app/hooks/use-trial-recap';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
+import { hasFreeScansLeft, paywallNoticeFor, planGateStanding, type PaywallNotice } from '#app/lib/plans/plan-gate';
+import { forgetPlanGateFacts, notePlanViewForSession } from '#app/lib/plans/plan-gate-facts';
+import type { PaymentConfirmation } from '#app/lib/plans/payment-return';
+import { offeredTrialScans } from '#app/lib/plans/signup-door';
+import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
 import {
@@ -108,7 +127,13 @@ export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs
   instance: InstanceDescriptor;
 }> {
   const { syncServerUrl } = await serverLoader();
-  const instance = await requirePlansDoor({ serverUrl: syncServerUrl });
+  // A SHUT DOOR IS ALSO NEWS FOR THE PAYWALL. A gate still holding the old
+  // `plans: true` would go on sending the person to this page, which is about
+  // to answer 404, so the gate forgets what it held and reads again.
+  const instance = await requirePlansDoor({ serverUrl: syncServerUrl }).catch((cause: unknown) => {
+    forgetPlanGateFacts();
+    throw cause;
+  });
   // The descriptor rides along so the page's standing reads the SAME answer
   // the gate just passed, rather than a second read that starts at `null`.
   return { syncServerUrl, instance };
@@ -167,6 +192,13 @@ export interface PlanScreenProps {
    * is no trial to sum up. Zero draws no line, like `null`.
    */
   recapMealCount: number | null;
+  /** Why the app is locked, drawn above the plans, or `null` when it is not locked. */
+  paywallNotice: PaywallNotice | null;
+  /** `true` offers "use your free AI scans first", back to the diary. */
+  offersFreeScansFirst: boolean;
+  /** Where a `success` return is. Read only when `checkoutReturn` is `success`. */
+  paymentConfirmation: PaymentConfirmation;
+  onCheckAgain: () => void;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
   onOrder: () => void;
@@ -201,9 +233,120 @@ function PortalControls({
   );
 }
 
+/** The heading of the notice, per reason. */
+function paywallHeading(notice: PaywallNotice, t: (key: string, options?: { count: number }) => string): string {
+  if (notice.kind === 'scans-used') return t('paywall.heading.scansUsed', { count: notice.count });
+  if (notice.kind === 'lapsed') return t('paywall.heading.lapsed');
+  return t('paywall.heading.choose');
+}
+
+/**
+ * Why the app is locked, and that the data is still the person's.
+ *
+ * Square, with a hairline all round, the inset every settings block is drawn
+ * in (DESIGN.md sections 5 and 11: no radius, no accent rule down one side).
+ */
+function PaywallNoticeView({ notice }: { notice: PaywallNotice }) {
+  const { t } = useTranslation();
+  const linkClass = 'text-primary underline underline-offset-4';
+  return (
+    <section
+      data-slot="paywall-notice"
+      aria-labelledby="paywall-heading"
+      className={cn(SETTINGS_INSET_CLASS, 'space-y-2 p-4')}
+    >
+      <h2 id="paywall-heading" className="text-base font-semibold">
+        {paywallHeading(notice, t)}
+      </h2>
+      <p className="text-sm">{t('paywall.body')}</p>
+      <p className="text-sm text-muted-foreground">
+        <Trans
+          i18nKey="paywall.data"
+          components={{
+            exportLink: <Link to="/settings/data" className={linkClass} />,
+            deleteLink: <Link to="/settings/account" className={linkClass} />,
+          }}
+        />
+      </p>
+    </section>
+  );
+}
+
+/** One state of the payment return line. Hidden states keep their size, so the box is the tallest of them. */
+function ReturnState({ isShown, children }: { isShown: boolean; children: ReactNode }) {
+  return (
+    <div aria-hidden={!isShown} className={cn('col-start-1 row-start-1 flex flex-col gap-3', !isShown && 'invisible')}>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * What the person came back from.
+ *
+ * A PAYMENT RETURN RESERVES ITS BOX FROM THE FIRST PAINT. Its three states,
+ * checking, active and slow, are drawn in ONE grid cell and only one is
+ * visible, so the cell is as tall as the tallest from the start and a state
+ * change moves nothing below it, in any language (DESIGN.md section 7).
+ */
+function CheckoutReturnLine({
+  checkoutReturn,
+  confirmation,
+  onCheckAgain,
+}: {
+  checkoutReturn: CheckoutReturn;
+  confirmation: PaymentConfirmation;
+  onCheckAgain: () => void;
+}) {
+  const { t } = useTranslation();
+  if (checkoutReturn === 'cancelled')
+    return <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>;
+  if (checkoutReturn !== 'success') return null;
+  return (
+    <div data-slot="plan-return" aria-live="polite" className="grid">
+      <ReturnState isShown={confirmation === 'checking'}>
+        <p className="flex items-start gap-2 text-sm">
+          <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin" aria-hidden="true" />
+          <span>{t('plan.returned.success')}</span>
+        </p>
+      </ReturnState>
+      <ReturnState isShown={confirmation === 'confirmed'}>
+        <p className="text-sm font-medium">{t('paywall.returned.active')}</p>
+        <Button asChild className="h-11 self-start">
+          <Link to="/dashboard">{t('paywall.returned.openDiary')}</Link>
+        </Button>
+      </ReturnState>
+      <ReturnState isShown={confirmation === 'slow'}>
+        <p className="text-sm">{t('paywall.returned.slow')}</p>
+        <Button type="button" variant="secondary" className="h-11 self-start" onClick={onCheckAgain}>
+          {t('paywall.returned.checkAgain')}
+        </Button>
+      </ReturnState>
+    </div>
+  );
+}
+
 /** The screen, props only. */
 export function PlanScreen(props: PlanScreenProps) {
-  const { state, standing, order, checkoutReturn, busy } = props;
+  const { checkoutReturn, paymentConfirmation } = props;
+  // WHILE A PAYMENT IS BEING CONFIRMED, only the line that says so. Nothing is
+  // sold to somebody who has just paid, and no lock is explained to them.
+  const isAwaitingPayment = checkoutReturn === 'success' && paymentConfirmation !== 'confirmed';
+  return (
+    <div className="mx-auto max-w-xl space-y-5">
+      <CheckoutReturnLine
+        checkoutReturn={checkoutReturn}
+        confirmation={paymentConfirmation}
+        onCheckAgain={props.onCheckAgain}
+      />
+      {!isAwaitingPayment && <PlanBody {...props} />}
+    </div>
+  );
+}
+
+/** Everything below the return line. */
+function PlanBody(props: PlanScreenProps) {
+  const { state, standing, order, busy } = props;
   const { t } = useTranslation();
   const subscribed: SubscribedStanding | null =
     state.kind === 'ready' && standing.kind === 'subscribed' ? standing : null;
@@ -217,15 +360,12 @@ export function PlanScreen(props: PlanScreenProps) {
     subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable);
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
-      {/* WHAT JUST HAPPENED, FIRST. Somebody arriving from Stripe has a
-          question this page must answer before it describes anything, and the
-          success line does not claim the plan is already active: the webhook
-          that records it is a separate delivery. */}
-      {checkoutReturn === 'success' && <p className="text-sm">{t('plan.returned.success')}</p>}
-      {checkoutReturn === 'cancelled' && (
-        <p className="text-sm text-muted-foreground">{t('plan.returned.cancelled')}</p>
-      )}
+    <>
+      {/* WHY THE APP IS LOCKED, FIRST, above the plans. Somebody sent here
+          from the diary has a question this page must answer before it sells
+          anything. Drawn in the same render as the order below it, never
+          after, so it cannot push the plans down. */}
+      {props.paywallNotice !== null && <PaywallNoticeView notice={props.paywallNotice} />}
       {props.isAlreadySubscribed && order === null && (
         <p data-slot="plan-already-subscribed" className="text-sm">
           {t('plan.order.alreadySubscribed')}
@@ -302,7 +442,15 @@ export function PlanScreen(props: PlanScreenProps) {
           onOrder={props.onOrder}
         />
       )}
-    </div>
+
+      {/* THE WAY BACK, for somebody who came to look and still has free
+          scans. Below the order, the "not now" beside the offer. */}
+      {props.offersFreeScansFirst && (
+        <Button asChild variant="secondary" className="h-11">
+          <Link to="/dashboard">{t('paywall.freeScansFirst')}</Link>
+        </Button>
+      )}
+    </>
   );
 }
 
@@ -375,7 +523,14 @@ export default function SettingsPlan() {
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
   const { instance } = useLoaderData<typeof clientLoader>();
-  const read = usePlanRead({ isEnabled: true, refresh: planRefresh });
+  const isReturningPaid = checkoutReturn === 'success';
+  const payment = usePaymentConfirmation({ isReturning: isReturningPaid, instance });
+  const pageRead = usePlanRead({ isEnabled: true, refresh: planRefresh });
+  // THE POLL'S LIVE PLAN WINS over the page's own read, which was taken
+  // before the webhook landed. Waiting for a second read of the same answer
+  // would draw the old order for a moment under "Your plan is active."
+  const read: PlanReadState =
+    payment.confirmedPlan === null ? pageRead : { kind: 'ready', plan: payment.confirmedPlan };
   const standing = planStanding({
     instance,
     account: session.account,
@@ -383,12 +538,31 @@ export default function SettingsPlan() {
     now: new Date(),
   });
   const isSubscribed = read.kind === 'ready' && standing.kind === 'subscribed';
+  const isAwaitingPayment = isReturningPaid && payment.confirmation !== 'confirmed';
+  // THE GATE'S STANDING, not the page's: an administrator is never locked,
+  // so the page must not tell one that the app is.
+  const gateStanding = planGateStanding({
+    instance,
+    account: session.account,
+    planView: planViewOf(read),
+    now: new Date(),
+  });
+  const paywallNotice =
+    read.kind === 'ready' && !isReturningPaid ?
+      paywallNoticeFor({
+        standing: gateStanding,
+        // The account's own count first, the instance's offer second, and
+        // never a typed number.
+        scansGranted: session.account?.trialScans?.granted ?? offeredTrialScans(instance),
+      })
+    : null;
+  const offersFreeScansFirst = read.kind === 'ready' && !isReturningPaid && hasFreeScansLeft(standing);
   // Read LIVE from the address, so the status card's link opens the order on
   // the page that is already mounted.
   const linkedPlan = readPlanParam(searchParams.get('plan'));
   const switchStart = switchStartsAt === null ? switchStartFor(standing) : null;
   const isSwitching = isSubscribed && switchStart !== null && linkedPlan === 'yearly';
-  const wantsOrder = read.kind === 'ready' && (!isSubscribed || isSwitching);
+  const wantsOrder = read.kind === 'ready' && !isAwaitingPayment && (!isSubscribed || isSwitching);
   const offerRead = usePlanOffer({
     isEnabled: wantsOrder,
     locale: offerLocaleFor(i18n.language),
@@ -418,6 +592,18 @@ export default function SettingsPlan() {
     wantsOrder && offer !== null ?
       { offer, mode, selectedPlan, consents, notice, isOrdering: busy === 'order' }
     : null;
+
+  // WHAT THIS PAGE READS, THE PAYWALL KNOWS. A plan read here is fresher than
+  // the one the gate holds, and the gate must not send a subscriber back here
+  // from a read taken before they paid. ONCE THE POLL HAS CONFIRMED, the
+  // page's own read is the older of the two and is never recorded again: a
+  // new descriptor from a revalidated loader would otherwise re-run this and
+  // write "no plan" over the live one.
+  const hasConfirmedPayment = payment.confirmedPlan !== null;
+  useEffect(() => {
+    if (pageRead.kind !== 'ready' || hasConfirmedPayment) return;
+    notePlanViewForSession({ instance, planView: pageRead.plan, readAt: Date.now() });
+  }, [pageRead, instance, hasConfirmedPayment]);
 
   // ONE RETURN, ONE EVENT, ONE THANK-YOU. The `checkout` marker leaves the
   // address, replacing the history entry, so a reload or a back navigation
@@ -539,6 +725,10 @@ export default function SettingsPlan() {
       onOrder={onOrder}
       recapMealCount={recap.settled ? recap.mealCount : null}
       onManage={onManage}
+      paywallNotice={paywallNotice}
+      offersFreeScansFirst={offersFreeScansFirst}
+      paymentConfirmation={payment.confirmation}
+      onCheckAgain={payment.checkAgain}
     />
   );
 }

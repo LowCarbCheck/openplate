@@ -2729,6 +2729,13 @@
     "at": "2026-09-14",
     "fr": "À propos d'openplate"
   },
+  "20f4628ee4e4361c": {
+    "en": "Open your diary",
+    "path": "common:paywall.returned.openDiary",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ouvrir ton journal"
+  },
   "210c31833757ece7": {
     "en": "German legal headings fit a phone.",
     "path": "releases:v0_36_0.fixed.15",
@@ -5963,6 +5970,13 @@
     "at": "2026-09-14",
     "fr": "Quand commencer"
   },
+  "4fa2451dbce4189e": {
+    "en": "Pick a plan to open your diary again. Everything you logged is still here.",
+    "path": "common:paywall.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Choisis un forfait pour rouvrir ton journal. Tout ce que tu as enregistré est toujours là."
+  },
   "4fb4b8d24d101fb4": {
     "en": "Connect an AI to read your photos. Your photo goes only to that AI.",
     "path": "common:scan.setup.crisp.selfHosted",
@@ -8182,6 +8196,13 @@
     "at": "2026-09-14",
     "fr": "Ce serveur ne connaît pas cette étude, rien n'a donc été envoyé."
   },
+  "6b0330830fe0ca58": {
+    "en": "Choose a plan to keep using openplate",
+    "path": "common:paywall.heading.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Choisis un forfait pour continuer à utiliser openplate"
+  },
   "6b110b6117c8a41a": {
     "en": "This connection attempt took too long and expired. Try connecting again.",
     "path": "common:oauth.callback.error.expired.body",
@@ -9568,6 +9589,13 @@
     "at": "2026-09-14",
     "fr": "Télécharger le journal (CSV)"
   },
+  "7b633984ee5b1dac": {
+    "en": "Your data stays yours. You can <exportLink>export your diary</exportLink> or <deleteLink>delete your account</deleteLink> at any time, with or without a plan.",
+    "path": "common:paywall.data",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Tes données restent les tiennes. Tu peux <exportLink>exporter ton journal</exportLink> ou <deleteLink>supprimer le compte</deleteLink> à tout moment, avec ou sans forfait."
+  },
   "7b88a68b43578305": {
     "en": "Back to sign in",
     "path": "common:forgot.backToSignIn",
@@ -9890,6 +9918,13 @@
     "at": "2026-09-14",
     "fr": "Touche l'icône du micro sur ton clavier pour dicter ton repas."
   },
+  "7f4669e9eb57e079": {
+    "en": "Use your free AI scans first",
+    "path": "common:paywall.freeScansFirst",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Utilise d'abord tes scans IA gratuits"
+  },
   "7f929b2e7211680c": {
     "en": "Your plan has not been read yet.",
     "path": "common:plan.unknown",
@@ -9973,6 +10008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Prends ton assiette en photo ou choisis une image"
+  },
+  "80cf32e25a2d346f": {
+    "en": "Your payment went through. It can take a minute to show here.",
+    "path": "common:paywall.returned.slow",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton paiement a bien été effectué. Cela peut prendre une minute pour s'afficher ici."
   },
   "80fc13be0a3ec836": {
     "en": "protein",
@@ -10211,6 +10253,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Lis chaque ligne avant de lui confier une journée de tes repas. Forke-le, modifie-le, distribue-le dans l'une de tes créations. La licence n'exige que la mention de droit d'auteur, et rien d'autre."
+  },
+  "83d2259f6c887151": {
+    "en": "Check again",
+    "path": "common:paywall.returned.checkAgain",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Vérifier à nouveau"
   },
   "83d2b4c85966b8e8": {
     "en": "Last updated: {{date}}",
@@ -13999,6 +14048,13 @@
     "at": "2026-09-14",
     "fr": "Connexion · openplate"
   },
+  "b3235675afaefe58": {
+    "en": "Your {{count}} free AI scan is used up",
+    "path": "common:paywall.heading.scansUsed_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton {{count}} scan IA gratuit est épuisé"
+  },
   "b3449415df0a0691": {
     "en": "{{count}} free AI scans, no time limit.",
     "path": "common:signUp.trial_other",
@@ -14824,6 +14880,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "fr": "La page d'administration s'adapte à l'écran d'un téléphone."
+  },
+  "beebbedcaa4b3f5c": {
+    "en": "Your {{count}} free AI scans are used up",
+    "path": "common:paywall.heading.scansUsed_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Tes {{count}} scans IA gratuits sont épuisés"
   },
   "bf26b6792b9ceea7": {
     "en": "Weigh-in removed.",
@@ -17464,6 +17527,13 @@
     "at": "2026-09-14",
     "fr": "Tu restes déconnecté jusqu'à ta prochaine connexion. Ton journal reste sur cet appareil."
   },
+  "e19f807951a6e7c5": {
+    "en": "Your plan is active.",
+    "path": "common:paywall.returned.active",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton forfait est actif."
+  },
   "e1f5a81929d5fd2e": {
     "en": "Today",
     "path": "common:diary.nav.today",
@@ -18618,6 +18688,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "fr": "Tu as utilisé ton {{count}} scan IA gratuit"
+  },
+  "efa6248d8928db88": {
+    "en": "Your plan has ended",
+    "path": "common:paywall.heading.lapsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton forfait a pris fin"
   },
   "efa7db3f8a23ccde": {
     "en": "Entry",

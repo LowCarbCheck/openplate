@@ -45,3 +45,4 @@ A changed decision gets a new ADR that supersedes the old one and sets the old o
 | [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted |
 | [0018](0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted |
 | [0019](0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted |
+| [0020](0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted |

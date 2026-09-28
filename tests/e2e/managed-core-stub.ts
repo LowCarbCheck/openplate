@@ -37,6 +37,10 @@ export interface ManagedCoreStub {
   planView: object;
   /** Holds every `/health` answer until it settles, for a reading taken before the handshake lands. */
   healthGate?: Promise<void>;
+  /** `instance.plans` on the handshake, or absent for `true`. `false` is the beta and self-hosted shape. */
+  plans?: boolean;
+  /** `AccountView.role`, or absent to keep the fake's own (a member). */
+  role?: 'admin' | 'member';
 }
 
 /** A trial account that has scans left, on an instance with member invites. */
@@ -63,7 +67,8 @@ function accountPatch(stub: ManagedCoreStub) {
     invitesLeft: stub.invitesLeft,
     trialScans: stub.trialScans,
   };
-  return stub.invitesNeedAPlan === undefined ? base : { ...base, invitesNeedAPlan: stub.invitesNeedAPlan };
+  const withRole = stub.role === undefined ? base : { ...base, role: stub.role };
+  return stub.invitesNeedAPlan === undefined ? withRole : { ...withRole, invitesNeedAPlan: stub.invitesNeedAPlan };
 }
 
 /**
@@ -85,7 +90,7 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
           language: 'en',
           mail: true,
           memberInvites: stub.memberInvites,
-          plans: true,
+          plans: stub.plans ?? true,
           openSignup: true,
           ai: { model: 'e2e-model' },
           trial: { scans: 10 },
@@ -187,6 +192,10 @@ export async function routeManagedProxy(page: Page, counter: { left: number }): 
  * its diary holds no profile yet (a managed spec run alone meets a fresh
  * fake service).
  *
+ * A LOCKED ACCOUNT ENDS ON THE PLAN PAGE (the paywall, 2026-09-28): a stub
+ * with the free scans spent and no plan signs in there, after onboarding when
+ * there was one to finish.
+ *
  * @param page - a page with its routes installed.
  * @param serverUrl - the managed server's base URL.
  */
@@ -195,7 +204,7 @@ export async function signInManaged(page: Page, serverUrl: string): Promise<void
   await page.locator('input[autocomplete="username"]').fill(E2E_ACCOUNT_EMAIL);
   await page.locator('input[autocomplete="current-password"]').fill(E2E_ACCOUNT_PASSPHRASE);
   await page.getByRole('button', { name: EN.sync.signIn.submit, exact: true }).click();
-  await page.waitForURL(/\/(diary|onboarding)/);
+  await page.waitForURL(/\/(diary|onboarding|settings\/plan)/);
   if (!page.url().includes('/onboarding')) return;
   await expect(page.getByText(EN.onboarding.style.title)).toBeVisible();
   await page.locator('input[name="eatingStyle"][value="just-track"]').check();
@@ -206,5 +215,5 @@ export async function signInManaged(page: Page, serverUrl: string): Promise<void
   await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();
   await expect(page.getByText(EN.onboarding.step.firstFood.title)).toBeVisible();
   await page.getByRole('button', { name: EN.onboarding.firstFood.later }).click();
-  await page.waitForURL('**/diary');
+  await page.waitForURL(/\/(diary|settings\/plan)$/);
 }

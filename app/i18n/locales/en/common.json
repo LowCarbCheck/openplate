@@ -3725,6 +3725,23 @@
       }
     }
   },
+  "paywall": {
+    "heading": {
+      "scansUsed_one": "Your {{count}} free AI scan is used up",
+      "scansUsed_other": "Your {{count}} free AI scans are used up",
+      "choose": "Choose a plan to keep using openplate",
+      "lapsed": "Your plan has ended"
+    },
+    "body": "Pick a plan to open your diary again. Everything you logged is still here.",
+    "data": "Your data stays yours. You can <exportLink>export your diary</exportLink> or <deleteLink>delete your account</deleteLink> at any time, with or without a plan.",
+    "freeScansFirst": "Use your free AI scans first",
+    "returned": {
+      "active": "Your plan is active.",
+      "openDiary": "Open your diary",
+      "slow": "Your payment went through. It can take a minute to show here.",
+      "checkAgain": "Check again"
+    }
+  },
   "whatsNew": {
     "title": "What's new",
     "card": {

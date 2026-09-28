@@ -3725,6 +3725,23 @@
       }
     }
   },
+  "paywall": {
+    "heading": {
+      "scansUsed_one": "{{count}} ücretsiz yapay zeka taraman bitti",
+      "scansUsed_other": "{{count}} ücretsiz yapay zeka taraman bitti",
+      "choose": "openplate'i kullanmaya devam etmek için bir plan seç",
+      "lapsed": "Planın sona erdi"
+    },
+    "body": "Günlüğünü tekrar açmak için bir plan seç. Kaydettiğin her şey hâlâ burada.",
+    "data": "Verilerin sana ait kalır. Bir planın olsun ya da olmasın, istediğin zaman <exportLink>günlüğünü dışa aktarabilir</exportLink> veya <deleteLink>hesabını silebilirsin</deleteLink>.",
+    "freeScansFirst": "Önce ücretsiz yapay zeka taramalarını kullan",
+    "returned": {
+      "active": "Planın aktif.",
+      "openDiary": "Günlüğünü aç",
+      "slow": "Ödemen alındı. Burada görünmesi bir dakika sürebilir.",
+      "checkAgain": "Tekrar kontrol et"
+    }
+  },
   "whatsNew": {
     "title": "Yenilikler",
     "card": {

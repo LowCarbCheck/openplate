@@ -14,6 +14,7 @@
  * It is pure so the ordering below can be tested exhaustively without a store,
  * a router or IndexedDB. The order is load-bearing — see each branch.
  */
+import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 
 /** What the gate decided. The caller turns each of these into a redirect, or into passage. */
 export type OnboardingGateOutcome =
@@ -290,6 +291,13 @@ function resolveForGatedPath({
  * the page the link named. It reads nothing from onboarding either, and it is
  * the one exempt page that is pure reading matter.
  *
+ * `/settings/plan` is where the paywall sends a locked person (2026-09-28),
+ * and where a new account that came from the pricing page pays BEFORE it
+ * answers the questionnaire. Without it here, the order would wait behind
+ * onboarding, and a locked account with no profile would bounce between the
+ * two gates. A stranger who opens it sees the public chrome and the page's
+ * own "sign in to see your plan", which is legible without the app around it.
+ *
  * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02),
  * and `/forgot` and `/reset` are where a mailed link lands (M192/05). All four
  * are registered outside this layout, so the exemptions are belt and braces
@@ -304,6 +312,7 @@ const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   '/settings/account',
   '/settings/sync',
   '/settings/about',
+  PLAN_PAGE_HREF,
   '/welcome',
   '/sign-in',
   '/forgot',

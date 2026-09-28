@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { useHasLegalPages } from '#app/hooks/use-public-config';
+import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 
 /** Which sentence a gate-exempt page shows a stranger. */
 export type StrangerNoteVariant = 'device' | 'needs-sign-in';
@@ -17,6 +18,9 @@ const SENTENCE_KEYS = {
   'needs-sign-in': 'strangerNote.needsSignIn',
 } satisfies Record<StrangerNoteVariant, string>;
 
+/** The exempt pages that are about an account, and so ask a stranger to sign in. */
+const NEEDS_SIGN_IN_PATHS: ReadonlySet<string> = new Set(['/settings/account', '/settings/sync', PLAN_PAGE_HREF]);
+
 /**
  * Which sentence a gate-exempt path gets, as a pure function.
  *
@@ -25,14 +29,15 @@ const SENTENCE_KEYS = {
  * so the sentence says what the controls apply to rather than asking for a
  * sign-in that is not needed. `/settings/account` and `/settings/sync` are the
  * door itself, and for somebody standing outside it the honest sentence is
- * that the page needs one.
+ * that the page needs one. `/settings/plan` joined the exempt pages with the
+ * paywall (2026-09-28), and a plan belongs to an account, so it needs one too.
  *
  * @param pathname - the request's pathname, with or without a trailing slash.
  * @returns the variant for that page.
  */
 export function strangerNoteVariantForPath(pathname: string): StrangerNoteVariant {
   const path = pathname.replace(/\/+$/, '') || '/';
-  return path === '/settings/account' || path === '/settings/sync' ? 'needs-sign-in' : 'device';
+  return NEEDS_SIGN_IN_PATHS.has(path) ? 'needs-sign-in' : 'device';
 }
 
 /**

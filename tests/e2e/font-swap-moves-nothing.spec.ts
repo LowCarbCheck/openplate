@@ -181,7 +181,10 @@ test('the zero-scans header line does not move when Victor Mono arrives late', a
   await signInManaged(page, server.url);
   await installShiftObserver(page);
   await holdVictorMonoLatin(page);
-  await page.goto(`${server.url}/diary`);
+  // NOT THE DIARY since the paywall (2026-09-28): an account at zero is sent
+  // from it to the plan page, which never draws this line. Preferences is a
+  // page it can still open.
+  await page.goto(`${server.url}/settings/preferences`);
 
   await expect(page.locator('header [data-slot="header-status"]')).toContainText(EN.plan.countdown.scansUsed, {
     timeout: 10_000,

@@ -11,8 +11,13 @@
  * by `X-Trial-Scans-Left`), and that is the count this screen now states.
  *
  * THE SETUP reproduces the live mismatch on purpose: the account has already
- * spent eight of its ten scans on another device, this browser makes the last
- * two. A line that read the device log would say 2; the account says 10.
+ * spent seven of its ten scans on another device, and this browser makes two
+ * more. A line that read the device log would say 2; the account says 9.
+ *
+ * ONE SCAN SHORT OF ZERO since the paywall (2026-09-28). The live report was
+ * at ten of ten, but an account at zero is now sent from the scan screen to
+ * the plan page, so the line can no longer be read there. Nine of ten is the
+ * same defect: the device's count against the account's.
  */
 import { expect, test, type Page } from '@playwright/test';
 
@@ -51,10 +56,10 @@ async function scanOnePlate(page: Page): Promise<void> {
   await expect(page.getByText(EN.scan.review.heading)).toBeVisible({ timeout: 10_000 });
 }
 
-test('after the last two of ten free scans the line states ten of ten, not two', async ({ page }) => {
+test('after two more of ten free scans the line states nine of ten, not two', async ({ page }) => {
   test.setTimeout(90_000);
-  const stub = trialAccountStub(2);
-  const counter = { left: 2 };
+  const stub = trialAccountStub(3);
+  const counter = { left: 3 };
   await routeManagedCore(page, stub);
   await routeManagedProxy(page, counter);
   await signInManaged(page, server.url);
@@ -65,7 +70,7 @@ test('after the last two of ten free scans the line states ten of ten, not two',
   stub.trialScans = { granted: 10, left: counter.left };
 
   await page.goto(`${server.url}/add/photo`);
-  await expect(usageLine(page)).toHaveText(fill(EN.scan.capture.trialScansUsed, { used: '10', granted: '10' }), {
+  await expect(usageLine(page)).toHaveText(fill(EN.scan.capture.trialScansUsed, { used: '9', granted: '10' }), {
     timeout: 10_000,
   });
 });
