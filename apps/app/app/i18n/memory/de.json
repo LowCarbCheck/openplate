@@ -15672,6 +15672,13 @@
     "at": "2026-09-14",
     "de": "Vor diesem Export widerrufen und gelöscht: {{withdrawn}}. Ihre Zeilen fehlen hier und dürfen nicht aus einer früheren Datei zurückgeholt werden."
   },
+  "c9329dbdef4a4019": {
+    "en": "Choose which reference values this instance shows for vitamins, minerals, and the protein reference. This choice applies to all users on this instance, in every language.",
+    "path": "common:admin.settings.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "de": "Wähle, welche Referenzwerte diese Instanz für Vitamine, Mineralstoffe und den Protein-Referenzwert anzeigt. Diese Auswahl gilt für alle Benutzer auf dieser Instanz, in jeder Sprache."
+  },
   "c95c8cd0a216b35b": {
     "en": "New password",
     "path": "common:sync.changePassphrase.newLabel",

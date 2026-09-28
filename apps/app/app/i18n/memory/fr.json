@@ -15672,6 +15672,13 @@
     "at": "2026-09-14",
     "fr": "Retirées et purgées avant cet export : {{withdrawn}}. Leurs lignes ne figurent pas dans ce fichier et ne doivent pas être récupérées depuis un fichier antérieur."
   },
+  "c9329dbdef4a4019": {
+    "en": "Choose which reference values this instance shows for vitamins, minerals, and the protein reference. This choice applies to all users on this instance, in every language.",
+    "path": "common:admin.settings.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Choisis les valeurs de référence que cette instance affiche pour les vitamines, les minéraux et l'apport de référence en protéines. Ce choix s'applique à tous les utilisateurs de cette instance, dans toutes les langues."
+  },
   "c95c8cd0a216b35b": {
     "en": "New password",
     "path": "common:sync.changePassphrase.newLabel",

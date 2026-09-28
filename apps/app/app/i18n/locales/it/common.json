@@ -3370,7 +3370,7 @@
     },
     "settings": {
       "title": "Valori di riferimento",
-      "body": "Scegli i valori di riferimento per i micronutrienti mostrati da questa istanza. La scelta si applica a tutte le persone che la usano, in qualsiasi lingua.",
+      "body": "Scegli quali valori di riferimento mostra questa istanza per vitamine, minerali e il riferimento proteico. Questa scelta si applica a tutti gli utenti su questa istanza, in ogni lingua.",
       "basisLegend": "Pubblicati da",
       "basis": {
         "dge": "Società tedesca di nutrizione (DGE)",

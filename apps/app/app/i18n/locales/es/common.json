@@ -3370,7 +3370,7 @@
     },
     "settings": {
       "title": "Valores de referencia",
-      "body": "Elige qué valores de referencia de micronutrientes muestra esta instancia. La elección se aplica a todo el mundo aquí, en todos los idiomas.",
+      "body": "Elige qué valores de referencia muestra esta instancia para las vitaminas, los minerales y la referencia de proteínas. Esta elección se aplica a todos los usuarios de esta instancia, en todos los idiomas.",
       "basisLegend": "Publicado por",
       "basis": {
         "dge": "Sociedad Alemana de Nutrición (DGE)",

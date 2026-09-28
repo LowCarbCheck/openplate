@@ -3370,7 +3370,7 @@
     },
     "settings": {
       "title": "Referenzwerte",
-      "body": "Wähle aus, wessen Mikronährstoff-Referenzwerte diese Instanz anzeigt. Die Auswahl gilt für alle hier, in jeder Sprache.",
+      "body": "Wähle, welche Referenzwerte diese Instanz für Vitamine, Mineralstoffe und den Protein-Referenzwert anzeigt. Diese Auswahl gilt für alle Benutzer auf dieser Instanz, in jeder Sprache.",
       "basisLegend": "Veröffentlicht von",
       "basis": {
         "dge": "Deutsche Gesellschaft für Ernährung (DGE)",

@@ -15672,6 +15672,13 @@
     "at": "2026-09-14",
     "it": "Revocati ed eliminati prima di questa esportazione: {{withdrawn}}. Le loro righe non sono presenti in questo file e non devono essere recuperate da uno precedente."
   },
+  "c9329dbdef4a4019": {
+    "en": "Choose which reference values this instance shows for vitamins, minerals, and the protein reference. This choice applies to all users on this instance, in every language.",
+    "path": "common:admin.settings.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "it": "Scegli quali valori di riferimento mostra questa istanza per vitamine, minerali e il riferimento proteico. Questa scelta si applica a tutti gli utenti su questa istanza, in ogni lingua."
+  },
   "c95c8cd0a216b35b": {
     "en": "New password",
     "path": "common:sync.changePassphrase.newLabel",

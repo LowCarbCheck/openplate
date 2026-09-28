@@ -15672,6 +15672,13 @@
     "at": "2026-09-14",
     "tr": "Bu dışa aktarmadan önce çekilen ve temizlenenler: {{withdrawn}}. Satırları bu dosyada yer almaz ve önceki bir dosyadan geri getirilmemelidir."
   },
+  "c9329dbdef4a4019": {
+    "en": "Choose which reference values this instance shows for vitamins, minerals, and the protein reference. This choice applies to all users on this instance, in every language.",
+    "path": "common:admin.settings.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "Bu örneğin vitaminler, mineraller ve protein referansı için hangi referans değerlerini göstereceğini seç. Bu seçim, her dilde, bu örnekteki tüm kullanıcılar için geçerlidir."
+  },
   "c95c8cd0a216b35b": {
     "en": "New password",
     "path": "common:sync.changePassphrase.newLabel",

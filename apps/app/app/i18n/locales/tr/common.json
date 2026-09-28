@@ -3370,7 +3370,7 @@
     },
     "settings": {
       "title": "Referans değerler",
-      "body": "Bu kurulumun hangi mikro besin referans değerlerini göstereceğini seç. Bu seçim buradaki herkes için her dilde geçerli olur.",
+      "body": "Bu örneğin vitaminler, mineraller ve protein referansı için hangi referans değerlerini göstereceğini seç. Bu seçim, her dilde, bu örnekteki tüm kullanıcılar için geçerlidir.",
       "basisLegend": "Yayımlayan:",
       "basis": {
         "dge": "Alman Beslenme Derneği (DGE)",

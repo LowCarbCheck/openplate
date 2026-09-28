@@ -3370,7 +3370,7 @@
     },
     "settings": {
       "title": "Reference values",
-      "body": "Choose whose reference values this instance shows, for vitamins, minerals and the protein reference. The choice applies to everybody here, in every language.",
+      "body": "Choose which reference values this instance shows for vitamins, minerals, and the protein reference. This choice applies to all users on this instance, in every language.",
       "basisLegend": "Published by",
       "basis": {
         "dge": "German Nutrition Society (DGE)",
