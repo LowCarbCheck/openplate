@@ -1005,6 +1005,7 @@ forwards, for every account, and never refuses a request for them:
 | `reasoning.max_tokens`                                                       | at most the same ceiling. `reasoning.effort` is kept.                                                                                                                 |
 | `n`                                                                          | `1`, when present.                                                                                                                                                    |
 | `models`, `route`, `provider`, `plugins`, `web_search_options`, `prediction` | removed.                                                                                                                                                              |
+| `provider`, on an OpenRouter upstream                                        | written back as `{"data_collection":"deny"}`: only endpoints that do not store or train on the request. Any other upstream gets no `provider` field.                   |
 
 The ceiling applies with or without a model. A client that needs a longer
 answer than the ceiling allows gets a truncated one, and the operator raises

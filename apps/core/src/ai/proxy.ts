@@ -558,7 +558,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // one is set, a capped answer always, and none of the fields that multiply
     // a request. Quietly, never a 400, see `ai/chat-body-policy.ts`.
     const forwardedBody = Buffer.from(
-      JSON.stringify(applyChatBodyPolicy({ body: bodyObject, policy: bodyPolicy })),
+      JSON.stringify(
+        applyChatBodyPolicy({ body: bodyObject, policy: bodyPolicy, upstreamBaseUrl: upstreamConfig.baseUrl }),
+      ),
       'utf8',
     );
 

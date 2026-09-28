@@ -29,6 +29,13 @@
  *    route, provider routing (it can pick a dearer endpoint of the same
  *    model), paid plugins such as web search, the OpenAI-style web search
  *    options, and predicted outputs (rejected prediction tokens are billed).
+ *  - On OpenRouter, `provider` is written back as
+ *    {@link OPENROUTER_PROVIDER_PREFERENCES}: route only to endpoints that do
+ *    not store or train on what they receive (2026-09-28, the pre-launch
+ *    privacy audit). A plate photo is a health-adjacent picture of somebody's
+ *    meal, and deleting the caller's `provider` field used to delete the only
+ *    place that request could have been made. Any other upstream gets no
+ *    `provider` field at all: it is an OpenRouter extension.
  *
  * The app never sends any of the deleted fields, `n`, `reasoning` or an
  * output cap to this proxy (measured in `openplate`'s
@@ -53,6 +60,25 @@ export const DEFAULT_AI_MAX_OUTPUT_TOKENS = 8192;
 
 /** Fields deleted from every forwarded chat body. See the module header for each one's cost. */
 export const REMOVED_CHAT_FIELDS = ['models', 'route', 'provider', 'plugins', 'web_search_options', 'prediction'];
+
+/**
+ * OpenRouter's provider preferences for every forwarded body. `data_collection:
+ * 'deny'` restricts routing to endpoints whose provider does not store or train
+ * on the request; checked live on 2026-09-28 that `google/gemini-3.7-flash`
+ * still routes (to Google) under it.
+ */
+export const OPENROUTER_PROVIDER_PREFERENCES: JsonObject = { data_collection: 'deny' };
+
+/** Whether the upstream is OpenRouter, which reads the `provider` preferences above. */
+export function isOpenRouterUpstream(baseUrl: string): boolean {
+  let hostname: string;
+  try {
+    hostname = new URL(baseUrl).hostname;
+  } catch {
+    return false;
+  }
+  return hostname === 'openrouter.ai' || hostname.endsWith('.openrouter.ai');
+}
 
 /** The two names OpenAI-compatible APIs read an output cap from. */
 const OUTPUT_CAP_FIELDS = ['max_tokens', 'max_completion_tokens'];
@@ -107,12 +133,21 @@ function capReasoningBudget(input: { body: WritableJsonObject; ceiling: number }
  *
  * @param input.body - the parsed request body, already proved to be an object.
  * @param input.policy - the instance's model and output ceiling.
+ * @param input.upstreamBaseUrl - where the body goes, which decides the `provider` preferences.
  * @returns the body to serialise and forward.
  */
-export function applyChatBodyPolicy(input: { body: JsonObject; policy: ChatBodyPolicy }): JsonObject {
+export function applyChatBodyPolicy(input: {
+  body: JsonObject;
+  policy: ChatBodyPolicy;
+  /** The upstream the body goes to; OpenRouter gets {@link OPENROUTER_PROVIDER_PREFERENCES}. */
+  upstreamBaseUrl?: string;
+}): JsonObject {
   const rewritten: WritableJsonObject = Object.fromEntries(
     Object.entries(input.body).filter(([field]) => !REMOVED_CHAT_FIELDS.includes(field)),
   );
+  if (input.upstreamBaseUrl !== undefined && isOpenRouterUpstream(input.upstreamBaseUrl)) {
+    rewritten.provider = { ...OPENROUTER_PROVIDER_PREFERENCES };
+  }
   if (input.policy.model !== null) rewritten.model = input.policy.model;
   capOutputTokens({ body: rewritten, ceiling: input.policy.maxOutputTokens });
   capReasoningBudget({ body: rewritten, ceiling: input.policy.maxOutputTokens });

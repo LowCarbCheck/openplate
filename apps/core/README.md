@@ -163,8 +163,11 @@ the caller's model through, which only helps a client that sends one. With
 or without it, `max_tokens` and `max_completion_tokens` are capped at
 `AI_MAX_OUTPUT_TOKENS` (written in when the body has neither), so is
 `reasoning.max_tokens`, `n` becomes 1, and `models`, `route`, `provider`,
-`plugins`, `web_search_options` and `prediction` are removed. Nothing is
-refused for these fields, so a client that sends them still gets an answer.
+`plugins`, `web_search_options` and `prediction` are removed. On OpenRouter
+the service writes its own `provider` field instead,
+`{"data_collection":"deny"}`, so a photo only goes to endpoints that do not
+store it or train on it. Nothing is refused for these fields, so a client that
+sends them still gets an answer.
 PROTOCOL.md §5.19 has the table.
 
 **The allowance is per account, per UTC day, and it defaults to zero.** A new

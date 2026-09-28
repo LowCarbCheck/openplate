@@ -22,6 +22,17 @@ change moves the minor.
 
 ### Fixed
 
+- **Finished invitations lose their address.** The hosted privacy notice
+  promises that an invitation's address is deleted once it is redeemed,
+  revoked or expired, and every finished row still held one. An hourly sweep
+  now clears the address and name of every revoked or expired invitation, and
+  of every redeemed one on an instance with `TRIAL_ADDRESS_PEPPER`, keeping
+  only the keyed trial hash. A resend refuses an invitation whose address is
+  gone.
+- **On OpenRouter, photos only go to endpoints that keep nothing.** The proxy
+  removed every `provider` field, so nothing asked OpenRouter to avoid
+  endpoints that store requests or train on them. On an OpenRouter upstream
+  the forwarded body now carries `provider: {"data_collection":"deny"}`.
 - **An instance with an AI key but no named model looked configured and never
   scanned.** `AI_ADVERTISED_MODEL` was documented as optional, but the
   openplate app sends no model of its own on a managed instance and refuses

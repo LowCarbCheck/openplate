@@ -47,3 +47,22 @@ test('the default ceiling sits clearly above the largest cap the app sends anywh
   // the largest it sends; the managed path sends none.
   assert.ok(DEFAULT_AI_MAX_OUTPUT_TOKENS >= 4 * 1536);
 });
+
+test('on OpenRouter the body asks for endpoints that do not keep or train on it, whatever the caller sent', () => {
+  const body = applyChatBodyPolicy({
+    body: { model: 'm', provider: { data_collection: 'allow', order: ['Cheap'] } },
+    policy: OPEN,
+    upstreamBaseUrl: 'https://openrouter.ai/api/v1',
+  });
+  assert.deepEqual(body.provider, { data_collection: 'deny' });
+});
+
+test('any other upstream gets no provider field, because it is an OpenRouter extension', () => {
+  // THE CONTROL for the host check: without it the test above would pass against a policy that
+  // wrote the preference into every body.
+  for (const upstreamBaseUrl of ['https://api.openai.com/v1', 'http://inference:8300/v1', 'https://openrouter.ai.example.com/v1']) {
+    const body = applyChatBodyPolicy({ body: { model: 'm', provider: { order: ['x'] } }, policy: OPEN, upstreamBaseUrl });
+    assert.equal('provider' in body, false, upstreamBaseUrl);
+  }
+  assert.equal('provider' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);
+});
