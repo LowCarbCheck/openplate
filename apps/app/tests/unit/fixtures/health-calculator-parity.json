@@ -1,0 +1,334 @@
+{
+  "about": [
+    "The parity table between openplate.de and the openplate app (M263 spec 01).",
+    "Each expected value was produced by running the app functions once: computeBmrKcal, computeTdeeKcal and suggestDailyKcal in app/models/body-metrics.ts, computeReferenceProteinFloor for the reference protein, and applyEatingStyle with the high-protein style for the high protein figure.",
+    "The same file lives in both repositories, byte for byte. Each repository tests its own functions against it, so a constant changed on one side fails that side.",
+    "The app takes a birth year, so its test passes birthYear = currentYear - ageYears. A null expected value means the calculator gives no answer for that input."
+  ],
+  "rows": [
+    {
+      "name": "a man of 30, the default activity level",
+      "input": {
+        "weightKg": 70,
+        "heightCm": 175,
+        "sex": "male",
+        "ageYears": 30,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": 1649,
+        "tdeeKcal": 2267,
+        "dailyKcal": 2270,
+        "proteinReferenceG": 58,
+        "proteinHighG": 112
+      }
+    },
+    {
+      "name": "a woman of 30, the default activity level",
+      "input": {
+        "weightKg": 60,
+        "heightCm": 165,
+        "sex": "female",
+        "ageYears": 30,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": 1320,
+        "tdeeKcal": 1815,
+        "dailyKcal": 1820,
+        "proteinReferenceG": 50,
+        "proteinHighG": 96
+      }
+    },
+    {
+      "name": "a light young woman who sits most of the day",
+      "input": {
+        "weightKg": 48,
+        "heightCm": 158,
+        "sex": "female",
+        "ageYears": 19,
+        "activityLevel": "sedentary",
+        "activityFactor": 1.2
+      },
+      "expected": {
+        "bmrKcal": 1212,
+        "tdeeKcal": 1454,
+        "dailyKcal": 1450,
+        "proteinReferenceG": 40,
+        "proteinHighG": 77
+      }
+    },
+    {
+      "name": "a heavy young man who is very active",
+      "input": {
+        "weightKg": 110,
+        "heightCm": 190,
+        "sex": "male",
+        "ageYears": 22,
+        "activityLevel": "very-active",
+        "activityFactor": 1.725
+      },
+      "expected": {
+        "bmrKcal": 2183,
+        "tdeeKcal": 3766,
+        "dailyKcal": 3770,
+        "proteinReferenceG": 91,
+        "proteinHighG": 176
+      }
+    },
+    {
+      "name": "a woman of 75 who sits most of the day",
+      "input": {
+        "weightKg": 85,
+        "heightCm": 160,
+        "sex": "female",
+        "ageYears": 75,
+        "activityLevel": "sedentary",
+        "activityFactor": 1.2
+      },
+      "expected": {
+        "bmrKcal": 1314,
+        "tdeeKcal": 1577,
+        "dailyKcal": 1580,
+        "proteinReferenceG": 71,
+        "proteinHighG": 136
+      }
+    },
+    {
+      "name": "a man of 68, moderately active",
+      "input": {
+        "weightKg": 95,
+        "heightCm": 172,
+        "sex": "male",
+        "ageYears": 68,
+        "activityLevel": "moderately-active",
+        "activityFactor": 1.55
+      },
+      "expected": {
+        "bmrKcal": 1690,
+        "tdeeKcal": 2620,
+        "dailyKcal": 2620,
+        "proteinReferenceG": 79,
+        "proteinHighG": 152
+      }
+    },
+    {
+      "name": "a woman of 45, extra active",
+      "input": {
+        "weightKg": 68,
+        "heightCm": 170,
+        "sex": "female",
+        "ageYears": 45,
+        "activityLevel": "extra-active",
+        "activityFactor": 1.9
+      },
+      "expected": {
+        "bmrKcal": 1357,
+        "tdeeKcal": 2578,
+        "dailyKcal": 2580,
+        "proteinReferenceG": 56,
+        "proteinHighG": 109
+      }
+    },
+    {
+      "name": "the youngest age the app accepts, 14",
+      "input": {
+        "weightKg": 55,
+        "heightCm": 165,
+        "sex": "male",
+        "ageYears": 14,
+        "activityLevel": "moderately-active",
+        "activityFactor": 1.55
+      },
+      "expected": {
+        "bmrKcal": 1516,
+        "tdeeKcal": 2350,
+        "dailyKcal": 2350,
+        "proteinReferenceG": 46,
+        "proteinHighG": 88
+      }
+    },
+    {
+      "name": "the oldest age the app accepts, 120",
+      "input": {
+        "weightKg": 45,
+        "heightCm": 150,
+        "sex": "female",
+        "ageYears": 120,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": 627,
+        "tdeeKcal": 862,
+        "dailyKcal": 860,
+        "proteinReferenceG": 37,
+        "proteinHighG": 72
+      }
+    },
+    {
+      "name": "a very heavy man of 90",
+      "input": {
+        "weightKg": 200,
+        "heightCm": 180,
+        "sex": "male",
+        "ageYears": 90,
+        "activityLevel": "sedentary",
+        "activityFactor": 1.2
+      },
+      "expected": {
+        "bmrKcal": 2680,
+        "tdeeKcal": 3216,
+        "dailyKcal": 3220,
+        "proteinReferenceG": 166,
+        "proteinHighG": 320
+      }
+    },
+    {
+      "name": "a weight with a decimal and a half centimetre of height",
+      "input": {
+        "weightKg": 72.4,
+        "heightCm": 168.5,
+        "sex": "female",
+        "ageYears": 33,
+        "activityLevel": "extra-active",
+        "activityFactor": 1.9
+      },
+      "expected": {
+        "bmrKcal": 1454,
+        "tdeeKcal": 2763,
+        "dailyKcal": 2760,
+        "proteinReferenceG": 60,
+        "proteinHighG": 116
+      }
+    },
+    {
+      "name": "a weight of 50 kg, where the reference protein lands on a half gram",
+      "input": {
+        "weightKg": 50,
+        "heightCm": 160,
+        "sex": "female",
+        "ageYears": 50,
+        "activityLevel": "very-active",
+        "activityFactor": 1.725
+      },
+      "expected": {
+        "bmrKcal": 1089,
+        "tdeeKcal": 1879,
+        "dailyKcal": 1880,
+        "proteinReferenceG": 42,
+        "proteinHighG": 80
+      }
+    },
+    {
+      "name": "an age of 13, below the youngest the app accepts",
+      "input": {
+        "weightKg": 45,
+        "heightCm": 155,
+        "sex": "female",
+        "ageYears": 13,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 37,
+        "proteinHighG": 72
+      }
+    },
+    {
+      "name": "an age of 121, above the oldest the app accepts",
+      "input": {
+        "weightKg": 70,
+        "heightCm": 170,
+        "sex": "male",
+        "ageYears": 121,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 58,
+        "proteinHighG": 112
+      }
+    },
+    {
+      "name": "no sex given",
+      "input": {
+        "weightKg": 80,
+        "heightCm": 180,
+        "sex": null,
+        "ageYears": 40,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 66,
+        "proteinHighG": 128
+      }
+    },
+    {
+      "name": "no height given",
+      "input": {
+        "weightKg": 75,
+        "heightCm": null,
+        "sex": "male",
+        "ageYears": 40,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 62,
+        "proteinHighG": 120
+      }
+    },
+    {
+      "name": "no weight given",
+      "input": {
+        "weightKg": null,
+        "heightCm": 170,
+        "sex": "female",
+        "ageYears": 40,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": null,
+        "proteinHighG": null
+      }
+    },
+    {
+      "name": "no age given",
+      "input": {
+        "weightKg": 65,
+        "heightCm": 170,
+        "sex": "female",
+        "ageYears": null,
+        "activityLevel": "moderately-active",
+        "activityFactor": 1.55
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 54,
+        "proteinHighG": 104
+      }
+    }
+  ]
+}
