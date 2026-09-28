@@ -18,6 +18,7 @@ import type { JsonObject } from '../lib/json.js';
 import type { AccountTokenKind } from '../lib/tokens.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
 import type { TrialPolicy } from './scan-trial.js';
+import type { HealthConsentRecord } from './health-consent.js';
 
 export interface AccountRecord {
   id: number;
@@ -54,6 +55,12 @@ export interface AccountRecord {
    */
   recoveryVerifier: string | null;
   kdfDescriptor: KdfDescriptor;
+  /**
+   * The account's consent to the processing of its health data, or `null`
+   * when it has none on record (`accounts/health-consent.ts`). The two
+   * columns behind it are both set or both `NULL`, by a check constraint.
+   */
+  healthConsent: HealthConsentRecord | null;
   createdAt: Date;
 }
 
@@ -92,6 +99,13 @@ export interface CreateAccountInput {
   recoveryCodeEscrow: Buffer;
   /** The DEK wrapped under the passphrase KEK and under the recovery KEK — exactly one record of each kind. */
   keyRecords: KeyRecordSubmission[];
+  /**
+   * The health-data consent to write on the new row, or `null` on an instance
+   * that asks for none. REQUIRED rather than optional, so every caller names
+   * it: the handler has already refused a body without it where the instance
+   * asks, and the instant is the handler's injected clock.
+   */
+  healthConsent: HealthConsentRecord | null;
 }
 
 /**
@@ -260,6 +274,22 @@ export interface AccountStore {
    * must not be able to raise for itself.
    */
   updateDisplayName(input: { accountId: number; displayName: string | null }): Promise<AccountRecord | null>;
+
+  /**
+   * `POST /v1/auth/account/health-consent`: records the account's consent to
+   * `consent.version` at `consent.at`, and returns the row, or `null` when the
+   * account is gone.
+   *
+   * IDEMPOTENT, AND THE FIRST INSTANT WINS. An account that already holds
+   * this exact version keeps the instant it first agreed at; a second post is
+   * a read. A different version, or none, is overwritten with both columns in
+   * one statement. The instant says when the person agreed, and a retry from
+   * a flaky connection must not move it.
+   *
+   * THE OWNER'S WRITE ONLY. Nothing on the operator's edit reaches these
+   * columns, and nothing here can clear them: withdrawal is deletion.
+   */
+  recordHealthConsent(input: { accountId: number; consent: HealthConsentRecord }): Promise<AccountRecord | null>;
 
   /**
    * The operator's edit: role, allowance, when the allowance ends, and display

@@ -37,6 +37,7 @@ import type {
 import type { AccountTokenKind } from '../../src/lib/tokens.js';
 import { SESSION_TOKEN_KINDS } from '../../src/lib/tokens.js';
 import type { AccountRole, SyncKeyRecordKind } from '../../src/protocol.js';
+import type { HealthConsentRecord } from '../../src/accounts/health-consent.js';
 
 interface StoredTokenRow extends StoredToken {
   tokenHash: string;
@@ -115,6 +116,8 @@ export interface SeedAccountInput {
   verifier?: string;
   recoveryVerifier?: string;
   recoveryCodeEscrow?: Buffer;
+  /** The consent the signup carried, or absent for none, which is what an instance that asks for none records. */
+  healthConsent?: HealthConsentRecord | null;
   now?: Date;
 }
 
@@ -176,6 +179,20 @@ export function createFakeAccountStore(): FakeAccountStore {
       const account = accountsById.get(input.accountId);
       if (!account) return null;
       account.displayName = input.displayName;
+      return { ...account };
+    },
+
+    async recordHealthConsent(input: {
+      accountId: number;
+      consent: HealthConsentRecord;
+    }): Promise<AccountRecord | null> {
+      const account = accountsById.get(input.accountId);
+      if (!account) return null;
+      // The real store's predicate, as a rule: the version already on record
+      // keeps its first instant, anything else is replaced whole.
+      if (account.healthConsent?.version !== input.consent.version) {
+        account.healthConsent = { version: input.consent.version, at: input.consent.at };
+      }
       return { ...account };
     },
 
@@ -277,6 +294,8 @@ export function createFakeAccountStore(): FakeAccountStore {
         verifier: input.account.verifier,
         recoveryVerifier: input.account.recoveryVerifier,
         kdfDescriptor: input.account.kdfDescriptor,
+        // Written with the account, exactly as the real INSERT does.
+        healthConsent: input.account.healthConsent,
         createdAt: input.now,
       };
       accountsById.set(account.id, account);
@@ -377,6 +396,7 @@ export function createFakeAccountStore(): FakeAccountStore {
           recoveryCodeEscrow: input.recoveryCodeEscrow ?? Buffer.alloc(60, 0x11),
           kdfDescriptor: { salt: 'AAAA', params: { memorySizeKib: 65536, iterations: 3, parallelism: 1 } },
           keyRecords: [],
+          healthConsent: input.healthConsent ?? null,
         },
       });
       if (!created.ok) throw new Error(`could not seed ${input.email}: ${created.reason}`);

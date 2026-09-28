@@ -457,13 +457,16 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
     "trial": { "scans": 10 },
     "plans": true,
     "push": false,
+    "healthConsent": { "version": "2026-09-28" },
     "nutrientReferenceBasis": "dge",
     "ai": { "model": "google/gemini-3.7-flash" }
   }
 }
 ```
 
-`instance` describes what this deployment is and what it can do, and it is **optional**: a service older than the field omits it, and a client that requires it would refuse to talk to every such instance. `name` is the operator's label for the instance, `language` is one of `en`, `de`, `fr`, `it`, `es`, `tr` (the six languages its mail is written in; a client shows it and never branches on it, so a seventh is not a protocol change), `mail` says whether it can send a letter at all, `memberInvites` says whether an ordinary member may invite people here (§5.21), `openSignup` says whether a person may ask for an account here (§5.8.3), `signupCaptcha` says what that request needs, `trial` promises the free scans a new account gets (§5.19), `plans` says whether a biller stands behind this instance so `/v1/plans/*` exists (§5.22), `push` says whether this instance can send web push so `/v1/push/*` exists (§5.24), `nutrientReferenceBasis` says whose micronutrient reference values it shows, and `ai` is `null` when no upstream key is configured. `ai.model` is the model the proxy sends every request to (§5.19), or `null` when the operator named none and the caller's own model is sent.
+`instance` describes what this deployment is and what it can do, and it is **optional**: a service older than the field omits it, and a client that requires it would refuse to talk to every such instance. `name` is the operator's label for the instance, `language` is one of `en`, `de`, `fr`, `it`, `es`, `tr` (the six languages its mail is written in; a client shows it and never branches on it, so a seventh is not a protocol change), `mail` says whether it can send a letter at all, `memberInvites` says whether an ordinary member may invite people here (§5.21), `openSignup` says whether a person may ask for an account here (§5.8.3), `signupCaptcha` says what that request needs, `trial` promises the free scans a new account gets (§5.19), `plans` says whether a biller stands behind this instance so `/v1/plans/*` exists (§5.22), `push` says whether this instance can send web push so `/v1/push/*` exists (§5.24), `healthConsent` names the health-data consent it asks of every account (§5.15.1), `nutrientReferenceBasis` says whose micronutrient reference values it shows, and `ai` is `null` when no upstream key is configured. `ai.model` is the model the proxy sends every request to (§5.19), or `null` when the operator named none and the caller's own model is sent.
+
+`healthConsent` is the explicit consent to health data this instance asks of every account, `{"version": "<v>"}`, or `null` when it asks for none, which is the self-hosted default. It is `null` rather than absent, like `ai`, and a client that finds no key (every service older than the field) reads it as `null`. Unlike the rest of this block, the service **enforces** it: while it is non-`null`, account creation needs the matching consent (§5.8) and an account without it is asked once (§5.15.1). A client that finds `null` draws no consent checkbox.
 
 `push` follows `plans` exactly: a boolean that says only whether a door exists. `false` means the whole `/v1/push` subtree answers the ordinary unknown-path `404`, so a client draws no notification settings. It says nothing about what a push contains, because a push contains a kind and nothing else (§5.24).
 
@@ -563,9 +566,12 @@ Unauthenticated, IP-throttled. **An invite is still the only thing that creates 
   "keyRecords": [
     { "kind": "passphrase", "kdfDescriptor": { "...": "..." }, "wrappedDek": "<base64>" },
     { "kind": "recovery", "kdfDescriptor": null, "wrappedDek": "<base64>" }
-  ]
+  ],
+  "healthConsent": { "version": "2026-09-28" }
 }
 ```
+
+`healthConsent` is **required where `instance.healthConsent` is non-`null`** and ignored everywhere else (§5.15.1). Its `version` must equal the instance's byte for byte. Without it the answer is `400 {"error":"health-consent-required"}` and **nothing is created or spent**: the invite stays redeemable, so the person ticks the box and posts again. The check runs after every other field, so a malformed invite still answers the `403` below first.
 
 **There is no `email` field, and that is the point.** The address comes from the invite row, inside the transaction. A body cannot claim a mailbox the operator did not write to, which is what makes the invitation itself the address verification: the person who received the letter is the person redeeming it, so there is no confirmation link and nothing left to confirm afterwards. `role` and `dailyAiLimit` come from the invite for the same reason: an account never asks for its own standing.
 
@@ -577,17 +583,17 @@ Unauthenticated, IP-throttled. **An invite is still the only thing that creates 
 
 `recoveryCode` is validated as Crockford base32 of 20 bytes (32 characters once spaces and hyphens are stripped and the value is uppercased) and canonicalised to that form before it is sealed. It is never logged, in any form, on any path.
 
-| Status | Meaning                                                                                                                                                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `201`  | `{"account": AccountView, "tokens": {...}}` (§5.15). A session is always issued; there is nothing left to confirm.                                                        |
-| `400`  | An `authHash`, `recoveryAuthHash` or `recoveryCode` of the wrong shape; a descriptor without a 16-byte salt and positive Argon2id params; or `keyRecords` missing a kind. |
-| `403`  | `{"error":"invite-invalid"}`: the invite is missing, malformed, of another service, unknown, expired, revoked or already redeemed. All seven, one answer.                 |
-| `409`  | An account already exists for the invite's address. The invite is NOT consumed.                                                                                           |
-| `429`  | Throttled. `Retry-After` in seconds.                                                                                                                                      |
+| Status | Meaning                                                                                                                                                                                                                                                                                                                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `201`  | `{"account": AccountView, "tokens": {...}}` (§5.15). A session is always issued; there is nothing left to confirm.                                                                                                                                                                                                      |
+| `400`  | An `authHash`, `recoveryAuthHash` or `recoveryCode` of the wrong shape; a descriptor without a 16-byte salt and positive Argon2id params; or `keyRecords` missing a kind. `{"error":"health-consent-required"}`: the instance asks for a consent and the body has none, or another version; the invite is NOT consumed. |
+| `403`  | `{"error":"invite-invalid"}`: the invite is missing, malformed, of another service, unknown, expired, revoked or already redeemed. All seven, one answer.                                                                                                                                                               |
+| `409`  | An account already exists for the invite's address. The invite is NOT consumed.                                                                                                                                                                                                                                         |
+| `429`  | Throttled. `Retry-After` in seconds.                                                                                                                                                                                                                                                                                    |
 
 The server stores `HMAC-SHA-256(serverPepper, authHash)`, and the same construction over `recoveryAuthHash`, **not** a second slow KDF over either. The client has already paid the memory-hard cost; hashing again server-side would add no brute-force resistance (an attacker holding the auth-hash has already skipped Argon2id) while creating a login-flood DoS in which every attempt pins 64 MiB. Peppering still defeats what peppering is for: with the pepper outside the database, a dumped table cannot be replayed against a live instance or checked offline against guesses.
 
-**The whole submission commits in one transaction**: the invite redemption, the account row, the sealed escrow and both key records. Every half-state is a distinct disaster the user cannot see until they try to read their own diary.
+**The whole submission commits in one transaction**: the invite redemption, the account row (with the consent, where the instance asks for one), the sealed escrow and both key records. Every half-state is a distinct disaster the user cannot see until they try to read their own diary.
 
 **The `409` is the one enumeration oracle in this protocol, and protocol 2 made it almost nothing.** It is reachable only by somebody holding a live invite that was ADDRESSED to the very address it reports as taken, so it confirms only what the operator wrote on the letter. In protocol 1 an invite holder could probe arbitrary handles with one invite; they cannot now, because the address is not theirs to choose. It does not consume the invite, so an operator who invited somebody twice by mistake has not destroyed the live invitation. Full reasoning: [`SECURITY.md`](./SECURITY.md).
 
@@ -773,6 +779,7 @@ All three bearer.
   "suspendedAt": null,
   "invitesLeft": 5,
   "invitesNeedAPlan": false,
+  "healthConsent": { "version": "2026-09-28", "at": "2026-09-04T10:11:12.000Z" },
   "createdAt": "2026-09-04T10:11:12.000Z"
 }
 ```
@@ -787,6 +794,8 @@ Nothing secret is in it and nothing can be: no verifier, no KDF descriptor, no w
 
 `trialScans` is `{"granted": n, "left": n}` for an account with a scan trial, and `null` for one without, which is every account on an instance that runs none. `left` is `granted` minus the scans used, never below `0`. A client may render it and **MUST NOT authorize on it**: the proxy counts (§5.19), `left` is a snapshot taken when this view was built, and every proxied response carries the fresh number in `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the scan gate, so a paying account may still carry this field.
 
+`healthConsent` is `{"version": "<v>", "at": "<ISO instant>"}` for an account with a health-data consent on record, and `null` for one without: every account created before its instance asked, and every account on an instance that asks for none. `version` is the wording the person agreed to and `at` is the service's own clock at that moment. A client compares `version` with `instance.healthConsent.version` (§5.6) and asks once when they differ or this is `null` on an instance that asks (§5.15.1). The field is additive: a client that ignores it decodes the view unchanged.
+
 The admin account endpoints return the same shape plus two operator fields, `blob` and `keyRecordKinds` (ADR-0001). A client decoding an `AccountView` from an admin response therefore works unchanged and reads two fields it did not ask for.
 
 **`GET /v1/auth/account`** → `200` `{"account": AccountView}`.
@@ -800,6 +809,36 @@ That is the only field an account may change about itself. `email` is the identi
 Deletion removes the account and, by cascade, every blob, key record, reset token and usage row it owns. There is no soft delete and no grace period. This is the self-serve erasure path, and it is complete by construction rather than by a cleanup job someone has to remember to run.
 
 On an instance that runs a scan trial, the same transaction also **removes the address and the name from every invitation row about that mailbox**, and, when the account held a trial, **keeps one keyed one-way hash of the mailbox** so the one trial per mailbox rule of §5.8.3 survives the deletion. Nothing else about the person is kept (§9.2).
+
+#### 5.15.1 `POST /v1/auth/account/health-consent`: explicit consent to health data
+
+Bearer. **Present only where `instance.healthConsent` is non-`null`**; everywhere else the path answers the ordinary unknown-path `404`, to everybody, signed in or not.
+
+**Why an instance asks.** A diary is health data: foods, weight, fasting. On a managed instance the operator holds the escrowed recovery code (§3.1, ADR-0005) and so can open the diary, and its privacy notice names explicit consent under Art. 9(2)(a) GDPR as the legal basis. The operator must be able to show that consent was given, when, and to which wording. A self-hosted instance whose operator is the person asks nobody anything and leaves `HEALTH_CONSENT_VERSION` unset.
+
+**Two ways a consent reaches an account, one version.** The operator sets `HEALTH_CONSENT_VERSION`, a short string of 1 to 32 letters, digits, `.`, `_` or `-` (a date such as `2026-09-28`), and `/health` publishes it as `instance.healthConsent.version`.
+
+- **A new account** agrees on the account-creation step: `POST /v1/auth/signup` carries `"healthConsent": {"version": "<v>"}` and records it in the same statement as the account (§5.8).
+- **An existing account** without it, or with an older version, is asked once and agrees here.
+
+Request: `{"version": "2026-09-28"}` → `200 {"account": AccountView}` (§5.15), with `healthConsent` set.
+
+| Status | Meaning                                                                                                                          |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{"account": AccountView}`. The consent is on record, now or from an earlier call with the same version                          |
+| `400`  | `{"error":"health-consent-required"}`: the body has no string `version`, or not the one `/health` publishes; nothing is recorded |
+| `401`  | No valid access token                                                                                                            |
+| `403`  | `{"error":"account-suspended"}`                                                                                                  |
+| `404`  | The instance asks for no consent                                                                                                 |
+
+Four rules a conforming server MUST hold:
+
+1. **The stored version is the instance's, never the caller's.** The body's `version` is compared byte for byte with the instance's, with no trim and no case fold, and what is written is the instance's string.
+2. **The instant is the server's clock.** A client sends no time, and none would be read.
+3. **Idempotent, and the first instant wins.** A second call with the version already on record changes nothing and answers the same `200`; `at` stays the moment the person first agreed. A different version replaces both, so a new wording carries its own instant.
+4. **Withdrawal is deletion.** No route clears a consent. A person who withdraws deletes the account (`POST /v1/auth/delete`, §5.15), which takes the diary and the consent with the row. The operator reads the consent in the admin account view and no admin route writes it: a consent an operator could set on somebody's behalf would prove nothing.
+
+`health-consent-required` is the one refusal of both paths, so a client recognises one string and shows its checkbox again. Changing `HEALTH_CONSENT_VERSION` asks every account again; an operator changes it when the wording changes and not otherwise.
 
 ### 5.16 Shares: `/v1/sync/shares` and `/v1/sync/shared` (ADR-0002)
 
@@ -1413,7 +1452,10 @@ carries the same 24-character minimum the operator token does.
 `AccountView` is the same shape the account's own `GET /v1/auth/account`
 returns (§5.15), `invitesLeft` included and computed the same way, plus
 `aiUsedToday`, and on the admin surface plus `lastSeenAt`,
-`blob` and `keyRecordKinds`. It carries **no verifier, no KDF
+`blob` and `keyRecordKinds`. `healthConsent` is on it too, and it is **read
+only** here: `PATCH /v1/admin/accounts/:id` does not read it, because a consent
+an operator could set on somebody's behalf would prove nothing (§5.15.1). It
+carries **no verifier, no KDF
 descriptor, no escrow and no ciphertext**. A blob is reported as a byte count
 and a timestamp. The reasoning is
 `docs/adr/0001-an-admin-api-for-a-zero-knowledge-service.md`, whose
@@ -1752,6 +1794,7 @@ Being honest about the metadata, because "end-to-end encrypted" is often heard a
 - **AI usage**: one integer per account per UTC day, **kept for 90 days and then deleted** (§5.20). A count, never a log: no prompt, no response, no model, no timestamp beyond the day. An operator can read one account's counters as a day-by-day strip (`GET /v1/admin/accounts/:id/activity`), which is metadata about when a person used a health app and is bounded for exactly that reason.
 - **The community pulse**, for accounts that turned it on (§5.23, ADR-0007): instance-wide day sums of meals, photographs, calories and grams of protein, one row per contributing account per day, and a short lived presence row saying that an account is fasting right now. The sums are not attributable to anybody; the contributor row and the presence row are, and they say only "this account contributed today" and "this account is fasting". Day sums and contributor rows are **kept 30 days**, presence expires 30 minutes after the last heartbeat, and the routes log no account id. A person who never turned it on sends nothing and appears in none of it.
 - **A push subscription**, for a device whose owner turned notifications on (§5.24, ADR-0008): the push service endpoint, the two keys it encrypts to, a capped user agent string, an IANA time zone, a locale, the minute of the local day a catch-up is due, the local day one last went out, the local day the device was last seen, the instant it asked to be woken, and a count of what has been sent today. Together those say roughly when this person is awake, roughly where in the world they are, and, through `wake_at`, when a fast of theirs ends. **That last one lines up with the pulse's presence row**, which says the same fast is running; ADR-0008 names the correlation rather than leaving it to be discovered. What is NOT stored is a word of any notification's text: every push carries a kind. The row goes when the device unsubscribes, when the push service disowns it, or with the account.
+- **A health-data consent**, on an instance that asks for one (§5.15.1): the version of the wording the person agreed to and the instant this service recorded it, two columns on the account row. It says that the person uses a health app and agreed to have the operator process that data, which the operator must be able to show. It is visible to an operator (§5.20), no route clears it, and it goes with the account row on deletion.
 - **When a person last did something**: `accounts.last_seen_at`, written by a login and by a proxied completion, and deliberately not by a token refresh or a sync poll, so it means "somebody acted" rather than "a client was running". It is visible to an operator (§5.20) and goes with the account row on deletion.
 - **Statutory declarations** (`POST /v1/legal/declarations`, a cancellation or a withdrawal, on every instance): the name, the address, the contract reference, the reason and the dates the person typed, the time it arrived, and the account it matched, if any. It is **kept until the end of the third calendar year after the year it arrived**, counted in Europe/Berlin time, and then deleted by the hourly sweep: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. **Deleting the account does not delete it earlier**; the row loses its account id and stays, because it is the record of what the person declared.
 - **Session metadata**: how many active sessions exist, when each was created, and when tokens were last rotated or revoked. Token values themselves are stored only as digests.

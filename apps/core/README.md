@@ -129,6 +129,18 @@ The second call answers `{"emailed":false,"link":"<CLIENT_BASE_URL>/reset#server
 
 If you are your own operator, which is what self-hosting means, the older promise is intact: nobody but you can open your diary, and you already could.
 
+### Explicit consent to health data, when you run an instance for others
+
+A diary is health data: foods, weight, fasting. Because you hold the escrowed recovery code, a privacy notice for an instance you run for other people may name **explicit consent** (Art. 9(2)(a) GDPR) as the legal basis, and you then have to be able to show that each person gave it. Set a version for the wording they agree to:
+
+```bash
+HEALTH_CONSENT_VERSION=2026-09-28   # 1 to 32 letters, digits, ".", "_" or "-"; empty asks for nothing
+```
+
+`/health` publishes it as `instance.healthConsent`, and the app shows a checkbox on the account-creation step. `POST /v1/auth/signup` then refuses a body without the matching consent with `400 health-consent-required` and spends nothing, so the invitation still works once the box is ticked. Every account stores the version it agreed to and the server's time of agreement, and the account view carries both as `healthConsent`. An account created before you set the version, or before you changed it, has none or an older one; the app asks that person once and records the answer at `POST /v1/auth/account/health-consent`. You read the version and the time in the admin account view, and no admin call can write them. A person who withdraws deletes their account, which removes the diary and the record together.
+
+**Leave it empty if you are your own operator.** An instance that holds only your own diary has nobody to ask. **Changing the version asks everybody again**, so change it when the wording changes. [PROTOCOL.md §5.15.1](./PROTOCOL.md#5151-post-v1authaccounthealth-consent-explicit-consent-to-health-data) is the contract.
+
 ### The AI proxy, and the allowance that bounds it
 
 openplate can name a plate from a photograph. The model that does it is not in

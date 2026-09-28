@@ -57,7 +57,7 @@ import { RESEARCH_BODY_MIN_BYTES } from '../../src/server/research-routes.js';
 import { createDrizzleBlobRollbackStore } from '../../src/db/blob-rollback-store.js';
 import { createDrizzleInstanceSettingsStore } from '../../src/db/settings-store.js';
 import { startInstanceSettings, type InstanceSettings } from '../../src/instance/instance-settings.js';
-import type { InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
+import type { InstanceHealthConsent, InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 
 export interface HttpResponse<T> {
@@ -156,6 +156,12 @@ export interface SignupThroughInviteInput {
   recoveryCode?: string;
 }
 
+/** What a test names when it needs an invite and nothing else. Everything but the address has a default. */
+export type MintInviteInput = Pick<
+  SignupThroughInviteInput,
+  'email' | 'invitedByAccountId' | 'displayName' | 'role' | 'dailyAiLimit' | 'trialScans'
+>;
+
 export interface ServiceHarness {
   baseUrl: string;
   /** The process-local settings surface the app publishes from, so a test can read what `/health` will say. */
@@ -175,6 +181,13 @@ export interface ServiceHarness {
    * everything after the mint is production code on the production path.
    */
   signupThroughInvite(input: SignupThroughInviteInput): Promise<SessionResponse>;
+  /**
+   * Mints an invite through the REAL invite store and returns the raw token,
+   * for a suite that posts `POST /v1/auth/signup` itself: one invite, several
+   * bodies, which is how "a refused signup leaves the invite redeemable" is
+   * shown.
+   */
+  mintInvite(input: MintInviteInput): Promise<string>;
   /**
    * The CAS token a key record currently carries, read the way a real client
    * reads it: out of the LIST response, over the wire.
@@ -380,6 +393,18 @@ export interface StartServiceOptions {
    * open sign-up suite passes one to prove no address reaches a log line.
    */
   authLogger?: Logger;
+  /**
+   * `HEALTH_CONSENT_VERSION`. Absent (the default) is every instance that asks
+   * for no consent: `instance.healthConsent: null` on `/health`, signup
+   * ignores the field, and `POST /v1/auth/account/health-consent` answers the
+   * ordinary unknown-path 404. `health-consent.test.ts` opts in.
+   *
+   * ONE BINDING FOR THE AUTH CONTEXT AND `/health`, as `main.ts` builds it, so
+   * a `create-app` or a handler that forgot either half fails a suite. On an
+   * instance that asks, {@link ServiceHarness.signupThroughInvite} sends the
+   * matching consent, as the app does from the ticked box.
+   */
+  healthConsent?: InstanceHealthConsent | null;
 }
 
 /** The application server key the harness advertises when a suite opts in. Public by definition, and not a real one. */
@@ -438,6 +463,9 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
         };
 
+  // `HEALTH_CONSENT_VERSION`, one binding for the context and `/health`.
+  const healthConsent = options.healthConsent ?? null;
+
   const authContext: AuthContext = {
     store: createDrizzleAccountStore(options.db, { hashAddress }),
     pepper: secrets.verifierPepper,
@@ -455,6 +483,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     // `null` by default, which takes the route away, see
     // `StartServiceOptions.openSignup`.
     openSignup: openSignupSurface,
+    // `null` by default, see `StartServiceOptions.healthConsent`.
+    healthConsent,
   };
 
   const aiSurface =
@@ -531,6 +561,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     // Reported from the SAME surface the routes are mounted on, as `main.ts`
     // does it, so a `create-app` that forgot to report it fails a suite.
     push: pushSurface !== null,
+    // The SAME binding the auth context enforces, as `main.ts` does it.
+    healthConsent: healthConsent === null ? null : { version: healthConsent.version },
   };
   // THE SCAN TRIAL, A PROMISE AND THEREFORE ABSENT WHEN OFF, as `main.ts` does it.
   if (options.trial != null) instance.trial = { scans: options.trial.scans };
@@ -606,35 +638,39 @@ export async function startService(options: StartServiceOptions): Promise<Servic
       clock += ms;
     },
     now: () => clock,
-    async signupThroughInvite(input: SignupThroughInviteInput): Promise<SessionResponse> {
-      const now = new Date(clock);
+    async mintInvite(input: MintInviteInput): Promise<string> {
       const minted = await inviteStore.mint({
         email: input.email,
         displayName: input.displayName ?? null,
         role: input.role ?? 'member',
         dailyAiLimit: input.dailyAiLimit ?? 0,
         expiresAt: new Date(clock + 7 * 24 * 60 * 60 * 1000),
-        now,
+        now: new Date(clock),
         invitedByAccountId: input.invitedByAccountId ?? null,
         source: null,
         trialScans: input.trialScans ?? null,
       });
       if (!minted.ok) throw new Error(`could not mint an invite for ${input.email}: ${minted.reason}`);
+      return minted.minted.token;
+    },
+    async signupThroughInvite(input: SignupThroughInviteInput): Promise<SessionResponse> {
+      const inviteToken = await harness.mintInvite(input);
 
       const response = await harness.request<SessionResponse>({
         method: 'POST',
         path: '/v1/auth/signup',
         body: {
-          inviteToken: minted.minted.token,
-          authHash: input.authHash ?? sampleAuthHash(),
-          kdfDescriptor: sampleKdfDescriptor(),
-          displayName: input.displayName ?? null,
-          recoveryAuthHash: input.recoveryAuthHash ?? sampleAuthHash(31),
-          recoveryCode: input.recoveryCode ?? sampleRecoveryCode(),
-          keyRecords: [
-            { kind: 'passphrase', kdfDescriptor: sampleKdfDescriptor(), wrappedDek: sampleWrappedDek() },
-            { kind: 'recovery', kdfDescriptor: null, wrappedDek: sampleWrappedDek(41) },
-          ],
+          ...sampleSignupBody({
+            inviteToken,
+            displayName: input.displayName ?? null,
+            authHash: input.authHash,
+            recoveryAuthHash: input.recoveryAuthHash,
+            recoveryCode: input.recoveryCode,
+          }),
+          // The box the app shows on `/join`, ticked, on an instance that asks.
+          // `undefined` leaves the key out of the JSON, which is the body an
+          // app sends where `/health` asked for nothing.
+          healthConsent: healthConsent === null ? undefined : { version: healthConsent.version },
         },
       });
       if (response.status !== 201) {
@@ -682,6 +718,32 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     },
   };
   return harness;
+}
+
+/**
+ * The body `POST /v1/auth/signup` takes for one minted invite, WITHOUT a
+ * `healthConsent` field: a suite about consent adds the one it is testing.
+ * Everything but the token has a default.
+ */
+export function sampleSignupBody(input: {
+  inviteToken: string;
+  displayName?: string | null;
+  authHash?: string;
+  recoveryAuthHash?: string;
+  recoveryCode?: string;
+}) {
+  return {
+    inviteToken: input.inviteToken,
+    authHash: input.authHash ?? sampleAuthHash(),
+    kdfDescriptor: sampleKdfDescriptor(),
+    displayName: input.displayName ?? null,
+    recoveryAuthHash: input.recoveryAuthHash ?? sampleAuthHash(31),
+    recoveryCode: input.recoveryCode ?? sampleRecoveryCode(),
+    keyRecords: [
+      { kind: 'passphrase', kdfDescriptor: sampleKdfDescriptor(), wrappedDek: sampleWrappedDek() },
+      { kind: 'recovery', kdfDescriptor: null, wrappedDek: sampleWrappedDek(41) },
+    ],
+  };
 }
 
 /** A structurally valid Argon2id descriptor for request bodies. */

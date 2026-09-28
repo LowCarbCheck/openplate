@@ -156,6 +156,7 @@ before(async () => {
       mail: true,
       memberInvites: true,
       openSignup: false,
+      healthConsent: null,
       ai: null,
       plans: false,
       push: false,

@@ -104,6 +104,27 @@ test('NUTRIENT_REFERENCE_BASIS defaults to dge, accepts the three, and a typo is
   assert.throws(() => parseConfig(baseEnv({ NUTRIENT_REFERENCE_BASIS: 'dach' })), /NUTRIENT_REFERENCE_BASIS/);
 });
 
+test('HEALTH_CONSENT_VERSION is unset by default, takes 1 to 32 safe characters, and anything else is fatal', () => {
+  // Unset and blank both mean "ask for no consent", the self-hosted default.
+  assert.equal(parseConfig(baseEnv()).healthConsentVersion, null);
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: '   ' })).healthConsentVersion, null);
+  // The intended shape, the edges of the length, and every allowed character.
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: '2026-09-28' })).healthConsentVersion, '2026-09-28');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: ' v2 ' })).healthConsentVersion, 'v2');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'a' })).healthConsentVersion, 'a');
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'x'.repeat(32) })).healthConsentVersion, 'x'.repeat(32));
+  assert.equal(parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: 'A.b_C-9' })).healthConsentVersion, 'A.b_C-9');
+  // A value a client could never echo back byte for byte is a boot failure,
+  // never a live instance where every signup answers health-consent-required.
+  for (const bad of ['x'.repeat(33), '2026 09 28', '"2026-09-28"', 'v1/2', 'versión']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ HEALTH_CONSENT_VERSION: bad })),
+      /HEALTH_CONSENT_VERSION/,
+      `"${bad}" must be refused`,
+    );
+  }
+});
+
 test('CLIENT_BASE_URL and SERVER_PUBLIC_URL are absolute http(s) URLs, or fatal', () => {
   // They end up in a letter somebody clicks. A relative or misspelled value
   // must be discovered by the operator at boot, not by the invited person.

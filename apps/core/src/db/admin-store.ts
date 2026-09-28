@@ -47,6 +47,7 @@ import { utcDayKey } from '../lib/utc-day.js';
 import { accounts, aiInstanceDays, aiUsageDays, signupInvites, syncBlobs, syncKeyRecords } from './schema.js';
 import { createDrizzlePulseStore } from '../pulse/pulse-store.js';
 import { createDrizzlePushStore } from '../push/push-store.js';
+import { healthConsentFromColumns } from '../accounts/health-consent.js';
 
 /** The identity columns, deliberately enumerated, never `select()`. See the module header. */
 interface AccountIdentityRow {
@@ -59,6 +60,8 @@ interface AccountIdentityRow {
   trialScans: number | null;
   trialScansUsed: number;
   suspendedAt: Date | null;
+  healthConsentVersion: string | null;
+  healthConsentAt: Date | null;
   createdAt: Date;
   lastSeenAt: Date | null;
 }
@@ -85,6 +88,11 @@ const IDENTITY_COLUMNS = {
   trialScans: accounts.trialScans,
   trialScansUsed: accounts.trialScansUsed,
   suspendedAt: accounts.suspendedAt,
+  // The health-data consent: the operator must be able to show when a person
+  // agreed and to which wording (Art. 7(1) GDPR). On the user-facing
+  // `AccountView` too, because the app decides from it whether to ask again.
+  healthConsentVersion: accounts.healthConsentVersion,
+  healthConsentAt: accounts.healthConsentAt,
   createdAt: accounts.createdAt,
   // An operator fact, added in M201: when this person last did something on
   // purpose. It is metadata about a person's use of a health app, so it is here
@@ -206,6 +214,7 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       trialScans: identity.trialScans,
       trialScansUsed: identity.trialScansUsed,
       suspendedAt: identity.suspendedAt,
+      healthConsent: healthConsentFromColumns({ version: identity.healthConsentVersion, at: identity.healthConsentAt }),
       createdAt: identity.createdAt,
       lastSeenAt: identity.lastSeenAt,
       blob: blobs.get(identity.id) ?? null,

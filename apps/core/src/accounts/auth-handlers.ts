@@ -66,11 +66,12 @@ import {
   parseTokenField,
 } from './auth-input.js';
 import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
-import type { AccountView } from '../protocol.js';
+import type { AccountView, InstanceHealthConsent } from '../protocol.js';
 import { SIGNUP_REQUEST_REFUSALS, readSignupIntent, type OpenSignupSurface } from './open-signup.js';
 import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
 import { isUnpaidTrial, trialScansView } from './scan-trial.js';
+import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
 
 /** Everything the handlers need from the outside world. All of it injected — none of it imported. */
 export interface AuthContext {
@@ -130,6 +131,22 @@ export interface AuthContext {
    * address and a captcha token.
    */
   openSignup?: OpenSignupSurface | null;
+  /**
+   * The health-data consent this instance asks of every account
+   * (`HEALTH_CONSENT_VERSION`), or `null`/absent on an instance that asks for
+   * none, which is the self-hosted default.
+   *
+   * THE SAME BINDING `/health` PUBLISHES AS `instance.healthConsent`
+   * (`main.ts`), so the version a client is shown and the version this
+   * context demands cannot disagree.
+   *
+   * `null` IS NOT "MOUNTED BUT REFUSING", for the reason
+   * {@link AuthContext.memberInvites} gives: `POST
+   * /v1/auth/account/health-consent` is not registered then and answers the
+   * ordinary unknown-path 404, and `POST /v1/auth/signup` ignores a
+   * `healthConsent` field it was sent.
+   */
+  healthConsent?: InstanceHealthConsent | null;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -269,6 +286,7 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
         now: ctx.now(),
       }),
     }),
+    healthConsent: healthConsentView(account.healthConsent),
     createdAt: account.createdAt.toISOString(),
   };
 }
@@ -526,18 +544,36 @@ function memberInviteGrantFor(policy: MemberInvitePolicy | null): MemberInviteGr
  * recovery code, and both key records. See
  * `AccountStore.redeemInviteAndCreateAccount` for why a half-application of
  * any of them is a distinct disaster.
+ *
+ * THE HEALTH-DATA CONSENT IS CHECKED BEFORE THE STORE IS CALLED, on an
+ * instance that asks for one (`ctx.healthConsent`). A body without the
+ * matching `healthConsent` is a `400 health-consent-required` and nothing is
+ * read or written, so the invite stays redeemable and the person can tick
+ * the box and try again. It is checked AFTER every other field, so the
+ * invite's shape gate still answers first. It is not an oracle about the
+ * invite: the same `400` comes back for a real token and a made-up one, and
+ * the instance's version is public on `/health`.
  */
 export async function handleSignup(
   body: JsonValue | undefined,
   ctx: AuthContext,
 ): Promise<AuthOutcome<SessionResponse>> {
-  const parsed = parseSignup(asFields(body));
+  const fields = asFields(body);
+  const parsed = parseSignup(fields);
   if (!parsed.ok) return parsed.outcome;
   const submission = parsed.value;
 
+  const consentPolicy = ctx.healthConsent ?? null;
+  if (consentPolicy !== null && !matchesHealthConsent({ policy: consentPolicy, submitted: fields.healthConsent })) {
+    return invalid(HEALTH_CONSENT_REQUIRED);
+  }
+  // ONE instant for the redemption and the consent, so the row says the
+  // person agreed at the moment the account came into being.
+  const now = ctx.now();
+
   const created: RedeemInviteResult = await ctx.store.redeemInviteAndCreateAccount({
     inviteTokenHash: hashToken(submission.inviteToken),
-    now: ctx.now(),
+    now,
     // The instance's own number, never the caller's, and it is applied only to
     // an invite a MEMBER caused, and the store decides that from the row. See
     // `AccountStore.redeemInviteAndCreateAccount`.
@@ -551,6 +587,10 @@ export async function handleSignup(
       // and nowhere else. It is never logged and never returned.
       recoveryCodeEscrow: sealRecoveryCode({ code: submission.recoveryCode, escrowKey: ctx.escrowKey }),
       keyRecords: submission.keyRecords,
+      // The instance's version, never the caller's string, and the server's
+      // instant. On an instance that asks for none, a submitted field is
+      // ignored and nothing is recorded.
+      healthConsent: consentPolicy === null ? null : { version: consentPolicy.version, at: now },
     },
   });
 
@@ -1135,6 +1175,45 @@ export async function handleUpdateAccount(
     displayName: displayName.value,
   });
   if (updated === null) return { status: 'unauthorized', reason: 'account no longer exists' };
+  return { status: 'ok', body: { account: await toAccountView(updated, ctx) } };
+}
+
+/**
+ * `POST /v1/auth/account/health-consent`: the signed-in account agrees to the
+ * instance's health-data consent wording.
+ *
+ * WHO CALLS IT. An account created before the instance asked, and every
+ * account once the operator changes `HEALTH_CONSENT_VERSION`. The app sees
+ * `account.healthConsent` missing or older than `instance.healthConsent` and
+ * asks once; the account on `/join` never needs it, because signup records
+ * the consent in the same statement as the account.
+ *
+ * THE BODY IS `{"version": "<v>"}` AND ONLY THE INSTANCE'S VERSION PASSES.
+ * Anything else is `400 health-consent-required`, the refusal signup gives,
+ * so a client has one error to recognise. The stored version is the
+ * instance's, never the caller's string, and the instant is the server's.
+ *
+ * IDEMPOTENT. A second post of the version already on record changes nothing
+ * and answers the same `200`; the first instant stands. See
+ * `AccountStore.recordHealthConsent`.
+ */
+export async function handleRecordHealthConsent(
+  input: { accountId: number; body: JsonValue | undefined },
+  ctx: AuthContext,
+): Promise<AuthOutcome<{ account: AccountView }>> {
+  const policy = ctx.healthConsent ?? null;
+  // DEFENCE IN DEPTH, NOT THE MECHANISM: the route is not registered at all
+  // on an instance that asks for no consent.
+  if (policy === null) return { status: 'not-found', reason: 'not found' };
+  if (!matchesHealthConsent({ policy, submitted: input.body })) return invalid(HEALTH_CONSENT_REQUIRED);
+
+  const updated = await ctx.store.recordHealthConsent({
+    accountId: input.accountId,
+    consent: { version: policy.version, at: ctx.now() },
+  });
+  if (updated === null) return { status: 'unauthorized', reason: 'account no longer exists' };
+  // The account id and the version, which is public on `/health`. Never the address.
+  ctx.logger.info('Health consent on record', { accountId: updated.id, version: policy.version });
   return { status: 'ok', body: { account: await toAccountView(updated, ctx) } };
 }
 

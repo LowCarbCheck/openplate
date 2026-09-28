@@ -307,7 +307,32 @@ export interface AccountView {
    * `allowanceExpiresAt` is what turns it `false`.
    */
   invitesNeedAPlan: boolean;
+  /**
+   * The account's explicit consent to the processing of its health data, or
+   * `null` when it has none on record: `{version, at}`, where `version` is the
+   * wording the person agreed to and `at` is the server's instant.
+   *
+   * WHY IT EXISTS. A hosted instance names Art. 9(2)(a) GDPR, explicit
+   * consent, as the legal basis for the diary, because its operator holds the
+   * escrowed recovery code that can open it (ADR-0005). The operator has to be
+   * able to show that consent was given, and when, and to which wording.
+   *
+   * A CLIENT COMPARES `version` WITH `instance.healthConsent.version` and asks
+   * again when they differ, or when this is `null` on an instance that asks.
+   * `null` is also what every account on an instance that asks for no consent
+   * carries. ADDITIVE: an older client ignores the key.
+   *
+   * WITHDRAWAL IS DELETION. There is no route that clears this field; deleting
+   * the account removes it with the row.
+   */
+  healthConsent: HealthConsentView | null;
   createdAt: IsoTimestamp;
+}
+
+/** What {@link AccountView.healthConsent} records: the version agreed to, and the server's instant. */
+export interface HealthConsentView {
+  version: string;
+  at: IsoTimestamp;
 }
 
 /**
@@ -410,6 +435,23 @@ export interface InstanceInfo {
    * carries a kind and the device writes the words. See ADR-0008.
    */
   push: boolean;
+  /**
+   * The explicit consent to health data this instance asks of every account
+   * (`HEALTH_CONSENT_VERSION`), or `null` when it asks for none, which is the
+   * self-hosted default: an instance whose operator is the person has nobody
+   * to ask.
+   *
+   * `null` RATHER THAN ABSENT, like `ai`: "this instance asks for no consent"
+   * is a statement every instance makes. A client that finds the key missing,
+   * which is every service older than the field, reads it as `null`.
+   *
+   * THE ONE FIELD HERE THE SERVICE ENFORCES. While it is non-`null`,
+   * `POST /v1/auth/signup` refuses a body without the matching
+   * `healthConsent` (`400 health-consent-required`), and
+   * `POST /v1/auth/account/health-consent` records it for an account that has
+   * none or an older version. See PROTOCOL.md §5.15.1.
+   */
+  healthConsent: InstanceHealthConsent | null;
   /** The AI proxy this instance offers, or `null` when it has no upstream key. Wired by spec 03. */
   ai: InstanceAi | null;
   /**
@@ -493,6 +535,11 @@ export const NUTRIENT_REFERENCE_BASES: readonly NutrientReferenceBasis[] = ['dge
 
 export function isNutrientReferenceBasis(value: JsonValue | undefined): value is NutrientReferenceBasis {
   return NUTRIENT_REFERENCE_BASES.some((basis) => basis === value);
+}
+
+/** What {@link InstanceInfo.healthConsent} asks for: the version of the wording a person agrees to. */
+export interface InstanceHealthConsent {
+  version: string;
 }
 
 /** What {@link InstanceInfo.trial} promises: how many free scans a new account gets. */

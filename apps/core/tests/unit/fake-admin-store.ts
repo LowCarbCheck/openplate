@@ -20,6 +20,7 @@ import type {
 } from '../../src/admin/admin-store.js';
 import type { AccountRole, SyncKeyRecordKind } from '../../src/protocol.js';
 import type { AccountActivityCount, ActivityDay } from '../../src/admin/account-activity.js';
+import type { HealthConsentRecord } from '../../src/accounts/health-consent.js';
 
 /**
  * The material an account really has in the database and which the admin API
@@ -47,6 +48,8 @@ export interface AdminSeedInput {
   trialScans?: number | null;
   trialScansUsed?: number;
   suspendedAt?: Date | null;
+  /** The health-data consent on record. Absent is none, which is what every account created before the column has. */
+  healthConsent?: HealthConsentRecord | null;
   lastSeenAt?: Date | null;
   blobSizeBytes?: number;
   keyRecordKinds?: SyncKeyRecordKind[];
@@ -90,6 +93,7 @@ export function createFakeAdminStore(): FakeAdminStore {
         trialScans: input.trialScans ?? null,
         trialScansUsed: input.trialScansUsed ?? 0,
         suspendedAt: input.suspendedAt ?? null,
+        healthConsent: input.healthConsent ?? null,
         createdAt: new Date('2026-08-01T09:00:00.000Z'),
         lastSeenAt: input.lastSeenAt ?? null,
         blob:

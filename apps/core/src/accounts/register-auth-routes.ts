@@ -70,6 +70,7 @@ import {
   handleLogin,
   handleLogout,
   handleMintMemberInvite,
+  handleRecordHealthConsent,
   handleRecover,
   handleRecoverRotate,
   handleRefresh,
@@ -393,6 +394,32 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
       next(error);
     }
   });
+
+  // THE HEALTH-DATA CONSENT PROMPT, OR NOTHING THAT ADMITS TO BEING ONE.
+  //
+  // `HEALTH_CONSENT_VERSION` is unset on every instance whose operator asks
+  // for no consent, which is the self-hosted default. The path then answers
+  // the ordinary unknown-path 404, to everybody, signed in or not, with the
+  // terminator in the same position the route would occupy, for the reason
+  // the member mint below gives. Bearer when mounted, like `PATCH /account`,
+  // and unthrottled like it: it writes one row the caller owns and sends
+  // nothing anywhere.
+  if (ctx.healthConsent != null) {
+    router.post(`${AUTH_API_PREFIX}/account/health-consent`, requireAuth, async (req, res, next) => {
+      try {
+        const session = getRequestSession(req);
+        if (session === null) {
+          res.status(401).json({ error: 'authentication required' });
+          return;
+        }
+        sendOutcome(res, await handleRecordHealthConsent({ accountId: session.accountId, body: req.body }, ctx));
+      } catch (error) {
+        next(error);
+      }
+    });
+  } else {
+    router.use(`${AUTH_API_PREFIX}/account/health-consent`, handleNotFound);
+  }
 
   // THE MEMBER MINT, OR NOTHING THAT ADMITS TO BEING ONE (M212).
   //

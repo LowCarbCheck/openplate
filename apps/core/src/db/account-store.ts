@@ -54,6 +54,7 @@ import {
   trialAddressHashes,
 } from './schema.js';
 import type { TrialAddressHasher } from '../accounts/trial-address.js';
+import { healthConsentFromColumns, type HealthConsentRecord } from '../accounts/health-consent.js';
 import { lockTrialMailbox, mailboxHadTrial } from './trial-mailbox.js';
 
 /** One day in milliseconds, for the one place this module does date arithmetic. */
@@ -113,6 +114,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     verifier: row.verifier,
     recoveryVerifier: row.recoveryVerifier,
     kdfDescriptor: row.kdfDescriptor,
+    healthConsent: healthConsentFromColumns({ version: row.healthConsentVersion, at: row.healthConsentAt }),
     createdAt: row.createdAt,
   };
 }
@@ -333,6 +335,32 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       return row ? mapAccountRow(row) : null;
     },
 
+    async recordHealthConsent(input: {
+      accountId: number;
+      consent: HealthConsentRecord;
+    }): Promise<AccountRecord | null> {
+      // ONE conditional UPDATE, then a read only when it changed nothing. The
+      // predicate is the idempotence: a row that already holds this version
+      // is left alone, so its first instant survives a retry. Two concurrent
+      // posts serialise on the row lock, and the second re-evaluates the
+      // predicate against the first's committed row and updates nothing.
+      const [updated] = await db
+        .update(accounts)
+        .set({ healthConsentVersion: input.consent.version, healthConsentAt: input.consent.at })
+        .where(
+          and(
+            eq(accounts.id, input.accountId),
+            or(isNull(accounts.healthConsentVersion), ne(accounts.healthConsentVersion, input.consent.version)),
+          ),
+        )
+        .returning();
+      if (updated) return mapAccountRow(updated);
+
+      // Either the account already agreed to this version, or it is gone.
+      const [existing] = await db.select().from(accounts).where(eq(accounts.id, input.accountId)).limit(1);
+      return existing ? mapAccountRow(existing) : null;
+    },
+
     async updateStanding(input: UpdateStandingInput): Promise<AccountRecord | null> {
       // `undefined` omits a column from the SET list, which is how "leave it
       // alone" is expressed. `displayName: null` is a real value here — it
@@ -482,6 +510,11 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
                 recoveryVerifier: input.account.recoveryVerifier,
                 kdfDescriptor: input.account.kdfDescriptor,
                 recoveryCodeEscrow: input.account.recoveryCodeEscrow,
+                // The consent the handler checked, in the SAME statement as
+                // the account, so an account on an instance that asks can
+                // never exist without it. Both `null` where it asks for none.
+                healthConsentVersion: input.account.healthConsent?.version ?? null,
+                healthConsentAt: input.account.healthConsent?.at ?? null,
               })
               .returning();
           } catch (error) {

@@ -102,6 +102,7 @@ import { asArray, asBoolean, asNumber, asObject, asString, type JsonObject, type
 import { isUnpaidTrial, MAX_TRIAL_SCANS, trialScansView, type TrialPolicy } from '../accounts/scan-trial.js';
 import { getAdminPrincipal } from './admin-auth.js';
 import { SERVICE_FIELD_REFUSAL, SERVICE_PRINCIPAL_PATCH_FIELDS } from './service-principal-scope.js';
+import { healthConsentView } from '../accounts/health-consent.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -281,6 +282,9 @@ function toAccountView(input: {
         now,
       }),
     }),
+    // READ ONLY for the operator: the PATCH below names no such field, so a
+    // consent can only ever be the person's own act.
+    healthConsent: healthConsentView(summary.healthConsent),
     createdAt: summary.createdAt.toISOString(),
     lastSeenAt: summary.lastSeenAt?.toISOString() ?? null,
     blob:
