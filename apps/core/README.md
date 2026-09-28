@@ -44,8 +44,8 @@ and The admin API sections read like standalone guides and are candidates for sp
 ## Self-hosting
 
 ```bash
-git clone https://github.com/LowCarbCheck/openplate-core.git
-cd openplate-core
+git clone https://github.com/LowCarbCheck/openplate.git
+cd openplate/apps/core
 cp .env.example .env
 
 # Generate the one secret you must not lose:
@@ -57,8 +57,8 @@ curl http://localhost:3000/health
 ```
 
 ```bash
-git clone https://github.com/LowCarbCheck/openplate-core.git
-cd openplate-core
+git clone https://github.com/LowCarbCheck/openplate.git
+cd openplate/apps/core
 cp .env.example .env
 
 openssl rand -hex 32
@@ -70,7 +70,7 @@ curl http://localhost:3000/health
 Podman needs the `compose` subcommand, not the separate `podman-compose`
 tool. This file's Postgres volume is already a named volume, so rootless
 Podman needs no ownership fix for it. See openplate's
-[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/docs/podman.md).
+[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/podman.md).
 
 That is the whole install. Postgres comes up alongside the service, the schema migrates itself on boot, and there is nothing else to run.
 
@@ -98,7 +98,7 @@ curl -s -X POST http://127.0.0.1:3000/v1/admin/invites \
   -d '{"email":"you@example.com","displayName":"You","role":"admin"}'
 ```
 
-The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=...&invite=si_..."` on an instance with no mail; open the link yourself. With mail it holds `"emailed":true` and the same link, which is also on its way as a letter. `"role":"admin"` makes the account an administrator, so from then on you invite people from `/admin` in the app. The link runs out after seven days. Opening it needs a secure page (`https://`, or `localhost`): the client derives keys with the browser's Web Crypto API, which browsers switch off on plain `http://` addresses. The openplate app's [self-hosting guide](https://github.com/LowCarbCheck/openplate/blob/main/docs/self-hosting.md#create-the-first-account) walks through the same step for its combined compose file, where the port is 3001.
+The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=...&invite=si_..."` on an instance with no mail; open the link yourself. With mail it holds `"emailed":true` and the same link, which is also on its way as a letter. `"role":"admin"` makes the account an administrator, so from then on you invite people from `/admin` in the app. The link runs out after seven days. Opening it needs a secure page (`https://`, or `localhost`): the client derives keys with the browser's Web Crypto API, which browsers switch off on plain `http://` addresses. The openplate app's [self-hosting guide](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/self-hosting.md#create-the-first-account) walks through the same step for its combined compose file, where the port is 3001.
 
 **The invitation is the address verification.** `POST /v1/auth/signup` reads the address from the invite row, never from the request body, so the person who received the letter is the person who signs up. There is no confirmation link and nothing left to confirm afterwards.
 
@@ -247,7 +247,7 @@ neither variable set, the route answers the ordinary unknown-path 404. With
 `MEMBER_INVITE_TRIAL=true` instead of the pair, a member's invitation grants the
 free scans above rather than a number of days.
 openplate's
-[configuration guide](https://github.com/LowCarbCheck/openplate/blob/main/docs/configuration.md#member-invites)
+[configuration guide](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/configuration.md#member-invites)
 has the full rules.
 
 **The counters are kept for 90 days and then deleted.** Spending is recorded as
@@ -571,7 +571,7 @@ Full detail, including the exact protocol, HKDF labels, and token lifetimes: [`P
 
 ## License
 
-openplate-core is **open source** under the [MIT License](./LICENSE) (SPDX: `MIT`), matching the [openplate](https://github.com/LowCarbCheck/openplate) app. MIT is one of the most permissive licenses available: run it, read it, change it, fork it, redistribute it, host it for others (commercially or not) with no restrictions beyond keeping the copyright and license notice attached to any copy you distribute. Self-hosting this service is a first-class use, and so is running it as a hosted product for others.
+openplate-core is **open source** under the [MIT License](./LICENSE) (SPDX: `MIT`), matching the [openplate](https://github.com/LowCarbCheck/openplate/tree/main/apps/app) app. MIT is one of the most permissive licenses available: run it, read it, change it, fork it, redistribute it, host it for others (commercially or not) with no restrictions beyond keeping the copyright and license notice attached to any copy you distribute. Self-hosting this service is a first-class use, and so is running it as a hosted product for others.
 
 ---
 
@@ -673,5 +673,5 @@ The integration suite targets a local Postgres at `localhost:5433` (user `postgr
   timeout that an `AbortSignal` can only tighten, so an operator who set
   `UPSTREAM_TIMEOUT_MS=600000` would still be cut off at 300 with an error naming no knob.
 - **Handler cores stay pure and dependency-injected.** The shell owns Express, the database and the environment; the cores take a store, a clock and a token minter. That is why the auth suite tests rotation, reuse detection and revocation without a database.
-- **`src/protocol.ts` is a hand-maintained duplicate** of `openplate/app/lib/sync/engine/protocol.ts`. There is no shared package and no shared CI, so both repos carry a unit test asserting the constants against _transcribed literals_. Changing the protocol means editing four places (two sources and two tests), starting with PROTOCOL.md.
+- **`src/protocol.ts` is a hand-maintained duplicate** of `apps/app/app/lib/sync/engine/protocol.ts`. There is no shared package and no shared CI, so both repos carry a unit test asserting the constants against _transcribed literals_. Changing the protocol means editing four places (two sources and two tests), starting with PROTOCOL.md.
 - **Migrations are generated, never written.** And journal timestamps are never hand-edited: the migrator applies only migrations newer than the last applied one, so an out-of-order value causes a later migration to be silently skipped at boot.

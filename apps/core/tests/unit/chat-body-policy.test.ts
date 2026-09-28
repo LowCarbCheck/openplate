@@ -43,7 +43,7 @@ test("the caller's body is not changed, so the proxy's log fields read what was 
 });
 
 test('the default ceiling sits clearly above the largest cap the app sends anywhere', () => {
-  // 1536 is the app's Anthropic cap (`openplate/app/services/vision/anthropic.ts`),
+  // 1536 is the app's Anthropic cap (`apps/app/app/services/vision/anthropic.ts`),
   // the largest it sends; the managed path sends none.
   assert.ok(DEFAULT_AI_MAX_OUTPUT_TOKENS >= 4 * 1536);
 });

@@ -90,7 +90,7 @@ export type AdminAccountView = z.infer<typeof accountViewSchema>;
  *
  * The service keeps one integer per account per day and nothing else: no
  * prompt, no model, no clock time inside the day. Days are the whole
- * resolution that exists, on purpose (`openplate-core/src/db/schema.ts:412`).
+ * resolution that exists, on purpose (`apps/core/src/db/schema.ts:412`).
  */
 export const activityDaySchema = z.object({ day: z.string(), count: z.number().int() });
 export type AdminActivityDay = z.infer<typeof activityDaySchema>;
@@ -242,7 +242,7 @@ export const adminStatsResponseSchema = z.object({ stats: adminStatsSchema });
 //
 // `GET /v1/admin/feedback`, `GET /v1/admin/feedback/:id` and
 // `DELETE /v1/admin/feedback/:id`, transcribed from
-// `openplate-core/src/server/admin-feedback-routes.ts`: `toSummaryView` at
+// `apps/core/src/server/admin-feedback-routes.ts`: `toSummaryView` at
 // `:79`, `toDetailView` at `:97`, the list envelope at `:183` and the detail
 // envelope at `:209`.
 //
@@ -312,7 +312,7 @@ export const feedbackReportResponseSchema = z.object({ report: feedbackReportDet
 
 // ─── The instance's own settings ────────────────────────────────────────────
 //
-// `PATCH /v1/admin/settings`, transcribed from `openplate-core/PROTOCOL.md`
+// `PATCH /v1/admin/settings`, transcribed from `apps/core/PROTOCOL.md`
 // §5.20's route table and §5.6's handshake paragraph. The request is
 // `{"nutrientReferenceBasis": "dge" | "efsa" | "us"}` and the answer is
 // `{"settings": {...}}`, WRAPPED like every other admin response, which is the

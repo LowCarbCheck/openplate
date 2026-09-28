@@ -11,7 +11,7 @@ line is maintained.
 
 ## Reporting a vulnerability
 
-Use GitHub's [private vulnerability reporting](https://github.com/LowCarbCheck/openplate-inference/security/advisories/new)
+Use GitHub's [private vulnerability reporting](https://github.com/LowCarbCheck/openplate/security/advisories/new)
 — **not** a public issue. That draft advisory is visible only to maintainers
 until a fix ships, which keeps an exploit private while it's live.
 

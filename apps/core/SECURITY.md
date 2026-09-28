@@ -8,7 +8,7 @@ Pre-1.0. Only the latest tagged release receives fixes.
 
 **Please do not open a public issue for a suspected vulnerability.**
 
-Report it privately via GitHub's [private vulnerability reporting](https://github.com/LowCarbCheck/openplate-core/security/advisories/new). This opens a draft security advisory visible only to you and the maintainers, and is the only channel we triage for security reports.
+Report it privately via GitHub's [private vulnerability reporting](https://github.com/LowCarbCheck/openplate/security/advisories/new). This opens a draft security advisory visible only to you and the maintainers, and is the only channel we triage for security reports.
 
 This is a small open-source project maintained without a dedicated security team and with no bug bounty. There is no SLA, but reports are read and taken seriously. Expect an initial response within a few days. If a report turns out to be valid, we will work with you on a fix and, if you want, credit you in the advisory when it is published.
 
@@ -37,4 +37,4 @@ That the operator of an instance, holding the database and `SERVER_SECRET`, can 
 
 The limit of recovery is also by design. A forgotten passphrase is restored through the escrow: a mailed link, or on an instance with no mail, a link the operator makes. If `SERVER_SECRET` is lost, the escrow cannot be opened. A person who then loses both their passphrase and their recovery code cannot get their diary back. Nothing on the server can restore it. A report that some path does is the most serious class of issue above.
 
-Non-security bugs (crashes, incorrect sync behavior, docs errors, etc.) belong in regular [GitHub issues](https://github.com/LowCarbCheck/openplate-core/issues), not here.
+Non-security bugs (crashes, incorrect sync behavior, docs errors, etc.) belong in regular [GitHub issues](https://github.com/LowCarbCheck/openplate/issues), not here.

@@ -54,7 +54,7 @@ const REQUEST_TIMEOUT_MS = 4000;
  * contact an abusive client instead of blocking a whole range. Honouring that is
  * the price of using a volunteer-run service.
  */
-const USER_AGENT = 'openplate-inference (self-hosted; https://github.com/LowCarbCheck/openplate-inference)';
+const USER_AGENT = 'openplate-inference (self-hosted; https://github.com/LowCarbCheck/openplate/tree/main/apps/inference)';
 
 /**
  * OFF nutriment key → our macro field. `energy-kcal_100g` is used rather than

@@ -126,7 +126,7 @@ podman compose -f compose.sync.yml up -d
 > fail on plain `http://<the server's address>`: the browser withholds the cryptography they
 > use. Serve both addresses over HTTPS, or test through `localhost`. See [HTTPS](#https).
 
-**Read [openplate-core's README](https://github.com/LowCarbCheck/openplate-core) before you run that last line on a machine other people can reach.** Both services publish their ports on every interface. The account service is exposed the moment it starts, and running an account service is a bigger undertaking than running the app.
+**Read [openplate-core's README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) before you run that last line on a machine other people can reach.** Both services publish their ports on every interface. The account service is exposed the moment it starts, and running an account service is a bigger undertaking than running the app.
 
 The file is annotated line by line, including the two settings that cause problems if set incorrectly (`SERVER_SECRET` and `TRUST_PROXY`). `TRUST_PROXY` applies to both services, because they sit behind the same proxy or behind none. Compose passes on only the variables the file names. A line in `.env` that the file never mentions reaches no container. See [sync.md](sync.md) for what sync is and how the client reaches it.
 
@@ -182,7 +182,7 @@ The second call answers `{"emailed":false,"link":"https://openplate.example.com/
 
 ## The app plus self-hosted inference
 
-[`docker/topologies/compose.inference.yml`](../../../docker/topologies/compose.inference.yml) runs the app beside [openplate-inference](https://github.com/LowCarbCheck/openplate-inference). Plate photos are read on your own hardware, and every visitor gets a one-tap "this openplate provides its own AI". Read the hardware section of [topologies.md](topologies.md#rung-3-add-self-hosted-inference) first. The small `lite` model wants about 1.6 GB of RAM and a few seconds to a minute per plate on a CPU.
+[`docker/topologies/compose.inference.yml`](../../../docker/topologies/compose.inference.yml) runs the app beside [openplate-inference](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference). Plate photos are read on your own hardware, and every visitor gets a one-tap "this openplate provides its own AI". Read the hardware section of [topologies.md](topologies.md#rung-3-add-self-hosted-inference) first. The small `lite` model wants about 1.6 GB of RAM and a few seconds to a minute per plate on a CPU.
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate

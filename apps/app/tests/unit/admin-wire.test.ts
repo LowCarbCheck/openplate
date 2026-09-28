@@ -5,12 +5,12 @@
  * ── WHY A TEST AND NOT A SHARED PACKAGE ──────────────────────────────────
  *
  * `openplate` and `openplate-core` cannot import each other, so the wire is
- * written out twice and `openplate-core/PROTOCOL.md` is the normative
+ * written out twice and `apps/core/PROTOCOL.md` is the normative
  * document. Each side pins ITS OWN transcription against a literal copied from
  * that document, never against the other repository, and the two tests are
  * what makes a one-sided edit fail instead of leaving both suites green while
  * the repositories silently disagree. The other side of this file is
- * `openplate-core/tests/unit/admin-contract.test.ts`, which drives its real
+ * `apps/core/tests/unit/admin-contract.test.ts`, which drives its real
  * router with the same bodies.
  *
  * ── THE BODIES BELOW ARE COPIED, NOT BUILT ───────────────────────────────

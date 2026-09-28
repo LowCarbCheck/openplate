@@ -61,7 +61,7 @@ systemctl --user restart app.service
 until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
 ```
 
-**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../apps/app/docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
 
 ```sh
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-sync/sync.env | cut -d= -f2)

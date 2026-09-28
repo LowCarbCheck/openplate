@@ -36,7 +36,7 @@
 # from source. There is still no database and no secret on the app side.
 #
 # "README" below always means openplate-inference's README:
-# https://github.com/LowCarbCheck/openplate-inference
+# https://github.com/LowCarbCheck/openplate/tree/main/apps/inference
 #
 # -- THE ONE THING PEOPLE GET WRONG ----------------------------------------
 # `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or

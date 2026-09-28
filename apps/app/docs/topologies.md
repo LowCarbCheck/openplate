@@ -117,7 +117,7 @@ flowchart LR
 **You operate:** the app, an account service, and a Postgres. That is a real step up: an
 account service has a database worth backing up, a `SERVER_SECRET` worth keeping, and users
 who can lock themselves out. Read
-[openplate-core's README](https://github.com/LowCarbCheck/openplate-core#readme) before you
+[openplate-core's README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core#readme) before you
 put it on the public internet.
 **Compose file:** [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml).
 
@@ -222,7 +222,7 @@ This rung is for two kinds of people:
 - **You already run a model runtime.** If you have llama.cpp, Ollama, or vLLM-on-GPU up
   today, set `MODEL_PROFILE=external` and `MODEL_RUNTIME_URL`: openplate-inference then
   downloads nothing and starts no second model, and just wraps what you have. Check the
-  [support matrix](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/runtimes.md#support-matrix)
+  [support matrix](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/runtimes.md#support-matrix)
   first; vLLM's **CPU** build cannot run this.
 
 **Hardware honesty.** The small `lite` profile is 2.0 GiB of weights and wants **8+ modern
@@ -230,7 +230,7 @@ cores with AVX2 and 4 GB of free RAM** on a CPU-only box; the larger `quality` p
 5.8 GiB of weights and a 5.8 GiB VRAM floor. CPU scans take seconds to minutes, and
 throughput does not improve with concurrency: plan capacity as if the box were serial. The
 measured numbers, per profile, are in
-[openplate-inference's docs/hardware.md](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/hardware.md).
+[openplate-inference's docs/hardware.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/hardware.md).
 Read it before you buy anything.
 
 Once it is running, you can either hand each person a key (**Settings → AI →

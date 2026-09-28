@@ -68,7 +68,7 @@ allowance per account.
 - Your provider has no per-key spend limit, so the cap has to live somewhere you control.
 - You want a **daily request** cap per person rather than a credit balance per person.
 - You are putting the household in front of your own
-  [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) box, where there
+  [openplate-inference](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference) box, where there
   is no provider dashboard at all, a managed instance adds the per-person allowance and usage
   the `API_KEYS` allowlist below does not have.
 - You want revocation to be one action in the admin screen rather than a shared key everyone
@@ -103,7 +103,7 @@ photo, read once and not stored. It still never sees a diary entry in the clear.
 ## The alternative: a shared inference box
 
 If you own the hardware, the other way to share one bill is to have no bill. Run
-[openplate-inference](https://github.com/LowCarbCheck/openplate-inference) on a machine at
+[openplate-inference](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference) on a machine at
 home, and every scan in the house is computed locally with no cloud provider involved. See
 [topologies.md](topologies.md#rung-3-add-self-hosted-inference) for what that costs you in
 hardware and operational work: it is a real step up from pasting five keys into a dashboard.
@@ -129,7 +129,7 @@ Two honest limits compared to provider sub-keys:
   the container's logs.
 
 Full variable list:
-[openplate-inference docs/configuration.md](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/configuration.md).
+[openplate-inference docs/configuration.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/configuration.md).
 
 **Do not use the instance-provided-AI shortcut for this.** Setting
 `DEFAULT_INFERENCE_API_KEY` on openplate gives everyone one tap and no key to paste, but that

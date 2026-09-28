@@ -23,7 +23,7 @@ workflow.
   regression.
 - **Security reports are never triaged in a public issue.** If a report
   arrives as a public issue and it's plausibly a vulnerability, close/redirect
-  it to [private vulnerability reporting](https://github.com/LowCarbCheck/openplate-core/security/advisories/new)
+  it to [private vulnerability reporting](https://github.com/LowCarbCheck/openplate/security/advisories/new)
   per [`SECURITY.md`](./SECURITY.md) — don't discuss specifics publicly first.
   **Any report that even might be a crypto/correlation flaw — anything that
   could let the server decrypt or correlate a blob it shouldn't, break token

@@ -73,7 +73,7 @@ This is the interface only. It does not translate food names or AI replies.
 
 If you also want encrypted sync across devices,
 [`docker/topologies/compose.sync.yml`](../../docker/topologies/compose.sync.yml) brings up the app, the
-[openplate-core](https://github.com/LowCarbCheck/openplate-core) service, and the Postgres that
+[openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) service, and the Postgres that
 sync (and only sync) needs:
 
 ```bash
@@ -118,8 +118,8 @@ Run any subset. Only the first one is required.
 | Component                                                                     | What it is                                                                                    | Needed?                                                          |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no required secrets.                 | Yes, it is the product.                                         |
-| **[openplate-core](https://github.com/LowCarbCheck/openplate-core)**          | An account service whose first feature is encrypted sync. Stores an email address, the encrypted diary, and an escrowed recovery code that lets a password reset return the diary ([docs/sync.md](docs/sync.md#encryption-and-what-the-operator-holds)). It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
-| **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint: open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
+| **[openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core)**          | An account service whose first feature is encrypted sync. Stores an email address, the encrypted diary, and an escrowed recovery code that lets a password reset return the diary ([docs/sync.md](docs/sync.md#encryption-and-what-the-operator-holds)). It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
+| **[openplate-inference](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint: open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
 | ~~openplate-gateway~~                                                         | Archived 2026-09-04 (M192), merged into openplate-core: a managed instance's own account now carries the AI allowance, so the separate proxy is gone. | n/a |
 
 The app also looks food names up at the [LowCarbCheck](https://lowcarbcheck.org) food
@@ -162,7 +162,7 @@ there.
 ```bash
 corepack enable
 git clone https://github.com/LowCarbCheck/openplate.git
-cd openplate
+cd openplate/apps/app
 pnpm install
 pnpm dev            # http://localhost:3000, nothing to provision first
 ```
@@ -216,6 +216,6 @@ provisioning step.
 ## License
 
 openplate is open source under the [MIT License](LICENSE) (SPDX: `MIT`), as is
-[openplate-core](https://github.com/LowCarbCheck/openplate-core). Run it, read it, change it,
+[openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core). Run it, read it, change it,
 fork it, redistribute it, host it for others, commercially or not, with no restrictions
 beyond keeping the copyright and license notice attached to any copy you distribute.

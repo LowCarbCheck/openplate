@@ -3,12 +3,12 @@
  * client and a sync service (M128 spec 01).
  *
  * THIS FILE IS MAINTAINED IN TWO REPOS AND MUST STAY IDENTICAL IN SUBSTANCE:
- *  - `openplate/app/lib/sync/engine/protocol.ts`   (this file, the client half)
- *  - `openplate-core/src/protocol.ts`              (the service half)
+ *  - `apps/app/app/lib/sync/engine/protocol.ts`   (this file, the client half)
+ *  - `apps/core/src/protocol.ts`              (the service half)
  *
  * They are deliberately NOT a shared package: the two repos ship and version
  * independently, and a third party must be able to implement either side from
- * `openplate-core/PROTOCOL.md` alone without depending on our code. The price
+ * `apps/core/PROTOCOL.md` alone without depending on our code. The price
  * of that independence is hand-maintained duplication, so each repo carries a
  * unit test that asserts its local `PROTOCOL_VERSION` (and the size/retention
  * limits) against TRANSCRIBED literals, there is no shared CI, so drift has
@@ -79,7 +79,7 @@ export const BLOB_VERSION_RETENTION = 5;
  * third-party implementations, and no deployed client can be broken by it.
  *
  * CROSS-REPO NOTE: this file is the hand-maintained duplicate of
- * `openplate-core/src/protocol.ts`, which is the side that ships the routes
+ * `apps/core/src/protocol.ts`, which is the side that ships the routes
  * and is therefore the one to follow when the two disagree. The drift-guard
  * tests on both sides assert TRANSCRIBED literals rather than each other, so
  * a one-sided edit keeps both suites green while the repos diverge, exactly
@@ -106,7 +106,7 @@ export const SYNC_KEY_RECORD_KINDS: readonly SyncKeyRecordKind[] = ['passphrase'
  * A value that arrived as parsed JSON and has not been decoded yet, the one
  * named type for "came off the wire", so that the undecoded-ness of a body is
  * visible in a signature instead of spreading as `unknown`. Mirrors
- * `openplate-core/src/lib/json.ts`, which names the same boundary on the
+ * `apps/core/src/lib/json.ts`, which names the same boundary on the
  * service side.
  */
 export type JsonValue = string | number | boolean | null | JsonValue[] | JsonObject;
@@ -574,7 +574,7 @@ export interface PullBlobResponse {
  * Argon2id salt plus the cost parameters any device needs to re-derive the
  * same KEK.
  *
- * CROSS-REPO NOTE: the service half (`openplate-core/src/protocol.ts`) types
+ * CROSS-REPO NOTE: the service half (`apps/core/src/protocol.ts`) types
  * this field as an opaque `JsonObject`, it stores and echoes the descriptor
  * verbatim and never interprets it. The client DOES produce and consume it
  * (`client/passphrase-kek.ts`'s `PassphraseKdfDescriptor`, which is

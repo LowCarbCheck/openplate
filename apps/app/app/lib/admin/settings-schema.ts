@@ -5,7 +5,7 @@
  * ── ONE FIELD, AND IT IS A CLOSED SET ────────────────────────────────────
  *
  * The three names are the wire's (`admin-wire.ts`, transcribed from
- * `openplate-core/PROTOCOL.md` §5.20), so the form refuses a fourth here and
+ * `apps/core/PROTOCOL.md` §5.20), so the form refuses a fourth here and
  * the service refuses it again at the column. What this setting decides is a
  * set of numbers a person is shown beside their food, which is why both ends
  * check rather than one.

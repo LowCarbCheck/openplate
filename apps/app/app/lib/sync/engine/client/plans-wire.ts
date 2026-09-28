@@ -1,5 +1,5 @@
 /**
- * The `/v1/plans/*` wire shapes, transcribed from `openplate-core/PROTOCOL.md`
+ * The `/v1/plans/*` wire shapes, transcribed from `apps/core/PROTOCOL.md`
  * §5.22 and from the biller's own handlers.
  *
  * ── WHY THIS IS TRANSCRIBED AND NOT IMPORTED ─────────────────────────────

@@ -23,7 +23,7 @@
  *
  * ── THE PATTERN IS BORROWED, NOT INVENTED ────────────────────────────────
  *
- * `openplate-inference/src/food-source/embedding.ts` already does this for the
+ * `apps/inference/src/food-source/embedding.ts` already does this for the
  * embedding runtime: it remembers the last failure reason, publishes it
  * through `status()`, and `/readyz` reports it as DEGRADED rather than
  * unhealthy. {@link foodDbStatus} is that same surface. Like it, it never

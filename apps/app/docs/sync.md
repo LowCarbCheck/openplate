@@ -3,7 +3,7 @@
 openplate is a local app by default: your diary lives in the browser's IndexedDB on the
 device you use, and nothing leaves it. Moving that diary between devices is the one thing
 that needs an account, so it lives in a separate service,
-[openplate-core](https://github.com/LowCarbCheck/openplate-core), with its own image,
+[openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core), with its own image,
 database and secrets.
 
 Sync is entirely optional. Unset, openplate loses no feature.
@@ -35,7 +35,7 @@ Three things never travel, whatever you switch on:
 ## What it needs
 
 - A running **openplate-core** instance: either the hosted one, your own, or any third-party
-  server implementing [the protocol](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md).
+  server implementing [the protocol](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/PROTOCOL.md).
   To run your own, use
   [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).

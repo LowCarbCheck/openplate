@@ -3,12 +3,12 @@
  * client and a sync service (M128 spec 01).
  *
  * THIS FILE IS MAINTAINED IN TWO REPOS AND MUST STAY IDENTICAL IN SUBSTANCE:
- *  - `openplate/app/lib/sync/engine/protocol.ts`   (the client half)
- *  - `openplate-core/src/protocol.ts`              (this file, the service half)
+ *  - `apps/app/app/lib/sync/engine/protocol.ts`   (the client half)
+ *  - `apps/core/src/protocol.ts`              (this file, the service half)
  *
  * They are deliberately NOT a shared package: the two repos ship and version
  * independently, and a third party must be able to implement either side from
- * `openplate-core/PROTOCOL.md` alone without depending on our code. The price
+ * `apps/core/PROTOCOL.md` alone without depending on our code. The price
  * of that independence is hand-maintained duplication, so each repo carries a
  * unit test that asserts its local `PROTOCOL_VERSION` (and the size/retention
  * limits) against TRANSCRIBED literals, there is no shared CI, so drift has
@@ -148,7 +148,7 @@ export const SHRINK_REFUSED_ERROR =
  * `PROTOCOL_VERSION`, zero production blobs exist, there are no third-party
  * implementations, and no deployed client can be broken by it.
  *
- * CROSS-REPO NOTE: `openplate/app/lib/sync/engine/protocol.ts` is the
+ * CROSS-REPO NOTE: `apps/app/app/lib/sync/engine/protocol.ts` is the
  * hand-maintained duplicate of this file and still carries the old value.
  * Its drift-guard test asserts against a transcribed literal, so it will keep
  * passing while disagreeing, nothing in either repo can catch this

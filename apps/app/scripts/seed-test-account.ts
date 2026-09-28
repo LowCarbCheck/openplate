@@ -26,7 +26,7 @@
  *
  * ── LOCALHOST IS THE DEFAULT, AND ANYTHING ELSE IS A DELIBERATE ACT ─────────
  * `--url`, then `SYNC_SERVER_URL`, then `http://localhost:3000` — the same
- * precedence `openplate-core/scripts/sync-api/main.ts` documents, and no
+ * precedence `apps/core/scripts/sync-api/main.ts` documents, and no
  * `--production` shortcut for the same reason it has none. A non-loopback host
  * additionally needs `--allow-remote`, and the host being written to is
  * printed before the first request either way. There is no production URL

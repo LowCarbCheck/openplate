@@ -17,7 +17,7 @@
  *
  * ── THE TWO CREDENTIALS, BOTH FROM THE ENVIRONMENT AND ONLY FROM THERE ──────
  * `OPENPLATE_SYNC_ADMIN_TOKEN`, or `ADMIN_TOKEN` under the name
- * `openplate-core`'s own CLI reads (`openplate-core/scripts/sync-api/main.ts`
+ * `openplate-core`'s own CLI reads (`apps/core/scripts/sync-api/main.ts`
  * line 147), moves the date. `WALK_SESSION_TOKEN` is the walker's ACCESS token
  * from the browser session they just opened, and it reads the account back.
  * Neither has a flag: a credential in argv is a credential in the shell
@@ -37,9 +37,9 @@
  *
  * ── WHERE EVERY FACT COMES FROM ─────────────────────────────────────────────
  * - `PATCH /v1/admin/accounts/:id` with `{ "allowanceExpiresAt": <iso|null> }`,
- *   bearer `Authorization`: `openplate-core/src/server/admin-routes.ts:810` is
+ *   bearer `Authorization`: `apps/core/src/server/admin-routes.ts:810` is
  *   the route, `:462` documents the field, and
- *   `openplate-core/scripts/sync-api/client.ts:157` is the header.
+ *   `apps/core/scripts/sync-api/client.ts:157` is the header.
  * - `GET /v1/auth/account`, bearer `Authorization`, answering
  *   `{ account: AccountViewWire }`: `app/lib/sync/engine/client/auth-client.ts:781`,
  *   with `allowanceExpiresAt` at `app/lib/sync/engine/client/auth-wire.ts:85`.
@@ -274,7 +274,7 @@ function joinUrl(baseUrl: string, path: string): string {
 /**
  * One request, one decoded JSON answer.
  *
- * A FAILURE BODY IS NOT READ, following `openplate-core/scripts/sync-api/client.ts`:
+ * A FAILURE BODY IS NOT READ, following `apps/core/scripts/sync-api/client.ts`:
  * `--url` points wherever the operator says, and a proxy's error page quotes
  * the request it rejected, which here would be a bearer token. The status is
  * the only thing taken from a non-2xx answer, and the transport error is

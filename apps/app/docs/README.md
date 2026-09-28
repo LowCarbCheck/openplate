@@ -4,10 +4,10 @@ openplate is a plate tracker: log what you eat, and optionally photograph it and
 model estimate the macros. It is three separate programs, and **you run only the ones you
 need**. The app is the product: it works alone, with no account, no database and no required
 server secret, because your diary lives in your browser's own IndexedDB.
-[openplate-core](https://github.com/LowCarbCheck/openplate-core) adds an account so a diary
+[openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) adds an account so a diary
 can move between your devices, encrypted before it leaves them. On a managed instance the same
 account carries an AI allowance, so an organization can share one AI bill with a quota per
-person. [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) adds a
+person. [openplate-inference](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference) adds a
 photo-to-macros endpoint on your own hardware, so no cloud AI provider is involved at all.
 Most people run the app and nothing else.
 
@@ -35,16 +35,16 @@ accounts.
 
 Each service documents its own operation. Read those before you run it, not this page.
 
-- **openplate-core**: [README](https://github.com/LowCarbCheck/openplate-core#readme) for
-  running it, [PROTOCOL.md](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md)
+- **openplate-core**: [README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core#readme) for
+  running it, [PROTOCOL.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/PROTOCOL.md)
   for the normative wire format and an honest list of the metadata the server does learn.
-- **openplate-inference**: [README](https://github.com/LowCarbCheck/openplate-inference#readme)
+- **openplate-inference**: [README](https://github.com/LowCarbCheck/openplate/tree/main/apps/inference#readme)
   for the quickstart,
-  [docs/hardware.md](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/hardware.md)
+  [docs/hardware.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/hardware.md)
   for whether your box can run it,
-  [docs/runtimes.md](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/runtimes.md)
+  [docs/runtimes.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/runtimes.md)
   for pointing it at an Ollama, vLLM or llama.cpp you already run, and
-  [docs/configuration.md](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/configuration.md)
+  [docs/configuration.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/configuration.md)
   for its environment variables.
 
 openplate-gateway, the separate AI proxy that used to share one key across a household, was

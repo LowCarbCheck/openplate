@@ -7,7 +7,7 @@
  * The workspace rule that this file exists under: a green gate once shipped
  * accounts nobody could open, because nothing in this repository had read the
  * normative document and written down what the service actually sends. So the
- * literals below come from `openplate-core/PROTOCOL.md` §5.6, §5.15 and §5.21,
+ * literals below come from `apps/core/PROTOCOL.md` §5.6, §5.15 and §5.21,
  * read on 2026-09-09, and NOT from the other repository's source, which this
  * one must not import. If the two disagree, this file is what fails.
  *

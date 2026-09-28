@@ -59,7 +59,7 @@ on it. On an instance you host yourself, you are that operator.
 [sync.md](sync.md#encryption-and-what-the-operator-holds) states the trade in full.
 
 What the server sees beside the ciphertext is stated plainly in
-[PROTOCOL.md §9](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md):
+[PROTOCOL.md §9](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/PROTOCOL.md):
 an email address, blob size, write frequency and timing, version numbers, and KDF parameters.
 
 The optional study console keeps its own, separate accounts on the same server.
@@ -156,7 +156,7 @@ invite link, and no second credential to hand out.
 ## What else openplate-core can carry
 
 Each feature below is off by default, and each one changes what the server holds.
-openplate-core's [README](https://github.com/LowCarbCheck/openplate-core#readme) describes
+openplate-core's [README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core#readme) describes
 each one.
 
 - **Sharing a diary with a clinician** (`SYNC_SHARING=true`). The owner wraps the data key a

@@ -51,7 +51,7 @@
 # converge. What the sync operator holds is explained in apps/app/docs/sync.md.
 #
 # "README" in the inference block below always means openplate-inference's
-# README: https://github.com/LowCarbCheck/openplate-inference
+# README: https://github.com/LowCarbCheck/openplate/tree/main/apps/inference
 #
 # ── THE ONE THING PEOPLE GET WRONG ─────────────────────────────────────────
 # `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or

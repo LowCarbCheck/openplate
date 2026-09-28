@@ -2,7 +2,7 @@
 
 **A plate-photo scanner you run yourself.** Point your phone at dinner, get back a list of foods with portion estimates in grams, computed on your hardware, from open-weight models, with no account, no API key from anybody, and no photo leaving your network.
 
-It speaks the OpenAI chat-completions protocol, so [openplate](https://github.com/LowCarbCheck/openplate)
+It speaks the OpenAI chat-completions protocol, so [openplate](https://github.com/LowCarbCheck/openplate/tree/main/apps/app)
 connects to it as a normal "OpenAI-compatible" provider. One container, one port.
 
 ```
@@ -67,7 +67,7 @@ podman run -d --name openplate-inference \
 ```
 
 Podman takes the same flags Docker does here. See openplate's
-[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/docs/podman.md)
+[podman.md](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/podman.md)
 for the `podman compose` notes that apply to the compose file linked below.
 
 That is the whole CPU install. On a machine with an NVIDIA GPU, add `--gpus all` and use the CUDA image. The container detects the GPU and offloads every layer by itself, there is no flag to set:
@@ -97,7 +97,7 @@ Building from source is always an option, and the one to take any time you want
 to see exactly what you are running:
 
 ```bash
-git clone https://github.com/LowCarbCheck/openplate-inference && cd openplate-inference
+git clone https://github.com/LowCarbCheck/openplate && cd openplate/apps/inference
 docker build -t openplate-inference .                                                     # CPU
 docker build -t openplate-inference --build-arg BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server-cuda .   # GPU
 ```

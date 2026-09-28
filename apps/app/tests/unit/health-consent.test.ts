@@ -3,7 +3,7 @@
  * `instance.healthConsent`, `AccountView.healthConsent`, and the one refusal
  * of both consent paths.
  *
- * TRANSCRIBED FROM `openplate-core/PROTOCOL.md` §5.6, §5.15 and §5.15.1, like
+ * TRANSCRIBED FROM `apps/core/PROTOCOL.md` §5.6, §5.15 and §5.15.1, like
  * every shape in the protocol tests: the two repositories cannot import each
  * other, so these are the literals a conforming service sends. Every reading
  * of a present value has a twin for the absent one, because "absent means

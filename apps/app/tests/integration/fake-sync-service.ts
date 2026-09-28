@@ -1,6 +1,6 @@
 /**
  * A protocol-faithful sync service, built from openplate's OWN
- * `app/lib/sync/engine/protocol.ts` types and `openplate-core/PROTOCOL.md`.
+ * `app/lib/sync/engine/protocol.ts` types and `apps/core/PROTOCOL.md`.
  *
  * ── Why an in-repo fake and not the real service ─────────────────────────
  *

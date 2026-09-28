@@ -66,7 +66,7 @@ systemctl --user restart app.service
 until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
 ```
 
-**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../apps/app/docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
 
 ```sh
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-full/sync.env | cut -d= -f2)
@@ -105,7 +105,7 @@ podman volume rm systemd-pg-data systemd-inference-models
 
 ## CPU, and which runtimes can run this
 
-The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights). It runs on CPU, slowly. The test run below ran on a CPU-only host. If you switch the profile or the runtime, read the [support matrix](https://github.com/LowCarbCheck/openplate-inference/blob/main/docs/runtimes.md#support-matrix) first. If you already run llama.cpp, Ollama, or vLLM on a GPU, set `MODEL_PROFILE=external` and `MODEL_RUNTIME_URL`. openplate-inference then downloads no files, starts no second model, and forwards requests to your existing runtime. Check the support matrix first; vLLM's **CPU** build cannot run this. The matrix records the vLLM CPU build as broken, not slow. A `json_schema` request crashes the server. It reports healthy until the first scan kills the process.
+The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights). It runs on CPU, slowly. The test run below ran on a CPU-only host. If you switch the profile or the runtime, read the [support matrix](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docs/runtimes.md#support-matrix) first. If you already run llama.cpp, Ollama, or vLLM on a GPU, set `MODEL_PROFILE=external` and `MODEL_RUNTIME_URL`. openplate-inference then downloads no files, starts no second model, and forwards requests to your existing runtime. Check the support matrix first; vLLM's **CPU** build cannot run this. The matrix records the vLLM CPU build as broken, not slow. A `json_schema` request crashes the server. It reports healthy until the first scan kills the process.
 
 **Health.** The image defines a `HEALTHCHECK` with a 60 minute start period for downloading weights. Podman drops that check during pull because GHCR serves an OCI manifest without health fields. `podman ps` shows no health column for `systemd-inference`. The generator sets no `Notify=healthy` on it, so systemd does not wait on the initial download. Query the service directly instead. A `GET /readyz` request to the published port returns 200 with `{"status":"ready", ...}` once the model loads, and returns 503 before that. During the first-boot download, nothing answers on the port at all, and curl reports `000`. That means it is still downloading, not broken. `podman logs systemd-inference` shows the progress. `/healthz` checks liveness only, and `/health` does not exist (404).
 

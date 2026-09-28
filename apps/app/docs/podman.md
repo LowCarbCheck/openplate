@@ -28,7 +28,7 @@ Podman runs rootless by default. Containers run as your own user, not root. This
 
 **Ports below 1024.** A rootless container cannot bind a host port below 1024 without permission, for example via `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. None of the default ports in these compose files (3000, 3001, 8300) need this. This issue occurs only if you remap a port to 80 or 443 to bypass a reverse proxy. Because each rung publishes at least one port, this can affect any of the 4 rungs.
 
-**Rootless Postgres.** The Postgres container runs as a non-root user. That user must own its data directory. A named volume solves this automatically, which `openplate-core/docker/compose.yml`, `compose.sync.yml`, and `compose.full.yml` already use. Podman creates the named volume with correct ownership. If you switch to a bind-mounted host directory, set ownership from the host first with `podman unshare chown -R 70:70 ./pg-data`. The user ID 70 matches the `postgres` user in the pinned `postgres:17-alpine` image; Debian images use 999. Without this step, the container fails on startup with a permissions error. This affects rungs 2 and 4.
+**Rootless Postgres.** The Postgres container runs as a non-root user. That user must own its data directory. A named volume solves this automatically, which `apps/core/docker/compose.yml`, `compose.sync.yml`, and `compose.full.yml` already use. Podman creates the named volume with correct ownership. If you switch to a bind-mounted host directory, set ownership from the host first with `podman unshare chown -R 70:70 ./pg-data`. The user ID 70 matches the `postgres` user in the pinned `postgres:17-alpine` image; Debian images use 999. Without this step, the container fails on startup with a permissions error. This affects rungs 2 and 4.
 
 ## Quadlet units
 
@@ -40,8 +40,8 @@ Every compose file above also ships as rootless systemd units. They are generate
 - [sync](../../../docker/quadlet/sync/README.md): rung 2, Postgres, the app and openplate-core
 - [inference](../../../docker/quadlet/inference/README.md): rung 3, openplate-inference and the app
 - [full](../../../docker/quadlet/full/README.md): rung 4, all four
-- [openplate-core](https://github.com/LowCarbCheck/openplate-core/blob/main/docker/quadlet/core/README.md): the sync service on its own
-- [openplate-inference](https://github.com/LowCarbCheck/openplate-inference/blob/main/docker/quadlet/inference/README.md): the inference endpoint on its own
+- [openplate-core](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docker/quadlet/core/README.md): the sync service on its own
+- [openplate-inference](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docker/quadlet/inference/README.md): the inference endpoint on its own
 
 **Pick one path: compose or Quadlet, never both.** A custom systemd unit running `podman compose up` and a Quadlet unit set perform the same task. If you install both, they conflict at boot over port 3000. Remove the existing service before switching to Quadlet. To remove Quadlet, follow the uninstall steps in the scenario README.
 

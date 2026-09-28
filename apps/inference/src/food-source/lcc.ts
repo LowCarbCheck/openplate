@@ -15,11 +15,11 @@
  * that front is to NOT DROP IT: `attribution` travels from the LCC row into
  * `FoodCandidate.attribution`, into the response item, and out to the client,
  * which has an optional `attribution` field waiting for it
- * (`openplate/app/services/vision/schema.ts`). `tests/unit/attribution.test.ts`
+ * (`apps/app/app/services/vision/schema.ts`). `tests/unit/attribution.test.ts`
  * proves the whole chain.
  *
  * WHAT WE DELIBERATELY MATCH FROM openplate's CLIENT-SIDE RESOLVER
- * (`openplate/app/services/food-resolution/`), which does the same lookup from the
+ * (`apps/app/app/services/food-resolution/`), which does the same lookup from the
  * browser side:
  *  - name-only queries: a food NAME is the only thing that leaves the machine —
  *    no image, no user id, no plate context.

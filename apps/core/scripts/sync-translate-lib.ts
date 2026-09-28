@@ -9,7 +9,7 @@
  * ── ONE TRANSLATOR, THREE REPOSITORIES ──
  * The website's `scripts/lib/translate.ts` is the client that buys this workspace's translations:
  * the model, the style contract, the glossary, the dash gate, the budget and the memory format all
- * live there. The app vendored it in M229 (`openplate/scripts/sync-translate-lib.ts`), and this
+ * live there. The app vendored it in M229 (`apps/app/scripts/sync-translate-lib.ts`), and this
  * service's two letters want the same treatment for the four languages nobody hand-wrote (M230
  * spec 03). The choice is the app's, taken as it stands: a VENDORED COPY WITH PROVENANCE. The
  * files here are byte copies, this script is the only thing that writes them, and
