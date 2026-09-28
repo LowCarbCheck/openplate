@@ -21,10 +21,12 @@
  *
  * ── A local-first screen does not wait on the network for it ───────────
  *
- * The diary and the dashboard read nothing from a network today. So the
- * handshake is given `INSTANCE_BASIS_WAIT_MS` and no more: past that, the app
- * server's basis stands for this one load and is not kept as the tab's answer,
- * so the next load asks again. The handshake read itself is the tab's shared one
+ * The diary and the dashboard read nothing else from a network. So the WHOLE
+ * resolution, the server loader's `.data` fetch and the handshake after it, gets
+ * one budget, `INSTANCE_BASIS_WAIT_MS`, and no more. Past it, this load uses the
+ * app server's basis when the server loader answered in time, else
+ * `DEFAULT_NUTRIENT_REFERENCE_BASIS`. Neither is kept as the tab's answer, so the
+ * next load asks again. The handshake read itself is the tab's shared one
  * (`readCachedServerInstance`), so waiting here never sends a second request.
  *
  * ── Once per tab ─────────────────────────────────────────────────────────
@@ -55,7 +57,7 @@ export interface NutrientReferenceBasisLoaderData {
   nutrientReferenceBasis: NutrientReferenceBasis;
 }
 
-/** How long a load waits for the `/health` handshake before the app server's basis stands in. */
+/** How long one load waits for the server loader and the `/health` handshake together. */
 export const INSTANCE_BASIS_WAIT_MS = 1500;
 
 /** The settled answer for this tab, or `null` until one settled. */
@@ -83,10 +85,7 @@ export function resolveNutrientReferenceBasis({
   return instanceBasis ?? serverBasis;
 }
 
-/** The handshake's answer, or `'timeout'` when it did not arrive in time. */
-type InstanceRead = InstanceDescriptor | null | 'timeout';
-
-/** The seams a test replaces: the handshake read and the wait. */
+/** The seams a test replaces: the handshake read and the budget. */
 export interface NutrientReferenceBasisDeps {
   readInstance: (serverUrl: string) => Promise<InstanceDescriptor | null>;
   waitMs: number;
@@ -97,25 +96,63 @@ const DEFAULT_DEPS: NutrientReferenceBasisDeps = {
   waitMs: INSTANCE_BASIS_WAIT_MS,
 };
 
+/** How one resolution ended: a basis to keep for the tab, or offline with nothing to read. */
+type Resolution = { kind: 'settled'; basis: NutrientReferenceBasis } | { kind: 'offline' };
+
+/** What a resolution learned on the way, so a timeout can still use the server loader's answer. */
+interface ResolutionProgress {
+  serverBasis: NutrientReferenceBasis | null;
+}
+
 /**
- * The handshake, or `'timeout'` once `waitMs` has passed.
+ * The server loader, then the handshake, with no time limit of its own. The
+ * caller races it against the budget.
  *
- * @param input - the sync server and the seams.
- * @returns what the handshake said, or `'timeout'`.
+ * @param input - the route's server loader, the seams, and where to note the server's basis.
+ * @returns the settled basis, or offline. Any loader fault that is not the network rejects.
  */
-async function readInstanceWithin({
-  serverUrl,
+async function resolveBasis({
+  serverLoader,
   deps,
+  progress,
 }: {
-  serverUrl: string;
+  serverLoader: () => Promise<NutrientReferenceBasisLoaderData>;
   deps: NutrientReferenceBasisDeps;
-}): Promise<InstanceRead> {
+  progress: ResolutionProgress;
+}): Promise<Resolution> {
+  let config: NutrientReferenceBasisLoaderData;
+  try {
+    config = await serverLoader();
+  } catch (cause) {
+    if (!shouldFallbackOffline(cause)) throw cause;
+    return { kind: 'offline' };
+  }
+  progress.serverBasis = config.nutrientReferenceBasis;
+  if (config.syncServerUrl === null) return { kind: 'settled', basis: config.nutrientReferenceBasis };
+
+  const instance = await deps.readInstance(config.syncServerUrl);
+  return {
+    kind: 'settled',
+    basis: resolveNutrientReferenceBasis({
+      instanceBasis: instance?.nutrientReferenceBasis ?? null,
+      serverBasis: config.nutrientReferenceBasis,
+    }),
+  };
+}
+
+/**
+ * `work`, or `'timeout'` once `waitMs` has passed.
+ *
+ * @param input - the promise to wait for and the budget.
+ * @returns what `work` settled with, or `'timeout'`. A rejection of `work` inside the budget rejects.
+ */
+async function settleWithin<T>({ work, waitMs }: { work: Promise<T>; waitMs: number }): Promise<T | 'timeout'> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<'timeout'>((resolve) => {
-    timer = setTimeout(() => resolve('timeout'), deps.waitMs);
+    timer = setTimeout(() => resolve('timeout'), waitMs);
   });
   try {
-    return await Promise.race([deps.readInstance(serverUrl), timeout]);
+    return await Promise.race([work, timeout]);
   } finally {
     clearTimeout(timer);
   }
@@ -123,11 +160,11 @@ async function readInstanceWithin({
 
 /**
  * The basis for a `clientLoader`, resolved as the vitamin and mineral rows
- * resolve theirs, and remembered for the tab once it settled.
+ * resolve theirs, within one budget, and remembered for the tab once it settled.
  *
  * @param serverLoader - the route's own `serverLoader`, returning {@link NutrientReferenceBasisLoaderData}.
- * @param deps - test seams; the default reads the tab's shared handshake and waits {@link INSTANCE_BASIS_WAIT_MS}.
- * @returns the basis. Never rejects offline; any other loader fault is rethrown.
+ * @param deps - test seams; the default reads the tab's shared handshake within {@link INSTANCE_BASIS_WAIT_MS}.
+ * @returns the basis. Never rejects offline or on a timeout; any other loader fault is rethrown.
  */
 export async function readNutrientReferenceBasis(
   serverLoader: () => Promise<NutrientReferenceBasisLoaderData>,
@@ -135,29 +172,20 @@ export async function readNutrientReferenceBasis(
 ): Promise<NutrientReferenceBasis> {
   if (rememberedBasis !== null) return rememberedBasis;
 
-  let config: NutrientReferenceBasisLoaderData;
-  try {
-    config = await serverLoader();
-  } catch (cause) {
-    if (!shouldFallbackOffline(cause)) throw cause;
-    return DEFAULT_NUTRIENT_REFERENCE_BASIS;
-  }
+  const progress: ResolutionProgress = { serverBasis: null };
+  const work = resolveBasis({ serverLoader, deps, progress });
+  // A loader fault that arrives AFTER the budget ran out has nobody left to
+  // hear it. Marking the promise handled keeps it from surfacing as an
+  // unhandled rejection; inside the budget the race below still rethrows it.
+  work.catch(() => undefined);
 
-  if (config.syncServerUrl === null) {
-    rememberedBasis = config.nutrientReferenceBasis;
-    return rememberedBasis;
-  }
-
-  const instance = await readInstanceWithin({ serverUrl: config.syncServerUrl, deps });
-  if (instance === 'timeout') {
-    provisionalBasis = config.nutrientReferenceBasis;
+  const outcome = await settleWithin({ work, waitMs: deps.waitMs });
+  if (outcome === 'timeout') {
+    provisionalBasis = progress.serverBasis ?? DEFAULT_NUTRIENT_REFERENCE_BASIS;
     return provisionalBasis;
   }
-
-  rememberedBasis = resolveNutrientReferenceBasis({
-    instanceBasis: instance?.nutrientReferenceBasis ?? null,
-    serverBasis: config.nutrientReferenceBasis,
-  });
+  if (outcome.kind === 'offline') return DEFAULT_NUTRIENT_REFERENCE_BASIS;
+  rememberedBasis = outcome.basis;
   return rememberedBasis;
 }
 
