@@ -244,11 +244,25 @@ export async function expectPhoneLayout(page: Page): Promise<void> {
     .toBe(HEADER_HEIGHT);
 }
 
-/** The header's status line, or `''` when nothing is being said. */
+/**
+ * The header's status line, or `''` when nothing is being said.
+ *
+ * THE SENTENCE AND ITS SECOND LINE, NEVER THE ACTION'S WORDS. An action's
+ * label is drawn inline after the sentence, inside the same live region
+ * (2026-09-28), and "Undo" is not part of what the status says. The two lines
+ * are joined the way the live region's own `innerText` joins them.
+ */
 export async function headerStatusText(page: Page): Promise<string> {
   const output = page.locator('[data-slot="header-status"] output');
   if ((await output.count()) === 0) return '';
-  return (await output.first().innerText()).trim();
+  const lines = await output
+    .first()
+    .locator('[data-slot="header-status-sentence"], [data-slot="header-status-description"]')
+    .allInnerTexts();
+  return lines
+    .map((line) => line.trim())
+    .join('\n')
+    .trim();
 }
 
 /**
@@ -256,14 +270,49 @@ export async function headerStatusText(page: Page): Promise<string> {
  *
  * The status row wraps rather than truncating (M225), so a sentence too long
  * for the header does not overflow the document, it CLIPS inside its own span
- * and the clipping is invisible in a screenshot. This is the read that sees it.
+ * and the clipping is invisible in a screenshot. This is the read that sees it,
+ * in both directions: a line clamped off the bottom, and an action label that
+ * cannot wrap running out of the side.
  *
  * @param page - the page whose header is showing a status.
  * @returns true when nothing is cut off.
  */
 export async function isHeaderStatusFullyVisible(page: Page): Promise<boolean> {
+  // The clamped text span: the first span inside a span inside the live region,
+  // in the markup before the action moved inline and in the markup after it.
   const span = page.locator('[data-slot="header-status"] output span span').first();
-  return span.evaluate((element) => element.scrollHeight <= element.clientHeight);
+  return span.evaluate(
+    (element) => element.scrollHeight <= element.clientHeight && element.scrollWidth <= element.clientWidth,
+  );
+}
+
+/**
+ * Whether a sentence and its action's label would fit the status row on
+ * screen, read by writing them into it.
+ *
+ * THE ROW IS THE REAL ONE, drawn by a real status in its real layout (with or
+ * without a second line), and only its words are swapped, the way
+ * `lcc-lineage-header-title.spec.ts` writes every title into the real `h1`. So
+ * one page answers for every language's sentence without a reload per string.
+ * The row is left holding the last words written; call this last.
+ *
+ * @param page - a page whose header is showing a status with an action.
+ * @param words.sentence - the sentence to write.
+ * @param words.label - the action's label to write after it.
+ * @returns whether nothing is cut off, in either direction.
+ */
+export async function doesStatusRowFit(page: Page, words: { sentence: string; label: string }): Promise<boolean> {
+  return page.locator('[data-slot="header-status"]').first().evaluate((row, { sentence, label }) => {
+    const sentenceSpan = row.querySelector('[data-slot="header-status-sentence"]');
+    const action = row.querySelector('[data-slot="header-status-action"]');
+    const text = row.querySelector('[data-slot="header-status-text"]');
+    if (sentenceSpan === null || action === null || text === null) {
+      throw new Error('the status row on screen carries no action');
+    }
+    sentenceSpan.textContent = sentence;
+    action.textContent = label;
+    return text.scrollHeight <= text.clientHeight && text.scrollWidth <= text.clientWidth;
+  }, words);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
