@@ -804,6 +804,13 @@
     "at": "2026-09-14",
     "fr": "Assiette vide pour l'instant."
   },
+  "0a5c8d5cd111b177": {
+    "en": "Your diary is encrypted on this device. Whoever runs this server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:join.operatorKey",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton journal est chiffré sur cet appareil. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal."
+  },
   "0a61a7d62b79bb4b": {
     "en": "{{day}}, {{count}} entries logged",
     "path": "common:dashboard.ridge.day.entries_other",
@@ -4689,6 +4696,13 @@
     "at": "2026-09-14",
     "fr": "Se connecter en tant que {{name}}"
   },
+  "3e9f282155c91524": {
+    "en": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that encrypts your diary on your device",
+    "path": "common:chrome.footerTaglineManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un suivi alimentaire qui chiffre ton journal sur ton appareil"
+  },
   "3ebe3217747dfebb": {
     "en": "Your usual breakfast",
     "path": "common:usual.title.breakfast",
@@ -5521,6 +5535,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "fr": "Tu as enregistré {{count}} repas avec l'IA jusqu'ici."
+  },
+  "4a492be54b1e34bd": {
+    "en": "Your browser asks sites not to track it, so this browser sends nothing.",
+    "path": "common:preferences.analytics.browserSignal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton navigateur demande aux sites de ne pas le suivre, donc ce navigateur n'envoie rien."
   },
   "4a4f15af7af019f1": {
     "en": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
@@ -6453,6 +6474,13 @@
     "at": "2026-09-17",
     "fr": "Recettes"
   },
+  "55d530af7b00a411": {
+    "en": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can open your diary.",
+    "path": "common:landing.sync.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Enregistre ton déjeuner sur ton téléphone, puis consulte ta semaine sur ton ordinateur portable. La synchronisation est facultative. Ton appareil chiffre ton journal avant de l'envoyer à un serveur openplate-core, que tu utilises le nôtre ou que tu héberges le tien. Ton mot de passe reste sur ton appareil. Le serveur conserve aussi une clé de secours scellée. Cela permet de réinitialiser le mot de passe, et cela signifie que l'administrateur du serveur peut ouvrir ton journal."
+  },
   "55db90044fa4fbd3": {
     "en": "{{count}} food",
     "path": "common:usual.itemCount_one",
@@ -6648,6 +6676,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "fr": "Ton journal, ainsi que tout ce que tu as déjà consigné, réside sur cet appareil et fonctionne toujours hors ligne. Le serveur en détient aussi une copie chiffrée. Cette page-ci ne peut simplement pas encore se charger : soit elle est nouvelle sur cet appareil, soit elle doit accéder à Internet (comme pour analyser une photo). Réessaie une fois que tu as retrouvé la connexion."
+  },
+  "5802940f1bb541f4": {
+    "en": "Count my visits",
+    "path": "common:preferences.analytics.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Compter mes visites"
   },
   "58051f0d2128a8e5": {
     "en": "Search foods",
@@ -7194,6 +7229,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Correspondance possible"
+  },
+  "5e8bc82c5a48196b": {
+    "en": "What you eat is not on these pages. Your diary is encrypted on this device before a copy leaves it. The operator keeps a backup key for password resets, and that key lets the operator read your diary.",
+    "path": "common:account.operatorSees.notTheDiary",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte. L'administrateur conserve une clé de secours pour réinitialiser les mots de passe, et cette clé lui permet de lire ton journal."
   },
   "5e8c05805b0cf26a": {
     "en": "{{count}} cup",
@@ -7957,6 +7999,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Utilisateurs"
+  },
+  "68cbca9a03f97baa": {
+    "en": "This openplate counts page visits with its own Matomo. It uses no cookies and never logs what you eat. Switch it off and this browser sends nothing.",
+    "path": "common:preferences.analytics.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Cette instance d'openplate compte les visites de pages avec son propre Matomo. Elle n'utilise aucun cookie et n'enregistre jamais ce que tu manges. Si tu la désactives, ce navigateur n'envoie rien."
   },
   "68d6390027becbd6": {
     "en": "Insulin falls and your body starts using stored liver sugar.",
@@ -11192,6 +11241,13 @@
     "at": "2026-09-22",
     "fr": "Analyses utilise désormais une disposition en deux colonnes sur les écrans larges."
   },
+  "8f5088e08f2dde88": {
+    "en": "openplate, a food tracker that encrypts your diary on your device",
+    "path": "common:meta.landingManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "openplate, un suivi alimentaire qui chiffre ton journal sur ton appareil"
+  },
   "8f74b6eb5c7a63ad": {
     "en": "How many carbs a day?",
     "path": "common:onboarding.carbPreset.legend",
@@ -13992,6 +14048,13 @@
     "at": "2026-09-14",
     "fr": "Cette instance est accessible uniquement sur invitation. Colle le code que tu as reçu, ou ouvre le lien d'invitation."
   },
+  "b3ddbe97124ad62b": {
+    "en": "Your words go to this openplate's server, which passes them to the operator's AI provider. It turns them into entries you check before anything is saved.",
+    "path": "common:scan.textIntake.managedDescription",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Tes mots sont envoyés au serveur de cette instance d'openplate, qui les transmet au fournisseur d'IA de l'administrateur. Celui-ci les transforme en entrées que tu vérifies avant tout enregistrement."
+  },
   "b3f46c109099b0e8": {
     "en": "Week",
     "path": "common:trends.range.week",
@@ -14194,6 +14257,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ton objectif"
+  },
+  "b66d2839610523e6": {
+    "en": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device before it is uploaded. The operator keeps a backup key so you can get your diary back after a forgotten password, and that key lets the operator read your diary.",
+    "path": "common:landing.sync.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Enregistre ton déjeuner sur ton téléphone, puis consulte ta semaine sur ton ordinateur portable. Tous les comptes fonctionnent ainsi par défaut. Ton journal est chiffré sur ton appareil avant d'être téléversé. L'administrateur conserve une clé de secours pour que tu puisses récupérer ton journal après avoir oublié ton mot de passe, et cette clé lui permet de lire ton journal."
   },
   "b69389b85dd74276": {
     "en": "Your fasts now follow you to your other devices.",
@@ -15378,6 +15448,13 @@
     "at": "2026-09-14",
     "fr": "Bilan quotidien à {{time}} et objectif de jeûne"
   },
+  "c7bdcace56dfdb56": {
+    "en": "Your photo goes to this openplate's server, which passes it to the operator's AI provider to work out what is on your plate. The server does not keep a copy. Afterwards the photo stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings.",
+    "path": "common:scan.capture.managedDescription",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ta photo est envoyée au serveur de cette instance d'openplate, qui la transmet au fournisseur d'IA de l'administrateur pour déterminer ce qui se trouve sur ton assiette. Le serveur n'en conserve aucune copie. La photo reste ensuite uniquement sur cet appareil, pour que tu puisses la revoir dans l'entrée. Tu peux désactiver cette option ou supprimer la photo à tout moment dans Données et sauvegarde, dans les réglages."
+  },
   "c7d4243df0efdc48": {
     "en": "The phone bottom bar now has three tabs.",
     "path": "releases:v0_47_0.changed.01",
@@ -16112,6 +16189,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Seuls les aliments de la base LowCarbCheck comportent des valeurs pour les vitamines et les minéraux. Les assiettes estimées par l'IA et les aliments saisis à la main n'en ont pas, ils comptent donc pour ce que tu as mangé mais pas pour ce qui est mesurable."
+  },
+  "d1f95cba8ab09c23": {
+    "en": "Your photo goes to this openplate's server, which passes it to the operator's AI provider, where the model {{model}} works out what is on your plate. The server does not keep a copy. Afterwards the photo stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings.",
+    "path": "common:scan.capture.managedDescriptionModel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ta photo est envoyée au serveur de cette instance d'openplate, qui la transmet au fournisseur d'IA de l'administrateur, où le modèle {{model}} détermine ce qui se trouve sur ton assiette. Le serveur n'en conserve aucune copie. La photo reste ensuite uniquement sur cet appareil, pour que tu puisses la revoir dans l'entrée. Tu peux désactiver cette option ou supprimer la photo à tout moment dans Données et sauvegarde, dans les réglages."
   },
   "d1fd226e3004d9a3": {
     "en": "{{count}} slice of bread",
@@ -17078,6 +17162,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Réessayer"
+  },
+  "ddddbf851be49987": {
+    "en": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator keeps a backup key to restore your diary if you forget your password. That key also lets the operator read your diary. The operator runs the AI, so photos you send for estimates pass through its server.",
+    "path": "common:onboarding.localFirstManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "fr": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'administrateur conserve une clé de secours pour restaurer ton journal si tu oublies ton mot de passe. Cette clé lui permet aussi de lire ton journal. L'administrateur gère l'IA, donc les photos que tu envoies pour estimation transitent par son serveur."
   },
   "dde7e5e58a8db918": {
     "en": "Net carbs",

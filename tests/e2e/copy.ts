@@ -39,6 +39,7 @@ const addCatalogSchema = z.object({
 
 const catalogSchema = z.object({
   chrome: z.object({
+    back: z.string(),
     /** The boot screen's line for scripts that never arrived. */
     bootFailed: z.string(),
     deviceMenuLabel: z.string(),
@@ -77,6 +78,8 @@ const catalogSchema = z.object({
   add: addCatalogSchema,
   /** The sheet primitive's close key, named in words in all six catalogs. */
   ui: z.object({ sheet: z.object({ close: z.string() }) }),
+  /** The visit-counting switch on Preferences (2026-09-28). */
+  preferences: z.object({ analytics: z.object({ label: z.string(), browserSignal: z.string() }) }),
   bodyMetrics: z.object({ save: z.string(), sex: z.object({ male: z.string() }) }),
   launcher: z.object({
     sheetTitle: z.string(),

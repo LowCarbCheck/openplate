@@ -386,7 +386,7 @@
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Questo dispositivo, apri menu",
     "footerTagline": "{{appName}} di <lcc>lowcarbcheck.org</lcc>, un diario alimentare che resta sul tuo dispositivo",
-    "footerTaglineManaged": "{{appName}} di <lcc>lowcarbcheck.org</lcc>, un diario alimentare che solo tu puoi leggere",
+    "footerTaglineManaged": "{{appName}} di <lcc>lowcarbcheck.org</lcc>, un diario alimentare che cifra il tuo diario sul tuo dispositivo",
     "imprint": "Note legali",
     "licence": "Licenza MIT",
     "licenceShort": "Licenza",
@@ -1154,7 +1154,8 @@
       "body": "C'è già un account associato a {{email}}. Accedi con la password che hai scelto.",
       "signIn": "Vai all'accesso"
     },
-    "working": "Configurazione del tuo account"
+    "working": "Configurazione del tuo account",
+    "operatorKey": "Il tuo diario è cifrato su questo dispositivo. Chi gestisce questo server conserva una chiave di backup per permetterti di reimpostare una password dimenticata, e quella chiave gli consente di leggere il tuo diario."
   },
   "landing": {
     "close": {
@@ -1306,12 +1307,12 @@
       "title": "Pronto in circa un minuto"
     },
     "sync": {
-      "body": "Registra il pranzo sul telefono, poi controlla la settimana sul portatile. La sincronizzazione è facoltativa. Il tuo dispositivo cifra il tuo diario prima di inviarlo a un server openplate-core, sia che tu usi il nostro o ne gestisca uno tuo. La tua password resta sul tuo dispositivo. Il server conserva anche una chiave di recupero sigillata. Questo consente il ripristino della password, e significa che il gestore del server può tecnicamente aprire il tuo diario.",
+      "body": "Registra il pranzo sul telefono, poi controlla la settimana sul portatile. La sincronizzazione è opzionale. Il tuo dispositivo cifra il tuo diario prima di inviarlo a un server openplate-core, sia che tu usi il nostro o ne ospiti uno tuo. La tua password resta sul tuo dispositivo. Il server conserva anche una chiave di recupero sigillata. Questo consente di reimpostare la password, e significa che chi gestisce il server può aprire il tuo diario.",
       "link": "Crea un account",
       "photos": "Le foto del piatto restano dove sono. Non fanno mai parte del blob di sincronizzazione.",
       "shotAlt": "La schermata dell'account su un telefono, disconnesso, con un link per accedere.",
       "title": "Due dispositivi, un diario",
-      "bodyManaged": "Registra il pranzo sul telefono, poi controlla la settimana sul portatile. Ogni account funziona così per impostazione predefinita. Il tuo diario viene cifrato sul tuo dispositivo, e il server conserva solo il testo cifrato. L'operatore conserva anche una chiave di recupero. Questa chiave ti consente di ripristinare il diario dopo aver reimpostato la password, e significa che tecnicamente l'operatore può decifrare i tuoi dati.",
+      "bodyManaged": "Registra il pranzo sul telefono, poi controlla la tua settimana sul portatile. Ogni account funziona così per impostazione predefinita. Il tuo diario viene cifrato sul tuo dispositivo prima del caricamento. Il gestore conserva una chiave di backup per farti recuperare il diario se dimentichi la password, e quella chiave gli consente di leggere il tuo diario.",
       "linkManaged": "Accedi al tuo account"
     }
   },
@@ -1377,7 +1378,7 @@
     "join": "Unisciti · openplate",
     "joinStudy": "Partecipa a uno studio · openplate",
     "landing": "openplate, un diario alimentare che resta sul tuo dispositivo",
-    "landingManaged": "openplate, un diario alimentare leggibile solo da te",
+    "landingManaged": "openplate, un diario alimentare che cifra il tuo diario sul tuo dispositivo",
     "landingDescription": "Scatta una foto del piatto o cerca ciò che hai mangiato. openplate ti mostra i carboidrati in pochi secondi e li confronta con l'obiettivo giornaliero che hai impostato. Gratuito, senza account e tutto ciò che registri resta sul tuo dispositivo.",
     "lifePhase": "Fase della vita · openplate",
     "nutrition": "Alimentazione e obiettivi · openplate",
@@ -1629,7 +1630,7 @@
     },
     "loading": "Caricamento in corso…",
     "localFirst": "I tuoi dati risiedono su <strong>questo dispositivo</strong>. Noi non li vediamo mai. Il diario che stai per iniziare resta in locale, sempre.",
-    "localFirstManaged": "Il tuo diario risiede su <strong>questo dispositivo</strong> e si sincronizza con il server in forma cifrata. Il gestore amministra l'IA, quindi le foto inviate per le stime transitano attraverso quel server. L'informativa sulla privacy illustra a cosa può accedere il gestore.",
+    "localFirstManaged": "Il tuo diario risiede su <strong>questo dispositivo</strong> e si sincronizza con il server in forma cifrata. Il gestore conserva una chiave di backup per ripristinare il tuo diario se dimentichi la password. Quella chiave consente inoltre al gestore di leggere il tuo diario. Il gestore esegue l'IA, quindi le foto che invii per le stime transitano dal suo server.",
     "mainGoal": {
       "label": "Quale valore conta di più?"
     },
@@ -1728,7 +1729,12 @@
       "system": "Sistema",
       "title": "Tema"
     },
-    "title": "Preferenze"
+    "title": "Preferenze",
+    "analytics": {
+      "label": "Conta le mie visite",
+      "description": "Questa istanza di openplate conta le visite alle pagine con una propria istanza di Matomo. Non usa cookie e non registra mai ciò che mangi. Se disattivi l'opzione, questo browser non invia nulla.",
+      "browserSignal": "Il tuo browser chiede ai siti di non tracciarlo, quindi questo browser non invia nulla."
+    }
   },
   "portions": {
     "unit": {
@@ -1963,8 +1969,9 @@
       "previewAlt": "Foto del piatto selezionata",
       "takePhoto": "Fotografa il tuo piatto",
       "title": "Identifica i cibi da una foto del piatto",
-      "managedDescription": "La tua foto viene letta una volta per identificare cosa c'è nel piatto, e non viene conservata. In seguito resta solo su questo dispositivo, così puoi rivederla nella voce del diario. Puoi disattivare questa opzione o cancellarla in qualsiasi momento sotto Dati e backup nelle impostazioni.",
-      "trialScansUsed": "{{used}} su {{granted}} scansioni IA gratuite utilizzate."
+      "managedDescription": "La tua foto va al server di questa istanza di openplate, che la inoltra al fornitore di IA del gestore per determinare cosa c'è nel tuo piatto. Il server non ne conserva una copia. In seguito la foto resta solo su questo dispositivo, così puoi rivederla nella voce. Puoi disattivare questa funzione o eliminarla in qualsiasi momento sotto Dati e backup nelle impostazioni.",
+      "trialScansUsed": "{{used}} su {{granted}} scansioni IA gratuite utilizzate.",
+      "managedDescriptionModel": "La tua foto va al server di questa istanza di openplate, che la inoltra al fornitore di IA del gestore, dove il modello {{model}} determina cosa c'è nel tuo piatto. Il server non ne conserva una copia. In seguito la foto resta solo su questo dispositivo, così puoi rivederla nella voce. Puoi disattivare questa funzione o eliminarla in qualsiasi momento sotto Dati e backup nelle impostazioni."
     },
     "errors": {
       "attemptCost": "Questo tentativo ha consumato {{amount}} del tuo credito API. Viene registrato nei tuoi consumi.",
@@ -2144,7 +2151,7 @@
       "title": "Lettura del testo inserito",
       "label": "Cosa hai inserito",
       "description": "Le tue parole vanno direttamente al tuo provider di IA, che le converte in voci da controllare prima di salvare qualsiasi elemento.",
-      "managedDescription": "Le tue parole vanno all'IA eseguita dalla tua istanza, che le converte in voci da controllare prima di salvare qualsiasi elemento."
+      "managedDescription": "Le tue parole vanno al server di questa istanza di openplate, che le inoltra al fornitore di IA del gestore. Quest'ultimo le converte in voci che puoi verificare prima di salvare qualsiasi elemento."
     }
   },
   "settings": {
@@ -3163,7 +3170,7 @@
       "role": "Se puoi amministrare tu stesso questa istanza.",
       "suspendedAt": "Se il tuo account è sospeso.",
       "activity": "Può anche vedere quante foto sono state analizzate per te in ciascuno degli ultimi {{days}} giorni. I conteggi giornalieri precedenti vengono eliminati.",
-      "notTheDiary": "Cosa mangi non compare su quelle pagine. Il tuo diario viene cifrato su questo dispositivo prima che ne parta qualsiasi copia, quindi non può essere letto lì.",
+      "notTheDiary": "Ciò che mangi non compare su queste pagine. Il tuo diario viene cifrato su questo dispositivo prima che una copia lo lasci. Il gestore conserva una chiave di backup per reimpostare la password, e quella chiave gli consente di leggere il tuo diario.",
       "allowanceExpiresAt": "La data in cui termina la tua quota.",
       "invitesLeft": "Il numero di inviti rimasti.",
       "trialScans": "Quante scansioni IA gratuite hai ricevuto e quante ne restano."

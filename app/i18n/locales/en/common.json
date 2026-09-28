@@ -386,7 +386,7 @@
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "This device, open menu",
     "footerTagline": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that stays on your device",
-    "footerTaglineManaged": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker only you can read",
+    "footerTaglineManaged": "{{appName}} by <lcc>lowcarbcheck.org</lcc>, a food tracker that encrypts your diary on your device",
     "imprint": "Imprint",
     "licence": "MIT licence",
     "licenceShort": "Licence",
@@ -1154,7 +1154,8 @@
       "body": "There is already an account for {{email}}. Sign in with the password you chose.",
       "signIn": "Go to sign in"
     },
-    "working": "Setting up your account"
+    "working": "Setting up your account",
+    "operatorKey": "Your diary is encrypted on this device. Whoever runs this server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary."
   },
   "landing": {
     "close": {
@@ -1306,12 +1307,12 @@
       "title": "Working in about a minute"
     },
     "sync": {
-      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can technically open your diary.",
+      "body": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can open your diary.",
       "link": "Create an account",
       "photos": "Plate photos stay where they are. They are never part of a sync blob.",
       "shotAlt": "The account screen on a phone, signed out, with a link to sign in.",
       "title": "Two devices, one diary",
-      "bodyManaged": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device, and the server stores only the ciphertext. The operator also keeps a recovery key. This key lets you restore your diary after a password reset, and it means the operator can technically decrypt your data.",
+      "bodyManaged": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device before it is uploaded. The operator keeps a backup key so you can get your diary back after a forgotten password, and that key lets the operator read your diary.",
       "linkManaged": "Sign in to your account"
     }
   },
@@ -1377,7 +1378,7 @@
     "join": "Join · openplate",
     "joinStudy": "Join a study · openplate",
     "landing": "openplate, a food tracker that stays on your device",
-    "landingManaged": "openplate, a food tracker only you can read",
+    "landingManaged": "openplate, a food tracker that encrypts your diary on your device",
     "landingDescription": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. Free, no account, and everything you log stays on your device.",
     "lifePhase": "Life phase · openplate",
     "nutrition": "Eating and targets · openplate",
@@ -1629,7 +1630,7 @@
     },
     "loading": "Loading…",
     "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
-    "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator manages the AI, so photos sent for estimates pass through that server in transit. The privacy policy details what the operator can access.",
+    "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator keeps a backup key to restore your diary if you forget your password. That key also lets the operator read your diary. The operator runs the AI, so photos you send for estimates pass through its server.",
     "mainGoal": {
       "label": "Which number matters most?"
     },
@@ -1728,7 +1729,12 @@
       "system": "System",
       "title": "Theme"
     },
-    "title": "Preferences"
+    "title": "Preferences",
+    "analytics": {
+      "label": "Count my visits",
+      "description": "This openplate counts page visits with its own Matomo. It uses no cookies and never logs what you eat. Switch it off and this browser sends nothing.",
+      "browserSignal": "Your browser asks sites not to track it, so this browser sends nothing."
+    }
   },
   "portions": {
     "unit": {
@@ -1963,8 +1969,9 @@
       "previewAlt": "Selected plate photo",
       "takePhoto": "Photograph your plate",
       "title": "Identify foods from a plate photo",
-      "managedDescription": "Your photo is read once to work out what is on your plate, and is not kept. Afterwards it stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings.",
-      "trialScansUsed": "{{used}} of {{granted}} free AI scans used."
+      "managedDescription": "Your photo goes to this openplate's server, which passes it to the operator's AI provider to work out what is on your plate. The server does not keep a copy. Afterwards the photo stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings.",
+      "trialScansUsed": "{{used}} of {{granted}} free AI scans used.",
+      "managedDescriptionModel": "Your photo goes to this openplate's server, which passes it to the operator's AI provider, where the model {{model}} works out what is on your plate. The server does not keep a copy. Afterwards the photo stays on this device only, so you can see it again in the entry. You can switch that off or delete it any time under Data and backup in settings."
     },
     "errors": {
       "attemptCost": "This attempt used {{amount}} of your API credit. It's recorded in your usage.",
@@ -2144,7 +2151,7 @@
       "title": "Reading what you wrote",
       "label": "What you entered",
       "description": "Your words go straight to your own AI provider, which turns them into entries you check before anything is saved.",
-      "managedDescription": "Your words go to the AI your instance runs, which turns them into entries you check before anything is saved."
+      "managedDescription": "Your words go to this openplate's server, which passes them to the operator's AI provider. It turns them into entries you check before anything is saved."
     }
   },
   "settings": {
@@ -3163,7 +3170,7 @@
       "role": "Whether you may administer this instance yourself.",
       "suspendedAt": "Whether your account is suspended.",
       "activity": "They can also see how many photos were read for you on each of the last {{days}} days. Older daily counts are deleted.",
-      "notTheDiary": "What you eat is not on those pages. Your diary is encrypted on this device before any copy of it leaves, so it cannot be read there.",
+      "notTheDiary": "What you eat is not on these pages. Your diary is encrypted on this device before a copy leaves it. The operator keeps a backup key for password resets, and that key lets the operator read your diary.",
       "allowanceExpiresAt": "The date your allowance ends.",
       "invitesLeft": "How many invitations you have left.",
       "trialScans": "How many free AI scans you were given, and how many are left."

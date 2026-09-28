@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-openplate ships as a rolling `main` with tagged releases (`v0.1.0` and up). Only the **latest release** is supported — there are no LTS branches. If you are self-hosting, update to the newest tag/image before reporting a bug that might already be fixed.
+openplate ships as a rolling `main` with tagged releases (`v0.1.0` and up). Only the **latest release** is supported. There are no LTS branches. If you are self-hosting, update to the newest tag/image before reporting a bug that might already be fixed.
 
 ## Reporting a vulnerability
 
@@ -12,14 +12,14 @@ openplate ships as a rolling `main` with tagged releases (`v0.1.0` and up). Only
 
 This opens a private draft security advisory visible only to you and the maintainers, so the issue isn't disclosed before a fix ships.
 
-We'll acknowledge new reports within a few days. This is a small open-source project maintained on a best-effort basis — there's no bug bounty, and there's no fixed SLA on turnaround, but we take reports seriously and will work with you toward a fix and coordinated disclosure.
+We'll acknowledge new reports within a few days. This is a small open-source project maintained on a best-effort basis. There's no bug bounty, and there's no fixed SLA on turnaround, but we take reports seriously and will work with you toward a fix and coordinated disclosure.
 
 ## Trust model
 
-openplate is a local-first app: it has no database and no accounts, and a user's food diary lives entirely in the browser's own storage (IndexedDB) on their device — the server never receives it and stores no personal data of any kind. BYOK AI provider keys (OpenRouter, Mistral, OpenAI-compatible endpoints, Anthropic) are handled client-side end to end — stored on-device and sent directly from the browser to the chosen provider, never through this server. Given that shape, the interesting attack surface for this repo is:
+openplate is a local-first app. The app server has no database. On an instance that runs it alone, a user's food diary lives only in the browser's own storage (IndexedDB) on their device. The server never receives it. BYOK AI provider keys (OpenRouter, Mistral, OpenAI-compatible endpoints, Anthropic) stay on the device and go straight from the browser to the chosen provider. An instance that also runs [openplate-core](https://github.com/LowCarbCheck/openplate-core), such as the hosted app.openplate.de, adds accounts. Each device encrypts the diary before it uploads a copy there. The operator keeps a sealed backup of each recovery code so a forgotten password restores the diary. Whoever holds that service's database and `SERVER_SECRET` can therefore read the diary. AI then goes through that service's proxy. Given that shape, the interesting attack surface for this repo is:
 
-- **XSS and CSP** — since a key or diary data compromised in the page is compromised entirely; the production Content-Security-Policy (`app/config/content-security-policy.ts`) is a load-bearing control, not decoration.
-- **The service worker** (`public/sw.js`, `app/lib/service-worker.ts`) — cache-poisoning or scope issues that could serve stale or malicious assets to an installed PWA.
-- **The optional, separately-hosted services a user opts into** — [openplate-core](https://github.com/LowCarbCheck/openplate-core) (end-to-end-encrypted diary sync) and [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) (self-hosted vision endpoint). Vulnerabilities specific to those services should be reported in their own repos, but cross-cutting issues (e.g. the shared wire protocol) are welcome here too.
+- **XSS and CSP**, since a key or diary data compromised in the page is compromised entirely; the production Content-Security-Policy (`app/config/content-security-policy.ts`) is a load-bearing control, not decoration.
+- **The service worker** (`public/sw.js`, `app/lib/service-worker.ts`): cache-poisoning or scope issues that could serve stale or malicious assets to an installed PWA.
+- **The optional, separately-hosted services**: [openplate-core](https://github.com/LowCarbCheck/openplate-core) (accounts and encrypted diary sync, whose operator can read the diary through the recovery escrow) and [openplate-inference](https://github.com/LowCarbCheck/openplate-inference) (self-hosted vision endpoint). Vulnerabilities specific to those services should be reported in their own repos, but cross-cutting issues (e.g. the shared wire protocol) are welcome here too.
 
-If you're unsure whether something is a security issue or a regular bug, err on the side of reporting it privately — we can always downgrade it to a public issue afterward.
+If you're unsure whether something is a security issue or a regular bug, err on the side of reporting it privately. We can always downgrade it to a public issue afterward.

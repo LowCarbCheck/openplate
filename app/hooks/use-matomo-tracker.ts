@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
+import { z } from 'zod';
 
 import type { AnalyticsConfig } from '#app/config/analytics';
+import { ANALYTICS_OPT_OUT_EVENT, mayCountVisits } from '#app/lib/analytics-opt-out';
 import { setAnalyticsEventLevel, trackOfflinePageview } from '#app/lib/matomo-events';
 import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
 
@@ -43,12 +45,28 @@ import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
  *    and `siteId` are: an operator changing the level must not need a second
  *    deploy to have it take effect. `null` config means analytics are off and
  *    leaves the module at `pageviews`.
+ *
+ * 6. **A person's "no" wins over the config** (2026-09-28). Do Not Track,
+ *    Global Privacy Control and the Preferences switch are read through
+ *    `analytics-opt-out.ts`, and while any of them says no, no script is
+ *    inserted and nothing is sent. The privacy notice promised Do Not Track
+ *    and a live browser sending it was counted anyway. Turning the switch off
+ *    during a visit stops a tracker that already loaded: `requireConsent`
+ *    holds every later request, the heartbeat included, and no consent is
+ *    ever given, so nothing more leaves. Turning it back on counts from the
+ *    next page load if the tracker never loaded, and from the next visit if
+ *    it was stopped.
  */
 let hasRun = false;
+let isStopped = false;
+
+/** What `setAnalyticsOptOut` puts on its event. */
+const optOutDetailSchema = z.object({ optedOut: z.boolean() });
 
 /** Test seam: resets the module-level load guard. Never called by app code. */
 export function __resetMatomoForTests(): void {
   hasRun = false;
+  isStopped = false;
 }
 
 export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
@@ -58,6 +76,22 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
   const matomoUrl = config?.matomoUrl ?? null;
   const siteId = config?.siteId ?? null;
   const eventLevel = config?.eventLevel ?? null;
+  // Bumped when the Preferences switch changes, so the load effect asks again.
+  const [optOutChanges, setOptOutChanges] = useState(0);
+
+  useEffect(() => {
+    function onOptOutChange(event: Event): void {
+      const detail = optOutDetailSchema.safeParse(event instanceof CustomEvent ? event.detail : null);
+      const optedOut = detail.success && detail.data.optedOut;
+      if (optedOut && hasRun && !isStopped) {
+        (window._paq = window._paq || []).push(['requireConsent']);
+        isStopped = true;
+      }
+      setOptOutChanges((count) => count + 1);
+    }
+    window.addEventListener(ANALYTICS_OPT_OUT_EVENT, onOptOutChange);
+    return () => window.removeEventListener(ANALYTICS_OPT_OUT_EVENT, onOptOutChange);
+  }, []);
 
   useEffect(() => {
     // Before the gate below, and before the script: the events module has to
@@ -69,6 +103,8 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
     // globals touched.
     if (matomoUrl === null || siteId === null) return;
     if (hasRun) return;
+    // Do Not Track, Global Privacy Control, or the person's own switch.
+    if (!mayCountVisits()) return;
 
     const _paq = (window._paq = window._paq || []);
     _paq.push(['disableCookies']);
@@ -90,12 +126,13 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
     s.parentNode?.insertBefore(g, s);
 
     hasRun = true;
-  }, [matomoUrl, siteId, eventLevel]);
+  }, [matomoUrl, siteId, eventLevel, optOutChanges]);
 
   // SPA navigations. openplate is a single-page app after the first load, so
   // without this every session would report exactly one pageview.
   useEffect(() => {
     if (!hasRun || !matomoLoaded) return;
+    if (isStopped || !mayCountVisits()) return;
 
     const _paq = (window._paq = window._paq || []);
     // NEVER `window.location.href` raw — openplate puts single-use tokens in

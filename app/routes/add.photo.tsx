@@ -1964,6 +1964,7 @@ function ScanFlow({
   return (
     <>
       <UploadForm
+        managedModel={managedAi?.model ?? null}
         phase={state.phase}
         file={file}
         typedText={typedText}
@@ -2223,6 +2224,7 @@ export function UploadForm({
   provider,
   usage,
   modelId,
+  managedModel = null,
   monthlyUsage,
   logDate,
   logDateLabel,
@@ -2274,6 +2276,13 @@ export function UploadForm({
   provider?: AiProviderType;
   usage?: ScanTokenUsage;
   modelId?: string;
+  /**
+   * The model the instance names (`instance.ai.model`), or `null` while the
+   * handshake is unread. On a managed instance the description names it, so
+   * the person pressing the shutter knows which model reads the photo
+   * (2026-09-28, the pre-launch privacy audit).
+   */
+  managedModel?: string | null;
   monthlyUsage: MonthlyAiUsage;
   logDate: string | null;
   logDateLabel: string | null;
@@ -2323,7 +2332,10 @@ export function UploadForm({
     isTextIntake ?
       aiComesFromTheInstance ? t('scan.textIntake.managedDescription')
       : t('scan.textIntake.description')
-    : aiComesFromTheInstance ? t('scan.capture.managedDescription')
+    : aiComesFromTheInstance ?
+      managedModel === null ?
+        t('scan.capture.managedDescription')
+      : t('scan.capture.managedDescriptionModel', { model: managedModel })
     : t('scan.capture.description');
   const emptyTitle = t('scan.capture.emptyTitle');
   const photoLabel = isTextIntake ? t('scan.textIntake.label') : t('scan.capture.photoLabel');
