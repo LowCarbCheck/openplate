@@ -17,7 +17,7 @@
  * record that a letter went out and was taken back, which a missing row cannot
  * say.
  */
-import { and, count, desc, eq, gt, isNotNull, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, gt, isNotNull, isNull, ne } from 'drizzle-orm';
 import type {
   InviteStore,
   InviteSummary,
@@ -141,8 +141,15 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
       const [row] = await db
         .update(signupInvites)
         .set({ tokenHash: token.hash, expiresAt: input.expiresAt })
+        // `ne(email, '')`: an expired row whose address the retention sweep already scrubbed
+        // (`db/invite-retention.ts`) has nobody to send a letter to, so it is not revived.
         .where(
-          and(eq(signupInvites.id, input.inviteId), isNull(signupInvites.redeemedAt), isNull(signupInvites.revokedAt)),
+          and(
+            eq(signupInvites.id, input.inviteId),
+            isNull(signupInvites.redeemedAt),
+            isNull(signupInvites.revokedAt),
+            ne(signupInvites.email, ''),
+          ),
         )
         .returning(SUMMARY_COLUMNS);
       if (!row) return null;

@@ -26,6 +26,7 @@ import { createDrizzleStorageAdapter } from './db/storage-adapter.js';
 import { createDrizzleBlobRollbackStore } from './db/blob-rollback-store.js';
 import { createDrizzleAdminStore } from './db/admin-store.js';
 import { createDrizzleInviteStore } from './db/invite-store.js';
+import { scrubFinishedInvites } from './db/invite-retention.js';
 import { createDrizzleShareStore } from './db/share-store.js';
 import { createDrizzleRotationStore } from './db/rotation-store.js';
 import { createDrizzleResearchStore } from './db/research-store.js';
@@ -501,6 +502,14 @@ async function main(): Promise<void> {
         if (deleted > 0) logger.info('Purged expired token rows', { deleted });
       } catch (cause) {
         logger.error('Token sweep failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
+      }
+      // THE PRIVACY NOTICE'S PROMISE: a redeemed, revoked or expired invitation keeps no address.
+      // On the same hourly tick, so a finished row holds one for an hour at most.
+      try {
+        const scrubbed = await scrubFinishedInvites(database.db, { now: new Date(), hashAddress });
+        if (scrubbed > 0) logger.info('Scrubbed finished invitation addresses', { scrubbed });
+      } catch (cause) {
+        logger.error('Invitation scrub failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
       }
     })();
   }, TOKEN_SWEEP_INTERVAL_MS);
