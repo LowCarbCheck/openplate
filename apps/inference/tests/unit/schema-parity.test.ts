@@ -52,7 +52,8 @@ function readAppFile(path: string): string {
   } catch (error) {
     throw new Error(
       `schema-parity: cannot read the app's ${path}. The app lives at apps/app in this repository; ` +
-        `if the file moved there, move this path with it. (${error instanceof Error ? error.message : String(error)})`,
+        `if the file moved there, move this path with it.`,
+      { cause: error },
     );
   }
 }
