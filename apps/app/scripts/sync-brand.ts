@@ -7,7 +7,7 @@
  * with the thing being built.
  *
  *   pnpm sync:brand                                        # the brand repository at its highest tag
- *   OPENPLATE_BRAND_REPO=../openplate-brand pnpm sync:brand # a checkout you already have
+ *   OPENPLATE_BRAND_REPO=../../../openplate-brand pnpm sync:brand  # a checkout beside this repository
  *   OPENPLATE_BRAND_REF=v0.1.0 pnpm sync:brand              # any ref
  *
  * ── THE MARK BELONGS TO `openplate-brand`, SO THIS APP NO LONGER KEEPS AN ORIGINAL ──
