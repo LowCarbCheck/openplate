@@ -1,6 +1,6 @@
 # openplate with sync as rootless Quadlet units
 
-Generated from `docker/topologies/compose.sync.yml`, rung 2: Postgres, the openplate app, and openplate-core (the sync service). Do not edit the unit files. Change the compose file and run `scripts/quadlet.sh generate`. This README is the one hand-written file here.
+Generated from `docker/topologies/compose.sync.yml`, rung 2: Postgres, the openplate app, and openplate-core (the sync service). Do not edit the unit files. Change the compose file and run `apps/app/scripts/quadlet.sh generate`. This README is the one hand-written file here.
 
 ## What is in this directory
 

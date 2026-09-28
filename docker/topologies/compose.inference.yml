@@ -24,7 +24,7 @@
 #
 # Plate photos work over plain http://. Installing the app needs a secure
 # page: https://, or http://localhost on this machine. See the HTTPS section
-# of docs/self-hosting.md. Once the app is on https://, the inference URL must
+# of apps/app/docs/self-hosting.md. Once the app is on https://, the inference URL must
 # be https:// too, or the browser blocks the call from the secure page.
 #
 #   docker compose -f compose.inference.yml logs -f inference   # weight download + model load + ready
@@ -132,7 +132,7 @@ services:
   # -- The app ---------------------------------------------------------------
   # Stateless. No accounts, no personal data, no database: your diary lives in
   # the browser. There is no secret to configure here -- that is the design, not
-  # an omission (see .adr/0006-the-app-server-holds-no-accounts.md).
+  # an omission (see apps/app/.adr/0006-the-app-server-holds-no-accounts.md).
   openplate:
     image: ghcr.io/lowcarbcheck/openplate:latest
     restart: unless-stopped

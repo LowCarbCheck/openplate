@@ -17,7 +17,7 @@ service for you, and that is also open source, for you to run yourself.
 - **The app plus self-hosted inference.** Adds `openplate-inference`. You gain local plate scans with no cloud account and no photos leaving your network. You risk hardware strain, and every browser must reach the inference container directly.
 - **[Everything](#the-app-plus-sync-and-self-hosted-inference).** Sync and inference together, four containers in all. You gain complete data privacy with multi-device sync. You risk the highest operational maintenance and resource load.
 
-Each shape is one compose file under [`docker/topologies/`](../docker/topologies/); [topologies.md](topologies.md) explains how to choose.
+Each shape is one compose file under [`docker/topologies/`](../../../docker/topologies/); [topologies.md](topologies.md) explains how to choose.
 
 ## Before you start
 
@@ -67,7 +67,7 @@ With no proxy, pages work at either value. However, `1` lets a visitor fake thei
 
 ### Build the image yourself
 
-To build from source instead of pulling the published image, comment out `image:` in [`docker/compose.yml`](../docker/compose.yml), uncomment `build:`, and run this from the repo root, because the build context is relative to that file:
+To build from source instead of pulling the published image, comment out `image:` in [`docker/compose.yml`](../../../docker/compose.yml), uncomment `build:`, and run this from the repo root, because the build context is relative to that file:
 
 ```bash
 docker compose --project-directory . -f docker/compose.yml build
@@ -81,11 +81,11 @@ podman compose --project-directory . -f docker/compose.yml up -d
 
 To run with no container at all, see [Without Docker](#without-docker).
 
-Every other setup (sync, self-hosted inference, or both) is a separate file under [`docker/topologies/`](../docker/topologies/). See [topologies.md](topologies.md) to choose one.
+Every other setup (sync, self-hosted inference, or both) is a separate file under [`docker/topologies/`](../../../docker/topologies/). See [topologies.md](topologies.md) to choose one.
 
 ## The app plus your own sync service
 
-[`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
+[`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -182,7 +182,7 @@ The second call answers `{"emailed":false,"link":"https://openplate.example.com/
 
 ## The app plus self-hosted inference
 
-[`docker/topologies/compose.inference.yml`](../docker/topologies/compose.inference.yml) runs the app beside [openplate-inference](https://github.com/LowCarbCheck/openplate-inference). Plate photos are read on your own hardware, and every visitor gets a one-tap "this openplate provides its own AI". Read the hardware section of [topologies.md](topologies.md#rung-3-add-self-hosted-inference) first. The small `lite` model wants about 1.6 GB of RAM and a few seconds to a minute per plate on a CPU.
+[`docker/topologies/compose.inference.yml`](../../../docker/topologies/compose.inference.yml) runs the app beside [openplate-inference](https://github.com/LowCarbCheck/openplate-inference). Plate photos are read on your own hardware, and every visitor gets a one-tap "this openplate provides its own AI". Read the hardware section of [topologies.md](topologies.md#rung-3-add-self-hosted-inference) first. The small `lite` model wants about 1.6 GB of RAM and a few seconds to a minute per plate on a CPU.
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -221,7 +221,7 @@ The key sits in the page every browser loads, so anyone who can open the app can
 
 ## The app plus sync and self-hosted inference
 
-[`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml) runs four containers: the app, the sync service, Postgres, and self-hosted inference. Read [The app plus your own sync service](#the-app-plus-your-own-sync-service) and [The app plus self-hosted inference](#the-app-plus-self-hosted-inference) first. This section only covers what changes when every piece runs together.
+[`docker/topologies/compose.full.yml`](../../../docker/topologies/compose.full.yml) runs four containers: the app, the sync service, Postgres, and self-hosted inference. Read [The app plus your own sync service](#the-app-plus-your-own-sync-service) and [The app plus self-hosted inference](#the-app-plus-self-hosted-inference) first. This section only covers what changes when every piece runs together.
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -461,7 +461,7 @@ podman compose -f compose.yml up -d
 ```
 
 Use the same `-f` file you deployed with. If you brought up a topology from
-[`docker/topologies/`](../docker/topologies/), name that file instead, for example
+[`docker/topologies/`](../../../docker/topologies/), name that file instead, for example
 `docker compose -f compose.sync.yml pull`. A bare `docker compose pull` beside
 `compose.sync.yml` fails with `no configuration file provided: not found`.
 

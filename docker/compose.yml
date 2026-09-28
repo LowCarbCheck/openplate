@@ -12,11 +12,11 @@
 # Only http://localhost:3000 on this machine counts as a secure page. Opened
 # from another device at http://<this machine's address>:3000, the diary and
 # plate photos work, but installing the app, offline use and the one-click
-# OpenRouter connect do not. See the HTTPS section of docs/self-hosting.md.
+# OpenRouter connect do not. See the HTTPS section of apps/app/docs/self-hosting.md.
 #
 # There is no database and no secret to configure. The server stores nothing:
 # your diary lives in your browser's own IndexedDB on the device you use it
-# from (see .adr/0006-the-app-server-holds-no-accounts.md). Back up with the
+# from (see apps/app/.adr/0006-the-app-server-holds-no-accounts.md). Back up with the
 # in-app JSON export, not with a database dump.
 #
 # If you also want the optional end-to-end-encrypted sync service, use
@@ -37,13 +37,14 @@ services:
   #   docker compose --project-directory . -f docker/compose.yml build
   #   docker compose --project-directory . -f docker/compose.yml up -d
   # Run those two from the repo root. The build context below is written
-  # relative to THIS file, so it points one level up at the checkout, and
-  # `--project-directory .` is what makes Compose read the repo root's `.env`
-  # instead of the one it would look for in `docker/`.
+  # relative to THIS file, so it points one level up and into the app's folder
+  # of the checkout, apps/app, and `--project-directory .` is what makes
+  # Compose read the repo root's `.env` instead of the one it would look for
+  # in `docker/`.
   app:
     image: ghcr.io/lowcarbcheck/openplate:latest
     # build:
-    #   context: ..
+    #   context: ../apps/app
     #   dockerfile: Dockerfile.pnpm
     restart: unless-stopped
     ports:
@@ -56,7 +57,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       # Public URL this instance is reachable at. Set APP_URL in .env if you
-      # put a reverse proxy in front (see docs/self-hosting.md, HTTPS).
+      # put a reverse proxy in front (see apps/app/docs/self-hosting.md, HTTPS).
       APP_URL: ${APP_URL:-http://localhost:3000}
       # ON by default. Queries the public LowCarbCheck food database for
       # curated nutrition data (food NAMES only, never photos; fails open on

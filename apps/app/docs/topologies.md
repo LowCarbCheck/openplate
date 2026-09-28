@@ -12,7 +12,7 @@ the bottom and stop as soon as you have what you need: most people stop at rung 
 | 4 | All of it | All of it | `docker/topologies/compose.full.yml` |
 
 Every compose file is annotated line by line;
-[`docker/topologies/README.md`](../docker/topologies/README.md) is the same map from the
+[`docker/topologies/README.md`](../../../docker/topologies/README.md) is the same map from the
 compose side.
 
 At every rung, the app server also looks food names up at the LowCarbCheck food database for
@@ -85,7 +85,7 @@ flowchart LR
 dependence on anyone else's instance.
 **You operate:** one container. No database, no `.env` step, no secret to generate, nothing
 to migrate on upgrade. If it dies, nothing is lost, because it stores nothing.
-**Compose file:** [`docker/compose.yml`](../docker/compose.yml).
+**Compose file:** [`docker/compose.yml`](../../../docker/compose.yml).
 
 This is the recommended stopping point. Everything below adds real operational work.
 
@@ -119,7 +119,7 @@ account service has a database worth backing up, a `SERVER_SECRET` worth keeping
 who can lock themselves out. Read
 [openplate-core's README](https://github.com/LowCarbCheck/openplate-core#readme) before you
 put it on the public internet.
-**Compose file:** [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml).
+**Compose file:** [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml).
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -201,7 +201,7 @@ flowchart LR
 **You operate:** a model runtime and a few gigabytes of weights, plus whatever it takes to
 make the endpoint reachable **from your browsers** (the photo goes device → endpoint, so a
 compose hostname does not work here).
-**Compose file:** [`docker/topologies/compose.inference.yml`](../docker/topologies/compose.inference.yml).
+**Compose file:** [`docker/topologies/compose.inference.yml`](../../../docker/topologies/compose.inference.yml).
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
@@ -274,7 +274,7 @@ flowchart LR
 hardware, with nothing going to any third party).
 **You operate:** all of it. App, sync service, Postgres, model runtime, and browser-reachable
 addresses for two of them.
-**Compose file:** [`docker/topologies/compose.full.yml`](../docker/topologies/compose.full.yml).
+**Compose file:** [`docker/topologies/compose.full.yml`](../../../docker/topologies/compose.full.yml).
 Its header lists the `.env` lines: those of rung 2 and rung 3 together.
 
 Podman runs this the same way: `podman compose -f compose.full.yml up -d`.

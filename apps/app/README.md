@@ -72,7 +72,7 @@ This is the interface only. It does not translate food names or AI replies.
 ### Add sync
 
 If you also want encrypted sync across devices,
-[`docker/topologies/compose.sync.yml`](docker/topologies/compose.sync.yml) brings up the app, the
+[`docker/topologies/compose.sync.yml`](../../docker/topologies/compose.sync.yml) brings up the app, the
 [openplate-core](https://github.com/LowCarbCheck/openplate-core) service, and the Postgres that
 sync (and only sync) needs:
 
@@ -93,7 +93,7 @@ docker compose -f compose.sync.yml up -d
 > [docs/self-hosting.md](docs/self-hosting.md#create-the-first-account).
 
 There are two larger shapes as well: self-hosted AI, and everything at once.
-[`docker/topologies/README.md`](docker/topologies/README.md) is the one-page map of all four setups.
+[`docker/topologies/README.md`](../../docker/topologies/README.md) is the one-page map of all four setups.
 Each file's header lists the `.env` lines it needs.
 
 Full walkthrough, including a path with no Docker at all:

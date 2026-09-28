@@ -2,7 +2,7 @@
 
 openplate needs one container and offers two optional services. Pick the
 smallest shape that fits your needs. Every added service is one more thing
-you back up, upgrade, and debug. [docs/topologies.md](../../docs/topologies.md)
+you back up, upgrade, and debug. [docs/topologies.md](../../apps/app/docs/topologies.md)
 explains the same four shapes in more detail, as rungs 1 to 4.
 
 | # | Shape | File | What you gain | What you now operate |
@@ -23,11 +23,11 @@ you picked before running it. Keep it in a folder that lasts, such as
 **Shapes 2 and 4 need a secure page to sign in.** Over plain
 `http://<LAN address>`, sign-in, sign-up, and invitation links fail. In every
 shape, plain HTTP breaks app installation and offline use. See the HTTPS
-section of [docs/self-hosting.md](../../docs/self-hosting.md#https). The same
+section of [docs/self-hosting.md](../../apps/app/docs/self-hosting.md#https). The same
 page shows how to create the first account in shapes 2 and 4.
 
 Every file here also runs under `podman compose`, the same way. That is a
 different tool from `podman-compose`. On Ubuntu, it needs `podman-compose`
-installed as its provider. See [docs/podman.md](../../docs/podman.md) for the
+installed as its provider. See [docs/podman.md](../../apps/app/docs/podman.md) for the
 distinction, and for rootless notes on SELinux volume labels, ports below
 1024, and the Postgres data directory for shapes 2 through 4.

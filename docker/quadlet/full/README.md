@@ -1,6 +1,6 @@
 # openplate, full stack, as rootless Quadlet units
 
-Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate-inference, the openplate app, and openplate-core (the sync service). Do not edit the unit files. Change the compose file and run `scripts/quadlet.sh generate`. This README is the one hand-written file here.
+Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate-inference, the openplate app, and openplate-core (the sync service). Do not edit the unit files. Change the compose file and run `apps/app/scripts/quadlet.sh generate`. This README is the one hand-written file here.
 
 ## What is in this directory
 

@@ -1,6 +1,6 @@
 # openplate with inference as rootless Quadlet units
 
-Generated from `docker/topologies/compose.inference.yml`, rung 3: openplate-inference and the openplate app. Do not edit the unit files directly. Change the compose file and run `scripts/quadlet.sh generate`. This README is the one hand-written file here.
+Generated from `docker/topologies/compose.inference.yml`, rung 3: openplate-inference and the openplate app. Do not edit the unit files directly. Change the compose file and run `apps/app/scripts/quadlet.sh generate`. This README is the one hand-written file here.
 
 ## What is in this directory
 

@@ -37,7 +37,7 @@ Three things never travel, whatever you switch on:
 - A running **openplate-core** instance: either the hosted one, your own, or any third-party
   server implementing [the protocol](https://github.com/LowCarbCheck/openplate-core/blob/main/PROTOCOL.md).
   To run your own, use
-  [`docker/topologies/compose.sync.yml`](../docker/topologies/compose.sync.yml): see
+  [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
 - `SYNC_SERVER_URL` set on the app, pointing at that service.
 - A secure page. Signing in derives your keys with the browser's Web Crypto API, which

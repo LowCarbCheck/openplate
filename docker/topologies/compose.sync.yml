@@ -1,17 +1,16 @@
-# openplate, everything at once: app + sync + Postgres + your own AI.
+# openplate, the full experience, self-hosted end to end.
 #
-# Four containers: the stateless app, the optional account + E2EE sync service
-# (openplate-core), the Postgres that sync, and only sync, needs, and a
-# self-hosted plate-identification endpoint (openplate-inference). The app
-# itself still keeps no database at all. Every image is open source under the
-# MIT License and is published to GHCR; nothing here builds from source.
+# Three containers: the stateless app, the optional account + E2EE sync
+# service (openplate-core), and the Postgres that sync, and only sync, needs.
+# The app itself keeps no database at all. Both images are open source under
+# the MIT License and are published to GHCR; nothing here builds from source.
 #
-# This is the largest shape, and you now operate all four. If you only want one
-# of the two extras, take the smaller file instead: `compose.sync.yml` for sync,
-# `compose.inference.yml` for the AI. `../compose.yml` is the app alone.
+# If you do not want sync, you do not want this file. Use `docker/compose.yml`
+# instead: the app alone needs no secrets and no accounts. The other shapes are
+# listed in `README.md` next to this file.
 #
 #   mkdir -p ~/openplate && cd ~/openplate
-#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.full.yml
+#   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
 #
 #   # The sync service needs exactly one secret. Generate it once and keep it
 #   # with your database backups, see the SERVER_SECRET note below.
@@ -20,58 +19,38 @@
 #   # Your key to the admin API, which is how you create the first account.
 #   echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 #
-#   # One key for the inference service, which the app hands to browsers.
-#   echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+#   # The two URLs a BROWSER will use to reach each service. Defaults below
+#   # work for a trial on this machine; set these for anything else.
+#   echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
+#   echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 #
-#   # The three URLs a BROWSER will use to reach each service. PUBLIC_APP_URL
-#   # and PUBLIC_SYNC_URL default to localhost, so skip both for a trial on
-#   # this machine. PUBLIC_INFERENCE_URL has no such default: set it even for
-#   # a local trial, for example to http://localhost:8300/v1.
-#   echo "PUBLIC_APP_URL=https://openplate.example.com"      >> .env
-#   echo "PUBLIC_SYNC_URL=https://sync.example.com"          >> .env
-#   echo "PUBLIC_INFERENCE_URL=https://ai.example.com/v1"    >> .env
-#
-#   # 1 behind one reverse proxy, 0 with none.
-#   echo "TRUST_PROXY=1" >> .env
-#
-#   docker compose -f compose.full.yml up -d
+#   docker compose -f compose.sync.yml up -d
 #
 # Keep this file in a folder that lasts, like ~/openplate above, and run all of
 # that from there. Compose treats the compose file's OWN directory as the
 # project directory, so the `.env` you just wrote, sitting beside this file, is
-# the one it reads. Compose passes on only the variables named below.
+# the one it reads. Compose passes on only the variables named below: a line in
+# `.env` that no `${...}` here mentions never reaches a container.
 #
 # Signing in needs a secure page: https://, or http://localhost on the machine
 # you are sitting at. Over plain http://<LAN address> the sign-in, the sign-up
-# and the invite link all fail. See the HTTPS section of docs/self-hosting.md.
+# and the invite link all fail. See the HTTPS section of apps/app/docs/self-hosting.md.
 #
 # Then create the first account with an invitation to yourself, minted on
-# THIS machine with ADMIN_TOKEN (docs/self-hosting.md has the curl command).
-# Open the link it returns, choose a password, and the devices you sign in on
-# converge. What the sync operator holds is explained in docs/sync.md.
+# THIS machine with ADMIN_TOKEN (apps/app/docs/self-hosting.md has the curl command).
+# Open the link it returns, choose a password, and the two devices you sign in
+# on converge. The service stores ciphertext; what its operator holds is
+# explained in apps/app/docs/sync.md.
 #
-# "README" in the inference block below always means openplate-inference's
-# README: https://github.com/LowCarbCheck/openplate-inference
-#
-# ── THE ONE THING PEOPLE GET WRONG ─────────────────────────────────────────
-# `DEFAULT_INFERENCE_BASE_URL` must be a URL a BROWSER on the user's phone or
-# laptop can open. The photo goes from the device straight to the inference
-# endpoint; openplate's server is never in the loop, which is what keeps the
-# scan private. So `http://inference:8300/v1` (the container hostname) does NOT
-# work, even though the two containers can talk to each other that way. Use the
-# LAN address of this host, or a hostname on your reverse proxy / tailnet.
-#
-# Fixes the project name, so containers and the two volumes are named after the
-# stack rather than after whatever directory the file sits in. Distinct from the
-# smaller topologies' names, so two stacks never collide on one host.
-name: openplate-full
+# Fixes the project name, so containers and the pg-data volume are named after
+# the stack rather than after whatever directory the file sits in.
+name: openplate-with-sync
 
 services:
   # ── Postgres ──────────────────────────────────────────────────────────────
   # Belongs to the sync service alone: it holds sync's accounts and the
-  # opaque ciphertext blobs. Neither the app nor the inference service connects
-  # to it, and the app has no database of its own
-  # (.adr/0006-the-app-server-holds-no-accounts.md).
+  # opaque ciphertext blobs. The app never connects to it and has no database
+  # of its own (apps/app/.adr/0006-the-app-server-holds-no-accounts.md).
   postgres:
     image: docker.io/library/postgres:17-alpine
     restart: unless-stopped
@@ -86,92 +65,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # Deliberately not published to the host: the sync service reaches Postgres
+    # Deliberately not published to the host: both services reach Postgres
     # over the compose network. Add a `ports:` mapping only if you need psql
     # from outside, and bind it to 127.0.0.1 if you do.
     expose:
       - '5432'
 
-  # ── The inference service ─────────────────────────────────────────────────
-  # A self-hosted, OpenAI-compatible plate-photo endpoint. Users of this
-  # instance tap ONE button to use it: no provider account, no API key of
-  # their own, no photo leaving your network.
-  inference:
-    image: ghcr.io/lowcarbcheck/openplate-inference:latest
-    restart: unless-stopped
-    ports:
-      # Published because the browser calls it directly. Bind to 0.0.0.0 (as
-      # here) for LAN access; use "127.0.0.1:8300:8300" if a reverse proxy on
-      # this host is the only thing that should reach it.
-      - '${INFERENCE_PORT:-8300}:8300'
-    volumes:
-      # Weights land here on first boot (~2.0 GiB for lite, ~5.8 GiB for
-      # quality) and are verified by sha256 on every start. Named, so
-      # `docker compose down` does not throw the download away.
-      - inference-models:/models
-    environment:
-      # lite | lite-apache | quality, see README "Hardware & measured latency".
-      MODEL_PROFILE: lite
-      # The key callers must present. Set INFERENCE_API_KEY in .env (see the
-      # top of this file); the placeholder below only keeps a first trial
-      # booting. It must match DEFAULT_INFERENCE_API_KEY on the app.
-      API_KEYS: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
-      # Self-host has no latency ceiling. 0 = never shed load for being slow.
-      LATENCY_CEILING_MS: '0'
-      # Scans in flight at once. It also sets llama.cpp's slot count; it does
-      # NOT add CPU threads, the slots share LLAMA_THREADS.
-      CONCURRENCY: '2'
-      # CPU threads for the model. Empty means every core but two (nproc - 2),
-      # which leaves room for the service and the OS.
-      LLAMA_THREADS: ${LLAMA_THREADS:-}
-      # Where macros come from. fdc = the bundled offline USDA-derived dataset.
-      # See README "Food data" before switching to `off` (ODbL) or `lcc`.
-      FOOD_SOURCE: fdc
-    # ── GPU (the `quality` profile): uncomment BOTH of these and switch the
-    # image to the -cuda tag. The entrypoint detects the GPU and offloads every
-    # layer automatically; there is no flag to set.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
-    #
-    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ─────────────────────────
-    # Replace the `environment:` block above with the one below and this
-    # container downloads no weights and starts no second model; it just turns
-    # your runtime into a plate scanner. You can drop the `volumes:` block and
-    # the `inference-models` volume entirely. Read README "Bring your own
-    # runtime" FIRST: your runtime must enforce grammar-constrained decoding,
-    # and there is a one-line curl there that tells you whether yours does.
-    #
-    # environment:
-    #   MODEL_PROFILE: external
-    #   MODEL_RUNTIME_URL: "http://your-runtime.lan:8000"   # no trailing /v1
-    #   MODEL_ID: "your-served-model-name"
-    #   MODEL_RUNTIME_API_KEY: "sk_your_runtime_key"
-    #   API_KEYS: "opk_CHANGE_ME"
-    #   LATENCY_CEILING_MS: "0"
-    #   CONCURRENCY: "2"
-    #   FOOD_SOURCE: fdc
-    #
-    # REQUIRED with the block above. The image bakes in a 60-minute health
-    # start_period, sized for a first-boot weight download. External mode has no
-    # download, so without this override a wrong MODEL_RUNTIME_URL stays hidden
-    # for an hour instead of surfacing in seconds.
-    # healthcheck:
-    #   start_period: 30s
-
   # ── The app ───────────────────────────────────────────────────────────────
   # Stateless. No accounts, no personal data, no database: your diary lives in
   # the browser. There is no secret to configure here; that is the design,
-  # not an omission (see .adr/0006-the-app-server-holds-no-accounts.md).
+  # not an omission (see apps/app/.adr/0006-the-app-server-holds-no-accounts.md).
   app:
     image: ghcr.io/lowcarbcheck/openplate:latest
     restart: unless-stopped
-    depends_on:
-      - inference
     ports:
       # Published on EVERY network interface. Behind a reverse proxy on this
       # machine, write '127.0.0.1:3000:3000' so only the proxy can reach it.
@@ -180,9 +86,8 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-      # The URL a browser uses to reach THIS app: PUBLIC_APP_URL in .env.
-      # Behind a reverse proxy, that is the public https:// address, not the
-      # container port.
+      # The URL a browser uses to reach THIS app. Behind a reverse proxy, that
+      # is the public https:// address, not the container port.
       APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
       # The URL a BROWSER uses to reach the sync service, not `http://sync:3000`.
@@ -192,32 +97,20 @@ services:
       # The origin is added to the app's Content-Security-Policy automatically.
       SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
 
-      # PUBLIC_INFERENCE_URL in .env: a BROWSER-reachable address for the
-      # inference container. NOT http://inference:8300. Note the /v1 suffix.
-      # This is what turns into openplate's one-tap "This openplate provides
-      # its own AI" card. Behind HTTPS it must be https:// too, or the browser
-      # blocks the call from the secure page.
-      DEFAULT_INFERENCE_BASE_URL: ${PUBLIC_INFERENCE_URL:-http://openplate.example.lan:8300/v1}
-      # The same INFERENCE_API_KEY as API_KEYS above.
-      #
-      # ! THIS KEY IS PUBLIC. It is embedded in the HTML every browser loads, so
-      #   anyone who can open your openplate can read it with view-source. That
-      #   is fine for a household or a tailnet. It is NOT fine on an instance
-      #   open to the internet without a VPN or auth proxy in front of it; in
-      #   that case leave this unset and let people paste the key themselves.
-      DEFAULT_INFERENCE_API_KEY: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
-      DEFAULT_INFERENCE_MODEL: 'openplate-plate-1'
-
-      # `open` (the default) or `managed`. See docs/configuration.md, Managed
-      # instances, and the AI proxy block on the sync service below.
+      # `open` (the default): anyone can keep a diary on their own device, and
+      # sync is an extra. `managed`: an administrator invites every person,
+      # there is no diary without an account, and scans run through the sync
+      # service's AI proxy (set UPSTREAM_* and AI_ADVERTISED_MODEL below).
+      # See apps/app/docs/configuration.md, Managed instances.
       INSTANCE_MODE: ${INSTANCE_MODE:-open}
 
       # How many reverse proxies stand in front of the app AND the sync service.
-      # One value for both. With one proxy set TRUST_PROXY=1: the app's CSRF
-      # check needs the proxy's X-Forwarded-* headers or form posts fail. With
-      # NO proxy set TRUST_PROXY=0: 1 would let any visitor fake their address
-      # in X-Forwarded-For and dodge the per-address limits. The app's default
-      # of 1 assumes a proxy.
+      # One value for both, because they sit behind the same proxy or behind
+      # none. With one proxy (Caddy, nginx, Traefik) set TRUST_PROXY=1: the
+      # app's CSRF check needs the proxy's X-Forwarded-* headers or form posts
+      # fail. With NO proxy set TRUST_PROXY=0: 1 would let any visitor fake
+      # their address in X-Forwarded-For and dodge the per-address limits.
+      # The app's default of 1 assumes a proxy.
       TRUST_PROXY: ${TRUST_PROXY:-1}
 
       # ON by default. Queries the public LowCarbCheck food database for
@@ -252,7 +145,7 @@ services:
   # ── The sync service ──────────────────────────────────────────────────────
   # An account service that stores an email address and opaque ciphertext,
   # plus each account's recovery code, sealed under SERVER_SECRET, so that a
-  # password reset brings the diary back. docs/sync.md states what that means
+  # password reset brings the diary back. apps/app/docs/sync.md states what that means
   # for whoever runs this service.
   sync:
     image: ghcr.io/lowcarbcheck/openplate-core:latest
@@ -322,7 +215,7 @@ services:
       # through an HTTP mail API that speaks pigeon's protocol. Empty, it sends
       # nothing: the admin API hands the invitation link and the reset link to
       # you, and you pass them on. "Forgot password" in the app then reaches
-      # nobody; see docs/self-hosting.md for what to do instead.
+      # nobody; see apps/app/docs/self-hosting.md for what to do instead.
       MAIL_API_URL: ${MAIL_API_URL:-}
       MAIL_API_KEY: ${MAIL_API_KEY:-}
       MAIL_API_FROM: ${MAIL_API_FROM:-}
@@ -342,7 +235,7 @@ services:
 
       # ── Members inviting people (optional) ──
       # The first two together or neither; the cap only with them. Empty means
-      # only an administrator invites. See docs/configuration.md, Member invites.
+      # only an administrator invites. See apps/app/docs/configuration.md, Member invites.
       MEMBER_INVITE_DAILY_AI_LIMIT: ${MEMBER_INVITE_DAILY_AI_LIMIT:-}
       MEMBER_INVITE_ALLOWANCE_DAYS: ${MEMBER_INVITE_ALLOWANCE_DAYS:-}
       MEMBER_INVITE_LIFETIME_CAP: ${MEMBER_INVITE_LIFETIME_CAP:-}
@@ -371,6 +264,4 @@ services:
 
 volumes:
   pg-data:
-    driver: local
-  inference-models:
     driver: local
