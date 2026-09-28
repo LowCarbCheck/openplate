@@ -15,6 +15,9 @@ import {
 import { makeSyncSignupSchema, type SyncInviteRule, type SyncSignupValues } from '#app/lib/sync/signup-schema';
 import { readSyncErrorField } from '#app/lib/sync/form-field-error';
 import { PasswordFields } from '#app/components/password-fields';
+import { HealthConsentField } from '#app/components/health-consent-field';
+import type { HealthConsentRequestWire } from '#app/lib/sync/engine/client/auth-wire';
+import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { FieldError } from '#app/components/field-error';
 import { Button } from '#app/components/ui/button';
@@ -82,8 +85,9 @@ export function SyncSetupFlow({
   onCeremonyComplete,
   resume,
   invite,
+  healthConsent,
 }: {
-  provision: (input: { passphrase: string; invite: string; displayName: string }) => Promise<SyncSetupOutcome>;
+  provision: (input: SyncProvisionInput) => Promise<SyncSetupOutcome>;
   /**
    * Reports whether this wizard is mid-flight, so the surrounding screen can
    * refuse to swap it out.
@@ -109,6 +113,14 @@ export function SyncSetupFlow({
   resume?: { passphrase: string };
   /** Omitted when this instance neither wants nor was given an invite — then no invite field is rendered at all. */
   invite?: SyncSetupInvite;
+  /**
+   * The consent this instance asks of every new account (`PROTOCOL.md` §5.8),
+   * or omitted when it asks for none. When present the form draws the box
+   * unticked, refuses to go on without the tick, and hands `provision` the
+   * version the box was drawn for. A NEW version (the caller re-read the
+   * handshake after a refusal) is drawn unticked again.
+   */
+  healthConsent?: InstanceHealthConsent;
 }) {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
@@ -145,7 +157,7 @@ export function SyncSetupFlow({
 
   /** The provisioning round trip, shared by the form submit and the `resume` entry point. */
   const runProvision = useCallback(
-    async (chosen: { passphrase: string; invite: string; displayName: string }): Promise<void> => {
+    async (chosen: SyncProvisionInput): Promise<void> => {
       try {
         await provision(chosen);
         trackSetupCeremonyCompleted();
@@ -177,7 +189,9 @@ export function SyncSetupFlow({
   useEffect(() => {
     if (resume === undefined || hasResumedRef.current) return;
     hasResumedRef.current = true;
-    void runProvision({ passphrase: resume.passphrase, invite: '', displayName: '' });
+    // No consent here: the repair writes key records for an account that
+    // already exists, and only a signup carries a consent.
+    void runProvision({ passphrase: resume.passphrase, invite: '', displayName: '', healthConsent: null });
   }, [resume, runProvision]);
 
   /**
@@ -193,7 +207,13 @@ export function SyncSetupFlow({
     const submission = lastSubmissionRef.current;
     if (submission === null) return undefined;
     if (state.serverError === null) return submission.reply();
-    return submission.reply({ fieldErrors: { [state.serverError.field]: [state.serverError.message] } });
+    const fieldErrors = { [state.serverError.field]: [state.serverError.message] };
+    // A REFUSED CONSENT COMES BACK UNTICKED. The service refused it because
+    // the wording changed, so the tick given to the old wording is not given
+    // to the new one; `hideFields` drops the value and keeps the passwords.
+    if (state.serverError.field === 'healthConsent')
+      return submission.reply({ fieldErrors, hideFields: ['healthConsent'] });
+    return submission.reply({ fieldErrors });
   }, [state]);
 
   function handleDetailsSubmit(submission: SyncSignupSubmission): void {
@@ -204,6 +224,10 @@ export function SyncSetupFlow({
       passphrase: submission.value.passphrase,
       invite: submission.value.invite.trim(),
       displayName: submission.value.displayName.trim(),
+      // THE VERSION THE BOX WAS DRAWN FOR, never one read later: that is the
+      // wording the person saw when they ticked it. The schema has already
+      // refused an unticked box wherever one is drawn.
+      healthConsent: healthConsent === undefined ? null : { version: healthConsent.version },
     });
   }
 
@@ -212,6 +236,7 @@ export function SyncSetupFlow({
       <DetailsStep
         invite={invite}
         isInviteRevealed={isInviteRejected(state.serverError)}
+        healthConsent={healthConsent}
         lastResult={detailsResult}
         onSubmit={handleDetailsSubmit}
       />
@@ -224,6 +249,18 @@ export function SyncSetupFlow({
     return <ErrorStep message={state.message} onRetry={() => dispatch({ type: 'retried' })} />;
   }
   return <CompleteStep />;
+}
+
+/**
+ * What the ceremony hands its `provision` callback: the password, the invite,
+ * the optional name, and the consent the person ticked with the version the
+ * box was drawn for, or `null` where no box was drawn.
+ */
+export interface SyncProvisionInput {
+  passphrase: string;
+  invite: string;
+  displayName: string;
+  healthConsent: HealthConsentRequestWire | null;
 }
 
 /** How the details form should treat the invite, when there is one at all. */
@@ -264,22 +301,28 @@ function inviteRule(invite: SyncSetupInvite | undefined): SyncInviteRule {
 function DetailsStep({
   invite,
   isInviteRevealed,
+  healthConsent,
   lastResult,
   onSubmit,
 }: {
   invite?: SyncSetupInvite;
   /** The service refused the token: the box appears so it can be corrected or replaced. */
   isInviteRevealed: boolean;
+  /** The consent the instance asks for, or `undefined` for none, and then no box is drawn. */
+  healthConsent: InstanceHealthConsent | undefined;
   lastResult: ReturnType<SyncSignupSubmission['reply']> | undefined;
   onSubmit: (submission: SyncSignupSubmission) => void;
 }) {
   const { t } = useTranslation();
+  const isHealthConsentAsked = healthConsent !== undefined;
 
   const [form, fields] = useForm({
     id: 'sync-signup',
     lastResult,
     onValidate({ formData }) {
-      return parseWithZod(formData, { schema: makeSyncSignupSchema(t, { invite: inviteRule(invite) }) });
+      return parseWithZod(formData, {
+        schema: makeSyncSignupSchema(t, { invite: inviteRule(invite), isHealthConsentAsked }),
+      });
     },
     // `shouldValidate` stays at Conform's `onSubmit` default — nothing is red
     // before the person asks for it — but REVALIDATION is `onInput`, so a
@@ -300,6 +343,8 @@ function DetailsStep({
   // HIDDEN when it came from a link and the service has not refused it. See
   // `SyncSetupInvite.isFromLink` for why this is not a read-only box.
   const isInviteHidden = invite?.isFromLink === true && !isInviteRevealed;
+  // Conform's `key` goes on the element it remounts, never into a spread.
+  const { key: consentKey, ...consentInputProps } = getInputProps(fields.healthConsent, { type: 'checkbox' });
 
   return (
     <form {...getFormProps(form)} className="space-y-4">
@@ -338,6 +383,19 @@ function DetailsStep({
         confirmPassphrase={fields.confirmPassphrase}
         passwordLabel={t('sync.setup.passphraseLabel')}
       />
+
+      {/* THE CONSENT BOX, only where the instance asks for one, last before
+          the button: it is the decision the button carries out. Its message
+          line is always there, so the button never moves when it shows. */}
+      {isHealthConsentAsked && (
+        <HealthConsentField
+          key={consentKey}
+          inputProps={consentInputProps}
+          messageId={fields.healthConsent.errorId}
+          message={t('healthConsent.requiredToCreate')}
+          isMessageShown={(fields.healthConsent.errors?.length ?? 0) > 0}
+        />
+      )}
 
       {/* Only what belongs to no field lands here: a service refusal with a
           named field went back to that field on the way in. */}

@@ -79,3 +79,28 @@ describe('the detector fires on the claims it exists for', () => {
     assert.equal(findFalseClaim(normalise(unrelated)), undefined, `the detector is too broad: ${unrelated}`);
   });
 });
+
+/**
+ * THE README'S OPENING PROMISE (2026-09-28). "Your key, your provider, your
+ * data." stood as a bare sentence under the project name, and on a hosted
+ * instance with accounts the operator provides the AI and keeps a recovery key
+ * that can open the diary. The promise is kept only where it holds: on a copy
+ * a person runs themselves. A bare sentence starting with the slogan is the
+ * false one; a sentence that scopes it first is the true one.
+ */
+const UNSCOPED_BYOK_PROMISE = /(?:^|[.!?]\s)Your key, your provider,? (?:and )?your data\./m;
+
+describe('the README scopes its BYOK promise to a copy you run yourself', () => {
+  it('README.md does not state the promise as a bare sentence', () => {
+    const readme = normalise(readFileSync(new URL('README.md', REPO_ROOT), 'utf8'));
+    assert.equal(UNSCOPED_BYOK_PROMISE.test(readme), false);
+  });
+
+  it('THE CONTROL: the old opening is caught, and the scoped sentence is left alone', () => {
+    assert.equal(UNSCOPED_BYOK_PROMISE.test('estimates the macros. Your key, your provider, your data.'), true);
+    assert.equal(
+      UNSCOPED_BYOK_PROMISE.test('On a copy you run yourself, it is your key, your provider, and your data.'),
+      false,
+    );
+  });
+});

@@ -212,6 +212,12 @@ export async function createStudyAccount({
       },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
+    // NO CONSENT TO HEALTH DATA (2026-09-28). A study account holds the study's
+    // keyring, not a diary, and this console draws no consent box. An instance
+    // that asks every account for one (`instance.healthConsent`) refuses this
+    // signup with `400 health-consent-required`; the research lane is dark on
+    // every such instance today, and lighting it there needs a box here first.
+    healthConsent: null,
   });
 
   vault = {

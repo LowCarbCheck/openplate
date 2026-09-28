@@ -38,6 +38,7 @@ import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage, unlockDevice } from './sync-state';
 import { decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
+import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
 
 /**
  * The address this device last signed in with.
@@ -150,6 +151,16 @@ export interface SyncSessionSnapshot {
      * recap reads it and every other snapshot fixture is right without it.
      */
     createdAt?: string | null;
+    /**
+     * The account's explicit consent to health data, or `null`/absent for
+     * none on record (2026-09-28). `null` IS ALSO "not read yet", which a
+     * reader tells apart by `role === null`, and "a core older than the
+     * field", which asks for no consent either. The consent gate compares
+     * `version` with the instance's and asks once when they differ
+     * (`#app/lib/health-consent/consent-gate`). OPTIONAL for the reason
+     * `createdAt` is: every other snapshot fixture is right without it.
+     */
+    healthConsent?: HealthConsent | null;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -333,6 +344,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       invitesNeedAPlan: knownAccount?.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(knownAccount?.trialScans),
       createdAt: knownAccount?.createdAt ?? null,
+      healthConsent: decodeHealthConsent(knownAccount?.healthConsent),
     },
     isResuming: false,
     phase: 'idle',

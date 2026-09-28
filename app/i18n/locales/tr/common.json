@@ -1411,7 +1411,8 @@
     "pantry": "Kiler · openplate",
     "recipes": "Tarifler · openplate",
     "awards": "Kayıtların · openplate",
-    "whatsNew": "Yenilikler · openplate"
+    "whatsNew": "Yenilikler · openplate",
+    "healthConsent": "Açık rızan · openplate"
   },
   "nav": {
     "add": "Ekle",
@@ -2793,7 +2794,7 @@
       "cta": "Giriş yap",
       "emailHint": "Hesabının oluşturulduğu adres. Büyük veya küçük harf fark etmez.",
       "failed": "İşe yaramadı. E-posta adresini ve parolayı kontrol edip tekrar dene.",
-      "finishSetup": "Bu hesap oluşturuldu ancak anahtarları hiçbir zaman tamamlanmadı. Bunu şimdi yapalım. İşlem başka bir cihazda oturum açmanı sağlayan bir kurtarma kodu ile biter, ancak bu hesaba yalnızca parolasıyla giriş yapılabilir.",
+      "finishSetup": "Bu hesap oluşturuldu ancak anahtarları hiç kurulmadı. Şimdi onları kuruyoruz. Ardından her cihazda parolanla giriş yapabilirsin.",
       "forgot": "Parolamı unuttum",
       "intro": "Bu cihazda oturum açmak için parolanı bir kez gir. Çıkış yapana kadar oturumun açık kalır.",
       "submit": "Giriş yap",
@@ -2821,7 +2822,6 @@
       "syncing": "Eşitleniyor…"
     },
     "title": "Hesap",
-    "passwordNote": "Parolan günlüğünü de şifreler. Parolayı biz sıfırlayamayız, bu yüzden kurtarma kodunu sakla.",
     "managed": {
       "inviteOnly": "Buradaki hesaplar bir davet bağlantısıyla oluşturulur. Bir bağlantın varsa başlamak için aç."
     },
@@ -3817,5 +3817,18 @@
     "title": "Hesaplar için güvenli bir bağlantı gerekir",
     "body": "Bu sayfa düz HTTP üzerinden yüklendi. Tarayıcın hesapların ihtiyaç duyduğu şifrelemeyi kapattı. openplate uygulamasını bir https:// adresinde ya da sunucunun çalıştığı bilgisayarda localhost üzerinde aç.",
     "guide": "HTTPS nasıl kurulur"
+  },
+  "healthConsent": {
+    "title": "Açık rızan",
+    "checkbox": "openplate'in hesabımı yönetmek ve günlüğümü senkronize etmek için ne yediğim, kilom ve oruç sürelerim gibi sağlık verilerimi işlemesini kabul ediyorum. <privacy>Gizlilik bildirimi</privacy> bunun nasıl yapıldığını açıklar. Rızamı dilediğim zaman hesabımı silerek geri çekebilirim.",
+    "requiredToCreate": "Hesabını oluşturmak için lütfen kutuyu işaretle.",
+    "requiredToContinue": "Devam etmek için lütfen kutuyu işaretle.",
+    "heading": "Son bir adım: açık rızan",
+    "body": "Günlüğün sağlık verileri içerir. Gizlilik bildiriminde açıklandığı gibi, sunucumuzda şifrelenmiş bir kopyasını saklamak için açık rızana ihtiyacımız var.",
+    "agree": "Kabul et ve devam et",
+    "saving": "Kaydediliyor…",
+    "failed": "Rızan kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
+    "exportDiary": "Günlüğümü dışa aktar",
+    "deleteAccount": "Hesabımı sil"
   }
 }

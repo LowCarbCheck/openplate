@@ -65,6 +65,11 @@ export const ROUTE_TREE: readonly RouteTreeEntry[] = [
   // tap from anywhere, exactly like Fasting above it.
   { pattern: '/pantry', parent: null },
   { pattern: '/settings', parent: null },
+  // The one-time consent to health data (2026-09-28). Not in the nav catalog:
+  // the consent gate REDIRECTS here, which replaces rather than pushes, and a
+  // parent would give Back a way into the very pages the gate holds shut.
+  // In the table because the parity test reads `app/routes.ts` as text.
+  { pattern: '/consent', parent: null },
   // `/settings/nutrition` is BOTH a root and a child, and the two answers are
   // not in conflict: the catalog carries it as the "Goals" row, so it is one
   // tap from anywhere, while `/settings` also lists it as a row. It is entered

@@ -22,12 +22,12 @@
 /**
  * The signup fields a service refusal can be attributed to.
  *
- * ONE, since M192: the form no longer collects a sign-in name, because the
- * address comes from the invite. The type is kept as a union rather than
- * collapsed to a literal so that adding a second field is a member rather than
- * a refactor of every signature that mentions it.
+ * TWO. `invite` since M192: the form no longer collects a sign-in name,
+ * because the address comes from the invite. `healthConsent` since 2026-09-28:
+ * the box an instance that asks for consent draws, which a
+ * `400 health-consent-required` sends the person back to.
  */
-export type SyncFormField = 'invite';
+export type SyncFormField = 'invite' | 'healthConsent';
 
 /**
  * A refusal plus the field it belongs under, or `null` for one that belongs to

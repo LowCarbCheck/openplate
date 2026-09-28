@@ -1411,7 +1411,8 @@
     "pantry": "Dispensa · openplate",
     "recipes": "Ricette · openplate",
     "awards": "I tuoi progressi · openplate",
-    "whatsNew": "Novità · openplate"
+    "whatsNew": "Novità · openplate",
+    "healthConsent": "Il tuo consenso · openplate"
   },
   "nav": {
     "add": "Aggiungi",
@@ -2793,7 +2794,7 @@
       "cta": "Accedi",
       "emailHint": "L'indirizzo usato per creare l'account. Le lettere maiuscole non fanno differenza.",
       "failed": "Non ha funzionato. Controlla l'indirizzo email e la password, poi riprova.",
-      "finishSetup": "Questo account è stato creato, ma la configurazione delle sue chiavi non è mai stata completata. Completiamola adesso. La procedura termina con un codice di recupero che ti permette di accedere su un altro dispositivo, anche se per accedere a questo account serve la sua password.",
+      "finishSetup": "Questo account è stato creato, ma le sue chiavi non sono mai state configurate. Le configuriamo ora. Poi potrai accedere con la tua password su ogni dispositivo.",
       "forgot": "Ho dimenticato la password",
       "intro": "Inserisci la password una volta sola per accedere su questo dispositivo. La sessione rimane attiva finché non esci.",
       "submit": "Accedi",
@@ -2821,7 +2822,6 @@
       "syncing": "Sincronizzazione in corso…"
     },
     "title": "Account",
-    "passwordNote": "La tua password cifra anche il tuo diario. Non possiamo reimpostarla, quindi conserva il tuo codice di recupero.",
     "managed": {
       "inviteOnly": "Gli account qui si creano con un link di invito. Se ne hai uno, aprilo per iniziare."
     },
@@ -3817,5 +3817,18 @@
     "title": "Gli account richiedono una connessione sicura",
     "body": "Questa pagina è stata caricata tramite HTTP semplice. Il tuo browser ha disattivato la crittografia richiesta dagli account. Apri openplate a un indirizzo https://, oppure su localhost nel computer che lo esegue.",
     "guide": "Come configurare HTTPS"
+  },
+  "healthConsent": {
+    "title": "Il tuo consenso",
+    "checkbox": "Acconsento a che openplate tratti i miei dati relativi alla salute, come ciò che mangio, il mio peso e i miei orari di digiuno, per gestire il mio account e sincronizzare il mio diario. L'<privacy>informativa sulla privacy</privacy> spiega come. Posso revocare il mio consenso in qualsiasi momento eliminando il mio account.",
+    "requiredToCreate": "Seleziona la casella per creare il tuo account.",
+    "requiredToContinue": "Seleziona la casella per continuare.",
+    "heading": "Ancora un passaggio: il tuo consenso",
+    "body": "Il tuo diario contiene dati relativi alla salute. Abbiamo bisogno del tuo consenso esplicito per conservarne una copia cifrata sul nostro server, come spiegato nell'informativa sulla privacy.",
+    "agree": "Accetta e continua",
+    "saving": "Salvataggio in corso…",
+    "failed": "Il tuo consenso non è stato salvato. Controlla la connessione e riprova.",
+    "exportDiary": "Esporta il mio diario",
+    "deleteAccount": "Elimina il mio account"
   }
 }

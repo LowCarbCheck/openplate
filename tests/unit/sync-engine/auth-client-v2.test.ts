@@ -170,6 +170,7 @@ test('signup sends the invite and the escrow, and carries no address of its own'
       { kind: 'passphrase', kdfDescriptor: KDF, wrappedDek: 'WRAP-P' },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: 'WRAP-R' },
     ],
+    healthConsent: null,
   });
 
   const body = bodyOf(captured, '/v1/auth/signup');
@@ -184,10 +185,87 @@ test('signup sends the invite and the escrow, and carries no address of its own'
   assert.equal(body.recoveryCode, 'ABCDE-FGHJK');
   assert.equal(Array.isArray(body.keyRecords) && body.keyRecords.length, 2);
 
+  // NO CONSENT KEY AT ALL on an instance that asks for none: that body is
+  // byte for byte what it was before the field existed (`PROTOCOL.md` §5.8).
+  assert.equal('healthConsent' in body, false, 'an instance that asks nothing was sent a consent');
+
   // And the session is adopted, so the key-record and blob calls that follow
   // are authenticated without a second round trip.
   assert.equal(created.account.email, 'anna@example.org');
   assert.equal(client.getAccessToken(), 'access-1');
+});
+
+test('signup carries the ticked consent with the version the box was drawn for, and nothing else', async () => {
+  const { fetchImpl, captured } = stub((path) =>
+    path.endsWith('/signup') ? json({ account: ACCOUNT, tokens: TOKENS }, 201) : undefined,
+  );
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+
+  await client.signup({
+    inviteToken: 'si_TOKEN',
+    authHash: 'AUTH',
+    kdfDescriptor: KDF,
+    recoveryAuthHash: 'RECOVERY-AUTH',
+    recoveryCode: 'ABCDE-FGHJK',
+    keyRecords: [],
+    healthConsent: { version: '2026-09-28' },
+  });
+
+  // TRANSCRIBED FROM `PROTOCOL.md` §5.8: `{"version": "<v>"}`, and no instant,
+  // because the service writes its own clock.
+  assert.deepEqual(bodyOf(captured, '/v1/auth/signup').healthConsent, { version: '2026-09-28' });
+});
+
+test('a refused consent on signup is a 400 carrying the documented code, never a forbidden invite', async () => {
+  const fetchImpl: typeof fetch = async () => json({ error: 'health-consent-required' }, 400);
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+
+  await assert.rejects(
+    () =>
+      client.signup({
+        inviteToken: 'si_TOKEN',
+        authHash: 'AUTH',
+        kdfDescriptor: KDF,
+        recoveryAuthHash: 'R',
+        recoveryCode: 'C',
+        keyRecords: [],
+        healthConsent: null,
+      }),
+    (cause: unknown) =>
+      cause instanceof SyncRequestError &&
+      cause.status === 400 &&
+      cause.code === 'health-consent-required' &&
+      cause.kind === 'invalid',
+  );
+});
+
+test('recordHealthConsent posts the version to the account route and adopts the view it returns', async () => {
+  const agreed = { ...ACCOUNT, healthConsent: { version: '2026-09-28', at: '2026-09-28T12:00:00.000Z' } };
+  const { fetchImpl, captured } = stub((path) => {
+    if (path.endsWith('/signup')) return json({ account: ACCOUNT, tokens: TOKENS }, 201);
+    if (path.endsWith('/account/health-consent')) return json({ account: agreed });
+    return undefined;
+  });
+  const client = new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl });
+  await client.signup({
+    inviteToken: 'si_TOKEN',
+    authHash: 'AUTH',
+    kdfDescriptor: KDF,
+    recoveryAuthHash: 'R',
+    recoveryCode: 'C',
+    keyRecords: [],
+    healthConsent: null,
+  });
+
+  const returned = await client.recordHealthConsent({ version: '2026-09-28' });
+
+  // `PROTOCOL.md` §5.15.1: POST, bearer, `{"version": "<v>"}` and nothing else.
+  const request = captured.find((entry) => entry.path === '/v1/auth/account/health-consent');
+  assert.equal(request?.method, 'POST');
+  assert.deepEqual(bodyOf(captured, '/v1/auth/account/health-consent'), { version: '2026-09-28' });
+  assert.deepEqual(returned.healthConsent, agreed.healthConsent);
+  // ADOPTED, so the next read of the session's account already carries it.
+  assert.deepEqual(client.getSession()?.account.healthConsent, agreed.healthConsent);
 });
 
 // ---------------------------------------------------------------------------
@@ -303,6 +381,7 @@ test('an ordinary 403 is still `forbidden` — only the documented token is a su
         recoveryAuthHash: 'R',
         recoveryCode: 'C',
         keyRecords: [],
+        healthConsent: null,
       }),
     (error) => {
       assert.ok(error instanceof SyncRequestError);

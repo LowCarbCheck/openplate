@@ -43,14 +43,23 @@ import { validateSyncPassphrase, type Translate } from './setup-flow';
  */
 export type SyncInviteRule = 'none' | 'optional' | 'required';
 
+/** The value a ticked checkbox posts, the browser's own default for an `<input type="checkbox">` with no `value`. */
+export const TICKED_CHECKBOX_VALUE = 'on';
+
 /**
  * The signup schema.
  *
  * @param t - the caller's translator.
- * @param options - whether an invite is offered, and whether it is demanded.
- * @returns a Zod object schema over the four raw form fields.
+ * @param options - whether an invite is offered and demanded, and whether
+ *   the instance asks for a consent to health data (`PROTOCOL.md` §5.8). When
+ *   it asks, an unticked box is refused HERE, under the box, and nothing is
+ *   derived or sent.
+ * @returns a Zod object schema over the raw form fields.
  */
-export function makeSyncSignupSchema(t: Translate, { invite }: { invite: SyncInviteRule }) {
+export function makeSyncSignupSchema(
+  t: Translate,
+  { invite, isHealthConsentAsked }: { invite: SyncInviteRule; isHealthConsentAsked: boolean },
+) {
   return z
     .object({
       // Absent from the FormData whenever the field isn't rendered, so every
@@ -61,6 +70,8 @@ export function makeSyncSignupSchema(t: Translate, { invite }: { invite: SyncInv
       displayName: z.string().max(64).default(''),
       passphrase: z.string().default(''),
       confirmPassphrase: z.string().default(''),
+      /** `on` when the consent box is ticked, absent when it is not or is not drawn. */
+      healthConsent: z.string().default(''),
     })
     .superRefine((value, ctx) => {
       const passphraseProblem = validateSyncPassphrase(value.passphrase, t);
@@ -77,6 +88,10 @@ export function makeSyncSignupSchema(t: Translate, { invite }: { invite: SyncInv
 
       const inviteProblem = describeInviteProblem(value.invite, { rule: invite, t });
       if (inviteProblem !== null) ctx.addIssue({ code: 'custom', path: ['invite'], message: inviteProblem });
+
+      if (isHealthConsentAsked && value.healthConsent !== TICKED_CHECKBOX_VALUE) {
+        ctx.addIssue({ code: 'custom', path: ['healthConsent'], message: t('healthConsent.requiredToCreate') });
+      }
     });
 }
 

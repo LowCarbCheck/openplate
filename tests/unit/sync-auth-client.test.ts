@@ -222,6 +222,7 @@ test('signup adopts the returned session so key records can be written immediate
       { kind: 'passphrase', kdfDescriptor: { salt: SALT_BASE64, params: FAST_PARAMS }, wrappedDek: 'CCCC' },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: 'DDDD' },
     ],
+    healthConsent: null,
   });
 
   assert.equal(client.getAccessToken(), 'access-1');

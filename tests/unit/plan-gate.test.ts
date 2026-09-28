@@ -126,6 +126,9 @@ const EXEMPT_PATHS = [
   '/settings/notifications',
   '/settings/research',
   '/settings/sharing',
+  // The one-time consent to health data (2026-09-28): never paid for, and
+  // asked before the plan page.
+  '/consent',
   '/admin',
   '/admin/invitations',
   '/admin/people/7',

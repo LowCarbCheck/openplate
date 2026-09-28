@@ -1,11 +1,14 @@
 # openplate
 
 An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI plate
-identification**. Snap a photo of your plate and your own AI provider (OpenRouter, Mistral,
-any OpenAI-compatible endpoint, or Anthropic) estimates the macros. Your key, your provider,
-your data.
+identification**. Snap a photo of your plate. Your own AI provider (OpenRouter, Mistral, any
+OpenAI-compatible endpoint, or Anthropic) estimates the macros. On a copy you run yourself, it is
+your key, your provider, and your data. A hosted instance with accounts differs in two ways: the
+operator provides the AI, and the operator keeps a recovery key that can open your diary
+([docs/sync.md](docs/sync.md#encryption-and-what-the-operator-holds)).
 
-**There are no accounts.** No sign-up, no login, no password: open the app and start logging.
+**A copy you run needs no account.** No sign-up, no login, and no password. Open the app and start
+logging.
 Your diary lives in your browser's own IndexedDB on the device you use, and the app server has
 no database at all: one stateless container, no required secrets, nothing to provision. Optional
 encrypted sync between devices is a separate service you can ignore forever.

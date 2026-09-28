@@ -35,10 +35,12 @@
  *
  * `/study` is an unconditional client route (`routes.ts`), so a study
  * compartment can already exist in production with the research lane dark.
- * Whether one does is NOT a question anybody can answer: the service is
- * zero-knowledge by construction, and nobody — including us — can look inside
- * a compartment on the server. So "no study compartment predates the tag" is
- * an assumption, and code must not rest on one it cannot test.
+ * Whether one does is NOT a question this code can answer: the service's own
+ * code never decrypts a compartment. The one party that could look, the
+ * operator of a managed instance holding the escrowed recovery code and
+ * `SERVER_SECRET` (`openplate-core` `PROTOCOL.md` §9.2), is not a check this
+ * client can run. So "no study compartment predates the tag" is an
+ * assumption, and code must not rest on one it cannot test.
  *
  * Hence {@link readCompartmentKind}'s sniff: an untagged plaintext that
  * carries a `studyKeyring` is a study compartment. Without it, a study account

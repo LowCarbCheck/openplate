@@ -3989,6 +3989,13 @@
     "at": "2026-09-14",
     "es": "Notas de la versión"
   },
+  "3455bd8581934ede": {
+    "en": "Please tick the box to continue.",
+    "path": "common:healthConsent.requiredToContinue",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Marca la casilla para continuar."
+  },
   "346885249bb6af0e": {
     "en": "No name",
     "path": "common:admin.noName",
@@ -7384,6 +7391,13 @@
     "at": "2026-09-14",
     "es": "calorías"
   },
+  "5fb1b29a986157ad": {
+    "en": "Saving…",
+    "path": "common:healthConsent.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Guardando…"
+  },
   "5fe6be50c4412e83": {
     "en": "avocado",
     "path": "common:catchUp.foods.avocado",
@@ -8756,6 +8770,13 @@
     "at": "2026-09-14",
     "es": "Compartido. Has verificado:"
   },
+  "72207a0ad067c144": {
+    "en": "Delete my account",
+    "path": "common:healthConsent.deleteAccount",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Eliminar mi cuenta"
+  },
   "723a20a4e0b02388": {
     "en": "How do you eat?",
     "path": "common:onboarding.style.title",
@@ -9435,6 +9456,13 @@
     "at": "2026-09-14",
     "es": "Tus objetivos"
   },
+  "7997375c444f6f3e": {
+    "en": "Export my diary",
+    "path": "common:healthConsent.exportDiary",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Exportar mi diario"
+  },
   "79b80614a98e3603": {
     "en": "Paste the whole link, exactly as you received it.",
     "path": "common:welcome.managed.pasteHint",
@@ -9959,6 +9987,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este estudio aún no tiene ninguna clave. Genera una antes de imprimir sus documentos de consentimiento."
+  },
+  "7fdb10dacd44bf8e": {
+    "en": "One more step: your consent",
+    "path": "common:healthConsent.heading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Un paso más: tu consentimiento"
   },
   "7fdc048c573cd547": {
     "en": "Tap a portion to adjust, or fine-tune anything below.",
@@ -11310,6 +11345,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "es": "openplate, un registro de alimentos que cifra tu diario en tu dispositivo"
+  },
+  "8f6c180d8b1a9f60": {
+    "en": "Please tick the box to create your account.",
+    "path": "common:healthConsent.requiredToCreate",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Marca la casilla para crear tu cuenta."
   },
   "8f74b6eb5c7a63ad": {
     "en": "How many carbs a day?",
@@ -13474,6 +13516,13 @@
     "at": "2026-09-14",
     "es": "Estudios en los que colaboras"
   },
+  "ab459374d6eceeea": {
+    "en": "This account was created, but its keys were never set up. We set them up now. Then you can sign in with your password on every device.",
+    "path": "common:sync.signIn.finishSetup",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Esta cuenta se creó, pero nunca se configuraron sus claves. Las configuramos ahora. Después podrás iniciar sesión con tu contraseña en cualquier dispositivo."
+  },
   "ab52291c30be6c26": {
     "en": "Participants in this file: {{participants}}",
     "path": "common:research.export.participants",
@@ -13662,6 +13711,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "es": "Una nueva pantalla lista lo que has hecho con la app."
+  },
+  "adf981b45f4dcd92": {
+    "en": "Your consent was not saved. Check your connection and try again.",
+    "path": "common:healthConsent.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "No se guardó tu consentimiento. Comprueba tu conexión e inténtalo de nuevo."
   },
   "aea73a7009f31ca5": {
     "en": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
@@ -14530,6 +14586,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "es": "Novedades · openplate"
+  },
+  "b9c1275afffbac89": {
+    "en": "I agree that openplate processes my health data, such as what I eat, my weight and my fasting times, to run my account and sync my diary. The <privacy>privacy notice</privacy> explains how. I can withdraw my consent at any time by deleting my account.",
+    "path": "common:healthConsent.checkbox",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Acepto que openplate procese mis datos de salud, como lo que como, mi peso y mis horas de ayuno, para gestionar mi cuenta y sincronizar mi diario. El <privacy>aviso de privacidad</privacy> explica cómo. Puedo retirar mi consentimiento en cualquier momento eliminando mi cuenta."
   },
   "b9edafefd955d196": {
     "en": "{{hint}} · ~{{grams}} g",
@@ -17779,6 +17842,13 @@
     "at": "2026-09-24",
     "es": "¿Eliminar todas las entradas importadas de YAZIO?"
   },
+  "e50470a16fa8bb9b": {
+    "en": "Agree and continue",
+    "path": "common:healthConsent.agree",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Aceptar y continuar"
+  },
   "e50b6320a8b2a8b6": {
     "en": "No goal, only the numbers",
     "path": "common:onboarding.style.justTrack.detail",
@@ -19305,6 +19375,13 @@
     "at": "2026-09-14",
     "es": "Falta una parte o se ha cortado. Pídele que te lo envíe otra vez o que te muestre el código en su pantalla."
   },
+  "f6ef9df7c915039a": {
+    "en": "Your consent · openplate",
+    "path": "common:meta.healthConsent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu consentimiento · openplate"
+  },
   "f72072404aac80cb": {
     "en": "Paste the key from their invitation. It is public: it can seal data to them, and nothing else.",
     "path": "common:sharing.grant.keyHint",
@@ -19578,6 +19655,13 @@
     "at": "2026-09-14",
     "es": "Más grande"
   },
+  "fa724937d8748513": {
+    "en": "Your diary holds health data. We need your explicit consent to keep an encrypted copy of it on our server, as the privacy notice explains.",
+    "path": "common:healthConsent.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu diario contiene datos de salud. Necesitamos tu consentimiento explícito para guardar una copia cifrada en nuestro servidor, tal como explica el aviso de privacidad."
+  },
   "fa8874b64f7b729a": {
     "en": "Logged on {{days}} of {{total}} days",
     "path": "common:trends.meals.averages.loggedDays",
@@ -19731,6 +19815,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "Resumen"
+  },
+  "fc0cd944a33f3b30": {
+    "en": "Your consent",
+    "path": "common:healthConsent.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu consentimiento"
   },
   "fc0db4bc7a243548": {
     "en": "Edit",

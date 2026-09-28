@@ -1411,7 +1411,8 @@
     "pantry": "Garde-manger · openplate",
     "recipes": "Recettes · openplate",
     "awards": "Ton historique · openplate",
-    "whatsNew": "Nouveautés · openplate"
+    "whatsNew": "Nouveautés · openplate",
+    "healthConsent": "Ton consentement · openplate"
   },
   "nav": {
     "add": "Ajouter",
@@ -2793,7 +2794,7 @@
       "cta": "Se connecter",
       "emailHint": "L'adresse utilisée pour créer ton compte. Les majuscules n'ont aucune importance.",
       "failed": "L'opération a échoué. Vérifie l'adresse e-mail et le mot de passe, puis réessaie.",
-      "finishSetup": "Ce compte a été créé, mais ses clés n'ont jamais été finalisées. Faisons-le maintenant. Cela se termine par un code de récupération qui te permet de te connecter sur un autre appareil, même si ce compte ne peut être ouvert qu'avec son mot de passe.",
+      "finishSetup": "Ce compte a été créé, mais ses clés n'ont jamais été configurées. Nous les configurons maintenant. Ensuite, tu pourras te connecter avec ton mot de passe sur tous tes appareils.",
       "forgot": "J'ai oublié mon mot de passe",
       "intro": "Saisis ton mot de passe une fois pour te connecter sur cet appareil. Tu restes connecté jusqu'à ta déconnexion explicite.",
       "submit": "Se connecter",
@@ -2821,7 +2822,6 @@
       "syncing": "Synchronisation en cours…"
     },
     "title": "Compte",
-    "passwordNote": "Ton mot de passe chiffre aussi ton journal. Nous ne pouvons pas le réinitialiser, conserve donc précieusement ton code de récupération.",
     "managed": {
       "inviteOnly": "Les comptes se créent ici avec un lien d'invitation. Si tu en as un, ouvre-le pour commencer."
     },
@@ -3817,5 +3817,18 @@
     "title": "Les comptes nécessitent une connexion sécurisée",
     "body": "Cette page s'est chargée en HTTP simple. Ton navigateur a désactivé le chiffrement dont les comptes ont besoin. Ouvre openplate à une adresse https://, ou sur localhost depuis l'ordinateur qui l'exécute.",
     "guide": "Configurer HTTPS"
+  },
+  "healthConsent": {
+    "title": "Ton consentement",
+    "checkbox": "J'accepte que openplate traite mes données de santé, comme ce que je mange, mon poids et mes périodes de jeûne, pour faire fonctionner mon compte et synchroniser mon journal. La <privacy>politique de confidentialité</privacy> explique comment. Je peux retirer mon consentement à tout moment en supprimant mon compte.",
+    "requiredToCreate": "Coche la case pour créer ton compte.",
+    "requiredToContinue": "Coche la case pour continuer.",
+    "heading": "Encore une étape : ton consentement",
+    "body": "Ton journal contient des données de santé. Nous avons besoin de ton consentement explicite pour en conserver une copie chiffrée sur notre serveur, comme l'explique la politique de confidentialité.",
+    "agree": "Accepter et continuer",
+    "saving": "Enregistrement…",
+    "failed": "Ton consentement n'a pas été enregistré. Vérifie ta connexion et réessaie.",
+    "exportDiary": "Exporter mon journal",
+    "deleteAccount": "Supprimer mon compte"
   }
 }

@@ -136,7 +136,9 @@ describe('the form asks for a password, and not for an address', () => {
   const parse = (values: Record<string, string>) => {
     const formData = new FormData();
     for (const [name, value] of Object.entries(values)) formData.append(name, value);
-    return parseWithZod(formData, { schema: makeSyncSignupSchema(fakeT, { invite: 'required' }) });
+    return parseWithZod(formData, {
+      schema: makeSyncSignupSchema(fakeT, { invite: 'required', isHealthConsentAsked: false }),
+    });
   };
 
   it('accepts an invite, a password and a confirmation', () => {

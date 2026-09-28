@@ -22,7 +22,9 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { SyncSetupFlow } from '#app/components/sync-setup-flow';
+import { SyncSetupFlow, type SyncProvisionInput } from '#app/components/sync-setup-flow';
+import { readFreshServerInstance } from '#app/hooks/use-server-instance';
+import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
 import { Button } from '#app/components/ui/button';
 import { trackAccountCreated } from '#app/lib/matomo-events';
 import { consumePendingInvite } from '#app/lib/sync/invite-link';
@@ -34,6 +36,7 @@ import { createSyncAccount } from '#app/lib/sync/sync-actions';
 export function CreateAccountPanel({
   serverUrl,
   initialInvite,
+  healthConsent: initialHealthConsent,
   onCancel,
   onAlreadyRegistered,
   onCeremonyActiveChange,
@@ -42,6 +45,15 @@ export function CreateAccountPanel({
   serverUrl: string;
   /** The token from an `#invite=…` link, already taken out of the URL by the caller, or `''`. */
   initialInvite: string;
+  /**
+   * The consent the instance asks of a new account, as the caller read it off
+   * the handshake, or `null` when it asks for none or could not be read
+   * (`PROTOCOL.md` §5.6, §5.8). The panel keeps its own copy from here on: a
+   * `400 health-consent-required` means the instance changed its wording, or
+   * started asking, while the page was open, and the panel reads the
+   * handshake again and draws the box for what it says now.
+   */
+  healthConsent: InstanceHealthConsent | null;
   /** Omitted where there is nowhere to cancel BACK to, e.g. `/join`, which is a page rather than a mode. */
   onCancel?: () => void;
   /**
@@ -58,6 +70,22 @@ export function CreateAccountPanel({
 }) {
   const { t } = useTranslation();
   const [isCeremonyActive, setIsCeremonyActive] = useState(false);
+  const [healthConsent, setHealthConsent] = useState<InstanceHealthConsent | null>(initialHealthConsent);
+
+  /**
+   * The consent the instance asks for NOW, after it refused the one sent.
+   *
+   * A fresh read, never the tab's cache: the refusal is the proof that the
+   * cached answer is out of date. An unreadable handshake keeps the version
+   * already held, so the box stays on screen for another try; `null` means
+   * there is no version to draw a box for at all.
+   */
+  const rereadHealthConsent = async (): Promise<InstanceHealthConsent | null> => {
+    const instance = await readFreshServerInstance(serverUrl);
+    const next = instance === null ? healthConsent : (instance.healthConsent ?? null);
+    setHealthConsent(next);
+    return next;
+  };
 
   /**
    * A `useCallback`, and that is load-bearing rather than tidiness.
@@ -81,9 +109,10 @@ export function CreateAccountPanel({
     <div className="space-y-4">
       <SyncSetupFlow
         invite={{ initialValue: initialInvite, isFromLink: initialInvite !== '', isRequired: true }}
+        healthConsent={healthConsent ?? undefined}
         onCeremonyActiveChange={handleCeremonyActiveChange}
         onCeremonyComplete={onCeremonyComplete}
-        provision={async ({ passphrase, invite, displayName }) => {
+        provision={async ({ passphrase, invite, displayName, healthConsent: agreed }: SyncProvisionInput) => {
           // The person has acted on the prefilled code, so the pending slot
           // has done its job and is emptied HERE rather than on mount: until
           // this moment a reload still has to be able to bring the token back,
@@ -95,10 +124,21 @@ export function CreateAccountPanel({
               inviteToken: invite,
               passphrase,
               displayName: displayName === '' ? null : displayName,
+              healthConsent: agreed,
             });
             trackAccountCreated();
             return account;
           } catch (error) {
+            // THE CONSENT WAS REFUSED: missing, or given to a wording the
+            // instance no longer asks for. Nothing was created and the invite
+            // is still good (`PROTOCOL.md` §5.8), so the box comes back,
+            // unticked, for the wording the handshake names now. With no
+            // wording to draw, it is the retry screen instead.
+            if (classifySignupFailure(error) === 'health-consent-required') {
+              const current = await rereadHealthConsent();
+              if (current === null) throw new Error(t('sync.setup.setupFailed'), { cause: error });
+              throw new SyncFieldError('healthConsent', t('healthConsent.requiredToCreate'), { cause: error });
+            }
             // Translated here rather than left to `describeErrorForUser`,
             // which would surface the SERVICE's own English sentence. §4 of
             // the protocol says a client branches on the status, not the
