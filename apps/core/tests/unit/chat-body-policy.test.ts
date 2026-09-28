@@ -60,8 +60,16 @@ test('on OpenRouter the body asks for endpoints that do not keep or train on it,
 test('any other upstream gets no provider field, because it is an OpenRouter extension', () => {
   // THE CONTROL for the host check: without it the test above would pass against a policy that
   // wrote the preference into every body.
-  for (const upstreamBaseUrl of ['https://api.openai.com/v1', 'http://inference:8300/v1', 'https://openrouter.ai.example.com/v1']) {
-    const body = applyChatBodyPolicy({ body: { model: 'm', provider: { order: ['x'] } }, policy: OPEN, upstreamBaseUrl });
+  for (const upstreamBaseUrl of [
+    'https://api.openai.com/v1',
+    'http://inference:8300/v1',
+    'https://openrouter.ai.example.com/v1',
+  ]) {
+    const body = applyChatBodyPolicy({
+      body: { model: 'm', provider: { order: ['x'] } },
+      policy: OPEN,
+      upstreamBaseUrl,
+    });
     assert.equal('provider' in body, false, upstreamBaseUrl);
   }
   assert.equal('provider' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);

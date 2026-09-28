@@ -61,7 +61,10 @@ export async function scrubFinishedInvites(db: Database, input: ScrubFinishedInv
       .from(signupInvites)
       .where(and(hasAddress, isNotNull(signupInvites.redeemedAt), isNull(signupInvites.trialKey)));
     for (const row of unkeyed) {
-      await tx.update(signupInvites).set({ trialKey: hashAddress(row.email) }).where(eq(signupInvites.id, row.id));
+      await tx
+        .update(signupInvites)
+        .set({ trialKey: hashAddress(row.email) })
+        .where(eq(signupInvites.id, row.id));
     }
 
     const redeemed = await tx

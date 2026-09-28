@@ -77,9 +77,15 @@ async function readRow(id: number) {
 }
 
 test('with a pepper, every finished row loses its address and name, and a pending row keeps both', async () => {
-  const pending = await insertInvite('pending@example.org', 'pending', { trialKey: hashAddress('pending@example.org') });
-  const expired = await insertInvite('expired@example.org', 'expired', { trialKey: hashAddress('expired@example.org') });
-  const revoked = await insertInvite('revoked@example.org', 'revoked', { trialKey: hashAddress('revoked@example.org') });
+  const pending = await insertInvite('pending@example.org', 'pending', {
+    trialKey: hashAddress('pending@example.org'),
+  });
+  const expired = await insertInvite('expired@example.org', 'expired', {
+    trialKey: hashAddress('expired@example.org'),
+  });
+  const revoked = await insertInvite('revoked@example.org', 'revoked', {
+    trialKey: hashAddress('revoked@example.org'),
+  });
   const redeemed = await insertInvite('redeemed@example.org', 'redeemed', {
     trialKey: hashAddress('redeemed@example.org'),
     trialScans: 10,
