@@ -16,13 +16,17 @@
  * the reason we care about: a field added, removed, renamed or retyped there and
  * not here.
  *
- * IT SKIPS WHEN OPENPLATE IS ABSENT — loudly. A self-hoster who clones only this
- * repo has no sibling checkout, and a hard failure there would be noise. In the
- * dev workspace the sibling IS present, so this comparison really runs; if you
- * see the skip warning locally, the path below is wrong and drift is going
- * unchecked.
+ * IT NEVER SKIPS, SINCE THE MERGE (M262). The app is `apps/app` in the same
+ * repository as this service, so its schema is always three directories up from
+ * here. This test used to skip when a sibling `../openplate` checkout was
+ * missing, which was right for a standalone clone of this repository and is now
+ * the wrong default: a path that no longer resolves would skip, and a skipped
+ * parity check is a green run that checked nothing. So a missing file FAILS,
+ * naming the path it looked for. Nothing runs this suite with only
+ * `apps/inference` on disk: the image build (`Dockerfile`, context
+ * `apps/inference`) copies no tests and runs none.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -36,25 +40,21 @@ import {
 } from '../../src/contract/plate-identification.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const OPENPLATE_SCHEMA_PATH = resolve(here, '../../../openplate/app/services/vision/schema.ts');
-const OPENPLATE_LANGUAGES_PATH = resolve(here, '../../../openplate/app/i18n/language-prefs.ts');
+/** The app's folder in the merged repository: `apps/inference/tests/unit` up three, then `app`. */
+const APP_ROOT = resolve(here, '../../../app');
+const OPENPLATE_SCHEMA_PATH = resolve(APP_ROOT, 'app/services/vision/schema.ts');
+const OPENPLATE_LANGUAGES_PATH = resolve(APP_ROOT, 'app/i18n/language-prefs.ts');
 
-const openplateAvailable = existsSync(OPENPLATE_SCHEMA_PATH);
-
-if (!openplateAvailable) {
-  console.warn(
-    [
-      '',
-      '*'.repeat(78),
-      '* WARNING: schema-parity is SKIPPED — no openplate checkout at',
-      `*   ${OPENPLATE_SCHEMA_PATH}`,
-      '* The PlateIdentification contract in src/contract/ is a hand-transcribed copy.',
-      '* Nothing in this run verified it still matches the client. Expected when this',
-      '* repo is cloned on its own; a BUG if you see it inside the dev workspace.',
-      '*'.repeat(78),
-      '',
-    ].join('\n'),
-  );
+/** The app's file as text, or a failure that names the path, never a quiet skip. */
+function readAppFile(path: string): string {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch (error) {
+    throw new Error(
+      `schema-parity: cannot read the app's ${path}. The app lives at apps/app in this repository; ` +
+        `if the file moved there, move this path with it. (${error instanceof Error ? error.message : String(error)})`,
+    );
+  }
 }
 
 /** Extracts the property names of a `const <name> = z.object({...})` declaration. */
@@ -116,8 +116,8 @@ describe('vendored PlateIdentification contract', () => {
     expect(Object.keys(itemProperties)).not.toContain('attribution');
   });
 
-  it.skipIf(!openplateAvailable)('matches openplate app/services/vision/schema.ts field-for-field', () => {
-    const source = readFileSync(OPENPLATE_SCHEMA_PATH, 'utf8');
+  it('matches openplate app/services/vision/schema.ts field-for-field', () => {
+    const source = readAppFile(OPENPLATE_SCHEMA_PATH);
 
     expect(declaredFields(source, 'PlateIdentificationSchema')).toEqual(
       ourFields(BasePlateIdentificationSchema),
@@ -127,8 +127,8 @@ describe('vendored PlateIdentification contract', () => {
     expect(declaredFields(source, 'RawMacrosSchema')).toEqual(ourFields(MacrosSchema));
   });
 
-  it.skipIf(!openplateAvailable)('matches openplate on the confidence enum and the nullable fields', () => {
-    const source = readFileSync(OPENPLATE_SCHEMA_PATH, 'utf8');
+  it('matches openplate on the confidence enum and the nullable fields', () => {
+    const source = readAppFile(OPENPLATE_SCHEMA_PATH);
     // The three literals the client accepts. A fourth value here would be a
     // response openplate throws on.
     expect(source).toContain("z.enum(['high', 'medium', 'low'])");
@@ -150,8 +150,8 @@ describe('vendored PlateIdentification contract', () => {
     expect(source).toContain('translations: RawFoodTranslationsSchema');
   });
 
-  it.skipIf(!openplateAvailable)('matches openplate on the list of app languages the translations are keyed by', () => {
-    const source = readFileSync(OPENPLATE_LANGUAGES_PATH, 'utf8');
+  it('matches openplate on the list of app languages the translations are keyed by', () => {
+    const source = readAppFile(OPENPLATE_LANGUAGES_PATH);
     const declared = /SUPPORTED_LANGUAGES = \[([^\]]*)\] as const/u.exec(source)?.[1] ?? '';
     const codes = [...declared.matchAll(/'([a-z]{2})'/gu)].map((match) => match[1]);
     expect(codes).toEqual([...APP_LANGUAGES]);
