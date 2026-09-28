@@ -24,7 +24,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { LANGUAGE_COOKIE } from '../../app/i18n/language-prefs';
-import { isOnboardingGateExempt } from '../../app/lib/onboarding-gate';
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { EN } from './copy';
 import { E2E_SYNC_SERVER_URL } from './env';
@@ -394,14 +393,16 @@ async function openPlanPageFromHub(page: Page): Promise<void> {
 }
 
 /**
- * WHERE THE PLAN PAGE IS EXEMPT from the onboarding gate (the paywall change
- * adds it), a new account lands on it straight from `/join`. Where it is not
- * yet, the gate sends the account to the questionnaire first, and the page
- * picks the plan when the person opens it afterwards. Each build is held to
- * the one landing it must produce.
+ * THE PLAN PAGE IS EXEMPT from the onboarding gate since the paywall landed
+ * (7cb9fd1), so a new account lands on it straight from `/join`.
+ *
+ * THIS FILE USED TO ASK, through `isOnboardingGateExempt`, so that it held
+ * either build while the two branches were apart. Once they met, that import
+ * reached `common.json` (`onboarding-gate` -> `plans-door` ->
+ * `use-server-instance` -> `sync-actions`), which Playwright's loader refuses
+ * without an import attribute, and the whole browser tier died at load before
+ * a single test ran. A spec imports only leaf modules from `app/`.
  */
-const PLAN_PAGE_IS_EXEMPT = isOnboardingGateExempt(PLAN_PAGE);
-
 test('a join link that names the yearly plan lands a new account on the order page with yearly picked', async ({
   page,
 }) => {
@@ -413,14 +414,8 @@ test('a join link that names the yearly plan lands a new account on the order pa
   await page.goto(joinLink(await mintInvite(), '&plan=yearly'));
   await createAccount(page);
 
-  if (PLAN_PAGE_IS_EXEMPT) {
-    await page.waitForURL(/\/settings\/plan\?plan=yearly$/u, { timeout: 60_000 });
-    await expect(page.locator('[data-slot="plan-card"]')).toHaveCount(2, { timeout: 15_000 });
-  } else {
-    await page.waitForURL('**/onboarding', { timeout: 60_000 });
-    await finishOnboarding(page);
-    await openPlanPageFromHub(page);
-  }
+  await page.waitForURL(/\/settings\/plan\?plan=yearly$/u, { timeout: 60_000 });
+  await expect(page.locator('[data-slot="plan-card"]')).toHaveCount(2, { timeout: 15_000 });
   await expect(planRadio(page, 'yearly')).toBeChecked();
   await expect(planRadio(page, 'monthly')).not.toBeChecked();
 });
