@@ -227,7 +227,7 @@ grant-lapsed`) gives the scans to day trials that ran out unpaid. CORS now
   answer is the same `202` whether or not an address matched an account, so it
   tells a caller nothing about who holds an account. Migration `0018` creates
   the table and a rate limit caps what one address and one address range can
-  send. ([77e84cd](https://github.com/LowCarbCheck/openplate-core/commit/77e84cd))
+  send. ([b673d1a](https://github.com/LowCarbCheck/openplate/commit/b673d1a))
 
 ### Changed
 
@@ -236,7 +236,7 @@ grant-lapsed`) gives the scans to day trials that ran out unpaid. CORS now
   as well, and it is where the alert for each declaration goes. An instance
   that sends no mail is unaffected. The shipped `docker/compose.yml` and the
   generated Quadlet unit both carry the
-  line. ([77e84cd](https://github.com/LowCarbCheck/openplate-core/commit/77e84cd)) ([35ed53c](https://github.com/LowCarbCheck/openplate-core/commit/35ed53c))
+  line. ([b673d1a](https://github.com/LowCarbCheck/openplate/commit/b673d1a)) ([dcd060c](https://github.com/LowCarbCheck/openplate/commit/dcd060c))
 
 ## [0.17.1] - 2026-09-20
 
@@ -250,17 +250,17 @@ grant-lapsed`) gives the scans to day trials that ran out unpaid. CORS now
   `PLANS_UPSTREAM_SECRET` and `BILLING_TOKEN`. A value set for one of them in
   `.env` was ignored without a word. Each now has a line in the `sync`
   service's `environment:` block. Its default parses exactly like the
-  unset variable. The generated Quadlet unit carries the same lines. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+  unset variable. The generated Quadlet unit carries the same lines. ([706ecb6](https://github.com/LowCarbCheck/openplate/commit/706ecb6))
 - **The Quadlet README said the wrong file wins.** It said a value in
   `openplate-core.env` overrides a unit's `Environment=` line. Podman does the
   opposite, so a setting put there had no effect. It now tells you to change a
-  setting with a drop-in. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+  setting with a drop-in. ([706ecb6](https://github.com/LowCarbCheck/openplate/commit/706ecb6))
 - **`PROTOCOL.md` documents reported estimates, and no longer says the server
   cannot decrypt.** §5.25 specifies `POST /v1/feedback`. §5.20 lists the four
   `/v1/admin/feedback` routes. §1, §5.23 and §9.1 said the server cannot
   decrypt a diary and never receives the recovery code. Since protocol 2 the
   server keeps that code sealed, and those sections now match §3.1 and §9.2.
-  §9.2 also lists reported estimates among what the server knows. ([0f46677](https://github.com/LowCarbCheck/openplate-core/commit/0f46677))
+  §9.2 also lists reported estimates among what the server knows. ([706ecb6](https://github.com/LowCarbCheck/openplate/commit/706ecb6))
 
 ## [0.17.0] - 2026-09-18
 
@@ -291,7 +291,7 @@ nutrient-reference-basis efsa` is the operator's command for it, and every
   does, and they live in `src/mail/strings.<lang>.ts`, one generated module
   each, checked by the compiler with the hand-written two. The expiry date in
   an invitation now renders in the reader's own language for every one of the
-  six; before this, every language but German got an English date. ([bf04ca4](https://github.com/LowCarbCheck/openplate-core/commit/bf04ca4))
+  six; before this, every language but German got an English date. ([fdf147e](https://github.com/LowCarbCheck/openplate/commit/fdf147e))
 
 ## [0.15.0] - 2026-09-14
 
@@ -308,7 +308,7 @@ nutrient-reference-basis efsa` is the operator's command for it, and every
   `MEMBER_INVITE_ALLOWANCE_DAYS` are unset is a boot failure naming it, because
   members cannot invite anybody there and the cap would narrow a door that is
   not open. Administrators stay exempt, and `AI_INSTANCE_DAILY_LIMIT` still
-  bounds what the whole instance may spend per day whatever the cap is. ([62f6564](https://github.com/LowCarbCheck/openplate-core/commit/62f6564))
+  bounds what the whole instance may spend per day whatever the cap is. ([c7c4958](https://github.com/LowCarbCheck/openplate/commit/c7c4958))
 
 ## [0.14.0] - 2026-09-12
 
@@ -332,7 +332,7 @@ nutrient-reference-basis efsa` is the operator's command for it, and every
   because a new header must be named in the CORS allow list or browsers drop
   the request after a clean preflight.
   ADR 0009 states the trade: the false positives cost a field, the false
-  negatives cost data. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+  negatives cost data. ([9fe93fd](https://github.com/LowCarbCheck/openplate/commit/9fe93fd))
 
 - **Tiered blob retention, and a pin on the version before an acknowledged shrink.**
   `BLOB_VERSION_RETENTION` keeps its name and its five, and becomes one tier of
@@ -341,7 +341,7 @@ nutrient-reference-basis efsa` is the operator's command for it, and every
   shrink replaced them. At most 33 versions and 66 MiB per account, and the
   daily tier is per calendar day rather than per count so two devices in a merge
   loop cannot burn through it. The flat five was the only reason the wiped diary
-  above was recoverable at all, and by luck. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+  above was recoverable at all, and by luck. ([9fe93fd](https://github.com/LowCarbCheck/openplate/commit/9fe93fd))
 
 - **An operator can roll a blob back.**
   `GET /v1/admin/accounts/:id/blob/versions` lists every retained version with
@@ -357,11 +357,11 @@ nutrient-reference-basis efsa` is the operator's command for it, and every
   `docs/operations/restoring-a-wiped-diary.md` is the playbook, and its
   non-negotiable step is the one the rollback cannot do: every device the person
   signed into still holds the baseline that caused the loss, and has to have its
-  local data erased before it syncs again. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+  local data erased before it syncs again. ([9fe93fd](https://github.com/LowCarbCheck/openplate/commit/9fe93fd))
 
 ### Changed
 
-- `sync_blobs` gains a nullable `pinned_until`. Migration `0016`. ([676a0a2](https://github.com/LowCarbCheck/openplate-core/commit/676a0a2))
+- `sync_blobs` gains a nullable `pinned_until`. Migration `0016`. ([9fe93fd](https://github.com/LowCarbCheck/openplate/commit/9fe93fd))
 
 ## [0.13.0] - 2026-09-12
 
