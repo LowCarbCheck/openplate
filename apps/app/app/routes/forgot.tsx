@@ -142,9 +142,19 @@ function ForgotForm({ serverUrl }: { serverUrl: string }) {
   return (
     <div className="space-y-4">
       {/* ONE CELL, THREE LAYERS: see the file header. `inert` keeps a hidden
-          layer out of the tab order and away from a screen reader. */}
+          layer out of the tab order and away from a screen reader.
+          `[&_*]:transition-none` hides the form's button in the same frame as
+          the form: the button's own `transition-all` would otherwise animate
+          the inherited `visibility` and keep it drawn for 150 ms under the
+          answer. The same fix as `ReturnState` in `settings.plan.tsx`, whose
+          comment has the mechanism; `invisible-button-flash.spec.ts` watches
+          every frame of the change. */}
       <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
-        <form {...getFormProps(form)} className={cn('space-y-3', isAnswered && 'invisible')} inert={isAnswered}>
+        <form
+          {...getFormProps(form)}
+          className={cn('space-y-3', isAnswered && 'invisible [&_*]:transition-none')}
+          inert={isAnswered}
+        >
           <div className="space-y-2">
             <Label htmlFor={fields.email.id}>{t('sync.emailLabel')}</Label>
             <Input
