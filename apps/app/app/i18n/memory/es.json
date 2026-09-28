@@ -1490,6 +1490,13 @@
     "at": "2026-09-21",
     "es": "En la fecha más temprana posible"
   },
+  "126e0068c49b9d29": {
+    "en": "Every compose file reads its settings from the env file.",
+    "path": "releases:v0_50_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Cada archivo compose lee su configuración desde el archivo env."
+  },
   "127c1a1aa73047a4": {
     "en": "{{value}} g net carbs today.",
     "path": "common:diary.hero.srAbsolute",
@@ -3030,6 +3037,13 @@
     "at": "2026-09-14",
     "es": "Todos los nutrientes"
   },
+  "23b5c2070221a675": {
+    "en": "A logged food no longer reopens on the search screen.",
+    "path": "releases:v0_50_0.fixed.16",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Un alimento registrado ya no se vuelve a abrir en la pantalla de búsqueda."
+  },
   "23d0a1d147680641": {
     "en": "Under 100 g net carbs a day",
     "path": "common:onboarding.carbPreset.moderate.detail",
@@ -3310,6 +3324,13 @@
     "at": "2026-09-28",
     "es": "Cuando se te acaben los escaneos, openplate cuesta {{monthly}} al mes o {{yearly}} al año. Los precios incluyen IVA."
   },
+  "284746f1451a5681": {
+    "en": "The protein reference follows the instance's reference values.",
+    "path": "releases:v0_50_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La referencia de proteínas sigue los valores de referencia de la instancia."
+  },
   "2855609a5d65723c": {
     "en": "Try again",
     "path": "common:errors.tryAgain",
@@ -3330,6 +3351,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "es": "Se ha omitido {{count}} pesaje: ese día ya tiene un pesaje en tu registro de peso de openplate."
+  },
+  "28cf26db7a86791c": {
+    "en": "Quadlet units read every setting from an env file you own.",
+    "path": "releases:v0_50_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Las unidades de Quadlet leen cada ajuste desde un archivo env de tu propiedad."
   },
   "28e04c0b74714979": {
     "en": "Welcome to openplate",
@@ -3883,6 +3911,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Hablar"
+  },
+  "328f4cadfd3f36cf": {
+    "en": "Connect with OpenRouter says it needs HTTPS on a plain-http page.",
+    "path": "releases:v0_50_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Conectar con OpenRouter indica que necesita HTTPS en una página http sin cifrar."
   },
   "32c577b81000f923": {
     "en": "Going over a goal is a number in amber. It is never a mark against you.",
@@ -4605,6 +4640,13 @@
     "at": "2026-09-14",
     "es": "Decidir más tarde"
   },
+  "3cb12a047f87e434": {
+    "en": "Sign-up and a one-time screen ask for consent to health data.",
+    "path": "releases:v0_50_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "El registro y una pantalla inicial piden el consentimiento para los datos de salud."
+  },
   "3cf86f13c5ce0b34": {
     "en": "Your daily catch-up · openplate",
     "path": "common:meta.catchUp",
@@ -4821,6 +4863,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Te invitaron como {{email}}."
+  },
+  "3fe515411406e66f": {
+    "en": "A second join link in the same tab replaces the first.",
+    "path": "releases:v0_50_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Un segundo enlace para unirse en la misma pestaña sustituye al primero."
   },
   "3fe56bb1ff389801": {
     "en": "Analyze",
@@ -5459,6 +5508,13 @@
     "at": "2026-09-14",
     "es": "Las fotos de tu comida se enviarán a través de {{origin}} para su análisis."
   },
+  "490b46be5e2ef5dc": {
+    "en": "The add sheet stays open when the screen changes underneath.",
+    "path": "releases:v0_50_0.fixed.14",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La hoja para añadir permanece abierta cuando la pantalla de fondo cambia."
+  },
   "490bc77d686d2f54": {
     "en": "A sample day, not your data.",
     "path": "common:landing.hero.shotCaption",
@@ -5837,6 +5893,13 @@
     "at": "2026-09-20",
     "es": "Nuevo"
   },
+  "4def761db6c283de": {
+    "en": "The scan screen says where a photo goes on a managed instance.",
+    "path": "releases:v0_50_0.fixed.20",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La pantalla de escaneo indica adónde va una foto en una instancia administrada."
+  },
   "4df198cf47c2acb8": {
     "en": "Save start time",
     "path": "common:fasting.active.adjustSave",
@@ -6144,6 +6207,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este dispositivo guardó datos por primera vez el {{date}}."
+  },
+  "5154cb757f425fd6": {
+    "en": "Account pages say that accounts need HTTPS.",
+    "path": "releases:v0_50_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Las páginas de la cuenta indican que las cuentas necesitan HTTPS."
   },
   "515b0f1ad96dcbaf": {
     "en": "Weigh-ins from YAZIO",
@@ -6809,6 +6879,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Progreso · openplate"
+  },
+  "58f787739b71f8f3": {
+    "en": "An instance that sells plans locks the app once the free trial is over.",
+    "path": "releases:v0_50_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Una instancia que vende planes bloquea la app en cuanto termina la prueba gratuita."
   },
   "590800b154e9d38a": {
     "en": "Loading your progress…",
@@ -8028,6 +8105,13 @@
     "at": "2026-09-14",
     "es": "Has leído la nota para ayunos de 24 horas o más."
   },
+  "689512a86d45c30e": {
+    "en": "The diary stops offering plans once you have paid.",
+    "path": "releases:v0_50_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "El diario deja de ofrecer planes en cuanto has pagado."
+  },
   "689c17a73602d175": {
     "en": "To update, pull the new image and restart the server. There is no update button in the app.",
     "path": "common:about.updates.behindWho",
@@ -8161,6 +8245,13 @@
     "at": "2026-09-14",
     "es": "Descargar la cohorte como CSV"
   },
+  "6a2aae82d31b92ff": {
+    "en": "Healthchecks report healthy under podman-compose.",
+    "path": "releases:v0_50_0.fixed.10",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Las comprobaciones de estado notifican un estado correcto bajo podman-compose."
+  },
   "6a33aef59381ec59": {
     "en": "Change password",
     "path": "common:sync.changePassphrase.open",
@@ -8174,6 +8265,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{value}} calorías"
+  },
+  "6a416f2b04e0e8f4": {
+    "en": "A managed instance says plainly that its operator can read your diary.",
+    "path": "releases:v0_50_0.fixed.18",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Una instancia administrada indica claramente que su operador puede leer tu diario."
   },
   "6a42a5e820499cce": {
     "en": "Time span",
@@ -8671,6 +8769,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Eliminar"
+  },
+  "70f4f441825dc5a9": {
+    "en": "The app opens offline after one visit without loading forever.",
+    "path": "releases:v0_50_0.fixed.13",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La app se abre sin conexión tras una visita sin quedarse cargando indefinidamente."
   },
   "710fbab287e4f7ad": {
     "en": "Current password",
@@ -9945,6 +10050,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Apuntarme"
+  },
+  "7f22827704b6aab8": {
+    "en": "The join page notices when another user is signed in.",
+    "path": "releases:v0_50_0.fixed.11",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La página para unirse detecta si hay otra sesión de usuario iniciada."
   },
   "7f23c891cbe59bac": {
     "en": "Save changes",
@@ -11962,6 +12074,13 @@
     "at": "2026-09-14",
     "es": "En iPhone, añade primero openplate a la pantalla de inicio."
   },
+  "97b2535986cb0a20": {
+    "en": "The OpenRouter callback explains that it needs an HTTPS connection.",
+    "path": "releases:v0_50_0.fixed.12",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La retrollamada de OpenRouter explica que necesita una conexión HTTPS."
+  },
   "97b83e3d2490b3ea": {
     "en": "Insights",
     "path": "common:trends.title",
@@ -11982,6 +12101,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Datos y copia de seguridad"
+  },
+  "9811183d07795c76": {
+    "en": "Sign-up on a paid instance states the price and keeps the chosen plan.",
+    "path": "releases:v0_50_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "El registro en una instancia de pago indica el precio y conserva el plan elegido."
   },
   "98537aa6ec449d48": {
     "en": "Connecting with OpenRouter requires a secure connection",
@@ -12494,6 +12620,13 @@
     "at": "2026-09-14",
     "es": "Las cantidades de referencia se agrupan en rangos de edad amplios, así que solo necesitamos el año, nunca tu fecha de nacimiento completa."
   },
+  "9e25a677df1f93e4": {
+    "en": "Visit counting honours Do Not Track, and you can switch it off.",
+    "path": "releases:v0_50_0.fixed.19",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "El recuento de visitas respeta Do Not Track, y puedes desactivarlo."
+  },
   "9e4237451c87f348": {
     "en": "Use a custom model ID instead",
     "path": "common:settingsAi.model.customToggle",
@@ -12913,6 +13046,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Los gramos deben ser más de 0"
+  },
+  "a3a8796fef4b07c0": {
+    "en": "The sync compose files pass the admin token and the link addresses on.",
+    "path": "releases:v0_50_0.fixed.09",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Los archivos compose de sincronización transmiten el token de administración y las direcciones de enlace."
   },
   "a3c8397a0c19c2a3": {
     "en": "This gateway says it can review what you send",
@@ -13347,6 +13487,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tamaño de la ración (g)"
+  },
+  "a8e9b88246dcf14f": {
+    "en": "A server started from source with only its .env file serves pages again.",
+    "path": "releases:v0_50_0.fixed.17",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Un servidor iniciado desde el código fuente solo con su archivo .env vuelve a servir páginas."
   },
   "a8f10a9badee32c4": {
     "en": "Activity",
@@ -14468,6 +14615,20 @@
     "at": "2026-09-14",
     "es": "Sobre ti · openplate"
   },
+  "b7e5dba00de7e5b8": {
+    "en": "The free scans line fits a phone in every language.",
+    "path": "releases:v0_50_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La línea de escaneos gratuitos cabe en un teléfono en todos los idiomas."
+  },
+  "b80189293bc6c2f8": {
+    "en": "Forgot password sends its request again.",
+    "path": "releases:v0_50_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La opción de contraseña olvidada vuelve a enviar su solicitud."
+  },
   "b80d8a8ff1e88263": {
     "en": "Updates",
     "path": "common:about.updates.title",
@@ -14957,6 +15118,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "es": "Se han agotado tus {{count}} escaneos gratis con IA"
+  },
+  "bf207f529865e4d7": {
+    "en": "The key repair after sign-in no longer promises a recovery code.",
+    "path": "releases:v0_50_0.fixed.21",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La reparación de claves tras iniciar sesión ya no promete un código de recuperación."
   },
   "bf26b6792b9ceea7": {
     "en": "Weigh-in removed.",
@@ -17268,6 +17436,13 @@
     "at": "2026-09-14",
     "es": "Contraseña"
   },
+  "dce4cba996c06e01": {
+    "en": "The More panel stays open when the screen changes underneath.",
+    "path": "releases:v0_50_0.fixed.15",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "El panel Más permanece abierto cuando la pantalla de fondo cambia."
+  },
   "dd0efc69da2f55f9": {
     "en": "{{day}}, logged, not graded",
     "path": "common:dashboard.ridge.day.logged",
@@ -17288,6 +17463,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "hasta {{value}} más"
+  },
+  "dd6ef681eccc77a1": {
+    "en": "A managed instance no longer sends members to AI settings.",
+    "path": "releases:v0_50_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Una instancia administrada ya no dirige a los miembros a los ajustes de IA."
   },
   "dd772ccc16ef3697": {
     "en": "{{count}} foods that would close the fiber gap",
@@ -18296,6 +18478,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Terminar este ayuno"
+  },
+  "e9c014ad122c4ebf": {
+    "en": "The plan page shows one answer after a slow payment.",
+    "path": "releases:v0_50_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "La página del plan muestra una única respuesta tras un pago lento."
   },
   "e9c94a1c2fc9938e": {
     "en": "Your account is suspended. Ask your administrator.",

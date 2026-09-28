@@ -1,4 +1,40 @@
 {
+  "v0_50_0": {
+    "date": "2026-09-28",
+    "added": {
+      "01": "An instance that sells plans locks the app once the free trial is over.",
+      "02": "Sign-up on a paid instance states the price and keeps the chosen plan.",
+      "03": "Sign-up and a one-time screen ask for consent to health data."
+    },
+    "changed": {
+      "01": "The protein reference follows the instance's reference values.",
+      "02": "Every compose file reads its settings from the env file.",
+      "03": "Quadlet units read every setting from an env file you own."
+    },
+    "fixed": {
+      "10": "Healthchecks report healthy under podman-compose.",
+      "11": "The join page notices when another user is signed in.",
+      "12": "The OpenRouter callback explains that it needs an HTTPS connection.",
+      "13": "The app opens offline after one visit without loading forever.",
+      "14": "The add sheet stays open when the screen changes underneath.",
+      "15": "The More panel stays open when the screen changes underneath.",
+      "16": "A logged food no longer reopens on the search screen.",
+      "17": "A server started from source with only its .env file serves pages again.",
+      "18": "A managed instance says plainly that its operator can read your diary.",
+      "19": "Visit counting honours Do Not Track, and you can switch it off.",
+      "20": "The scan screen says where a photo goes on a managed instance.",
+      "21": "The key repair after sign-in no longer promises a recovery code.",
+      "01": "The plan page shows one answer after a slow payment.",
+      "02": "The diary stops offering plans once you have paid.",
+      "03": "The free scans line fits a phone in every language.",
+      "04": "Account pages say that accounts need HTTPS.",
+      "05": "Forgot password sends its request again.",
+      "06": "A second join link in the same tab replaces the first.",
+      "07": "A managed instance no longer sends members to AI settings.",
+      "08": "Connect with OpenRouter says it needs HTTPS on a plain-http page.",
+      "09": "The sync compose files pass the admin token and the link addresses on."
+    }
+  },
   "v0_49_1": {
     "date": "2026-09-26",
     "changed": {
@@ -14,17 +50,6 @@
     "changed": {
       "01": "The diary, Overview and Pantry lead with a large photo button.",
       "02": "The logo at the top left shows that it opens a menu."
-    }
-  },
-  "v0_48_0": {
-    "date": "2026-09-25",
-    "changed": {
-      "01": "The logo at the top left opens the More menu.",
-      "02": "More now holds Settings.",
-      "03": "The add panel leads with a large photo button."
-    },
-    "fixed": {
-      "01": "A closed More menu stays closed."
     }
   }
 }

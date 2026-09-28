@@ -1,4 +1,40 @@
 {
+  "v0_50_0": {
+    "date": "2026-09-28",
+    "added": {
+      "01": "Un'istanza che vende piani blocca l'app una volta terminata la prova gratuita.",
+      "02": "La registrazione su un'istanza a pagamento indica il prezzo e mantiene il piano scelto.",
+      "03": "La registrazione e una schermata iniziale chiedono il consenso per i dati sanitari."
+    },
+    "changed": {
+      "01": "Il riferimento per le proteine segue i valori di riferimento dell'istanza.",
+      "02": "Ogni file compose legge le proprie impostazioni dal file env.",
+      "03": "Le unità Quadlet leggono ogni impostazione da un file env di tua proprietà."
+    },
+    "fixed": {
+      "10": "I controlli dello stato di salute indicano healthy con podman-compose.",
+      "11": "La pagina per unirsi rileva se un altro utente ha effettuato l'accesso.",
+      "12": "Il callback di OpenRouter spiega che richiede una connessione HTTPS.",
+      "13": "L'app si apre offline dopo una sola visita, senza caricare all'infinito.",
+      "14": "Il riquadro di aggiunta resta aperto quando la schermata sottostante cambia.",
+      "15": "Il pannello Altro resta aperto quando la schermata sottostante cambia.",
+      "16": "Un alimento registrato non si riapre più nella schermata di ricerca.",
+      "17": "Un server avviato dal codice sorgente solo con il suo file .env serve di nuovo le pagine.",
+      "18": "Un'istanza gestita dichiara chiaramente che il suo gestore può leggere il tuo diario.",
+      "19": "Il conteggio delle visite rispetta il Do Not Track, e puoi disattivarlo.",
+      "20": "La schermata di scansione indica dove finisce una foto su un'istanza gestita.",
+      "21": "Il ripristino delle chiavi dopo l'accesso non promette più un codice di recupero.",
+      "01": "La pagina del piano mostra una sola risposta dopo un pagamento lento.",
+      "02": "Il diario smette di proporre piani dopo che hai pagato.",
+      "03": "La riga delle scansioni gratuite entra nello schermo di un telefono in tutte le lingue.",
+      "04": "Le pagine dell'account indicano che gli account richiedono HTTPS.",
+      "05": "Password dimenticata invia di nuovo la richiesta.",
+      "06": "Un secondo link per unirsi aperto nella stessa scheda sostituisce il primo.",
+      "07": "Un'istanza gestita non rimanda più i membri alle impostazioni dell'IA.",
+      "08": "Connettiti con OpenRouter indica che richiede HTTPS se la pagina è in semplice HTTP.",
+      "09": "I file compose di sincronizzazione trasmettono il token di amministrazione e gli indirizzi dei link."
+    }
+  },
   "v0_49_1": {
     "date": "2026-09-26",
     "changed": {
@@ -14,17 +50,6 @@
     "changed": {
       "01": "Il diario, Panoramica e Dispensa si aprono con un grande pulsante per la foto.",
       "02": "Il logo in alto a sinistra indica che apre un menu."
-    }
-  },
-  "v0_48_0": {
-    "date": "2026-09-25",
-    "changed": {
-      "01": "Il logo in alto a sinistra apre il menu Altro.",
-      "02": "Altro ora include Impostazioni.",
-      "03": "Il pannello di aggiunta si apre con un pulsante grande per la foto."
-    },
-    "fixed": {
-      "01": "Un menu Altro chiuso rimane chiuso."
     }
   }
 }
