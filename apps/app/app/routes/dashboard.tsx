@@ -39,6 +39,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 import { Link } from '#app/components/link';
+import { CONFIG } from '#app/config';
 import {
   computeDailyTotals,
   computeDailyTotalsInRange,
@@ -62,6 +63,7 @@ import {
   selectMissingReferenceDate,
 } from '#app/models/body-metrics';
 import { resolveAdherenceGoals } from '#app/lib/adherence-goals';
+import { readNutrientReferenceBasis } from '#app/lib/nutrient-reference-basis-client';
 import type { MissingReferenceDate } from '#app/lib/macro-gaps';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { fromKg, roundWeightForDisplay, formatKgForDisplay } from '#app/lib/weight-units';
@@ -150,11 +152,14 @@ const GLANCE_CONTENT_CLASS = 'p-4 pt-0 sm:p-6 sm:pt-0';
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * No server work. Present so an offline client-side navigation resolves without
- * a `.data` fetch, matching `/diary` and `/trends`.
+ * The two facts the protein reference needs from this server: the sync server
+ * to ask for the instance's basis, and this server's own basis
+ * (M263/04). The client loader asks for them once per tab at most, through
+ * `readNutrientReferenceBasis`; after that an offline client-side navigation
+ * still resolves without a `.data` fetch, matching `/diary` and `/trends`.
  */
 export async function loader() {
-  return {};
+  return { syncServerUrl: CONFIG.sync.syncServerUrl, nutrientReferenceBasis: CONFIG.nutrients.referenceBasis };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -251,7 +256,7 @@ function dismissInsightsHintOnDevice(): void {
   dismissInsightsHint(globalThis.localStorage);
 }
 
-export async function clientLoader(): Promise<DashboardData> {
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs): Promise<DashboardData> {
   const profile = await getLocalProfileGoals();
   const timezone = resolveLocalTimezone(profile);
   const today = todayInTimezone(timezone);
@@ -304,6 +309,12 @@ export async function clientLoader(): Promise<DashboardData> {
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
+    birthYear: bodyMetrics.birthYear,
+    currentYear: Number(today.slice(0, 4)),
+    // The instance's basis, resolved as the vitamin and mineral rows resolve
+    // theirs (`nutrient-reference-basis-client.ts`): DGE by age and sex, or
+    // EFSA's 0.83 g/kg.
+    nutrientReferenceBasis: await readNutrientReferenceBasis(serverLoader),
   }).grams;
 
   // The grid's own window: 13 whole Monday to Sunday columns, selected through

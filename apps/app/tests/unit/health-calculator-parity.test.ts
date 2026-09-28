@@ -8,8 +8,12 @@
  * constant or a rounding step changed here fails this test, and the site cannot silently disagree
  * with the app about one person's kcal or protein.
  *
- * Nothing here imports the website. The BMI and water values are the site's own, from WHO and EFSA;
+ * Nothing here imports the website. The BMI and water values are the site's own, from WHO and DGE;
  * the app has no function for either, so the table carries none.
+ *
+ * The protein reference is the one the app shows under the DGE basis, the default (M263/04): DGE
+ * g/kg by age and sex, on the weight at BMI 25 when the weigh-in is above it. A row marked `appOnly`
+ * adds a pregnancy, which the site does not ask about, so only this side runs it.
  *
  * The site asks for an age, the app stores a birth year. `deriveAgeYears` is `currentYear -
  * birthYear`, so `birthYear = currentYear - ageYears` gives back exactly the age the site used. The
@@ -35,9 +39,12 @@ import {
 import type { EnergyEstimateInput } from '../../app/models/body-metrics';
 import { applyEatingStyle } from '../../app/lib/eating-style';
 import type { BiologicalSex } from '../../app/lib/local-store/schema';
+import type { Trimester } from '../../app/lib/reproductive-stage';
 
 interface ParityRow {
   readonly name: string;
+  /** Set on a row whose input the site does not ask for; only this repository runs it. */
+  readonly appOnly?: true;
   readonly input: {
     readonly weightKg: number | null;
     readonly heightCm: number | null;
@@ -45,6 +52,8 @@ interface ParityRow {
     readonly ageYears: number | null;
     readonly activityLevel: string;
     readonly activityFactor: number;
+    /** A pregnancy in this trimester, on an `appOnly` row. Absent means neither pregnant nor lactating. */
+    readonly pregnancyTrimester?: Trimester;
   };
   readonly expected: {
     readonly bmrKcal: number | null;
@@ -99,6 +108,26 @@ describe('the parity table', () => {
     assert.ok(TABLE.rows.some((row) => row.expected.proteinReferenceG === null), 'a row expects no protein answer');
   });
 
+  it('covers every DGE protein case the site and the app must agree on (M263/04)', () => {
+    const has = (test: (input: ParityRow['input']) => boolean): boolean => TABLE.rows.some((row) => test(row.input));
+    assert.ok(has(({ ageYears }) => ageYears !== null && ageYears >= 65), 'a row at 65 or older, DGE 1.0 g/kg');
+    for (const sex of ['female', 'male'] as const) {
+      assert.ok(
+        has((input) => input.sex === sex && input.ageYears !== null && input.ageYears >= 15 && input.ageYears < 19),
+        `a ${sex} row between 15 and 18`,
+      );
+    }
+    assert.ok(has(({ ageYears }) => ageYears === 14), 'a row at 14, the 13 to 15 band');
+    assert.ok(
+      has(({ weightKg, heightCm }) => weightKg !== null && heightCm !== null && weightKg / (heightCm / 100) ** 2 > 25),
+      'a row above BMI 25 with a known height',
+    );
+    assert.ok(
+      TABLE.rows.some((row) => row.appOnly === true && row.input.pregnancyTrimester !== undefined),
+      'a pregnant row the app alone runs',
+    );
+  });
+
   it('gives the site default level the one fixed factor of the app', () => {
     const defaultRows = TABLE.rows.filter((row) => row.input.activityLevel === SITE_DEFAULT_LEVEL);
     assert.ok(defaultRows.length > 0, 'the table has rows at the site default level');
@@ -119,14 +148,19 @@ describe('the app gives the numbers openplate.de copied', () => {
         assert.equal(suggestDailyKcal(energy), row.expected.dailyKcal, 'daily kcal at the app default');
       }
 
-      // The reference protein a person with a weigh-in sees, neither pregnant nor lactating. The
-      // site answers only from a weight, so its "no answer" is the app not using a weigh-in.
+      // The reference protein a person with a weigh-in sees under the DGE basis, the default. The
+      // site answers only from a weight, so its "no answer" is the app not using a weigh-in. Only an
+      // `appOnly` row is pregnant; the site has no pregnancy field.
+      const { pregnancyTrimester } = row.input;
       const reference = computeReferenceProteinFloor({
         latestWeighInKg: row.input.weightKg,
         heightCm: energy.heightCm,
         biologicalSex: row.input.sex,
-        reproductiveStatus: null,
-        trimester: null,
+        birthYear: energy.birthYear,
+        currentYear: CURRENT_YEAR,
+        nutrientReferenceBasis: 'dge',
+        reproductiveStatus: pregnancyTrimester === undefined ? null : 'pregnant',
+        trimester: pregnancyTrimester ?? null,
         lactationMonths: null,
       });
       const referenceG = reference.basis === 'weigh-in' ? reference.grams : null;

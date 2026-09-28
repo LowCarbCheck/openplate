@@ -413,6 +413,11 @@ export const CONFIG = {
    * on screen by its own `source` string. `/api/nutrients?basis=` overrides it
    * per request; see that route for why a typo there is a 400 rather than a
    * quiet fall back to this default.
+   *
+   * The protein reference follows it too (M263/04): DGE's table under `dge`,
+   * EFSA's 0.83 g/kg under the other two. That figure is computed in the
+   * browser, so the routes that show it publish this value through their own
+   * server loaders (`nutrient-reference-basis-client.ts`).
    */
   nutrients: {
     referenceBasis: parseNutrientReferenceBasis(process.env.NUTRIENT_REFERENCE_BASIS),

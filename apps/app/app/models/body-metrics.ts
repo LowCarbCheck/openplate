@@ -32,6 +32,9 @@ import type { Trimester } from '#app/lib/reproductive-stage';
 import { MAX_WEEKS_AHEAD, resolveGestation } from '#app/lib/reproductive-stage';
 import { parseDateParam } from '#app/lib/user-days';
 import type { MissingReferenceDate } from '#app/lib/macro-gaps';
+// Type only: `nutrient-reference.ts` imports this module for its age bands, and
+// an erased import cannot close that loop at runtime.
+import type { NutrientReferenceBasis } from '#app/lib/nutrient-reference';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shape
@@ -830,16 +833,101 @@ export function suggestProteinFloor(input: ProteinFloorSuggestionInput): Protein
  *
  * Never substitute one for the other: swapping them would either double a
  * beginner's floor overnight or halve the suggestion an athlete asked for.
+ *
+ * ── Whose reference, DGE or EFSA ─────────────────────────────────────────
+ *
+ * The population reference follows the instance's nutrient reference basis
+ * (`NutrientReferenceBasis`, M263/04), the same setting the vitamin and mineral
+ * rows follow. Under `dge`, the default, it is the DGE table below: by age and
+ * sex, on normal weight, with DGE's own pregnancy and lactation additions.
+ * Under `efsa` and `us` it is EFSA's 0.83 g/kg with EFSA's additions, exactly as
+ * before M263. The US basis has no protein figure of its own here, so it keeps
+ * the EFSA one it always had.
  */
 
 /**
  * EFSA's population reference intake for protein in adults, in grams per
- * kilogram of body weight per day.
+ * kilogram of body weight per day. Used under the `efsa` and `us` bases.
  *
  * Source: EFSA Panel on Dietetic Products, Nutrition and Allergies, "Scientific
  * Opinion on Dietary Reference Values for protein", EFSA Journal 2012;10(2):2557.
  */
 export const EFSA_PROTEIN_REFERENCE_G_PER_KG = 0.83;
+
+/**
+ * One DGE age band for protein: the ages it covers, in whole years, and its
+ * grams per kilogram of body weight per day for each sex.
+ */
+export interface DgeProteinBand {
+  /** First age in the band, inclusive. */
+  fromAge: number;
+  /** First age past the band, or `null` for the open-ended last band. */
+  belowAge: number | null;
+  female: number;
+  male: number;
+}
+
+/**
+ * The DGE reference values for protein, in grams per kilogram of body weight
+ * per day, from 13 years up. The value for 65 and older is a DGE "Schätzwert",
+ * an estimate rather than a derived recommendation; the app uses it the same way.
+ *
+ * Source: Deutsche Gesellschaft für Ernährung, Referenzwerte für die
+ * Nährstoffzufuhr, Protein, https://www.dge.de/wissenschaft/referenzwerte/protein/ ,
+ * "Stand Ableitung: 2017", read 2026-09-28.
+ */
+export const DGE_PROTEIN_BANDS = [
+  { fromAge: 13, belowAge: 15, female: 0.9, male: 0.9 },
+  { fromAge: 15, belowAge: 19, female: 0.8, male: 0.9 },
+  { fromAge: 19, belowAge: 65, female: 0.8, male: 0.8 },
+  { fromAge: 65, belowAge: null, female: 1.0, male: 1.0 },
+] as const satisfies readonly DgeProteinBand[];
+
+/**
+ * The DGE adult value, 19 to under 65, in grams per kilogram per day. It is also
+ * the value for a person with no age on file: nothing about them says they are
+ * anything but an adult. Source: the DGE protein page, as above.
+ */
+export const DGE_PROTEIN_ADULT_G_PER_KG = 0.8;
+
+/**
+ * The BMI above which DGE says to use normal weight instead of actual weight.
+ *
+ * DGE, footnote a of the protein table: "Die Angaben beziehen sich auf
+ * Normalgewicht; bei Übergewicht (BMI > 25 kg/m² bei Erwachsenen) sollte das
+ * Normalgewicht für die Berechnung zugrunde gelegt werden." Normal weight for a
+ * BMI over 25 is taken as the weight at BMI 25 for the person's own height: the
+ * top of the normal range, so the figure does not jump at the border (M263/04).
+ * The same limit applies to every age, because the app has no percentile table
+ * for teenagers and BMI 25 is a generous limit below 19.
+ *
+ * Source: https://www.dge.de/wissenschaft/referenzwerte/protein/ , "Stand
+ * Ableitung: 2017". DGE uses the WHO classes, where overweight starts at 25.
+ */
+export const DGE_NORMAL_WEIGHT_BMI_LIMIT = 25;
+
+/**
+ * Grams of protein DGE adds for pregnancy, one figure per trimester. The first
+ * trimester adds nothing. With no due date on file, T3 applies, for the same
+ * reason the EFSA fallback takes T3 (see `EFSA_PREGNANCY_T1_PROTEIN_ADDITION_G`).
+ *
+ * Source: https://www.dge.de/wissenschaft/referenzwerte/protein/ , "Stand
+ * Ableitung: 2017", read 2026-09-28.
+ */
+export const DGE_PREGNANCY_T1_PROTEIN_ADDITION_G = 0;
+/** Grams of protein DGE adds in the second trimester. See the T1 constant for the source. */
+export const DGE_PREGNANCY_T2_PROTEIN_ADDITION_G = 7;
+/** Grams of protein DGE adds in the third trimester, and the no-due-date fallback. See the T1 constant for the source. */
+export const DGE_PREGNANCY_T3_PROTEIN_ADDITION_G = 21;
+
+/**
+ * Grams of protein DGE adds while breastfeeding. DGE publishes one figure, not
+ * one per period, so the month count does not change it.
+ *
+ * Source: https://www.dge.de/wissenschaft/referenzwerte/protein/ , "Stand
+ * Ableitung: 2017", read 2026-09-28.
+ */
+export const DGE_LACTATION_PROTEIN_ADDITION_G = 23;
 
 /**
  * The food-labelling reference intake for protein, in grams per day. This is
@@ -954,19 +1042,104 @@ export interface ReproductiveStageInput {
   lactationMonths: number | null;
 }
 
-/** Everything the reference floor reads: the last weigh-in, Devine's two fields, and the resolved reproductive stage. */
+/**
+ * Everything the reference floor reads: the last weigh-in, Devine's two fields,
+ * the birth year, the resolved reproductive stage, and whose reference values
+ * the instance shows.
+ */
 export interface ReferenceProteinFloorInput extends IdealWeightInput, ReproductiveStageInput {
   latestWeighInKg: number | null;
+  /**
+   * The instance's nutrient reference basis. REQUIRED, with no default here:
+   * a caller that does not know it must resolve it the way the vitamin and
+   * mineral rows do, never guess one.
+   */
+  nutrientReferenceBasis: NutrientReferenceBasis;
+  /** The stored birth year. Only the `dge` basis reads it, for the age band. */
+  birthYear: number | null;
+  /** The year to age the person against, never read from a clock here. */
+  currentYear: number;
 }
 
 /**
- * The pregnancy or lactation protein addition in grams, or zero when the person
- * is neither.
+ * DGE grams of protein per kilogram for one age and sex.
+ *
+ * With no age the adult value applies. Between 15 and 18 with no sex the higher
+ * of the two values applies, because this figure is a floor. An age below the
+ * first band cannot arrive from `deriveAgeYears`, which starts at 14; should it
+ * arrive, it is treated like no age.
+ *
+ * @param input - the age in whole years and the sex, either possibly null.
+ * @returns grams per kilogram of body weight per day.
+ */
+export function selectDgeProteinGPerKg({
+  ageYears,
+  biologicalSex,
+}: {
+  ageYears: number | null;
+  biologicalSex: BiologicalSex | null;
+}): number {
+  if (ageYears === null) return DGE_PROTEIN_ADULT_G_PER_KG;
+  const band = DGE_PROTEIN_BANDS.find(
+    ({ fromAge, belowAge }) => ageYears >= fromAge && (belowAge === null || ageYears < belowAge),
+  );
+  if (band === undefined) return DGE_PROTEIN_ADULT_G_PER_KG;
+  if (biologicalSex === null) return Math.max(band.female, band.male);
+  return band[biologicalSex];
+}
+
+/**
+ * The weight at `DGE_NORMAL_WEIGHT_BMI_LIMIT` for a height, in kilograms, or
+ * `null` when the height is unknown or not a usable number.
+ *
+ * @param heightCm - the stored height in centimetres.
+ * @returns kilograms at BMI 25, or `null`.
+ */
+function normalWeightLimitKg(heightCm: number | null): number | null {
+  if (heightCm === null || !Number.isFinite(heightCm) || heightCm <= 0) return null;
+  const heightM = heightCm / 100;
+  return DGE_NORMAL_WEIGHT_BMI_LIMIT * heightM * heightM;
+}
+
+/**
+ * The body mass DGE scales protein by: the actual weight, or the weight at BMI
+ * 25 when the actual weight is above it and the height is known.
+ *
+ * @param input - the weigh-in and the stored height.
+ * @returns kilograms.
+ */
+function dgeProteinMassKg({ weightKg, heightCm }: { weightKg: number; heightCm: number | null }): number {
+  const limitKg = normalWeightLimitKg(heightCm);
+  if (limitKg === null) return weightKg;
+  return Math.min(weightKg, limitKg);
+}
+
+/**
+ * The DGE pregnancy or lactation protein addition in grams, or zero when the
+ * person is neither.
+ *
+ * @param stage - the status plus the resolved trimester; DGE has one lactation figure, so the month count is not read.
+ * @returns whole grams to add on top of the reference basis.
+ */
+function dgeProteinAdditionFor(stage: ReproductiveStageInput): number {
+  if (stage.reproductiveStatus === 'pregnant') {
+    if (stage.trimester === 1) return DGE_PREGNANCY_T1_PROTEIN_ADDITION_G;
+    if (stage.trimester === 2) return DGE_PREGNANCY_T2_PROTEIN_ADDITION_G;
+    // T3, and the no-due-date fallback: the largest figure of the three.
+    return DGE_PREGNANCY_T3_PROTEIN_ADDITION_G;
+  }
+  if (stage.reproductiveStatus === 'lactating') return DGE_LACTATION_PROTEIN_ADDITION_G;
+  return 0;
+}
+
+/**
+ * The EFSA pregnancy or lactation protein addition in grams, or zero when the
+ * person is neither.
  *
  * @param stage - the status plus the resolved trimester or month count, either of which may be null.
  * @returns whole grams to add on top of the reference basis.
  */
-function proteinAdditionFor(stage: ReproductiveStageInput): number {
+function efsaProteinAdditionFor(stage: ReproductiveStageInput): number {
   if (stage.reproductiveStatus === 'pregnant') {
     if (stage.trimester === 1) return EFSA_PREGNANCY_T1_PROTEIN_ADDITION_G;
     if (stage.trimester === 2) return EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G;
@@ -1071,16 +1244,55 @@ export function selectMissingReferenceDate(stage: ReproductiveStageInput): Missi
  * 3. `EU_PROTEIN_REFERENCE_INTAKE_G`, the flat labelling figure, for a person
  *    who gave neither.
  *
+ * The order is the same under every basis. What the basis changes is the
+ * factor and the additions:
+ * - `dge`: `selectDgeProteinGPerKg` by age and sex, on the weigh-in capped at
+ *   the weight for BMI 25 when the height is known (`DGE_NORMAL_WEIGHT_BMI_LIMIT`),
+ *   or on the Devine mass, which is a normal weight already. DGE additions.
+ *   Source: https://www.dge.de/wissenschaft/referenzwerte/protein/ , "Stand
+ *   Ableitung: 2017".
+ * - `efsa` and `us`: `EFSA_PROTEIN_REFERENCE_G_PER_KG` on the weigh-in or the
+ *   Devine mass, whatever the age. EFSA additions.
+ * The labelling figure takes no factor under any basis, only the addition.
+ *
  * The pregnancy or lactation addition applies on top of whichever basis won, at
  * the figure for the stage the caller resolved. With no date to resolve one from,
  * it is the largest figure for the status, which is what this function did for
  * every pregnancy before a due date could be recorded.
  *
- * @param input - the latest weigh-in, height, sex and resolved reproductive stage, each field possibly null.
+ * @param input - the weigh-in, height, sex, birth year, resolved reproductive stage and reference basis.
  * @returns whole grams per day, and the basis, never null.
  */
 export function computeReferenceProteinFloor(input: ReferenceProteinFloorInput): ReferenceProteinFloor {
-  const additionG = proteinAdditionFor(input);
+  if (input.nutrientReferenceBasis === 'dge') return computeDgeProteinFloor(input);
+  return computeEfsaProteinFloor(input);
+}
+
+/** The `dge` branch of {@link computeReferenceProteinFloor}. */
+function computeDgeProteinFloor(input: ReferenceProteinFloorInput): ReferenceProteinFloor {
+  const additionG = dgeProteinAdditionFor(input);
+  const gramsPerKg = selectDgeProteinGPerKg({
+    ageYears: deriveAgeYears({ birthYear: input.birthYear, currentYear: input.currentYear }),
+    biologicalSex: input.biologicalSex,
+  });
+  const { latestWeighInKg } = input;
+
+  if (latestWeighInKg !== null && Number.isFinite(latestWeighInKg) && latestWeighInKg > 0) {
+    const massKg = dgeProteinMassKg({ weightKg: latestWeighInKg, heightCm: input.heightCm });
+    return { grams: Math.round(massKg * gramsPerKg + additionG), basis: 'weigh-in' };
+  }
+
+  const referenceMassKg = computeDevineIdealWeightKg(input);
+  if (referenceMassKg !== null) {
+    return { grams: Math.round(referenceMassKg * gramsPerKg + additionG), basis: 'height' };
+  }
+
+  return { grams: Math.round(EU_PROTEIN_REFERENCE_INTAKE_G + additionG), basis: 'labelling' };
+}
+
+/** The `efsa` and `us` branch of {@link computeReferenceProteinFloor}, unchanged since M206. */
+function computeEfsaProteinFloor(input: ReferenceProteinFloorInput): ReferenceProteinFloor {
+  const additionG = efsaProteinAdditionFor(input);
   const { latestWeighInKg } = input;
 
   if (latestWeighInKg !== null && Number.isFinite(latestWeighInKg) && latestWeighInKg > 0) {

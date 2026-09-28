@@ -29,6 +29,11 @@ import { getFormProps, useForm } from '@conform-to/react';
 import type { SubmissionResult } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { todayInTimezone } from '#app/lib/user-days';
+import { CONFIG } from '#app/config';
+import {
+  readNutrientReferenceBasis,
+  readRememberedNutrientReferenceBasis,
+} from '#app/lib/nutrient-reference-basis-client';
 import { redirectWithLocalToast } from '#app/lib/client-toast';
 import { trackGoalsSaved } from '#app/lib/matomo-events';
 import { selectGoalRings, storedTrackingFocusFor } from '#app/lib/goal-rings';
@@ -156,20 +161,27 @@ function makeGoalsSchema(t: Translate) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Server loader: none needed (M117/04, accounts optional and health data is
-// local-only, so there is no auth invariant left to enforce or echo here)
+// Server loader: two instance facts, and no health data (M117/04 keeps that local)
 //////////////////////////////////////////////////////////////////////////////
 
-/** No server work: this route's data comes entirely from the on-device primary store via `clientLoader`. */
+/**
+ * The two facts the reference protein needs from this server: the sync server
+ * to ask for the instance's basis, and this server's own basis (M263/04). Every
+ * goal on the page still comes from the on-device store via `clientLoader`.
+ */
 export async function loader() {
-  return {};
+  return { syncServerUrl: CONFIG.sync.syncServerUrl, nutrientReferenceBasis: CONFIG.nutrients.referenceBasis };
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // Client loader
 //////////////////////////////////////////////////////////////////////////////
 
-export async function clientLoader() {
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  // Settles the instance's reference basis for this tab. The style save below
+  // is a `clientAction`, which has no server loader to ask, so it reads the
+  // answer this leaves behind (`readRememberedNutrientReferenceBasis`).
+  await readNutrientReferenceBasis(serverLoader);
   const profile = await getLocalProfileGoals();
 
   const goals = {
@@ -327,6 +339,10 @@ async function _saveEatingStyle(formData: FormData) {
         reproductiveStatus: metrics.reproductiveStatus,
         trimester: resolveGestation({ dueDate: metrics.pregnancyDueDate, today })?.trimester ?? null,
         lactationMonths: resolveLactationMonths({ startDate: metrics.lactationStartDate, today }),
+        birthYear: metrics.birthYear,
+        currentYear: Number(today.slice(0, 4)),
+        // The basis this page's `clientLoader` settled for the tab.
+        nutrientReferenceBasis: readRememberedNutrientReferenceBasis(),
       }).grams
     : null;
 

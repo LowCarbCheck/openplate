@@ -37,6 +37,10 @@ import { clearHomeHint, writeHomeHint } from '#app/lib/home-entry';
 import { CONFIG } from '#app/config';
 import { isAnonymousStartAllowed } from '#app/lib/onboarding-gate';
 import { readInstancePolicy } from '#app/lib/read-instance-policy';
+import {
+  readNutrientReferenceBasis,
+  readRememberedNutrientReferenceBasis,
+} from '#app/lib/nutrient-reference-basis-client';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import {
@@ -184,7 +188,13 @@ const NEEDS_WEIGHT_PARAM = 'needsWeight';
  * has to be joined to it on the device. Hence the `serverLoader()` call there.
  */
 export async function loader() {
-  return { managed: CONFIG.instance.managed };
+  return {
+    managed: CONFIG.instance.managed,
+    // The two facts the reference protein needs (M263/04): the sync server to
+    // ask for the instance's basis, and this server's own basis.
+    syncServerUrl: CONFIG.sync.syncServerUrl,
+    nutrientReferenceBasis: CONFIG.nutrients.referenceBasis,
+  };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -219,7 +229,10 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   // called `managed` in `onboarding-gate.ts`; the value handed to it is the
   // answer to "does a person need an account before they can use this
   // instance at all", which is exactly what the branch below means.
-  const { requiresAccount } = await readInstancePolicy(serverLoader);
+  // ONE server read for both questions below, so a client-side navigation
+  // costs one `.data` fetch and not two.
+  const serverData = serverLoader();
+  const { requiresAccount } = await readInstancePolicy(() => serverData);
   const isAllowed = isAnonymousStartAllowed({
     managed: requiresAccount,
     hasProfile: profile !== null,
@@ -227,6 +240,10 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   });
   if (!isAllowed) throw redirect('/welcome');
   clearHomeHint();
+  // Settles the instance's reference basis for this tab. The style step saves
+  // in the `clientAction`, which has no server loader to ask, so `saveStyle`
+  // reads the answer this leaves behind.
+  await readNutrientReferenceBasis(() => serverData);
   const url = new URL(request.url);
   const step = parseOnboardingStep(url.searchParams.get('step'));
   const entries = await listLocalWeightEntries();
@@ -453,6 +470,10 @@ async function saveStyle(values: StyleStepValues): Promise<boolean> {
         latestWeighInKg: latestWeightKg,
         heightCm: bodyMetrics.heightCm,
         biologicalSex: bodyMetrics.biologicalSex,
+        birthYear: bodyMetrics.birthYear,
+        currentYear: Number(today.slice(0, 4)),
+        // The basis this route's `clientLoader` settled for the tab.
+        nutrientReferenceBasis: readRememberedNutrientReferenceBasis(),
       }).grams
     : null;
   const { patch, needsWeight } = applyEatingStyle({

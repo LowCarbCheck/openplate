@@ -28,6 +28,13 @@ import {
   EFSA_PREGNANCY_T3_PROTEIN_ADDITION_G,
   EFSA_PROTEIN_REFERENCE_G_PER_KG,
   EU_PROTEIN_REFERENCE_INTAKE_G,
+  DGE_LACTATION_PROTEIN_ADDITION_G,
+  DGE_NORMAL_WEIGHT_BMI_LIMIT,
+  DGE_PREGNANCY_T1_PROTEIN_ADDITION_G,
+  DGE_PREGNANCY_T2_PROTEIN_ADDITION_G,
+  DGE_PREGNANCY_T3_PROTEIN_ADDITION_G,
+  DGE_PROTEIN_ADULT_G_PER_KG,
+  DGE_PROTEIN_BANDS,
   computeBmrKcal,
   computeDevineIdealWeightKg,
   computeReferenceKcalAddition,
@@ -60,7 +67,8 @@ import {
   MAX_WEEKS_UNTIL_DUE_DATE,
   type BodyMetrics,
 } from '../../app/models/body-metrics';
-import type { ReproductiveStageInput } from '../../app/models/body-metrics';
+import type { ReferenceProteinFloorInput, ReproductiveStageInput } from '../../app/models/body-metrics';
+import type { BiologicalSex } from '../../app/lib/local-store/schema';
 import type { Trimester } from '../../app/lib/reproductive-stage';
 import { shiftDate } from '../../app/lib/user-days';
 
@@ -631,14 +639,22 @@ describe('the protein floor, from height and sex', () => {
  * exported constants, which is why the constants are imported rather than the
  * numbers being retyped.
  */
+/**
+ * The EFSA basis, for a person with no birth year on file. EFSA's 0.83 g/kg
+ * reads no age, so these cases keep the figures they had before M263/04.
+ */
+const EFSA_NO_AGE = { nutrientReferenceBasis: 'efsa', birthYear: null, currentYear: 2026 } as const;
+
 describe('computeReferenceProteinFloor', () => {
   const MALE_180 = { heightCm: 180, biologicalSex: 'male' } as const;
   /**
    * "No date on file": what every caller passed before a due date could be
    * recorded, and what a pregnancy or lactation with no date still passes today.
    * The stage-aware cases below pass a real trimester or month count instead.
+   * It also carries the EFSA basis with no age, the one figure this block pins
+   * (the DGE block further down pins the other).
    */
-  const NO_STAGE = { trimester: null, lactationMonths: null } as const;
+  const NO_STAGE = { trimester: null, lactationMonths: null, ...EFSA_NO_AGE } as const;
 
   it('scales the latest weigh-in by the EFSA reference intake', () => {
     // 82 kg x 0.83 = 68.06 g.
@@ -831,7 +847,13 @@ const BASE_G = 58;
 
 /** The reference floor for one 70 kg person, varying nothing but the resolved stage. */
 function floorGramsFor(stage: ReproductiveStageInput): number {
-  return computeReferenceProteinFloor({ ...stage, latestWeighInKg: 70, heightCm: null, biologicalSex: null }).grams;
+  return computeReferenceProteinFloor({
+    ...stage,
+    ...EFSA_NO_AGE,
+    latestWeighInKg: 70,
+    heightCm: null,
+    biologicalSex: null,
+  }).grams;
 }
 
 describe('computeReferenceProteinFloor across the reproductive stage', () => {
@@ -912,6 +934,211 @@ describe('computeReferenceProteinFloor across the reproductive stage', () => {
     );
     // CONTROL: 'none' still adds nothing at all, whatever the stage fields say.
     assert.equal(floorGramsFor({ reproductiveStatus: 'none', trimester: 3, lactationMonths: 1 }), BASE_G);
+  });
+});
+
+/**
+ * The DGE half of the reference floor (M263/04).
+ *
+ * Under the `dge` basis, the default, the factor comes from DGE's table by age
+ * and sex, the weigh-in is capped at the weight for BMI 25 when the height is
+ * known, and DGE's own pregnancy and lactation additions apply. Every figure is
+ * arithmetic from https://www.dge.de/wissenschaft/referenzwerte/protein/
+ * ("Stand Ableitung: 2017"). Ages are birth years against a fixed year, the way
+ * the app stores them.
+ */
+const DGE_YEAR = 2026;
+
+/** A DGE input for one person of a given age and sex, with a 70 kg weigh-in and nothing else on file. */
+function dgePerson({
+  ageYears,
+  biologicalSex,
+}: {
+  ageYears: number | null;
+  biologicalSex: BiologicalSex | null;
+}): ReferenceProteinFloorInput {
+  return {
+    nutrientReferenceBasis: 'dge',
+    birthYear: ageYears === null ? null : DGE_YEAR - ageYears,
+    currentYear: DGE_YEAR,
+    latestWeighInKg: 70,
+    heightCm: null,
+    biologicalSex,
+    reproductiveStatus: null,
+    trimester: null,
+    lactationMonths: null,
+  };
+}
+
+/** The DGE floor in grams for a 70 kg person of a given age and sex. */
+function dgeGramsAt(ageYears: number | null, biologicalSex: BiologicalSex | null): number {
+  return computeReferenceProteinFloor(dgePerson({ ageYears, biologicalSex })).grams;
+}
+
+describe('computeReferenceProteinFloor under the DGE basis', () => {
+  it('carries the DGE table as published', () => {
+    assert.deepEqual(DGE_PROTEIN_BANDS, [
+      { fromAge: 13, belowAge: 15, female: 0.9, male: 0.9 },
+      { fromAge: 15, belowAge: 19, female: 0.8, male: 0.9 },
+      { fromAge: 19, belowAge: 65, female: 0.8, male: 0.8 },
+      { fromAge: 65, belowAge: null, female: 1.0, male: 1.0 },
+    ]);
+    assert.equal(DGE_PROTEIN_ADULT_G_PER_KG, 0.8);
+    assert.equal(DGE_NORMAL_WEIGHT_BMI_LIMIT, 25);
+  });
+
+  it('gives 0.9 g/kg to both sexes at 14, the 13 to 15 band', () => {
+    // 70 kg x 0.9 = 63 g.
+    assert.equal(dgeGramsAt(14, 'female'), 63);
+    assert.equal(dgeGramsAt(14, 'male'), 63);
+    // CONTROL: one year on, a girl drops to 0.8, so the band edge is real.
+    assert.equal(dgeGramsAt(15, 'female'), 56);
+  });
+
+  it('splits 15 to 18 by sex: 0.9 for boys, 0.8 for girls', () => {
+    for (const age of [15, 16, 18]) {
+      assert.equal(dgeGramsAt(age, 'male'), 63, `male ${age}`);
+      assert.equal(dgeGramsAt(age, 'female'), 56, `female ${age}`);
+    }
+  });
+
+  it('takes the higher value between 15 and 18 when no sex is on file, because this is a floor', () => {
+    assert.equal(dgeGramsAt(16, null), 63);
+    // CONTROL: the lower value is really there to choose against.
+    assert.notEqual(dgeGramsAt(16, null), dgeGramsAt(16, 'female'));
+  });
+
+  it('gives 0.8 g/kg from 19 to 64, for both sexes', () => {
+    assert.equal(dgeGramsAt(19, 'male'), 56);
+    assert.equal(dgeGramsAt(40, 'female'), 56);
+    assert.equal(dgeGramsAt(64, 'male'), 56);
+    // CONTROL: 18 and 19 differ for a boy, so the adult band starts at 19.
+    assert.notEqual(dgeGramsAt(18, 'male'), dgeGramsAt(19, 'male'));
+  });
+
+  it('gives 1.0 g/kg from 65', () => {
+    // 70 kg x 1.0 = 70 g.
+    assert.equal(dgeGramsAt(65, 'female'), 70);
+    assert.equal(dgeGramsAt(70, 'male'), 70);
+    assert.equal(dgeGramsAt(100, null), 70);
+    // CONTROL: 64 is still the adult value.
+    assert.notEqual(dgeGramsAt(64, 'female'), dgeGramsAt(65, 'female'));
+  });
+
+  it('uses the adult value when no age is on file', () => {
+    assert.equal(dgeGramsAt(null, 'male'), 56);
+    assert.equal(dgeGramsAt(null, null), 56);
+    // CONTROL: the same person at 70 gets more, so the age really is read.
+    assert.notEqual(dgeGramsAt(null, null), dgeGramsAt(70, null));
+  });
+
+  it('scales by the weight at BMI 25 when the weigh-in is above it and the height is known', () => {
+    const heavy = { ...dgePerson({ ageYears: 30, biologicalSex: 'male' }), latestWeighInKg: 90 };
+    // 170 cm: 25 x 1.7^2 = 72.25 kg, x 0.8 = 57.8 g.
+    assert.deepEqual(computeReferenceProteinFloor({ ...heavy, heightCm: 170 }), { grams: 58, basis: 'weigh-in' });
+    // CONTROL: with no height there is no normal weight to cap at, so the
+    // actual 90 kg counts: 90 x 0.8 = 72 g.
+    assert.equal(computeReferenceProteinFloor(heavy).grams, 72);
+  });
+
+  it('does not cap a weigh-in at BMI 24.9', () => {
+    // 260 cm, the tallest height the app stores, so a tenth of a BMI point is
+    // worth more than a rounding step. At 70 the factor is 1.0.
+    const tall = { ...dgePerson({ ageYears: 70, biologicalSex: 'male' }), heightCm: 260 };
+    const atBmi249Kg = 24.9 * 2.6 * 2.6;
+    // 168.324 kg x 1.0, the actual weight.
+    assert.equal(computeReferenceProteinFloor({ ...tall, latestWeighInKg: atBmi249Kg }).grams, 168);
+    // CONTROL: a cap at BMI 25 would have answered 25 x 2.6^2 = 169 g, and
+    // above BMI 25 it does.
+    assert.equal(computeReferenceProteinFloor({ ...tall, latestWeighInKg: 180 }).grams, 169);
+  });
+
+  it('applies the DGE factor to the Devine mass when there is no weigh-in', () => {
+    const noWeighIn = {
+      ...dgePerson({ ageYears: 30, biologicalSex: 'male' }),
+      latestWeighInKg: null,
+      heightCm: 180,
+    };
+    // 180 cm male: 74.992126 kg x 0.8 = 59.99 g.
+    assert.deepEqual(computeReferenceProteinFloor(noWeighIn), { grams: 60, basis: 'height' });
+    // At 70: x 1.0 = 74.99 g.
+    assert.deepEqual(computeReferenceProteinFloor({ ...noWeighIn, birthYear: DGE_YEAR - 70 }), {
+      grams: 75,
+      basis: 'height',
+    });
+    // CONTROL: the EFSA basis gives the same person 62 g, so the basis is read.
+    assert.equal(computeReferenceProteinFloor({ ...noWeighIn, nutrientReferenceBasis: 'efsa' }).grams, 62);
+  });
+
+  it('keeps the flat labelling figure with no factor when there is no body mass at all', () => {
+    const nothing = {
+      ...dgePerson({ ageYears: 70, biologicalSex: null }),
+      latestWeighInKg: null,
+    };
+    assert.deepEqual(computeReferenceProteinFloor(nothing), { grams: EU_PROTEIN_REFERENCE_INTAKE_G, basis: 'labelling' });
+  });
+
+  it('adds the DGE pregnancy figures by trimester, with T3 when no due date resolved one', () => {
+    const pregnant = {
+      ...dgePerson({ ageYears: 30, biologicalSex: 'female' }),
+      reproductiveStatus: 'pregnant',
+    } as const;
+    // Base 70 kg x 0.8 = 56 g.
+    assert.equal(computeReferenceProteinFloor({ ...pregnant, trimester: 1 }).grams, 56 + DGE_PREGNANCY_T1_PROTEIN_ADDITION_G);
+    assert.equal(computeReferenceProteinFloor({ ...pregnant, trimester: 2 }).grams, 56 + DGE_PREGNANCY_T2_PROTEIN_ADDITION_G);
+    assert.equal(computeReferenceProteinFloor({ ...pregnant, trimester: 3 }).grams, 56 + DGE_PREGNANCY_T3_PROTEIN_ADDITION_G);
+    assert.equal(computeReferenceProteinFloor({ ...pregnant, trimester: null }).grams, 56 + DGE_PREGNANCY_T3_PROTEIN_ADDITION_G);
+    assert.deepEqual(
+      [DGE_PREGNANCY_T1_PROTEIN_ADDITION_G, DGE_PREGNANCY_T2_PROTEIN_ADDITION_G, DGE_PREGNANCY_T3_PROTEIN_ADDITION_G],
+      [0, 7, 21],
+    );
+    // CONTROL: the EFSA figures differ in every trimester (1, 9, 28), so these
+    // are DGE's and not EFSA's on a DGE base.
+    assert.notEqual(
+      computeReferenceProteinFloor({ ...pregnant, trimester: 2 }).grams,
+      56 + EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G,
+    );
+  });
+
+  it('adds one DGE lactation figure, whatever the month count', () => {
+    const lactating = {
+      ...dgePerson({ ageYears: 30, biologicalSex: 'female' }),
+      reproductiveStatus: 'lactating',
+    } as const;
+    assert.equal(DGE_LACTATION_PROTEIN_ADDITION_G, 23);
+    for (const lactationMonths of [null, 0, 5, 6, 18]) {
+      assert.equal(computeReferenceProteinFloor({ ...lactating, lactationMonths }).grams, 56 + 23, `month ${lactationMonths}`);
+    }
+    // CONTROL: 'none' adds nothing.
+    assert.equal(computeReferenceProteinFloor({ ...lactating, reproductiveStatus: 'none' }).grams, 56);
+  });
+});
+
+describe('computeReferenceProteinFloor under the EFSA and US bases', () => {
+  it('keeps 0.83 g/kg under efsa, whatever the age, and caps nothing', () => {
+    const seventy = dgePerson({ ageYears: 70, biologicalSex: 'male' });
+    // 70 kg x 0.83 = 58.1 g, where DGE gives this 70-year-old 70 g.
+    assert.equal(computeReferenceProteinFloor({ ...seventy, nutrientReferenceBasis: 'efsa' }).grams, 58);
+    assert.equal(computeReferenceProteinFloor(seventy).grams, 70);
+    // 90 kg at 170 cm: 90 x 0.83 = 74.7 g, not the capped DGE figure.
+    const heavy = { ...seventy, nutrientReferenceBasis: 'efsa', latestWeighInKg: 90, heightCm: 170 } as const;
+    assert.equal(computeReferenceProteinFloor(heavy).grams, 75);
+  });
+
+  it('keeps the EFSA figure and additions under us, unchanged', () => {
+    const us = {
+      ...dgePerson({ ageYears: 16, biologicalSex: 'female' }),
+      nutrientReferenceBasis: 'us',
+      latestWeighInKg: 82,
+    } as const;
+    // 82 kg x 0.83 = 68.06 g, the figure the EFSA block pins.
+    assert.equal(computeReferenceProteinFloor(us).grams, 68);
+    assert.equal(
+      computeReferenceProteinFloor({ ...us, reproductiveStatus: 'pregnant', trimester: 2 }).grams,
+      68 + EFSA_PREGNANCY_T2_PROTEIN_ADDITION_G,
+    );
+    // CONTROL: the same girl under dge gets 0.8 g/kg, 65.6 g.
+    assert.equal(computeReferenceProteinFloor({ ...us, nutrientReferenceBasis: 'dge' }).grams, 66);
   });
 });
 

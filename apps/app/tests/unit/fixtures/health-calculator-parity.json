@@ -1,9 +1,10 @@
 {
   "about": [
-    "The parity table between openplate.de and the openplate app (M263 spec 01).",
-    "Each expected value was produced by running the app functions once: computeBmrKcal, computeTdeeKcal and suggestDailyKcal in app/models/body-metrics.ts, computeReferenceProteinFloor for the reference protein, and applyEatingStyle with the high-protein style for the high protein figure.",
+    "The parity table between openplate.de and the openplate app (M263 specs 01 and 04).",
+    "Each expected value was produced by running the app functions once: computeBmrKcal, computeTdeeKcal and suggestDailyKcal in app/models/body-metrics.ts, computeReferenceProteinFloor with the dge basis for the reference protein, and applyEatingStyle with the high-protein style for the high protein figure.",
     "The same file lives in both repositories, byte for byte. Each repository tests its own functions against it, so a constant changed on one side fails that side.",
-    "The app takes a birth year, so its test passes birthYear = currentYear - ageYears. A null expected value means the calculator gives no answer for that input."
+    "The app takes a birth year, so its test passes birthYear = currentYear - ageYears. A null expected value means the calculator gives no answer for that input.",
+    "A row marked appOnly carries an input the site does not ask for, such as a pregnancy trimester. Only the app runs it."
   ],
   "rows": [
     {
@@ -20,7 +21,7 @@
         "bmrKcal": 1649,
         "tdeeKcal": 2267,
         "dailyKcal": 2270,
-        "proteinReferenceG": 58,
+        "proteinReferenceG": 56,
         "proteinHighG": 112
       }
     },
@@ -38,7 +39,7 @@
         "bmrKcal": 1320,
         "tdeeKcal": 1815,
         "dailyKcal": 1820,
-        "proteinReferenceG": 50,
+        "proteinReferenceG": 48,
         "proteinHighG": 96
       }
     },
@@ -56,7 +57,7 @@
         "bmrKcal": 1212,
         "tdeeKcal": 1454,
         "dailyKcal": 1450,
-        "proteinReferenceG": 40,
+        "proteinReferenceG": 38,
         "proteinHighG": 77
       }
     },
@@ -74,7 +75,7 @@
         "bmrKcal": 2183,
         "tdeeKcal": 3766,
         "dailyKcal": 3770,
-        "proteinReferenceG": 91,
+        "proteinReferenceG": 72,
         "proteinHighG": 176
       }
     },
@@ -92,7 +93,7 @@
         "bmrKcal": 1314,
         "tdeeKcal": 1577,
         "dailyKcal": 1580,
-        "proteinReferenceG": 71,
+        "proteinReferenceG": 64,
         "proteinHighG": 136
       }
     },
@@ -110,7 +111,7 @@
         "bmrKcal": 1690,
         "tdeeKcal": 2620,
         "dailyKcal": 2620,
-        "proteinReferenceG": 79,
+        "proteinReferenceG": 74,
         "proteinHighG": 152
       }
     },
@@ -128,7 +129,7 @@
         "bmrKcal": 1357,
         "tdeeKcal": 2578,
         "dailyKcal": 2580,
-        "proteinReferenceG": 56,
+        "proteinReferenceG": 54,
         "proteinHighG": 109
       }
     },
@@ -146,7 +147,7 @@
         "bmrKcal": 1516,
         "tdeeKcal": 2350,
         "dailyKcal": 2350,
-        "proteinReferenceG": 46,
+        "proteinReferenceG": 50,
         "proteinHighG": 88
       }
     },
@@ -164,7 +165,7 @@
         "bmrKcal": 627,
         "tdeeKcal": 862,
         "dailyKcal": 860,
-        "proteinReferenceG": 37,
+        "proteinReferenceG": 45,
         "proteinHighG": 72
       }
     },
@@ -182,7 +183,7 @@
         "bmrKcal": 2680,
         "tdeeKcal": 3216,
         "dailyKcal": 3220,
-        "proteinReferenceG": 166,
+        "proteinReferenceG": 81,
         "proteinHighG": 320
       }
     },
@@ -200,7 +201,7 @@
         "bmrKcal": 1454,
         "tdeeKcal": 2763,
         "dailyKcal": 2760,
-        "proteinReferenceG": 60,
+        "proteinReferenceG": 57,
         "proteinHighG": 116
       }
     },
@@ -218,7 +219,7 @@
         "bmrKcal": 1089,
         "tdeeKcal": 1879,
         "dailyKcal": 1880,
-        "proteinReferenceG": 42,
+        "proteinReferenceG": 40,
         "proteinHighG": 80
       }
     },
@@ -236,7 +237,7 @@
         "bmrKcal": null,
         "tdeeKcal": null,
         "dailyKcal": null,
-        "proteinReferenceG": 37,
+        "proteinReferenceG": 36,
         "proteinHighG": 72
       }
     },
@@ -254,7 +255,7 @@
         "bmrKcal": null,
         "tdeeKcal": null,
         "dailyKcal": null,
-        "proteinReferenceG": 58,
+        "proteinReferenceG": 56,
         "proteinHighG": 112
       }
     },
@@ -272,7 +273,7 @@
         "bmrKcal": null,
         "tdeeKcal": null,
         "dailyKcal": null,
-        "proteinReferenceG": 66,
+        "proteinReferenceG": 64,
         "proteinHighG": 128
       }
     },
@@ -290,7 +291,7 @@
         "bmrKcal": null,
         "tdeeKcal": null,
         "dailyKcal": null,
-        "proteinReferenceG": 62,
+        "proteinReferenceG": 60,
         "proteinHighG": 120
       }
     },
@@ -326,7 +327,153 @@
         "bmrKcal": null,
         "tdeeKcal": null,
         "dailyKcal": null,
+        "proteinReferenceG": 52,
+        "proteinHighG": 104
+      }
+    },
+    {
+      "name": "a man of 70, where DGE gives 1.0 g/kg",
+      "input": {
+        "weightKg": 70,
+        "heightCm": 175,
+        "sex": "male",
+        "ageYears": 70,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": 1449,
+        "tdeeKcal": 1992,
+        "dailyKcal": 1990,
+        "proteinReferenceG": 70,
+        "proteinHighG": 112
+      }
+    },
+    {
+      "name": "a boy of 16, where DGE gives 0.9 g/kg",
+      "input": {
+        "weightKg": 60,
+        "heightCm": 175,
+        "sex": "male",
+        "ageYears": 16,
+        "activityLevel": "moderately-active",
+        "activityFactor": 1.55
+      },
+      "expected": {
+        "bmrKcal": 1619,
+        "tdeeKcal": 2509,
+        "dailyKcal": 2510,
         "proteinReferenceG": 54,
+        "proteinHighG": 96
+      }
+    },
+    {
+      "name": "a girl of 16, where DGE gives 0.8 g/kg",
+      "input": {
+        "weightKg": 55,
+        "heightCm": 165,
+        "sex": "female",
+        "ageYears": 16,
+        "activityLevel": "moderately-active",
+        "activityFactor": 1.55
+      },
+      "expected": {
+        "bmrKcal": 1340,
+        "tdeeKcal": 2077,
+        "dailyKcal": 2080,
+        "proteinReferenceG": 44,
+        "proteinHighG": 88
+      }
+    },
+    {
+      "name": "a girl of 14, where DGE gives 0.9 g/kg",
+      "input": {
+        "weightKg": 50,
+        "heightCm": 160,
+        "sex": "female",
+        "ageYears": 14,
+        "activityLevel": "sedentary",
+        "activityFactor": 1.2
+      },
+      "expected": {
+        "bmrKcal": 1269,
+        "tdeeKcal": 1523,
+        "dailyKcal": 1520,
+        "proteinReferenceG": 45,
+        "proteinHighG": 80
+      }
+    },
+    {
+      "name": "a 16-year-old with no sex given, where the higher DGE value applies",
+      "input": {
+        "weightKg": 60,
+        "heightCm": 170,
+        "sex": null,
+        "ageYears": 16,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 54,
+        "proteinHighG": 96
+      }
+    },
+    {
+      "name": "a woman of 30 with a BMI over 25, where DGE uses the weight at BMI 25",
+      "input": {
+        "weightKg": 90,
+        "heightCm": 165,
+        "sex": "female",
+        "ageYears": 30,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": 1620,
+        "tdeeKcal": 2228,
+        "dailyKcal": 2230,
+        "proteinReferenceG": 54,
+        "proteinHighG": 144
+      }
+    },
+    {
+      "name": "a BMI over 25 with no height, where the actual weight counts",
+      "input": {
+        "weightKg": 90,
+        "heightCm": null,
+        "sex": "female",
+        "ageYears": 30,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375
+      },
+      "expected": {
+        "bmrKcal": null,
+        "tdeeKcal": null,
+        "dailyKcal": null,
+        "proteinReferenceG": 72,
+        "proteinHighG": 144
+      }
+    },
+    {
+      "name": "a pregnant woman in the second trimester, app only",
+      "appOnly": true,
+      "input": {
+        "weightKg": 65,
+        "heightCm": 168,
+        "sex": "female",
+        "ageYears": 30,
+        "activityLevel": "lightly-active",
+        "activityFactor": 1.375,
+        "pregnancyTrimester": 2
+      },
+      "expected": {
+        "bmrKcal": 1389,
+        "tdeeKcal": 1910,
+        "dailyKcal": 1910,
+        "proteinReferenceG": 59,
         "proteinHighG": 104
       }
     }

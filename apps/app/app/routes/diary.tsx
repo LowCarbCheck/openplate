@@ -31,6 +31,8 @@ import type { DiaryEmptyState } from '#app/lib/diary-empty-state';
 import { ADD_DESCRIBE_PATH, ADD_PHOTO_PATH, ADD_SEARCH_PATH, buildIntakeHref } from '#app/lib/intake-hrefs';
 import { useDaySwipe } from '#app/hooks/use-day-swipe';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { CONFIG } from '#app/config';
+import { readNutrientReferenceBasis } from '#app/lib/nutrient-reference-basis-client';
 import { computeDayGaps, dayVerdict } from '#app/lib/macro-gaps';
 import { effectiveEatingStyle, lensForStyle } from '#app/lib/eating-style';
 import { effectiveMainGoal, type MainGoalId } from '#app/lib/main-goal';
@@ -244,13 +246,17 @@ const DATE_NAV_ARROW_CLASS = 'size-11 shrink-0 md:size-9';
 const POPOVER_COLLISION_PADDING_PX = 16;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Server loader — none needed (M117/04: accounts optional, health data is
-// local-only — there is no auth invariant left to enforce or echo here)
+// Server loader: two instance facts, and no health data (M117/04 keeps that local)
 ////////////////////////////////////////////////////////////////////////////////
 
-/** No server work: this route's data comes entirely from the on-device primary store via `clientLoader`. */
+/**
+ * The two facts the protein reference needs from this server: the sync server
+ * to ask for the instance's basis, and this server's own basis (M263/04). Every
+ * figure the day shows still comes from the on-device store via `clientLoader`,
+ * which asks for these once per tab at most, through `readNutrientReferenceBasis`.
+ */
 export async function loader() {
-  return {};
+  return { syncServerUrl: CONFIG.sync.syncServerUrl, nutrientReferenceBasis: CONFIG.nutrients.referenceBasis };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1147,7 +1153,7 @@ export interface DiaryData {
   saveMealHintSlots: MealType[];
 }
 
-export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise<DiaryData> {
+export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs): Promise<DiaryData> {
   const profile = await getLocalProfileGoals();
   const timezone = resolveLocalTimezone(profile);
   const url = new URL(request.url);
@@ -1268,6 +1274,13 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs): Promise
     latestWeighInKg: selectLatestWeighInKg(weightEntries),
     heightCm: bodyMetrics.heightCm,
     biologicalSex: bodyMetrics.biologicalSex,
+    // Aged against the real `today`, like the stage above.
+    birthYear: bodyMetrics.birthYear,
+    currentYear: Number(today.slice(0, 4)),
+    // The instance's basis, resolved as the vitamin and mineral rows resolve
+    // theirs (`nutrient-reference-basis-client.ts`): DGE by age and sex, or
+    // EFSA's 0.83 g/kg.
+    nutrientReferenceBasis: await readNutrientReferenceBasis(serverLoader),
   }).grams;
 
   // The calendar's per-day paint, built off the SAME goals Overview and
