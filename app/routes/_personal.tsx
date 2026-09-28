@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Route } from './+types/_personal';
 import type { BaseHandle } from '#types/base';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import {
   useLocation,
   useMatches,
@@ -31,10 +31,21 @@ import { StrangerNote, strangerNoteVariantForPath } from '#app/components/strang
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { shellForGate } from '#app/lib/personal-shell';
 import { useSettleAppNavigation } from '#app/hooks/use-app-navigate';
+import {
+  getPlanGateFactsSnapshot,
+  notePlanGateRenderedPath,
+  planGateAt,
+  refreshPlanGateFacts,
+  requestPlanGateCheck,
+  resolvePlanGateForNavigation,
+  shouldCheckPlanGate,
+  subscribePlanGateFacts,
+} from '#app/lib/plans/plan-gate-facts';
 
 /**
- * The onboarding gate — the only gate this layout still runs, and it is purely
- * local (M128 spec 03). The account-scoped server → device migration gate that
+ * The onboarding gate, which is purely local (M128 spec 03), and after it the
+ * paywall (2026-09-28), which the comment above its branch below describes.
+ * The account-scoped server → device migration gate that
  * used to sit in front of it is gone with the account system itself: there is
  * no `users` table, no session, and no server-side health data left to migrate,
  * so there is no server loader on this layout at all any more.
@@ -147,6 +158,27 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (outcome.kind === 'welcome') throw redirect('/welcome');
   if (outcome.kind === 'self-heal') await patchLocalProfileGoals({ onboardingCompletedAt: Date.now() });
   writeHomeHint();
+  // THE PAYWALL, SECOND (2026-09-28). Only a device that the onboarding gate
+  // lets into the app is asked, and only on an instance that sells plans. An
+  // exempt page (the plan itself, the export, the account, the privacy
+  // switches) is never asked, and a fact that cannot be read never locks: see
+  // `#app/lib/plans/plan-gate` for the rule and `plan-gate-facts` for why
+  // this waits for the network once per session and never again.
+  //
+  // ON A COLD BOOT THE SESSION IS STILL REOPENING here, exactly as the
+  // snapshot comment above says, so there is no account yet and this answers
+  // open. `PlanGateWatcher` below asks again once the account and the facts
+  // have arrived.
+  //
+  // ONLY A NAVIGATION IS DECIDED. A run for the page already on screen (an
+  // action on it, a session settling) is left alone, or the last free scan's
+  // own action would replace the review of that plate with the plan page. See
+  // `shouldCheckPlanGate`.
+  const pathname = new URL(request.url).pathname;
+  if (shouldCheckPlanGate(pathname)) {
+    const planGate = await resolvePlanGateForNavigation({ pathname });
+    if (planGate.kind === 'paywall') throw redirect(planGate.destination);
+  }
   return { gateKind: 'pass' as const, isExemptPath };
 }
 clientLoader.hydrate = true as const;
@@ -195,6 +227,11 @@ export function shouldRevalidate({
   // which is by definition a nav to a DIFFERENT url — so this branch buys the
   // second look without giving back the offline failure it was added to avoid.
   if (currentUrl.href === nextUrl.href) return true;
+  // A TAP ONTO A LOCKED PAGE runs the loader, so the paywall above can send it
+  // to the plan page. Decided from the facts already held, synchronously and
+  // without the network, which is why every other plain navigation keeps
+  // skipping the loader as before.
+  if (planGateAt({ pathname: nextUrl.pathname }).kind === 'paywall') return true;
   return formMethod ? defaultShouldRevalidate : false;
 }
 
@@ -203,8 +240,9 @@ const leafBackToSchema = z.object({ backTo: z.string() });
 
 /**
  * Layout for the food-tracker routes (/diary, /scan, /add, /settings/*): the
- * app chrome plus device-local boot housekeeping. Nothing here is gated — the
- * tracker belongs to whoever holds the device (M128 spec 03).
+ * app chrome plus device-local boot housekeeping. The tracker belongs to
+ * whoever holds the device (M128 spec 03); the one lock is the paywall, and
+ * only on an instance that sells plans (see `clientLoader`).
  */
 export default function PersonalLayout() {
   const { t } = useTranslation();
@@ -221,6 +259,7 @@ export default function PersonalLayout() {
   // right meaning of Back.
   useSettleAppNavigation();
   useRevalidateWhenTheSessionEnds();
+  useNoteRenderedPathForThePaywall(pathname);
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];
   // SAFETY: every route under this layout declares a `handle` matching
@@ -280,6 +319,9 @@ export default function PersonalLayout() {
           nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set.
           MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
+      {/* Asks the paywall again once the account and its plan facts arrive;
+          renders nothing. */}
+      <PlanGateWatcher />
       {gateKind === 'wait' ?
         <SessionResumeGate />
       : <Outlet />}
@@ -316,6 +358,90 @@ function useRevalidateWhenTheSessionEnds(): void {
     if (revalidator.state !== 'idle') return;
     void revalidator.revalidate();
   }, [session.account, revalidator]);
+}
+
+/**
+ * Tells the paywall which page this layout has on screen, and that it has
+ * none once it unmounts. The loader decides navigations and leaves this page
+ * alone (`shouldCheckPlanGate`).
+ */
+function useNoteRenderedPathForThePaywall(pathname: string): void {
+  useEffect(() => {
+    notePlanGateRenderedPath(pathname);
+  }, [pathname]);
+  useEffect(() => () => notePlanGateRenderedPath(null), []);
+}
+
+/** The server snapshot of the plan facts: none, ever, so a server render can never lock anything. */
+function getServerPlanGateFacts(): null {
+  return null;
+}
+
+/**
+ * Keeps the paywall's facts read, and asks the gate again the moment the first
+ * facts for an account arrive.
+ *
+ * WHY IT IS NEEDED. On a document load the session is still reopening when
+ * `clientLoader` runs, so the loader has no account to ask about and answers
+ * open (see the snapshot comment there). The page is drawn, the session
+ * reopens, and only then can the facts be read. This is what reads them,
+ * keyed on the ACCOUNT ID and never on a value fixed at mount (the pulse
+ * tile's defect, 2026-09-12), and what revalidates when they say the page on
+ * screen is locked: the loader then answers with the redirect.
+ *
+ * ONCE PER ACCOUNT, not on every change. A later change is picked up at the
+ * next navigation instead, by `shouldRevalidate`. That is deliberate: the
+ * last free scan is spent on the review screen, and sending the person away
+ * from the plate they just scanned would lose it.
+ *
+ * It also refreshes stale facts in the background on every navigation and
+ * when the tab is shown again, so a lapse or a purchase elsewhere is seen at
+ * the next tap without a wait.
+ */
+function PlanGateWatcher(): null {
+  const session = useSyncSession();
+  const accountId = session.account?.id ?? null;
+  // `null` until a real account view has been read. Deciding on the
+  // placeholder would settle the question on facts nobody has read yet.
+  const hasReadAccount = session.account !== null && session.account.dailyAiLimit !== null;
+  const facts = useSyncExternalStore(subscribePlanGateFacts, getPlanGateFactsSnapshot, getServerPlanGateFacts);
+  const { pathname } = useLocation();
+  const revalidator = useRevalidator();
+  const settledFor = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (accountId === null) return;
+    void refreshPlanGateFacts();
+  }, [accountId, pathname]);
+
+  useEffect(() => {
+    if (accountId === null) return;
+    const refreshWhenShown = (): void => {
+      if (document.visibilityState === 'visible') void refreshPlanGateFacts();
+    };
+    document.addEventListener('visibilitychange', refreshWhenShown);
+    return () => document.removeEventListener('visibilitychange', refreshWhenShown);
+  }, [accountId]);
+
+  useEffect(() => {
+    if (accountId === null || !hasReadAccount) return;
+    if (facts === null || facts.accountId !== accountId) return;
+    if (settledFor.current === accountId) return;
+    if (planGateAt({ pathname }).kind === 'open') {
+      settledFor.current = accountId;
+      return;
+    }
+    // A revalidation already running will run the loader anyway; this effect
+    // runs again when it settles.
+    if (revalidator.state !== 'idle') return;
+    settledFor.current = accountId;
+    // The loader leaves the page on screen alone unless asked, and this is
+    // the one time it is asked.
+    requestPlanGateCheck();
+    void revalidator.revalidate();
+  }, [accountId, hasReadAccount, facts, pathname, revalidator]);
+
+  return null;
 }
 
 /**

@@ -6,7 +6,10 @@
  * view differs between the cases, so each is the other's control: a page that
  * drew the card for everybody, or the order for everybody, fails one of them.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { z } from 'zod';
 
 import { EN, fill } from './copy';
 import {
@@ -18,6 +21,12 @@ import {
 } from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
+
+/** The line a return from a payment says once the plan is live (2026-09-28), from the shipped English bundle. */
+const PLAN_ACTIVE = z
+  .object({ paywall: z.object({ returned: z.object({ active: z.string() }) }) })
+  .parse(JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8'))).paywall
+  .returned.active;
 
 /** The period end of the fixture yearly subscriber, as an English reader sees it. */
 function yearlyPeriodEnd(): string {
@@ -57,11 +66,14 @@ test('a person without a plan sees the order instead of a status card', async ({
   expect(offerRequests.locales).toEqual(['en']);
 });
 
-test('the thank-you after a payment shows once, and a reload does not repeat it', async ({ page }) => {
+test('the line after a payment shows once, and a reload does not repeat it', async ({ page }) => {
   await routePlansCore(page, { planView: YEARLY_SUBSCRIBER_VIEW, offerBody: FIXTURE_OFFER_BODY });
   await openPlanPageSignedIn(page, '?checkout=success');
 
-  const thanks = page.getByText(EN.plan.returned.success);
+  // The plan is live on the first poll, so the line says so at once. The
+  // "thank you, it can take a moment" line is the state before that, and
+  // `paywall-plan-page.spec.ts` walks the whole poll.
+  const thanks = page.getByText(PLAN_ACTIVE, { exact: true });
   await expect(thanks).toBeVisible();
   await expect(statusCard(page)).toBeVisible();
   // The marker leaves the address, and the thank-you stays where it was.

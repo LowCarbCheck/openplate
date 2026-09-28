@@ -15,6 +15,12 @@
  *
  * The expected price is computed HERE, from the fixture's own cents with this
  * file's own `Intl` call, never imported from `plan-prices.ts`.
+ *
+ * THE DEVICE STILL BELIEVES IT MAY SCAN. Since the paywall (2026-09-28) an
+ * account the app already knows is spent never reaches the scan screen, so
+ * each refusal here is the server knowing better than the device's last read:
+ * a standing grant that was ended, or one free scan left that another device
+ * used. That is the case this card is for now.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
@@ -96,6 +102,14 @@ async function signInWithProvider(page: Page): Promise<void> {
   await page.waitForURL('**/diary');
 }
 
+/**
+ * An account the device reads as open: a daily allowance with no end date and
+ * no scan count, which draws no countdown and never locks (`no-plans`).
+ */
+async function routeOpenAllowance(page: Page): Promise<void> {
+  await routeAccountAllowance(page, { dailyAiLimit: 20, allowanceExpiresAt: null });
+}
+
 /** Takes one photo and waits for the refusal whose headline the spec names. */
 async function scanAndBeRefused(page: Page, title = EN.scan.errors.titles.allowanceExpired): Promise<void> {
   await page.goto('/add/photo');
@@ -118,6 +132,7 @@ test('an ended allowance turns into the offer, whose price fills its box without
     offerBody: FIXTURE_OFFER_BODY,
     offerGate: offerGate.promise,
   });
+  await routeOpenAllowance(page);
   await refuseEveryScan(page);
   await signInWithProvider(page);
   await scanAndBeRefused(page);
@@ -181,7 +196,8 @@ test('spent free scans turn into the same offer, headed with the number given (M
   await routeAccountAllowance(page, {
     dailyAiLimit: 20,
     allowanceExpiresAt: null,
-    trialScans: { granted: 10, left: 0 },
+    // ONE LEFT on the device's last read; the proxy knows another device used it.
+    trialScans: { granted: 10, left: 1 },
   });
   await refuseEveryScan(page, 'trial-scans-spent');
   await signInWithProvider(page);
@@ -210,6 +226,7 @@ test('spent free scans turn into the same offer, headed with the number given (M
 
 test('the control: a refusal no plan answers draws no offer on the same instance (M253/05)', async ({ page }) => {
   const requests = await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_OFFER_BODY });
+  await routeOpenAllowance(page);
   await refuseEveryScan(page, 'ai-not-allowed');
   await signInWithProvider(page);
   await scanAndBeRefused(page, EN.scan.errors.titles.aiNotAllowed);

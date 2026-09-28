@@ -157,10 +157,16 @@ describe('the sentence each exempt page shows', () => {
     }
   });
 
-  it('asks for a sign-in on the two pages that are the door', () => {
+  it('asks for a sign-in on the pages that are about an account', () => {
     // THE CONTROL: the two answers are DIFFERENT, so the assertion above
     // reads a rule rather than one constant.
-    for (const path of ['/settings/account', '/settings/sync', '/settings/account/']) {
+    for (const path of [
+      '/settings/account',
+      '/settings/sync',
+      '/settings/account/',
+      '/settings/plan',
+      '/settings/plan/',
+    ]) {
       assert.equal(strangerNoteVariantForPath(path), 'needs-sign-in', path);
     }
   });

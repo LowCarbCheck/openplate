@@ -89,6 +89,13 @@ export async function completeOnboarding(page: Page, weights?: { current: string
  * labels: the labels are wordsmith-owned copy and the tokens are a contract
  * with the password manager, so the tokens are the stable half.
  *
+ * THE DIARY, OR THE PLAN PAGE (the paywall, 2026-09-28). The sign-in lands on
+ * the diary, and on an instance that sells plans the paywall sends a locked
+ * account on to the plan page. The fixture account has no allowance and no
+ * plan of its own, so a spec that stubs `plans: true` without an allowance
+ * (`routeAccountAllowance`) signs in to a locked account and lands there. This
+ * waits for either; a spec that needs the diary gives the account an allowance.
+ *
  * @param page - a page on a device that has already been through onboarding.
  */
 export async function signInFixtureAccount(page: Page): Promise<void> {
@@ -96,7 +103,7 @@ export async function signInFixtureAccount(page: Page): Promise<void> {
   await page.locator('input[autocomplete="username"]').fill(E2E_ACCOUNT_EMAIL);
   await page.locator('input[autocomplete="current-password"]').fill(E2E_ACCOUNT_PASSPHRASE);
   await page.getByRole('button', { name: EN.sync.signIn.submit, exact: true }).click();
-  await page.waitForURL('**/diary');
+  await page.waitForURL(/\/(diary|settings\/plan)$/);
 }
 
 /**

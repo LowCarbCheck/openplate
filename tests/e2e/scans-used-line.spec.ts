@@ -18,6 +18,12 @@
  * WHO SEES IT: a scan-trial account at zero, on every page but the plan page.
  * Not an account with scans left (it sees the count), not a subscriber, not a
  * standing grant with no count.
+ *
+ * WHERE THIS FILE READS IT. Since the paywall (2026-09-28) an account at zero
+ * is sent to the plan page from every feature screen, so the zero case and its
+ * control are read on the preferences page, which a locked person can still
+ * open. The subscriber and the standing grant are not locked and keep the
+ * diary.
  */
 import { expect, test, type Page } from '@playwright/test';
 
@@ -48,12 +54,15 @@ function headerStatus(page: Page) {
   return page.locator('header [data-slot="header-status"]');
 }
 
-/** Signs in with the stub installed, then opens the diary in a fresh document with the shift observer running. */
-async function openDiary(page: Page, stub: ManagedCoreStub): Promise<void> {
+/** A page an account at zero can still open, see the file header. */
+const OPEN_WHILE_LOCKED = '/settings/preferences';
+
+/** Signs in with the stub installed, then opens `path` in a fresh document with the shift observer running. */
+async function openPage(page: Page, stub: ManagedCoreStub, path = '/diary'): Promise<void> {
   await routeManagedCore(page, stub);
   await signInManaged(page, server.url);
   await installShiftObserver(page);
-  await page.goto(`${server.url}/diary`);
+  await page.goto(`${server.url}${path}`);
 }
 
 /** Waits until every read the header could still be waiting for has answered. */
@@ -63,7 +72,7 @@ async function settleReads(page: Page): Promise<void> {
 }
 
 test('at zero free scans the header says so, links to the plans, and moves nothing', async ({ page }) => {
-  await openDiary(page, trialAccountStub(0));
+  await openPage(page, trialAccountStub(0), OPEN_WHILE_LOCKED);
 
   await expect(headerStatus(page)).toContainText(EN.plan.countdown.scansUsed, { timeout: 10_000 });
   await settleReads(page);
@@ -85,7 +94,7 @@ test('at zero free scans the header says so, links to the plans, and moves nothi
 });
 
 test('control: with scans left the header counts instead', async ({ page }) => {
-  await openDiary(page, trialAccountStub(2));
+  await openPage(page, trialAccountStub(2), OPEN_WHILE_LOCKED);
   // THE ANCHOR: the same slot, read by the same session, says the count.
   await expect(headerStatus(page)).toContainText(fill(EN.plan.countdown.scansLeft_other, { count: '2' }), {
     timeout: 10_000,
@@ -99,7 +108,7 @@ test('a subscriber and a standing grant never see it', async ({ page }) => {
     allowanceExpiresAt: '2030-01-01T00:00:00.000Z',
     planView: MONTHLY_SUBSCRIBER_VIEW,
   };
-  await openDiary(page, subscriber);
+  await openPage(page, subscriber);
   await expect(page.locator('main')).toBeVisible();
   await settleReads(page);
   await expect(page.locator('header').first()).not.toContainText(EN.plan.countdown.scansUsed);

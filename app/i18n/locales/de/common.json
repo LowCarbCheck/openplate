@@ -3725,6 +3725,23 @@
       }
     }
   },
+  "paywall": {
+    "heading": {
+      "scansUsed_one": "Dein {{count}} kostenloser KI-Scan ist aufgebraucht",
+      "scansUsed_other": "Deine {{count}} kostenlosen KI-Scans sind aufgebraucht",
+      "choose": "Wähle einen Tarif, um openplate weiter zu nutzen",
+      "lapsed": "Dein Tarif ist abgelaufen"
+    },
+    "body": "Wähle einen Tarif, um dein Tagebuch wieder zu öffnen. Alles, was du eingetragen hast, ist noch da.",
+    "data": "Deine Daten gehören dir. Du kannst jederzeit <exportLink>dein Tagebuch exportieren</exportLink> oder <deleteLink>dein Konto löschen</deleteLink>, mit oder ohne Tarif.",
+    "freeScansFirst": "Nutze zuerst deine kostenlosen KI-Scans",
+    "returned": {
+      "active": "Dein Tarif ist aktiv.",
+      "openDiary": "Tagebuch öffnen",
+      "slow": "Deine Zahlung war erfolgreich. Es kann eine Minute dauern, bis sie hier angezeigt wird.",
+      "checkAgain": "Erneut prüfen"
+    }
+  },
   "whatsNew": {
     "title": "Was neu ist",
     "card": {

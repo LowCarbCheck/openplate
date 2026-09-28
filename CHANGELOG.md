@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **An instance that sells plans locks the app once the free trial is over.** When the free AI scans are used up, a day trial has ended, the account never had an allowance, or a paid plan lapsed, every screen of the diary sends the person to the plan page until they pay. The plan page says why above the plans, and links the export and the account deletion. Export (`/settings/data`), the account page, Preferences, research studies, clinician sharing, notifications, the settings hub and `/admin` stay open, and so does everything outside the app: the legal pages, sign-in, join, and the cancellation and withdrawal pages. An instance with no biller (`plans: false`) is never locked, an administrator is never locked, and a plan read that fails or times out opens the app; the AI proxy on openplate-core stays the server side limit. The last free scan keeps its review on screen, and the plan page comes with the next page opened. A new account can open the plan page before onboarding. A person with free scans left is offered "Use your free AI scans first". A return from payment now checks the plan every two seconds and offers "Open your diary" once it is active. `tests/e2e/paywall.spec.ts` and `tests/e2e/paywall-plan-page.spec.ts` check every standing.
+
 ### Changed
 
 - **Every compose file reads its settings from the env file.** The app service now passes on `DEFAULT_UI_LANGUAGE`, `UPDATE_CHECK`, `FOOD_DB_API_KEY`, `FOOD_DB_BACKFILL` and `CSP_CONNECT_EXTRA`, which the docs told people to set in `.env` but which never reached the container. `compose.inference.yml` and `compose.full.yml` take `INFERENCE_API_KEY`, `PUBLIC_APP_URL`, `PUBLIC_INFERENCE_URL` and `LLAMA_THREADS` from `.env` instead of values edited inside the file; the defaults are the old placeholders, so a Quadlet unit generated from them is unchanged there.

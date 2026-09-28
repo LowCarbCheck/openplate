@@ -3725,6 +3725,23 @@
       }
     }
   },
+  "paywall": {
+    "heading": {
+      "scansUsed_one": "La tua {{count}} scansione IA gratuita è terminata",
+      "scansUsed_other": "Le tue {{count}} scansioni IA gratuite sono terminate",
+      "choose": "Scegli un piano per continuare a usare openplate",
+      "lapsed": "Il tuo piano è terminato"
+    },
+    "body": "Scegli un piano per riaprire il tuo diario. Tutto ciò che hai registrato è ancora qui.",
+    "data": "I tuoi dati restano tuoi. Puoi <exportLink>esportare il tuo diario</exportLink> o <deleteLink>eliminare il tuo account</deleteLink> in qualsiasi momento, con o senza un piano.",
+    "freeScansFirst": "Usa prima le tue scansioni IA gratuite",
+    "returned": {
+      "active": "Il tuo piano è attivo.",
+      "openDiary": "Apri il tuo diario",
+      "slow": "Il pagamento è andato a buon fine. Potrebbe volerci un minuto prima che compaia qui.",
+      "checkAgain": "Controlla di nuovo"
+    }
+  },
   "whatsNew": {
     "title": "Novità",
     "card": {

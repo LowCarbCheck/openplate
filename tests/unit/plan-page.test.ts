@@ -56,6 +56,8 @@ import { planStanding } from '../../app/lib/plans/plan-standing';
 import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { SELF_HOSTING_DOCS_URL } from '../../app/lib/brand';
+import type { PaywallNotice } from '../../app/lib/plans/plan-gate';
+import type { PaymentConfirmation } from '../../app/lib/plans/payment-return';
 
 /** An instance whose handshake says a biller stands behind it. */
 const SELLING: InstanceDescriptor = {
@@ -107,6 +109,9 @@ interface RenderOverrides {
   switchStartsAt?: string | null;
   isAlreadySubscribed?: boolean;
   recapMealCount?: number | null;
+  paywallNotice?: PaywallNotice | null;
+  offersFreeScansFirst?: boolean;
+  paymentConfirmation?: PaymentConfirmation;
 }
 
 function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
@@ -148,6 +153,10 @@ function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
           switchStartsAt: overrides.switchStartsAt ?? null,
           isAlreadySubscribed: overrides.isAlreadySubscribed ?? false,
           recapMealCount: overrides.recapMealCount ?? null,
+          paywallNotice: overrides.paywallNotice ?? null,
+          offersFreeScansFirst: overrides.offersFreeScansFirst ?? false,
+          paymentConfirmation: overrides.paymentConfirmation ?? 'checking',
+          onCheckAgain: () => undefined,
           onSelectPlan: () => undefined,
           onConsentChange: () => undefined,
           onOrder: () => undefined,
@@ -231,7 +240,9 @@ describe('the plan page', () => {
   });
 
   it('says what happened when somebody comes back from the payment page', () => {
-    assert.ok(render({ kind: 'ready', plan: PAID }, { checkoutReturn: 'success' }).includes(enCommon.plan.returned.success));
+    assert.ok(
+      render({ kind: 'ready', plan: FREE }, { checkoutReturn: 'success' }).includes(enCommon.plan.returned.success),
+    );
     assert.ok(
       render({ kind: 'ready', plan: PAID }, { checkoutReturn: 'cancelled' }).includes(enCommon.plan.returned.cancelled),
     );
@@ -425,9 +436,14 @@ describe('the status card for a subscriber', () => {
     assert.ok(orderButton(markup) !== null);
   });
 
-  it('thanks a returning subscriber above the card', () => {
-    const markup = render({ kind: 'ready', plan: YEARLY }, { checkoutReturn: 'success' });
-    assert.ok(markup.indexOf(enCommon.plan.returned.success) < markup.indexOf('data-slot="plan-status-card"'));
+  it('tells a returning subscriber the plan is active, above the card', () => {
+    const markup = render(
+      { kind: 'ready', plan: YEARLY },
+      { checkoutReturn: 'success', paymentConfirmation: 'confirmed' },
+    );
+    const card = markup.indexOf('data-slot="plan-status-card"');
+    assert.ok(card > 0, 'no status card');
+    assert.ok(markup.indexOf(enCommon.paywall.returned.active) < card);
   });
 });
 
@@ -533,5 +549,120 @@ describe('the free card before the plans (M250/10)', () => {
     );
     assert.ok(markup.includes('data-slot="plan-order"'), 'THE CONTROL: the order is drawn');
     assert.equal(markup.includes('data-slot="plan-self-host"'), false);
+  });
+});
+
+/** The markup of one state of the return line, found by the text it holds. */
+function returnStateOf(markup: string, text: string): string {
+  const states = [
+    ...markup.matchAll(
+      /<div aria-hidden="(?:true|false)" class="[^"]*col-start-1 row-start-1[^"]*">(?:(?!<div aria-hidden).)*/gs,
+    ),
+  ].map((match) => match[0]);
+  const found = states.find((state) => state.includes(text));
+  assert.ok(found !== undefined, `no return state holds "${text}"`);
+  return found;
+}
+
+describe('a return from the payment page (2026-09-28)', () => {
+  const returning = (paymentConfirmation: PaymentConfirmation) =>
+    render({ kind: 'ready', plan: FREE }, { checkoutReturn: 'success', paymentConfirmation });
+
+  it('draws all three states in one grid cell, so the box never changes size', () => {
+    const markup = returning('checking');
+    assert.ok(markup.includes('data-slot="plan-return"'));
+    for (const text of [
+      enCommon.plan.returned.success,
+      enCommon.paywall.returned.active,
+      enCommon.paywall.returned.slow,
+    ]) {
+      assert.ok(returnStateOf(markup, text).includes('col-start-1 row-start-1'), text);
+    }
+  });
+
+  it('shows exactly the state it is in, and hides the other two', () => {
+    const cases = [
+      ['checking', enCommon.plan.returned.success],
+      ['confirmed', enCommon.paywall.returned.active],
+      ['slow', enCommon.paywall.returned.slow],
+    ] satisfies [PaymentConfirmation, string][];
+    for (const [confirmation, shown] of cases) {
+      const markup = returning(confirmation);
+      for (const [, text] of cases) {
+        const state = returnStateOf(markup, text);
+        assert.equal(state.includes('invisible'), text !== shown, `${confirmation}: "${text}"`);
+      }
+    }
+  });
+
+  it('sells nothing while the payment is being confirmed, and says nothing about a lock', () => {
+    const markup = render(
+      { kind: 'ready', plan: FREE },
+      { checkoutReturn: 'success', paymentConfirmation: 'checking', paywallNotice: { kind: 'choose' } },
+    );
+    assert.equal(orderButton(markup), null);
+    assert.equal(markup.includes('data-slot="paywall-notice"'), false);
+    // THE CONTROL: once confirmed, the page below the line is drawn again.
+    const confirmed = render(
+      { kind: 'ready', plan: YEARLY },
+      { checkoutReturn: 'success', paymentConfirmation: 'confirmed' },
+    );
+    assert.ok(confirmed.includes('data-slot="plan-status-card"'));
+  });
+
+  it('opens the diary from the active state, and asks again from the slow one', () => {
+    assert.ok(returnStateOf(returning('confirmed'), enCommon.paywall.returned.active).includes('href="/dashboard"'));
+    assert.ok(
+      returnStateOf(returning('slow'), enCommon.paywall.returned.slow).includes(enCommon.paywall.returned.checkAgain),
+    );
+  });
+
+  it('draws no return line on an ordinary visit', () => {
+    assert.equal(render({ kind: 'ready', plan: FREE }).includes('data-slot="plan-return"'), false);
+  });
+});
+
+describe('the paywall notice (2026-09-28)', () => {
+  const heading = (notice: PaywallNotice) => {
+    const markup = render({ kind: 'ready', plan: FREE }, { paywallNotice: notice });
+    return /<h2 id="paywall-heading"[^>]*>(.*?)<\/h2>/s.exec(markup)?.[1] ?? null;
+  };
+
+  it('names the free scans that were used, in the plural the count asks for', () => {
+    assert.equal(
+      heading({ kind: 'scans-used', count: 10 }),
+      enCommon.paywall.heading.scansUsed_other.replace('{{count}}', '10'),
+    );
+    assert.equal(
+      heading({ kind: 'scans-used', count: 1 }),
+      enCommon.paywall.heading.scansUsed_one.replace('{{count}}', '1'),
+    );
+  });
+
+  it('asks for a plan, or says the plan ended, by reason', () => {
+    assert.equal(heading({ kind: 'choose' }), enCommon.paywall.heading.choose);
+    assert.equal(heading({ kind: 'lapsed' }), enCommon.paywall.heading.lapsed);
+  });
+
+  it('sits above the plans, and links the export and the account page', () => {
+    const markup = render({ kind: 'ready', plan: FREE }, { paywallNotice: { kind: 'choose' } });
+    const notice = markup.indexOf('data-slot="paywall-notice"');
+    assert.ok(notice > 0);
+    assert.ok(notice < markup.indexOf('data-slot="plan-card"'));
+    assert.ok(markup.includes('href="/settings/data"'));
+    assert.ok(markup.includes('href="/settings/account"'));
+  });
+
+  it('CONTROL: is not drawn when the page is not told the app is locked', () => {
+    assert.equal(render({ kind: 'ready', plan: FREE }).includes('data-slot="paywall-notice"'), false);
+  });
+});
+
+describe('the way back to the free scans (2026-09-28)', () => {
+  it('is a link to the diary below the order when offered, and absent when not', () => {
+    const offered = render({ kind: 'ready', plan: FREE }, { offersFreeScansFirst: true });
+    const link = offered.indexOf(enCommon.paywall.freeScansFirst);
+    assert.ok(link > offered.indexOf('data-slot="plan-order-button"'), 'the link is not below the order');
+    assert.equal(render({ kind: 'ready', plan: FREE }).includes(enCommon.paywall.freeScansFirst), false);
   });
 });

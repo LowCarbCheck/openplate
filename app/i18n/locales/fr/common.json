@@ -3725,6 +3725,23 @@
       }
     }
   },
+  "paywall": {
+    "heading": {
+      "scansUsed_one": "Ton {{count}} scan IA gratuit est épuisé",
+      "scansUsed_other": "Tes {{count}} scans IA gratuits sont épuisés",
+      "choose": "Choisis un forfait pour continuer à utiliser openplate",
+      "lapsed": "Ton forfait a pris fin"
+    },
+    "body": "Choisis un forfait pour rouvrir ton journal. Tout ce que tu as enregistré est toujours là.",
+    "data": "Tes données restent les tiennes. Tu peux <exportLink>exporter ton journal</exportLink> ou <deleteLink>supprimer le compte</deleteLink> à tout moment, avec ou sans forfait.",
+    "freeScansFirst": "Utilise d'abord tes scans IA gratuits",
+    "returned": {
+      "active": "Ton forfait est actif.",
+      "openDiary": "Ouvrir ton journal",
+      "slow": "Ton paiement a bien été effectué. Cela peut prendre une minute pour s'afficher ici.",
+      "checkAgain": "Vérifier à nouveau"
+    }
+  },
   "whatsNew": {
     "title": "Nouveautés",
     "card": {

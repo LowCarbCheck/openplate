@@ -2729,6 +2729,13 @@
     "at": "2026-09-14",
     "es": "Acerca de openplate"
   },
+  "20f4628ee4e4361c": {
+    "en": "Open your diary",
+    "path": "common:paywall.returned.openDiary",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Abre tu diario"
+  },
   "210c31833757ece7": {
     "en": "German legal headings fit a phone.",
     "path": "releases:v0_36_0.fixed.15",
@@ -5963,6 +5970,13 @@
     "at": "2026-09-14",
     "es": "Cuándo empezar"
   },
+  "4fa2451dbce4189e": {
+    "en": "Pick a plan to open your diary again. Everything you logged is still here.",
+    "path": "common:paywall.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Elige un plan para volver a abrir tu diario. Todo lo que registraste sigue aquí."
+  },
   "4fb4b8d24d101fb4": {
     "en": "Connect an AI to read your photos. Your photo goes only to that AI.",
     "path": "common:scan.setup.crisp.selfHosted",
@@ -8182,6 +8196,13 @@
     "at": "2026-09-14",
     "es": "Este servidor no conoce ese estudio, por lo que no se envió nada."
   },
+  "6b0330830fe0ca58": {
+    "en": "Choose a plan to keep using openplate",
+    "path": "common:paywall.heading.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Elige un plan para seguir usando openplate"
+  },
   "6b110b6117c8a41a": {
     "en": "This connection attempt took too long and expired. Try connecting again.",
     "path": "common:oauth.callback.error.expired.body",
@@ -9568,6 +9589,13 @@
     "at": "2026-09-14",
     "es": "Descargar diario (CSV)"
   },
+  "7b633984ee5b1dac": {
+    "en": "Your data stays yours. You can <exportLink>export your diary</exportLink> or <deleteLink>delete your account</deleteLink> at any time, with or without a plan.",
+    "path": "common:paywall.data",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tus datos siguen siendo tuyos. Puedes <exportLink>exportar tu diario</exportLink> o <deleteLink>eliminar tu cuenta</deleteLink> en cualquier momento, con o sin un plan."
+  },
   "7b88a68b43578305": {
     "en": "Back to sign in",
     "path": "common:forgot.backToSignIn",
@@ -9890,6 +9918,13 @@
     "at": "2026-09-14",
     "es": "Toca la tecla del micrófono en tu teclado para dictar tu comida."
   },
+  "7f4669e9eb57e079": {
+    "en": "Use your free AI scans first",
+    "path": "common:paywall.freeScansFirst",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Usa primero tus escaneos gratis con IA"
+  },
   "7f929b2e7211680c": {
     "en": "Your plan has not been read yet.",
     "path": "common:plan.unknown",
@@ -9973,6 +10008,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Haz una foto de tu plato o elige una imagen"
+  },
+  "80cf32e25a2d346f": {
+    "en": "Your payment went through. It can take a minute to show here.",
+    "path": "common:paywall.returned.slow",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu pago se ha procesado. Puede tardar un minuto en aparecer aquí."
   },
   "80fc13be0a3ec836": {
     "en": "protein",
@@ -10211,6 +10253,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Lee cada línea antes de confiarle el registro de un día de tus comidas. Crea una bifurcación, modifícalo, intégralo en algo propio. La licencia solo exige el aviso de derechos de autor y nada más."
+  },
+  "83d2259f6c887151": {
+    "en": "Check again",
+    "path": "common:paywall.returned.checkAgain",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Volver a comprobar"
   },
   "83d2b4c85966b8e8": {
     "en": "Last updated: {{date}}",
@@ -13999,6 +14048,13 @@
     "at": "2026-09-14",
     "es": "Iniciar sesión · openplate"
   },
+  "b3235675afaefe58": {
+    "en": "Your {{count}} free AI scan is used up",
+    "path": "common:paywall.heading.scansUsed_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Se ha agotado tu {{count}} escaneo gratis con IA"
+  },
   "b3449415df0a0691": {
     "en": "{{count}} free AI scans, no time limit.",
     "path": "common:signUp.trial_other",
@@ -14824,6 +14880,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "es": "La página de administración se adapta a la pantalla de un teléfono."
+  },
+  "beebbedcaa4b3f5c": {
+    "en": "Your {{count}} free AI scans are used up",
+    "path": "common:paywall.heading.scansUsed_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Se han agotado tus {{count}} escaneos gratis con IA"
   },
   "bf26b6792b9ceea7": {
     "en": "Weigh-in removed.",
@@ -17464,6 +17527,13 @@
     "at": "2026-09-14",
     "es": "La sesión permanecerá cerrada hasta que vuelvas a iniciar sesión. Tu diario se queda en este dispositivo."
   },
+  "e19f807951a6e7c5": {
+    "en": "Your plan is active.",
+    "path": "common:paywall.returned.active",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu plan está activo."
+  },
   "e1f5a81929d5fd2e": {
     "en": "Today",
     "path": "common:diary.nav.today",
@@ -18618,6 +18688,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "Has usado tu {{count}} escaneo con IA gratis"
+  },
+  "efa6248d8928db88": {
+    "en": "Your plan has ended",
+    "path": "common:paywall.heading.lapsed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "es": "Tu plan ha terminado"
   },
   "efa7db3f8a23ccde": {
     "en": "Entry",

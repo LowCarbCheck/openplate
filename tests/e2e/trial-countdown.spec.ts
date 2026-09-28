@@ -160,11 +160,19 @@ test('the last day says today', async ({ page }) => {
   await expect(headerStatus(page)).toContainText(EN.plan.countdown.lastDay);
 });
 
+/**
+ * A page an ended trial can still open. The paywall (2026-09-28) sends it to
+ * the plan page from everywhere else, and the plan page never draws the line,
+ * so an absence read there would say nothing about the countdown.
+ */
+const OPEN_WHILE_LOCKED = '/settings/preferences';
+
 test('no countdown after the trial ended', async ({ page }) => {
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null });
   await routeAccountAllowance(page, { dailyAiLimit: TRIAL_DAILY_LIMIT, allowanceExpiresAt: noonInDays(-1) });
-  const planRead = waitForPlanRead(page);
   await signIn(page);
+  const planRead = waitForPlanRead(page);
+  await page.goto(OPEN_WHILE_LOCKED);
   await planRead;
 
   await expect(page.locator('header h1')).toBeVisible();
@@ -216,8 +224,10 @@ test('a spent scan trial says the free scans are used instead of counting (M253/
     allowanceExpiresAt: null,
     trialScans: { granted: 10, left: 0 },
   });
-  const planRead = waitForPlanRead(page);
   await signIn(page);
+  // Read where a locked person can still go, as the case above explains.
+  const planRead = waitForPlanRead(page);
+  await page.goto(OPEN_WHILE_LOCKED);
   await planRead;
 
   // THE OWNER'S DECISION (M253/11): at zero the line stays, says the scans

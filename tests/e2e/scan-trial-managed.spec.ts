@@ -139,10 +139,16 @@ function corsHeaders(request: Request) {
   };
 }
 
-/** Routes the handshake, the plan reads, the account and the proxy. */
-async function routeManagedCore(page: Page): Promise<Recorded> {
+/**
+ * Routes the handshake, the plan reads, the account and the proxy.
+ *
+ * @param options.scansLeft - what the account says on every read and where the
+ *   proxy's count starts. A walk of several AI actions starts higher: since the
+ *   paywall (2026-09-28) a count of zero locks the next page the walk opens.
+ */
+async function routeManagedCore(page: Page, { scansLeft: startingScans = ACCOUNT_SCANS_LEFT } = {}): Promise<Recorded> {
   const recorded: Recorded = { calls: [], accountReads: 0, model: 'e2e-model' };
-  let scansLeft = ACCOUNT_SCANS_LEFT;
+  let scansLeft = startingScans;
 
   await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) =>
     route.fulfill({
@@ -187,7 +193,7 @@ async function routeManagedCore(page: Page): Promise<Recorded> {
             ...parsed.data.account,
             dailyAiLimit: 20,
             allowanceExpiresAt: null,
-            trialScans: { granted: 10, left: ACCOUNT_SCANS_LEFT },
+            trialScans: { granted: 10, left: startingScans },
           },
         },
       });
@@ -281,7 +287,9 @@ test('a second photo, a typed meal, a pantry read and a recipe round each send o
   page,
 }) => {
   test.setTimeout(WALK_BUDGET_MS);
-  const recorded = await routeManagedCore(page);
+  // FIVE AI ACTIONS, so ten scans: the count this file checks is the case
+  // above's business, and at zero the paywall would lock the recipes page.
+  const recorded = await routeManagedCore(page, { scansLeft: 10 });
   await signInManaged(page);
 
   // A plate, and a second photo (a label is the same person action).
