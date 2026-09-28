@@ -67,6 +67,7 @@ const COPY = z
     meta: z.object({ dashboard: z.string(), diary: z.string() }),
     settings: z.object({ data: z.object({ downloadJson: z.string() }) }),
     account: z.object({ signOut: z.object({ cta: z.string() }), delete: z.object({ cta: z.string() }) }),
+    preferences: z.object({ analytics: z.object({ label: z.string() }) }),
     paywall: z.object({ heading: z.object({ scansUsed_other: z.string() }) }),
   })
   .parse(JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')));
@@ -258,6 +259,27 @@ test('while not agreed, the export works and the account page offers delete and 
   await expect(page).toHaveURL(/\/settings\/account$/);
   await expect(page.getByRole('button', { name: COPY.account.delete.cta, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: COPY.account.signOut.cta, exact: true })).toBeVisible();
+});
+
+test('while not agreed, the visit-counting switch the privacy notice links to opens directly', async ({ page }) => {
+  test.setTimeout(WALK_BUDGET_MS);
+  await routeManagedCore(page, core());
+  expect(await signIn(page)).toBe('/consent?next=/diary');
+
+  // THE CONTROL: this session is asked, so preferences is open because it is
+  // exempt, not because the gate is asleep.
+  await page.goto('/dashboard');
+  await expectConsentScreen(page, { next: '/dashboard', from: 'the control load' });
+
+  // The address privacy notice section 13 links: an objection to visit
+  // counting (Art. 21) never waits on a consent to health data (Art. 9).
+  const anchor = handshake(page);
+  await page.goto('/settings/preferences#visit-counting');
+  await anchor;
+  await settleFrames(page);
+  await page.waitForTimeout(OPEN_WATCH_MS);
+  await expect(page).toHaveURL(/\/settings\/preferences#visit-counting$/);
+  await expect(page.getByRole('switch', { name: COPY.preferences.analytics.label })).toBeVisible();
 });
 
 test('the consent screen comes before the plan page for an account whose free scans are used up', async ({ page }) => {

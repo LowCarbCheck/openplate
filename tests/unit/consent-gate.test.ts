@@ -77,18 +77,27 @@ describe('resolveConsentGate', () => {
   });
 
   it('asks on every page an account uses, the admin console included, because administrators are asked too', () => {
-    for (const pathname of ['/diary', '/add/photo', '/settings', '/settings/plan', '/settings/preferences', '/admin']) {
+    for (const pathname of ['/diary', '/add/photo', '/settings', '/settings/plan', '/settings/profile', '/admin']) {
       assert.equal(gate({ pathname }).kind, 'consent', pathname);
     }
   });
 });
 
 describe('the exempt pages', () => {
-  it('are exactly the consent screen, the export, the account page and its old address', () => {
+  it('are exactly the consent screen, the export, the account page and its old address, and preferences', () => {
     assert.deepEqual(
       [...CONSENT_GATE_EXEMPT_PATHS].toSorted(),
-      ['/consent', '/settings/account', '/settings/data', '/settings/sync'].toSorted(),
+      ['/consent', '/settings/account', '/settings/data', '/settings/preferences', '/settings/sync'].toSorted(),
     );
+  });
+
+  // THE OBJECTION SWITCH (privacy notice section 13 links it at
+  // `/settings/preferences#visit-counting`). An Art. 21 objection to visit
+  // counting must not wait on an Art. 9 consent to health data. The twin is a
+  // sibling settings page the same account is still asked on.
+  it('lets an account that never agreed open preferences, where the visit-counting switch is', () => {
+    assert.deepEqual(gate({ pathname: '/settings/preferences' }), { kind: 'open' });
+    assert.equal(gate({ pathname: '/settings/profile' }).kind, 'consent');
   });
 
   it('stay open to an account that never agreed, while the same account is asked elsewhere', () => {

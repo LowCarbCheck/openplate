@@ -71,6 +71,12 @@ const OPEN: ConsentGateOutcome = { kind: 'open' };
  *   also how somebody declines. `/settings/sync` is the old address of that
  *   page and only redirects to it, so it is open too, or the redirect would
  *   be swallowed by this gate first.
+ * - `/settings/preferences`, the language and the "Count my visits" switch.
+ *   The privacy notice (section 13) links that switch at
+ *   `/settings/preferences#visit-counting` as the way to object to visit
+ *   counting, and an objection under Art. 21 GDPR must not wait on a consent
+ *   to health data under Art. 9. The plan gate keeps it open for the same
+ *   reason.
  *
  * Everything outside the `_personal` layout (the legal pages, the privacy
  * notice the box links to, sign-in, join, welcome) never reaches this gate at
@@ -83,6 +89,7 @@ export const CONSENT_GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
   '/settings/data',
   '/settings/account',
   '/settings/sync',
+  '/settings/preferences',
 ]);
 
 /**
