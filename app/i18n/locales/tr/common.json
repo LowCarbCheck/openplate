@@ -386,7 +386,7 @@
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Bu cihaz, menüyü aç",
     "footerTagline": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, verilerini cihazında tutan bir beslenme takipçisi",
-    "footerTaglineManaged": "<lcc>lowcarbcheck.org</lcc> tarafından geliştirilen {{appName}}, yalnızca senin okuyabildiğin bir beslenme takipçisi",
+    "footerTaglineManaged": "<lcc>lowcarbcheck.org</lcc> tarafından sunulan {{appName}}, günlüğünü cihazında şifreleyen bir besin takipçisi",
     "imprint": "Künye",
     "licence": "MIT lisansı",
     "licenceShort": "Lisans",
@@ -1154,7 +1154,8 @@
       "body": "{{email}} için zaten bir hesap var. Belirlediğin parolayla oturum aç.",
       "signIn": "Oturum açmaya git"
     },
-    "working": "Hesabın kuruluyor"
+    "working": "Hesabın kuruluyor",
+    "operatorKey": "Günlüğün bu cihazda şifrelenir. Bu sunucuyu kim işletiyorsa, unuttuğun bir parolayı sıfırlayabilmen için bir yedekleme anahtarı saklar ve bu anahtar günlüğünü okumasına olanak tanır."
   },
   "landing": {
     "close": {
@@ -1306,12 +1307,12 @@
       "title": "Yaklaşık bir dakikada çalışır"
     },
     "sync": {
-      "body": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftalık görünüme bak. Eşitleme isteğe bağlıdır. İster bizimkini kullan ister kendi sunucunu barındır, cihazın günlüğünü bir openplate-core sunucusuna göndermeden önce şifreler. Parolan cihazında kalır. Sunucu ayrıca mühürlü bir kurtarma anahtarı tutar. Bu anahtar parola sıfırlamayı sağlar, yani sunucu yöneticisi teknik olarak günlüğünü açabilir.",
+      "body": "Öğle yemeğini telefonuna kaydet, ardından haftaya dizüstü bilgisayarından bak. Eşitleme isteğe bağlıdır. İster bizimkini kullan ister kendin barındır, cihazın günlüğünü bir openplate-core sunucusuna göndermeden önce şifreler. Parolan cihazında kalır. Sunucu ayrıca mühürlü bir kurtarma anahtarı tutar. Bu, parola sıfırlamaya izin verir ve sunucu işleticisinin günlüğünü açabileceği anlamına gelir.",
       "link": "Hesap oluştur",
       "photos": "Tabak fotoğrafları oldukları yerde kalır. Hiçbir zaman eşitleme verisinin parçası olmazlar.",
       "shotAlt": "Bir telefonda, oturumu kapatılmış ve giriş bağlantısı içeren hesap ekranı.",
       "title": "İki cihaz, tek günlük",
-      "bodyManaged": "Öğle yemeğini telefonuna kaydet, sonra dizüstü bilgisayarından haftanı incele. Her hesap varsayılan olarak bu şekilde çalışır. Günlüğün cihazında şifrelenir ve sunucu yalnızca şifreli metni saklar. İşletmeci ayrıca bir kurtarma anahtarı tutar. Bu anahtar parola sıfırlamanın ardından günlüğünü geri yüklemeni sağlar ve teknik olarak işletmecinin verilerini çözebileceği anlamına gelir.",
+      "bodyManaged": "Öğle yemeğini telefonuna kaydet, ardından haftanı dizüstü bilgisayarından gözden geçir. Her hesap varsayılan olarak bu şekilde çalışır. Günlüğün yüklenmeden önce cihazında şifrelenir. İşletici, unuttuğun bir paroladan sonra günlüğünü geri alabilmen için bir yedekleme anahtarı saklar ve bu anahtar işleticinin günlüğünü okumasına olanak tanır.",
       "linkManaged": "Hesabına giriş yap"
     }
   },
@@ -1377,7 +1378,7 @@
     "join": "Katıl · openplate",
     "joinStudy": "Çalışmaya katıl · openplate",
     "landing": "openplate, cihazında kalan bir besin takip uygulaması",
-    "landingManaged": "openplate, yalnızca senin okuyabildiğin bir besin takip uygulaması",
+    "landingManaged": "openplate, günlüğünü cihazında şifreleyen bir besin takipçisi",
     "landingDescription": "Tabağının fotoğrafını çek veya yediklerini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Ücretsiz, hesap gerekmez ve kaydettiğin her şey kendi cihazında kalır.",
     "lifePhase": "Yaşam evresi · openplate",
     "nutrition": "Beslenme ve hedefler · openplate",
@@ -1629,7 +1630,7 @@
     },
     "loading": "Yükleniyor…",
     "localFirst": "Verilerin <strong>bu cihazda</strong> tutulur. Biz onları asla görmeyiz. Başlamak üzere olduğun günlük her zaman yerel kalır.",
-    "localFirstManaged": "Günlüğün <strong>bu cihazda</strong> tutulur ve sunucuya şifrelenmiş biçimde eşitlenir. Yapay zekayı işletmeci yönetir, bu nedenle tahmin için gönderilen fotoğraflar aktarım sırasında bu sunucudan geçer. İşletmecinin nelere erişebileceği gizlilik politikasında ayrıntılarıyla anlatılır.",
+    "localFirstManaged": "Günlüğün <strong>bu cihazda</strong> tutulur ve sunucuya şifrelenmiş halde eşitlenir. Parolanı unutursan günlüğünü geri yüklemek için işletici bir yedekleme anahtarı saklar. Bu anahtar aynı zamanda işleticinin günlüğünü okumasına olanak tanır. İşletici yapay zekayı çalıştırdığı için, tahmin almak üzere gönderdiğin fotoğraflar sunucusundan geçer.",
     "mainGoal": {
       "label": "Hangi sayı en çok önem taşıyor?"
     },
@@ -1728,7 +1729,12 @@
       "system": "Sistem",
       "title": "Tema"
     },
-    "title": "Tercihler"
+    "title": "Tercihler",
+    "analytics": {
+      "label": "Ziyaretlerimi say",
+      "description": "Bu openplate, sayfa ziyaretlerini kendi Matomo kurulumuyla sayar. Çerez kullanmaz ve ne yediğini asla kaydetmez. Kapatırsan bu tarayıcı hiçbir şey göndermez.",
+      "browserSignal": "Tarayıcın sitelerden kendisini takip etmemelerini istiyor, bu yüzden bu tarayıcı hiçbir şey göndermiyor."
+    }
   },
   "portions": {
     "unit": {
@@ -1963,8 +1969,9 @@
       "previewAlt": "Seçilen tabak fotoğrafı",
       "takePhoto": "Tabağının fotoğrafını çek",
       "title": "Tabak fotoğrafından yiyecekleri belirle",
-      "managedDescription": "Tabağında ne olduğunu anlamak için fotoğrafın bir kez okunur ve saklanmaz. Ardından, kayıtta tekrar görebilmen için yalnızca bu cihazda kalır. Bunu ayarlardaki Veri ve yedekleme altından dilediğin zaman kapatabilir veya silebilirsin.",
-      "trialScansUsed": "{{used}} / {{granted}} ücretsiz yapay zeka taramaları kullanıldı."
+      "managedDescription": "Fotoğrafın bu openplate'in sunucusuna gider, sunucu da tabağında ne olduğunu çıkarması için bunu işleticinin yapay zeka sağlayıcısına iletir. Sunucu bir kopyasını tutmaz. Sonrasında fotoğraf yalnızca bu cihazda kalır, böylece girdide onu tekrar görebilirsin. Bunu ayarlardaki Veri ve yedekleme altından istediğin zaman kapatabilir veya silebilirsin.",
+      "trialScansUsed": "{{used}} / {{granted}} ücretsiz yapay zeka taramaları kullanıldı.",
+      "managedDescriptionModel": "Fotoğrafın bu openplate'in sunucusuna gider, sunucu da tabağında ne olduğunu {{model}} modelinin çıkarması için bunu işleticinin yapay zeka sağlayıcısına iletir. Sunucu bir kopyasını tutmaz. Sonrasında fotoğraf yalnızca bu cihazda kalır, böylece girdide onu tekrar görebilirsin. Bunu ayarlardaki Veri ve yedekleme altından istediğin zaman kapatabilir veya silebilirsin."
     },
     "errors": {
       "attemptCost": "Bu deneme {{amount}} API kredini kullandı. Kullanımına kaydedildi.",
@@ -2144,7 +2151,7 @@
       "title": "Yazdıkların okunuyor",
       "label": "Girdiğin metin",
       "description": "Kelimelerin doğrudan kendi yapay zeka sağlayıcına gider, o da herhangi bir şey kaydedilmeden önce kontrol edeceğin girdilere dönüştürür.",
-      "managedDescription": "Kelimelerin, örneğinin çalıştırdığı yapay zekaya gider, o da herhangi bir şey kaydedilmeden önce kontrol edeceğin girdilere dönüştürür."
+      "managedDescription": "Kelimelerin bu openplate'in sunucusuna gider, sunucu da bunları işleticinin yapay zeka sağlayıcısına iletir. Sağlayıcı bunları, herhangi bir şey kaydedilmeden önce senin kontrol ettiğin girdilere dönüştürür."
     }
   },
   "settings": {
@@ -3163,7 +3170,7 @@
       "role": "Bu örneği bizzat yönetme yetkinin olup olmadığı.",
       "suspendedAt": "Hesabının askıya alınıp alınmadığı.",
       "activity": "Ayrıca son {{days}} günün her birinde senin için kaç fotoğrafın okunduğunu da görebilirler. Daha eski günlük sayımlar silinir.",
-      "notTheDiary": "Ne yediğin o sayfalarda yer almaz. Günlüğün herhangi bir kopyası bu cihazdan çıkmadan önce burada şifrelenir, bu nedenle orada okunamaz.",
+      "notTheDiary": "Ne yediğin bu sayfalarda yer almaz. Bir kopya cihazdan çıkmadan önce günlüğün bu cihazda şifrelenir. İşletici, parola sıfırlama işlemleri için bir yedekleme anahtarı saklar ve bu anahtar işleticinin günlüğünü okumasına olanak tanır.",
       "allowanceExpiresAt": "Kotanın bittiği tarih.",
       "invitesLeft": "Kalan davetiye sayın.",
       "trialScans": "Sana kaç ücretsiz yapay zekâ taraması tanımlandığı ve kaç tane kaldığı."

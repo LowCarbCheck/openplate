@@ -8,7 +8,7 @@ your data.
 **There are no accounts.** No sign-up, no login, no password: open the app and start logging.
 Your diary lives in your browser's own IndexedDB on the device you use, and the app server has
 no database at all: one stateless container, no required secrets, nothing to provision. Optional
-end-to-end-encrypted sync between devices is a separate service you can ignore forever.
+encrypted sync between devices is a separate service you can ignore forever.
 
 ## Try it without installing anything
 
@@ -68,7 +68,7 @@ This is the interface only. It does not translate food names or AI replies.
 
 ### Add sync
 
-If you also want end-to-end-encrypted sync across devices,
+If you also want encrypted sync across devices,
 [`docker/topologies/compose.sync.yml`](docker/topologies/compose.sync.yml) brings up the app, the
 [openplate-core](https://github.com/LowCarbCheck/openplate-core) service, and the Postgres that
 sync (and only sync) needs:
@@ -115,7 +115,7 @@ Run any subset. Only the first one is required.
 | Component                                                                     | What it is                                                                                    | Needed?                                                          |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | **openplate** (this repo)                                                     | The app. Accountless, local-first, stateless, boots with no required secrets.                 | Yes, it is the product.                                         |
-| **[openplate-core](https://github.com/LowCarbCheck/openplate-core)**          | An account service whose first feature is end-to-end-encrypted sync. Stores an email address, the encrypted diary, and an escrowed recovery code that lets a password reset return the diary ([docs/sync.md](docs/sync.md#encryption-and-what-the-operator-holds)). It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
+| **[openplate-core](https://github.com/LowCarbCheck/openplate-core)**          | An account service whose first feature is encrypted sync. Stores an email address, the encrypted diary, and an escrowed recovery code that lets a password reset return the diary ([docs/sync.md](docs/sync.md#encryption-and-what-the-operator-holds)). It also backs the optional research console at `/study` ([docs/sync.md](docs/sync.md)), which stays dark unless the sync service sets `SYNC_RESEARCH=true` (off by default). | No. Everything works without it.                                 |
 | **[openplate-inference](https://github.com/LowCarbCheck/openplate-inference)**| A self-hosted, OpenAI-compatible plate-photo endpoint: open-weight models, your own hardware. | No. BYOK cloud providers work without it.                        |
 | ~~openplate-gateway~~                                                         | Archived 2026-09-04 (M192), merged into openplate-core: a managed instance's own account now carries the AI allowance, so the separate proxy is gone. | n/a |
 

@@ -15,8 +15,11 @@
  *
  * One DEK, wrapped twice. That indirection is what makes a passphrase change
  * (or the recovery path) re-wrap 32 bytes instead of re-encrypting the user's
- * entire history — and it is why losing BOTH the passphrase and the recovery
- * code is unrecoverable by anyone, including us.
+ * entire history. Losing BOTH the passphrase and the recovery code is not the
+ * end on an openplate-core server: it keeps a sealed copy of the recovery code
+ * (the escrow, `PROTOCOL.md` §3.1), which a password reset opens, and which
+ * also lets whoever holds that server's database and `SERVER_SECRET` read the
+ * diary. This module never sees the escrow; the signup action sends the code.
  *
  * Neither the DEK nor either KEK is returned. The caller gets only the two
  * wrapped-DEK records, which are exactly what goes on the wire

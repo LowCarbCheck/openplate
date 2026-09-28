@@ -386,7 +386,7 @@
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Cet appareil, ouvrir le menu",
     "footerTagline": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire qui reste sur ton appareil",
-    "footerTaglineManaged": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un journal alimentaire que tu es le seul à pouvoir lire",
+    "footerTaglineManaged": "{{appName}} par <lcc>lowcarbcheck.org</lcc>, un suivi alimentaire qui chiffre ton journal sur ton appareil",
     "imprint": "Mentions légales",
     "licence": "Licence MIT",
     "licenceShort": "Licence",
@@ -1154,7 +1154,8 @@
       "body": "Un compte existe déjà pour {{email}}. Connecte-toi avec le mot de passe que tu as choisi.",
       "signIn": "Aller à la connexion"
     },
-    "working": "Configuration de ton compte"
+    "working": "Configuration de ton compte",
+    "operatorKey": "Ton journal est chiffré sur cet appareil. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal."
   },
   "landing": {
     "close": {
@@ -1306,12 +1307,12 @@
       "title": "Opérationnel en une minute environ"
     },
     "sync": {
-      "body": "Enregistre ton déjeuner sur ton téléphone, puis consulte la semaine sur ton ordinateur portable. La synchronisation reste facultative. Ton appareil chiffre ton journal avant de l'envoyer à un serveur openplate-core, que tu utilises le nôtre ou héberges le tien. Ton mot de passe ne quitte pas ton appareil. Le serveur conserve aussi une clé de récupération scellée. Cela permet de réinitialiser le mot de passe, et cela signifie que l'opérateur du serveur peut techniquement ouvrir ton journal.",
+      "body": "Enregistre ton déjeuner sur ton téléphone, puis consulte ta semaine sur ton ordinateur portable. La synchronisation est facultative. Ton appareil chiffre ton journal avant de l'envoyer à un serveur openplate-core, que tu utilises le nôtre ou que tu héberges le tien. Ton mot de passe reste sur ton appareil. Le serveur conserve aussi une clé de secours scellée. Cela permet de réinitialiser le mot de passe, et cela signifie que l'administrateur du serveur peut ouvrir ton journal.",
       "link": "Créer un compte",
       "photos": "Les photos d'assiette ne bougent pas d'ici. Elles ne font jamais partie d'un blob de synchronisation.",
       "shotAlt": "L'écran de compte sur un téléphone, déconnecté, avec un lien pour se connecter.",
       "title": "Deux appareils, un journal",
-      "bodyManaged": "Saisis ton déjeuner sur ton téléphone, puis passe en revue ta semaine sur ton ordinateur. Chaque compte fonctionne ainsi par défaut. Ton journal est chiffré sur ton appareil, et le serveur ne stocke que le texte chiffré. L'administrateur conserve aussi une clé de récupération. Cette clé te permet de restaurer ton journal après une réinitialisation de mot de passe, ce qui signifie que l'administrateur peut techniquement déchiffrer tes données.",
+      "bodyManaged": "Enregistre ton déjeuner sur ton téléphone, puis consulte ta semaine sur ton ordinateur portable. Tous les comptes fonctionnent ainsi par défaut. Ton journal est chiffré sur ton appareil avant d'être téléversé. L'administrateur conserve une clé de secours pour que tu puisses récupérer ton journal après avoir oublié ton mot de passe, et cette clé lui permet de lire ton journal.",
       "linkManaged": "Se connecter à ton compte"
     }
   },
@@ -1377,7 +1378,7 @@
     "join": "Rejoindre · openplate",
     "joinStudy": "Rejoindre une étude · openplate",
     "landing": "openplate, un suivi alimentaire qui reste sur ton appareil",
-    "landingManaged": "openplate, un suivi alimentaire que toi seul peux lire",
+    "landingManaged": "openplate, un suivi alimentaire qui chiffre ton journal sur ton appareil",
     "landingDescription": "Prends une photo d'assiette ou recherche ce que tu as mangé. openplate calcule les glucides en quelques secondes et les compare à l'objectif quotidien fixé. Gratuit, sans compte, et chaque élément saisi reste sur ton appareil.",
     "lifePhase": "Période de vie · openplate",
     "nutrition": "Alimentation et objectifs · openplate",
@@ -1629,7 +1630,7 @@
     },
     "loading": "Chargement…",
     "localFirst": "Tes données restent sur <strong>cet appareil</strong>. Nous ne les voyons jamais. Le journal que tu t'apprêtes à commencer reste local, toujours.",
-    "localFirstManaged": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'opérateur gère l'IA, les photos envoyées pour estimation transitent donc par ce serveur. La politique de confidentialité détaille les accès possibles de l'opérateur.",
+    "localFirstManaged": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'administrateur conserve une clé de secours pour restaurer ton journal si tu oublies ton mot de passe. Cette clé lui permet aussi de lire ton journal. L'administrateur gère l'IA, donc les photos que tu envoies pour estimation transitent par son serveur.",
     "mainGoal": {
       "label": "Quel chiffre compte le plus ?"
     },
@@ -1728,7 +1729,12 @@
       "system": "Système",
       "title": "Thème"
     },
-    "title": "Préférences"
+    "title": "Préférences",
+    "analytics": {
+      "label": "Compter mes visites",
+      "description": "Cette instance d'openplate compte les visites de pages avec son propre Matomo. Elle n'utilise aucun cookie et n'enregistre jamais ce que tu manges. Si tu la désactives, ce navigateur n'envoie rien.",
+      "browserSignal": "Ton navigateur demande aux sites de ne pas le suivre, donc ce navigateur n'envoie rien."
+    }
   },
   "portions": {
     "unit": {
@@ -1963,8 +1969,9 @@
       "previewAlt": "Photo d'assiette sélectionnée",
       "takePhoto": "Prends ton assiette en photo",
       "title": "Identifier les aliments à partir d'une photo d'assiette",
-      "managedDescription": "Ta photo est lue une seule fois pour déterminer ce qui se trouve dans ton assiette, sans être conservée. Elle reste ensuite uniquement sur cet appareil pour que tu puisses la revoir sur l'entrée. Tu peux désactiver cette option ou la supprimer à tout moment sous Données et sauvegarde dans les paramètres.",
-      "trialScansUsed": "{{used}} sur {{granted}} scans IA gratuits utilisés."
+      "managedDescription": "Ta photo est envoyée au serveur de cette instance d'openplate, qui la transmet au fournisseur d'IA de l'administrateur pour déterminer ce qui se trouve sur ton assiette. Le serveur n'en conserve aucune copie. La photo reste ensuite uniquement sur cet appareil, pour que tu puisses la revoir dans l'entrée. Tu peux désactiver cette option ou supprimer la photo à tout moment dans Données et sauvegarde, dans les réglages.",
+      "trialScansUsed": "{{used}} sur {{granted}} scans IA gratuits utilisés.",
+      "managedDescriptionModel": "Ta photo est envoyée au serveur de cette instance d'openplate, qui la transmet au fournisseur d'IA de l'administrateur, où le modèle {{model}} détermine ce qui se trouve sur ton assiette. Le serveur n'en conserve aucune copie. La photo reste ensuite uniquement sur cet appareil, pour que tu puisses la revoir dans l'entrée. Tu peux désactiver cette option ou supprimer la photo à tout moment dans Données et sauvegarde, dans les réglages."
     },
     "errors": {
       "attemptCost": "Cette tentative a utilisé {{amount}} de tes crédits API. Elle est enregistrée dans ton utilisation.",
@@ -2144,7 +2151,7 @@
       "title": "Lecture de ta saisie",
       "label": "Ce que tu as saisi",
       "description": "Tes mots vont directement à ton propre fournisseur d'IA, qui les transforme en entrées que tu vérifies avant tout enregistrement.",
-      "managedDescription": "Tes mots vont à l'IA qu'exécute ton instance, qui les transforme en entrées que tu vérifies avant tout enregistrement."
+      "managedDescription": "Tes mots sont envoyés au serveur de cette instance d'openplate, qui les transmet au fournisseur d'IA de l'administrateur. Celui-ci les transforme en entrées que tu vérifies avant tout enregistrement."
     }
   },
   "settings": {
@@ -3163,7 +3170,7 @@
       "role": "Si tu peux administrer toi-même cette instance.",
       "suspendedAt": "Si ton compte est suspendu.",
       "activity": "Ces personnes peuvent aussi voir combien de photos ont été analysées pour toi lors de chacun des {{days}} derniers jours. Les décomptes quotidiens plus anciens sont supprimés.",
-      "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte, il ne peut donc pas y être lu.",
+      "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte. L'administrateur conserve une clé de secours pour réinitialiser les mots de passe, et cette clé lui permet de lire ton journal.",
       "allowanceExpiresAt": "La date de fin de ton quota.",
       "invitesLeft": "Le nombre d'invitations qu'il te reste.",
       "trialScans": "Le nombre de scans IA gratuits qui t'ont été accordés, et combien il t'en reste."

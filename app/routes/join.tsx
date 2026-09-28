@@ -209,6 +209,12 @@ export default function Join() {
         <CardHeader>
           <CardTitle>{t('join.title')}</CardTitle>
           <CardDescription>{t('join.description')}</CardDescription>
+          {/* WHAT THE ESCROW MEANS, before the password is chosen (2026-09-28). Every
+              openplate-core server keeps a sealed copy of the recovery code so a
+              forgotten password restores the diary, and whoever runs it can read the
+              diary with it. Said here, where the person decides, and from the first
+              paint, so it moves nothing. */}
+          <p className="text-sm">{t('join.operatorKey')}</p>
         </CardHeader>
         {shown.status === 'needs-https' && (
           <CardContent>

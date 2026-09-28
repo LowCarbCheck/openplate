@@ -13,6 +13,7 @@ import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { AwardsVisibilityToggle } from '#app/components/gamification/awards-visibility-toggle';
+import { AnalyticsOptOutToggle } from '#app/components/settings/analytics-opt-out-toggle';
 import { ThemeSelector } from '#app/components/theme-selector';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SettingsGroup, SettingsSection } from '#app/components/settings/settings-section';
@@ -104,6 +105,9 @@ export default function SettingsPreferences() {
         only door to that screen.
       */}
       <AwardsVisibilityToggle />
+
+      {/* Visit counting (2026-09-28): the way to object to it, reachable signed out. */}
+      <AnalyticsOptOutToggle />
     </div>
   );
 }

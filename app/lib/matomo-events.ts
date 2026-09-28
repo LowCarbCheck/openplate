@@ -71,6 +71,7 @@
  * is what keeps the feature flag out of forty components.
  */
 import type { AnalyticsEventLevel } from '#app/config/analytics';
+import { mayCountVisits } from '#app/lib/analytics-opt-out';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 
 declare global {
@@ -126,6 +127,9 @@ function trackEvent(tier: EventTier, category: string, action: string, name?: st
   // SSR guard idiom `app/lib/sync/sync-state.ts` uses for `localStorage`.
   if (globalThis.window === undefined) return;
   if (LEVEL_RANK[currentLevel] < TIER_RANK[tier]) return;
+  // Do Not Track, Global Privacy Control or the Preferences switch: not even
+  // buffered, so a tracker that loads later has nothing of this visit to send.
+  if (!mayCountVisits()) return;
   const _paq = (window._paq = window._paq || []);
   const args: unknown[] = ['trackEvent', category, action];
   if (name !== undefined) args.push(name);

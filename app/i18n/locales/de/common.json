@@ -386,7 +386,7 @@
     "cancelContract": "Verträge hier kündigen",
     "deviceMenuLabel": "Dieses Gerät, Menü öffnen",
     "footerTagline": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
-    "footerTaglineManaged": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das nur du lesen kannst",
+    "footerTaglineManaged": "{{appName}} von <lcc>lowcarbcheck.org</lcc>, ein Ernährungstagebuch, das dein Tagebuch auf deinem Gerät verschlüsselt",
     "imprint": "Impressum",
     "licence": "MIT-Lizenz",
     "licenceShort": "Lizenz",
@@ -1154,7 +1154,8 @@
       "body": "Für {{email}} gibt es bereits ein Konto. Melde dich mit deinem Passwort an.",
       "signIn": "Zur Anmeldung"
     },
-    "working": "Konto wird eingerichtet"
+    "working": "Konto wird eingerichtet",
+    "operatorKey": "Dein Tagebuch wird auf diesem Gerät verschlüsselt. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel zum Zurücksetzen vergessener Passwörter. Mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen."
   },
   "landing": {
     "close": {
@@ -1306,12 +1307,12 @@
       "title": "In etwa einer Minute einsatzbereit"
     },
     "sync": {
-      "body": "Erfasse dein Mittagessen auf dem Smartphone und prüfe die Woche dann auf dem Laptop. Die Synchronisierung ist optional. Dein Gerät verschlüsselt dein Tagebuch, bevor es an einen openplate-core-Server gesendet wird, ganz gleich, ob du unseren nutzt oder selbst hostest. Dein Passwort bleibt auf deinem Gerät. Der Server speichert zudem einen versiegelten Wiederherstellungsschlüssel. Dies ermöglicht das Zurücksetzen des Passworts und bedeutet technisch, dass der Serverbetreiber dein Tagebuch öffnen kann.",
+      "body": "Trage das Mittagessen auf deinem Telefon ein und sieh dir die Woche auf deinem Laptop an. Die Synchronisation ist optional. Dein Gerät verschlüsselt dein Tagebuch, bevor es an einen openplate-core-Server gesendet wird, egal ob du unseren nutzt oder selbst hostest. Dein Passwort bleibt auf deinem Gerät. Der Server hält außerdem einen versiegelten Wiederherstellungsschlüssel vor. Das ermöglicht das Zurücksetzen von Passwörtern, bedeutet aber auch, dass die Serverbetreiber dein Tagebuch öffnen können.",
       "link": "Konto erstellen",
       "photos": "Fotos von Tellern bleiben dort, wo sie sind. Sie sind niemals Teil der Synchronisation.",
       "shotAlt": "Die Kontoansicht auf einem Smartphone, abgemeldet, mit einem Link zum Anmelden.",
       "title": "Zwei Geräte, ein Tagebuch",
-      "bodyManaged": "Trage dein Mittagessen auf dem Smartphone ein und analysiere deine Woche auf dem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird auf deinem Gerät verschlüsselt, und der Server speichert lediglich die verschlüsselten Daten. Der Betreiber speichert zudem einen Wiederherstellungsschlüssel. Mit diesem Schlüssel kannst du dein Tagebuch nach dem Zurücksetzen des Passworts wiederherstellen. Dadurch kann der Betreiber deine Daten technisch gesehen auch entschlüsseln.",
+      "bodyManaged": "Trage das Mittagessen auf deinem Telefon ein und prüfe deine Woche auf deinem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird vor dem Hochladen auf deinem Gerät verschlüsselt. Die betreibende Person verwahrt einen Sicherungsschlüssel, damit du dein Tagebuch nach einem vergessenen Passwort wiederherstellen kannst. Mit diesem Schlüssel kann sie dein Tagebuch lesen.",
       "linkManaged": "Bei deinem Konto anmelden"
     }
   },
@@ -1377,7 +1378,7 @@
     "join": "Beitreten · openplate",
     "joinStudy": "Bei einer Studie mitmachen · openplate",
     "landing": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt",
-    "landingManaged": "openplate, ein Ernährungstagebuch, das nur du lesen kannst",
+    "landingManaged": "openplate, ein Ernährungstagebuch, das dein Tagebuch auf deinem Gerät verschlüsselt",
     "landingDescription": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir in Sekundenschnelle die Kohlenhydrate und vergleicht sie mit deinem festgelegten Tagesziel. Kostenlos, ohne Account, und alles, was du einträgst, bleibt auf deinem Gerät.",
     "lifePhase": "Lebensphase · openplate",
     "nutrition": "Ernährung und Ziele · openplate",
@@ -1629,7 +1630,7 @@
     },
     "loading": "Wird geladen…",
     "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
-    "localFirstManaged": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong> und synchronisiert sich verschlüsselt mit dem Server. Der Betreiber verwaltet die KI, daher werden für Schätzungen versendete Fotos bei der Übertragung über diesen Server geleitet. Die Datenschutzerklärung beschreibt im Detail, worauf der Betreiber Zugriff hat.",
+    "localFirstManaged": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong> und synchronisiert sich verschlüsselt mit dem Server. Die betreibende Person verwahrt einen Sicherungsschlüssel, um dein Tagebuch wiederherzustellen, falls du dein Passwort vergisst. Mit diesem Schlüssel kann sie dein Tagebuch auch lesen. Sie betreibt die KI, daher laufen Fotos für Schätzungen über ihren Server.",
     "mainGoal": {
       "label": "Welche Zahl ist am wichtigsten?"
     },
@@ -1728,7 +1729,12 @@
       "system": "System",
       "title": "Erscheinungsbild"
     },
-    "title": "Darstellung & Sprache"
+    "title": "Darstellung & Sprache",
+    "analytics": {
+      "label": "Meine Besuche zählen",
+      "description": "Diese openplate-Instanz zählt Seitenbesuche mit einem eigenen Matomo. Sie verwendet keine Cookies und protokolliert niemals, was du isst. Wenn du dies abschaltest, überträgt dieser Browser nichts.",
+      "browserSignal": "Dein Browser fordert Websites auf, dich nicht zu verfolgen, daher überträgt dieser Browser nichts."
+    }
   },
   "portions": {
     "unit": {
@@ -1963,8 +1969,9 @@
       "previewAlt": "Ausgewähltes Teller-Foto",
       "takePhoto": "Teller-Foto aufnehmen",
       "title": "Lebensmittel aus einem Teller-Foto erkennen",
-      "managedDescription": "Dein Foto wird einmal ausgelesen, um zu erkennen, was auf deinem Teller liegt, und nicht gespeichert. Danach bleibt es nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst das unter „Daten und Backup“ in den Einstellungen jederzeit ausschalten oder löschen.",
-      "trialScansUsed": "{{used}} von {{granted}} kostenlosen KI-Scans verbraucht."
+      "managedDescription": "Dein Foto geht an den Server dieser openplate-Instanz. Dieser leitet es an den KI-Anbieter der betreibenden Person weiter, um zu erkennen, was auf deinem Teller liegt. Der Server speichert keine Kopie. Danach verbleibt das Foto nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst dies in den Einstellungen unter Daten und Sicherung jederzeit abschalten oder löschen.",
+      "trialScansUsed": "{{used}} von {{granted}} kostenlosen KI-Scans verbraucht.",
+      "managedDescriptionModel": "Dein Foto geht an den Server dieser openplate-Instanz. Dieser leitet es an den KI-Anbieter der betreibenden Person weiter, wo das Modell {{model}} erkennt, was auf deinem Teller liegt. Der Server speichert keine Kopie. Danach verbleibt das Foto nur auf diesem Gerät, damit du es im Eintrag wiedersehen kannst. Du kannst dies in den Einstellungen unter Daten und Sicherung jederzeit abschalten oder löschen."
     },
     "errors": {
       "attemptCost": "Dieser Versuch hat {{amount}} deines API-Guthabens verbraucht. Es wurde in deinen Nutzungsdaten erfasst.",
@@ -2144,7 +2151,7 @@
       "title": "Deine Eingabe wird gelesen",
       "label": "Deine Eingabe",
       "description": "Deine Eingabe geht direkt an deinen eigenen KI-Anbieter, der daraus Einträge macht, die du vor dem Speichern prüfst.",
-      "managedDescription": "Deine Eingabe geht an die KI deiner Instanz, die daraus Einträge macht, die du vor dem Speichern prüfst."
+      "managedDescription": "Deine Texte gehen an den Server dieser openplate-Instanz. Dieser leitet sie an den KI-Anbieter der betreibenden Person weiter. Er wandelt sie in Einträge um, die du prüfst, bevor etwas gespeichert wird."
     }
   },
   "settings": {
@@ -3163,7 +3170,7 @@
       "role": "Ob du diese Instanz selbst verwalten darfst.",
       "suspendedAt": "Ob dein Konto gesperrt ist.",
       "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
-      "notTheDiary": "Was du isst, steht nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie davon das Gerät verlässt, sodass es dort nicht gelesen werden kann.",
+      "notTheDiary": "Was du isst, erscheint nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie das Gerät verlässt. Die betreibende Person verwahrt einen Sicherungsschlüssel für Passwort-Zurücksetzungen. Mit diesem Schlüssel kann sie dein Tagebuch lesen.",
       "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
       "invitesLeft": "Wie viele Einladungen du noch übrig hast.",
       "trialScans": "Wie viele kostenlose KI-Scans du bekommen hast und wie viele noch übrig sind."
