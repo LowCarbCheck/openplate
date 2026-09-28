@@ -198,6 +198,7 @@ const catalogSchema = z.object({
       stale: z.string(),
       alreadySubscribed: z.string(),
       unavailable: z.string(),
+      withdrawalLink: z.string(),
     }),
     choice: z.object({
       legend: z.string(),

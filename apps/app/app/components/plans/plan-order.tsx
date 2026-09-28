@@ -14,7 +14,9 @@
  * `offer.texts`. This file writes no price, no plan name and no sentence about
  * the order. What it does write is chrome: the label of a link to the terms,
  * the label of a link to the withdrawal page, and the one line above the
- * button that says why it is held or what went wrong.
+ * button that says why it is held or what went wrong. The address of the
+ * withdrawal function that the notice prints becomes a link with that same
+ * address as its text, so the notice still reads exactly as served.
  *
  * ── NOTHING IS TICKED FOR THE PERSON ─────────────────────────────────────
  *
@@ -56,6 +58,7 @@ import { SelfHostCard } from '#app/components/plans/self-host-card';
 import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { readIntendedPlan } from '#app/lib/plans/intended-plan';
+import { WIDERRUFEN_PATH, splitAtWiderrufenAddress } from '#app/lib/plans/widerrufen-address';
 import { DATE_SLOT, TERMS_SLOT, type OfferPlan, type PlanKey, type PlanOffer } from '#app/lib/sync/engine/client/plans-wire';
 import { cn } from '#app/lib/utils';
 
@@ -122,6 +125,26 @@ function withSlot(text: string, slot: string, node: ReactNode): ReactNode {
       {text.slice(0, at)}
       {node}
       {text.slice(at + slot.length)}
+    </>
+  );
+}
+
+/**
+ * The withdrawal notice with the address it prints drawn as a link (M265 spec 05).
+ *
+ * The biller prints the full address of the withdrawal function inside the
+ * sentence. That address becomes a link to the app's own `/widerrufen` route,
+ * and stays the link's text, so the sentence reads exactly as served. A notice
+ * that prints no such address is drawn as plain text, as before.
+ */
+function withWiderrufenLink(text: string): ReactNode {
+  const parts = splitAtWiderrufenAddress(text);
+  if (parts === null) return text;
+  return (
+    <>
+      {parts.before}
+      <LegalLink to={WIDERRUFEN_PATH}>{parts.address}</LegalLink>
+      {parts.after}
     </>
   );
 }
@@ -223,7 +246,7 @@ export function PlanOrder({
         </ul>
 
         <p data-slot="plan-order-withdrawal" className="text-sm">
-          {offer.texts.withdrawal}{' '}
+          {withWiderrufenLink(offer.texts.withdrawal)}{' '}
           <LegalLink to={offer.links.withdrawal}>{t('plan.order.withdrawalLink')}</LegalLink>
         </p>
 

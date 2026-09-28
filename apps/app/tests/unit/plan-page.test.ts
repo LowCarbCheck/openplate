@@ -298,6 +298,20 @@ describe('the order page', () => {
     );
   });
 
+  it('links the address of the withdrawal function the notice prints, and keeps the notice as served (M265/05)', () => {
+    const address = 'https://plans.example.org/widerrufen';
+    const withdrawal = `Fixture withdrawal notice at ${address}. The fixture form is on the page:`;
+    const offer: PlanOffer = { ...OFFER, texts: { ...OFFER.texts, withdrawal } };
+    const markup = render({ kind: 'ready', plan: FREE }, { offer });
+    const notice = /<p[^>]*data-slot="plan-order-withdrawal"[^>]*>(.*?)<\/p>/s.exec(markup)?.[1] ?? '';
+    assert.match(notice, new RegExp(`<a[^>]*href="/widerrufen"[^>]*>${address}</a>`));
+    // The notice reads exactly as served once the markup is taken away.
+    assert.equal(notice.replaceAll(/<[^>]+>/g, ''), `${withdrawal} ${enCommon.plan.order.withdrawalLink}`);
+    // CONTROL: the fixture notice prints no address and gains no such link.
+    const plain = render({ kind: 'ready', plan: FREE });
+    assert.doesNotMatch(plain, /href="\/widerrufen"/);
+  });
+
   it('starts with both boxes unticked', () => {
     const markup = render({ kind: 'ready', plan: FREE }, { selectedPlan: 'yearly' });
     const boxes = [...markup.matchAll(/<input[^>]*type="checkbox"[^>]*>/g)].map((match) => match[0]);
