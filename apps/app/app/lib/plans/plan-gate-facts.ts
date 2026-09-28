@@ -285,8 +285,12 @@ function verdictFrom({
   });
 }
 
-/** Whether the browser says it has a network. Anything but an explicit `false` is online. */
-function isDeviceOnline(): boolean {
+/**
+ * Whether the browser says it has a network. Anything but an explicit `false`
+ * is online. Exported for `plan-gate-hold.ts`, which applies the same offline
+ * rule to a cold start.
+ */
+export function isDeviceOnline(): boolean {
   return globalThis.navigator?.onLine !== false;
 }
 

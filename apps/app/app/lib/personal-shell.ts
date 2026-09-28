@@ -19,6 +19,13 @@
  */
 import type { OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 
+/**
+ * Every answer the `_personal` loader can give the layout: the onboarding
+ * gate's kinds, and `plan-pending`, a cold start the paywall holds on the boot
+ * splash until the session has reopened (M265 spec 10, `plan-gate-hold.ts`).
+ */
+export type PersonalGateKind = OnboardingGateOutcome['kind'] | 'plan-pending';
+
 /** The three chromes the layout can draw. */
 export type PersonalShell =
   /** The tracker: sidebar, header with the device chip, back arrow. */
@@ -38,8 +45,8 @@ export type PersonalShell =
 
 /** Everything the mapping reads. */
 export interface PersonalShellInput {
-  /** What `resolveOnboardingGate` answered for this request. */
-  gateKind: OnboardingGateOutcome['kind'];
+  /** What the loader answered for this request. */
+  gateKind: PersonalGateKind;
   /** Was the request on a `GATE_EXEMPT_PATHS` route? The same fact the gate used. */
   isExemptPath: boolean;
   /** `getInstancePolicy(...).strangerSeesThePublicShell` for this instance. */
@@ -49,15 +56,21 @@ export interface PersonalShellInput {
 /**
  * The chrome for one gate answer, in a fixed order.
  *
+ * 0. **`plan-pending` is the loading screen, on every instance.** It is the
+ *    screen `HydrateFallback` has already drawn, so a held cold start shows one
+ *    splash from the first paint to the plan page, and no page is drawn under
+ *    it. Ahead of the policy, because the paywall is not a managed-instance
+ *    question: an open instance that sells plans holds the same way. An
+ *    instance that sells nothing never produces the kind.
  * 1. **`exempt` plus the policy is the public chrome.** This is the visitor
  *    the whole change is about.
  * 2. **`wait` on an exempt path, plus the policy, is the loading screen.** The
  *    cold-boot snapshot makes this the FIRST answer a stranger gets, so it is
  *    the one that decides whether a sidebar flashes.
  * 3. **Everything else is the app.** That includes `wait` on a guarded route,
- *    which is a device with a diary reopening its session, and every kind on
- *    an OPEN instance, where nothing about this changes: the policy answers
- *    `false` there and both branches above fall through.
+ *    which is a device with a diary reopening its session, and every
+ *    onboarding kind on an OPEN instance, where nothing about this changes:
+ *    the policy answers `false` there and both branches above fall through.
  *
  * @param input - the gate answer, the path fact and the instance policy.
  * @returns which chrome to draw.
@@ -67,6 +80,7 @@ export function shellForGate({
   isExemptPath,
   strangerSeesThePublicShell,
 }: PersonalShellInput): PersonalShell {
+  if (gateKind === 'plan-pending') return 'loading';
   if (!strangerSeesThePublicShell) return 'app';
   if (gateKind === 'exempt') return 'public';
   if (gateKind === 'wait' && isExemptPath) return 'loading';

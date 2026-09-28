@@ -276,6 +276,24 @@ const SHELL_CASES: ShellCase[] = [
     // The policy is the only thing standing between this input and 'public'.
     control: { change: { strangerSeesThePublicShell: true }, shell: 'public' },
   },
+  // THE PAYWALL'S HOLD (M265 spec 10). A cold start of a device the paywall
+  // locked last time draws the boot splash and no page until the session has
+  // reopened, so a locked person never sees the diary before the plan page.
+  {
+    name: 'a cold start the paywall holds, managed',
+    input: { gateKind: 'plan-pending', isExemptPath: false, strangerSeesThePublicShell: true },
+    shell: 'loading',
+    // The same start with the gate answered: the diary, in the app shell.
+    control: { change: { gateKind: 'pass' }, shell: 'app' },
+  },
+  {
+    name: 'a cold start the paywall holds, on an open instance that sells plans',
+    input: { gateKind: 'plan-pending', isExemptPath: false, strangerSeesThePublicShell: false },
+    shell: 'loading',
+    // The one kind that leaves an open instance's app shell, and only for the
+    // splash every boot already shows: the gate answered, it is the app again.
+    control: { change: { gateKind: 'pass' }, shell: 'app' },
+  },
 ];
 
 describe('shellForGate', () => {
@@ -292,8 +310,10 @@ describe('shellForGate', () => {
   }
 
   it('never leaves an open instance a chrome it did not have before', () => {
-    // The whole open-instance surface in one sweep: no input can take a
-    // self-hoster out of the app shell.
+    // The whole open-instance surface in one sweep: no onboarding answer can
+    // take a self-hoster out of the app shell. `plan-pending` is not in the
+    // list on purpose, see its two rows above: it is the boot splash, and an
+    // instance that sells nothing never produces it.
     for (const gateKind of ['pass', 'wait', 'exempt', 'welcome', 'recover', 'onboard', 'self-heal'] as const) {
       for (const isExemptPath of [true, false]) {
         assert.equal(
