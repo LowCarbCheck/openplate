@@ -30,8 +30,8 @@
   },
   "dependencies": {
     "dotenv": "^16.6.1",
-    "drizzle-orm": "^0.39.3",
-    "express": "^4.21.2",
+    "drizzle-orm": "^0.45.2",
+    "express": "^4.22.3",
     "pg": "^8.16.3",
     "undici": "8.10.0",
     "web-push": "^3.6.7"
@@ -42,8 +42,8 @@
     "@types/node": "^22.10.0",
     "@types/pg": "^8.15.6",
     "@types/web-push": "^3.6.4",
-    "drizzle-kit": "^0.30.6",
-    "esbuild": "^0.24.2",
+    "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.25.0",
     "oxlint": "1.78.0",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",

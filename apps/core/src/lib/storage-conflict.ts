@@ -14,21 +14,43 @@ import { asString } from './json.js';
 /** Postgres SQLSTATE for a unique-constraint violation; the `pg` driver surfaces it as `error.code`. */
 export const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
 
-/** The single property this module reads off a driver error: the five-character SQLSTATE. */
+/**
+ * The two properties this module reads off a caught value: the five-character
+ * SQLSTATE, and the error it wraps, if any.
+ */
 interface SqlstateCarrier {
   readonly code?: string;
+  readonly cause?: unknown;
 }
+
+/**
+ * How many wrapping errors `sqlstate` looks through. drizzle-orm 0.44 and
+ * later throw a `DrizzleQueryError` whose `cause` is the `pg` error, so the
+ * code sits one level down. A small bound keeps a cyclic `cause` chain finite.
+ */
+const MAX_CAUSE_DEPTH = 4;
 
 /**
  * The SQLSTATE of a caught value, or `null` when it carries none.
  *
+ * The value's own `code` wins. Without one, the `cause` chain is followed, so
+ * a driver error wrapped by the ORM still reads as its SQLSTATE; without that
+ * every CAS path would turn a routine lost race into a 500.
+ *
  * `Object()` boxes primitives instead of narrowing them, so a thrown string or
- * number simply has no `code` property and reads as `null` — the same answer a
+ * number simply has no `code` property and reads as `null`, the same answer a
  * non-Postgres `Error` gives, which is exactly what callers want.
  */
 export function sqlstate(cause: unknown): string | null {
-  const carrier: SqlstateCarrier = Object(cause);
-  return asString(carrier.code);
+  let current = cause;
+  for (let depth = 1; depth <= MAX_CAUSE_DEPTH; depth += 1) {
+    if (current === null || current === undefined) return null;
+    const carrier: SqlstateCarrier = Object(current);
+    const code = asString(carrier.code);
+    if (code !== null) return code;
+    current = carrier.cause;
+  }
+  return null;
 }
 
 /**
