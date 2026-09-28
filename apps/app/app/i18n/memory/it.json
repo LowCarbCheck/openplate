@@ -3314,8 +3314,8 @@
     "en": "{{count}} day of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_one",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova."
+    "at": "2026-09-29",
+    "it": "Hai {{count}} giorno di scansioni IA in prova."
   },
   "2804c5c36d960f15": {
     "en": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
@@ -3377,8 +3377,8 @@
     "en": "{{count}} days of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_other",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Ti restano {{count}} giorni di scansioni IA nel tuo periodo di prova."
+    "at": "2026-09-29",
+    "it": "Hai {{count}} giorni di scansioni IA in prova."
   },
   "292c1d93ff155676": {
     "en": "Saved meals",
@@ -4630,8 +4630,8 @@
     "en": "Your trial's AI scans end today.",
     "path": "common:plan.countdown.lastDay",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Le scansioni IA del tuo periodo di prova terminano oggi."
+    "at": "2026-09-29",
+    "it": "La tua prova di scansioni IA scade oggi."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",

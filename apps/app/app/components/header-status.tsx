@@ -31,13 +31,16 @@ import {
  * inside the same box. An error persists until dismissed, so its text wraps
  * instead of truncating to an unreadable one: `text-sm line-clamp-2` for
  * every other tone, but an ERROR drops to `text-xs font-semibold leading-4
- * line-clamp-3` (or `line-clamp-2` when it also carries a description) so a
- * long sentence, in German especially, fits whole rather than clipping after
- * two lines of the larger size (M225 follow-up). Three lines at `leading-4`
- * (16px) plus a 16px description is 64px, so the bar's height is still fixed
- * by the header's own `min-h-16`, and the `AvatarMenu` and the brand mark
- * are siblings of this component rather than children of it, so neither
- * shifts by a pixel.
+ * line-clamp-3` so a long sentence, in German especially, fits whole rather
+ * than clipping after two lines of the larger size (M225 follow-up). Three
+ * lines at `leading-4` (16px) is 48px.
+ *
+ * FOUR LINES AT MOST, AND THEY FIT THE BOX. The header is `min-h-16` with a
+ * 1px bottom border, so its content box is 63px. A compact status that also
+ * carries a description (the trial countdown near its end, with its recap
+ * line) draws two lines of each at `leading-tight` (15px): 30 + 1 + 30 is
+ * 61px. The `AvatarMenu` and the brand mark are siblings of this component
+ * rather than children of it, so neither shifts by a pixel.
  *
  * THE `h1` IS NOT RENDERED while a status shows. That is deliberate and not an
  * oversight: for those seconds the status IS what the header says, and it is
@@ -64,6 +67,17 @@ const TONE_ICON = {
   warning: AlertTriangle,
   error: AlertCircle,
 } as const;
+
+/**
+ * The sentence line's size and line height.
+ *
+ * @param input.isCompact - an error or a status with an action, which drops to `text-xs`.
+ * @param input.hasFourLines - a compact status that also carries a description, which shares four lines.
+ */
+function compactTextRowClass({ isCompact, hasFourLines }: { isCompact: boolean; hasFourLines: boolean }): string {
+  if (!isCompact) return 'text-sm font-semibold';
+  return hasFourLines ? 'text-xs font-semibold leading-tight' : 'text-xs font-semibold leading-4';
+}
 
 /**
  * The action's words and its tap area.
@@ -125,8 +139,21 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   // every language (`tests/e2e/header-status.spec.ts`), and the trial
   // countdown in the three longest (`tests/e2e/trial-countdown.spec.ts`).
   const isCompact = isError || status.action !== null;
-  const textRowClass = isCompact ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
+  // A COMPACT STATUS WITH A SECOND LINE SHARES FOUR LINES (M265/08). The
+  // recap line under the trial countdown used to be one `truncate` line, and
+  // at 390 px it ended in an ellipsis in every language, English included:
+  // the status face is Victor Mono, a flat 7.2px a character at `text-xs`, so
+  // the 208px column holds 28 of them. It now wraps to a second line, and all
+  // four lines drop to `leading-tight` so they fit the header's box (the file
+  // comment has the sum). `tests/e2e/trial-recap-line-fits.spec.ts` writes
+  // every day sentence and recap of all six languages into that row.
+  const hasFourLines = isCompact && hasDescription;
+  const textRowClass = compactTextRowClass({ isCompact, hasFourLines });
   const textClampClass = isCompact && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
+  const descriptionClass =
+    hasFourLines ?
+      'line-clamp-2 text-balance break-words text-xs leading-tight text-muted-foreground'
+    : 'truncate text-xs leading-4 text-muted-foreground';
 
   return (
     <div
@@ -147,7 +174,9 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
               plus `break-words` replaces `truncate` here (M225): an error stays
               on screen until dismissed, so cutting it to one line with an
               ellipsis made it unreadable. The description below keeps
-              `truncate`, it is supplementary, never the whole message.
+              `truncate` beside a full-size sentence, where two lines of
+              `text-sm` leave it one; beside a compact one it wraps to two
+              (M265/08, see `hasFourLines`).
 
               `text-balance` is the mobile audit's fix for the orphan: at 390 px
               "That's seven days logged in a row." broke after "in a" and left
@@ -173,7 +202,7 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
             </span>
           </span>
           {status.description !== null && (
-            <span data-slot="header-status-description" className="truncate text-xs leading-4 text-muted-foreground">
+            <span data-slot="header-status-description" className={descriptionClass}>
               {status.description}
             </span>
           )}

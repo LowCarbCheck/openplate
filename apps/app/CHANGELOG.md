@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The trial countdown and its recap line fit a phone in every language.** Near the end of a trial, the header adds a second line that counts meals logged with AI. At 390 px wide, that line ended in an ellipsis in every language, including English. The day sentence above it was cut off in German, French, Spanish, Italian, and Turkish. The second line now wraps onto two lines. All four lines use a tighter line height inside the same 64 px header. The day sentences are now shorter in those five languages. `tests/e2e/trial-recap-line-fits.spec.ts` checks every day sentence and recap line in all six languages.
+
 ## [0.50.0] - 2026-09-28
 
 ### Added

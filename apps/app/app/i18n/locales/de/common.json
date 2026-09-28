@@ -3512,8 +3512,8 @@
       "withdrawalLink": "Widerrufsbelehrung und Widerrufsformular"
     },
     "countdown": {
-      "daysLeft_one": "Noch {{count}} Tag KI-Scans in deiner Testphase.",
-      "daysLeft_other": "Noch {{count}} Tage KI-Scans in deiner Testphase.",
+      "daysLeft_one": "Deine KI-Testphase läuft noch {{count}} Tag.",
+      "daysLeft_other": "Deine KI-Testphase läuft noch {{count}} Tage.",
       "lastDay": "Die KI-Scans deiner Testphase enden heute.",
       "scansLeft_one": "Noch {{count}} kostenloser KI-Scan übrig.",
       "scansLeft_other": "Noch {{count}} kostenlose KI-Scans übrig.",
