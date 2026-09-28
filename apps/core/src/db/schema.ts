@@ -231,6 +231,26 @@ export const accounts = pgTable(
      * published in the protocol anyway.
      */
     kdfDescriptor: jsonb('kdf_descriptor').$type<KdfDescriptor>().notNull(),
+    /**
+     * The version of the health-data consent wording this account agreed to,
+     * or `NULL` when it has none on record (`HEALTH_CONSENT_VERSION`,
+     * `accounts/health-consent.ts`).
+     *
+     * `NULL` IS WHAT EVERY ACCOUNT CREATED BEFORE THE COLUMN HAS, and what
+     * every account on an instance that asks for no consent keeps. It is
+     * never back-filled: a consent nobody gave is not one, so an existing
+     * account is asked by the app instead, once.
+     *
+     * WITHDRAWAL IS DELETION. Nothing clears this pair on a live row; the
+     * account's own erasure takes it with the rest.
+     */
+    healthConsentVersion: text('health_consent_version'),
+    /**
+     * When THIS SERVER recorded that consent, on its own clock, never on a
+     * client's. Written in the same statement as the version, and only with
+     * it: the check below makes a half-set pair impossible.
+     */
+    healthConsentAt: timestamp('health_consent_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -242,7 +262,16 @@ export const accounts = pgTable(
   // true case-insensitive AND Unicode-form-insensitive uniqueness guarantee.
   // This index is also what makes concurrent signups for the same address safe
   //, never a read-then-insert check.
-  (table) => [uniqueIndex('accounts_email_idx').on(table.email)],
+  (table) => [
+    uniqueIndex('accounts_email_idx').on(table.email),
+    // BOTH OR NEITHER. A version with no instant cannot say when consent was
+    // given, and an instant with no version cannot say to what. Either half
+    // alone is a record an operator could not stand behind.
+    check(
+      'accounts_health_consent_pair',
+      sql`(${table.healthConsentVersion} IS NULL) = (${table.healthConsentAt} IS NULL)`,
+    ),
+  ],
 );
 
 export type InsertAccount = InferInsertModel<typeof accounts>;

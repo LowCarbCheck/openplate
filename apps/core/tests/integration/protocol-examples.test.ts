@@ -7,7 +7,8 @@
  * parses; only the service can say whether an alternative client written from
  * that example would decode what it actually receives. The service here runs
  * the configuration the examples describe: open sign-up with a captcha, a
- * scan trial, and AI.
+ * scan trial, AI, and a health-data consent (so `healthConsent` is an object
+ * on both examples, and the harness signs up with the box ticked).
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,6 +33,7 @@ before(async () => {
       captchaSiteKey: 'site-key',
     },
     ai: { baseUrl: 'http://127.0.0.1:9', apiKey: 'sk-unused', advertisedModel: 'a-model' },
+    healthConsent: { version: '2026-09-28' },
   });
 });
 

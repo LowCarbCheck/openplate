@@ -602,6 +602,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
     'dailyAiLimit',
     'displayName',
     'email',
+    // The health-data consent, `null` here because this fixture's instance asks for none.
+    'healthConsent',
     'id',
     'invitesLeft',
     // M253/11: why `invitesLeft` is 0 for a scan trial nobody has paid for.
@@ -613,6 +615,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   ]);
   assert.equal(outcome.body.account.aiUsedToday, 3);
   assert.equal(outcome.body.account.trialScans, null);
+  // `null` rather than absent on an instance that asks for no consent.
+  assert.equal(outcome.body.account.healthConsent, null);
   // `null` on this fixture because the instance has member invites off, which
   // is what every deployment runs until an operator sets both settings. The
   // counting-down case is `member-invites.test.ts`.

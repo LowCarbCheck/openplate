@@ -133,6 +133,9 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'dailyAiLimit',
     'displayName',
     'email',
+    // The person's health-data consent, read only here: see
+    // `admin-no-forbidden-fields.test.ts` for why an operator may read it.
+    'healthConsent',
     'id',
     'invitesLeft',
     // M253/11: why `invitesLeft` is 0 for a scan trial nobody has paid for.

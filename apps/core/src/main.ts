@@ -58,7 +58,7 @@ import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.j
 import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
 import type { AuthContext } from './accounts/auth-handlers.js';
-import type { InstanceInfo } from './protocol.js';
+import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
 import { SERVICE_VERSION } from './version.js';
 
 /** How long a fully-expired token row is kept before the sweeper drops it. */
@@ -135,6 +135,15 @@ async function main(): Promise<void> {
     }
   }
 
+  // THE HEALTH-DATA CONSENT, ONE BINDING FOR TWO READERS. The auth context
+  // demands it on signup and records it on the prompt route; `/health`
+  // publishes it below as `instance.healthConsent`. Built once here, so the
+  // version a client is shown and the version the service checks cannot
+  // disagree. `null` unless `HEALTH_CONSENT_VERSION` is set, which is the
+  // self-hosted default and asks nobody anything.
+  const healthConsent: InstanceHealthConsent | null =
+    config.healthConsentVersion === null ? null : { version: config.healthConsentVersion };
+
   const authContext: AuthContext = {
     store: createDrizzleAccountStore(database.db, { hashAddress }),
     pepper: secrets.verifierPepper,
@@ -151,6 +160,9 @@ async function main(): Promise<void> {
     // `accounts/register-auth-routes.ts`.
     memberInvites: config.memberInvites === null ? null : { invites, policy: config.memberInvites },
     openSignup,
+    // `null` leaves `POST /v1/auth/account/health-consent` answering the
+    // ordinary unknown-path 404 and signup ignoring the field.
+    healthConsent,
   };
 
   // ALWAYS PRESENT, because signup is invite-only and the invite store is the
@@ -268,6 +280,10 @@ async function main(): Promise<void> {
     // settings. It says nothing about what a push contains, because a push
     // contains a kind. See ADR-0008.
     push: config.push !== null,
+    // THE SAME BINDING THE AUTH CONTEXT ENFORCES, so an instance cannot
+    // publish one version and demand another. `null` when it asks for none,
+    // which a client reads as "draw no consent checkbox".
+    healthConsent: healthConsent === null ? null : { version: healthConsent.version },
     // `nutrientReferenceBasis` IS DELIBERATELY NOT HERE, and this is where a
     // reader looking for it will look. Every field above is env config read
     // once, so a copy taken at boot stays true for the life of the process.
@@ -428,6 +444,8 @@ async function main(): Promise<void> {
       plans: config.plans !== null,
       // Whether this instance can send a notification, never a key and never the subject.
       push: config.push !== null,
+      // Which consent wording this instance asks for, or `null` for none. Public on `/health` already.
+      healthConsentVersion: config.healthConsentVersion,
       // What the instance is showing right now, which is the stored row when
       // there is one and `NUTRIENT_REFERENCE_BASIS` when there is not.
       nutrientReferenceBasis: settings.current(),

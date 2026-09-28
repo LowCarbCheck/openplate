@@ -7,6 +7,24 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **An instance can ask for explicit consent to health data.** The hosted
+  privacy notice names Art. 9(2)(a) GDPR as the basis for the diary, because
+  the operator holds a recovery key that can open it, and until now no consent
+  was asked or recorded. Set `HEALTH_CONSENT_VERSION` (1 to 32 letters, digits,
+  `.`, `_` or `-`, such as `2026-09-28`) and `/health` publishes it as
+  `instance.healthConsent`. `POST /v1/auth/signup` then needs
+  `"healthConsent": {"version": "<v>"}` and answers
+  `400 health-consent-required` without it, spending nothing, so the invitation
+  still works. The account row stores the version and the server's instant,
+  two new nullable columns that existing accounts get as `null`. The account
+  view carries them as `healthConsent`, and the admin view shows them read
+  only. `POST /v1/auth/account/health-consent` records the consent for an
+  existing account, keeps the first instant on a repeat, and takes a new
+  version. Unset, the self-hosted default, changes nothing and the new route
+  is the ordinary unknown-path 404. Withdrawal is account deletion.
+
 ### Changed
 
 - **The Quadlet units read every setting from an env file you own.** The

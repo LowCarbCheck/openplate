@@ -30,6 +30,7 @@ import type { AccountRole, SyncKeyRecordKind } from '../protocol.js';
 import type { AccountActivityCount, ActivityDay } from './account-activity.js';
 import type { PulseTotals } from '../pulse/pulse-store.js';
 import type { PushStats } from '../push/push-store.js';
+import type { HealthConsentRecord } from '../accounts/health-consent.js';
 
 /**
  * What the admin surface knows about an account. Everything else about it is
@@ -64,6 +65,17 @@ export interface AdminAccountSummary {
   trialScansUsed: number;
   /** Non-`null` while the account is suspended. */
   suspendedAt: Date | null;
+  /**
+   * The account's health-data consent, version and instant, or `null` for
+   * none on record (`accounts/health-consent.ts`).
+   *
+   * JUSTIFIED AGAINST ADR-0001 BY WHO NEEDS IT. Art. 7(1) GDPR puts the
+   * burden of showing consent on the controller, which is the operator, so the
+   * operator has to be able to read when a person agreed and to which
+   * wording. It is READ ONLY here: no admin route writes it, because a consent
+   * an operator could set on somebody's behalf proves nothing.
+   */
+  healthConsent: HealthConsentRecord | null;
   createdAt: Date;
   /**
    * The last time this person did something on purpose: a sign-in or an AI

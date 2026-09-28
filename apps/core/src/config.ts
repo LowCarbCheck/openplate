@@ -30,6 +30,7 @@ import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './a
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
+import { isHealthConsentVersion } from './accounts/health-consent.js';
 
 /**
  * Minimum accepted `SERVER_SECRET` length. 32 characters is the shortest
@@ -447,6 +448,22 @@ export interface ServiceConfig {
    * cannot be read at all, see `instance/instance-settings.ts`.
    */
   nutrientReferenceBasis: NutrientReferenceBasis;
+  /**
+   * The version of the health-data consent wording this instance asks every
+   * account to agree to (`HEALTH_CONSENT_VERSION`), or `null`, the default,
+   * for an instance that asks for none.
+   *
+   * `null` IS THE SELF-HOSTED DEFAULT AND IT IS NOT A GAP. An instance whose
+   * operator is the person has nobody to ask. A hosted instance whose privacy
+   * notice names Art. 9(2)(a) GDPR sets it, and from then on every account is
+   * created with the consent recorded on it, and every existing account is
+   * asked once (`accounts/health-consent.ts`).
+   *
+   * CHANGING IT ASKS EVERYBODY AGAIN. The stored version stops matching, so
+   * the app prompts once more. Change it when the wording a person agrees to
+   * changes, and not otherwise.
+   */
+  healthConsentVersion: string | null;
   logLevel: LogLevel;
 }
 
@@ -1203,6 +1220,27 @@ function parseTrialAddressPepper(env: NodeJS.ProcessEnv, trial: TrialPolicy | nu
   return raw;
 }
 
+/**
+ * `HEALTH_CONSENT_VERSION`: unset or empty is `null`, which asks for no
+ * consent. Anything set must be 1 to 32 letters, digits, dots, underscores or
+ * hyphens, or the boot fails with a message that says so.
+ *
+ * A TYPO IS A BOOT FAILURE, NOT A DOWNGRADE. The value is compared byte for
+ * byte with what a client sends back, so a stray quote or space would publish
+ * a version nobody can agree to, and every sign-up would then answer
+ * `health-consent-required` on a live instance.
+ */
+function parseHealthConsentVersion(env: NodeJS.ProcessEnv): string | null {
+  const raw = env.HEALTH_CONSENT_VERSION?.trim();
+  if (raw === undefined || raw === '') return null;
+  if (!isHealthConsentVersion(raw)) {
+    throw new Error(
+      `Invalid HEALTH_CONSENT_VERSION: expected 1 to 32 letters, digits, ".", "_" or "-" (such as 2026-09-28), got "${raw}"`,
+    );
+  }
+  return raw;
+}
+
 function parseLogLevel(env: NodeJS.ProcessEnv): LogLevel {
   const raw = env.LOG_LEVEL?.trim().toLowerCase() ?? 'info';
   if (!isLogLevel(raw)) throw new Error(`Invalid LOG_LEVEL: expected debug/info/warn/error, got "${raw}"`);
@@ -1332,6 +1370,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     ),
     notice: parseNotice(env),
     nutrientReferenceBasis: parseNutrientReferenceBasis(env),
+    healthConsentVersion: parseHealthConsentVersion(env),
     logLevel: parseLogLevel(env),
   };
 }

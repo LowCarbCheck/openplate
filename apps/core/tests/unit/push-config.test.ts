@@ -113,6 +113,7 @@ async function startConfigHarness(options: { push: boolean }): Promise<ConfigHar
       mail: false,
       memberInvites: false,
       openSignup: false,
+      healthConsent: null,
       ai: null,
       plans: false,
       push: options.push,
