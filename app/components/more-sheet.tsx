@@ -15,6 +15,7 @@ import { ChevronRight } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
+import { useSheetLeavesWithItsPage } from '#app/hooks/use-sheet-leaves-with-its-page';
 import {
   activeCatalog,
   activeNavigationHref,
@@ -114,18 +115,15 @@ const MORE_SHEET_HREFS = new Set([...footerNavigationItems, ...moreSheetNavigati
 interface MoreSheetEntryProps {
   item: NavigationItem;
   isActive: boolean;
-  /** Closes the sheet. Called on a tap, so the sheet leaves with the page it opened. */
-  onNavigate: () => void;
 }
 
 /** One tile. */
-function MoreTile({ item, isActive, onNavigate }: MoreSheetEntryProps) {
+function MoreTile({ item, isActive }: MoreSheetEntryProps) {
   const { t } = useTranslation();
 
   return (
     <Link
       to={item.to}
-      onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       data-slot="more-tile"
       className={cn(TILE_CLASS, isActive ? TILE_ACTIVE_CLASS : TILE_IDLE_CLASS)}
@@ -137,13 +135,12 @@ function MoreTile({ item, isActive, onNavigate }: MoreSheetEntryProps) {
 }
 
 /** One configuration row, above the grid. */
-function MoreRow({ item, isActive, onNavigate }: MoreSheetEntryProps) {
+function MoreRow({ item, isActive }: MoreSheetEntryProps) {
   const { t } = useTranslation();
 
   return (
     <Link
       to={item.to}
-      onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       data-slot="more-row"
       className={cn(ROW_CLASS, isActive ? TILE_ACTIVE_CLASS : TILE_IDLE_CLASS)}
@@ -162,20 +159,20 @@ function MoreRow({ item, isActive, onNavigate }: MoreSheetEntryProps) {
  * against, and the rows share its padding, so a row is exactly as wide as the
  * grid under it.
  */
-function MoreSheetBody({ activeHref, onNavigate }: { activeHref: string | null; onNavigate: () => void }) {
+function MoreSheetBody({ activeHref }: { activeHref: string | null }) {
   const blanks = (COLUMNS - (moreSheetNavigationItems.length % COLUMNS)) % COLUMNS;
 
   return (
     <nav className="flex flex-col gap-1.5 px-2 pb-4">
       {footerNavigationItems.map((item) => (
-        <MoreRow key={item.to} item={item} isActive={activeHref === item.to} onNavigate={onNavigate} />
+        <MoreRow key={item.to} item={item} isActive={activeHref === item.to} />
       ))}
       <div className="grid grid-cols-3 gap-1.5">
         {Array.from({ length: blanks }, (_, index) => (
           <span key={`blank-${index}`} aria-hidden="true" />
         ))}
         {moreSheetNavigationItems.map((item) => (
-          <MoreTile key={item.to} item={item} isActive={activeHref === item.to} onNavigate={onNavigate} />
+          <MoreTile key={item.to} item={item} isActive={activeHref === item.to} />
         ))}
       </div>
     </nav>
@@ -253,36 +250,33 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
   const location = useLocation();
   const contentId = useId();
   /**
-   * The location the sheet was opened on, or `null` while it is shut. The
-   * sheet is open only while that location is still the current one, so ANY
-   * navigation shuts it, a tile's, the phone's own Back, or a link elsewhere.
-   */
-  const [openedOnKey, setOpenedOnKey] = useState<string | null>(null);
-  /**
-   * The last location this provider rendered on. A key that differs from it
-   * means a navigation happened, and the sheet is FORGOTTEN, not only hidden.
+   * Whether the sheet is open. A plain flag, not the location it was opened
+   * on, and no navigation shuts it by itself.
    *
-   * WHY BOTH. Comparing `openedOnKey` with the current key hid the sheet on a
-   * navigation but kept the key it was opened on, and React Router hands the
-   * old entry's key back on Forward: open More, go Back, go Forward, and the
-   * sheet was open again with no tap (counsel review of 9c82669, a defect
-   * carried from M258's More tab). Resetting during render, React's pattern
-   * for state that follows a changing value, drops it in the same render the
-   * key changes, with no effect and no frame in which the sheet shows.
+   * WHY NOT THE LOCATION. Until 2026-09-28 the sheet was open only while the
+   * key it was opened on was still the current one, and it was dropped in the
+   * render where the key changed. That render is the one where a new location
+   * COMMITS, which on a slow phone is well after the navigation started: tap a
+   * link, tap More while the old screen is still up, and the landing page shut
+   * the sheet with no tap from anybody
+   * (`more-sheet-outlives-a-pending-navigation.spec.ts`). The add sheet had
+   * the same race, and both now close through `useSheetLeavesWithItsPage`: a
+   * row or a tile closes it as its navigation starts, and Back and Forward
+   * close it at `popstate`, before any render.
+   *
+   * FORWARD CANNOT REOPEN IT. 9c82669 kept the key the sheet was opened on,
+   * and React Router hands the old entry's key back on Forward, so the sheet
+   * came back with no tap (counsel review of 9c82669). A flag that Back set to
+   * false has nothing to come back to (`mark-opens-more.spec.ts`).
    */
-  const [lastSeenKey, setLastSeenKey] = useState(location.key);
-  if (location.key !== lastSeenKey) {
-    setLastSeenKey(location.key);
-    setOpenedOnKey(null);
-  }
+  const [isOpen, setIsOpen] = useState(false);
+  const closeWhenALinkIsTaken = useSheetLeavesWithItsPage({ isOpen, setIsOpen });
   /** The door that opened the sheet last, where the focus goes back on close. */
   const openerRef = useRef<HTMLElement | null>(null);
-  const isOpen = openedOnKey === location.key;
   // The winner across the WHOLE catalog, so `/settings/ai` lights the Settings
   // row (it is under the hub) while `/settings/nutrition` lights Goals.
   const activeHref = activeNavigationHref(location.pathname, activeCatalog(showsPlanEntry));
   const holdsCurrentPage = activeHref !== null && MORE_SHEET_HREFS.has(activeHref);
-  const close = (): void => setOpenedOnKey(null);
 
   /**
    * SHUT AT `md`. The sheet is phone chrome and hides itself at `md` and up,
@@ -297,7 +291,7 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
   useEffect(() => {
     const mdAndUp = window.matchMedia(MD_AND_UP_QUERY);
     const closeAtMd = (): void => {
-      if (mdAndUp.matches) setOpenedOnKey(null);
+      if (mdAndUp.matches) setIsOpen(false);
     };
     mdAndUp.addEventListener('change', closeAtMd);
     return () => mdAndUp.removeEventListener('change', closeAtMd);
@@ -312,10 +306,10 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
       holdsCurrentPage,
       open: (opener) => {
         openerRef.current = opener;
-        setOpenedOnKey(location.key);
+        setIsOpen(true);
       },
     }),
-    [isOpen, contentId, holdsCurrentPage, location.key],
+    [isOpen, contentId, holdsCurrentPage],
   );
 
   return (
@@ -326,12 +320,15 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
       <Sheet
         open={isOpen}
         onOpenChange={(next) => {
-          if (!next) close();
+          if (!next) setIsOpen(false);
         }}
       >
         <SheetContent
           id={contentId}
           side="bottom"
+          // A row or a tile is a link, and a click that reached one closes the
+          // sheet as its navigation starts.
+          onClick={closeWhenALinkIsTaken}
           // The title names the sheet, and there is no sentence to describe it
           // with that the rows and tiles do not already say.
           aria-describedby={undefined}
@@ -354,7 +351,7 @@ export function MoreSheetProvider({ showsPlanEntry, children }: MoreSheetProvide
           <SheetHeader className="px-4 pt-2 pb-2">
             <SheetTitle className="flex min-h-11 items-center">{t('nav.more')}</SheetTitle>
           </SheetHeader>
-          <MoreSheetBody activeHref={activeHref} onNavigate={close} />
+          <MoreSheetBody activeHref={activeHref} />
         </SheetContent>
       </Sheet>
     </MoreSheetContext.Provider>
