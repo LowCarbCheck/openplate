@@ -114,9 +114,20 @@ export type OrderOutcome =
 
 export class PlansClient {
   private readonly transport: PlansTransport;
+  private readonly onOrderPlaced: () => void;
 
-  constructor({ transport }: { transport: PlansTransport }) {
+  /**
+   * @param input.transport - the open session's authorised request.
+   * @param input.onOrderPlaced - told once the biller ACCEPTS an order: a
+   *   Stripe address for a first order, or a booked switch. The plan page's
+   *   session passes `clearIntendedPlan`, so the plan a person chose before
+   *   they had an account is forgotten once it is ordered (2026-09-28). A
+   *   refusal, a 404 or a throw tells it nothing. Injected, so this wrapper
+   *   stays free of the browser's storage.
+   */
+  constructor({ transport, onOrderPlaced = () => {} }: { transport: PlansTransport; onOrderPlaced?: () => void }) {
     this.transport = transport;
+    this.onOrderPlaced = onOrderPlaced;
   }
 
   /**
@@ -198,6 +209,7 @@ export class PlansClient {
     }
     if (outcome.status === 'absent') return { kind: 'absent' };
     const answer = outcome.value;
+    this.onOrderPlaced();
     if ('switched' in answer) return { kind: 'switched', ...answer.switched };
     return { kind: 'redirect', url: answer.url };
   }

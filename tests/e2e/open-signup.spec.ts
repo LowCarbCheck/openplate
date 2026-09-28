@@ -44,13 +44,13 @@ const copySchema = z.object({
   signUp: z.object({
     sent: z.string(),
     submit: z.string(),
-    trial_other: z.string(),
     wait_other: z.string(),
     captchaFailed: z.string(),
     captchaUnavailable: z.string(),
     domainBlocked: z.string(),
   }),
   sync: z.object({ email: z.object({ invalid: z.string() }) }),
+  signupOffer: z.object({ scans_other: z.string() }),
 });
 const COPY = copySchema.parse(
   JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')),
@@ -313,8 +313,8 @@ test('the form posts one request with the address and turns into the inbox line 
   await expect(page.locator('[data-slot="sign-up-sent"]')).toHaveText(COPY.signUp.sent);
   await settleFrames(page);
 
-  expect(bodies, 'exactly one request, carrying the canonical address and nothing else').toEqual([
-    { email: 'anna@example.org' },
+  expect(bodies, 'exactly one request, carrying the canonical address and the form language, nothing else').toEqual([
+    { email: 'anna@example.org', locale: 'en' },
   ]);
   expect((await below.boundingBox())?.y, 'the link under the form moved').toBe(topBefore);
   expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift as the form turned').toBe(0);
@@ -350,13 +350,15 @@ test('a refused address and an unreachable challenge each get their own line, ne
 test('the free scans sentence comes from the handshake, and says nothing without it', async ({ page }) => {
   await routeHealth(page, { openSignup: true, trialScans: 10 });
   await openSignUp(page);
-  await expect(page.locator('[data-slot="sign-up-trial"]')).toHaveText(withCount(COPY.signUp.trial_other, 10));
+  await expect(page.locator('[data-slot="signup-offer-scans"]')).toHaveText(
+    withCount(COPY.signupOffer.scans_other, 10),
+  );
 
   // THE CONTROL: the same page against a handshake with no trial states no number.
   await page.unrouteAll({ behavior: 'wait' });
   await routeHealth(page, { openSignup: true });
   await openSignUp(page);
-  await expect(page.locator('[data-slot="sign-up-trial"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="signup-offer-scans"]')).toHaveCount(0);
 });
 
 test('the challenge loads under the CSP, holds its box, rides with the request and is renewed after a refusal', async ({
@@ -405,9 +407,9 @@ test('the challenge loads under the CSP, holds its box, rides with the request a
   await expect(page.locator('[data-slot="sign-up-sent"]')).toBeVisible();
 
   expect(bodies, 'every request carried a token, and never the same one twice').toEqual([
-    { email: 'anna@example.org', captchaToken: 'stub-token-1' },
-    { email: 'anna@example.org', captchaToken: 'stub-token-2' },
-    { email: 'anna@example.net', captchaToken: 'stub-token-3' },
+    { email: 'anna@example.org', captchaToken: 'stub-token-1', locale: 'en' },
+    { email: 'anna@example.org', captchaToken: 'stub-token-2', locale: 'en' },
+    { email: 'anna@example.net', captchaToken: 'stub-token-3', locale: 'en' },
   ]);
   // ONLY CLOUDFLARE'S: the page reports one violation of its own on every
   // load, zod probing whether it may `eval`, which the policy refuses by

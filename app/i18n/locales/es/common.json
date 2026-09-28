@@ -2671,8 +2671,6 @@
   "signUp": {
     "title": "Crea una cuenta",
     "body": "Escribe tu correo electrónico. Te enviamos un correo y el enlace que incluye crea tu cuenta.",
-    "trial_one": "{{count}} escaneo con IA gratis, sin límite de tiempo.",
-    "trial_other": "{{count}} escaneos con IA gratis, sin límite de tiempo.",
     "emailRequired": "Escribe tu correo electrónico.",
     "submit": "Enviar el correo",
     "sent": "Revisa tu bandeja de entrada. El enlace del correo crea tu cuenta.",
@@ -2684,6 +2682,14 @@
     "domainBlocked": "No aceptamos registros con este dominio de correo. Usa otra dirección.",
     "failed": "La solicitud no se procesó. Vuelve a intentarlo en un momento.",
     "legal": "Lee los <terms>términos</terms> y el <privacy>aviso de privacidad</privacy> antes de registrarte."
+  },
+  "signupOffer": {
+    "scans_one": "{{count}} escaneo gratis con IA. No necesitas tarjeta.",
+    "scans_other": "{{count}} escaneos gratis con IA. No necesitas tarjeta.",
+    "prices": "Cuando se te acaben los escaneos, openplate cuesta {{monthly}} al mes o {{yearly}} al año. Los precios incluyen IVA.",
+    "noPrices": "Cuando se te acaben los escaneos, necesitarás un plan de pago para seguir usando openplate.",
+    "chosenMonthly": "Has elegido el plan mensual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis.",
+    "chosenYearly": "Has elegido el plan anual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis."
   },
   "signOut": {
     "menuItem": "Cerrar sesión",

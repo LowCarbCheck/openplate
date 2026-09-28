@@ -13,9 +13,19 @@
  * a browser, a router or IndexedDB.
  */
 import type { OnboardingGateOutcome } from '#app/lib/onboarding-gate';
+import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 
 /** Every path a finished sign-in can send somebody to. */
 export type SignInDestination = '/diary' | '/onboarding' | '/recover';
+
+/**
+ * The order page, with the plan the person chose named in its query, the one
+ * way that page takes a pick it did not make itself (`readPlanParam`).
+ */
+export type PlanOrderDestination = `/settings/plan?plan=${PlanKey}`;
+
+/** Every path a finished `/join` can send somebody to. */
+export type JoinDestination = SignInDestination | PlanOrderDestination;
 
 /**
  * Turns the gate's verdict, plus one fact about this device, into a path.
@@ -43,6 +53,43 @@ export function resolveSignInDestination({ gate }: { gate: OnboardingGateOutcome
   if (gate === 'recover') return '/recover';
   if (gate === 'pass' || gate === 'self-heal') return '/diary';
   return '/onboarding';
+}
+
+/**
+ * Where a finished `/join` lands (2026-09-28).
+ *
+ * Exactly where a finished sign-in lands, with one door in front: somebody
+ * who chose a plan on the pricing page before they had an account goes to the
+ * order page with that plan picked, because paying for it is what they came
+ * to do. Where the onboarding gate exempts the plan page (the paywall change
+ * of 2026-09-28 adds it to `GATE_EXEMPT_PATHS`), a brand-new account reaches
+ * it before the questionnaire, and the questionnaire still waits behind the
+ * diary. Where it does not, the gate sends the account to the questionnaire
+ * first, as it sends every other path.
+ *
+ * TWO THINGS OUTRANK THE PLAN:
+ *
+ * 1. **`recover`.** A device that may have lost a diary is asked about it
+ *    first, for the reason {@link resolveSignInDestination} gives.
+ * 2. **An instance that sells nothing.** `sellsPlans` is `hasPlansDoor` of the
+ *    handshake. A choice made on one instance's pricing page and carried to
+ *    another must not land somebody on a 404.
+ *
+ * @param input.intendedPlan - `readIntendedPlan()`, or `null`.
+ * @param input.sellsPlans - whether this instance's handshake says it sells plans.
+ */
+export function resolveJoinDestination({
+  gate,
+  intendedPlan,
+  sellsPlans,
+}: {
+  gate: OnboardingGateOutcome['kind'];
+  intendedPlan: PlanKey | null;
+  sellsPlans: boolean;
+}): JoinDestination {
+  if (gate === 'recover') return '/recover';
+  if (intendedPlan !== null && sellsPlans) return `/settings/plan?plan=${intendedPlan}`;
+  return resolveSignInDestination({ gate });
 }
 
 /** What a finished sign-in leaves the screen with: somewhere to go, or a pull to retry. */

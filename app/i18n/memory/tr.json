@@ -3303,6 +3303,13 @@
     "at": "2026-09-23",
     "tr": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı."
   },
+  "2804c5c36d960f15": {
+    "en": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
+    "path": "common:signupOffer.prices",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "Ücretsiz tarama hakların bittiğinde openplate aylık {{monthly}} veya yıllık {{yearly}}. Fiyatlara KDV dahildir."
+  },
   "2855609a5d65723c": {
     "en": "Try again",
     "path": "common:errors.tryAgain",
@@ -3526,6 +3533,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kaydediliyor…"
+  },
+  "2bc12d3d681845ac": {
+    "en": "You chose the monthly plan. You can pay for it right after you create your account, or use your free scans first.",
+    "path": "common:signupOffer.chosenMonthly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "Aylık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin."
   },
   "2bc3ebb8a90892b1": {
     "en": "The diary's day bar sits against the header, and the lists match the rest of the app.",
@@ -12669,6 +12683,13 @@
     "at": "2026-09-14",
     "tr": "Hedefler tutturuldu"
   },
+  "a16fa1a9ab8c0a19": {
+    "en": "You chose the yearly plan. You can pay for it right after you create your account, or use your free scans first.",
+    "path": "common:signupOffer.chosenYearly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "Yıllık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin."
+  },
   "a18924a6e599fe73": {
     "en": "This gateway's privacy settings changed, so it stopped accepting this device. Ask whoever invited you for a new invite link.",
     "path": "common:scan.errors.provider.reconsentRequired",
@@ -13803,13 +13824,6 @@
     "at": "2026-09-17",
     "tr": "Bu işe yaramadı"
   },
-  "b060f2b4e5ff77a1": {
-    "en": "{{count}} free AI scan, no time limit.",
-    "path": "common:signUp.trial_one",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "tr": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok."
-  },
   "b09b8b6047637931": {
     "en": "Reference values",
     "path": "common:admin.settings.title",
@@ -14054,13 +14068,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "tr": "{{count}} ücretsiz yapay zeka taraman bitti"
-  },
-  "b3449415df0a0691": {
-    "en": "{{count}} free AI scans, no time limit.",
-    "path": "common:signUp.trial_other",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "tr": "{{count}} ücretsiz yapay zeka taraması, süre sınırı yok."
   },
   "b345c7a07cd63fdc": {
     "en": "Enter your weight",
@@ -15980,6 +15987,13 @@
     "at": "2026-09-18",
     "tr": "Yedeklendi"
   },
+  "cea71816f38adc48": {
+    "en": "{{count}} free AI scans. No card needed.",
+    "path": "common:signupOffer.scans_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez."
+  },
   "cef99b34736b2c00": {
     "en": "EU style (carbs already exclude fibre)",
     "path": "common:add.custom.carbBasis.available",
@@ -16673,6 +16687,13 @@
     "at": "2026-09-14",
     "tr": "Şimdiye kadar bir tartım var, bir eğilim için birkaç tane daha gerekir."
   },
+  "d6976b0d448486c1": {
+    "en": "{{count}} free AI scan. No card needed.",
+    "path": "common:signupOffer.scans_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez."
+  },
   "d69ed04762762ee8": {
     "en": "0 turns photo reading off for this person.",
     "path": "common:admin.edit.allowanceHint",
@@ -16770,6 +16791,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Fotoğraf çek, makroları al"
+  },
+  "d788a6daee5be9dc": {
+    "en": "When they are used up, you need a paid plan to keep using openplate.",
+    "path": "common:signupOffer.noPrices",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-28",
+    "tr": "Ücretsiz tarama hakların bittiğinde openplate kullanmaya devam etmek için ücretli bir plana geçmen gerekir."
   },
   "d79407d02bfc5e93": {
     "en": "The request did not go through. Try again in a moment.",

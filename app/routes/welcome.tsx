@@ -51,6 +51,16 @@
  * card and inside the centring, so the pair is centred as one group rather
  * than the mark being pinned to a top edge the card is nowhere near.
  *
+ * CREATE AN ACCOUNT COMES FIRST WHERE ANYBODY MAY (2026-09-28). On a managed
+ * instance with open sign-up, a device that has never signed in is led to the
+ * sign-up form, with signing in and the invite link as the quieter doors. A
+ * device that remembers an address keeps "Sign in as ..." first: this screen
+ * exists so that somebody who has an account does not make a second one. The
+ * sign-up link keeps the query string, so `?plan=` reaches the form.
+ *
+ * `?lang=` makes the page, and the device, speak that language
+ * (`useLanguageFromLink`), as on the landing and on `/sign-up`.
+ *
  * "NOT YOU?" (M183 spec 04) sits beside the prefilled name and clears the
  * account hint, both in storage and in this screen's own state, so "Start"
  * becomes the primary button on the next paint rather than after a reload.
@@ -60,7 +70,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { MetaFunction } from 'react-router';
+import { useLocation, type MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
@@ -74,6 +84,7 @@ import { useSyncSession } from '#app/components/sync-status';
 import { Wordmark } from '#app/components/wordmark';
 import { cn } from '#app/lib/utils';
 import { SIGN_UP_PATH } from '#app/components/account-door';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { hasOpenSignup } from '#app/lib/plans/signup-door';
@@ -224,6 +235,35 @@ function SecondaryAction({
 }
 
 /**
+ * The three doors of an instance with open sign-up, for a device that has
+ * never signed in: create an account, then the two quieter ones.
+ */
+function SignUpFirstChoices({
+  signUpHref,
+  secondary,
+  onPasteInviteLink,
+}: {
+  signUpHref: string;
+  secondary: WelcomeHint['secondary'];
+  onPasteInviteLink: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-3">
+      <Button asChild className="h-11 w-full justify-center">
+        <Link to={signUpHref}>{t('welcome.managed.signUp')}</Link>
+      </Button>
+      <Button asChild variant="outline" className="h-11 w-full justify-center">
+        <Link to={SIGN_IN_PATH}>{t('welcome.haveAccount')}</Link>
+      </Button>
+      {/* The resolver's second door, which on a managed instance is the
+          invite link. Skipped if it is signing in, which already stands above. */}
+      {secondary !== 'sign-in' && <SecondaryAction action={secondary} onPasteInviteLink={onPasteInviteLink} />}
+    </div>
+  );
+}
+
+/**
  * One box for a link that arrived as text.
  *
  * It reimplements NOTHING of the join ceremony. What is pasted is parsed by
@@ -288,6 +328,8 @@ function PasteInviteLink({ onCancel }: { onCancel: () => void }) {
 
 export default function Welcome() {
   const { t } = useTranslation();
+  useLanguageFromLink();
+  const { search } = useLocation();
   // The screen offers two doors instead of three because an account is the
   // only way in here (M201/07). `resolveWelcomeHint` keeps the parameter name
   // `managed`, so the question is answered once and handed over.
@@ -301,6 +343,10 @@ export default function Welcome() {
   const instanceRead = useServerInstanceRead();
   const isInstanceKnown = !requiresAccount || instanceRead.isSettled;
   const offersSignUp = requiresAccount && hasOpenSignup(instanceRead.instance);
+  // THE FORM LEADS for a device with no remembered address; one that has
+  // signed in before keeps signing in first (see the file header).
+  const leadsWithSignUp = offersSignUp && hint !== null && !hint.isReturning;
+  const signUpHref = `${SIGN_UP_PATH}${search}`;
   const [isPastingLink, setIsPastingLink] = useState(false);
   // WHY THEY ARE HERE, when the app ended their session rather than they did
   // (0.10.3). `endSessionRefused` publishes the reason on the signed-out
@@ -344,12 +390,19 @@ export default function Welcome() {
               <span className="sr-only">{t('chrome.loading')}</span>
             </div>
           )}
-          {!isPastingLink && hint !== null && isInstanceKnown && (
+          {!isPastingLink && hint !== null && isInstanceKnown && leadsWithSignUp && (
+            <SignUpFirstChoices
+              signUpHref={signUpHref}
+              secondary={hint.secondary}
+              onPasteInviteLink={() => setIsPastingLink(true)}
+            />
+          )}
+          {!isPastingLink && hint !== null && isInstanceKnown && !leadsWithSignUp && (
             <div className="space-y-3">
               <WelcomeChoices hint={hint} onForgetName={forgetName} onPasteInviteLink={() => setIsPastingLink(true)} />
               {offersSignUp && (
                 <Button asChild variant="outline" className="h-11 w-full justify-center">
-                  <Link to={SIGN_UP_PATH}>{t('welcome.managed.signUp')}</Link>
+                  <Link to={signUpHref}>{t('welcome.managed.signUp')}</Link>
                 </Button>
               )}
             </div>

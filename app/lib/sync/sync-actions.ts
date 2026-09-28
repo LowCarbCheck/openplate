@@ -42,6 +42,8 @@ import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } fr
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
 import type { KdfDescriptorWire, KeyRecordSubmissionWire } from './engine/client/auth-wire';
+import type { PlanKey } from './engine/client/plans-wire';
+import type { LanguageCode } from '#app/i18n/language-prefs';
 import type { InstanceDescriptor, OperatorNotice } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
 import { reconcileAwardsQuietly } from '#app/lib/gamification/record';
@@ -1115,10 +1117,20 @@ export async function requestOpenSignup({
   serverUrl,
   email,
   captchaToken,
+  plan,
+  locale,
   fetchImpl,
-}: { serverUrl: string; email: string; captchaToken: string | null } & SyncActionOptions): Promise<void> {
+}: {
+  serverUrl: string;
+  email: string;
+  captchaToken: string | null;
+  /** The plan chosen on the pricing page, or `null`. The core carries it into the mailed link. */
+  plan: PlanKey | null;
+  /** The language the form was drawn in. The core carries it into the mailed link as `lang`. */
+  locale: LanguageCode;
+} & SyncActionOptions): Promise<void> {
   const { authClient } = clients({ serverUrl, fetchImpl });
-  await authClient.signupRequest({ email, captchaToken });
+  await authClient.signupRequest({ email, captchaToken, plan, locale });
 }
 
 /**

@@ -31,6 +31,17 @@
  * no key loads nothing. The CSP names Cloudflare only on a managed instance
  * (`content-security-policy.ts`, `signupCaptchaPossible`).
  *
+ * ── It says what openplate costs, and which plan was chosen ──────────────
+ *
+ * The funnel starts on openplate.de (2026-09-28). Its pricing page links here
+ * with `?plan=monthly|yearly` and `?lang=<code>`. The language becomes the
+ * device's (`useLanguageFromLink`), the plan is stored for the join link and
+ * the order page (`intended-plan.ts`), and both ride in the request as `plan`
+ * and `locale`, so the core puts them in the mailed link. Under the free scans
+ * the form says what comes after them, from the anonymous price read
+ * (`SignupOffer`), and names the chosen plan. A price line keeps its box while
+ * the read is in flight.
+ *
  * CLIENT-ONLY and TOP-LEVEL, like `/sign-in` and `/forgot`: the address goes
  * to the sync service's own origin and none of it is this server's business.
  */
@@ -49,11 +60,18 @@ import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { SignupOffer } from '#app/components/plans/signup-offer';
 import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
+import { useIntendedPlanFromLink } from '#app/hooks/use-intended-plan';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { useHasLegalPages, useSyncServerUrl } from '#app/hooks/use-public-config';
+import { usePublicPlanPrices } from '#app/hooks/use-public-plan-prices';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { toLanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { hasOpenSignup, offeredTrialScans, signupCaptchaOf } from '#app/lib/plans/signup-door';
+import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import type { SignupCaptcha } from '#app/lib/sync/engine/protocol';
 import { describeSignupFailure, makeSignupRequestSchema, type SignupProblem } from '#app/lib/sync/signup-request-schema';
@@ -71,6 +89,8 @@ const SIGN_IN_PATH = '/sign-in';
 
 export default function SignUp() {
   const { t } = useTranslation();
+  useLanguageFromLink();
+  const intendedPlan = useIntendedPlanFromLink();
   const serverUrl = useSyncServerUrl();
   const { isSettled, instance } = useServerInstanceRead();
   // THE LETTER'S LINK WOULD LAND ON A PAGE THAT CANNOT FINISH. The account is
@@ -113,6 +133,8 @@ export default function SignUp() {
               serverUrl={serverUrl}
               trialScans={offeredTrialScans(instance)}
               captcha={signupCaptchaOf(instance)}
+              sellsPlans={hasPlansDoor(instance)}
+              chosenPlan={intendedPlan}
             />
           )}
         </CardContent>
@@ -142,14 +164,26 @@ function SignUpForm({
   serverUrl,
   trialScans,
   captcha,
+  sellsPlans,
+  chosenPlan,
 }: {
   serverUrl: string;
   /** The instance's promise, or `null`, which says nothing about AI at all. */
   trialScans: number | null;
   captcha: SignupCaptcha | null;
+  /** Whether the handshake says this instance sells plans, the only place a price or a chosen plan means anything. */
+  sellsPlans: boolean;
+  /** The plan chosen on the pricing page, or `null`. */
+  chosenPlan: PlanKey | null;
 }) {
   const { t, i18n } = useTranslation();
   const hasLegalPages = useHasLegalPages();
+  // THE PRICE COMES AFTER THE FREE SCANS, so it is asked for only where there
+  // are free scans to come after, and only where the instance sells a plan.
+  const prices = usePublicPlanPrices({ isEnabled: sellsPlans && trialScans !== null });
+  // Sent only where a plan can be bought: the mailed link would otherwise
+  // lead a new account to a plan page this instance does not have.
+  const planToSend = sellsPlans ? chosenPlan : null;
   const [state, setState] = useState<SendState>({ kind: 'idle' });
   const challenge = useChallenge({ captcha, language: i18n.resolvedLanguage ?? i18n.language });
   const isSent = state.kind === 'sent';
@@ -173,7 +207,14 @@ function SignUpForm({
   async function send(email: string): Promise<void> {
     setState({ kind: 'sending' });
     try {
-      await requestOpenSignup({ serverUrl, email, captchaToken: challenge.token });
+      await requestOpenSignup({
+        serverUrl,
+        email,
+        captchaToken: challenge.token,
+        plan: planToSend,
+        // The language this form is drawn in, so the letter's link opens `/join` in it too.
+        locale: toLanguageCode(i18n.resolvedLanguage ?? i18n.language),
+      });
       setState({ kind: 'sent' });
     } catch (error) {
       setState({ kind: 'problem', problem: describeSignupFailure(error) });
@@ -191,9 +232,7 @@ function SignUpForm({
       <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
         <form {...getFormProps(form)} className={cn('space-y-3', isSent && 'invisible')} inert={isSent}>
           {trialScans !== null && (
-            <p data-slot="sign-up-trial" className="text-sm font-medium">
-              {t('signUp.trial', { count: trialScans })}
-            </p>
+            <SignupOffer trialScans={trialScans} prices={prices} chosenPlan={planToSend} size="sm" />
           )}
           <div className="space-y-2">
             <Label htmlFor={fields.email.id}>{t('sync.emailLabel')}</Label>
