@@ -13,7 +13,7 @@
  *
  * ── WHAT LEAVES THE BOX ─────────────────────────────────────────────────────
  *
- * One anonymous GET to the public tags endpoint of a public repository, at most
+ * One anonymous GET to the public tag refs of a public repository, at most
  * once every six hours, carrying nothing about anybody. No token, no instance
  * id, no version number in the query. GitHub sees the instance's IP and the
  * default user agent, and nothing else. `UPDATE_CHECK=off` stops even that.
@@ -52,8 +52,20 @@ export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 /** The shortest gap between two MANUAL checks, server wide. */
 export const MANUAL_CHECK_COOLDOWN_MS = 60_000;
 
-/** How many tags to ask for. Enough to see past a run of prereleases. */
-const TAG_PAGE_SIZE = 30;
+/**
+ * The app's tags, and only the app's, asked of GitHub by prefix.
+ *
+ * ── ONE REPOSITORY, THREE TAG SERIES, SINCE M262 ──
+ * `LowCarbCheck/openplate` now also carries `core-vX.Y.Z` and `inference-vX.Y.Z`. The old
+ * `/tags?per_page=30` answered with ONE page of every tag in the repository, in an order GitHub
+ * chooses, so enough core and inference tags could push the newest app release off it and the
+ * banner would go quiet with no error anywhere. `git/matching-refs/tags/v` lets GitHub filter by
+ * prefix and answers with every match: `refs/tags/v0.50.0` is in it, `refs/tags/core-v1.0.0` is
+ * not. `selectLatestTag` still refuses anything that is not `v` plus a version, so a stray
+ * `vendor-x` tag the prefix lets through is ignored there.
+ */
+const TAG_REFS_PATH = 'git/matching-refs/tags/v';
+const TAG_REF_PREFIX = 'refs/tags/';
 
 /**
  * `owner/name`, derived from the one repository literal in `app/`
@@ -149,7 +161,9 @@ export function compareSemver(a: string, b: string): number {
  * deployed `0.19.0-rc.1` has already opted into the release candidate train and
  * wants to hear about `0.19.0-rc.2`; someone on `0.18.3` has not, and telling
  * them a release candidate is "available" would push a whole instance onto an
- * unfinished build. A tag that is not `v` plus a version is ignored outright.
+ * unfinished build. A tag that is not `v` plus a version is ignored outright,
+ * which is also what keeps `core-v9.9.9` and `inference-v9.9.9`, released from
+ * the same repository since M262, from ever being offered as an app update.
  */
 export function selectLatestTag({
   tags,
@@ -170,13 +184,18 @@ export function selectLatestTag({
 }
 
 /**
- * One page of the tags endpoint, decoded at the boundary.
+ * The matching-refs answer, decoded at the boundary.
  *
- * `.loose()` because GitHub sends a commit object, a zipball URL and more on
- * every entry, none of which this file reads; refusing the page over an unread
- * field would turn an API addition into a broken banner.
+ * `.loose()` because GitHub sends a node id, a URL and the object each ref
+ * points at on every entry, none of which this file reads; refusing the answer
+ * over an unread field would turn an API addition into a broken banner.
  */
-const tagsPageSchema = z.array(z.object({ name: z.string() }).loose());
+const tagRefsSchema = z.array(z.object({ ref: z.string() }).loose());
+
+/** `refs/tags/v0.50.0` as `v0.50.0`. A ref outside `refs/tags/` is not a tag, and is dropped. */
+export function tagNamesOf(refs: readonly string[]): string[] {
+  return refs.flatMap((ref) => (ref.startsWith(TAG_REF_PREFIX) ? [ref.slice(TAG_REF_PREFIX.length)] : []));
+}
 
 /** A `fetch`, narrowed to what this module uses so a test can supply one. */
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
@@ -246,7 +265,7 @@ export function createUpdateChecker(options: UpdateCheckerOptions): UpdateChecke
   let inFlight: Promise<UpdateCheckState> | null = null;
 
   async function fetchTags(): Promise<UpdateCheckState> {
-    const url = `https://api.github.com/repos/${options.repo}/tags?per_page=${TAG_PAGE_SIZE}`;
+    const url = `https://api.github.com/repos/${options.repo}/${TAG_REFS_PATH}`;
     const response = await options.fetchImpl(url, {
       headers: { Accept: 'application/vnd.github+json' },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -255,9 +274,9 @@ export function createUpdateChecker(options: UpdateCheckerOptions): UpdateChecke
     // Decoded here, at the boundary, so nothing downstream handles an unparsed
     // payload. A page that does not fit the schema reads as "no tags", which
     // leaves the previous answer standing exactly as a network failure does.
-    const page = tagsPageSchema.safeParse(await response.json());
+    const page = tagRefsSchema.safeParse(await response.json());
     const latest = selectLatestTag({
-      tags: page.success ? page.data.map((tag) => tag.name) : [],
+      tags: page.success ? tagNamesOf(page.data.map((entry) => entry.ref)) : [],
       currentVersion: options.currentVersion,
     });
     return {

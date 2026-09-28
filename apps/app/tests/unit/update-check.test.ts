@@ -34,15 +34,22 @@ import {
   parseVersion,
   repoSlug,
   selectLatestTag,
+  tagNamesOf,
 } from '../../app/lib/update-check.server';
 
-/** A `fetch` that answers with the given tag names and counts its calls. */
+/**
+ * A `fetch` that answers with the given tag names, as the matching-refs endpoint
+ * spells them, and counts its calls. It answers with EVERY tag it is given,
+ * whatever the URL asked for, so a test can hand the checker a tag GitHub's
+ * prefix filter would have kept out and see the checker refuse it too.
+ */
 function stubFetch(tags: readonly string[]) {
   const calls: string[] = [];
   const fetchImpl = (url: string) => {
     calls.push(url);
+    const refs = tags.map((name) => ({ ref: `refs/tags/${name}`, object: { sha: 'ignored', type: 'commit' } }));
     return Promise.resolve(
-      new Response(JSON.stringify(tags.map((name) => ({ name, zipball_url: 'ignored' }))), {
+      new Response(JSON.stringify(refs), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),
@@ -148,8 +155,27 @@ describe('selectLatestTag', () => {
     assert.equal(selectLatestTag({ tags: ['nightly', '0.21.0'], currentVersion: '0.18.3' }), null);
   });
 
+  it('ignores a core or inference release however high it is', () => {
+    const merged = ['v0.18.3', 'v0.19.0', 'core-v9.9.9', 'inference-v9.9.9'];
+    assert.equal(selectLatestTag({ tags: merged, currentVersion: '0.18.3' }), '0.19.0');
+  });
+
+  it('control: the same version on an app tag is the latest', () => {
+    assert.equal(selectLatestTag({ tags: ['v0.19.0', 'v9.9.9'], currentVersion: '0.18.3' }), '9.9.9');
+  });
+
   it('is null when the page is empty', () => {
     assert.equal(selectLatestTag({ tags: [], currentVersion: '0.18.3' }), null);
+  });
+});
+
+describe('tagNamesOf', () => {
+  it('reads the tag name out of a tag ref', () => {
+    assert.deepEqual(tagNamesOf(['refs/tags/v0.19.0', 'refs/tags/v0.20.0-rc.1']), ['v0.19.0', 'v0.20.0-rc.1']);
+  });
+
+  it('drops a ref that is not a tag', () => {
+    assert.deepEqual(tagNamesOf(['refs/heads/v0.19.0', 'v0.19.0']), []);
   });
 });
 
@@ -176,10 +202,34 @@ describe('the checker', () => {
     assert.equal(state.updateAvailable, false);
   });
 
-  it('asks the tags endpoint of the repository it was given', async () => {
+  it("asks GitHub for the repository's v-prefixed tag refs only", async () => {
+    // The prefix is the server-side half of keeping core and inference releases out: the merged
+    // repository carries `core-v*` and `inference-v*` too, and a single page of every tag could
+    // push the newest app release off it.
     const { checker, stub } = checkerOver({ tags: ['v0.19.0'], currentVersion: '0.18.3', clock: () => 0 });
     await checker.refresh();
-    assert.deepEqual(stub.calls, ['https://api.github.com/repos/LowCarbCheck/openplate/tags?per_page=30']);
+    assert.deepEqual(stub.calls, ['https://api.github.com/repos/LowCarbCheck/openplate/git/matching-refs/tags/v']);
+  });
+
+  it('never offers a core or inference release as an app update', async () => {
+    const { checker } = checkerOver({
+      tags: ['v0.18.3', 'v0.19.0', 'core-v9.9.9', 'inference-v9.9.9'],
+      currentVersion: '0.18.3',
+      clock: () => 0,
+    });
+    const state = await checker.refresh();
+    assert.equal(state.latest, '0.19.0');
+    assert.equal(state.releaseUrl, 'https://example.test/releases/tag/v0.19.0');
+  });
+
+  it('control: the same 9.9.9 as an app tag IS offered, so the case above is not passing by accident', async () => {
+    const { checker } = checkerOver({
+      tags: ['v0.18.3', 'v0.19.0', 'v9.9.9', 'inference-v9.9.9'],
+      currentVersion: '0.18.3',
+      clock: () => 0,
+    });
+    const state = await checker.refresh();
+    assert.equal(state.latest, '9.9.9');
   });
 
   it('keeps the previous answer when the fetch fails, and does not throw', async () => {

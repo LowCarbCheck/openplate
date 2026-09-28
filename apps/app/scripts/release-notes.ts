@@ -5,7 +5,7 @@
  *   pnpm exec tsx scripts/release-notes.ts --version 0.22.0 --repo LowCarbCheck/openplate --tag v0.22.0 \
  *     --previous-tag v0.21.0 --changelog CHANGELOG.md
  *
- * Prints the body to stdout. `.github/workflows/release-image.yml` redirects it into the file
+ * Prints the body to stdout. The root `.github/workflows/release-app.yml` redirects it into the file
  * `gh release create --notes-file` reads.
  *
  * THE FILE IT READS: a version's section groups its bullets under `### Added`, `### Changed`,
@@ -340,6 +340,15 @@ export function changelogAnchor({ version, date }: { version: string; date: stri
   return `${version.replaceAll('.', '')}---${date}`;
 }
 
+/**
+ * Where the app's CHANGELOG sits in the repository, for the link into it.
+ *
+ * NOT the `--changelog` path the CLI reads, which is relative to wherever the workflow runs it.
+ * Since M262 the app lives at `apps/app` in the merged `LowCarbCheck/openplate`, and a
+ * `blob/<tag>/CHANGELOG.md` link at a post-merge tag is a 404.
+ */
+export const CHANGELOG_IN_REPO = 'apps/app/CHANGELOG.md';
+
 export interface ReleaseBodyRequest {
   changelog: string;
   version: string;
@@ -372,7 +381,7 @@ export function renderBody({ changelog, version, repo, tag, previousTag = null }
   }
 
   lines.push(
-    `Full detail with commits: [${version} in the changelog](https://github.com/${repo}/blob/${tag}/CHANGELOG.md#${anchor})`,
+    `Full detail with commits: [${version} in the changelog](https://github.com/${repo}/blob/${tag}/${CHANGELOG_IN_REPO}#${anchor})`,
     '',
   );
 

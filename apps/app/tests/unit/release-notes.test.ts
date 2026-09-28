@@ -305,7 +305,7 @@ describe('renderBody', () => {
 
 - The self-hosting page names the sync variable.
 
-Full detail with commits: [0.23.0 in the changelog](https://github.com/LowCarbCheck/openplate/blob/v0.23.0/CHANGELOG.md#0230---2026-10-01)
+Full detail with commits: [0.23.0 in the changelog](https://github.com/LowCarbCheck/openplate/blob/v0.23.0/apps/app/CHANGELOG.md#0230---2026-10-01)
 
 Compare: [v0.22.0...v0.23.0](https://github.com/LowCarbCheck/openplate/compare/v0.22.0...v0.23.0)
 `,
