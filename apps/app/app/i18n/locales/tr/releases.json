@@ -1,4 +1,18 @@
 {
+  "v0_52_0": {
+    "date": "2026-09-29",
+    "changed": {
+      "01": "Reddedilen bir eşitleme veya tarama artık onay ekranını açar.",
+      "02": "Yönetilen bir örneğin ön sayfası, bir hesaba açılan kapıdır.",
+      "03": "Yönetilen bir örnekteki herkese açık sayfalar, openplate.de adresine geri bağlantı verir.",
+      "04": "HTTPS ve YAZIO kılavuzları okuyucunun dilinde açılır."
+    },
+    "fixed": {
+      "01": "openplate.de üzerindeki yasal bağlantılar ziyaretçinin dilinde açılır.",
+      "02": "Açılış sayfasının ekran görüntüleri sayfanın diliyle eşleşir.",
+      "03": "Alt bilgi bağlantıları artık tablet ekranının dışına taşmaz."
+    }
+  },
   "v0_51_0": {
     "date": "2026-09-29",
     "fixed": {
@@ -50,16 +64,6 @@
       "07": "Yönetilen bir örnek artık üyeleri yapay zeka ayarlarına göndermez.",
       "08": "OpenRouter ile Bağlan, düz bir http sayfasında HTTPS gerektiğini belirtir.",
       "09": "Eşitleme compose dosyaları yönetici belirtecini ve bağlantı adreslerini iletir."
-    }
-  },
-  "v0_49_1": {
-    "date": "2026-09-26",
-    "changed": {
-      "01": "Daha Fazla paneli üst kısmındaki gri çubuğu kaldırır."
-    },
-    "fixed": {
-      "01": "Kapat düğmesi dokunduktan sonra artık bir halka göstermez.",
-      "02": "0.49.0 sürümünün Almanca notları tek bir liste olarak okunur."
     }
   }
 }

@@ -419,6 +419,13 @@
     "at": "2026-09-14",
     "es": "Analizando tu plato…"
   },
+  "058cdd83fc85c5cc": {
+    "en": "Legal links from openplate.de open in the visitor's language.",
+    "path": "releases:v0_52_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Los enlaces legales de openplate.de se abren en el idioma del visitante."
+  },
   "05a4a66e6f7b5d58": {
     "en": "eggs",
     "path": "common:catchUp.foods.eggs",
@@ -1027,6 +1034,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "El proveedor tuvo problemas para responder"
+  },
+  "0c77a4938bed4fbb": {
+    "en": "A managed instance's front page is the door to an account.",
+    "path": "releases:v0_52_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "La portada de una instancia administrada es la puerta de entrada a una cuenta."
   },
   "0c93e15fbea8efef": {
     "en": "The fingerprint they read out",
@@ -8189,6 +8203,13 @@
     "at": "2026-09-14",
     "es": "Personas"
   },
+  "68ca06ac98ec02a1": {
+    "en": "The HTTPS and YAZIO guides open in the reader's language.",
+    "path": "releases:v0_52_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Las guías de HTTPS e YAZIO se abren en el idioma del lector."
+  },
   "68cbca9a03f97baa": {
     "en": "This openplate counts page visits with its own Matomo. It uses no cookies and never logs what you eat. Switch it off and this browser sends nothing.",
     "path": "common:preferences.analytics.description",
@@ -10597,6 +10618,13 @@
     "at": "2026-09-29",
     "es": "Los formularios de recuperación de contraseña y de registro ya no muestran un parpadeo en su botón."
   },
+  "845cf6a092c13fe1": {
+    "en": "Public pages on a managed instance link back to openplate.de.",
+    "path": "releases:v0_52_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Las páginas públicas de una instancia administrada enlazan de vuelta a openplate.de."
+  },
   "84703df1bdc28690": {
     "en": "Per 100 g",
     "path": "common:add.custom.per100gToggle",
@@ -11338,6 +11366,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Menos de 50 g de carbohidratos netos al día"
+  },
+  "8d08df94c8602735": {
+    "en": "The landing's screenshots match the page's language.",
+    "path": "releases:v0_52_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Las capturas de pantalla de la página de inicio coinciden con el idioma de la página."
   },
   "8d0e55e0038cfa85": {
     "en": "Nobody has shared a diary with you yet.",
@@ -16981,6 +17016,13 @@
     "at": "2026-09-14",
     "es": "Enviarme un enlace nuevo"
   },
+  "d55f347b30c60850": {
+    "en": "A refused sync or scan now opens the consent screen.",
+    "path": "releases:v0_52_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Si rechazas una sincronización o un escaneo, ahora se abre la pantalla de consentimiento."
+  },
   "d56bf455ec78c3bd": {
     "en": "That photo could not be read. Try again in better light, closer, and hold still.",
     "path": "common:scan.errors.photo.unreadable",
@@ -17176,6 +17218,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "Registrado {{count}} vez"
+  },
+  "d84d4ad7201c903c": {
+    "en": "The footer links no longer run off a tablet screen.",
+    "path": "releases:v0_52_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Los enlaces del pie de página ya no se salen de la pantalla de una tableta."
   },
   "d89906a1e313e8d3": {
     "en": "Show",
