@@ -194,13 +194,15 @@ export type InstanceDescriptor = {
   openSignup?: boolean;
   /**
    * The scan trial a new account on this instance starts with, or ABSENT when
-   * the instance runs none (M253/03).
+   * the instance runs none (M253/03). `days` (M267) is the day limit beside
+   * the scans, "whichever comes first", and ABSENT on an instance whose trial
+   * has no end date.
    *
    * A PROMISE, like `feedback` below, so the client MUST NOT invent it: absent
-   * means no number is stated anywhere. The number on screen is this one and
+   * means no number is stated anywhere. The numbers on screen are these and
    * never a typed literal.
    */
-  trial?: { scans: number };
+  trial?: { scans: number; days?: number };
   /**
    * The challenge the sign-up form carries, or ABSENT when it carries none
    * (M253, owner decision 2026-09-23). Only Turnstile exists. Present only
@@ -379,8 +381,12 @@ const instanceDescriptorSchema = z.object({
   // A PROMISE, so `.optional()` and `.catch(undefined)` like `feedback`
   // below: a count that is not a positive whole number is no promise anybody
   // can read, and it must not fail the whole descriptor either.
+  //
+  // `days` (M267) the same way, INSIDE the block: a nonsense day count is
+  // dropped on its own and the scans survive, so a bad value can only take
+  // the day limit's sentence away, never the scans'.
   trial: z
-    .object({ scans: z.number().int().positive() })
+    .object({ scans: z.number().int().positive(), days: z.number().int().positive().optional().catch(undefined) })
     .optional()
     .catch(undefined),
   // A provider this build cannot render is dropped, so the form is sent with

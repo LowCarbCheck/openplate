@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "Hai usato la tua {{count}} scansione gratuita con IA",
         "trialScansSpent_other": "Hai usato le tue {{count}} scansioni gratuite con IA",
         "trialScansSpentUncounted": "Hai usato le tue scansioni gratuite con IA",
+        "trialDaysOver": "I tuoi giorni gratuiti sono terminati",
         "instanceCeiling": "Questa istanza ha esaurito la capacità disponibile oggi",
         "managedUpstream": "Il provider IA ha rifiutato la richiesta"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} scansione con IA gratuita. Nessuna carta richiesta.",
     "scans_other": "{{count}} scansioni con IA gratuite. Nessuna carta richiesta.",
+    "scansOrDays_one": "{{count}} scansione con IA gratuita o {{days}}, a seconda di cosa si verifica prima. Nessuna carta richiesta.",
+    "scansOrDays_other": "{{count}} scansioni con IA gratuite o {{days}}, a seconda di cosa si verifica prima. Nessuna carta richiesta.",
+    "days_one": "{{count}} giorno",
+    "days_other": "{{count}} giorni",
     "prices": "Una volta esaurite le scansioni gratuite, openplate costa {{monthly}} al mese o {{yearly}} all'anno. I prezzi includono l'IVA.",
     "noPrices": "Una volta esaurite le scansioni gratuite, serve un piano a pagamento per continuare a usare openplate.",
+    "pricesAfter": "Dopodiché, openplate costa {{monthly}} al mese o {{yearly}} all'anno. I prezzi includono l'IVA.",
+    "noPricesAfter": "Dopodiché, ti servirà un piano a pagamento per continuare a usare openplate.",
     "chosenMonthly": "Hai scelto il piano mensile. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite.",
     "chosenYearly": "Hai scelto il piano annuale. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "La tua {{count}} scansione IA gratuita è terminata",
       "scansUsed_other": "Le tue {{count}} scansioni IA gratuite sono terminate",
+      "daysOver_one": "Il tuo {{count}} giorno gratuito è terminato",
+      "daysOver_other": "I tuoi {{count}} giorni gratuiti sono terminati",
       "choose": "Scegli un piano per continuare a usare openplate",
       "lapsed": "Il tuo piano è terminato"
     },

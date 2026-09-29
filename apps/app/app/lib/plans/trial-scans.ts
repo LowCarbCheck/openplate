@@ -46,6 +46,52 @@ export function decodeTrialScans(wire: TrialScansWire | null | undefined): Trial
   return parsed === null ? null : { granted: parsed.granted, left: parsed.left };
 }
 
+const trialEndsAtSchema = z
+  .string()
+  .refine((value) => !Number.isNaN(Date.parse(value)))
+  .nullable()
+  .catch(null);
+
+/**
+ * When the free tier ends by the calendar, as an ISO instant, or `null` for
+ * no end date (M267).
+ *
+ * An absent key (a core older than the field), a `null` and anything that is
+ * not a parseable instant all answer `null`, and `null` never locks: a broken
+ * value must not end somebody's free tier early.
+ *
+ * @param wire - `AccountView.trialEndsAt` as it arrived.
+ */
+export function decodeTrialEndsAt(wire: string | null | undefined): string | null {
+  if (wire === undefined) return null;
+  return trialEndsAtSchema.parse(wire);
+}
+
+/** One day, the unit `TRIAL_DAYS` counts in. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How many days this account's free tier ran, read off its own creation and
+ * end, or `null` when either is unknown (M267).
+ *
+ * THE ACCOUNT'S OWN NUMBER FIRST, the instance's offer second, the rule the
+ * spent-scans heading follows: an operator may change `TRIAL_DAYS` later, and
+ * the lock screen must name the days this person was given. Rounded, because
+ * the core stamps the account a few milliseconds after the instant the end
+ * date was counted from.
+ */
+export function grantedTrialDays({
+  createdAt,
+  trialEndsAt,
+}: {
+  createdAt: string | null | undefined;
+  trialEndsAt: string | null | undefined;
+}): number | null {
+  if (createdAt === null || createdAt === undefined || trialEndsAt === null || trialEndsAt === undefined) return null;
+  const days = Math.round((Date.parse(trialEndsAt) - Date.parse(createdAt)) / DAY_MS);
+  return Number.isFinite(days) && days > 0 ? days : null;
+}
+
 /**
  * The count a proxied response carried, or `null` when it carried none.
  *

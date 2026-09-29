@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The free tier now ends after free scans or set days, whichever comes first.** Where openplate-core publishes a day limit (`instance.trial.days`), the sign-up form and account door display "10 free AI scans or 14 days, whichever comes first", reading both values from core. The price line states what follows the free tier. When the days elapse, the app locks as it does for used scans. The plan page states the reason, showing that free days ended or free scans ran out. When a scan is refused with `403 trial-expired`, the app explains that free days ended and presents the plans, rather than prompting for an API key. Accounts created before the day limit, and instances without one, keep current copy and lock only on scans. `tests/e2e/paywall-trial-days.spec.ts` tests the lock and its heading.
+
 ### Fixed
 
 - **Copied links now state when they point to another address.** On an instance without mail, a new invitation link and a person's password reset link appear for you to copy. openplate-core builds them from `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. The docker compose files set those to `http://localhost:3000` and `http://localhost:3001` when `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` are unset. Such a link opens only on the server. When the link address differs from the one you are using, a line under it now names that address and tells you to set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. The line appears together with the link, so nothing on screen moves. The invite form also checks what the instance reports to say whether they get mail or you get the link, instead of always promising mail. `tests/e2e/admin-link-names-another-address.spec.ts` checks it.

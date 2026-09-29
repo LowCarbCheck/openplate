@@ -97,7 +97,8 @@ import {
 } from '#app/lib/plans/payment-return';
 import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
-import { offeredTrialScans } from '#app/lib/plans/signup-door';
+import { offeredTrialDays, offeredTrialScans } from '#app/lib/plans/signup-door';
+import { grantedTrialDays } from '#app/lib/plans/trial-scans';
 import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
@@ -261,6 +262,7 @@ function PortalControls({
 /** The heading of the notice, per reason. */
 function paywallHeading(notice: PaywallNotice, t: (key: string, options?: { count: number }) => string): string {
   if (notice.kind === 'scans-used') return t('paywall.heading.scansUsed', { count: notice.count });
+  if (notice.kind === 'days-over') return t('paywall.heading.daysOver', { count: notice.count });
   if (notice.kind === 'lapsed') return t('paywall.heading.lapsed');
   return t('paywall.heading.choose');
 }
@@ -611,6 +613,10 @@ export default function SettingsPlan() {
         // The account's own count first, the instance's offer second, and
         // never a typed number.
         scansGranted: session.account?.trialScans?.granted ?? offeredTrialScans(instance),
+        // The same order for the days (M267): the account's own window, then the instance's.
+        trialDays:
+          grantedTrialDays({ createdAt: session.account?.createdAt, trialEndsAt: session.account?.trialEndsAt }) ??
+          offeredTrialDays(instance),
       })
     : null;
   const offersFreeScansFirst = read.kind === 'ready' && !isReturningPaid && hasFreeScansLeft(standing);

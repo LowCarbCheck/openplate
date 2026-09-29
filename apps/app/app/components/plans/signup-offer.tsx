@@ -6,10 +6,13 @@
  * to three lines:
  *
  * 1. the free scans, counted from the handshake (`instance.trial.scans`) and
- *    never from a string;
+ *    never from a string, and since M267 the days beside them, "10 free AI
+ *    scans or 14 days, whichever comes first", from `instance.trial.days`.
+ *    With no day limit the sentence is exactly the one it was before;
  * 2. the price after them, from the anonymous price read, formatted with
  *    `Intl.NumberFormat` in the reader's language, or the sentence with no
- *    price when the read failed;
+ *    price when the read failed. With a day limit it says "after that", not
+ *    "when they are used up", because the days may end the free tier first;
  * 3. on `/sign-up` only, the plan the person chose on the pricing page.
  *
  * ── THE PRICE LINE HAS ITS BOX BEFORE THE PRICE ARRIVES ──────────────────
@@ -57,6 +60,12 @@ const CHOSEN_KEY = {
 export interface SignupOfferProps {
   /** The free scans a new account starts with, from the handshake. */
   trialScans: number;
+  /**
+   * The days after which the free tier ends anyway, from the handshake, or
+   * `null` where the instance promises no day limit (M267). REQUIRED AND
+   * NULLABLE, so every caller says which.
+   */
+  trialDays: number | null;
   /** The price read. `idle` draws no price line at all: the instance sells no plans. */
   prices: PublicPricesRead;
   /** The plan chosen before sign-up, or `null`. Drawn only where a price line is. */
@@ -65,8 +74,17 @@ export interface SignupOfferProps {
   size: 'sm' | 'xs';
 }
 
+/**
+ * The two price sentences for one offer: "when they are used up" where the
+ * scans alone end the free tier, "after that" where the days may end it first.
+ */
+const PRICE_KEYS = {
+  scansOnly: { prices: 'signupOffer.prices', noPrices: 'signupOffer.noPrices' },
+  withDayLimit: { prices: 'signupOffer.pricesAfter', noPrices: 'signupOffer.noPricesAfter' },
+} as const;
+
 /** The widest price sentence this line may need, for the reserve. */
-function useSizingSentence(): string {
+function useSizingSentence(pricesKey: string): string {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const figure = new Intl.NumberFormat(locale, {
@@ -74,14 +92,21 @@ function useSizingSentence(): string {
     currency: SIZING_CURRENCY,
     currencyDisplay: 'code',
   }).format(SIZING_FIGURE_CENTS / 100);
-  return t('signupOffer.prices', { monthly: figure, yearly: figure });
+  return t(pricesKey, { monthly: figure, yearly: figure });
 }
 
 /** The price line: the reserve, the sentence without a price, and the prices once they are known. */
-function PriceLine({ prices }: { prices: Exclude<PublicPricesRead, { kind: 'idle' }> }) {
+function PriceLine({
+  prices,
+  hasDayLimit,
+}: {
+  prices: Exclude<PublicPricesRead, { kind: 'idle' }>;
+  hasDayLimit: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage ?? i18n.language;
-  const sizing = useSizingSentence();
+  const keys = hasDayLimit ? PRICE_KEYS.withDayLimit : PRICE_KEYS.scansOnly;
+  const sizing = useSizingSentence(keys.prices);
   const isUnavailable = prices.kind === 'unavailable';
   return (
     <p data-slot="signup-offer-price-line" className="grid text-muted-foreground [&>*]:col-start-1 [&>*]:row-start-1">
@@ -93,11 +118,11 @@ function PriceLine({ prices }: { prices: Exclude<PublicPricesRead, { kind: 'idle
         aria-hidden={isUnavailable ? undefined : true}
         className={cn(!isUnavailable && 'invisible')}
       >
-        {t('signupOffer.noPrices')}
+        {t(keys.noPrices)}
       </span>
       {prices.kind === 'ready' && (
         <span data-slot="signup-offer-prices">
-          {t('signupOffer.prices', {
+          {t(keys.prices, {
             monthly: formatCents({ cents: prices.prices.monthlyCents, currency: prices.prices.currency, locale }),
             yearly: formatCents({ cents: prices.prices.yearlyCents, currency: prices.prices.currency, locale }),
           })}
@@ -107,14 +132,21 @@ function PriceLine({ prices }: { prices: Exclude<PublicPricesRead, { kind: 'idle
   );
 }
 
-export function SignupOffer({ trialScans, prices, chosenPlan, size }: SignupOfferProps) {
+export function SignupOffer({ trialScans, trialDays, prices, chosenPlan, size }: SignupOfferProps) {
   const { t } = useTranslation();
+  const hasDayLimit = trialDays !== null;
   return (
     <div data-slot="signup-offer" className={cn('space-y-1', size === 'sm' ? 'text-sm' : 'text-xs')}>
       <p data-slot="signup-offer-scans" className="font-medium text-foreground">
-        {t('signupOffer.scans', { count: trialScans })}
+        {trialDays === null ?
+          t('signupOffer.scans', { count: trialScans })
+        : t('signupOffer.scansOrDays', {
+            count: trialScans,
+            days: t('signupOffer.days', { count: trialDays }),
+          })
+        }
       </p>
-      {prices.kind !== 'idle' && <PriceLine prices={prices} />}
+      {prices.kind !== 'idle' && <PriceLine prices={prices} hasDayLimit={hasDayLimit} />}
       {prices.kind !== 'idle' && chosenPlan !== null && (
         <p data-slot="signup-offer-chosen" className="text-muted-foreground">
           {t(CHOSEN_KEY[chosenPlan])}

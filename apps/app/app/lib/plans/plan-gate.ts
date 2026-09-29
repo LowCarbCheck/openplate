@@ -190,33 +190,51 @@ export function planGateStanding({
  * What the plan page says above the plans when the app is locked.
  *
  * - `scans-used`: the free scans are spent. `count` is how many there were.
+ * - `days-over`: the free tier's days are over, with scans still left (M267).
+ *   `count` is how many days there were.
  * - `choose`: a dated trial ended, or there never was an allowance, or the
- *   number of free scans is not known.
+ *   number that ended the free tier is not known.
  * - `lapsed`: a plan the person paid for is over.
  */
-export type PaywallNotice = { kind: 'scans-used'; count: number } | { kind: 'choose' } | { kind: 'lapsed' };
+export type PaywallNotice =
+  | { kind: 'scans-used'; count: number }
+  | { kind: 'days-over'; count: number }
+  | { kind: 'choose' }
+  | { kind: 'lapsed' };
+
+/** The notice that names no number. */
+const CHOOSE: PaywallNotice = { kind: 'choose' };
 
 /**
  * The notice for one standing, or `null` when the standing does not lock.
+ *
+ * The standing says WHICH limit ended the free tier (`endedBy`, M267), and
+ * the heading names that one and only that one: a person whose days ran out
+ * with scans left is never told the scans are used.
  *
  * @param input.standing - where the person stands.
  * @param input.scansGranted - how many free scans this account was given, or
  *   `null` when nothing says. The caller reads the account first and the
  *   instance descriptor second, and never types a number.
+ * @param input.trialDays - how many days the free tier ran, or `null` when
+ *   nothing says. Read the same way: the account's own, then the instance's.
  */
 export function paywallNoticeFor({
   standing,
   scansGranted,
+  trialDays,
 }: {
   standing: PlanStanding;
   scansGranted: number | null;
+  trialDays: number | null;
 }): PaywallNotice | null {
   if (standing.kind === 'lapsed') return { kind: 'lapsed' };
   if (standing.kind !== 'trial-ended') return null;
-  if (standing.basis === 'scans' && scansGranted !== null && scansGranted > 0) {
-    return { kind: 'scans-used', count: scansGranted };
+  if (standing.basis === 'days') return CHOOSE;
+  if (standing.endedBy === 'days') {
+    return trialDays !== null && trialDays > 0 ? { kind: 'days-over', count: trialDays } : CHOOSE;
   }
-  return { kind: 'choose' };
+  return scansGranted !== null && scansGranted > 0 ? { kind: 'scans-used', count: scansGranted } : CHOOSE;
 }
 
 /**

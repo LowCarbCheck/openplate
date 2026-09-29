@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "Has usado tu {{count}} escaneo con IA gratis",
         "trialScansSpent_other": "Has usado tus {{count}} escaneos con IA gratis",
         "trialScansSpentUncounted": "Has usado tus escaneos con IA gratis",
+        "trialDaysOver": "Se terminaron tus días gratis",
         "instanceCeiling": "Esta instancia no tiene más capacidad por hoy",
         "managedUpstream": "El proveedor de IA rechazó la solicitud"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} escaneo gratis con IA. No necesitas tarjeta.",
     "scans_other": "{{count}} escaneos gratis con IA. No necesitas tarjeta.",
+    "scansOrDays_one": "{{count}} escaneo gratis con IA o {{days}}, lo que ocurra primero. Sin tarjeta.",
+    "scansOrDays_other": "{{count}} escaneos gratis con IA o {{days}}, lo que ocurra primero. Sin tarjeta.",
+    "days_one": "{{count}} día",
+    "days_other": "{{count}} días",
     "prices": "Cuando se te acaben los escaneos, openplate cuesta {{monthly}} al mes o {{yearly}} al año. Los precios incluyen IVA.",
     "noPrices": "Cuando se te acaben los escaneos, necesitarás un plan de pago para seguir usando openplate.",
+    "pricesAfter": "Después, openplate cuesta {{monthly}} al mes o {{yearly}} al año. Precios con IVA incluido.",
+    "noPricesAfter": "Después, necesitas un plan de pago para seguir usando openplate.",
     "chosenMonthly": "Has elegido el plan mensual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis.",
     "chosenYearly": "Has elegido el plan anual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "Se ha agotado tu {{count}} escaneo gratis con IA",
       "scansUsed_other": "Se han agotado tus {{count}} escaneos gratis con IA",
+      "daysOver_one": "Se terminó tu {{count}} día gratis",
+      "daysOver_other": "Se terminaron tus {{count}} días gratis",
       "choose": "Elige un plan para seguir usando openplate",
       "lapsed": "Tu plan ha terminado"
     },

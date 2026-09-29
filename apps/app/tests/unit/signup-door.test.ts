@@ -9,7 +9,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { hasOpenSignup, offeredTrialScans, signupCaptchaOf } from '../../app/lib/plans/signup-door';
+import { hasOpenSignup, offeredTrialDays, offeredTrialScans, signupCaptchaOf } from '../../app/lib/plans/signup-door';
 import { readHandshakeInstance, type InstanceDescriptor, type JsonValue } from '../../app/lib/sync/engine/protocol';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { describeSignupFailure } from '../../app/lib/sync/signup-request-schema';
@@ -76,6 +76,29 @@ describe('the scan trial a new account is promised', () => {
   it('drops a count that is not a positive whole number rather than refusing the descriptor', () => {
     assert.equal(offeredTrialScans(decode({ trial: { scans: 0 } })), null);
     assert.equal(offeredTrialScans(decode({ trial: { scans: 2.5 } })), null);
+  });
+});
+
+describe('the days a new account is promised (M267)', () => {
+  it('reads the number the core sends beside the scans', () => {
+    const descriptor = decode({ trial: { scans: 10, days: 14 } });
+    assert.equal(offeredTrialDays(descriptor), 14);
+    assert.equal(offeredTrialScans(descriptor), 10);
+  });
+
+  it('states none when the key is absent, the control for the number above, and the scans stay', () => {
+    const descriptor = decode({ trial: { scans: 10 } });
+    assert.equal(offeredTrialDays(descriptor), null);
+    assert.equal(offeredTrialScans(descriptor), 10);
+    assert.equal(offeredTrialDays(decode({})), null);
+  });
+
+  it('drops a day count that is not a positive whole number, and keeps the scans', () => {
+    for (const days of [0, 2.5, -3, '14']) {
+      const descriptor = decode({ trial: { scans: 10, days } });
+      assert.equal(offeredTrialDays(descriptor), null, String(days));
+      assert.equal(offeredTrialScans(descriptor), 10, `the scans survived ${String(days)}`);
+    }
   });
 });
 

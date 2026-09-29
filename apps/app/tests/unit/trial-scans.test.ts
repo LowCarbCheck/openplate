@@ -7,7 +7,9 @@ import assert from 'node:assert/strict';
 
 import {
   bindingTrialScans,
+  decodeTrialEndsAt,
   decodeTrialScans,
+  grantedTrialDays,
   readTrialScansLeft,
   withScansLeft,
 } from '../../app/lib/plans/trial-scans';
@@ -80,5 +82,41 @@ describe('the account strip on a scan trial', () => {
   it('keeps the per-day line without a binding count, the control for the case above', () => {
     assert.deepEqual(resolveAllowanceLine({ ...base, trialScans: null }), { kind: 'usage', used: 4, limit: 20 });
     assert.deepEqual(resolveAllowanceLine(base), { kind: 'usage', used: 4, limit: 20 });
+  });
+});
+
+describe('decodeTrialEndsAt (M267)', () => {
+  it('reads an instant the core states', () => {
+    assert.equal(decodeTrialEndsAt('2026-10-13T09:00:00.000Z'), '2026-10-13T09:00:00.000Z');
+  });
+
+  it('reads an absent key, a null and a broken value as no end date, which never locks', () => {
+    assert.equal(decodeTrialEndsAt(undefined), null);
+    assert.equal(decodeTrialEndsAt(null), null);
+    assert.equal(decodeTrialEndsAt('next tuesday'), null);
+    assert.equal(decodeTrialEndsAt(''), null);
+  });
+});
+
+describe('grantedTrialDays (M267)', () => {
+  it("reads the account's own day count off its creation and its end", () => {
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T10:00:00.000Z', trialEndsAt: '2026-10-13T10:00:00.000Z' }),
+      14,
+    );
+    // A creation stamped a few milliseconds after the redemption instant is still fourteen.
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T10:00:00.004Z', trialEndsAt: '2026-10-13T10:00:00.000Z' }),
+      14,
+    );
+  });
+
+  it('knows no count without both instants, or with an end before the start', () => {
+    assert.equal(grantedTrialDays({ createdAt: null, trialEndsAt: '2026-10-13T10:00:00.000Z' }), null);
+    assert.equal(grantedTrialDays({ createdAt: '2026-09-29T10:00:00.000Z', trialEndsAt: null }), null);
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-10-13T10:00:00.000Z', trialEndsAt: '2026-09-29T10:00:00.000Z' }),
+      null,
+    );
   });
 });

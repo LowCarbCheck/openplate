@@ -100,7 +100,7 @@ describe('the trial window', () => {
 });
 
 describe('the recap of a scan trial (M253/05)', () => {
-  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 2, scansGranted: 10 };
+  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 2, scansGranted: 10, endsAt: null };
 
   it('counts from the account\'s creation with no end, because a scan trial has no date', () => {
     assert.deepEqual(trialRecapWindow({ standing: scans, accountCreatedAt: CREATED_AT }), {
@@ -108,7 +108,7 @@ describe('the recap of a scan trial (M253/05)', () => {
       endsAtMs: Number.POSITIVE_INFINITY,
     });
     // A spent scan trial still sums up what the scans were used for.
-    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedAt: null };
+    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null };
     assert.notEqual(trialRecapWindow({ standing: spent, accountCreatedAt: CREATED_AT }), null);
   });
 

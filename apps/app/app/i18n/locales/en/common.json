@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "You used your {{count}} free AI scan",
         "trialScansSpent_other": "You used your {{count}} free AI scans",
         "trialScansSpentUncounted": "You used your free AI scans",
+        "trialDaysOver": "Your free days are over",
         "instanceCeiling": "This instance is out of capacity today",
         "managedUpstream": "The AI provider rejected the request"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} free AI scan. No card needed.",
     "scans_other": "{{count}} free AI scans. No card needed.",
+    "scansOrDays_one": "{{count}} free AI scan or {{days}}, whichever comes first. No card needed.",
+    "scansOrDays_other": "{{count}} free AI scans or {{days}}, whichever comes first. No card needed.",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
     "prices": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
     "noPrices": "When they are used up, you need a paid plan to keep using openplate.",
+    "pricesAfter": "After that, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
+    "noPricesAfter": "After that, you need a paid plan to keep using openplate.",
     "chosenMonthly": "You chose the monthly plan. You can pay for it right after you create your account, or use your free scans first.",
     "chosenYearly": "You chose the yearly plan. You can pay for it right after you create your account, or use your free scans first."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "Your {{count}} free AI scan is used up",
       "scansUsed_other": "Your {{count}} free AI scans are used up",
+      "daysOver_one": "Your {{count}} free day is over",
+      "daysOver_other": "Your {{count}} free days are over",
       "choose": "Choose a plan to keep using openplate",
       "lapsed": "Your plan has ended"
     },

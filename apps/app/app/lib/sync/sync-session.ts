@@ -37,7 +37,7 @@ import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage, unlockDevice } from './sync-state';
-import { decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
+import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
 
 /**
@@ -140,6 +140,13 @@ export interface SyncSessionSnapshot {
      * `createdAt` below is: every other snapshot fixture is right without it.
      */
     trialScans?: TrialScans | null;
+    /**
+     * When the free tier ends by the calendar, an ISO instant, or
+     * `null`/absent for no end date (M267). `null` is also "not read yet" and
+     * "a core older than the field", and none of the three locks anything.
+     * OPTIONAL for the reason `trialScans` above is.
+     */
+    trialEndsAt?: string | null;
     /**
      * When the account was created, as an ISO instant, or `null`/absent.
      *
@@ -343,6 +350,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       invitesLeft: knownAccount?.invitesLeft ?? null,
       invitesNeedAPlan: knownAccount?.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(knownAccount?.trialScans),
+      trialEndsAt: decodeTrialEndsAt(knownAccount?.trialEndsAt),
       createdAt: knownAccount?.createdAt ?? null,
       healthConsent: decodeHealthConsent(knownAccount?.healthConsent),
     },

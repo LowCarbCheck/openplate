@@ -133,6 +133,34 @@ describe('planGateHoldFrom', () => {
     );
   });
 
+  it('holds a free tier with a day limit from the instant its days end (M267)', () => {
+    const freeTier = { ...RUNNING, trialEndsAt: TOMORROW };
+    assert.equal(
+      planGateHoldFrom({ instance: SELLING, account: freeTier, planView: NO_SUBSCRIPTION, now: NOW }),
+      Date.parse(TOMORROW),
+    );
+    // THE CONTROLS: past its end it is locked and holds from now, and the
+    // same free tier with no end date never holds.
+    assert.equal(
+      planGateHoldFrom({
+        instance: SELLING,
+        account: { ...freeTier, trialEndsAt: YESTERDAY },
+        planView: NO_SUBSCRIPTION,
+        now: NOW,
+      }),
+      NOW.getTime(),
+    );
+    assert.equal(
+      planGateHoldFrom({
+        instance: SELLING,
+        account: { ...freeTier, trialEndsAt: null },
+        planView: NO_SUBSCRIPTION,
+        now: NOW,
+      }),
+      null,
+    );
+  });
+
   it('holds a subscription that will not renew from the end of its paid period', () => {
     const endingPlan = { ...ACTIVE, cancelAtPeriodEnd: true };
     assert.equal(

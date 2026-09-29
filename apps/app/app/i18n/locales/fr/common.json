@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "Tu as utilisé ton {{count}} scan IA gratuit",
         "trialScansSpent_other": "Tu as utilisé tes {{count}} scans IA gratuits",
         "trialScansSpentUncounted": "Tu as utilisé tes scans IA gratuits",
+        "trialDaysOver": "Tes jours gratuits sont terminés",
         "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui",
         "managedUpstream": "Le fournisseur d'IA a rejeté la requête"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} scan IA gratuit. Pas besoin de carte.",
     "scans_other": "{{count}} scans IA gratuits. Pas besoin de carte.",
+    "scansOrDays_one": "{{count}} scan IA gratuit ou {{days}}, selon la première limite atteinte. Pas besoin de carte.",
+    "scansOrDays_other": "{{count}} scans IA gratuits ou {{days}}, selon la première limite atteinte. Pas besoin de carte.",
+    "days_one": "{{count}} jour",
+    "days_other": "{{count}} jours",
     "prices": "Une fois ces scans épuisés, openplate coûte {{monthly}} par mois ou {{yearly}} par an. Les prix incluent la TVA.",
     "noPrices": "Une fois ces scans épuisés, il te faudra un forfait payant pour continuer à utiliser openplate.",
+    "pricesAfter": "Ensuite, openplate coûte {{monthly}} par mois ou {{yearly}} par an. Les prix incluent la TVA.",
+    "noPricesAfter": "Ensuite, tu as besoin d'un forfait payant pour continuer à utiliser openplate.",
     "chosenMonthly": "Tu as choisi le forfait mensuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits.",
     "chosenYearly": "Tu as choisi le forfait annuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "Ton {{count}} scan IA gratuit est épuisé",
       "scansUsed_other": "Tes {{count}} scans IA gratuits sont épuisés",
+      "daysOver_one": "Ton {{count}} jour gratuit est terminé",
+      "daysOver_other": "Tes {{count}} jours gratuits sont terminés",
       "choose": "Choisis un forfait pour continuer à utiliser openplate",
       "lapsed": "Ton forfait a pris fin"
     },

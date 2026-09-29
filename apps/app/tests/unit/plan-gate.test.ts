@@ -29,10 +29,20 @@ const NOW = new Date('2026-09-28T12:00:00.000Z');
 const STANDINGS = {
   noPlans: NO_PLANS,
   trialDays: { kind: 'trial', basis: 'days', endsAt: '2026-10-01T12:00:00.000Z', daysLeft: 3 },
-  trialScans: { kind: 'trial', basis: 'scans', scansLeft: 4, scansGranted: 10 },
+  trialScans: { kind: 'trial', basis: 'scans', scansLeft: 4, scansGranted: 10, endsAt: null },
+  // M267: the free tier with its day limit still running.
+  trialScansAndDays: {
+    kind: 'trial',
+    basis: 'scans',
+    scansLeft: 4,
+    scansGranted: 10,
+    endsAt: '2026-10-05T12:00:00.000Z',
+  },
   trialEndedOnADate: { kind: 'trial-ended', basis: 'days', endedAt: '2026-09-20T12:00:00.000Z' },
   trialEndedNoAllowance: { kind: 'trial-ended', basis: 'days', endedAt: null },
-  trialEndedScans: { kind: 'trial-ended', basis: 'scans', endedAt: null },
+  trialEndedScans: { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null },
+  // M267: the free tier's fourteen days are over, with scans still left.
+  trialEndedDays: { kind: 'trial-ended', basis: 'scans', endedBy: 'days', endedAt: '2026-09-27T12:00:00.000Z' },
   subscribed: {
     kind: 'subscribed',
     planKey: 'monthly',
@@ -73,12 +83,14 @@ const LOCKING = [
   STANDINGS.trialEndedOnADate,
   STANDINGS.trialEndedNoAllowance,
   STANDINGS.trialEndedScans,
+  STANDINGS.trialEndedDays,
   STANDINGS.lapsed,
 ];
 const OPEN = [
   STANDINGS.noPlans,
   STANDINGS.trialDays,
   STANDINGS.trialScans,
+  STANDINGS.trialScansAndDays,
   STANDINGS.subscribed,
   STANDINGS.subscribedNotRenewing,
   STANDINGS.subscribedPastDue,
@@ -287,43 +299,82 @@ describe('planGateStanding: an administrator is never locked', () => {
 
 describe('paywallNoticeFor: the heading the plan page draws', () => {
   it('counts the free scans for a spent scan trial', () => {
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: 10 }), {
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: 10, trialDays: 14 }), {
       kind: 'scans-used',
       count: 10,
     });
   });
 
-  it('falls back to the plain heading when no count is known, never a blank number', () => {
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: null }), { kind: 'choose' });
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: 0 }), { kind: 'choose' });
+  it('counts the free days when the days ended the free tier (M267)', () => {
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedDays, scansGranted: 10, trialDays: 14 }), {
+      kind: 'days-over',
+      count: 14,
+    });
+    // THE NUMBER IS THE ONE HANDED IN, never a typed fourteen.
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedDays, scansGranted: 10, trialDays: 30 }), {
+      kind: 'days-over',
+      count: 30,
+    });
   });
 
-  it('asks for a plan when a dated trial ended or there never was an allowance', () => {
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedOnADate, scansGranted: 10 }), { kind: 'choose' });
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedNoAllowance, scansGranted: null }), {
+  it('never names the days for spent scans, nor the scans for days that ran out', () => {
+    // THE CONTROLS for the two above: the same inputs, the other limit.
+    const scans = paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: 10, trialDays: 14 });
+    assert.equal(scans?.kind, 'scans-used');
+    const days = paywallNoticeFor({ standing: STANDINGS.trialEndedDays, scansGranted: 10, trialDays: 14 });
+    assert.equal(days?.kind, 'days-over');
+  });
+
+  it('falls back to the plain heading when no count is known, never a blank number', () => {
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: null, trialDays: 14 }), {
+      kind: 'choose',
+    });
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedScans, scansGranted: 0, trialDays: 14 }), {
+      kind: 'choose',
+    });
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedDays, scansGranted: 10, trialDays: null }), {
+      kind: 'choose',
+    });
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedDays, scansGranted: 10, trialDays: 0 }), {
       kind: 'choose',
     });
   });
 
+  it('asks for a plan when a dated trial ended or there never was an allowance', () => {
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.trialEndedOnADate, scansGranted: 10, trialDays: 14 }), {
+      kind: 'choose',
+    });
+    assert.deepEqual(
+      paywallNoticeFor({ standing: STANDINGS.trialEndedNoAllowance, scansGranted: null, trialDays: 14 }),
+      {
+        kind: 'choose',
+      },
+    );
+  });
+
   it('says the plan ended when a subscription lapsed', () => {
-    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.lapsed, scansGranted: 10 }), { kind: 'lapsed' });
+    assert.deepEqual(paywallNoticeFor({ standing: STANDINGS.lapsed, scansGranted: 10, trialDays: 14 }), {
+      kind: 'lapsed',
+    });
   });
 
   it('draws no notice for a standing that does not lock', () => {
     for (const standing of OPEN)
-      assert.equal(paywallNoticeFor({ standing, scansGranted: 10 }), null, describeStanding(standing));
+      assert.equal(paywallNoticeFor({ standing, scansGranted: 10, trialDays: 14 }), null, describeStanding(standing));
   });
 });
 
 describe('hasFreeScansLeft: the "use my free scans first" link', () => {
-  it('is offered on a scan trial with scans left', () => {
+  it('is offered on a scan trial with scans left, with or without a day limit', () => {
     assert.equal(hasFreeScansLeft(STANDINGS.trialScans), true);
+    assert.equal(hasFreeScansLeft(STANDINGS.trialScansAndDays), true);
   });
 
   it('is not offered on a dated trial, a spent trial, a plan or no plans', () => {
     for (const standing of [
       STANDINGS.trialDays,
       STANDINGS.trialEndedScans,
+      STANDINGS.trialEndedDays,
       STANDINGS.subscribed,
       STANDINGS.noPlans,
       STANDINGS.lapsed,
@@ -341,6 +392,10 @@ function describeStanding(standing: PlanStanding): string {
   if (standing.kind === 'trial-ended' && standing.basis === 'days') {
     return `trial-ended on days (${standing.endedAt === null ? 'no allowance' : 'dated'})`;
   }
-  if (standing.kind === 'trial' || standing.kind === 'trial-ended') return `${standing.kind} on ${standing.basis}`;
+  if (standing.kind === 'trial-ended') return `the free tier ended by its ${standing.endedBy}`;
+  if (standing.kind === 'trial' && standing.basis === 'scans') {
+    return `trial on scans${standing.endsAt === null ? '' : ' and days'}`;
+  }
+  if (standing.kind === 'trial') return `trial on ${standing.basis}`;
   return standing.kind;
 }

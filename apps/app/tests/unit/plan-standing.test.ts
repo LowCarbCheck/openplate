@@ -230,6 +230,7 @@ describe('a scan trial (M253/05)', () => {
       basis: 'scans',
       scansLeft: 3,
       scansGranted: 10,
+      endsAt: null,
     });
   });
 
@@ -243,6 +244,7 @@ describe('a scan trial (M253/05)', () => {
     assert.deepEqual(standing({ account: { ...SCAN_TRIAL, trialScans: { granted: 10, left: 0 } } }), {
       kind: 'trial-ended',
       basis: 'scans',
+      endedBy: 'scans',
       endedAt: null,
     });
   });
@@ -270,5 +272,70 @@ describe('a scan trial (M253/05)', () => {
 
   it('gives way to a live subscription', () => {
     assert.equal(standing({ account: SCAN_TRIAL, planView: YEARLY }).kind, 'subscribed');
+  });
+});
+
+describe('the free tier ends after its scans or its days, whichever comes first (M267)', () => {
+  /** A free tier with four of ten scans left and an end date three days away. */
+  const FREE_TIER: StandingAccount = {
+    dailyAiLimit: 20,
+    allowanceExpiresAt: null,
+    trialScans: { granted: 10, left: 4 },
+    trialEndsAt: fromNow(3 * DAY_MS),
+  };
+
+  it('runs while scans and days are both left, and carries the end date', () => {
+    assert.deepEqual(standing({ account: FREE_TIER }), {
+      kind: 'trial',
+      basis: 'scans',
+      scansLeft: 4,
+      scansGranted: 10,
+      endsAt: FREE_TIER.trialEndsAt,
+    });
+  });
+
+  it('ends by the days once the end date has passed, with scans still left', () => {
+    const endedAt = fromNow(-MINUTE_MS);
+    assert.deepEqual(standing({ account: { ...FREE_TIER, trialEndsAt: endedAt } }), {
+      kind: 'trial-ended',
+      basis: 'scans',
+      endedBy: 'days',
+      endedAt,
+    });
+  });
+
+  it('counts the boundary instant as ended, the proxy\'s "not after" rule', () => {
+    const atTheEnd = standing({ account: { ...FREE_TIER, trialEndsAt: fromNow(0) } });
+    assert.equal(atTheEnd.kind === 'trial-ended' && atTheEnd.basis === 'scans' && atTheEnd.endedBy, 'days');
+    // THE CONTROL: one millisecond before, it still runs.
+    assert.equal(standing({ account: { ...FREE_TIER, trialEndsAt: fromNow(1) } }).kind, 'trial');
+  });
+
+  it('names the scans when they ran out, before the days and after them', () => {
+    const spent = { granted: 10, left: 0 };
+    for (const trialEndsAt of [fromNow(3 * DAY_MS), fromNow(-DAY_MS)]) {
+      const ended = standing({ account: { ...FREE_TIER, trialScans: spent, trialEndsAt } });
+      assert.equal(ended.kind === 'trial-ended' && ended.basis === 'scans' && ended.endedBy, 'scans', trialEndsAt);
+    }
+  });
+
+  it('keeps an account from before the day limit running, however late it is', () => {
+    const muchLater = new Date(NOW.getTime() + 400 * DAY_MS);
+    const old: StandingAccount = { ...FREE_TIER, trialEndsAt: null };
+    assert.equal(planStanding({ instance: SELLING, account: old, planView: NO_SUBSCRIPTION, now: muchLater }).kind, 'trial');
+    // An account read from a core older than the field reads the same.
+    const older: StandingAccount = { dailyAiLimit: 20, allowanceExpiresAt: null, trialScans: { granted: 10, left: 4 } };
+    assert.equal(planStanding({ instance: SELLING, account: older, planView: NO_SUBSCRIPTION, now: muchLater }).kind, 'trial');
+  });
+
+  it('reads an end date it cannot parse as no end date, because unknown never locks', () => {
+    assert.equal(standing({ account: { ...FREE_TIER, trialEndsAt: 'not a date' } }).kind, 'trial');
+  });
+
+  it('never ends for a subscriber, and a paid date lifts the day limit', () => {
+    const ended = { ...FREE_TIER, trialEndsAt: fromNow(-DAY_MS) };
+    assert.equal(standing({ account: ended, planView: YEARLY }).kind, 'subscribed');
+    const paidWindow = standing({ account: { ...ended, allowanceExpiresAt: fromNow(20 * DAY_MS) } });
+    assert.equal(paidWindow.kind === 'trial' && paidWindow.basis, 'days');
   });
 });

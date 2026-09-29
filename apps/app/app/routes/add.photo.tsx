@@ -2030,6 +2030,8 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   // THE DATELESS, COUNTLESS FORM (M253/05). `getFailureAlertTitle` swaps in
   // the counted title when the session knows how many scans were given.
   'trial-scans-spent': 'scan.errors.titles.trialScansSpentUncounted',
+  // THE DAY LIMIT (M267): the free tier's days are over, with scans left.
+  'trial-expired': 'scan.errors.titles.trialDaysOver',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
 /**
@@ -2125,18 +2127,28 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   // The free scans are used: a plan is the next step, and the food database
   // still answers without AI (M253/05).
   'trial-scans-spent': 'scan.errors.provider.trialScansSpent',
+  // The same next step for the day limit (M267): that sentence names no scans.
+  'trial-expired': 'scan.errors.provider.trialScansSpent',
   // The remaining causes deliberately keep the adapter's own English (see above).
   'invalid-request': undefined,
   transient: undefined,
   'genuinely-no-food': undefined,
 } satisfies Record<VisionFailureCause, string | undefined>;
 
+/** The refusals a payment answers, see {@link shouldOfferPlansDoor}. */
+const PLAN_DOOR_CAUSES: ReadonlySet<VisionFailureCause> = new Set([
+  'allowance-expired',
+  'trial-scans-spent',
+  'trial-expired',
+]);
+
 /**
  * Whether the refusal a person is looking at has a page that fixes it.
  *
- * TWO CAUSES, and that is the whole rule. `allowance-expired` and
- * `trial-scans-spent` (M253/05) are the refusals a payment answers: a trial
- * that ran out on a date, and one whose free scans are used. `ai-not-allowed`
+ * THREE CAUSES, and that is the whole rule. `allowance-expired`,
+ * `trial-scans-spent` (M253/05) and `trial-expired` (M267) are the refusals a
+ * payment answers: a trial that ran out on a date, one whose free scans are
+ * used, and a free tier whose days are over. `ai-not-allowed`
  * is an account an administrator
  * never switched on, and offering to sell a plan there would be an
  * advertisement on a screen somebody opened to log a meal. The composer's
@@ -2147,9 +2159,7 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
  * link rendered from a `&&` inside the alert would have neither.
  */
 export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause; plansAvailable: boolean }): boolean {
-  return (
-    input.plansAvailable && (input.failureCause === 'allowance-expired' || input.failureCause === 'trial-scans-spent')
-  );
+  return input.plansAvailable && input.failureCause !== undefined && PLAN_DOOR_CAUSES.has(input.failureCause);
 }
 
 /**

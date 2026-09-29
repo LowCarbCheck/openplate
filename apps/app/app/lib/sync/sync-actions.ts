@@ -91,7 +91,7 @@ import {
   revokeCachedSession,
 } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
-import { decodeTrialScans } from '#app/lib/plans/trial-scans';
+import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
   decodeHealthConsent,
   isConsentRequiredRefusal,
@@ -1132,6 +1132,7 @@ function publishAccountView(account: AccountViewWire): void {
       invitesLeft: account.invitesLeft ?? null,
       invitesNeedAPlan: account.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(account.trialScans),
+      trialEndsAt: decodeTrialEndsAt(account.trialEndsAt),
       createdAt: account.createdAt,
       healthConsent: decodeHealthConsent(account.healthConsent),
     },

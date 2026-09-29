@@ -447,6 +447,13 @@
     "at": "2026-09-14",
     "es": "El nombre es obligatorio"
   },
+  "06409e0fba3e89cf": {
+    "en": "{{count}} day",
+    "path": "common:signupOffer.days_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "{{count}} día"
+  },
   "064381ce605e3746": {
     "en": "Adding a food by hand now says what is missing in your language.",
     "path": "releases:v0_36_0.fixed.05",
@@ -2526,6 +2533,13 @@
     "at": "2026-09-14",
     "es": "Tu diario no llegó"
   },
+  "1d7ecae8831abb3d": {
+    "en": "Your free days are over",
+    "path": "common:scan.errors.titles.trialDaysOver",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Se terminaron tus días gratis"
+  },
   "1d89f48ab7d70185": {
     "en": "Fasting",
     "path": "common:nav.fasting",
@@ -2868,6 +2882,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Recargar"
+  },
+  "21983856c6913f26": {
+    "en": "After that, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
+    "path": "common:signupOffer.pricesAfter",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Después, openplate cuesta {{monthly}} al mes o {{yearly}} al año. Precios con IVA incluido."
   },
   "21a2bf803dcaaa88": {
     "en": "g",
@@ -8959,6 +8980,13 @@
     "at": "2026-09-14",
     "es": "Mostrarla de nuevo la próxima vez"
   },
+  "71d59e54a3579adc": {
+    "en": "{{count}} free AI scans or {{days}}, whichever comes first. No card needed.",
+    "path": "common:signupOffer.scansOrDays_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "{{count}} escaneos gratis con IA o {{days}}, lo que ocurra primero. Sin tarjeta."
+  },
   "71f20462dbefd5ba": {
     "en": "openplate is a carb-first food diary that keeps an end-to-end-encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
     "path": "common:landing.hero.taglineManaged",
@@ -9883,6 +9911,13 @@
     "at": "2026-09-14",
     "es": "Leyendo tu registro…"
   },
+  "7bfb4eb3353e340d": {
+    "en": "Your {{count}} free days are over",
+    "path": "common:paywall.heading.daysOver_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Se terminaron tus {{count}} días gratis"
+  },
   "7c13e6f00019f4fa": {
     "en": "May contain peanuts",
     "path": "common:cautions.mayContain.peanuts",
@@ -10652,6 +10687,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Las cuentas aquí se crean con un enlace de invitación. Un administrador emite esas invitaciones, así que pídele una a quien gestione esta instancia."
+  },
+  "848bc687b96e0635": {
+    "en": "Your {{count}} free day is over",
+    "path": "common:paywall.heading.daysOver_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Se terminó tu {{count}} día gratis"
   },
   "8493c7c6a900ec7f": {
     "en": "Agreed on {{date}}",
@@ -12353,6 +12395,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cerrar sesión"
+  },
+  "98f4cad68f47d6d2": {
+    "en": "{{count}} days",
+    "path": "common:signupOffer.days_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "{{count}} días"
   },
   "98f883e48cf9fab1": {
     "en": "This account cannot join a study yet",
@@ -14167,6 +14216,13 @@
     "at": "2026-09-14",
     "es": "Tu contraseña también cifra tu diario. No podemos restablecerla, así que guarda tu código de recuperación."
   },
+  "afcfa0ee9f6a1c9a": {
+    "en": "{{count}} free AI scan or {{days}}, whichever comes first. No card needed.",
+    "path": "common:signupOffer.scansOrDays_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "{{count}} escaneo gratis con IA o {{days}}, lo que ocurra primero. Sin tarjeta."
+  },
   "afd1af32bbf45abb": {
     "en": "Log a food today to start a streak.",
     "path": "common:trends.streak.empty",
@@ -15748,6 +15804,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Eliminar cuenta"
+  },
+  "c4f641f76133b1da": {
+    "en": "After that, you need a paid plan to keep using openplate.",
+    "path": "common:signupOffer.noPricesAfter",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Después, necesitas un plan de pago para seguir usando openplate."
   },
   "c4f6980b28241a59": {
     "en": "Paste your invite link",

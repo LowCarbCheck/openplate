@@ -229,6 +229,7 @@ export type ScanFailureReason =
   | 'consent-required'
   | 'allowance-expired'
   | 'trial-scans-spent'
+  | 'trial-expired'
   | 'ai-instance-ceiling'
   // Not provider causes: the photo never reached a provider at all.
   | 'no-provider'

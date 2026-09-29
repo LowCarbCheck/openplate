@@ -52,7 +52,7 @@ import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { PROJECT_SITE_HOST } from '#app/lib/brand';
 import { trackLandingCtaClicked } from '#app/lib/matomo-events';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
-import { hasOpenSignup, offeredTrialScans } from '#app/lib/plans/signup-door';
+import { hasOpenSignup, offeredTrialDays, offeredTrialScans } from '#app/lib/plans/signup-door';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { cn } from '#app/lib/utils';
 
@@ -99,6 +99,9 @@ const DOOR_CLASS = 'h-11 w-full justify-center';
  * depends on the language and the width. MEASURED in the production build on
  * 2026-09-29: 100 px below 390 px (German, French, Italian and Spanish at 320,
  * Italian at 360), 84 px from 390 (Italian), 68 px from 412 in every language.
+ * RE-MEASURED the same day with the day limit's sentence (M267, "10 free AI
+ * scans or 14 days, whichever comes first", and "After that" in the price
+ * line): at most 100 px below 390 and 68 px from 390, inside the same bands.
  * `tests/e2e/account-door-page.spec.ts` holds the handshake and the price read,
  * lets them through, and requires a layout-shift total of 0 at 320, 390 and
  * 412 px in all six languages, so a longer translation fails there.
@@ -171,6 +174,7 @@ function Doors({ door, onPasteInviteLink }: { door: Door; onPasteInviteLink: () 
 function SmallPrint({ read }: { read: DoorRead }): ReactElement {
   const { t } = useTranslation();
   const trialScans = offeredTrialScans(read.instance);
+  const trialDays = offeredTrialDays(read.instance);
   const showsOffer = read.door.kind === 'sign-up' && hasPlansDoor(read.instance) && trialScans !== null;
   const prices = usePublicPlanPrices({ isEnabled: showsOffer });
   return (
@@ -180,7 +184,9 @@ function SmallPrint({ read }: { read: DoorRead }): ReactElement {
           {t('accountDoor.inviteOnly')}
         </p>
       )}
-      {showsOffer && <SignupOffer trialScans={trialScans} prices={prices} chosenPlan={null} size="xs" />}
+      {showsOffer && (
+        <SignupOffer trialScans={trialScans} trialDays={trialDays} prices={prices} chosenPlan={null} size="xs" />
+      )}
     </div>
   );
 }

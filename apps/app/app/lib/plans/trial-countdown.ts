@@ -51,7 +51,14 @@ export interface CountdownStorage {
  * - `scans-used`: the free AI scans are all spent (M253/11, owner decision).
  *   A spent scan trial is `trial-ended`, and before this the header went from
  *   "1 left" to silence; the person learned it only from the next refusal. A
- *   spent DAY trial still draws nothing: the owner asked about scans.
+ *   spent DAY trial still draws nothing: the owner asked about scans. Nor does
+ *   a free tier whose days ran out with scans left (M267): "Free AI scans
+ *   used" would be false, and the plan page names the days.
+ *
+ * NO DAY COUNT FOR THE FREE TIER (M267). Its countdown still says the scans
+ * left. The old day-trial line ("{{count}} days of AI scans left in your
+ * trial") is not reused: with scans that may run out first, the days left are
+ * not days of AI scans left, so the sentence would not be true.
  */
 export type TrialCountdown =
   { basis: 'days'; daysLeft: number } | { basis: 'scans'; scansLeft: number } | { basis: 'scans-used' };
@@ -123,7 +130,7 @@ export function resolveTrialCountdown({
   closedDay: string | null;
   pathname: string;
 }): TrialCountdown | null {
-  const isScansUsed = standing.kind === 'trial-ended' && standing.basis === 'scans';
+  const isScansUsed = standing.kind === 'trial-ended' && standing.basis === 'scans' && standing.endedBy === 'scans';
   if (standing.kind !== 'trial' && !isScansUsed) return null;
   if (closedDay === localDateToDayKey(now)) return null;
   if (isPlanPage(pathname)) return null;

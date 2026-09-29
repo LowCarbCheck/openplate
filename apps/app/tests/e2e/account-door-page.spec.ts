@@ -46,6 +46,13 @@ const BOOT_BUDGET_MS = 90_000;
 /** The free scans the stubbed handshake promises. */
 const TRIAL_SCANS = 10;
 
+/**
+ * The day limit the six-language walk's handshake promises beside the scans (M267), the
+ * consumer instance's configuration. Its sentence is the longer one, so the reserve is measured
+ * against it; measured on 2026-09-29, it fits the bands the scans-only sentence set.
+ */
+const TRIAL_DAYS = 14;
+
 /** Figures nobody charges, in cents. */
 const MONTHLY_CENTS = 321;
 const YEARLY_CENTS = 2345;
@@ -123,6 +130,8 @@ interface HandshakeStub {
   openSignup: boolean;
   plans: boolean;
   gate?: Promise<void>;
+  /** `instance.trial.days`, or absent for a trial with no day limit (M267). */
+  trialDays?: number;
 }
 
 let server: ManagedAppServer;
@@ -153,7 +162,7 @@ async function routeHandshake(page: Page, stub: HandshakeStub): Promise<void> {
           plans: stub.plans,
           openSignup: stub.openSignup,
           ai: { model: 'e2e-model' },
-          trial: { scans: TRIAL_SCANS },
+          trial: stub.trialDays === undefined ? { scans: TRIAL_SCANS } : { scans: TRIAL_SCANS, days: stub.trialDays },
         },
       },
     });
@@ -290,7 +299,7 @@ for (const language of LANGUAGES) {
       await page.setViewportSize({ width, height: PHONE_HEIGHT });
       const health = createGate();
       const prices = createGate();
-      await routeHandshake(page, { openSignup: true, plans: true, gate: health.promise });
+      await routeHandshake(page, { openSignup: true, plans: true, gate: health.promise, trialDays: TRIAL_DAYS });
       await routePrices(page, prices);
 
       await page.goto(`${server.url}/`);
@@ -307,6 +316,8 @@ for (const language of LANGUAGES) {
       health.open();
       await expect(page.getByRole('link', { name: COPY[language].chrome.signUp, exact: true })).toBeVisible();
       await expect(page.locator(`${SMALL_PRINT} [data-slot="signup-offer-scans"]`)).toBeVisible();
+      // The day limit's sentence is the one on screen, so the reading below is taken against it.
+      await expect(page.locator(`${SMALL_PRINT} [data-slot="signup-offer-scans"]`)).toContainText(String(TRIAL_DAYS));
       prices.open();
       await expect(page.locator(`${SMALL_PRINT} [data-slot="signup-offer-prices"]`)).toBeVisible();
       await settleFrames(page);

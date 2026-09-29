@@ -372,3 +372,36 @@ test('the spent-scans body says the food database still works', () => {
     EN.get('scan.errors.provider.trialScansSpent'),
   );
 });
+
+// ---------------------------------------------------------------------------
+// The free tier's day limit (M267)
+// ---------------------------------------------------------------------------
+
+test('403 trial-expired is its own cause, never the one about a key', async () => {
+  // An unknown 403 falls through to `auth`, which tells a person on a managed
+  // instance to check an API key they never had. The day limit's refusal is
+  // the free tier ending, and a plan is the next step.
+  const expired = await classifyVisionHttpFailure(
+    refusal({ status: 403, body: { error: 'trial-expired', endedBy: 'days' } }),
+  );
+  assert.equal(expired.cause, 'trial-expired');
+  assert.doesNotMatch(expired.message, /API key|AI settings/i);
+  // THE CONTROL: the scan limit's refusal still classifies as itself.
+  const spent = await classifyVisionHttpFailure(
+    refusal({ status: 403, body: { error: 'trial-scans-spent', endedBy: 'scans' } }),
+  );
+  assert.equal(spent.cause, 'trial-scans-spent');
+});
+
+test('the day limit\'s refusal has its own headline and a translated sentence, and offers the plan page', () => {
+  const english = getFailureAlertTitle('trial-expired', t, 10);
+  const german = getFailureAlertTitle('trial-expired', tDe, 10);
+  assert.ok(!english.includes('scan.errors') && !german.includes('scan.errors'), 'a key fell through');
+  assert.notEqual(german, english);
+  // THE CONTROL: it is not the spent-scans headline, which would say the scans are used.
+  assert.notEqual(english, getFailureAlertTitle('trial-scans-spent', t, 10));
+  const body = describeFailureBody({ failureCause: 'trial-expired', language: 'en' }, t);
+  assert.ok(body !== undefined && !body.includes('scan.errors'), 'no body');
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-expired', plansAvailable: true }), true);
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-expired', plansAvailable: false }), false);
+});

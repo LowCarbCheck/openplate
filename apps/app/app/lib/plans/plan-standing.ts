@@ -44,6 +44,17 @@
  * proxy's ladder (`PROTOCOL.md` §5.19): a paid or granted window lifts the scan
  * gate, so a person with a date is never shown a count that no longer binds.
  *
+ * ── AND THE FREE TIER HAS A DAY LIMIT (M267) ────────────────────────────
+ *
+ * Since M267 the free tier is "10 free AI scans or 14 days, whichever comes
+ * first": the core writes `AccountView.trialEndsAt` when the trial starts. The
+ * scan trial keeps `basis: 'scans'` and carries `endsAt` (`null` for an account
+ * from before the day limit, which keeps no end date), and `trial-ended` on
+ * that basis says which limit ended it in `endedBy`, so the lock screen names
+ * the right reason. The scans are asked first, as the proxy asks them: with
+ * both spent, the scans ran out first, because a free tier past its end date
+ * cannot spend another scan. The boundary instant counts as ended.
+ *
  * PURE, AND THE CLOCK IS AN ARGUMENT, so the last minute of a trial and a
  * subscription that ends today are ordinary test cases.
  */
@@ -66,13 +77,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * - `trial`, basis `days`: an allowance with an end date still ahead.
  *   `daysLeft` is whole days, rounded UP, so the last minute of a trial still
  *   reads one day and never zero.
- * - `trial`, basis `scans`: free AI scans left and no end date (M253/05).
- *   `scansLeft` is above zero; zero is `trial-ended`.
+ * - `trial`, basis `scans`: free AI scans left and no allowance date
+ *   (M253/05). `scansLeft` is above zero; zero is `trial-ended`. `endsAt` is
+ *   when the free tier ends by the calendar (M267), or `null` for no end date.
  * - `trial-ended`: no plan, and no working allowance. Basis `days`: `endedAt`
  *   is the date that passed, or `null` for an account that never had an
  *   allowance at all, the same dateless fact `PlansDoor` carries in
- *   `use-ai-connection.ts`. Basis `scans`: every free scan is used, and there
- *   is no date to name.
+ *   `use-ai-connection.ts`. Basis `scans`: the free tier is over, and
+ *   `endedBy` says which limit ended it (M267): `scans`, every free scan is
+ *   used and there is no date to name, or `days`, and `endedAt` is the end
+ *   date that passed.
  * - `subscribed`: the biller holds a live subscription. `renews` is `false`
  *   when it was cancelled and runs out at `periodEnd`. `planKey` and
  *   `interval` are `null` when the biller could not name the plan.
@@ -81,9 +95,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export type PlanStanding =
   | { kind: 'no-plans' }
   | { kind: 'trial'; basis: 'days'; endsAt: string; daysLeft: number }
-  | { kind: 'trial'; basis: 'scans'; scansLeft: number; scansGranted: number }
+  | { kind: 'trial'; basis: 'scans'; scansLeft: number; scansGranted: number; endsAt: string | null }
   | { kind: 'trial-ended'; basis: 'days'; endedAt: string | null }
-  | { kind: 'trial-ended'; basis: 'scans'; endedAt: null }
+  | { kind: 'trial-ended'; basis: 'scans'; endedBy: 'scans'; endedAt: null }
+  | { kind: 'trial-ended'; basis: 'scans'; endedBy: 'days'; endedAt: string }
   | {
       kind: 'subscribed';
       planKey: PlanKey | null;
@@ -107,6 +122,12 @@ export interface StandingAccount {
    * account read from a core older than the field is today's account.
    */
   trialScans?: TrialScans | null;
+  /**
+   * When the free tier ends by the calendar, or `null`/absent for no end date
+   * (M267). OPTIONAL, like `trialScans`: an account read from a core older
+   * than the field has no day limit.
+   */
+  trialEndsAt?: string | null;
 }
 
 /** The single `no-plans` value, so no caller builds a second one. */
@@ -163,7 +184,14 @@ function subscribedStanding(planView: PlanView): PlanStanding {
 function neverSubscribedStanding({ account, now }: { account: StandingAccount | null; now: Date }): PlanStanding {
   if (account === null || account.dailyAiLimit === null) return NO_PLANS;
   const endsAtMs = account.allowanceExpiresAt === null ? Number.NaN : Date.parse(account.allowanceExpiresAt);
-  if (Number.isNaN(endsAtMs)) return datelessStanding({ dailyAiLimit: account.dailyAiLimit, trialScans: account.trialScans ?? null });
+  if (Number.isNaN(endsAtMs)) {
+    return datelessStanding({
+      dailyAiLimit: account.dailyAiLimit,
+      trialScans: account.trialScans ?? null,
+      trialEndsAt: account.trialEndsAt ?? null,
+      now,
+    });
+  }
   const endsAt = account.allowanceExpiresAt;
   if (endsAt === null || endsAtMs <= now.getTime()) return { kind: 'trial-ended', basis: 'days', endedAt: endsAt };
   if (account.dailyAiLimit <= 0) return { kind: 'trial-ended', basis: 'days', endedAt: null };
@@ -171,22 +199,33 @@ function neverSubscribedStanding({ account, now }: { account: StandingAccount | 
 }
 
 /**
- * An account with no end date: a scan trial, a standing grant, or no AI.
+ * An account with no allowance date: a scan trial, a standing grant, or no AI.
  *
  * The allowance is asked FIRST, the proxy's order: an account with no daily
  * allowance is `403 ai-not-allowed` whatever its count says, so it keeps
  * today's dateless `trial-ended`. With an allowance, a count decides; without a
- * count it is a standing grant, which nothing sold here would improve.
+ * count it is a standing grant, which nothing sold here would improve. Then
+ * the day limit (M267), after the count: spent scans ended the free tier
+ * first. An end date that does not parse reads as none, because unknown must
+ * not lock.
  */
 function datelessStanding({
   dailyAiLimit,
   trialScans,
+  trialEndsAt,
+  now,
 }: {
   dailyAiLimit: number;
   trialScans: TrialScans | null;
+  trialEndsAt: string | null;
+  now: Date;
 }): PlanStanding {
   if (dailyAiLimit <= 0) return { kind: 'trial-ended', basis: 'days', endedAt: null };
   if (trialScans === null) return NO_PLANS;
-  if (trialScans.left <= 0) return { kind: 'trial-ended', basis: 'scans', endedAt: null };
-  return { kind: 'trial', basis: 'scans', scansLeft: trialScans.left, scansGranted: trialScans.granted };
+  if (trialScans.left <= 0) return { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null };
+  const endsAt = trialEndsAt !== null && !Number.isNaN(Date.parse(trialEndsAt)) ? trialEndsAt : null;
+  if (endsAt !== null && Date.parse(endsAt) <= now.getTime()) {
+    return { kind: 'trial-ended', basis: 'scans', endedBy: 'days', endedAt: endsAt };
+  }
+  return { kind: 'trial', basis: 'scans', scansLeft: trialScans.left, scansGranted: trialScans.granted, endsAt };
 }

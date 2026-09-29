@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "Du hast deinen {{count}} kostenlosen KI-Scan aufgebraucht",
         "trialScansSpent_other": "Du hast deine {{count}} kostenlosen KI-Scans aufgebraucht",
         "trialScansSpentUncounted": "Du hast deine kostenlosen KI-Scans aufgebraucht",
+        "trialDaysOver": "Deine kostenlosen Tage sind vorbei",
         "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr",
         "managedUpstream": "Der KI-Anbieter hat die Anfrage abgelehnt"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} kostenloser KI-Scan. Keine Karte nötig.",
     "scans_other": "{{count}} kostenlose KI-Scans. Keine Karte nötig.",
+    "scansOrDays_one": "{{count}} kostenloser KI-Scan oder {{days}}, je nachdem, was zuerst eintritt. Keine Karte nötig.",
+    "scansOrDays_other": "{{count}} kostenlose KI-Scans oder {{days}}, je nachdem, was zuerst eintritt. Keine Karte nötig.",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage",
     "prices": "Wenn deine kostenlosen KI-Scans aufgebraucht sind, kostet openplate {{monthly}} im Monat oder {{yearly}} im Jahr. Preise inkl. MwSt.",
     "noPrices": "Wenn deine kostenlosen KI-Scans aufgebraucht sind, brauchst du einen kostenpflichtigen Tarif, um openplate weiterzunutzen.",
+    "pricesAfter": "Danach kostet openplate {{monthly}} im Monat oder {{yearly}} im Jahr. Preise inkl. MwSt.",
+    "noPricesAfter": "Danach brauchst du einen kostenpflichtigen Tarif, um openplate weiter zu nutzen.",
     "chosenMonthly": "Du hast den Monatstarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen.",
     "chosenYearly": "Du hast den Jahrestarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "Dein {{count}} kostenloser KI-Scan ist aufgebraucht",
       "scansUsed_other": "Deine {{count}} kostenlosen KI-Scans sind aufgebraucht",
+      "daysOver_one": "Dein {{count}} kostenloser Tag ist vorbei",
+      "daysOver_other": "Deine {{count}} kostenlosen Tage sind vorbei",
       "choose": "Wähle einen Tarif, um openplate weiter zu nutzen",
       "lapsed": "Dein Tarif ist abgelaufen"
     },

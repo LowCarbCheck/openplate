@@ -2030,6 +2030,7 @@
         "trialScansSpent_one": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın",
         "trialScansSpent_other": "{{count}} ücretsiz yapay zeka tarama hakkını kullandın",
         "trialScansSpentUncounted": "Ücretsiz yapay zeka tarama haklarını kullandın",
+        "trialDaysOver": "Ücretsiz günlerin sona erdi",
         "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu",
         "managedUpstream": "Yapay zeka sağlayıcısı isteği reddetti"
       },
@@ -2691,8 +2692,14 @@
   "signupOffer": {
     "scans_one": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez.",
     "scans_other": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez.",
+    "scansOrDays_one": "{{count}} ücretsiz yapay zeka taraması veya {{days}}, hangisi önce biterse. Kart gerekmez.",
+    "scansOrDays_other": "{{count}} ücretsiz yapay zeka taraması veya {{days}}, hangisi önce biterse. Kart gerekmez.",
+    "days_one": "{{count}} gün",
+    "days_other": "{{count}} gün",
     "prices": "Ücretsiz tarama hakların bittiğinde openplate aylık {{monthly}} veya yıllık {{yearly}}. Fiyatlara KDV dahildir.",
     "noPrices": "Ücretsiz tarama hakların bittiğinde openplate kullanmaya devam etmek için ücretli bir plana geçmen gerekir.",
+    "pricesAfter": "Sonrasında openplate aylık {{monthly}} veya yıllık {{yearly}} tutar. Fiyatlara KDV dahildir.",
+    "noPricesAfter": "Sonrasında openplate kullanmaya devam etmek için ücretli bir plana ihtiyacın olacak.",
     "chosenMonthly": "Aylık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin.",
     "chosenYearly": "Yıllık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin."
   },
@@ -3749,6 +3756,8 @@
     "heading": {
       "scansUsed_one": "{{count}} ücretsiz yapay zeka taraman bitti",
       "scansUsed_other": "{{count}} ücretsiz yapay zeka taraman bitti",
+      "daysOver_one": "{{count}} ücretsiz günün sona erdi",
+      "daysOver_other": "{{count}} ücretsiz günün sona erdi",
       "choose": "openplate'i kullanmaya devam etmek için bir plan seç",
       "lapsed": "Planın sona erdi"
     },

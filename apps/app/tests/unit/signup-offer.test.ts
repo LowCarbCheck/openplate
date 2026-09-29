@@ -24,8 +24,12 @@ import { SignupOffer, type SignupOfferProps } from '../../app/components/plans/s
 const offerCatalogSchema = z.looseObject({
   signupOffer: z.object({
     scans_other: z.string(),
+    scansOrDays_other: z.string(),
+    days_other: z.string(),
     prices: z.string(),
     noPrices: z.string(),
+    pricesAfter: z.string(),
+    noPricesAfter: z.string(),
     chosenYearly: z.string(),
     chosenMonthly: z.string(),
   }),
@@ -73,20 +77,44 @@ function isInvisible(html: string, name: string): boolean {
 
 describe('the offer lines', () => {
   it('count the free scans from the prop, never from a string', () => {
-    const html = render('en', { trialScans: 7, prices: { kind: 'idle' }, chosenPlan: null, size: 'sm' });
+    const html = render('en', {
+      trialScans: 7,
+      trialDays: null,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
     assert.ok(html.includes(EN.signupOffer.scans_other.replace('{{count}}', '7')), html);
-    const other = render('en', { trialScans: 12, prices: { kind: 'idle' }, chosenPlan: null, size: 'sm' });
+    const other = render('en', {
+      trialScans: 12,
+      trialDays: null,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
     assert.ok(other.includes(EN.signupOffer.scans_other.replace('{{count}}', '12')), other);
   });
 
   it('draw no price line and no chosen plan where the instance sells no plans', () => {
-    const html = render('en', { trialScans: 10, prices: { kind: 'idle' }, chosenPlan: 'yearly', size: 'sm' });
+    const html = render('en', {
+      trialScans: 10,
+      trialDays: null,
+      prices: { kind: 'idle' },
+      chosenPlan: 'yearly',
+      size: 'sm',
+    });
     assert.equal(slot(html, 'signup-offer-price-line'), null);
     assert.equal(slot(html, 'signup-offer-chosen'), null);
   });
 
   it('hold the price line box while the read is in flight, with neither sentence shown', () => {
-    const html = render('en', { trialScans: 10, prices: { kind: 'loading' }, chosenPlan: null, size: 'sm' });
+    const html = render('en', {
+      trialScans: 10,
+      trialDays: null,
+      prices: { kind: 'loading' },
+      chosenPlan: null,
+      size: 'sm',
+    });
     assert.ok(slot(html, 'signup-offer-price-line') !== null);
     assert.ok(isInvisible(html, 'signup-offer-no-prices'));
     assert.equal(slot(html, 'signup-offer-prices'), null);
@@ -95,6 +123,7 @@ describe('the offer lines', () => {
   it('state both prices, formatted in English', () => {
     const html = render('en', {
       trialScans: 10,
+      trialDays: null,
       prices: { kind: 'ready', prices: PRICES },
       chosenPlan: null,
       size: 'sm',
@@ -108,6 +137,7 @@ describe('the offer lines', () => {
   it('state both prices, formatted in French, in the French sentence', () => {
     const html = render('fr', {
       trialScans: 10,
+      trialDays: null,
       prices: { kind: 'ready', prices: PRICES },
       chosenPlan: null,
       size: 'sm',
@@ -122,15 +152,107 @@ describe('the offer lines', () => {
   });
 
   it('say the sentence without a price when the read failed', () => {
-    const html = render('en', { trialScans: 10, prices: { kind: 'unavailable' }, chosenPlan: null, size: 'sm' });
+    const html = render('en', {
+      trialScans: 10,
+      trialDays: null,
+      prices: { kind: 'unavailable' },
+      chosenPlan: null,
+      size: 'sm',
+    });
     assert.equal(isInvisible(html, 'signup-offer-no-prices'), false);
     assert.ok((slot(html, 'signup-offer-no-prices') ?? '').includes(EN.signupOffer.noPrices));
     assert.equal(slot(html, 'signup-offer-prices'), null);
   });
 
   it('name the chosen plan, and only that one', () => {
-    const html = render('en', { trialScans: 10, prices: { kind: 'loading' }, chosenPlan: 'yearly', size: 'sm' });
+    const html = render('en', {
+      trialScans: 10,
+      trialDays: null,
+      prices: { kind: 'loading' },
+      chosenPlan: 'yearly',
+      size: 'sm',
+    });
     assert.ok((slot(html, 'signup-offer-chosen') ?? '').includes(EN.signupOffer.chosenYearly));
     assert.equal(html.includes(EN.signupOffer.chosenMonthly), false);
+  });
+});
+
+describe('the offer lines with a day limit (M267)', () => {
+  it('say both numbers, from the props, in one sentence: scans or days, whichever comes first', () => {
+    const html = render('en', { trialScans: 7, trialDays: 9, prices: { kind: 'idle' }, chosenPlan: null, size: 'sm' });
+    const days = EN.signupOffer.days_other.replace('{{count}}', '9');
+    const sentence = EN.signupOffer.scansOrDays_other.replace('{{count}}', '7').replace('{{days}}', days);
+    assert.ok((slot(html, 'signup-offer-scans') ?? '').includes(sentence), html);
+    // THE CONTROL: other numbers give another sentence, so none is typed.
+    const other = render('en', {
+      trialScans: 12,
+      trialDays: 30,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    assert.ok((slot(other, 'signup-offer-scans') ?? '').includes('12') && other.includes('30'), other);
+    assert.equal(other.includes(sentence), false);
+  });
+
+  it("stays exactly today's sentence when the instance promises no days", () => {
+    const html = render('en', {
+      trialScans: 7,
+      trialDays: null,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    assert.ok((slot(html, 'signup-offer-scans') ?? '').includes(EN.signupOffer.scans_other.replace('{{count}}', '7')));
+    const withDays = render('en', {
+      trialScans: 7,
+      trialDays: 9,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    assert.equal(withDays.includes(EN.signupOffer.scans_other.replace('{{count}}', '7')), false);
+  });
+
+  it('say what comes after the free tier, not after the scans, where days end it too', () => {
+    const ready = render('en', {
+      trialScans: 10,
+      trialDays: 14,
+      prices: { kind: 'ready', prices: PRICES },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    const after = EN.signupOffer.pricesAfter.replace('{{monthly}}', '€3.21').replace('{{yearly}}', '€23.45');
+    assert.ok((slot(ready, 'signup-offer-prices') ?? '').includes(after), ready);
+    const failed = render('en', {
+      trialScans: 10,
+      trialDays: 14,
+      prices: { kind: 'unavailable' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    assert.ok((slot(failed, 'signup-offer-no-prices') ?? '').includes(EN.signupOffer.noPricesAfter));
+    // THE CONTROL: without days, the sentence without a price is today's.
+    const today = render('en', {
+      trialScans: 10,
+      trialDays: null,
+      prices: { kind: 'unavailable' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    assert.ok((slot(today, 'signup-offer-no-prices') ?? '').includes(EN.signupOffer.noPrices));
+  });
+
+  it('say both numbers in French too, from the French catalog', () => {
+    const html = render('fr', {
+      trialScans: 10,
+      trialDays: 14,
+      prices: { kind: 'idle' },
+      chosenPlan: null,
+      size: 'sm',
+    });
+    const scans = slot(html, 'signup-offer-scans') ?? '';
+    assert.ok(scans.includes('10') && scans.includes('14'), html);
+    assert.equal(scans.includes(EN.signupOffer.scansOrDays_other.replace('{{count}}', '10').slice(0, 12)), false);
   });
 });

@@ -30,6 +30,16 @@ import { FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW } from './plans-stub';
 export interface ManagedCoreStub {
   /** `AccountView.trialScans`, or `null` for an account with no scan trial. */
   trialScans: { granted: number; left: number } | null;
+  /**
+   * `AccountView.trialEndsAt` (M267): when the free tier ends by the
+   * calendar, `null` for no end date, or absent to leave the key out, as a
+   * core older than the field does.
+   */
+  trialEndsAt?: string | null;
+  /** `instance.trial.days` on the handshake (M267), or absent for a trial with no day limit. */
+  trialDays?: number;
+  /** `AccountView.createdAt`, or absent to keep the fake's own instant. The lock screen counts the days from it. */
+  createdAt?: string;
   /** `AccountView.allowanceExpiresAt`: a paid or granted window, or `null`. */
   allowanceExpiresAt: string | null;
   /** `AccountView.dailyAiLimit`. */
@@ -94,7 +104,9 @@ function accountPatch(stub: ManagedCoreStub) {
     invitesLeft: stub.invitesLeft,
     trialScans: stub.trialScans,
   };
-  const withRole = stub.role === undefined ? base : { ...base, role: stub.role };
+  const withCreated = stub.createdAt === undefined ? base : { ...base, createdAt: stub.createdAt };
+  const withEnd = stub.trialEndsAt === undefined ? withCreated : { ...withCreated, trialEndsAt: stub.trialEndsAt };
+  const withRole = stub.role === undefined ? withEnd : { ...withEnd, role: stub.role };
   const withInvites =
     stub.invitesNeedAPlan === undefined ? withRole : { ...withRole, invitesNeedAPlan: stub.invitesNeedAPlan };
   return stub.accountHealthConsent === undefined ?
@@ -112,7 +124,7 @@ function instanceBlock(stub: ManagedCoreStub) {
     ['plans', stub.plans ?? true],
     ['openSignup', true],
     ['ai', { model: 'e2e-model' }],
-    ['trial', { scans: 10 }],
+    ['trial', stub.trialDays === undefined ? { scans: 10 } : { scans: 10, days: stub.trialDays }],
   ]);
   if (stub.healthConsent !== undefined) instance.set('healthConsent', stub.healthConsent);
   return Object.fromEntries(instance);

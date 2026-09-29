@@ -18,8 +18,9 @@
  *
  * - A standing that locks holds from the moment it was read.
  * - A standing that will lock by the clock alone holds from that instant: a
- *   day trial from its end date, a subscription that will not renew from the
- *   end of its paid period.
+ *   day trial from its end date, a free tier with a day limit from the end of
+ *   its days (M267), a subscription that will not renew from the end of its
+ *   paid period.
  * - Every other standing, and an instance that sells nothing, never holds,
  *   and the marker is removed.
  *
@@ -67,7 +68,9 @@ function parseInstant(instant: string): number | null {
 function locksByTheClockAt(standing: PlanStanding): number | null {
   switch (standing.kind) {
     case 'trial':
-      return standing.basis === 'days' ? parseInstant(standing.endsAt) : null;
+      // A day trial's end, or a free tier's day limit (M267); a free tier
+      // with no end date locks only when its scans run out.
+      return standing.endsAt === null ? null : parseInstant(standing.endsAt);
     case 'subscribed':
       return standing.renews || standing.periodEnd === null ? null : parseInstant(standing.periodEnd);
     case 'no-plans':

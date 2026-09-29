@@ -109,6 +109,16 @@ export type VisionFailureCause =
    */
   | 'trial-scans-spent'
   /**
+   * `403 {"error":"trial-expired","endedBy":"days"}`, the free tier's days
+   * are over with scans still left (M267, `PROTOCOL.md` §5.19).
+   *
+   * A FOURTH REFUSAL, NOT `trial-scans-spent`, whose sentence says the scans
+   * are used, and NOT `allowance-expired`, which is a paid window running out.
+   * The next step is a plan, as for spent scans. Before this cause existed the
+   * code was an unknown 403, which fell through to `auth` ("check your key").
+   */
+  | 'trial-expired'
+  /**
    * `503 {"error":"ai-instance-ceiling"}`, the whole instance has spent its
    * daily ceiling, and every account is refused until the next UTC day.
    *
@@ -219,6 +229,7 @@ const ACCOUNT_SUSPENDED_CODE = 'account-suspended';
 const HEALTH_CONSENT_REQUIRED_CODE = 'health-consent-required';
 const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
 const TRIAL_SCANS_SPENT_CODE = 'trial-scans-spent';
+const TRIAL_EXPIRED_CODE = 'trial-expired';
 
 /** The marker on the instance-wide `503`, see `VisionFailureCause`. */
 const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
@@ -254,6 +265,8 @@ const HEALTH_CONSENT_REQUIRED_MESSAGE = 'Your consent to the processing of your 
 const ALLOWANCE_EXPIRED_MESSAGE = 'Your allowance for photo estimates has ended. Everything else keeps working.';
 // No number: this module has no account, and the screen adds the count it read.
 const TRIAL_SCANS_SPENT_MESSAGE = 'You used your free AI scans. Pick a plan to keep using AI entries.';
+// No number either: the screen names the days from what the session read.
+const TRIAL_EXPIRED_MESSAGE = 'Your free days are over. Pick a plan to keep using AI entries.';
 const AI_INSTANCE_CEILING_MESSAGE =
   'This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.';
 
@@ -312,6 +325,7 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
     if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
     if (code === ALLOWANCE_EXPIRED_CODE) return { cause: 'allowance-expired', message: ALLOWANCE_EXPIRED_MESSAGE };
     if (code === TRIAL_SCANS_SPENT_CODE) return { cause: 'trial-scans-spent', message: TRIAL_SCANS_SPENT_MESSAGE };
+    if (code === TRIAL_EXPIRED_CODE) return { cause: 'trial-expired', message: TRIAL_EXPIRED_MESSAGE };
     // A provider refusing a pasted key: the open instance's ordinary case.
     return { cause: 'auth', message: AUTH_MESSAGE };
   }

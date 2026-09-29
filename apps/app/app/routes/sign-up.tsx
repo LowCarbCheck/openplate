@@ -70,7 +70,7 @@ import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { toLanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
-import { hasOpenSignup, offeredTrialScans, signupCaptchaOf } from '#app/lib/plans/signup-door';
+import { hasOpenSignup, offeredTrialDays, offeredTrialScans, signupCaptchaOf } from '#app/lib/plans/signup-door';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import type { SignupCaptcha } from '#app/lib/sync/engine/protocol';
@@ -132,6 +132,7 @@ export default function SignUp() {
             <SignUpForm
               serverUrl={serverUrl}
               trialScans={offeredTrialScans(instance)}
+              trialDays={offeredTrialDays(instance)}
               captcha={signupCaptchaOf(instance)}
               sellsPlans={hasPlansDoor(instance)}
               chosenPlan={intendedPlan}
@@ -163,6 +164,7 @@ type SendState = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { k
 function SignUpForm({
   serverUrl,
   trialScans,
+  trialDays,
   captcha,
   sellsPlans,
   chosenPlan,
@@ -170,6 +172,8 @@ function SignUpForm({
   serverUrl: string;
   /** The instance's promise, or `null`, which says nothing about AI at all. */
   trialScans: number | null;
+  /** The day limit beside the scans (M267), or `null` for none, which keeps today's sentence. */
+  trialDays: number | null;
   captcha: SignupCaptcha | null;
   /** Whether the handshake says this instance sells plans, the only place a price or a chosen plan means anything. */
   sellsPlans: boolean;
@@ -242,7 +246,13 @@ function SignUpForm({
           inert={isSent}
         >
           {trialScans !== null && (
-            <SignupOffer trialScans={trialScans} prices={prices} chosenPlan={planToSend} size="sm" />
+            <SignupOffer
+              trialScans={trialScans}
+              trialDays={trialDays}
+              prices={prices}
+              chosenPlan={planToSend}
+              size="sm"
+            />
           )}
           <div className="space-y-2">
             <Label htmlFor={fields.email.id}>{t('sync.emailLabel')}</Label>

@@ -28,6 +28,15 @@ export function offeredTrialScans(instance: InstanceDescriptor | null): number |
 }
 
 /**
+ * After how many days the free tier ends anyway, or `null` when the instance
+ * promises no day limit (M267). Read beside {@link offeredTrialScans}, and
+ * `null` keeps every sentence exactly as it was before the day limit.
+ */
+export function offeredTrialDays(instance: InstanceDescriptor | null): number | null {
+  return instance?.trial?.days ?? null;
+}
+
+/**
  * The challenge the sign-up form must carry, or `null` for none. Read only
  * where the door is open: a key on an invite-only instance has no form to sit in.
  */

@@ -171,7 +171,7 @@ describe('the status channel reports a close', () => {
 });
 
 describe('a scan trial countdown (M253/05)', () => {
-  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 7, scansGranted: 10 };
+  const scans: PlanStanding = { kind: 'trial', basis: 'scans', scansLeft: 7, scansGranted: 10, endsAt: null };
 
   it('says the scans left, not days, on a scan trial', () => {
     assert.deepEqual(resolveTrialCountdown({ standing: scans, now: NOW, closedDay: null, pathname: '/diary' }), {
@@ -189,7 +189,7 @@ describe('a scan trial countdown (M253/05)', () => {
   });
 
   it('says the free scans are used once they are, on any page but the plan page (M253/11)', () => {
-    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedAt: null };
+    const spent: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null };
     assert.deepEqual(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: null, pathname: '/diary' }), {
       basis: 'scans-used',
     });
@@ -198,5 +198,38 @@ describe('a scan trial countdown (M253/05)', () => {
       null,
     );
     assert.equal(resolveTrialCountdown({ standing: spent, now: NOW, closedDay: TODAY, pathname: '/diary' }), null);
+  });
+});
+
+describe('the free tier with a day limit (M267)', () => {
+  it('still counts the scans left while the days run, and states no day count', () => {
+    // The old day-trial line ("days of AI scans left in your trial") is not
+    // true of a free tier whose scans may run out first, so it is not reused.
+    const running: PlanStanding = {
+      kind: 'trial',
+      basis: 'scans',
+      scansLeft: 6,
+      scansGranted: 10,
+      endsAt: new Date(NOW.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    assert.deepEqual(resolveTrialCountdown({ standing: running, now: NOW, closedDay: null, pathname: '/diary' }), {
+      basis: 'scans',
+      scansLeft: 6,
+    });
+  });
+
+  it('never says the free scans are used when the days ended the free tier', () => {
+    const daysOver: PlanStanding = {
+      kind: 'trial-ended',
+      basis: 'scans',
+      endedBy: 'days',
+      endedAt: new Date(NOW.getTime() - 60_000).toISOString(),
+    };
+    assert.equal(resolveTrialCountdown({ standing: daysOver, now: NOW, closedDay: null, pathname: '/diary' }), null);
+    // THE CONTROL: the same standing ended by its scans says so.
+    const scansUsed: PlanStanding = { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null };
+    assert.deepEqual(resolveTrialCountdown({ standing: scansUsed, now: NOW, closedDay: null, pathname: '/diary' }), {
+      basis: 'scans-used',
+    });
   });
 });

@@ -123,6 +123,16 @@ export interface AccountViewWire {
    */
   trialScans?: TrialScansWire | null;
   /**
+   * When the free tier ends by the calendar (M267, `PROTOCOL.md` §5.15), or
+   * `null` for no end date. ABSENT on a core older than the field, which
+   * means the same thing: no day limit.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. The proxy answers `403 trial-expired`
+   * from the instant on. Read only through `decodeTrialEndsAt`, because this
+   * interface is a cast, not a parse.
+   */
+  trialEndsAt?: IsoTimestamp | null;
+  /**
    * The account's explicit consent to health data, or `null` for none on
    * record (2026-09-28, `PROTOCOL.md` §5.15). ABSENT on a core older than the
    * field, which means the same thing: that core asks for no consent either.
