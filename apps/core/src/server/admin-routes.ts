@@ -271,6 +271,7 @@ function toAccountView(input: {
     aiUsedToday: summary.aiUsedToday,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
     trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
+    trialEndsAt: summary.trialEndsAt?.toISOString() ?? null,
     suspendedAt: summary.suspendedAt?.toISOString() ?? null,
     ...memberInviteFields({
       role: summary.role,
@@ -460,8 +461,10 @@ export const MAX_INVITE_TTL_DAYS = 30;
 /** Default daily AI allowance for an invite that does not name one: none. */
 export const DEFAULT_INVITE_DAILY_AI_LIMIT = 0;
 
-/** What an admin mint grants: a standing allowance, or the instance's scan trial (M253). */
-type MintGrant = { ok: true; dailyAiLimit: number; trialScans: number | null } | { ok: false; reason: string };
+/** What an admin mint grants: a standing allowance, or the instance's scan trial (M253) with its day limit (M267). */
+type MintGrant =
+  | { ok: true; dailyAiLimit: number; trialScans: number | null; trialDays: number | null }
+  | { ok: false; reason: string };
 
 /**
  * The AI half of an admin mint body.
@@ -484,13 +487,18 @@ function parseMintGrant(input: { body: JsonObject; trial: TrialPolicy | null }):
         reason: 'trial and dailyAiLimit cannot both be named: the trial carries its own daily limit',
       };
     }
-    return { ok: true, dailyAiLimit: input.trial.dailyAiLimit, trialScans: input.trial.scans };
+    return {
+      ok: true,
+      dailyAiLimit: input.trial.dailyAiLimit,
+      trialScans: input.trial.scans,
+      trialDays: input.trial.days,
+    };
   }
   const limit = asNumber(body.dailyAiLimit ?? DEFAULT_INVITE_DAILY_AI_LIMIT);
   if (limit === null || !Number.isInteger(limit) || limit < 0 || limit > MAX_DAILY_AI_LIMIT) {
     return { ok: false, reason: `dailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
   }
-  return { ok: true, dailyAiLimit: limit, trialScans: null };
+  return { ok: true, dailyAiLimit: limit, trialScans: null, trialDays: null };
 }
 
 /**
@@ -1480,6 +1488,8 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         dailyAiLimit: grant.dailyAiLimit,
         // The store writes `0` for a mailbox that already had its trial.
         trialScans: grant.trialScans,
+        // The trial's day limit (M267), `null` for a standing grant.
+        trialDays: grant.trialDays,
         expiresAt: new Date(now.getTime() + ttl.value),
         now,
         // `null` IS THE OPERATOR, and it is what makes this door exempt from

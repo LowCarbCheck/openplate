@@ -278,6 +278,7 @@ test('a new address, a pending letter from another door and an existing account 
       invitedByAccountId: null,
       source: null,
       trialScans: null,
+      trialDays: null,
     });
     assert.ok(operatorMint.ok);
 

@@ -56,6 +56,7 @@ import {
 import type { TrialAddressHasher } from '../accounts/trial-address.js';
 import { healthConsentFromColumns, type HealthConsentRecord } from '../accounts/health-consent.js';
 import { lockTrialMailbox, mailboxHadTrial } from './trial-mailbox.js';
+import { trialEndsAtFor } from '../accounts/scan-trial.js';
 
 /** One day in milliseconds, for the one place this module does date arithmetic. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -110,6 +111,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     allowanceExpiresAt: row.allowanceExpiresAt,
     trialScans: row.trialScans,
     trialScansUsed: row.trialScansUsed,
+    trialEndsAt: row.trialEndsAt,
     suspendedAt: row.suspendedAt,
     verifier: row.verifier,
     recoveryVerifier: row.recoveryVerifier,
@@ -200,17 +202,25 @@ interface RedeemedStanding {
   dailyAiLimit: number;
   allowanceExpiresAt: Date | null;
   trialScans: number | null;
+  /** The trial's day limit, `null` for none (M267). What the row records and what `trialEndsAt` was made from. */
+  trialDays: number | null;
+  /** When the trial ends by the calendar, `null` for no end date (M267). */
+  trialEndsAt: Date | null;
 }
 
 /**
  * THE ROW DECIDES, NOT THE CONFIG (M212, M253). Four cases, in this order:
  *
- *  1. The row carries a scan trial: the account gets it, and no date. Every
- *     trial door writes this at mint.
+ *  1. The row carries a scan trial: the account gets it, and no allowance
+ *     date. Every trial door writes this at mint. Since M267 the row also
+ *     carries the trial's day limit, and the trial ends that many days after
+ *     THIS redemption; a row minted before that carries none, and its trial
+ *     has no end date.
  *  2. A member caused it and the member door now grants the scan trial: the
- *     account gets the trial pair. This closes the seven days in which a
- *     letter minted under the day pair can still be redeemed after the
- *     switch, so it is neither a date nor an unbounded grant.
+ *     account gets the instance's trial, its day limit included. This closes
+ *     the seven days in which a letter minted under the day pair can still be
+ *     redeemed after the switch, so it is neither a date nor an unbounded
+ *     grant.
  *  3. A member caused it under the day pair: `redeemedAt + days`, off the SAME
  *     instant the claim was stamped with.
  *  4. Anything else is the operator's standing grant: no date, no trial.
@@ -222,19 +232,39 @@ interface RedeemedStanding {
 function standingFor(input: { claimed: InviteRow; grant: MemberInviteGrant | null; now: Date }): RedeemedStanding {
   const { claimed, grant, now } = input;
   if (claimed.trialScans !== null) {
-    return { dailyAiLimit: claimed.dailyAiLimit, allowanceExpiresAt: null, trialScans: claimed.trialScans };
+    return {
+      dailyAiLimit: claimed.dailyAiLimit,
+      allowanceExpiresAt: null,
+      trialScans: claimed.trialScans,
+      trialDays: claimed.trialDays,
+      trialEndsAt: trialEndsAtFor({ startedAt: now, days: claimed.trialDays }),
+    };
   }
   if (claimed.invitedByAccountId !== null && grant?.kind === 'trial') {
-    return { dailyAiLimit: grant.dailyAiLimit, allowanceExpiresAt: null, trialScans: grant.scans };
+    return {
+      dailyAiLimit: grant.dailyAiLimit,
+      allowanceExpiresAt: null,
+      trialScans: grant.scans,
+      trialDays: grant.days,
+      trialEndsAt: trialEndsAtFor({ startedAt: now, days: grant.days }),
+    };
   }
   if (claimed.invitedByAccountId !== null && grant?.kind === 'days') {
     return {
       dailyAiLimit: claimed.dailyAiLimit,
       allowanceExpiresAt: new Date(now.getTime() + grant.allowanceDays * MS_PER_DAY),
       trialScans: null,
+      trialDays: null,
+      trialEndsAt: null,
     };
   }
-  return { dailyAiLimit: claimed.dailyAiLimit, allowanceExpiresAt: null, trialScans: null };
+  return {
+    dailyAiLimit: claimed.dailyAiLimit,
+    allowanceExpiresAt: null,
+    trialScans: null,
+    trialDays: null,
+    trialEndsAt: null,
+  };
 }
 
 /** What the store needs beyond a database. */
@@ -506,6 +536,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
                 dailyAiLimit: standing.dailyAiLimit,
                 allowanceExpiresAt: standing.allowanceExpiresAt,
                 trialScans: standing.trialScans,
+                trialEndsAt: standing.trialEndsAt,
                 verifier: input.account.verifier,
                 recoveryVerifier: input.account.recoveryVerifier,
                 kdfDescriptor: input.account.kdfDescriptor,
@@ -546,6 +577,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
             .set({
               redeemedAccountId: account.id,
               trialScans: standing.trialScans,
+              trialDays: standing.trialDays,
               trialKey: trialKey ?? claimed.trialKey,
             })
             .where(eq(signupInvites.id, claimed.id));
@@ -696,11 +728,16 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
         if (trialKey !== null) await lockTrialMailbox(tx, { hash: trialKey });
         if (trialKey !== null && (await mailboxHadTrial(tx, { hash: trialKey }))) return false;
 
+        // THE COUNT ALONE, NO END DATE, EVEN WITH `TRIAL_DAYS` SET (M267).
+        // This grant is the owner's M253 make-good for day trials that never
+        // bought, and it was promised as scans with no time limit; the day
+        // limit belongs to trials that start at a redemption.
         await tx
           .update(accounts)
           .set({
             trialScans: input.trial.scans,
             trialScansUsed: 0,
+            trialEndsAt: null,
             allowanceExpiresAt: null,
             dailyAiLimit: input.trial.dailyAiLimit,
           })

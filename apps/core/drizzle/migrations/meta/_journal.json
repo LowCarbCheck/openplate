@@ -162,6 +162,13 @@
       "when": 1790588996964,
       "tag": "0022_rapid_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790699588013,
+      "tag": "0023_magical_exodus",
+      "breakpoints": true
     }
   ]
 }

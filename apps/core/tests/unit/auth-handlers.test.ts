@@ -610,6 +610,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
     'invitesNeedAPlan',
     'role',
     'suspendedAt',
+    // M267: the day limit's end, `null` here because this account has no scan trial.
+    'trialEndsAt',
     // M253: the free scans, `null` here because this account has no scan trial.
     'trialScans',
   ]);

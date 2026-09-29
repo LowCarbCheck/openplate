@@ -290,6 +290,7 @@ export function createFakeAccountStore(): FakeAccountStore {
         // trial doors against the real store (M253).
         trialScans: null,
         trialScansUsed: 0,
+        trialEndsAt: null,
         suspendedAt: null,
         verifier: input.account.verifier,
         recoveryVerifier: input.account.recoveryVerifier,

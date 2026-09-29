@@ -148,6 +148,19 @@ export const accounts = pgTable(
      */
     trialScansUsed: integer('trial_scans_used').default(0).notNull(),
     /**
+     * The instant the scan trial ends by the calendar (`TRIAL_DAYS`, M267), or
+     * `NULL` for no end date. Written once, at redemption, as the redemption
+     * instant plus the invite row's `trial_days`, and read by the AI proxy,
+     * which answers `403 trial-expired` from this instant on unless the scans
+     * ran out first.
+     *
+     * NO BACKFILL, AND THAT IS THE POINT. Every account created before this
+     * column existed keeps `NULL`: those people signed up under terms that
+     * said "no time limit", and their trial is not shortened after the fact.
+     * A future `allowance_expires_at` lifts it exactly as it lifts the count.
+     */
+    trialEndsAt: timestamp('trial_ends_at'),
+    /**
      * Set when an operator suspends the account, `NULL` while it is in good
      * standing. A suspended account cannot log in, refresh, sync or use AI:
      * every such call is `403 {"error":"account-suspended"}`.
@@ -457,6 +470,14 @@ export const signupInvites = pgTable(
      * record of a trial handed out.
      */
     trialScans: integer('trial_scans'),
+    /**
+     * The day limit of the trial this invite carries, or `NULL` for a trial
+     * with no end date and for no trial at all (M267). Written at mint from
+     * the instance's `TRIAL_DAYS` beside `trial_scans`, and redemption turns
+     * it into the account's `trial_ends_at`. A row minted before the column
+     * existed carries `NULL`, so the account it creates keeps no end date.
+     */
+    trialDays: integer('trial_days'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [

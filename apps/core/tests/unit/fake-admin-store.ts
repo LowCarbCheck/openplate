@@ -47,6 +47,8 @@ export interface AdminSeedInput {
   /** The scan trial (M253). Absent is none. */
   trialScans?: number | null;
   trialScansUsed?: number;
+  /** The day limit's end (M267). Absent is none. */
+  trialEndsAt?: Date | null;
   suspendedAt?: Date | null;
   /** The health-data consent on record. Absent is none, which is what every account created before the column has. */
   healthConsent?: HealthConsentRecord | null;
@@ -92,6 +94,7 @@ export function createFakeAdminStore(): FakeAdminStore {
         allowanceExpiresAt: input.allowanceExpiresAt ?? null,
         trialScans: input.trialScans ?? null,
         trialScansUsed: input.trialScansUsed ?? 0,
+        trialEndsAt: input.trialEndsAt ?? null,
         suspendedAt: input.suspendedAt ?? null,
         healthConsent: input.healthConsent ?? null,
         createdAt: new Date('2026-08-01T09:00:00.000Z'),

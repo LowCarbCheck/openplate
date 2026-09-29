@@ -309,6 +309,7 @@ test('an operator-minted invitation is not a member one, so that address can sti
     invitedByAccountId: null,
     source: null,
     trialScans: null,
+    trialDays: null,
   });
   assert.ok(operatorMint.ok);
   invites.markRedeemed(operatorMint.minted.invite.id, 4242);

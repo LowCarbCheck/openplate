@@ -115,6 +115,9 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
             role: input.role,
             dailyAiLimit: input.dailyAiLimit,
             trialScans,
+            // The trial's day limit rides beside its count (M267), and only
+            // with one: a row with no trial has no days to end it.
+            trialDays: trialScans === null ? null : input.trialDays,
             expiresAt: input.expiresAt,
             // `null` for an operator mint, which is what makes the admin door
             // exempt from the cap and from the re-invite rule (M212).

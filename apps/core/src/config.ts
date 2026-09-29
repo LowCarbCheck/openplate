@@ -29,7 +29,7 @@ import type { VapidCredentials } from './push/web-push-sender.js';
 import { MAX_DAILY_AI_LIMIT } from './admin/invite-store.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
-import { MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
+import { MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
 
@@ -221,18 +221,24 @@ export interface ServiceConfig {
    */
   memberInvites: MemberInvitePolicy | null;
   /**
-   * The instance's scan trial (M253): `TRIAL_SCANS` free AI scans with no end
-   * date, at `TRIAL_DAILY_AI_LIMIT` requests a day, or `null` for an instance
-   * that runs none, which is the default.
+   * The instance's scan trial (M253): `TRIAL_SCANS` free AI scans at
+   * `TRIAL_DAILY_AI_LIMIT` requests a day, or `null` for an instance that runs
+   * none, which is the default.
    *
    * BOTH OR NEITHER, and half is a boot failure that names the missing one. A
    * count with no daily bound is an unbounded retry loop on a flaky provider,
    * and a daily bound with no count is a standing grant nobody meant.
    *
+   * `TRIAL_DAYS` (M267) is the optional third value: the trial also ends that
+   * many days after it starts, whichever comes first. Unset is `days: null`,
+   * no end date, which is what every instance before it keeps. Set without
+   * the pair it is a boot failure, a dial with no door.
+   *
    * WHAT READS IT: the open sign-up door, a member invite under
    * `MEMBER_INVITE_TRIAL=true`, and an operator mint with `"trial": true`.
-   * Every door that creates a trial account writes exactly this pair on the
-   * invite row, and `/health` publishes the count as `instance.trial`.
+   * Every door that creates a trial account writes exactly these values on
+   * the invite row, and `/health` publishes the count as `instance.trial.scans`
+   * and the day limit, when there is one, as `instance.trial.days`.
    */
   trial: TrialPolicy | null;
   /**
@@ -1256,7 +1262,9 @@ function parseMemberInvites(env: NodeJS.ProcessEnv, trial: TrialPolicy | null): 
   const present = MEMBER_INVITE_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
   const capIsSet = (env[MEMBER_INVITE_CAP_VARIABLE]?.trim() ?? '') !== '';
   // THE SCAN-TRIAL SWITCH (M253) is the other way to open this door, and never
-  // together with the day pair: a member invite grants one or the other.
+  // together with the day pair: a member invite grants one or the other. A
+  // trial that also ends after some days is `TRIAL_DAYS` on the trial itself
+  // (M267), which the switch hands on whole.
   if (parseBoolean(env, MEMBER_INVITE_TRIAL_VARIABLE, false)) {
     return parseMemberInviteTrial({ env, trial, dayPairSet: present });
   }
@@ -1366,13 +1374,17 @@ const MEMBER_INVITE_TRIAL_VARIABLE = 'MEMBER_INVITE_TRIAL';
 
 /**
  * `MEMBER_INVITE_TRIAL=true`: a member's invitation grants the instance's scan
- * trial rather than a day trial (M253).
+ * trial rather than a day trial (M253), its `TRIAL_DAYS` included (M267).
  *
  * A BOOT FAILURE BESIDE EITHER DAY VARIABLE, because the door grants one
  * thing: an operator with both set believes in two trials and gets neither
- * sentence right. A boot failure WITHOUT the trial pair, because the switch
- * would open a door that grants nothing. `MEMBER_INVITE_LIFETIME_CAP` narrows
- * it exactly as it narrows the day door.
+ * sentence right. The day pair is an allowance DATE, and a date lifts the
+ * scan gate (`scan-trial.ts`), so the two together would be a trial with no
+ * scan limit at all. "Ten scans or fourteen days" is the trial with
+ * `TRIAL_DAYS`, and the message sends the operator there (M267, the combined
+ * rule). A boot failure WITHOUT the trial pair, because the switch would open
+ * a door that grants nothing. `MEMBER_INVITE_LIFETIME_CAP` narrows it exactly
+ * as it narrows the day door.
  */
 function parseMemberInviteTrial(input: {
   env: NodeJS.ProcessEnv;
@@ -1382,7 +1394,8 @@ function parseMemberInviteTrial(input: {
   if (input.dayPairSet.length > 0) {
     throw new Error(
       `${MEMBER_INVITE_TRIAL_VARIABLE}=true cannot stand beside ${input.dayPairSet.join(' and ')}: a member ` +
-        'invitation grants the scan trial or a day trial, never both. Unset one of them.',
+        'invitation grants the scan trial or a day trial, never both. For a trial that ends after some scans or ' +
+        `some days, whichever comes first, set TRIAL_DAYS beside TRIAL_SCANS and unset ${input.dayPairSet.join(' and ')}.`,
     );
   }
   if (input.trial === null) {
@@ -1395,6 +1408,7 @@ function parseMemberInviteTrial(input: {
     kind: 'trial',
     dailyAiLimit: input.trial.dailyAiLimit,
     trialScans: input.trial.scans,
+    trialDays: input.trial.days,
     lifetimeCap: parseNonNegativeInteger(input.env, MEMBER_INVITE_CAP_VARIABLE, DEFAULT_MEMBER_INVITE_LIFETIME_CAP),
   };
 }
@@ -1404,7 +1418,8 @@ const TRIAL_VARIABLES = ['TRIAL_SCANS', 'TRIAL_DAILY_AI_LIMIT'] as const;
 
 /**
  * `TRIAL_SCANS` (1 to {@link MAX_TRIAL_SCANS}) + `TRIAL_DAILY_AI_LIMIT` (1 to
- * `MAX_DAILY_AI_LIMIT`), both or neither (M253).
+ * `MAX_DAILY_AI_LIMIT`), both or neither (M253), and the optional
+ * `TRIAL_DAYS` beside them (M267, see {@link parseTrialDays}).
  *
  * A HALF-CONFIGURED BLOCK IS A BOOT FAILURE THAT NAMES THE MISSING VARIABLE.
  * ZERO IS REFUSED FOR EITHER: a trial of no scans is not a trial, and a daily
@@ -1412,7 +1427,15 @@ const TRIAL_VARIABLES = ['TRIAL_SCANS', 'TRIAL_DAILY_AI_LIMIT'] as const;
  */
 function parseTrial(env: NodeJS.ProcessEnv): TrialPolicy | null {
   const present = TRIAL_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
-  if (present.length === 0) return null;
+  if (present.length === 0) {
+    if ((env[TRIAL_DAYS_VARIABLE]?.trim() ?? '') !== '') {
+      throw new Error(
+        `${TRIAL_DAYS_VARIABLE} is set, but this instance runs no scan trial (${TRIAL_VARIABLES.join(' and ')}), ` +
+          'so there is nothing for it to end. Unset it, or set the trial.',
+      );
+    }
+    return null;
+  }
 
   const missing = TRIAL_VARIABLES.filter((name) => !present.includes(name));
   if (missing.length > 0) {
@@ -1431,7 +1454,29 @@ function parseTrial(env: NodeJS.ProcessEnv): TrialPolicy | null {
   if (dailyAiLimit > MAX_DAILY_AI_LIMIT) {
     throw new Error(`TRIAL_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT} (got ${dailyAiLimit})`);
   }
-  return { scans, dailyAiLimit };
+  return { scans, dailyAiLimit, days: parseTrialDays(env) };
+}
+
+/** The optional day limit beside the trial pair (M267). */
+const TRIAL_DAYS_VARIABLE = 'TRIAL_DAYS';
+
+/**
+ * `TRIAL_DAYS` (M267): 1 to {@link MAX_TRIAL_DAYS}, or unset for a trial with
+ * no end date. Only reached beside the trial pair; set without it is refused
+ * in {@link parseTrial}, for the reason `AI_TRIAL_INSTANCE_DAILY_LIMIT` is.
+ *
+ * ZERO IS REFUSED, and it is the value that reads most like "off": a trial of
+ * zero days has ended when the person opens the letter. Somebody who wants no
+ * day limit unsets it.
+ */
+function parseTrialDays(env: NodeJS.ProcessEnv): number | null {
+  const raw = env[TRIAL_DAYS_VARIABLE]?.trim();
+  if (raw === undefined || raw === '') return null;
+  const days = parsePositiveInteger(env, TRIAL_DAYS_VARIABLE, 0);
+  if (days > MAX_TRIAL_DAYS) {
+    throw new Error(`${TRIAL_DAYS_VARIABLE} must be at most ${MAX_TRIAL_DAYS} (got ${days})`);
+  }
+  return days;
 }
 
 /**

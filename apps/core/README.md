@@ -253,7 +253,10 @@ published on `/health`. `GET /v1/admin/stats` reports it to you.
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
 them. An account from open sign-up, from an invite minted with
 `pnpm sync-api invites create --trial`, or (with `MEMBER_INVITE_TRIAL=true`)
-from a member's invitation gets that many scans with no end date. A scan is one
+from a member's invitation gets that many scans. With `TRIAL_DAYS` beside them
+the trial also ends that many days after the account is created, whichever comes
+first, and the proxy then answers `403 trial-expired`; unset means no end date,
+and an account created before you set it keeps none. A scan is one
 AI action the person started: the app sends one `X-Intake-Id` per action, a
 retry of it rides on the same scan until an answer is delivered, and an action
 that got no answer gives its scan back. One scan buys one answer: a request
@@ -526,7 +529,7 @@ never reaches the service. `INSTANCE_NAME`, `INSTANCE_LANGUAGE`,
 `FEEDBACK_MAX_REQUEST_BYTES`, `AI_INSTANCE_DAILY_LIMIT`,
 `MEMBER_INVITE_DAILY_AI_LIMIT`, `MEMBER_INVITE_ALLOWANCE_DAYS`,
 `MEMBER_INVITE_LIFETIME_CAP`, `OPEN_SIGNUP`, `TURNSTILE_SECRET_KEY`,
-`TURNSTILE_SITE_KEY`, `TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`,
+`TURNSTILE_SITE_KEY`, `TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`, `TRIAL_DAYS`,
 `TRIAL_ADDRESS_PEPPER`, `MEMBER_INVITE_TRIAL`,
 `AI_TRIAL_INSTANCE_DAILY_LIMIT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 `VAPID_SUBJECT`, `PLANS_UPSTREAM_URL`, `PLANS_UPSTREAM_SECRET` and

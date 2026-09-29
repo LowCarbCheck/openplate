@@ -281,6 +281,7 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
     aiUsedToday,
     allowanceExpiresAt: account.allowanceExpiresAt?.toISOString() ?? null,
     trialScans: trialScansView({ granted: account.trialScans, used: account.trialScansUsed }),
+    trialEndsAt: account.trialEndsAt?.toISOString() ?? null,
     suspendedAt: account.suspendedAt?.toISOString() ?? null,
     ...memberInviteFields({
       role: account.role,
@@ -533,7 +534,9 @@ function parseSignup(fields: JsonObject): ParseSignupResult {
 /** What the instance's member-invite policy grants a member-caused invite at redemption (M212, M253). */
 function memberInviteGrantFor(policy: MemberInvitePolicy | null): MemberInviteGrant | null {
   if (policy === null) return null;
-  if (policy.kind === 'trial') return { kind: 'trial', scans: policy.trialScans, dailyAiLimit: policy.dailyAiLimit };
+  if (policy.kind === 'trial') {
+    return { kind: 'trial', scans: policy.trialScans, dailyAiLimit: policy.dailyAiLimit, days: policy.trialDays };
+  }
   return { kind: 'days', allowanceDays: policy.allowanceDays };
 }
 
@@ -1362,6 +1365,8 @@ export async function handleMintMemberInvite(
     // `0` for a mailbox that already had one. The day door writes none, and
     // redemption turns the row into a date.
     trialScans: surface.policy.kind === 'trial' ? surface.policy.trialScans : null,
+    // And its day limit (M267), which redemption turns into an end date.
+    trialDays: surface.policy.kind === 'trial' ? surface.policy.trialDays : null,
     expiresAt: new Date(now.getTime() + DEFAULT_INVITE_TTL_MS),
     now,
     // What makes this invitation count against the caller's five, and what
@@ -1500,8 +1505,10 @@ export async function handleSignupRequest(
     displayName: null,
     role: 'member',
     dailyAiLimit: surface.grant.dailyAiLimit,
-    // The instance's scan trial, or `null` on an open instance that runs none.
+    // The instance's scan trial, or `null` on an open instance that runs none,
+    // and its day limit (M267).
     trialScans: surface.grant.trialScans,
+    trialDays: surface.grant.trialDays,
     expiresAt: new Date(now.getTime() + DEFAULT_INVITE_TTL_MS),
     now,
     // NOBODY INVITED THIS PERSON, so nobody's member cap is spent and the

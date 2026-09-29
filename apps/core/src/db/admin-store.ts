@@ -59,6 +59,7 @@ interface AccountIdentityRow {
   allowanceExpiresAt: Date | null;
   trialScans: number | null;
   trialScansUsed: number;
+  trialEndsAt: Date | null;
   suspendedAt: Date | null;
   healthConsentVersion: string | null;
   healthConsentAt: Date | null;
@@ -87,6 +88,9 @@ const IDENTITY_COLUMNS = {
   // told how many are left.
   trialScans: accounts.trialScans,
   trialScansUsed: accounts.trialScansUsed,
+  // The day limit's end (M267), on the user-facing `AccountView` too, for the
+  // same reason: the person whose free tier ends has to be told when.
+  trialEndsAt: accounts.trialEndsAt,
   suspendedAt: accounts.suspendedAt,
   // The health-data consent: the operator must be able to show when a person
   // agreed and to which wording (Art. 7(1) GDPR). On the user-facing
@@ -213,6 +217,7 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       allowanceExpiresAt: identity.allowanceExpiresAt,
       trialScans: identity.trialScans,
       trialScansUsed: identity.trialScansUsed,
+      trialEndsAt: identity.trialEndsAt,
       suspendedAt: identity.suspendedAt,
       healthConsent: healthConsentFromColumns({ version: identity.healthConsentVersion, at: identity.healthConsentAt }),
       createdAt: identity.createdAt,

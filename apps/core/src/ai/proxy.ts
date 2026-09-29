@@ -59,6 +59,12 @@
  * window, and the count only decides where there is no date at all. Then the
  * trial accounts' own daily sub-ceiling, and the steps below as before.
  *
+ * THE DAY LIMIT (M267) is asked just before the claim: a trial with an end
+ * date that has passed is `403 trial-expired`, before any row is written,
+ * unless its scans ran out first, which the claim then says as it always did.
+ * Both refusals carry `endedBy`, `scans` or `days`, so a client names the
+ * reason from one field. A future allowance date lifts the day limit too.
+ *
  * THE SCAN HAS ITS OWN GIVE-BACK TABLE, and it differs from the unit's on
  * purpose, because the scan protects a promise ("failed attempts do not
  * count") where the unit protects the bill:
@@ -167,9 +173,11 @@ import { randomUUID } from 'node:crypto';
 import {
   INTAKE_ID_INVALID,
   INTAKE_ID_PATTERN,
+  TRIAL_EXPIRED,
   TRIAL_SCANS_LEFT_HEADER,
   TRIAL_SCANS_SPENT,
   isScanGated,
+  trialEndedBy,
 } from '../accounts/scan-trial.js';
 
 /** The upstream this proxy forwards to, already validated all-or-nothing by `config.ts`. */
@@ -606,7 +614,24 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // every reservation below keys on this one value.
     const day = utcDayKey(requestedAt);
 
-    // 2c. THE SCAN CLAIM (M253), only where the gate applies: free scans and
+    // 2c. THE DAY LIMIT (M267), before the claim so a trial past its end date
+    // writes no intake row. Asked only where the scans have not ended it
+    // already: `trialEndedBy` answers `scans` first, and the claim below
+    // stays the authority on the last scan, so that refusal is unchanged.
+    // The instant is the one read above the allowance tests.
+    const endedBy = trialEndedBy({
+      trialScans: account.trialScans,
+      trialScansUsed: account.trialScansUsed,
+      trialEndsAt: account.trialEndsAt,
+      allowanceExpiresAt: account.allowanceExpiresAt,
+      now: requestedAt,
+    });
+    if (endedBy === 'days') {
+      res.status(403).json({ error: TRIAL_EXPIRED, endedBy: 'days' });
+      return;
+    }
+
+    // 2d. THE SCAN CLAIM (M253), only where the gate applies: free scans and
     // no allowance date. See the module header for the claim and its
     // give-back. A request with no id is its own action, under an id this
     // process makes up and nobody can reuse.
@@ -620,13 +645,13 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       });
       if (!claim.ok) {
         res.setHeader(TRIAL_SCANS_LEFT_HEADER, '0');
-        res.status(403).json({ error: TRIAL_SCANS_SPENT });
+        res.status(403).json({ error: TRIAL_SCANS_SPENT, endedBy: 'scans' });
         return;
       }
       scan = claim;
       res.setHeader(TRIAL_SCANS_LEFT_HEADER, String(claim.left));
 
-      // 2d. THE SCAN-TRIAL ACCOUNTS' SHARE OF THE DAY, counted always and
+      // 2e. THE SCAN-TRIAL ACCOUNTS' SHARE OF THE DAY, counted always and
       // bounded when `AI_TRIAL_INSTANCE_DAILY_LIMIT` is set, so farming runs
       // out of its own budget before it reaches the paying accounts'.
       const trialDay = await quota.reserveTrialInstance({ day, limit: trialInstanceDailyLimit });

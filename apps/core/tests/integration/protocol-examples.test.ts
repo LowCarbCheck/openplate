@@ -7,7 +7,7 @@
  * parses; only the service can say whether an alternative client written from
  * that example would decode what it actually receives. The service here runs
  * the configuration the examples describe: open sign-up with a captcha, a
- * scan trial, AI, and a health-data consent (so `healthConsent` is an object
+ * scan trial with a day limit (M267), AI, and a health-data consent (so `healthConsent` is an object
  * on both examples, and the harness signs up with the box ticked).
  */
 import { test, before, after } from 'node:test';
@@ -26,7 +26,7 @@ before(async () => {
   await database.reset();
   service = await startService({
     db: database.db,
-    trial: { scans: 10, dailyAiLimit: 50 },
+    trial: { scans: 10, dailyAiLimit: 50, days: 14 },
     trialAddressPepper: 'a-trial-address-pepper-that-is-long-enough-0123',
     openSignup: {
       captcha: { verify: async (): Promise<CaptchaVerdict> => 'passed' },
@@ -48,7 +48,12 @@ test('the §5.6 example names exactly what /health sends', async () => {
 });
 
 test('the §5.15 example names exactly what GET /v1/auth/account sends', async () => {
-  const session = await service.signupThroughInvite({ email: 'example@example.org', trialScans: 10, dailyAiLimit: 50 });
+  const session = await service.signupThroughInvite({
+    email: 'example@example.org',
+    trialScans: 10,
+    trialDays: 14,
+    dailyAiLimit: 50,
+  });
   const account = await service.request<{ account: JsonValue }>({
     method: 'GET',
     path: '/v1/auth/account',

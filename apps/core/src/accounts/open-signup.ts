@@ -120,6 +120,8 @@ export interface OpenSignupGrant {
   dailyAiLimit: number;
   /** `TRIAL_SCANS`, or `null` on an open instance that runs no scan trial (M253). */
   trialScans: number | null;
+  /** `TRIAL_DAYS`, or `null` for a trial with no end date and for no trial (M267). */
+  trialDays: number | null;
 }
 
 /**

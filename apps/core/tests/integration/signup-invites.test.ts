@@ -100,6 +100,7 @@ async function mintInvite(
     invitedByAccountId,
     source: null,
     trialScans: null,
+    trialDays: null,
   });
   if (!minted.ok) throw new Error(`could not mint an invite for ${email}: ${minted.reason}`);
   return minted.minted.token;
@@ -248,6 +249,7 @@ test('invite-lookup shows the addressee, and every bad token is one 404', async 
       invitedByAccountId: null,
       source: null,
       trialScans: null,
+      trialDays: null,
     });
     if (!minted.ok) throw new Error('expected a minted invite');
 

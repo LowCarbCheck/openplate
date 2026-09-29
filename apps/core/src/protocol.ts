@@ -274,6 +274,17 @@ export interface AccountView {
    * paid account may still carry this field.
    */
   trialScans: TrialScansView | null;
+  /**
+   * When the free tier ends by the calendar (M267, `TRIAL_DAYS`), or `null`
+   * for no end date: an account whose trial started before the setting
+   * existed, one on an instance without it, and one with no trial at all.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. From this instant on
+   * the proxy answers `403 trial-expired` (PROTOCOL.md §5.19), unless the
+   * scans ran out first, and a future `allowanceExpiresAt` lifts it exactly as
+   * it lifts the scan count. ADDITIVE: an older client ignores the key.
+   */
+  trialEndsAt: IsoTimestamp | null;
   /** Non-`null` while the account is suspended; every authenticated call then answers `403 account-suspended`. */
   suspendedAt: IsoTimestamp | null;
   /**
@@ -392,7 +403,8 @@ export interface InstanceInfo {
    */
   signupCaptcha?: InstanceSignupCaptcha;
   /**
-   * The free scans a new account gets here (`TRIAL_SCANS`, M253), or ABSENT
+   * The free scans a new account gets here (`TRIAL_SCANS`, M253), and since
+   * M267 the days after which the trial ends anyway (`TRIAL_DAYS`), or ABSENT
    * on an instance that runs no scan trial.
    *
    * A PROMISE, LIKE `feedback`, SO ABSENT RATHER THAN NULL. An instance with
@@ -542,9 +554,16 @@ export interface InstanceHealthConsent {
   version: string;
 }
 
-/** What {@link InstanceInfo.trial} promises: how many free scans a new account gets. */
+/** What {@link InstanceInfo.trial} promises: how many free scans a new account gets, and for how many days. */
 export interface InstanceTrial {
   scans: number;
+  /**
+   * The days after which the trial ends even with scans left (M267), or
+   * ABSENT for a trial with no end date. Absent rather than null, like the
+   * block itself: a client that finds no key MUST NOT state a number of days,
+   * and states the scans exactly as before.
+   */
+  days?: number;
 }
 
 /** The captcha the sign-up request needs (M253). One provider today, named so a second is additive. */

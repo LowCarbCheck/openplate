@@ -37,6 +37,7 @@ import { createThrottleStore } from './lib/throttle.js';
 import { SIGNUP_LETTER_THROTTLE, type OpenSignupSurface } from './accounts/open-signup.js';
 import { createTurnstileVerifier } from './accounts/captcha.js';
 import { createTrialAddressHasher } from './accounts/trial-address.js';
+import { instanceTrialOf } from './accounts/scan-trial.js';
 import { generateFamilyId, generatePasswordResetToken, generateToken } from './lib/tokens.js';
 import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
@@ -123,8 +124,8 @@ async function main(): Promise<void> {
         // operator grants some, and the boot line below says so.
         grant:
           config.trial === null
-            ? { dailyAiLimit: 0, trialScans: null }
-            : { dailyAiLimit: config.trial.dailyAiLimit, trialScans: config.trial.scans },
+            ? { dailyAiLimit: 0, trialScans: null, trialDays: null }
+            : { dailyAiLimit: config.trial.dailyAiLimit, trialScans: config.trial.scans, trialDays: config.trial.days },
         captcha: config.turnstile === null ? null : createTurnstileVerifier({ config: config.turnstile }),
         letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
       }
@@ -339,8 +340,9 @@ async function main(): Promise<void> {
 
   // THE SCAN TRIAL, A PROMISE AND THEREFORE ABSENT WHEN OFF (M253), from the
   // same binding every trial door writes, so the number a client shows is the
-  // number the doors grant.
-  if (config.trial !== null) instance.trial = { scans: config.trial.scans };
+  // number the doors grant. The day limit (M267) is a promise inside it, so
+  // it is absent too when unset, and a client states the scans alone.
+  if (config.trial !== null) instance.trial = instanceTrialOf(config.trial);
 
   // THE CAPTCHA A CLIENT RENDERS, ABSENT unless the door is open AND the
   // operator configured Turnstile. The site key is public by design; the
@@ -440,6 +442,8 @@ async function main(): Promise<void> {
       // Which member door, and the scan trial, never a number.
       memberInviteTrial: config.memberInvites?.kind === 'trial',
       trial: config.trial !== null,
+      // Whether the trial also ends by the calendar (M267), never the number.
+      trialDays: (config.trial?.days ?? null) !== null,
       trialAddressPepper: config.trialAddressPepper !== null,
       openSignup: openSignup !== null,
       // Whether a captcha guards that door, never a key.

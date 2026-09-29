@@ -188,3 +188,12 @@ test('the PROTOCOL.md examples name the M253 fields where a client reads them', 
   const account = keyPaths(protocolExample('### 5.15'));
   assert.ok(account.includes('trialScans.granted') && account.includes('trialScans.left'));
 });
+
+test('the PROTOCOL.md examples name the M267 day limit where a client reads it', () => {
+  const health = keyPaths(protocolExample('### 5.6'));
+  assert.ok(health.includes('instance.trial.days'), 'the §5.6 example is missing instance.trial.days');
+  const account = keyPaths(protocolExample('### 5.15'));
+  assert.ok(account.includes('trialEndsAt'), 'the §5.15 example is missing trialEndsAt');
+  // THE CONTROL: the helper reads real key paths, so a name nobody wrote is absent.
+  assert.equal(health.includes('instance.trial.weeks'), false);
+});

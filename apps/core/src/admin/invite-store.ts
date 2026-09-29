@@ -91,6 +91,13 @@ export interface MintInviteInput {
    * mint-time half of the one mailbox, one trial rule.
    */
   trialScans: number | null;
+  /**
+   * The instance's `TRIAL_DAYS` beside `trialScans`, or `null` for a trial
+   * with no end date and for no trial (M267). REQUIRED AND NULLABLE, like
+   * `trialScans`, so every door names it. Redemption turns it into the
+   * account's end date; the store drops it on a row with no trial.
+   */
+  trialDays: number | null;
   expiresAt: Date;
   /** Stamped on the pending invite this mint supersedes, if there is one. Injected, like every instant in this repo. */
   now: Date;

@@ -38,6 +38,7 @@ import { deriveServerSecrets } from '../../src/lib/server-secrets.js';
 import type { AuthContext, SessionResponse } from '../../src/accounts/auth-handlers.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from '../../src/accounts/member-invites.js';
 import { createTrialAddressHasher } from '../../src/accounts/trial-address.js';
+import { instanceTrialOf, type TrialPolicy } from '../../src/accounts/scan-trial.js';
 import { SIGNUP_LETTER_THROTTLE, type OpenSignupSurface } from '../../src/accounts/open-signup.js';
 import type { CaptchaVerifier } from '../../src/accounts/captcha.js';
 import type {
@@ -152,6 +153,11 @@ export interface SignupThroughInviteInput {
   dailyAiLimit?: number;
   /** The scan trial the invite carries (M253). Absent is none, a standing grant. */
   trialScans?: number | null;
+  /**
+   * The trial's day limit on the invite row (M267). Absent is none, which is
+   * what every row minted before the column carries: a trial with no end date.
+   */
+  trialDays?: number | null;
   authHash?: string;
   recoveryAuthHash?: string;
   recoveryCode?: string;
@@ -160,7 +166,7 @@ export interface SignupThroughInviteInput {
 /** What a test names when it needs an invite and nothing else. Everything but the address has a default. */
 export type MintInviteInput = Pick<
   SignupThroughInviteInput,
-  'email' | 'invitedByAccountId' | 'displayName' | 'role' | 'dailyAiLimit' | 'trialScans'
+  'email' | 'invitedByAccountId' | 'displayName' | 'role' | 'dailyAiLimit' | 'trialScans' | 'trialDays'
 >;
 
 export interface ServiceHarness {
@@ -312,11 +318,12 @@ export interface StartServiceOptions {
    */
   memberInvites?: { dailyAiLimit?: number; allowanceDays?: number; lifetimeCap?: number; trial?: boolean } | null;
   /**
-   * `TRIAL_SCANS` and `TRIAL_DAILY_AI_LIMIT` (M253). Absent is every instance
+   * `TRIAL_SCANS` and `TRIAL_DAILY_AI_LIMIT` (M253), and `TRIAL_DAYS` as
+   * `days` (M267, absent or `null` for no end date). Absent is every instance
    * that runs no scan trial: no `instance.trial` on `/health`, and `"trial":
    * true` on an admin mint is a 400.
    */
-  trial?: { scans: number; dailyAiLimit: number } | null;
+  trial?: { scans: number; dailyAiLimit: number; days?: number | null } | null;
   /** `TRIAL_ADDRESS_PEPPER` (M253). Absent is no keyed mailbox hash, which `main.ts` refuses beside a trial. */
   trialAddressPepper?: string | null;
   /**
@@ -424,7 +431,13 @@ function memberInvitePolicyFor(options: StartServiceOptions): MemberInvitePolicy
   if (member?.trial === true) {
     if (options.trial == null)
       throw new Error('memberInvites.trial needs StartServiceOptions.trial, as the config does');
-    return { kind: 'trial', dailyAiLimit: options.trial.dailyAiLimit, trialScans: options.trial.scans, lifetimeCap };
+    return {
+      kind: 'trial',
+      dailyAiLimit: options.trial.dailyAiLimit,
+      trialScans: options.trial.scans,
+      trialDays: options.trial.days ?? null,
+      lifetimeCap,
+    };
   }
   return {
     dailyAiLimit: member?.dailyAiLimit ?? 25,
@@ -433,8 +446,15 @@ function memberInvitePolicyFor(options: StartServiceOptions): MemberInvitePolicy
   };
 }
 
+/** The suite's trial as `config.ts` parses it: `days` is `null`, never absent (M267). */
+function trialPolicyOf(options: StartServiceOptions): TrialPolicy | null {
+  if (options.trial == null) return null;
+  return { scans: options.trial.scans, dailyAiLimit: options.trial.dailyAiLimit, days: options.trial.days ?? null };
+}
+
 export async function startService(options: StartServiceOptions): Promise<ServiceHarness> {
   let clock = Date.now();
+  const trial = trialPolicyOf(options);
   const secrets = deriveServerSecrets('integration-test-root-secret-long-enough');
   const mailer = createRecordingMailer();
   // The keyed mailbox hash (M253), on when a suite names a pepper, as
@@ -457,9 +477,9 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           invites: inviteStore,
           // The instance's trial when the suite sets one, as `main.ts` does.
           grant:
-            options.trial == null
-              ? { dailyAiLimit: options.openSignup.dailyAiLimit ?? 0, trialScans: null }
-              : { dailyAiLimit: options.trial.dailyAiLimit, trialScans: options.trial.scans },
+            trial === null
+              ? { dailyAiLimit: options.openSignup.dailyAiLimit ?? 0, trialScans: null, trialDays: null }
+              : { dailyAiLimit: trial.dailyAiLimit, trialScans: trial.scans, trialDays: trial.days },
           captcha: options.openSignup.captcha ?? null,
           letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
         };
@@ -566,7 +586,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     healthConsent: healthConsent === null ? null : { version: healthConsent.version },
   };
   // THE SCAN TRIAL, A PROMISE AND THEREFORE ABSENT WHEN OFF, as `main.ts` does it.
-  if (options.trial != null) instance.trial = { scans: options.trial.scans };
+  if (trial !== null) instance.trial = instanceTrialOf(trial);
   // THE CAPTCHA, ABSENT unless the door is open with one, as `main.ts` does it.
   if (openSignupSurface?.captcha != null) {
     instance.signupCaptcha = { provider: 'turnstile', siteKey: options.openSignup?.captchaSiteKey ?? 'test-site-key' };
@@ -606,7 +626,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     plans: options.plans ?? null,
     // ALWAYS BUILT, no flag beside it, exactly as `pulse` is: the two
     // statutory buttons exist on every instance. See `create-app.ts`.
-    trial: options.trial ?? null,
+    trial,
     legal: {
       store: createDrizzleLegalDeclarationsStore(options.db),
       rateLimitPerMinute: options.legal?.rateLimitPerMinute ?? 10_000,
@@ -650,6 +670,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
         invitedByAccountId: input.invitedByAccountId ?? null,
         source: null,
         trialScans: input.trialScans ?? null,
+        trialDays: input.trialDays ?? null,
       });
       if (!minted.ok) throw new Error(`could not mint an invite for ${input.email}: ${minted.reason}`);
       return minted.minted.token;

@@ -465,7 +465,7 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
     "memberInvites": true,
     "openSignup": true,
     "signupCaptcha": { "provider": "turnstile", "siteKey": "0x4AAAAAAAexample" },
-    "trial": { "scans": 10 },
+    "trial": { "scans": 10, "days": 14 },
     "plans": true,
     "push": false,
     "healthConsent": { "version": "2026-09-28" },
@@ -487,7 +487,7 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
 
 `signupCaptcha` is present only while `openSignup` is `true` and the operator runs a captcha. `provider` is `turnstile` today; `siteKey` is Cloudflare Turnstile's public site key, which a client renders the widget with and which grants nothing. The token the widget produces travels as `captchaToken` in the sign-up request. Absent means the request needs no token.
 
-`trial` is a **promise, like `feedback` below, so it is absent rather than `null`** on an instance that runs no scan trial. `scans` is the number of free AI scans a new account gets there, with no end date (§5.19, "The scan trial"). A client that finds no `trial` **MUST NOT state a number of free scans**. The number is the one every trial door writes, published from the same setting, so the sentence a person reads before signing up and the count the proxy keeps cannot drift apart.
+`trial` is a **promise, like `feedback` below, so it is absent rather than `null`** on an instance that runs no scan trial. `scans` is the number of free AI scans a new account gets there (§5.19, "The scan trial"). `days` is the number of days after which that trial ends even with scans left, whichever comes first; it is **absent, never `null`**, on an instance whose trial has no end date, and a client that finds no `days` states the scans exactly as before and **MUST NOT state a number of days**. A client that finds no `trial` **MUST NOT state a number of free scans**. Both numbers are the ones every trial door writes, published from the same settings (`TRIAL_SCANS`, `TRIAL_DAYS`), so the sentence a person reads before signing up and the limits the proxy keeps cannot drift apart.
 
 `memberInvites` is **descriptive, never a grant**, like everything else in this block. A client reads it to decide whether to draw an invite card at all; it never reads it to decide whether it may mint. `false` means `POST /v1/auth/invites` answers the ordinary unknown-path `404`, and `true` still leaves the lifetime cap, the re-invite rule and the throttle to the service.
 
@@ -616,7 +616,7 @@ An invite is a single-use, expiring capability **addressed to one person**. It c
 
 Minting is `POST /v1/admin/invites`. An older PENDING invite for the same address is revoked by a new one, so there is never more than one live capability per address; an address that already has an account cannot be invited at all (`409`). The one exception is the request door of §5.8.3, which leaves a pending invite from the operator or a member alone rather than withdraw it on a stranger's say.
 
-An invite may carry a **scan trial** (`trialScans`, §5.19): open sign-up, an admin mint with `"trial": true` and, where the instance runs it, a member invite write the instance's number on the row, and redemption copies it to the account with no end date.
+An invite may carry a **scan trial** (`trialScans`, §5.19): open sign-up, an admin mint with `"trial": true` and, where the instance runs it, a member invite write the instance's number on the row, and redemption copies it to the account. Where the instance also sets a day limit (`instance.trial.days`), the row carries that too, and **redemption starts the clock**: the account's `trialEndsAt` is the redemption instant plus that many days. A row minted before the day limit existed carries none, and the account it creates has no end date.
 
 An instance may also let an ordinary member mint one, on the instance's terms and with none of the disclosure this paragraph's `409` makes. That is `POST /v1/auth/invites`, §5.21.
 
@@ -787,6 +787,7 @@ All three bearer.
   "aiUsedToday": 3,
   "allowanceExpiresAt": null,
   "trialScans": { "granted": 10, "left": 7 },
+  "trialEndsAt": "2026-09-18T10:11:12.000Z",
   "suspendedAt": null,
   "invitesLeft": 5,
   "invitesNeedAPlan": false,
@@ -804,6 +805,8 @@ Nothing secret is in it and nothing can be: no verifier, no KDF descriptor, no w
 `allowanceExpiresAt` is an ISO instant or `null`, and `null` means the AI allowance has no end date, which is what a self-hosted instance keeps. From that instant on, the proxy of §5.19 answers `403 allowance-expired`. **It gates AI and nothing else**: sync keeps working past the date, because the diary belongs to the account and a new device must be able to pull it. A client may render the date and must not authorize on it; the proxy is where the rule lives.
 
 `trialScans` is `{"granted": n, "left": n}` for an account with a scan trial, and `null` for one without, which is every account on an instance that runs none. `left` is `granted` minus the scans used, never below `0`. A client may render it and **MUST NOT authorize on it**: the proxy counts (§5.19), `left` is a snapshot taken when this view was built, and every proxied response carries the fresh number in `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the scan gate, so a paying account may still carry this field.
+
+`trialEndsAt` is an ISO instant, or `null` for a scan trial with no end date and for an account with no trial at all. It is written once, when the trial starts at redemption (§5.8), on an instance that sets a day limit; **an account created before its instance set one keeps `null`**, and its trial is never shortened after the fact. From that instant on the proxy answers `403 trial-expired` (§5.19), unless the free scans ran out first. A client may render it and **MUST NOT authorize on it**. A future `allowanceExpiresAt` lifts it exactly as it lifts the scan count. The field is additive: a client that ignores it decodes the view unchanged.
 
 `healthConsent` is `{"version": "<v>", "at": "<ISO instant>"}` for an account with a health-data consent on record, and `null` for one without: every account created before its instance asked, and every account on an instance that asks for none. `version` is the wording the person agreed to and `at` is the service's own clock at that moment. A client compares `version` with `instance.healthConsent.version` (§5.6) and asks once when they differ or this is `null` on an instance that asks (§5.15.1). The field is additive: a client that ignores it decodes the view unchanged.
 
@@ -1164,19 +1167,20 @@ Each account carries `dailyAiLimit`: requests per **UTC day**, defaulting to
 | `X-Quota-Limit`      | The account's `dailyAiLimit`                                                                         |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
-| Status | `error`                                | When                                                                                                                                                                                |
-| ------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401`  | `authentication required`              | No access token, or one that is expired or revoked                                                                                                                                  |
-| `403`  | `ai-not-allowed`                       | `dailyAiLimit` is `0`. Refused before anything leaves the host                                                                                                                      |
-| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived. Refused before anything leaves the host, and before a usage row is written                               |
-| `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0`              |
-| `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                  |
-| `403`  | `health-consent-required`              | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1). Refused before anything leaves the host, and before a usage row is written |
-| `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                                           |
-| `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                                        |
-| `429`  | a sentence naming the reset instant    | The allowance is spent. `Retry-After` is seconds to the next UTC midnight                                                                                                           |
-| `429`  | a sentence naming the per-minute bound | More than `AI_RATE_LIMIT_PER_MINUTE` requests in any trailing 60 s                                                                                                                  |
-| `503`  | `ai-instance-ceiling`                  | The whole instance has spent its daily ceiling, or the scan-trial accounts have spent theirs. `Retry-After` is seconds to the next UTC midnight                                     |
+| Status | `error`                                | When                                                                                                                                                                                                               |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `401`  | `authentication required`              | No access token, or one that is expired or revoked                                                                                                                                                                 |
+| `403`  | `ai-not-allowed`                       | `dailyAiLimit` is `0`. Refused before anything leaves the host                                                                                                                                                     |
+| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived. Refused before anything leaves the host, and before a usage row is written                                                              |
+| `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0`. The body carries `"endedBy": "scans"`      |
+| `403`  | `trial-expired`                        | The account's `trialEndsAt` is set and not after the instant the request arrived, its scans are not used up, and it has no allowance date. Refused before any row is written. The body carries `"endedBy": "days"` |
+| `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                                                 |
+| `403`  | `health-consent-required`              | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1). Refused before anything leaves the host, and before a usage row is written                                |
+| `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                                                                          |
+| `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                                                                       |
+| `429`  | a sentence naming the reset instant    | The allowance is spent. `Retry-After` is seconds to the next UTC midnight                                                                                                                                          |
+| `429`  | a sentence naming the per-minute bound | More than `AI_RATE_LIMIT_PER_MINUTE` requests in any trailing 60 s                                                                                                                                                 |
+| `503`  | `ai-instance-ceiling`                  | The whole instance has spent its daily ceiling, or the scan-trial accounts have spent theirs. `Retry-After` is seconds to the next UTC midnight                                                                    |
 
 `403 ai-not-allowed` is a machine code because a client MUST branch on it; it
 means "this account will never succeed here until an operator changes
@@ -1200,20 +1204,34 @@ administrator" (`ai-not-allowed`) and not "your time ran out"
 (`allowance-expired`). A client older than the code reads an unknown `403`,
 which is why it is separate rather than folded into either.
 
+`403 trial-expired` is a **fourth**, for the free tier's other
+limit: "your free days are over". It is not `allowance-expired`, which is a paid
+or granted window running out; a client that read one as the other would tell a
+person who paid that their trial is over. Both trial refusals carry
+**`endedBy`**, `"scans"` or `"days"`, so a client can name which limit ended
+the free tier from one field:
+
+```json
+{ "error": "trial-expired", "endedBy": "days" }
+```
+
 **The order of the refusals**, which a conforming server MUST keep: identity
 and suspension; the health-data consent (`health-consent-required`, §5.15.1);
 `dailyAiLimit` of `0` (`ai-not-allowed`); an allowance date
 that has passed (`allowance-expired`); the body; `X-Intake-Id`'s shape; then,
-only for an account with free scans and **no** allowance date, the scan claim
-(`trial-scans-spent`). A date in the future lifts the scan gate: it is a paid or
-granted window, and the count decides only where there is no date at all. Then
-the scan-trial accounts' ceiling, the instance ceiling and the daily
-allowance, as below.
+only for an account with free scans and **no** allowance date, the day limit
+(`trial-expired`, asked only when the scans are not used up, so spent scans
+keep their own code) and the scan claim (`trial-scans-spent`). A date in the
+future lifts both: it is a paid or granted window, and the trial's limits
+decide only where there is no date at all. Then the scan-trial accounts'
+ceiling, the instance ceiling and the daily allowance, as below.
 
 #### The scan trial
 
-An account may carry free AI scans with no end date (`AccountView.trialScans`,
-§5.15), granted by the instance's trial (`instance.trial`, §5.6). **A scan is
+An account may carry free AI scans (`AccountView.trialScans`, §5.15), and
+an end date (`AccountView.trialEndsAt`), granted by the
+instance's trial (`instance.trial`, §5.6): so many scans or so many days,
+whichever comes first. **A scan is
 one AI action the person started**, and one action may be more than one
 upstream request: a client may retry once without `response_format` after a
 provider refusal. (A retry after a stale bearer is refused by the bearer check,

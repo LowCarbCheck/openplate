@@ -991,14 +991,47 @@ test('the trial needs its pepper, and a short one is refused without being print
 test('the trial pair with its pepper is the trial on', () => {
   // THE CONTROL for the refusals above.
   const config = parseConfig(baseEnv(TRIAL_ENV));
-  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50 });
+  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: null });
   assert.equal(config.trialAddressPepper, PEPPER_ENV.TRIAL_ADDRESS_PEPPER);
+});
+
+// ── the day limit (M267) ───────────────────────────────────────────────────
+
+test('TRIAL_DAYS beside the trial pair ends the trial after that many days', () => {
+  const config = parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14' }));
+  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: 14 });
+});
+
+test('TRIAL_DAYS unset keeps a trial with no end date, as every instance before it', () => {
+  // THE CONTROL for the day limit above.
+  assert.equal(parseConfig(baseEnv(TRIAL_ENV)).trial?.days, null);
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '' })).trial?.days, null);
+});
+
+test('TRIAL_DAYS without the trial pair is a boot failure: a dial with no door', () => {
+  assert.throws(() => parseConfig(baseEnv({ TRIAL_DAYS: '14', ...PEPPER_ENV })), /TRIAL_DAYS.*no scan trial/);
+});
+
+test('TRIAL_DAYS is a whole number from 1 to 90, and zero is refused rather than read as off', () => {
+  for (const days of ['0', '91', '-3', 'fourteen', '1.5']) {
+    assert.throws(() => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: days })), /TRIAL_DAYS/, days);
+  }
+  // THE CONTROLS: both ends of the range boot.
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '1' })).trial?.days, 1);
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '90' })).trial?.days, 90);
 });
 
 test('MEMBER_INVITE_TRIAL refuses to stand beside the day pair or without the trial', () => {
   assert.throws(
     () => parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_ALLOWANCE_DAYS: '3' })),
     /never both/,
+  );
+  // THE COMBINED RULE (M267): a trial that ends after some days is the
+  // instance's own trial with TRIAL_DAYS, and the refusal says so, so an
+  // operator reaching for the day pair is sent to the one setting that works.
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_ALLOWANCE_DAYS: '3' })),
+    /set TRIAL_DAYS/,
   );
   assert.throws(
     () => parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_DAILY_AI_LIMIT: '50' })),
@@ -1010,7 +1043,16 @@ test('MEMBER_INVITE_TRIAL refuses to stand beside the day pair or without the tr
 test('MEMBER_INVITE_TRIAL with the trial opens the member door on the scan trial, narrowed by the cap', () => {
   // THE CONTROL for the refusals above.
   const config = parseConfig(baseEnv({ ...TRIAL_ENV, MEMBER_INVITE_TRIAL: 'true', MEMBER_INVITE_LIFETIME_CAP: '2' }));
-  assert.deepEqual(config.memberInvites, { kind: 'trial', dailyAiLimit: 50, trialScans: 10, lifetimeCap: 2 });
+  assert.deepEqual(config.memberInvites, {
+    kind: 'trial',
+    dailyAiLimit: 50,
+    trialScans: 10,
+    trialDays: null,
+    lifetimeCap: 2,
+  });
+  // A member invitation grants the whole trial, its day limit included (M267).
+  const dated = parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14', MEMBER_INVITE_TRIAL: 'true' }));
+  assert.equal(dated.memberInvites?.kind === 'trial' ? dated.memberInvites.trialDays : 'not the trial door', 14);
   // And the day door still boots on its own, unchanged.
   const days = parseConfig(baseEnv({ MEMBER_INVITE_DAILY_AI_LIMIT: '50', MEMBER_INVITE_ALLOWANCE_DAYS: '3' }));
   assert.deepEqual(days.memberInvites, { dailyAiLimit: 50, allowanceDays: 3, lifetimeCap: 5 });

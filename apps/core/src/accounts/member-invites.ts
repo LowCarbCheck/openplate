@@ -92,13 +92,15 @@ export interface MemberInviteDaysPolicy {
   lifetimeCap: number;
 }
 
-/** The scan trial (M253): the instance's `TRIAL_SCANS` free scans with no end date, at `TRIAL_DAILY_AI_LIMIT` a day. */
+/** The scan trial (M253): the instance's `TRIAL_SCANS` free scans at `TRIAL_DAILY_AI_LIMIT` a day, and its `TRIAL_DAYS` (M267). */
 export interface MemberInviteTrialPolicy {
   kind: 'trial';
   /** `TRIAL_DAILY_AI_LIMIT`. */
   dailyAiLimit: number;
   /** `TRIAL_SCANS`. */
   trialScans: number;
+  /** `TRIAL_DAYS`, or `null` for a trial with no end date (M267). */
+  trialDays: number | null;
   /** As on the day shape. */
   lifetimeCap: number;
 }

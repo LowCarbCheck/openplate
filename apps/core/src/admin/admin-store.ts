@@ -63,6 +63,8 @@ export interface AdminAccountSummary {
   trialScans: number | null;
   /** How many of them are used. */
   trialScansUsed: number;
+  /** When the scan trial ends by the calendar (M267), or `null` for no end date. */
+  trialEndsAt: Date | null;
   /** Non-`null` while the account is suspended. */
   suspendedAt: Date | null;
   /**

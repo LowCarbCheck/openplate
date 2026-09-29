@@ -144,6 +144,8 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'lastSeenAt',
     'role',
     'suspendedAt',
+    // M267: when the scan trial ends by the calendar, `null` for no end date.
+    'trialEndsAt',
     'trialScans',
   ]);
 });

@@ -42,10 +42,16 @@ export interface AccountRecord {
    * an account MUST check this — login, refresh, the bearer middleware and the
    * recovery paths all answer `403 account-suspended` for a non-`null` value.
    */
-  /** Free scans granted with no end date, or `null` for no scan trial (M253). See `accounts/scan-trial.ts`. */
+  /** Free scans granted, or `null` for no scan trial (M253). See `accounts/scan-trial.ts`. */
   trialScans: number | null;
   /** How many of them are used. Always `0` for an account with no scan trial. */
   trialScansUsed: number;
+  /**
+   * When the scan trial ends by the calendar (`TRIAL_DAYS`, M267), or `null`
+   * for no end date: every account whose trial started before the setting,
+   * or on an instance without it, and every account with no trial.
+   */
+  trialEndsAt: Date | null;
   suspendedAt: Date | null;
   verifier: string;
   /**
@@ -149,10 +155,11 @@ export interface RedeemInviteAndCreateAccountInput {
 /**
  * What a MEMBER-caused invite grants at redemption, from the instance's
  * member-invite policy (M212, M253). `days`: the allowance ends that many days
- * after redemption. `trial`: the scan trial, no date.
+ * after redemption. `trial`: the scan trial, and since M267 its day limit,
+ * `days: null` for none.
  */
 export type MemberInviteGrant =
-  { kind: 'days'; allowanceDays: number } | { kind: 'trial'; scans: number; dailyAiLimit: number };
+  { kind: 'days'; allowanceDays: number } | { kind: 'trial'; scans: number; dailyAiLimit: number; days: number | null };
 
 /**
  * What `POST /v1/auth/invite-lookup` shows a person before they choose a

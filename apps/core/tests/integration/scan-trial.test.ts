@@ -243,7 +243,9 @@ test('two scans, then 403 trial-scans-spent before any upstream call or usage ro
 
     const third = await scan(service, { token, intakeId: intake('c') });
     assert.equal(third.status, 403);
-    assert.deepEqual(third.body, { error: 'trial-scans-spent' });
+    // `endedBy` (M267) names which limit ended the trial, the same field the
+    // day limit's `trial-expired` carries.
+    assert.deepEqual(third.body, { error: 'trial-scans-spent', endedBy: 'scans' });
     assert.equal(third.headers.get('x-trial-scans-left'), '0');
     assert.equal(upstreamCalls, 2, 'the refused scan never reached the provider');
     assert.equal(await usageToday('two@example.org'), 2, 'the refused scan spent no daily unit');
@@ -301,7 +303,7 @@ test('a delivered intake id is not reused: the next request claims a new scan, t
 
     const refused = await scan(service, { token, intakeId: intake('same') });
     assert.equal(refused.status, 403);
-    assert.deepEqual(refused.body, { error: 'trial-scans-spent' });
+    assert.deepEqual(refused.body, { error: 'trial-scans-spent', endedBy: 'scans' });
     assert.equal(upstreamCalls, 2, 'the refused request never reached the provider');
   });
 });
@@ -586,6 +588,7 @@ interface RedeemedBody {
     dailyAiLimit: number;
     allowanceExpiresAt: string | null;
     trialScans: { granted: number; left: number } | null;
+    trialEndsAt: string | null;
   };
   tokens: { accessToken: string };
 }
@@ -611,6 +614,7 @@ async function mintMemberRow(service: ServiceHarness, input: { email: string; in
     role: 'member',
     dailyAiLimit: 50,
     trialScans: null,
+    trialDays: null,
     expiresAt: new Date(service.now() + 7 * MS_PER_DAY),
     now: new Date(service.now()),
     invitedByAccountId: input.inviterId,
@@ -725,6 +729,7 @@ async function mintTrialLetter(service: ServiceHarness, email: string): Promise<
     role: 'member',
     dailyAiLimit: TRIAL.dailyAiLimit,
     trialScans: TRIAL.scans,
+    trialDays: null,
     expiresAt: new Date(service.now() + 7 * MS_PER_DAY),
     now: new Date(service.now()),
     invitedByAccountId: null,
@@ -1030,4 +1035,207 @@ test('no intake id and no address reaches a log line', async () => {
       `a log line carries ${needle}`,
     );
   }
+});
+
+// ── the day limit (M267) ───────────────────────────────────────────────────
+
+const TRIAL_DAYS = 14;
+/** The instance's trial with `TRIAL_DAYS`, as the consumer instance runs it since M267. */
+const DATED_TRIAL = { ...TRIAL, days: TRIAL_DAYS };
+
+/** A signed-in account whose invite carries the dated trial, as every trial door writes it since M267. */
+async function datedTrialAccount(
+  service: ServiceHarness,
+  input: { email: string; granted?: number },
+): Promise<SessionAccount> {
+  const session = await service.signupThroughInvite({
+    email: input.email,
+    dailyAiLimit: TRIAL.dailyAiLimit,
+    trialScans: input.granted ?? TRIAL.scans,
+    trialDays: TRIAL_DAYS,
+  });
+  return { token: session.tokens.accessToken, trialEndsAt: session.account.trialEndsAt };
+}
+
+interface SessionAccount {
+  token: string;
+  trialEndsAt: string | null;
+}
+
+/** The end date on the account row itself, not the view, so a test sees what the proxy reads. */
+async function trialEndsAtOf(email: string): Promise<Date | null> {
+  const [row] = await database.db
+    .select({ trialEndsAt: accounts.trialEndsAt })
+    .from(accounts)
+    .where(eq(accounts.email, email));
+  if (!row) throw new Error(`no account for ${email}`);
+  return row.trialEndsAt;
+}
+
+test('a new trial ends fourteen days after it starts: 403 trial-expired before any upstream call, scan or usage row', async () => {
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    const startedAt = service.now();
+    const account = await datedTrialAccount(service, { email: 'dated@example.org' });
+    const endsAt = startedAt + TRIAL_DAYS * MS_PER_DAY;
+    assert.equal(account.trialEndsAt, new Date(endsAt).toISOString(), 'the account view names the end');
+    assert.equal((await trialEndsAtOf('dated@example.org'))?.getTime(), endsAt, 'and the row carries it');
+    assert.equal((await scan(service, { token: account.token, intakeId: intake('a') })).status, 200);
+
+    // THE CONTROL: the last millisecond of the fourteenth day still scans.
+    service.advance(TRIAL_DAYS * MS_PER_DAY - 1);
+    const lastMoment = await scan(service, {
+      token: await signInAgain(service, 'dated@example.org'),
+      intakeId: intake('b'),
+    });
+    assert.equal(lastMoment.status, 200);
+
+    service.advance(1);
+    const callsBefore = upstreamCalls;
+    const usageBefore = await usageToday('dated@example.org');
+    const expired = await scan(service, {
+      token: await signInAgain(service, 'dated@example.org'),
+      intakeId: intake('c'),
+    });
+    assert.equal(expired.status, 403);
+    assert.deepEqual(expired.body, { error: 'trial-expired', endedBy: 'days' });
+    assert.equal(upstreamCalls, callsBefore, 'the refused request never reached the provider');
+    assert.equal(await usageToday('dated@example.org'), usageBefore, 'and spent no daily unit');
+    assert.equal(await usedScans('dated@example.org'), 2, 'and no scan');
+  });
+});
+
+test('an account whose invite carries no day limit keeps its trial with no end date, however long it waits', async () => {
+  // Every account created before M267, and every invite row minted before it,
+  // carries no day count. THE ROW DECIDES, so the instance's TRIAL_DAYS does
+  // not reach it: those people signed up under terms with no time limit.
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    const session = await service.signupThroughInvite({
+      email: 'before@example.org',
+      dailyAiLimit: TRIAL.dailyAiLimit,
+      trialScans: TRIAL.scans,
+    });
+    assert.equal(session.account.trialEndsAt, null);
+    assert.equal(await trialEndsAtOf('before@example.org'), null);
+    service.advance(400 * MS_PER_DAY);
+    const late = await scan(service, {
+      token: await signInAgain(service, 'before@example.org'),
+      intakeId: intake('a'),
+    });
+    assert.equal(late.status, 200);
+  });
+});
+
+test('used-up scans still end a dated trial first, and stay the reason after the days are over', async () => {
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    const account = await datedTrialAccount(service, { email: 'quick@example.org', granted: 1 });
+    assert.equal((await scan(service, { token: account.token, intakeId: intake('a') })).status, 200);
+    const spent = await scan(service, { token: account.token, intakeId: intake('b') });
+    assert.equal(spent.status, 403);
+    assert.deepEqual(spent.body, { error: 'trial-scans-spent', endedBy: 'scans' });
+
+    service.advance((TRIAL_DAYS + 1) * MS_PER_DAY);
+    const later = await scan(service, {
+      token: await signInAgain(service, 'quick@example.org'),
+      intakeId: intake('c'),
+    });
+    assert.deepEqual(later.body, { error: 'trial-scans-spent', endedBy: 'scans' });
+  });
+});
+
+test('a paid account past its trial end is never refused by the free tier', async () => {
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    await datedTrialAccount(service, { email: 'payer@example.org' });
+    service.advance((TRIAL_DAYS + 6) * MS_PER_DAY);
+    await database.db
+      .update(accounts)
+      .set({ allowanceExpiresAt: new Date(service.now() + 30 * MS_PER_DAY) })
+      .where(eq(accounts.email, 'payer@example.org'));
+    const token = await signInAgain(service, 'payer@example.org');
+    assert.equal((await scan(service, { token, intakeId: intake('a') })).status, 200);
+
+    // THE CONTROL: the same account without its paid date is past its trial.
+    await database.db.update(accounts).set({ allowanceExpiresAt: null }).where(eq(accounts.email, 'payer@example.org'));
+    const refused = await scan(service, { token, intakeId: intake('b') });
+    assert.deepEqual(refused.body, { error: 'trial-expired', endedBy: 'days' });
+  });
+});
+
+test('every trial door starts the day limit at redemption, not at the mint', async () => {
+  // Open sign-up: the letter is redeemed a day after it was asked for, and
+  // the fourteen days start then.
+  await withService({ trial: DATED_TRIAL, openSignup: {} }, async (service) => {
+    await service.request({ method: 'POST', path: '/v1/auth/signup-request', body: { email: 'open@example.org' } });
+    const letter = service.mailer.signupRequests[0];
+    assert.ok(letter);
+    service.advance(MS_PER_DAY);
+    const created = await redeem(service, letter.inviteToken);
+    assert.equal(created.status, 201);
+    assert.equal(created.body.account.trialEndsAt, new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString());
+  });
+
+  // A member's invitation under MEMBER_INVITE_TRIAL=true.
+  await database.reset();
+  await withService({ trial: DATED_TRIAL, memberInvites: { trial: true } }, async (service) => {
+    const inviter = await service.signupThroughInvite({ email: 'inviter@example.org', dailyAiLimit: 50 });
+    const minted = await service.request({
+      method: 'POST',
+      path: '/v1/auth/invites',
+      accessToken: inviter.tokens.accessToken,
+      body: { email: 'friend@example.org' },
+    });
+    assert.equal(minted.status, 202);
+    const letter = service.mailer.invites.find((sent) => sent.email === 'friend@example.org');
+    assert.ok(letter);
+    service.advance(2 * MS_PER_DAY);
+    const created = await redeem(service, letter.inviteToken);
+    assert.equal(created.body.account.trialEndsAt, new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString());
+
+    // An old member letter with no trial on its row gets the instance's
+    // whole trial at redemption, its day limit included.
+    const oldToken = await mintMemberRow(service, { email: 'old-letter@example.org', inviterId: inviter.account.id });
+    const fromOldLetter = await redeem(service, oldToken);
+    assert.equal(
+      fromOldLetter.body.account.trialEndsAt,
+      new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString(),
+    );
+  });
+
+  // The operator's mint with "trial": true.
+  await database.reset();
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    await service.request({
+      method: 'POST',
+      path: '/v1/admin/invites',
+      adminToken: ADMIN_TOKEN,
+      body: { email: 'op-dated@example.org', trial: true },
+    });
+    const [row] = await database.db
+      .select({ trialDays: signupInvites.trialDays })
+      .from(signupInvites)
+      .where(eq(signupInvites.email, 'op-dated@example.org'));
+    assert.equal(row?.trialDays, TRIAL_DAYS);
+  });
+
+  // THE CONTROL: the same open door on an instance without TRIAL_DAYS starts
+  // a trial with no end date.
+  await database.reset();
+  await withService({ openSignup: {} }, async (service) => {
+    await service.request({ method: 'POST', path: '/v1/auth/signup-request', body: { email: 'open@example.org' } });
+    const letter = service.mailer.signupRequests[0];
+    assert.ok(letter);
+    const created = await redeem(service, letter.inviteToken);
+    assert.equal(created.body.account.trialEndsAt, null);
+  });
+});
+
+test('/health promises the day limit beside the scans, and only where one is set', async () => {
+  await withService({ trial: DATED_TRIAL }, async (service) => {
+    const health = await service.request<{ instance: { trial?: object } }>({ method: 'GET', path: '/health' });
+    assert.deepEqual(health.body.instance.trial, { scans: TRIAL.scans, days: TRIAL_DAYS });
+  });
+  // THE CONTROL: no TRIAL_DAYS, no `days` key, not even a null one.
+  await withService({}, async (service) => {
+    const health = await service.request<{ instance: { trial?: object } }>({ method: 'GET', path: '/health' });
+    assert.deepEqual(health.body.instance.trial, { scans: TRIAL.scans });
+  });
 });
