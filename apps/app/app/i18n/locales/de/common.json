@@ -3512,9 +3512,9 @@
       "withdrawalLink": "Widerrufsbelehrung und Widerrufsformular"
     },
     "countdown": {
-      "daysLeft_one": "Deine KI-Testphase läuft noch {{count}} Tag.",
-      "daysLeft_other": "Deine KI-Testphase läuft noch {{count}} Tage.",
-      "lastDay": "Die KI-Scans deiner Testphase enden heute.",
+      "daysLeft_one": "Du hast noch {{count}} Tag Testphase.",
+      "daysLeft_other": "Du hast noch {{count}} Tage Testphase.",
+      "lastDay": "Deine Testphase endet heute.",
       "scansLeft_one": "Noch {{count}} kostenloser KI-Scan übrig.",
       "scansLeft_other": "Noch {{count}} kostenlose KI-Scans übrig.",
       "action": "Tarife ansehen",
@@ -3524,8 +3524,8 @@
       "from": "Tarife ab {{price}} im Monat."
     },
     "recap": {
-      "meals_one": "In deiner Testphase hast du {{count}} Mahlzeit mit KI erfasst.",
-      "meals_other": "In deiner Testphase hast du {{count}} Mahlzeiten mit KI erfasst.",
+      "meals_one": "Du hast {{count}} Mahlzeit mit KI erfasst.",
+      "meals_other": "Du hast {{count}} Mahlzeiten mit KI erfasst.",
       "mealsSoFar_one": "Du hast bisher {{count}} Mahlzeit mit KI erfasst.",
       "mealsSoFar_other": "Du hast bisher {{count}} Mahlzeiten mit KI erfasst."
     },

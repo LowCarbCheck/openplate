@@ -3514,7 +3514,7 @@
     "countdown": {
       "daysLeft_one": "Hai {{count}} giorno di scansioni IA in prova.",
       "daysLeft_other": "Hai {{count}} giorni di scansioni IA in prova.",
-      "lastDay": "La tua prova di scansioni IA scade oggi.",
+      "lastDay": "Oggi scade la tua prova IA.",
       "scansLeft_one": "{{count}} scansione IA gratuita rimasta.",
       "scansLeft_other": "{{count}} scansioni IA gratuite rimaste.",
       "action": "Vedi i piani",
@@ -3524,8 +3524,8 @@
       "from": "Piani da {{price}} al mese."
     },
     "recap": {
-      "meals_one": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA.",
-      "meals_other": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA.",
+      "meals_one": "Nella prova hai tracciato {{count}} pasto con l'IA.",
+      "meals_other": "Nella prova hai tracciato {{count}} pasti con l'IA.",
       "mealsSoFar_one": "Finora hai registrato {{count}} pasto con l'IA.",
       "mealsSoFar_other": "Finora hai registrato {{count}} pasti con l'IA."
     },

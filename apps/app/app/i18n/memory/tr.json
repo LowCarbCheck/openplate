@@ -4631,7 +4631,7 @@
     "path": "common:plan.countdown.lastDay",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
-    "tr": "Yapay zeka deneme süren bugün bitiyor."
+    "tr": "Deneme süren bugün bitiyor."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",

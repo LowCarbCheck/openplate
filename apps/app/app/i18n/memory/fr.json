@@ -3315,7 +3315,7 @@
     "path": "common:plan.countdown.daysLeft_one",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
-    "fr": "Il te reste {{count}} jour d'essai IA."
+    "fr": "Il te reste {{count}} jour d’IA."
   },
   "2804c5c36d960f15": {
     "en": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
@@ -3378,7 +3378,7 @@
     "path": "common:plan.countdown.daysLeft_other",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
-    "fr": "Il te reste {{count}} jours d'essai IA."
+    "fr": "Il te reste {{count}} jours d’IA."
   },
   "292c1d93ff155676": {
     "en": "Saved meals",
@@ -4631,7 +4631,7 @@
     "path": "common:plan.countdown.lastDay",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
-    "fr": "Ton essai expire aujourd'hui."
+    "fr": "Dernier jour d’essai."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",

@@ -3512,9 +3512,9 @@
       "withdrawalLink": "Informations et formulaire de rétractation"
     },
     "countdown": {
-      "daysLeft_one": "Il te reste {{count}} jour d'essai IA.",
-      "daysLeft_other": "Il te reste {{count}} jours d'essai IA.",
-      "lastDay": "Ton essai expire aujourd'hui.",
+      "daysLeft_one": "Il te reste {{count}} jour d’IA.",
+      "daysLeft_other": "Il te reste {{count}} jours d’IA.",
+      "lastDay": "Dernier jour d’essai.",
       "scansLeft_one": "Il te reste {{count}} scan IA gratuit.",
       "scansLeft_other": "Il te reste {{count}} scans IA gratuits.",
       "action": "Voir les forfaits",

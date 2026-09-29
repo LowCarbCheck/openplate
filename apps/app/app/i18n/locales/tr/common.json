@@ -3514,7 +3514,7 @@
     "countdown": {
       "daysLeft_one": "Yapay zeka deneme sürende son {{count}} gün.",
       "daysLeft_other": "Yapay zeka deneme sürende son {{count}} gün.",
-      "lastDay": "Yapay zeka deneme süren bugün bitiyor.",
+      "lastDay": "Deneme süren bugün bitiyor.",
       "scansLeft_one": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "scansLeft_other": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "action": "Planları gör",
