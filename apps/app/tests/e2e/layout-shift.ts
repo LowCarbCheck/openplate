@@ -20,6 +20,12 @@ export interface ShiftEntry {
   hadRecentInput: boolean;
   /** The elements the browser says moved, each with how far its top moved. */
   sources: string[];
+  /**
+   * The subset of `sources` inside the app's `header`. A status in the header
+   * that grows the header's own boxes shows up here even when the page below
+   * moves for a reason of its own (M265).
+   */
+  headerSources: string[];
 }
 
 /** One element that moved between two readings. */
@@ -61,23 +67,27 @@ export async function installShiftObserver(page: Page): Promise<void> {
         // `toJSON` is typed `any` and is the one read of a `LayoutShift` that needs no cast.
         const json = entry.toJSON();
         const sources: ShiftSource[] = Array.isArray(json.sources) ? json.sources : [];
+        const explain = (source: ShiftSource): string => {
+          const before = source.previousRect;
+          const after = source.currentRect;
+          if (!(before instanceof DOMRectReadOnly) || !(after instanceof DOMRectReadOnly)) {
+            return `${describe(source.node)} moved`;
+          }
+          // All four, because a shift is not only vertical: a button that
+          // grows by a pixel pushes its sibling sideways with dy = 0.
+          const dx = Math.round(after.x - before.x);
+          const dy = Math.round(after.y - before.y);
+          const dw = Math.round(after.width - before.width);
+          const dh = Math.round(after.height - before.height);
+          return `${describe(source.node)} moved dx ${dx} px, dy ${dy} px, width ${dw} px, height ${dh} px`;
+        };
+        const isInHeader = (source: ShiftSource): boolean =>
+          source.node instanceof Element && source.node.closest('header') !== null;
         shifts.push({
           value: Number(json.value),
           hadRecentInput: Boolean(json.hadRecentInput),
-          sources: sources.map((source) => {
-            const before = source.previousRect;
-            const after = source.currentRect;
-            if (!(before instanceof DOMRectReadOnly) || !(after instanceof DOMRectReadOnly)) {
-              return `${describe(source.node)} moved`;
-            }
-            // All four, because a shift is not only vertical: a button that
-            // grows by a pixel pushes its sibling sideways with dy = 0.
-            const dx = Math.round(after.x - before.x);
-            const dy = Math.round(after.y - before.y);
-            const dw = Math.round(after.width - before.width);
-            const dh = Math.round(after.height - before.height);
-            return `${describe(source.node)} moved dx ${dx} px, dy ${dy} px, width ${dw} px, height ${dh} px`;
-          }),
+          sources: sources.map(explain),
+          headerSources: sources.filter(isInHeader).map(explain),
         });
       }
     }).observe({ type: 'layout-shift', buffered: true });
@@ -107,6 +117,32 @@ export async function readShiftEntries(page: Page): Promise<ShiftEntry[]> {
  */
 export function shiftScoreAfter(entries: readonly ShiftEntry[], since: number): number {
   return entries.slice(since).reduce((sum, entry) => sum + entry.value, 0);
+}
+
+/** The layout shift inside the header: its summed score and the header nodes that moved. */
+export interface HeaderShift {
+  score: number;
+  sources: string[];
+}
+
+/**
+ * The summed score of the entries recorded after the first `since` of them
+ * that moved something INSIDE THE HEADER, and what they moved.
+ *
+ * For a status in the header that arrives while the page below changes on its
+ * own (a quick-add adds an entry to the list, a delete navigates to the
+ * diary), where the whole-page total is not a reading of the status.
+ *
+ * @param entries - a reading from `readShiftEntries`.
+ * @param since - how many entries to skip, the length of an earlier reading.
+ * @returns the score and the header sources behind it.
+ */
+export function headerShiftAfter(entries: readonly ShiftEntry[], since: number): HeaderShift {
+  const inHeader = entries.slice(since).filter((entry) => entry.headerSources.length > 0);
+  return {
+    score: inHeader.reduce((sum, entry) => sum + entry.value, 0),
+    sources: inHeader.flatMap((entry) => entry.headerSources),
+  };
 }
 
 /**

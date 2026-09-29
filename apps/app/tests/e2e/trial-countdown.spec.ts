@@ -24,7 +24,9 @@ import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../app/i18n/language-
 import { EN, catalogFor, fill } from './copy';
 import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
 import {
+  FIT_WIDTHS,
   HEADER_HEIGHT,
+  PHONE_HEIGHT,
   PHONE_WIDTH,
   completeOnboarding,
   doesStatusRowFit,
@@ -301,77 +303,87 @@ async function readActionTapArea(page: Page): Promise<{ isFirstWordTheAction: bo
     });
 }
 
-for (const locale of LONG_LABEL_LOCALES) {
-  test(`the scan count reads whole at 390 px in ${locale}, beside its action and the close control, and moves nothing`, async ({
-    page,
-  }) => {
-    const copy = catalogFor(locale);
-    const sentence = fill(copy.plan.countdown.scansLeft_other, { count: String(SCANS_LEFT) });
-    const gate = createGate();
-    const requests = await routePlansCore(page, {
-      planView: NO_SUBSCRIPTION_VIEW,
-      offerBody: null,
-      planViewGate: gate.promise,
-    });
-    await routeAccountAllowance(page, {
-      dailyAiLimit: TRIAL_DAILY_LIMIT,
-      allowanceExpiresAt: null,
-      trialScans: { granted: SCANS_LEFT, left: SCANS_LEFT },
-    });
-    await signIn(page);
-
-    // ── It arrives without moving anything, in this language ────────────
-    // The plan read is HELD, so this reading is the diary before the line.
-    const viewsBefore = requests.planViews;
-    await useLanguage(page, locale);
-    await page.goto('/diary');
-    expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
-    await expect.poll(() => requests.planViews, { message: 'the shell never asked for the plan' }).toBeGreaterThan(viewsBefore);
-    await settleAnimations(page);
-    await settleFrames(page);
-    const topsBefore = await readTops(page);
-    const shiftsBefore = (await readShiftEntries(page)).length;
-
-    gate.open();
-    await expect(headerStatus(page)).toContainText(sentence, { timeout: 10_000 });
-    const action = headerStatus(page).getByRole('button', { name: copy.plan.countdown.action, exact: true });
-    await expect(action).toBeVisible();
-    await settleFrames(page);
-    expect(movedBetween(topsBefore, await readTops(page)), `${locale}: the countdown moved the diary`).toEqual([]);
-    expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), `${locale}: layout-shift`).toBe(0);
-
-    // ── Whole, on every page the buyer read it on ───────────────────────
-    for (const path of LOCALE_WALK_PAGES) {
-      if (path !== '/diary') {
-        await page.goto(path);
-        await expect(headerStatus(page)).toContainText(sentence, { timeout: 10_000 });
-      }
-      await settleFrames(page);
-      const fit = await readCountdownFit(page);
-      expect(fit.isSentenceWhole, `${locale} ${path}: the sentence is clipped`).toBe(true);
-      expect(fit.documentScrollWidth, `${locale} ${path}: the document overflows`).toBe(fit.documentClientWidth);
-      expect(fit.documentClientWidth, `${locale} ${path}: the phone`).toBe(PHONE_WIDTH);
-      expect(fit.headerHeight, `${locale} ${path}: the line opened the header`).toBe(HEADER_HEIGHT);
-      // A finger on the words takes the action, in a box no shorter than the floor.
-      const tap = await readActionTapArea(page);
-      expect(tap.isFirstWordTheAction, `${locale} ${path}: the sentence is not the action's tap area`).toBe(true);
-      expect(tap.columnHeight, `${locale} ${path}: the action's tap area`).toBeGreaterThanOrEqual(44);
-    }
-
-    // THE CONTROL for the fit reading: the same sentence squeezed into the
-    // 40 px the buyer walk measured must read as clipped.
-    await headerStatus(page)
-      .locator('[data-slot="header-status-text"]')
-      .evaluate((text) => {
-        if (text instanceof HTMLElement) text.style.width = '40px';
+for (const width of FIT_WIDTHS) {
+  for (const locale of LONG_LABEL_LOCALES) {
+    test(`the scan count reads whole at ${width} px in ${locale}, beside its action and the close control, and moves nothing`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: PHONE_HEIGHT });
+      const copy = catalogFor(locale);
+      const sentence = fill(copy.plan.countdown.scansLeft_other, { count: String(SCANS_LEFT) });
+      const gate = createGate();
+      const requests = await routePlansCore(page, {
+        planView: NO_SUBSCRIPTION_VIEW,
+        offerBody: null,
+        planViewGate: gate.promise,
       });
-    expect((await readCountdownFit(page)).isSentenceWhole, `${locale}: the fit reading cannot see a clipped line`).toBe(
-      false,
-    );
-  });
+      await routeAccountAllowance(page, {
+        dailyAiLimit: TRIAL_DAILY_LIMIT,
+        allowanceExpiresAt: null,
+        trialScans: { granted: SCANS_LEFT, left: SCANS_LEFT },
+      });
+      await signIn(page);
+
+      // ── It arrives without moving anything, in this language ────────────
+      // The plan read is HELD, so this reading is the diary before the line.
+      const viewsBefore = requests.planViews;
+      await useLanguage(page, locale);
+      await page.goto('/diary');
+      expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(
+        locale,
+      );
+      await expect
+        .poll(() => requests.planViews, { message: 'the shell never asked for the plan' })
+        .toBeGreaterThan(viewsBefore);
+      await settleAnimations(page);
+      await settleFrames(page);
+      const topsBefore = await readTops(page);
+      const shiftsBefore = (await readShiftEntries(page)).length;
+
+      gate.open();
+      await expect(headerStatus(page)).toContainText(sentence, { timeout: 10_000 });
+      const action = headerStatus(page).getByRole('button', { name: copy.plan.countdown.action, exact: true });
+      await expect(action).toBeVisible();
+      await settleFrames(page);
+      expect(movedBetween(topsBefore, await readTops(page)), `${locale}: the countdown moved the diary`).toEqual([]);
+      expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), `${locale}: layout-shift`).toBe(0);
+
+      // ── Whole, on every page the buyer read it on ───────────────────────
+      for (const path of LOCALE_WALK_PAGES) {
+        if (path !== '/diary') {
+          await page.goto(path);
+          await expect(headerStatus(page)).toContainText(sentence, { timeout: 10_000 });
+        }
+        await settleFrames(page);
+        const fit = await readCountdownFit(page);
+        expect(fit.isSentenceWhole, `${locale} ${path}: the sentence is clipped`).toBe(true);
+        expect(fit.documentScrollWidth, `${locale} ${path}: the document overflows`).toBe(fit.documentClientWidth);
+        expect(fit.documentClientWidth, `${locale} ${path}: the phone`).toBe(width);
+        expect(fit.headerHeight, `${locale} ${path}: the line opened the header`).toBe(HEADER_HEIGHT);
+        // A finger on the words takes the action, in a box no shorter than the floor.
+        const tap = await readActionTapArea(page);
+        expect(tap.isFirstWordTheAction, `${locale} ${path}: the sentence is not the action's tap area`).toBe(true);
+        expect(tap.columnHeight, `${locale} ${path}: the action's tap area`).toBeGreaterThanOrEqual(44);
+      }
+
+      // THE CONTROL for the fit reading: the same sentence squeezed into the
+      // 40 px the buyer walk measured must read as clipped.
+      await headerStatus(page)
+        .locator('[data-slot="header-status-text"]')
+        .evaluate((text) => {
+          if (text instanceof HTMLElement) text.style.width = '40px';
+        });
+      expect(
+        (await readCountdownFit(page)).isSentenceWhole,
+        `${locale}: the fit reading cannot see a clipped line`,
+      ).toBe(false);
+    });
+  }
 }
 
-test('every countdown sentence of all six languages fits the row with its action at 390 px', async ({ page }) => {
+test('every countdown sentence of all six languages fits the row with its action at 390 and 360 px', async ({
+  page,
+}) => {
   // A real countdown in its one-line layout (no recap: ten scans left), whose
   // words are then swapped for each language's. The three cases above walk
   // the longest labels for real; this reads every sentence the line can say.
@@ -383,25 +395,37 @@ test('every countdown sentence of all six languages fits the row with its action
   });
   await signIn(page);
   await expect(countdownAction(page)).toBeVisible({ timeout: 10_000 });
-  expect(await page.locator('header [data-slot="header-status-description"]').count(), 'a recap line is showing').toBe(0);
+  expect(await page.locator('header [data-slot="header-status-description"]').count(), 'a recap line is showing').toBe(
+    0,
+  );
 
   const clipped: string[] = [];
-  for (const locale of SUPPORTED_LANGUAGES) {
-    const countdown = catalogFor(locale).plan.countdown;
-    const sentences = [
-      fill(countdown.scansLeft_other, { count: String(SCANS_LEFT) }),
-      countdown.scansUsed,
-      // Two digits, the longest a trial in days says.
-      fill(countdown.daysLeft_other, { count: '14' }),
-      countdown.lastDay,
-    ];
-    for (const sentence of sentences) {
-      if (!(await doesStatusRowFit(page, { sentence, label: countdown.action }))) {
-        clipped.push(`${locale}: ${sentence} ${countdown.action}`);
+  // THE SAME ROW AT EACH WIDTH: 390 px is the tier's phone, 360 px the narrow
+  // Android one. The row reflows in place, so no reload is needed between.
+  for (const width of FIT_WIDTHS) {
+    await page.setViewportSize({ width, height: PHONE_HEIGHT });
+    expect(await page.evaluate(() => document.documentElement.clientWidth), `${width}: the phone`).toBe(width);
+    for (const locale of SUPPORTED_LANGUAGES) {
+      const countdown = catalogFor(locale).plan.countdown;
+      const sentences = [
+        fill(countdown.scansLeft_other, { count: String(SCANS_LEFT) }),
+        countdown.scansUsed,
+        // Two digits, the longest a trial in days says.
+        fill(countdown.daysLeft_other, { count: '14' }),
+        countdown.lastDay,
+      ];
+      for (const sentence of sentences) {
+        if (!(await doesStatusRowFit(page, { sentence, label: countdown.action }))) {
+          const column = await page
+            .locator('header [data-slot="header-status-text"]')
+            .evaluate((text) => `column ${text.clientWidth} px, ${text.scrollHeight}/${text.clientHeight} px tall`);
+          clipped.push(`${width} ${locale}: ${sentence} ${countdown.action} (${column})`);
+        }
       }
     }
   }
-  expect(clipped, 'these countdown lines are cut off at 390 px').toEqual([]);
+  expect(clipped, 'these countdown lines are cut off').toEqual([]);
+  await page.setViewportSize({ width: PHONE_WIDTH, height: PHONE_HEIGHT });
 
   // THE CONTROL: a sentence far past three lines must read as cut off.
   expect(

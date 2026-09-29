@@ -7,7 +7,7 @@
  * window collapse into one growing burst rather than stacking — the counsel
  * amendment that a four-item plate is one toast, not four.
  */
-import { describe, it } from 'node:test';
+import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import i18next from '../../app/i18n/i18n';
@@ -15,8 +15,12 @@ import {
   ADD_BATCH_WINDOW_MS,
   formatFoodAddedToast,
   nextFoodAddedBatch,
+  resetFoodAddedBatch,
+  showFoodAddedToast,
   type Translate,
 } from '../../app/lib/food-added-toast';
+import { formatDayLabel } from '../../app/lib/format-day-label';
+import { readStatus, resetStatusChannel } from '../../app/lib/status';
 
 /**
  * The REAL catalog. The sentence is the contract, so it is asserted in the
@@ -32,6 +36,59 @@ describe('formatFoodAddedToast', () => {
     const copy = formatFoodAddedToast({ ...BASE, batch: { count: 1, lastName: 'Greek yogurt', startedAtMs: 0 } });
     assert.equal(copy.title, 'Added Greek yogurt');
     assert.equal(copy.description, 'To Breakfast, 12.4\u00a0g net carbs so far today.');
+  });
+
+  it('ends a long name in "…" so the title fits beside an Undo, and keeps a short one whole (M265)', () => {
+    const copied = formatFoodAddedToast({
+      ...BASE,
+      verb: 'copied',
+      batch: { count: 1, lastName: 'Dinkelporridge mit Heidelbeeren und Zimt', startedAtMs: 0 },
+    });
+    assert.equal(copied.title, 'Copied Dinkelporridge mit Heide…');
+    // THE CONTROL: the short name of the first case comes through untouched.
+    const added = formatFoodAddedToast({ ...BASE, batch: { count: 1, lastName: 'Greek yogurt', startedAtMs: 0 } });
+    assert.equal(added.title, 'Added Greek yogurt');
+  });
+
+  it('leaves the meal out when the status offers Undo, and keeps the figure and the day (M265)', () => {
+    const withUndo = formatFoodAddedToast({
+      ...BASE,
+      offersUndo: true,
+      dayLabel: 'Mon 28 Sept',
+      batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
+    });
+    assert.equal(withUndo.description, '12.4\u00a0g net carbs on Mon 28 Sept.');
+    // THE CONTROL: the same add with no Undo still names the meal.
+    const withoutUndo = formatFoodAddedToast({
+      ...BASE,
+      dayLabel: 'Mon 28 Sept',
+      batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
+    });
+    assert.equal(withoutUndo.description, 'To Breakfast, 12.4\u00a0g net carbs on Mon 28 Sept.');
+  });
+
+  it('ends a past-day line on one period when the date already ends in one (M265)', () => {
+    // German abbreviates the weekday and the month with a period, so the date
+    // ends in one: "Mo., 28. Sept.". The sentence's own period made it "..".
+    const german = i18next.getFixedT('de');
+    const deCopy = formatFoodAddedToast({
+      ...BASE,
+      t: (key, params) => german(key, params ?? {}),
+      language: 'de',
+      offersUndo: true,
+      dayLabel: formatDayLabel('2026-09-28', 'de'),
+      batch: { count: 1, lastName: 'Reis', startedAtMs: 0 },
+    });
+    assert.equal(deCopy.description, '12,4\u00a0g Netto-KH am Mo., 28. Sept.');
+    // THE CONTROL: an English date ends in no period, and its line keeps the
+    // sentence's one.
+    const enCopy = formatFoodAddedToast({
+      ...BASE,
+      offersUndo: true,
+      dayLabel: formatDayLabel('2026-09-28', 'en'),
+      batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
+    });
+    assert.equal(enCopy.description, '12.4\u00a0g net carbs on Mon 28 Sept.');
   });
 
   it('collapses a burst into a count', () => {
@@ -106,5 +163,32 @@ describe('nextFoodAddedBatch', () => {
     const later = nextFoodAddedBatch({ previous: first, name: 'Chicken', nowMs: 1000 + ADD_BATCH_WINDOW_MS + 1 });
     assert.equal(later.count, 1);
     assert.equal(later.startedAtMs, 1000 + ADD_BATCH_WINDOW_MS + 1);
+  });
+});
+
+describe('showFoodAddedToast', () => {
+  beforeEach(() => {
+    resetStatusChannel();
+    resetFoodAddedBatch();
+  });
+  afterEach(() => {
+    resetStatusChannel();
+    resetFoodAddedBatch();
+  });
+
+  const undo = { label: 'Undo', onClick: () => {} };
+  const add = { mealLabel: 'Breakfast', netCarbsTotal: 12.4, hasEstimates: false, dayLabel: null, t, action: undo };
+
+  it('publishes an Undo status whose second line leaves the meal out (M265)', () => {
+    showFoodAddedToast({ ...add, name: 'Rice', nowMs: 1000 });
+    assert.equal(readStatus()?.action, undo);
+    assert.equal(readStatus()?.description, '12.4\u00a0g net carbs so far today.');
+  });
+
+  it('CONTROL: a collapsed burst offers no Undo and names the meal again', () => {
+    showFoodAddedToast({ ...add, name: 'Rice', nowMs: 1000 });
+    showFoodAddedToast({ ...add, name: 'Egg', nowMs: 1500 });
+    assert.equal(readStatus()?.action, null);
+    assert.equal(readStatus()?.description, 'To Breakfast, 12.4\u00a0g net carbs so far today.');
   });
 });

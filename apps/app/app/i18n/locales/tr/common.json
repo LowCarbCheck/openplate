@@ -3516,9 +3516,9 @@
       "withdrawalLink": "Cayma hakkı bilgilendirmesi ve formu"
     },
     "countdown": {
-      "daysLeft_one": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
-      "daysLeft_other": "Deneme sürende yapay zeka taramaları için {{count}} günün kaldı.",
-      "lastDay": "Deneme sürendeki yapay zeka taramaları bugün bitiyor.",
+      "daysLeft_one": "Yapay zeka deneme sürende son {{count}} gün.",
+      "daysLeft_other": "Yapay zeka deneme sürende son {{count}} gün.",
+      "lastDay": "Deneme süren bugün bitiyor.",
       "scansLeft_one": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "scansLeft_other": "{{count}} ücretsiz yapay zekâ taraman kaldı.",
       "action": "Planları gör",

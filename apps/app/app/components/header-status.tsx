@@ -1,7 +1,8 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X, type LucideIcon } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '#app/components/ui/button';
 import { cn } from '#app/lib/utils';
 import {
   clearStatus,
@@ -31,13 +32,16 @@ import {
  * inside the same box. An error persists until dismissed, so its text wraps
  * instead of truncating to an unreadable one: `text-sm line-clamp-2` for
  * every other tone, but an ERROR drops to `text-xs font-semibold leading-4
- * line-clamp-3` (or `line-clamp-2` when it also carries a description) so a
- * long sentence, in German especially, fits whole rather than clipping after
- * two lines of the larger size (M225 follow-up). Three lines at `leading-4`
- * (16px) plus a 16px description is 64px, so the bar's height is still fixed
- * by the header's own `min-h-16`, and the `AvatarMenu` and the brand mark
- * are siblings of this component rather than children of it, so neither
- * shifts by a pixel.
+ * line-clamp-3` so a long sentence, in German especially, fits whole rather
+ * than clipping after two lines of the larger size (M225 follow-up). Three
+ * lines at `leading-4` (16px) is 48px.
+ *
+ * FOUR LINES AT MOST, AND THEY FIT THE BOX. The header is `min-h-16` with a
+ * 1px bottom border, so its content box is 63px. A compact status that also
+ * carries a description (the trial countdown near its end, with its recap
+ * line) draws two lines of each at `leading-tight` (15px): 30 + 1 + 30 is
+ * 61px. The `AvatarMenu` and the brand mark are siblings of this component
+ * rather than children of it, so neither shifts by a pixel.
  *
  * THE `h1` IS NOT RENDERED while a status shows. That is deliberate and not an
  * oversight: for those seconds the status IS what the header says, and it is
@@ -64,6 +68,17 @@ const TONE_ICON = {
   warning: AlertTriangle,
   error: AlertCircle,
 } as const;
+
+/**
+ * The sentence line's size and line height.
+ *
+ * @param input.isCompact - an error or a status with an action, which drops to `text-xs`.
+ * @param input.hasFourLines - a compact status that also carries a description, which shares four lines.
+ */
+function compactTextRowClass({ isCompact, hasFourLines }: { isCompact: boolean; hasFourLines: boolean }): string {
+  if (!isCompact) return 'text-sm font-semibold';
+  return hasFourLines ? 'text-xs font-semibold leading-tight' : 'text-xs font-semibold leading-4';
+}
 
 /**
  * The action's words and its tap area.
@@ -99,17 +114,67 @@ function StatusActionLabel({ action }: { action: StatusAction }): ReactNode {
 }
 
 /**
+ * An action drawn as a control of its own: an ICON-ONLY square button beside
+ * the sentence (M265/07, the architect's decision of 2026-09-29).
+ *
+ * ONLY A CALLER THAT SETS `icon` GETS THIS, and today that is every Undo: the
+ * entry screen's delete, the diary's quick-add chip and a copy from
+ * yesterday. The plan action beside the trial countdown keeps the sentence's
+ * last words: a button beside that sentence left the German countdown about
+ * 40 px (`StatusActionLabel`).
+ *
+ * THE LABEL IS NOT DRAWN, IT IS THE NAME. A button with the icon and its
+ * words cost 66 px in English and 108 px for the German "Rückgängig", and a
+ * status with a second line (the quick-add chip's) did not fit beside it in
+ * five or six languages. The square costs 44 px in every language; the label
+ * is the `aria-label`, so a screen reader and a test find it by its words.
+ *
+ * 44 PX AT EVERY WIDTH. `ui/button`'s `icon` size is 44 px below `md` and 36
+ * above; `md:size-11` keeps the desktop target as large as the close control
+ * other statuses draw, and as tall as the row's `min-h-11`, so the header
+ * keeps its 64 px. An Undo row draws no close control beside it (see
+ * `isDismissable`). `tests/e2e/undo-control-look.spec.ts` measures both.
+ */
+function StatusActionControl({ action, icon: ActionIcon }: { action: StatusAction; icon: LucideIcon }): ReactNode {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      aria-label={action.label}
+      onClick={() => {
+        action.onClick();
+        clearStatus();
+      }}
+      className="md:size-11"
+    >
+      <ActionIcon aria-hidden="true" />
+    </Button>
+  );
+}
+
+/**
  * The status row itself, props only, so a static render can be handed a
  * message without driving the store.
  */
 export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNode {
   const { t } = useTranslation();
   const Icon = TONE_ICON[status.tone];
+  // An action with an icon is drawn as a control beside the sentence
+  // (`StatusActionControl`); every other action is the sentence's last words.
+  const ControlIcon = status.action?.icon;
+  const isError = status.tone === 'error';
   // An error persists until it is dismissed (`STATUS_TTL_MS`), so it needs a
   // way out. A status carrying an action gets the same control for a different
   // reason: it is offering a choice, and "neither" has to be one of them.
-  const isDismissable = status.tone === 'error' || status.action !== null;
-  const isError = status.tone === 'error';
+  //
+  // EXCEPT BESIDE AN UNDO (the architect, 2026-09-29). Every Undo status (the
+  // delete, the quick-add chip, the copy from yesterday) clears itself after
+  // four seconds, so "neither" is to wait, and its close control's 52 px went
+  // to a second line that did not fit beside it. The plan action beside the
+  // trial countdown, which stays until closed, keeps the close control, and so
+  // does every error, whatever it carries.
+  const isDismissable = isError || (status.action !== null && ControlIcon === undefined);
   const hasDescription = status.description !== null;
   // An error is smaller AND taller than every other tone: dropping to
   // `text-xs` buys a third line before the header's `min-h-16` is at risk, so
@@ -125,8 +190,21 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
   // every language (`tests/e2e/header-status.spec.ts`), and the trial
   // countdown in the three longest (`tests/e2e/trial-countdown.spec.ts`).
   const isCompact = isError || status.action !== null;
-  const textRowClass = isCompact ? 'text-xs font-semibold leading-4' : 'text-sm font-semibold';
+  // A COMPACT STATUS WITH A SECOND LINE SHARES FOUR LINES (M265/08). The
+  // recap line under the trial countdown used to be one `truncate` line, and
+  // at 390 px it ended in an ellipsis in every language, English included:
+  // the status face is Victor Mono, a flat 7.2px a character at `text-xs`, so
+  // the 208px column holds 28 of them. It now wraps to a second line, and all
+  // four lines drop to `leading-tight` so they fit the header's box (the file
+  // comment has the sum). `tests/e2e/trial-recap-line-fits.spec.ts` writes
+  // every day sentence and recap of all six languages into that row.
+  const hasFourLines = isCompact && hasDescription;
+  const textRowClass = compactTextRowClass({ isCompact, hasFourLines });
   const textClampClass = isCompact && !hasDescription ? 'line-clamp-3' : 'line-clamp-2';
+  const descriptionClass =
+    hasFourLines ?
+      'line-clamp-2 text-balance break-words text-xs leading-tight text-muted-foreground'
+    : 'truncate text-xs leading-4 text-muted-foreground';
 
   return (
     <div
@@ -147,7 +225,9 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
               plus `break-words` replaces `truncate` here (M225): an error stays
               on screen until dismissed, so cutting it to one line with an
               ellipsis made it unreadable. The description below keeps
-              `truncate`, it is supplementary, never the whole message.
+              `truncate` beside a full-size sentence, where two lines of
+              `text-sm` leave it one; beside a compact one it wraps to two
+              (M265/08, see `hasFourLines`).
 
               `text-balance` is the mobile audit's fix for the orphan: at 390 px
               "That's seven days logged in a row." broke after "in a" and left
@@ -160,11 +240,12 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
                 them: with the icon, the German, French and Turkish scan counts
                 plus their labels took a third line in the two lines a recap
                 line leaves them (measured, 2026-09-28). The tone stays in the
-                colour, and the underlined label says there is something to do. */}
+                colour, and the underlined label (or, for Undo, its icon button)
+                says there is something to do. */}
             {status.action === null && <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
             <span data-slot="header-status-text" className={cn(textClampClass, 'text-balance break-words')}>
               <span data-slot="header-status-sentence">{status.text}</span>
-              {status.action !== null && (
+              {status.action !== null && ControlIcon === undefined && (
                 <>
                   {' '}
                   <StatusActionLabel action={status.action} />
@@ -173,12 +254,15 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
             </span>
           </span>
           {status.description !== null && (
-            <span data-slot="header-status-description" className="truncate text-xs leading-4 text-muted-foreground">
+            <span data-slot="header-status-description" className={descriptionClass}>
               {status.description}
             </span>
           )}
         </output>
       </div>
+      {status.action !== null && ControlIcon !== undefined && (
+        <StatusActionControl action={status.action} icon={ControlIcon} />
+      )}
       {isDismissable && (
         // `size-11` is the app's 44px tap floor. The text of a persisting error
         // opens nothing, tapping it is not a gesture, this button is the exit.

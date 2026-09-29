@@ -3321,8 +3321,8 @@
     "en": "{{count}} day of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_one",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "fr": "Il te reste {{count}} jour de scans IA dans ton essai."
+    "at": "2026-09-29",
+    "fr": "Il te reste {{count}} jour d’IA."
   },
   "2804c5c36d960f15": {
     "en": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
@@ -3384,8 +3384,8 @@
     "en": "{{count}} days of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_other",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "fr": "Il te reste {{count}} jours de scans IA dans ton essai."
+    "at": "2026-09-29",
+    "fr": "Il te reste {{count}} jours d’IA."
   },
   "292c1d93ff155676": {
     "en": "Saved meals",
@@ -4637,8 +4637,8 @@
     "en": "Your trial's AI scans end today.",
     "path": "common:plan.countdown.lastDay",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "fr": "Les scans IA de ton essai se terminent aujourd’hui."
+    "at": "2026-09-29",
+    "fr": "Dernier jour d’essai."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",
@@ -17818,8 +17818,8 @@
     "en": "In your trial you logged {{count}} meals with AI.",
     "path": "common:plan.recap.meals_other",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "fr": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
+    "at": "2026-09-29",
+    "fr": "Pendant ton essai, tu as noté {{count}} repas avec l'IA."
   },
   "e16e9dc593f46c36": {
     "en": "The diary lives on this device, and the server keeps an encrypted copy",
@@ -18329,8 +18329,8 @@
     "en": "In your trial you logged {{count}} meal with AI.",
     "path": "common:plan.recap.meals_one",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "fr": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA."
+    "at": "2026-09-29",
+    "fr": "Pendant ton essai, tu as noté {{count}} repas avec l'IA."
   },
   "e77580e3d1e024f9": {
     "en": "Servers can propose saved foods to LowCarbCheck.",

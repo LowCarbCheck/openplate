@@ -3516,9 +3516,9 @@
       "withdrawalLink": "Informations et formulaire de rétractation"
     },
     "countdown": {
-      "daysLeft_one": "Il te reste {{count}} jour de scans IA dans ton essai.",
-      "daysLeft_other": "Il te reste {{count}} jours de scans IA dans ton essai.",
-      "lastDay": "Les scans IA de ton essai se terminent aujourd’hui.",
+      "daysLeft_one": "Il te reste {{count}} jour d’IA.",
+      "daysLeft_other": "Il te reste {{count}} jours d’IA.",
+      "lastDay": "Dernier jour d’essai.",
       "scansLeft_one": "Il te reste {{count}} scan IA gratuit.",
       "scansLeft_other": "Il te reste {{count}} scans IA gratuits.",
       "action": "Voir les forfaits",
@@ -3528,8 +3528,8 @@
       "from": "Forfaits à partir de {{price}} par mois."
     },
     "recap": {
-      "meals_one": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
-      "meals_other": "Pendant ton essai, tu as enregistré {{count}} repas avec l’IA.",
+      "meals_one": "Pendant ton essai, tu as noté {{count}} repas avec l'IA.",
+      "meals_other": "Pendant ton essai, tu as noté {{count}} repas avec l'IA.",
       "mealsSoFar_one": "Tu as enregistré {{count}} repas avec l'IA jusqu'ici.",
       "mealsSoFar_other": "Tu as enregistré {{count}} repas avec l'IA jusqu'ici."
     },

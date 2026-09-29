@@ -17,6 +17,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { Undo2 } from 'lucide-react';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -160,6 +161,38 @@ describe('HeaderStatus', () => {
     );
   });
 
+  it('wraps the second line of a compact status to two lines, and all four lines share leading-tight (M265/08)', () => {
+    // THE TRIAL COUNTDOWN NEAR ITS END: an action, so compact, and a recap
+    // line. The recap used to be one `truncate` line and ended in an ellipsis
+    // at 390 px in every language. The browser tier measures the fit; this
+    // pins the two class lists that make it.
+    publishStatus({
+      text: '3 days of AI scans left in your trial.',
+      description: 'In your trial you logged 28 meals with AI.',
+      action: { label: 'See plans', onClick: () => {} },
+    });
+    const markup = render();
+    assert.ok(
+      markup.includes(
+        'data-slot="header-status-description" class="line-clamp-2 text-balance break-words text-xs leading-tight text-muted-foreground"',
+      ),
+      'the recap line beside a compact sentence does not wrap to two lines',
+    );
+    assert.ok(markup.includes('text-xs font-semibold leading-tight'), 'the compact sentence kept its 16 px line height');
+    assert.equal(countOf(markup, 'text-xs font-semibold leading-4'), 0, 'four lines of 16 px overflow the header');
+
+    // CONTROL: a full-size sentence leaves its second line one line, so there
+    // it still truncates, read through the same attribute.
+    resetStatusChannel();
+    publishStatus({ text: 'Added Greek yogurt', description: 'To Breakfast, 12 g net carbs so far today.' });
+    assert.ok(
+      render().includes(
+        'data-slot="header-status-description" class="truncate text-xs leading-4 text-muted-foreground"',
+      ),
+      'the second line under a full-size sentence stopped truncating',
+    );
+  });
+
   it('omits the second line when there is no description', () => {
     publishStatus({ text: 'Report queued' });
     const markup = render();
@@ -193,6 +226,21 @@ describe('HeaderStatus', () => {
       0,
       'a self-clearing confirmation grew a dismiss button',
     );
+  });
+
+  it('draws no close control beside an Undo, which clears itself, but keeps one beside an error (M265)', () => {
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
+    assert.equal(countOf(render(), 'Dismiss this message'), 0, 'an Undo status drew a close control');
+    // An error persists, so it keeps its way out even with an icon action.
+    resetStatusChannel();
+    publishStatus({
+      text: 'Could not remove Greek yogurt',
+      tone: 'error',
+      action: { label: 'Undo', onClick: () => {}, icon: Undo2 },
+    });
+    assert.equal(countOf(render(), 'Dismiss this message'), 1, 'an error lost its close control');
+    // THE CONTROL: the next case, an action with no icon, keeps the close
+    // control through the same read.
   });
 
   it('renders an action label, and gives that status a dismiss control too', () => {
@@ -229,6 +277,34 @@ describe('HeaderStatus', () => {
     assert.match(markup, /data-slot="header-status-action" class="[^"]*after:absolute after:inset-0/);
     assert.match(markup, /<div class="relative flex min-w-0 flex-1 flex-col justify-center self-stretch /);
     assert.match(markup, /data-slot="header-status" class="flex min-h-11 /);
+  });
+
+  it('draws an action that brings an icon as an icon-only square button named by its label (M265/07)', () => {
+    // EVERY UNDO opts in with `icon`. The button sits beside the text column,
+    // holds the icon and no words, and carries the label as its accessible
+    // name; the sentence has no inline label.
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
+    const markup = render();
+    const columnClosesAt = markup.indexOf('</output></div>');
+    const controlAt = markup.indexOf('<button data-slot="button"');
+    const controlClosesAt = markup.indexOf('</button>', controlAt);
+    const control = markup.slice(controlAt, controlClosesAt);
+    assert.ok(columnClosesAt !== -1 && controlAt > columnClosesAt, 'the control is not beside the text column');
+    assert.ok(control.includes('lucide-undo2'), 'the control does not hold its icon');
+    assert.match(control, /aria-label="Undo"/, 'the control is not named by its label');
+    assert.equal(control.replace(/<[^>]*>/g, ''), '', 'the control draws words beside its icon');
+    assert.match(control, /class="[^"]*\bborder\b[^"]*\bsize-11\b[^"]*\bmd:size-11\b/, 'the control is not a 44 px square');
+    assert.equal(countOf(markup, 'data-slot="header-status-action"'), 0, 'the sentence still ends in an inline label');
+
+    // CONTROL: the same action without an icon is the sentence's last words,
+    // drawn, and the same reads find no square button, no icon and no aria-label.
+    resetStatusChannel();
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
+    const inline = render();
+    assert.equal(countOf(inline, 'data-slot="button"'), 0, 'an action with no icon grew a square button');
+    assert.equal(countOf(inline, 'lucide-undo2'), 0, 'an action with no icon grew an icon');
+    assert.equal(countOf(inline, 'aria-label="Undo"'), 0, 'an action with no icon is named by aria-label');
+    assert.ok(inline.includes('>Undo</button>'), 'the inline label read matches nothing');
   });
 
   it('CONTROL: a status with no action draws no action label', () => {

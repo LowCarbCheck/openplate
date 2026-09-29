@@ -3321,8 +3321,8 @@
     "en": "{{count}} day of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_one",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Ti resta {{count}} giorno di scansioni IA nel tuo periodo di prova."
+    "at": "2026-09-29",
+    "it": "Hai {{count}} giorno di scansioni IA in prova."
   },
   "2804c5c36d960f15": {
     "en": "When they are used up, openplate costs {{monthly}} a month or {{yearly}} a year. Prices include VAT.",
@@ -3384,8 +3384,8 @@
     "en": "{{count}} days of AI scans left in your trial.",
     "path": "common:plan.countdown.daysLeft_other",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Ti restano {{count}} giorni di scansioni IA nel tuo periodo di prova."
+    "at": "2026-09-29",
+    "it": "Hai {{count}} giorni di scansioni IA in prova."
   },
   "292c1d93ff155676": {
     "en": "Saved meals",
@@ -4637,8 +4637,8 @@
     "en": "Your trial's AI scans end today.",
     "path": "common:plan.countdown.lastDay",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Le scansioni IA del tuo periodo di prova terminano oggi."
+    "at": "2026-09-29",
+    "it": "Oggi scade la tua prova IA."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",
@@ -17818,8 +17818,8 @@
     "en": "In your trial you logged {{count}} meals with AI.",
     "path": "common:plan.recap.meals_other",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Nel tuo periodo di prova hai registrato {{count}} pasti con l'IA."
+    "at": "2026-09-29",
+    "it": "Nella prova hai tracciato {{count}} pasti con l'IA."
   },
   "e16e9dc593f46c36": {
     "en": "The diary lives on this device, and the server keeps an encrypted copy",
@@ -18329,8 +18329,8 @@
     "en": "In your trial you logged {{count}} meal with AI.",
     "path": "common:plan.recap.meals_one",
     "model": "google/gemini-3.8-flash",
-    "at": "2026-09-23",
-    "it": "Nel tuo periodo di prova hai registrato {{count}} pasto con l'IA."
+    "at": "2026-09-29",
+    "it": "Nella prova hai tracciato {{count}} pasto con l'IA."
   },
   "e77580e3d1e024f9": {
     "en": "Servers can propose saved foods to LowCarbCheck.",

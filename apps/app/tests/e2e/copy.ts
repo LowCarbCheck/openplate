@@ -142,8 +142,23 @@ const catalogSchema = z.object({
   diary: z.object({
     netCarbsValue: z.string(),
     nav: z.object({ previousDay: z.string() }),
-    meals: z.object({ breakfast: z.string(), dinner: z.string() }),
+    meals: z.object({
+      breakfast: z.string(),
+      lunch: z.string(),
+      dinner: z.string(),
+      snack: z.string(),
+      none: z.string(),
+    }),
     copy: z.object({ door: z.string(), title: z.string() }),
+    actions: z.object({ undo: z.string() }),
+    toast: z.object({
+      addedOne: z.string(),
+      copiedOne: z.string(),
+      toMeal: z.string(),
+      soFarToday: z.string(),
+      onDay: z.string(),
+      description: z.string(),
+    }),
     saveMeal: z.object({
       trigger: z.string(),
       namePlaceholder: z.string(),
@@ -174,6 +189,7 @@ const catalogSchema = z.object({
   meals: z.object({ logNow: z.string(), removeAria: z.string() }),
   plan: z.object({
     countdown: z.object({
+      daysLeft_one: z.string(),
       daysLeft_other: z.string(),
       lastDay: z.string(),
       action: z.string(),
@@ -181,7 +197,7 @@ const catalogSchema = z.object({
       scansUsed: z.string(),
     }),
     offer: z.object({ from: z.string() }),
-    recap: z.object({ meals_one: z.string(), mealsSoFar_one: z.string() }),
+    recap: z.object({ meals_one: z.string(), meals_other: z.string(), mealsSoFar_one: z.string() }),
     manage: z.string(),
     endsOn: z.string(),
     status: z.object({ active: z.string(), paidUntil: z.string() }),

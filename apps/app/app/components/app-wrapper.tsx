@@ -221,7 +221,14 @@ function InnerContent({
           already sits on `bg-card`, an opaque fill, so it needs no backdrop
           blur to stay readable over scrolling content. */}
       <header className="sticky top-0 z-40 flex min-h-16 shrink-0 items-center gap-2 border-b border-primary/20 bg-card">
-        <div className="flex min-w-0 items-center gap-2.5 px-4 w-full">
+        {/* `self-stretch` HERE AND ON THE TITLE SLOT BELOW (M265): both boxes
+            fill the header's 63 px content box whatever they hold. Sized by
+            their content, they were as tall as the 44 px brand mark at rest
+            and grew to 61 px around a four-line status, so their top moved
+            8 px and the browser counted a layout shift, even though every
+            control inside stayed centred where it was.
+            `tests/e2e/trial-recap-line-fits.spec.ts` reads it. */}
+        <div className="flex min-w-0 items-center gap-2.5 self-stretch px-4 w-full">
           {/* Desktop only: below `md` the mark beside it and the bottom bar's
               More tab are the doors to the pages the bar does not carry, and a
               hamburger here would be a third. Only the desktop sidebar (visible
@@ -235,8 +242,8 @@ function InnerContent({
               error, especially the longer German string) pushes the header
               past the viewport instead of wrapping inside `HeaderStatusRow`.
               `tests/unit/app-wrapper-sticky-header.test.ts` pins this line's
-              exact class list. */}
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              exact class list. `self-stretch`: see the box above. */}
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-2 self-stretch">
             {/* The header's title slot is also the app's ONE notification
                 surface. While `#app/lib/status` holds a message,
                 `HeaderStatus` renders it here instead of the two lines below,

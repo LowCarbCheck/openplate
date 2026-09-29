@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import i18nSingleton from '#app/i18n/i18n';
 import { dateLabelLocale } from '#app/i18n/date-locale';
 import { formatClockTime } from '#app/lib/format-clock-time';
+import { shortenFoodName } from '#app/lib/shorten-food-name';
 import { publishStatus } from '#app/lib/status';
 import { z } from 'zod';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
@@ -63,7 +64,7 @@ import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#app/components/ui/select';
-import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw, Star, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw, Star, Trash2, Undo2 } from 'lucide-react';
 import {
   ANONYMOUS_USER_ID,
   deleteLocalFoodLog,
@@ -975,8 +976,13 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
   const handleDeleteClick = () => {
     setIsDeleting(true);
     publishStatus({
-      text: t('entry.toast.removed', { name: displayFoodName(log, i18n.language) }),
-      action: { label: t('entry.toast.undo'), onClick: handleUndo },
+      // A long name ends in "…" so the whole sentence fits the header on a
+      // 360 px phone; the rest of the sentence stays whole (M265).
+      text: t('entry.toast.removed', { name: shortenFoodName(displayFoodName(log, i18n.language)) }),
+      // `icon` opts Undo into its icon button beside the sentence, named by
+      // the label (M265/07); every other status action stays the sentence's
+      // last words.
+      action: { label: t('entry.toast.undo'), onClick: handleUndo, icon: Undo2 },
     });
     // Device-local photo cache: when this is the batch's last remaining entry,
     // drop its cached photo too. Best-effort — an undo-restored entry simply has

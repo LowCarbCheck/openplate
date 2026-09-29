@@ -118,7 +118,7 @@ import { selectCalendarDayLevels } from '#app/lib/calendar-day-levels';
 import type { CalendarDayLevel } from '#app/lib/calendar-day-levels';
 import { CALENDAR_DAY_MODIFIER_CLASSNAMES, calendarDayModifierFor } from '#app/lib/adherence-cell-fill';
 import type { CalendarDayModifier } from '#app/lib/adherence-cell-fill';
-import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Copy } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, ChevronsRight, Copy, Undo2 } from 'lucide-react';
 import { publishStatus } from '#app/lib/status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 
@@ -2442,6 +2442,8 @@ export function QuickAddChipButton({ chip, date }: { chip: LocalFrequentChip; da
       action: {
         label: t('diary.actions.undo'),
         onClick: () => undoFetcher.submit({ _intent: 'log-recent-undo', logId }, { method: 'post' }),
+        // Every Undo is the same icon button, named by this label (M265/07).
+        icon: Undo2,
       },
     });
   }, [logFetcher.data, undoFetcher, t, i18n.language]);

@@ -35,8 +35,12 @@ import {
 } from './helpers';
 import { EN, catalogFor, fill } from './copy';
 
-/** The entry this spec deletes and puts back. */
-const FOOD_NAME = 'Smoke tier porridge';
+/**
+ * The entry this spec deletes and puts back. 18 characters or fewer, the cap
+ * a status sentence keeps whole (`shorten-food-name.ts`), so the sentence is
+ * read word for word.
+ */
+const FOOD_NAME = 'Smoke tier muesli';
 
 /** How many grams of it. */
 const FOOD_GRAMS = '200';

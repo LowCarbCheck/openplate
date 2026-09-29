@@ -19,7 +19,8 @@
  * `showFoodAddedToast` side effect, so the exact strings and the collapse rule
  * are pinned by tests rather than by watching a message go by.
  */
-import { publishStatus } from '#app/lib/status';
+import { shortenFoodName } from '#app/lib/shorten-food-name';
+import { publishStatus, type StatusAction } from '#app/lib/status';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 
 /** The i18next `t` shape this module needs, taken as an argument so the copy stays testable without a provider. */
@@ -120,6 +121,11 @@ export interface FoodAddedToastCopy {
  * @param batch - the burst being reported.
  * @param verb - `added` for a new entry, `copied` for a copy-from-yesterday.
  * @param mealLabel - the meal the food landed in, or null when it has none.
+ * @param offersUndo - whether the status carries its Undo. It then leaves the
+ *   meal out: beside the Undo button the second line has two lines of 25
+ *   characters on a 360 px phone, and "To Breakfast," pushed the figure onto a
+ *   third in five languages. The net carbs figure and the day stay; they are
+ *   the point of this diary (the architect, 2026-09-29).
  * @param netCarbsTotal - the day's net carbs AFTER the add.
  * @param hasEstimates - whether that total includes AI estimates (hedges with "~").
  * @param dayLabel - a human day label when the entry went to a day other than today, else null.
@@ -130,6 +136,7 @@ export function formatFoodAddedToast({
   batch,
   verb = 'added',
   mealLabel,
+  offersUndo = false,
   netCarbsTotal,
   hasEstimates,
   dayLabel,
@@ -139,6 +146,7 @@ export function formatFoodAddedToast({
   batch: FoodAddedBatch;
   verb?: FoodAddedVerb;
   mealLabel: string | null;
+  offersUndo?: boolean;
   netCarbsTotal: number;
   hasEstimates: boolean;
   dayLabel: string | null;
@@ -146,27 +154,43 @@ export function formatFoodAddedToast({
   /** Active UI language for the carb figure. Optional alongside `t`, and for the same reason — see `FALLBACK_EN`. */
   language?: string | null;
 }): FoodAddedToastCopy {
+  // A long name ends in "…" so the title fits the header beside an Undo on a
+  // 360 px phone (M265); the rest of the sentence stays whole.
   const title =
     batch.count === 1 ?
-      t(verb === 'copied' ? 'diary.toast.copiedOne' : 'diary.toast.addedOne', { name: batch.lastName })
+      t(verb === 'copied' ? 'diary.toast.copiedOne' : 'diary.toast.addedOne', { name: shortenFoodName(batch.lastName) })
     : t(verb === 'copied' ? 'diary.toast.copiedMany' : 'diary.toast.addedMany', { n: batch.count });
   // `formatMeasureIn`, not a `${...}g` template: the toast used to be the only
   // place on the diary that wrote "35g" while the ring beside it wrote "35 g".
   const carbs = `${hasEstimates ? '~' : ''}${formatMeasureIn(language, netCarbsTotal, 'g')}`;
-  const where = mealLabel === null ? '' : t('diary.toast.toMeal', { meal: mealLabel });
+  const where = mealLabel === null || offersUndo ? '' : t('diary.toast.toMeal', { meal: mealLabel });
   const when =
-    dayLabel === null ? t('diary.toast.soFarToday', { carbs }) : t('diary.toast.onDay', { carbs, day: dayLabel });
+    dayLabel === null ?
+      t('diary.toast.soFarToday', { carbs })
+    : endOnOnePeriod(t('diary.toast.onDay', { carbs, day: dayLabel }));
   return { title, description: where === '' ? when : t('diary.toast.description', { where, when }) };
+}
+
+/**
+ * A sentence that closes on a date, ended on one period.
+ *
+ * German abbreviates the weekday and the month with a period, so its date
+ * already ends in one ("Mo., 28. Sept."), and the sentence's own period after
+ * `{{day}}` read "Sept.." (M265). A sentence ending in one period, or in an
+ * ellipsis, comes back as it is.
+ */
+function endOnOnePeriod(sentence: string): string {
+  return sentence.endsWith('..') && !sentence.endsWith('...') ? sentence.slice(0, -1) : sentence;
 }
 
 /** Module-scoped burst state. Lives for the SPA session, which is the only window in which "consecutive" means anything. */
 let currentBatch: FoodAddedBatch | null = null;
 
-/** An optional trailing action (the quick-add chip's "Undo"). */
-export interface FoodAddedToastAction {
-  label: string;
-  onClick: () => void;
-}
+/**
+ * An optional trailing action (the quick-add chip's and the copy's "Undo").
+ * It is the status channel's own action, so an `icon` reaches the header.
+ */
+export type FoodAddedToastAction = StatusAction;
 
 /**
  * Publishes (or replaces) the single food-added status.
@@ -206,10 +230,14 @@ export function showFoodAddedToast({
   nowMs?: number;
 }): void {
   currentBatch = nextFoodAddedBatch({ previous: currentBatch, name, count, nowMs });
+  // An Undo bound to ONE entry would be a lie on a collapsed burst, so it's
+  // offered only while the burst is still a single food.
+  const undo = currentBatch.count === 1 ? action : undefined;
   const copy = formatFoodAddedToast({
     batch: currentBatch,
     verb,
     mealLabel,
+    offersUndo: undo !== undefined,
     netCarbsTotal,
     hasEstimates,
     dayLabel,
@@ -220,9 +248,7 @@ export function showFoodAddedToast({
     text: copy.title,
     description: copy.description,
     tone: 'success',
-    // An Undo bound to ONE entry would be a lie on a collapsed burst, so it's
-    // offered only while the burst is still a single food.
-    action: action && currentBatch.count === 1 ? action : undefined,
+    action: undo,
   });
 }
 

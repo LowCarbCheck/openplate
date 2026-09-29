@@ -14,8 +14,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { logOnePlateWithAi, routeStubPlateAnswer } from './ai-plate-stub';
 import { EN, catalogFor, fill } from './copy';
-import { E2E_APP_URL } from './env';
 import {
   completeOnboarding,
   connectStubAiProvider,
@@ -26,33 +26,6 @@ import {
 import { FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW, routeAccountAllowance, routePlansCore } from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
-
-/** The endpoint `connectStubAiProvider` connects. */
-const STUB_PROVIDER_URL = `${E2E_APP_URL}/e2e-stub-provider/v1`;
-
-/** A valid 1 x 1 PNG, the smallest thing the photo checks accept. */
-const PIXEL_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
-
-/** Two items on one plate, so the count has to fold one intake's rows into one meal. */
-const IDENTIFICATION = JSON.stringify({
-  foods: ['Recap tier rye bread', 'Recap tier butter'].map((name) => ({
-    name,
-    estimatedGrams: 30,
-    confidence: 'high',
-    portionHint: null,
-    macrosPer100g: { carbs: 40, fiber: 6, sugars: null, polyols: null, protein: 8, fat: 10, kcal: 300 },
-    macroSource: 'estimated',
-    carbBasis: null,
-    brand: null,
-    servingSize: null,
-  })),
-  unreadable: false,
-  unreadableReason: null,
-  notes: null,
-});
 
 /** An allowance that ends at local noon two days from today: three calendar days left, inside the recap's reach. */
 function noonInTwoDays(): string {
@@ -80,33 +53,12 @@ async function startTrialDevice(page: Page): Promise<void> {
     allowanceExpiresAt: noonInTwoDays(),
     createdAt: new Date().toISOString(),
   });
-  await page.route(`${STUB_PROVIDER_URL}/chat/completions`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        choices: [{ index: 0, message: { role: 'assistant', content: IDENTIFICATION } }],
-        usage: { prompt_tokens: 1000, completion_tokens: 200 },
-      }),
-    }),
-  );
+  await routeStubPlateAnswer(page);
   await completeOnboarding(page);
   await signInFixtureAccount(page);
   await connectStubAiProvider(page);
   // A food typed by hand: in the trial, and NOT an AI meal.
   await logFoodManually(page, { name: 'Recap tier hand-typed apple', grams: '100' });
-}
-
-/** Photographs one plate and logs both of its items. */
-async function logOnePlateWithAi(page: Page): Promise<void> {
-  await page.goto('/add/photo');
-  const captureCard = page.locator('[data-slot="card"]').filter({ has: page.locator('input[type="file"][capture]') });
-  await captureCard
-    .locator('input[type="file"][capture]')
-    .setInputFiles({ name: 'plate.png', mimeType: 'image/png', buffer: PIXEL_PNG });
-  await expect(page.getByText(EN.scan.review.heading)).toBeVisible();
-  await page.getByRole('button', { name: EN.scan.review.confirmAndLog }).click();
-  await page.waitForURL('**/diary**');
 }
 
 /** The plan page, reached by a document load, once its cards are drawn. */
@@ -163,16 +115,7 @@ async function startScanTrialDeviceWithOneAiMeal(page: Page): Promise<void> {
     trialScans: { granted: 10, left: SCANS_LEFT_NEAR_THE_END },
     createdAt: new Date().toISOString(),
   });
-  await page.route(`${STUB_PROVIDER_URL}/chat/completions`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        choices: [{ index: 0, message: { role: 'assistant', content: IDENTIFICATION } }],
-        usage: { prompt_tokens: 1000, completion_tokens: 200 },
-      }),
-    }),
-  );
+  await routeStubPlateAnswer(page);
   await completeOnboarding(page);
   await signInFixtureAccount(page);
   await connectStubAiProvider(page);
