@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **A refused sync or scan now opens the consent screen.** When openplate-core rejects a data route with `403 health-consent-required` because an account lacks current consent, the app routes the user to `/consent`. A rejected sync, scan, or pantry photo triggers this redirect. After the user agrees, the app returns to the previous view and uploads any queued changes. Previously, the app treated the response as a generic error: sync showed "Sync failed" with the protocol code, and scanning prompted for an API key check. Logging in on a new device still pulls diary data first, so returning users see the consent prompt instead of the onboarding questionnaire. Data export, the account page, and Preferences remain accessible without consent. The study console shows the consent checkbox from `/join` and sends it with a new study account, and `pnpm seed:test-account` submits the required version. `tests/e2e/health-consent-refusal.spec.ts` and `tests/e2e/health-consent-refusal-scan.spec.ts` check the sync and the scan.
+
 ### Fixed
 
 - **Legal links from openplate.de open in the visitor's language.** The site's imprint, privacy, terms and cancellation links carried no language, so a reader of the English site could land on a German page. They now carry `?lang=<code>`, which the app reads before its own cookie, so the page is correct on the first paint, with or without JavaScript. The choice becomes the device's cookie once JavaScript runs. `/widerrufen` and `/kuendigung` keep their German statutory heading and button in every language. `tests/e2e/legal-link-language.spec.ts` checks it.

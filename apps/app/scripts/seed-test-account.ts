@@ -321,6 +321,11 @@ async function createAccount({
   const authClient = new SyncAuthClient({ baseUrl });
   const compatibility = await authClient.handshake();
   if (compatibility.status !== 'compatible') throw new SeedError(compatibility.reason);
+  // THE CONSENT THE INSTANCE ASKS FOR, read off `/health`. `instance()` fails
+  // open, so an instance that cannot say reads as one that asks for nothing,
+  // which is what every instance older than the field is.
+  const instance = await authClient.instance();
+  const consentVersion = instance?.healthConsent?.version ?? null;
 
   const recovery = generateRecoveryCode();
   const keys = await setupSyncKeys({ passphrase, recoveryCodeRaw: recovery.raw, deriveHash: deriveArgon2idHash });
@@ -339,10 +344,13 @@ async function createAccount({
       },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
-    // No consent to health data: a seeded test account is not a person
-    // agreeing to anything, so this tool seeds only an instance that asks for
-    // none. One that asks refuses it with `400 health-consent-required`.
-    healthConsent: null,
+    // THE CONSENT TO HEALTH DATA, WHERE THE INSTANCE ASKS FOR ONE (2026-09-29).
+    // The operator running this tool is the person the test account is for,
+    // and running it is their act. Without the field an instance that asks
+    // refuses the signup with `400 health-consent-required`, and an account
+    // made any other way would be refused every data route, the diary push
+    // below included.
+    healthConsent: consentVersion === null ? null : { version: consentVersion },
   });
 
   // The owner-private compartment, sealed with the one this setup just minted.

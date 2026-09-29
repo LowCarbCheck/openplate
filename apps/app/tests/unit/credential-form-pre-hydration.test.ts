@@ -176,17 +176,6 @@ describe('/forgot cannot be submitted before it hydrates', () => {
   });
 });
 
-describe('the study console sign-in cannot be submitted before it hydrates', () => {
-  it('renders its submit control disabled, and nothing else that submits', () => {
-    const markup = renderRoute(StudyConsole);
-    assert.ok(markup.includes('type="password"'), 'the study console stopped rendering a password field');
-    const tag = guardedButton(markup);
-    assert.ok(tag !== null, 'the study console no longer uses the guarded submit control');
-    assert.ok(isDisabled(tag), `the study console submit is enabled in server markup: ${tag}`);
-    assert.deepEqual(enabledSubmitTags(markup), [], 'an enabled submit is on the pre-hydration study sign-in');
-  });
-
-});
 
 describe('the guard is what disables the button, not the renderer', () => {
   // Without this pair, every "renders disabled" assertion above would also
@@ -223,6 +212,18 @@ describe('the client-gated credential screens put no form in the server markup',
     assert.ok(!markup.includes('type="password"'), `/reset server-rendered a password box: ${markup}`);
     assert.deepEqual(enabledSubmitTags(markup), [], '/reset server-rendered a submittable form');
   });
+
+  it('/study renders its heading, and no sign-in form until the handshake has answered', () => {
+    // GATED ON THE HANDSHAKE since 2026-09-29: the card waits for `/health`
+    // to say whether the instance asks for a consent to health data, so the
+    // consent box arrives with the card instead of pushing its buttons down.
+    // The read happens in an effect, which never runs under a server renderer.
+    // It moved here from the guarded list; the card still uses the guard.
+    const markup = renderRoute(StudyConsole);
+    assert.ok(markup.includes('<h1'), `the study console did not render at all: ${markup}`);
+    assert.ok(!markup.includes('type="password"'), `/study server-rendered a password box: ${markup}`);
+    assert.deepEqual(enabledSubmitTags(markup), [], '/study server-rendered a submittable form');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -245,7 +246,7 @@ const CREDENTIAL_SOURCES = [
 ] as const;
 
 /**
- * The three that are in the server's markup and must therefore use the shared
+ * The two that are in the server's markup and must therefore use the shared
  * guard.
  *
  * The rest are absent from it for a structural reason, pinned by the renders
@@ -253,11 +254,7 @@ const CREDENTIAL_SOURCES = [
  * A file moving between these two lists is a change of that structure and
  * belongs in the same commit as the list edit.
  */
-const SERVER_RENDERED_CREDENTIAL_SOURCES = [
-  'app/components/sign-in-panel.tsx',
-  'app/routes/forgot.tsx',
-  'app/routes/study._index.tsx',
-] as const;
+const SERVER_RENDERED_CREDENTIAL_SOURCES = ['app/components/sign-in-panel.tsx', 'app/routes/forgot.tsx'] as const;
 
 function readSource(path: string): string {
   return readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
@@ -303,6 +300,5 @@ describe('the sweep is non-vacuous', () => {
     // A list that had drifted to paths which no longer draw a credential form
     // would pass silently.
     assert.ok(readSource('app/components/sign-in-panel.tsx').includes("type: 'password'"));
-    assert.ok(readSource('app/routes/study._index.tsx').includes('type="password"'));
   });
 });

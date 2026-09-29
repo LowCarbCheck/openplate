@@ -45,6 +45,7 @@
 import { SyncAuthClient } from '../engine/client/auth-client';
 import { SyncHttpClient } from '../engine/client/http-client';
 import { SyncRequestError } from '../engine/client/sync-error';
+import { HEALTH_CONSENT_REQUIRED, type HealthConsentRequestWire } from '../engine/client/auth-wire';
 import { workerArgon2idDeriver } from '../engine/client/argon2-worker';
 import { deriveCredentialsFromPassphrase } from '../engine/client/derive-credentials';
 import { setupSyncKeys, type Argon2idDeriver } from '../engine/client/setup-keys';
@@ -142,6 +143,21 @@ export type StudySignInResult = { status: 'connected' } | { status: 'setup-compl
 /** Creating the account opens the console. There is nothing to hand back: see {@link StudySignInResult}. */
 export type StudyAccountSetupResult = { status: 'ready' };
 
+/**
+ * The consent to health data as the console's box left it: the version the
+ * instance names in `instance.healthConsent`, and whether the researcher
+ * ticked it. `null` where the instance asks for none, which draws no box.
+ */
+export interface StudyConsentChoice {
+  version: string;
+  isTicked: boolean;
+}
+
+/** The consent a request carries: the version when the box was ticked, nothing otherwise. */
+function tickedConsent(choice: StudyConsentChoice | null): HealthConsentRequestWire | null {
+  return choice !== null && choice.isTicked ? { version: choice.version } : null;
+}
+
 function clientsFor({ serverUrl, fetchImpl }: { serverUrl: string; fetchImpl?: typeof fetch }) {
   const authClient = new SyncAuthClient({ baseUrl: serverUrl, fetchImpl });
   const http = new SyncHttpClient({ baseUrl: serverUrl, tokens: authClient, fetchImpl });
@@ -167,6 +183,7 @@ export async function createStudyAccount({
   serverUrl,
   inviteToken,
   passphrase,
+  healthConsent,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
@@ -181,6 +198,8 @@ export async function createStudyAccount({
    */
   inviteToken: string;
   passphrase: string;
+  /** The console's consent box, or `null` where the instance asks for none. See the signup call below. */
+  healthConsent: StudyConsentChoice | null;
 } & StudySessionOptions): Promise<StudyAccountSetupResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
@@ -212,12 +231,15 @@ export async function createStudyAccount({
       },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
-    // NO CONSENT TO HEALTH DATA (2026-09-28). A study account holds the study's
-    // keyring, not a diary, and this console draws no consent box. An instance
-    // that asks every account for one (`instance.healthConsent`) refuses this
-    // signup with `400 health-consent-required`; the research lane is dark on
-    // every such instance today, and lighting it there needs a box here first.
-    healthConsent: null,
+    // THE CONSENT TO HEALTH DATA, WHERE THE INSTANCE ASKS FOR ONE (2026-09-29).
+    // A study account holds the study's keyring rather than a diary, but the
+    // core requires the consent of EVERY account on every data route, and the
+    // contributions a study reads are health data. Without it the signup is a
+    // `400 health-consent-required`, and an account created some other way
+    // would be refused its cohort. The console draws the same box `/join`
+    // does, and this is what it ticked; an unticked box sends nothing and the
+    // core's `400` says so.
+    healthConsent: tickedConsent(healthConsent),
   });
 
   vault = {
@@ -272,9 +294,22 @@ export async function signInToStudy({
   serverUrl,
   email,
   passphrase,
+  healthConsent,
   deriveHash = workerArgon2idDeriver,
   fetchImpl,
-}: { serverUrl: string; email: string; passphrase: string } & StudySessionOptions): Promise<StudySignInResult> {
+}: {
+  serverUrl: string;
+  email: string;
+  passphrase: string;
+  /**
+   * The console's consent box, or `null` where the instance asks for none.
+   * A study account created before its instance asked, or before the wording
+   * changed, has no other screen to agree on, and the core refuses its cohort
+   * until it has (2026-09-29): a ticked box records the consent right after
+   * the login, and an unticked one stops the sign-in there.
+   */
+  healthConsent: StudyConsentChoice | null;
+} & StudySessionOptions): Promise<StudySignInResult> {
   const { authClient, http } = clientsFor({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
@@ -290,6 +325,21 @@ export async function signInToStudy({
   });
 
   const session = await authClient.login({ email, authHash });
+  // BEFORE ANYTHING IS WRITTEN OR PULLED, so the repair below, the first push
+  // of a new key and the cohort are not refused later with nothing on screen
+  // to fix it. Nothing to do for an account that holds the version already.
+  if (healthConsent !== null && session.account.healthConsent?.version !== healthConsent.version) {
+    // The same refusal the core would give, raised here while the box is still
+    // on screen to tick. No vault is opened, so the next press signs in again.
+    if (!healthConsent.isTicked) {
+      throw new SyncRequestError({
+        kind: 'consent-required',
+        message: HEALTH_CONSENT_REQUIRED,
+        code: HEALTH_CONSENT_REQUIRED,
+      });
+    }
+    await authClient.recordHealthConsent({ version: healthConsent.version });
+  }
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
   if (passphraseRecord === undefined) {

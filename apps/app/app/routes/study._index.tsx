@@ -37,6 +37,7 @@ import type { MetaFunction } from 'react-router';
 import { FlaskConical, Loader2 } from 'lucide-react';
 
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { HealthConsentField } from '#app/components/health-consent-field';
 import { StudyCohortPanel } from '#app/components/study-cohort-panel';
 import { StudyKeyCard } from '#app/components/study-key-card';
 import { Alert, AlertDescription, AlertTitle } from '#app/components/ui/alert';
@@ -46,7 +47,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
+import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { isConsentRequiredRefusal, isHealthConsentRefusal } from '#app/lib/health-consent/health-consent';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import {
@@ -114,10 +117,25 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
   // account is escrowed like every other account now, so there is nothing for
   // a researcher to write down and nothing here to write it on.
   const [isCreated, setIsCreated] = useState(false);
+  // THE CONSENT TO HEALTH DATA the instance asks of every account, a study's
+  // too (2026-09-29): the version `/health` names, or `null` for none. The
+  // sign-in card waits for this read, so the box arrives with the card rather
+  // than pushing its buttons down after it.
+  const instanceRead = useServerInstanceRead();
+  const consentVersion = instanceRead.instance?.healthConsent?.version ?? null;
+  // Whether the line under the box says it has to be ticked.
+  const [isConsentMessageShown, setIsConsentMessageShown] = useState(false);
 
   // Leaving the console ends the session. There is nothing to persist and
   // nothing that should outlive the screen.
   useEffect(() => closeStudyConsole, []);
+
+  /** Back to the sign-in card, with the line under the consent box showing. */
+  function askForConsentAgain(): void {
+    closeStudyConsole();
+    setState({ status: 'signed-out' });
+    setIsConsentMessageShown(true);
+  }
 
   async function run(operation: () => Promise<void>, failureKey: string): Promise<void> {
     setIsBusy(true);
@@ -125,6 +143,16 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
     try {
       await operation();
     } catch (caught) {
+      // THE CORE WANTS THE CONSENT: a signup without the box (`400`), or a
+      // study account that never agreed meeting a data route (`403`). Both
+      // are answered under the box, where ticking it is the fix, and never as
+      // the protocol token the service sent. An open console goes back to the
+      // sign-in card for it, because that is where the box is: a wording the
+      // operator changed mid-session is the one way to get here signed in.
+      if (isHealthConsentRefusal(caught) || isConsentRequiredRefusal(caught)) {
+        askForConsentAgain();
+        return;
+      }
       setError(describeErrorForUser(caught, t(failureKey)));
     } finally {
       setIsBusy(false);
@@ -136,12 +164,22 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
     inviteToken,
     passphrase,
     isNewAccount,
+    isConsentTicked,
   }: {
     email: string;
     inviteToken: string;
     passphrase: string;
     isNewAccount: boolean;
+    isConsentTicked: boolean;
   }): void {
+    // AN UNTICKED BOX CREATES NOTHING. The core would refuse the signup, and
+    // saying so here costs no request and no Argon2id run.
+    if (isNewAccount && consentVersion !== null && !isConsentTicked) {
+      setIsConsentMessageShown(true);
+      return;
+    }
+    setIsConsentMessageShown(false);
+    const healthConsent = consentVersion === null ? null : { version: consentVersion, isTicked: isConsentTicked };
     void run(async () => {
       setIsCreated(false);
       if (isNewAccount) {
@@ -150,10 +188,10 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
         // rather than read off the invite: the console is a standalone screen
         // with no join link behind it, and `readSyncInvite` would be a round
         // trip added to a form a researcher fills in once.
-        await createStudyAccount({ serverUrl, inviteToken, passphrase });
+        await createStudyAccount({ serverUrl, inviteToken, passphrase, healthConsent });
         setIsCreated(true);
       } else {
-        const signedIn = await signInToStudy({ serverUrl, email, passphrase });
+        const signedIn = await signInToStudy({ serverUrl, email, passphrase, healthConsent });
         if (signedIn.status === 'setup-completed') setIsCreated(true);
       }
       setState({ status: 'open', identity: await loadStudyIdentity() });
@@ -188,12 +226,20 @@ function StudyConsoleBody({ serverUrl }: { serverUrl: string }) {
         </Alert>
       )}
 
-      {state.status === 'signed-out' && <SignInCard onSubmit={handleSignIn} isBusy={isBusy} />}
+      {state.status === 'signed-out' && instanceRead.isSettled && (
+        <SignInCard
+          onSubmit={handleSignIn}
+          isBusy={isBusy}
+          consentVersion={consentVersion}
+          isConsentMessageShown={isConsentMessageShown}
+          onConsentTicked={() => setIsConsentMessageShown(false)}
+        />
+      )}
 
       {state.status === 'open' && (
         <>
           <StudyKeyCard identity={state.identity} onGenerate={handleGenerate} isBusy={isBusy} />
-          <CohortSection />
+          <CohortSection onConsentRefused={askForConsentAgain} />
         </>
       )}
     </div>
@@ -216,21 +262,47 @@ function NoSyncCard() {
   );
 }
 
+/** The id of the line under the consent box, which the box names while the line shows. */
+const CONSENT_MESSAGE_ID = 'study-console-consent-message';
+
 function SignInCard({
   onSubmit,
   isBusy,
+  consentVersion,
+  isConsentMessageShown,
+  onConsentTicked,
 }: {
-  onSubmit: (input: { email: string; inviteToken: string; passphrase: string; isNewAccount: boolean }) => void;
+  onSubmit: (input: {
+    email: string;
+    inviteToken: string;
+    passphrase: string;
+    isNewAccount: boolean;
+    isConsentTicked: boolean;
+  }) => void;
   isBusy: boolean;
+  /** The consent version the instance asks for, which draws the box, or `null` for none and no box. */
+  consentVersion: string | null;
+  /** Whether the line under the box says it has to be ticked. */
+  isConsentMessageShown: boolean;
+  /** The box was ticked, so the line under it can go. */
+  onConsentTicked: () => void;
 }) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [inviteToken, setInviteToken] = useState('');
   const [passphrase, setPassphrase] = useState('');
+  // Unticked, always: consent has to be an act (Art. 7 GDPR).
+  const [isConsentTicked, setIsConsentTicked] = useState(false);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onSubmit({ email: canonicalizeEmail(email), inviteToken: inviteToken.trim(), passphrase, isNewAccount: false });
+    onSubmit({
+      email: canonicalizeEmail(email),
+      inviteToken: inviteToken.trim(),
+      passphrase,
+      isNewAccount: false,
+      isConsentTicked,
+    });
   };
 
   return (
@@ -276,6 +348,29 @@ function SignInCard({
               onChange={(event) => setPassphrase(event.target.value)}
             />
           </div>
+          {/* THE SAME BOX `/join` DRAWS, on an instance that asks every
+              account for a consent to health data, a study account included.
+              Its message line is always there, so the buttons never move when
+              it shows. One sentence for both buttons: ticking the box is what
+              either of them needs. */}
+          {consentVersion !== null && (
+            <HealthConsentField
+              inputProps={{
+                id: 'study-console-consent',
+                name: 'healthConsent',
+                checked: isConsentTicked,
+                onChange: (event) => {
+                  setIsConsentTicked(event.target.checked);
+                  if (event.target.checked) onConsentTicked();
+                },
+                'aria-invalid': isConsentMessageShown || undefined,
+                'aria-describedby': isConsentMessageShown ? CONSENT_MESSAGE_ID : undefined,
+              }}
+              messageId={CONSENT_MESSAGE_ID}
+              message={t('healthConsent.requiredToContinue')}
+              isMessageShown={isConsentMessageShown}
+            />
+          )}
           {/* Disabled in the server-rendered markup as well as while the
               boxes are empty. The empty-box check happens to hold the same
               line before hydration, but only by accident: it is about a form
@@ -297,6 +392,7 @@ function SignInCard({
                 inviteToken: inviteToken.trim(),
                 passphrase,
                 isNewAccount: true,
+                isConsentTicked,
               })
             }
           >
@@ -315,7 +411,7 @@ function SignInCard({
  * the study asked contributors for, an empty cohort still has one, and
  * `exportStudyCohortCsv` echoes it into the file.
  */
-function CohortSection() {
+function CohortSection({ onConsentRefused }: { onConsentRefused: () => void }) {
   const { t } = useTranslation();
   const [fromDayKey, setFromDayKey] = useState('');
   const [toDayKey, setToDayKey] = useState('');
@@ -337,6 +433,12 @@ function CohortSection() {
         pulled.status === 'unavailable' ? { status: 'unavailable' } : { status: 'ready', cohort: pulled.value },
       );
     } catch (caught) {
+      // The study account lost its consent mid-session (the wording changed):
+      // back to the card with the box, rather than the protocol token here.
+      if (isConsentRequiredRefusal(caught)) {
+        onConsentRefused();
+        return;
+      }
       setError(describeErrorForUser(caught, t('research.console.cohort.failed')));
     } finally {
       setIsPulling(false);

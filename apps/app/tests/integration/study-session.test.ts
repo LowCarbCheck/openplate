@@ -58,16 +58,19 @@
 import { after, afterEach, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import 'fake-indexeddb/auto';
+import { z } from 'zod';
 
 import { startFakeSyncService, type FakeSyncService } from './fake-sync-service';
 import {
   closeStudyConsole,
   createStudyAccount,
   generateStudyKey,
+  isStudyConsoleOpen,
   loadStudyIdentity,
   pullCohort,
   signInToStudy,
 } from '../../app/lib/sync/research/study-session';
+import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { createSyncAccount, markSyncPending, syncNow } from '../../app/lib/sync/sync-actions';
 import { enrolInStudyAction, submitContributionAction } from '../../app/lib/sync/research-actions';
 import { getSyncVault, readAccountHint, type SyncVault } from '../../app/lib/sync/sync-session';
@@ -199,6 +202,8 @@ async function createStudy(label: string, fetchImpl?: typeof fetch): Promise<Stu
     serverUrl: service.url,
     inviteToken: service.createInvite({ email }),
     passphrase: PASSPHRASE,
+    // The fake service is an instance that asks for no consent.
+    healthConsent: null,
     deriveHash: fastDeriver,
     params: FAST_PARAMS,
     fetchImpl,
@@ -215,6 +220,7 @@ async function signIn(email: string): Promise<void> {
     serverUrl: service.url,
     email,
     passphrase: PASSPHRASE,
+    healthConsent: null,
     deriveHash: fastDeriver,
   });
   assert.equal(result.status, 'connected', 'this account already completed setup, so nothing is being repaired here');
@@ -386,6 +392,86 @@ function foodLog(id: string, dayKey: string, name: string, kcal: number): LocalF
     logBatchId: null,
   };
 }
+
+/** The one field of a signup body the consent tests read. */
+const signupConsentSchema = z.looseObject({ healthConsent: z.object({ version: z.string() }).optional() });
+
+/** A `fetch` for the console, and the consent each signup it carried named. */
+interface SignupConsentRecorder {
+  fetchImpl: typeof fetch;
+  /** One entry per signup, `null` where the body left the field out. */
+  consents: ({ version: string } | null)[];
+}
+
+/** A `fetch` that hands every request on and keeps the consent each signup body carried. */
+function recordingSignupConsents(): SignupConsentRecorder {
+  const consents: ({ version: string } | null)[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const url = input instanceof Request ? input.url : String(input);
+    if (url.endsWith('/v1/auth/signup')) {
+      consents.push(signupConsentSchema.parse(JSON.parse(String(init?.body))).healthConsent ?? null);
+    }
+    return fetch(input, init);
+  };
+  return { fetchImpl, consents };
+}
+
+test('the console sends the consent the researcher ticked with the signup, and nothing for an unticked box', async () => {
+  // THE CONSENT TO HEALTH DATA is required of every account on an instance
+  // that asks (2026-09-29), a study account's too. The fake service asks for
+  // none and ignores the field, so what is asserted is the body on the wire.
+  const ticked = recordingSignupConsents();
+  await createStudyAccount({
+    serverUrl: service.url,
+    inviteToken: service.createInvite({ email: freshEmail('consent-ticked') }),
+    passphrase: PASSPHRASE,
+    healthConsent: { version: '2026-09-28', isTicked: true },
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+    fetchImpl: ticked.fetchImpl,
+  });
+  closeStudyConsole();
+  assert.deepEqual(ticked.consents, [{ version: '2026-09-28' }]);
+
+  // THE CONTROL: the same box unticked sends no consent at all.
+  const unticked = recordingSignupConsents();
+  await createStudyAccount({
+    serverUrl: service.url,
+    inviteToken: service.createInvite({ email: freshEmail('consent-unticked') }),
+    passphrase: PASSPHRASE,
+    healthConsent: { version: '2026-09-28', isTicked: false },
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+    fetchImpl: unticked.fetchImpl,
+  });
+  closeStudyConsole();
+  assert.deepEqual(unticked.consents, [null]);
+});
+
+test('signing in with the box unticked stops at the login when the account does not hold the wording', async () => {
+  const study = await createStudy('consent-sign-in');
+  closeStudyConsole();
+
+  let refusal = 'no-error';
+  try {
+    await signInToStudy({
+      serverUrl: service.url,
+      email: study.email,
+      passphrase: PASSPHRASE,
+      healthConsent: { version: '2026-09-28', isTicked: false },
+      deriveHash: fastDeriver,
+    });
+  } catch (caught) {
+    refusal = caught instanceof SyncRequestError ? caught.kind : 'other-error';
+  }
+  assert.equal(refusal, 'consent-required');
+  assert.equal(isStudyConsoleOpen(), false, 'a refused consent must open no console');
+
+  // THE CONTROL: the same account on an instance that asks for nothing signs in.
+  await signIn(study.email);
+  assert.equal(isStudyConsoleOpen(), true);
+  closeStudyConsole();
+});
 
 test('a mint that loses the CAS re-reads the server: both generations survive a competing write', async () => {
   const study = await createStudy('cas-study', interposingFetch);
