@@ -1,4 +1,16 @@
 {
+  "v0_53_0": {
+    "date": "2026-09-29",
+    "changed": {
+      "01": "Der kostenlose Testzeitraum endet jetzt nach den kostenlosen Scans oder nach der festgelegten Anzahl an Tagen, je nachdem, was zuerst eintritt."
+    },
+    "fixed": {
+      "01": "Kopierte Links geben jetzt an, wenn sie auf eine andere Adresse verweisen.",
+      "02": "Das erneute Senden einer Einladung zeigt den neuen Link ohne E-Mail an.",
+      "03": "Die Link-Warnung prüft jetzt die Adresse des Sync-Servers.",
+      "04": "Ein Link zum Zurücksetzen verschiebt die Seite nicht mehr nach unten."
+    }
+  },
   "v0_52_0": {
     "date": "2026-09-29",
     "changed": {
@@ -28,42 +40,6 @@
       "07": "Jedes Rückgängigmachen in der Kopfzeile ist wieder eine Schaltfläche, jetzt mit einem Symbol und ohne Text.",
       "08": "Ein langer Lebensmittelname endet im Status der Kopfzeile mit Auslassungspunkten.",
       "09": "Die deutsche Zeile für ein an einem vergangenen Tag protokolliertes Lebensmittel endet mit einem Punkt."
-    }
-  },
-  "v0_50_0": {
-    "date": "2026-09-28",
-    "added": {
-      "01": "Eine Instanz, die Tarife verkauft, sperrt die App, sobald der kostenlose Testzeitraum abgelaufen ist.",
-      "02": "Die Registrierung auf einer kostenpflichtigen Instanz nennt den Preis und behält den gewählten Tarif bei.",
-      "03": "Die Registrierung und ein einmaliger Bildschirm bitten um die Zustimmung für Gesundheitsdaten."
-    },
-    "changed": {
-      "01": "Der Protein-Referenzwert folgt den Referenzwerten der Instanz.",
-      "02": "Jede Compose-Datei liest ihre Einstellungen aus der Env-Datei.",
-      "03": "Quadlet-Units lesen jede Einstellung aus einer Env-Datei, die dir gehört."
-    },
-    "fixed": {
-      "10": "Healthchecks melden unter podman-compose den Status \"healthy\".",
-      "11": "Die Beitrittsseite erkennt, wenn ein anderer Benutzer angemeldet ist.",
-      "12": "Der OpenRouter-Callback erklärt, dass er eine HTTPS-Verbindung benötigt.",
-      "13": "Die App öffnet sich nach einem Besuch offline, ohne ewig zu laden.",
-      "14": "Das Hinzufügen-Panel bleibt geöffnet, wenn sich der Bildschirm darunter ändert.",
-      "15": "Das \"Mehr\"-Bedienfeld bleibt geöffnet, wenn sich der Bildschirm darunter ändert.",
-      "16": "Ein erfasstes Lebensmittel öffnet sich auf dem Suchbildschirm nicht mehr erneut.",
-      "17": "Ein aus dem Quellcode nur mit seiner .env-Datei gestarteter Server liefert wieder Seiten aus.",
-      "18": "Eine verwaltete Instanz weist klar darauf hin, dass ihr Betreiber dein Tagebuch lesen kann.",
-      "19": "Die Zählung der Besuche respektiert Do Not Track, und du kannst sie abschalten.",
-      "20": "Der Scan-Bildschirm zeigt an, wohin ein Foto auf einer verwalteten Instanz übertragen wird.",
-      "21": "Die Schlüsselreparatur nach der Anmeldung verspricht keinen Wiederherstellungscode mehr.",
-      "01": "Die Tarifseite zeigt nach einer verzögerten Zahlung genau eine Antwort an.",
-      "02": "Das Tagebuch bietet keine Tarife mehr an, sobald du bezahlt hast.",
-      "03": "Die Zeile für kostenlose Scans passt in jeder Sprache auf ein Smartphone.",
-      "04": "Kontoseiten weisen darauf hin, dass Konten HTTPS erfordern.",
-      "05": "\"Passwort vergessen\" sendet seine Anfrage wieder.",
-      "06": "Ein zweiter Beitrittslink im selben Tab ersetzt den ersten.",
-      "07": "Eine verwaltete Instanz leitet Mitglieder nicht mehr zu KI-Einstellungen weiter.",
-      "08": "\"Mit OpenRouter verbinden\" weist auf einer reinen HTTP-Seite darauf hin, dass es HTTPS benötigt.",
-      "09": "Die Sync-Compose-Dateien reichen das Admin-Token und die Link-Adressen weiter."
     }
   }
 }

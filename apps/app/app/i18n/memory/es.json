@@ -2428,6 +2428,13 @@
     "at": "2026-09-14",
     "es": "Unirte a una pasarela · openplate"
   },
+  "1c793c0903aa528f": {
+    "en": "The free trial now ends after its free scans or its set days, whichever comes first.",
+    "path": "releases:v0_53_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "La prueba gratuita termina ahora al agotar sus escaneos gratuitos o al cumplir sus días fijados, lo que ocurra primero."
+  },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
     "path": "common:settingsAi.advanced.toggle",
@@ -5479,6 +5486,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Comenzar un plan"
+  },
+  "46c27f7f8623f982": {
+    "en": "The free tier now ends after free scans or set days, whichever comes first.",
+    "path": "releases:v0_53_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "El nivel gratuito ahora termina tras los escaneos gratuitos o los días fijados, lo que ocurra primero."
   },
   "46e6021cf7e859bb": {
     "en": "Forgot your password?",
@@ -10856,6 +10870,13 @@
     "at": "2026-09-14",
     "es": "Una entrada todavía no ha llegado al servidor. Si borras, se perderá."
   },
+  "86ae6e8b63b498fc": {
+    "en": "A reset link no longer pushes the page down.",
+    "path": "releases:v0_53_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "El enlace de restablecimiento ya no empuja la página hacia abajo."
+  },
   "86bc03a94ce97232": {
     "en": "Protein",
     "path": "common:diary.macros.protein",
@@ -12899,6 +12920,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cambiaste estos números, así que ahora son tuyos. Partieron de nuestra base de datos de alimentos: el crédito que figura abajo corresponde a esos datos originales."
+  },
+  "9f4806d26ce443b3": {
+    "en": "Resending an invitation shows the new link without mail.",
+    "path": "releases:v0_53_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Reenviar una invitación muestra el enlace nuevo sin correo."
   },
   "9f4fb8d04777d4a3": {
     "en": "Diary",
@@ -18633,6 +18661,13 @@
     "at": "2026-09-14",
     "es": "semillas de lino"
   },
+  "e814668d5fceb379": {
+    "en": "The link warning now checks the sync server address.",
+    "path": "releases:v0_53_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "El aviso del enlace ahora comprueba la dirección del servidor de sincronización."
+  },
   "e81a26e669fabb93": {
     "en": "Include",
     "path": "common:scan.review.include",
@@ -20501,6 +20536,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "Escaneos gratis con IA"
+  },
+  "fe4db4615bc51e54": {
+    "en": "Copied links now state when they point to another address.",
+    "path": "releases:v0_53_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Los enlaces copiados ahora indican cuándo apuntan a otra dirección."
   },
   "fe5a275fb4e1d870": {
     "en": "The legal pages come from a folder you mount, and openplate ships none of its own.",

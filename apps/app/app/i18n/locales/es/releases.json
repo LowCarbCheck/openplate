@@ -1,4 +1,16 @@
 {
+  "v0_53_0": {
+    "date": "2026-09-29",
+    "changed": {
+      "01": "La prueba gratuita termina ahora al agotar sus escaneos gratuitos o al cumplir sus días fijados, lo que ocurra primero."
+    },
+    "fixed": {
+      "01": "Los enlaces copiados ahora indican cuándo apuntan a otra dirección.",
+      "02": "Reenviar una invitación muestra el enlace nuevo sin correo.",
+      "03": "El aviso del enlace ahora comprueba la dirección del servidor de sincronización.",
+      "04": "El enlace de restablecimiento ya no empuja la página hacia abajo."
+    }
+  },
   "v0_52_0": {
     "date": "2026-09-29",
     "changed": {
@@ -28,42 +40,6 @@
       "07": "Cada Deshacer de la cabecera vuelve a ser un botón, ahora con un icono y sin texto.",
       "08": "Un nombre largo de alimento termina con puntos suspensivos en el estado de la cabecera.",
       "09": "La línea en alemán para un alimento registrado en un día anterior termina con un solo punto."
-    }
-  },
-  "v0_50_0": {
-    "date": "2026-09-28",
-    "added": {
-      "01": "Una instancia que vende planes bloquea la app en cuanto termina la prueba gratuita.",
-      "02": "El registro en una instancia de pago indica el precio y conserva el plan elegido.",
-      "03": "El registro y una pantalla inicial piden el consentimiento para los datos de salud."
-    },
-    "changed": {
-      "01": "La referencia de proteínas sigue los valores de referencia de la instancia.",
-      "02": "Cada archivo compose lee su configuración desde el archivo env.",
-      "03": "Las unidades de Quadlet leen cada ajuste desde un archivo env de tu propiedad."
-    },
-    "fixed": {
-      "10": "Las comprobaciones de estado notifican un estado correcto bajo podman-compose.",
-      "11": "La página para unirse detecta si hay otra sesión de usuario iniciada.",
-      "12": "La retrollamada de OpenRouter explica que necesita una conexión HTTPS.",
-      "13": "La app se abre sin conexión tras una visita sin quedarse cargando indefinidamente.",
-      "14": "La hoja para añadir permanece abierta cuando la pantalla de fondo cambia.",
-      "15": "El panel Más permanece abierto cuando la pantalla de fondo cambia.",
-      "16": "Un alimento registrado ya no se vuelve a abrir en la pantalla de búsqueda.",
-      "17": "Un servidor iniciado desde el código fuente solo con su archivo .env vuelve a servir páginas.",
-      "18": "Una instancia administrada indica claramente que su operador puede leer tu diario.",
-      "19": "El recuento de visitas respeta Do Not Track, y puedes desactivarlo.",
-      "20": "La pantalla de escaneo indica adónde va una foto en una instancia administrada.",
-      "21": "La reparación de claves tras iniciar sesión ya no promete un código de recuperación.",
-      "01": "La página del plan muestra una única respuesta tras un pago lento.",
-      "02": "El diario deja de ofrecer planes en cuanto has pagado.",
-      "03": "La línea de escaneos gratuitos cabe en un teléfono en todos los idiomas.",
-      "04": "Las páginas de la cuenta indican que las cuentas necesitan HTTPS.",
-      "05": "La opción de contraseña olvidada vuelve a enviar su solicitud.",
-      "06": "Un segundo enlace para unirse en la misma pestaña sustituye al primero.",
-      "07": "Una instancia administrada ya no dirige a los miembros a los ajustes de IA.",
-      "08": "Conectar con OpenRouter indica que necesita HTTPS en una página http sin cifrar.",
-      "09": "Los archivos compose de sincronización transmiten el token de administración y las direcciones de enlace."
     }
   }
 }

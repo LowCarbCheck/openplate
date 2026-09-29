@@ -1,4 +1,16 @@
 {
+  "v0_53_0": {
+    "date": "2026-09-29",
+    "changed": {
+      "01": "Ücretsiz deneme süresi artık, hangisi önce biterse, ücretsiz tarama sayısı veya belirlenen gün dolduğunda sona erer."
+    },
+    "fixed": {
+      "01": "Kopyalanan bağlantılar artık başka bir adresi gösterdiklerinde bunu belirtir.",
+      "02": "Bir daveti yeniden göndermek, e-posta olmadan yeni bağlantıyı gösterir.",
+      "03": "Bağlantı uyarısı artık eşitleme sunucusu adresini denetler.",
+      "04": "Sıfırlama bağlantısı artık sayfayı aşağı kaydırmaz."
+    }
+  },
   "v0_52_0": {
     "date": "2026-09-29",
     "changed": {
@@ -28,42 +40,6 @@
       "07": "Üst bilgideki her Geri al yeniden bir buton haline geldi, artık metin içermiyor ve bir simgesi var.",
       "08": "Üst bilgi durumundaki uzun bir yiyecek adı üç nokta ile biter.",
       "09": "Geçmiş bir güne kaydedilen bir yiyecek için Almanca satır tek bir noktayla biter."
-    }
-  },
-  "v0_50_0": {
-    "date": "2026-09-28",
-    "added": {
-      "01": "Plan satan bir örnek, ücretsiz deneme süresi bittiğinde uygulamayı kilitler.",
-      "02": "Ücretli bir örnekte kayıt olma işlemi fiyatı belirtir ve seçilen planı korur.",
-      "03": "Kayıt olma işlemi ve tek seferlik bir ekran, sağlık verileri için onay ister."
-    },
-    "changed": {
-      "01": "Protein referansı, örneğin referans değerlerini takip eder.",
-      "02": "Her compose dosyası ayarlarını env dosyasından okur.",
-      "03": "Quadlet birimleri her ayarı sana ait bir env dosyasından okur."
-    },
-    "fixed": {
-      "10": "Sağlık denetimleri podman-compose altında sağlıklı durumu bildirir.",
-      "11": "Katılma sayfası, başka bir kullanıcının oturumu açık olduğunda bunu fark eder.",
-      "12": "OpenRouter geri araması, bir HTTPS bağlantısına ihtiyaç duyduğunu açıklar.",
-      "13": "Uygulama, bir ziyaretten sonra sonsuza kadar yüklenmeden çevrimdışı açılır.",
-      "14": "Alttaki ekran değiştiğinde ekleme sayfası açık kalır.",
-      "15": "Alttaki ekran değiştiğinde Daha Fazla paneli açık kalır.",
-      "16": "Kaydedilen bir yiyecek arama ekranında artık yeniden açılmaz.",
-      "17": "Yalnızca .env dosyasıyla kaynaktan başlatılan bir sunucu sayfaları yeniden sunar.",
-      "18": "Yönetilen bir örnek, işletmecisinin günlüğünü okuyabileceğini açıkça belirtir.",
-      "19": "Ziyaret sayımı Do Not Track özelliğine uyar ve bunu kapatabilirsin.",
-      "20": "Tarama ekranı, yönetilen bir örnekte fotoğrafın nereye gittiğini belirtir.",
-      "21": "Oturum açma sonrasındaki anahtar onarımı artık bir kurtarma kodu vadetmez.",
-      "01": "Plan sayfası, yavaş bir ödemeden sonra tek bir yanıt gösterir.",
-      "02": "Günlük, ödeme yaptıktan sonra plan sunmayı bırakır.",
-      "03": "Ücretsiz taramalar satırı her dilde bir telefona sığar.",
-      "04": "Hesap sayfaları, hesapların HTTPS gerektirdiğini belirtir.",
-      "05": "Şifremi unuttum, isteğini yeniden gönderir.",
-      "06": "Aynı sekmedeki ikinci bir katılma bağlantısı ilkinin yerini alır.",
-      "07": "Yönetilen bir örnek artık üyeleri yapay zeka ayarlarına göndermez.",
-      "08": "OpenRouter ile Bağlan, düz bir http sayfasında HTTPS gerektiğini belirtir.",
-      "09": "Eşitleme compose dosyaları yönetici belirtecini ve bağlantı adreslerini iletir."
     }
   }
 }

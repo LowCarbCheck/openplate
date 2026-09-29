@@ -1,4 +1,16 @@
 {
+  "v0_53_0": {
+    "date": "2026-09-29",
+    "changed": {
+      "01": "La période d'essai gratuit prend désormais fin une fois ses scans gratuits épuisés ou son nombre de jours atteint, selon la première échéance."
+    },
+    "fixed": {
+      "01": "Les liens copiés indiquent maintenant lorsqu'ils mènent à une autre adresse.",
+      "02": "Renvoyer une invitation affiche le nouveau lien sans envoyer de courriel.",
+      "03": "L'avertissement de lien vérifie désormais l'adresse du serveur de synchronisation.",
+      "04": "Un lien de réinitialisation ne décale plus la page vers le bas."
+    }
+  },
   "v0_52_0": {
     "date": "2026-09-29",
     "changed": {
@@ -28,42 +40,6 @@
       "07": "Chaque Annuler dans l'en-tête redevient un bouton, désormais avec une icône et sans texte.",
       "08": "Un nom d'aliment trop long se termine par des points de suspension dans l'état de l'en-tête.",
       "09": "La ligne en allemand pour un aliment consigné un jour passé se termine par un seul point."
-    }
-  },
-  "v0_50_0": {
-    "date": "2026-09-28",
-    "added": {
-      "01": "Une instance qui vend des forfaits verrouille l'application une fois la période d'essai gratuit terminée.",
-      "02": "L'inscription sur une instance payante indique le prix et conserve le forfait choisi.",
-      "03": "L'inscription et un écran unique demandent le consentement pour les données de santé."
-    },
-    "changed": {
-      "01": "La référence pour les protéines suit les valeurs de référence de l'instance.",
-      "02": "Chaque fichier compose lit ses paramètres dans le fichier env.",
-      "03": "Les unités Quadlet lisent chaque paramètre dans un fichier env qui t'appartient."
-    },
-    "fixed": {
-      "10": "Les healthchecks indiquent un état sain sous podman-compose.",
-      "11": "La page d'adhésion détecte la connexion d'un autre utilisateur.",
-      "12": "Le rappel OpenRouter explique qu'il a besoin d'une connexion HTTPS.",
-      "13": "L'application s'ouvre hors ligne après une première visite, sans charger indéfiniment.",
-      "14": "La feuille d'ajout reste ouverte quand l'écran change en dessous.",
-      "15": "Le panneau Plus reste ouvert quand l'écran change en dessous.",
-      "16": "Un aliment consigné ne se rouvre plus sur l'écran de recherche.",
-      "17": "Un serveur démarré depuis les sources avec seulement son fichier .env sert à nouveau les pages.",
-      "18": "Une instance gérée indique clairement que son administrateur peut lire ton journal.",
-      "19": "Le décompte des visites respecte Do Not Track, et tu peux le désactiver.",
-      "20": "L'écran de numérisation indique où va une photo sur une instance gérée.",
-      "21": "La réparation de la clé après connexion ne promet plus de code de récupération.",
-      "01": "La page des forfaits affiche une seule réponse après un paiement lent.",
-      "02": "Le journal cesse de proposer des forfaits une fois que tu as payé.",
-      "03": "La ligne des numérisations gratuites s'adapte aux écrans de téléphone dans toutes les langues.",
-      "04": "Les pages du compte indiquent que les comptes exigent HTTPS.",
-      "05": "La fonction mot de passe oublié renvoie bien sa requête.",
-      "06": "Un second lien d'adhésion ouvert dans le même onglet remplace le premier.",
-      "07": "Une instance gérée ne redirige plus ses membres vers les paramètres d'IA.",
-      "08": "Le bouton Se connecter avec OpenRouter indique qu'il a besoin de HTTPS sur une page en HTTP simple.",
-      "09": "Les fichiers compose de synchronisation transmettent le jeton d'administration et les adresses de liaison."
     }
   }
 }
