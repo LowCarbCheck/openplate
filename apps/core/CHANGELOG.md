@@ -7,6 +7,7 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-09-29
 
 ### Fixed
 
@@ -14,7 +15,7 @@ change moves the minor.
   published no image. Its arm64 build crashed under emulation on GitHub
   runners and hung until timeout. 0.23.2 carries the exact code of 0.23.1.
   Each platform now builds on a runner of its own architecture, so no build
-  runs under emulation.
+  runs under emulation. ([fb1a0a8](https://github.com/LowCarbCheck/openplate/commit/fb1a0a8))
 
 ## [0.23.1] - 2026-09-29
 
