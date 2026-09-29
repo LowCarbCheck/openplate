@@ -67,6 +67,8 @@ import { canSendMemberInvites } from '#app/lib/sync/member-invites';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { consentPageHref } from '#app/lib/health-consent/consent-gate';
+import { isConsentRequiredRefusal } from '#app/lib/health-consent/health-consent';
 import { SignOutDialog } from '#app/components/sign-out-dialog';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import {
@@ -221,6 +223,47 @@ export default function SettingsAccount() {
   );
 }
 
+/**
+ * What one of this page's forms says after a submit: done, failed, or that
+ * the consent to health data is needed first (M266).
+ *
+ * THE THIRD KIND EXISTS BECAUSE THIS PAGE IS EXEMPT FROM THE CONSENT GATE, on
+ * purpose: deleting the account is how a person declines, and signing out
+ * must always work. So somebody who has not agreed reaches it, and three of
+ * its forms (the name, an invitation, the password) meet openplate-core's
+ * `403 health-consent-required`. Read as an ordinary failure, the name and
+ * password forms printed that machine code as their sentence.
+ */
+type FormMessage = { kind: 'ok' | 'error'; text: string } | { kind: 'consent' };
+
+/** The message for a failed submit: the consent line for the core's consent refusal, `failure` for anything else. */
+function failureMessage(input: { cause: unknown; failure: string }): FormMessage {
+  if (isConsentRequiredRefusal(input.cause)) return { kind: 'consent' };
+  return { kind: 'error', text: input.failure };
+}
+
+/**
+ * One form's message line. The consent kind is a link to the consent screen,
+ * which comes back here once the person has agreed.
+ */
+function FormMessageLine({ message }: { message: FormMessage }) {
+  const { t } = useTranslation();
+  if (message.kind === 'consent') {
+    return (
+      <p className="text-sm text-red-600 dark:text-red-400">
+        <Link to={consentPageHref('/settings/account')} className="underline underline-offset-4">
+          {t('healthConsent.requiredToContinue')}
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
+      {message.text}
+    </p>
+  );
+}
+
 /** A person who reached this page signed out. One sentence and the door. */
 function SignedOutCard() {
   const { t } = useTranslation();
@@ -257,7 +300,7 @@ function IdentityCard({
   const { t } = useTranslation();
   const [name, setName] = useState(displayName ?? '');
   const [isBusy, setIsBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<FormMessage | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -270,7 +313,7 @@ function IdentityCard({
       await setSyncDisplayName({ displayName: name.trim() === '' ? null : name.trim() });
       setMessage({ kind: 'ok', text: t('account.name.saved') });
     } catch (caught) {
-      setMessage({ kind: 'error', text: describeErrorForUser(caught, t('account.name.failed')) });
+      setMessage(failureMessage({ cause: caught, failure: describeErrorForUser(caught, t('account.name.failed')) }));
     } finally {
       setIsBusy(false);
     }
@@ -304,11 +347,7 @@ function IdentityCard({
           />
           <p className="text-xs text-muted-foreground">{t('account.name.hint')}</p>
         </div>
-        {message !== null && (
-          <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-            {message.text}
-          </p>
-        )}
+        {message !== null && <FormMessageLine message={message} />}
         <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy}>
           {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {t('account.name.save')}
@@ -474,7 +513,7 @@ function InviteFormCard({ invitesLeft }: { invitesLeft: number }) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isBusy, setIsBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<FormMessage | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -484,12 +523,13 @@ function InviteFormCard({ invitesLeft }: { invitesLeft: number }) {
       await sendMemberInvite({ email: email.trim() });
       setMessage({ kind: 'ok', text: t('account.invites.sent') });
       setEmail('');
-    } catch {
+    } catch (caught) {
       // NOT `describeErrorForUser`, and that is the point rather than laziness:
       // a transport failure and a refusal from the cap are one sentence here,
       // because the refused ones are the cases whose reason would say
-      // something about the address.
-      setMessage({ kind: 'error', text: t('account.invites.failed') });
+      // something about the address. The consent refusal is the exception: it
+      // says nothing about the address and everything about what to do next.
+      setMessage(failureMessage({ cause: caught, failure: t('account.invites.failed') }));
     } finally {
       setIsBusy(false);
       await refreshSyncAccount();
@@ -516,11 +556,7 @@ function InviteFormCard({ invitesLeft }: { invitesLeft: number }) {
             className="h-11"
           />
         </div>
-        {message !== null && (
-          <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-            {message.text}
-          </p>
-        )}
+        {message !== null && <FormMessageLine message={message} />}
         {/* DISABLED AT ZERO, and still refused by the service if a client
             believed otherwise: `invitesLeft` is drawn, never trusted. */}
         <Button type="submit" className="h-11 w-full sm:w-auto" disabled={isBusy || invitesLeft === 0}>
@@ -545,7 +581,7 @@ function ChangePasswordCard() {
   const [isOpen, setIsOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [isBusy, setIsBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<FormMessage | null>(null);
 
   const [form, fields] = useForm({
     id: 'account-change-password',
@@ -572,7 +608,7 @@ function ChangePasswordCard() {
       setIsOpen(false);
       setMessage({ kind: 'ok', text: t('account.password.done') });
     } catch (error) {
-      setMessage({ kind: 'error', text: describeErrorForUser(error, t('account.password.failed')) });
+      setMessage(failureMessage({ cause: error, failure: describeErrorForUser(error, t('account.password.failed')) }));
     } finally {
       setIsBusy(false);
     }
@@ -584,11 +620,7 @@ function ChangePasswordCard() {
       description={t('account.password.body')}
       contentClassName="space-y-3"
     >
-      {message !== null && (
-        <p className={message.kind === 'ok' ? 'text-sm text-primary' : 'text-sm text-red-600 dark:text-red-400'}>
-          {message.text}
-        </p>
-      )}
+      {message !== null && <FormMessageLine message={message} />}
       {!isOpen ?
         <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => setIsOpen(true)}>
           <RefreshCw className="h-4 w-4" aria-hidden="true" /> {t('account.password.open')}

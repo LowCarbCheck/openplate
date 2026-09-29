@@ -306,6 +306,36 @@ describe('decideConsentScreen', () => {
     assert.deepEqual(decision, { kind: 'continue', destination: '/dashboard' });
   });
 
+  it('asks for an exempt page to return to when the account owes the consent', async () => {
+    // THE ACCOUNT PAGE LINKS HERE with `next=/settings/account` when one of
+    // its forms is refused for want of the consent (M266). That page is exempt
+    // from the gate, so asking the gate about `next` alone answered open and
+    // the screen bounced straight back without asking.
+    const { readers } = countingReaders({ instance: ASKING });
+    const decision = await decideConsentScreen({
+      next: '/settings/account',
+      isResuming: false,
+      session: NEVER_AGREED,
+      readers,
+      now: NOW,
+      isOnline: true,
+    });
+    assert.deepEqual(decision, { kind: 'ask' });
+  });
+
+  it('THE TWIN: continues to the exempt page when the account owes nothing', async () => {
+    const { readers } = countingReaders({ instance: ASKING });
+    const decision = await decideConsentScreen({
+      next: '/settings/account',
+      isResuming: false,
+      session: AGREED,
+      readers,
+      now: NOW,
+      isOnline: true,
+    });
+    assert.deepEqual(decision, { kind: 'continue', destination: '/settings/account' });
+  });
+
   it('asks, and decides nothing, while the session is still reopening, so a reload does not bounce', async () => {
     const { readers, calls } = countingReaders({ instance: ASKING });
     const decision = await decideConsentScreen({

@@ -37,6 +37,7 @@ import { getSyncSessionSnapshot, getSyncVault } from '#app/lib/sync/sync-session
 import { withTimeout } from '#app/lib/with-timeout';
 
 import {
+  DEFAULT_CONSENT_NEXT,
   isConsentGateExempt,
   resolveConsentGate,
   safeConsentNext,
@@ -344,6 +345,14 @@ export type ConsentScreenDecision = { kind: 'ask' } | { kind: 'continue'; destin
  * a consent already on record, an instance that asks for none, a signed-out
  * device and every unreadable fact.
  *
+ * AN EXEMPT `next` IS STILL A QUESTION (M266). The gate answers open for an
+ * exempt page whatever the account holds, so asking it about one would say
+ * nothing. The account page links here with `next=/settings/account` when a
+ * form was refused for want of the consent, and the screen bounced straight
+ * back. For an exempt page the gate is asked about a guarded one instead,
+ * which is the question "does this account owe the consent", and the person
+ * still returns to the exempt page afterwards.
+ *
  * WHILE THE SESSION IS STILL REOPENING it asks, and decides nothing. A reload
  * of this screen meets a session that is not open yet; continuing then would
  * bounce the person to `next` and straight back here once the session opened.
@@ -369,7 +378,11 @@ export async function decideConsentScreen({
 }): Promise<ConsentScreenDecision> {
   const destination = safeConsentNext(next);
   if (isResuming) return { kind: 'ask' };
-  const target = new URL(destination, 'https://openplate.invalid');
+  const probe = 'https://openplate.invalid';
+  const target = new URL(
+    isConsentGateExempt(new URL(destination, probe).pathname) ? DEFAULT_CONSENT_NEXT : destination,
+    probe,
+  );
   const verdict = await resolveConsentGateForNavigation({
     pathname: target.pathname,
     search: target.search,

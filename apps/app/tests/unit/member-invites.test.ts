@@ -216,8 +216,15 @@ describe('the client asks for one invitation and learns nothing from the answer'
     // The cap and the re-invite rule are enforced by the service and a refusal
     // is not a fact about the address, so both land on the same sentence.
     assert.match(ROUTE, /setMessage\(\{ kind: 'ok', text: t\('account\.invites\.sent'\) \}\)/);
-    assert.match(ROUTE, /setMessage\(\{ kind: 'error', text: t\('account\.invites\.failed'\) \}\)/);
+    assert.match(ROUTE, /setMessage\(failureMessage\(\{ cause: caught, failure: t\('account\.invites\.failed'\) \}\)\)/);
     assert.ok(!ROUTE.includes('describeErrorForUser(caught, t(\'account.invites'), 'a reason would be the oracle');
+  });
+
+  it('makes one exception, the consent refusal, which says nothing about the address', () => {
+    // M266: an account without the consent to health data is refused every
+    // invitation, whatever the address. That refusal gets the consent line and
+    // every other failure keeps the neutral sentence handed in.
+    assert.match(ROUTE, /if \(isConsentRequiredRefusal\(input\.cause\)\) return \{ kind: 'consent' \};\n\s+return \{ kind: 'error', text: input\.failure \};/);
   });
 
   it('re-reads the account afterwards, because the count moved on the server', () => {

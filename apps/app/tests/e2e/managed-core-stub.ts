@@ -194,7 +194,7 @@ export interface SyncWriteLog {
  * core's own rule (`PROTOCOL.md` §4): the instance names a version and the
  * account does not hold exactly that one.
  */
-function refusesForConsent(stub: ManagedCoreStub): boolean {
+export function refusesForConsent(stub: ManagedCoreStub): boolean {
   const asked = stub.healthConsent ?? null;
   return asked !== null && stub.accountHealthConsent?.version !== asked.version;
 }
@@ -231,6 +231,40 @@ export async function routeConsentRequiredSync(page: Page, stub: ManagedCoreStub
         log.accepted += 1;
         return route.fallback();
       }
+      log.refused += 1;
+      const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
+      return route.fulfill({ status: 403, headers: cors, json: { error: HEALTH_CONSENT_REQUIRED } });
+    },
+  );
+  return log;
+}
+
+/** The three account routes the core refuses to an account without the consent (`PROTOCOL.md` §5.15.1). */
+function isConsentGatedAccountWrite(request: Request): boolean {
+  const path = new URL(request.url()).pathname;
+  if (request.method() === 'PATCH') return path === '/v1/auth/account';
+  if (request.method() !== 'POST') return false;
+  return path === '/v1/auth/invites' || path === '/v1/auth/change-passphrase';
+}
+
+/**
+ * Routes the account page's three writes through the core's consent rule:
+ * renaming the account, inviting somebody and changing the passphrase answer
+ * `403 health-consent-required` while the stub's account does not hold the
+ * instance's version, and reach the fake sync service otherwise. Registered
+ * AFTER `routeManagedCore`, so it answers first.
+ *
+ * @param page - the page, before its first navigation.
+ * @param stub - what the core says, the same object `routeManagedCore` reads.
+ * @returns how many writes were refused, counted as they arrive.
+ */
+export async function routeConsentRequiredAccountWrites(page: Page, stub: ManagedCoreStub): Promise<{ refused: number }> {
+  const log = { refused: 0 };
+  await page.route(
+    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (route) => {
+      const request = route.request();
+      if (!isConsentGatedAccountWrite(request) || !refusesForConsent(stub)) return route.fallback();
       log.refused += 1;
       const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
       return route.fulfill({ status: 403, headers: cors, json: { error: HEALTH_CONSENT_REQUIRED } });
