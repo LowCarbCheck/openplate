@@ -61,11 +61,14 @@ import { HEALTHY_STORAGE, NOTHING_WAS_UNPINNED, withRecordedDeletes } from '../s
 import {
   createSyncAccount,
   markSyncPending,
+  recordHealthConsent,
   recoverSyncAccount,
   resetSyncPassphrase,
   signInToSync,
   syncNow,
+  type ResetSyncPassphraseResult,
 } from '../../app/lib/sync/sync-actions';
+import { consentAskingFetch } from './consent-asking-fetch';
 import type { SyncSetupOutcome } from '../../app/lib/sync/setup-flow';
 import { classifyRecoveryFailure } from '../../app/lib/sync/sign-in-error';
 import {
@@ -726,7 +729,8 @@ test('an interrupted setup is repaired by the next sign-in', async () => {
   assert.equal(getSyncVault(), null, 'the vault stays shut until the ceremony has actually written the keys');
 
   assert.ok(signedIn.status === 'setup-incomplete');
-  assert.equal(expectReady(await signedIn.completeSetup({ passphrase: PASSPHRASE })), email);
+  // The fake service asks for no consent, so there is none to hand over.
+  assert.equal(expectReady(await signedIn.completeSetup({ passphrase: PASSPHRASE, healthConsent: null })), email);
 
   // The account is now genuinely usable: push, then read it back on a fresh
   // sign-in that takes the ORDINARY path.
@@ -1241,3 +1245,139 @@ test('a freshly established compartment reaches the service', async () => {
   });
   assert.equal(JSON.parse(new TextDecoder().decode(plaintext)).kind, 'diary');
 });
+
+// ---------------------------------------------------------------------------
+// A reset by an account without the consent to health data (M266 review)
+// ---------------------------------------------------------------------------
+
+/** The wording the consent-asking instance below asks for. */
+const CONSENT_VERSION = '2026-09-28';
+
+/** The passphrase the resets below set. */
+const RESET_PASSPHRASE = 'a passphrase chosen after a forgotten one';
+
+/** Keeps the addresses and device ids below unique within one run. */
+let consentCounter = 0;
+
+/** The compartment the service holds for this account, read back by a device of its own, or `null`. */
+async function publishedCompartment(vault: SyncVault): Promise<SealedPrivateStore | null> {
+  const readback = { current: snapshotOf([]) };
+  await runSyncCycleUnlocked(deviceDeps({ vault, deviceId: `device-readback-${consentCounter++}`, local: readback }));
+  return readback.current.privateStore;
+}
+
+/** Whether the passphrase door of `vault`, derived at its own sign-in, opens `sealed`. */
+async function opensWithPassphrase(input: { vault: SyncVault; sealed: SealedPrivateStore }): Promise<boolean> {
+  const opened = await openOwnerPrivateRegion({
+    session: createPrivateStoreSession({
+      accountId: input.vault.accountId,
+      passphraseKek: input.vault.privateStore.passphraseKek,
+    }),
+    sealed: input.sealed,
+  });
+  return opened !== null;
+}
+
+/** An account whose compartment is on the service and opens with {@link PASSPHRASE}, signed out again. */
+async function accountWithPublishedCompartment(label: string): Promise<string> {
+  closeSyncSession();
+  const email = `${label}-${Date.now()}-${consentCounter++}@example.org`;
+  expectReady(await signUp(email));
+  markSyncPending();
+  await syncNow();
+  const vault = requireVault();
+  const sealed = await publishedCompartment(vault);
+  assert.ok(sealed !== null, 'the fixture account must hold a compartment on the service');
+  assert.equal(await opensWithPassphrase({ vault, sealed }), true, 'and its passphrase must open it');
+  closeSyncSession();
+  return email;
+}
+
+test('a reset by an account without the consent keeps its private compartment once the consent is given', async () => {
+  // 14 OF THE 15 BETA ACCOUNTS HAD NO CONSENT when openplate-core started to
+  // require it. A reset rotates the passphrase and the recovery code, then
+  // rewraps the compartment in a blob push, and the core refuses that push to
+  // such an account. The compartment then keeps its doors on a passphrase and
+  // a code that no longer exist: the share keys and pins in it are lost.
+  const email = await accountWithPublishedCompartment('consent-reset');
+  const consent = consentAskingFetch({ version: CONSENT_VERSION });
+
+  let outcome: ResetSyncPassphraseResult | 'threw';
+  try {
+    outcome = await resetSyncPassphrase({
+      serverUrl: service.url,
+      resetToken: service.createResetToken(email) ?? '',
+      newPassphrase: RESET_PASSPHRASE,
+      deriveHash: fastDeriver,
+      params: FAST_PARAMS,
+      fetchImpl: consent.fetchImpl,
+    });
+  } catch {
+    outcome = 'threw';
+  }
+  // THE PERSON GIVES THE CONSENT, the way the build offers it: on the reset
+  // screen when the reset asks, and otherwise on `/consent` afterwards, which
+  // syncs what it held.
+  if (outcome !== 'threw' && outcome.status === 'consent-required') {
+    outcome = await outcome.continueWithConsent();
+  } else {
+    await recordHealthConsent({ version: CONSENT_VERSION });
+  }
+  assert.equal(consent.isConsented, true, 'the consent was never given, so nothing below is a statement');
+  markSyncPending();
+  await syncNow();
+
+  // THE CLAIM, read back by a fresh sign-in with the NEW passphrase, which
+  // derives its own door rather than borrowing one from memory.
+  closeSyncSession();
+  await signInToSync({ serverUrl: service.url, email, passphrase: RESET_PASSPHRASE, deriveHash: fastDeriver });
+  const fresh = requireVault();
+  const sealed = await publishedCompartment(fresh);
+  assert.ok(sealed !== null, 'the compartment is gone from the service');
+  assert.equal(
+    await opensWithPassphrase({ vault: fresh, sealed }),
+    true,
+    'the compartment no longer opens with the new passphrase: its keys are lost for good',
+  );
+  closeSyncSession();
+});
+
+test('a reset that asks for the consent has rotated nothing yet, so leaving there loses nothing', async () => {
+  const email = await accountWithPublishedCompartment('consent-reset-left');
+  const consent = consentAskingFetch({ version: CONSENT_VERSION });
+
+  const outcome = await resetSyncPassphrase({
+    serverUrl: service.url,
+    resetToken: service.createResetToken(email) ?? '',
+    newPassphrase: RESET_PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+    fetchImpl: consent.fetchImpl,
+  });
+  assert.equal(outcome.status, 'consent-required', 'the reset must ask before it rotates anything');
+  assert.equal(getSyncVault(), null, 'no session may open before the consent');
+  assert.equal(consent.refusedWrites, 0, 'no write may even be attempted before the consent');
+  assert.equal(consent.isConsented, false);
+
+  // THE PERSON CLOSES THE TAB. The old passphrase still signs in...
+  const signedIn = await signInToSync({ serverUrl: service.url, email, passphrase: PASSPHRASE, deriveHash: fastDeriver });
+  assert.equal(signedIn.status, 'connected', 'the passphrase the reset did not get to replace must still work');
+  const vault = requireVault();
+  const sealed = await publishedCompartment(vault);
+  assert.ok(sealed !== null);
+  assert.equal(await opensWithPassphrase({ vault, sealed }), true, 'and it must still open the compartment');
+  closeSyncSession();
+
+  // ...and a NEW link still resets, because the escrowed code was never
+  // retired. This instance asks nothing, so it goes straight through.
+  const again = await resetSyncPassphrase({
+    serverUrl: service.url,
+    resetToken: service.createResetToken(email) ?? '',
+    newPassphrase: RESET_PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  assert.deepEqual(again, { status: 'ready', email });
+  closeSyncSession();
+});
+

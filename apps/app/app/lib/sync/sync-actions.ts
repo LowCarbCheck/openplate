@@ -41,15 +41,16 @@ import { establishPrivateStore } from './engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } from './engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { bytesToBase64 } from './engine/crypto/base64';
-import type {
-  AccountViewWire,
-  HealthConsentRequestWire,
-  KdfDescriptorWire,
-  KeyRecordSubmissionWire,
+import {
+  HEALTH_CONSENT_REQUIRED,
+  type AccountViewWire,
+  type HealthConsentRequestWire,
+  type KdfDescriptorWire,
+  type KeyRecordSubmissionWire,
 } from './engine/client/auth-wire';
 import type { PlanKey } from './engine/client/plans-wire';
 import type { LanguageCode } from '#app/i18n/language-prefs';
-import type { InstanceDescriptor, OperatorNotice } from './engine/protocol';
+import type { InstanceDescriptor, InstanceHealthConsent, OperatorNotice } from './engine/protocol';
 import type { SyncSetupOutcome } from './setup-flow';
 import { reconcileAwardsQuietly } from '#app/lib/gamification/record';
 import { reconcileFastWakeAtAfterMerge } from '#app/lib/fast-wake';
@@ -94,6 +95,7 @@ import { decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
   decodeHealthConsent,
   isConsentRequiredRefusal,
+  requiredHealthConsentVersion,
   signalConsentRefusal,
 } from '#app/lib/health-consent/health-consent';
 
@@ -130,6 +132,56 @@ async function requireCompatibleService(authClient: SyncAuthClient): Promise<voi
 
 function toWireDescriptor(descriptor: PassphraseKdfDescriptor): KdfDescriptorWire {
   return { salt: descriptor.salt, params: descriptor.params };
+}
+
+/**
+ * The consent to health data this account still owes the instance: the
+ * version the instance asks for, when the account does not hold exactly that
+ * one, or `null` when it owes nothing (M266, openplate-core `PROTOCOL.md`
+ * §5.15.1). The core refuses every data write while one is owed.
+ *
+ * Reads the handshake, which fails OPEN: an instance that cannot say reads as
+ * one that asks for nothing, exactly as every instance older than the field.
+ * The callers have just passed `requireCompatibleService`, so the handshake
+ * answered a moment ago.
+ */
+async function owedHealthConsent({
+  authClient,
+  account,
+}: {
+  authClient: SyncAuthClient;
+  account: AccountViewWire;
+}): Promise<string | null> {
+  const required = requiredHealthConsentVersion(await authClient.instance());
+  if (required === null) return null;
+  return decodeHealthConsent(account.healthConsent)?.version === required ? null : required;
+}
+
+/**
+ * Records `agreed` when the account owes exactly that version, and answers
+ * the version still owed afterwards, or `null`.
+ *
+ * FOR THE TWO PATHS THAT WRITE BEFORE ANY SCREEN CAN ASK: a recovery, whose
+ * compartment rewrap is refused otherwise and lost with it, and the repair of
+ * an unfinished setup, whose key records are refused otherwise. Both call it
+ * BEFORE their first write, so a consent still owed stops them with nothing
+ * changed. An `agreed` for another version records nothing: it is a tick given
+ * to a wording the instance no longer asks about.
+ */
+async function settleHealthConsent({
+  authClient,
+  account,
+  agreed,
+}: {
+  authClient: SyncAuthClient;
+  account: AccountViewWire;
+  agreed: HealthConsentRequestWire | null;
+}): Promise<string | null> {
+  const owed = await owedHealthConsent({ authClient, account });
+  if (owed === null) return null;
+  if (agreed?.version !== owed) return owed;
+  await authClient.recordHealthConsent({ version: owed });
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -354,8 +406,21 @@ export type SignInToSyncResult =
    * pushes both key records and opens the vault — so the ceremony's own
    * "I've saved this code" gate is what stands between the code and the rest of
    * the app, exactly as in first-time setup.
+   *
+   * `healthConsent` is the consent to health data the account still owes the
+   * instance, or `null` (M266). The core refuses the key-record writes while
+   * one is owed, and the sign-in page sits outside the layout that asks, so
+   * the page asks first and hands the ticked version to `completeSetup`,
+   * which records it before the first write.
    */
-  | { status: 'setup-incomplete'; completeSetup: (input: { passphrase: string }) => Promise<SyncSetupOutcome> };
+  | {
+      status: 'setup-incomplete';
+      healthConsent: InstanceHealthConsent | null;
+      completeSetup: (input: {
+        passphrase: string;
+        healthConsent: HealthConsentRequestWire | null;
+      }) => Promise<SyncSetupOutcome>;
+    };
 
 /**
  * Signs in and unlocks the vault: authenticate with the auth branch, then
@@ -402,8 +467,10 @@ export async function signInToSync({
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
   if (passphraseRecord === undefined) {
+    const owed = await owedHealthConsent({ authClient, account: session.account });
     return {
       status: 'setup-incomplete',
+      healthConsent: owed === null ? null : { version: owed },
       completeSetup: async (input) =>
         finishInterruptedSetup({
           authClient,
@@ -415,6 +482,7 @@ export async function signInToSync({
           // KEK closed over here would silently write a record that the
           // passphrase the user just typed cannot open.
           passphrase: input.passphrase,
+          healthConsent: input.healthConsent,
           descriptor,
           deriveHash,
         }),
@@ -466,17 +534,29 @@ async function finishInterruptedSetup({
   serverUrl,
   account,
   passphrase,
+  healthConsent,
   descriptor,
   deriveHash,
 }: {
   authClient: SyncAuthClient;
   http: SyncHttpClient;
   serverUrl: string;
-  account: { id: number; email: string };
+  account: AccountViewWire;
   passphrase: string;
+  /** The consent the sign-in page asked for and the person ticked, or `null` where it asked nothing. */
+  healthConsent: HealthConsentRequestWire | null;
   descriptor: PassphraseKdfDescriptor;
   deriveHash: Argon2idDeriver;
 }): Promise<SyncSetupOutcome> {
+  // THE CONSENT, BEFORE THE FIRST KEY RECORD (M266). The core refuses both
+  // writes below to an account that does not hold the instance's consent. A
+  // consent still owed here is a wording that changed while the page was
+  // open: stopped with nothing written, and with no message of its own, so the
+  // ceremony shows its own failure sentence rather than the protocol token.
+  const owed = await settleHealthConsent({ authClient, account, agreed: healthConsent });
+  if (owed !== null) {
+    throw new SyncRequestError({ kind: 'consent-required', message: '', code: HEALTH_CONSENT_REQUIRED });
+  }
   const { passphraseKek, privateStoreKek } = await deriveCredentialsFromPassphrase({
     passphrase,
     descriptor,
@@ -1199,6 +1279,18 @@ export async function requestOpenSignup({
  * A password field, and then their diary. No code, at any point, in either
  * direction: {@link recoverSyncAccount} is called with a value fetched from
  * the service microseconds earlier and dropped when this frame ends.
+ *
+ * ── Except when the instance wants the consent first (M266) ─────────────
+ *
+ * openplate-core refuses every data write to an account without its current
+ * consent to health data, and the recovery's last step is one: the
+ * compartment's rewrap, a blob push. Refused after the rotation, it left the
+ * compartment's doors on a passphrase and a code that no longer exist, and its
+ * share keys and pins were lost for good. So the recovery asks BEFORE it
+ * rotates anything (`consent-required`), and the code waits in the closure of
+ * `continueWithConsent` while the person ticks the box. Nothing holds it but
+ * that closure, and a person who leaves instead has changed nothing: the old
+ * passphrase still works, and a new link returns the same escrowed code.
  */
 export async function resetSyncPassphrase({
   serverUrl,
@@ -1222,20 +1314,53 @@ export async function resetSyncPassphrase({
   // own screen rather than a throw. Everything else still throws.
   if ('status' in opened) return { status: 'invalid' };
 
-  await recoverSyncAccount({
-    serverUrl,
-    email: opened.email,
-    recoveryCode: opened.recoveryCode,
-    newPassphrase,
-    deriveHash,
-    params,
-    fetchImpl,
+  return finishReset({
+    recovery: {
+      serverUrl,
+      email: opened.email,
+      recoveryCode: opened.recoveryCode,
+      newPassphrase,
+      deriveHash,
+      params,
+      fetchImpl,
+    },
+    healthConsent: null,
   });
-  return { status: 'ready', email: opened.email };
 }
 
-/** The two ways a mailed reset ends. A dead token has a screen; anything else throws. */
-export type ResetSyncPassphraseResult = { status: 'ready'; email: string } | { status: 'invalid' };
+/** Runs the recovery, and turns a consent it still needs into a continuation that holds everything it needs. */
+async function finishReset({
+  recovery,
+  healthConsent,
+}: {
+  recovery: Omit<Parameters<typeof recoverSyncAccount>[0], 'healthConsent'>;
+  healthConsent: HealthConsentRequestWire | null;
+}): Promise<ResetSyncPassphraseResult> {
+  const recovered = await recoverSyncAccount({ ...recovery, healthConsent });
+  if (recovered.status === 'recovered') return { status: 'ready', email: recovery.email };
+  return {
+    status: 'consent-required',
+    continueWithConsent: () => finishReset({ recovery, healthConsent: { version: recovered.version } }),
+  };
+}
+
+/**
+ * The three ways a mailed reset ends. A dead token has a screen; anything
+ * else throws.
+ *
+ * `consent-required` has changed nothing yet: the instance asks every account
+ * for the consent to health data, this account does not hold it, and the
+ * recovery stopped before the first write. `continueWithConsent` is the
+ * person ticking the box: it records the consent to the version asked, then
+ * runs the recovery again with the same code and the same new passphrase.
+ */
+export type ResetSyncPassphraseResult =
+  | { status: 'ready'; email: string }
+  | { status: 'invalid' }
+  | { status: 'consent-required'; continueWithConsent: () => Promise<ResetSyncPassphraseResult> };
+
+/** How a recovery ended: done, or stopped before its first write because the account owes the instance a consent. */
+export type RecoverSyncAccountResult = { status: 'recovered' } | { status: 'consent-required'; version: string };
 
 /**
  * Sets a new passphrase using the recovery code, and mints a replacement code
@@ -1270,6 +1395,7 @@ export async function recoverSyncAccount({
   email,
   recoveryCode,
   newPassphrase,
+  healthConsent = null,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
@@ -1279,7 +1405,13 @@ export async function recoverSyncAccount({
   /** The escrowed code, exactly as `/reset/open` returned it (`parseRecoveryCode` tolerates the grouping). */
   recoveryCode: string;
   newPassphrase: string;
-} & SyncActionOptions): Promise<void> {
+  /**
+   * The consent to health data the person has just agreed to, or `null` when
+   * they have not been asked. Recorded before anything rotates when the
+   * account owes exactly this version; see {@link resetSyncPassphrase}.
+   */
+  healthConsent?: HealthConsentRequestWire | null;
+} & SyncActionOptions): Promise<RecoverSyncAccountResult> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
@@ -1292,6 +1424,13 @@ export async function recoverSyncAccount({
     email,
     recoveryAuthHash: await deriveRecoveryAuthHash(rawRecoveryCode),
   });
+
+  // THE CONSENT, BEFORE ANYTHING ROTATES (M266). The last step below pushes
+  // the compartment's rewrap, which the core refuses to an account without
+  // the consent, and by then the passphrase and the code have both been
+  // replaced. Stopping here leaves every credential as it was.
+  const owed = await settleHealthConsent({ authClient, account: recovered.account, agreed: healthConsent });
+  if (owed !== null) return { status: 'consent-required', version: owed };
 
   const records = await http.listKeyRecords();
   const recoveryRecord = records.find((record) => record.kind === 'recovery');
@@ -1362,6 +1501,7 @@ export async function recoverSyncAccount({
     currentRecoveryKek: await derivePrivateStoreRecoveryKek(rawRecoveryCode),
     nextRecoveryKek: await derivePrivateStoreRecoveryKek(nextRecovery.raw),
   });
+  return { status: 'recovered' };
 }
 
 /**

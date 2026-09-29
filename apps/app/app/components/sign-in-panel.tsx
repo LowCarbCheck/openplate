@@ -30,6 +30,7 @@ import { Loader2 } from 'lucide-react';
 
 import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { FieldError } from '#app/components/field-error';
+import { HealthConsentStep } from '#app/components/health-consent-step';
 import { SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
@@ -38,8 +39,8 @@ import { canonicalizeEmail } from '#app/lib/sync/email';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { classifySignInFailure } from '#app/lib/sync/sign-in-error';
 import { makeSyncSignInSchema, type SyncSignInValues } from '#app/lib/sync/sign-in-schema';
-import type { SyncSetupOutcome } from '#app/lib/sync/setup-flow';
-import { signInToSync, syncNow } from '#app/lib/sync/sync-actions';
+import type { HealthConsentRequestWire } from '#app/lib/sync/engine/client/auth-wire';
+import { signInToSync, syncNow, type SignInToSyncResult } from '#app/lib/sync/sync-actions';
 
 /** The shape `parseWithZod` hands back for the sign-in form, and what a service refusal is replied onto. */
 type SyncSignInSubmission = Submission<SyncSignInValues, string[], SyncSignInValues>;
@@ -102,10 +103,14 @@ export function SignInPanel({
   // and a wrong passphrase, so naming a field would be a guess — and an
   // account-enumeration oracle if the guess were right.
   const [lastResult, setLastResult] = useState<ReturnType<SyncSignInSubmission['reply']> | undefined>(undefined);
-  const [repair, setRepair] = useState<{
+  const [repair, setRepair] = useState<Extract<SignInToSyncResult, { status: 'setup-incomplete' }> & {
     passphrase: string;
-    completeSetup: (input: { passphrase: string }) => Promise<SyncSetupOutcome>;
   } | null>(null);
+  // THE CONSENT THE REPAIR NEEDS FIRST, once ticked (M266). `null` until then.
+  // The ceremony below writes the key records the moment it mounts, and the
+  // core refuses them to an account that owes the instance a consent, so it is
+  // not mounted until the account owes nothing or the box has been ticked.
+  const [agreedConsent, setAgreedConsent] = useState<HealthConsentRequestWire | null>(null);
 
   const [form, fields] = useForm({
     id: 'sync-signin',
@@ -139,7 +144,7 @@ export function SignInPanel({
       // screen is indistinguishable from a wrong password.
       const result = await signInToSync({ serverUrl, email: canonicalizeEmail(email), passphrase });
       if (result.status === 'setup-incomplete') {
-        setRepair({ passphrase, completeSetup: result.completeSetup });
+        setRepair({ ...result, passphrase });
         return;
       }
       if (onSignedIn !== undefined) {
@@ -165,22 +170,29 @@ export function SignInPanel({
   const emailDescribedBy = [emailInputProps['aria-describedby'], emailHintId].filter(Boolean).join(' ');
 
   if (repair !== null) {
+    const owedConsent = repair.healthConsent;
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{t('sync.signIn.finishSetup')}</p>
-        <SyncSetupFlow
-          resume={{ passphrase: repair.passphrase }}
-          onCeremonyActiveChange={onCeremonyActiveChange}
-          onCeremonyComplete={onCeremonyComplete}
-          provision={async (input) => {
-            const outcome = await repair.completeSetup({ passphrase: input.passphrase });
-            // Fired, never awaited — same reason as the create path: the
-            // ceremony is finished the moment the key records exist, and a
-            // network round trip after that would only hold the screen.
-            void syncNow().catch(() => undefined);
-            return outcome;
-          }}
-        />
+        {owedConsent !== null && agreedConsent === null ?
+          <HealthConsentStep onAgree={() => setAgreedConsent({ version: owedConsent.version })} />
+        : <SyncSetupFlow
+            resume={{ passphrase: repair.passphrase }}
+            onCeremonyActiveChange={onCeremonyActiveChange}
+            onCeremonyComplete={onCeremonyComplete}
+            provision={async (input) => {
+              const outcome = await repair.completeSetup({
+                passphrase: input.passphrase,
+                healthConsent: agreedConsent,
+              });
+              // Fired, never awaited, for the same reason as the create path: the
+              // ceremony is finished the moment the key records exist, and a
+              // network round trip after that would only hold the screen.
+              void syncNow().catch(() => undefined);
+              return outcome;
+            }}
+          />
+        }
       </div>
     );
   }

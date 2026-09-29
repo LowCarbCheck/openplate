@@ -43,6 +43,7 @@ import { Loader2 } from 'lucide-react';
 
 import { FieldError } from '#app/components/field-error';
 import { FirstPullStatus } from '#app/components/first-pull-status';
+import { HealthConsentStep } from '#app/components/health-consent-step';
 import { Link } from '#app/components/link';
 import { PasswordFields } from '#app/components/password-fields';
 import { AccountsNeedHttps } from '#app/components/accounts-need-https';
@@ -58,7 +59,7 @@ import { trackPasswordResetCompleted } from '#app/lib/matomo-events';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import type { SignInDestination } from '#app/lib/sign-in-flow';
-import { resetSyncPassphrase } from '#app/lib/sync/sync-actions';
+import { resetSyncPassphrase, type ResetSyncPassphraseResult } from '#app/lib/sync/sync-actions';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -80,6 +81,18 @@ type Phase =
   | { status: 'foreign-server' }
   | { status: 'form'; resetToken: string }
   | { status: 'working'; resetToken: string }
+  /**
+   * The instance asks every account for a consent to health data and this one
+   * does not hold it (M266). The recovery has stopped before its first write,
+   * so nothing has rotated yet, and `continueWithConsent` holds the escrowed
+   * code and the new password until the box is ticked. Leaving here changes
+   * nothing: the old password still works and a new link still resets.
+   */
+  | {
+      status: 'consent';
+      resetToken: string;
+      continueWithConsent: () => Promise<ResetSyncPassphraseResult>;
+    }
   /**
    * The password is set and the session is open; the diary is on its way.
    *
@@ -119,15 +132,30 @@ export default function Reset() {
 
   async function submit({ resetToken, passphrase }: { resetToken: string; passphrase: string }): Promise<void> {
     if (serverUrl === null) return;
-    setPhase({ status: 'working', resetToken });
     // CONSUMED HERE, on submit rather than on mount: until this moment a
     // reload has to be able to bring the token back, and after it a later
     // visit must not resurrect one the service has spent.
     consumeResetToken();
+    await settle({ resetToken, run: () => resetSyncPassphrase({ serverUrl, resetToken, newPassphrase: passphrase }) });
+  }
+
+  /** Runs one step of the reset and moves to the screen its answer calls for. */
+  async function settle({
+    resetToken,
+    run,
+  }: {
+    resetToken: string;
+    run: () => Promise<ResetSyncPassphraseResult>;
+  }): Promise<void> {
+    setPhase({ status: 'working', resetToken });
     try {
-      const result = await resetSyncPassphrase({ serverUrl, resetToken, newPassphrase: passphrase });
+      const result = await run();
       if (result.status === 'invalid') {
         setPhase({ status: 'invalid-token' });
+        return;
+      }
+      if (result.status === 'consent-required') {
+        setPhase({ status: 'consent', resetToken, continueWithConsent: result.continueWithConsent });
         return;
       }
       // THE RESET OPENS THE SESSION, and that is only half of getting back in.
@@ -171,6 +199,14 @@ export default function Reset() {
                   and never asks for a password again. */}
               {phase.status === 'pulling' && firstPull.phase.status !== 'idle' && (
                 <FirstPullStatus phase={firstPull.phase} onRetry={firstPull.start} />
+              )}
+              {/* THE CONSENT, ASKED BEFORE ANYTHING ROTATES (M266). The same
+                  box and words as `/consent`; ticking it records the consent
+                  and finishes the reset with the password already typed. */}
+              {phase.status === 'consent' && (
+                <HealthConsentStep
+                  onAgree={() => void settle({ resetToken: phase.resetToken, run: phase.continueWithConsent })}
+                />
               )}
               {(phase.status === 'no-token' ||
                 phase.status === 'invalid-token' ||
