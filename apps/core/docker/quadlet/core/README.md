@@ -21,7 +21,7 @@ Every unit reads two env files. Quadlet looks for both in the directory where th
 - `sync.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up with the database. If you restore the database without the secret, no one can log in.
 - Put any other setting in `sync.env`, using the variable name defined in `sync.defaults.env`. This includes `ADMIN_TOKEN` to mint the first invitation, `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` for links, `TRUST_PROXY`, and the mail block. Keep file permissions set to mode 600, because the file stores the secret.
 - `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
-- Do not set `SIGNUP_MODE` or any `SMTP_*`. The service rejects them at boot.
+- Do not set `SIGNUP_MODE` or `SMTP_SECURE`. They make the service refuse to start. Configure SMTP mail with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM` in `sync.env`. The `.env.example` file explains them.
 
 After you change a file, restart its unit, for example `systemctl --user restart sync.service`.
 

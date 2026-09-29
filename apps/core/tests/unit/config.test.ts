@@ -419,6 +419,187 @@ test('CONTROL: outside production, mail with localhost link bases still boots', 
   }
 });
 
+// ---------------------------------------------------------------------------
+// SMTP, the second mail transport
+// ---------------------------------------------------------------------------
+//
+// A family server rarely has an HTTP mail API, and nearly always has an SMTP
+// login: a Gmail app password, Amazon SES SMTP, the provider behind its
+// domain. The owner decided on 2026-09-29 to add SMTP back beside the HTTP API.
+// Exactly one transport at a time, and TLS is decided by the port, never by a
+// switch an operator could leave on "off".
+
+/** A Gmail app password setup, the example the README gives. */
+const SMTP_BLOCK = {
+  SMTP_HOST: 'smtp.gmail.com',
+  SMTP_PORT: '587',
+  SMTP_USER: 'family.openplate@gmail.com',
+  SMTP_PASSWORD: 'abcd efgh ijkl mnop',
+  SMTP_FROM: 'openplate <family.openplate@gmail.com>',
+  MAIL_OPERATOR_EMAIL: 'operator@example.org',
+  ...PUBLIC_LINKS,
+};
+
+/** The HTTP transport's three names, for the case that sets both transports. */
+const HTTP_TRANSPORT = {
+  MAIL_API_URL: 'http://pigeon:3601/v1/emails',
+  MAIL_API_KEY: 'a-pigeon-tenant-key',
+  MAIL_API_FROM: 'openplate <openplate@mail.example.org>',
+};
+
+test('an SMTP block is a mail transport, and port 587 must upgrade with STARTTLS', () => {
+  const config = parseConfig(baseEnv(SMTP_BLOCK));
+  assert.deepEqual(config.mail, {
+    transport: 'smtp',
+    host: 'smtp.gmail.com',
+    port: 587,
+    tls: 'starttls-required',
+    auth: { user: 'family.openplate@gmail.com', password: 'abcd efgh ijkl mnop' },
+    from: 'openplate <family.openplate@gmail.com>',
+    operatorEmail: 'operator@example.org',
+  });
+});
+
+test('SMTP_PORT defaults to 587, unset or empty', () => {
+  const unset = baseEnv(SMTP_BLOCK);
+  delete unset.SMTP_PORT;
+  const empty = baseEnv({ ...SMTP_BLOCK, SMTP_PORT: '' });
+  for (const env of [unset, empty]) {
+    const mail = parseConfig(env).mail;
+    assert.ok(mail !== null && mail.transport === 'smtp');
+    assert.equal(mail.port, 587);
+    assert.equal(mail.tls, 'starttls-required');
+  }
+});
+
+test('port 465 is implicit TLS', () => {
+  const mail = parseConfig(baseEnv({ ...SMTP_BLOCK, SMTP_PORT: '465' })).mail;
+  assert.ok(mail !== null && mail.transport === 'smtp');
+  assert.equal(mail.tls, 'implicit-tls');
+});
+
+test('on a host that is not this machine, every other port must upgrade with STARTTLS: no plain text', () => {
+  for (const [host, port] of [
+    ['smtp.example.org', '25'],
+    ['smtp.example.org', '2525'],
+    ['email-smtp.eu-central-1.amazonaws.com', '587'],
+    ['192.0.2.10', '25'],
+    // Contains the word, is not the name.
+    ['localhost.example.org', '25'],
+  ]) {
+    const mail = parseConfig(baseEnv({ ...SMTP_BLOCK, SMTP_HOST: host, SMTP_PORT: port })).mail;
+    assert.ok(mail !== null && mail.transport === 'smtp');
+    assert.equal(mail.tls, 'starttls-required', `${host}:${port}`);
+  }
+});
+
+test('a loopback host may send in plain text and needs no login, for a local catcher such as Mailpit', () => {
+  for (const host of ['localhost', '127.0.0.1', '127.0.0.53', '::1', '[::1]', 'mailpit.localhost']) {
+    const env = baseEnv({ ...SMTP_BLOCK, SMTP_HOST: host, SMTP_PORT: '1025' });
+    delete env.SMTP_USER;
+    delete env.SMTP_PASSWORD;
+    const mail = parseConfig(env).mail;
+    assert.ok(mail !== null && mail.transport === 'smtp', host);
+    assert.equal(mail.tls, 'starttls-if-offered', host);
+    assert.equal(mail.auth, null, host);
+  }
+  // 465 on loopback is still implicit TLS: the port decides first.
+  const tls = parseConfig(baseEnv({ ...SMTP_BLOCK, SMTP_HOST: 'localhost', SMTP_PORT: '465' })).mail;
+  assert.ok(tls !== null && tls.transport === 'smtp');
+  assert.equal(tls.tls, 'implicit-tls');
+});
+
+test('a partial SMTP block refuses to boot, names what is missing, and never quotes the password', () => {
+  const cases: { env: NodeJS.ProcessEnv; missing: RegExp }[] = [
+    { env: { SMTP_HOST: 'smtp.gmail.com', MAIL_OPERATOR_EMAIL: 'operator@example.org' }, missing: /SMTP_FROM/ },
+    { env: { SMTP_FROM: 'f', MAIL_OPERATOR_EMAIL: 'operator@example.org' }, missing: /SMTP_HOST/ },
+    { env: { SMTP_HOST: 'smtp.gmail.com', SMTP_FROM: 'f' }, missing: /MAIL_OPERATOR_EMAIL/ },
+    { env: { SMTP_PORT: '587' }, missing: /SMTP_HOST/ },
+    {
+      env: { SMTP_HOST: 'smtp.gmail.com', SMTP_FROM: 'f', MAIL_OPERATOR_EMAIL: 'o@example.org', SMTP_USER: 'u' },
+      missing: /SMTP_PASSWORD/,
+    },
+    {
+      env: {
+        SMTP_HOST: 'smtp.gmail.com',
+        SMTP_FROM: 'f',
+        MAIL_OPERATOR_EMAIL: 'o@example.org',
+        SMTP_PASSWORD: 'abcd efgh ijkl mnop',
+      },
+      missing: /SMTP_USER/,
+    },
+  ];
+  for (const { env, missing } of cases) {
+    const message = refusal(baseEnv({ ...PUBLIC_LINKS, ...env }));
+    assert.match(message, missing, JSON.stringify(Object.keys(env)));
+    assert.ok(!message.includes('abcd efgh ijkl mnop'), 'a password in a startup log is a password in a log');
+  }
+});
+
+test('both transports at once refuse to boot, and the message names both', () => {
+  // CONTROL first: each transport alone boots, so the refusal below is about
+  // the pair and not about either one.
+  assert.equal(parseConfig(baseEnv(SMTP_BLOCK)).mail?.transport, 'smtp');
+  const httpOnly = parseConfig(
+    baseEnv({ ...HTTP_TRANSPORT, MAIL_OPERATOR_EMAIL: 'operator@example.org', ...PUBLIC_LINKS }),
+  ).mail;
+  assert.ok(httpOnly !== null && httpOnly.transport !== 'smtp');
+
+  const message = refusal(baseEnv({ ...SMTP_BLOCK, ...HTTP_TRANSPORT }));
+  assert.match(message, /MAIL_API_URL/);
+  assert.match(message, /SMTP_HOST/);
+  assert.ok(!message.includes('abcd efgh ijkl mnop'));
+  assert.ok(!message.includes('a-pigeon-tenant-key'));
+  // One variable of each is enough to be two transports.
+  assert.match(refusal(baseEnv({ ...SMTP_BLOCK, MAIL_API_KEY: 'k' })), /MAIL_API_KEY/);
+});
+
+test('an SMTP_PORT that is not a port refuses to boot', () => {
+  for (const port of ['0', '65536', 'smtp', '58 7', '-25']) {
+    assert.match(refusal(baseEnv({ ...SMTP_BLOCK, SMTP_PORT: port })), /SMTP_PORT/, port);
+  }
+});
+
+test('an SMTP_HOST that is not a bare host name or address refuses to boot', () => {
+  // CONTROL: the same block with a bare host boots.
+  assert.equal(parseConfig(baseEnv(SMTP_BLOCK)).mail?.transport, 'smtp');
+  for (const host of ['smtp.gmail.com:587', 'smtps://smtp.gmail.com', 'user@smtp.gmail.com', 'smtp.gmail.com/x']) {
+    assert.match(refusal(baseEnv({ ...SMTP_BLOCK, SMTP_HOST: host })), /SMTP_HOST/, host);
+  }
+});
+
+test('every rule that needs mail accepts SMTP: open sign-up, the link bases, and the production link guard', () => {
+  assert.equal(parseConfig(baseEnv({ ...SMTP_BLOCK, OPEN_SIGNUP: 'true' })).openSignup, true);
+  const withoutLinks = baseEnv(SMTP_BLOCK);
+  delete withoutLinks.SERVER_PUBLIC_URL;
+  assert.match(refusal(withoutLinks), /SERVER_PUBLIC_URL/);
+  const message = refusal(baseEnv({ ...SMTP_BLOCK, NODE_ENV: 'production', CLIENT_BASE_URL: 'http://localhost:3000' }));
+  assert.ok(message.includes('CLIENT_BASE_URL is "http://localhost:3000"'), message);
+  // And the open sign-up refusal names both transports, so an operator with
+  // SMTP learns it counts.
+  assert.match(refusal(baseEnv({ OPEN_SIGNUP: 'true' })), /SMTP_HOST/);
+});
+
+test('empty SMTP variables, as the compose files pass them, mean no SMTP', () => {
+  const config = parseConfig(
+    baseEnv({ SMTP_HOST: '', SMTP_PORT: '', SMTP_USER: '', SMTP_PASSWORD: '', SMTP_FROM: '', MAIL_OPERATOR_EMAIL: '' }),
+  );
+  assert.equal(config.mail, null);
+});
+
+test('SMTP_SECURE is still refused, and the message says the port decides TLS', () => {
+  const message = refusal(baseEnv({ ...SMTP_BLOCK, SMTP_SECURE: 'true' }));
+  assert.match(message, /SMTP_SECURE/);
+  assert.match(message, /SMTP_PORT/);
+  assert.match(message, /465/);
+});
+
+test('EMAIL_FROM is still refused, and the message names both sending addresses', () => {
+  const message = refusal(baseEnv({ EMAIL_FROM: 'f' }));
+  assert.match(message, /MAIL_API_FROM/);
+  assert.match(message, /SMTP_FROM/);
+});
+
 test('every removed variable is fatal rather than ignored', () => {
   // The same asymmetry SIGNUP_MODE is rejected under, applied to the old mail
   // plumbing. A variable that is quietly ignored lets an operator believe mail
@@ -428,18 +609,10 @@ test('every removed variable is fatal rather than ignored', () => {
   //
   // CLIENT_BASE_URL is deliberately NOT on this list any more: M181 made it
   // fatal because nothing linked into the client, and M192 mails invitations
-  // and resets again, so it is read again.
-  const removed = [
-    'REQUIRE_EMAIL_VERIFICATION',
-    'EMAIL_FROM',
-    'SMTP_HOST',
-    'SMTP_PORT',
-    'SMTP_USER',
-    'SMTP_PASSWORD',
-    'SMTP_SECURE',
-    'PIGEON_API_KEY',
-    'PIGEON_BASE_URL',
-  ];
+  // and resets again, so it is read again. SMTP_HOST, SMTP_PORT, SMTP_USER and
+  // SMTP_PASSWORD left it for the same reason: SMTP is a transport again. Only
+  // SMTP_SECURE stays, because the port decides TLS now.
+  const removed = ['REQUIRE_EMAIL_VERIFICATION', 'EMAIL_FROM', 'SMTP_SECURE', 'PIGEON_API_KEY', 'PIGEON_BASE_URL'];
   for (const key of removed) {
     // The message must NAME the variable, or an operator reading one line of
     // container output cannot tell which of ten it was.
@@ -452,7 +625,7 @@ test('a removed variable is fatal even when set to its old default', () => {
   // `false` reads it as "off, therefore harmless". It is not harmless, it is
   // stale, and an empty-looking value must not slip past the guard.
   assert.throws(() => parseConfig(baseEnv({ REQUIRE_EMAIL_VERIFICATION: 'false' })), /REQUIRE_EMAIL_VERIFICATION/);
-  assert.throws(() => parseConfig(baseEnv({ SMTP_HOST: '' })), /SMTP_HOST/);
+  assert.throws(() => parseConfig(baseEnv({ SMTP_SECURE: '' })), /SMTP_SECURE/);
 });
 
 test('SYNC_RESEARCH and SYNC_SHARING are independent flags', () => {
@@ -730,7 +903,11 @@ test('open sign-up is off unless set, and every instance that says nothing stays
 });
 
 test('OPEN_SIGNUP=true without mail refuses to boot and says why', () => {
-  assert.throws(() => parseConfig(baseEnv({ OPEN_SIGNUP: 'true' })), /OPEN_SIGNUP=true needs mail/);
+  // The facts, not the verb: the variable, and what to set for either transport.
+  const message = refusal(baseEnv({ OPEN_SIGNUP: 'true' }));
+  assert.match(message, /OPEN_SIGNUP=true/);
+  assert.match(message, /MAIL_API_URL/);
+  assert.match(message, /SMTP_HOST/);
 });
 
 test('OPEN_SIGNUP=true with mail boots with the door open', () => {

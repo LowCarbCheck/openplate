@@ -104,7 +104,34 @@ The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=..
 
 **You can let people ask for an invitation themselves.** With `OPEN_SIGNUP=true`, `POST /v1/auth/signup-request` takes an address, mints an ordinary invite for it and mails it there in a letter of its own, which says the person asked rather than that somebody invited them, so the letter is still the address check. It needs the mail block, and it refuses to boot without it. Every address gets the same `202`: an address that already has an account receives a short note with no link, and one that already holds a letter from you or a member receives nothing new. The request may name the plan the person picked (`"plan": "monthly"` or `"yearly"`) and the language they asked in (`"locale"`); the mailed link then carries `&plan=` and `&lang=`, the letter or the note is written in that language instead of `INSTANCE_LANGUAGE`, nothing is stored, and any other value is ignored. One source address may ask five times an hour, one mailbox receives one letter a day, and addresses at known throwaway mail services are refused (a vendored copy of the CC0 list at [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains), refreshed with `pnpm sync:disposable-domains`). Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_SITE_KEY` to require a Cloudflare Turnstile captcha as well; `/health` then publishes the site key for the app. `GET /v1/admin/stats` counts the invites this door minted today and in the last seven days, so a burst shows.
 
-**Mail is optional.** Set `MAIL_API_*` and this service sends the invitation and the password reset itself; leave it unset and both come back to you as links to paste. Nothing is silently dropped either way. `SMTP_*` and `PIGEON_*` are boot failures rather than no-ops: this service speaks pigeon's HTTP API and nothing else.
+**Mail is optional, and it goes out one of two ways.** Set one transport, and this service sends the invitation and the password reset itself. Leave both unset, and both come back to you as links to paste. Nothing is silently dropped either way. Setting both is a boot failure. `MAIL_OPERATOR_EMAIL` belongs to both. It receives your copy of a cancellation or a withdrawal.
+
+- **An HTTP mail API** that speaks pigeon's protocol, which matches Resend's shape: `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`, all three.
+- **SMTP**: `SMTP_HOST` and `SMTP_FROM`, with `SMTP_PORT` (587 when unset) and `SMTP_USER` with `SMTP_PASSWORD` as your server needs them. The port decides the encryption. Port 465 is TLS from the first byte. Every other port must upgrade with STARTTLS, so a server that does not offer it receives nothing. Only a host on this machine, a local catcher such as Mailpit, may take plain text. Certificates are always checked. A server that does not answer within 10 seconds fails the send the same way a failed HTTP send does: `emailed: false`, and you get the link.
+
+A Gmail account, with 2-Step Verification turned on and an app password made for this service:
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=family.openplate@gmail.com
+SMTP_PASSWORD="the 16-letter app password"
+SMTP_FROM="openplate <family.openplate@gmail.com>"
+MAIL_OPERATOR_EMAIL=you@example.org
+```
+
+Amazon SES, with SMTP credentials made in the SES console (they are not your AWS access key) and a verified sending address. In the SES sandbox, SES delivers only to verified addresses.
+
+```bash
+SMTP_HOST=email-smtp.eu-central-1.amazonaws.com
+SMTP_PORT=587
+SMTP_USER=<SES SMTP user name>
+SMTP_PASSWORD=<SES SMTP password>
+SMTP_FROM="openplate <noreply@example.org>"
+MAIL_OPERATOR_EMAIL=you@example.org
+```
+
+`SMTP_SECURE` and `PIGEON_*` cause boot failures rather than no-ops.
 
 **A declaration is kept until the end of the third calendar year after the year it arrived.** Every cancellation or withdrawal `POST /v1/legal/declarations` records stays in `legal_declarations` for that long, counted in Europe/Berlin time, and the hourly sweep then deletes it: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. Deleting an account does not delete its declarations earlier; the row only loses its account id. The sweep logs how many rows it deleted, never a row.
 
@@ -267,7 +294,7 @@ If you set one without the other, the service refuses to boot. The route answers
 with the same `404` any unknown path returns. `/health` reports
 `instance.ai: null`, so the app knows not to offer a scan.
 
-Setting any of the removed variables (`SIGNUP_MODE`, `SIGNUPS_OPEN`, `EMAIL_FROM`, `SMTP_*`, `PIGEON_*`, `REQUIRE_EMAIL_VERIFICATION`) is a **boot failure**, not a no-op. See [`.env.example`](./.env.example) for why refusing to start is the safer answer.
+Setting any of the removed variables (`SIGNUP_MODE`, `SIGNUPS_OPEN`, `EMAIL_FROM`, `SMTP_SECURE`, `PIGEON_*`, `REQUIRE_EMAIL_VERIFICATION`) is a **boot failure**, not a no-op. See [`.env.example`](./.env.example) for why refusing to start is the safer answer.
 
 ### Reported estimates, and what holding one costs you
 
@@ -493,7 +520,7 @@ never reaches the service. `INSTANCE_NAME`, `INSTANCE_LANGUAGE`,
 `NUTRIENT_REFERENCE_BASIS`,
 `SERVER_PUBLIC_URL`, `CLIENT_BASE_URL`, `TRUST_PROXY`, `LOG_LEVEL`,
 `SYNC_SHARING`, `SYNC_RESEARCH`, `DATABASE_SSL`, `SYNC_NOTICE`,
-`SYNC_NOTICE_URL`, `MAIL_API_*`, `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`,
+`SYNC_NOTICE_URL`, `MAIL_API_*`, `SMTP_*`, `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`,
 `UPSTREAM_TIMEOUT_MS`, `AI_ADVERTISED_MODEL`, `AI_MAX_OUTPUT_TOKENS`, `AI_RATE_LIMIT_PER_MINUTE`,
 `AI_MAX_REQUEST_BYTES`, `SYNC_FEEDBACK`, `FEEDBACK_DAILY_LIMIT`,
 `FEEDBACK_MAX_REQUEST_BYTES`, `AI_INSTANCE_DAILY_LIMIT`,
@@ -651,21 +678,21 @@ The integration suite targets a local Postgres at `localhost:5433` (user `postgr
 
 ### Layout
 
-| Path                  | What lives there                                                                                                                                                                                                       |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/protocol.ts`     | The wire contract: versions, limits, request/response types, handshake check.                                                                                                                                          |
-| `src/server/`         | Express glue, the sync handler cores, CORS, bearer auth, error handling.                                                                                                                                               |
-| `src/accounts/`       | Account policy as pure handlers over an injected `AccountStore`.                                                                                                                                                       |
-| `src/db/`             | Drizzle schema and the two store implementations.                                                                                                                                                                      |
-| `src/admin/`          | The admin metadata read contract, deliberately not part of `AccountStore`.                                                                                                                                             |
-| `src/ai/`             | The completion proxy, its quota store, the minute limiter, the scrubber and the usage retention sweep.                                                                                                                 |
-| `src/feedback/`       | Reported estimates: submit, the operator's read side, image storage, retention.                                                                                                                                        |
-| `src/pulse/`          | The community pulse: its store, the rounding, the per account limits, the cache and the retention sweep.                                                                                                               |
-| `src/mail/`           | The letters in six languages, their strings, and the HTTP mailer that sends them. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
-| `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                          |
-| `scripts/sync-api/`   | The `pnpm sync-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                 |
-| `scripts/lib/`        | The translator, a vendored copy of `openplate-website`'s written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                |
-| `drizzle/migrations/` | Generated migrations. Never hand-written: see `src/db/schema.ts`.                                                                                                                                                      |
+| Path                  | What lives there                                                                                                                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/protocol.ts`     | The wire contract: versions, limits, request/response types, handshake check.                                                                                                                                                                                                           |
+| `src/server/`         | Express glue, the sync handler cores, CORS, bearer auth, error handling.                                                                                                                                                                                                                |
+| `src/accounts/`       | Account policy as pure handlers over an injected `AccountStore`.                                                                                                                                                                                                                        |
+| `src/db/`             | Drizzle schema and the two store implementations.                                                                                                                                                                                                                                       |
+| `src/admin/`          | The admin metadata read contract, deliberately not part of `AccountStore`.                                                                                                                                                                                                              |
+| `src/ai/`             | The completion proxy, its quota store, the minute limiter, the scrubber and the usage retention sweep.                                                                                                                                                                                  |
+| `src/feedback/`       | Reported estimates: submit, the operator's read side, image storage, retention.                                                                                                                                                                                                         |
+| `src/pulse/`          | The community pulse: its store, the rounding, the per account limits, the cache and the retention sweep.                                                                                                                                                                                |
+| `src/mail/`           | The letters in six languages, their strings, and the two transports that send them: the HTTP mail API in `mailer.ts`, SMTP in `smtp-transport.ts`. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
+| `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                                                                                           |
+| `scripts/sync-api/`   | The `pnpm sync-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                                                                                  |
+| `scripts/lib/`        | The translator, a vendored copy of `openplate-website`'s written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                                                                                 |
+| `drizzle/migrations/` | Generated migrations. Never hand-written: see `src/db/schema.ts`.                                                                                                                                                                                                                       |
 
 ### Invariants
 

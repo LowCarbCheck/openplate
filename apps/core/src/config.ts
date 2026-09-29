@@ -21,7 +21,8 @@ import {
   type NutrientReferenceBasis,
   type OperatorNotice,
 } from './protocol.js';
-import type { HttpMailConfig } from './mail/mailer.js';
+import type { HttpMailConfig, MailConfig } from './mail/mailer.js';
+import type { SmtpMailConfig, SmtpTlsMode } from './mail/smtp-transport.js';
 import type { AiUpstreamConfig } from './ai/proxy.js';
 import type { PlansUpstreamConfig } from './server/plans-proxy.js';
 import type { VapidCredentials } from './push/web-push-sender.js';
@@ -124,14 +125,14 @@ export interface ServiceConfig {
    * default, and what every deployment gets until an operator points it at a
    * relay.
    *
-   * ALL THREE OR NONE, and any of them requires
-   * {@link ServiceConfig.serverPublicUrl} and {@link ServiceConfig.clientBaseUrl}:
-   * a letter with no link in it is not worth sending, and a half-configured
-   * block is an operator who believes mail works. In production both must
-   * also be https and name a host other than this machine, see
-   * `refuseUnreachableLinkBases`. See `parseMail`.
+   * ONE TRANSPORT, THE HTTP MAIL API OR SMTP, each block all-or-nothing, and
+   * either requires {@link ServiceConfig.serverPublicUrl} and
+   * {@link ServiceConfig.clientBaseUrl}: a letter with no link in it is not
+   * worth sending, and a half-configured block is an operator who believes
+   * mail works. In production both must also be https and name a host other
+   * than this machine, see `refuseUnreachableLinkBases`. See `parseMail`.
    */
-  mail: HttpMailConfig | null;
+  mail: MailConfig | null;
   /**
    * `CONTENT_DIR`, the instance's mounted content folder, or `null` when
    * unset (M246/04). The same env name, and the same folder, the app renders
@@ -899,24 +900,179 @@ function refuseUnreachableLinkBases(urls: { clientBaseUrl: string; serverPublicU
   );
 }
 
-/** The four names that make up the mail block. Listed once so every message below can name them all. */
-const MAIL_VARIABLES = ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM', 'MAIL_OPERATOR_EMAIL'] as const;
+/** The HTTP mail API's three names. Listed once so every message below can name them. */
+const MAIL_API_VARIABLES = ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM'] as const;
+
+/** The HTTP block as it has been since M214/09: the three names and the operator address, all or nothing. */
+const MAIL_VARIABLES = [...MAIL_API_VARIABLES, 'MAIL_OPERATOR_EMAIL'] as const;
+
+/** SMTP's five names. `SMTP_PORT` has a default, and the login pair is optional. */
+const SMTP_VARIABLES = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'] as const;
+
+/** What SMTP cannot run without. `MAIL_OPERATOR_EMAIL` is shared with the HTTP transport. */
+const SMTP_REQUIRED_VARIABLES = ['SMTP_HOST', 'SMTP_FROM', 'MAIL_OPERATOR_EMAIL'] as const;
+
+/** The submission port, which must upgrade with STARTTLS. What an unset `SMTP_PORT` means. */
+const DEFAULT_SMTP_PORT = 587;
+
+/** The one port that speaks TLS from the first byte. */
+const IMPLICIT_TLS_SMTP_PORT = 465;
+
+/** The highest TCP port. */
+const MAX_PORT = 65_535;
+
+/** Whether a variable holds anything but whitespace. An empty value, as the compose files pass one, is unset. */
+function isSet(env: NodeJS.ProcessEnv, name: string): boolean {
+  return (env[name]?.trim() ?? '') !== '';
+}
+
+/** `is` or `are`, for a message that names one variable or several. */
+function isOrAre(names: readonly string[]): string {
+  return names.length === 1 ? 'is' : 'are';
+}
 
 /**
- * `MAIL_API_URL` + `MAIL_API_KEY` + `MAIL_API_FROM` + `MAIL_OPERATOR_EMAIL`,
- * all or none, and only alongside the two base URLs a link is built from.
- *
- * A HALF-CONFIGURED BLOCK IS A BOOT FAILURE THAT NAMES THE MISSING VARIABLE,
- * and never a value: a key or a URL in a startup log is a credential in a log.
- * The alternative, starting with mail half-configured, is an operator who
- * believes invitations are being delivered while every one of them silently
- * comes back as a link nobody looks at.
+ * The HTTP mail API: `MAIL_API_URL` + `MAIL_API_KEY` + `MAIL_API_FROM` +
+ * `MAIL_OPERATOR_EMAIL`, all or none. Called only when one of them is set and
+ * no SMTP variable is.
  *
  * `MAIL_OPERATOR_EMAIL` JOINED THE GROUP IN M214/09, and it is all-or-nothing
  * with the other three for the same reason: an instance that can mail at all
  * can name who reads a cancellation or a withdrawal notice, and a mailer
  * configured to send everything else but silently drop the operator's own
  * copy is exactly the half-configured state this whole block refuses.
+ */
+function parseHttpMail(env: NodeJS.ProcessEnv): HttpMailConfig {
+  const missing = MAIL_VARIABLES.filter((name) => !isSet(env, name));
+  if (missing.length > 0) {
+    throw new Error(
+      `Incomplete mail configuration: ${missing.join(', ')} ${isOrAre(missing)} not set. ` +
+        `${MAIL_VARIABLES.join(', ')} are all-or-nothing, set all four, or none and hand out links yourself.`,
+    );
+  }
+  // SAFETY: every name was checked non-empty just above.
+  return {
+    url: env.MAIL_API_URL?.trim() ?? '',
+    apiKey: env.MAIL_API_KEY?.trim() ?? '',
+    from: env.MAIL_API_FROM?.trim() ?? '',
+    operatorEmail: env.MAIL_OPERATOR_EMAIL?.trim() ?? '',
+  };
+}
+
+/** `SMTP_PORT`, 587 when unset, and a boot failure for anything that is not a TCP port. */
+function parseSmtpPort(env: NodeJS.ProcessEnv): number {
+  const raw = env.SMTP_PORT?.trim() ?? '';
+  if (raw === '') return DEFAULT_SMTP_PORT;
+  const port = Number(raw);
+  if (!/^\d+$/u.test(raw) || port < 1 || port > MAX_PORT) {
+    throw new Error(`Invalid SMTP_PORT: expected a port number from 1 to ${MAX_PORT}, got "${raw}"`);
+  }
+  return port;
+}
+
+/** `SMTP_HOST` as nodemailer takes it, and whether it names this machine. */
+interface SmtpHost {
+  host: string;
+  isLoopback: boolean;
+}
+
+/**
+ * `SMTP_HOST`: a bare name or address, and a boot failure for anything with a
+ * scheme, a port, a login or a path in it, because each of those is a value
+ * meant for another variable and nodemailer would try to resolve it as a name.
+ *
+ * Parsed as the host of an `http:` URL, which lowercases a name and writes
+ * every IPv4 spelling out in dotted decimal, so {@link isLoopbackHost} sees the
+ * one form it expects. An IPv6 address may be written with or without its
+ * brackets; nodemailer gets it without.
+ */
+function parseSmtpHost(raw: string): SmtpHost {
+  const bracketed = raw.includes(':') && !raw.startsWith('[') ? `[${raw}]` : raw;
+  const parsed = URL.canParse(`http://${bracketed}`) ? new URL(`http://${bracketed}`) : null;
+  const isBare =
+    parsed !== null &&
+    parsed.port === '' &&
+    parsed.username === '' &&
+    parsed.password === '' &&
+    parsed.pathname === '/' &&
+    parsed.search === '' &&
+    parsed.hash === '' &&
+    !raw.endsWith('/');
+  if (parsed === null || !isBare) {
+    throw new Error(
+      `Invalid SMTP_HOST: expected a host name or address like smtp.example.org, with no scheme, port, or path, got "${raw}"`,
+    );
+  }
+  return { host: raw.replace(/^\[(.*)\]$/u, '$1'), isLoopback: isLoopbackHost(parsed.hostname) };
+}
+
+/**
+ * The port decides TLS. 465 is TLS from the first byte; every other port must
+ * upgrade with STARTTLS, and a server that does not offer it gets nothing.
+ * Only a host that is this machine, a local catcher such as Mailpit, may stay
+ * plain, and it still upgrades when the catcher offers STARTTLS. There is no
+ * variable that turns TLS off, so there is none an operator can leave off.
+ */
+function smtpTlsMode(input: { port: number; isLoopback: boolean }): SmtpTlsMode {
+  if (input.port === IMPLICIT_TLS_SMTP_PORT) return 'implicit-tls';
+  return input.isLoopback ? 'starttls-if-offered' : 'starttls-required';
+}
+
+/**
+ * SMTP (2026-09-29, owner decision): `SMTP_HOST` + `SMTP_FROM` +
+ * `MAIL_OPERATOR_EMAIL`, with `SMTP_PORT` defaulting to 587 and
+ * `SMTP_USER` + `SMTP_PASSWORD` both or neither. Called only when one SMTP
+ * variable is set and no HTTP one is.
+ *
+ * THE LOGIN PAIR IS BOTH OR NEITHER, and neither is allowed, because a local
+ * catcher takes no login. One without the other is a typo that would fail on
+ * the first letter, at the server, instead of here.
+ *
+ * A MISSING VARIABLE IS NAMED, AND A VALUE NEVER IS, for the reason the HTTP
+ * block gives: a password in a startup log is a password in a log.
+ */
+function parseSmtpMail(env: NodeJS.ProcessEnv): SmtpMailConfig {
+  const missing = SMTP_REQUIRED_VARIABLES.filter((name) => !isSet(env, name));
+  if (missing.length > 0) {
+    throw new Error(
+      `Incomplete SMTP configuration: ${missing.join(', ')} ${isOrAre(missing)} not set. ` +
+        `SMTP requires SMTP_HOST, SMTP_FROM, and MAIL_OPERATOR_EMAIL. SMTP_PORT defaults to ${DEFAULT_SMTP_PORT}. ` +
+        'SMTP_USER and SMTP_PASSWORD go together.',
+    );
+  }
+  const hasUser = isSet(env, 'SMTP_USER');
+  if (hasUser !== isSet(env, 'SMTP_PASSWORD')) {
+    throw new Error(
+      `SMTP_USER and SMTP_PASSWORD go together, and ${hasUser ? 'SMTP_PASSWORD' : 'SMTP_USER'} is not set. ` +
+        'Set both for a server that requires a login. Leave both unset for a local catcher that does not.',
+    );
+  }
+  const port = parseSmtpPort(env);
+  const { host, isLoopback } = parseSmtpHost(env.SMTP_HOST?.trim() ?? '');
+  return {
+    transport: 'smtp',
+    host,
+    port,
+    tls: smtpTlsMode({ port, isLoopback }),
+    auth: hasUser ? { user: env.SMTP_USER?.trim() ?? '', password: env.SMTP_PASSWORD?.trim() ?? '' } : null,
+    from: env.SMTP_FROM?.trim() ?? '',
+    operatorEmail: env.MAIL_OPERATOR_EMAIL?.trim() ?? '',
+  };
+}
+
+/**
+ * The mail block: the HTTP mail API or SMTP, EXACTLY ONE, or none, and only
+ * alongside the two base URLs a link is built from.
+ *
+ * A HALF-CONFIGURED BLOCK IS A BOOT FAILURE THAT NAMES THE MISSING VARIABLE,
+ * and never a value: a key, a password or a URL in a startup log is a
+ * credential in a log. The alternative, starting with mail half-configured, is
+ * an operator who believes invitations are being delivered while every one of
+ * them silently comes back as a link nobody looks at.
+ *
+ * BOTH TRANSPORTS AT ONCE IS A BOOT FAILURE TOO. Picking one silently would be
+ * an operator who believes their letters leave through the one they tested.
+ * `MAIL_OPERATOR_EMAIL` belongs to both and decides nothing on its own.
  *
  * REQUIRING THE LINK BASES IS THE SAME ARGUMENT ONE STEP OUT. Both account
  * letters carry a link. Configured mail with no `CLIENT_BASE_URL` would send
@@ -929,17 +1085,23 @@ const MAIL_VARIABLES = ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM', 'MAIL_O
 function parseMail(
   env: NodeJS.ProcessEnv,
   urls: { serverPublicUrl: string | null; clientBaseUrl: string | null },
-): HttpMailConfig | null {
-  const present = MAIL_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
-  if (present.length === 0) return null;
-
-  const missing = MAIL_VARIABLES.filter((name) => !present.includes(name));
-  if (missing.length > 0) {
+): MailConfig | null {
+  const httpSet = MAIL_API_VARIABLES.filter((name) => isSet(env, name));
+  const smtpSet = SMTP_VARIABLES.filter((name) => isSet(env, name));
+  if (httpSet.length === 0 && smtpSet.length === 0) {
+    if (!isSet(env, 'MAIL_OPERATOR_EMAIL')) return null;
     throw new Error(
-      `Incomplete mail configuration: ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not set. ` +
-        `${MAIL_VARIABLES.join(', ')} are all-or-nothing, set all four, or none and hand out links yourself.`,
+      'MAIL_OPERATOR_EMAIL is set, but no mail transport is. Set MAIL_API_URL, MAIL_API_KEY, and MAIL_API_FROM for a mail API. ' +
+        'Or set SMTP_HOST and SMTP_FROM for SMTP. Otherwise, unset MAIL_OPERATOR_EMAIL and hand out links yourself.',
     );
   }
+  if (httpSet.length > 0 && smtpSet.length > 0) {
+    throw new Error(
+      `Two mail transports are configured: ${httpSet.join(', ')} for a mail API, and ${smtpSet.join(', ')} for SMTP. ` +
+        'Set one transport and leave the other unset.',
+    );
+  }
+  const mail = smtpSet.length > 0 ? parseSmtpMail(env) : parseHttpMail(env);
 
   if (urls.serverPublicUrl === null || urls.clientBaseUrl === null) {
     const missingUrls = [
@@ -947,21 +1109,14 @@ function parseMail(
       urls.clientBaseUrl === null ? 'CLIENT_BASE_URL' : null,
     ].filter((name): name is string => name !== null);
     throw new Error(
-      `Mail is configured but ${missingUrls.join(' and ')} ${missingUrls.length === 1 ? 'is' : 'are'} not set. ` +
+      `Mail is configured but ${missingUrls.join(' and ')} ${isOrAre(missingUrls)} not set. ` +
         'The invitation and the password reset both carry a link, and a link needs both values.',
     );
   }
   if (env.NODE_ENV?.trim() === 'production') {
     refuseUnreachableLinkBases({ clientBaseUrl: urls.clientBaseUrl, serverPublicUrl: urls.serverPublicUrl });
   }
-
-  // SAFETY: `present.length === 4` above, so every name has a non-empty value.
-  return {
-    url: env.MAIL_API_URL?.trim() ?? '',
-    apiKey: env.MAIL_API_KEY?.trim() ?? '',
-    from: env.MAIL_API_FROM?.trim() ?? '',
-    operatorEmail: env.MAIL_OPERATOR_EMAIL?.trim() ?? '',
-  };
+  return mail;
 }
 
 /** The two names that make up the upstream block. Listed once so every message below can name both. */
@@ -1155,7 +1310,7 @@ function parseMemberInvites(env: NodeJS.ProcessEnv, trial: TrialPolicy | null): 
  * MAIL IS REQUIRED BESIDE IT. The mailed letter is the address check: without
  * it the route could only mint links that nobody receives.
  */
-function parseOpenSignup(env: NodeJS.ProcessEnv, mail: HttpMailConfig | null): boolean {
+function parseOpenSignup(env: NodeJS.ProcessEnv, mail: MailConfig | null): boolean {
   const raw = env.OPEN_SIGNUP?.trim();
   if (raw === undefined || raw === '') return false;
   if (raw !== 'true') {
@@ -1163,8 +1318,9 @@ function parseOpenSignup(env: NodeJS.ProcessEnv, mail: HttpMailConfig | null): b
   }
   if (mail === null) {
     throw new Error(
-      'OPEN_SIGNUP=true needs mail: the letter with the link is how a new address proves it is real. ' +
-        'Set MAIL_API_URL, MAIL_API_KEY, MAIL_API_FROM and MAIL_OPERATOR_EMAIL, or unset OPEN_SIGNUP.',
+      'OPEN_SIGNUP=true requires mail. The letter with the link proves a new address is real. ' +
+        'Set MAIL_API_URL, MAIL_API_KEY, MAIL_API_FROM, and MAIL_OPERATOR_EMAIL for a mail API. ' +
+        'Or set SMTP_HOST, SMTP_FROM, and MAIL_OPERATOR_EMAIL for SMTP. Otherwise, unset OPEN_SIGNUP.',
     );
   }
   return true;
@@ -1368,9 +1524,14 @@ function throwIfRemoved(env: NodeJS.ProcessEnv, name: string, because: string): 
   );
 }
 
-/** Why the SMTP and pigeon-shaped variables went: M181 deleted those transports and M192 did not bring them back. */
-const MAILER_DELETED =
-  "openplate-core speaks only pigeon's HTTP API, configured as MAIL_API_URL, MAIL_API_KEY and MAIL_API_FROM, SMTP is a non-goal";
+/**
+ * Why `SMTP_SECURE` stays refused now that SMTP is back (2026-09-29): the port
+ * decides TLS, and a switch an operator could leave on "false" is the plain
+ * text this service no longer sends to another host.
+ */
+const SMTP_SECURE_GONE =
+  'TLS follows SMTP_PORT. Port 465 uses implicit TLS. Every other port must upgrade with STARTTLS. ' +
+  'Configure SMTP with SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, and SMTP_FROM';
 
 /**
  * Every variable this service refuses, one by one.
@@ -1403,14 +1564,14 @@ function rejectRemovedEnvVars(env: NodeJS.ProcessEnv): void {
     'REQUIRE_EMAIL_VERIFICATION',
     'the invitation IS the verification, an account is created by redeeming an invite addressed to that mailbox, so there is nothing left to confirm afterwards',
   );
-  throwIfRemoved(env, 'EMAIL_FROM', 'the sending address is MAIL_API_FROM');
-  throwIfRemoved(env, 'SMTP_HOST', MAILER_DELETED);
-  throwIfRemoved(env, 'SMTP_PORT', MAILER_DELETED);
-  throwIfRemoved(env, 'SMTP_USER', MAILER_DELETED);
-  throwIfRemoved(env, 'SMTP_PASSWORD', MAILER_DELETED);
-  throwIfRemoved(env, 'SMTP_SECURE', MAILER_DELETED);
-  throwIfRemoved(env, 'PIGEON_API_KEY', 'the mail credential is MAIL_API_KEY');
-  throwIfRemoved(env, 'PIGEON_BASE_URL', 'the mail endpoint is MAIL_API_URL');
+  throwIfRemoved(env, 'EMAIL_FROM', 'the sending address is MAIL_API_FROM for a mail API, or SMTP_FROM for SMTP');
+  throwIfRemoved(env, 'SMTP_SECURE', SMTP_SECURE_GONE);
+  throwIfRemoved(
+    env,
+    'PIGEON_API_KEY',
+    'the mail API credential is MAIL_API_KEY, and an SMTP login is SMTP_USER and SMTP_PASSWORD',
+  );
+  throwIfRemoved(env, 'PIGEON_BASE_URL', 'the mail API endpoint is MAIL_API_URL, and an SMTP server is SMTP_HOST');
 }
 
 /** Pure: builds the config from an arbitrary env bag. Throws on anything invalid, see the module header. */

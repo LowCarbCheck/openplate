@@ -32,6 +32,13 @@
  * All five are ordinary production dependencies installed into the image
  * (`pnpm install --prod`), so the bundle resolves them at runtime.
  *
+ * `nodemailer` (the SMTP transport, 2026-09-29) IS NOT EXTERNAL, like
+ * `drizzle-orm`. Version 10 is an ES module with no dependencies of its own
+ * and imports only `node:` built-ins, so it inlines without the shim below; a
+ * letter sent through a bundle built with these options reached a test server.
+ * If a later version brings the shim back, the guard below fails the build and
+ * it joins this list.
+ *
  * Migrations are NOT bundled: `drizzle/migrations/` is copied into the image as
  * data and read by the migrator at boot (`src/main.ts`).
  */

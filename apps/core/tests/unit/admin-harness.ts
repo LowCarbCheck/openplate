@@ -40,6 +40,7 @@ import type { FeedbackReportDetail } from '../../src/feedback/feedback-admin-sto
 import { createFakeBlobRollbackStore, type FakeBlobRollbackStore } from './fake-blob-rollback-store.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import type { Mailer } from '../../src/mail/mailer.js';
 
 /** One emitted log line, kept whole so a test can assert on the message AND the fields. */
 export interface CapturedLogLine {
@@ -119,6 +120,13 @@ export interface StartAdminHarnessOptions {
    * pass a test the production wiring fails.
    */
   aiInstanceDailyLimit?: number;
+  /**
+   * A real mailer, for a test about what a send does to an admin answer. Given,
+   * the app is told mail is configured, as `main.ts` tells it whenever a mail
+   * block is set. Absent, the fixture's recording mailer is used and mail
+   * counts as not configured, which is what every other admin test runs on.
+   */
+  mailer?: Mailer;
 }
 
 /**
@@ -180,7 +188,8 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
     throttle: createThrottleStore({ freeAttempts: 10_000, baseLockoutMs: 1, maxLockoutMs: 1, attemptResetMs: 1 }),
     logger: capturing.logger,
     trustProxy: false,
-    mailer: fixture.mailer,
+    mailer: options.mailer ?? fixture.mailer,
+    mailConfigured: options.mailer !== undefined,
     now: fixture.now,
     admin: {
       blobs,

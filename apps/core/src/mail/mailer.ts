@@ -31,6 +31,13 @@
  * come from the instance's content folder (M246/04), found at send time
  * through the `templates` option; with none, a neutral fallback goes out.
  *
+ * TWO TRANSPORTS, ONE SET OF LETTERS (2026-09-29). The HTTP mail API
+ * (`postMail` below) and SMTP (`smtp-transport.ts`) sit behind
+ * {@link MailTransport}, which sends a finished letter and nothing more. Every
+ * letter is built once, in `createLetterMailer`, so the words, the links and
+ * the log lines are the same whichever transport carries them, and `config.ts`
+ * refuses to boot with both configured.
+ *
  * WHY AN INTERFACE AND NOT AN HTTP CLIENT. Everything upstream of the
  * transport has to be testable without one: the admin invite route has real
  * branching (mail configured or not, send succeeded or not, and what the
@@ -61,6 +68,7 @@ import {
   type DeclarationReceiptInput,
 } from './declaration-message.js';
 import type { DeclarationTemplateSource } from './declaration-templates.js';
+import { createSmtpTransport, type SmtpMailConfig } from './smtp-transport.js';
 
 export interface SendInviteInput {
   /** The address the invitation goes to — the invite's own `email`, never one from a request body. */
@@ -198,8 +206,14 @@ export function createNoopMailer(): Mailer {
  */
 export const DEFAULT_MAIL_API_TIMEOUT_MS = 15_000;
 
-/** What an operator configured, already validated all-or-nothing by `config.ts`. */
+/** What an operator configured for the HTTP mail API, already validated all-or-nothing by `config.ts`. */
 export interface HttpMailConfig {
+  /**
+   * The discriminant against {@link SmtpMailConfig}. OPTIONAL, and absent from
+   * what `config.ts` builds, because this shape predates SMTP and every caller
+   * and test that writes one without it is still an HTTP config.
+   */
+  transport?: 'http';
   url: string;
   apiKey: string;
   from: string;
@@ -229,12 +243,30 @@ export interface CreateHttpMailerOptions {
   timeoutMs?: number;
 }
 
-/** One message, ready to post. Internal: nothing outside this module builds one. */
-interface OutgoingMail {
+/** Either transport's configuration. `transport === 'smtp'` tells them apart. */
+export type MailConfig = HttpMailConfig | SmtpMailConfig;
+
+/**
+ * One finished letter, the whole of what a transport is handed. The sending
+ * address belongs to the transport's own configuration (`MAIL_API_FROM`,
+ * `SMTP_FROM`).
+ */
+export interface OutgoingMail {
   to: string;
   subject: string;
   text: string;
   html: string;
+}
+
+/**
+ * THE ONE SEAM BETWEEN A LETTER AND A WIRE. Every letter is built once, by
+ * {@link createLetterMailer}; a transport only sends it. So the words, the
+ * links and the log lines cannot differ between HTTP and SMTP, and a new
+ * transport is one `send`. A failed send throws a message that carries a
+ * status or a code and nothing the far end echoed.
+ */
+export interface MailTransport {
+  send(outgoing: OutgoingMail): Promise<void>;
 }
 
 /**
@@ -290,8 +322,21 @@ async function postMail(input: { mail: HttpMailConfig; timeoutMs: number; outgoi
   }
 }
 
+/** What {@link createLetterMailer} needs: a transport, and everything a letter is built from. */
+interface LetterMailerOptions {
+  transport: MailTransport;
+  /** Where `sendDeclarationOperatorAlert` sends, `MAIL_OPERATOR_EMAIL`, shared by both transports. */
+  operatorEmail: string;
+  links: { clientBaseUrl: string; serverPublicUrl: string };
+  language: InstanceLanguage;
+  templates: DeclarationTemplateSource;
+  logger: Logger;
+}
+
 /**
- * The real mailer: builds each letter with the pure builders and posts it.
+ * The real mailer: builds each letter with the pure builders and hands it to
+ * the transport. Both `createHttpMailer` and `createSmtpMailer` are this with
+ * a different transport.
  *
  * A FAILED SEND THROWS OUT OF HERE, deliberately, and the CALL SITE decides
  * what that means. The admin invite route answers `201 emailed: false` with a
@@ -305,9 +350,8 @@ async function postMail(input: { mail: HttpMailConfig; timeoutMs: number; outgoi
  * for one send. This module logs that a send was attempted and its outcome,
  * with no argument that could carry either.
  */
-export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_MAIL_API_TIMEOUT_MS;
-  const { language, links, logger, mail, templates } = options;
+function createLetterMailer(options: LetterMailerOptions): Mailer {
+  const { language, links, logger, operatorEmail, templates, transport } = options;
 
   return {
     async sendInvite(input: SendInviteInput): Promise<void> {
@@ -318,11 +362,7 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         expiresAt: input.expiresAt,
         language,
       });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.email, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       logger.info('Invitation mailed');
     },
 
@@ -333,21 +373,13 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         resetToken: input.resetToken,
         language,
       });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.email, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       logger.info('Password reset mailed');
     },
 
     async sendAccountNotice(input: SendAccountNoticeInput): Promise<void> {
       const message = buildAccountNoticeMessage({ language });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.email, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       // No address, and nothing that says which member's mint caused it.
       logger.info('Account notice mailed');
     },
@@ -364,22 +396,14 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         language: input.intent.locale ?? language,
         intent: input.intent,
       });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.email, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       logger.info('Sign-up letter mailed');
     },
 
     async sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void> {
       // As for the letter above: the language the person asked in, then the instance's.
       const message = buildSignupAccountNoticeMessage({ language: input.language ?? language });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.email, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       logger.info('Sign-up account notice mailed');
     },
 
@@ -390,11 +414,7 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         languages: input.language === 'en' ? ['en'] : [input.language, 'en'],
       });
       const message = buildDeclarationReceiptMessage({ declaration: input, template });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: input.to, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: input.to, subject: message.subject, text: message.text, html: message.html });
       // No address and no field the person typed, for the reason the module
       // doc gives: this letter carries no link, but it carries their name,
       // their reason and their contract reference, and none of that belongs
@@ -405,11 +425,7 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
     async sendDeclarationOperatorAlert(input: SendDeclarationOperatorAlertInput): Promise<void> {
       const template = await templates.find({ name: alertTemplateName(input.kind), languages: ['en'] });
       const message = buildDeclarationOperatorAlertMessage({ declaration: input, template });
-      await postMail({
-        mail,
-        timeoutMs,
-        outgoing: { to: mail.operatorEmail, subject: message.subject, text: message.text, html: message.html },
-      });
+      await transport.send({ to: operatorEmail, subject: message.subject, text: message.text, html: message.html });
       logger.info('Declaration operator alert mailed', {
         kind: input.kind,
         matched: input.matched,
@@ -419,12 +435,55 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
   };
 }
 
+/** The HTTP mail API as a transport: `postMail`, bound to one config and one timeout. */
+function createHttpTransport(input: { mail: HttpMailConfig; timeoutMs: number }): MailTransport {
+  return {
+    send: (outgoing: OutgoingMail): Promise<void> =>
+      postMail({ mail: input.mail, timeoutMs: input.timeoutMs, outgoing }),
+  };
+}
+
+/** The mailer over the HTTP mail API. Its wire contract is `postMail`'s, unchanged by the SMTP transport. */
+export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
+  return createLetterMailer({
+    transport: createHttpTransport({ mail: options.mail, timeoutMs: options.timeoutMs ?? DEFAULT_MAIL_API_TIMEOUT_MS }),
+    operatorEmail: options.mail.operatorEmail,
+    links: options.links,
+    language: options.language,
+    templates: options.templates,
+    logger: options.logger,
+  });
+}
+
+export interface CreateSmtpMailerOptions {
+  mail: SmtpMailConfig;
+  /** The two base URLs a link is built from. Required whenever mail is configured (`config.ts`). */
+  links: { clientBaseUrl: string; serverPublicUrl: string };
+  language: InstanceLanguage;
+  templates: DeclarationTemplateSource;
+  logger: Logger;
+  /** Connect, greeting and socket timeout. `DEFAULT_SMTP_TIMEOUT_MS` unless a test proves the bound. */
+  timeoutMs?: number | undefined;
+}
+
+/** The mailer over SMTP. The same letters, see `smtp-transport.ts` for the wire. */
+export function createSmtpMailer(options: CreateSmtpMailerOptions): Mailer {
+  return createLetterMailer({
+    transport: createSmtpTransport({ mail: options.mail, timeoutMs: options.timeoutMs }),
+    operatorEmail: options.mail.operatorEmail,
+    links: options.links,
+    language: options.language,
+    templates: options.templates,
+    logger: options.logger,
+  });
+}
+
 /**
  * Picks the adapter from config. `null` is the copy-link-only deployment,
  * which is what most self-hosters run.
  */
 export function createMailer(options: {
-  mail: HttpMailConfig | null;
+  mail: MailConfig | null;
   links: { clientBaseUrl: string; serverPublicUrl: string } | null;
   language: InstanceLanguage;
   templates: DeclarationTemplateSource;
@@ -433,11 +492,12 @@ export function createMailer(options: {
   // Both or neither: `config.ts` refuses to boot with mail configured and no
   // link bases, so this branch is a type narrowing rather than a policy.
   if (options.mail === null || options.links === null) return createNoopMailer();
-  return createHttpMailer({
-    mail: options.mail,
+  const letters = {
     links: options.links,
     language: options.language,
     templates: options.templates,
     logger: options.logger,
-  });
+  };
+  if (options.mail.transport === 'smtp') return createSmtpMailer({ ...letters, mail: options.mail });
+  return createHttpMailer({ ...letters, mail: options.mail });
 }

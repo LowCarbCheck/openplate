@@ -95,6 +95,11 @@ async function main(): Promise<void> {
     templates: createDeclarationTemplateSource({ contentDir: config.contentDir, logger }),
     logger,
   });
+  // Which of the two transports is live, and nothing else about it: the host
+  // and the login stay out of the log.
+  if (config.mail !== null) {
+    logger.info('Mail is configured', { transport: config.mail.transport === 'smtp' ? 'smtp' : 'http' });
+  }
   if (config.mail !== null && config.contentDir === null) {
     logger.info('CONTENT_DIR is not set, so declaration letters use the neutral text');
   }

@@ -112,12 +112,20 @@ services:
       # SYNC_NOTICE is a boot failure. See .env.example for the length cap.
       SYNC_NOTICE: ${SYNC_NOTICE:-}
       SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
-      # Mail: all four or none. Unset means invitations and resets come back
-      # to you as links instead of being posted, and a cancellation or a
-      # withdrawal is recorded but mailed to nobody. See .env.example.
+      # Mail: one transport or none, see .env.example. Unset means invitations
+      # and resets come back to you as links instead of being sent. A
+      # cancellation or a withdrawal is recorded but mailed to nobody. The
+      # HTTP mail API uses the three MAIL_API_* values. SMTP uses the five
+      # SMTP_* values. Both at once is a boot failure. MAIL_OPERATOR_EMAIL
+      # belongs to both.
       MAIL_API_URL: ${MAIL_API_URL:-}
       MAIL_API_KEY: ${MAIL_API_KEY:-}
       MAIL_API_FROM: ${MAIL_API_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       MAIL_OPERATOR_EMAIL: ${MAIL_OPERATOR_EMAIL:-}
       # The AI proxy: both or neither. Unset means POST /v1/chat/completions
       # answers the ordinary unknown-path 404 and /health reports no AI at all.

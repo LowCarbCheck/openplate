@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **Mail can go out over SMTP.** Set `SMTP_HOST`, `SMTP_FROM`, and `MAIL_OPERATOR_EMAIL`, with `SMTP_PORT` (587 when unset) and `SMTP_USER` with `SMTP_PASSWORD` as the server needs. The invitation, reset, and declaration letters go out through nodemailer. This reverses the earlier decision that SMTP was a non-goal. The HTTP mail API is unchanged. Setting both transports is a boot failure. Port 465 uses TLS from the first byte. Every other port must upgrade with STARTTLS. Only a loopback host such as a local Mailpit may take plain text. Certificates are always checked. Connect, greeting, and socket each time out after 10 seconds. A refused send gives the same answer as a refused HTTP send: `emailed: false` and the link. `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_PASSWORD` are no longer refused. `SMTP_SECURE` is still refused, because the port decides TLS. The compose files pass the five new variables through, empty by default.
+
 ### Changed
 
 - **Mail no longer starts with links nobody else can open.** With mail

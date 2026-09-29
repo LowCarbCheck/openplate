@@ -317,16 +317,30 @@ services:
       INSTANCE_NAME: ${INSTANCE_NAME:-}
       INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-}
 
-      # ── Mail (optional): all four or none ──
-      # Set, this service mails the invitation and the password reset itself,
-      # through an HTTP mail API that speaks pigeon's protocol. Empty, it sends
-      # nothing: the admin API hands the invitation link and the reset link to
-      # you, and you pass them on. "Forgot password" in the app then reaches
-      # nobody; see apps/app/docs/self-hosting.md for what to do instead.
+      # ── Mail (optional): one transport, or none ──
+      # When set, this service mails the invitation and the password reset
+      # itself. When empty, it sends nothing. The admin API hands the
+      # invitation link and the reset link to you, and you pass them on.
+      # "Forgot password" in the app reaches nobody. See
+      # apps/app/docs/self-hosting.md for what to do instead. With mail on,
+      # PUBLIC_APP_URL and PUBLIC_SYNC_URL must be https addresses, or the
+      # service refuses to start.
+      #
+      # Either an HTTP mail API that speaks pigeon's protocol, all three:
       MAIL_API_URL: ${MAIL_API_URL:-}
       MAIL_API_KEY: ${MAIL_API_KEY:-}
       MAIL_API_FROM: ${MAIL_API_FROM:-}
+      # Or SMTP, never both. SMTP_PORT defaults to 587 when empty. Port 465
+      # uses TLS from the start. Every other port must upgrade with STARTTLS.
+      # SMTP_USER and SMTP_PASSWORD go together. For Gmail, use an app
+      # password on smtp.gmail.com.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       # Who receives the operator's copy of a cancellation or a withdrawal.
+      # Either transport requires it.
       MAIL_OPERATOR_EMAIL: ${MAIL_OPERATOR_EMAIL:-}
 
       # ── The AI proxy (optional, for INSTANCE_MODE=managed) ──
