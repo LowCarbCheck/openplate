@@ -16,6 +16,7 @@ change moves the minor.
   already holds an account, now use `locale` when it is valid, and
   `INSTANCE_LANGUAGE` when the request names none. The request and the
   answer are unchanged.
+- **drizzle-orm updates past an identifier escaping advisory in the core.** drizzle-orm 0.45.3 carries the fix for GHSA-gpj5-g38j-94v9. A Postgres error that drizzle-orm now wraps is still read by its SQLSTATE, so a storage conflict answers exactly as before. `pnpm audit` reports one moderate advisory left, in a development tool that production never runs.
 
 ## [0.23.0] - 2026-09-28
 
