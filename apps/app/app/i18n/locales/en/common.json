@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Your plan is active.",
       "openDiary": "Open your diary",
+      "setUp": "Set up your diary",
       "slow": "Your payment went through. It can take a minute to show here.",
       "checkAgain": "Check again"
     }

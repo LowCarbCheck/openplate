@@ -7797,6 +7797,13 @@
     "at": "2026-09-14",
     "es": "Se registró {{name}}."
   },
+  "63b55b6ce8b03edf": {
+    "en": "Set up your diary",
+    "path": "common:paywall.returned.setUp",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Configura tu diario"
+  },
   "63bb80663f4d31ae": {
     "en": "Macros are per 100 g. Leave a field blank if it's unknown.",
     "path": "common:entry.edit.per100gHint",

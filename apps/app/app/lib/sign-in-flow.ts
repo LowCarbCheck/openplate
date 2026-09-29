@@ -61,11 +61,12 @@ export function resolveSignInDestination({ gate }: { gate: OnboardingGateOutcome
  * Exactly where a finished sign-in lands, with one door in front: somebody
  * who chose a plan on the pricing page before they had an account goes to the
  * order page with that plan picked, because paying for it is what they came
- * to do. Where the onboarding gate exempts the plan page (the paywall change
- * of 2026-09-28 adds it to `GATE_EXEMPT_PATHS`), a brand-new account reaches
- * it before the questionnaire, and the questionnaire still waits behind the
- * diary. Where it does not, the gate sends the account to the questionnaire
- * first, as it sends every other path.
+ * to do. The onboarding gate exempts the plan page (the paywall change of
+ * 2026-09-28 adds it to `GATE_EXEMPT_PATHS`), so a brand-new account reaches
+ * it before the questionnaire, and nothing stands between the chosen price and
+ * Stripe. The questionnaire comes AFTER the payment (M265/03): the return
+ * screen links to it, and the gate asks again on the first navigation out of
+ * the plan page, so a buyer who leaves Stripe without paying meets it too.
  *
  * TWO THINGS OUTRANK THE PLAN:
  *

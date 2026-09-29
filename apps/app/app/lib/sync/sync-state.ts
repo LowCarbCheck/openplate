@@ -21,7 +21,7 @@
  */
 import { z } from 'zod';
 import { randomUuid } from '#app/lib/uuid';
-import type { SyncBaseline } from './snapshot-sync';
+import { PRIVATE_STORE_ENTITY_KEY, type SyncBaseline } from './snapshot-sync';
 
 /** Bumped only if the shape below changes incompatibly; an unreadable state is simply discarded and rebuilt. */
 const STATE_FORMAT_VERSION = 1;
@@ -205,8 +205,18 @@ export function parseSyncState(raw: string): PersistedSyncState {
  * whole database being evicted, which is the failure that put a real person in
  * front of the first-run wizard with her diary gone.
  *
+ * THE OWNER-PRIVATE COMPARTMENT DOES NOT COUNT (M265/03). Every account's
+ * first sync writes it (`privateStore:me`, lamport 1), whether or not the
+ * account has ever held a diary, so it proves that this device synced, never
+ * that it synced a diary. Counting it sent a buyer who chose a plan on the
+ * pricing page to the recovery screen: they pay before the questionnaire, the
+ * app syncs on the order page, and their first diary page then found a
+ * baseline and no profile and said their diary was gone. A device that lost a
+ * real diary still has the diary's own entities in its baseline, a profile
+ * above all, so this narrows nothing M224 was written for.
+ *
  * @param accountId - the sync account this device is signed into.
- * @returns `true` when a stored baseline names at least one entity.
+ * @returns `true` when a stored baseline names at least one entity besides the compartment.
  */
 export function hasSyncBaselineEntities({
   accountId,
@@ -217,7 +227,7 @@ export function hasSyncBaselineEntities({
 }): boolean {
   const raw = storage.getItem(syncBaselineStorageKey(accountId));
   if (raw === null) return false;
-  return Object.keys(parseSyncState(raw).baseline.perEntity).length > 0;
+  return Object.keys(parseSyncState(raw).baseline.perEntity).some((key) => key !== PRIVATE_STORE_ENTITY_KEY);
 }
 
 /**

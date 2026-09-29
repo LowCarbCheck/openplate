@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Ton forfait est actif.",
       "openDiary": "Ouvrir ton journal",
+      "setUp": "Configurer ton journal",
       "slow": "Ton paiement a bien été effectué. Cela peut prendre une minute pour s'afficher ici.",
       "checkAgain": "Vérifier à nouveau"
     }

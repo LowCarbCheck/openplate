@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Dein Tarif ist aktiv.",
       "openDiary": "Tagebuch öffnen",
+      "setUp": "Tagebuch einrichten",
       "slow": "Deine Zahlung war erfolgreich. Es kann eine Minute dauern, bis sie hier angezeigt wird.",
       "checkAgain": "Erneut prüfen"
     }

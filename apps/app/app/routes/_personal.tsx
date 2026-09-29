@@ -15,7 +15,8 @@ import {
   type ShouldRevalidateFunctionArgs,
 } from 'react-router';
 import { getLocalProfileGoals, hasEverHadData, listLocalFoodLogs, patchLocalProfileGoals } from '#app/lib/local-store';
-import { isOnboardingGateExempt, resolveOnboardingGate } from '#app/lib/onboarding-gate';
+import { isOnboardingGateExempt, resolveOnboardingGate, type OnboardingGateInput } from '#app/lib/onboarding-gate';
+import { noteOnboardingGateRun, shouldAskOnboardingGateAt } from '#app/lib/onboarding-gate-facts';
 import { writeHomeHint } from '#app/lib/home-entry';
 import AppWrapper from '#app/components/app-wrapper';
 import { AppLoading } from '#app/components/app-loading';
@@ -129,7 +130,7 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // therefore has not mounted yet. That is not a race to paper over: it is the
   // honest state, and the gate answers `wait` for it.
   const session = getSyncSessionSnapshot();
-  const outcome = resolveOnboardingGate({
+  const gateInput: OnboardingGateInput = {
     hasProfile,
     hasCompletedOnboarding,
     logCount,
@@ -146,7 +147,14 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     // the policy IS known.
     isDeviceLocked: isDeviceLocked(),
     isExemptPath,
-  });
+  };
+  const outcome = resolveOnboardingGate(gateInput);
+  // WHAT THE NEXT PLAIN NAVIGATION NEEDS (M265/03). `shouldRevalidate` below
+  // cannot read IndexedDB, so this run leaves behind whether the gated order
+  // has let this device through. Until it has, a navigation out of an exempt
+  // page runs this loader again, which is what sends a buyer from the return
+  // screen to the questionnaire and not past it.
+  noteOnboardingGateRun(gateInput);
 
   // NOT A REDIRECT. This layout renders the loading screen and mounts the
   // controller that reopens the session, then revalidates. A redirect here
@@ -251,6 +259,8 @@ export function HydrateFallback() {
 // loader's own self-heal on first entry into the layout — never a revalidation
 // of an already-mounted route). A plain GET nav's parent `.data` fetch fails
 // unhandled offline, so skip it; keep default revalidation after a submission.
+// The one plain navigation that does run it is the way out of an exempt page
+// for a device the gate has not let through yet, see the second branch.
 export function shouldRevalidate({
   currentUrl,
   nextUrl,
@@ -263,6 +273,15 @@ export function shouldRevalidate({
   // which is by definition a nav to a DIFFERENT url — so this branch buys the
   // second look without giving back the offline failure it was added to avoid.
   if (currentUrl.href === nextUrl.href) return true;
+  // THE WAY OUT OF AN EXEMPT PAGE, BEFORE ONBOARDING (M265/03). A buyer who
+  // chose a plan first enters this layout at the order page, which is exempt,
+  // and the return screen's link walked them into the diary without the gate
+  // being asked, so they never met the questionnaire. Until a run of the
+  // loader has let this device through, every navigation to a guarded page
+  // runs it again, and the gate answers. It is asked before the consent and
+  // the paywall below, in the order the loader asks all three, and it costs
+  // no request of its own: the onboarding gate reads only the device.
+  if (shouldAskOnboardingGateAt({ pathname: nextUrl.pathname })) return true;
   // A TAP ONTO A LOCKED PAGE runs the loader, so the paywall above can send it
   // to the plan page. Decided from the facts already held, synchronously and
   // without the network, which is why every other plain navigation keeps

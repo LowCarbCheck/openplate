@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Il tuo piano è attivo.",
       "openDiary": "Apri il tuo diario",
+      "setUp": "Configura il tuo diario",
       "slow": "Il pagamento è andato a buon fine. Potrebbe volerci un minuto prima che compaia qui.",
       "checkAgain": "Controlla di nuovo"
     }
