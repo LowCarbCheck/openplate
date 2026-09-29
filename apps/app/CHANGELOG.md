@@ -18,6 +18,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **The link warning now checks the sync server address.** A copied link can load the right page while still pointing the app to a sync server at `localhost` or a plain `http://` address, which another device cannot reach. The line under the link now identifies that server and instructs you to set `PUBLIC_SYNC_URL`. On this machine, where both the page and server run locally, it says nothing.
 - **A reset link no longer pushes the page down.** Without mail, the card with the reset link appeared above the person's details, causing the page and the button you just pressed to jump down. The card now appears below the details and scrolls into view, leaving everything already on screen in place. `tests/e2e/admin-reset-card-moves-nothing.spec.ts` checks it.
 
+### Docs
+
+- **The self-hosting guide now covers a family server's addresses and mail.** `docs/self-hosting.md` adds a Mail section covering setups with no mail where links are shared by hand, SMTP using Gmail or Amazon SES, and a Resend-compatible HTTP mail API. It explains why mail needs public `https://` addresses and how to verify that a message was sent. The guide adds a checklist for other reverse proxies, rewrites the Tailscale Serve recipe and marks it untested, and instructs the SSH tunnel path to leave mail unset. `docs/family-setup.md` adds a section on family accounts.
+
 ## [0.52.0] - 2026-09-29
 
 ### Changed

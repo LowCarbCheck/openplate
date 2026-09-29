@@ -149,9 +149,9 @@ The answer is one line of JSON. The part that matters looks like this:
 ```
 
 - **No mail configured** (the default): `"emailed": false`. Nobody was written to. Copy the `link` and open it yourself.
-- **Mail configured** (the `MAIL_API_*` and `MAIL_OPERATOR_EMAIL` values in `.env`): `"emailed": true`, and the same link is on its way to that address as a letter.
+- **Mail configured** (see [Mail](#mail)): `"emailed": true`. The same link is on its way to that address as a letter.
 
-Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member.
+Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member. [Mail](#mail) explains both ways: passing each link on by hand, or letting the sync service mail it.
 
 On a managed instance, where the sync service pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without `AI_ADVERTISED_MODEL`, because the app will not choose a model on your bill:
 
@@ -179,6 +179,78 @@ curl -s -X POST http://127.0.0.1:3001/v1/admin/accounts/1/reset-mail \
 ```
 
 The second call answers `{"emailed":false,"link":"https://openplate.example.com/reset#server=...&token=sr_..."}`. A reset link works once and runs out after one hour.
+
+### Mail
+
+The sync service can send invitation and password reset letters. It does not have to. A family instance works with no mail setup at all, and that is the simplest path.
+
+#### No mail
+
+Leave every mail setting unset. The sync service sends no letters. It shows each link to you instead, and you pass it on the way you would share a password.
+
+- **An invitation:** open **Administration** at `/admin` and choose **Invite someone**. Enter the address and choose **Send the invitation**. The page says **Invitation ready for** that address and shows the link. Choose **Copy the link** and send it to the person, for example in a private message. Whoever holds the link can open the account.
+- **A forgotten password:** under **People**, open the person and choose **Send a reset link**. The page shows the link. Pass it on the same way. It works once, within one hour.
+- **A lost invitation:** under **Invitations**, choose **Send again** next to the address. This creates a new link and invalidates the old one. The page shows the new link to copy. Choose **Back to the list** to return to your open invitations.
+
+If the link uses an address different from your browser, a warning appears below it. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the addresses your family uses, then generate the link again. The page also warns you if the link opens the page but directs the app to a sync server at `localhost` or a plain `http://` address that other devices cannot reach. Set `PUBLIC_SYNC_URL` to the `https://` address your family uses, then generate the link again.
+
+`OPEN_SIGNUP=true` lets strangers ask for an account. The sync service refuses to start with that setting when there is no mail configured. A family instance leaves it off. The compose files do not pass it on, so it stays off unless you add it.
+
+#### SMTP
+
+Any standard mail account can send the letters over SMTP. Add these lines to `.env`:
+
+- `SMTP_HOST`: the server name, with no scheme and no port.
+- `SMTP_PORT`: `587` when you leave it out.
+- `SMTP_USER` and `SMTP_PASSWORD`: the login. Set both, or leave both empty for a server that requires no login.
+- `SMTP_FROM`: the sender address, as a bare address or `Name <address>`.
+- `MAIL_OPERATOR_EMAIL`: your own address. It receives your copy of a cancellation or a withdrawal. Both transports require it.
+
+The port decides the encryption mode. Port 465 uses TLS from the start. Any other port must upgrade through STARTTLS, and the service sends no letters to a server that lacks it. Plain text is allowed only when `SMTP_HOST` is a loopback address such as `localhost`, for a local catcher such as Mailpit. The service always checks certificates.
+
+A Gmail account needs an [app password](https://support.google.com/accounts/answer/185833). Google generates one only for accounts with 2-Step Verification turned on. [Google's SMTP settings](https://support.google.com/mail/answer/7104828) specify `smtp.gmail.com` and port 587:
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=family.openplate@gmail.com
+SMTP_PASSWORD="the app password"
+SMTP_FROM="openplate <family.openplate@gmail.com>"
+MAIL_OPERATOR_EMAIL=you@example.org
+```
+
+Amazon SES needs [SMTP credentials made for SES](https://docs.aws.amazon.com/ses/latest/dg/smtp-credentials.html), which differ from your AWS access key, and a verified sending address. The host names your AWS region. Check the [endpoint list](https://docs.aws.amazon.com/general/latest/gr/ses.html) for details. While your account remains in the [SES sandbox](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html), SES delivers only to verified recipient addresses.
+
+```bash
+SMTP_HOST=email-smtp.eu-central-1.amazonaws.com
+SMTP_PORT=587
+SMTP_USER=<SES SMTP user name>
+SMTP_PASSWORD=<SES SMTP password>
+SMTP_FROM="openplate <noreply@example.org>"
+MAIL_OPERATOR_EMAIL=you@example.org
+```
+
+Recreate the sync service with `docker compose -f <your file> up -d` after any edit to `.env`.
+
+#### An HTTP mail API
+
+A mail service with an HTTP API works as well. Set `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`, all three, plus `MAIL_OPERATOR_EMAIL`. The sync service sends each letter as a JSON `POST` request to `MAIL_API_URL`, with `MAIL_API_KEY` as a Bearer token, using the format expected by the Resend API. [Resend](https://resend.com/docs/api-reference/emails/send-email) is one compatible service. On Resend, `MAIL_API_URL` is `https://api.resend.com/emails`.
+
+Configure one transport only. If you set both SMTP and the mail API, the sync service refuses to start.
+
+#### Mail needs the public addresses
+
+Every letter carries a link, and that link must open on the reader's phone. When you configure SMTP or a mail API, set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the `https://` addresses your family uses. If either setting uses plain `http://` or a loopback address such as `localhost`, the sync service refuses to start. Its log names each value to fix, in a message that starts like this:
+
+```
+Mail is configured. Its messages would carry links that recipients cannot open.
+```
+
+The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. Those are the internal names the sync service reads, and the compose files map them from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. View the message with `docker compose -f <your file> logs sync`.
+
+#### Check that mail works
+
+Send an invitation to a second address of your own in `/admin`. The page should display **Invitation sent to** that address, and the letter should arrive in your inbox. If the page displays **Invitation ready for** and prints a link, the delivery failed. The link remains valid. Check the sync service log for a `Mail send failed` line to see the reason. When you finish testing, choose **Withdraw** for the test invitation under **Invitations**.
 
 ## The app plus self-hosted inference
 
@@ -364,7 +436,7 @@ Your devices need a secure address. You can set one up in three ways.
 > runs it, and only while the command runs. A phone or a second device cannot sign in through
 > it. For those, set up HTTPS with [Caddy](#a-domain-name-caddy) below.
 
-To test accounts and sync before configuring a certificate, forward the two ports to your computer. Leave `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` unset so both keep their `localhost` defaults. Run this command on your computer, not on the server:
+To test accounts and sync before configuring a certificate, forward the two ports to your computer. Leave `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` unset so both keep their `localhost` defaults. Leave mail unset here as well. With mail set, the sync service refuses to start while its link addresses name `localhost`. Without mail, it starts, and you copy each link yourself. Run this command on your computer, not on the server:
 
 ```bash
 ssh -N -L 3000:localhost:3000 -L 3001:localhost:3001 you@192.168.1.20
@@ -407,17 +479,48 @@ Change the `ports:` line to `'127.0.0.1:3000:3000'`, and use `'127.0.0.1:3001:30
 
 Podman recreates the service the same way with `podman compose -f compose.yml up -d`. Note one rootless detail before skipping the reverse proxy: a rootless Podman container cannot bind a host port below 1024 without extra configuration. Publishing directly to port 80 or 443 requires `sudo sysctl net.ipv4.ip_unprivileged_port_start=80` first. See [podman.md](podman.md).
 
+### Any other reverse proxy
+
+nginx, Traefik, or another proxy can take Caddy's place. We have tested none of them, so this is a checklist, not a recipe. The proxy must do all of this:
+
+- **Two `https://` addresses.** The app and the sync service each get their own.
+- **The same addresses in `.env`.** Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to those exact addresses. For the app on its own, that is `APP_URL`.
+- **`TRUST_PROXY=1`**, or the number of proxies in the chain.
+- **`Host` and `X-Forwarded-Proto` reach the app.** Pass the browser's `Host` header through unchanged, or set `X-Forwarded-Host` to it. Set `X-Forwarded-Proto` to `https`. The app's CSRF check builds the page's own address from these and compares it with the browser's `Origin`. If they are wrong, form posts fail.
+- **`X-Forwarded-For` reaches both services.** Their per-address limits read it.
+- **The container ports stay on `127.0.0.1`.** Keep `'127.0.0.1:3000:3000'` and `'127.0.0.1:3001:3000'`, so nothing reaches them past the proxy.
+
 ### No domain name: Tailscale Serve
 
-Tailscale provides an HTTPS address for every device on your tailnet. It requires no domain name, no open ports, and no manual certificate management:
+Tailscale gives every machine on your tailnet an HTTPS address under `ts.net`. You need no domain name, no open ports, and no manual certificate management. Tailscale Serve puts that address in front of a port on this machine. openplate with sync needs two addresses. You serve two ports under the same machine name: the app on 443 and the sync service on 8443.
+
+Before you start:
+
+- **Turn on MagicDNS and HTTPS certificates** for your tailnet on the DNS page of the Tailscale admin console. [Tailscale's HTTPS guide](https://tailscale.com/docs/how-to/set-up-https-certificates) has the steps. The machine name appears in a public certificate log, so choose a name that reveals nothing private.
+- **Every family member runs Tailscale** on each device that opens openplate. Each person must be in your tailnet, or have this machine [shared with them](https://tailscale.com/docs/features/sharing).
+- **Keep the container ports on `127.0.0.1`**: `'127.0.0.1:3000:3000'` for the app and `'127.0.0.1:3001:3000'` for sync. Tailscale Serve reaches them on this machine. Nothing else needs access.
+
+Then serve both ports. `--bg` keeps them running in the background, and Tailscale serves them again after a reboot:
 
 ```bash
-tailscale serve --bg 3000
+tailscale serve --bg --https=443 3000
+tailscale serve --bg --https=8443 3001
+tailscale serve status
 ```
 
-Tailscale issues and renews the certificate. The app becomes reachable at `https://<machine-name>.<tailnet>.ts.net`. Set `APP_URL` to that URL. Every device that opens this URL must run Tailscale on your tailnet.
+Tailscale issues and renews the certificate. Set both addresses in `.env`, using your own machine and tailnet names:
 
-We have not tested this path ourselves, and the command above serves only the app on port 3000, not the sync service. [Tailscale's documentation](https://tailscale.com/docs/features/tailscale-serve) describes `tailscale serve`. The Caddy recipe above is the one we verified.
+```bash
+PUBLIC_APP_URL=https://<machine-name>.<tailnet>.ts.net
+PUBLIC_SYNC_URL=https://<machine-name>.<tailnet>.ts.net:8443
+TRUST_PROXY=1
+```
+
+Tailscale Serve is a reverse proxy, so `TRUST_PROXY` stays at `1`. Recreate the stack with `docker compose -f <your file> up -d`. If you run the app on its own, serve only port 3000 and set `APP_URL` to the first address.
+
+We have not run this path end to end. The [`tailscale serve` reference](https://tailscale.com/docs/reference/tailscale-cli/serve) documents the flags above, and [Tailscale's documentation](https://tailscale.com/docs/features/tailscale-serve) describes `tailscale serve`. The Caddy recipe above is the one we verified.
+
+Headscale, a self-hosted Tailscale control server, gives out no HTTPS certificates. A Headscale tailnet needs the Caddy recipe with a domain instead.
 
 ## Backups
 

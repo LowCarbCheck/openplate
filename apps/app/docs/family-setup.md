@@ -137,3 +137,11 @@ key is embedded in the page HTML and readable with view-source by anyone who can
 app, so it is one shared credential again, with the same problem you started with. It is
 fine for a LAN or tailnet where you trust everyone who can reach it, and wrong anywhere else.
 See [configuration.md](configuration.md#instance-provided-ai).
+
+## Accounts for the family
+
+Sync and a managed instance both give each person an account on the openplate-core service you run.
+
+- **Use invitations.** You make the first account for yourself on the server ([self-hosting.md](self-hosting.md#create-the-first-account) has the command). After that, invite each person from `/admin` in the app.
+- **Keep `OPEN_SIGNUP` off.** It lets anyone who finds the address ask for an account. A family has no use for that.
+- **Mail is optional.** With no mail, `/admin` shows each invitation and reset link, and you pass it on yourself. [self-hosting.md](self-hosting.md#mail) explains both ways, and how to set up mail if you want it.
