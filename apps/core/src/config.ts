@@ -127,7 +127,9 @@ export interface ServiceConfig {
    * ALL THREE OR NONE, and any of them requires
    * {@link ServiceConfig.serverPublicUrl} and {@link ServiceConfig.clientBaseUrl}:
    * a letter with no link in it is not worth sending, and a half-configured
-   * block is an operator who believes mail works. See `parseMail`.
+   * block is an operator who believes mail works. In production both must
+   * also be https and name a host other than this machine, see
+   * `refuseUnreachableLinkBases`. See `parseMail`.
    */
   mail: HttpMailConfig | null;
   /**
@@ -804,6 +806,99 @@ function parseTrustProxy(env: NodeJS.ProcessEnv): boolean | number {
   return hops;
 }
 
+/**
+ * One of the two link bases a mailed letter is built from: the variable this
+ * service reads, the variable the docker compose files fill it from, and what
+ * it should name instead of the value it has.
+ */
+interface LinkBase {
+  variable: 'CLIENT_BASE_URL' | 'SERVER_PUBLIC_URL';
+  composeVariable: 'PUBLIC_APP_URL' | 'PUBLIC_SYNC_URL';
+  target: string;
+}
+
+const CLIENT_LINK_BASE: LinkBase = {
+  variable: 'CLIENT_BASE_URL',
+  composeVariable: 'PUBLIC_APP_URL',
+  target: 'the https:// address where your family opens the openplate app',
+};
+
+const SERVER_LINK_BASE: LinkBase = {
+  variable: 'SERVER_PUBLIC_URL',
+  composeVariable: 'PUBLIC_SYNC_URL',
+  target: "this service's own https:// address",
+};
+
+/** `127.0.0.0/8` as the WHATWG parser writes it: `127.1`, `0x7f.1` and `2130706433` all come out dotted. */
+const LOOPBACK_IPV4 = /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/u;
+
+/** `::ffff:127.0.0.0/104`, an IPv4 loopback address mapped into IPv6, as the parser writes it. */
+const LOOPBACK_IPV4_MAPPED = /^\[::ffff:7f[0-9a-f]{2}:[0-9a-f]{1,4}\]$/u;
+
+/**
+ * Whether a URL's `hostname` names this machine and nothing else: `localhost`,
+ * a `*.localhost` name (RFC 6761 reserves the whole tree for loopback), an
+ * address in `127.0.0.0/8`, or `::1`.
+ *
+ * READS A PARSED HOSTNAME, never the raw value. The parser has already
+ * lowercased it, bracketed and shortened an IPv6 address (`[0:0:0:0:0:0:0:1]`
+ * is `[::1]`), and turned every IPv4 spelling into dotted decimal, so the
+ * patterns above see one form each.
+ */
+function isLoopbackHost(hostname: string): boolean {
+  // A trailing dot is the fully qualified spelling of the same name.
+  const name = hostname.replace(/\.$/u, '');
+  if (name === 'localhost' || name.endsWith('.localhost')) return true;
+  if (name === '[::1]') return true;
+  return LOOPBACK_IPV4.test(name) || LOOPBACK_IPV4_MAPPED.test(name);
+}
+
+/**
+ * What is wrong with one link base for a letter read on somebody else's
+ * device, as one sentence, or `null` when nothing is.
+ *
+ * The value was already accepted by `parseOptionalBaseUrl`, so it parses.
+ */
+function linkBaseProblem(input: { base: LinkBase; value: string }): string | null {
+  const { hostname, protocol } = new URL(input.value);
+  const fix = `Set it to ${input.base.target} (${input.base.composeVariable} in the .env of the docker compose files).`;
+  if (isLoopbackHost(hostname)) {
+    return `${input.base.variable} is "${input.value}". That is a loopback address that opens only on this machine. ${fix}`;
+  }
+  if (protocol !== 'https:') {
+    return `${input.base.variable} is "${input.value}". It is a plain http:// address, and on another device the app cannot sign anyone in over plain http. ${fix}`;
+  }
+  return null;
+}
+
+/**
+ * THE LINKS IN A LETTER HAVE TO OPEN ON THE READER'S DEVICE, so in production a
+ * mail block beside a loopback or plain-http link base is a BOOT FAILURE.
+ *
+ * The compose files fill both bases from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`,
+ * and fall back to `http://localhost:3000` and `http://localhost:3001` when
+ * those are unset. An operator who turned mail on and forgot them got a service
+ * that booted and mailed a family member a link that opens nothing on any other
+ * device, and heard of it from that person. Both bases are checked before
+ * anything is thrown, so one message names every value to change.
+ *
+ * PRODUCTION ONLY. The image sets `NODE_ENV=production`. A development machine
+ * and the test suites mail localhost links on purpose, and an instance without
+ * mail is not checked at all: its administrator copies each link by hand, and
+ * the app's admin screen says when that link names another address.
+ */
+function refuseUnreachableLinkBases(urls: { clientBaseUrl: string; serverPublicUrl: string }): void {
+  const problems = [
+    linkBaseProblem({ base: CLIENT_LINK_BASE, value: urls.clientBaseUrl }),
+    linkBaseProblem({ base: SERVER_LINK_BASE, value: urls.serverPublicUrl }),
+  ].filter((problem): problem is string => problem !== null);
+  if (problems.length === 0) return;
+  throw new Error(
+    `Mail is configured. Its messages would carry links that recipients cannot open. ${problems.join(' ')} ` +
+      'This check runs because NODE_ENV is production.',
+  );
+}
+
 /** The four names that make up the mail block. Listed once so every message below can name them all. */
 const MAIL_VARIABLES = ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM', 'MAIL_OPERATOR_EMAIL'] as const;
 
@@ -827,7 +922,9 @@ const MAIL_VARIABLES = ['MAIL_API_URL', 'MAIL_API_KEY', 'MAIL_API_FROM', 'MAIL_O
  * letters carry a link. Configured mail with no `CLIENT_BASE_URL` would send
  * one of them with nothing in it to click. The two declaration letters carry
  * no link at all, so they do not depend on the base URLs, only on the mail
- * block itself.
+ * block itself. In production the same argument goes one step further: a link
+ * that names `localhost` or plain http is a link with nothing to click on the
+ * reader's device, see `refuseUnreachableLinkBases`.
  */
 function parseMail(
   env: NodeJS.ProcessEnv,
@@ -844,15 +941,18 @@ function parseMail(
     );
   }
 
-  const missingUrls = [
-    urls.serverPublicUrl === null ? 'SERVER_PUBLIC_URL' : null,
-    urls.clientBaseUrl === null ? 'CLIENT_BASE_URL' : null,
-  ].filter((name): name is string => name !== null);
-  if (missingUrls.length > 0) {
+  if (urls.serverPublicUrl === null || urls.clientBaseUrl === null) {
+    const missingUrls = [
+      urls.serverPublicUrl === null ? 'SERVER_PUBLIC_URL' : null,
+      urls.clientBaseUrl === null ? 'CLIENT_BASE_URL' : null,
+    ].filter((name): name is string => name !== null);
     throw new Error(
       `Mail is configured but ${missingUrls.join(' and ')} ${missingUrls.length === 1 ? 'is' : 'are'} not set. ` +
         'The invitation and the password reset both carry a link, and a link needs both values.',
     );
+  }
+  if (env.NODE_ENV?.trim() === 'production') {
+    refuseUnreachableLinkBases({ clientBaseUrl: urls.clientBaseUrl, serverPublicUrl: urls.serverPublicUrl });
   }
 
   // SAFETY: `present.length === 4` above, so every name has a non-empty value.

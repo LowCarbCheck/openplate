@@ -7,6 +7,19 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **Mail no longer starts with links nobody else can open.** With mail
+  configured and `NODE_ENV=production`, which the image sets, the service
+  refuses to boot when `CLIENT_BASE_URL` or `SERVER_PUBLIC_URL` is a plain
+  `http://` address or names this machine (`localhost`, `127.0.0.0/8`, `::1`,
+  a `*.localhost` name). The compose files fall back to localhost when
+  `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` are unset. Because of that fallback,
+  an install that enabled mail without setting them sent invitations and
+  resets with links that open only on the server. The error message names
+  each variable, its value, and the target value to set. Without mail, and
+  outside production, nothing changes.
+
 ## [0.24.0] - 2026-09-29
 
 ### Changed

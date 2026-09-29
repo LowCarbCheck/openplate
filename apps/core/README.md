@@ -397,7 +397,7 @@ Your reverse proxy must also allow request bodies of about **2.75 MB**. Blobs ar
 
 Also worth knowing: **`ADMIN_TOKEN`** is the operator's break-glass credential, and it is optional. An account with `role: "admin"` reaches `/v1/admin` with its own access token, which is what puts the console in the app rather than in a shell. With neither configured nor existing, the whole `/v1/admin` tree answers the ordinary unknown-path 404, not a 401, which would announce that a credential exists here worth guessing.
 
-**`SERVER_PUBLIC_URL`** and **`CLIENT_BASE_URL`** are both optional and are needed together: they build the link in an invitation and in a reset mail. With neither, the admin API returns the raw token instead of an invitation link, and no reset link at all, so set both unless you have a reason not to. Mail refuses to start without them.
+**`SERVER_PUBLIC_URL`** and **`CLIENT_BASE_URL`** are both optional and are needed together: they build the link in an invitation and in a reset mail. With neither, the admin API returns the raw token instead of an invitation link, and no reset link at all, so set both unless you have a reason not to. Mail refuses to start without them. With mail configured and `NODE_ENV=production`, which the image sets, both must be `https://` addresses on a host other than this machine (`localhost`, `127.0.0.0/8`, `::1` or a `*.localhost` name). Otherwise the service refuses to start. A mailed link is opened on somebody else's device. The docker compose files fill both from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`, and fall back to localhost when those are unset.
 
 ### Backup and restore
 

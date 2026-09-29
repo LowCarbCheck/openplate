@@ -238,6 +238,187 @@ test('configured mail without the two link bases is a boot failure', () => {
   assert.equal(parseConfig(baseEnv()).mail, null);
 });
 
+// ---------------------------------------------------------------------------
+// Mailed links must open on the reader's device
+// ---------------------------------------------------------------------------
+//
+// The compose files default both link bases to localhost when PUBLIC_APP_URL
+// and PUBLIC_SYNC_URL are unset. An operator who turned mail on and forgot them
+// got a server that booted and mailed a family member
+// `http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=...`,
+// a link that opens nothing on any other device. In production that is now a
+// boot failure; in development and in the test suites it is not.
+
+/** A complete mail block. The link bases are supplied per case. */
+const MAIL_BLOCK = {
+  MAIL_API_URL: 'http://pigeon:3601/v1/emails',
+  MAIL_API_KEY: 'a-pigeon-tenant-key',
+  MAIL_API_FROM: 'openplate <openplate@mail.example.org>',
+  MAIL_OPERATOR_EMAIL: 'operator@example.org',
+};
+
+/** Two link bases that a family member's phone opens. */
+const PUBLIC_LINKS = {
+  CLIENT_BASE_URL: 'https://openplate.example.org',
+  SERVER_PUBLIC_URL: 'https://sync.example.org',
+};
+
+/** What the compose files hand the core when PUBLIC_APP_URL and PUBLIC_SYNC_URL are unset. */
+const COMPOSE_DEFAULT_LINKS = {
+  CLIENT_BASE_URL: 'http://localhost:3000',
+  SERVER_PUBLIC_URL: 'http://localhost:3001',
+};
+
+/** The message a refused boot carries, or a failure naming the env that booted. */
+function refusal(env: NodeJS.ProcessEnv): string {
+  try {
+    parseConfig(env);
+  } catch (error) {
+    assert.ok(error instanceof Error);
+    return error.message;
+  }
+  assert.fail(`this environment booted and must not have: ${JSON.stringify(env)}`);
+}
+
+test('in production, mail with a localhost CLIENT_BASE_URL refuses to boot and names the value and the fix', () => {
+  const message = refusal(
+    baseEnv({
+      NODE_ENV: 'production',
+      ...MAIL_BLOCK,
+      ...PUBLIC_LINKS,
+      CLIENT_BASE_URL: 'http://localhost:3000',
+    }),
+  );
+  assert.match(message, /CLIENT_BASE_URL/);
+  assert.ok(message.includes('"http://localhost:3000"'), message);
+  assert.match(message, /PUBLIC_APP_URL/, 'the compose files set it under this name');
+  assert.match(message, /https:\/\//, 'the message says what to set');
+  // The one that is fine is not blamed.
+  assert.doesNotMatch(message, /SERVER_PUBLIC_URL/);
+});
+
+test('in production, mail with a loopback SERVER_PUBLIC_URL refuses to boot and names the value and the fix', () => {
+  const message = refusal(
+    baseEnv({
+      NODE_ENV: 'production',
+      ...MAIL_BLOCK,
+      ...PUBLIC_LINKS,
+      SERVER_PUBLIC_URL: 'https://127.0.0.1:3001',
+    }),
+  );
+  assert.match(message, /SERVER_PUBLIC_URL/);
+  assert.ok(message.includes('"https://127.0.0.1:3001"'), message);
+  assert.match(message, /PUBLIC_SYNC_URL/, 'the compose files set it under this name');
+  assert.doesNotMatch(message, /CLIENT_BASE_URL/);
+});
+
+test('in production, mail with a plain http link base refuses to boot, even on a public host', () => {
+  // Opening a plain http address on another device gives a page with no Web
+  // Crypto, and an https page cannot call a plain http service. So the scheme
+  // is refused on its own, not only the host.
+  const appMessage = refusal(
+    baseEnv({
+      NODE_ENV: 'production',
+      ...MAIL_BLOCK,
+      ...PUBLIC_LINKS,
+      CLIENT_BASE_URL: 'http://openplate.example.org',
+    }),
+  );
+  assert.match(appMessage, /CLIENT_BASE_URL/);
+  assert.ok(appMessage.includes('"http://openplate.example.org"'), appMessage);
+  assert.match(appMessage, /https:\/\//);
+
+  const syncMessage = refusal(
+    baseEnv({ NODE_ENV: 'production', ...MAIL_BLOCK, ...PUBLIC_LINKS, SERVER_PUBLIC_URL: 'http://100.64.0.3:3001' }),
+  );
+  assert.match(syncMessage, /SERVER_PUBLIC_URL/);
+  assert.ok(syncMessage.includes('"http://100.64.0.3:3001"'), syncMessage);
+});
+
+test('in production, every spelling of a loopback host is refused, https or not', () => {
+  const loopbacks = [
+    'https://localhost',
+    'https://LOCALHOST:8443',
+    'https://localhost.',
+    'https://openplate.localhost',
+    'https://127.0.0.1',
+    'https://127.1.2.3:3000',
+    // The WHATWG parser writes these forms out as 127.0.0.1 before the check.
+    'https://127.1',
+    'https://2130706433',
+    'https://[::1]:3000',
+    'https://[0:0:0:0:0:0:0:1]',
+    'https://[::ffff:127.0.0.1]',
+  ];
+  for (const value of loopbacks) {
+    const message = refusal(
+      baseEnv({ NODE_ENV: 'production', ...MAIL_BLOCK, ...PUBLIC_LINKS, CLIENT_BASE_URL: value }),
+    );
+    assert.match(message, /CLIENT_BASE_URL/, value);
+    assert.ok(message.includes(`"${value}"`), `${value} must be quoted as written: ${message}`);
+  }
+});
+
+test('in production, the compose defaults refuse to boot with mail, and one message names both variables', () => {
+  // The exact state of an install that followed the compose file and forgot
+  // PUBLIC_APP_URL and PUBLIC_SYNC_URL. Both are wrong, and an operator who
+  // fixes one at a time would restart twice.
+  const message = refusal(baseEnv({ NODE_ENV: 'production', ...MAIL_BLOCK, ...COMPOSE_DEFAULT_LINKS }));
+  assert.ok(message.includes('CLIENT_BASE_URL is "http://localhost:3000"'), message);
+  assert.ok(message.includes('SERVER_PUBLIC_URL is "http://localhost:3001"'), message);
+  assert.match(message, /PUBLIC_APP_URL/);
+  assert.match(message, /PUBLIC_SYNC_URL/);
+  // The mail block is a credential; its values stay out of the log.
+  assert.ok(!message.includes('a-pigeon-tenant-key'), 'the message must not quote the mail key');
+});
+
+test('CONTROL: in production, mail with two public https link bases boots', () => {
+  const config = parseConfig(baseEnv({ NODE_ENV: 'production', ...MAIL_BLOCK, ...PUBLIC_LINKS }));
+  assert.notEqual(config.mail, null);
+  assert.equal(config.clientBaseUrl, 'https://openplate.example.org');
+  assert.equal(config.serverPublicUrl, 'https://sync.example.org');
+  // A tailnet name with its own certificate is a public https host for this rule.
+  assert.notEqual(
+    parseConfig(
+      baseEnv({
+        NODE_ENV: 'production',
+        ...MAIL_BLOCK,
+        CLIENT_BASE_URL: 'https://bluefin.tail1234.ts.net',
+        SERVER_PUBLIC_URL: 'https://bluefin.tail1234.ts.net:8443',
+      }),
+    ).mail,
+    null,
+  );
+});
+
+test('CONTROL: a host that only contains the word localhost is not a loopback host', () => {
+  for (const value of ['https://localhost.example.org', 'https://notlocalhost.example', 'https://127.example.org']) {
+    const config = parseConfig(
+      baseEnv({ NODE_ENV: 'production', ...MAIL_BLOCK, ...PUBLIC_LINKS, CLIENT_BASE_URL: value }),
+    );
+    assert.equal(config.clientBaseUrl, value, value);
+  }
+});
+
+test('CONTROL: in production WITHOUT mail, localhost link bases still boot', () => {
+  // The admin copies the link by hand then, and the admin screen warns about
+  // an address the family cannot open. Refusing here would stop a trial install.
+  const config = parseConfig(baseEnv({ NODE_ENV: 'production', ...COMPOSE_DEFAULT_LINKS }));
+  assert.equal(config.mail, null);
+  assert.equal(config.clientBaseUrl, 'http://localhost:3000');
+});
+
+test('CONTROL: outside production, mail with localhost link bases still boots', () => {
+  // The dev setup and the integration suites mail localhost links on purpose.
+  for (const nodeEnv of ['test', 'development', undefined]) {
+    const env = baseEnv({ ...MAIL_BLOCK, ...COMPOSE_DEFAULT_LINKS });
+    if (nodeEnv !== undefined) env.NODE_ENV = nodeEnv;
+    const config = parseConfig(env);
+    assert.notEqual(config.mail, null, `NODE_ENV=${nodeEnv ?? '(unset)'}`);
+    assert.equal(config.clientBaseUrl, 'http://localhost:3000');
+  }
+});
+
 test('every removed variable is fatal rather than ignored', () => {
   // The same asymmetry SIGNUP_MODE is rejected under, applied to the old mail
   // plumbing. A variable that is quietly ignored lets an operator believe mail
