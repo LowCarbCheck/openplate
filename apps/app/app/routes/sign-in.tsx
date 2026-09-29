@@ -43,6 +43,7 @@ import { FirstPullStatus } from '#app/components/first-pull-status';
 import { SignInPanel } from '#app/components/sign-in-panel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useFirstPull, type FirstPullPhase } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -59,6 +60,8 @@ export const meta: MetaFunction = ({ matches }) => [{ title: metaTitle(metaLangu
 
 export default function SignIn() {
   const { t } = useTranslation();
+  // openplate.de links here with `?lang=<code>`, as it links to `/sign-up`.
+  useLanguageFromLink();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   // A plain-http page off this computer has no `crypto.subtle`, and signing

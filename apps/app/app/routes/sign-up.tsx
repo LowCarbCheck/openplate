@@ -228,9 +228,19 @@ function SignUpForm({
   return (
     <div className="space-y-4">
       {/* ONE CELL, TWO LAYERS: see the file header. `inert` keeps the hidden
-          layer out of the tab order and away from a screen reader. */}
+          layer out of the tab order and away from a screen reader.
+          `[&_*]:transition-none` hides the form's button in the same frame as
+          the form: the button's own `transition-all` would otherwise animate
+          the inherited `visibility` and keep it drawn for 150 ms under the
+          sentence. The same fix as `ReturnState` in `settings.plan.tsx`, whose
+          comment has the mechanism; `invisible-button-flash.spec.ts` watches
+          every frame of the change. */}
       <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
-        <form {...getFormProps(form)} className={cn('space-y-3', isSent && 'invisible')} inert={isSent}>
+        <form
+          {...getFormProps(form)}
+          className={cn('space-y-3', isSent && 'invisible [&_*]:transition-none')}
+          inert={isSent}
+        >
           {trialScans !== null && (
             <SignupOffer trialScans={trialScans} prices={prices} chosenPlan={planToSend} size="sm" />
           )}
