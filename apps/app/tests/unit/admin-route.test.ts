@@ -601,7 +601,7 @@ test('with mail configured the result names the address and shows NO link', () =
     createElement(InviteResult, {
       email: 'bea@example.org',
       delivery: { emailed: true, link: null },
-      onInviteAnother: () => undefined,
+      next: { kind: 'invite-another', onClick: () => undefined },
     }),
   );
 
@@ -619,7 +619,7 @@ test('without mail the result shows the link, and says what holding it means', (
     createElement(InviteResult, {
       email: 'bea@example.org',
       delivery: { emailed: false, link },
-      onInviteAnother: () => undefined,
+      next: { kind: 'invite-another', onClick: () => undefined },
     }),
   );
 
@@ -637,7 +637,7 @@ test('a server that reports mail AND hands back a link is treated as the link ca
     createElement(InviteResult, {
       email: 'bea@example.org',
       delivery: { emailed: true, link: 'https://app.example.test/join#invite=si_abc' },
-      onInviteAnother: () => undefined,
+      next: { kind: 'invite-another', onClick: () => undefined },
     }),
   );
 
@@ -672,6 +672,29 @@ test('a link that opens another origin than the page says so under the link, and
   assert.ok(linkAt >= 0 && linkAt < warningAt && warningAt < copyAt, `link ${linkAt}, warning ${warningAt}, copy ${copyAt}`);
 });
 
+test('a link on the page origin whose server= names this machine warns in the same line, naming PUBLIC_SYNC_URL', () => {
+  const page = 'https://openplate.family.example';
+  const link = `${page}/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_abc`;
+  const html = render(createElement(CopyableLinkView, { link, pageOrigin: page }));
+
+  assert.ok(html.includes(ORIGIN_WARNING), 'the same one-line box');
+  const warningAt = html.indexOf(ORIGIN_WARNING);
+  const line = html.slice(warningAt, html.indexOf('</p>', warningAt));
+  assert.ok(line.includes('http://localhost:3001'), `it names the sync server the link points at: ${line}`);
+  assert.match(line, /PUBLIC_SYNC_URL/);
+  assert.doesNotMatch(line, /PUBLIC_APP_URL/, 'the app address is right, so it is not the setting to change');
+  // Still one line: the two warnings never stack.
+  assert.equal(html.split(ORIGIN_WARNING).length - 1, 1);
+});
+
+test('CONTROL: a link on the page origin with an https sync server on a real host draws no line', () => {
+  const page = 'https://openplate.family.example';
+  const link = `${page}/join#server=https%3A%2F%2Fsync.family.example&invite=si_abc`;
+  const html = render(createElement(CopyableLinkView, { link, pageOrigin: page }));
+  assert.match(html, /Copy the link/);
+  assert.ok(!html.includes(ORIGIN_WARNING));
+});
+
 test('CONTROL: a link on the page origin draws no warning line', () => {
   const html = render(createElement(CopyableLinkView, { link: LOCALHOST_INVITE_LINK, pageOrigin: 'http://localhost:3000' }));
   // The link itself is there, so an empty render cannot pass this.
@@ -686,11 +709,34 @@ test('the server render of the invite result draws no warning line, so hydration
     createElement(InviteResult, {
       email: 'bea@example.org',
       delivery: { emailed: false, link: LOCALHOST_INVITE_LINK },
-      onInviteAnother: () => undefined,
+      next: { kind: 'invite-another', onClick: () => undefined },
     }),
   );
   assert.match(html, /Copy the link/);
   assert.ok(!html.includes(ORIGIN_WARNING));
+});
+
+test('a resend result offers the way back to the list, and a new invitation offers the next one', () => {
+  const delivery = { emailed: false, link: 'https://app.example.test/join#server=https%3A%2F%2Fsync.example.test&invite=si_abc' };
+  const resent = render(
+    createElement(InviteResult, {
+      email: 'bea@example.org',
+      delivery,
+      next: { kind: 'back-to-list', onClick: () => undefined },
+    }),
+  );
+  assert.match(resent, /Back to the list/);
+  assert.doesNotMatch(resent, /Invite somebody else/);
+  // The rest of the card is the one a new invitation gets.
+  assert.match(resent, /Invitation ready for bea@example\.org/);
+  assert.match(resent, /Copy the link/);
+
+  // THE CONTROL: the invite page's own result still offers the next invitation.
+  const invited = render(
+    createElement(InviteResult, { email: 'bea@example.org', delivery, next: { kind: 'invite-another', onClick: () => undefined } }),
+  );
+  assert.match(invited, /Invite somebody else/);
+  assert.doesNotMatch(invited, /Back to the list/);
 });
 
 test("a person with a scan trial shows the free scans used against those given (M253/05)", () => {

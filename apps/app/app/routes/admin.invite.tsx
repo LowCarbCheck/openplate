@@ -173,9 +173,12 @@ function AdminInviteForm({ trialScans, mail }: AdminInviteFormProps) {
       <InviteResult
         email={state.email}
         delivery={state.delivery}
-        onInviteAnother={() => {
-          setState({ kind: 'form' });
-          setFailure(null);
+        next={{
+          kind: 'invite-another',
+          onClick: () => {
+            setState({ kind: 'form' });
+            setFailure(null);
+          },
         }}
       />
     );

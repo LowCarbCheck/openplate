@@ -24,6 +24,11 @@
  * that opens only on the server. The administrator is using the address the
  * family uses, so a link whose origin is not this page's gets one line under
  * it that names the address and the two settings to change.
+ *
+ * The same line covers the link's other half: a link on the right address whose
+ * `server=` names this machine or plain http opens the right page and then
+ * cannot reach the sync server, so the line names that server and
+ * `PUBLIC_SYNC_URL` instead. See `lib/admin/link-delivery.ts`.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,15 +38,22 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { usePageOrigin } from '#app/hooks/use-page-origin';
 import type { Delivery } from '#app/lib/admin/admin-wire';
-import { foreignLinkOrigin } from '#app/lib/admin/link-delivery';
+import { linkWarning } from '#app/lib/admin/link-delivery';
+
+/**
+ * The one button under the result: the next invitation, on the invite page, or
+ * the way back to the list a resend came from, on the invitations tab.
+ */
+export type InviteResultNext =
+  { kind: 'invite-another'; onClick: () => void } | { kind: 'back-to-list'; onClick: () => void };
 
 export interface InviteResultProps {
   email: string;
   delivery: Delivery;
-  onInviteAnother: () => void;
+  next: InviteResultNext;
 }
 
-export function InviteResult({ email, delivery, onInviteAnother }: InviteResultProps) {
+export function InviteResult({ email, delivery, next }: InviteResultProps) {
   const { t } = useTranslation();
   const emailed = delivery.emailed && delivery.link === null;
 
@@ -56,8 +68,8 @@ export function InviteResult({ email, delivery, onInviteAnother }: InviteResultP
       </CardHeader>
       <CardContent className="space-y-4">
         {delivery.link !== null && <CopyableLink link={delivery.link} />}
-        <Button type="button" variant="outline" className="h-11" onClick={onInviteAnother}>
-          {t('admin.invite.again')}
+        <Button type="button" variant="outline" className="h-11" onClick={next.onClick}>
+          {next.kind === 'invite-another' ? t('admin.invite.again') : t('admin.invite.back')}
         </Button>
       </CardContent>
     </Card>
@@ -103,7 +115,7 @@ export interface CopyableLinkViewProps {
 export function CopyableLinkView({ link, pageOrigin }: CopyableLinkViewProps) {
   const { t } = useTranslation();
   const [isCopied, setIsCopied] = useState(false);
-  const otherOrigin = foreignLinkOrigin({ link, pageOrigin });
+  const warning = linkWarning({ link, pageOrigin });
 
   async function copy(): Promise<void> {
     try {
@@ -119,10 +131,14 @@ export function CopyableLinkView({ link, pageOrigin }: CopyableLinkViewProps) {
   return (
     <div className="space-y-2">
       <p className="break-all border bg-muted/30 p-3 font-mono text-xs">{link}</p>
-      {otherOrigin !== null && (
+      {warning !== null && (
         <p data-slot="link-origin-warning" className="flex items-start gap-2 text-sm text-accent-amber">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="min-w-0 break-words">{t('admin.link.otherAddress', { origin: otherOrigin })}</span>
+          <span className="min-w-0 break-words">
+            {warning.kind === 'other-origin' ?
+              t('admin.link.otherAddress', { origin: warning.origin })
+            : t('admin.link.syncAddress', { server: warning.server })}
+          </span>
         </p>
       )}
       <Button type="button" variant="outline" className="h-11" onClick={() => void copy()}>

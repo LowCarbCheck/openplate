@@ -3379,7 +3379,8 @@
       "back": "Retour à la liste"
     },
     "link": {
-      "otherAddress": "Ce lien ouvre {{origin}}, et non l'adresse que tu utilises actuellement. Il se peut qu'il ne fonctionne pas pour tes proches. Définis PUBLIC_APP_URL et PUBLIC_SYNC_URL sur le serveur avec les adresses que ta famille utilise."
+      "otherAddress": "Ce lien ouvre {{origin}}, et non l'adresse que tu utilises actuellement. Il se peut qu'il ne fonctionne pas pour tes proches. Définis PUBLIC_APP_URL et PUBLIC_SYNC_URL sur le serveur avec les adresses que ta famille utilise.",
+      "syncAddress": "Ce lien ouvre la bonne page, mais redirige l'application vers le serveur situé à l'adresse {{server}}. Leur appareil ne peut pas le joindre. Définis PUBLIC_SYNC_URL sur le serveur avec l'adresse https qu'utilise ta famille."
     },
     "settings": {
       "title": "Valeurs de référence",

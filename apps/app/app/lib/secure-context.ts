@@ -58,8 +58,12 @@ export function isPotentiallyTrustworthyUrl(url: string): boolean {
   return isLocalHostname(parsed.hostname);
 }
 
-/** A loopback address or a `localhost` name. `URL` hands an IPv6 host back in brackets. */
-function isLocalHostname(hostname: string): boolean {
+/**
+ * A loopback address or a `localhost` name. `URL` hands an IPv6 host back in brackets.
+ * Exported for `lib/admin/link-delivery.ts`, which asks the same question of a
+ * link's `server=` address.
+ */
+export function isLocalHostname(hostname: string): boolean {
   const host = hostname.toLowerCase();
   if (LOCALHOST_NAMES.has(host) || host.endsWith('.localhost') || host.endsWith('.localhost.')) return true;
   if (host === '[::1]') return true;

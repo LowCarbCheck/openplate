@@ -102,11 +102,16 @@ function InviteRow({
           type="button"
           size="sm"
           variant="outline"
+          className="relative"
           disabled={isBusy}
           onClick={() => void run(() => onResend({ id: invite.id }))}
         >
-          {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-          {t('admin.invites.resend')}
+          {/* THE LABEL KEEPS THE BUTTON'S WIDTH WHILE BUSY, and the spinner is
+              drawn over it. A spinner beside the label widened the button and
+              pushed "Withdraw" 22 px sideways. `opacity-0`, not `invisible`, so
+              the button keeps its name for a screen reader. */}
+          <span className={isBusy ? 'opacity-0' : undefined}>{t('admin.invites.resend')}</span>
+          {isBusy && <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin" aria-hidden="true" />}
         </Button>
         <ConfirmButton
           label={t('admin.invites.revoke')}

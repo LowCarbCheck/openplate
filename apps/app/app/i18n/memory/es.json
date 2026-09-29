@@ -10744,6 +10744,13 @@
     "at": "2026-09-14",
     "es": "Abrir el diario de hoy"
   },
+  "85dcd6872f847b9a": {
+    "en": "This link opens the right page, but points the app to the server at {{server}}. Their device cannot reach it. Set PUBLIC_SYNC_URL on the server to the https address your family uses.",
+    "path": "common:admin.link.syncAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Este enlace abre la página correcta, pero dirige la app al servidor en {{server}}. Su dispositivo no puede acceder a él. Configura PUBLIC_SYNC_URL en el servidor con la dirección https que usa tu familia."
+  },
   "85de4ae1ff443028": {
     "en": "Today's weight ({{unit}})",
     "path": "common:goals.weight.todayLabel",

@@ -96,6 +96,33 @@ export async function installShiftObserver(page: Page): Promise<void> {
 }
 
 /**
+ * Turns off the browser's scroll anchoring on every page this test opens.
+ *
+ * WITHOUT THIS A READING TAKEN ON A SCROLLED PAGE CANNOT FAIL. Once a spec has
+ * scrolled its target into view, Chrome picks a node near it as its scroll
+ * anchor. A line grown above that node then scrolls the page by the same
+ * amount, so nothing moves in the viewport and the browser records no layout
+ * shift: `admin-link-names-another-address.spec.ts` measured exactly that, a 0
+ * score for a 40 px line. Safari has no scroll anchoring at all, and there a
+ * late line pushes the next button down under the finger aiming at it. So the
+ * page is measured the way Safari draws it, where a late line is a shift.
+ *
+ * An init script, so every navigation gets it before the first paint. Call it
+ * before the first `goto`, next to {@link installShiftObserver}.
+ *
+ * @param page - a page that has not navigated yet.
+ */
+export async function turnOffScrollAnchoring(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const style = document.createElement('style');
+      style.textContent = '* { overflow-anchor: none !important; }';
+      document.head.append(style);
+    });
+  });
+}
+
+/**
  * Every shift recorded so far, in order.
  *
  * @param page - a page with the observer installed.

@@ -24,10 +24,11 @@
  *
  * ── Two writes, only when a spec asks for a link ─────────────────────────
  *
- * `handedLink` answers a new invitation and a reset the way an instance with
- * no mail does: `emailed: false` and the link to pass on. A spec picks the
- * link, which is how `admin-link-names-another-address.spec.ts` hands the page
- * a link on another origin and, as its control, one on its own.
+ * `handedLink` answers a new invitation, a resend and a reset the way an
+ * instance with no mail does: `emailed: false` and the link to pass on. A spec
+ * picks the link, which is how `admin-link-names-another-address.spec.ts` hands
+ * the page a link on another origin and, as its control, one on its own.
+ * `sendsMail` answers all three the way an instance with mail does instead.
  *
  * ── A request this file has no answer for is recorded, not guessed ───────
  *
@@ -59,6 +60,18 @@ export interface AdminConsoleStub {
    * link never gets one.
    */
   handedLink?: string;
+  /**
+   * An instance WITH mail: every new invitation, resend and reset answers
+   * `emailed: true` with no link, and the routed `/health` says `mail: true`.
+   * Wins over `handedLink`, because a core with mail sends no link to copy.
+   */
+  sendsMail?: boolean;
+  /**
+   * Holds every new invitation, resend and reset answer until it settles, so a
+   * spec can read the page while the button that sent it is busy. Left out,
+   * they answer at once, often before the busy state is ever painted.
+   */
+  writeGate?: Promise<void>;
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -247,6 +260,21 @@ const PERSON_PATH = /^\/accounts\/(\d+)(\/activity)?$/u;
 /** `POST /v1/admin/accounts/:id/reset-mail`. */
 const RESET_MAIL_PATH = /^\/accounts\/(\d+)\/reset-mail$/u;
 
+/** `POST /v1/admin/invites/:id/resend`. */
+const RESEND_PATH = /^\/invites\/(\d+)\/resend$/u;
+
+/** What a letter-carrying answer says: sent by mail, or a link to copy. */
+interface StubDelivery {
+  emailed: boolean;
+  link: string | null;
+}
+
+/** The delivery the stub answers with, or `null` when the spec asked for neither and the request stays unanswered. */
+function deliveryOf(stub: AdminConsoleStub): StubDelivery | null {
+  if (stub.sendsMail === true) return { emailed: true, link: null };
+  return stub.handedLink === undefined ? null : { emailed: false, link: stub.handedLink };
+}
+
 /** The one field of an invite body the answer repeats. LOOSE, so the rest of the body is not this file's concern. */
 const INVITE_BODY = z.looseObject({ email: z.string() });
 
@@ -314,17 +342,23 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
     return route.fulfill({ json: { accountId: found.id, lastSeenAt: found.lastSeenAt, ...strip } });
   }
 
-  if (request.method() === 'POST' && path === '/invites' && stub.handedLink !== undefined) {
+  const delivery = deliveryOf(stub);
+  if (request.method() === 'POST' && delivery !== null) await stub.writeGate;
+  if (request.method() === 'POST' && path === '/invites' && delivery !== null) {
     const body = INVITE_BODY.parse(request.postDataJSON());
-    return route.fulfill({
-      status: 201,
-      json: { invite: mintedInvite(body.email), emailed: false, link: stub.handedLink },
-    });
+    return route.fulfill({ status: 201, json: { invite: mintedInvite(body.email), ...delivery } });
+  }
+  const resend = RESEND_PATH.exec(path);
+  const resent = resend === null ? undefined : PENDING_INVITES.find((invite) => invite.id === Number(resend[1]));
+  if (request.method() === 'POST' && resent !== undefined && delivery !== null) {
+    // A resend mints a new token and a new week: the same row, a later expiry.
+    const invite = { ...resent, expiresAt: new Date(Date.now() + 7 * DAY_MS).toISOString() };
+    return route.fulfill({ status: 202, json: { invite, ...delivery } });
   }
   const reset = RESET_MAIL_PATH.exec(path);
   const resetFor = reset === null ? undefined : people.find((candidate) => candidate.id === Number(reset[1]));
-  if (request.method() === 'POST' && resetFor !== undefined && stub.handedLink !== undefined) {
-    return route.fulfill({ json: { emailed: false, link: stub.handedLink } });
+  if (request.method() === 'POST' && resetFor !== undefined && delivery !== null) {
+    return route.fulfill({ json: delivery });
   }
 
   stub.unanswered.push(`${request.method()} ${ADMIN_API_PREFIX}${path}`);
@@ -359,10 +393,10 @@ export async function routeAdminConsole(page: Page, stub: AdminConsoleStub): Pro
     const response = await route.fetch();
     const body = response.ok() ? HEALTH_ANSWER.safeParse(await response.json()) : null;
     if (body === null || !body.success) return route.fulfill({ response });
-    return route.fulfill({
-      response,
-      json: { ...body.data, instance: { ...body.data.instance, feedback: { retentionDays: REPORT_RETENTION_DAYS } } },
-    });
+    const instance = { ...body.data.instance, feedback: { retentionDays: REPORT_RETENTION_DAYS } };
+    // The fake says `mail: false`; a spec about a mail instance says otherwise.
+    if (stub.sendsMail === true) Object.assign(instance, { mail: true });
+    return route.fulfill({ response, json: { ...body.data, instance } });
   });
 
   await page.route(

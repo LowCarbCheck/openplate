@@ -3379,7 +3379,8 @@
       "back": "Listeye geri dön"
     },
     "link": {
-      "otherAddress": "Bu bağlantı şu an kullandığın adresi değil, {{origin}} adresini açar. Onlarda açılmayabilir. Sunucuda PUBLIC_APP_URL ve PUBLIC_SYNC_URL değerlerini ailenin kullandığı adreslere ayarla."
+      "otherAddress": "Bu bağlantı şu an kullandığın adresi değil, {{origin}} adresini açar. Onlarda açılmayabilir. Sunucuda PUBLIC_APP_URL ve PUBLIC_SYNC_URL değerlerini ailenin kullandığı adreslere ayarla.",
+      "syncAddress": "Bu bağlantı doğru sayfayı açıyor, ancak uygulamayı {{server}} adresindeki sunucuya yönlendiriyor. Cihazları buraya erişemiyor. Sunucudaki PUBLIC_SYNC_URL değerini ailenin kullandığı https adresine ayarla."
     },
     "settings": {
       "title": "Referans değerler",

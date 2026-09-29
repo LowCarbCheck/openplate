@@ -3379,7 +3379,8 @@
       "back": "Back to the list"
     },
     "link": {
-      "otherAddress": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses."
+      "otherAddress": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+      "syncAddress": "This link opens the right page, but points the app to the server at {{server}}. Their device cannot reach it. Set PUBLIC_SYNC_URL on the server to the https address your family uses."
     },
     "settings": {
       "title": "Reference values",

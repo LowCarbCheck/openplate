@@ -1,5 +1,5 @@
 /**
- * How an invitation or a reset link reaches a person, as two pure answers the
+ * How an invitation or a reset link reaches a person, as pure answers the
  * admin screens draw from.
  *
  * ── A link that opens somewhere else ─────────────────────────────────────
@@ -12,12 +12,24 @@
  * the address the family uses, so a link whose origin differs from the page's
  * is the one worth a line of warning.
  *
+ * ── A link that opens the right page and then the wrong server ──────────
+ *
+ * The other half of a link is its `server=`, which tells the app where the
+ * sync server is. A link on the right app address can still name
+ * `http://localhost:3001` there: it opens the right page, and the app then
+ * looks for the sync server on the reader's own device. The family's page is
+ * https on a real host (the app signs nobody in anywhere else), so a loopback
+ * or plain-http server beside it is the defect. On this machine, where page,
+ * app and server are all loopback, the link is consistent and says nothing.
+ *
  * ── What the invite form promises before anything is sent ────────────────
  *
  * The handshake says whether the instance sends mail (`instance.mail`), and the
  * form waits for the handshake before it draws. So the form can say the true
  * sentence from its first paint, and a third one when the handshake failed.
  */
+
+import { isLocalHostname } from '#app/lib/secure-context';
 
 /**
  * The origin a hand-passed link opens, when it is not the origin of the page
@@ -36,6 +48,45 @@ export function foreignLinkOrigin(input: { link: string; pageOrigin: string | nu
   // may not; one parse makes both sides the same spelling.
   const pageOrigin = URL.canParse(input.pageOrigin) ? new URL(input.pageOrigin).origin : input.pageOrigin;
   return linkOrigin === pageOrigin ? null : linkOrigin;
+}
+
+/**
+ * The one warning a hand-passed link can carry, or none. One at a time: when the
+ * app address is wrong, its line already names both settings.
+ */
+export type LinkWarning = { kind: 'other-origin'; origin: string } | { kind: 'unreachable-server'; server: string };
+
+/** The link's `server=` value as an origin, or `null` when it has none or it does not parse. */
+function linkServerOrigin(link: URL): string | null {
+  const server = new URLSearchParams(link.hash.slice(1)).get('server');
+  if (server === null || !URL.canParse(server)) return null;
+  return new URL(server).origin;
+}
+
+/**
+ * Whether the app at `app` can reach a sync server at `server`: never one on
+ * the reader's own device when the app is not on it too, and never plain http
+ * beside an https app, which the browser blocks as mixed content.
+ */
+function isServerUnreachableFrom(input: { app: URL; server: URL }): boolean {
+  const isAppLocal = isLocalHostname(input.app.hostname);
+  if (isLocalHostname(input.server.hostname) && !isAppLocal) return true;
+  return input.app.protocol === 'https:' && input.server.protocol === 'http:';
+}
+
+/**
+ * What is wrong with a hand-passed link for somebody on another device, or
+ * `null`. The app address first, see {@link foreignLinkOrigin}; then, on the
+ * right app address, the `server=` half, see the module header.
+ */
+export function linkWarning(input: { link: string; pageOrigin: string | null }): LinkWarning | null {
+  const origin = foreignLinkOrigin(input);
+  if (origin !== null) return { kind: 'other-origin', origin };
+  if (input.pageOrigin === null || !URL.canParse(input.link)) return null;
+  const app = new URL(input.link);
+  const server = linkServerOrigin(app);
+  if (server === null) return null;
+  return isServerUnreachableFrom({ app, server: new URL(server) }) ? { kind: 'unreachable-server', server } : null;
 }
 
 /** The sentence under the invite form's title, one per thing the handshake can say about mail. */

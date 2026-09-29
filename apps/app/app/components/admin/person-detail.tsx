@@ -180,11 +180,16 @@ export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...act
                 type="button"
                 size="sm"
                 variant="outline"
+                className="relative"
                 disabled={isBusy}
                 onClick={() => void run(() => actions.onSendResetMail())}
               >
-                {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                {t('admin.resetMail.cta')}
+                {/* The label keeps the button's width while busy and the
+                    spinner is drawn over it, so no neighbour moves. An icon
+                    beside the label would not fit "Envoyer un lien de
+                    réinitialisation" on a 360 px phone. */}
+                <span className={isBusy ? 'opacity-0' : undefined}>{t('admin.resetMail.cta')}</span>
+                {isBusy && <Loader2 className="absolute inset-0 m-auto h-4 w-4 animate-spin" aria-hidden="true" />}
               </Button>
               {!isSelf && (
                 <>

@@ -3379,7 +3379,8 @@
       "back": "Zurück zur Liste"
     },
     "link": {
-      "otherAddress": "Dieser Link öffnet {{origin}}, nicht die Adresse, die du gerade nutzt. Vielleicht öffnet er sich bei ihnen nicht. Setze PUBLIC_APP_URL und PUBLIC_SYNC_URL auf dem Server auf die Adressen, die deine Familie verwendet."
+      "otherAddress": "Dieser Link öffnet {{origin}}, nicht die Adresse, die du gerade nutzt. Vielleicht öffnet er sich bei ihnen nicht. Setze PUBLIC_APP_URL und PUBLIC_SYNC_URL auf dem Server auf die Adressen, die deine Familie verwendet.",
+      "syncAddress": "Dieser Link öffnet die richtige Seite, leitet die App aber an den Server unter {{server}} weiter. Das jeweilige Gerät kann ihn nicht erreichen. Setze PUBLIC_SYNC_URL auf dem Server auf die HTTPS-Adresse, die deine Familie verwendet."
     },
     "settings": {
       "title": "Referenzwerte",

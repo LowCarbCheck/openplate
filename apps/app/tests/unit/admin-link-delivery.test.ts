@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-import { foreignLinkOrigin, inviteBodyKey } from '../../app/lib/admin/link-delivery';
+import { foreignLinkOrigin, inviteBodyKey, linkWarning } from '../../app/lib/admin/link-delivery';
 
 const LOCALHOST_LINK = 'http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_abc';
 
@@ -79,6 +79,83 @@ test('a link that does not parse names nothing rather than throwing on the admin
   assert.equal(foreignLinkOrigin({ link: '', pageOrigin: 'http://bluefin:3000' }), null);
 });
 
+// ── The server= half of the link ──────────────────────────────────────────
+//
+// A link whose app address is right can still name a sync server the reader's
+// device cannot reach: `server=http%3A%2F%2Flocalhost%3A3001` opens the right
+// page and then points the app at the reader's own phone. The page the family
+// uses is https on a real host (the app signs nobody in anywhere else), so a
+// loopback or plain-http server beside it is the defect.
+
+/** The address a family opens the app at, in these cases. */
+const FAMILY_APP = 'https://openplate.family.example';
+
+/** A join link on the family's own app address, naming `server`. */
+function familyLink(server: string): string {
+  return `${FAMILY_APP}/join#server=${encodeURIComponent(server)}&invite=si_abc`;
+}
+
+test('a link on the right app address whose server= names this machine or plain http warns about the sync server', () => {
+  for (const server of [
+    'http://localhost:3001',
+    'https://localhost:3001',
+    'http://127.0.0.1:3001',
+    'https://127.0.1.1',
+    'http://[::1]:3001',
+    'https://sync.localhost',
+    // A real host, but plain http: an https page cannot call it.
+    'http://sync.family.example',
+  ]) {
+    assert.deepEqual(
+      linkWarning({ link: familyLink(server), pageOrigin: FAMILY_APP }),
+      { kind: 'unreachable-server', server: new URL(server).origin },
+      server,
+    );
+  }
+  // A reset link carries its server= the same way.
+  assert.deepEqual(
+    linkWarning({
+      link: `${FAMILY_APP}/reset#server=${encodeURIComponent('http://localhost:3001')}&token=sr_x`,
+      pageOrigin: FAMILY_APP,
+    }),
+    { kind: 'unreachable-server', server: 'http://localhost:3001' },
+  );
+});
+
+test('CONTROL: a link on the right app address with an https sync server on a real host warns about nothing', () => {
+  for (const server of ['https://sync.family.example', 'https://openplate.family.example', 'https://100.64.0.3:8443']) {
+    assert.equal(linkWarning({ link: familyLink(server), pageOrigin: FAMILY_APP }), null, server);
+  }
+});
+
+test('CONTROL: on this machine, a link to this machine is consistent and warns about nothing', () => {
+  // The dev setup and the ssh-tunnel test: the page, the app and the sync server
+  // are all on this machine, where plain http is a secure page. The link works
+  // exactly where the administrator is, and the app address check already
+  // covers the case where the page is somewhere else.
+  const link = 'http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_abc';
+  assert.equal(linkWarning({ link, pageOrigin: 'http://localhost:3000' }), null);
+});
+
+test('a link on another app address names that address, and the server= half is covered by the same line', () => {
+  assert.deepEqual(
+    linkWarning({
+      link: 'http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_abc',
+      pageOrigin: FAMILY_APP,
+    }),
+    { kind: 'other-origin', origin: 'http://localhost:3000' },
+  );
+});
+
+test('a link with no server= or an unreadable one, and a page not hydrated yet, warn about nothing', () => {
+  assert.equal(linkWarning({ link: `${FAMILY_APP}/join#invite=si_abc`, pageOrigin: FAMILY_APP }), null);
+  assert.equal(
+    linkWarning({ link: `${FAMILY_APP}/join#server=not%20a%20url&invite=si_abc`, pageOrigin: FAMILY_APP }),
+    null,
+  );
+  assert.equal(linkWarning({ link: familyLink('http://localhost:3001'), pageOrigin: null }), null);
+});
+
 test('the invite form says the mail sentence only where the instance says it sends mail', () => {
   assert.equal(inviteBodyKey({ mail: true }), 'admin.invite.body');
   assert.equal(inviteBodyKey({ mail: false }), 'admin.invite.bodyNoMail');
@@ -90,7 +167,7 @@ test('the invite form says the mail sentence only where the instance says it sen
 const inviteCopySchema = z.object({
   admin: z.object({
     invite: z.object({ body: z.string(), bodyNoMail: z.string(), bodyUnknown: z.string() }),
-    link: z.object({ otherAddress: z.string() }),
+    link: z.object({ otherAddress: z.string(), syncAddress: z.string() }),
   }),
 });
 
@@ -107,4 +184,7 @@ test('every sentence the form can pick is a different sentence in the English ca
   assert.match(catalog.admin.link.otherAddress, /\{\{origin\}\}/);
   assert.match(catalog.admin.link.otherAddress, /PUBLIC_APP_URL/);
   assert.match(catalog.admin.link.otherAddress, /PUBLIC_SYNC_URL/);
+  // The sync server line names the address it found and the one setting that fixes it.
+  assert.match(catalog.admin.link.syncAddress, /\{\{server\}\}/);
+  assert.match(catalog.admin.link.syncAddress, /PUBLIC_SYNC_URL/);
 });

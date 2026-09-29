@@ -21,22 +21,35 @@
  * No optimistic update, deliberately. A resend mints a NEW link and the old
  * one stops working, so what matters is what the service stored, not what was
  * clicked.
+ *
+ * ── A resend answers like a new invitation ───────────────────────────────
+ *
+ * On an instance without mail the service hands the new link back, and it is
+ * the only copy anywhere: the old link is dead. So a resend shows the card a
+ * new invitation gets (`InviteResult`), with the link to copy and its origin
+ * warning, or "sent" on an instance with mail, in place of the list. "Back to
+ * the list" re-reads it. The card replaces the list, so nothing above it moves.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
+import { InviteResult } from '#app/components/admin/invite-result';
 import { InviteTable } from '#app/components/admin/invite-table';
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { AdminClient } from '#app/lib/admin/admin-client';
-import type { InviteView } from '#app/lib/admin/admin-wire';
+import type { Delivery, InviteView } from '#app/lib/admin/admin-wire';
 
 /** What the tab is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
 type InvitationsState =
-  { kind: 'loading' } | { kind: 'forbidden' } | { kind: 'failed' } | { kind: 'ready'; invites: InviteView[] };
+  | { kind: 'loading' }
+  | { kind: 'forbidden' }
+  | { kind: 'failed' }
+  | { kind: 'ready'; invites: InviteView[] }
+  | { kind: 'resent'; email: string; delivery: Delivery };
 
 export default function AdminInvitations() {
   const { t } = useTranslation();
@@ -89,7 +102,41 @@ export default function AdminInvitations() {
     [load],
   );
 
+  /**
+   * A resend, and then its result in place of the list.
+   *
+   * RETHROWS a failed request, like `apply`, so the row shows its own message.
+   * The address comes from the answer, which is the one the service stored.
+   */
+  const resend = useCallback(async ({ id }: { id: number }): Promise<void> => {
+    const client = currentAdminClient();
+    if (client === null) {
+      setState({ kind: 'forbidden' });
+      return;
+    }
+    const outcome = await client.resendInvite({ id });
+    if (outcome.status === 'forbidden') {
+      setState({ kind: 'forbidden' });
+      return;
+    }
+    setState({
+      kind: 'resent',
+      email: outcome.value.invite.email,
+      delivery: { emailed: outcome.value.emailed, link: outcome.value.link },
+    });
+  }, []);
+
   if (state.kind === 'forbidden') return <NotAnAdministratorCard />;
+
+  if (state.kind === 'resent') {
+    return (
+      <InviteResult
+        email={state.email}
+        delivery={state.delivery}
+        next={{ kind: 'back-to-list', onClick: () => void load() }}
+      />
+    );
+  }
 
   if (state.kind === 'loading') {
     return (
@@ -128,7 +175,7 @@ export default function AdminInvitations() {
       <CardContent>
         <InviteTable
           invites={state.invites}
-          onResend={({ id }) => apply((client) => client.resendInvite({ id }))}
+          onResend={resend}
           onRevoke={({ id }) => apply((client) => client.revokeInvite({ id }))}
         />
       </CardContent>

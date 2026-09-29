@@ -32,13 +32,22 @@
  * separate question from who this person is, and a failed strip must never
  * take the page down with it.
  *
+ * ── The reset card goes under the details, and pushes nothing ───────────
+ *
+ * On an instance without mail, "Send a reset link" shows the link in a card.
+ * It used to go above the details, so the whole page, the button just pressed
+ * included, jumped down by the card's height under the administrator's finger
+ * (`DESIGN.md` section 7). It is now the last thing on the page, where it
+ * pushes nothing down, and it scrolls itself into view: a scroll moves the
+ * viewport, not the layout.
+ *
  * ── A 403 replaces the page, it does not blank it ────────────────────────
  *
  * Being demoted, or suspended, mid-session is ordinary. `AdminClient` returns
  * that as a value rather than throwing, and the whole page becomes the
  * not-an-administrator card.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { publishStatus } from '#app/lib/status';
@@ -67,6 +76,7 @@ export default function AdminPersonPage() {
   const [state, setState] = useState<PersonState>({ kind: 'loading' });
   const [activity, setActivity] = useState<PersonActivityState>({ kind: 'loading' });
   const [resetLink, setResetLink] = useState<string | null>(null);
+  const resetCard = useRef<HTMLDivElement>(null);
 
   // A path that is not a number cannot be an account, and the read below would
   // ask the service about `NaN`. It is reported as the same failure a deleted
@@ -123,6 +133,14 @@ export default function AdminPersonPage() {
   useEffect(() => {
     void loadActivity();
   }, [loadActivity]);
+
+  // THE CARD IS AT THE BOTTOM, so it brings itself into view: on a phone the
+  // activity card sits between the button and the link. `nearest` leaves a card
+  // that is already in view where it is.
+  useEffect(() => {
+    if (resetLink === null) return;
+    resetCard.current?.scrollIntoView({ block: 'nearest' });
+  }, [resetLink]);
 
   /**
    * One change, then a re-read.
@@ -206,18 +224,6 @@ export default function AdminPersonPage() {
 
   return (
     <div className="space-y-6">
-      {resetLink !== null && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.resetMail.cta')}</CardTitle>
-            <CardDescription>{t('admin.resetMail.noMail', { email: state.person.email })}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CopyableLink link={resetLink} />
-          </CardContent>
-        </Card>
-      )}
-
       <PersonDetail
         person={state.person}
         activity={activity}
@@ -228,6 +234,19 @@ export default function AdminPersonPage() {
         onSendResetMail={sendResetMail}
         onDelete={deletePerson}
       />
+
+      {/* LAST, so it pushes nothing down. See "The reset card goes under the details" above. */}
+      {resetLink !== null && (
+        <Card ref={resetCard}>
+          <CardHeader>
+            <CardTitle>{t('admin.resetMail.cta')}</CardTitle>
+            <CardDescription>{t('admin.resetMail.noMail', { email: state.person.email })}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CopyableLink link={resetLink} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

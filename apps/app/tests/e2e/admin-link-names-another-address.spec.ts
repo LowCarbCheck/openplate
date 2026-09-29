@@ -30,7 +30,8 @@
  * it. The layout readings have their own control, which grows a line above the
  * copy button in the live result and requires both readings to see it. That
  * control is why scroll anchoring is off here: with it on, the browser scrolled
- * the grown line away and recorded no shift (see `turnOffScrollAnchoring`). On the
+ * the grown line away and recorded no shift (see `turnOffScrollAnchoring` in
+ * `layout-shift.ts`). On the
  * code before this change, the first test fails at the warning line: it is
  * never drawn.
  *
@@ -63,6 +64,7 @@ import {
   settleAnimations,
   settleFrames,
   shiftScoreAfter,
+  turnOffScrollAnchoring,
 } from './layout-shift';
 
 // A cross-origin read the service worker made would never reach `page.route`.
@@ -114,32 +116,6 @@ function shownLink(page: Page, link: string): Locator {
 /** The sentence the line must say for this origin, from the bundle. */
 function warningFor(origin: string): string {
   return COPY.admin.link.otherAddress.replace('{{origin}}', origin);
-}
-
-/**
- * Turns off the browser's scroll anchoring on every page this test opens.
- *
- * WITHOUT THIS THE LAYOUT READINGS CANNOT FAIL. The result is read with the
- * copy button scrolled into view, and Chrome picks a node near it as its scroll
- * anchor. A line grown above that node then scrolls the page by the same amount,
- * so nothing moves in the viewport and the browser records no layout shift: the
- * control below measured exactly that, a 0 score for a 40 px line. Safari has
- * no scroll anchoring at all, and there a late line pushes the copy button down
- * under the finger aiming at it. So the page is measured the way Safari draws
- * it, where a late line is a shift.
- *
- * An init script, so every navigation gets it before the first paint.
- *
- * @param page - a page that has not navigated yet.
- */
-async function turnOffScrollAnchoring(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    document.addEventListener('DOMContentLoaded', () => {
-      const style = document.createElement('style');
-      style.textContent = '* { overflow-anchor: none !important; }';
-      document.head.append(style);
-    });
-  });
 }
 
 /** Signs the device in as an administrator, through the real sign-in, with every admin request routed. */
