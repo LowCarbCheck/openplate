@@ -17,9 +17,9 @@
 #
 # An account is an EMAIL ADDRESS plus a passphrase, and it is created by
 # redeeming an invite you addressed to somebody. Signup is invite-only,
-# always. Mail is optional: with none configured, an invitation comes back as a
-# link for you to paste rather than as a letter. The old SMTP and PIGEON_*
-# names are boot failures, not no-ops. See .env.example.
+# always. Mail is optional. If none is configured, an invite comes back as a
+# link for you to paste instead of an email. SMTP_SECURE and the old
+# PIGEON_* names cause a BOOT FAILURE, not a no-op. See .env.example.
 #
 #   docker compose --project-directory . -f docker/compose.yml logs -f sync
 #

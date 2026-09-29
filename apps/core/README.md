@@ -106,7 +106,7 @@ The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=..
 
 **Mail is optional, and it goes out one of two ways.** Set one transport, and this service sends the invitation and the password reset itself. Leave both unset, and both come back to you as links to paste. Nothing is silently dropped either way. Setting both is a boot failure. `MAIL_OPERATOR_EMAIL` belongs to both. It receives your copy of a cancellation or a withdrawal.
 
-- **An HTTP mail API** that speaks pigeon's protocol, which matches Resend's shape: `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`, all three.
+- **A Resend-compatible HTTP mail API**. It accepts a JSON POST with a Bearer token: set `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`.
 - **SMTP**: `SMTP_HOST` and `SMTP_FROM`, with `SMTP_PORT` (587 when unset) and `SMTP_USER` with `SMTP_PASSWORD` as your server needs them. The port decides the encryption. Port 465 is TLS from the first byte. Every other port must upgrade with STARTTLS, so a server that does not offer it receives nothing. Only a host on this machine, a local catcher such as Mailpit, may take plain text. Certificates are always checked. A server that does not answer within 10 seconds fails the send the same way a failed HTTP send does: `emailed: false`, and you get the link.
 
 A Gmail account, with 2-Step Verification turned on and an app password made for this service:

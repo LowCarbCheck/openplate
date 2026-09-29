@@ -326,7 +326,8 @@ services:
       # PUBLIC_APP_URL and PUBLIC_SYNC_URL must be https addresses, or the
       # service refuses to start.
       #
-      # Either an HTTP mail API that speaks pigeon's protocol, all three:
+      # Any Resend-compatible HTTP mail API. It takes a POST of JSON with a
+      # Bearer token. Set all three:
       MAIL_API_URL: ${MAIL_API_URL:-}
       MAIL_API_KEY: ${MAIL_API_KEY:-}
       MAIL_API_FROM: ${MAIL_API_FROM:-}
@@ -380,8 +381,8 @@ services:
       # docker/compose.yml and .env.example. To use one, add a line here in the
       # same `NAME: ${NAME:-}` form.
       #
-      # Setting SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, any SMTP_*, any
-      # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION is a BOOT FAILURE, not a no-op.
+      # If you set SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, SMTP_SECURE, any
+      # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION, you get a BOOT FAILURE.
 
 volumes:
   pg-data:
