@@ -1040,8 +1040,16 @@ test('no intake id and no address reaches a log line', async () => {
 // ── the day limit (M267) ───────────────────────────────────────────────────
 
 const TRIAL_DAYS = 14;
-/** The instance's trial with `TRIAL_DAYS`, as the consumer instance runs it since M267. */
+/** The instance's trial with `TRIAL_DAYS`, in UTC, the default `TRIAL_TIME_ZONE`. */
 const DATED_TRIAL = { ...TRIAL, days: TRIAL_DAYS };
+
+/**
+ * A pinned fixture clock for the suites that assert the trial's last midnight
+ * as a literal: 2026-10-01 09:00 UTC. The sign-up day does not count, so a
+ * trial redeemed then ends at 2026-10-16 00:00 UTC (owner decision,
+ * 2026-09-29, BGB 187(1) and 188(1)).
+ */
+const PINNED_START = Date.parse('2026-10-01T09:00:00.000Z');
 
 /** A signed-in account whose invite carries the dated trial, as every trial door writes it since M267. */
 async function datedTrialAccount(
@@ -1073,16 +1081,15 @@ async function trialEndsAtOf(email: string): Promise<Date | null> {
 }
 
 test('a new trial ends fourteen days after it starts: 403 trial-expired before any upstream call, scan or usage row', async () => {
-  await withService({ trial: DATED_TRIAL }, async (service) => {
-    const startedAt = service.now();
+  await withService({ trial: DATED_TRIAL, clockStartsAt: PINNED_START }, async (service) => {
     const account = await datedTrialAccount(service, { email: 'dated@example.org' });
-    const endsAt = startedAt + TRIAL_DAYS * MS_PER_DAY;
+    const endsAt = Date.parse('2026-10-16T00:00:00.000Z');
     assert.equal(account.trialEndsAt, new Date(endsAt).toISOString(), 'the account view names the end');
     assert.equal((await trialEndsAtOf('dated@example.org'))?.getTime(), endsAt, 'and the row carries it');
     assert.equal((await scan(service, { token: account.token, intakeId: intake('a') })).status, 200);
 
     // THE CONTROL: the last millisecond of the fourteenth day still scans.
-    service.advance(TRIAL_DAYS * MS_PER_DAY - 1);
+    service.advance(endsAt - PINNED_START - 1);
     const lastMoment = await scan(service, {
       token: await signInAgain(service, 'dated@example.org'),
       intakeId: intake('b'),
@@ -1163,42 +1170,43 @@ test('a paid account past its trial end is never refused by the free tier', asyn
 test('every trial door starts the day limit at redemption, not at the mint', async () => {
   // Open sign-up: the letter is redeemed a day after it was asked for, and
   // the fourteen days start then.
-  await withService({ trial: DATED_TRIAL, openSignup: {} }, async (service) => {
+  await withService({ trial: DATED_TRIAL, openSignup: {}, clockStartsAt: PINNED_START }, async (service) => {
     await service.request({ method: 'POST', path: '/v1/auth/signup-request', body: { email: 'open@example.org' } });
     const letter = service.mailer.signupRequests[0];
     assert.ok(letter);
     service.advance(MS_PER_DAY);
     const created = await redeem(service, letter.inviteToken);
     assert.equal(created.status, 201);
-    assert.equal(created.body.account.trialEndsAt, new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString());
+    // Redeemed on 2026-10-02: the fourteen days after it end at 2026-10-17 00:00 UTC.
+    assert.equal(created.body.account.trialEndsAt, '2026-10-17T00:00:00.000Z');
   });
 
   // A member's invitation under MEMBER_INVITE_TRIAL=true.
   await database.reset();
-  await withService({ trial: DATED_TRIAL, memberInvites: { trial: true } }, async (service) => {
-    const inviter = await service.signupThroughInvite({ email: 'inviter@example.org', dailyAiLimit: 50 });
-    const minted = await service.request({
-      method: 'POST',
-      path: '/v1/auth/invites',
-      accessToken: inviter.tokens.accessToken,
-      body: { email: 'friend@example.org' },
-    });
-    assert.equal(minted.status, 202);
-    const letter = service.mailer.invites.find((sent) => sent.email === 'friend@example.org');
-    assert.ok(letter);
-    service.advance(2 * MS_PER_DAY);
-    const created = await redeem(service, letter.inviteToken);
-    assert.equal(created.body.account.trialEndsAt, new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString());
+  await withService(
+    { trial: DATED_TRIAL, memberInvites: { trial: true }, clockStartsAt: PINNED_START },
+    async (service) => {
+      const inviter = await service.signupThroughInvite({ email: 'inviter@example.org', dailyAiLimit: 50 });
+      const minted = await service.request({
+        method: 'POST',
+        path: '/v1/auth/invites',
+        accessToken: inviter.tokens.accessToken,
+        body: { email: 'friend@example.org' },
+      });
+      assert.equal(minted.status, 202);
+      const letter = service.mailer.invites.find((sent) => sent.email === 'friend@example.org');
+      assert.ok(letter);
+      service.advance(2 * MS_PER_DAY);
+      const created = await redeem(service, letter.inviteToken);
+      assert.equal(created.body.account.trialEndsAt, '2026-10-18T00:00:00.000Z');
 
-    // An old member letter with no trial on its row gets the instance's
-    // whole trial at redemption, its day limit included.
-    const oldToken = await mintMemberRow(service, { email: 'old-letter@example.org', inviterId: inviter.account.id });
-    const fromOldLetter = await redeem(service, oldToken);
-    assert.equal(
-      fromOldLetter.body.account.trialEndsAt,
-      new Date(service.now() + TRIAL_DAYS * MS_PER_DAY).toISOString(),
-    );
-  });
+      // An old member letter with no trial on its row gets the instance's
+      // whole trial at redemption, its day limit included.
+      const oldToken = await mintMemberRow(service, { email: 'old-letter@example.org', inviterId: inviter.account.id });
+      const fromOldLetter = await redeem(service, oldToken);
+      assert.equal(fromOldLetter.body.account.trialEndsAt, '2026-10-18T00:00:00.000Z');
+    },
+  );
 
   // The operator's mint with "trial": true.
   await database.reset();
@@ -1237,5 +1245,25 @@ test('/health promises the day limit beside the scans, and only where one is set
   await withService({}, async (service) => {
     const health = await service.request<{ instance: { trial?: object } }>({ method: 'GET', path: '/health' });
     assert.deepEqual(health.body.instance.trial, { scans: TRIAL.scans });
+  });
+});
+
+test('TRIAL_TIME_ZONE=Europe/Berlin: the trial ends at Berlin midnight after the fourteenth day, read from the row', async () => {
+  // Pinned at 2026-10-20 10:00 CEST. The fourteen days after the sign-up day
+  // end at 2026-11-04 00:00, which is winter time again (the clocks go back on
+  // 2026-10-25), so the row carries 2026-11-03 23:00 UTC.
+  const berlinTrial = { ...TRIAL, days: TRIAL_DAYS, timeZone: 'Europe/Berlin' };
+  await withService({ trial: berlinTrial, clockStartsAt: Date.parse('2026-10-20T08:00:00.000Z') }, async (service) => {
+    await datedTrialAccount(service, { email: 'morning@example.org' });
+    service.advance(13.5 * 60 * 60 * 1000); // 2026-10-20 23:30 CEST
+    await datedTrialAccount(service, { email: 'late@example.org' });
+    service.advance(40 * 60 * 1000); // 2026-10-21 00:10 CEST, the next day
+    await datedTrialAccount(service, { email: 'next-day@example.org' });
+
+    assert.equal((await trialEndsAtOf('morning@example.org'))?.toISOString(), '2026-11-03T23:00:00.000Z');
+    assert.equal((await trialEndsAtOf('late@example.org'))?.toISOString(), '2026-11-03T23:00:00.000Z');
+    assert.equal((await trialEndsAtOf('next-day@example.org'))?.toISOString(), '2026-11-04T23:00:00.000Z');
+    // THE CONTROL: sign-up plus 14 x 24 hours would have written 2026-11-03
+    // 08:00 and 21:30 and 2026-11-03 22:10 UTC, three different instants.
   });
 });

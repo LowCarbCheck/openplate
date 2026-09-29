@@ -318,12 +318,19 @@ export interface StartServiceOptions {
    */
   memberInvites?: { dailyAiLimit?: number; allowanceDays?: number; lifetimeCap?: number; trial?: boolean } | null;
   /**
-   * `TRIAL_SCANS` and `TRIAL_DAILY_AI_LIMIT` (M253), and `TRIAL_DAYS` as
-   * `days` (M267, absent or `null` for no end date). Absent is every instance
+   * `TRIAL_SCANS` and `TRIAL_DAILY_AI_LIMIT` (M253), `TRIAL_DAYS` as
+   * `days` (M267, absent or `null` for no end date), and `TRIAL_TIME_ZONE` as
+   * `timeZone` (absent for UTC, the config's default). Absent is every instance
    * that runs no scan trial: no `instance.trial` on `/health`, and `"trial":
    * true` on an admin mint is a 400.
    */
-  trial?: { scans: number; dailyAiLimit: number; days?: number | null } | null;
+  trial?: { scans: number; dailyAiLimit: number; days?: number | null; timeZone?: string } | null;
+  /**
+   * The fixture clock's first instant, in epoch milliseconds, or absent for
+   * the real time at boot. A suite that asserts a calendar instant, such as a
+   * trial's last midnight, pins it here so the expected value is a literal.
+   */
+  clockStartsAt?: number;
   /** `TRIAL_ADDRESS_PEPPER` (M253). Absent is no keyed mailbox hash, which `main.ts` refuses beside a trial. */
   trialAddressPepper?: string | null;
   /**
@@ -449,11 +456,16 @@ function memberInvitePolicyFor(options: StartServiceOptions): MemberInvitePolicy
 /** The suite's trial as `config.ts` parses it: `days` is `null`, never absent (M267). */
 function trialPolicyOf(options: StartServiceOptions): TrialPolicy | null {
   if (options.trial == null) return null;
-  return { scans: options.trial.scans, dailyAiLimit: options.trial.dailyAiLimit, days: options.trial.days ?? null };
+  return {
+    scans: options.trial.scans,
+    dailyAiLimit: options.trial.dailyAiLimit,
+    days: options.trial.days ?? null,
+    timeZone: options.trial.timeZone ?? 'UTC',
+  };
 }
 
 export async function startService(options: StartServiceOptions): Promise<ServiceHarness> {
-  let clock = Date.now();
+  let clock = options.clockStartsAt ?? Date.now();
   const trial = trialPolicyOf(options);
   const secrets = deriveServerSecrets('integration-test-root-secret-long-enough');
   const mailer = createRecordingMailer();
@@ -488,7 +500,9 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   const healthConsent = options.healthConsent ?? null;
 
   const authContext: AuthContext = {
-    store: createDrizzleAccountStore(options.db, { hashAddress }),
+    // The zone the trial's last midnight falls in, as `main.ts` reads it from
+    // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
+    store: createDrizzleAccountStore(options.db, { hashAddress, trialTimeZone: trial?.timeZone ?? 'UTC' }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
     escrowKey: secrets.escrowKey,

@@ -37,7 +37,7 @@ import { createThrottleStore } from './lib/throttle.js';
 import { SIGNUP_LETTER_THROTTLE, type OpenSignupSurface } from './accounts/open-signup.js';
 import { createTurnstileVerifier } from './accounts/captcha.js';
 import { createTrialAddressHasher } from './accounts/trial-address.js';
-import { instanceTrialOf } from './accounts/scan-trial.js';
+import { DEFAULT_TRIAL_TIME_ZONE, instanceTrialOf } from './accounts/scan-trial.js';
 import { generateFamilyId, generatePasswordResetToken, generateToken } from './lib/tokens.js';
 import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
@@ -151,7 +151,12 @@ async function main(): Promise<void> {
     config.healthConsentVersion === null ? null : { version: config.healthConsentVersion };
 
   const authContext: AuthContext = {
-    store: createDrizzleAccountStore(database.db, { hashAddress }),
+    // The zone a trial's last midnight falls in (`TRIAL_TIME_ZONE`), read at
+    // every redemption and never written on an invite row.
+    store: createDrizzleAccountStore(database.db, {
+      hashAddress,
+      trialTimeZone: config.trial?.timeZone ?? DEFAULT_TRIAL_TIME_ZONE,
+    }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
     escrowKey: secrets.escrowKey,
@@ -442,8 +447,10 @@ async function main(): Promise<void> {
       // Which member door, and the scan trial, never a number.
       memberInviteTrial: config.memberInvites?.kind === 'trial',
       trial: config.trial !== null,
-      // Whether the trial also ends by the calendar (M267), never the number.
+      // Whether the trial also ends by the calendar (M267), never the number,
+      // and the zone of its last midnight, which is a setting and no secret.
       trialDays: (config.trial?.days ?? null) !== null,
+      trialTimeZone: config.trial?.timeZone ?? DEFAULT_TRIAL_TIME_ZONE,
       trialAddressPepper: config.trialAddressPepper !== null,
       openSignup: openSignup !== null,
       // Whether a captcha guards that door, never a key.

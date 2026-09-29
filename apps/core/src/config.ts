@@ -29,7 +29,7 @@ import type { VapidCredentials } from './push/web-push-sender.js';
 import { MAX_DAILY_AI_LIMIT } from './admin/invite-store.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
-import { MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
+import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
 
@@ -229,10 +229,12 @@ export interface ServiceConfig {
    * count with no daily bound is an unbounded retry loop on a flaky provider,
    * and a daily bound with no count is a standing grant nobody meant.
    *
-   * `TRIAL_DAYS` (M267) is the optional third value: the trial also ends that
-   * many days after it starts, whichever comes first. Unset is `days: null`,
-   * no end date, which is what every instance before it keeps. Set without
-   * the pair it is a boot failure, a dial with no door.
+   * `TRIAL_DAYS` (M267) is the optional third value: the trial also ends at
+   * local midnight after that many days following the sign-up day, whichever
+   * comes first. Unset is `days: null`, no end date, which is what every
+   * instance before it keeps. Set without the pair it is a boot failure, a
+   * dial with no door. `TRIAL_TIME_ZONE` names the zone of that midnight,
+   * `UTC` by default, and is a boot failure without `TRIAL_DAYS`.
    *
    * WHAT READS IT: the open sign-up door, a member invite under
    * `MEMBER_INVITE_TRIAL=true`, and an operator mint with `"trial": true`.
@@ -1428,9 +1430,10 @@ const TRIAL_VARIABLES = ['TRIAL_SCANS', 'TRIAL_DAILY_AI_LIMIT'] as const;
 function parseTrial(env: NodeJS.ProcessEnv): TrialPolicy | null {
   const present = TRIAL_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
   if (present.length === 0) {
-    if ((env[TRIAL_DAYS_VARIABLE]?.trim() ?? '') !== '') {
+    for (const dial of [TRIAL_DAYS_VARIABLE, TRIAL_TIME_ZONE_VARIABLE]) {
+      if ((env[dial]?.trim() ?? '') === '') continue;
       throw new Error(
-        `${TRIAL_DAYS_VARIABLE} is set, but this instance runs no scan trial (${TRIAL_VARIABLES.join(' and ')}), ` +
+        `${dial} is set, but this instance runs no scan trial (${TRIAL_VARIABLES.join(' and ')}), ` +
           'so there is nothing for it to end. Unset it, or set the trial.',
       );
     }
@@ -1454,11 +1457,47 @@ function parseTrial(env: NodeJS.ProcessEnv): TrialPolicy | null {
   if (dailyAiLimit > MAX_DAILY_AI_LIMIT) {
     throw new Error(`TRIAL_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT} (got ${dailyAiLimit})`);
   }
-  return { scans, dailyAiLimit, days: parseTrialDays(env) };
+  const days = parseTrialDays(env);
+  return { scans, dailyAiLimit, days, timeZone: parseTrialTimeZone({ env, days }) };
 }
 
 /** The optional day limit beside the trial pair (M267). */
 const TRIAL_DAYS_VARIABLE = 'TRIAL_DAYS';
+
+/** The zone the day limit's last midnight falls in (owner decision, 2026-09-29). */
+const TRIAL_TIME_ZONE_VARIABLE = 'TRIAL_TIME_ZONE';
+
+/**
+ * `TRIAL_TIME_ZONE`: an IANA zone name, `UTC` when unset, returned the way
+ * Intl writes it (`europe/berlin` is `Europe/Berlin`).
+ *
+ * CHECKED BY THE RUNTIME THAT WILL USE IT. `Intl.DateTimeFormat` refuses a
+ * zone its ICU data does not know, and that refusal becomes a boot failure
+ * naming the setting, rather than a redemption that throws weeks later.
+ *
+ * A BOOT FAILURE WITHOUT `TRIAL_DAYS`, for the reason `TRIAL_DAYS` is one
+ * without the trial pair: a zone decides where the last day of a trial ends,
+ * and a trial with no day limit has no last day. The operator who set it
+ * believes a day limit is running.
+ */
+function parseTrialTimeZone(input: { env: NodeJS.ProcessEnv; days: number | null }): string {
+  const raw = input.env[TRIAL_TIME_ZONE_VARIABLE]?.trim();
+  if (raw === undefined || raw === '') return DEFAULT_TRIAL_TIME_ZONE;
+  if (input.days === null) {
+    throw new Error(
+      `${TRIAL_TIME_ZONE_VARIABLE} is set, but ${TRIAL_DAYS_VARIABLE} is not, so the trial has no last day ` +
+        `for the zone to end. Set ${TRIAL_DAYS_VARIABLE}, or unset ${TRIAL_TIME_ZONE_VARIABLE}.`,
+    );
+  }
+  try {
+    return new Intl.DateTimeFormat('en', { timeZone: raw }).resolvedOptions().timeZone;
+  } catch {
+    throw new Error(
+      `Invalid ${TRIAL_TIME_ZONE_VARIABLE}: "${raw}" is not a time zone this runtime knows. ` +
+        `Use an IANA name such as Europe/Berlin, or unset it for ${DEFAULT_TRIAL_TIME_ZONE}.`,
+    );
+  }
+}
 
 /**
  * `TRIAL_DAYS` (M267): 1 to {@link MAX_TRIAL_DAYS}, or unset for a trial with

@@ -116,7 +116,7 @@ before(async () => {
   });
 
   const authContext: AuthContext = {
-    store: createDrizzleAccountStore(database.db),
+    store: createDrizzleAccountStore(database.db, { trialTimeZone: 'UTC' }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
     escrowKey: secrets.escrowKey,

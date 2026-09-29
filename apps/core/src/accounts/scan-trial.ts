@@ -27,12 +27,14 @@ import type { InstanceTrial, TrialScansView } from '../protocol.js';
  * What an instance hands a new account through the trial doors: `TRIAL_SCANS`
  * free scans at `TRIAL_DAILY_AI_LIMIT` requests a day, both or neither, and
  * since M267 an optional `TRIAL_DAYS` after which the trial ends even with
- * scans left (`null`: no end date). See `config.ts`.
+ * scans left (`null`: no end date). `timeZone` is `TRIAL_TIME_ZONE`, the IANA
+ * zone whose midnight ends the last day, `UTC` unless set. See `config.ts`.
  */
 export interface TrialPolicy {
   scans: number;
   dailyAiLimit: number;
   days: number | null;
+  timeZone: string;
 }
 
 /** The largest `TRIAL_SCANS`, and the largest `trialScans` an operator may set on one account. */
@@ -44,7 +46,10 @@ export const MAX_TRIAL_SCANS = 100;
  */
 export const MAX_TRIAL_DAYS = 90;
 
-/** One day in milliseconds, the unit `TRIAL_DAYS` counts in. */
+/** The zone the trial's last midnight falls in when `TRIAL_TIME_ZONE` is unset. */
+export const DEFAULT_TRIAL_TIME_ZONE = 'UTC';
+
+/** One day in milliseconds, a window around a midnight and nothing more: days are counted on the calendar. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** How long one intake id may ride on the scan it claimed. See {@link INTAKE_MAX_REQUESTS}. */
@@ -157,17 +162,126 @@ export function instanceTrialOf(trial: TrialPolicy): InstanceTrial {
  * When a trial that starts at `startedAt` ends, or `null` for a trial with no
  * end date (M267).
  *
+ * THE END OF THE `days`-TH DAY AFTER THE SIGN-UP DAY, at local midnight in
+ * `timeZone` (owner decision, 2026-09-29, after BGB 187(1) and 188(1)). The
+ * day the account is created does not count, so a trial of fourteen days that
+ * starts on 2026-09-29 in Berlin, at 10:00 or at 23:30, ends at 2026-10-14
+ * 00:00 Berlin time. It is a calendar rule, not a duration: across a change of
+ * the clocks the last day still ends at 00:00 local, and the trial is an hour
+ * shorter or longer than `days` + 1 times twenty-four hours.
+ *
  * `days` IS THE ROW'S, NOT THE CONFIG'S. The doors write `TRIAL_DAYS` on the
  * invite row at mint, and redemption calls this with that value, so an invite
  * minted before the setting existed starts a trial with no end date, as the
  * scan count on the row already works (`db/account-store.ts`, `standingFor`).
  *
- * EXACTLY `days` TIMES TWENTY-FOUR HOURS, off the one instant redemption is
- * stamped with, so the date a test asserts is the date the row carries.
+ * `timeZone` IS THE CONFIG'S, READ AT REDEMPTION, AND THAT IS SAFE. The zone
+ * does not change the length of the offer: the person still gets `days` whole
+ * calendar days after the day they signed up, which is what the invite row and
+ * the terms promise. It only decides where the midnight between two days
+ * falls, which is a fact about the instance's calendar and not about any one
+ * invitation, so it stays off the row. The one instant redemption is stamped
+ * with is the instant this counts from, so the date a test asserts is the date
+ * the row carries.
+ *
+ * INTL ONLY, no date library: the zone rules are the runtime's ICU data.
  */
-export function trialEndsAtFor(input: { startedAt: Date; days: number | null }): Date | null {
+export function trialEndsAtFor(input: { startedAt: Date; days: number | null; timeZone: string }): Date | null {
   if (input.days === null) return null;
-  return new Date(input.startedAt.getTime() + input.days * MS_PER_DAY);
+  const signUpDay = wallClockAt({ instant: input.startedAt.getTime(), timeZone: input.timeZone });
+  // Calendar arithmetic on the date alone: `Date.UTC` rolls the day over the
+  // month and the year, and no clock change can touch a date with no time.
+  const lastMidnight = new Date(Date.UTC(signUpDay.year, signUpDay.month - 1, signUpDay.day + input.days + 1));
+  return new Date(
+    localMidnight({
+      year: lastMidnight.getUTCFullYear(),
+      month: lastMidnight.getUTCMonth() + 1,
+      day: lastMidnight.getUTCDate(),
+      timeZone: input.timeZone,
+    }),
+  );
+}
+
+/** A wall clock reading in one zone, to the second. `month` counts from 1. */
+interface WallClock {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+/** One formatter per zone, made once: a formatter is costly to build and cheap to reuse. */
+const WALL_CLOCK_FORMATS = new Map<string, Intl.DateTimeFormat>();
+
+function wallClockFormat(timeZone: string): Intl.DateTimeFormat {
+  const known = WALL_CLOCK_FORMATS.get(timeZone);
+  if (known !== undefined) return known;
+  const format = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
+  WALL_CLOCK_FORMATS.set(timeZone, format);
+  return format;
+}
+
+/** What the clocks in `timeZone` read at `instant`. */
+function wallClockAt(input: { instant: number; timeZone: string }): WallClock {
+  const parts = wallClockFormat(input.timeZone).formatToParts(input.instant);
+  const read = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((part) => part.type === type)?.value);
+  return {
+    year: read('year'),
+    month: read('month'),
+    day: read('day'),
+    hour: read('hour'),
+    minute: read('minute'),
+    second: read('second'),
+  };
+}
+
+/** How far `timeZone`'s clocks run ahead of UTC at `instant`, in milliseconds. Negative west of Greenwich. */
+function offsetAt(input: { instant: number; timeZone: string }): number {
+  const wall = wallClockAt(input);
+  const wallAsUtc = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second);
+  return wallAsUtc - Math.floor(input.instant / 1000) * 1000;
+}
+
+/**
+ * The instant `timeZone`'s clocks read 00:00:00 on the given date.
+ *
+ * Two candidates, one per offset the zone had a day before and a day after
+ * the date's UTC midnight, and each is checked against the wall clock. On an
+ * ordinary day both agree. Where a change of the clocks makes midnight happen
+ * twice, the first one wins; where it skips midnight (no zone this instance is
+ * run in does), the day starts at the change. That is the "compatible" choice
+ * the Temporal proposal makes for the same two cases.
+ */
+function localMidnight(input: { year: number; month: number; day: number; timeZone: string }): number {
+  const { year, month, day, timeZone } = input;
+  const utcMidnight = Date.UTC(year, month - 1, day);
+  const offsetBefore = offsetAt({ instant: utcMidnight - MS_PER_DAY, timeZone });
+  const offsetAfter = offsetAt({ instant: utcMidnight + MS_PER_DAY, timeZone });
+  const candidates = [utcMidnight - offsetBefore, utcMidnight - offsetAfter];
+  const exact = candidates.filter((instant) => {
+    const wall = wallClockAt({ instant, timeZone });
+    return (
+      wall.year === year &&
+      wall.month === month &&
+      wall.day === day &&
+      wall.hour === 0 &&
+      wall.minute === 0 &&
+      wall.second === 0
+    );
+  });
+  if (exact.length > 0) return Math.min(...exact);
+  return utcMidnight - offsetBefore;
 }
 
 /**

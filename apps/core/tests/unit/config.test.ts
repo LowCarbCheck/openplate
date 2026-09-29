@@ -991,7 +991,7 @@ test('the trial needs its pepper, and a short one is refused without being print
 test('the trial pair with its pepper is the trial on', () => {
   // THE CONTROL for the refusals above.
   const config = parseConfig(baseEnv(TRIAL_ENV));
-  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: null });
+  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: null, timeZone: 'UTC' });
   assert.equal(config.trialAddressPepper, PEPPER_ENV.TRIAL_ADDRESS_PEPPER);
 });
 
@@ -999,7 +999,37 @@ test('the trial pair with its pepper is the trial on', () => {
 
 test('TRIAL_DAYS beside the trial pair ends the trial after that many days', () => {
   const config = parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14' }));
-  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: 14 });
+  assert.deepEqual(config.trial, { scans: 10, dailyAiLimit: 50, days: 14, timeZone: 'UTC' });
+});
+
+// ── the zone the day boundary falls in (owner decision, 2026-09-29) ────────
+
+test("TRIAL_TIME_ZONE places the trial's last midnight, and UTC is the default", () => {
+  const berlin = parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14', TRIAL_TIME_ZONE: 'Europe/Berlin' }));
+  assert.equal(berlin.trial?.timeZone, 'Europe/Berlin');
+  // THE CONTROL: unset, the zone is UTC.
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14' })).trial?.timeZone, 'UTC');
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14', TRIAL_TIME_ZONE: '' })).trial?.timeZone, 'UTC');
+});
+
+test('TRIAL_TIME_ZONE is written the way Intl names the zone', () => {
+  const lower = parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14', TRIAL_TIME_ZONE: 'europe/berlin' }));
+  assert.equal(lower.trial?.timeZone, 'Europe/Berlin');
+});
+
+test('an unknown TRIAL_TIME_ZONE fails the boot, and the message names the setting', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_DAYS: '14', TRIAL_TIME_ZONE: 'Europe/Berln' })),
+    /TRIAL_TIME_ZONE.*Europe\/Berln/,
+  );
+});
+
+test('TRIAL_TIME_ZONE without TRIAL_DAYS fails the boot, as TRIAL_DAYS without the trial pair does', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, TRIAL_TIME_ZONE: 'Europe/Berlin' })),
+    /TRIAL_TIME_ZONE.*TRIAL_DAYS/,
+  );
+  assert.throws(() => parseConfig(baseEnv({ ...PEPPER_ENV, TRIAL_TIME_ZONE: 'Europe/Berlin' })), /TRIAL_TIME_ZONE/);
 });
 
 test('TRIAL_DAYS unset keeps a trial with no end date, as every instance before it', () => {

@@ -254,9 +254,13 @@ published on `/health`. `GET /v1/admin/stats` reports it to you.
 them. An account from open sign-up, from an invite minted with
 `pnpm sync-api invites create --trial`, or (with `MEMBER_INVITE_TRIAL=true`)
 from a member's invitation gets that many scans. With `TRIAL_DAYS` beside them
-the trial also ends that many days after the account is created, whichever comes
-first, and the proxy then answers `403 trial-expired`; unset means no end date,
-and an account created before you set it keeps none. A scan is one
+the trial also ends at midnight after that many days, whichever comes first: the
+day the account is created does not count, so fourteen days from a sign-up on
+the 29th end at 00:00 on the 14th of the next month. The proxy then answers
+`403 trial-expired`. `TRIAL_TIME_ZONE` names the zone of that midnight, an IANA
+name such as `Europe/Berlin`, `UTC` when unset, and it needs `TRIAL_DAYS`.
+Unset `TRIAL_DAYS` means no end date, and an account created before you set it
+keeps none. A scan is one
 AI action the person started: the app sends one `X-Intake-Id` per action, a
 retry of it rides on the same scan until an answer is delivered, and an action
 that got no answer gives its scan back. One scan buys one answer: a request
@@ -530,7 +534,7 @@ never reaches the service. `INSTANCE_NAME`, `INSTANCE_LANGUAGE`,
 `MEMBER_INVITE_DAILY_AI_LIMIT`, `MEMBER_INVITE_ALLOWANCE_DAYS`,
 `MEMBER_INVITE_LIFETIME_CAP`, `OPEN_SIGNUP`, `TURNSTILE_SECRET_KEY`,
 `TURNSTILE_SITE_KEY`, `TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`, `TRIAL_DAYS`,
-`TRIAL_ADDRESS_PEPPER`, `MEMBER_INVITE_TRIAL`,
+`TRIAL_TIME_ZONE`, `TRIAL_ADDRESS_PEPPER`, `MEMBER_INVITE_TRIAL`,
 `AI_TRIAL_INSTANCE_DAILY_LIMIT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 `VAPID_SUBJECT`, `PLANS_UPSTREAM_URL`, `PLANS_UPSTREAM_SECRET` and
 `BILLING_TOKEN` are forwarded there too. If you run your own Compose file

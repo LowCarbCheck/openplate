@@ -213,31 +213,43 @@ interface RedeemedStanding {
  *
  *  1. The row carries a scan trial: the account gets it, and no allowance
  *     date. Every trial door writes this at mint. Since M267 the row also
- *     carries the trial's day limit, and the trial ends that many days after
- *     THIS redemption; a row minted before that carries none, and its trial
- *     has no end date.
+ *     carries the trial's day limit, and the trial ends at local midnight
+ *     after that many days following THIS redemption's day
+ *     (`trialEndsAtFor`); a row minted before that carries none, and its
+ *     trial has no end date.
  *  2. A member caused it and the member door now grants the scan trial: the
  *     account gets the instance's trial, its day limit included. This closes
  *     the seven days in which a letter minted under the day pair can still be
  *     redeemed after the switch, so it is neither a date nor an unbounded
  *     grant.
  *  3. A member caused it under the day pair: `redeemedAt + days`, off the SAME
- *     instant the claim was stamped with.
+ *     instant the claim was stamped with. An allowance date, not the free
+ *     tier, so it keeps its exact sum: the lapsed-trial grant finds unpaid
+ *     day trials by that very sum.
+ *
+ * ONE FUNCTION FOR BOTH TRIAL CASES, `trialEndsAtFor`, with the day count each
+ * case reads (the row's, or the member door's) and the instance's zone, so
+ * case 1 and case 2 cannot end a trial at two different midnights.
  *  4. Anything else is the operator's standing grant: no date, no trial.
  *
  * A CLAIM ON AN INSTANCE THAT TURNED MEMBER INVITES OFF redeems a member
  * invite as case 4, which is the honest reading of "this instance no longer
  * runs trials". The mailbox check for cases 1 and 2 is the caller's.
  */
-function standingFor(input: { claimed: InviteRow; grant: MemberInviteGrant | null; now: Date }): RedeemedStanding {
-  const { claimed, grant, now } = input;
+function standingFor(input: {
+  claimed: InviteRow;
+  grant: MemberInviteGrant | null;
+  now: Date;
+  timeZone: string;
+}): RedeemedStanding {
+  const { claimed, grant, now, timeZone } = input;
   if (claimed.trialScans !== null) {
     return {
       dailyAiLimit: claimed.dailyAiLimit,
       allowanceExpiresAt: null,
       trialScans: claimed.trialScans,
       trialDays: claimed.trialDays,
-      trialEndsAt: trialEndsAtFor({ startedAt: now, days: claimed.trialDays }),
+      trialEndsAt: trialEndsAtFor({ startedAt: now, days: claimed.trialDays, timeZone }),
     };
   }
   if (claimed.invitedByAccountId !== null && grant?.kind === 'trial') {
@@ -246,7 +258,7 @@ function standingFor(input: { claimed: InviteRow; grant: MemberInviteGrant | nul
       allowanceExpiresAt: null,
       trialScans: grant.scans,
       trialDays: grant.days,
-      trialEndsAt: trialEndsAtFor({ startedAt: now, days: grant.days }),
+      trialEndsAt: trialEndsAtFor({ startedAt: now, days: grant.days, timeZone }),
     };
   }
   if (claimed.invitedByAccountId !== null && grant?.kind === 'days') {
@@ -275,6 +287,16 @@ export interface DrizzleAccountStoreOptions {
    * trial rule, and a deletion scrubs the address and keeps only the hash.
    */
   hashAddress?: TrialAddressHasher | null;
+  /**
+   * `TRIAL_TIME_ZONE`, the IANA zone whose midnight ends a trial's last day,
+   * `UTC` unless the operator set one. REQUIRED, so every place that builds
+   * this store names the zone its redemptions count in.
+   *
+   * INJECTED AND READ AT REDEMPTION, NOT WRITTEN ON THE INVITE ROW: the zone
+   * decides where the boundary between two days falls, and never how many
+   * days the offer is worth. See `accounts/scan-trial.ts`, `trialEndsAtFor`.
+   */
+  trialTimeZone: string;
 }
 
 /**
@@ -295,8 +317,9 @@ function lapsedDayTrialPredicate(input: LapsedDayTrialQuery) {
   );
 }
 
-export function createDrizzleAccountStore(db: Database, options: DrizzleAccountStoreOptions = {}): AccountStore {
+export function createDrizzleAccountStore(db: Database, options: DrizzleAccountStoreOptions): AccountStore {
   const hashAddress = options.hashAddress ?? null;
+  const trialTimeZone = options.trialTimeZone;
 
   /**
    * Deletes an account on an instance with a pepper, keeping ONLY a keyed hash
@@ -515,7 +538,12 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
           // UNDER THE MAILBOX LOCK (M256/02), so two spellings redeemed at the
           // same moment grant one trial: the second waits here until the
           // first commits, and its read below then sees the first's row.
-          const standing = standingFor({ claimed, grant: input.memberInviteGrant, now: input.now });
+          const standing = standingFor({
+            claimed,
+            grant: input.memberInviteGrant,
+            now: input.now,
+            timeZone: trialTimeZone,
+          });
           const trialKey = hashAddress === null ? null : hashAddress(claimed.email);
           if (standing.trialScans !== null && standing.trialScans > 0 && trialKey !== null) {
             await lockTrialMailbox(tx, { hash: trialKey });

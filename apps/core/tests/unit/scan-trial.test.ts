@@ -51,16 +51,103 @@ test('the mailbox hash is keyed, one-way, and shared by every spelling of one ma
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const CREATED = new Date('2026-10-01T15:00:00.000Z');
 
-test('a new trial ends fourteen days after it starts, to the millisecond', () => {
-  const endsAt = trialEndsAtFor({ startedAt: CREATED, days: 14 });
-  assert.equal(endsAt?.toISOString(), '2026-10-15T15:00:00.000Z');
-  assert.equal(endsAt?.getTime(), CREATED.getTime() + 14 * MS_PER_DAY);
+// THE RULE (owner decision, 2026-09-29, BGB 187(1) and 188(1)): the sign-up
+// day does not count, and the trial ends at the end of the 14th day after it,
+// at local midnight in TRIAL_TIME_ZONE. Every case below also shows that the
+// old rule, sign-up plus 14 x 24 hours, gives another instant, so the case
+// can tell the two rules apart.
+
+const BERLIN = 'Europe/Berlin';
+
+/** The rule this replaced: exactly `days` x 24 hours after the sign-up. */
+function oldRule(input: { startedAt: Date; days: number }): string {
+  return new Date(input.startedAt.getTime() + input.days * MS_PER_DAY).toISOString();
+}
+
+/** A wall clock reading and the zone's UTC offset at that moment, `00:00:00` and `GMT+02:00`. */
+interface WallClockReading {
+  time: string;
+  offset: string;
+}
+
+/** The wall clock and the UTC offset of an instant in a zone, read with Intl on its own. */
+function wallClock(input: { instant: Date; timeZone: string }): WallClockReading {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: input.timeZone,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZoneName: 'longOffset',
+  }).formatToParts(input.instant);
+  const part = (type: Intl.DateTimeFormatPartTypes): string => parts.find((p) => p.type === type)?.value ?? '';
+  return { time: `${part('hour')}:${part('minute')}:${part('second')}`, offset: part('timeZoneName') };
+}
+
+test('Berlin: a sign-up at 10:00 and one at 23:30 on the same day end at the same instant, local midnight', () => {
+  const morning = new Date('2026-09-29T08:00:00.000Z'); // 10:00 CEST
+  const lateEvening = new Date('2026-09-29T21:30:00.000Z'); // 23:30 CEST
+  const expected = '2026-10-13T22:00:00.000Z'; // 2026-10-14 00:00 CEST
+  assert.equal(trialEndsAtFor({ startedAt: morning, days: 14, timeZone: BERLIN })?.toISOString(), expected);
+  assert.equal(trialEndsAtFor({ startedAt: lateEvening, days: 14, timeZone: BERLIN })?.toISOString(), expected);
+  // THE CONTROL: the old rule ends the two at different instants, neither of them this one.
+  assert.notEqual(oldRule({ startedAt: morning, days: 14 }), expected);
+  assert.notEqual(oldRule({ startedAt: lateEvening, days: 14 }), expected);
+});
+
+test('Berlin: a sign-up at 00:10 ends one day later than one at 23:50 the day before', () => {
+  const justAfterMidnight = new Date('2026-09-29T22:10:00.000Z'); // 2026-09-30 00:10 CEST
+  const justBeforeMidnight = new Date('2026-09-29T21:50:00.000Z'); // 2026-09-29 23:50 CEST
+  const later = trialEndsAtFor({ startedAt: justAfterMidnight, days: 14, timeZone: BERLIN });
+  const earlier = trialEndsAtFor({ startedAt: justBeforeMidnight, days: 14, timeZone: BERLIN });
+  assert.equal(earlier?.toISOString(), '2026-10-13T22:00:00.000Z');
+  assert.equal(later?.toISOString(), '2026-10-14T22:00:00.000Z');
+  // Both sign-ups fall on 2026-09-29 in UTC: a rule that read the UTC date would end them together.
+  // THE CONTROL: under the old rule the two ends are twenty minutes apart, not a day.
+  assert.equal(
+    new Date(oldRule({ startedAt: justAfterMidnight, days: 14 })).getTime() -
+      new Date(oldRule({ startedAt: justBeforeMidnight, days: 14 })).getTime(),
+    20 * 60 * 1000,
+  );
+});
+
+test('Berlin: a trial across the last Sunday of March ends at local midnight in summer time', () => {
+  const startedAt = new Date('2027-03-20T11:00:00.000Z'); // 12:00 CET, before 2027-03-28
+  const endsAt = trialEndsAtFor({ startedAt, days: 14, timeZone: BERLIN });
+  assert.equal(endsAt?.toISOString(), '2027-04-03T22:00:00.000Z'); // 2027-04-04 00:00 CEST
+  assert.ok(endsAt);
+  assert.deepEqual(wallClock({ instant: endsAt, timeZone: BERLIN }), { time: '00:00:00', offset: 'GMT+02:00' });
+  // THE CONTROL: the old rule lands at 13:00 local.
+  assert.equal(wallClock({ instant: new Date(oldRule({ startedAt, days: 14 })), timeZone: BERLIN }).time, '13:00:00');
+});
+
+test('Berlin: a trial across the last Sunday of October ends at local midnight in winter time', () => {
+  const startedAt = new Date('2026-10-20T10:00:00.000Z'); // 12:00 CEST, before 2026-10-25
+  const endsAt = trialEndsAtFor({ startedAt, days: 14, timeZone: BERLIN });
+  assert.equal(endsAt?.toISOString(), '2026-11-03T23:00:00.000Z'); // 2026-11-04 00:00 CET
+  assert.ok(endsAt);
+  assert.deepEqual(wallClock({ instant: endsAt, timeZone: BERLIN }), { time: '00:00:00', offset: 'GMT+01:00' });
+  // THE CONTROL: the old rule lands at 11:00 local.
+  assert.equal(wallClock({ instant: new Date(oldRule({ startedAt, days: 14 })), timeZone: BERLIN }).time, '11:00:00');
+});
+
+test('UTC, the default zone: the trial ends at UTC midnight after the fourteenth day', () => {
+  const startedAt = new Date('2026-09-29T23:30:00.000Z');
+  assert.equal(trialEndsAtFor({ startedAt, days: 14, timeZone: 'UTC' })?.toISOString(), '2026-10-14T00:00:00.000Z');
+  assert.equal(
+    trialEndsAtFor({ startedAt: CREATED, days: 14, timeZone: 'UTC' })?.toISOString(),
+    '2026-10-16T00:00:00.000Z',
+  );
+  // THE CONTROL: the old rule gives 23:30 and 15:00.
+  assert.equal(oldRule({ startedAt, days: 14 }), '2026-10-13T23:30:00.000Z');
+  assert.equal(oldRule({ startedAt: CREATED, days: 14 }), '2026-10-15T15:00:00.000Z');
 });
 
 test('an instance without TRIAL_DAYS, or an invite row written before it, starts a trial with no end date', () => {
-  // THE CONTROL for the date above: no day count, no date. This is what every
-  // account created before M267 keeps.
-  assert.equal(trialEndsAtFor({ startedAt: CREATED, days: null }), null);
+  // THE CONTROL for the dates above: no day count, no date, in any zone. This
+  // is what every account created before M267 keeps.
+  assert.equal(trialEndsAtFor({ startedAt: CREATED, days: null, timeZone: 'UTC' }), null);
+  assert.equal(trialEndsAtFor({ startedAt: CREATED, days: null, timeZone: BERLIN }), null);
 });
 
 /** A scan trial with no allowance date, overridable per test. */
