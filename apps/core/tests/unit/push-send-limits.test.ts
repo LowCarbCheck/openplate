@@ -34,6 +34,7 @@ function daysAgo(days: number): string {
 async function tickAndCount(store: FakePushStore, now: Date): Promise<number> {
   let calls = 0;
   await runPushTick({
+    healthConsent: null,
     store,
     sender: async () => {
       calls += 1;
@@ -94,6 +95,7 @@ test('a third send in one UTC day is skipped, and the row is not touched', async
 
   let calls = 0;
   const result = await runPushTick({
+    healthConsent: null,
     store,
     sender: async () => {
       calls += 1;
@@ -127,6 +129,7 @@ test('the two sends under the cap DO go out, which is what makes the skip above 
 
   const kinds: string[] = [];
   const result = await runPushTick({
+    healthConsent: null,
     store,
     sender: async (_credential, payload) => {
       kinds.push(payload);
@@ -180,6 +183,7 @@ test('the fast target alert waits for its instant and rides its own topic', asyn
   const topics: string[] = [];
   const urgencies: string[] = [];
   await runPushTick({
+    healthConsent: null,
     store,
     sender: async (_credential, _payload, options) => {
       topics.push(options.topic);

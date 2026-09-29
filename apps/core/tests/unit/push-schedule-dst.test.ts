@@ -71,6 +71,7 @@ async function walk(input: { from: Date; minutes: number }): Promise<WalkResult>
     if (local.minuteOfDay >= EIGHT_AM) dueDays.add(local.day);
 
     await runPushTick({
+      healthConsent: null,
       store,
       sender: async (_credential, payload, options) => {
         sent.push({ at, payload, topic: options.topic, urgency: options.urgency });
@@ -153,6 +154,7 @@ test('the control: a subscription with no catch-up minute is never sent to', asy
 
   let calls = 0;
   const result = await runPushTick({
+    healthConsent: null,
     store,
     sender: async () => {
       calls += 1;

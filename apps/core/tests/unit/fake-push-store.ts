@@ -18,6 +18,7 @@ import type {
   PushSubscriptionRow,
   PushSubscriptionUpsert,
   PushUpsertOutcome,
+  SchedulableSubscription,
 } from '../../src/push/push-store.js';
 
 export interface FakePushStore extends PushStore {
@@ -25,6 +26,13 @@ export interface FakePushStore extends PushStore {
   rows: Map<string, PushSubscriptionRow>;
   /** Seeds a row without going through a route, for a test about the tick rather than about registration. */
   seed(row: Partial<PushSubscriptionRow> & { endpoint: string; accountId: number; timeZone: string }): void;
+  /**
+   * The health-data consent version an ACCOUNT holds, or `null` for none, which
+   * is what every account starts with here. An account fact, not a device one,
+   * so every subscription of the account reads the same value, as the real
+   * store's join on `accounts` does.
+   */
+  setAccountConsent(input: { accountId: number; version: string | null }): void;
 }
 
 /** Everything a seeded row needs that the caller did not name. Deliberately the quiet defaults: no schedule at all. */
@@ -54,6 +62,7 @@ function withDefaults(
 
 export function createFakePushStore(): FakePushStore {
   const rows = new Map<string, PushSubscriptionRow>();
+  const consents = new Map<number, string | null>();
   let nextId = 1;
 
   return {
@@ -62,6 +71,10 @@ export function createFakePushStore(): FakePushStore {
     seed(row: Partial<PushSubscriptionRow> & { endpoint: string; accountId: number; timeZone: string }): void {
       rows.set(row.endpoint, withDefaults(row, nextId));
       nextId += 1;
+    },
+
+    setAccountConsent(input: { accountId: number; version: string | null }): void {
+      consents.set(input.accountId, input.version);
     },
 
     async upsert(input: PushSubscriptionUpsert): Promise<PushUpsertOutcome> {
@@ -134,8 +147,14 @@ export function createFakePushStore(): FakePushStore {
       return updated;
     },
 
-    async listSchedulable(): Promise<PushSubscriptionRow[]> {
-      return [...rows.values()].filter((row) => row.catchUpMinute !== null || row.wakeAt !== null);
+    async listSchedulable(): Promise<SchedulableSubscription[]> {
+      const schedulable: SchedulableSubscription[] = [];
+      for (const row of rows.values()) {
+        if (row.catchUpMinute === null && row.wakeAt === null) continue;
+        // A COPY, never the stored row: the store's rows are what a test reads back.
+        schedulable.push({ ...row, healthConsentVersion: consents.get(row.accountId) ?? null });
+      }
+      return schedulable;
     },
 
     async markCatchUpSent(input: {

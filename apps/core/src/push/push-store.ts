@@ -13,7 +13,7 @@
  */
 import { and, count, eq, isNotNull, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
-import { pushSubscriptions } from '../db/schema.js';
+import { accounts, pushSubscriptions } from '../db/schema.js';
 import type { InstanceLanguage } from '../protocol.js';
 
 /** One subscription row, as every caller in this service sees it. */
@@ -35,6 +35,16 @@ export interface PushSubscriptionRow {
   sendsTodayDay: string | null;
   sendsToday: number;
   createdAt: Date;
+}
+
+/**
+ * A subscription the minute tick may send to, with the one account fact the
+ * tick needs beside the schedule: the health-data consent version the account
+ * holds, or `null` for none. Read in the same query as the row, so the tick
+ * costs no second read (M266, see `push/push-scheduler.ts`).
+ */
+export interface SchedulableSubscription extends PushSubscriptionRow {
+  healthConsentVersion: string | null;
 }
 
 /** What a registration writes. Everything the device knows about itself, plus the day it is being seen on. */
@@ -120,7 +130,7 @@ export interface PushStore {
    * is a device that asked for nothing and reading it every minute would be a
    * full table scan a minute for nothing.
    */
-  listSchedulable(): Promise<PushSubscriptionRow[]>;
+  listSchedulable(): Promise<SchedulableSubscription[]>;
   /** Records a catch-up: the local day it went out, and the day's send count. One statement. */
   markCatchUpSent(input: { endpoint: string; localDay: string; sendsDay: string; sends: number }): Promise<void>;
   /** Records a fast target alert and CLEARS `wake_at` in the same write, so it can never fire twice. */
@@ -251,12 +261,20 @@ export function createDrizzlePushStore(db: Database): PushStore {
       return row === undefined ? null : toRow(row);
     },
 
-    async listSchedulable(): Promise<PushSubscriptionRow[]> {
+    async listSchedulable(): Promise<SchedulableSubscription[]> {
+      // JOINED, NOT LOOKED UP. The tick has to know each account's consent,
+      // and one query per account every minute would be the full scan this
+      // method's predicate exists to avoid, many times over. An inner join is
+      // exact: a subscription cannot outlive its account (the foreign key
+      // cascades).
       const rows = await db
-        .select()
+        .select({ subscription: pushSubscriptions, healthConsentVersion: accounts.healthConsentVersion })
         .from(pushSubscriptions)
+        .innerJoin(accounts, eq(accounts.id, pushSubscriptions.accountId))
         .where(or(isNotNull(pushSubscriptions.catchUpMinute), isNotNull(pushSubscriptions.wakeAt)));
-      return rows.map(toRow);
+      return rows.map((row) =>
+        Object.assign(toRow(row.subscription), { healthConsentVersion: row.healthConsentVersion }),
+      );
     },
 
     async markCatchUpSent(input: {

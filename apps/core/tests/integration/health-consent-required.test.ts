@@ -35,6 +35,9 @@ import {
   type StartServiceOptions,
 } from './service-harness.js';
 import { aiUsageDays } from '../../src/db/schema.js';
+import { createDrizzlePushStore } from '../../src/push/push-store.js';
+import { runPushTick } from '../../src/push/push-scheduler.js';
+import { createSilentLogger } from '../../src/logger.js';
 import type { SessionResponse } from '../../src/accounts/auth-handlers.js';
 import type { AccountView } from '../../src/protocol.js';
 
@@ -215,6 +218,18 @@ function pushSubscription(): DataRequest {
   const found = dataRequests().find((request) => request.path === '/v1/push/subscriptions');
   if (found === undefined) throw new Error('the push subscription is missing from the table');
   return found;
+}
+
+/** The body of `PUT /v1/push/subscriptions` the table above sends, for a test that names its own endpoint. */
+function pushSubscriptionBody() {
+  return {
+    endpoint: 'https://push.example.org/consent',
+    keys: { p256dh: 'a-device-public-key', auth: 'a-device-auth-secret' },
+    timeZone: 'Europe/Berlin',
+    locale: 'de',
+    catchUpMinute: 480,
+    fastTargetEnabled: true,
+  };
 }
 
 /** How many AI units an account has spent on the fixture day. */
@@ -416,4 +431,44 @@ test('the twin: an instance that asks for no consent lets an account without one
     const answered = await send(service, { request, accessToken });
     assert.notDeepEqual(answered.body, REFUSED, `${request.name} was refused on an instance that asks nothing`);
   }
+});
+
+// ── The push scheduler, which reads the table rather than a route ───────────
+
+test('the push tick sends to the account that agreed and to nobody else, from the real store', async () => {
+  // A SUBSCRIPTION FROM BEFORE THE VERSION: registered while the instance
+  // asked for nothing, the only way one exists for an account without the
+  // consent now that the route refuses new ones.
+  const earlier = await serve({ healthConsent: null });
+  const silent = await earlier.signupThroughInvite({ email: nextEmail() });
+  const early = await earlier.request<unknown>({
+    method: 'PUT',
+    path: '/v1/push/subscriptions',
+    accessToken: silent.tokens.accessToken,
+    body: { ...pushSubscriptionBody(), endpoint: 'https://push.example.org/never-agreed', catchUpMinute: 0 },
+  });
+  assert.equal(early.status, 201, 'the fixture subscription must exist');
+
+  const service = await serve({ healthConsent: VERSION });
+  const agreed = await accountWithConsent(service);
+  const late = await service.request<unknown>({
+    method: 'PUT',
+    path: '/v1/push/subscriptions',
+    accessToken: agreed.tokens.accessToken,
+    body: { ...pushSubscriptionBody(), endpoint: 'https://push.example.org/agreed', catchUpMinute: 0 },
+  });
+  assert.equal(late.status, 201);
+
+  const sent: string[] = [];
+  const result = await runPushTick({
+    store: createDrizzlePushStore(database.db),
+    sender: async (subscription) => {
+      sent.push(subscription.endpoint);
+    },
+    logger: createSilentLogger(),
+    now: () => new Date(service.now()),
+    healthConsent: { version: VERSION },
+  });
+  assert.deepEqual(sent, ['https://push.example.org/agreed']);
+  assert.equal(result.sent, 1);
 });

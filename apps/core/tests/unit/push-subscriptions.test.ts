@@ -44,6 +44,7 @@ async function tickAgainstStatus(status: number): Promise<{ rows: number; pruned
   });
 
   const result = await runPushTick({
+    healthConsent: null,
     store,
     sender: async () => {
       throw new FakeWebPushError(status);
@@ -89,6 +90,7 @@ test('a failed send does not mark the catch-up as done, so the next minute tries
   store.seed({ endpoint, accountId: 1, timeZone: ZONE, catchUpMinute: EIGHT_AM, lastSeenDay: '2026-01-15' });
 
   await runPushTick({
+    healthConsent: null,
     store,
     sender: async () => {
       throw new FakeWebPushError(503);

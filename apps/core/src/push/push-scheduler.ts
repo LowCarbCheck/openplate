@@ -16,6 +16,10 @@
  * minute in milliseconds, and it is the half of this feature most likely to be
  * wrong.
  *
+ * AND ONE GATE BEFORE THE RULES (M266, 2026-09-29): an account that does not
+ * hold the instance's current health-data consent is sent nothing. See
+ * `runPushTick`.
+ *
  * THREE RULES, all of them in ADR-0008:
  *
  *  1. The catch-up goes out once per LOCAL day, when the subscription's own
@@ -28,6 +32,8 @@
  */
 import { utcDayKey } from '../lib/utc-day.js';
 import type { Logger } from '../logger.js';
+import { holdsHealthConsent } from '../accounts/health-consent.js';
+import type { InstanceHealthConsent } from '../protocol.js';
 import { localClock, localDaysBetween } from './local-day.js';
 import type { PushSubscriptionRow, PushStore } from './push-store.js';
 import {
@@ -149,6 +155,15 @@ export interface PushTickOptions {
   logger: Logger;
   /** Injected, like every clock in this repo, so a test names the minute instead of waiting for it. */
   now(): Date;
+  /**
+   * The health-data consent this instance requires of every account
+   * (`HEALTH_CONSENT_VERSION`), or `null` for an instance that asks for none,
+   * which is every self-hoster and sends exactly as before.
+   *
+   * REQUIRED AND NULLABLE, like the AI proxy's ceilings: a wiring change that
+   * forgot it must not compile into a scheduler that pushes to everybody.
+   */
+  healthConsent: InstanceHealthConsent | null;
 }
 
 /**
@@ -165,7 +180,17 @@ export interface PushTickOptions {
  */
 export async function runPushTick(options: PushTickOptions): Promise<PushTickResult> {
   const now = options.now();
-  const subscriptions = await options.store.listSchedulable();
+  // THE CONSENT GATE, BEFORE ANY RULE (M266). A catch-up says what somebody
+  // logged today and a fast alert says when their fast ends, so both are
+  // health data sent on the operator's behalf, and the routes already refuse
+  // such an account a new subscription. One registered before the instance
+  // asked, or before its wording changed, is still in the table, and this is
+  // the one reader of the table. Withheld rows are simply not planned: no
+  // mark is written, so a catch-up still due once the person agrees goes out
+  // at the next tick.
+  const subscriptions = (await options.store.listSchedulable()).filter((row) =>
+    holdsHealthConsent({ policy: options.healthConsent, consentedVersion: row.healthConsentVersion }),
+  );
   const plan = planPushSends({ subscriptions, now });
 
   const byEndpoint = new Map<string, PushSubscriptionRow>();

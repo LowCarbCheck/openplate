@@ -505,6 +505,9 @@ async function main(): Promise<void> {
           sender: createWebPushSender(config.push),
           logger,
           now: () => new Date(),
+          // THE SAME BINDING the routes and `/health` use, so the tick cannot
+          // push to an account the routes would refuse (M266).
+          healthConsent,
         });
   if (pushScheduler !== null) {
     logger.info('Push scheduler started', { dailySendCap: PUSH_DAILY_SEND_CAP });

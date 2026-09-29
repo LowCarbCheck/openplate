@@ -855,6 +855,8 @@ Bearer. **Present only where `instance.healthConsent` is non-`null`**; everywher
 
 A consent to an older wording is refused like none. The refusal lifts on the very next request after this route answers `200`, on the same access token: the service reads the account row on every authenticated request, as it does for a suspension, and the consent with it. On an instance where `instance.healthConsent` is `null` nothing here refuses anything.
 
+The push sender reads the subscription table rather than a route, so it applies the same rule on its own: a device subscribed before the instance asked keeps its row and receives nothing until the account agrees (§5.24).
+
 Request: `{"version": "2026-09-28"}` → `200 {"account": AccountView}` (§5.15), with `healthConsent` set.
 
 | Status | Meaning                                                                                                                          |
@@ -1708,6 +1710,7 @@ Nine properties a conforming implementation MUST hold:
 7. **Seven days of silence pauses it.** A subscription whose last registration or schedule change was more than seven local days ago receives no catch-up until it comes back.
 8. **At most two pushes per subscription per UTC day.** A third is skipped, never queued.
 9. **A `404` or a `410` from the push service deletes the row.** Nothing else does: a `400`, a `401`, a `403`, a `429` and every `5xx` are transient or about the sender, and pruning on them would empty the table the first time a key was pasted wrong.
+10. **Nothing goes to an account without consent.** Where `instance.healthConsent` is non-`null` (§5.6), the server sends no push to an account that lacks that exact version (§5.15.1), regardless of schedule. A withheld push writes no mark, so a catch-up still due goes out at the next tick after the person agrees.
 
 The collapse topics are `openplate-catchups` and `openplate-fast`, the TTL is 6 hours, and the urgency is normal for the catch-up and high for the fast target. A topic MUST be URL-safe base64 characters, at most 32 of them, and a length that is **never 1 mod 4**: Apple decodes the topic and answers `400 BadWebPushTopic` otherwise, while other push services accept it, so the defect is invisible on everything but an iPhone.
 
