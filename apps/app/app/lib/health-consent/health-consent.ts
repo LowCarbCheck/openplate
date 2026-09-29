@@ -10,7 +10,12 @@
  * - `instance.healthConsent` on `/health`: the version an instance asks for,
  *   or `null` when it asks for none.
  * - `AccountView.healthConsent`: the version an account agreed to, or `null`.
- * - `400 health-consent-required`: the one refusal of both consent paths.
+ * - `health-consent-required`: `400` on both consent paths, where the box is
+ *   shown again, and `403` on every data route (2026-09-29), where the person
+ *   is sent to the consent screen. The core now REQUIRES the consent, so the
+ *   `403` is what a sync cycle or a scan meets when the app's own gate did not
+ *   ask in time: the wording changed while a page was open, or the handshake
+ *   could not be read when the gate decided.
  *
  * ── An older core, and a broken value, read as "no consent" ─────────────
  *
@@ -70,6 +75,17 @@ export function isHealthConsentRefusal(cause: unknown): boolean {
 }
 
 /**
+ * Whether a failure is the core refusing a DATA route for want of the consent
+ * (`403 health-consent-required`), as opposed to {@link isHealthConsentRefusal},
+ * which is the consent path refusing the box.
+ *
+ * @param cause - anything a sync call, a scan or another data call threw.
+ */
+export function isConsentRequiredRefusal(cause: unknown): boolean {
+  return cause instanceof SyncRequestError && cause.kind === 'consent-required';
+}
+
+/**
  * Whether a failure is the consent route answering that it does not exist,
  * which is how an instance that asks for no consent answers it.
  *
@@ -77,4 +93,40 @@ export function isHealthConsentRefusal(cause: unknown): boolean {
  */
 export function isHealthConsentRouteAbsent(cause: unknown): boolean {
   return cause instanceof SyncRequestError && cause.kind === 'not-found';
+}
+
+// ── The refusal, told to whoever decides the page ──────────────────────────
+
+/**
+ * How many data refusals for want of the consent this tab has met, and who
+ * wants to hear about the next one.
+ *
+ * A COUNTER, NOT A FLAG. The sync cycle meets the refusal in plain code, far
+ * from the router, and the `_personal` layout is the one place that can send
+ * the person anywhere. A flag would need somebody to clear it, and a second
+ * refusal after the first was handled would find it already set and say
+ * nothing; a counter that only rises says "one more" every time.
+ *
+ * HERE, BESIDE THE DECODERS, because this module is a leaf the sync session
+ * already imports, so the sync cycle can tell the layout without importing
+ * anything that imports it back.
+ */
+let consentRefusals = 0;
+const consentRefusalListeners = new Set<() => void>();
+
+/** Records one more data refusal for want of the consent, and tells every subscriber. */
+export function signalConsentRefusal(): void {
+  consentRefusals += 1;
+  for (const listener of consentRefusalListeners) listener();
+}
+
+/** `useSyncExternalStore` subscribe. */
+export function subscribeConsentRefusals(listener: () => void): () => void {
+  consentRefusalListeners.add(listener);
+  return () => void consentRefusalListeners.delete(listener);
+}
+
+/** `useSyncExternalStore` getSnapshot: the refusals met so far. */
+export function getConsentRefusalCount(): number {
+  return consentRefusals;
 }

@@ -78,10 +78,12 @@ import {
   createVisionProvider,
   RECIPE_PROPOSAL_TASK,
   VisionProviderError,
+  VisionProviderFailure,
   type RecipeProposal,
   type RecipeProposals,
   type ScanTokenUsage,
 } from '#app/services/vision';
+import { signalConsentRefusal } from '#app/lib/health-consent/health-consent';
 import { buildRecipeProposalUserPrompt } from '#app/services/vision/recipe-prompt';
 import { estimateScanCostUsd } from '#app/services/vision/cost';
 import type { MealType } from '#types/enums';
@@ -230,6 +232,9 @@ async function proposeRecipes({
   } catch (error) {
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
     await record(usage, 'error');
+    // THE CORE WANTS THE CONSENT FIRST (2026-09-29): told to the layout, which
+    // sends the person to the consent screen, as a refused scan does.
+    if (error instanceof VisionProviderFailure && error.failureCause === 'consent-required') signalConsentRefusal();
     // A `VisionProviderError`'s own message is authored provider-neutrally in
     // the adapter layer and is already the actionable detail; anything else is
     // a throw this screen cannot explain, so it gets the generic sentence.

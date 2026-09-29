@@ -226,6 +226,7 @@ export type ScanFailureReason =
   | 'photo-too-large'
   | 'ai-not-allowed'
   | 'account-suspended'
+  | 'consent-required'
   | 'allowance-expired'
   | 'trial-scans-spent'
   | 'ai-instance-ceiling'

@@ -12,6 +12,8 @@
  * gets forgotten on the path where a missed failure strands someone's data.
  */
 
+import { HEALTH_CONSENT_REQUIRED } from './auth-wire';
+
 /** Protocol-meaningful failure classes. `conflict` is deliberately NOT here — a 409 is a normal outcome, not an error. */
 export type SyncErrorKind =
   /** `400` — the request was malformed. A bug on this side, not a user problem. */
@@ -31,6 +33,19 @@ export type SyncErrorKind =
    * which `PROTOCOL.md` §4 forbids branching on.
    */
   | 'suspended'
+  /**
+   * `403 {"error":"health-consent-required"}`: the instance asks every
+   * account for a consent to health data, and this one does not hold its
+   * current version (openplate-core `PROTOCOL.md` §5.15.1, 2026-09-29).
+   *
+   * A SEPARATE KIND for the reason `suspended` is one: it can land on any data
+   * call, a sync cycle, a scan, a push subscription, and every one of them has
+   * the same answer, the consent screen. Read as `forbidden` it became "Sync
+   * failed" with the protocol token for a sentence. The `400` of the same code,
+   * on signup and on the consent route itself, stays `invalid`: there the
+   * answer is the checkbox on the screen already showing.
+   */
+  | 'consent-required'
   /** `404` — no such resource. Only an error where the protocol doesn't already give 404 a meaning. */
   | 'not-found'
   /** `409` — a duplicate account on signup. (Blob/key-record 409s are CAS outcomes and never reach here.) */
@@ -95,13 +110,27 @@ export class SyncRequestError extends Error {
 export const ACCOUNT_SUSPENDED_ERROR = 'account-suspended';
 
 /**
- * Maps a status code, and for one documented token the body, onto a
- * {@link SyncErrorKind}. The only place that mapping is written down.
+ * The body text the service uses for a data route refused for want of the
+ * consent to health data (openplate-core `PROTOCOL.md` §4.1), the second
+ * documented token on a `403`.
+ */
+export const HEALTH_CONSENT_REQUIRED_ERROR = HEALTH_CONSENT_REQUIRED;
+
+/** The kind of a `403`, read off the one field that can tell its three meanings apart. */
+function forbiddenKind(errorText: string | undefined): SyncErrorKind {
+  if (errorText === ACCOUNT_SUSPENDED_ERROR) return 'suspended';
+  if (errorText === HEALTH_CONSENT_REQUIRED_ERROR) return 'consent-required';
+  return 'forbidden';
+}
+
+/**
+ * Maps a status code, and for the two documented tokens on a `403` the body,
+ * onto a {@link SyncErrorKind}. The only place that mapping is written down.
  */
 export function errorKindForStatus(status: number, errorText?: string): SyncErrorKind {
   if (status === 400) return 'invalid';
   if (status === 401) return 'unauthorized';
-  if (status === 403) return errorText === ACCOUNT_SUSPENDED_ERROR ? 'suspended' : 'forbidden';
+  if (status === 403) return forbiddenKind(errorText);
   if (status === 404) return 'not-found';
   if (status === 409) return 'conflict';
   if (status === 413) return 'too-large';

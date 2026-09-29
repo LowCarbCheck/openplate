@@ -19,8 +19,11 @@
  * A handshake not answered, an instance older than the field, an account view
  * not yet read and a device with no session all answer open. The caller
  * (`consent-gate-facts.ts`) fails open on a timeout and offline for the same
- * reason. The gate is a door on the client: the core enforces the consent only
- * where an account is created, and records it where this screen sends it.
+ * reason. Failing open costs nothing the operator must show: the core REQUIRES
+ * the consent on every data route (2026-09-29), so an account the gate let
+ * through by mistake stores nothing, and the `403 health-consent-required` its
+ * next sync or scan meets makes the layout ask this gate again with fresh
+ * facts (`_personal.tsx`, `ConsentGateWatcher`).
  *
  * ── ADMINISTRATORS TOO ───────────────────────────────────────────────────
  *
@@ -65,7 +68,9 @@ const OPEN: ConsentGateOutcome = { kind: 'open' };
  * - `/consent`, the page the gate sends them to. Without it the redirect
  *   would loop.
  * - `/settings/data`, the export. Taking the diary out never waits on a
- *   consent to keeping it.
+ *   consent to keeping it. The core agrees: it serves an account its own blob
+ *   without the consent, so on a new device the pull that fills the export
+ *   still works (openplate-core `PROTOCOL.md` §5.15.1).
  * - `/settings/account`, delete the account and sign out. Deleting the
  *   account is how a consent is withdrawn (`PROTOCOL.md` §5.15.1), so it is
  *   also how somebody declines. `/settings/sync` is the old address of that

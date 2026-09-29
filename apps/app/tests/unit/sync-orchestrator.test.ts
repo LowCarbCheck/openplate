@@ -94,6 +94,8 @@ function fakeService(dek: Uint8Array) {
   let interfereBeforeNextPush: (() => Promise<void>) | null = null;
   /** When set, the next push is REFUSED with a `400`, the shape of the service's shrink guard. */
   let refuseNextPush = false;
+  /** When set, the next push is REFUSED with this error instead, and nothing is written. */
+  let refuseNextPushWith: SyncRequestError | null = null;
 
   /** Only the two calls the cycle makes; the rest of the transport is the integration suite's job. */
   const client: Pick<SyncHttpClient, 'pullBlob' | 'pushBlob'> = {
@@ -127,6 +129,11 @@ function fakeService(dek: Uint8Array) {
         refuseNextPush = false;
         throw new SyncRequestError({ kind: 'invalid', status: 400, message: 'This push would delete more than half' });
       }
+      if (refuseNextPushWith !== null) {
+        const refusal = refuseNextPushWith;
+        refuseNextPushWith = null;
+        throw refusal;
+      }
       stored = { version: current + 1, ciphertext: input.ciphertext };
       return { status: 'accepted', newVersion: stored.version };
     },
@@ -149,6 +156,10 @@ function fakeService(dek: Uint8Array) {
     /** Arranges for the service to REFUSE the very next push, writing nothing. */
     refuseTheNextPush(): void {
       refuseNextPush = true;
+    },
+    /** Arranges for the service to refuse the very next push with `refusal`, writing nothing. */
+    refuseTheNextPushWith(refusal: SyncRequestError): void {
+      refuseNextPushWith = refusal;
     },
     /** Writes a payload directly, as if another device had pushed it. */
     async seed(payload: SyncPayload, version: number): Promise<void> {
@@ -707,6 +718,61 @@ test('a REFUSED push heals the device before the error leaves, so the next cycle
   // file's own fixture shape, and only the ids are read.
   const settledSnapshot = (await service.read()).snapshot as { foodLogs: { id: string }[] };
   assert.deepEqual(settledSnapshot.foodLogs.map((entry) => entry.id).toSorted(), ['a', 'b', 'c']);
+});
+
+/** The account from the heal test above: two entries this device cannot see, and one of its own. */
+async function accountThisDeviceIsBehind(service: ReturnType<typeof fakeService>): Promise<{ current: SyncedSnapshot }> {
+  await service.seed(
+    {
+      snapshot: snapshot([log('a', 'Apple', 100), log('b', 'Bread', 50)]),
+      syncMeta: { perEntity: { 'foodLog:a': { lamport: 1, deviceId: 'device-2' } }, tombstones: [] },
+    },
+    1,
+  );
+  return { current: snapshot([log('c', 'Cheese', 30)]) };
+}
+
+test('a push refused for want of the consent still lands the pulled diary on the device', async () => {
+  // openplate-core serves an account its own blob without the consent to
+  // health data and refuses only the write (`PROTOCOL.md` §5.15.1). The pull
+  // is therefore the account's real copy, and a device signing in must hold
+  // it, or the first pull reads an empty store and a returning person meets
+  // the first-run questionnaire before the consent screen.
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = await accountThisDeviceIsBehind(service);
+  service.refuseTheNextPushWith(
+    new SyncRequestError({
+      kind: 'consent-required',
+      status: 403,
+      message: 'health-consent-required',
+      code: 'health-consent-required',
+    }),
+  );
+
+  await assert.rejects(
+    () => runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1' })),
+    (cause: unknown) => cause instanceof SyncRequestError && cause.kind === 'consent-required',
+  );
+  assert.deepEqual(
+    local.current.foodLogs.map((entry) => entry.id).toSorted(),
+    ['a', 'b', 'c'],
+    'the pulled entries must reach the device even though the consent refused the push',
+  );
+  assert.equal(service.version, 1, 'nothing may be stored while the consent is missing');
+});
+
+test('THE CONTROL: a push refused with any other 403 lands nothing, the service never judged the payload', async () => {
+  const dek = generateDek();
+  const service = fakeService(dek);
+  const local = await accountThisDeviceIsBehind(service);
+  service.refuseTheNextPushWith(new SyncRequestError({ kind: 'forbidden', status: 403, message: 'forbidden' }));
+
+  await assert.rejects(
+    () => runSyncCycleUnlocked(deps({ dek, http: service.client, local, deviceId: 'device-1' })),
+    (cause: unknown) => cause instanceof SyncRequestError && cause.kind === 'forbidden',
+  );
+  assert.deepEqual(local.current.foodLogs.map((entry) => entry.id), ['c']);
 });
 
 test('shrinkAcknowledged is false when ANY tombstone was withheld', async () => {

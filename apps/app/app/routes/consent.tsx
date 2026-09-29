@@ -22,9 +22,14 @@
  *
  * The client action sends the version the instance publishes to
  * `POST /v1/auth/account/health-consent` (`PROTOCOL.md` §5.15.1), puts the
- * account view it returns into the session, and navigates to `next`. The gate
- * reads the session at that navigation, so it lets the person through, and the
- * plan gate after it decides as it always does.
+ * account view it returns into the session, starts a sync cycle for the writes
+ * the core refused while the consent was missing, and navigates to `next`. The
+ * gate reads the session at that navigation, so it lets the person through,
+ * and the plan gate after it decides as it always does.
+ *
+ * TWO ROADS LEAD HERE: the gate in `_personal.tsx`'s loader, and a data route
+ * the core refused with `403 health-consent-required`, which makes the layout
+ * ask that gate again with fresh facts (`ConsentGateWatcher`).
  *
  * - `400 health-consent-required`: the wording changed while the screen was
  *   open. The facts are dropped, so the next read is fresh, and the box comes
@@ -60,7 +65,7 @@ import { safeConsentNext } from '#app/lib/health-consent/consent-gate';
 import { isHealthConsentRefusal, isHealthConsentRouteAbsent } from '#app/lib/health-consent/health-consent';
 import { TICKED_CHECKBOX_VALUE } from '#app/lib/sync/signup-schema';
 import type { Translate } from '#app/lib/sync/setup-flow';
-import { recordHealthConsent } from '#app/lib/sync/sync-actions';
+import { recordHealthConsent, syncNow } from '#app/lib/sync/sync-actions';
 import { cn } from '#app/lib/utils';
 
 export { RouteErrorBoundary as ErrorBoundary };
@@ -139,6 +144,12 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     }
     return submission.reply({ formErrors: [actionT('healthConsent.failed')] });
   }
+  // THE HELD WRITES GO UP NOW. openplate-core refuses every data write to an
+  // account without the consent (2026-09-29), so whatever this device changed
+  // while it was missing is still pending. Fired and never awaited, the way
+  // the setup ceremony does it: the consent is on record, and a round trip
+  // would only hold this screen.
+  void syncNow().catch(() => undefined);
   return redirect(next);
 }
 

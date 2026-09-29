@@ -158,11 +158,13 @@ export interface HealthConsentRequestWire {
 }
 
 /**
- * The one refusal of both consent paths, transcribed from `PROTOCOL.md`
- * §5.15.1 (`openplate-core` `src/accounts/health-consent.ts`): `400` when the
- * instance asks for a consent and the body has none, or another version. On
- * the signup path the invite is NOT spent, so the person ticks the box and
- * posts again.
+ * The one refusal of every consent check, transcribed from `PROTOCOL.md`
+ * §5.15.1 (`openplate-core` `src/accounts/health-consent.ts`), in two
+ * statuses. `400` on the two consent paths, when the instance asks for a
+ * consent and the body has none, or another version; on the signup path the
+ * invite is NOT spent, so the person ticks the box and posts again. `403` on
+ * every data route, for an account that does not hold the instance's current
+ * version, which `sync-error.ts` reads as its own kind.
  */
 export const HEALTH_CONSENT_REQUIRED = 'health-consent-required';
 

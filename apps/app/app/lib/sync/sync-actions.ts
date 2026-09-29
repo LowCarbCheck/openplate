@@ -91,7 +91,11 @@ import {
 } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
 import { decodeTrialScans } from '#app/lib/plans/trial-scans';
-import { decodeHealthConsent } from '#app/lib/health-consent/health-consent';
+import {
+  decodeHealthConsent,
+  isConsentRequiredRefusal,
+  signalConsentRefusal,
+} from '#app/lib/health-consent/health-consent';
 
 /** Overridable seams. Production passes none of these; tests pass all of them. */
 export interface SyncActionOptions {
@@ -595,6 +599,19 @@ export async function syncNow(): Promise<void> {
     // swallows its own failures, because a badge is not a sync outcome.
     await reconcileAwardsQuietly({ now: Date.now() });
   } catch (error) {
+    // A REFUSAL FOR WANT OF THE CONSENT IS NOT A SYNC FAILURE TO SHOW
+    // (2026-09-29). openplate-core refuses every data write to an account that
+    // does not hold the instance's current consent, and the answer to that is
+    // the consent screen, not "Sync failed" with a protocol token for a
+    // sentence. So no error is published: the changes stay pending, which is
+    // true, and the layout is told, which asks the consent gate again with a
+    // fresh handshake and a fresh account (`_personal.tsx`). The session is
+    // not ended: the token is good, and the consent route needs it.
+    if (isConsentRequiredRefusal(error)) {
+      updateSyncSession({ phase: 'idle', error: null });
+      signalConsentRefusal();
+      throw error;
+    }
     const failure = describeSyncFailure(error);
     updateSyncSession({ phase: 'idle', error: failure });
     // A REFUSED SESSION DROPS THE CACHE, wherever it surfaces. The auth client

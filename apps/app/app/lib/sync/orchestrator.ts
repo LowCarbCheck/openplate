@@ -372,10 +372,19 @@ export async function runSyncCycleUnlocked(deps: SyncCycleDeps): Promise<SyncCyc
  * itself behind, and the next cycle stamps the healed snapshot, which no longer
  * shrinks, and settles.
  *
- * ONLY A `400`. A 401, a 429 or a transport failure means the service never
- * judged this payload; retrying the identical push is exactly right there, and
- * writing the merge on a cycle that failed before it was read would be doing
- * work on no evidence.
+ * ONLY A `400`, AND ONE `403`. A 401, a 429 or a transport failure means the
+ * service never judged this payload; retrying the identical push is exactly
+ * right there, and writing the merge on a cycle that failed before it was read
+ * would be doing work on no evidence.
+ *
+ * THE `403` IS `health-consent-required` (2026-09-29). openplate-core serves an
+ * account its own blob without the consent to health data and refuses only the
+ * write (`PROTOCOL.md` §5.15.1), so the pull this cycle holds is the account's
+ * real copy. Dropping it would leave a device that signed in with an empty
+ * store, and the first pull after a sign-in would read that store and send a
+ * returning person to the first-run questionnaire instead of the consent
+ * screen. The write is the success path's own, and the baseline stays
+ * uncommitted for the same reason as the `400`: nothing was stored.
  */
 async function pushOrHeal({
   deps,
@@ -400,14 +409,25 @@ async function pushOrHeal({
       shrinkAcknowledged,
     });
   } catch (cause) {
-    // AN HTTP 400, and nothing else. `status` is checked beside `kind` because
-    // `invalid` has a second producer with no status at all,
-    // `decryptWithSchemaProbe` below, which cannot reach this `catch` today and
-    // must never start healing on a blob it failed to decrypt if it ever does.
-    if (!isSyncRequestError(cause) || cause.kind !== 'invalid' || cause.status !== 400) throw cause;
+    if (!isJudgedRefusal(cause)) throw cause;
     await deps.applySnapshot({ merged: merged.snapshot, local });
     throw cause;
   }
+}
+
+/**
+ * Whether the service judged a push and wrote nothing: the shrink guard's
+ * `400`, or the consent's `403` (see {@link pushOrHeal}).
+ *
+ * `status` is checked beside `kind` for the `400` because `invalid` has a
+ * second producer with no status at all, `decryptWithSchemaProbe` below, which
+ * cannot reach the push's `catch` today and must never start healing on a blob
+ * it failed to decrypt if it ever does.
+ */
+function isJudgedRefusal(cause: unknown): boolean {
+  if (!isSyncRequestError(cause)) return false;
+  if (cause.kind === 'invalid' && cause.status === 400) return true;
+  return cause.kind === 'consent-required';
 }
 
 /**

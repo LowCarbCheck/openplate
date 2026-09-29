@@ -79,9 +79,11 @@ import {
   pantryTextTask,
   PANTRY_UNITS,
   VisionProviderError,
+  VisionProviderFailure,
   type PantryIdentification,
   type ScanTokenUsage,
 } from '#app/services/vision';
+import { signalConsentRefusal } from '#app/lib/health-consent/health-consent';
 import { estimateScanCostUsd } from '#app/services/vision/cost';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { toLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
@@ -183,6 +185,9 @@ async function readPantry({
   } catch (error) {
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
     await record(usage, 'error');
+    // THE CORE WANTS THE CONSENT FIRST (2026-09-29): told to the layout, which
+    // sends the person to the consent screen, as a refused scan does.
+    if (error instanceof VisionProviderFailure && error.failureCause === 'consent-required') signalConsentRefusal();
     // A `VisionProviderError`'s own message is authored provider-neutrally in
     // the adapter layer and is already the actionable detail; anything else is
     // a throw this screen cannot explain, so it gets the generic sentence.

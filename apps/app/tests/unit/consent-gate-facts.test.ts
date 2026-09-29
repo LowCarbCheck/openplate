@@ -18,6 +18,7 @@ import {
   peekConsentGateFacts,
   readRequiredConsent,
   refreshConsentGateFacts,
+  rereadAfterConsentRefusal,
   resolveConsentGateForNavigation,
   type ConsentGateReaders,
   type ConsentGateSession,
@@ -206,6 +207,62 @@ describe('refreshConsentGateFacts', () => {
     await refreshConsentGateFacts({ session: NEVER_AGREED, now: NOW, readers });
     await refreshConsentGateFacts({ session: NEVER_AGREED, now: NOW, readers });
     assert.equal(calls.instance, 1);
+  });
+});
+
+describe('rereadAfterConsentRefusal, after a 403 health-consent-required', () => {
+  /** The wording the operator changed to while the page was open. */
+  const NEXT_VERSION = '2027-01-15';
+  const CHANGED: InstanceDescriptor = { ...ASKING, healthConsent: { version: NEXT_VERSION } };
+
+  it('drops FRESH facts, reads the account first and the handshake second, and the gate then asks', async () => {
+    // Facts read a moment ago, for the wording this account agreed to.
+    await refreshConsentGateFacts({
+      session: AGREED,
+      now: NOW,
+      readers: countingReaders({ instance: ASKING }).readers,
+    });
+    // THE CONTROL: those facts are fresh, so without the reread the gate stays
+    // open, and so does every navigation for the next five minutes.
+    assert.equal(consentGateAt({ pathname: '/diary', search: '', session: AGREED, isOnline: true }).kind, 'open');
+    await refreshConsentGateFacts({
+      session: AGREED,
+      now: NOW,
+      readers: countingReaders({ instance: CHANGED }).readers,
+    });
+    assert.equal(peekConsentGateFacts(SERVER_URL)?.requiredVersion, VERSION, 'a refresh of fresh facts reads nothing');
+
+    const order: string[] = [];
+    const changed = countingReaders({ instance: CHANGED });
+    await rereadAfterConsentRefusal({
+      now: NOW,
+      readers: {
+        readInstance: async (serverUrl: string) => {
+          order.push('handshake');
+          return changed.readers.readInstance(serverUrl);
+        },
+      },
+      refreshAccount: async () => {
+        order.push('account');
+      },
+      readSession: () => AGREED,
+    });
+
+    assert.deepEqual(order, ['account', 'handshake']);
+    assert.equal(peekConsentGateFacts(SERVER_URL)?.requiredVersion, NEXT_VERSION);
+    assert.equal(consentGateAt({ pathname: '/diary', search: '', session: AGREED, isOnline: true }).kind, 'consent');
+  });
+
+  it('reads no handshake when the account read left no session, and holds nothing', async () => {
+    await refreshConsentGateFacts({
+      session: AGREED,
+      now: NOW,
+      readers: countingReaders({ instance: ASKING }).readers,
+    });
+    const { readers, calls } = countingReaders({ instance: CHANGED });
+    await rereadAfterConsentRefusal({ now: NOW, readers, refreshAccount: async () => {}, readSession: () => null });
+    assert.equal(calls.instance, 0);
+    assert.equal(peekConsentGateFacts(SERVER_URL), null, 'the facts the service called wrong must not survive');
   });
 });
 

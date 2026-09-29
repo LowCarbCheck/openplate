@@ -32,6 +32,7 @@
  */
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { readFreshServerInstance } from '#app/hooks/use-server-instance';
+import { refreshSyncAccount } from '#app/lib/sync/sync-actions';
 import { getSyncSessionSnapshot, getSyncVault } from '#app/lib/sync/sync-session';
 import { withTimeout } from '#app/lib/with-timeout';
 
@@ -186,6 +187,39 @@ export function currentConsentGateSession(): ConsentGateSession | null {
   if (account === null || vault === null || vault.accountId !== account.id) return null;
   if (account.role === null) return null;
   return { serverUrl: vault.serverUrl, account: { consentedVersion: account.healthConsent?.version ?? null } };
+}
+
+/**
+ * Reads BOTH facts again, because the core has just refused a data route for
+ * want of the consent (`403 health-consent-required`, 2026-09-29).
+ *
+ * The refusal is the service saying the gate's facts are wrong, and either one
+ * can be: the handshake held here is up to five minutes old, so a wording the
+ * operator changed since is not in it, and the account in the snapshot is the
+ * one read at sign-in. So the held facts are dropped, the account view is read
+ * again, and only then is the handshake read, so the verdict that follows is
+ * taken over two fresh facts. Every step fails open, as everything in this
+ * module does: an unreadable account keeps the old view, and an unreadable
+ * handshake stores nothing.
+ */
+export async function rereadAfterConsentRefusal({
+  now = new Date(),
+  readers = NETWORK_READERS,
+  refreshAccount = refreshSyncAccount,
+  readSession = currentConsentGateSession,
+}: {
+  now?: Date;
+  readers?: ConsentGateReaders;
+  /** Re-reads the account view into the session. Never rejects. */
+  refreshAccount?: () => Promise<void>;
+  /** The session AFTER the account read, which is why it is a function rather than a value. */
+  readSession?: () => ConsentGateSession | null;
+} = {}): Promise<void> {
+  forgetConsentGateFacts();
+  await refreshAccount();
+  const session = readSession();
+  if (session === null) return;
+  await readConsentGateFacts({ serverUrl: session.serverUrl, now, readers });
 }
 
 /** Whether the browser says it has a network. Anything but an explicit `false` is online. */

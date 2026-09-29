@@ -75,6 +75,18 @@ export type VisionFailureCause =
    */
   | 'account-suspended'
   /**
+   * `403 {"error":"health-consent-required"}`: the instance requires a consent
+   * to health data and this account does not hold its current version
+   * (openplate-core `PROTOCOL.md` §5.15.1, 2026-09-29). A plate photograph is
+   * health data, so the proxy refuses before anything is counted or sent.
+   *
+   * NOT `auth`, WHERE AN UNKNOWN 403 USED TO LAND, which told the person to
+   * check an API key a managed instance never gave them. The screen sends the
+   * person to the consent screen instead, and nothing about a key or an
+   * allowance is true of it.
+   */
+  | 'consent-required'
+  /**
    * `403 {"error":"allowance-expired"}`, the account's AI allowance ended on
    * a date that has passed (`PROTOCOL.md` §5.19).
    *
@@ -204,6 +216,7 @@ async function is429CreditExhaustion(response: Response): Promise<boolean> {
  */
 const AI_NOT_ALLOWED_CODE = 'ai-not-allowed';
 const ACCOUNT_SUSPENDED_CODE = 'account-suspended';
+const HEALTH_CONSENT_REQUIRED_CODE = 'health-consent-required';
 const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
 const TRIAL_SCANS_SPENT_CODE = 'trial-scans-spent';
 
@@ -232,6 +245,9 @@ const MODEL_NOT_FOUND_MESSAGE =
 const PHOTO_TOO_LARGE_MESSAGE = 'The photo is too large for this server. Try a smaller one.';
 const AI_NOT_ALLOWED_MESSAGE = 'Photo estimates are not switched on for your account. Ask your administrator.';
 const ACCOUNT_SUSPENDED_MESSAGE = 'Your account is suspended. Ask your administrator.';
+// The screen replaces it with the consent screen's own translated sentences;
+// this is the English a caller without `t` still gets, and it names no key.
+const HEALTH_CONSENT_REQUIRED_MESSAGE = 'Your consent to the processing of your health data is needed first.';
 // Neither of these names a date or a person. This module has no `t` and no
 // account, so the DATE is added by the screen, which has both; the sentence
 // here is the true one that needs neither (`scan.tsx`, `describeFailureBody`).
@@ -280,15 +296,19 @@ function buildInvalidRequestMessage(status: number): string {
  * status and, for 429s, a machine-readable error code.
  */
 export async function classifyVisionHttpFailure(response: Response): Promise<HttpFailureClassification> {
-  // ONE 403 BRANCH, one body read. Three different refusals wear this status
-  // and only the code tells them apart: an account with no allowance, a
-  // suspended account, and an allowance whose end date passed. None of the
-  // three is fixed by touching an API key, which is what the `auth` message
-  // asks for, and on a managed instance there is no key and no settings page
-  // to ask about (M192/06).
+  // ONE 403 BRANCH, one body read. Several refusals wear this status and only
+  // the code tells them apart: an account with no allowance, a suspended
+  // account, one without the instance's consent to health data, an allowance
+  // whose end date passed, and spent free scans. None of them is fixed by
+  // touching an API key, which is what the `auth` message asks for, and on a
+  // managed instance there is no key and no settings page to ask about
+  // (M192/06).
   if (response.status === 403) {
     const code = await readForbiddenCode(response);
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
+    if (code === HEALTH_CONSENT_REQUIRED_CODE) {
+      return { cause: 'consent-required', message: HEALTH_CONSENT_REQUIRED_MESSAGE };
+    }
     if (code === AI_NOT_ALLOWED_CODE) return { cause: 'ai-not-allowed', message: AI_NOT_ALLOWED_MESSAGE };
     if (code === ALLOWANCE_EXPIRED_CODE) return { cause: 'allowance-expired', message: ALLOWANCE_EXPIRED_MESSAGE };
     if (code === TRIAL_SCANS_SPENT_CODE) return { cause: 'trial-scans-spent', message: TRIAL_SCANS_SPENT_MESSAGE };

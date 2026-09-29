@@ -47,10 +47,12 @@ import {
   consentGateAt,
   getConsentGateFactsSnapshot,
   refreshConsentGateFacts,
+  rereadAfterConsentRefusal,
   resolveConsentGateForNavigation,
   subscribeConsentGateFacts,
   type ConsentGateFacts,
 } from '#app/lib/health-consent/consent-gate-facts';
+import { getConsentRefusalCount, subscribeConsentRefusals } from '#app/lib/health-consent/health-consent';
 
 /**
  * The onboarding gate, which is purely local (M128 spec 03), after it the
@@ -521,6 +523,11 @@ function getServerConsentGateFacts(): ConsentGateFacts | null {
   return null;
 }
 
+/** The server snapshot of the refusal count: none, so a server render never reacts to one. */
+function getServerConsentRefusalCount(): number {
+  return 0;
+}
+
 /**
  * Keeps the consent gate's facts read, and asks the gate again the moment the
  * first facts for an account arrive.
@@ -533,8 +540,15 @@ function getServerConsentGateFacts(): ConsentGateFacts | null {
  * on screen is one the gate would ask on: the loader then answers with the
  * redirect to `/consent`.
  *
- * ONCE PER ACCOUNT. A wording that changes later is asked at the next
- * navigation, by `shouldRevalidate`, never in the middle of a page.
+ * ONCE PER ACCOUNT, AND ONCE MORE PER REFUSAL. A wording that changes later is
+ * asked at the next navigation, by `shouldRevalidate`, never in the middle of
+ * a page, with one exception: the core refusing a data route for want of the
+ * consent (`403 health-consent-required`, 2026-09-29). A sync cycle or a scan
+ * that meets it has already been stopped, so there is nothing on the page left
+ * to protect, and the facts the gate holds are the ones the service has just
+ * called wrong. Each refusal reads both facts again and lets the decision below
+ * run once more; on an exempt page (the export, the account page, the consent
+ * screen) it answers open and nothing moves.
  */
 function ConsentGateWatcher(): null {
   const session = useSyncSession();
@@ -543,14 +557,29 @@ function ConsentGateWatcher(): null {
   // says nothing about a consent.
   const hasReadAccount = session.account !== null && session.account.role !== null;
   const facts = useSyncExternalStore(subscribeConsentGateFacts, getConsentGateFactsSnapshot, getServerConsentGateFacts);
+  const refusals = useSyncExternalStore(subscribeConsentRefusals, getConsentRefusalCount, getServerConsentRefusalCount);
   const { pathname, search } = useLocation();
   const revalidator = useRevalidator();
   const settledFor = useRef<number | null>(null);
+  // FROM ZERO, so a refusal met while this layout showed its loading screen
+  // (which mounts the sync controller and not this watcher) is still answered
+  // once the watcher mounts. A spare read at worst.
+  const answeredRefusals = useRef(0);
 
   useEffect(() => {
     if (accountId === null || !hasReadAccount) return;
     void refreshConsentGateFacts();
   }, [accountId, hasReadAccount, pathname]);
+
+  // THE CORE SAID NO. Forget the verdict this account settled on, then read
+  // the account and the handshake again; the facts arriving run the decision
+  // below, which now has a verdict to reach.
+  useEffect(() => {
+    if (accountId === null || refusals === answeredRefusals.current) return;
+    answeredRefusals.current = refusals;
+    settledFor.current = null;
+    void rereadAfterConsentRefusal();
+  }, [accountId, refusals]);
 
   useEffect(() => {
     if (accountId === null || !hasReadAccount || facts === null) return;

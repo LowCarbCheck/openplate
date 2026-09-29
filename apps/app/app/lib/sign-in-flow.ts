@@ -14,6 +14,7 @@
  */
 import type { OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
+import { isConsentRequiredRefusal } from '#app/lib/health-consent/health-consent';
 
 /** Every path a finished sign-in can send somebody to. */
 export type SignInDestination = '/diary' | '/onboarding' | '/recover';
@@ -108,6 +109,14 @@ export type SignInOutcome =
  * the only thing on offer is repeating the pull. Never signing out and never
  * falling through to `/onboarding` is the point.
  *
+ * ONE REFUSAL IS NOT A FAILED PULL: `403 health-consent-required` (2026-09-29).
+ * openplate-core serves the account its own blob without the consent and
+ * refuses only the push that follows, and the cycle lands the pulled copy
+ * before that refusal leaves (`orchestrator.ts`, `pushOrHeal`). The store is
+ * therefore the account's, the destination read from it is the right one, and
+ * the consent gate on that page sends the person to the consent screen. A
+ * retry screen here could never succeed: the pull already did.
+ *
  * @param pull - one sync cycle; rejects when the snapshot did not arrive.
  * @param readDestination - reads the freshly pulled store and asks the gate.
  */
@@ -121,7 +130,7 @@ export async function completeSignIn({
   try {
     await pull();
   } catch (cause) {
-    return { status: 'pull-failed', cause };
+    if (!isConsentRequiredRefusal(cause)) return { status: 'pull-failed', cause };
   }
   return { status: 'navigate', path: await readDestination() };
 }

@@ -25,6 +25,7 @@ import type { IntakeSource, TypedIntakeSource } from '#app/lib/intake-source';
 import { parseCarbBasis } from '#app/lib/net-carbs';
 import type { CarbBasis } from '#app/lib/net-carbs';
 import { reportPhotoParsed } from '#app/lib/pulse';
+import { signalConsentRefusal } from '#app/lib/health-consent/health-consent';
 import { estimateScanCostUsd, formatScanCost, formatTokenCount } from '#app/services/vision/cost';
 import type { FoodMatch } from '#app/services/food-resolution';
 import {
@@ -1005,6 +1006,11 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     // 'unknown'. A plain `VisionProviderError`, or any other throw, has no
     // machine-readable cause and lands on 'unknown' honestly.
     trackScanFailed(failureCause ?? 'unknown');
+    // THE CORE WANTS THE CONSENT FIRST (2026-09-29). Told to the layout, which
+    // reads the account and the handshake again and sends the person to the
+    // consent screen; this page is not exempt from that gate, so it moves. The
+    // card below says the same thing for the moment in between.
+    if (failureCause === 'consent-required') signalConsentRefusal();
     return {
       intent: 'identify',
       error: message,
@@ -2012,6 +2018,10 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   'photo-too-large': 'scan.errors.titles.photoTooLarge',
   'ai-not-allowed': 'scan.errors.titles.aiNotAllowed',
   'account-suspended': 'scan.errors.titles.accountSuspended',
+  // THE CONSENT TO HEALTH DATA (2026-09-29). The layout sends the person to
+  // the consent screen on this refusal, and until it lands the card says what
+  // that screen says, in the consent screen's own words.
+  'consent-required': 'healthConsent.heading',
   // THE TWO M212 REFUSALS. Neither is about the person's key or their photo:
   // one is a date that passed on their account, the other is the operator out
   // of capacity for the day.
@@ -2104,6 +2114,8 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   'photo-too-large': 'scan.errors.provider.photoTooLarge',
   'ai-not-allowed': 'scan.errors.provider.aiNotAllowed',
   'account-suspended': 'scan.errors.provider.accountSuspended',
+  // The consent screen's own sentence, for the moment before it opens.
+  'consent-required': 'healthConsent.body',
   // THE DATELESS FORM of the expired sentence, which is the one this map can
   // answer: the date is not in the classification, so `describeFailureBody`
   // swaps in `allowanceExpiredOn` when the session knows it, exactly as it

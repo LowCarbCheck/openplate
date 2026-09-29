@@ -10,6 +10,13 @@
  *
  * Every field is read PER REQUEST, so a spec can move the account between two
  * reads (a scan trial running out, a plan being bought).
+ *
+ * THE CONSENT RULE, OPT IN (2026-09-29). `routeConsentRequiredSync` and
+ * `routeConsentRequiredProxy` answer sync writes and scans with the core's
+ * `403 health-consent-required` while the stub's account does not hold the
+ * instance's version, so a spec can change the wording while a page is open
+ * and watch the app meet the refusal. Specs that do not call them keep the
+ * fake sync service's answers, which ask nothing.
  */
 import { expect, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
@@ -176,6 +183,62 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
   });
 }
 
+/** What the sync refusal below saw: every write it let through and every one it refused. */
+export interface SyncWriteLog {
+  accepted: number;
+  refused: number;
+}
+
+/**
+ * Whether the stubbed core refuses a data route to this account, by the
+ * core's own rule (`PROTOCOL.md` §4): the instance names a version and the
+ * account does not hold exactly that one.
+ */
+function refusesForConsent(stub: ManagedCoreStub): boolean {
+  const asked = stub.healthConsent ?? null;
+  return asked !== null && stub.accountHealthConsent?.version !== asked.version;
+}
+
+/**
+ * The two reads under `/v1/sync` an account without the consent keeps (its
+ * own blob and its own key records), so sign-in and the export still work.
+ */
+function isOwnCopyRead(request: Request): boolean {
+  if (request.method() !== 'GET') return false;
+  const path = new URL(request.url()).pathname;
+  return path === '/v1/sync/blob' || path === '/v1/sync/key-records';
+}
+
+/**
+ * Routes every sync write through the core's consent rule: `403
+ * health-consent-required` while the stub's account does not hold the
+ * instance's version, the fake sync service otherwise. Read per request, so a
+ * spec can change the wording while a page is open and the next push meets it.
+ *
+ * @param page - the page, before its first navigation.
+ * @param stub - what the core says, the same object `routeManagedCore` reads.
+ * @returns the writes seen so far, counted as they arrive.
+ */
+export async function routeConsentRequiredSync(page: Page, stub: ManagedCoreStub): Promise<SyncWriteLog> {
+  const log: SyncWriteLog = { accepted: 0, refused: 0 };
+  await page.route(
+    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/sync/`),
+    (route) => {
+      const request = route.request();
+      // The preflight goes on to the fake service, which answers it for every path.
+      if (request.method() === 'OPTIONS' || isOwnCopyRead(request)) return route.fallback();
+      if (!refusesForConsent(stub)) {
+        log.accepted += 1;
+        return route.fallback();
+      }
+      log.refused += 1;
+      const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
+      return route.fulfill({ status: 403, headers: cors, json: { error: HEALTH_CONSENT_REQUIRED } });
+    },
+  );
+  return log;
+}
+
 /** A valid 1 x 1 PNG, the smallest thing the photo checks accept. */
 export const PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -243,6 +306,55 @@ export async function routeManagedProxy(page: Page, counter: { left: number }): 
       }),
     });
   });
+}
+
+/** What the consent-ruled proxy below saw: every scan it answered and every one it refused. */
+export interface ProxyCallLog {
+  answered: number;
+  refused: number;
+}
+
+/**
+ * Routes the AI proxy through the core's consent rule, like
+ * {@link routeConsentRequiredSync} does for sync writes: `403
+ * health-consent-required` while the stub's account does not hold the
+ * instance's version (`PROTOCOL.md` §5.19), one food otherwise. Read per
+ * request, so a spec can change the wording while the scan screen is open.
+ *
+ * @param page - the page, before its first navigation.
+ * @param stub - what the core says, the same object `routeManagedCore` reads.
+ * @returns the scans seen so far, counted as they arrive.
+ */
+export async function routeConsentRequiredProxy(page: Page, stub: ManagedCoreStub): Promise<ProxyCallLog> {
+  const log: ProxyCallLog = { answered: 0, refused: 0 };
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/chat/completions`, (route) => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      return route.fulfill({
+        status: 204,
+        headers: {
+          ...corsHeaders(request),
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': request.headers()['access-control-request-headers'] ?? '*',
+        },
+      });
+    }
+    if (refusesForConsent(stub)) {
+      log.refused += 1;
+      return route.fulfill({ status: 403, headers: corsHeaders(request), json: { error: HEALTH_CONSENT_REQUIRED } });
+    }
+    log.answered += 1;
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: corsHeaders(request),
+      body: JSON.stringify({
+        choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify(PLATE_ANSWER) } }],
+        usage: { prompt_tokens: 100, completion_tokens: 20 },
+      }),
+    });
+  });
+  return log;
 }
 
 /**
