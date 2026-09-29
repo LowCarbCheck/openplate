@@ -1,4 +1,21 @@
 {
+  "v0_51_0": {
+    "date": "2026-09-29",
+    "fixed": {
+      "10": "Giriş sayfası, bağlantının dilinde açılır.",
+      "11": "Şifremi unuttum ve kayıt formlarındaki buton artık anlık olarak yanıp sönmez.",
+      "12": "Bağımlılıklar, uygulamadaki bilinen birkaç güvenlik uyarısını aşacak şekilde güncellenir.",
+      "01": "Kilitli hesaplar artık plan sayfasından önce günlüğü görmez.",
+      "02": "Sipariş sayfası, çevrim içi cayma hakkı sayfasına bağlantı verir.",
+      "03": "Cayma ve iptal sayfaları, Almanca başlıklarının ne anlama geldiğini açıklar.",
+      "04": "Önce bir plan seçen alıcı, ödeme yaptıktan sonra günlüğü kurar.",
+      "05": "Giriş yapmış kişilere artık günlüklerinin bu cihazda kaldığı söylenmez.",
+      "06": "Deneme süresi geri sayımı ve özet satırı, her dilde bir telefona sığar.",
+      "07": "Üst bilgideki her Geri al yeniden bir buton haline geldi, artık metin içermiyor ve bir simgesi var.",
+      "08": "Üst bilgi durumundaki uzun bir yiyecek adı üç nokta ile biter.",
+      "09": "Geçmiş bir güne kaydedilen bir yiyecek için Almanca satır tek bir noktayla biter."
+    }
+  },
   "v0_50_0": {
     "date": "2026-09-28",
     "added": {
@@ -43,13 +60,6 @@
     "fixed": {
       "01": "Kapat düğmesi dokunduktan sonra artık bir halka göstermez.",
       "02": "0.49.0 sürümünün Almanca notları tek bir liste olarak okunur."
-    }
-  },
-  "v0_49_0": {
-    "date": "2026-09-26",
-    "changed": {
-      "01": "Günlük, Genel bakış ve Kiler büyük bir fotoğraf düğmesiyle başlar.",
-      "02": "Sol üstteki logo, bir menü açtığını gösterir."
     }
   }
 }

@@ -1,4 +1,21 @@
 {
+  "v0_51_0": {
+    "date": "2026-09-29",
+    "fixed": {
+      "10": "Die Anmeldeseite öffnet sich in der Sprache des Links.",
+      "11": "Die Schaltfläche in den Formularen für Passwort vergessen und Registrierung flackert nicht mehr.",
+      "12": "Abhängigkeiten wurden aktualisiert, um mehrere bekannte Sicherheitshinweise in der App zu beheben.",
+      "01": "Gesperrte Konten sehen nicht mehr das Tagebuch vor der Tarifseite.",
+      "02": "Die Bestellseite verlinkt auf die Seite für den Online-Widerruf.",
+      "03": "Die Seiten für Widerruf und Kündigung erklären, was ihre deutschen Überschriften bedeuten.",
+      "04": "Käufer, die zuerst einen Tarif wählen, richten das Tagebuch nach der Bezahlung ein.",
+      "05": "Angemeldete Personen sehen nicht mehr den Hinweis, dass ihr Tagebuch auf diesem Gerät bleibt.",
+      "06": "Der Testphasen-Countdown und seine Zusammenfassungszeile passen in jeder Sprache auf ein Smartphone.",
+      "07": "Jedes Rückgängigmachen in der Kopfzeile ist wieder eine Schaltfläche, jetzt mit einem Symbol und ohne Text.",
+      "08": "Ein langer Lebensmittelname endet im Status der Kopfzeile mit Auslassungspunkten.",
+      "09": "Die deutsche Zeile für ein an einem vergangenen Tag protokolliertes Lebensmittel endet mit einem Punkt."
+    }
+  },
   "v0_50_0": {
     "date": "2026-09-28",
     "added": {
@@ -43,13 +60,6 @@
     "fixed": {
       "01": "Die Schließen-Schaltfläche zeigt nach dem Antippen keinen Rahmen mehr an.",
       "02": "Die deutschen Notizen für 0.49.0 sind als eine Liste formatiert."
-    }
-  },
-  "v0_49_0": {
-    "date": "2026-09-26",
-    "changed": {
-      "01": "Tagebuch, Übersicht und Vorratskammer beginnen jeweils mit einer großen Fototaste.",
-      "02": "Das Logo oben links zeigt, dass es ein Menü öffnet."
     }
   }
 }

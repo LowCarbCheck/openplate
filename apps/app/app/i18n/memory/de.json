@@ -1252,6 +1252,13 @@
     "at": "2026-09-14",
     "de": "Schlüssel ersetzen"
   },
+  "0f4af60a40ecb445": {
+    "en": "A buyer who picks a plan first sets up the diary after paying.",
+    "path": "releases:v0_51_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Käufer, die zuerst einen Tarif wählen, richten das Tagebuch nach der Bezahlung ein."
+  },
   "0f50bbb166477c31": {
     "en": "Low-carb",
     "path": "common:onboarding.style.lowCarb.label",
@@ -1545,6 +1552,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{grams}} g Netto-KH"
+  },
+  "12f623090af2d2b2": {
+    "en": "Every Undo in the header is a button again, now with an icon and no text.",
+    "path": "releases:v0_51_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Jedes Rückgängigmachen in der Kopfzeile ist wieder eine Schaltfläche, jetzt mit einem Symbol und ohne Text."
   },
   "131d79028e9850d6": {
     "en": "Plan cancelled.",
@@ -2805,6 +2819,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Überschreibt das oben gewählte Modell, sobald hier etwas steht."
+  },
+  "215da98c530abe85": {
+    "en": "The withdrawal and cancellation pages explain what their German headings mean.",
+    "path": "releases:v0_51_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die Seiten für Widerruf und Kündigung erklären, was ihre deutschen Überschriften bedeuten."
   },
   "2169d8a62f18df9f": {
     "en": "Administrator",
@@ -6712,6 +6733,13 @@
     "at": "2026-09-14",
     "de": "In diesem Zeitraum gelesene Fotos: {{photos}}"
   },
+  "56b71ede3ba67c22": {
+    "en": "The trial countdown and its recap line fit a phone in every language.",
+    "path": "releases:v0_51_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Der Testphasen-Countdown und seine Zusammenfassungszeile passen in jeder Sprache auf ein Smartphone."
+  },
   "56c1d4d5e3925b1c": {
     "en": "Goals met: level {{level}} of 4.",
     "path": "common:trends.grid.cell.level",
@@ -8084,6 +8112,13 @@
     "at": "2026-09-14",
     "de": "Längste"
   },
+  "6727c9d6d52e81d5": {
+    "en": "Locked accounts no longer see the diary before the plan page.",
+    "path": "releases:v0_51_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Gesperrte Konten sehen nicht mehr das Tagebuch vor der Tarifseite."
+  },
   "678f94329d2e0bff": {
     "en": "And {{count}} more changes.",
     "path": "common:whatsNew.card.more_other",
@@ -8454,6 +8489,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Trag dein erstes Gewicht ein, dann siehst du hier deinen Verlauf."
+  },
+  "6c66cd9f1fd7755f": {
+    "en": "A long food name ends in an ellipsis in the header status.",
+    "path": "releases:v0_51_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Ein langer Lebensmittelname endet im Status der Kopfzeile mit Auslassungspunkten."
   },
   "6ca1ad408e3e136b": {
     "en": "Saved meals now tells you where the next one comes from.",
@@ -10541,6 +10583,13 @@
     "at": "2026-09-14",
     "de": "Aktualisieren"
   },
+  "845a0d37b170bdaa": {
+    "en": "The forgot-password and sign-up forms no longer flash their button.",
+    "path": "releases:v0_51_0.fixed.11",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die Schaltfläche in den Formularen für Passwort vergessen und Registrierung flackert nicht mehr."
+  },
   "84703df1bdc28690": {
     "en": "Per 100 g",
     "path": "common:add.custom.per100gToggle",
@@ -11247,6 +11296,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Bewahre deinen Wiederherstellungscode sicher auf. Er schützt den Zugriff deiner Patientinnen und Patienten genauso wie deinen eigenen. Verlierst du ihn und dein Passwort, lässt sich kein mit dir geteiltes Tagebuch mehr öffnen."
+  },
+  "8cd7b2dd78e01426": {
+    "en": "The German line for a food logged on a past day ends on one period.",
+    "path": "releases:v0_51_0.fixed.09",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die deutsche Zeile für ein an einem vergangenen Tag protokolliertes Lebensmittel endet mit einem Punkt."
   },
   "8ce1aa0721b899b9": {
     "en": "{{count}} servings",
@@ -13145,6 +13201,13 @@
     "at": "2026-09-14",
     "de": "Geprüft, aber noch nichts geteilt"
   },
+  "a44e7e10d117cd30": {
+    "en": "Dependencies update past several known security advisories in the app.",
+    "path": "releases:v0_51_0.fixed.12",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Abhängigkeiten wurden aktualisiert, um mehrere bekannte Sicherheitshinweise in der App zu beheben."
+  },
   "a44fa711e2fba5ae": {
     "en": "Like yesterday",
     "path": "common:diary.copy.title",
@@ -14019,6 +14082,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Gewicht {{first}} → {{last}} kg ({{delta}})"
+  },
+  "afa09d5c9d0f8501": {
+    "en": "Signed-in people are no longer told their diary stays on this device.",
+    "path": "releases:v0_51_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Angemeldete Personen sehen nicht mehr den Hinweis, dass ihr Tagebuch auf diesem Gerät bleibt."
   },
   "afa336b5ce02dc39": {
     "en": "{{elapsed}} in · {{remaining}} left",
@@ -17464,6 +17534,13 @@
     "at": "2026-09-21",
     "de": "Der Name openplate ist jetzt dünn gesetzt, mit der ersten Hälfte in Blaugrün und auf die Bildmarke zentriert."
   },
+  "dccdba4de43cbede": {
+    "en": "The sign-in page opens in the language of the link.",
+    "path": "releases:v0_51_0.fixed.10",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die Anmeldeseite öffnet sich in der Sprache des Links."
+  },
   "dcde0645ce6b5d35": {
     "en": "Password",
     "path": "common:sync.setup.passphraseLabel",
@@ -17652,6 +17729,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Person kann ein Passwort festlegen und direkt loslegen."
+  },
+  "dfe6c845c432fd2c": {
+    "en": "The order page links to the online withdrawal page.",
+    "path": "releases:v0_51_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die Bestellseite verlinkt auf die Seite für den Online-Widerruf."
   },
   "dfe9388c2a9465c4": {
     "en": "You have no calorie target yet. Set one below to see a bar.",

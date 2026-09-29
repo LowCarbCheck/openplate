@@ -1,4 +1,21 @@
 {
+  "v0_51_0": {
+    "date": "2026-09-29",
+    "fixed": {
+      "10": "La page de connexion s'ouvre dans la langue du lien.",
+      "11": "Les formulaires de mot de passe oublié et d'inscription ne font plus clignoter leur bouton.",
+      "12": "Les dépendances sont mises à jour pour corriger plusieurs avis de sécurité connus dans l'application.",
+      "01": "Les comptes verrouillés ne voient plus le journal avant la page des forfaits.",
+      "02": "La page de commande contient un lien vers la page de rétractation en ligne.",
+      "03": "Les pages de rétractation et de résiliation expliquent ce que signifient leurs titres en allemand.",
+      "04": "Une personne qui choisit d'abord un forfait configure le journal après avoir payé.",
+      "05": "L'application n'indique plus aux personnes connectées que leur journal reste sur cet appareil.",
+      "06": "Le compte à rebours de la période d'essai et sa ligne récapitulative tiennent sur un téléphone dans toutes les langues.",
+      "07": "Chaque Annuler dans l'en-tête redevient un bouton, désormais avec une icône et sans texte.",
+      "08": "Un nom d'aliment trop long se termine par des points de suspension dans l'état de l'en-tête.",
+      "09": "La ligne en allemand pour un aliment consigné un jour passé se termine par un seul point."
+    }
+  },
   "v0_50_0": {
     "date": "2026-09-28",
     "added": {
@@ -43,13 +60,6 @@
     "fixed": {
       "01": "Le bouton de fermeture n'affiche plus d'anneau après un appui.",
       "02": "Les notes de version allemandes pour 0.49.0 s'affichent sous la forme d'une seule liste."
-    }
-  },
-  "v0_49_0": {
-    "date": "2026-09-26",
-    "changed": {
-      "01": "Le journal, Vue d'ensemble et Garde-manger s'ouvrent sur un grand bouton photo.",
-      "02": "Le logo en haut à gauche indique qu'il ouvre un menu."
     }
   }
 }
