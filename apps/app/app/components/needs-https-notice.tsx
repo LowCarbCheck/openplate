@@ -14,7 +14,8 @@
 import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { SELF_HOSTING_HTTPS_DOCS_URL } from '#app/lib/brand';
+import { useProjectSiteUrl } from '#app/hooks/use-project-site-url';
+import { SELF_HOSTING_HTTPS_DOCS_PATH } from '#app/lib/brand';
 import { cn } from '#app/lib/utils';
 
 export function NeedsHttpsNotice({
@@ -32,12 +33,14 @@ export function NeedsHttpsNotice({
   className?: string;
 }) {
   const { t } = useTranslation();
+  // The guide in the reader's language: the site translates it, and it used to be the English copy for everybody.
+  const guideUrl = useProjectSiteUrl(SELF_HOSTING_HTTPS_DOCS_PATH);
   return (
     <div data-slot={slot} className={cn('space-y-3 text-sm', className)}>
       <p className="font-medium">{title}</p>
       <p className="text-muted-foreground">{body}</p>
       <a
-        href={SELF_HOSTING_HTTPS_DOCS_URL}
+        href={guideUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex min-h-11 items-center gap-1 text-primary underline underline-offset-4"

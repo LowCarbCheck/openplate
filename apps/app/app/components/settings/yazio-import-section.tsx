@@ -21,7 +21,8 @@ import { ExternalLink, Upload } from 'lucide-react';
 
 import { Button } from '#app/components/ui/button';
 import { numberLocale } from '#app/i18n/date-locale';
-import { YAZIO_IMPORT_DOCS_URL } from '#app/lib/brand';
+import { useProjectSiteUrl } from '#app/hooks/use-project-site-url';
+import { YAZIO_IMPORT_DOCS_PATH } from '#app/lib/brand';
 import { formatContentDate } from '#app/lib/content/format-content-date';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 import {
@@ -155,6 +156,8 @@ function successText({
 
 export function YazioImportSection() {
   const { t } = useTranslation();
+  // The guide in the reader's language: the site translates it, and it used to be the English copy for everybody.
+  const guideUrl = useProjectSiteUrl(YAZIO_IMPORT_DOCS_PATH);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<SectionState>({ kind: 'idle' });
   const isWriting = state.kind === 'writing';
@@ -196,7 +199,7 @@ export function YazioImportSection() {
       <p className="text-xs text-muted-foreground">{t('settings.data.yazio.description')}</p>
       <p className="text-xs">
         <a
-          href={YAZIO_IMPORT_DOCS_URL}
+          href={guideUrl}
           target="_blank"
           rel="noopener noreferrer"
           data-slot="yazio-guide-link"

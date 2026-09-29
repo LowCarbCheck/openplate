@@ -171,6 +171,20 @@ export interface InstancePolicy {
    * is nothing for them to do (`settings.about.tsx`).
    */
   readonly updatesAreSomeoneElsesJob: boolean;
+  /**
+   * Is the front page, for a visitor with no session, the door to an account
+   * rather than a page that explains the product?
+   *
+   * `false` on an open instance: its landing is one person's front door, it
+   * has no account to open, and the pitch, the screenshots and the way into
+   * the tracker are all it has to say. `true` on a managed one (M266 design,
+   * approved 2026-09-29): openplate.de explains and prices the product, so
+   * the managed `/` draws the doors the handshake allows, the offer, and one
+   * line to the project site, and nothing is pitched twice. Because the pitch
+   * left `/`, the public footer on such an instance links the project site
+   * too, so a reader who came for a legal page has a way to it.
+   */
+  readonly frontDoorIsTheAccountDoor: boolean;
 }
 
 /**
@@ -190,6 +204,7 @@ const OPEN_INSTANCE_POLICY = {
   serverHoldsTheDiary: false,
   strangerSeesThePublicShell: false,
   updatesAreSomeoneElsesJob: false,
+  frontDoorIsTheAccountDoor: false,
 } satisfies InstancePolicy;
 
 /** An instance an organization runs for its people: `INSTANCE_MODE=managed`. */
@@ -203,6 +218,7 @@ const MANAGED_INSTANCE_POLICY = {
   serverHoldsTheDiary: true,
   strangerSeesThePublicShell: true,
   updatesAreSomeoneElsesJob: true,
+  frontDoorIsTheAccountDoor: true,
 } satisfies InstancePolicy;
 
 /**

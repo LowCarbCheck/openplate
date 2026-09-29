@@ -2,7 +2,7 @@ import { ProgressBar } from './progress-bar';
 import * as React from 'react';
 import { Link } from '#app/components/link';
 import { Trans, useTranslation } from 'react-i18next';
-import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
+import { APP_NAME, PROJECT_SITE_HOST, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { BuildStamp } from '#app/components/build-stamp';
 import { Wordmark } from '#app/components/wordmark';
@@ -11,6 +11,7 @@ import { useHasLegalPages, useInstancePolicy } from '#app/hooks/use-public-confi
 import { AccountDoor } from '#app/components/account-door';
 import { Button } from './ui/button';
 import { HeaderStatus } from './header-status';
+import { useProjectSiteUrl } from '#app/hooks/use-project-site-url';
 
 /**
  * One footer destination's classes.
@@ -46,20 +47,31 @@ const FOOTER_LINK_CLASS = 'inline-flex min-h-11 items-center transition-colors h
  * reading measure. `wide` swaps the container to `max-w-5xl` for that one
  * route. Hero COPY still caps itself at a reading measure inside it — a wide
  * container is not permission to set a 1024px-long sentence.
+ *
+ * ── `showDoors` ──────────────────────────────────────────────────────────
+ *
+ * The account door on a managed `/` (`routes/account-door-page.tsx`) draws the
+ * doors the handshake allows in the page itself, so the header's pair would be
+ * the same doors twice on one screen. That page passes `false`, and it is the
+ * only caller that does: every other public page keeps its header doors.
  */
 export default function PublicWrapper({
   children,
   showLogo = true,
+  showDoors = true,
   wide = false,
 }: {
   children: React.ReactNode;
   showLogo?: boolean;
+  /** `false` on the managed account door only, which draws its doors in the page. See the component doc. */
+  showDoors?: boolean;
   /** The landing route only — see the component doc. */
   wide?: boolean;
 }) {
   const { t } = useTranslation();
-  const { headerOffersSignIn, serverHoldsTheDiary } = useInstancePolicy();
+  const { headerOffersSignIn, serverHoldsTheDiary, frontDoorIsTheAccountDoor } = useInstancePolicy();
   const hasLegalPages = useHasLegalPages();
+  const projectSiteHref = useProjectSiteUrl('/');
   const container = cn('container mx-auto w-full px-4', wide ? 'max-w-5xl' : 'max-w-3xl');
 
   return (
@@ -130,36 +142,39 @@ export default function PublicWrapper({
             answer for a visitor holding no invite. Neither one renders on an
             open instance, where there is nothing to sign in to and the offer
             would be the mirror image of the same fault. */}
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {/* The source icon left this corner in M201/03. It was the SECOND
-                copy of a link the footer already carries as a labelled word,
-                and the row is one 16px band: on a managed instance the space
-                is spent on the two controls a visitor actually needs, and an
-                open instance keeps the one it always had. The footer's Source
-                link is untouched and is now the only one on the page. */}
-            {/* "Sign up" on an open instance, the invite-only dialog on any
-                other (M253/02). `AccountDoor` reads the handshake and draws
-                nothing until it has answered. */}
-            {headerOffersSignIn && <AccountDoor />}
-            {/* `md:h-10` keeps the pointer-sized box this corner has always
-                drawn. The phone height comes from the `sm` size itself now
-                (44px below `md`), which is what the hand-written `h-10` here
-                used to be for and was quietly capping at 40.
+          {/* The door page draws these two doors in the page itself (`showDoors`). */}
+          {showDoors && (
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              {/* The source icon left this corner in M201/03. It was the SECOND
+                  copy of a link the footer already carries as a labelled word,
+                  and the row is one 16px band: on a managed instance the space
+                  is spent on the two controls a visitor actually needs, and an
+                  open instance keeps the one it always had. The footer's Source
+                  link is untouched and is now the only one on the page. */}
+              {/* "Sign up" on an open instance, the invite-only dialog on any
+                  other (M253/02). `AccountDoor` reads the handshake and draws
+                  nothing until it has answered. */}
+              {headerOffersSignIn && <AccountDoor />}
+              {/* `md:h-10` keeps the pointer-sized box this corner has always
+                  drawn. The phone height comes from the `sm` size itself now
+                  (44px below `md`), which is what the hand-written `h-10` here
+                  used to be for and was quietly capping at 40.
 
-                The destination changes WITH the label, the same trade the
-                landing page's mid-page call to action already made: on a
-                managed instance `/dashboard` bounces to `/welcome`, so a button
-                named for a destination is a redirect wearing that name. Naming
-                the real door is what makes the label true. */}
-            {/* `px-3` below `sm`, the size's own padding: with the word gone
-                the managed row still needs 362 px in Spanish at `px-4`, two
-                more than a 360 px phone has. */}
-            <Button asChild variant="outline" size="sm" className="px-3 sm:px-4 md:h-10">
-              <Link to={headerOffersSignIn ? '/sign-in' : '/dashboard'}>
-                {headerOffersSignIn ? t('chrome.signIn') : t('chrome.openTracker')}
-              </Link>
-            </Button>
-          </div>
+                  The destination changes WITH the label, the same trade the
+                  landing page's mid-page call to action already made: on a
+                  managed instance `/dashboard` bounces to `/welcome`, so a button
+                  named for a destination is a redirect wearing that name. Naming
+                  the real door is what makes the label true. */}
+              {/* `px-3` below `sm`, the size's own padding: with the word gone
+                  the managed row still needs 362 px in Spanish at `px-4`, two
+                  more than a 360 px phone has. */}
+              <Button asChild variant="outline" size="sm" className="px-3 sm:px-4 md:h-10">
+                <Link to={headerOffersSignIn ? '/sign-in' : '/dashboard'}>
+                  {headerOffersSignIn ? t('chrome.signIn') : t('chrome.openTracker')}
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </header>
       {/* The page's one landmark for its main content. Every public route gets
@@ -214,11 +229,40 @@ export default function PublicWrapper({
           {/* Five links. `flex-wrap` used to break them 4 + 1, leaving one word
               orphaned on its own line under a full row — so on a phone they are
               an explicit TWO-COLUMN grid (a deliberate short column, not a
-              stray), and from `sm` up one non-wrapping right-aligned row.
-              Labels are one word each so that row fits: the long forms
-              ("Source code", "MIT licence") stay on the header's `aria-label`
-              and `title`, where there is room for them. */}
-          <nav className="grid w-full grid-cols-2 gap-x-5 gap-y-2 sm:flex sm:w-auto sm:flex-nowrap sm:items-center sm:justify-end">
+              stray), and from `sm` up a right-aligned row. Labels are one word
+              each where they can be: the long forms ("Source code", "MIT
+              licence") stay on the `title`, where there is room for them.
+
+              THE ROW WRAPS from `sm` up (M266 design, step 2). It was
+              `flex-nowrap` while it held five links; with the three app links,
+              the five legal ones and the two statutory labels it needs about
+              700 px in German, the container gives it 736 px minus the
+              tagline, and a flex item that cannot wrap cannot shrink. So from
+              640 px to about 1000 px the row ran past the screen and the outer
+              `overflow-x-clip` cut off the imprint and both statutory buttons
+              (measured 2026-09-29, `tests/e2e/managed-way-back.spec.ts`). A
+              wrapping row shrinks beside the tagline and breaks onto a second
+              line instead, still right-aligned. */}
+          <nav className="grid w-full grid-cols-2 gap-x-5 gap-y-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+            {/* THE WAY BACK TO THE PROJECT SITE (M266 design, step 2), in the
+                reader's language, where the front page is the account door.
+                The pitch left that `/` for openplate.de, so every public page
+                of such an instance says where it went; a reader who came for
+                the imprint had no way home. An open instance's landing is the
+                whole pitch, and a self-hoster's instance is nobody's
+                storefront, so it draws none. The label is the site's own
+                name, a proper noun, so it has no catalog entry. On a phone it
+                takes the grid's first row alone, which keeps the eight links
+                under it in even pairs. Same tab: it is home, not a detour. */}
+            {frontDoorIsTheAccountDoor && (
+              <a
+                href={projectSiteHref}
+                data-slot="footer-project-site"
+                className={cn(FOOTER_LINK_CLASS, 'col-span-2 sm:col-span-1')}
+              >
+                {PROJECT_SITE_HOST}
+              </a>
+            )}
             {/* Provenance, where a reader looks for it: the repository as a
                 real labelled link, and the licence next to it. Both are plain
                 external anchors (not the in-app `Link`) and both stay muted
