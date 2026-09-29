@@ -76,9 +76,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *
  * THE ACCOUNT'S OWN NUMBER FIRST, the instance's offer second, the rule the
  * spent-scans heading follows: an operator may change `TRIAL_DAYS` later, and
- * the lock screen must name the days this person was given. Rounded, because
- * the core stamps the account a few milliseconds after the instant the end
- * date was counted from.
+ * the lock screen must name the days this person was given.
+ *
+ * COUNTED ON THE CALENDAR, NOT IN HOURS. The core ends the trial at local
+ * midnight after the last day, and the sign-up day does not count
+ * (`openplate-core` `trialEndsAtFor`, owner decision 2026-09-29), so the time
+ * from sign-up to end is anything from just over fourteen days to fifteen. The
+ * end is a midnight in the core's zone, so its UTC time of day says how far
+ * that zone ran from UTC at the end; both instants are moved by that offset
+ * and the count is the calendar days between them, less the sign-up day. The
+ * zone itself never reaches the app. The count is off by one only for a
+ * sign-up within the hour next to midnight on a trial that crosses a change
+ * of the clocks, where the offset at the sign-up differed by that hour.
  */
 export function grantedTrialDays({
   createdAt,
@@ -88,8 +97,14 @@ export function grantedTrialDays({
   trialEndsAt: string | null | undefined;
 }): number | null {
   if (createdAt === null || createdAt === undefined || trialEndsAt === null || trialEndsAt === undefined) return null;
-  const days = Math.round((Date.parse(trialEndsAt) - Date.parse(createdAt)) / DAY_MS);
-  return Number.isFinite(days) && days > 0 ? days : null;
+  const endsAtMs = Date.parse(trialEndsAt);
+  const createdAtMs = Date.parse(createdAt);
+  if (Number.isNaN(endsAtMs) || Number.isNaN(createdAtMs)) return null;
+  const zoneOffsetMs = (DAY_MS - (((endsAtMs % DAY_MS) + DAY_MS) % DAY_MS)) % DAY_MS;
+  const lastMidnightDay = Math.round((endsAtMs + zoneOffsetMs) / DAY_MS);
+  const signUpDay = Math.floor((createdAtMs + zoneOffsetMs) / DAY_MS);
+  const days = lastMidnightDay - signUpDay - 1;
+  return days > 0 ? days : null;
 }
 
 /**

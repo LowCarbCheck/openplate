@@ -99,15 +99,47 @@ describe('decodeTrialEndsAt (M267)', () => {
 });
 
 describe('grantedTrialDays (M267)', () => {
-  it("reads the account's own day count off its creation and its end", () => {
+  // The core ends a trial at local midnight after the fourteenth day, and the
+  // sign-up day does not count (owner decision, 2026-09-29). So the time from
+  // sign-up to end runs from just over 14 days to 15, and a count that rounded
+  // that time would read 15 for most sign-ups. Every case below is one such
+  // end, as the core writes it.
+  it('reads fourteen for every sign-up time on the day, in Berlin', () => {
+    const berlinEnd = '2026-10-13T22:00:00.000Z'; // 2026-10-14 00:00 CEST
+    assert.equal(grantedTrialDays({ createdAt: '2026-09-29T08:00:00.000Z', trialEndsAt: berlinEnd }), 14); // 10:00
+    assert.equal(grantedTrialDays({ createdAt: '2026-09-29T21:30:00.000Z', trialEndsAt: berlinEnd }), 14); // 23:30
+    assert.equal(grantedTrialDays({ createdAt: '2026-09-28T22:05:00.000Z', trialEndsAt: berlinEnd }), 14); // 00:05
+    // A sign-up at 00:10 the next day ends a day later, and is fourteen too.
     assert.equal(
-      grantedTrialDays({ createdAt: '2026-09-29T10:00:00.000Z', trialEndsAt: '2026-10-13T10:00:00.000Z' }),
+      grantedTrialDays({ createdAt: '2026-09-29T22:10:00.000Z', trialEndsAt: '2026-10-14T22:00:00.000Z' }),
       14,
     );
-    // A creation stamped a few milliseconds after the redemption instant is still fourteen.
+  });
+
+  it('reads fourteen across the change to winter time, and in UTC', () => {
+    // 2026-10-20 12:00 CEST, ending 2026-11-04 00:00 CET.
     assert.equal(
-      grantedTrialDays({ createdAt: '2026-09-29T10:00:00.004Z', trialEndsAt: '2026-10-13T10:00:00.000Z' }),
+      grantedTrialDays({ createdAt: '2026-10-20T10:00:00.000Z', trialEndsAt: '2026-11-03T23:00:00.000Z' }),
       14,
+    );
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T23:30:00.000Z', trialEndsAt: '2026-10-14T00:00:00.000Z' }),
+      14,
+    );
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T00:00:00.004Z', trialEndsAt: '2026-10-14T00:00:00.000Z' }),
+      14,
+    );
+  });
+
+  it('CONTROL: another day count reads as itself, so fourteen is not a constant', () => {
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T08:00:00.000Z', trialEndsAt: '2026-10-06T22:00:00.000Z' }),
+      7,
+    );
+    assert.equal(
+      grantedTrialDays({ createdAt: '2026-09-29T08:00:00.000Z', trialEndsAt: '2026-09-30T22:00:00.000Z' }),
+      1,
     );
   });
 

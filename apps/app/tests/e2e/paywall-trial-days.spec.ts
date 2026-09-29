@@ -56,14 +56,21 @@ function daysFromNow(days: number): string {
 }
 
 /**
- * A free tier that started fifteen days ago and ended by its fourteen days yesterday, with four
- * of its ten scans left. The overrides move one fact at a time.
+ * The end the core writes for a trial in UTC: a midnight, here today's UTC midnight, which has
+ * passed. The core ends a trial at local midnight after its last day, and the sign-up day does
+ * not count, so the account below was created at midday fifteen calendar days before it.
+ */
+const ENDED_AT = Math.floor(Date.now() / DAY_MS) * DAY_MS;
+
+/**
+ * A free tier that ended by its fourteen days at today's UTC midnight, with four of its ten scans
+ * left. The overrides move one fact at a time.
  */
 function core(overrides: Partial<ManagedCoreStub> = {}): ManagedCoreStub {
   return {
     trialScans: { granted: 10, left: 4 },
-    trialEndsAt: daysFromNow(-1),
-    createdAt: daysFromNow(-(TRIAL_DAYS + 1)),
+    trialEndsAt: new Date(ENDED_AT).toISOString(),
+    createdAt: new Date(ENDED_AT - (TRIAL_DAYS + 0.5) * DAY_MS).toISOString(),
     trialDays: TRIAL_DAYS,
     allowanceExpiresAt: null,
     dailyAiLimit: 20,
