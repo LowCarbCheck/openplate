@@ -1406,9 +1406,10 @@ const SIGNUP_REQUEST_ACCEPTED: AuthOutcome<Record<string, never>> = { status: 'a
  * a letter from an operator or a member gets nothing new, and a mailbox that
  * already got a letter today gets nothing either.
  *
- * WHAT THE PERSON PICKED RIDES IN THE LINK ONLY. `plan` and `locale` are read
- * by `readSignupIntent`, which drops an unknown value silently, and they reach
- * nothing but the letter's link: no row, no log line, no status code.
+ * WHAT THE PERSON PICKED REACHES THE LETTERS ONLY. `plan` and `locale` are
+ * read by `readSignupIntent`, which drops an unknown value silently. Both ride
+ * in the letter's link, and `locale` also picks the words of the letter and of
+ * the note. Neither reaches a row, a log line or a status code.
  *
  * A PENDING INVITE FROM ANOTHER DOOR IS LEFT ALONE. A mint supersedes the
  * address's pending invite, which is right when an operator re-sends and
@@ -1455,7 +1456,9 @@ export async function handleSignupRequest(
   surface.letters.recordFailure(letterKey, now.getTime());
 
   if ((await ctx.store.findAccountByEmail(email.value)) !== null) {
-    await trySignupLetter(ctx, () => ctx.mailer.sendSignupAccountNotice({ email: email.value }));
+    await trySignupLetter(ctx, () =>
+      ctx.mailer.sendSignupAccountNotice({ email: email.value, language: intent.locale }),
+    );
     ctx.logger.info('Sign-up request answered with the account notice');
     return SIGNUP_REQUEST_ACCEPTED;
   }
@@ -1482,7 +1485,9 @@ export async function handleSignupRequest(
   });
   if (!minted.ok) {
     // An account appeared between the read above and the mint's own check.
-    await trySignupLetter(ctx, () => ctx.mailer.sendSignupAccountNotice({ email: email.value }));
+    await trySignupLetter(ctx, () =>
+      ctx.mailer.sendSignupAccountNotice({ email: email.value, language: intent.locale }),
+    );
     ctx.logger.info('Sign-up request answered with the account notice');
     return SIGNUP_REQUEST_ACCEPTED;
   }

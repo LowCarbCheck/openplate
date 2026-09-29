@@ -74,11 +74,21 @@ export interface SendInviteInput {
 
 /**
  * The open sign-up door's letter: the invitation's fields, plus what the
- * person picked before they asked. The intent rides in the link and nowhere
- * else (`signup-message.ts`).
+ * person picked before they asked. Both picks ride in the link
+ * (`signup-message.ts`), and the language also chooses the letter's words.
  */
 export interface SendSignupRequestInput extends SendInviteInput {
   intent: SignupIntent;
+}
+
+/**
+ * The open sign-up door's note to an address that already holds an account.
+ * The account notice's one field, plus the language the request was made in,
+ * which is the only pick a letter with no link can use.
+ */
+export interface SendSignupAccountNoticeInput extends SendAccountNoticeInput {
+  /** The language the person asked in (`SignupIntent.locale`), or `null` for the instance's own. */
+  language: InstanceLanguage | null;
 }
 
 /**
@@ -126,7 +136,7 @@ export interface Mailer {
    */
   sendSignupRequest(input: SendSignupRequestInput): Promise<void>;
   /** The open sign-up door's note to an address that already holds an account (M253). No link. */
-  sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void>;
+  sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void>;
   /** M214/09. See `SendDeclarationReceiptInput` above and the module header. */
   sendDeclarationReceipt(input: SendDeclarationReceiptInput): Promise<void>;
   /** M214/09. See `SendDeclarationOperatorAlertInput` above and the module header. */
@@ -207,7 +217,11 @@ export interface CreateHttpMailerOptions {
   mail: HttpMailConfig;
   /** The two base URLs a link is built from. Required whenever mail is configured (`config.ts`). */
   links: { clientBaseUrl: string; serverPublicUrl: string };
-  /** Which language both letters are written in (`INSTANCE_LANGUAGE`). */
+  /**
+   * The instance's own language (`INSTANCE_LANGUAGE`). A letter whose request
+   * names the reader's language is written in that one instead; every other
+   * letter, and a request that names none, is written in this.
+   */
   language: InstanceLanguage;
   /** Where the two declaration letters find their text (M246/04). See `declaration-templates.ts`. */
   templates: DeclarationTemplateSource;
@@ -344,7 +358,10 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
         serverPublicUrl: links.serverPublicUrl,
         inviteToken: input.inviteToken,
         expiresAt: input.expiresAt,
-        language,
+        // The language the person asked in, then the instance's. Every
+        // `InstanceLanguage` has a sign-up letter (`signup-letter-strings.ts`),
+        // so no language needs a fallback past this one.
+        language: input.intent.locale ?? language,
         intent: input.intent,
       });
       await postMail({
@@ -355,8 +372,9 @@ export function createHttpMailer(options: CreateHttpMailerOptions): Mailer {
       logger.info('Sign-up letter mailed');
     },
 
-    async sendSignupAccountNotice(input: SendAccountNoticeInput): Promise<void> {
-      const message = buildSignupAccountNoticeMessage({ language });
+    async sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void> {
+      // As for the letter above: the language the person asked in, then the instance's.
+      const message = buildSignupAccountNoticeMessage({ language: input.language ?? language });
       await postMail({
         mail,
         timeoutMs,

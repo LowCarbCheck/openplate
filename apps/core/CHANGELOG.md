@@ -7,6 +7,16 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The sign-up letter is written in the language the person asked in.**
+  `POST /v1/auth/signup-request` already took a `locale`, but it reached only
+  the mailed link's `&lang=`, so a German instance sent a German letter to a
+  person who asked in English. The letter, and the note to an address that
+  already holds an account, now use `locale` when it is valid, and
+  `INSTANCE_LANGUAGE` when the request names none. The request and the
+  answer are unchanged.
+
 ## [0.23.0] - 2026-09-28
 
 ### Added

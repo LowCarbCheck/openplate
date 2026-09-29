@@ -94,7 +94,10 @@ export interface ServiceConfig {
   serverSecret: string;
   /** What this instance calls itself on the handshake and in its mail. `INSTANCE_NAME`, default `openplate`. */
   instanceName: string;
-  /** Which language its letters are written in. `INSTANCE_LANGUAGE`, one of `INSTANCE_LANGUAGES`, default `en`. */
+  /**
+   * Which language its letters are written in when the request names no reader's language.
+   * `INSTANCE_LANGUAGE`, one of `INSTANCE_LANGUAGES`, default `en`.
+   */
   instanceLanguage: InstanceLanguage;
   /**
    * This service's own public base URL, or `null`. It goes into the `server=`

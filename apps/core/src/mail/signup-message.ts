@@ -8,6 +8,9 @@
  * invite=si_...`, built by the same `buildInviteLink`. Only the words differ,
  * and the two parameters a person's own request may add: `&plan=<key>` for
  * the plan they picked and `&lang=<code>` for the language they asked in.
+ *
+ * THE BUILDERS TAKE THE LANGUAGE THEY ARE HANDED. Which one that is, the
+ * person's or the instance's, is decided by the mailer (`mailer.ts`).
  */
 import type { SignupIntent } from '../accounts/open-signup.js';
 import type { InstanceLanguage } from '../protocol.js';
