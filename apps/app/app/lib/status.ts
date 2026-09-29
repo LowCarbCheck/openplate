@@ -46,14 +46,14 @@ export interface StatusAction {
   label: string;
   onClick: () => void;
   /**
-   * OPT IN to a control of its own: this icon and the label in a bordered
-   * button beside the sentence (M265/07). Left out, the label is drawn as
-   * the sentence's last words, underlined, which is what every other action
-   * gets. The diary's Undo after a delete is the one caller that sets it: it
-   * is the action a person reaches for in a hurry, and the operator wanted it
-   * to look like a control again. The plan action beside the trial countdown
-   * must not set it, because a button beside the sentence left the German
-   * countdown about 40 px at 390 px (`header-status.tsx`).
+   * OPT IN to a control of its own: this icon alone, in a 44 px square button
+   * beside the sentence, with `label` as its accessible name and not drawn
+   * (M265/07). Left out, the label is drawn as the sentence's last words,
+   * underlined, which is what every other action gets. Every Undo sets it
+   * (the delete, the quick-add chip, the copy from yesterday), so one action
+   * has one look. The plan action beside the trial countdown must not set it,
+   * because a button beside the sentence left the German countdown about
+   * 40 px at 390 px (`header-status.tsx`).
    */
   icon?: LucideIcon;
 }

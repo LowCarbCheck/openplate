@@ -13,6 +13,7 @@
  * over is that fetcher's data; the Undo fetcher, the de-duplication and the
  * toast are here.
  */
+import { Undo2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useFetcher } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -85,6 +86,8 @@ export function useCopyYesterdayToast({ data, onCopied }: { data: CopyFetcherDat
         // dashboard and on the composer, where a relative post would reach the
         // wrong route (or none at all).
         onClick: () => undoFetcher.submit({ _intent: 'copy-undo', batchId }, { method: 'post', action: '/diary' }),
+        // Every Undo is the same icon button, named by this label (M265/07).
+        icon: Undo2,
       },
     });
     onCopied?.();

@@ -5,13 +5,21 @@
  * On 2026-09-28 every status action became underlined words at the end of the
  * sentence, because a bordered plan button beside the trial countdown left the
  * German sentence about 40 px at 390 px (`header-status.tsx`). That fix was
- * right for the plan action and took the diary's Undo with it. The operator's
- * decision: Undo alone gets a compact control with an icon again, opted into
- * by its one caller, and the plan action keeps its sentence-end look.
+ * right for the plan action and took the diary's Undo with it. The decision
+ * (the architect, 2026-09-29): every Undo is an ICON-ONLY square button,
+ * 44 x 44 px, the `Undo2` icon, its label the accessible name and not drawn.
+ * The plan action keeps its sentence-end look.
  *
- * WHAT IS REAL: the production build, a hand-typed entry, the entry screen's
- * delete, the status it publishes and the row that draws it. The plan action
- * is a real trial countdown on stubbed plan reads (`plans-stub.ts`).
+ * EVERY UNDO LOOKS THE SAME (M265 follow-up). Three statuses offer Undo: the
+ * entry screen's delete, the diary's quick-add chip, and a copy from
+ * yesterday. The two diary ones kept the underlined words after the first
+ * fix, so the app had two looks for one action. The six-language walk drives
+ * all three.
+ *
+ * WHAT IS REAL: the production build, the diary on disk, the entry screen's
+ * delete, the chip and the copy the diary draws, the statuses they publish and
+ * the row that draws them. The plan action is a real trial countdown on
+ * stubbed plan reads (`plans-stub.ts`).
  *
  * Every reading has a control: the icon reading finds the close control's
  * icon through the same query, the plan action is read through the same query
@@ -27,12 +35,12 @@ import {
   PHONE_WIDTH,
   completeOnboarding,
   headerStatusText,
-  isHeaderStatusFullyVisible,
   logFoodManually,
   signInFixtureAccount,
   useLanguage,
 } from './helpers';
 import {
+  headerShiftAfter,
   installShiftObserver,
   movedBetween,
   readShiftEntries,
@@ -43,21 +51,40 @@ import {
 } from './layout-shift';
 import { NO_SUBSCRIPTION_VIEW, routeAccountAllowance, routePlansCore } from './plans-stub';
 
-/** The entry this spec deletes and puts back. */
+/** The entry the delete path deletes and puts back. It sits on today. */
 const FOOD_NAME = 'Smoke tier porridge';
 
-/** How many grams of it. */
+/** How many grams of it, for the hand-typed entry of the first case. */
 const FOOD_GRAMS = '200';
+
+/** The food the quick-add chip logs. Two past days make it a chip (`MIN_CHIP_TIMES_LOGGED`). */
+const CHIP_FOOD = 'Smoke tier crumpets';
+
+/** Yesterday's one lunch entry, which the copy chip copies onto today. One entry, so the status offers Undo. */
+const YESTERDAY_FOOD = 'Smoke tier soup bowl';
 
 /** The app's tap floor, in CSS px. */
 const TAP_FLOOR = 44;
+
+/** The three statuses that offer Undo. */
+type UndoPath = 'delete' | 'quick-add' | 'copy';
+
+const UNDO_PATHS: readonly UndoPath[] = ['delete', 'quick-add', 'copy'];
+
+/** One language's words, as the spec reads them. */
+type Copy = ReturnType<typeof catalogFor>;
 
 function headerStatus(page: Page): Locator {
   return page.locator('header [data-slot="header-status"]');
 }
 
+/** Today's entries of one food, as links on the diary. */
+function entryLinks(page: Page, name: string): Locator {
+  return page.getByRole('link', { name: new RegExp(name, 'u') });
+}
+
 function entryLink(page: Page): Locator {
-  return page.getByRole('link', { name: new RegExp(FOOD_NAME, 'u') });
+  return entryLinks(page, FOOD_NAME);
 }
 
 /** Opens the entry from the diary and deletes it, which publishes the Undo status and returns to the diary. */
@@ -67,12 +94,147 @@ async function deleteEntry(page: Page, deleteLabel: string): Promise<void> {
   await page.getByRole('button', { name: deleteLabel }).click();
 }
 
+/** The diary's "copy from yesterday" chip for lunch, found by the fields its form posts. */
+function copyLunchChip(page: Page): Locator {
+  return page
+    .locator('form')
+    .filter({ has: page.locator('input[name="_intent"][value="copy-yesterday"]') })
+    .filter({ has: page.locator('input[name="mealType"][value="lunch"]') })
+    .getByRole('button');
+}
+
+/** Shifts a `YYYY-MM-DD` day by whole days, in UTC, which is safe because the parts are already local. */
+function shiftDay(day: string, days: number): string {
+  const shifted = new Date(`${day}T00:00:00Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+/** One seeded entry. */
+interface SeedLog {
+  dayKey: string;
+  mealType: 'breakfast' | 'lunch';
+  name: string;
+}
+
+/**
+ * A device past onboarding whose diary holds: today's entry for the delete,
+ * the chip food on two past days, and one lunch entry yesterday. Written into
+ * the primary store's `foodLogs` table on disk, the layout every `insights-*`
+ * and `mobile-*` spec writes, then read by a document load.
+ */
+async function seedUndoDiary(page: Page): Promise<void> {
+  await completeOnboarding(page);
+  const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+  const logs: SeedLog[] = [
+    { dayKey: today, mealType: 'breakfast', name: FOOD_NAME },
+    { dayKey: shiftDay(today, -2), mealType: 'breakfast', name: CHIP_FOOD },
+    { dayKey: shiftDay(today, -3), mealType: 'breakfast', name: CHIP_FOOD },
+    { dayKey: shiftDay(today, -1), mealType: 'lunch', name: YESTERDAY_FOOD },
+  ];
+  await page.evaluate(
+    (seedLogs) =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('openplate-primary');
+        request.addEventListener('error', () => reject(new Error('the primary database could not be opened')));
+        request.addEventListener('success', () => {
+          const db = request.result;
+          const cells = Object.fromEntries(
+            seedLogs.map((log, index) => {
+              const id = `undo-seed-${index}`;
+              const loggedAt = Date.parse(`${log.dayKey}T1${index % 3}:00:00Z`);
+              const macros = { carbs: 30, fiber: 4, sugars: null, polyols: 0, protein: 8, fat: 5, kcal: 200 };
+              const entity = {
+                id,
+                name: log.name,
+                quantityGrams: 100,
+                macros,
+                mealType: log.mealType,
+                source: 'manual',
+                aiEstimated: false,
+                curatedSource: null,
+                foodId: null,
+                dayKey: log.dayKey,
+                loggedAt,
+                createdAt: loggedAt,
+                logBatchId: null,
+              };
+              return [id, { entity: JSON.stringify(entity) }];
+            }),
+          );
+          const transaction = db.transaction('t', 'readwrite');
+          transaction.objectStore('t').put({ k: 'foodLogs', v: cells });
+          transaction.addEventListener('complete', () => {
+            db.close();
+            resolve();
+          });
+          transaction.addEventListener('error', () => reject(new Error('the seed write failed')));
+        });
+      }),
+    logs,
+  );
+  await page.goto('/diary');
+  await expect(entryLink(page)).toHaveCount(1);
+}
+
+/**
+ * Publishes one of the three Undo statuses from the diary the page is on, and
+ * answers the sentence it says.
+ */
+async function triggerUndoStatus(page: Page, path: UndoPath, copy: Copy): Promise<string> {
+  switch (path) {
+    case 'delete':
+      await deleteEntry(page, copy.entry.action.delete);
+      return fill(copy.entry.toast.removed, { name: FOOD_NAME });
+    case 'quick-add':
+      await page.locator('[data-slot="quick-add-chip"]').filter({ hasText: CHIP_FOOD }).click();
+      return fill(copy.diary.toast.addedOne, { name: CHIP_FOOD });
+    case 'copy':
+      await copyLunchChip(page).click();
+      return fill(copy.diary.toast.copiedOne, { name: YESTERDAY_FOOD });
+  }
+}
+
+/** The Undo label a path's status carries, in one language. */
+function undoLabel(path: UndoPath, copy: Copy): string {
+  return path === 'delete' ? copy.entry.toast.undo : copy.diary.actions.undo;
+}
+
+/** The Undo a path's status offers, found by its role and that language's label. */
+function undoControl(page: Page, path: UndoPath, copy: Copy): Locator {
+  return headerStatus(page).getByRole('button', { name: undoLabel(path, copy), exact: true });
+}
+
+/** Takes the Undo and waits until the diary is back to its seeded state. */
+async function takeUndo(page: Page, path: UndoPath, undo: Locator): Promise<void> {
+  switch (path) {
+    case 'delete':
+      await page.waitForURL(/\/diary$/u);
+      await expect(entryLink(page)).toHaveCount(0);
+      await undo.click();
+      await expect(entryLink(page)).toHaveCount(1);
+      return;
+    case 'quick-add':
+      await expect(entryLinks(page, CHIP_FOOD)).toHaveCount(1);
+      await undo.click();
+      await expect(entryLinks(page, CHIP_FOOD)).toHaveCount(0);
+      return;
+    case 'copy':
+      await expect(entryLinks(page, YESTERDAY_FOOD)).toHaveCount(1);
+      await undo.click();
+      await expect(entryLinks(page, YESTERDAY_FOOD)).toHaveCount(0);
+  }
+}
+
 /** What a control in the status row looks like, read off the element. */
 interface ControlLook {
   iconCount: number;
   width: number;
   height: number;
   isUnderlined: boolean;
+  /** The words drawn inside the control, trimmed. */
+  drawnText: string;
+  ariaLabel: string | null;
 }
 
 async function readControlLook(control: Locator): Promise<ControlLook> {
@@ -80,31 +242,101 @@ async function readControlLook(control: Locator): Promise<ControlLook> {
     const box = element.getBoundingClientRect();
     return {
       iconCount: element.querySelectorAll('svg').length,
-      width: box.width,
-      height: box.height,
+      width: Math.round(box.width),
+      height: Math.round(box.height),
       isUnderlined: getComputedStyle(element).textDecorationLine.includes('underline'),
+      drawnText: element instanceof HTMLElement ? element.innerText.trim() : '',
+      ariaLabel: element.getAttribute('aria-label'),
     };
   });
 }
 
-/** Whether the status row, its sentence and its Undo control all fit, and the page around them. */
+/**
+ * What an Undo control gets wrong against the architect's decision
+ * (2026-09-29): an ICON-ONLY square button, 44 x 44 px, the `Undo2` icon and
+ * nothing drawn beside it, the Undo label as its accessible name.
+ */
+function iconOnlyFailures(look: ControlLook, label: string, where: string): string[] {
+  const failures: string[] = [];
+  if (look.iconCount !== 1) failures.push(`holds ${look.iconCount} icons`);
+  if (look.drawnText !== '') failures.push(`draws "${look.drawnText}"`);
+  if (look.ariaLabel !== label) failures.push(`is named by aria-label ${JSON.stringify(look.ariaLabel)}`);
+  if (look.width !== TAP_FLOOR || look.height !== TAP_FLOOR) failures.push(`is ${look.width} x ${look.height} px`);
+  if (look.isUnderlined) failures.push('is underlined');
+  return failures.map((failure) => `${where}: the undo control ${failure}`);
+}
+
+/** Whether the status row, its lines and its Undo control all fit, the page around them, and the boxes measured. */
 interface UndoRowFit {
   isRowWhole: boolean;
   isControlWhole: boolean;
   isSentenceWhole: boolean;
+  /** True when there is no second line. */
+  isDescriptionWhole: boolean;
   documentScrollWidth: number;
   headerHeight: number;
+  /** The widths and heights behind the answers, for a failure message. */
+  boxes: string;
 }
 
 async function readUndoRowFit(page: Page, control: Locator): Promise<UndoRowFit> {
-  const isSentenceWhole = await isHeaderStatusFullyVisible(page);
-  const isControlWhole = await control.evaluate((element) => element.scrollWidth <= element.clientWidth);
-  const layout = await headerStatus(page).evaluate((row) => ({
-    isRowWhole: row.scrollWidth <= row.clientWidth,
-    documentScrollWidth: document.documentElement.scrollWidth,
-    headerHeight: Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0),
+  const controlBox = await control.evaluate((element) => ({
+    isWhole: element.scrollWidth <= element.clientWidth,
+    width: Math.round(element.getBoundingClientRect().width),
   }));
-  return { isSentenceWhole, isControlWhole, ...layout };
+  const row = await headerStatus(page).evaluate((element) => {
+    const column = element.firstElementChild;
+    const text = element.querySelector('[data-slot="header-status-text"]');
+    const description = element.querySelector('[data-slot="header-status-description"]');
+    if (column === null || text === null) throw new Error('the status row has no text column');
+    return {
+      isRowWhole: element.scrollWidth <= element.clientWidth,
+      isSentenceWhole: text.scrollHeight <= text.clientHeight && text.scrollWidth <= text.clientWidth,
+      isDescriptionWhole:
+        description === null ||
+        (description.scrollHeight <= description.clientHeight && description.scrollWidth <= description.clientWidth),
+      columnWidth: Math.round(column.getBoundingClientRect().width),
+      sentence: `${text.scrollHeight}/${text.clientHeight} px tall, ${text.scrollWidth}/${text.clientWidth} px wide`,
+      secondLine:
+        description === null ? 'none' : (
+          `${description.scrollHeight}/${description.clientHeight} px tall, ${description.scrollWidth}/${description.clientWidth} px wide`
+        ),
+      documentScrollWidth: document.documentElement.scrollWidth,
+      headerHeight: Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0),
+    };
+  });
+  return {
+    isRowWhole: row.isRowWhole,
+    isControlWhole: controlBox.isWhole,
+    isSentenceWhole: row.isSentenceWhole,
+    isDescriptionWhole: row.isDescriptionWhole,
+    documentScrollWidth: row.documentScrollWidth,
+    headerHeight: row.headerHeight,
+    boxes: `column ${row.columnWidth} px, control ${controlBox.width} px, sentence ${row.sentence}, second line ${row.secondLine}`,
+  };
+}
+
+/** What the row gets wrong around its lines: the row, the control, the page width and the header height. */
+function rowFailures(fit: UndoRowFit, where: string): string[] {
+  const failures: string[] = [];
+  if (!fit.isRowWhole) failures.push(`${where}: the status row overflows`);
+  if (!fit.isControlWhole) failures.push(`${where}: the undo control is cut off`);
+  if (fit.documentScrollWidth !== PHONE_WIDTH) failures.push(`${where}: the document is ${fit.documentScrollWidth} px`);
+  if (fit.headerHeight !== HEADER_HEIGHT) failures.push(`${where}: the header is ${fit.headerHeight} px`);
+  return failures.map((failure) => `${failure} (${fit.boxes})`);
+}
+
+/** Which of the row's lines are cut off: the sentence, and the second line when there is one. */
+function lineFailures(fit: UndoRowFit, where: string): string[] {
+  const failures: string[] = [];
+  if (!fit.isSentenceWhole) failures.push(`${where}: the sentence is cut off`);
+  if (!fit.isDescriptionWhole) failures.push(`${where}: the second line is cut off`);
+  return failures.map((failure) => `${failure} (${fit.boxes})`);
+}
+
+/** Everything a fit reading found wrong, each with the boxes behind it. */
+function fitFailures(fit: UndoRowFit, where: string): string[] {
+  return [...rowFailures(fit, where), ...lineFailures(fit, where)];
 }
 
 /**
@@ -126,57 +358,8 @@ async function readHeaderControls(page: Page): Promise<Record<string, string>> {
   });
 }
 
-/** One `layout-shift` entry that moved something inside the header. */
-interface HeaderShiftEntry {
-  value: number;
-  sources: string[];
-}
-
-/**
- * Installs a second `layout-shift` observer that keeps only the entries that
- * moved something INSIDE THE HEADER. Call before the first `goto`.
- *
- * Why a second one: the delete that publishes the Undo status also navigates
- * to the diary, and the diary moves by itself after a navigation from the
- * entry screen (see the arrival below), so the whole-page total of that
- * moment is not a reading of the status.
- */
-async function installHeaderShiftObserver(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const entries: HeaderShiftEntry[] = [];
-    Object.defineProperty(window, '__headerShiftEntries', { value: entries });
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        // `toJSON` is typed `any` and is the one read of a `LayoutShift` that needs no cast.
-        const json = entry.toJSON();
-        const nodes: unknown[] = Array.isArray(json.sources) ? json.sources.map((source: { node?: unknown }) => source.node) : [];
-        const moved = nodes.filter((node): node is Element => node instanceof Element && node.closest('header') !== null);
-        if (moved.length === 0) continue;
-        entries.push({
-          value: Number(json.value),
-          sources: moved.map((node) => `${node.tagName.toLowerCase()} "${(node.textContent ?? '').trim().slice(0, 30)}"`),
-        });
-      }
-    }).observe({ type: 'layout-shift', buffered: true });
-  });
-}
-
-/** The summed score of some header shift entries. */
-function headerShiftScore(entries: readonly HeaderShiftEntry[]): number {
-  return entries.reduce((sum, entry) => sum + entry.value, 0);
-}
-
-/** Every header shift recorded so far, in order. */
-async function readHeaderShiftEntries(page: Page): Promise<HeaderShiftEntry[]> {
-  return page.evaluate(() => {
-    const recorded = Object.getOwnPropertyDescriptor(window, '__headerShiftEntries')?.value;
-    return Array.isArray(recorded) ? [...recorded] : [];
-  });
-}
-
 test.beforeEach(async ({ page }) => {
   await installShiftObserver(page);
-  await installHeaderShiftObserver(page);
 });
 
 test('after a delete, the undo control is a button that holds an icon, and it arrives and goes without moving anything', async ({
@@ -188,7 +371,7 @@ test('after a delete, the undo control is a button that holds an icon, and it ar
   await page.waitForURL('**/diary/entry/**');
   await settleAnimations(page);
   const headerBefore = await readHeaderControls(page);
-  const headerShiftsBefore = (await readHeaderShiftEntries(page)).length;
+  const shiftsBefore = (await readShiftEntries(page)).length;
 
   // ── It arrives ────────────────────────────────────────────────────────
   await page.getByRole('button', { name: EN.entry.action.delete }).click();
@@ -198,22 +381,13 @@ test('after a delete, the undo control is a button that holds an icon, and it ar
   await page.waitForURL(/\/diary$/u);
   await settleFrames(page);
 
-  const look = await readControlLook(undo);
-  expect(look.iconCount, 'the undo control holds no icon').toBe(1);
-  expect(look.isUnderlined, 'the undo control still reads as underlined words').toBe(false);
-  expect(look.height, 'the undo control is under the tap floor').toBeGreaterThanOrEqual(TAP_FLOOR);
-  expect(look.width, 'the undo control is under the tap floor').toBeGreaterThanOrEqual(TAP_FLOOR);
+  expect(iconOnlyFailures(await readControlLook(undo), EN.entry.toast.undo, 'delete')).toEqual([]);
   // THE CONTROL for the icon reading: the close control beside it holds its X
   // icon, found through the same query, so a zero above is the undo control.
   const close = headerStatus(page).getByRole('button', { name: EN.chrome.status.dismiss, exact: true });
   expect((await readControlLook(close)).iconCount, 'the icon reading finds no icon at all').toBe(1);
 
-  const fit = await readUndoRowFit(page, undo);
-  expect(fit.isRowWhole, 'the status row overflows').toBe(true);
-  expect(fit.isControlWhole, 'the undo label is cut off').toBe(true);
-  expect(fit.isSentenceWhole, 'the sentence is cut off').toBe(true);
-  expect(fit.documentScrollWidth, 'the document overflows').toBe(PHONE_WIDTH);
-  expect(fit.headerHeight, 'the status opened the header').toBe(HEADER_HEIGHT);
+  expect(fitFailures(await readUndoRowFit(page, undo), 'delete'), 'the undo row does not fit').toEqual([]);
   expect(await readHeaderControls(page), 'the status moved the header controls').toEqual(headerBefore);
   // THE ARRIVAL IS READ IN THE HEADER. The status can move the header's own
   // contents, or everything below if it opened the header, which the 64 px
@@ -222,11 +396,8 @@ test('after a delete, the undo control is a button that holds an icon, and it ar
   // about 0.05, and a plain Back with no status at all does the same), and
   // that is the diary's, not this row's. The row going is read on a still
   // page, in full, below.
-  const arrival = (await readHeaderShiftEntries(page)).slice(headerShiftsBefore);
-  expect(
-    headerShiftScore(arrival),
-    `layout-shift in the header while it arrived: ${arrival.flatMap((entry) => entry.sources).join('; ')}`,
-  ).toBe(0);
+  const arrival = headerShiftAfter(await readShiftEntries(page), shiftsBefore);
+  expect(arrival.score, `layout-shift in the header while it arrived: ${arrival.sources.join('; ')}`).toBe(0);
 
   // ── It goes ───────────────────────────────────────────────────────────
   // It clears itself (a confirmation's four seconds); the diary under it and
@@ -244,61 +415,82 @@ test('after a delete, the undo control is a button that holds an icon, and it ar
 
   // THE CONTROL for the header reading: a header control moved on purpose
   // must register there.
-  const headerShiftsQuiet = (await readHeaderShiftEntries(page)).length;
+  const shiftsQuiet = (await readShiftEntries(page)).length;
   await page.locator('header [data-slot="header-mark"]').evaluate((mark) => {
     if (mark instanceof HTMLElement) mark.style.marginTop = '12px';
   });
   await settleFrames(page);
   expect(
-    headerShiftScore((await readHeaderShiftEntries(page)).slice(headerShiftsQuiet)),
+    headerShiftAfter(await readShiftEntries(page), shiftsQuiet).score,
     'the header reading cannot see a header control move',
   ).toBeGreaterThan(0);
 });
 
-test('the undo control and its sentence fit the row at 390 px in all six languages', async ({ page }) => {
-  await completeOnboarding(page);
-  await logFoodManually(page, { name: FOOD_NAME, grams: FOOD_GRAMS });
+test('the quick-add and copy undo are the same control as the delete one, and arrive without moving the header', async ({
+  page,
+}) => {
+  await seedUndoDiary(page);
+  for (const path of ['quick-add', 'copy'] as const) {
+    await page.goto('/diary');
+    await settleAnimations(page);
+    const headerBefore = await readHeaderControls(page);
+    const shiftsBefore = (await readShiftEntries(page)).length;
+
+    const sentence = await triggerUndoStatus(page, path, EN);
+    await expect(headerStatus(page).locator('[data-slot="header-status-sentence"]')).toHaveText(sentence);
+    const undo = undoControl(page, path, EN);
+    await expect(undo).toBeVisible();
+    await settleFrames(page);
+
+    expect(iconOnlyFailures(await readControlLook(undo), undoLabel(path, EN), path)).toEqual([]);
+    expect(fitFailures(await readUndoRowFit(page, undo), path), `${path}: the undo row does not fit`).toEqual([]);
+    expect(await readHeaderControls(page), `${path}: the status moved the header controls`).toEqual(headerBefore);
+    // IN THE HEADER, because the diary below changes on purpose: the chip and
+    // the copy each add an entry to today's list.
+    const arrival = headerShiftAfter(await readShiftEntries(page), shiftsBefore);
+    expect(arrival.score, `${path}: layout-shift in the header while it arrived: ${arrival.sources.join('; ')}`).toBe(0);
+
+    await takeUndo(page, path, undo);
+  }
+});
+
+test('every undo control is the icon button, and its row fits at 390 px, in all six languages', async ({ page }) => {
+  await seedUndoDiary(page);
 
   const cutOff: string[] = [];
   for (const locale of SUPPORTED_LANGUAGES) {
     const copy = catalogFor(locale);
     await useLanguage(page, locale);
-    await page.goto('/diary');
-    expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
-    await deleteEntry(page, copy.entry.action.delete);
-    await expect
-      .poll(() => headerStatusText(page), { message: `${locale}: the status is that language's sentence` })
-      .toBe(fill(copy.entry.toast.removed, { name: FOOD_NAME }));
-    const undo = headerStatus(page).getByRole('button', { name: copy.entry.toast.undo, exact: true });
-    await expect(undo).toBeVisible();
+    for (const path of UNDO_PATHS) {
+      await page.goto('/diary');
+      expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
+      const sentence = await triggerUndoStatus(page, path, copy);
+      await expect(
+        headerStatus(page).locator('[data-slot="header-status-sentence"]'),
+        `${locale} ${path}: the status is that language's sentence`,
+      ).toHaveText(sentence);
+      const undo = undoControl(page, path, copy);
+      await expect(undo).toBeVisible();
 
-    const look = await readControlLook(undo);
-    if (look.iconCount !== 1) cutOff.push(`${locale}: the undo control holds ${look.iconCount} icons`);
-    const fit = await readUndoRowFit(page, undo);
-    if (!fit.isRowWhole) cutOff.push(`${locale}: the status row overflows`);
-    if (!fit.isControlWhole) cutOff.push(`${locale}: the undo label is cut off`);
-    if (!fit.isSentenceWhole) cutOff.push(`${locale}: the sentence is cut off`);
-    if (fit.documentScrollWidth !== PHONE_WIDTH) cutOff.push(`${locale}: the document is ${fit.documentScrollWidth} px`);
-    if (fit.headerHeight !== HEADER_HEIGHT) cutOff.push(`${locale}: the header is ${fit.headerHeight} px`);
+      cutOff.push(...iconOnlyFailures(await readControlLook(undo), undoLabel(path, copy), `${locale} ${path}`));
+      cutOff.push(...rowFailures(await readUndoRowFit(page, undo), `${locale} ${path}`));
 
-    // Put it back for the next language, through that language's Undo.
-    await page.waitForURL(/\/diary$/u);
-    await expect(entryLink(page)).toHaveCount(0);
-    await undo.click();
-    await expect(entryLink(page)).toHaveCount(1);
+      // Back to the seeded diary for the next case, through that language's Undo.
+      await takeUndo(page, path, undo);
+    }
   }
-  expect(cutOff, 'the undo row does not fit at 390 px').toEqual([]);
+  expect(cutOff, 'the undo rows do not fit at 390 px').toEqual([]);
 
-  // THE CONTROL for the fit reading: the same control squeezed to 20 px must
-  // read as cut off.
+  // THE CONTROL for the fit reading: the same 44 px button made to draw a
+  // run of words it cannot hold must read as cut off.
   await useLanguage(page, 'en');
   await page.goto('/diary');
   await deleteEntry(page, EN.entry.action.delete);
-  const undo = headerStatus(page).getByRole('button', { name: EN.entry.toast.undo, exact: true });
+  const undo = undoControl(page, 'delete', EN);
   await expect(undo).toBeVisible();
   await undo.evaluate((element) => {
     if (element instanceof HTMLElement) {
-      element.style.width = '20px';
+      element.append(' Undo Undo Undo');
       element.style.overflow = 'hidden';
     }
   });
@@ -320,4 +512,8 @@ test('CONTROL: the plan action keeps its sentence-end look, with no icon', async
   const look = await readControlLook(action);
   expect(look.iconCount, 'the plan action grew an icon').toBe(0);
   expect(look.isUnderlined, 'the plan action lost its underlined sentence-end look').toBe(true);
+  // THE CONTROL for the "nothing drawn" and "named by aria-label" readings:
+  // the plan action draws its label and needs no aria-label, read the same way.
+  expect(look.drawnText, 'the drawn-text reading reads nothing').toBe(EN.plan.countdown.action);
+  expect(iconOnlyFailures(look, EN.plan.countdown.action, 'plan')).not.toEqual([]);
 });

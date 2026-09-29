@@ -19,7 +19,7 @@
  * `showFoodAddedToast` side effect, so the exact strings and the collapse rule
  * are pinned by tests rather than by watching a message go by.
  */
-import { publishStatus } from '#app/lib/status';
+import { publishStatus, type StatusAction } from '#app/lib/status';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 
 /** The i18next `t` shape this module needs, taken as an argument so the copy stays testable without a provider. */
@@ -162,11 +162,11 @@ export function formatFoodAddedToast({
 /** Module-scoped burst state. Lives for the SPA session, which is the only window in which "consecutive" means anything. */
 let currentBatch: FoodAddedBatch | null = null;
 
-/** An optional trailing action (the quick-add chip's "Undo"). */
-export interface FoodAddedToastAction {
-  label: string;
-  onClick: () => void;
-}
+/**
+ * An optional trailing action (the quick-add chip's and the copy's "Undo").
+ * It is the status channel's own action, so an `icon` reaches the header.
+ */
+export type FoodAddedToastAction = StatusAction;
 
 /**
  * Publishes (or replaces) the single food-added status.

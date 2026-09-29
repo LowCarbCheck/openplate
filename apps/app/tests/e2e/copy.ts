@@ -144,6 +144,8 @@ const catalogSchema = z.object({
     nav: z.object({ previousDay: z.string() }),
     meals: z.object({ breakfast: z.string(), dinner: z.string() }),
     copy: z.object({ door: z.string(), title: z.string() }),
+    actions: z.object({ undo: z.string() }),
+    toast: z.object({ addedOne: z.string(), copiedOne: z.string() }),
     saveMeal: z.object({
       trigger: z.string(),
       namePlaceholder: z.string(),

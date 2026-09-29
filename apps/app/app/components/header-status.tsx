@@ -114,42 +114,40 @@ function StatusActionLabel({ action }: { action: StatusAction }): ReactNode {
 }
 
 /**
- * An action drawn as a control of its own: its icon and its label in a
- * bordered button beside the sentence (M265/07).
+ * An action drawn as a control of its own: an ICON-ONLY square button beside
+ * the sentence (M265/07, the architect's decision of 2026-09-29).
  *
- * ONLY A CALLER THAT SETS `icon` GETS THIS, and today that is the diary's
- * Undo after a delete. The operator wanted Undo to look like a control again
- * after the buyer walk turned every action into the sentence's last words.
- * The plan action beside the trial countdown keeps those words: the reason
- * they exist is that a button beside the sentence left the German countdown
- * about 40 px (`StatusActionLabel`).
+ * ONLY A CALLER THAT SETS `icon` GETS THIS, and today that is every Undo: the
+ * entry screen's delete, the diary's quick-add chip and a copy from
+ * yesterday. The plan action beside the trial countdown keeps the sentence's
+ * last words: a button beside that sentence left the German countdown about
+ * 40 px (`StatusActionLabel`).
  *
- * COMPACT, BECAUSE IT TAKES ITS WIDTH OUT OF THE SENTENCE. The label is
- * `text-xs`, the padding is `px-2` and the gap to the icon is `gap-1`, so the
- * German "Rückgängig", the longest label, costs about 108 px, about what the
- * `text-sm` button before 2026-09-28 cost. At 390 px that leaves the sentence
- * about 92 px, three lines of the compact size for "{{name}} entfernt.".
- * `tests/e2e/undo-control-look.spec.ts` walks the delete in all six
- * languages and measures the row, the label and the sentence.
+ * THE LABEL IS NOT DRAWN, IT IS THE NAME. A button with the icon and its
+ * words cost 66 px in English and 108 px for the German "Rückgängig", and a
+ * status with a second line (the quick-add chip's) did not fit beside it in
+ * five or six languages. The square costs 44 px in every language; the label
+ * is the `aria-label`, so a screen reader and a test find it by its words.
  *
- * THE TAP AREA IS THE BUTTON. `ui/button`'s `sm` is 44 px tall below `md`, as
- * tall as the row's `min-h-11`, so the row keeps its height and the header its
- * 64 px. The icon is decoration; the accessible name is the label.
+ * 44 PX AT EVERY WIDTH. `ui/button`'s `icon` size is 44 px below `md` and 36
+ * above; `md:size-11` keeps the desktop target as large as the close control
+ * beside it, and as tall as the row's `min-h-11`, so the header keeps its
+ * 64 px. `tests/e2e/undo-control-look.spec.ts` measures it.
  */
 function StatusActionControl({ action, icon: ActionIcon }: { action: StatusAction; icon: LucideIcon }): ReactNode {
   return (
     <Button
       type="button"
       variant="outline"
-      size="sm"
+      size="icon"
+      aria-label={action.label}
       onClick={() => {
         action.onClick();
         clearStatus();
       }}
-      className="gap-1 px-2 text-xs has-[>svg]:px-2"
+      className="md:size-11"
     >
       <ActionIcon aria-hidden="true" />
-      {action.label}
     </Button>
   );
 }
@@ -234,7 +232,7 @@ export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNod
                 them: with the icon, the German, French and Turkish scan counts
                 plus their labels took a third line in the two lines a recap
                 line leaves them (measured, 2026-09-28). The tone stays in the
-                colour, and the underlined label (or, for Undo, its own control)
+                colour, and the underlined label (or, for Undo, its icon button)
                 says there is something to do. */}
             {status.action === null && <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />}
             <span data-slot="header-status-text" className={cn(textClampClass, 'text-balance break-words')}>

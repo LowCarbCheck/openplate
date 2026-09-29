@@ -264,31 +264,34 @@ describe('HeaderStatus', () => {
     assert.match(markup, /data-slot="header-status" class="flex min-h-11 /);
   });
 
-  it('draws an action that brings an icon as a bordered control beside the sentence, the icon inside it (M265/07)', () => {
-    // THE DIARY'S UNDO opts in with `icon`. The control sits between the text
-    // column and the close control, holds the icon and the label, and the
-    // sentence carries no inline label of its own.
+  it('draws an action that brings an icon as an icon-only square button named by its label (M265/07)', () => {
+    // EVERY UNDO opts in with `icon`. The button sits between the text column
+    // and the close control, holds the icon and no words, and carries the
+    // label as its accessible name; the sentence has no inline label.
     publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
     const markup = render();
     const columnClosesAt = markup.indexOf('</output></div>');
     const controlAt = markup.indexOf('<button data-slot="button"');
-    const iconAt = markup.indexOf('lucide-undo2', controlAt);
-    const labelAt = markup.indexOf('>Undo</button>', controlAt);
+    const controlClosesAt = markup.indexOf('</button>', controlAt);
     const closeAt = markup.indexOf('aria-label="Dismiss this message"');
+    const control = markup.slice(controlAt, controlClosesAt);
     assert.ok(columnClosesAt !== -1 && controlAt > columnClosesAt, 'the control is not beside the text column');
-    assert.ok(iconAt > controlAt && labelAt > iconAt, 'the control does not hold its icon before its label');
-    assert.ok(closeAt > labelAt, 'the control is not before the close control');
-    assert.match(markup.slice(controlAt, labelAt), /class="[^"]*\bborder\b[^"]*\bh-11\b/, 'the control lost its border or its 44 px');
+    assert.ok(closeAt > controlClosesAt, 'the control is not before the close control');
+    assert.ok(control.includes('lucide-undo2'), 'the control does not hold its icon');
+    assert.match(control, /aria-label="Undo"/, 'the control is not named by its label');
+    assert.equal(control.replace(/<[^>]*>/g, ''), '', 'the control draws words beside its icon');
+    assert.match(control, /class="[^"]*\bborder\b[^"]*\bsize-11\b[^"]*\bmd:size-11\b/, 'the control is not a 44 px square');
     assert.equal(countOf(markup, 'data-slot="header-status-action"'), 0, 'the sentence still ends in an inline label');
 
     // CONTROL: the same action without an icon is the sentence's last words,
-    // and the same two reads find no bordered control and no icon.
+    // drawn, and the same reads find no square button, no icon and no aria-label.
     resetStatusChannel();
     publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
     const inline = render();
-    assert.equal(countOf(inline, 'data-slot="button"'), 0, 'an action with no icon grew a bordered control');
+    assert.equal(countOf(inline, 'data-slot="button"'), 0, 'an action with no icon grew a square button');
     assert.equal(countOf(inline, 'lucide-undo2'), 0, 'an action with no icon grew an icon');
-    assert.equal(countOf(inline, 'data-slot="header-status-action"'), 1, 'the inline label read matches nothing');
+    assert.equal(countOf(inline, 'aria-label="Undo"'), 0, 'an action with no icon is named by aria-label');
+    assert.ok(inline.includes('>Undo</button>'), 'the inline label read matches nothing');
   });
 
   it('CONTROL: a status with no action draws no action label', () => {

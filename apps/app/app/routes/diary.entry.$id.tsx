@@ -976,8 +976,9 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
     setIsDeleting(true);
     publishStatus({
       text: t('entry.toast.removed', { name: displayFoodName(log, i18n.language) }),
-      // `icon` opts Undo into a control of its own beside the sentence
-      // (M265/07); every other status action stays the sentence's last words.
+      // `icon` opts Undo into its icon button beside the sentence, named by
+      // the label (M265/07); every other status action stays the sentence's
+      // last words.
       action: { label: t('entry.toast.undo'), onClick: handleUndo, icon: Undo2 },
     });
     // Device-local photo cache: when this is the batch's last remaining entry,
