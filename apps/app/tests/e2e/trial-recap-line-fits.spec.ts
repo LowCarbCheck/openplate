@@ -1,6 +1,7 @@
 /**
  * Near the end of a DAY trial, the countdown and its recap line both read
- * whole at 390 px, in all six languages (M265/08).
+ * whole at 390 px and at 360 px, in all six languages (M265/08). 360 px is
+ * the narrow Android phone; the tier's own phone is 390.
  *
  * Three days before the end the countdown carries a second, smaller line: how
  * many meals were logged with AI in the trial (`trial-recap.ts`). The sign-off
@@ -31,8 +32,9 @@ import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
 import { logOnePlateWithAi, routeStubPlateAnswer } from './ai-plate-stub';
 import { catalogFor, fill } from './copy';
 import {
+  FIT_WIDTHS,
   HEADER_HEIGHT,
-  PHONE_WIDTH,
+  PHONE_HEIGHT,
   completeOnboarding,
   connectStubAiProvider,
   signInFixtureAccount,
@@ -65,10 +67,12 @@ function headerStatus(page: Page): Locator {
   return page.locator('header [data-slot="header-status"]');
 }
 
-/** Whether each of the status row's two lines reads whole. */
+/** Whether each of the status row's two lines reads whole, and the boxes behind the answers. */
 interface StatusLinesFit {
   isSentenceWhole: boolean;
   isRecapWhole: boolean;
+  /** Each line's scroll and client size and the column's width, for a failure message. */
+  boxes: string;
 }
 
 /**
@@ -86,6 +90,9 @@ async function readStatusLinesFit(page: Page): Promise<StatusLinesFit> {
     return {
       isSentenceWhole: text.scrollHeight <= text.clientHeight && text.scrollWidth <= text.clientWidth,
       isRecapWhole: recap.scrollHeight <= recap.clientHeight && recap.scrollWidth <= recap.clientWidth,
+      boxes:
+        `column ${text.clientWidth} px, sentence ${text.scrollHeight}/${text.clientHeight} px tall, ` +
+        `recap ${recap.scrollHeight}/${recap.clientHeight} px tall ${recap.scrollWidth}/${recap.clientWidth} px wide`,
     };
   });
 }
@@ -114,12 +121,12 @@ async function writeStatusLines(page: Page, words: { sentence: string; label: st
 /** Names what a reading found cut off, or nothing when both lines are whole. */
 function clippedLines(fit: StatusLinesFit, where: string): string[] {
   const clipped: string[] = [];
-  if (!fit.isSentenceWhole) clipped.push(`${where}: the countdown sentence is cut off`);
-  if (!fit.isRecapWhole) clipped.push(`${where}: the recap line is cut off`);
+  if (!fit.isSentenceWhole) clipped.push(`${where}: the countdown sentence is cut off (${fit.boxes})`);
+  if (!fit.isRecapWhole) clipped.push(`${where}: the recap line is cut off (${fit.boxes})`);
   return clipped;
 }
 
-test('near the end of a day trial, every day sentence and its recap line read whole at 390 px in all six languages', async ({
+test('near the end of a day trial, every day sentence and its recap line read whole at 390 and 360 px in all six languages', async ({
   page,
 }) => {
   await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: null });
@@ -137,60 +144,72 @@ test('near the end of a day trial, every day sentence and its recap line read wh
   await logOnePlateWithAi(page);
 
   const clipped: string[] = [];
-  for (const locale of SUPPORTED_LANGUAGES) {
-    const copy = catalogFor(locale);
-    const countdown = copy.plan.countdown;
-    const recap = copy.plan.recap;
+  for (const width of FIT_WIDTHS) {
+    await page.setViewportSize({ width, height: PHONE_HEIGHT });
+    for (const locale of SUPPORTED_LANGUAGES) {
+      const copy = catalogFor(locale);
+      const countdown = copy.plan.countdown;
+      const recap = copy.plan.recap;
 
-    // ── The real row, in this language ──────────────────────────────────
-    await useLanguage(page, locale);
-    await page.goto('/diary');
-    expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
-    await expect(headerStatus(page)).toContainText(fill(countdown.daysLeft_other, { count: String(DAYS_LEFT) }), {
-      timeout: 10_000,
-    });
-    // ONE MEAL: the two-item plate is one intake.
-    await expect(headerStatus(page)).toContainText(fill(recap.meals_one, { count: '1' }));
-    const layout = await page.evaluate(() => ({
-      documentScrollWidth: document.documentElement.scrollWidth,
-      headerHeight: Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0),
-    }));
-    expect(layout.documentScrollWidth, `${locale}: the document overflows`).toBe(PHONE_WIDTH);
-    expect(layout.headerHeight, `${locale}: the two lines opened the header`).toBe(HEADER_HEIGHT);
-    clipped.push(...clippedLines(await readStatusLinesFit(page), `${locale} as drawn`));
-    // THE ROW ARRIVED WITHOUT MOVING THE HEADER. Four lines are taller than
-    // the brand mark the header's boxes are sized by at rest; a box that grew
-    // around them moved its top, which the browser counts as a shift even
-    // when the controls inside it stayed put. Read in the header, from the
-    // start of this document: the countdown replaced the title after the load.
-    await settleFrames(page);
-    const arrival = headerShiftAfter(await readShiftEntries(page), 0);
-    if (arrival.score !== 0) {
-      clipped.push(`${locale} as drawn: the header shifted ${arrival.score} (${arrival.sources.join('; ')})`);
-    }
+      // ── The real row, in this language ──────────────────────────────────
+      await useLanguage(page, locale);
+      await page.goto('/diary');
+      expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(
+        locale,
+      );
+      await expect(headerStatus(page)).toContainText(fill(countdown.daysLeft_other, { count: String(DAYS_LEFT) }), {
+        timeout: 10_000,
+      });
+      // ONE MEAL: the two-item plate is one intake.
+      await expect(headerStatus(page)).toContainText(fill(recap.meals_one, { count: '1' }));
+      const layout = await page.evaluate(() => ({
+        documentClientWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        headerHeight: Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0),
+      }));
+      expect(layout.documentClientWidth, `${width} ${locale}: the phone`).toBe(width);
+      expect(layout.documentScrollWidth, `${width} ${locale}: the document overflows`).toBe(width);
+      expect(layout.headerHeight, `${width} ${locale}: the two lines opened the header`).toBe(HEADER_HEIGHT);
+      clipped.push(...clippedLines(await readStatusLinesFit(page), `${width} ${locale} as drawn`));
+      // THE ROW ARRIVED WITHOUT MOVING THE HEADER. Four lines are taller than
+      // the brand mark the header's boxes were sized by at rest; a box that
+      // grew around them moved its top, which the browser counts as a shift
+      // even when the controls inside it stayed put. Read in the header, from
+      // the start of this document: the countdown replaced the title after
+      // the load.
+      await settleFrames(page);
+      const arrival = headerShiftAfter(await readShiftEntries(page), 0);
+      if (arrival.score !== 0) {
+        clipped.push(
+          `${width} ${locale} as drawn: the header shifted ${arrival.score} (${arrival.sources.join('; ')})`,
+        );
+      }
 
-    // ── Every day sentence beside every recap sentence ──────────────────
-    // `daysLeft_one` is in the catalog but the line never says it: on the
-    // last day the countdown says `lastDay` instead (`trial-countdown.tsx`).
-    // It is read anyway, so a future caller of the key finds it fits.
-    const sentences = {
-      [`daysLeft_other (${DAYS_LEFT})`]: fill(countdown.daysLeft_other, { count: String(DAYS_LEFT) }),
-      'daysLeft_other (2)': fill(countdown.daysLeft_other, { count: '2' }),
-      'daysLeft_one (1)': fill(countdown.daysLeft_one, { count: '1' }),
-      lastDay: countdown.lastDay,
-    };
-    const recaps = {
-      'meals_one (1)': fill(recap.meals_one, { count: '1' }),
-      [`meals_other (${MANY_MEALS})`]: fill(recap.meals_other, { count: String(MANY_MEALS) }),
-    };
-    for (const [sentenceKey, sentence] of Object.entries(sentences)) {
-      for (const [recapKey, recapSentence] of Object.entries(recaps)) {
-        await writeStatusLines(page, { sentence, label: countdown.action, recap: recapSentence });
-        clipped.push(...clippedLines(await readStatusLinesFit(page), `${locale} ${sentenceKey} + ${recapKey}`));
+      // ── Every day sentence beside every recap sentence ──────────────────
+      // `daysLeft_one` is in the catalog but the line never says it: on the
+      // last day the countdown says `lastDay` instead (`trial-countdown.tsx`).
+      // It is read anyway, so a future caller of the key finds it fits.
+      const sentences = {
+        [`daysLeft_other (${DAYS_LEFT})`]: fill(countdown.daysLeft_other, { count: String(DAYS_LEFT) }),
+        'daysLeft_other (2)': fill(countdown.daysLeft_other, { count: '2' }),
+        'daysLeft_one (1)': fill(countdown.daysLeft_one, { count: '1' }),
+        lastDay: countdown.lastDay,
+      };
+      const recaps = {
+        'meals_one (1)': fill(recap.meals_one, { count: '1' }),
+        [`meals_other (${MANY_MEALS})`]: fill(recap.meals_other, { count: String(MANY_MEALS) }),
+      };
+      for (const [sentenceKey, sentence] of Object.entries(sentences)) {
+        for (const [recapKey, recapSentence] of Object.entries(recaps)) {
+          await writeStatusLines(page, { sentence, label: countdown.action, recap: recapSentence });
+          clipped.push(
+            ...clippedLines(await readStatusLinesFit(page), `${width} ${locale} ${sentenceKey} + ${recapKey}`),
+          );
+        }
       }
     }
   }
-  expect(clipped, 'these lines are cut off at 390 px near the end of a day trial').toEqual([]);
+  expect(clipped, 'these lines are cut off near the end of a day trial').toEqual([]);
 
   // THE CONTROLS, one per line: the English sentence four times over does not
   // fit two lines, and the English recap three times over does not fit one.
