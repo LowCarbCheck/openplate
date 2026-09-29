@@ -121,6 +121,11 @@ export interface FoodAddedToastCopy {
  * @param batch - the burst being reported.
  * @param verb - `added` for a new entry, `copied` for a copy-from-yesterday.
  * @param mealLabel - the meal the food landed in, or null when it has none.
+ * @param offersUndo - whether the status carries its Undo. It then leaves the
+ *   meal out: beside the Undo button the second line has two lines of 25
+ *   characters on a 360 px phone, and "To Breakfast," pushed the figure onto a
+ *   third in five languages. The net carbs figure and the day stay; they are
+ *   the point of this diary (the architect, 2026-09-29).
  * @param netCarbsTotal - the day's net carbs AFTER the add.
  * @param hasEstimates - whether that total includes AI estimates (hedges with "~").
  * @param dayLabel - a human day label when the entry went to a day other than today, else null.
@@ -131,6 +136,7 @@ export function formatFoodAddedToast({
   batch,
   verb = 'added',
   mealLabel,
+  offersUndo = false,
   netCarbsTotal,
   hasEstimates,
   dayLabel,
@@ -140,6 +146,7 @@ export function formatFoodAddedToast({
   batch: FoodAddedBatch;
   verb?: FoodAddedVerb;
   mealLabel: string | null;
+  offersUndo?: boolean;
   netCarbsTotal: number;
   hasEstimates: boolean;
   dayLabel: string | null;
@@ -156,7 +163,7 @@ export function formatFoodAddedToast({
   // `formatMeasureIn`, not a `${...}g` template: the toast used to be the only
   // place on the diary that wrote "35g" while the ring beside it wrote "35 g".
   const carbs = `${hasEstimates ? '~' : ''}${formatMeasureIn(language, netCarbsTotal, 'g')}`;
-  const where = mealLabel === null ? '' : t('diary.toast.toMeal', { meal: mealLabel });
+  const where = mealLabel === null || offersUndo ? '' : t('diary.toast.toMeal', { meal: mealLabel });
   const when =
     dayLabel === null ? t('diary.toast.soFarToday', { carbs }) : t('diary.toast.onDay', { carbs, day: dayLabel });
   return { title, description: where === '' ? when : t('diary.toast.description', { where, when }) };
@@ -209,10 +216,14 @@ export function showFoodAddedToast({
   nowMs?: number;
 }): void {
   currentBatch = nextFoodAddedBatch({ previous: currentBatch, name, count, nowMs });
+  // An Undo bound to ONE entry would be a lie on a collapsed burst, so it's
+  // offered only while the burst is still a single food.
+  const undo = currentBatch.count === 1 ? action : undefined;
   const copy = formatFoodAddedToast({
     batch: currentBatch,
     verb,
     mealLabel,
+    offersUndo: undo !== undefined,
     netCarbsTotal,
     hasEstimates,
     dayLabel,
@@ -223,9 +234,7 @@ export function showFoodAddedToast({
     text: copy.title,
     description: copy.description,
     tone: 'success',
-    // An Undo bound to ONE entry would be a lie on a collapsed burst, so it's
-    // offered only while the burst is still a single food.
-    action: action && currentBatch.count === 1 ? action : undefined,
+    action: undo,
   });
 }
 
