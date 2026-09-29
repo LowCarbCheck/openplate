@@ -165,8 +165,22 @@ export function formatFoodAddedToast({
   const carbs = `${hasEstimates ? '~' : ''}${formatMeasureIn(language, netCarbsTotal, 'g')}`;
   const where = mealLabel === null || offersUndo ? '' : t('diary.toast.toMeal', { meal: mealLabel });
   const when =
-    dayLabel === null ? t('diary.toast.soFarToday', { carbs }) : t('diary.toast.onDay', { carbs, day: dayLabel });
+    dayLabel === null ?
+      t('diary.toast.soFarToday', { carbs })
+    : endOnOnePeriod(t('diary.toast.onDay', { carbs, day: dayLabel }));
   return { title, description: where === '' ? when : t('diary.toast.description', { where, when }) };
+}
+
+/**
+ * A sentence that closes on a date, ended on one period.
+ *
+ * German abbreviates the weekday and the month with a period, so its date
+ * already ends in one ("Mo., 28. Sept."), and the sentence's own period after
+ * `{{day}}` read "Sept.." (M265). A sentence ending in one period, or in an
+ * ellipsis, comes back as it is.
+ */
+function endOnOnePeriod(sentence: string): string {
+  return sentence.endsWith('..') && !sentence.endsWith('...') ? sentence.slice(0, -1) : sentence;
 }
 
 /** Module-scoped burst state. Lives for the SPA session, which is the only window in which "consecutive" means anything. */

@@ -19,6 +19,7 @@ import {
   showFoodAddedToast,
   type Translate,
 } from '../../app/lib/food-added-toast';
+import { formatDayLabel } from '../../app/lib/format-day-label';
 import { readStatus, resetStatusChannel } from '../../app/lib/status';
 
 /**
@@ -64,6 +65,30 @@ describe('formatFoodAddedToast', () => {
       batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
     });
     assert.equal(withoutUndo.description, 'To Breakfast, 12.4\u00a0g net carbs on Mon 28 Sept.');
+  });
+
+  it('ends a past-day line on one period when the date already ends in one (M265)', () => {
+    // German abbreviates the weekday and the month with a period, so the date
+    // ends in one: "Mo., 28. Sept.". The sentence's own period made it "..".
+    const german = i18next.getFixedT('de');
+    const deCopy = formatFoodAddedToast({
+      ...BASE,
+      t: (key, params) => german(key, params ?? {}),
+      language: 'de',
+      offersUndo: true,
+      dayLabel: formatDayLabel('2026-09-28', 'de'),
+      batch: { count: 1, lastName: 'Reis', startedAtMs: 0 },
+    });
+    assert.equal(deCopy.description, '12,4\u00a0g Netto-KH am Mo., 28. Sept.');
+    // THE CONTROL: an English date ends in no period, and its line keeps the
+    // sentence's one.
+    const enCopy = formatFoodAddedToast({
+      ...BASE,
+      offersUndo: true,
+      dayLabel: formatDayLabel('2026-09-28', 'en'),
+      batch: { count: 1, lastName: 'Rice', startedAtMs: 0 },
+    });
+    assert.equal(enCopy.description, '12.4\u00a0g net carbs on Mon 28 Sept.');
   });
 
   it('collapses a burst into a count', () => {
