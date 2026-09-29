@@ -230,6 +230,13 @@
     "at": "2026-09-14",
     "fr": "Ton en-cas habituel"
   },
+  "02efddca214163a6": {
+    "en": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device, and it is not synced with your account.",
+    "path": "common:onboarding.firstFood.keyNoteSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "L'analyse de photos est facultative. Elle se connecte à un service d'IA que tu configures toi-même, comme OpenAI. Cette connexion reste sur cet appareil et n'est pas synchronisée avec ton compte."
+  },
   "02f29aa7a40d4dd5": {
     "en": "Carbs, protein and fat add up to {{sum}} g per 100 g, double-check before logging.",
     "path": "common:scan.review.sanity.macroSumOver100",
@@ -10821,6 +10828,13 @@
     "at": "2026-09-14",
     "fr": "Retour à la recherche"
   },
+  "88244b8c446a2b33": {
+    "en": "Your diary lives on <strong>this device</strong>, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.localFirstSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Ton journal est stocké sur <strong>cet appareil</strong>, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal."
+  },
   "8827a4e1658be282": {
     "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
     "path": "releases:v0_36_0.fixed.04",
@@ -11128,6 +11142,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Pour rejoindre une étude, ce compte doit avoir une identité stable, et cet appareil n'en a pas encore. Définir un nouveau mot de passe permet de la créer."
+  },
+  "8c2a9635ba733476": {
+    "en": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary. Nothing here ever travels with a food lookup.",
+    "path": "common:bodyMetrics.card.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Tout est facultatif. Ces informations nous permettent d'adapter tes apports de référence en vitamines et minéraux et de te suggérer un objectif calorique. Comme le reste de ton journal, elles sont stockées sur cet appareil, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal. Aucune de ces informations n'est transmise lors d'une recherche d'aliment."
   },
   "8c3cb23592bede53": {
     "en": "There is already a confirmation email waiting for you. Open the link in it to finish.",
@@ -18821,6 +18842,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "La personne reçoit un e-mail avec un lien. Il lui demande un mot de passe et l'amène directement dans l'application."
+  },
+  "edd423fa7e9a4cbe": {
+    "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.step.body.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Facultatif. Ces informations nous permettent d'adapter tes apports de référence en nutriments et de te suggérer un objectif calorique. Comme le reste de ton journal, elles sont stockées sur cet appareil, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal."
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",

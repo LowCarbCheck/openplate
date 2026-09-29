@@ -233,6 +233,7 @@
     },
     "card": {
       "description": "Alles freiwillig. Damit passen wir die Referenzwerte für Vitamine und Mineralstoffe an dich an und können dir einen Kalorienwert vorschlagen. Die Angaben bleiben auf diesem Gerät wie dein restliches Tagebuch, und nichts davon geht bei einer Lebensmittelsuche mit.",
+      "descriptionSynced": "Alles optional. Damit können wir Referenzwerte für Vitamine und Mineralstoffe an dich anpassen und einen Kalorienwert vorschlagen. Wie der Rest deines Tagebuchs werden sie auf diesem Gerät gespeichert, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen. Nichts davon wird jemals bei einer Lebensmittelsuche übertragen.",
       "title": "Über dich"
     },
     "clear": {
@@ -1600,6 +1601,7 @@
     "firstFood": {
       "finishing": "Gleich fertig…",
       "keyNote": "Das Scannen von Fotos ist optional. Es verbindet sich mit einem KI-Dienst, den du selbst einrichtest, wie z. B. OpenAI. Diese Verbindung bleibt ebenfalls auf diesem Gerät, genau wie dein Tagebuch.",
+      "keyNoteSynced": "Das Scannen von Fotos ist optional. Es verbindet sich mit einem KI-Dienst, den du selbst einrichtest, wie OpenAI. Diese Verbindung bleibt auf diesem Gerät und wird nicht mit deinem Konto synchronisiert.",
       "keyNoteLink": "Du kannst das jederzeit in den Einstellungen einrichten.",
       "later": "Mach ich später",
       "opening": "Wird geöffnet…",
@@ -1632,12 +1634,14 @@
     "loading": "Wird geladen…",
     "localFirst": "Deine Daten liegen auf <strong>diesem Gerät</strong>. Wir sehen sie niemals. Das Tagebuch, das du gleich beginnst, bleibt immer lokal.",
     "localFirstManaged": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong> und synchronisiert sich verschlüsselt mit dem Server. Die betreibende Person verwahrt einen Sicherungsschlüssel, um dein Tagebuch wiederherzustellen, falls du dein Passwort vergisst. Mit diesem Schlüssel kann sie dein Tagebuch auch lesen. Sie betreibt die KI, daher laufen Fotos für Schätzungen über ihren Server.",
+    "localFirstSynced": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong>, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen.",
     "mainGoal": {
       "label": "Welche Zahl ist am wichtigsten?"
     },
     "step": {
       "body": {
         "description": "Optional. Damit können wir Nährstoff-Referenzwerte anpassen und eine Kalorienmenge vorschlagen. Wie alles andere bleiben auch diese Angaben auf diesem Gerät.",
+        "descriptionSynced": "Optional. Damit können wir Referenzwerte für Nährstoffe anpassen und einen Kalorienwert vorschlagen. Wie der Rest deines Tagebuchs werden sie auf diesem Gerät gespeichert, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen.",
         "title": "Ein paar Angaben zu dir?"
       },
       "firstFood": {

@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Signed-in people are no longer told their diary stays on this device.** The first onboarding screen, the onboarding profile step, the AI connection note, and the About you card in profile settings said the diary or profile stays on this device. That is false once an account keeps an encrypted copy on the sync server, and every account on a managed instance does. These screens now say that the account keeps an encrypted copy, and that whoever runs the server keeps a backup key that can read it. People with no account still read that the diary stays on the device. `tests/e2e/synced-diary-location-copy.spec.ts` checks it.
+
 ## [0.50.0] - 2026-09-28
 
 ### Added

@@ -68,6 +68,8 @@ import { makeLogWeightSchema } from '#app/lib/weight-log-schema';
 import { readStoredWeightUnit, writeStoredWeightUnit } from '#app/lib/weight-unit-preference';
 import { settingsChipClass } from '#app/components/settings/chip-class';
 import { AllergenFields } from '#app/components/allergen-fields';
+import { useDiaryHasServerCopy } from '#app/hooks/use-diary-has-server-copy';
+import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SubmitButton } from '#app/components/submit-button';
 import { FieldError } from '#app/components/field-error';
@@ -158,8 +160,12 @@ export async function clientLoader() {
   // read through its own accessor because it is not a body metric: nothing
   // derives from it, and "remove these details" leaves it alone.
   const allergens = await getLocalAllergens();
+  // Whether this device is signed in, open or cached, for the card that says
+  // where these answers are kept (`useDiaryHasServerCopy`). Settled before the
+  // first paint, so the sentence never swaps under the reader.
+  const hasDeviceSession = await hasDeviceSyncSession();
 
-  return { weighIns, todayWeightKg, bodyMetrics, allergens, today };
+  return { weighIns, todayWeightKg, bodyMetrics, allergens, today, hasDeviceSession };
 }
 clientLoader.hydrate = true as const;
 
@@ -451,11 +457,21 @@ function WeightCard({
  *  - **Everything clears.** A blank field removes that metric, "prefer not to
  *    say" removes the sex, and one button removes the lot. An answer you cannot
  *    withdraw is not optional.
- *  - **Nothing here is sent anywhere.** It lives in this browser, rides the
- *    JSON backup and the encrypted sync payload, and is never part of a food
- *    lookup, that request only ever carries a food name.
+ *  - **Nothing here is sent anywhere it is not already said to go.** It lives
+ *    in this browser, rides the JSON backup and the encrypted sync payload,
+ *    and is never part of a food lookup, that request only ever carries a food
+ *    name. The description says the sync half only to a person who has it: an
+ *    account keeps an encrypted copy, and the operator's backup key opens it.
  */
-function BodyMetricsCard({ metrics, allergens }: { metrics: BodyMetrics; allergens: Allergen[] }) {
+function BodyMetricsCard({
+  metrics,
+  allergens,
+  diaryHasServerCopy,
+}: {
+  metrics: BodyMetrics;
+  allergens: Allergen[];
+  diaryHasServerCopy: boolean;
+}) {
   const { t } = useTranslation();
   const fetcher = useFetcher<typeof clientAction>();
   const isSaving = fetcher.state !== 'idle';
@@ -497,7 +513,7 @@ function BodyMetricsCard({ metrics, allergens }: { metrics: BodyMetrics; allerge
   return (
     <SettingsSection
       label={t('bodyMetrics.card.title')}
-      description={t('bodyMetrics.card.description')}
+      description={t(diaryHasServerCopy ? 'bodyMetrics.card.descriptionSynced' : 'bodyMetrics.card.description')}
       contentClassName="space-y-6"
     >
       <fetcher.Form method="post" {...getFormProps(form)} className="space-y-6">
@@ -605,7 +621,8 @@ function BodyMetricsCard({ metrics, allergens }: { metrics: BodyMetrics; allerge
 }
 
 export default function SettingsProfile({ loaderData }: Route.ComponentProps) {
-  const { weighIns, todayWeightKg, bodyMetrics, allergens, today } = loaderData;
+  const { weighIns, todayWeightKg, bodyMetrics, allergens, today, hasDeviceSession } = loaderData;
+  const diaryHasServerCopy = useDiaryHasServerCopy({ hasDeviceSession });
   // Device-local display preference only (not synced), SHARED with the Progress
   // page's weight card and with the target weight field on
   // `/settings/nutrition` (see `#app/lib/weight-unit-preference`). One storage
@@ -628,6 +645,7 @@ export default function SettingsProfile({ loaderData }: Route.ComponentProps) {
         key={`${bodyMetricsFormKey(bodyMetrics)}|${allergens.join(',')}`}
         metrics={bodyMetrics}
         allergens={allergens}
+        diaryHasServerCopy={diaryHasServerCopy}
       />
       {/* The life phase is one row, not a fieldset: the question has its own
           page, and this page is where somebody editing their body facts looks

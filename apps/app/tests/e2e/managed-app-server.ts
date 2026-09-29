@@ -107,10 +107,14 @@ export async function stopChild(child: ChildProcess): Promise<void> {
 /**
  * Boots the production build as a managed instance.
  *
+ * @param options.extraEnv - variables laid over the managed set, for a spec that needs one more fact about the
+ *   instance (analytics, for the landing's visit counting card). The hermetic set still wins over them.
  * @returns its URL and a stop function. Call `stop` in `afterAll`.
  * @throws when the server exits or stays silent past the boot deadline.
  */
-export async function startManagedAppServer(): Promise<ManagedAppServer> {
+export async function startManagedAppServer(
+  options: { readonly extraEnv?: Readonly<Record<string, string>> } = {},
+): Promise<ManagedAppServer> {
   const port = await pickFreePort();
   const url = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, ['--import', 'tsx', './server.ts'], {
@@ -128,6 +132,7 @@ export async function startManagedAppServer(): Promise<ManagedAppServer> {
         INSTANCE_MODE: 'managed',
         CONTENT_DIR,
         FOOD_DB_API_URL: E2E_FOOD_DB_URL,
+        ...options.extraEnv,
       },
     }),
     stdio: 'ignore',

@@ -88,7 +88,7 @@ function renderFirstFoodStep(): string {
         id: 'root',
         path: '/',
         loader: () => ({ publicConfig: config }),
-        children: [{ index: true, element: withI18n(createElement(FirstFoodStep)) }],
+        children: [{ index: true, element: withI18n(createElement(FirstFoodStep, { diaryHasServerCopy: false })) }],
       },
     ],
     { initialEntries: ['/'], hydrationData: { loaderData: { root: { publicConfig: config } } } },

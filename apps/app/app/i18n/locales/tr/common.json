@@ -233,6 +233,7 @@
     },
     "card": {
       "description": "Tümü isteğe bağlıdır. Bunlar vitamin ve mineral referans miktarlarını sana göre ayarlamamızı ve bir kalori değeri önermemizi sağlar. Günlüğünün geri kalanı gibi bu cihazda kalırlar ve buradaki hiçbir bilgi bir yiyecek aramasıyla birlikte dışarı aktarılmaz.",
+      "descriptionSynced": "Tamamen isteğe bağlıdır. Bunlar, vitamin ve mineral referans miktarlarını sana uyarlamamızı ve bir kalori hedefi önermemizi sağlar. Günlüğünün geri kalanı gibi bu bilgiler de bu cihazda saklanır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır. Buradaki hiçbir bilgi asla bir yiyecek araması ile birlikte gönderilmez.",
       "title": "Senin hakkında"
     },
     "clear": {
@@ -1600,6 +1601,7 @@
     "firstFood": {
       "finishing": "Tamamlanıyor…",
       "keyNote": "Fotoğraf tarama isteğe bağlıdır. OpenAI gibi kendi kurduğun bir yapay zeka servisine bağlanır. Bu bağlantı da, tıpkı günlüğün gibi bu cihazda kalır.",
+      "keyNoteSynced": "Fotoğraf tarama isteğe bağlıdır. OpenAI gibi bizzat ayarladığın bir yapay zekâ hizmetine bağlanır. Bu bağlantı bu cihazda kalır ve hesabınla eşitlenmez.",
       "keyNoteLink": "İstediğin zaman Ayarlar'dan kurabilirsin.",
       "later": "Daha sonra yapacağım",
       "opening": "Açılıyor…",
@@ -1632,12 +1634,14 @@
     "loading": "Yükleniyor…",
     "localFirst": "Verilerin <strong>bu cihazda</strong> tutulur. Biz onları asla görmeyiz. Başlamak üzere olduğun günlük her zaman yerel kalır.",
     "localFirstManaged": "Günlüğün <strong>bu cihazda</strong> tutulur ve sunucuya şifrelenmiş halde eşitlenir. Parolanı unutursan günlüğünü geri yüklemek için işletici bir yedekleme anahtarı saklar. Bu anahtar aynı zamanda işleticinin günlüğünü okumasına olanak tanır. İşletici yapay zekayı çalıştırdığı için, tahmin almak üzere gönderdiğin fotoğraflar sunucusundan geçer.",
+    "localFirstSynced": "Günlüğün <strong>bu cihazda</strong> yer alır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır.",
     "mainGoal": {
       "label": "Hangi sayı en çok önem taşıyor?"
     },
     "step": {
       "body": {
         "description": "İsteğe bağlı. Bunlar besin referans miktarlarını uyarlamamızı ve bir kalori değeri önermemizi sağlar, diğer her şey gibi bu cihazda kalırlar.",
+        "descriptionSynced": "İsteğe bağlıdır. Bunlar, besin ögesi referans miktarlarını sana uyarlamamızı ve bir kalori hedefi önermemizi sağlar. Günlüğünün geri kalanı gibi bu bilgiler de bu cihazda saklanır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır.",
         "title": "Biraz kendinden bahseder misin?"
       },
       "firstFood": {
