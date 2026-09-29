@@ -34,6 +34,18 @@ describe('formatFoodAddedToast', () => {
     assert.equal(copy.description, 'To Breakfast, 12.4\u00a0g net carbs so far today.');
   });
 
+  it('ends a long name in "…" so the title fits beside an Undo, and keeps a short one whole (M265)', () => {
+    const copied = formatFoodAddedToast({
+      ...BASE,
+      verb: 'copied',
+      batch: { count: 1, lastName: 'Dinkelporridge mit Heidelbeeren und Zimt', startedAtMs: 0 },
+    });
+    assert.equal(copied.title, 'Copied Dinkelporridge mi…');
+    // THE CONTROL: the short name of the first case comes through untouched.
+    const added = formatFoodAddedToast({ ...BASE, batch: { count: 1, lastName: 'Greek yogurt', startedAtMs: 0 } });
+    assert.equal(added.title, 'Added Greek yogurt');
+  });
+
   it('collapses a burst into a count', () => {
     const copy = formatFoodAddedToast({ ...BASE, batch: { count: 4, lastName: 'Rice', startedAtMs: 0 } });
     assert.equal(copy.title, 'Added 4 foods');

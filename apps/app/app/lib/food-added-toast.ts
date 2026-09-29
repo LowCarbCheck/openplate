@@ -19,6 +19,7 @@
  * `showFoodAddedToast` side effect, so the exact strings and the collapse rule
  * are pinned by tests rather than by watching a message go by.
  */
+import { shortenFoodName } from '#app/lib/shorten-food-name';
 import { publishStatus, type StatusAction } from '#app/lib/status';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 
@@ -146,9 +147,11 @@ export function formatFoodAddedToast({
   /** Active UI language for the carb figure. Optional alongside `t`, and for the same reason — see `FALLBACK_EN`. */
   language?: string | null;
 }): FoodAddedToastCopy {
+  // A long name ends in "…" so the title fits the header beside an Undo on a
+  // 360 px phone (M265); the rest of the sentence stays whole.
   const title =
     batch.count === 1 ?
-      t(verb === 'copied' ? 'diary.toast.copiedOne' : 'diary.toast.addedOne', { name: batch.lastName })
+      t(verb === 'copied' ? 'diary.toast.copiedOne' : 'diary.toast.addedOne', { name: shortenFoodName(batch.lastName) })
     : t(verb === 'copied' ? 'diary.toast.copiedMany' : 'diary.toast.addedMany', { n: batch.count });
   // `formatMeasureIn`, not a `${...}g` template: the toast used to be the only
   // place on the diary that wrote "35g" while the ring beside it wrote "35 g".

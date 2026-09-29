@@ -32,6 +32,8 @@ import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
 import { EN, catalogFor, fill } from './copy';
 import {
   HEADER_HEIGHT,
+  NARROW_PHONE_WIDTH,
+  PHONE_HEIGHT,
   PHONE_WIDTH,
   completeOnboarding,
   headerStatusText,
@@ -51,17 +53,38 @@ import {
 } from './layout-shift';
 import { NO_SUBSCRIPTION_VIEW, routeAccountAllowance, routePlansCore } from './plans-stub';
 
-/** The entry the delete path deletes and puts back. It sits on today. */
-const FOOD_NAME = 'Smoke tier porridge';
+/**
+ * The entry the delete path deletes and puts back. It sits on today.
+ *
+ * EVERY SEEDED NAME IS 18 CHARACTERS OR FEWER, the cap a status sentence
+ * keeps whole (`shorten-food-name.ts`), so these sentences are read word for
+ * word; the long-name case below is the one that is shortened.
+ */
+const FOOD_NAME = 'Smoke tier muesli';
 
 /** How many grams of it, for the hand-typed entry of the first case. */
 const FOOD_GRAMS = '200';
 
 /** The food the quick-add chip logs. Two past days make it a chip (`MIN_CHIP_TIMES_LOGGED`). */
-const CHIP_FOOD = 'Smoke tier crumpets';
+const CHIP_FOOD = 'Smoke tier toast';
 
 /** Yesterday's one lunch entry, which the copy chip copies onto today. One entry, so the status offers Undo. */
-const YESTERDAY_FOOD = 'Smoke tier soup bowl';
+const YESTERDAY_FOOD = 'Smoke tier soup';
+
+/** A 40 character German food name, far past the cap. */
+const LONG_FOOD_NAME = 'Dinkelporridge mit Heidelbeeren und Zimt';
+
+/** A second one, for the quick-add chip, so the two long entries are told apart. */
+const LONG_CHIP_NAME = 'Roggenbrot mit Frischkäse und Radieschen';
+
+/** The names a seeded diary carries: today's entry, the chip food, yesterday's lunch. */
+interface DiaryNames {
+  todayFood: string;
+  chipFood: string;
+  yesterdayFood: string;
+}
+
+const SEED_NAMES: DiaryNames = { todayFood: FOOD_NAME, chipFood: CHIP_FOOD, yesterdayFood: YESTERDAY_FOOD };
 
 /** The app's tap floor, in CSS px. */
 const TAP_FLOOR = 44;
@@ -88,8 +111,8 @@ function entryLink(page: Page): Locator {
 }
 
 /** Opens the entry from the diary and deletes it, which publishes the Undo status and returns to the diary. */
-async function deleteEntry(page: Page, deleteLabel: string): Promise<void> {
-  await entryLink(page).first().click();
+async function deleteEntry(page: Page, deleteLabel: string, name: string = FOOD_NAME): Promise<void> {
+  await entryLinks(page, name).first().click();
   await page.waitForURL('**/diary/entry/**');
   await page.getByRole('button', { name: deleteLabel }).click();
 }
@@ -123,14 +146,14 @@ interface SeedLog {
  * the primary store's `foodLogs` table on disk, the layout every `insights-*`
  * and `mobile-*` spec writes, then read by a document load.
  */
-async function seedUndoDiary(page: Page): Promise<void> {
+async function seedUndoDiary(page: Page, names: DiaryNames = SEED_NAMES): Promise<void> {
   await completeOnboarding(page);
   const today = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
   const logs: SeedLog[] = [
-    { dayKey: today, mealType: 'breakfast', name: FOOD_NAME },
-    { dayKey: shiftDay(today, -2), mealType: 'breakfast', name: CHIP_FOOD },
-    { dayKey: shiftDay(today, -3), mealType: 'breakfast', name: CHIP_FOOD },
-    { dayKey: shiftDay(today, -1), mealType: 'lunch', name: YESTERDAY_FOOD },
+    { dayKey: today, mealType: 'breakfast', name: names.todayFood },
+    { dayKey: shiftDay(today, -2), mealType: 'breakfast', name: names.chipFood },
+    { dayKey: shiftDay(today, -3), mealType: 'breakfast', name: names.chipFood },
+    { dayKey: shiftDay(today, -1), mealType: 'lunch', name: names.yesterdayFood },
   ];
   await page.evaluate(
     (seedLogs) =>
@@ -174,24 +197,29 @@ async function seedUndoDiary(page: Page): Promise<void> {
     logs,
   );
   await page.goto('/diary');
-  await expect(entryLink(page)).toHaveCount(1);
+  await expect(entryLinks(page, names.todayFood)).toHaveCount(1);
 }
 
 /**
  * Publishes one of the three Undo statuses from the diary the page is on, and
- * answers the sentence it says.
+ * answers the sentence it says for a name the sentence keeps whole.
  */
-async function triggerUndoStatus(page: Page, path: UndoPath, copy: Copy): Promise<string> {
+async function triggerUndoStatus(
+  page: Page,
+  path: UndoPath,
+  copy: Copy,
+  names: DiaryNames = SEED_NAMES,
+): Promise<string> {
   switch (path) {
     case 'delete':
-      await deleteEntry(page, copy.entry.action.delete);
-      return fill(copy.entry.toast.removed, { name: FOOD_NAME });
+      await deleteEntry(page, copy.entry.action.delete, names.todayFood);
+      return fill(copy.entry.toast.removed, { name: names.todayFood });
     case 'quick-add':
-      await page.locator('[data-slot="quick-add-chip"]').filter({ hasText: CHIP_FOOD }).click();
-      return fill(copy.diary.toast.addedOne, { name: CHIP_FOOD });
+      await page.locator('[data-slot="quick-add-chip"]').filter({ hasText: names.chipFood }).click();
+      return fill(copy.diary.toast.addedOne, { name: names.chipFood });
     case 'copy':
       await copyLunchChip(page).click();
-      return fill(copy.diary.toast.copiedOne, { name: YESTERDAY_FOOD });
+      return fill(copy.diary.toast.copiedOne, { name: names.yesterdayFood });
   }
 }
 
@@ -206,23 +234,23 @@ function undoControl(page: Page, path: UndoPath, copy: Copy): Locator {
 }
 
 /** Takes the Undo and waits until the diary is back to its seeded state. */
-async function takeUndo(page: Page, path: UndoPath, undo: Locator): Promise<void> {
+async function takeUndo(page: Page, path: UndoPath, undo: Locator, names: DiaryNames = SEED_NAMES): Promise<void> {
   switch (path) {
     case 'delete':
       await page.waitForURL(/\/diary$/u);
-      await expect(entryLink(page)).toHaveCount(0);
+      await expect(entryLinks(page, names.todayFood)).toHaveCount(0);
       await undo.click();
-      await expect(entryLink(page)).toHaveCount(1);
+      await expect(entryLinks(page, names.todayFood)).toHaveCount(1);
       return;
     case 'quick-add':
-      await expect(entryLinks(page, CHIP_FOOD)).toHaveCount(1);
+      await expect(entryLinks(page, names.chipFood)).toHaveCount(1);
       await undo.click();
-      await expect(entryLinks(page, CHIP_FOOD)).toHaveCount(0);
+      await expect(entryLinks(page, names.chipFood)).toHaveCount(0);
       return;
     case 'copy':
-      await expect(entryLinks(page, YESTERDAY_FOOD)).toHaveCount(1);
+      await expect(entryLinks(page, names.yesterdayFood)).toHaveCount(1);
       await undo.click();
-      await expect(entryLinks(page, YESTERDAY_FOOD)).toHaveCount(0);
+      await expect(entryLinks(page, names.yesterdayFood)).toHaveCount(0);
   }
 }
 
@@ -352,7 +380,8 @@ async function readHeaderControls(page: Page): Promise<Record<string, string>> {
       const box = element.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) continue;
       const name = element.getAttribute('aria-label') ?? element.getAttribute('data-slot') ?? element.tagName;
-      controls[name] = `${Math.round(box.left)},${Math.round(box.top)} ${Math.round(box.width)}x${Math.round(box.height)}`;
+      controls[name] =
+        `${Math.round(box.left)},${Math.round(box.top)} ${Math.round(box.width)}x${Math.round(box.height)}`;
     }
     return controls;
   });
@@ -448,10 +477,49 @@ test('the quick-add and copy undo are the same control as the delete one, and ar
     // IN THE HEADER, because the diary below changes on purpose: the chip and
     // the copy each add an entry to today's list.
     const arrival = headerShiftAfter(await readShiftEntries(page), shiftsBefore);
-    expect(arrival.score, `${path}: layout-shift in the header while it arrived: ${arrival.sources.join('; ')}`).toBe(0);
+    expect(arrival.score, `${path}: layout-shift in the header while it arrived: ${arrival.sources.join('; ')}`).toBe(
+      0,
+    );
 
     await takeUndo(page, path, undo);
   }
+});
+
+test('at 360 px in German, a long food name ends in "…" so the delete and quick-add sentences fit, and a short name stays whole', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: NARROW_PHONE_WIDTH, height: PHONE_HEIGHT });
+  const names: DiaryNames = { todayFood: LONG_FOOD_NAME, chipFood: LONG_CHIP_NAME, yesterdayFood: YESTERDAY_FOOD };
+  await seedUndoDiary(page, names);
+  await useLanguage(page, 'de');
+  const copy = catalogFor('de');
+  const sentenceSpan = headerStatus(page).locator('[data-slot="header-status-sentence"]');
+
+  const failures: string[] = [];
+  const longNames = { delete: LONG_FOOD_NAME, 'quick-add': LONG_CHIP_NAME } as const;
+  for (const path of ['delete', 'quick-add'] as const) {
+    await page.goto('/diary');
+    const whole = await triggerUndoStatus(page, path, copy, names);
+    const undo = undoControl(page, path, copy);
+    await expect(undo).toBeVisible();
+    const sentence = await sentenceSpan.innerText();
+    const name = longNames[path];
+    // THE NAME GIVES WAY, the sentence's own words stay: a start of the name,
+    // one "…", and never the whole 40 characters.
+    if (sentence === whole) failures.push(`${path}: the sentence carries the whole name: "${sentence}"`);
+    if (!sentence.includes(`${name.slice(0, 10)}`)) failures.push(`${path}: the name's start is gone: "${sentence}"`);
+    if (!sentence.includes('…')) failures.push(`${path}: the name does not end in "…": "${sentence}"`);
+    const fit = await readUndoRowFit(page, undo);
+    if (!fit.isSentenceWhole) failures.push(`${path}: the sentence is cut off: "${sentence}" (${fit.boxes})`);
+    await takeUndo(page, path, undo, names);
+  }
+  expect(failures, 'a long food name does not fit the sentence at 360 px').toEqual([]);
+
+  // THE CONTROL: a short name in the same row, the copy's, is not touched.
+  await page.goto('/diary');
+  const whole = await triggerUndoStatus(page, 'copy', copy, names);
+  await expect(sentenceSpan).toHaveText(whole);
+  expect(await sentenceSpan.innerText(), 'a short name grew an ellipsis').not.toContain('…');
 });
 
 test('every undo control is the icon button, and its row fits at 390 px, in all six languages', async ({ page }) => {
@@ -463,7 +531,9 @@ test('every undo control is the icon button, and its row fits at 390 px, in all 
     await useLanguage(page, locale);
     for (const path of UNDO_PATHS) {
       await page.goto('/diary');
-      expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(locale);
+      expect(await page.locator('html').getAttribute('lang'), `${locale}: the document is in that language`).toBe(
+        locale,
+      );
       const sentence = await triggerUndoStatus(page, path, copy);
       await expect(
         headerStatus(page).locator('[data-slot="header-status-sentence"]'),

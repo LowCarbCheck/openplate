@@ -19,6 +19,15 @@ import { EN } from './copy';
 /** The phone this tier emulates, and the width the layout budget is written against. */
 export const PHONE_WIDTH = 390;
 
+/** The narrow Android phone, 360 px wide. A fit check that matters on a phone runs here too. */
+export const NARROW_PHONE_WIDTH = 360;
+
+/** The widths a fit check runs at, the tier's phone first. Set per test with `page.setViewportSize`. */
+export const FIT_WIDTHS = [PHONE_WIDTH, NARROW_PHONE_WIDTH] as const;
+
+/** The tier's phone height (`playwright.config.ts`), kept when a test changes the width. */
+export const PHONE_HEIGHT = 844;
+
 /** The app header's fixed height (`min-h-16`), which no status message may change. */
 export const HEADER_HEIGHT = 64;
 
