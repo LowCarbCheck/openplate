@@ -38,9 +38,14 @@ import {
   signInFixtureAccount,
   useLanguage,
 } from './helpers';
+import { headerShiftAfter, installShiftObserver, readShiftEntries, settleFrames } from './layout-shift';
 import { NO_SUBSCRIPTION_VIEW, routeAccountAllowance, routePlansCore } from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
+
+test.beforeEach(async ({ page }) => {
+  await installShiftObserver(page);
+});
 
 /** The calendar days left, today included, that an end at noon two days from today leaves. Inside the recap's reach. */
 const DAYS_LEFT = 3;
@@ -153,6 +158,16 @@ test('near the end of a day trial, every day sentence and its recap line read wh
     expect(layout.documentScrollWidth, `${locale}: the document overflows`).toBe(PHONE_WIDTH);
     expect(layout.headerHeight, `${locale}: the two lines opened the header`).toBe(HEADER_HEIGHT);
     clipped.push(...clippedLines(await readStatusLinesFit(page), `${locale} as drawn`));
+    // THE ROW ARRIVED WITHOUT MOVING THE HEADER. Four lines are taller than
+    // the brand mark the header's boxes are sized by at rest; a box that grew
+    // around them moved its top, which the browser counts as a shift even
+    // when the controls inside it stayed put. Read in the header, from the
+    // start of this document: the countdown replaced the title after the load.
+    await settleFrames(page);
+    const arrival = headerShiftAfter(await readShiftEntries(page), 0);
+    if (arrival.score !== 0) {
+      clipped.push(`${locale} as drawn: the header shifted ${arrival.score} (${arrival.sources.join('; ')})`);
+    }
 
     // ── Every day sentence beside every recap sentence ──────────────────
     // `daysLeft_one` is in the catalog but the line never says it: on the
@@ -186,4 +201,14 @@ test('near the end of a day trial, every day sentence and its recap line read wh
   expect((await readStatusLinesFit(page)).isSentenceWhole, 'the reading cannot see a clipped sentence').toBe(false);
   await writeStatusLines(page, { sentence, label: english.countdown.action, recap: recapSentence.repeat(3) });
   expect((await readStatusLinesFit(page)).isRecapWhole, 'the reading cannot see a clipped recap line').toBe(false);
+  // And for the header reading: the brand mark moved on purpose must register.
+  const quiet = (await readShiftEntries(page)).length;
+  await page.locator('header [data-slot="header-mark"]').evaluate((mark) => {
+    if (mark instanceof HTMLElement) mark.style.marginTop = '12px';
+  });
+  await settleFrames(page);
+  expect(
+    headerShiftAfter(await readShiftEntries(page), quiet).score,
+    'the header reading cannot see a header control move',
+  ).toBeGreaterThan(0);
 });

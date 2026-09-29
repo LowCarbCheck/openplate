@@ -96,9 +96,11 @@ describe('the header status row can shrink below its text width', () => {
     // Exact match, not `.includes('min-w-0')`: the old line was
     // `"flex flex-1 items-center justify-between gap-2"`, which contains
     // neither `min-w-0` nor `min-w`, so this fails against it as written.
+    // `self-stretch` (M265) keeps the slot's box the header's height, so a
+    // tall status grows nothing and moves nothing.
     assert.equal(
       className,
-      'flex min-w-0 flex-1 items-center justify-between gap-2',
+      'flex min-w-0 flex-1 items-center justify-between gap-2 self-stretch',
       `<HeaderStatus>'s parent div must carry \`min-w-0\` alongside \`flex-1\`, or a long status can't shrink ` +
         `below its text's intrinsic width and the header overflows the viewport. Got: ${className}`,
     );
