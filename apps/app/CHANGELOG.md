@@ -16,6 +16,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **Legal links from openplate.de open in the visitor's language.** The site's imprint, privacy, terms and cancellation links carried no language, so a reader of the English site could land on a German page. They now carry `?lang=<code>`, which the app reads before its own cookie, so the page is correct on the first paint, with or without JavaScript. The choice becomes the device's cookie once JavaScript runs. `/widerrufen` and `/kuendigung` keep their German statutory heading and button in every language. `tests/e2e/legal-link-language.spec.ts` checks it.
+- **The landing's screenshots match the page's language.** The self-hosted landing showed the English app on a German page. A German page now shows the German screenshots, and a language without its own screenshots keeps the English ones. `tests/e2e/account-door-page.spec.ts` checks German, English and French.
 - **The footer links no longer run off a tablet screen.** Between about 640 and 1000 px wide, the footer's row of links did not wrap, and the page cut off the imprint and both statutory buttons. The row now wraps onto a second line. `tests/e2e/managed-way-back.spec.ts` checks 640, 768 and 1024 px.
 
 ## [0.51.0] - 2026-09-29

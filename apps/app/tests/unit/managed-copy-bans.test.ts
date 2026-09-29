@@ -83,8 +83,11 @@ const DE = flatten(loadCatalog('de'));
  * `plan` joined them with M213 spec 05, and it is the narrowest of the seven:
  * the page exists only where a biller stands behind the instance, which is a
  * subset of the instances that have accounts at all.
+ *
+ * `accountDoor` joined with the M266 design: it is the managed front page, the
+ * doors to an account, and it is drawn nowhere else.
  */
-const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account.', 'admin.', 'plan.'];
+const MANAGED_ONLY_PREFIXES = ['join.', 'signIn.', 'forgot.', 'reset.', 'account.', 'admin.', 'plan.', 'accountDoor.'];
 
 /**
  * The managed BRANCHES of three shared namespaces.
@@ -153,6 +156,9 @@ const MANAGED_BRANCH_KEYS = [
   'aiIntake.plansLink',
   // M250/04: the price line of the compact offer that replaced that link.
   'plan.offer.from',
+  // M266: the one sentence the account door says about the instance, out of
+  // the landing namespace the open page shares.
+  'landing.hero.taglineManaged',
 ];
 
 /**

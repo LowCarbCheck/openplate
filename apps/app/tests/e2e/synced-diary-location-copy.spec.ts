@@ -61,6 +61,7 @@ const SOFT_WALK_BUDGET_MS = 90_000;
 const COPY = z
   .object({
     landing: z.object({
+      hero: z.object({ taglineManaged: z.string() }),
       features: z.object({
         noTracking: z.object({ bodyAnalytics: z.string(), bodyAnalyticsManaged: z.string() }),
       }),
@@ -259,7 +260,12 @@ test.describe('on a managed instance', () => {
   test('the landing, logged out, never says the diary stays on this device', async ({ page }) => {
     await page.goto(`${server.url}/`);
     const main = page.locator('main');
-    await expect(main).toContainText(COPY.landing.features.noTracking.bodyAnalyticsManaged);
+    // A MANAGED `/` IS THE ACCOUNT DOOR since M266: it states no pitch, so the
+    // trust card and its counting sentences are not on it at all. Its one
+    // sentence about the instance is the anchor that the page is drawn before
+    // the absences are read.
+    await expect(main).toContainText(COPY.landing.hero.taglineManaged);
+    await expect(main).not.toContainText(COPY.landing.features.noTracking.bodyAnalyticsManaged);
     await expect(main).not.toContainText(COPY.landing.features.noTracking.bodyAnalytics);
     await expect(main).not.toContainText(DEVICE_CLAIM);
   });

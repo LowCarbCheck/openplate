@@ -2696,6 +2696,10 @@
     "chosenMonthly": "You chose the monthly plan. You can pay for it right after you create your account, or use your free scans first.",
     "chosenYearly": "You chose the yearly plan. You can pay for it right after you create your account, or use your free scans first."
   },
+  "accountDoor": {
+    "inviteOnly": "Invitation only",
+    "siteLine": "What openplate is, and what it costs: <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Sign out",
     "title": "Sign out",

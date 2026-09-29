@@ -8,7 +8,7 @@
  * build it was written against.
  *
  * WHAT IS REAL: the production build booted as a managed instance
- * (`managed-app-server.ts`), its CSP, the header, the landing, `/welcome`,
+ * (`managed-app-server.ts`), its CSP, the header, `/welcome`,
  * `/sign-up`, the handshake decoder and the sign-up request. WHAT IS STUBBED:
  * `/health` (the fake sync service has no open sign-up), the
  * `POST /v1/auth/signup-request` answer, and Cloudflare's Turnstile script and
@@ -16,6 +16,12 @@
  *
  * Every absence has a control that finds the same thing through the same
  * query on the other kind of instance.
+ *
+ * THE HEADER IS READ ON A LEGAL PAGE since M266: a managed `/` is the account
+ * door, which draws its doors in the page and none in the header
+ * (`account-door-page.spec.ts` covers that page). Every other public page keeps
+ * the header's two doors, and `/imprint` is one every instance with legal
+ * pages serves.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -39,7 +45,6 @@ const NARROW_PHONE = { width: 360, height: 800 } as const;
 /** The strings this spec reads, parsed from the shipped English bundle so a missing key fails here. */
 const copySchema = z.object({
   chrome: z.object({ signUp: z.string(), requestAccess: z.string(), signIn: z.string() }),
-  landing: z.object({ hero: z.object({ ticksManaged: z.string(), ticksManagedOpen: z.string() }) }),
   welcome: z.object({ managed: z.object({ signUp: z.string(), haveInvite: z.string() }) }),
   signUp: z.object({
     sent: z.string(),
@@ -69,6 +74,9 @@ const TURNSTILE_FRAME = 'https://challenges.cloudflare.com/e2e-stub/frame';
 
 /** A site key. Public by design; this one names nothing. */
 const SITE_KEY = '0x4AAAAAAAe2e-stub';
+
+/** A public page that wears the header's two doors. */
+const HEADER_PAGE = '/imprint';
 
 /** What the stubbed `/health` says about sign-up. */
 interface SignupStub {
@@ -238,7 +246,7 @@ test('an open instance says "Sign up" and no invite wording, and the door moves 
   const gate = createGate();
   await routeHealth(page, { openSignup: true }, gate.promise);
   await page.setViewportSize(NARROW_PHONE);
-  await page.goto(`${server.url}/`);
+  await page.goto(`${server.url}${HEADER_PAGE}`);
 
   // BEFORE THE HANDSHAKE: neither door, so an open instance never shows the
   // invite wording for a moment. Sign in is already there.
@@ -253,8 +261,6 @@ test('an open instance says "Sign up" and no invite wording, and the door moves 
   await expect(signUpDoor(page)).toBeVisible({ timeout: 10_000 });
   await expect(signUpDoor(page)).toHaveText(COPY.chrome.signUp);
   await expect(inviteDoor(page)).toHaveCount(0);
-  await expect(page.getByText(COPY.landing.hero.ticksManagedOpen)).toBeVisible();
-  await expect(page.getByText(COPY.landing.hero.ticksManaged, { exact: true })).toHaveCount(0);
   await settleFrames(page);
   expect(await signIn.boundingBox(), 'sign in moved when the door arrived').toEqual(signInBefore);
   expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift while the door arrived').toBe(0);
@@ -282,12 +288,10 @@ test('an open instance says "Sign up" and no invite wording, and the door moves 
 
 test('the control: an invite-only instance keeps the invite wording and offers no sign-up', async ({ page }) => {
   await routeHealth(page, { openSignup: false });
-  await page.goto(`${server.url}/`);
+  await page.goto(`${server.url}${HEADER_PAGE}`);
 
   await expect(inviteDoor(page)).toBeVisible({ timeout: 10_000 });
   await expect(signUpDoor(page)).toHaveCount(0);
-  await expect(page.getByText(COPY.landing.hero.ticksManaged, { exact: true })).toBeVisible();
-  await expect(page.getByText(COPY.landing.hero.ticksManagedOpen)).toHaveCount(0);
 
   // /welcome keeps its two doors, and the invite one is the anchor that the
   // screen has drawn its buttons before the absence is read.

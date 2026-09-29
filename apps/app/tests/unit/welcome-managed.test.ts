@@ -126,6 +126,10 @@ describe('/onboarding is closed on a managed instance, and only there', () => {
  */
 describe('the two screens actually consult the rules', () => {
   const welcomeSource = readFileSync(new URL('../../app/routes/welcome.tsx', import.meta.url), 'utf8');
+  // The paste box moved into a component in M266, so the account door on an
+  // invite-only `/` opens the same one. The rule is unchanged: one box, and it
+  // hands the link to `/join`.
+  const pasteSource = readFileSync(new URL('../../app/components/paste-invite-link.tsx', import.meta.url), 'utf8');
   const onboardingSource = readFileSync(new URL('../../app/routes/onboarding.tsx', import.meta.url), 'utf8');
 
   it('welcome reads the instance shape and offers the paste box from the resolver', () => {
@@ -138,9 +142,12 @@ describe('the two screens actually consult the rules', () => {
 
   it('welcome hands a pasted link to /join rather than redeeming anything itself', () => {
     // The join ceremony has exactly one implementation, and it is not here.
-    assert.match(welcomeSource, /parseJoinLinkInput/);
-    assert.match(welcomeSource, /buildJoinFragment/);
+    assert.match(welcomeSource, /<PasteInviteLink /);
+    assert.match(pasteSource, /parseJoinLinkInput/);
+    assert.match(pasteSource, /buildJoinFragment/);
+    assert.match(pasteSource, /location\.assign\(`\/join\$\{buildJoinFragment\(link\)\}`\)/);
     assert.doesNotMatch(welcomeSource, /redeem/i);
+    assert.doesNotMatch(pasteSource, /redeem/i);
   });
 
   it("onboarding's client loader asks the rule and redirects to /welcome", () => {

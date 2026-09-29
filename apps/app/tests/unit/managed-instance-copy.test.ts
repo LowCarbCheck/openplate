@@ -80,31 +80,32 @@ function assertChosenByPolicy(source: string, question: string, managedKey: stri
 }
 
 describe('landing page — the three claims that are false on a managed instance', () => {
-  const source = readRoute('index.tsx');
+  // M266 (2026-09-29): a managed `/` is the account door, so the claims that
+  // are false there are not branched any more, they are simply not drawn. The
+  // open landing keeps its own strings and asks no managed question at all;
+  // `tests/unit/landing-doors.test.ts` renders both pages to hold that.
+  const route = readRoute('index.tsx');
+  const landing = readRoute('landing-open.tsx');
 
-  // Three different questions, one per claim (M201/07): the AI cards are about
-  // where the estimate comes from, the call to action is about whether an
-  // account is the only way in, and the sync card is about who holds the copy.
-  for (const [question, openKey, managedKey] of [
-    ['aiComesFromTheInstance', 'landing.features.byok.title', 'landing.features.byokManaged.title'],
-    ['aiComesFromTheInstance', 'landing.features.byok.body', 'landing.features.byokManaged.body'],
-    ['requiresAccount', 'landing.cta.tryItFree', 'landing.cta.tryItFreeManaged'],
-    ['serverHoldsTheDiary', 'landing.sync.body', 'landing.sync.bodyManaged'],
+  it('chooses the page by asking whether the front door is the account door', () => {
+    assert.match(route, /const \{ frontDoorIsTheAccountDoor \} = useInstancePolicy\(\);/);
+    assert.match(route, /if \(frontDoorIsTheAccountDoor\) return <AccountDoorPage \/>;/);
+  });
+
+  for (const openKey of [
+    'landing.features.byok.title',
+    'landing.features.byok.body',
+    'landing.cta.tryItFree',
+    'landing.sync.body',
   ]) {
-    it(`renders ${managedKey} on a managed instance and keeps ${openKey} on an open one`, () => {
-      assertChosenByPolicy(source, question, managedKey);
-      assert.ok(source.includes(openKey), `${openKey} must still be the open instance's string`);
+    it(`keeps ${openKey} on the open landing`, () => {
+      assert.ok(landing.includes(openKey), `${openKey} must still be the open instance's string`);
     });
   }
 
-  it('sends the closing call to action to the sign-in door rather than the anonymous one', () => {
-    // `/dashboard` bounces to `/welcome` on a managed instance anyway; naming
-    // the real door is what makes the button's label true. Since 2026-09-28
-    // the managed branch draws `ManagedDoorLink`, which is `/welcome` unless
-    // the handshake says anybody may sign up and a plan is sold, where it is
-    // the sign-up form (`tests/unit/landing-doors.test.ts` renders the count).
-    assert.match(source, /requiresAccount \?\s*<ManagedDoorLink placement="footer"/);
-    assert.match(source, /isSignUp \? door\.signUpHref : '\/welcome'/);
+  it('carries no managed twin and asks no policy question, because it only ever meets an open instance', () => {
+    assert.deepEqual(landing.match(/'landing\.[\w.]*Managed[\w.]*'/g) ?? [], []);
+    assert.ok(!landing.includes('useInstancePolicy'), 'the open landing reads the policy again');
   });
 });
 

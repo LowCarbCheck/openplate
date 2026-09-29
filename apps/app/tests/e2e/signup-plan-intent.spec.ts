@@ -56,10 +56,6 @@ const YEARLY_CENTS = 2345;
 /** The plan page, whose onboarding exemption the paywall change adds. */
 const PLAN_PAGE = '/settings/plan';
 
-/** The phone widths the landing is read at. */
-const PHONE_WIDTHS = [320, 390, 412] as const;
-const PHONE_HEIGHT = 800;
-
 const LANGUAGES = ['en', 'de', 'fr', 'it', 'es', 'tr'] as const;
 type Language = (typeof LANGUAGES)[number];
 
@@ -74,10 +70,7 @@ const funnelCopySchema = z.looseObject({
   }),
   signUp: z.object({ title: z.string(), submit: z.string(), sent: z.string() }),
   chrome: z.object({ signUp: z.string(), signIn: z.string() }),
-  landing: z.object({
-    cta: z.object({ tryIt: z.string(), tryItFreeManaged: z.string(), howItWorks: z.string() }),
-    hero: z.object({ ticksManaged: z.string(), ticksManagedOpen: z.string() }),
-  }),
+  landing: z.object({ cta: z.object({ tryIt: z.string() }) }),
   welcome: z.object({ haveAccount: z.string(), managed: z.object({ signUp: z.string(), haveInvite: z.string() }) }),
   join: z.object({ title: z.string() }),
 });
@@ -472,51 +465,69 @@ test('a plan chosen before signing in is picked on the order page, and a link na
   await expect(planRadio(page, 'monthly')).not.toBeChecked();
 });
 
-// ─── the landing and /welcome ───────────────────────────────────────────────
+// ─── the front page and /welcome ────────────────────────────────────────────
 
-/** The hero's visible links, as label and destination. */
-async function heroLinks(page: Page): Promise<{ label: string; href: string | null }[]> {
-  const links = page.locator('[data-slot="landing-hero-doors"] a:visible');
+/**
+ * A MANAGED `/` IS THE ACCOUNT DOOR since M266 (the owner's design, approved
+ * 2026-09-29): the doors the handshake allows, the offer, one line to
+ * openplate.de. `account-door-page.spec.ts` reads that page in six languages
+ * at three phone widths, with the handshake and the price read held and let
+ * through; the funnel's own claims about it stay here.
+ */
+const DOORS = '[data-slot="account-door-doors"]';
+
+/** The door page's visible links, as label and destination. */
+async function doorLinks(page: Page): Promise<{ label: string; href: string | null }[]> {
+  const links = page.locator(`${DOORS} a:visible`);
   return links.evaluateAll((nodes) =>
     nodes.map((node) => ({ label: (node.textContent ?? '').trim(), href: node.getAttribute('href') })),
   );
 }
 
-test('the landing on an open, paid instance leads with "Sign up", keeps the query string, and states the offer', async ({
+test('the front page of an open, paid instance leads with "Sign up", keeps the query string, and states the offer', async ({
   page,
 }) => {
   await routeHandshake(page, { openSignup: true, plans: true, trialScans: TRIAL_SCANS });
   await routePrices(page, 'prices');
   await page.goto(`${server.url}/?plan=yearly`);
 
-  await expect(page.locator('[data-slot="landing-hero-doors"] a:visible').first()).toHaveText(EN_FUNNEL.chrome.signUp, {
-    timeout: 10_000,
-  });
+  await expect(page.locator(`${DOORS} a:visible`).first()).toHaveText(EN_FUNNEL.chrome.signUp, { timeout: 10_000 });
   await expect
-    .poll(() => heroLinks(page))
+    .poll(() => doorLinks(page))
     .toEqual([
       { label: EN_FUNNEL.chrome.signUp, href: '/sign-up?plan=yearly' },
       { label: EN_FUNNEL.chrome.signIn, href: '/sign-in' },
     ]);
-  // The one filled button is the sign-up door.
-  await expect(page.locator('[data-slot="landing-hero-doors"] a:visible[data-slot="button"]')).toHaveText(
-    EN_FUNNEL.chrome.signUp,
-  );
-  await expect(page.locator('[data-slot="landing-small-print"] [data-slot="signup-offer-scans"]')).toHaveText(
+  // The one filled door is the sign-up form.
+  await expect(page.locator(`${DOORS} a:visible[data-door="primary"]`)).toHaveText(EN_FUNNEL.chrome.signUp);
+  const smallPrint = page.locator('[data-slot="account-door-small-print"]');
+  await expect(smallPrint.locator('[data-slot="signup-offer-scans"]')).toHaveText(
     EN_FUNNEL.signupOffer.scans_other.replace('{{count}}', String(TRIAL_SCANS)),
   );
-  await expect(page.locator('[data-slot="landing-small-print"] [data-slot="signup-offer-prices"]')).toContainText(
-    '€3.21',
-  );
+  await expect(smallPrint.locator('[data-slot="signup-offer-prices"]')).toContainText('€3.21');
 });
 
-test('the control: an invite-only instance and an open one that sells nothing keep the landing as it was', async ({
+test('the control: an invite-only instance leads with signing in, and an open one that sells nothing states no offer', async ({
   page,
 }) => {
   for (const instanceKind of [
-    { openSignup: false, plans: true, ticks: EN_FUNNEL.landing.hero.ticksManaged },
-    { openSignup: true, plans: false, ticks: EN_FUNNEL.landing.hero.ticksManagedOpen },
+    {
+      openSignup: false,
+      plans: true,
+      doors: [{ label: EN_FUNNEL.chrome.signIn, href: '/sign-in' }],
+      signUpLinks: 0,
+    },
+    {
+      openSignup: true,
+      plans: false,
+      doors: [
+        { label: EN_FUNNEL.chrome.signUp, href: '/sign-up?plan=yearly' },
+        { label: EN_FUNNEL.chrome.signIn, href: '/sign-in' },
+      ],
+      signUpLinks: 1,
+    },
   ]) {
+    const where = JSON.stringify({ openSignup: instanceKind.openSignup, plans: instanceKind.plans });
     await page.unrouteAll({ behavior: 'wait' });
     await routeHandshake(page, {
       openSignup: instanceKind.openSignup,
@@ -525,18 +536,15 @@ test('the control: an invite-only instance and an open one that sells nothing ke
     });
     const prices = await routePrices(page, 'prices');
     await page.goto(`${server.url}/?plan=yearly`);
-    await expect(page.getByText(instanceKind.ticks, { exact: true })).toBeVisible({ timeout: 10_000 });
-    // POLLED: the button's visibility transitions for a frame after the row
-    // turns visible, and a one-shot read taken in that frame misses it.
-    await expect
-      .poll(() => heroLinks(page), { message: JSON.stringify(instanceKind) })
-      .toEqual([
-        { label: EN_FUNNEL.landing.cta.tryItFreeManaged, href: '/welcome' },
-        { label: EN_FUNNEL.landing.cta.howItWorks, href: '#how' },
-      ]);
-    await expect(page.locator('main a[href^="/sign-up"]:visible')).toHaveCount(0);
-    await expect(page.locator('[data-slot="signup-offer"]')).toHaveCount(0);
-    expect(prices.reads, 'a landing that states no price asked for one').toBe(0);
+    // POLLED: a door's visibility settles a frame after its pair is drawn.
+    await expect.poll(() => doorLinks(page), { message: where, timeout: 10_000 }).toEqual(instanceKind.doors);
+    await expect(page.locator('main a[href^="/sign-up"]'), where).toHaveCount(instanceKind.signUpLinks);
+    if (!instanceKind.openSignup) {
+      // The invite-only pair's second door is the paste box, not a link.
+      await expect(page.getByRole('button', { name: EN_FUNNEL.welcome.managed.haveInvite })).toBeVisible();
+    }
+    await expect(page.locator('[data-slot="signup-offer"]'), where).toHaveCount(0);
+    expect(prices.reads, `${where}: a front page that states no price asked for one`).toBe(0);
   }
 });
 
@@ -545,48 +553,9 @@ test('the control: the self-hosted landing keeps its one door, with no handshake
   await page.goto('/?plan=yearly');
   const hero = page.locator('main a[href="/dashboard"]').first();
   await expect(hero).toHaveText(EN_FUNNEL.landing.cta.tryIt);
-  await expect(page.locator('[data-slot="landing-hero-doors"]')).toHaveCount(0);
+  await expect(page.locator(DOORS)).toHaveCount(0);
   await expect(page.locator('main a[href^="/sign-up"]')).toHaveCount(0);
 });
-
-for (const language of LANGUAGES) {
-  test(`the managed landing moves nothing while the doors and the offer arrive, in ${language} at three phone widths`, async ({
-    page,
-  }) => {
-    await page.context().addCookies([{ name: LANGUAGE_COOKIE, value: language, url: server.url }]);
-    await installShiftObserver(page);
-    // 320 is the narrowest phone; 390 and 412 stand either side of the width
-    // where the reserve steps down (`SMALL_PRINT_RESERVE` in `index.tsx`).
-    for (const width of PHONE_WIDTHS) {
-      const where = `${language} at ${width} px`;
-      await page.unrouteAll({ behavior: 'wait' });
-      await page.setViewportSize({ width, height: PHONE_HEIGHT });
-      const health = createGate();
-      const pricesGate = createGate();
-      await routeHandshake(page, { openSignup: true, plans: true, trialScans: TRIAL_SCANS, gate: health.promise });
-      await routePrices(page, 'prices', pricesGate);
-
-      await page.goto(`${server.url}/`);
-      const shot = page.locator('main figure').first();
-      await expect(shot).toBeVisible();
-      await settleForBaseline(page);
-      const shotTop = (await shot.boundingBox())?.y;
-      const since = (await readShiftEntries(page)).length;
-
-      health.open();
-      await expect(page.locator('[data-slot="landing-hero-doors"] a:visible').first()).toHaveText(
-        COPY[language].chrome.signUp,
-      );
-      await expect(page.locator('[data-slot="signup-offer-scans"]')).toBeVisible();
-      pricesGate.open();
-      await expect(page.locator('[data-slot="signup-offer-prices"]')).toBeVisible();
-      await settleFrames(page);
-
-      expect((await shot.boundingBox())?.y, `${where}: the picture under the hero moved`).toBe(shotTop);
-      expect(shiftScoreAfter(await readShiftEntries(page), since), `${where}: layout-shift`).toBe(0);
-    }
-  });
-}
 
 test('/welcome on an open instance leads with "Create an account", in the language the link names', async ({
   page,

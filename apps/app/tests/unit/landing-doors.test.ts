@@ -34,6 +34,18 @@
  * `meta()` descriptor and not markup, and the three level bodies only appear
  * when the loader reports an analytics level, which `renderLanding` used to
  * pin at `null`. Both gaps are closed below.
+ *
+ * M266 (the owner's design, approved 2026-09-29) CHANGED WHAT THE MANAGED PAGE
+ * IS. openplate.de sells and explains; every app host is a door and then the
+ * app. So a managed `/` renders the account door (`account-door-page.tsx`), and
+ * the managed twins of the landing's copy left with the managed landing. The
+ * two directions still hold, and are asserted the same way, by rendering:
+ *
+ *  1. THE MANAGED PAGE IS THE DOOR. No `/dashboard`, no `/settings/account`,
+ *     no screenshot, no newsletter, no section of the landing, none of the
+ *     banned claims, and one way to openplate.de in the reader's language.
+ *  2. THE OPEN PAGE IS UNTOUCHED. Every string and every destination it had
+ *     is still pinned by name, now rendered from `landing-open.tsx`.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,14 +99,20 @@ function publicConfig(managed: boolean): PublicConfig {
  * @param managed - the instance mode this render's public config reports.
  * @param analyticsLevel - what the loader says this instance counts.
  */
-function renderLanding(managed: boolean, analyticsLevel: AnalyticsEventLevel | null = null): string {
+function renderLanding(
+  managed: boolean,
+  analyticsLevel: AnalyticsEventLevel | null = null,
+  newsletter: { turnstileSiteKey: string } | null = null,
+): string {
   const config = publicConfig(managed);
   // SAFETY: `Route.ComponentProps` also carries `params`, `matches`, `actionData`
   // and `loaderData` typed by the generated route module, and this page reads
   // exactly the four fields of `loaderData` supplied above and nothing else.
   // The cast is the harness admitting it is not the router, not a claim about
   // the component.
-  const page = withI18n(createElement(Index as never, { loaderData: { ...LOADER_DATA, analyticsLevel } } as never));
+  const page = withI18n(
+    createElement(Index as never, { loaderData: { ...LOADER_DATA, analyticsLevel, newsletter } } as never),
+  );
   const router = createMemoryRouter(
     [
       {
@@ -156,50 +174,82 @@ const OPEN = renderLanding(false);
 /** Every counting level, so the trust card's three mode-dependent bodies are all exercised. */
 const ANALYTICS_LEVELS: readonly AnalyticsEventLevel[] = ['pageviews', 'product', 'research'];
 
-describe('the landing page on a managed instance', () => {
+/** Both pages again, on an instance whose operator configured a newsletter. */
+const MANAGED_WITH_NEWSLETTER = renderLanding(true, null, { turnstileSiteKey: '1x00000000000000000000AA' });
+const OPEN_WITH_NEWSLETTER = renderLanding(false, null, { turnstileSiteKey: '1x00000000000000000000AA' });
+
+/** The heading of every section the landing draws, by name. The door draws none of them. */
+const LANDING_SECTION_TITLES = {
+  how: enCommon.landing.how.title,
+  setup: enCommon.landing.setup.title,
+  features: enCommon.landing.features.title,
+  goals: enCommon.landing.goals.title,
+  sync: enCommon.landing.sync.title,
+  close: enCommon.landing.close.title,
+};
+
+describe('the managed front page is the account door (M266)', () => {
   it('leaves no dashboard link anywhere on the page', () => {
-    // Spec 01 makes `/dashboard` bounce a signed-out managed visitor to
-    // `/welcome`, so this is not about a broken route. A button named for a
-    // destination it never reaches is a redirect wearing that name, and the
-    // page had three of them.
+    // A signed-out managed visitor who presses `/dashboard` is bounced to
+    // `/welcome`. A button named for a destination it never reaches is a
+    // redirect wearing that name.
     assert.equal(hrefCount(MANAGED, '/dashboard'), 0, MANAGED.slice(0, 400));
   });
 
-  it('offers no self-service account link', () => {
-    // "Create an account" pointing at a settings page behind a door the
-    // visitor has not opened. An invite-only instance cannot honour either
-    // half of that.
+  it('offers no self-service account link and no detour through /welcome', () => {
     assert.equal(hrefCount(MANAGED, '/settings/account'), 0);
+    assert.equal(hrefCount(MANAGED, '/welcome'), 0);
     assert.ok(!MANAGED.includes(enCommon.landing.sync.link), 'the open label leaked onto a managed page');
   });
 
-  it('names the real door instead, five times over', () => {
-    // Hero, how-it-works, mid-page, sync card, close. The mid-page one was
-    // already right before this spec and is counted with the rest, because the
-    // rule is about the page and not about the four links that were wrong. The
-    // count is the guard: a sixth call to action added later without the branch
-    // would leave this at five while `/dashboard` came back above.
-    assert.equal(hrefCount(MANAGED, '/welcome'), 5, MANAGED.slice(0, 400));
+  it('draws "Sign in" once, in the page, and the header draws no door beside it', () => {
+    // The door's own reserved pair is in the served markup (invisible until
+    // the handshake answers), and the header's pair steps aside on this page.
+    // Two would mean the same door twice on one screen.
+    assert.equal(hrefCount(MANAGED, '/sign-in'), 1, MANAGED.slice(0, 400));
+    assert.ok(MANAGED.includes('data-slot="account-door-doors"'), 'the doors cell is not on the page');
+    assert.ok(!MANAGED.includes('data-slot="account-door"'), 'the header drew its account door on the door page');
   });
 
-  it('promises no free trial and no immediate start', () => {
-    for (const forbidden of ['completely free', 'Nothing to sign up for', 'Start with step one']) {
-      assert.ok(!MANAGED.includes(forbidden), `${forbidden} is still on the managed page`);
+  it('serves no "Sign up" before the handshake has said anybody may sign up', () => {
+    // The server cannot know, so the served markup must not claim it.
+    assert.equal(MANAGED.split('href="/sign-up').length - 1, 0);
+  });
+
+  it('says the one sentence that is true of this instance', () => {
+    assert.ok(rendersCopy(MANAGED, enCommon.landing.hero.taglineManaged), MANAGED.slice(0, 400));
+  });
+
+  it('links openplate.de in the reader\'s language, under the doors and in the footer', () => {
+    // The harness renders English, which lives under `/en/` on the site.
+    assert.equal(hrefCount(MANAGED, 'https://openplate.de/en/'), 2, MANAGED.slice(0, 400));
+    // THE CONTROL: the open landing is the whole pitch and names no project site.
+    assert.equal(hrefCount(OPEN, 'https://openplate.de/en/'), 0);
+    assert.ok(MANAGED.includes('data-slot="account-door-site-line"'));
+    assert.ok(MANAGED.includes('data-slot="footer-project-site"'));
+  });
+
+  it('keeps the small print box from the first paint, with nothing in it yet', () => {
+    // "Invitation only" and the offer are both answers of the handshake, which
+    // the server has not read. The box is there so neither moves the page.
+    assert.ok(MANAGED.includes('data-slot="account-door-small-print"'));
+    assert.ok(!MANAGED.includes(enCommon.accountDoor.inviteOnly), 'the server claimed an invite-only instance');
+    assert.ok(!MANAGED.includes('data-slot="signup-offer"'), 'the server claimed an offer');
+  });
+
+  it('draws no screenshot, no "how it works" and no section of the landing', () => {
+    assert.ok(!MANAGED.includes('/landing/'), 'a landing capture is on the account door');
+    assert.ok(!MANAGED.includes('id="how"'), 'the how-it-works section is on the account door');
+    for (const [section, title] of Object.entries(LANDING_SECTION_TITLES)) {
+      assert.ok(!rendersCopy(MANAGED, title), `the ${section} section is on the account door`);
+      assert.ok(rendersCopy(OPEN, title), `the ${section} section left the open landing, so this proves nothing`);
     }
   });
 
-  it('says the managed words the catalog actually holds', () => {
-    assert.ok(MANAGED.includes(enCommon.landing.cta.tryItFreeManaged), 'the hero and closing label');
-    assert.ok(MANAGED.includes(enCommon.landing.setup.ctaManaged), 'the how-it-works label');
-    assert.ok(MANAGED.includes(enCommon.landing.sync.linkManaged), 'the sync card label');
-    assert.ok(MANAGED.includes(enCommon.landing.close.bodyManaged), 'the closing paragraph');
-  });
-
-  it('still carries the small print that made the contradiction visible', () => {
-    // The facts were never the problem: this line was already right while the
-    // button above it offered a free trial. It is pinned so a later pass
-    // cannot "resolve" the contradiction by deleting the true half.
-    assert.ok(MANAGED.includes('Invitation only'), MANAGED.slice(0, 400));
+  it('draws no newsletter form, even where the operator configured one', () => {
+    assert.ok(!MANAGED_WITH_NEWSLETTER.includes('newsletter-consent'), 'a newsletter form on the account door');
+    // THE CONTROL: the same configuration puts the form on the open landing.
+    assert.ok(OPEN_WITH_NEWSLETTER.includes('newsletter-consent'), 'the open landing lost its newsletter form');
   });
 });
 
@@ -294,102 +344,66 @@ describe('the ban is real, because the open page says every one of them', () => 
 // The three strings the sweep caught, pinned by name
 ////////////////////////////////////////////////////////////////////////////////
 
-describe('the setup ladder describes the ladder it actually has', () => {
-  it('does not claim the middle step asks anything, because it does not', () => {
-    // The subtitle is a claim ABOUT step two, and step two stopped asking for
-    // a key when `connectManaged` replaced `connect`.
-    assert.ok(!MANAGED.includes(enCommon.landing.setup.subtitle), 'the open subtitle survived');
-    assert.ok(MANAGED.includes(enCommon.landing.setup.subtitleManaged), MANAGED.slice(0, 400));
+describe('the open setup ladder is the ladder it always was', () => {
+  it('keeps the subtitle and the third step that name the key you bring', () => {
     assert.ok(OPEN.includes(enCommon.landing.setup.subtitle));
-    assert.ok(!OPEN.includes(enCommon.landing.setup.subtitleManaged));
+    assert.ok(OPEN.includes(enCommon.landing.setup.steps.scan.body));
+    assert.ok(OPEN.includes(enCommon.landing.setup.steps.scan.title));
   });
 
-  it('names the instance rather than a provider in the third step', () => {
-    assert.ok(!MANAGED.includes(enCommon.landing.setup.steps.scan.body), 'the BYOK third step survived');
-    assert.ok(MANAGED.includes(enCommon.landing.setup.steps.scan.bodyManaged));
-    assert.ok(OPEN.includes(enCommon.landing.setup.steps.scan.body));
+  it('borrows none of the managed twins, which left with the managed landing', () => {
+    assert.ok(!OPEN.includes(enCommon.landing.setup.subtitleManaged));
     assert.ok(!OPEN.includes(enCommon.landing.setup.steps.scan.bodyManaged));
-    // The step's own title is true in both modes and is deliberately NOT
-    // branched, so it is pinned as shared rather than left unmentioned.
-    for (const page of [MANAGED, OPEN]) assert.ok(page.includes(enCommon.landing.setup.steps.scan.title));
   });
 });
 
-describe('the how-it-works scan step shows no picture it cannot honour', () => {
-  it('renders the BYOK connect capture only where BYOK exists', () => {
-    // `scan-mobile-*.webp` has "Connect with OpenRouter" on its primary
-    // button. The picture is the claim here, so the managed page carries
-    // neither the file nor the sentence that describes it. When a managed
-    // capture exists this test changes to name that file instead.
-    assert.ok(!MANAGED.includes('scan-mobile'), 'the BYOK scan capture is on the managed page');
-    assert.ok(!MANAGED.includes(enCommon.landing.how.scan.shotAlt), 'its alt text is on the managed page');
+describe('the open how-it-works section shows its three steps, each with its capture', () => {
+  it('renders the scan capture and its alt, where bring-your-own-key is what the capture shows', () => {
     assert.ok(OPEN.includes('scan-mobile-dark.webp'), OPEN.slice(0, 400));
     assert.ok(OPEN.includes(enCommon.landing.how.scan.shotAlt));
-  });
-
-  it('keeps the other two captions on both pages, because both are true', () => {
-    for (const page of [MANAGED, OPEN]) {
-      assert.ok(page.includes(enCommon.landing.how.search.shotAlt));
-      assert.ok(page.includes(enCommon.landing.how.see.shotAlt));
-    }
-  });
-
-  it('still shows three steps and, on managed, two of the three captures', () => {
-    // THE STEP THAT LOST ITS PICTURE MUST NOT LOSE ITSELF. Withholding the
-    // capture is a `shot={undefined}`, one prop away from withholding the whole
-    // step, and a page with two steps where three belong would pass every
-    // assertion above it: no banned phrase, no forbidden href, the two true
-    // alts still present. So this counts what the section renders rather than
-    // naming what it must not say.
-    //
-    // Four `<img>` on managed and six on open is the same fact stated twice:
-    // every capture is a dark/light PAIR (`ThemedShot`), because the theme is a
-    // class and not a media query, so one withheld capture is two fewer
-    // elements and not one.
-    for (const [label, page, captures] of [
-      ['managed', MANAGED, 4],
-      ['open', OPEN, 6],
-    ] as const) {
-      const section = howSection(page);
-      assert.equal(section.split('<img').length - 1, captures, `${label}: wrong number of step captures`);
-      for (const title of [
-        enCommon.landing.how.scan.title,
-        enCommon.landing.how.search.title,
-        enCommon.landing.how.see.title,
-      ]) {
-        assert.ok(section.includes(title), `${label}: the "${title}" step left the section`);
-      }
-    }
-  });
-
-  it("keeps the scan step's own copy on the managed page", () => {
-    // The picture is withheld; the step it illustrated is not. Its paragraph is
-    // the managed one, and its heading is the same in both modes.
-    assert.ok(MANAGED.includes(enCommon.landing.how.scan.title));
-    assert.ok(rendersCopy(MANAGED, enCommon.landing.how.scan.bodyManaged), MANAGED.slice(0, 400));
-    assert.ok(!rendersCopy(MANAGED, enCommon.landing.how.scan.body), 'the BYOK body survived');
     assert.ok(rendersCopy(OPEN, enCommon.landing.how.scan.body), OPEN.slice(0, 400));
+  });
+
+  it('keeps the other two captions', () => {
+    assert.ok(OPEN.includes(enCommon.landing.how.search.shotAlt));
+    assert.ok(OPEN.includes(enCommon.landing.how.see.shotAlt));
+  });
+
+  it('still shows three steps and three captures', () => {
+    // Six `<img>` for three captures: every capture is a dark/light PAIR
+    // (`ThemedShot`), because the theme is a class and not a media query.
+    const section = howSection(OPEN);
+    assert.equal(section.split('<img').length - 1, 6, 'wrong number of step captures');
+    for (const title of [
+      enCommon.landing.how.scan.title,
+      enCommon.landing.how.search.title,
+      enCommon.landing.how.see.title,
+    ]) {
+      assert.ok(section.includes(title), `the "${title}" step left the section`);
+    }
+  });
+
+  it('draws every capture from the reader\'s folder, English here', () => {
+    // `landing-shots.ts` picks the folder; the harness renders English.
+    const folders = new Set(OPEN.match(/\/landing\/[a-z]{2}\//g) ?? []);
+    assert.deepEqual([...folders], ['/landing/en/']);
   });
 });
 
 describe('the sync capture is described as the capture it is', () => {
-  it('says the same true sentence on both pages', () => {
+  it('says a true sentence on the open page', () => {
     // `sync-mobile-*.webp` shows a signed-out account screen with one "Sign
-    // in" link on it. It has never shown a create-account offer or a note
-    // about photographs, both of which the old alt text claimed, so this one
-    // is a CORRECTION rather than a mode branch: the picture is the same
-    // picture on both instances and the sentence is now true of it on both.
-    for (const page of [MANAGED, OPEN]) assert.ok(page.includes(enCommon.landing.sync.shotAlt), page.slice(0, 400));
+    // in" link on it. It has never shown a create-account offer.
+    assert.ok(OPEN.includes(enCommon.landing.sync.shotAlt), OPEN.slice(0, 400));
     assert.match(enCommon.landing.sync.shotAlt, /signed out/i);
     assert.ok(!/create an account/i.test(enCommon.landing.sync.shotAlt));
   });
 });
 
-describe('the copy this pass added is fit to be managed copy', () => {
+describe('the account door copy M266 added is fit to be managed copy', () => {
   const ADDED = {
-    'landing.setup.subtitleManaged': enCommon.landing.setup.subtitleManaged,
-    'landing.setup.steps.scan.bodyManaged': enCommon.landing.setup.steps.scan.bodyManaged,
-    'landing.sync.shotAlt': enCommon.landing.sync.shotAlt,
+    'accountDoor.inviteOnly': enCommon.accountDoor.inviteOnly,
+    'accountDoor.siteLine': enCommon.accountDoor.siteLine,
   };
 
   it('exists, in full, and carries no dash', () => {
@@ -405,6 +419,11 @@ describe('the copy this pass added is fit to be managed copy', () => {
         assert.ok(!text.toLowerCase().includes(phrase.toLowerCase()), `${key} says "${phrase}": ${text}`);
       }
     }
+  });
+
+  it('keeps the site line one link, whose words the catalog does not type', () => {
+    // The domain comes from `brand.ts`, so a fork's one edit moves the label too.
+    assert.match(enCommon.accountDoor.siteLine, /<site>\{\{site\}\}<\/site>/);
   });
 });
 
@@ -436,35 +455,6 @@ describe('the open instance landing page is unchanged', () => {
       assert.ok(!OPEN.includes(managedOnly), `${managedOnly} reached an instance with no accounts`);
     }
     assert.ok(!OPEN.includes('Invitation only'), 'the open instance invites nobody, it is simply open');
-  });
-});
-
-describe('the landing copy this spec added is fit to be a managed label', () => {
-  /** The English source strings, by the control each one labels. */
-  const NEW_COPY = {
-    'landing.setup.ctaManaged': enCommon.landing.setup.ctaManaged,
-    'landing.sync.linkManaged': enCommon.landing.sync.linkManaged,
-    'landing.close.bodyManaged': enCommon.landing.close.bodyManaged,
-  };
-
-  it('exists, in full', () => {
-    for (const [key, text] of Object.entries(NEW_COPY)) {
-      assert.ok(text.trim().length > 0, `${key} is empty`);
-    }
-  });
-
-  it('never offers a signup an invite-only instance cannot honour', () => {
-    // The same ban `public-header-doors.test.ts` puts on the header labels.
-    // The label is the affordance's whole contract, so the ban is on the copy.
-    for (const [key, text] of Object.entries(NEW_COPY)) {
-      assert.ok(!/sign ?up|create an account|register|free/i.test(text), `${key} promises a signup: ${text}`);
-    }
-  });
-
-  it('uses no em dash and no en dash', () => {
-    for (const [key, text] of Object.entries(NEW_COPY)) {
-      assert.ok(!/[–—]/.test(text), `${key} carries a dash: ${text}`);
-    }
   });
 });
 
@@ -536,30 +526,17 @@ function landingTitle(managed: boolean | undefined): string {
   throw new Error('the landing page served no title at all');
 }
 
-describe('the setup ladder on a managed instance', () => {
-  it('does not offer to connect a provider the person cannot bring', () => {
-    // The operator runs the AI here: no key is brought, no provider bills
-    // anybody, and the whole paragraph plus its title was false on this page.
-    assert.ok(!MANAGED.includes(enCommon.landing.setup.steps.connect.title), 'the BYOK step title survived');
-    assert.ok(!MANAGED.includes(enCommon.landing.setup.steps.connect.body), 'the BYOK step body survived');
-    assert.ok(!MANAGED.includes('your provider bills you'), 'the managed page still bills the person');
-  });
-
-  it('says instead that the instance provides the AI, with a daily limit', () => {
-    assert.ok(MANAGED.includes(enCommon.landing.setup.steps.connectManaged.title), MANAGED.slice(0, 400));
-    assert.ok(MANAGED.includes(enCommon.landing.setup.steps.connectManaged.body));
-    // The two facts the managed step exists to state. Asserted as words rather
-    // than only as the key, so a rewrite that drops the allowance and leaves a
-    // pleasant sentence behind fails here.
-    assert.match(enCommon.landing.setup.steps.connectManaged.body, /no key/i);
-    assert.match(enCommon.landing.setup.steps.connectManaged.body, /each day/i);
-  });
-
-  it('promises no signup and carries no dash, like every managed label', () => {
-    for (const [key, text] of Object.entries(enCommon.landing.setup.steps.connectManaged)) {
-      assert.ok(!/sign ?up|create an account|register|free/i.test(text), `${key} promises a signup: ${text}`);
-      assert.ok(!/[–—]/.test(text), `${key} carries a dash: ${text}`);
+describe('the account door draws no setup ladder', () => {
+  it('names no provider step and no instance step, because it pitches nothing', () => {
+    for (const text of [
+      enCommon.landing.setup.steps.connect.title,
+      enCommon.landing.setup.steps.connect.body,
+      enCommon.landing.setup.steps.connectManaged.title,
+      enCommon.landing.setup.steps.connectManaged.body,
+    ]) {
+      assert.ok(!MANAGED.includes(text), `the account door says: ${text}`);
     }
+    assert.ok(!MANAGED.includes('your provider bills you'), 'the managed page still bills the person');
   });
 });
 
@@ -721,14 +698,13 @@ const OPEN_AT = {
 } satisfies Record<AnalyticsEventLevel, string>;
 
 describe('the trust card names where the diary lives at every analytics level', () => {
-  // THE BODIES NOBODY HAD EVER RENDERED. Every assertion in this file was
-  // written against `analyticsLevel: null`, which is the one body of the four
-  // that makes no claim about where the diary lives. The three that do were
-  // invisible here, and all three said "your diary stays on this device".
+  // THE BODIES NOBODY HAD EVER RENDERED (M196/02). All three counting levels
+  // say "your diary stays on this device", which is true on the open landing.
+  // The account door states no pitch, so it draws the card at no level at all.
   for (const level of ANALYTICS_LEVELS) {
-    it(`says the managed sentence at the ${level} level`, () => {
-      assert.ok(rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].managed), MANAGED_AT[level].slice(0, 400));
-      assert.ok(!rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].open), `the ${level} device-only body survived`);
+    it(`draws no trust card on the account door at the ${level} level`, () => {
+      assert.ok(!rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].open), `the ${level} body is on the door`);
+      assert.ok(!rendersCopy(MANAGED_AT[level], NO_TRACKING_BODIES[level].managed), `the ${level} twin is on the door`);
     });
 
     it(`keeps the device-only sentence at the ${level} level on an open instance`, () => {
@@ -737,13 +713,9 @@ describe('the trust card names where the diary lives at every analytics level', 
     });
   }
 
-  it('leaves the level-off body alone, because it claims nothing about the device', () => {
-    // Analytics off is the self-host default and the one body with no managed
-    // twin. It is pinned as SHARED rather than left unmentioned, so a later
-    // pass that branches it has to say why.
-    for (const page of [MANAGED, OPEN]) {
-      assert.ok(rendersCopy(page, enCommon.landing.features.noTracking.body), page.slice(0, 400));
-    }
+  it('keeps the level-off body on the open page, where it claims nothing about the device', () => {
+    assert.ok(rendersCopy(OPEN, enCommon.landing.features.noTracking.body), OPEN.slice(0, 400));
+    assert.ok(!rendersCopy(MANAGED, enCommon.landing.features.noTracking.body), 'the trust card is on the door');
     assert.ok(!/this device|your device/i.test(enCommon.landing.features.noTracking.body));
   });
 });
@@ -826,18 +798,18 @@ function localTitleTail(): string {
 }
 
 describe('the storage card describes the storage this instance actually has', () => {
-  // THE STRONGEST FALSE CLAIM ON THE PAGE, and different in kind from the
-  // other five this file pins. The hero and the footer tagline made a promise
-  // that a managed instance cannot keep; this card asserts a fact about the
-  // operator's machines, "it has no database at all", and `openplate-core`
-  // runs a Postgres with the ciphertext diary in it. Worse, the sync card
-  // three cards down the same grid discloses that copy and the operator's
-  // recovery key, so before this branch a managed visitor read two opposite
-  // facts about one server without scrolling.
-  it('names the encrypted copy on a managed instance', () => {
-    assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.titleManaged), MANAGED.slice(0, 400));
-    assert.ok(rendersCopy(MANAGED, enCommon.landing.features.local.bodyManaged), MANAGED.slice(0, 400));
-    assert.ok(!rendersCopy(MANAGED, enCommon.landing.features.local.body), 'the no-database body survived');
+  // "It has no database at all" is a checkable claim about the operator's
+  // machines, true of an open instance and false of a managed one, where
+  // `openplate-core` runs a Postgres with the ciphertext diary in it. The
+  // account door draws no feature grid, so it makes neither claim.
+  it('draws no storage card on the account door', () => {
+    for (const text of [
+      enCommon.landing.features.local.body,
+      enCommon.landing.features.local.bodyManaged,
+      localTitleTail(),
+    ]) {
+      assert.ok(!rendersCopy(MANAGED, text), `the account door says: ${text}`);
+    }
   });
 
   it('keeps the no-database card on an open instance, where it is true', () => {
@@ -845,32 +817,6 @@ describe('the storage card describes the storage this instance actually has', ()
     assert.ok(rendersCopy(OPEN, enCommon.landing.features.local.body), OPEN.slice(0, 400));
     assert.ok(!rendersCopy(OPEN, localTitleTail()), 'the managed title reached a self-host');
     assert.ok(!rendersCopy(OPEN, enCommon.landing.features.local.bodyManaged), 'the managed body reached a self-host');
-  });
-
-  it('states two different things, so the pair cannot drift into one sentence', () => {
-    // WITHOUT THIS the assertions above pass on a "fix" that points both body
-    // keys at the same words. The claim being branched is named here by hand,
-    // because it is the sentence that was false rather than the whole
-    // paragraph that carried it.
-    assert.notEqual(enCommon.landing.features.local.body, enCommon.landing.features.local.bodyManaged);
     assert.match(enCommon.landing.features.local.body, /no database at all/);
-    assert.ok(!/no database at all/.test(enCommon.landing.features.local.bodyManaged));
-    // And the managed body has to state the fact it exists to state, which is
-    // three things at once: there IS a copy, it is encrypted, and the
-    // operator holds a recovery key that can open it. Asserted as meaning
-    // rather than as the sentence, because the sentence has already been
-    // rewritten once: it arrived as two clauses saying the same thing twice
-    // and was merged into one, and then rewritten again when "cannot open
-    // it" turned out to be false (the recovery code escrow, M192, gives the
-    // operator a key that can).
-    const managed = enCommon.landing.features.local.bodyManaged;
-    assert.match(managed, /\bserver\b/i);
-    assert.match(managed, /encrypted/i);
-    assert.match(managed, /recovery key/i);
-    assert.ok(
-      !/cannot read|cannot open/i.test(managed),
-      'the managed body denies the recovery key it exists to announce',
-    );
-    assert.ok(!/keeps no copy/i.test(managed), 'the managed body denies the copy it exists to announce');
   });
 });

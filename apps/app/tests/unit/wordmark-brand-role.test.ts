@@ -202,8 +202,13 @@ describe('the places that draw the word', () => {
     };
   }
 
-  it('lifts the word wherever the mark is beside it: sidebar, public header, onboarding', () => {
-    for (const path of ['app/components/app-sidebar.tsx', 'app/components/public-wrapper.tsx', 'app/routes/onboarding.tsx']) {
+  it('lifts the word wherever the mark is beside it: sidebar, public header, onboarding, the account door', () => {
+    for (const path of [
+      'app/components/app-sidebar.tsx',
+      'app/components/public-wrapper.tsx',
+      'app/routes/onboarding.tsx',
+      'app/routes/account-door-page.tsx',
+    ]) {
       assert.deepEqual(usesOf(path), { lifted: 1, alone: 0 }, `${path} draws the word beside the mark`);
     }
     // The phone drawer's header was the fourth place, and it went with the
@@ -213,7 +218,9 @@ describe('the places that draw the word', () => {
 
   it('leaves the word alone where no mark is beside it: the phone kicker and the landing heading', () => {
     assert.equal(usesOf('app/components/app-wrapper.tsx').alone, 1, 'the kicker is the one lone use in app-wrapper');
-    assert.deepEqual(usesOf('app/routes/index.tsx'), { lifted: 0, alone: 1 }, 'the landing heading has no mark beside it');
+    // The open landing's markup left `index.tsx` for `landing-open.tsx` (M266).
+    assert.deepEqual(usesOf('app/routes/landing-open.tsx'), { lifted: 0, alone: 1 }, 'the landing heading has no mark beside it');
+    assert.deepEqual(usesOf('app/routes/index.tsx'), { lifted: 0, alone: 0 }, 'the route draws no word of its own');
   });
 
   it('CONTROL: the reader tells a lifted tag from a lone one', () => {
@@ -238,7 +245,8 @@ describe('the places that draw the word', () => {
       'app/components/app-wrapper.tsx',
       'app/components/public-wrapper.tsx',
       'app/routes/onboarding.tsx',
-      'app/routes/index.tsx',
+      'app/routes/landing-open.tsx',
+      'app/routes/account-door-page.tsx',
     ]) {
       const tags = readFileSync(join(ROOT, path), 'utf8').match(/<Wordmark\b[^>]*>/g) ?? [];
       for (const tag of tags) {

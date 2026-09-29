@@ -12,7 +12,8 @@
  *
  * THE SAME CELL RECIPE is on three more pages: the forgot-password form and
  * its two answers (`forgot.tsx`), the sign-up form and its sentence
- * (`sign-up.tsx`), and the landing's two rows of hero doors (`index.tsx`).
+ * (`sign-up.tsx`), and the two pairs of doors on the managed front page
+ * (`account-door-page.tsx`, the landing's hero doors until M266).
  * Each test below drives that page's swap and reads the DOM on every
  * animation frame across it, because a reading taken after the page settles,
  * or a screenshot, sees none of those frames.
@@ -23,7 +24,8 @@
  * The landing never flashed: its "Sign in" row is hidden from the first paint
  * wherever "Sign up" leads, so its button has no change of `visibility` to
  * animate, and on an invite-only instance the row only ever turns visible.
- * The landing's two tests stay as guards, and the landing kept its markup.
+ * The account door took over that cell recipe (M266), with the invite-only
+ * pair as the reserved row, and the two tests guard it now.
  *
  * WHAT IS REAL: the production build booted as a managed instance, the pages,
  * their forms and their requests. WHAT IS STUBBED: `/health`, the reset
@@ -50,7 +52,10 @@ const BOOT_BUDGET_MS = 90_000;
 /** The grid cell each page swaps its states in. Every direct child of the cell is one state. */
 const FORGOT_CELL = 'main div:has(> [data-slot="forgot-sent"])';
 const SIGN_UP_CELL = 'main div:has(> [data-slot="sign-up-sent"])';
-const LANDING_CELL = 'main [data-slot="landing-hero-doors"]';
+const LANDING_CELL = 'main [data-slot="account-door-doors"]';
+
+/** The line under the door page's small print, which nothing on the page may move. */
+const BELOW_THE_DOORS = 'main [data-slot="account-door-site-line"]';
 
 /**
  * How many more frames the watch reads once a swap has shown its new state,
@@ -242,7 +247,7 @@ async function routeHealth(page: Page, stub: { openSignup: boolean }, gate?: Pro
         protocolVersion: PROTOCOL_VERSION,
         envelopeVersion: ENVELOPE_VERSION,
         serviceVersion: 'fake-e2e',
-        // NO TRIAL: the landing then draws no offer and asks for no prices,
+        // NO TRIAL: the account door then draws no offer and asks for no prices,
         // so the doors are the only thing the handshake changes there.
         instance: {
           name: 'openplate-e2e',
@@ -370,7 +375,7 @@ test('no invisible-button flash on /sign-up: the form turning into its sentence 
   await expectAMoveIsSeen(page, { below, cell: page.locator(SIGN_UP_CELL) });
 });
 
-test('no invisible-button flash on the landing: "Sign up" arriving beside the hidden "Sign in" row draws one row per frame', async ({
+test('no invisible-button flash on the account door: "Sign up" arriving beside the hidden invite-only pair draws one pair per frame', async ({
   page,
 }) => {
   await installShiftObserver(page);
@@ -378,7 +383,7 @@ test('no invisible-button flash on the landing: "Sign up" arriving beside the hi
   const gate = createGate();
   await routeHealth(page, { openSignup: true }, gate.promise);
   await page.goto(`${server.url}/`);
-  const below = page.locator('main figure').first();
+  const below = page.locator(BELOW_THE_DOORS);
   await expect(below).toBeVisible();
   const baseline = await takeBaseline(page, below);
 
@@ -388,11 +393,12 @@ test('no invisible-button flash on the landing: "Sign up" arriving beside the hi
 
   await expectNoFlash(page);
   await expectNothingMoved(page, { below, baseline });
-  await expectWatchSeesAForcedPaint(page, page.locator(`${LANDING_CELL} a[href="/welcome"]`));
+  // The hidden pair is the cell's first state; the sign-up pair has a "Sign in" link too.
+  await expectWatchSeesAForcedPaint(page, page.locator(`${LANDING_CELL} > div:first-child a[href="/sign-in"]`));
   await expectAMoveIsSeen(page, { below, cell: page.locator(LANDING_CELL) });
 });
 
-test('no invisible-button flash on the landing: the "Sign in" row turning visible on an invite-only instance draws one row per frame', async ({
+test('no invisible-button flash on the account door: the invite-only pair turning visible draws one pair per frame', async ({
   page,
 }) => {
   await installShiftObserver(page);
@@ -400,12 +406,12 @@ test('no invisible-button flash on the landing: the "Sign in" row turning visibl
   const gate = createGate();
   await routeHealth(page, { openSignup: false }, gate.promise);
   await page.goto(`${server.url}/`);
-  const below = page.locator('main figure').first();
+  const below = page.locator(BELOW_THE_DOORS);
   await expect(below).toBeVisible();
   const baseline = await takeBaseline(page, below);
 
   gate.open();
-  await expect(page.locator(`${LANDING_CELL} a[href="/welcome"]`)).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(`${LANDING_CELL} a[href="/sign-in"]`)).toBeVisible({ timeout: 10_000 });
   await settleAnimations(page);
 
   await expectNoFlash(page);
@@ -416,6 +422,6 @@ test('no invisible-button flash on the landing: the "Sign in" row turning visibl
     if (!(row instanceof HTMLElement)) throw new Error('the doors row is not an HTML element');
     row.style.visibility = 'hidden';
   });
-  await expectWatchSeesAForcedPaint(page, page.locator(`${LANDING_CELL} a[href="/welcome"]`));
+  await expectWatchSeesAForcedPaint(page, page.locator(`${LANDING_CELL} a[href="/sign-in"]`));
   await expectAMoveIsSeen(page, { below, cell: page.locator(LANDING_CELL) });
 });

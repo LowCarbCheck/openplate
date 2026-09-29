@@ -28,6 +28,12 @@
  * THE CONTROL. The same reader, with the word made visible again inline at the
  * narrowest width in the longest language, must report an overlap. A reader
  * that could not see one would pass every claim above and prove nothing.
+ *
+ * READ ON A LEGAL PAGE since M266. A managed `/` is the account door, and its
+ * header carries no doors (they are in the page, `account-door-page.spec.ts`
+ * reads that page at 320, 390 and 412 px). Every other public page keeps the
+ * header's two controls, which is the row this spec is about, so it reads the
+ * header of `/imprint`.
  */
 import { expect, test, type Page } from '@playwright/test';
 
@@ -42,6 +48,9 @@ const PHONE_HEIGHT = 844;
 
 /** How long the managed server may take to boot, beside the tier's 30 s per spec. */
 const BOOT_BUDGET_MS = 90_000;
+
+/** A public page whose header carries both managed controls. */
+const HEADER_PAGE = '/imprint';
 
 /** The language whose two header labels are the longest, measured on 2026-09-23. */
 const LONGEST_LANGUAGE: LanguageCode = 'es';
@@ -79,7 +88,7 @@ test.afterAll(async () => {
 });
 
 /**
- * Opens the managed landing in a language and waits for the header and its fonts.
+ * Opens a managed public page in a language and waits for the header and its fonts.
  *
  * @param page - a fresh page.
  * @param language - the language cookie to send.
@@ -87,7 +96,7 @@ test.afterAll(async () => {
 async function openLanding(page: Page, language: LanguageCode): Promise<void> {
   await page.context().addCookies([{ name: LANGUAGE_COOKIE, value: language, url: server.url }]);
   await page.setViewportSize({ width: PHONE_WIDTHS[0], height: PHONE_HEIGHT });
-  await page.goto(`${server.url}/`);
+  await page.goto(`${server.url}${HEADER_PAGE}`);
   await expect(page.locator('header a[href="/sign-in"]'), 'the managed header draws sign in').toBeVisible();
   await expect(page.locator('header button'), 'and the access control beside it').toBeVisible();
   await page.evaluate(async () => {
@@ -173,7 +182,7 @@ function outsideViewport(read: HeaderRead): string[] {
 }
 
 for (const language of SUPPORTED_LANGUAGES) {
-  test(`the managed landing header fits a phone in ${language}`, async ({ page }) => {
+  test(`the managed public header fits a phone in ${language}`, async ({ page }) => {
     await openLanding(page, language);
     for (const width of PHONE_WIDTHS) {
       await page.setViewportSize({ width, height: PHONE_HEIGHT });

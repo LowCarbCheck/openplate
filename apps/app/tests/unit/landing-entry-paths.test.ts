@@ -14,6 +14,18 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../../app/routes/index.tsx', import.meta.url), 'utf8');
 
+describe('the entry logic runs before the page is chosen', () => {
+  it('asks the policy once and draws one of the two pages, after the repair effect', () => {
+    // Both pages get the three paths into the app: a device with a session
+    // never stays on the landing OR on the account door.
+    const page = source.slice(source.indexOf('export default function Index('));
+    assert.ok(page.length > 0, 'the page component is gone');
+    assert.ok(page.indexOf('useHomeHintRepair()') < page.indexOf('frontDoorIsTheAccountDoor'));
+    assert.match(page, /if \(frontDoorIsTheAccountDoor\) return <AccountDoorPage \/>;/);
+    assert.match(page, /<LandingOpen /);
+  });
+});
+
 function slice(from: string, to: string): string {
   const start = source.indexOf(from);
   const end = source.indexOf(to, start + 1);
@@ -36,7 +48,9 @@ describe('a managed dashboard redirect proves a session, on every path', () => {
   });
 
   it('the hard-load repair effect makes the same check rather than its own', () => {
-    const repair = slice('function useHomeHintRepair(', '// Product imagery');
+    // Up to the page component, which follows the effect since the landing's
+    // markup moved to `landing-open.tsx` (M266).
+    const repair = slice('function useHomeHintRepair(', 'export default function Index(');
     assert.match(repair, /useInstancePolicy/);
     assert.match(repair, /hasDeviceSyncSession/);
     assert.match(repair, /resolveClientLandingEntry/);
