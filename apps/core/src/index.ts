@@ -27,7 +27,13 @@ export { createAdminRoutes, ADMIN_API_PREFIX } from './server/admin-routes.js';
 export { createAdminFeedbackRoutes, ADMIN_FEEDBACK_PATH } from './server/admin-feedback-routes.js';
 export { registerFeedbackRoute, FEEDBACK_API_PREFIX } from './feedback/register-feedback-route.js';
 export { createAdminAuthMiddleware } from './server/admin-auth.js';
-export { createBearerAuthMiddleware, createEntitledUserResolver, getRequestSession } from './server/bearer-auth.js';
+export {
+  createBearerAuthMiddleware,
+  createEntitledUserResolver,
+  createHealthConsentMiddleware,
+  exceptOwnCopyReads,
+  getRequestSession,
+} from './server/bearer-auth.js';
 
 // Account system.
 export * from './accounts/auth-handlers.js';

@@ -136,6 +136,8 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
     instanceDailyLimit: null,
     trialInstanceDailyLimit: null,
     bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+    // An instance that asks for no consent, which this file is not about.
+    healthConsent: null,
   });
   // The terminal handler the real app mounts last. Present so a test can see
   // that the route's own handler answered rather than falling through to it.

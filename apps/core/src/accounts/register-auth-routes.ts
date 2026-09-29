@@ -99,6 +99,16 @@ export interface AuthRoutesOptions {
   /** The bearer middleware — injected so this module never reaches for a singleton. */
   requireAuth: RequestHandler;
   /**
+   * `requireHealthConsent` (`server/bearer-auth.ts`), mounted behind
+   * `requireAuth` on the three routes here that use the account rather than
+   * let it agree or leave: the account patch, the passphrase change and the
+   * member mint. A pass-through on an instance that asks for no consent.
+   *
+   * REQUIRED, like `requireAuth`. A `?` would let a wiring change that forgot
+   * it compile into three routes an account that never agreed still reaches.
+   */
+  requireConsent: RequestHandler;
+  /**
    * The per-source bucket of `POST /v1/auth/signup-request` (M253), or absent
    * for a fresh one on {@link SIGNUP_REQUEST_IP_THROTTLE}.
    *
@@ -163,7 +173,7 @@ function clientIp(req: Request): string {
 }
 
 export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): void {
-  const { ctx, throttle, requireAuth } = options;
+  const { ctx, throttle, requireAuth, requireConsent } = options;
   const router = express.Router();
   // SCOPED TO THE PREFIX. See the module header: unscoped, this parser applies
   // to every path in the service and silently caps them all at 64 KB.
@@ -356,7 +366,13 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
     }
   });
 
-  router.post(`${AUTH_API_PREFIX}/change-passphrase`, requireAuth, async (req, res, next) => {
+  // BEHIND THE CONSENT, and not only because it is not a way out. A passphrase
+  // change is two writes in the app: this one, and the compartment's new wrap
+  // on the blob, which the sync prefix refuses to an account without the
+  // consent. Accepting this half alone would revoke every session and leave
+  // the compartment on a passphrase nobody has any more, so the whole change
+  // waits until the person has agreed.
+  router.post(`${AUTH_API_PREFIX}/change-passphrase`, requireAuth, requireConsent, async (req, res, next) => {
     try {
       const session = getRequestSession(req);
       if (session === null) {
@@ -382,7 +398,11 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
     }
   });
 
-  router.patch(`${AUTH_API_PREFIX}/account`, requireAuth, async (req, res, next) => {
+  // THE READ ABOVE IS OPEN, the patch is not. The app reads the account to
+  // learn that it must ask, so `GET` is reachable by exactly the accounts the
+  // consent refuses, and the patch is using the account, not agreeing or
+  // leaving.
+  router.patch(`${AUTH_API_PREFIX}/account`, requireAuth, requireConsent, async (req, res, next) => {
     try {
       const session = getRequestSession(req);
       if (session === null) {
@@ -403,7 +423,9 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
   // terminator in the same position the route would occupy, for the reason
   // the member mint below gives. Bearer when mounted, like `PATCH /account`,
   // and unthrottled like it: it writes one row the caller owns and sends
-  // nothing anywhere.
+  // nothing anywhere. NEVER BEHIND `requireConsent`: it is the route an
+  // account without the consent uses to agree, so gating it would lock that
+  // account out of every data route for good.
   if (ctx.healthConsent != null) {
     router.post(`${AUTH_API_PREFIX}/account/health-consent`, requireAuth, async (req, res, next) => {
       try {
@@ -437,7 +459,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
   // around a registered-but-refusing handler, so a second verb added here
   // later is dark by default.
   if (ctx.memberInvites != null) {
-    router.post(`${AUTH_API_PREFIX}/invites`, requireAuth, async (req, res, next) => {
+    router.post(`${AUTH_API_PREFIX}/invites`, requireAuth, requireConsent, async (req, res, next) => {
       try {
         const session = getRequestSession(req);
         if (session === null) {

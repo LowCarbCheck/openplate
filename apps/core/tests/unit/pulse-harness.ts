@@ -19,7 +19,7 @@ import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { registerPulseRoutes, PULSE_API_PREFIX } from '../../src/server/register-pulse-routes.js';
-import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
+import { createBearerAuthMiddleware, createHealthConsentMiddleware } from '../../src/server/bearer-auth.js';
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import type { LogFields, Logger } from '../../src/logger.js';
@@ -103,6 +103,9 @@ export async function startPulseHarness(options: StartPulseHarnessOptions = {}):
   registerPulseRoutes(app, {
     pulse,
     requireAuth: createBearerAuthMiddleware(fixture.ctx),
+    // An instance that asks for no consent: the refusal is
+    // `tests/integration/health-consent-required.test.ts`'s to prove.
+    requireConsent: createHealthConsentMiddleware(null),
     logger: createRecordingLogger(logLines),
     now: fixture.now,
     cacheTtlMs: options.cacheTtlMs,

@@ -92,6 +92,12 @@ export interface PulseRouteOptions {
   pulse: PulseStore;
   /** The bearer middleware, injected so this module never reaches for a singleton. */
   requireAuth: RequestHandler;
+  /**
+   * `requireHealthConsent` (`server/bearer-auth.ts`), mounted directly behind
+   * `requireAuth`. A pass-through on an instance that asks for no consent.
+   * Required for the reason `requireAuth` is.
+   */
+  requireConsent: RequestHandler;
   logger: Logger;
   /** Injected, like every clock in this repo, so a test can pin the day and the cache window. */
   now: () => Date;
@@ -155,6 +161,9 @@ export function registerPulseRoutes(app: Express, options: PulseRouteOptions): v
   router.use(PULSE_API_PREFIX, express.json({ limit: PULSE_MAX_REQUEST_BYTES }));
   router.use(PULSE_API_PREFIX, createPulseAccessLog(logger));
   router.use(PULSE_API_PREFIX, options.requireAuth);
+  // BEHIND THE CONSENT TO HEALTH DATA (2026-09-29): a meal, a photo and a
+  // fast counted for the community are about the person's diary.
+  router.use(PULSE_API_PREFIX, options.requireConsent);
 
   // THE INJECTED CLOCK REACHES THE LIMITERS TOO, so a test moves time rather
   // than waiting ten minutes for a heartbeat window.

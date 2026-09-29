@@ -13,9 +13,24 @@
  *  1. CORS first, so even a `401` and a preflight carry the headers.
  *  2. The bearer middleware is mounted on the sync prefix BEFORE the sync
  *     router, so an unauthenticated caller gets `401` instead of falling
- *     through to `resolveEntitledUser`'s `403`.
+ *     through to `resolveEntitledUser`'s `403`. The consent to health data
+ *     is mounted directly behind it, so an anonymous caller still hears
+ *     "sign in" before an account hears "agree".
  *  3. The 404 and the error handler are last, Express only reaches a
  *     four-argument handler after everything before it has passed along.
+ *
+ * THE CONSENT TO HEALTH DATA IS REQUIRED ON EVERY DATA ROUTE (owner decision,
+ * 2026-09-29) on an instance that sets `HEALTH_CONSENT_VERSION`. One
+ * `requireHealthConsent` is built below from the auth context's binding and
+ * mounted behind `requireAuth` everywhere an account stores, sends or spends
+ * something: the sync prefix (all of it but the account's own two reads), the
+ * AI proxy (in its own refusal ladder), reported estimates, the pulse, web
+ * push, the plans proxy, and three account routes. What stays open is what an
+ * account needs to agree, to leave and to read back its own copy: sign in,
+ * refresh, sign out, the account view, the consent route, deletion, its own
+ * blob and key records, and everything with no account at all (`/health`, the
+ * price list, the statutory buttons, the operator's own API). On an instance
+ * that asks for nothing the middleware is a pass-through.
  *
  * THE ADMIN API IS ALWAYS MOUNTED, AND ITS MIDDLEWARE DECIDES WHAT TO ADMIT
  * TO (M192). It used to be mounted only when `ADMIN_TOKEN` was set, so absence
@@ -112,7 +127,12 @@ import type { FeedbackStore } from '../feedback/feedback-store.js';
 import type { AiQuotaStore } from '../ai/quota-store.js';
 import type { AiUpstreamConfig } from '../ai/proxy.js';
 import type { ChatBodyPolicy } from '../ai/chat-body-policy.js';
-import { createBearerAuthMiddleware, createEntitledUserResolver } from './bearer-auth.js';
+import {
+  createBearerAuthMiddleware,
+  createEntitledUserResolver,
+  createHealthConsentMiddleware,
+  exceptOwnCopyReads,
+} from './bearer-auth.js';
 import { createCorsMiddleware } from './cors.js';
 import { createErrorMiddleware, handleNotFound } from './error-middleware.js';
 import type { AdminMetadataStore } from '../admin/admin-store.js';
@@ -430,10 +450,16 @@ export function createApp(options: CreateAppOptions): Express {
   });
 
   const requireAuth = createBearerAuthMiddleware(options.authContext);
+  // THE SAME BINDING `/health` PUBLISHES and signup asks for, read off the
+  // auth context rather than configured again here. `null` makes it a
+  // pass-through, which is what every self-hosted instance runs.
+  const healthConsent = options.authContext.healthConsent ?? null;
+  const requireConsent = createHealthConsentMiddleware(healthConsent);
   registerAuthRoutes(app, {
     ctx: options.authContext,
     throttle: options.throttle,
     requireAuth,
+    requireConsent,
     signupRequestThrottle: options.signupRequestThrottle,
   });
 
@@ -520,7 +546,13 @@ export function createApp(options: CreateAppOptions): Express {
   // Every blob/key-record route is behind the bearer gate. `registerSyncRoutes`
   // still does its own `resolveEntitledUser` check, defence in depth, and the
   // seam a future entitlement rule would use.
-  app.use(SYNC_API_PREFIX, requireAuth);
+  //
+  // AND BEHIND THE CONSENT, in the same mount, so it covers every router
+  // registered on the prefix below: the blob, the key records, the DEK
+  // rotation, sharing and research. Only the account's own blob and key
+  // records may be READ without it, because signing in on a new device needs
+  // both before the app can ask; see `exceptOwnCopyReads`.
+  app.use(SYNC_API_PREFIX, requireAuth, exceptOwnCopyReads(requireConsent));
   const resolveEntitledUser = createEntitledUserResolver();
   registerSyncRoutes(app, {
     storage: options.storage,
@@ -589,6 +621,9 @@ export function createApp(options: CreateAppOptions): Express {
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
       bodyPolicy: ai.bodyPolicy,
+      // Refused in the proxy's own ladder, beside the suspension, rather than
+      // by `requireConsent` in front of it. See `ChatCompletionsDeps`.
+      healthConsent,
     });
   }
 
@@ -621,6 +656,7 @@ export function createApp(options: CreateAppOptions): Express {
       reports: feedback.reports,
       images: feedback.images,
       requireAuth,
+      requireConsent,
       dailyLimit: feedback.dailyLimit,
       maxRequestBytes: feedback.maxRequestBytes,
       now,
@@ -634,6 +670,7 @@ export function createApp(options: CreateAppOptions): Express {
   registerPulseRoutes(app, {
     pulse: options.pulse,
     requireAuth,
+    requireConsent,
     logger: options.logger,
     now,
   });
@@ -647,6 +684,7 @@ export function createApp(options: CreateAppOptions): Express {
       store: push.store,
       publicKey: push.publicKey,
       requireAuth,
+      requireConsent,
       logger: options.logger,
       now,
     });
@@ -666,6 +704,7 @@ export function createApp(options: CreateAppOptions): Express {
     registerPlansRoutes(app, {
       upstream: plans,
       requireAuth,
+      requireConsent,
       accounts: options.authContext.store,
       logger: options.logger,
       now,

@@ -103,6 +103,12 @@ export interface FeedbackRouteOptions {
   images: FeedbackImageStore;
   /** The bearer middleware, injected so this module never reaches for a singleton. */
   requireAuth: express.RequestHandler;
+  /**
+   * `requireHealthConsent` (`server/bearer-auth.ts`), mounted directly behind
+   * `requireAuth`. A pass-through on an instance that asks for no consent.
+   * Required for the reason `requireAuth` is.
+   */
+  requireConsent: express.RequestHandler;
   /** How many reports one account may store per UTC day (`FEEDBACK_DAILY_LIMIT`). */
   dailyLimit: number;
   /** The largest request body this route accepts, in bytes (`FEEDBACK_MAX_REQUEST_BYTES`). */
@@ -240,6 +246,9 @@ export function registerFeedbackRoute(app: Express, options: FeedbackRouteOption
     FEEDBACK_API_PREFIX,
     express.json({ limit: options.maxRequestBytes }),
     options.requireAuth,
+    // BEHIND THE CONSENT TO HEALTH DATA (2026-09-29): a report keeps a
+    // photograph of the person's food and the entry it was logged as.
+    options.requireConsent,
     asyncHandler(async (req, res) => {
       const session = getRequestSession(req);
       if (session === null) {

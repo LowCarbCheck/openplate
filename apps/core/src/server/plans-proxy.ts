@@ -173,6 +173,12 @@ export interface PlansRouteOptions {
   /** The bearer middleware, injected so this module never reaches for a singleton. */
   requireAuth: RequestHandler;
   /**
+   * `requireHealthConsent` (`server/bearer-auth.ts`), mounted directly behind
+   * `requireAuth`. A pass-through on an instance that asks for no consent.
+   * Required for the reason `requireAuth` is.
+   */
+  requireConsent: RequestHandler;
+  /**
    * Where `X-Account-Email` comes from. THE ROW, NEVER THE REQUEST: a client
    * that sends an address is sending somebody else's as easily as its own.
    */
@@ -539,6 +545,11 @@ export function registerPlansRoutes(app: Express, options: PlansRouteOptions): v
     createPlansPricesHandler({ read: readPrices, logger: options.logger }),
   );
   router.use(options.requireAuth);
+  // BEHIND THE CONSENT TO HEALTH DATA (2026-09-29), like every other route an
+  // account uses rather than agrees or leaves on. The price list above stays
+  // open: it has no account to ask. The two statutory buttons are not here at
+  // all (`server/legal-declarations.ts`), and nothing gates them.
+  router.use(options.requireConsent);
   router.use(refuseMethod);
   router.get('/*', forward);
   router.post('/*', express.raw({ type: () => true, limit: PLANS_MAX_REQUEST_BYTES }), forward);

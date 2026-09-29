@@ -69,6 +69,12 @@ export interface PushRouteOptions {
   publicKey: string;
   /** The bearer middleware, injected so this module never reaches for a singleton. */
   requireAuth: RequestHandler;
+  /**
+   * `requireHealthConsent` (`server/bearer-auth.ts`), mounted directly behind
+   * `requireAuth`. A pass-through on an instance that asks for no consent.
+   * Required for the reason `requireAuth` is.
+   */
+  requireConsent: RequestHandler;
   logger: Logger;
   /** Injected, like every clock in this repo, so a test can pin the local day a registration is stamped with. */
   now: () => Date;
@@ -209,6 +215,10 @@ export function registerPushRoutes(app: Express, options: PushRouteOptions): voi
   router.use(PUSH_API_PREFIX, express.json({ limit: PUSH_MAX_REQUEST_BYTES }));
   router.use(PUSH_API_PREFIX, createPushAccessLog(logger));
   router.use(PUSH_API_PREFIX, options.requireAuth);
+  // BEHIND THE CONSENT TO HEALTH DATA (2026-09-29): a subscription stores
+  // whether the person wants the fast target alert, when their fast should
+  // wake them, and the hour of their daily catch-up.
+  router.use(PUSH_API_PREFIX, options.requireConsent);
 
   router.get(
     `${PUSH_API_PREFIX}/config`,

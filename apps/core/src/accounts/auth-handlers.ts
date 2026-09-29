@@ -145,6 +145,12 @@ export interface AuthContext {
    * /v1/auth/account/health-consent` is not registered then and answers the
    * ordinary unknown-path 404, and `POST /v1/auth/signup` ignores a
    * `healthConsent` field it was sent.
+   *
+   * SET, IT IS REQUIRED ON EVERY DATA ROUTE (2026-09-29), not only asked for
+   * here. `create-app.ts` builds `requireHealthConsent` from this binding, and
+   * the AI proxy reads the same one, so an account without the current
+   * version is refused `403 health-consent-required` everywhere but the routes
+   * it needs to agree, to leave and to read its own copy.
    */
   healthConsent?: InstanceHealthConsent | null;
 }
@@ -663,6 +669,17 @@ export interface ResolvedSession {
   accountId: number;
   tokenId: number;
   familyId: string | null;
+  /**
+   * The health-data consent version on the account row, or `null` for none,
+   * as read by the SAME query that checked the suspension.
+   *
+   * CARRIED HERE so `requireHealthConsent` (`server/bearer-auth.ts`) costs no
+   * second round trip: the row is already in hand on every authenticated
+   * request, and a copy read per request is as fresh as the suspension is. A
+   * consent recorded on the prompt route is therefore seen by the next request
+   * on the same access token.
+   */
+  healthConsentVersion: string | null;
 }
 
 /**
@@ -685,7 +702,9 @@ export type AccessTokenResolution =
  * IT READS THE ACCOUNT ROW, which is a second query on every authenticated
  * request. That cost buys the suspension guarantee: without it, an operator
  * who suspends somebody at 09:00 leaves their phone syncing until its access
- * token expires, and "suspended" would mean "in a quarter of an hour".
+ * token expires, and "suspended" would mean "in a quarter of an hour". The
+ * same row answers the consent question too, see
+ * {@link ResolvedSession.healthConsentVersion}.
  */
 export async function resolveAccessToken(rawToken: string, ctx: AuthContext): Promise<AccessTokenResolution> {
   const stored = await ctx.store.findToken({ kind: 'access', tokenHash: hashToken(rawToken) });
@@ -701,7 +720,12 @@ export async function resolveAccessToken(rawToken: string, ctx: AuthContext): Pr
 
   return {
     status: 'valid',
-    session: { accountId: stored.accountId, tokenId: stored.id, familyId: stored.familyId },
+    session: {
+      accountId: stored.accountId,
+      tokenId: stored.id,
+      familyId: stored.familyId,
+      healthConsentVersion: account.healthConsent?.version ?? null,
+    },
   };
 }
 
@@ -1184,9 +1208,11 @@ export async function handleUpdateAccount(
  *
  * WHO CALLS IT. An account created before the instance asked, and every
  * account once the operator changes `HEALTH_CONSENT_VERSION`. The app sees
- * `account.healthConsent` missing or older than `instance.healthConsent` and
- * asks once; the account on `/join` never needs it, because signup records
- * the consent in the same statement as the account.
+ * `account.healthConsent` missing or older than `instance.healthConsent`, or
+ * meets `403 health-consent-required` on a data route, and asks once; the
+ * account on `/join` never needs it, because signup records the consent in
+ * the same statement as the account. It stays open to exactly the accounts
+ * the data routes refuse, which is the point of it.
  *
  * THE BODY IS `{"version": "<v>"}` AND ONLY THE INSTANCE'S VERSION PASSES.
  * Anything else is `400 health-consent-required`, the refusal signup gives,

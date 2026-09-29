@@ -15,7 +15,7 @@ import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { PUSH_API_PREFIX, registerPushRoutes } from '../../src/server/register-push-routes.js';
-import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
+import { createBearerAuthMiddleware, createHealthConsentMiddleware } from '../../src/server/bearer-auth.js';
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import { createAuthFixture } from './auth-context-fixture.js';
@@ -78,6 +78,9 @@ export async function startPushHarness(): Promise<PushHarness> {
     store,
     publicKey: HARNESS_PUBLIC_KEY,
     requireAuth: createBearerAuthMiddleware(fixture.ctx),
+    // An instance that asks for no consent: the refusal is
+    // `tests/integration/health-consent-required.test.ts`'s to prove.
+    requireConsent: createHealthConsentMiddleware(null),
     logger: createRecordingLogger(logLines),
     now: fixture.now,
   });

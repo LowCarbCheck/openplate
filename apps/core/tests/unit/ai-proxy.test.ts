@@ -209,11 +209,19 @@ async function startProxy(options: {
   timeoutMs?: number;
   /** The whole instance's ceiling per UTC day. Absent means NONE, which is every deployment that has not opted in. */
   instanceDailyLimit?: number | null;
+  /** The consent version the instance requires. Absent means none, which is every self-hosted instance. */
+  healthConsentVersion?: string;
+  /** The consent version on the account. Absent means none on record. */
+  accountConsentVersion?: string;
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
     email: 'anna@example.org',
     dailyAiLimit: options.dailyAiLimit ?? 200,
+    healthConsent:
+      options.accountConsentVersion === undefined
+        ? null
+        : { version: options.accountConsentVersion, at: fixture.now() },
   });
   if (options.allowanceExpiresAt !== undefined) {
     // Through `updateStanding`, the operator's own write, rather than a
@@ -252,6 +260,7 @@ async function startProxy(options: {
       // The production wiring's shape with no model: the caller's model
       // passes, and the output ceiling is still written in (M256).
       bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+      healthConsent: options.healthConsentVersion === undefined ? null : { version: options.healthConsentVersion },
       now: fixture.now,
     }),
   );
@@ -349,6 +358,56 @@ test('a limit of 0 is 403 ai-not-allowed, before the upstream and before the res
   assert.deepEqual(await response.json(), { error: 'ai-not-allowed' });
   assert.equal(upstream.received.length, 0);
   assert.equal(harness.quota.reserves, 0, 'a zero limit must never reach the quota store');
+
+  await harness.close();
+});
+
+// ── The consent to health data (2026-09-29) ────────────────────────────────
+
+test('an account without the consent is 403 health-consent-required, before the allowance and the reserve', async () => {
+  // A LIMIT OF ZERO TOO, which is the point of it: were the consent asked
+  // after the allowance, this would answer `ai-not-allowed`. The consent sits
+  // beside the suspension, first, so an account that never agreed is told the
+  // one thing it can act on and spends nothing.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0, healthConsentVersion: 'v2' });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: 'health-consent-required' });
+  assert.equal(upstream.received.length, 0);
+  assert.equal(harness.quota.reserves, 0, 'a refused consent must never reach the quota store');
+
+  await harness.close();
+});
+
+test('a consent to an older wording is refused like none', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    healthConsentVersion: 'v2',
+    accountConsentVersion: 'v1',
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: 'health-consent-required' });
+  assert.equal(upstream.received.length, 0);
+
+  await harness.close();
+});
+
+test('the twin: an account that holds the version is proxied', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    healthConsentVersion: 'v2',
+    accountConsentVersion: 'v2',
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(upstream.received.length, 1);
 
   await harness.close();
 });

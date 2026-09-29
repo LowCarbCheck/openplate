@@ -9,9 +9,12 @@
  * consent as the legal basis, and a basis the operator cannot show is not one.
  *
  * WHAT THIS MODULE DECIDES, AND NOTHING ELSE. Whether a submitted consent
- * matches the version the instance asks for, and how a stored consent reads
- * on the wire. The instance's version comes from `HEALTH_CONSENT_VERSION`
- * (`config.ts`); where it is enforced is `auth-handlers.ts`.
+ * matches the version the instance asks for, whether an account holds it, and
+ * how a stored consent reads on the wire. The instance's version comes from
+ * `HEALTH_CONSENT_VERSION` (`config.ts`). It is asked for where an account is
+ * created and on the prompt route (`auth-handlers.ts`), and REQUIRED on every
+ * data route (owner decision, 2026-09-29): `server/bearer-auth.ts`'s
+ * `requireHealthConsent` and the AI proxy's refusal ladder (`ai/proxy.ts`).
  *
  * `null` EVERYWHERE MEANS "THIS INSTANCE ASKS FOR NONE". That is the default,
  * and what a self-hoster keeps: an instance whose operator is the person has
@@ -21,12 +24,17 @@ import { asObject, asString, type JsonValue } from '../lib/json.js';
 import type { HealthConsentView, InstanceHealthConsent } from '../protocol.js';
 
 /**
- * The ONE refusal every consent check answers with, on account creation and
- * on the prompt route alike: the field is missing, is not an object, carries
- * no string `version`, or names a version this instance does not ask for.
+ * The ONE refusal every consent check answers with, in two statuses.
  *
- * MACHINE-SHAPED, like `invite-invalid`. A client branches on it to show its
- * checkbox again, and renders its own words for it.
+ * - `400` on account creation and on the prompt route: the field is missing,
+ *   is not an object, carries no string `version`, or names a version this
+ *   instance does not ask for. The client shows its checkbox again.
+ * - `403` on every data route, for an account that does not hold the
+ *   instance's current version (see {@link holdsHealthConsent}). The client
+ *   sends the person to its consent screen.
+ *
+ * MACHINE-SHAPED, like `invite-invalid` and `account-suspended`. A client
+ * branches on it, and renders its own words for it.
  */
 export const HEALTH_CONSENT_REQUIRED = 'health-consent-required';
 
@@ -68,6 +76,24 @@ export function matchesHealthConsent(input: {
 }): boolean {
   const version = asString(asObject(input.submitted)?.version);
   return version !== null && version === input.policy.version;
+}
+
+/**
+ * Whether an account may use the data routes of this instance: always where
+ * the instance asks for no consent, and otherwise only when the version on
+ * record is the instance's own, byte for byte.
+ *
+ * A CONSENT TO AN OLDER WORDING IS NO CONSENT. The operator changes
+ * `HEALTH_CONSENT_VERSION` when the wording changes, and a person who agreed
+ * to the old one never saw the new one. The prompt route takes the new
+ * version, and this answers `true` again on the very next request.
+ */
+export function holdsHealthConsent(input: {
+  policy: InstanceHealthConsent | null;
+  consentedVersion: string | null;
+}): boolean {
+  if (input.policy === null) return true;
+  return input.consentedVersion === input.policy.version;
 }
 
 /** A stored consent as the wire carries it, see `AccountView.healthConsent`. */

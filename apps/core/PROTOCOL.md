@@ -282,6 +282,15 @@ A bearer token in an `Authorization: Bearer <token>` header. **No cookies, in ei
 - `Access-Control-Allow-Origin: *`, and `Access-Control-Allow-Credentials` is never sent. Any openplate client (ours, a self-hoster's on their own domain, or a third-party implementation) can therefore talk to any instance of this service regardless of origin.
 - That combination is safe precisely _because_ there is no ambient credential. A hostile page can issue a cross-origin request and will get a `401`, because the browser has nothing to attach automatically. This is the CSRF property cookies lack, and it is the reason the wide-open origin is a considered choice rather than a shortcut.
 - Unauthenticated callers get `401`. Authenticated-but-not-permitted callers get `403`. A conforming server must not conflate them.
+- Two `403`s carry a **fixed machine code** a client branches on: `account-suspended` on any bearer route, and `health-consent-required` on any data route §5.15.1 does not list as open. They are the exception to "branch on the status, never on the message", because `403` alone cannot tell them apart from each other or from an ordinary refusal:
+
+  | Status | Body                                  | Meaning                                                                                                 | What the client does                            |
+  | ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+  | `401`  | any                                   | No valid access token                                                                                   | Refreshes once, then asks the person to sign in |
+  | `403`  | `{"error":"account-suspended"}`       | An operator suspended the account (§5)                                                                  | Says so; signing in again will not help         |
+  | `403`  | `{"error":"health-consent-required"}` | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1) | Asks for the consent, then retries              |
+  | `403`  | anything else                         | Authenticated, not permitted for this one request                                                       | Reads the endpoint's own table                  |
+
 - Every custom request header a route reads is named in `Access-Control-Allow-Headers`: `Authorization`, `Content-Type`, `Idempotency-Key` (§5.23) and `X-Intake-Id` (§5.19). Every custom response header a client reads is named in `Access-Control-Expose-Headers`: `Retry-After`, `X-Trial-Scans-Left`, `X-Quota-Used` and `X-Quota-Limit`. A browser refuses to send a header the first list omits, and hides one the second list omits, with nothing in any log.
 
 This replaced a same-origin session cookie that existed while the handler cores were mounted inside the openplate app. That change, and the move of the sync routes from `/api/sync` to `/v1/sync`, are **pre-1.0 and do not bump `PROTOCOL_VERSION`**: zero production blobs exist, there are no third-party implementations, and no deployed client can be broken by them. Once this document is published alongside a public release, that latitude ends; see §7.
@@ -338,6 +347,8 @@ Two families, under one versioned namespace:
 | Account (§5.7 to §5.15) | `/v1/auth`                     | Mixed: stated per endpoint |
 
 **A suspended account is refused everywhere.** `POST /login`, `POST /refresh`, `POST /recover`, `POST /recover-rotate`, every bearer-guarded route and the admin tree answer `403 {"error":"account-suspended"}`, that exact string, so a client can recognise it and say what happened. On `login` and the recovery paths the check runs AFTER the credential is verified, so an unknown address still gets the ordinary indistinguishable `401`.
+
+**An account without the instance's consent is refused every data route.** Where `instance.healthConsent` is non-`null` (§5.6), an account that does not hold exactly that version gets `403 {"error":"health-consent-required"}` on every route that stores, sends or spends something for it, and keeps the routes it needs to agree, to leave and to read back its own copy. §5.15.1 lists both. A suspension is checked first, so a suspended account hears `account-suspended`.
 
 Paths in §5.1 to §5.5 are written relative to `SYNC_API_PREFIX`; everything else is absolute.
 
@@ -466,7 +477,7 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
 
 `instance` describes what this deployment is and what it can do, and it is **optional**: a service older than the field omits it, and a client that requires it would refuse to talk to every such instance. `name` is the operator's label for the instance, `language` is one of `en`, `de`, `fr`, `it`, `es`, `tr` (the six languages its mail is written in; a client shows it and never branches on it, so a seventh is not a protocol change), `mail` says whether it can send a letter at all, `memberInvites` says whether an ordinary member may invite people here (§5.21), `openSignup` says whether a person may ask for an account here (§5.8.3), `signupCaptcha` says what that request needs, `trial` promises the free scans a new account gets (§5.19), `plans` says whether a biller stands behind this instance so `/v1/plans/*` exists (§5.22), `push` says whether this instance can send web push so `/v1/push/*` exists (§5.24), `healthConsent` names the health-data consent it asks of every account (§5.15.1), `nutrientReferenceBasis` says whose micronutrient reference values it shows, and `ai` is `null` when no upstream key is configured. `ai.model` is the model the proxy sends every request to (§5.19), or `null` when the operator named none and the caller's own model is sent.
 
-`healthConsent` is the explicit consent to health data this instance asks of every account, `{"version": "<v>"}`, or `null` when it asks for none, which is the self-hosted default. It is `null` rather than absent, like `ai`, and a client that finds no key (every service older than the field) reads it as `null`. Unlike the rest of this block, the service **enforces** it: while it is non-`null`, account creation needs the matching consent (§5.8) and an account without it is asked once (§5.15.1). A client that finds `null` draws no consent checkbox.
+`healthConsent` is the explicit consent to health data this instance asks of every account, `{"version": "<v>"}`, or `null` when it asks for none, which is the self-hosted default. It is `null` rather than absent, like `ai`, and a client that finds no key (every service older than the field) reads it as `null`. Unlike the rest of this block, the service **enforces** it: while it is non-`null`, account creation needs the matching consent (§5.8), and **every data route refuses an account that does not hold this exact version** with `403 {"error":"health-consent-required"}` until it agrees on §5.15.1. A client that finds a version asks before it syncs, and treats that `403` as the same question asked late. A client that finds `null` draws no consent checkbox, and the service refuses nothing for it.
 
 `push` follows `plans` exactly: a boolean that says only whether a door exists. `false` means the whole `/v1/push` subtree answers the ordinary unknown-path `404`, so a client draws no notification settings. It says nothing about what a push contains, because a push contains a kind and nothing else (§5.24).
 
@@ -571,7 +582,7 @@ Unauthenticated, IP-throttled. **An invite is still the only thing that creates 
 }
 ```
 
-`healthConsent` is **required where `instance.healthConsent` is non-`null`** and ignored everywhere else (§5.15.1). Its `version` must equal the instance's byte for byte. Without it the answer is `400 {"error":"health-consent-required"}` and **nothing is created or spent**: the invite stays redeemable, so the person ticks the box and posts again. The check runs after every other field, so a malformed invite still answers the `403` below first.
+`healthConsent` is **required where `instance.healthConsent` is non-`null`** and ignored everywhere else (§5.15.1). Its `version` must equal the instance's byte for byte. Without it the answer is `400 {"error":"health-consent-required"}` and **nothing is created or spent**: the invite stays redeemable, so the person ticks the box and posts again. The check runs after every other field, so a malformed invite still answers the `403` below first. An account created with it holds the consent from its first request, so no data route refuses it; a client that creates accounts on such an instance (a study console, a seeding tool) sends the field too, or its account is refused every data route (§5.15.1).
 
 **There is no `email` field, and that is the point.** The address comes from the invite row, inside the transaction. A body cannot claim a mailbox the operator did not write to, which is what makes the invitation itself the address verification: the person who received the letter is the person redeeming it, so there is no confirmation link and nothing left to confirm afterwards. `role` and `dailyAiLimit` come from the invite for the same reason: an account never asks for its own standing.
 
@@ -821,6 +832,29 @@ Bearer. **Present only where `instance.healthConsent` is non-`null`**; everywher
 - **A new account** agrees on the account-creation step: `POST /v1/auth/signup` carries `"healthConsent": {"version": "<v>"}` and records it in the same statement as the account (§5.8).
 - **An existing account** without it, or with an older version, is asked once and agrees here.
 
+**Required on every data route.** Until it agrees, an account that does not hold the instance's current version is refused `403 {"error":"health-consent-required"}`, the same body on every route, after the bearer check and before anything is stored, counted or sent:
+
+| Refused to an account without the consent                                                                                          | Why                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Every route under `/v1/sync` but the two reads below: the blob push, key-record writes and deletes, `rotate-dek`, shares, research | They store or hand on the diary                                                                   |
+| `POST /v1/chat/completions` (§5.19), after the suspension and before the allowance                                                 | The body is a plate photograph                                                                    |
+| `POST /v1/feedback` (§5.25), `/v1/pulse/*` (§5.23), `/v1/push/*` (§5.24)                                                           | Each stores something drawn from the diary                                                        |
+| `/v1/plans/*` (§5.22), except the anonymous `GET /v1/plans/prices`                                                                 | Using the account, not agreeing or leaving                                                        |
+| `PATCH /v1/auth/account`, `POST /v1/auth/invites` (§5.21)                                                                          | Using the account, not agreeing or leaving                                                        |
+| `POST /v1/auth/change-passphrase` (§5.14)                                                                                          | Its second half rewrites the compartment on the blob, which is refused, so the whole change waits |
+
+| Open to an account without the consent                                                                                    | Why                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/auth/login`, `POST /v1/auth/refresh`, `POST /v1/auth/logout`                                                    | Signing in and out                                                                                                                        |
+| `GET /v1/auth/account`                                                                                                    | The client reads it to learn that it must ask                                                                                             |
+| `POST /v1/auth/account/health-consent` (this route)                                                                       | Where the account agrees                                                                                                                  |
+| `POST /v1/auth/delete` (§5.15)                                                                                            | Deletion is how a consent is declined or withdrawn                                                                                        |
+| `GET /v1/sync/blob` (§5.2), `GET /v1/sync/key-records` (§5.3)                                                             | Its own copy. Signing in on a new device needs both before a client can ask, and an export on a new device is the pull. Nothing is stored |
+| `/health`, `GET /v1/plans/prices`, `POST /v1/legal/declarations`, the unauthenticated `/v1/auth/*` routes (§5.7 to §5.14) | No session, so no account to ask                                                                                                          |
+| `/v1/admin/*` (§5.20)                                                                                                     | The operator's own credential; an administrator's diary routes are refused like anybody's                                                 |
+
+A consent to an older wording is refused like none. The refusal lifts on the very next request after this route answers `200`, on the same access token: the service reads the account row on every authenticated request, as it does for a suspension, and the consent with it. On an instance where `instance.healthConsent` is `null` nothing here refuses anything.
+
 Request: `{"version": "2026-09-28"}` → `200 {"account": AccountView}` (§5.15), with `healthConsent` set.
 
 | Status | Meaning                                                                                                                          |
@@ -838,7 +872,7 @@ Four rules a conforming server MUST hold:
 3. **Idempotent, and the first instant wins.** A second call with the version already on record changes nothing and answers the same `200`; `at` stays the moment the person first agreed. A different version replaces both, so a new wording carries its own instant.
 4. **Withdrawal is deletion.** No route clears a consent. A person who withdraws deletes the account (`POST /v1/auth/delete`, §5.15), which takes the diary and the consent with the row. The operator reads the consent in the admin account view and no admin route writes it: a consent an operator could set on somebody's behalf would prove nothing.
 
-`health-consent-required` is the one refusal of both paths, so a client recognises one string and shows its checkbox again. Changing `HEALTH_CONSENT_VERSION` asks every account again; an operator changes it when the wording changes and not otherwise.
+`health-consent-required` is the one refusal of every consent check, in two statuses: `400` on account creation and on this route, where the client shows its checkbox again, and `403` on a data route, where the client sends the person to it. Changing `HEALTH_CONSENT_VERSION` asks every account again, and from that moment every data route refuses the accounts that agreed to the old wording until they agree to the new one; an operator changes it when the wording changes and not otherwise.
 
 ### 5.16 Shares: `/v1/sync/shares` and `/v1/sync/shared` (ADR-0002)
 
@@ -1128,18 +1162,19 @@ Each account carries `dailyAiLimit`: requests per **UTC day**, defaulting to
 | `X-Quota-Limit`      | The account's `dailyAiLimit`                                                                         |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
-| Status | `error`                                | When                                                                                                                                                                   |
-| ------ | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401`  | `authentication required`              | No access token, or one that is expired or revoked                                                                                                                     |
-| `403`  | `ai-not-allowed`                       | `dailyAiLimit` is `0`. Refused before anything leaves the host                                                                                                         |
-| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived. Refused before anything leaves the host, and before a usage row is written                  |
-| `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0` |
-| `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                     |
-| `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                              |
-| `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                           |
-| `429`  | a sentence naming the reset instant    | The allowance is spent. `Retry-After` is seconds to the next UTC midnight                                                                                              |
-| `429`  | a sentence naming the per-minute bound | More than `AI_RATE_LIMIT_PER_MINUTE` requests in any trailing 60 s                                                                                                     |
-| `503`  | `ai-instance-ceiling`                  | The whole instance has spent its daily ceiling, or the scan-trial accounts have spent theirs. `Retry-After` is seconds to the next UTC midnight                        |
+| Status | `error`                                | When                                                                                                                                                                                |
+| ------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401`  | `authentication required`              | No access token, or one that is expired or revoked                                                                                                                                  |
+| `403`  | `ai-not-allowed`                       | `dailyAiLimit` is `0`. Refused before anything leaves the host                                                                                                                      |
+| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived. Refused before anything leaves the host, and before a usage row is written                               |
+| `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0`              |
+| `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                  |
+| `403`  | `health-consent-required`              | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1). Refused before anything leaves the host, and before a usage row is written |
+| `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                                           |
+| `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                                        |
+| `429`  | a sentence naming the reset instant    | The allowance is spent. `Retry-After` is seconds to the next UTC midnight                                                                                                           |
+| `429`  | a sentence naming the per-minute bound | More than `AI_RATE_LIMIT_PER_MINUTE` requests in any trailing 60 s                                                                                                                  |
+| `503`  | `ai-instance-ceiling`                  | The whole instance has spent its daily ceiling, or the scan-trial accounts have spent theirs. `Retry-After` is seconds to the next UTC midnight                                     |
 
 `403 ai-not-allowed` is a machine code because a client MUST branch on it; it
 means "this account will never succeed here until an operator changes
@@ -1164,7 +1199,8 @@ administrator" (`ai-not-allowed`) and not "your time ran out"
 which is why it is separate rather than folded into either.
 
 **The order of the refusals**, which a conforming server MUST keep: identity
-and suspension; `dailyAiLimit` of `0` (`ai-not-allowed`); an allowance date
+and suspension; the health-data consent (`health-consent-required`, §5.15.1);
+`dailyAiLimit` of `0` (`ai-not-allowed`); an allowance date
 that has passed (`allowance-expired`); the body; `X-Intake-Id`'s shape; then,
 only for an account with free scans and **no** allowance date, the scan claim
 (`trial-scans-spent`). A date in the future lifts the scan gate: it is a paid or

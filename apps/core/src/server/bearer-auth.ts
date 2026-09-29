@@ -23,7 +23,9 @@ import {
   type AuthContext,
   type ResolvedSession,
 } from '../accounts/auth-handlers.js';
+import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-consent.js';
 import type { SyncEntitledUser } from '../contract-types.js';
+import type { InstanceHealthConsent } from '../protocol.js';
 
 const sessionsByRequest = new WeakMap<Request, ResolvedSession>();
 
@@ -72,6 +74,86 @@ export function createBearerAuthMiddleware(ctx: AuthContext): RequestHandler {
         next(cause);
       }
     })();
+  };
+}
+
+/**
+ * Refuses with `403 health-consent-required` an account that does not hold
+ * the instance's current health-data consent (`HEALTH_CONSENT_VERSION`), on
+ * every route it is mounted on. Owner decision, 2026-09-29: "Whatever check
+ * we need we should require." Before it, the consent was asked for where an
+ * account is created and on the prompt route, and an account that never
+ * agreed synced, scanned and subscribed exactly like one that had.
+ *
+ * MOUNTED BEHIND `createBearerAuthMiddleware`, NEVER IN FRONT OF IT. It reads
+ * the version the bearer middleware already read off the account row
+ * ({@link ResolvedSession.healthConsentVersion}), so it costs no query, and an
+ * anonymous caller still gets the `401` that says "sign in" rather than a
+ * `403` that says "agree". No session on the request is therefore a wiring
+ * bug, and it fails CLOSED with that same `401`.
+ *
+ * A `403` AND NOT A `401`, for the reason the suspension is one: signing in
+ * again will not help. The token is good, the person is who they say, and
+ * the one thing missing is an act only they can perform, on the prompt route
+ * (`POST /v1/auth/account/health-consent`), which this is never mounted on.
+ *
+ * `null` IS A PASS-THROUGH, and it is what every self-hosted instance runs:
+ * an instance that asks for no consent answers exactly as it did before this
+ * middleware existed.
+ */
+export function createHealthConsentMiddleware(policy: InstanceHealthConsent | null): RequestHandler {
+  return function requireHealthConsent(req: Request, res: Response, next: NextFunction): void {
+    const session = getRequestSession(req);
+    if (session === null) {
+      res.status(401).json({ error: 'authentication required' });
+      return;
+    }
+    if (!holdsHealthConsent({ policy, consentedVersion: session.healthConsentVersion })) {
+      res.status(403).json({ error: HEALTH_CONSENT_REQUIRED });
+      return;
+    }
+    next();
+  };
+}
+
+/**
+ * The two reads under `SYNC_API_PREFIX` an account without the consent keeps,
+ * as paths relative to that prefix: its own blob and its own key records.
+ *
+ * WHY THESE TWO STAY OPEN, and they are the only sync routes that do:
+ *
+ *  1. SIGNING IN NEEDS THEM before the app can show a consent screen. A new
+ *     device reads the wrapped keys to open the diary, then pulls it, because
+ *     the profile that says where the person belongs travels INSIDE the blob.
+ *     Refused, an account that never agreed could not finish signing in on a
+ *     new device, so it could never reach the screen that asks.
+ *  2. TAKING THE DIARY OUT NEVER WAITS ON A CONSENT TO KEEPING IT. The app's
+ *     export is built on the device from what the pull brought down, so on a
+ *     new device the export IS the pull.
+ *  3. NOTHING IS STORED. A read hands the account the ciphertext it already
+ *     has here. Every write under the prefix, the blob push, a key-record
+ *     write or delete, a DEK rotation, and every share and research route,
+ *     stays refused.
+ *
+ * EXACT, AND FAIL-CLOSED. A method other than `GET`, a trailing slash or a
+ * differently cased path is refused, never let through: a spelling this list
+ * did not name is a spelling the app never sends.
+ */
+const OWN_COPY_READ_PATHS: ReadonlySet<string> = new Set(['/blob', '/key-records']);
+
+/**
+ * `requireHealthConsent` for the sync prefix: the same refusal, with the two
+ * reads of {@link OWN_COPY_READ_PATHS} let through. Mounted as
+ * `app.use(SYNC_API_PREFIX, requireAuth, ...)`, where `req.path` is relative to
+ * the prefix.
+ */
+export function exceptOwnCopyReads(requireConsent: RequestHandler): RequestHandler {
+  return function requireHealthConsentExceptOwnCopy(req: Request, res: Response, next: NextFunction): void {
+    if (req.method === 'GET' && OWN_COPY_READ_PATHS.has(req.path)) {
+      next();
+      return;
+    }
+    requireConsent(req, res, next);
   };
 }
 

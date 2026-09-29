@@ -26,6 +26,11 @@
  *
  * ORDER OF OPERATIONS, and every step is where it is on purpose:
  *   1. identity   : no session on the request is a WIRING bug; fail closed.
+ *                   A suspended account, then an account without the
+ *                   instance's current consent to health data (403
+ *                   health-consent-required, 2026-09-29), are refused here,
+ *                   before anything is counted: a plate photograph is health
+ *                   data, and this route is where it passes through.
  *   2. allowance  : a `dailyAiLimit` of 0 is refused before an upstream call,
  *                   and so is an allowance whose end date has passed
  *                   (403 allowance-expired). Both refuse BEFORE step 3,
@@ -153,6 +158,8 @@ import type { Logger } from '../logger.js';
 import { getRequestSession } from '../server/bearer-auth.js';
 import type { AccountStore } from '../accounts/account-store.js';
 import { ACCOUNT_SUSPENDED } from '../accounts/auth-handlers.js';
+import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-consent.js';
+import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
 import { describeError, scrubPayloads } from './scrub.js';
 import { applyChatBodyPolicy, type ChatBodyPolicy } from './chat-body-policy.js';
@@ -202,6 +209,17 @@ export interface ChatCompletionsDeps {
    * compile into a proxy that lets the caller pick the cost again.
    */
   bodyPolicy: ChatBodyPolicy;
+  /**
+   * The health-data consent this instance requires of every account
+   * (`HEALTH_CONSENT_VERSION`), or `null` for an instance that asks for none,
+   * which is every self-hoster.
+   *
+   * CHECKED IN THE LADDER, NOT BY `requireHealthConsent` IN FRONT OF IT. The
+   * handler reads the account row anyway, and the refusal belongs beside the
+   * suspension it mirrors, before the allowance and before the reservation.
+   * Required and nullable for the reason `instanceDailyLimit` is.
+   */
+  healthConsent: InstanceHealthConsent | null;
   /** Injectable so a test can freeze the UTC day boundary the quota keys on. */
   now?: () => Date;
 }
@@ -327,6 +345,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
   const {
     accounts,
     bodyPolicy,
+    healthConsent,
     instanceDailyLimit,
     logger,
     quota,
@@ -491,6 +510,16 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // account, so reaching here means it was suspended between the two reads.
     if (account.suspendedAt !== null) {
       res.status(403).json({ error: ACCOUNT_SUSPENDED });
+      return;
+    }
+    // THE CONSENT TO HEALTH DATA (2026-09-29), the same refusal every other
+    // data route gives (`server/bearer-auth.ts`), in the same shape as the
+    // suspension above. Before the allowance and before the reservation, so an
+    // account that never agreed spends nothing and sends nothing upstream. A
+    // consent to an older wording is refused like none; see
+    // `holdsHealthConsent`.
+    if (!holdsHealthConsent({ policy: healthConsent, consentedVersion: account.healthConsent?.version ?? null })) {
+      res.status(403).json({ error: HEALTH_CONSENT_REQUIRED });
       return;
     }
 
