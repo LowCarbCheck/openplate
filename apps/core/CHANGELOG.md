@@ -7,6 +7,8 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-09-29
+
 ### Fixed
 
 - **The sign-up letter is written in the language the person asked in.**
@@ -15,8 +17,8 @@ change moves the minor.
   person who asked in English. The letter, and the note to an address that
   already holds an account, now use `locale` when it is valid, and
   `INSTANCE_LANGUAGE` when the request names none. The request and the
-  answer are unchanged.
-- **drizzle-orm updates past an identifier escaping advisory in the core.** drizzle-orm 0.45.3 carries the fix for GHSA-gpj5-g38j-94v9. A Postgres error that drizzle-orm now wraps is still read by its SQLSTATE, so a storage conflict answers exactly as before. `pnpm audit` reports one moderate advisory left, in a development tool that production never runs.
+  answer are unchanged. ([831ed0e](https://github.com/LowCarbCheck/openplate/commit/831ed0e))
+- **drizzle-orm updates past an identifier escaping advisory in the core.** drizzle-orm 0.45.3 carries the fix for GHSA-gpj5-g38j-94v9. A Postgres error that drizzle-orm now wraps is still read by its SQLSTATE, so a storage conflict answers exactly as before. `pnpm audit` reports one moderate advisory left, in a development tool that production never runs. ([ed7b8c5](https://github.com/LowCarbCheck/openplate/commit/ed7b8c5))
 
 ## [0.23.0] - 2026-09-28
 
