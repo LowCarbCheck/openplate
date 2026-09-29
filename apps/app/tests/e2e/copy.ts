@@ -142,10 +142,23 @@ const catalogSchema = z.object({
   diary: z.object({
     netCarbsValue: z.string(),
     nav: z.object({ previousDay: z.string() }),
-    meals: z.object({ breakfast: z.string(), dinner: z.string() }),
+    meals: z.object({
+      breakfast: z.string(),
+      lunch: z.string(),
+      dinner: z.string(),
+      snack: z.string(),
+      none: z.string(),
+    }),
     copy: z.object({ door: z.string(), title: z.string() }),
     actions: z.object({ undo: z.string() }),
-    toast: z.object({ addedOne: z.string(), copiedOne: z.string() }),
+    toast: z.object({
+      addedOne: z.string(),
+      copiedOne: z.string(),
+      toMeal: z.string(),
+      soFarToday: z.string(),
+      onDay: z.string(),
+      description: z.string(),
+    }),
     saveMeal: z.object({
       trigger: z.string(),
       namePlaceholder: z.string(),

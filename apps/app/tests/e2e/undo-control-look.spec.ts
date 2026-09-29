@@ -32,7 +32,9 @@
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../app/i18n/language-prefs';
+import { formatFoodAddedToast, type Translate } from '../../app/lib/food-added-toast';
+import { formatDayLabel } from '../../app/lib/format-day-label';
 import { EN, catalogFor, fill } from './copy';
 import {
   FIT_WIDTHS,
@@ -350,7 +352,7 @@ async function readUndoRowFit(page: Page, control: Locator): Promise<UndoRowFit>
       sentence: `${text.scrollHeight}/${text.clientHeight} px tall, ${text.scrollWidth}/${text.clientWidth} px wide`,
       secondLine:
         description === null ? 'none' : (
-          `${description.scrollHeight}/${description.clientHeight} px tall, ${description.scrollWidth}/${description.clientWidth} px wide`
+          `${description.scrollHeight}/${description.clientHeight} px tall, ${description.scrollWidth}/${description.clientWidth} px wide, "${description.textContent ?? ''}"`
         ),
       documentScrollWidth: document.documentElement.scrollWidth,
       headerHeight: Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0),
@@ -365,6 +367,77 @@ async function readUndoRowFit(page: Page, control: Locator): Promise<UndoRowFit>
     headerHeight: row.headerHeight,
     boxes: `column ${row.columnWidth} px, control ${controlBox.width} px, sentence ${row.sentence}, second line ${row.secondLine}`,
   };
+}
+
+/** A past day for the worst case: a label with a weekday, a two-digit date and a month. */
+const PAST_DAY = '2026-09-28';
+
+/** The worst case's figure: an estimate past two digits. */
+const WORST_NET_CARBS = 123;
+
+/**
+ * A translator over the strings the toast copy reads, for the app's own
+ * `formatFoodAddedToast`. Only those keys: any other key is a spec that went
+ * out of step with the app, and fails loudly.
+ */
+function toastTranslator(copy: Copy): Translate {
+  const strings = new Map<string, string>([
+    ['diary.toast.addedOne', copy.diary.toast.addedOne],
+    ['diary.toast.copiedOne', copy.diary.toast.copiedOne],
+    ['diary.toast.toMeal', copy.diary.toast.toMeal],
+    ['diary.toast.soFarToday', copy.diary.toast.soFarToday],
+    ['diary.toast.onDay', copy.diary.toast.onDay],
+    ['diary.toast.description', copy.diary.toast.description],
+  ]);
+  return (key, params) => {
+    const sentence = strings.get(key);
+    if (sentence === undefined) throw new Error(`the toast copy read a key this spec does not carry: ${key}`);
+    return fill(
+      sentence,
+      Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, String(value)])),
+    );
+  };
+}
+
+/** The longest meal name one language has, the worst `{{meal}}` a second line can carry. */
+function longestMealName(copy: Copy): string {
+  let longest = '';
+  for (const name of Object.values(copy.diary.meals)) {
+    if (Array.from(name).length > Array.from(longest).length) longest = name;
+  }
+  return longest;
+}
+
+/**
+ * The worst real second line of a quick-add or copy status in one language:
+ * the longest meal, "~123 g" and a past day, composed by the app's own
+ * `formatFoodAddedToast`, so it says what the app would say.
+ */
+function worstSecondLine(path: 'quick-add' | 'copy', locale: LanguageCode): string {
+  const copy = catalogFor(locale);
+  return formatFoodAddedToast({
+    batch: { count: 1, lastName: path === 'copy' ? YESTERDAY_FOOD : CHIP_FOOD, startedAtMs: 0 },
+    verb: path === 'copy' ? 'copied' : 'added',
+    // The copy never names a meal (`use-copy-yesterday-toast.ts`), and the
+    // quick-add's meal is left out beside its Undo, as `offersUndo` says; the
+    // longest one is passed anyway, so a change to that rule shows up here.
+    mealLabel: path === 'copy' ? null : longestMealName(copy),
+    offersUndo: true,
+    netCarbsTotal: WORST_NET_CARBS,
+    hasEstimates: true,
+    dayLabel: formatDayLabel(PAST_DAY, locale),
+    t: toastTranslator(copy),
+    language: locale,
+  }).description;
+}
+
+/** Writes a second line into the live status row, which keeps its layout and its Undo. */
+async function writeSecondLine(page: Page, text: string): Promise<void> {
+  await headerStatus(page)
+    .locator('[data-slot="header-status-description"]')
+    .evaluate((line, words) => {
+      line.textContent = words;
+    }, text);
 }
 
 /** What the row gets wrong around its lines: the row, the control, the page width and the header height. */
@@ -391,27 +464,19 @@ function fitFailures(fit: UndoRowFit, where: string, width: number): string[] {
 }
 
 /**
- * The same, without the second line.
- *
- * THE SECOND LINE IS NOT READ FOR THE QUICK-ADD AND COPY STATUSES YET (M265,
- * 2026-09-29). Beside the Undo button and the close control their second line
- * ("To Lunch, 52 g net carbs so far today.") has two lines of 18 characters at
- * 360 px and 22 at 390 px, and it needs three or more in most languages, and
- * in English too for a long meal, an estimate and a past day. No wording
- * keeps the meal, the figure and the day inside that, so the layout is an open
- * decision with the architect. Once it is made, these readers use
- * `fitFailures` again.
- */
-function fitFailuresBesideSecondLine(fit: UndoRowFit, where: string, width: number): string[] {
-  return [...rowFailures(fit, where, width), ...lineFailures({ ...fit, isDescriptionWhole: true }, where)];
-}
-
-/**
  * Where the header's own controls sit, the brand mark and the avatar menu,
  * keyed by name. They are siblings of the status row, so a row that grew
  * would push them.
+ *
+ * It waits for both to be drawn first: on a loaded host a reading taken
+ * right after a load found neither, and every later reading then looked like
+ * a move.
  */
 async function readHeaderControls(page: Page): Promise<Record<string, string>> {
+  await expect(page.locator('header [data-slot="header-mark"]')).toBeVisible();
+  await expect(
+    page.locator('header').getByRole('button', { name: EN.chrome.deviceMenuLabel, exact: true }),
+  ).toBeVisible();
   return page.evaluate(() => {
     const controls: Record<string, string> = {};
     for (const element of document.querySelectorAll('header button, header a')) {
@@ -514,10 +579,9 @@ for (const width of FIT_WIDTHS) {
 
       expect(iconOnlyFailures(await readControlLook(undo), undoLabel(path, EN), path)).toEqual([]);
       expect(await closeFailures(page, EN, path)).toEqual([]);
-      expect(
-        fitFailuresBesideSecondLine(await readUndoRowFit(page, undo), path, width),
-        `${path}: the undo row does not fit`,
-      ).toEqual([]);
+      expect(fitFailures(await readUndoRowFit(page, undo), path, width), `${path}: the undo row does not fit`).toEqual(
+        [],
+      );
       expect(await readHeaderControls(page), `${path}: the status moved the header controls`).toEqual(headerBefore);
       // IN THE HEADER, because the diary below changes on purpose: the chip and
       // the copy each add an entry to today's list.
@@ -568,7 +632,7 @@ test('at 360 px in German, a long food name ends in "…" so the delete and quic
   expect(await sentenceSpan.innerText(), 'a short name grew an ellipsis').not.toContain('…');
 });
 
-test('every undo control is the icon button, and its row and sentence are whole at 390 and 360 px, in all six languages', async ({
+test('every undo control is the icon button, and every line of its row is whole at 390 and 360 px, in all six languages', async ({
   page,
 }) => {
   await seedUndoDiary(page);
@@ -597,9 +661,19 @@ test('every undo control is the icon button, and its row and sentence are whole 
           ...iconOnlyFailures(await readControlLook(undo), undoLabel(path, copy), `${width} ${locale} ${path}`),
         );
         cutOff.push(...(await closeFailures(page, copy, `${width} ${locale} ${path}`)));
-        cutOff.push(
-          ...fitFailuresBesideSecondLine(await readUndoRowFit(page, undo), `${width} ${locale} ${path}`, width),
-        );
+        cutOff.push(...fitFailures(await readUndoRowFit(page, undo), `${width} ${locale} ${path}`, width));
+        // THE WORST REAL CASE, written into the same live second line: the
+        // longest meal name this language has, an estimated three-digit
+        // figure and a past day, composed by the app's own toast copy.
+        if (path !== 'delete') {
+          const worst = worstSecondLine(path, locale);
+          await writeSecondLine(page, worst);
+          cutOff.push(
+            ...lineFailures(await readUndoRowFit(page, undo), `${width} ${locale} ${path} worst case`).filter(
+              (failure) => failure.includes('second line'),
+            ),
+          );
+        }
 
         // Back to the seeded diary for the next case, through that language's Undo.
         await takeUndo(page, path, undo);
@@ -623,6 +697,18 @@ test('every undo control is the icon button, and its row and sentence are whole 
     }
   });
   expect((await readUndoRowFit(page, undo)).isControlWhole, 'the fit reading cannot see a cut-off control').toBe(false);
+
+  // And for the second-line reading: the English worst case three times over,
+  // written into a real quick-add row, must read as cut off.
+  await page.goto('/diary');
+  await triggerUndoStatus(page, 'quick-add', EN);
+  const quickAddUndo = undoControl(page, 'quick-add', EN);
+  await expect(quickAddUndo).toBeVisible();
+  await writeSecondLine(page, worstSecondLine('quick-add', 'en').repeat(3));
+  expect(
+    (await readUndoRowFit(page, quickAddUndo)).isDescriptionWhole,
+    'the second-line reading cannot see a cut-off line',
+  ).toBe(false);
 });
 
 test('CONTROL: the plan action keeps its sentence-end look, with no icon', async ({ page }) => {
