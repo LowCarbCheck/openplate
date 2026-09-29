@@ -228,6 +228,21 @@ describe('HeaderStatus', () => {
     );
   });
 
+  it('draws no close control beside an Undo, which clears itself, but keeps one beside an error (M265)', () => {
+    publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
+    assert.equal(countOf(render(), 'Dismiss this message'), 0, 'an Undo status drew a close control');
+    // An error persists, so it keeps its way out even with an icon action.
+    resetStatusChannel();
+    publishStatus({
+      text: 'Could not remove Greek yogurt',
+      tone: 'error',
+      action: { label: 'Undo', onClick: () => {}, icon: Undo2 },
+    });
+    assert.equal(countOf(render(), 'Dismiss this message'), 1, 'an error lost its close control');
+    // THE CONTROL: the next case, an action with no icon, keeps the close
+    // control through the same read.
+  });
+
   it('renders an action label, and gives that status a dismiss control too', () => {
     publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {} } });
     const markup = render();
@@ -265,18 +280,16 @@ describe('HeaderStatus', () => {
   });
 
   it('draws an action that brings an icon as an icon-only square button named by its label (M265/07)', () => {
-    // EVERY UNDO opts in with `icon`. The button sits between the text column
-    // and the close control, holds the icon and no words, and carries the
-    // label as its accessible name; the sentence has no inline label.
+    // EVERY UNDO opts in with `icon`. The button sits beside the text column,
+    // holds the icon and no words, and carries the label as its accessible
+    // name; the sentence has no inline label.
     publishStatus({ text: 'Removed Greek yogurt', action: { label: 'Undo', onClick: () => {}, icon: Undo2 } });
     const markup = render();
     const columnClosesAt = markup.indexOf('</output></div>');
     const controlAt = markup.indexOf('<button data-slot="button"');
     const controlClosesAt = markup.indexOf('</button>', controlAt);
-    const closeAt = markup.indexOf('aria-label="Dismiss this message"');
     const control = markup.slice(controlAt, controlClosesAt);
     assert.ok(columnClosesAt !== -1 && controlAt > columnClosesAt, 'the control is not beside the text column');
-    assert.ok(closeAt > controlClosesAt, 'the control is not before the close control');
     assert.ok(control.includes('lucide-undo2'), 'the control does not hold its icon');
     assert.match(control, /aria-label="Undo"/, 'the control is not named by its label');
     assert.equal(control.replace(/<[^>]*>/g, ''), '', 'the control draws words beside its icon');

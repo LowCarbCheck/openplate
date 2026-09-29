@@ -40,7 +40,7 @@ describe('formatFoodAddedToast', () => {
       verb: 'copied',
       batch: { count: 1, lastName: 'Dinkelporridge mit Heidelbeeren und Zimt', startedAtMs: 0 },
     });
-    assert.equal(copied.title, 'Copied Dinkelporridge mi…');
+    assert.equal(copied.title, 'Copied Dinkelporridge mit Heide…');
     // THE CONTROL: the short name of the first case comes through untouched.
     const added = formatFoodAddedToast({ ...BASE, batch: { count: 1, lastName: 'Greek yogurt', startedAtMs: 0 } });
     assert.equal(added.title, 'Added Greek yogurt');

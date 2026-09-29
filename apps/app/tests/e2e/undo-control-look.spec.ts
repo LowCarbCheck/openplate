@@ -21,10 +21,14 @@
  * the row that draws them. The plan action is a real trial countdown on
  * stubbed plan reads (`plans-stub.ts`).
  *
- * Every reading has a control: the icon reading finds the close control's
- * icon through the same query, the plan action is read through the same query
- * and holds none, and the fit reading is shown a squeezed control that it
- * must call cut off.
+ * NO CLOSE CONTROL BESIDE AN UNDO (the architect, 2026-09-29). An Undo status
+ * clears itself after four seconds, so it draws only its Undo; a status with
+ * no Undo keeps its close control exactly as before.
+ *
+ * Every reading has a control: the plan action is read through the same
+ * queries and draws its words, no icon, and keeps its close control with its
+ * X icon; the fit reading is shown a button made to draw words it cannot hold
+ * and must call it cut off.
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
@@ -222,6 +226,24 @@ async function triggerUndoStatus(
       await copyLunchChip(page).click();
       return fill(copy.diary.toast.copiedOne, { name: names.yesterdayFood });
   }
+}
+
+/** The status row's close control, found by that language's name for it. */
+function closeControl(page: Page, copy: Copy): Locator {
+  return headerStatus(page).getByRole('button', { name: copy.chrome.status.dismiss, exact: true });
+}
+
+/**
+ * What the Undo row draws besides its Undo: an Undo status clears itself
+ * after four seconds, so it draws no close control (the architect, 2026-09-29).
+ */
+async function closeFailures(page: Page, copy: Copy, where: string): Promise<string[]> {
+  const failures: string[] = [];
+  const closeCount = await closeControl(page, copy).count();
+  const buttonCount = await headerStatus(page).getByRole('button').count();
+  if (closeCount !== 0) failures.push(`${where}: the undo status draws a close control`);
+  if (buttonCount !== 1) failures.push(`${where}: the undo row holds ${buttonCount} buttons, not only its undo`);
+  return failures;
 }
 
 /** The Undo label a path's status carries, in one language. */
@@ -430,10 +452,7 @@ for (const width of FIT_WIDTHS) {
     await settleFrames(page);
 
     expect(iconOnlyFailures(await readControlLook(undo), EN.entry.toast.undo, 'delete')).toEqual([]);
-    // THE CONTROL for the icon reading: the close control beside it holds its X
-    // icon, found through the same query, so a zero above is the undo control.
-    const close = headerStatus(page).getByRole('button', { name: EN.chrome.status.dismiss, exact: true });
-    expect((await readControlLook(close)).iconCount, 'the icon reading finds no icon at all').toBe(1);
+    expect(await closeFailures(page, EN, 'delete')).toEqual([]);
 
     expect(fitFailures(await readUndoRowFit(page, undo), 'delete', width), 'the undo row does not fit').toEqual([]);
     expect(await readHeaderControls(page), 'the status moved the header controls').toEqual(headerBefore);
@@ -494,6 +513,7 @@ for (const width of FIT_WIDTHS) {
       await settleFrames(page);
 
       expect(iconOnlyFailures(await readControlLook(undo), undoLabel(path, EN), path)).toEqual([]);
+      expect(await closeFailures(page, EN, path)).toEqual([]);
       expect(
         fitFailuresBesideSecondLine(await readUndoRowFit(page, undo), path, width),
         `${path}: the undo row does not fit`,
@@ -576,6 +596,7 @@ test('every undo control is the icon button, and its row and sentence are whole 
         cutOff.push(
           ...iconOnlyFailures(await readControlLook(undo), undoLabel(path, copy), `${width} ${locale} ${path}`),
         );
+        cutOff.push(...(await closeFailures(page, copy, `${width} ${locale} ${path}`)));
         cutOff.push(
           ...fitFailuresBesideSecondLine(await readUndoRowFit(page, undo), `${width} ${locale} ${path}`, width),
         );
@@ -623,4 +644,11 @@ test('CONTROL: the plan action keeps its sentence-end look, with no icon', async
   // the plan action draws its label and needs no aria-label, read the same way.
   expect(look.drawnText, 'the drawn-text reading reads nothing').toBe(EN.plan.countdown.action);
   expect(iconOnlyFailures(look, EN.plan.countdown.action, 'plan')).not.toEqual([]);
+  // THE CONTROL for the close-control reading: a status with no Undo (this
+  // countdown persists until closed) keeps its close control, found by the
+  // same name and counted in the same row, and the icon reading finds its X.
+  const close = closeControl(page, EN);
+  await expect(close).toHaveCount(1);
+  expect((await readControlLook(close)).iconCount, 'the icon reading finds no icon at all').toBe(1);
+  expect(await closeFailures(page, EN, 'plan')).not.toEqual([]);
 });

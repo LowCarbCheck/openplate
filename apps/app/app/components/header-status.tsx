@@ -131,8 +131,9 @@ function StatusActionLabel({ action }: { action: StatusAction }): ReactNode {
  *
  * 44 PX AT EVERY WIDTH. `ui/button`'s `icon` size is 44 px below `md` and 36
  * above; `md:size-11` keeps the desktop target as large as the close control
- * beside it, and as tall as the row's `min-h-11`, so the header keeps its
- * 64 px. `tests/e2e/undo-control-look.spec.ts` measures it.
+ * other statuses draw, and as tall as the row's `min-h-11`, so the header
+ * keeps its 64 px. An Undo row draws no close control beside it (see
+ * `isDismissable`). `tests/e2e/undo-control-look.spec.ts` measures both.
  */
 function StatusActionControl({ action, icon: ActionIcon }: { action: StatusAction; icon: LucideIcon }): ReactNode {
   return (
@@ -159,15 +160,22 @@ function StatusActionControl({ action, icon: ActionIcon }: { action: StatusActio
 export function HeaderStatusRow({ status }: { status: StatusMessage }): ReactNode {
   const { t } = useTranslation();
   const Icon = TONE_ICON[status.tone];
-  // An error persists until it is dismissed (`STATUS_TTL_MS`), so it needs a
-  // way out. A status carrying an action gets the same control for a different
-  // reason: it is offering a choice, and "neither" has to be one of them.
-  const isDismissable = status.tone === 'error' || status.action !== null;
-  const isError = status.tone === 'error';
-  const hasDescription = status.description !== null;
   // An action with an icon is drawn as a control beside the sentence
   // (`StatusActionControl`); every other action is the sentence's last words.
   const ControlIcon = status.action?.icon;
+  const isError = status.tone === 'error';
+  // An error persists until it is dismissed (`STATUS_TTL_MS`), so it needs a
+  // way out. A status carrying an action gets the same control for a different
+  // reason: it is offering a choice, and "neither" has to be one of them.
+  //
+  // EXCEPT BESIDE AN UNDO (the architect, 2026-09-29). Every Undo status (the
+  // delete, the quick-add chip, the copy from yesterday) clears itself after
+  // four seconds, so "neither" is to wait, and its close control's 52 px went
+  // to a second line that did not fit beside it. The plan action beside the
+  // trial countdown, which stays until closed, keeps the close control, and so
+  // does every error, whatever it carries.
+  const isDismissable = isError || (status.action !== null && ControlIcon === undefined);
+  const hasDescription = status.description !== null;
   // An error is smaller AND taller than every other tone: dropping to
   // `text-xs` buys a third line before the header's `min-h-16` is at risk, so
   // a long sentence (the German notifications-blocked copy is the one that

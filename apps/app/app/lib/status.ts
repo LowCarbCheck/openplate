@@ -48,7 +48,8 @@ export interface StatusAction {
   /**
    * OPT IN to a control of its own: this icon alone, in a 44 px square button
    * beside the sentence, with `label` as its accessible name and not drawn
-   * (M265/07). Left out, the label is drawn as the sentence's last words,
+   * (M265/07). Such a status draws no close control: it is an Undo, and an
+   * Undo status clears itself. Left out, the label is drawn as the sentence's last words,
    * underlined, which is what every other action gets. Every Undo sets it
    * (the delete, the quick-add chip, the copy from yesterday), so one action
    * has one look. The plan action beside the trial countdown must not set it,

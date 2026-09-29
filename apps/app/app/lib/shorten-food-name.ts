@@ -7,15 +7,16 @@
  * a fixed length it keeps its start and ends in "…", and the rest of the
  * sentence ("entfernt.", "Added") stays whole.
  *
- * ── WHY 18 ───────────────────────────────────────────────────────────────
+ * ── WHY 25 ───────────────────────────────────────────────────────────────
  *
  * The tightest place a name lands is an Undo status on a 360 px phone: the
- * icon button and the close control leave the text column 126 px, and the
- * status face (Victor Mono at `text-xs`) is a flat 7 px a character, so a line
- * holds 18. A name of at most 18 characters therefore always fits on one line,
- * and the sentence's own words take the other: the quick-add sentence has two
- * lines, the delete sentence three. `tests/e2e/undo-control-look.spec.ts`
- * writes a 40 character German name at 360 px and measures the sentence.
+ * Undo button leaves the text column 178 px (an Undo status draws no close
+ * control), and the status face (Victor Mono at `text-xs`) is a flat 7 px a
+ * character, so a line holds 25. A name of at most 25 characters therefore
+ * always fits on one line, and the sentence's own words take the other: the
+ * quick-add sentence has two lines, the delete sentence three.
+ * `tests/e2e/undo-control-look.spec.ts` writes a 40 character German name at
+ * 360 px and measures the sentence.
  *
  * Counted in graphemes, not UTF-16 units, so an accented letter written as two
  * code points or an emoji is never cut in half.
@@ -24,7 +25,7 @@
  */
 
 /** The most characters a food name keeps in a header status sentence, the "…" included. */
-export const STATUS_FOOD_NAME_MAX_CHARS = 18;
+export const STATUS_FOOD_NAME_MAX_CHARS = 25;
 
 /** The character a shortened name ends in. One character, so the cap holds. */
 const ELLIPSIS = '…';
