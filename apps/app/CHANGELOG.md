@@ -14,6 +14,8 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **Locked accounts no longer see the diary before the plan page.** On instances that sell plans, a person with exhausted free scans or an expired plan saw the diary for about a second during a cold start to `/` or a diary URL, before the plan page loaded. The client now remembers the paywall lock. A subsequent cold start keeps the boot screen visible until the session reopens and the gate answers with the plan page, or with a consent screen if one is pending. Users with an active plan load the diary as quickly as before. A day trial and a non-renewing plan hold from their scheduled end date. An offline device, the export tool, and other pages that remain open are never held. Free scans spent on another device are recognized only after the session reopens. `tests/e2e/locked-account-cold-boot.spec.ts` samples every frame to verify this behavior.
+- **The order page links to the online withdrawal page.** The withdrawal notice on the order page names the page "Vertrag widerrufen" and prints its address. The address was plain text. It is now a link to `/widerrufen` that opens beside the order. The notice still reads exactly as openplate-core serves it. `tests/e2e/order-page-links-widerrufen.spec.ts` checks it.
+- **The withdrawal and cancellation pages explain what their German headings mean.** The law fixes the headings "Vertrag widerrufen" and "Verträge hier kündigen" in German, so they stay German in every language. On an English, French, Spanish, Italian or Turkish page, one line under the heading now says what the page does. German pages are unchanged. `tests/e2e/legal-page-english-subtitle.spec.ts` checks it.
 
 ## [0.50.0] - 2026-09-28
 

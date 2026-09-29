@@ -3788,14 +3788,16 @@
       "timingEarliest": "Mümkün olan en erken tarihte",
       "timingOnDate": "Belirli bir tarihte",
       "requestedDateLabel": "Talep edilen tarih (isteğe bağlı)",
-      "submit": "jetzt kündigen"
+      "submit": "jetzt kündigen",
+      "subtitle": "Bir sözleşmeyi feshetme"
     },
     "withdraw": {
       "nameLabel": "Ad",
       "emailLabel": "E-posta adresi",
       "contractReferenceLabel": "Müşteri numarası veya sözleşme (isteğe bağlı)",
       "requestedDateLabel": "Sözleşmenin yapıldığı tarih (isteğe bağlı)",
-      "submit": "Widerruf bestätigen"
+      "submit": "Widerruf bestätigen",
+      "subtitle": "Bir sözleşmeden cayma"
     },
     "confirmed": {
       "receiptIdLabel": "Makbuz no.: {{receiptId}}",

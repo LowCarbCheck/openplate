@@ -198,6 +198,7 @@ const catalogSchema = z.object({
       stale: z.string(),
       alreadySubscribed: z.string(),
       unavailable: z.string(),
+      withdrawalLink: z.string(),
     }),
     choice: z.object({
       legend: z.string(),
@@ -268,6 +269,11 @@ const catalogSchema = z.object({
       needsPlan: z.string(),
       needsPlanLink: z.string(),
     }),
+  }),
+  /** The two statutory forms: the German button labels and the subtitle under their German heading (M265/06). */
+  declarations: z.object({
+    withdraw: z.object({ submit: z.string(), subtitle: z.string() }),
+    cancel: z.object({ submit: z.string(), subtitle: z.string() }),
   }),
 });
 

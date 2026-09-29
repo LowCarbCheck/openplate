@@ -18,6 +18,16 @@
  * Paragraphs of the body before its first heading are the page's lead and use
  * the lead size, as the hand-written pages did. That is how the statutory
  * button pages get their one-paragraph introduction above the form.
+ *
+ * ── THE SUBTITLE UNDER A GERMAN HEADING (M265 spec 06) ──
+ * `/widerrufen` and `/kuendigung` carry the labels § 356a and § 312k BGB fix,
+ * "Vertrag widerrufen" and "Verträge hier kündigen", as their title in every
+ * language. Neither is ours to rephrase. So on a page in any other language,
+ * one line from the app's catalog sits directly under the heading and says
+ * what the page does, in the FILE's language, like the body it introduces.
+ * A German page draws nothing there, because its heading already says it.
+ * The line is drawn on the server from the loader's page, so it is in the
+ * first paint and moves nothing when the app hydrates.
  */
 import { Fragment, createElement, type ReactNode } from 'react';
 import { Link } from '#app/components/link';
@@ -137,6 +147,12 @@ export function ContentBlocks({ blocks, hasLead = false }: { blocks: readonly Co
   );
 }
 
+/** The catalog keys of the subtitle under a statutory German heading, one per statutory form. */
+export type StatutorySubtitleKey = 'declarations.withdraw.subtitle' | 'declarations.cancel.subtitle';
+
+/** The language the statutory labels are written in. A page in it needs no subtitle under them. */
+const STATUTORY_LANGUAGE = 'de';
+
 export interface ContentArticleProps {
   /** The page's h1, from the file's front matter. */
   title: string;
@@ -148,6 +164,8 @@ export interface ContentArticleProps {
   blocks: readonly ContentBlock[];
   /** Hide the "Last updated" line. A receipt is not a document with a revision date. */
   hasUpdatedLine?: boolean;
+  /** The catalog key of the line under a statutory German heading. See the file header. */
+  subtitleKey?: StatutorySubtitleKey;
   /** Drawn after the body: a form, a receipt, a named section. */
   children?: ReactNode;
 }
@@ -166,14 +184,22 @@ export function ContentArticle({
   language,
   blocks,
   hasUpdatedLine = true,
+  subtitleKey,
   children,
 }: ContentArticleProps) {
   const { t, i18n } = useTranslation();
+  const subtitle =
+    subtitleKey === undefined || language === STATUTORY_LANGUAGE ? null : t(subtitleKey, { lng: language });
   return (
     <article className="font-prose prose prose-zinc dark:prose-invert max-w-none" lang={language}>
-      <H1 variant="default" className="mb-8">
+      <H1 variant="default" className={subtitle === null ? 'mb-8' : 'mb-3'}>
         {title}
       </H1>
+      {subtitle !== null && (
+        <P variant="lead" data-slot="content-subtitle" className="mt-0 mb-8 font-medium text-foreground">
+          {subtitle}
+        </P>
+      )}
       {hasUpdatedLine && (
         <P variant="subtle" className="mb-8">
           {t('content.lastUpdated', { date: formatContentDate({ isoDate: updated, language: i18n.language }) })}

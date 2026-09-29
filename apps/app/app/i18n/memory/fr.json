@@ -5039,6 +5039,13 @@
     "at": "2026-09-14",
     "fr": "La personne peut le voir sur sa propre page de partage."
   },
+  "421aeb641f23aa09": {
+    "en": "Withdraw from a contract",
+    "path": "common:declarations.withdraw.subtitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Se rétracter d'un contrat"
+  },
   "421d9fe5e20f61e4": {
     "en": "{{carbs}} net carbs so far today.",
     "path": "common:diary.toast.soFarToday",
@@ -17491,6 +17498,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Aucune donnée sur cet appareil pour l'instant. Tu utilises déjà openplate ailleurs ? <backup>Importe une sauvegarde</backup> pour les transférer."
+  },
+  "dd9e87cc5ac579db": {
+    "en": "Cancel a contract",
+    "path": "common:declarations.cancel.subtitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Résilier un contrat"
   },
   "ddbcfd2f3fe4360d": {
     "en": "Entries imported from YAZIO",

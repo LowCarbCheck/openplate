@@ -5039,6 +5039,13 @@
     "at": "2026-09-14",
     "de": "Sie sehen sie auf ihrer eigenen Teilen-Seite."
   },
+  "421aeb641f23aa09": {
+    "en": "Withdraw from a contract",
+    "path": "common:declarations.withdraw.subtitle",
+    "model": "hand-written",
+    "at": "2026-09-29",
+    "de": "Vertrag widerrufen"
+  },
   "421d9fe5e20f61e4": {
     "en": "{{carbs}} net carbs so far today.",
     "path": "common:diary.toast.soFarToday",
@@ -17491,6 +17498,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Noch keine Daten auf diesem Gerät. Hast du openplate schon woanders genutzt? <backup>Importiere ein Backup</backup>, um deine Daten zu übertragen."
+  },
+  "dd9e87cc5ac579db": {
+    "en": "Cancel a contract",
+    "path": "common:declarations.cancel.subtitle",
+    "model": "hand-written",
+    "at": "2026-09-29",
+    "de": "Verträge hier kündigen"
   },
   "ddbcfd2f3fe4360d": {
     "en": "Entries imported from YAZIO",

@@ -3788,14 +3788,16 @@
       "timingEarliest": "At the earliest possible date",
       "timingOnDate": "On a specific date",
       "requestedDateLabel": "Requested date (optional)",
-      "submit": "jetzt kündigen"
+      "submit": "jetzt kündigen",
+      "subtitle": "Cancel a contract"
     },
     "withdraw": {
       "nameLabel": "Name",
       "emailLabel": "Email address",
       "contractReferenceLabel": "Customer number or contract (optional)",
       "requestedDateLabel": "Date the contract was made (optional)",
-      "submit": "Widerruf bestätigen"
+      "submit": "Widerruf bestätigen",
+      "subtitle": "Withdraw from a contract"
     },
     "confirmed": {
       "receiptIdLabel": "Receipt no.: {{receiptId}}",

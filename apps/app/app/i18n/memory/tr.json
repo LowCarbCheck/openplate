@@ -5039,6 +5039,13 @@
     "at": "2026-09-14",
     "tr": "Bunu kendi paylaşım sayfalarında görebilirler."
   },
+  "421aeb641f23aa09": {
+    "en": "Withdraw from a contract",
+    "path": "common:declarations.withdraw.subtitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Bir sözleşmeden cayma"
+  },
   "421d9fe5e20f61e4": {
     "en": "{{carbs}} net carbs so far today.",
     "path": "common:diary.toast.soFarToday",
@@ -17491,6 +17498,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu cihazda henüz veri yok. openplate uygulamasını başka bir yerde kullandın mı? Verilerini aktarmak için <backup>bir yedeği içe aktar</backup>."
+  },
+  "dd9e87cc5ac579db": {
+    "en": "Cancel a contract",
+    "path": "common:declarations.cancel.subtitle",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Bir sözleşmeyi feshetme"
   },
   "ddbcfd2f3fe4360d": {
     "en": "Entries imported from YAZIO",
