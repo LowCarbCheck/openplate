@@ -1693,6 +1693,13 @@
     "at": "2026-09-19",
     "fr": "Ton téléchargement JSON contient la clé privée utilisée quand quelqu'un partage son journal avec toi, ainsi que la graine de ton pseudonyme de recherche. Garde ce fichier en lieu sûr, tout comme ton journal."
   },
+  "13d545ad91790e07": {
+    "en": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+    "path": "common:admin.link.otherAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Ce lien ouvre {{origin}}, et non l'adresse que tu utilises actuellement. Il se peut qu'il ne fonctionne pas pour tes proches. Définis PUBLIC_APP_URL et PUBLIC_SYNC_URL sur le serveur avec les adresses que ta famille utilise."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",
@@ -3204,6 +3211,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Auto-héberge-le dans un seul conteneur"
+  },
+  "25572369c750dffa": {
+    "en": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyNoMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Cette instance n'envoie aucun e-mail, tu reçois donc le lien à transmettre. Il demande un mot de passe et redirige directement vers l'application."
   },
   "258d0a5a6d864869": {
     "en": "Where your calories come from",
@@ -17855,6 +17869,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tous facultatifs. Ces détails permettent d'adapter les apports de référence en vitamines et minéraux à ton profil et de suggérer un objectif de calories. Ils restent sur cet appareil comme le reste de ton journal, et aucune de ces données n'est transmise lors d'une recherche d'aliment."
+  },
+  "e06e68f9f7f14a56": {
+    "en": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "La personne reçoit un lien, par e-mail si cette instance en envoie, ou de ta part dans le cas contraire. Il demande un mot de passe et redirige directement vers l'application."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Copied links now state when they point to another address.** On an instance without mail, a new invitation link and a person's password reset link appear for you to copy. openplate-core builds them from `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. The docker compose files set those to `http://localhost:3000` and `http://localhost:3001` when `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` are unset. Such a link opens only on the server. When the link address differs from the one you are using, a line under it now names that address and tells you to set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. The line appears together with the link, so nothing on screen moves. The invite form also checks what the instance reports to say whether they get mail or you get the link, instead of always promising mail. `tests/e2e/admin-link-names-another-address.spec.ts` checks it.
+
 ## [0.52.0] - 2026-09-29
 
 ### Changed

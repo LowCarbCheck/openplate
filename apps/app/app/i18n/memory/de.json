@@ -1693,6 +1693,13 @@
     "at": "2026-09-19",
     "de": "Dein JSON-Download enthält den privaten Schlüssel, der verwendet wird, wenn jemand sein Tagebuch mit dir teilt, sowie den Seed für dein Forschungspseudonym. Verwahre diese Datei sicher, genau wie dein Tagebuch."
   },
+  "13d545ad91790e07": {
+    "en": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+    "path": "common:admin.link.otherAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Dieser Link öffnet {{origin}}, nicht die Adresse, die du gerade nutzt. Vielleicht öffnet er sich bei ihnen nicht. Setze PUBLIC_APP_URL und PUBLIC_SYNC_URL auf dem Server auf die Adressen, die deine Familie verwendet."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",
@@ -3204,6 +3211,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Selbst betreiben, in einem Container"
+  },
+  "25572369c750dffa": {
+    "en": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyNoMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Diese Instanz versendet keine E-Mails, du erhältst den Link also zum Weitergeben. Er fragt nach einem Passwort und leitet direkt in die App weiter."
   },
   "258d0a5a6d864869": {
     "en": "Where your calories come from",
@@ -17855,6 +17869,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Alles freiwillig. Damit passen wir die Referenzwerte für Vitamine und Mineralstoffe an dich an und können dir einen Kalorienwert vorschlagen. Die Angaben bleiben auf diesem Gerät wie dein restliches Tagebuch, und nichts davon geht bei einer Lebensmittelsuche mit."
+  },
+  "e06e68f9f7f14a56": {
+    "en": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Die Person erhält einen Link, per E-Mail, falls diese Instanz E-Mails versendet, oder von dir, falls nicht. Er fragt nach einem Passwort und leitet direkt in die App weiter."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

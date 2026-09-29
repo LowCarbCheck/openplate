@@ -3351,6 +3351,8 @@
       "cta": "Invitar a alguien",
       "title": "Invitar a alguien",
       "body": "Recibirá un correo con un enlace. Le pedirá una contraseña y le dará acceso directo a la aplicación.",
+      "bodyNoMail": "Esta instancia no envía correo, por lo que recibes el enlace para compartirlo. Solicita una contraseña y da acceso directo a la aplicación.",
+      "bodyUnknown": "Reciben un enlace, por correo si esta instancia envía correo, o de tu parte si no lo hace. Solicita una contraseña y da acceso directo a la aplicación.",
       "emailLabel": "Dirección de correo electrónico",
       "emailRequired": "Se necesita una dirección de correo electrónico.",
       "nameLabel": "Nombre",
@@ -3375,6 +3377,9 @@
       "failed": "No se ha podido crear la invitación.",
       "exists": "{{email}} ya tiene una cuenta aquí.",
       "back": "Volver a la lista"
+    },
+    "link": {
+      "otherAddress": "Este enlace abre {{origin}}, no la dirección que estás usando ahora. Es posible que no les funcione. Configura PUBLIC_APP_URL y PUBLIC_SYNC_URL en el servidor con las direcciones que usa tu familia."
     },
     "settings": {
       "title": "Valores de referencia",

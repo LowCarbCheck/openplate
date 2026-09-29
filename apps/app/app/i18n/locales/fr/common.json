@@ -3351,6 +3351,8 @@
       "cta": "Inviter quelqu'un",
       "title": "Inviter quelqu'un",
       "body": "La personne reçoit un e-mail avec un lien. Il lui demande un mot de passe et l'amène directement dans l'application.",
+      "bodyNoMail": "Cette instance n'envoie aucun e-mail, tu reçois donc le lien à transmettre. Il demande un mot de passe et redirige directement vers l'application.",
+      "bodyUnknown": "La personne reçoit un lien, par e-mail si cette instance en envoie, ou de ta part dans le cas contraire. Il demande un mot de passe et redirige directement vers l'application.",
       "emailLabel": "Adresse e-mail",
       "emailRequired": "Une adresse e-mail est requise.",
       "nameLabel": "Nom",
@@ -3375,6 +3377,9 @@
       "failed": "Impossible de créer l'invitation.",
       "exists": "{{email}} a déjà un compte ici.",
       "back": "Retour à la liste"
+    },
+    "link": {
+      "otherAddress": "Ce lien ouvre {{origin}}, et non l'adresse que tu utilises actuellement. Il se peut qu'il ne fonctionne pas pour tes proches. Définis PUBLIC_APP_URL et PUBLIC_SYNC_URL sur le serveur avec les adresses que ta famille utilise."
     },
     "settings": {
       "title": "Valeurs de référence",

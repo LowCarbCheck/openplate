@@ -1693,6 +1693,13 @@
     "at": "2026-09-19",
     "tr": "JSON indirmen, birisi günlüğünü seninle paylaştığında kullanılan özel anahtarı ve araştırma takma adının tohumunu içerir. Bu dosyayı tıpkı günlüğün gibi güvende tut."
   },
+  "13d545ad91790e07": {
+    "en": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+    "path": "common:admin.link.otherAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Bu bağlantı şu an kullandığın adresi değil, {{origin}} adresini açar. Onlarda açılmayabilir. Sunucuda PUBLIC_APP_URL ve PUBLIC_SYNC_URL değerlerini ailenin kullandığı adreslere ayarla."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",
@@ -3204,6 +3211,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tek bir konteyner içinde kendin barındır"
+  },
+  "25572369c750dffa": {
+    "en": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyNoMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Bu sunucu e-posta göndermiyor, bu yüzden iletmen için bağlantıyı sen alırsın. Şifre belirlemelerini ister ve onları doğrudan uygulamaya alır."
   },
   "258d0a5a6d864869": {
     "en": "Where your calories come from",
@@ -17855,6 +17869,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tümü isteğe bağlıdır. Bunlar vitamin ve mineral referans miktarlarını sana göre ayarlamamızı ve bir kalori değeri önermemizi sağlar. Günlüğünün geri kalanı gibi bu cihazda kalırlar ve buradaki hiçbir bilgi bir yiyecek aramasıyla birlikte dışarı aktarılmaz."
+  },
+  "e06e68f9f7f14a56": {
+    "en": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Bu sunucu e-posta gönderiyorsa e-postayla, göndermiyorsa senden bir bağlantı alırlar. Şifre belirlemelerini ister ve onları doğrudan uygulamaya alır."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

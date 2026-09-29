@@ -16,14 +16,24 @@
  * that has to be there is what the link IS: whoever holds it opens that
  * account. An administrator who reads it as a convenience will paste it into a
  * group chat.
+ *
+ * ── A link that opens another address says so ────────────────────────────
+ *
+ * The core builds the link from its own settings, and the compose files fall
+ * back to `http://localhost:3000` when `PUBLIC_APP_URL` is unset. A link like
+ * that opens only on the server. The administrator is using the address the
+ * family uses, so a link whose origin is not this page's gets one line under
+ * it that names the address and the two settings to change.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Copy, MailCheck } from 'lucide-react';
+import { AlertTriangle, Check, Copy, MailCheck } from 'lucide-react';
 
 import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { usePageOrigin } from '#app/hooks/use-page-origin';
 import type { Delivery } from '#app/lib/admin/admin-wire';
+import { foreignLinkOrigin } from '#app/lib/admin/link-delivery';
 
 export interface InviteResultProps {
   email: string;
@@ -61,10 +71,39 @@ export function InviteResult({ email, delivery, onInviteAnother }: InviteResultP
  * Shown in full rather than behind a button alone: a clipboard write can fail
  * silently in a browser that refuses it, and an administrator who cannot see
  * what they are about to send has no way to tell.
+ *
+ * Reads the page's origin here, so both screens that hand out a link get the
+ * warning in {@link CopyableLinkView} without asking for it.
  */
 export function CopyableLink({ link }: { link: string }) {
+  return <CopyableLinkView link={link} pageOrigin={usePageOrigin()} />;
+}
+
+export interface CopyableLinkViewProps {
+  link: string;
+  /** `location.origin`, or `null` before hydration, when no warning is drawn. */
+  pageOrigin: string | null;
+}
+
+/**
+ * The link, the warning line when it opens another address than this page,
+ * and the copy button.
+ *
+ * ── The warning is drawn with the link, never after it ───────────────────
+ *
+ * Both callers mount this in the commit that puts the link on screen, after
+ * hydration, so `pageOrigin` is already the browser's answer in that first
+ * render (see `usePageOrigin`). The line therefore arrives with the link and
+ * the copy button is drawn below it from the start: nothing moves once it is
+ * on screen. A `useEffect` that set the origin a frame later would push the
+ * button down under a finger aiming at it.
+ *
+ * Presentational, so the unit tier can render it with either origin.
+ */
+export function CopyableLinkView({ link, pageOrigin }: CopyableLinkViewProps) {
   const { t } = useTranslation();
   const [isCopied, setIsCopied] = useState(false);
+  const otherOrigin = foreignLinkOrigin({ link, pageOrigin });
 
   async function copy(): Promise<void> {
     try {
@@ -80,6 +119,12 @@ export function CopyableLink({ link }: { link: string }) {
   return (
     <div className="space-y-2">
       <p className="break-all border bg-muted/30 p-3 font-mono text-xs">{link}</p>
+      {otherOrigin !== null && (
+        <p data-slot="link-origin-warning" className="flex items-start gap-2 text-sm text-accent-amber">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 break-words">{t('admin.link.otherAddress', { origin: otherOrigin })}</span>
+        </p>
+      )}
       <Button type="button" variant="outline" className="h-11" onClick={() => void copy()}>
         {isCopied ?
           <Check className="h-4 w-4" aria-hidden="true" />

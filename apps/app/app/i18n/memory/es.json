@@ -1693,6 +1693,13 @@
     "at": "2026-09-19",
     "es": "La descarga en formato JSON contiene la clave privada que se usa cuando alguien comparte su diario contigo, y la semilla de tu seudónimo de investigación. Guarda este archivo en un lugar seguro, al igual que tu diario."
   },
+  "13d545ad91790e07": {
+    "en": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+    "path": "common:admin.link.otherAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Este enlace abre {{origin}}, no la dirección que estás usando ahora. Es posible que no les funcione. Configura PUBLIC_APP_URL y PUBLIC_SYNC_URL en el servidor con las direcciones que usa tu familia."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",
@@ -3204,6 +3211,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Aloja tú mismo el servicio en un solo contenedor"
+  },
+  "25572369c750dffa": {
+    "en": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyNoMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Esta instancia no envía correo, por lo que recibes el enlace para compartirlo. Solicita una contraseña y da acceso directo a la aplicación."
   },
   "258d0a5a6d864869": {
     "en": "Where your calories come from",
@@ -17855,6 +17869,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Todo opcional. Nos permite ajustar las cantidades de referencia de vitaminas y minerales a tu caso y sugerirte una cifra de calorías. Se quedan en este dispositivo como el resto de tu diario, y ningún dato de aquí viaja jamás con una búsqueda de alimentos."
+  },
+  "e06e68f9f7f14a56": {
+    "en": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Reciben un enlace, por correo si esta instancia envía correo, o de tu parte si no lo hace. Solicita una contraseña y da acceso directo a la aplicación."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

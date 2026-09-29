@@ -23,6 +23,13 @@
  * number is typed here. The form waits for the handshake before it draws, so
  * the choice is there from its first paint and never arrives under a cursor.
  *
+ * ── The first sentence is true before anything is sent ───────────────────
+ *
+ * It used to say "They get a mail with a link" on every instance, including
+ * the ones that send no mail and hand the administrator the link instead. The
+ * same handshake names `instance.mail`, so the sentence is picked from it
+ * (`inviteBodyKey`), with a third one for a handshake that did not answer.
+ *
  * ── Client-only, like every account screen ───────────────────────────────
  *
  * The loader answers "does this instance have a server" and nothing else. The
@@ -53,6 +60,7 @@ import {
 } from '#app/lib/admin/invite-schema';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import type { Delivery } from '#app/lib/admin/admin-wire';
+import { inviteBodyKey } from '#app/lib/admin/link-delivery';
 import { isSyncRequestError } from '#app/lib/sync/engine/client/sync-error';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
@@ -79,11 +87,18 @@ export default function AdminInvite() {
       </Card>
     );
   }
-  return <AdminInviteForm trialScans={offeredTrialScans(instance)} />;
+  return <AdminInviteForm trialScans={offeredTrialScans(instance)} mail={instance?.mail ?? null} />;
 }
 
-/** The invitation form, once the handshake says whether the instance runs a trial. */
-function AdminInviteForm({ trialScans }: { trialScans: number | null }) {
+/** What the form knows from the handshake before anything is sent. */
+interface AdminInviteFormProps {
+  trialScans: number | null;
+  /** `instance.mail`, or `null` when the handshake did not answer. */
+  mail: boolean | null;
+}
+
+/** The invitation form, once the handshake says whether the instance runs a trial and sends mail. */
+function AdminInviteForm({ trialScans, mail }: AdminInviteFormProps) {
   const { t } = useTranslation();
   const navigate = useAppNavigate();
   const [state, setState] = useState<InviteState>({ kind: 'form' });
@@ -170,7 +185,7 @@ function AdminInviteForm({ trialScans }: { trialScans: number | null }) {
     <Card>
       <CardHeader>
         <CardTitle>{t('admin.invite.title')}</CardTitle>
-        <CardDescription>{t('admin.invite.body')}</CardDescription>
+        <CardDescription>{t(inviteBodyKey({ mail }))}</CardDescription>
       </CardHeader>
       <CardContent>
         <form {...getFormProps(form)} className="space-y-4">

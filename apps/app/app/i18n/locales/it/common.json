@@ -3351,6 +3351,8 @@
       "cta": "Invita qualcuno",
       "title": "Invita qualcuno",
       "body": "Riceveranno un'email con un link, che chiederà una password e li farà entrare direttamente nell'app.",
+      "bodyNoMail": "Questa istanza non invia email, quindi ricevi tu il link da inoltrare. Chiede una password e porta direttamente nell'app.",
+      "bodyUnknown": "Ricevono un link, via email se questa istanza invia email, oppure da te se non lo fa. Chiede una password e porta direttamente nell'app.",
       "emailLabel": "Indirizzo email",
       "emailRequired": "È richiesto un indirizzo email.",
       "nameLabel": "Nome",
@@ -3375,6 +3377,9 @@
       "failed": "Impossibile creare l'invito.",
       "exists": "{{email}} ha già un account qui.",
       "back": "Torna all'elenco"
+    },
+    "link": {
+      "otherAddress": "Questo link apre {{origin}}, non l'indirizzo che stai usando ora. Potrebbe non aprirsi per loro. Imposta PUBLIC_APP_URL e PUBLIC_SYNC_URL sul server con gli indirizzi usati dalla tua famiglia."
     },
     "settings": {
       "title": "Valori di riferimento",

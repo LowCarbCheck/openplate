@@ -3351,6 +3351,8 @@
       "cta": "Invite someone",
       "title": "Invite someone",
       "body": "They get a mail with a link. It asks for a password and puts them straight into the app.",
+      "bodyNoMail": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+      "bodyUnknown": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
       "emailLabel": "Email address",
       "emailRequired": "An email address is needed.",
       "nameLabel": "Name",
@@ -3375,6 +3377,9 @@
       "failed": "The invitation could not be created.",
       "exists": "{{email}} already has an account here.",
       "back": "Back to the list"
+    },
+    "link": {
+      "otherAddress": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses."
     },
     "settings": {
       "title": "Reference values",

@@ -3351,6 +3351,8 @@
       "cta": "Jemanden einladen",
       "title": "Jemanden einladen",
       "body": "Die Person erhält eine E-Mail mit einem Link, legt ein Passwort fest und ist direkt in der App.",
+      "bodyNoMail": "Diese Instanz versendet keine E-Mails, du erhältst den Link also zum Weitergeben. Er fragt nach einem Passwort und leitet direkt in die App weiter.",
+      "bodyUnknown": "Die Person erhält einen Link, per E-Mail, falls diese Instanz E-Mails versendet, oder von dir, falls nicht. Er fragt nach einem Passwort und leitet direkt in die App weiter.",
       "emailLabel": "E-Mail-Adresse",
       "emailRequired": "Eine E-Mail-Adresse ist erforderlich.",
       "nameLabel": "Name",
@@ -3375,6 +3377,9 @@
       "failed": "Die Einladung konnte nicht erstellt werden.",
       "exists": "{{email}} hat hier bereits ein Konto.",
       "back": "Zurück zur Liste"
+    },
+    "link": {
+      "otherAddress": "Dieser Link öffnet {{origin}}, nicht die Adresse, die du gerade nutzt. Vielleicht öffnet er sich bei ihnen nicht. Setze PUBLIC_APP_URL und PUBLIC_SYNC_URL auf dem Server auf die Adressen, die deine Familie verwendet."
     },
     "settings": {
       "title": "Referenzwerte",

@@ -3351,6 +3351,8 @@
       "cta": "Birini davet et",
       "title": "Birini davet et",
       "body": "İçinde bağlantı olan bir e-posta alırlar. Bağlantı bir parola belirlemelerini ister ve doğrudan uygulamaya aktarır.",
+      "bodyNoMail": "Bu sunucu e-posta göndermiyor, bu yüzden iletmen için bağlantıyı sen alırsın. Şifre belirlemelerini ister ve onları doğrudan uygulamaya alır.",
+      "bodyUnknown": "Bu sunucu e-posta gönderiyorsa e-postayla, göndermiyorsa senden bir bağlantı alırlar. Şifre belirlemelerini ister ve onları doğrudan uygulamaya alır.",
       "emailLabel": "E-posta adresi",
       "emailRequired": "Bir e-posta adresi gerekli.",
       "nameLabel": "Ad",
@@ -3375,6 +3377,9 @@
       "failed": "Davet oluşturulamadı.",
       "exists": "{{email}} adresinin burada zaten bir hesabı var.",
       "back": "Listeye geri dön"
+    },
+    "link": {
+      "otherAddress": "Bu bağlantı şu an kullandığın adresi değil, {{origin}} adresini açar. Onlarda açılmayabilir. Sunucuda PUBLIC_APP_URL ve PUBLIC_SYNC_URL değerlerini ailenin kullandığı adreslere ayarla."
     },
     "settings": {
       "title": "Referans değerler",

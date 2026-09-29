@@ -1693,6 +1693,13 @@
     "at": "2026-09-19",
     "it": "Il file JSON che scarichi contiene la chiave privata usata quando qualcuno condivide il suo diario con te e il seed per il tuo pseudonimo di ricerca. Custodisci questo file al sicuro, proprio come il tuo diario."
   },
+  "13d545ad91790e07": {
+    "en": "This link opens {{origin}}, not the address you are using now. It may not open for them. Set PUBLIC_APP_URL and PUBLIC_SYNC_URL on the server to the addresses your family uses.",
+    "path": "common:admin.link.otherAddress",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "it": "Questo link apre {{origin}}, non l'indirizzo che stai usando ora. Potrebbe non aprirsi per loro. Imposta PUBLIC_APP_URL e PUBLIC_SYNC_URL sul server con gli indirizzi usati dalla tua famiglia."
+  },
   "13d65e3748a7e2e8": {
     "en": "German Nutrition Society (DGE)",
     "path": "common:admin.settings.basis.dge",
@@ -3204,6 +3211,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ospitalo in autonomia in un unico container"
+  },
+  "25572369c750dffa": {
+    "en": "This instance sends no mail, so you get the link to pass on. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyNoMail",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "it": "Questa istanza non invia email, quindi ricevi tu il link da inoltrare. Chiede una password e porta direttamente nell'app."
   },
   "258d0a5a6d864869": {
     "en": "Where your calories come from",
@@ -17855,6 +17869,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Tutti facoltativi. Servono per adattare a te i valori di riferimento di vitamine e minerali e suggerirti una quota calorica. Restano su questo dispositivo come il resto del tuo diario, e nessun dato inserito qui viene mai inviato durante la ricerca degli alimenti."
+  },
+  "e06e68f9f7f14a56": {
+    "en": "They get a link, by mail if this instance sends mail, or from you if it does not. It asks for a password and puts them straight into the app.",
+    "path": "common:admin.invite.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "it": "Ricevono un link, via email se questa istanza invia email, oppure da te se non lo fa. Chiede una password e porta direttamente nell'app."
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

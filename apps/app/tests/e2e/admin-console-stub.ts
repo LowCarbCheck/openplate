@@ -22,6 +22,13 @@
  * long address, a suspended person, a second administrator, four digit
  * counts, and activity windows of whatever length the page asks for.
  *
+ * ── Two writes, only when a spec asks for a link ─────────────────────────
+ *
+ * `handedLink` answers a new invitation and a reset the way an instance with
+ * no mail does: `emailed: false` and the link to pass on. A spec picks the
+ * link, which is how `admin-link-names-another-address.spec.ts` hands the page
+ * a link on another origin and, as its control, one on its own.
+ *
  * ── A request this file has no answer for is recorded, not guessed ───────
  *
  * It gets a 404 and its method and path go into `unanswered`, which a spec
@@ -45,6 +52,13 @@ export interface AdminConsoleStub {
   healthGate?: Promise<void>;
   /** Holds every `/v1/admin/stats` answer until it settles. Left out, the counts answer at once. */
   statsGate?: Promise<void>;
+  /**
+   * The link a new invitation and a reset hand back, as an instance with no mail
+   * does (`emailed: false`). Left out, `POST /invites` and `POST
+   * /accounts/:id/reset-mail` stay unanswered, so a spec that did not ask for a
+   * link never gets one.
+   */
+  handedLink?: string;
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -230,6 +244,27 @@ function numberParam(input: { url: URL; name: string; fallback: number }): numbe
 /** `GET /v1/admin/accounts/:id` and `GET /v1/admin/accounts/:id/activity`. */
 const PERSON_PATH = /^\/accounts\/(\d+)(\/activity)?$/u;
 
+/** `POST /v1/admin/accounts/:id/reset-mail`. */
+const RESET_MAIL_PATH = /^\/accounts\/(\d+)\/reset-mail$/u;
+
+/** The one field of an invite body the answer repeats. LOOSE, so the rest of the body is not this file's concern. */
+const INVITE_BODY = z.looseObject({ email: z.string() });
+
+/** The invitation a `POST /invites` answer describes: pending, a week to run, the address that was sent. */
+function mintedInvite(email: string) {
+  return {
+    id: 777,
+    email,
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: 0,
+    expiresAt: new Date(Date.now() + 7 * DAY_MS).toISOString(),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    redeemedAccountId: null,
+  };
+}
+
 /**
  * Answers one `/v1/admin/*` request, or records it as unanswered.
  *
@@ -277,6 +312,19 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
   if (request.method() === 'GET' && found !== undefined) {
     const strip = activityWindow({ days: PERSON_WINDOW_DAYS, seed: found.id });
     return route.fulfill({ json: { accountId: found.id, lastSeenAt: found.lastSeenAt, ...strip } });
+  }
+
+  if (request.method() === 'POST' && path === '/invites' && stub.handedLink !== undefined) {
+    const body = INVITE_BODY.parse(request.postDataJSON());
+    return route.fulfill({
+      status: 201,
+      json: { invite: mintedInvite(body.email), emailed: false, link: stub.handedLink },
+    });
+  }
+  const reset = RESET_MAIL_PATH.exec(path);
+  const resetFor = reset === null ? undefined : people.find((candidate) => candidate.id === Number(reset[1]));
+  if (request.method() === 'POST' && resetFor !== undefined && stub.handedLink !== undefined) {
+    return route.fulfill({ json: { emailed: false, link: stub.handedLink } });
   }
 
   stub.unanswered.push(`${request.method()} ${ADMIN_API_PREFIX}${path}`);

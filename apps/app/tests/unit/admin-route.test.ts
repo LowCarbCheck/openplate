@@ -34,6 +34,8 @@
  *  6. THE INVITATIONS TAB. The pending invitations that used to sit under the
  *     people list.
  *  7. THE INVITE RESULT, with and without mail.
+ *  8. A HAND-PASSED LINK THAT OPENS ANOTHER ADDRESS than the page, which
+ *     says so under the link.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,7 +46,7 @@ import { MemoryRouter } from 'react-router';
 import { withI18n } from './trends-i18n-harness';
 import { AdminTabs } from '../../app/components/admin/admin-tabs';
 import { NotAnAdministratorCard } from '../../app/components/admin/not-an-administrator';
-import { InviteResult } from '../../app/components/admin/invite-result';
+import { CopyableLinkView, InviteResult } from '../../app/components/admin/invite-result';
 import { InviteTable } from '../../app/components/admin/invite-table';
 import { ActivityOverview } from '../../app/components/admin/activity-overview';
 import { PeopleTable } from '../../app/components/admin/people-table';
@@ -641,6 +643,54 @@ test('a server that reports mail AND hands back a link is treated as the link ca
 
   assert.match(html, /Invitation ready for/);
   assert.match(html, /Copy the link/);
+});
+
+// ---------------------------------------------------------------------------
+// 8. A hand-passed link that opens another address
+// ---------------------------------------------------------------------------
+
+/** What the compose files make the core build when PUBLIC_APP_URL and PUBLIC_SYNC_URL are unset. */
+const LOCALHOST_INVITE_LINK = 'http://localhost:3000/join#server=http%3A%2F%2Flocalhost%3A3001&invite=si_abc';
+
+/** The warning line, found by its slot so its wording stays the wordsmith's. */
+const ORIGIN_WARNING = 'data-slot="link-origin-warning"';
+
+test('a link that opens another origin than the page says so under the link, and names the address and the fix', () => {
+  const html = render(createElement(CopyableLinkView, { link: LOCALHOST_INVITE_LINK, pageOrigin: 'http://bluefin:3000' }));
+
+  assert.ok(html.includes(ORIGIN_WARNING), 'the warning line is drawn');
+  // Read INSIDE the line: the link above it holds the same address.
+  const warningAt = html.indexOf(ORIGIN_WARNING);
+  const line = html.slice(warningAt, html.indexOf('</p>', warningAt));
+  assert.ok(line.includes('http://localhost:3000'), `it names the address the link opens: ${line}`);
+  assert.ok(!line.includes('bluefin'), 'it names the link, not the page');
+  assert.match(line, /PUBLIC_APP_URL/);
+  assert.match(line, /PUBLIC_SYNC_URL/);
+  // UNDER the link and ABOVE the copy button: the order a person reads in.
+  const linkAt = html.indexOf(LOCALHOST_INVITE_LINK.replaceAll('&', '&amp;'));
+  const copyAt = html.indexOf('Copy the link');
+  assert.ok(linkAt >= 0 && linkAt < warningAt && warningAt < copyAt, `link ${linkAt}, warning ${warningAt}, copy ${copyAt}`);
+});
+
+test('CONTROL: a link on the page origin draws no warning line', () => {
+  const html = render(createElement(CopyableLinkView, { link: LOCALHOST_INVITE_LINK, pageOrigin: 'http://localhost:3000' }));
+  // The link itself is there, so an empty render cannot pass this.
+  assert.match(html, /Copy the link/);
+  assert.ok(!html.includes(ORIGIN_WARNING), 'a link on this address needs no warning');
+});
+
+test('the server render of the invite result draws no warning line, so hydration matches it', () => {
+  // `renderToStaticMarkup` takes the server snapshot of `usePageOrigin`, the
+  // same one React hydrates with. The browser's origin arrives after that.
+  const html = render(
+    createElement(InviteResult, {
+      email: 'bea@example.org',
+      delivery: { emailed: false, link: LOCALHOST_INVITE_LINK },
+      onInviteAnother: () => undefined,
+    }),
+  );
+  assert.match(html, /Copy the link/);
+  assert.ok(!html.includes(ORIGIN_WARNING));
 });
 
 test("a person with a scan trial shows the free scans used against those given (M253/05)", () => {
