@@ -31,6 +31,7 @@ import { StrangerNote, strangerNoteVariantForPath } from '#app/components/strang
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { shellForGate } from '#app/lib/personal-shell';
 import { useSettleAppNavigation } from '#app/hooks/use-app-navigate';
+import { recordPlanGateHold, shouldHoldStartForPlanGate } from '#app/lib/plans/plan-gate-hold';
 import {
   getPlanGateFactsSnapshot,
   notePlanGateRenderedPath,
@@ -176,8 +177,10 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   //
   // ON A COLD BOOT THE SESSION IS STILL REOPENING here, exactly as the
   // snapshot comment above says, so there is no account yet and this answers
-  // open. `PlanGateWatcher` below asks again once the account and the facts
-  // have arrived.
+  // open. What happens next is the hold below: a device the paywall locked
+  // last time waits on the splash for the session, and everybody else gets
+  // the page at once while `PlanGateWatcher` asks again once the account and
+  // the facts have arrived.
   //
   // ONLY A NAVIGATION IS DECIDED. A run for the page already on screen (an
   // action on it, a session settling) is left alone, or the last free scan's
@@ -203,6 +206,15 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     const planGate = await resolvePlanGateForNavigation({ pathname });
     if (planGate.kind === 'paywall') throw redirect(planGate.destination);
   }
+  // THE COLD START OF A DEVICE THE PAYWALL LOCKED LAST TIME (M265 spec 10).
+  // The answer above was open only because the session has not reopened, and
+  // drawing the page now is what showed a locked person the diary for about a
+  // second before the plan page. So the page is not drawn: the layout keeps
+  // the boot splash up, `PlanGateHold` asks both gates again once the session
+  // has settled, and they answer with the account in hand. Only a device whose
+  // marker says it may be locked is held, see `plan-gate-hold.ts`, so a
+  // person with a working plan gets the diary exactly as soon as before.
+  if (await shouldHoldStartForPlanGate({ pathname })) return { gateKind: 'plan-pending' as const, isExemptPath };
   return { gateKind: 'pass' as const, isExemptPath };
 }
 clientLoader.hydrate = true as const;
@@ -327,12 +339,16 @@ export default function PersonalLayout() {
   //
   // BOTH CHILDREN ARE LOAD-BEARING. `SyncController` is what ends the wait,
   // and unmounting it here would leave the wait for ever; `SessionResumeGate`
-  // is what revalidates once the session has settled.
+  // is what revalidates once the session has settled, and `PlanGateHold` is
+  // the same screen for a cold start the paywall holds, which also asks the
+  // gates to decide when it revalidates.
   if (shell === 'loading') {
     return (
       <>
         <SyncController />
-        <SessionResumeGate />
+        {gateKind === 'plan-pending' ?
+          <PlanGateHold />
+        : <SessionResumeGate />}
       </>
     );
   }
@@ -442,6 +458,14 @@ function PlanGateWatcher(): null {
     if (accountId === null) return;
     void refreshPlanGateFacts();
   }, [accountId, pathname]);
+
+  // THE MARKER THE NEXT COLD START READS (M265 spec 10), kept in step with
+  // every standing this watcher sees: a new read, and every change to the
+  // account, such as the last free scan the AI proxy counted down to zero.
+  useEffect(() => {
+    if (session.account === null) return;
+    recordPlanGateHold({ account: session.account, held: facts, now: new Date() });
+  }, [session.account, facts]);
 
   useEffect(() => {
     if (accountId === null) return;
@@ -553,6 +577,39 @@ function SessionResumeGate() {
   useEffect(() => {
     if (session.isResuming) return;
     if (revalidator.state !== 'idle') return;
+    void revalidator.revalidate();
+  }, [session.isResuming, revalidator]);
+
+  return <AppLoading label={t('chrome.loading')} />;
+}
+
+/**
+ * The boot splash a cold start sees while the paywall holds it, and the one
+ * thing it does when the session has settled (M265 spec 10).
+ *
+ * THE SAME SCREEN as `HydrateFallback` and `SessionResumeGate`, so a held start
+ * is one splash from the first paint to the plan page, with no page drawn
+ * under it. That is the whole point: the diary is not mounted until the gates
+ * have answered with the account in hand.
+ *
+ * IT ASKS THE GATES, where `SessionResumeGate` only revalidates. The layout
+ * notes this address as the page on screen, and the loader leaves the page on
+ * screen alone unless asked (`shouldCheckPlanGate`). So this asks first
+ * (`requestPlanGateCheck`), and the revalidation decides both gates in their
+ * order: the consent first, then the paywall, which waits for its first read
+ * for at most `PLAN_GATE_READ_TIMEOUT_MS` and opens when that read fails.
+ * Afterwards the loader no longer answers `plan-pending`, because the session
+ * is no longer reopening, so this unmounts.
+ */
+function PlanGateHold() {
+  const { t } = useTranslation();
+  const session = useSyncSession();
+  const revalidator = useRevalidator();
+
+  useEffect(() => {
+    if (session.isResuming) return;
+    if (revalidator.state !== 'idle') return;
+    requestPlanGateCheck();
     void revalidator.revalidate();
   }, [session.isResuming, revalidator]);
 
