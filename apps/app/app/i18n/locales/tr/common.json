@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Planın aktif.",
       "openDiary": "Günlüğünü aç",
+      "setUp": "Günlüğünü kur",
       "slow": "Ödemen alındı. Burada görünmesi bir dakika sürebilir.",
       "checkAgain": "Tekrar kontrol et"
     }

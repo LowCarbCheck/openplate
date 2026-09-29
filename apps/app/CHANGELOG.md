@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **A buyer who picks a plan first sets up the diary after paying.** Someone who came from the pricing page pays before onboarding, and the payment return used to send them straight to a diary without calorie or protein targets. The return now offers "Set up your diary" and opens onboarding, and the diary comes after it. A buyer who leaves the payment page without paying meets onboarding on the next page they open, like any new account. An account that finished onboarding before it bought a plan still goes to the diary. Accounts left in that state by an earlier version no longer see "We can't find your diary" on their next visit. Every account's first sync stores its private keys, and the app read that as a lost diary. `tests/e2e/onboarding-after-payment.spec.ts` checks all four.
+
 ## [0.50.0] - 2026-09-28
 
 ### Added

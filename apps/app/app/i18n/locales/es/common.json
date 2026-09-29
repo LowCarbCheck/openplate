@@ -3744,6 +3744,7 @@
     "returned": {
       "active": "Tu plan está activo.",
       "openDiary": "Abre tu diario",
+      "setUp": "Configura tu diario",
       "slow": "Tu pago se ha procesado. Puede tardar un minuto en aparecer aquí.",
       "checkAgain": "Volver a comprobar"
     }

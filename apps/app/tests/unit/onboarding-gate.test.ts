@@ -15,7 +15,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isOnboardingGateExempt, resolveOnboardingGate, type OnboardingGateInput } from '../../app/lib/onboarding-gate';
+import {
+  hasPassedOnboardingGate,
+  isOnboardingGateExempt,
+  resolveOnboardingGate,
+  shouldAskOnboardingGate,
+  type OnboardingGateInput,
+} from '../../app/lib/onboarding-gate';
 
 /**
  * A device that has never been written to: the only shape with no marker.
@@ -333,5 +339,68 @@ describe('a sync baseline is evidence that this device is not a new person’s',
   it('THE CONTROL: a real stranger on the same path still gets the public chrome', () => {
     const outcome = resolveOnboardingGate(newDevice({ isExemptPath: true, hasSyncBaseline: false }));
     assert.deepEqual(outcome, { kind: 'exempt' });
+  });
+});
+
+/**
+ * THE GATE ON A PLAIN NAVIGATION (M265/03).
+ *
+ * `_personal.tsx`'s `shouldRevalidate` skips the loader on a plain navigation,
+ * so the gate used to run only where a person entered the layout. A buyer who
+ * chose a plan first enters it at the order page, which is exempt, and walked
+ * from the return screen into the diary without ever meeting the
+ * questionnaire. These two functions are the rule that closes it: every loader
+ * run records whether the gated order let the device through, and until it
+ * has, a navigation to a guarded path runs the loader again.
+ */
+describe('hasPassedOnboardingGate', () => {
+  it('is false for a new account standing on the exempt order page, the plan-first buyer', () => {
+    assert.equal(hasPassedOnboardingGate(newDevice({ hasSyncAccount: true, isExemptPath: true })), false);
+  });
+
+  it('THE CONTROL: is true for an onboarded device on the same page', () => {
+    const onboarded = newDevice({
+      hasSyncAccount: true,
+      isExemptPath: true,
+      hasProfile: true,
+      hasCompletedOnboarding: true,
+    });
+    assert.equal(hasPassedOnboardingGate(onboarded), true);
+  });
+
+  it('counts a self-heal as through, because the loader stamps it before it lets the request on', () => {
+    assert.equal(hasPassedOnboardingGate(newDevice({ hasSyncAccount: true, hasEverHadData: true, logCount: 3 })), true);
+  });
+
+  it('is false for a locked device whatever its profile says, because the lock is asked first', () => {
+    const locked = newDevice({
+      hasProfile: true,
+      hasCompletedOnboarding: true,
+      isDeviceLocked: true,
+      isExemptPath: true,
+    });
+    assert.equal(hasPassedOnboardingGate(locked), false);
+  });
+
+  it('is false while a session is still reopening on a device with no stamped profile', () => {
+    assert.equal(hasPassedOnboardingGate(newDevice({ isResumingSession: true, isExemptPath: true })), false);
+  });
+});
+
+describe('shouldAskOnboardingGate', () => {
+  it('asks again on the way from the order page to the diary before the gate has let the device through', () => {
+    assert.equal(shouldAskOnboardingGate({ pathname: '/dashboard', hasPassed: false }), true);
+    assert.equal(shouldAskOnboardingGate({ pathname: '/diary', hasPassed: false }), true);
+    assert.equal(shouldAskOnboardingGate({ pathname: '/settings', hasPassed: false }), true);
+  });
+
+  it('THE CONTROL: never asks once the gate has let the device through, so an onboarded device navigates as before', () => {
+    assert.equal(shouldAskOnboardingGate({ pathname: '/dashboard', hasPassed: true }), false);
+    assert.equal(shouldAskOnboardingGate({ pathname: '/diary', hasPassed: true }), false);
+  });
+
+  it('does not ask on the way to another exempt page, which the gate would let through untested anyway', () => {
+    assert.equal(shouldAskOnboardingGate({ pathname: '/settings/plan', hasPassed: false }), false);
+    assert.equal(shouldAskOnboardingGate({ pathname: '/settings/preferences/', hasPassed: false }), false);
   });
 });

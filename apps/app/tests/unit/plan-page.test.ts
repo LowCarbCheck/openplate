@@ -57,7 +57,7 @@ import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { SELF_HOSTING_DOCS_URL } from '../../app/lib/brand';
 import type { PaywallNotice } from '../../app/lib/plans/plan-gate';
-import type { PaymentConfirmation } from '../../app/lib/plans/payment-return';
+import type { PaymentConfirmation, PaymentReturnDoor } from '../../app/lib/plans/payment-return';
 
 /** An instance whose handshake says a biller stands behind it. */
 const SELLING: InstanceDescriptor = {
@@ -112,6 +112,7 @@ interface RenderOverrides {
   paywallNotice?: PaywallNotice | null;
   offersFreeScansFirst?: boolean;
   paymentConfirmation?: PaymentConfirmation;
+  afterPaymentDoor?: PaymentReturnDoor;
 }
 
 function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
@@ -156,6 +157,7 @@ function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
           paywallNotice: overrides.paywallNotice ?? null,
           offersFreeScansFirst: overrides.offersFreeScansFirst ?? false,
           paymentConfirmation: overrides.paymentConfirmation ?? 'checking',
+          afterPaymentDoor: overrides.afterPaymentDoor ?? 'diary',
           onCheckAgain: () => undefined,
           onSelectPlan: () => undefined,
           onConsentChange: () => undefined,
@@ -633,6 +635,30 @@ describe('a return from the payment page (2026-09-28)', () => {
     assert.ok(
       returnStateOf(returning('slow'), enCommon.paywall.returned.slow).includes(enCommon.paywall.returned.checkAgain),
     );
+  });
+
+  // M265/03. A buyer who chose a plan on the pricing page pays before the
+  // questionnaire, so the link after the payment leads there and says so.
+  it('leads to the questionnaire and says so when that is the door, and to the diary otherwise', () => {
+    const activeState = (afterPaymentDoor: PaymentReturnDoor) =>
+      returnStateOf(
+        render(
+          { kind: 'ready', plan: FREE },
+          { checkoutReturn: 'success', paymentConfirmation: 'confirmed', afterPaymentDoor },
+        ),
+        enCommon.paywall.returned.active,
+      );
+    const toOnboarding = activeState('onboarding');
+    assert.ok(toOnboarding.includes('href="/onboarding"'), 'the link does not lead to the questionnaire');
+    assert.ok(toOnboarding.includes(`>${enCommon.paywall.returned.setUp}</a>`), 'the link does not say where it leads');
+    assert.equal(toOnboarding.includes('href="/dashboard"'), false);
+    // THE CONTROL, through the same reading: the diary's door draws the other
+    // link, so the two assertions above can fail.
+    const toDiary = activeState('diary');
+    assert.ok(toDiary.includes('href="/dashboard"'));
+    assert.ok(toDiary.includes(`>${enCommon.paywall.returned.openDiary}</a>`));
+    assert.equal(toDiary.includes('href="/onboarding"'), false);
+    assert.equal(toDiary.includes(enCommon.paywall.returned.setUp), false);
   });
 
   it('draws no return line on an ordinary visit', () => {

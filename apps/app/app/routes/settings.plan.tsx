@@ -52,6 +52,12 @@
  * your diary" opens it. While the payment is being confirmed nothing is sold:
  * the order block would invite a second payment for the first one.
  *
+ * A BUYER WHO CHOSE A PLAN FIRST ANSWERS THE QUESTIONNAIRE AFTER PAYING
+ * (M265/03, decision (c) of the milestone). They arrive here from `/join`
+ * before onboarding, so the link after a confirmed payment leads to the
+ * questionnaire and says so, and the diary comes after it. An account that
+ * answered it before it bought a plan keeps "Open your diary".
+ *
  * ── The view is props only ───────────────────────────────────────────────
  *
  * `PlanScreen` takes everything it draws and holds no hook but `t`, so every
@@ -83,7 +89,14 @@ import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
 import { hasFreeScansLeft, paywallNoticeFor, planGateStanding, type PaywallNotice } from '#app/lib/plans/plan-gate';
 import { forgetPlanGateFacts, notePlanViewForSession } from '#app/lib/plans/plan-gate-facts';
-import type { PaymentConfirmation } from '#app/lib/plans/payment-return';
+import {
+  PAYMENT_RETURN_HREF,
+  paymentReturnDoorFor,
+  type PaymentConfirmation,
+  type PaymentReturnDoor,
+} from '#app/lib/plans/payment-return';
+import { readOnboardingGateKind } from '#app/lib/read-onboarding-gate';
+import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { offeredTrialScans } from '#app/lib/plans/signup-door';
 import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
@@ -125,6 +138,7 @@ export function loader() {
 export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs, 'serverLoader'>): Promise<{
   syncServerUrl: string;
   instance: InstanceDescriptor;
+  afterPayment: PaymentReturnDoor;
 }> {
   const { syncServerUrl } = await serverLoader();
   // A SHUT DOOR IS ALSO NEWS FOR THE PAYWALL. A gate still holding the old
@@ -134,9 +148,18 @@ export async function clientLoader({ serverLoader }: Pick<Route.ClientLoaderArgs
     forgetPlanGateFacts();
     throw cause;
   });
+  // WHERE THE WAY ON FROM A PAYMENT LEADS (M265/03), decided HERE and not in
+  // the view, so the link's label is right from its first paint and never
+  // changes under the person. Read on every run, not only on a return: the
+  // page takes the `checkout` marker off its own address, which runs this
+  // loader again, and the answer has to survive that. NO DIARY READ FOR A
+  // STRANGER (M204 spec 09): with no session there is no payment to come back
+  // from, and the page asks them to sign in instead.
+  const afterPayment: PaymentReturnDoor =
+    getSyncSessionSnapshot().account === null ? 'diary' : paymentReturnDoorFor(await readOnboardingGateKind());
   // The descriptor rides along so the page's standing reads the SAME answer
   // the gate just passed, rather than a second read that starts at `null`.
-  return { syncServerUrl, instance };
+  return { syncServerUrl, instance, afterPayment };
 }
 clientLoader.hydrate = true as const;
 
@@ -198,6 +221,8 @@ export interface PlanScreenProps {
   offersFreeScansFirst: boolean;
   /** Where a `success` return is. Read only when `checkoutReturn` is `success`. */
   paymentConfirmation: PaymentConfirmation;
+  /** Where the link after a confirmed payment leads, and so what it says. */
+  afterPaymentDoor: PaymentReturnDoor;
   onCheckAgain: () => void;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
@@ -302,21 +327,31 @@ function ReturnState({ isShown, children }: { isShown: boolean; children: ReactN
   );
 }
 
+/** The label of the link after a confirmed payment. A `Record`, so a third door fails to compile here. */
+const RETURN_DOOR_LABEL_KEY = {
+  onboarding: 'paywall.returned.setUp',
+  diary: 'paywall.returned.openDiary',
+} satisfies Record<PaymentReturnDoor, string>;
+
 /**
  * What the person came back from.
  *
  * A PAYMENT RETURN RESERVES ITS BOX FROM THE FIRST PAINT. Its three states,
  * checking, active and slow, are drawn in ONE grid cell and only one is
  * visible, so the cell is as tall as the tallest from the start and a state
- * change moves nothing below it, in any language (DESIGN.md section 7).
+ * change moves nothing below it, in any language (DESIGN.md section 7). The
+ * link in the active state says where it leads, the questionnaire or the
+ * diary, and which of the two is known before the first paint.
  */
 function CheckoutReturnLine({
   checkoutReturn,
   confirmation,
+  door,
   onCheckAgain,
 }: {
   checkoutReturn: CheckoutReturn;
   confirmation: PaymentConfirmation;
+  door: PaymentReturnDoor;
   onCheckAgain: () => void;
 }) {
   const { t } = useTranslation();
@@ -334,7 +369,7 @@ function CheckoutReturnLine({
       <ReturnState isShown={confirmation === 'confirmed'}>
         <p className="text-sm font-medium">{t('paywall.returned.active')}</p>
         <Button asChild className="h-11 self-start">
-          <Link to="/dashboard">{t('paywall.returned.openDiary')}</Link>
+          <Link to={PAYMENT_RETURN_HREF[door]}>{t(RETURN_DOOR_LABEL_KEY[door])}</Link>
         </Button>
       </ReturnState>
       <ReturnState isShown={confirmation === 'slow'}>
@@ -358,6 +393,7 @@ export function PlanScreen(props: PlanScreenProps) {
       <CheckoutReturnLine
         checkoutReturn={checkoutReturn}
         confirmation={paymentConfirmation}
+        door={props.afterPaymentDoor}
         onCheckAgain={props.onCheckAgain}
       />
       {!isAwaitingPayment && <PlanBody {...props} />}
@@ -543,7 +579,7 @@ export default function SettingsPlan() {
 
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
-  const { instance } = useLoaderData<typeof clientLoader>();
+  const { instance, afterPayment } = useLoaderData<typeof clientLoader>();
   const isReturningPaid = checkoutReturn === 'success';
   const payment = usePaymentConfirmation({ isReturning: isReturningPaid, instance });
   const pageRead = usePlanRead({ isEnabled: true, refresh: planRefresh });
@@ -749,6 +785,7 @@ export default function SettingsPlan() {
       paywallNotice={paywallNotice}
       offersFreeScansFirst={offersFreeScansFirst}
       paymentConfirmation={payment.confirmation}
+      afterPaymentDoor={afterPayment}
       onCheckAgain={payment.checkAgain}
     />
   );

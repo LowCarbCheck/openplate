@@ -255,6 +255,51 @@ function resolveForGatedPath({
 }
 
 /**
+ * Has the gated order let this device through, going by what one loader run
+ * read (M265/03)?
+ *
+ * THE QUESTION `shouldRevalidate` HAS TO ANSWER, synchronously, and the gate
+ * cannot be asked there: its inputs are IndexedDB reads. So every run of the
+ * layout's loader leaves this answer behind (`onboarding-gate-facts.ts`), and
+ * the next plain navigation reads it.
+ *
+ * ASKED OF THE GATED ORDER EVEN ON AN EXEMPT PATH, because the gated order is
+ * what the next navigation out of that path meets. An exempt run skips the log
+ * listing, so `logCount` is 0 there and `self-heal` cannot come out of it: a
+ * device with logs and no stamp reads as not through yet, and the one extra
+ * loader run that costs at its next navigation is the run that stamps it.
+ *
+ * @returns `true` for `pass` and `self-heal`, the two outcomes that let a request through.
+ */
+export function hasPassedOnboardingGate(input: OnboardingGateInput): boolean {
+  const gated = resolveForGatedPath(input);
+  return gated.kind === 'pass' || gated.kind === 'self-heal';
+}
+
+/**
+ * Must a plain navigation to this path run the gate again (M265/03)?
+ *
+ * THE DEFECT IT CLOSES. `_personal.tsx`'s `shouldRevalidate` skips the loader
+ * on a plain navigation, so the gate ran only where a person entered the
+ * layout. A buyer who chose a plan on the pricing page enters it at the order
+ * page, which is exempt. They paid, and the return screen's link took them
+ * into the diary without the gate being asked once, so the questionnaire the
+ * diary's targets come from never came. A buyer who left Stripe without paying
+ * reached the diary the same way.
+ *
+ * So a device the gate has not let through yet is asked again on the way to
+ * every path the gate guards. A device it has let through is never asked, so
+ * an onboarded device navigates exactly as before, with the loader skipped.
+ *
+ * @param input.pathname - where the navigation goes.
+ * @param input.hasPassed - {@link hasPassedOnboardingGate} of the last loader run.
+ */
+export function shouldAskOnboardingGate({ pathname, hasPassed }: { pathname: string; hasPassed: boolean }): boolean {
+  if (hasPassed) return false;
+  return !isOnboardingGateExempt(pathname);
+}
+
+/**
  * Routes under `_personal` that the gate must NOT redirect away from, AND the
  * routes whose chrome a stranger's visit changes.
  *
@@ -297,6 +342,8 @@ function resolveForGatedPath({
  * onboarding, and a locked account with no profile would bounce between the
  * two gates. A stranger who opens it sees the public chrome and the page's
  * own "sign in to see your plan", which is legible without the app around it.
+ * The questionnaire comes right AFTER it (M265/03): the first navigation out
+ * of the page asks the gate again, see {@link shouldAskOnboardingGate}.
  *
  * `/welcome` and `/sign-in` are the gate's own destinations (M183 spec 02),
  * and `/forgot` and `/reset` are where a mailed link lands (M192/05). All four

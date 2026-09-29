@@ -11,6 +11,7 @@
  * The clock is an argument, so the last poll before the deadline and the
  * first one after it are ordinary test cases.
  */
+import type { OnboardingGateOutcome } from '#app/lib/onboarding-gate';
 
 /** How often the page asks for the plan while a payment is being confirmed. */
 export const PAYMENT_POLL_INTERVAL_MS = 2_000;
@@ -45,4 +46,38 @@ export function confirmationAfterRead({
   if (isSubscribed) return 'confirmed';
   if (elapsedMs >= PAYMENT_POLL_DEADLINE_MS) return 'slow';
   return 'checking';
+}
+
+/**
+ * Where the way on from a confirmed payment leads (M265/03).
+ *
+ * - `onboarding`: the questionnaire. A buyer who chose a plan on the pricing
+ *   page pays before they answer it, so for them it comes now, before the
+ *   diary whose targets it sets.
+ * - `diary`: everybody else, among them an account that answered it long
+ *   before it bought a plan. The onboarding gate still stands at the diary's
+ *   door, so a device it would send elsewhere (a possible data loss) is sent
+ *   there all the same.
+ */
+export type PaymentReturnDoor = 'onboarding' | 'diary';
+
+/** The address behind each door. The diary's door is the dashboard, as it was before M265/03. */
+export const PAYMENT_RETURN_HREF = {
+  onboarding: '/onboarding',
+  diary: '/dashboard',
+} as const satisfies Record<PaymentReturnDoor, string>;
+
+/**
+ * The door for what the onboarding gate would answer on the way to the diary.
+ *
+ * Only `onboard` is the questionnaire's, and linking straight to it is exactly
+ * what the gate would do (`resolveSignInDestination`). Every other answer
+ * keeps the diary's door and lets the gate decide there: `recover` is a
+ * question about lost data that this page must not answer with a wizard, and
+ * `wait` is a session still reopening, which the page is never drawn during.
+ *
+ * @param gate - `readOnboardingGateKind()`.
+ */
+export function paymentReturnDoorFor(gate: OnboardingGateOutcome['kind']): PaymentReturnDoor {
+  return gate === 'onboard' ? 'onboarding' : 'diary';
 }
