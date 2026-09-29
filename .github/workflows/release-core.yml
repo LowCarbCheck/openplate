@@ -77,60 +77,90 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  build-and-push:
+  # ── Wait for the sibling run, WITHOUT holding the group ───────
+  # A coordinated release pushes `main` and then the `core-v*` tag seconds
+  # later, so the tag run must let the branch run settle before `reuse` reads
+  # the registry. This job does the waiting and carries NO concurrency group,
+  # for the reason release-app.yml gives: on 2026-09-11 a wait inside the group
+  # that `merge` also needs held both runs until the timeout.
+  #
+  # `--workflow` names this FILE, because the app and inference release
+  # workflows run on the same commits. A sibling that FAILED must not stop the
+  # release, so `--exit-status` is swallowed; the point is only that it is
+  # finished. A timed out wait skips `reuse`, and the release builds instead.
+  wait-for-branch-run:
     needs: resolve-commit
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for the branch run of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve-commit.outputs.sha }}
+        run: |
+          set -uo pipefail
+          export GH_REPO="$GITHUB_REPOSITORY"
+          ids=$(gh run list --workflow release-core.yml --commit "$SHA" --limit 50 \
+            --json databaseId,status \
+            --jq '.[] | select(.status != "completed") | .databaseId' \
+            | grep -vx "$GITHUB_RUN_ID" || true)
+          if [ -z "$ids" ]; then
+            echo "no other run of $GITHUB_WORKFLOW is open on $SHA"
+            exit 0
+          fi
+          echo "waiting on run ids: $(echo "$ids" | tr '\n' ' ')"
+          for id in $ids; do
+            echo "::group::run $id"
+            gh run watch "$id" --exit-status || true
+            echo "::endgroup::"
+          done
 
-    # ── Why this job queues ─────────────────────────────────────
-    # A coordinated release pushes `main` and then the `core-v*` tag seconds
-    # later. Both refs point at the SAME commit, so both start this job. On 2026-09-08
-    # the second one to start missed the first one's not yet exported buildx
-    # cache and rebuilt linux/arm64 under QEMU from nothing: openplate v0.17.0
-    # sat 42 minutes and never finished, openplate-sync v0.9.0 sat 26 minutes.
-    # A warm run of this step takes under 3 minutes.
-    #
-    # The group is keyed on the COMMIT, resolved by the job above rather than
-    # taken from `github.sha`. Not on the ref, because the branch push and the
-    # tag push carry different refs and must land in ONE group. Not on the
-    # repository, because that is wider than the problem: it would queue every
-    # ordinary push to `main` behind every other one, and GitHub keeps
-    # only ONE run waiting per group. A newer arrival evicts an older waiting
-    # run even when cancel-in-progress is false, so a wide key could DROP a
-    # release build rather than delay it. Keying on the commit bounds this
-    # queue at two, the branch run and the tag run, so nothing is ever evicted.
-    #
-    # The WORKFLOW is part of the key too, as `release-core-`. Since M262 one
-    # push to `main` can start the app and inference release workflows on the
-    # same commit, and a group they shared would serialise the three apps, or
-    # evict a waiting release of another app.
-    #
-    # cancel-in-progress MUST stay false. Cancelling a release run is the
-    # failure this block exists to prevent; see the dispatch-website note below.
-    #
-    # EXPECT a release to take about twice one build now, roughly 5 to 8 minutes
-    # end to end, because the tag run starts only after the branch run finishes.
-    # A job held here reads "Queued" in the Actions UI. Queued is not hung. Do
-    # not cancel it.
+  # ── Copy, do not rebuild ───────────────────────────────────────
+  # `wait-for-branch-run` makes this job start only after the branch run of the
+  # same commit has finished or failed, so what it published is a SETTLED fact
+  # and the registry lookup below is exact.
+  #
+  # If the commit already has a two platform `sha-` image, the semver tag becomes
+  # a manifest COPY of it: seconds, no layers pushed, no cache exported. Every
+  # other case falls through to the build: no image, a pruned image, a single
+  # platform image, or a copy that failed. A SINGLE PLATFORM source is never
+  # copied, because that would silently drop `linux/arm64` from the release, and
+  # self-hosters on a Raspberry Pi or an ARM VPS pull that platform.
+  #
+  # Tagging an OLD commit lands here too, and copying is the more faithful answer
+  # than a fresh build. A tag on a commit whose `main` push touched nothing under
+  # `apps/core` finds no `sha-` image, because the `paths` filter skipped that
+  # branch run, and it builds.
+  #
+  # The source is keyed on the RESOLVED commit, never on `github.sha`: an
+  # annotated tag's `github.sha` is the tag OBJECT, and no `sha-` image is ever
+  # published under it. `latest` is untouched, because it is emitted only with
+  # `enable={{is_default_branch}}`. `--annotation` rewrites the copied OCI
+  # version label so the semver tag states its own version.
+  #
+  # This is a JOB, not a step, because each platform builds in a matrix job of
+  # its own now. Gating a step would leave both legs running.
+  reuse:
+    needs:
+      - resolve-commit
+      - wait-for-branch-run
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    # The plain group, the same one `merge` holds, so this lookup never reads
+    # the registry while the branch run's `merge` is still assembling.
     concurrency:
       group: release-core-${{ needs.resolve-commit.outputs.sha }}
       cancel-in-progress: false
-
-    # Ordering the two runs cannot stop a stall from a GHCR outage or a poisoned
-    # cache, and a stuck job now holds the group instead of only hurting itself.
-    # GitHub's own default would let it sit for six hours. 45 clears the slowest
-    # real cold arm64 build on record (42 minutes) and still fails a genuine
-    # hang inside the hour.
-    timeout-minutes: 45
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
+    outputs:
+      done: ${{ steps.reuse.outputs.done }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU (multi-arch emulation)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -141,69 +171,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # `core-v0.22.0` is not semver, so `type=semver` would skip it with a
-      # warning and the release would publish no version tag at all. The bare
-      # `0.22.0` goes in through `value=` instead. It stays EMPTY on a branch
-      # push, because a `type=semver` with a value is emitted on any event.
-      - name: Strip the tag prefix
-        id: version
-        run: |
-          case "$GITHUB_REF" in
-            refs/tags/core-v*) echo "semver=${GITHUB_REF_NAME#core-v}" >> "$GITHUB_OUTPUT" ;;
-            *) echo "semver=" >> "$GITHUB_OUTPUT" ;;
-          esac
-
-      - name: Derive image tags and labels
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}},value=${{ steps.version.outputs.semver }}
-            type=sha,prefix=sha-,format=short
-
-      # ── Copy, do not rebuild ──────────────────────────────────
-      # A coordinated release pushes `main` and then the `core-v*` tag at the same commit,
-      # and the concurrency group makes the tag run start only after the branch run
-      # has finished or failed. So whatever the branch run published is a SETTLED
-      # fact by the time this runs, never a race, and a registry lookup here is
-      # exact. That is what makes copying safe at all.
-      #
-      # If the commit already has a two platform `sha-` image, the semver tag becomes
-      # a manifest COPY of it: seconds, no layers pushed, no cache exported. Every
-      # other case falls through to the build below and behaves exactly as it does
-      # today: no image, a pruned image, a single platform image, or a copy that
-      # failed. A SINGLE PLATFORM source is never copied, because that would silently
-      # drop `linux/arm64` from the release, and self-hosters on a Raspberry Pi or an
-      # ARM VPS pull that platform.
-      #
-      # Tagging an OLD commit lands here too, and copying is the more faithful answer
-      # than a fresh build: the `sha-` image is what that commit actually produced,
-      # against the base image of that day.
-      #
-      # The source is keyed on the RESOLVED commit, never on `github.sha`, for the
-      # same reason the group is: an annotated tag's `github.sha` is the tag OBJECT,
-      # and no `sha-` image is ever published under it.
-      #
-      # `latest` is untouched. It is emitted only with `enable={{is_default_branch}}`,
-      # so a tag run never moved it and still does not.
-      #
-      # A copy carries the source's OCI labels, whose version says the `sha-` tag.
-      # `--annotation` rewrites that one value on the new index so the semver tag
-      # states its own version.
-      #
-      # A tag on a commit whose `main` push touched nothing under `apps/core`
-      # finds no `sha-` image, because the `paths` filter skipped that branch
-      # run. It builds, which is the fallback above.
-      #
-      # No wait is needed here, unlike in release-app.yml: this one job does the
-      # whole build and it holds the plain group itself, so the tag run cannot
-      # start until the branch run has finished and the lookup below is already
-      # a settled answer.
       - name: Reuse the branch image if it published
         id: reuse
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           SHA: ${{ needs.resolve-commit.outputs.sha }}
@@ -231,22 +200,187 @@ jobs:
             echo "done=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # arm64 matters here: a meaningful share of self-hosters run this on a
-      # Raspberry Pi or an ARM VPS.
-      - name: Build and push (linux/amd64, linux/arm64)
-        if: steps.reuse.outputs.done != 'true'
+  # ── One platform per NATIVE runner ─────────────────────────────
+  # Until 0.23.2 one job built both platforms on an x86 runner, with arm64
+  # under QEMU. On 2026-09-29 core-v0.23.1 and its branch run both died the
+  # same way: `qemu: uncaught target signal 4 (Illegal instruction)` in the
+  # arm64 `pnpm install`, then a silent hang to the 45 minute timeout. The same
+  # base image, pnpm and QEMU had built fine the night before, so it depends on
+  # the runner's machine, not on the commit. The app hit it on 2026-09-09 and
+  # moved to native runners then; release-app.yml is the worked example.
+  #
+  # Each platform now builds on a runner of its own architecture, pushes by
+  # digest, and `merge` below assembles the tagged manifest list. No QEMU is
+  # set up anywhere in this workflow.
+  #
+  # Each leg holds a PER PLATFORM group, so a stuck leg holds only its own
+  # platform, and the branch and tag runs of one commit still never build the
+  # same platform at once. The cache scope is named for core AND the platform,
+  # because the Actions cache is shared by the whole repository and the app's
+  # legs use the bare platform as their scope.
+  build:
+    needs:
+      - resolve-commit
+      - reuse
+    # `reuse` is skipped on a branch push, and a skipped need would skip this
+    # job too without the explicit condition.
+    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' && needs.reuse.outputs.done != 'true' }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            slug: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            slug: arm64
+            runner: ubuntu-24.04-arm
+    concurrency:
+      group: release-core-${{ needs.resolve-commit.outputs.sha }}-${{ matrix.slug }}
+      cancel-in-progress: false
+    # A native build of either platform takes a few minutes, so 20 fails a
+    # genuine hang well inside the old 45.
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: apps/core
           file: apps/core/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          platforms: ${{ matrix.platform }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           labels: ${{ steps.meta.outputs.labels }}
-          # A named scope, because the Actions cache is shared by the whole
-          # repository since M262 and the default scope is not named for core.
-          cache-from: type=gha,scope=core
-          cache-to: type=gha,mode=max,scope=core
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=core-${{ matrix.slug }}
+          cache-to: type=gha,mode=max,scope=core-${{ matrix.slug }}
+
+      - name: Export the digest
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/digests"
+          digest='${{ steps.build.outputs.digest }}'
+          touch "$RUNNER_TEMP/digests/${digest#sha256:}"
+
+      - name: Upload the digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.slug }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # ── Assemble the tags from the digests ─────────────────────────
+  # Holds the plain group, like `reuse`, so a tag run's lookup never reads a
+  # half assembled manifest list. An amd64 leg that failed stops the release,
+  # because production runs x86_64. An arm64 leg that failed publishes an
+  # amd64-only tag with a warning, so a flaky arm runner never blocks a deploy.
+  merge:
+    needs:
+      - resolve-commit
+      - reuse
+      - build
+    if: ${{ !cancelled() && needs.resolve-commit.result == 'success' && needs.reuse.outputs.done != 'true' && needs.build.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-core-${{ needs.resolve-commit.outputs.sha }}
+      cancel-in-progress: false
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+
+      - name: Check which platforms built
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          if [ -z "$(find digests-amd64 -type f 2>/dev/null || true)" ]; then
+            echo "::error::No linux/amd64 digest was uploaded, so that leg did not build. Production runs x86_64, so this release publishes no tag."
+            exit 1
+          fi
+          if [ -z "$(find digests-arm64 -type f 2>/dev/null || true)" ]; then
+            echo "::warning::No linux/arm64 digest was uploaded. The manifest list is single-platform, linux/amd64 only, and an arm64 host cannot pull this tag."
+          fi
+          echo "platforms with a digest:"
+          find . -type f
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # `core-v0.22.0` is not semver, so `type=semver` would skip it with a
+      # warning and the release would publish no version tag at all. The bare
+      # `0.22.0` goes in through `value=` instead. It stays EMPTY on a branch
+      # push, because a `type=semver` with a value is emitted on any event.
+      - name: Strip the tag prefix
+        id: version
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/core-v*) echo "semver=${GITHUB_REF_NAME#core-v}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "semver=" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Derive image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.semver }}
+            type=sha,prefix=sha-,format=short
+
+      - name: Create the manifest list
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          refs=()
+          for file in */*; do
+            refs+=("${REGISTRY}/${IMAGE_NAME}@sha256:$(basename "$file")")
+          done
+          echo "assembling from: ${refs[*]}"
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            "${refs[@]}"
+
+      - name: Inspect the manifest list
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect "${REGISTRY}/${IMAGE_NAME}:${{ steps.meta.outputs.version }}"
 
 
   # ── Tell the website ───────────────────────────────────────────────────────

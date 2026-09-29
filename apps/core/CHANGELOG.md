@@ -7,6 +7,15 @@ change moves the minor.
 
 ## [Unreleased]
 
+
+### Fixed
+
+- **The image is published for both platforms again.** The `core-v0.23.1` tag
+  published no image. Its arm64 build crashed under emulation on GitHub
+  runners and hung until timeout. 0.23.2 carries the exact code of 0.23.1.
+  Each platform now builds on a runner of its own architecture, so no build
+  runs under emulation.
+
 ## [0.23.1] - 2026-09-29
 
 ### Fixed
