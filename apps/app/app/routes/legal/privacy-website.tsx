@@ -5,9 +5,14 @@
  * `<CONTENT_DIR>/<lang>/privacy-website.md` for this request's language (English when
  * that language has no file) and the page draws it; no file is a 404, a file
  * that breaks the format is a 503. See `docs/content.md`.
+ *
+ * openplate.de links here with `?lang=<code>` (M267/01), like `/sign-in`: the
+ * loader already reads it for the first paint, and `useLanguageFromLink`
+ * below makes the choice stick as the device's cookie.
  */
 import type { Route } from './+types/privacy-website';
 import { ContentPageView } from '#app/components/content-article';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
 import { contentPageTitle } from '#app/lib/content/content-page-title';
 import '#app/i18n/i18n';
@@ -19,5 +24,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
 
 export default function PrivacyWebsite({ loaderData }: Route.ComponentProps) {
+  useLanguageFromLink();
   return <ContentPageView page={loaderData.page} />;
 }

@@ -41,6 +41,7 @@ const FIXTURE = {
   cancelReceiptTitle: 'Fixture cancellation receipt',
   cancelMailNotice: 'Fixture mail notice for the cancellation receipt.',
   imprintTitle: 'Fixture imprint',
+  privacyTitle: 'Fixture privacy page',
   websitePrivacyTitle: 'Fixture website privacy page',
 } as const;
 
@@ -169,10 +170,11 @@ test.describe('content pages from the mounted folder', () => {
   });
 
   test('a language with no file is served the English file, marked as English', async ({ page }) => {
-    // The fixture has `de/terms.md` but no `de/imprint.md`.
+    // The fixture has `de/terms.md` but no `de/privacy.md`. `/imprint` has a
+    // German file now (`legal-link-language.spec.ts`), so this reads `/privacy` instead.
     await useLanguage(page, 'de');
-    await page.goto('/imprint');
-    await expect(page.getByRole('heading', { level: 1, name: FIXTURE.imprintTitle })).toBeVisible();
+    await page.goto('/privacy');
+    await expect(page.getByRole('heading', { level: 1, name: FIXTURE.privacyTitle })).toBeVisible();
     await expect(page.locator('article')).toHaveAttribute('lang', 'en');
 
     // CONTROL: where the German file exists, it is the one drawn, marked German.

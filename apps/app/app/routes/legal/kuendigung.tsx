@@ -40,6 +40,13 @@
  * email address into the address bar, history and the next `Referer`. That is
  * a smaller secret than a passphrase, but it is still this reader's own data,
  * and the guard costs nothing extra to reuse.
+ *
+ * ── THE LANGUAGE LINK (M267/01) ──
+ * The site's cancellation link and its own "Can I cancel?" answer both open
+ * `?lang=<code>`. `content-route.server.ts` already reads it for the first
+ * paint, and `useLanguageFromLink` below makes the choice stick as the
+ * device's cookie. The § 312k heading and button stay German regardless: the
+ * file's title is fixed by statute, not by this parameter.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,6 +62,7 @@ import PublicWrapper from '#app/components/public-wrapper';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
+import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
 import { contentPageTitle } from '#app/lib/content/content-page-title';
@@ -167,6 +175,7 @@ export default function Kuendigung({ loaderData }: Route.ComponentProps) {
   const { page } = loaderData;
   const unavailable = sectionBlocks(page, 'unavailable');
   const { t, i18n } = useTranslation();
+  useLanguageFromLink();
   const navigate = useAppNavigate();
   const serverUrl = useSyncServerUrl();
   const [terminationType, setTerminationType] = useState<TerminationType>('ordentlich');

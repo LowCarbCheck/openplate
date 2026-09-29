@@ -13,9 +13,30 @@
 import { data } from 'react-router';
 
 import { CONFIG } from '#app/config';
-import { resolveRequestLanguage } from '#app/i18n/language-prefs';
+import { languageParamOf } from '#app/i18n/language-link';
+import { resolveRequestLanguage, type LanguageCode } from '#app/i18n/language-prefs';
 import { CONTENT_READER, type ContentPage, type ContentReader, type ContentSlug } from './content.server';
 import { ContentRefusedError } from './markdown';
+
+/**
+ * The language THIS PAGE renders in: the `?lang=` a link named it with, else
+ * the device's own cookie (M267/01).
+ *
+ * openplate.de's legal links carry `?lang=<code>` for the page the reader was
+ * just on, and a reader who clicked one has to see that language on the
+ * FIRST paint, with or without JavaScript: `useLanguageFromLink`'s reload
+ * cannot run before that first paint, only after it. So the query is read
+ * here, ahead of the cookie, for the content alone: the chrome around the
+ * article (the header, the footer) still follows the cookie, exactly as it
+ * already does for the English fallback file (`ContentArticle`'s own
+ * doc comment). Once hydrated, the legal routes call `useLanguageFromLink`
+ * themselves, which writes the cookie so the choice persists.
+ */
+function resolveContentLanguage(request: Request): LanguageCode {
+  const fromLink = languageParamOf({ search: new URL(request.url).search, hash: '' });
+  if (fromLink !== null) return fromLink;
+  return resolveRequestLanguage(request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
+}
 
 /** The status a refused content file answers with. */
 export const REFUSED_CONTENT_STATUS = 503;
@@ -23,7 +44,8 @@ export const REFUSED_CONTENT_STATUS = 503;
 /**
  * The page for this request, or a thrown 404 or 503 response.
  *
- * @param input.request - the loader's request; its language cookie picks the file.
+ * @param input.request - the loader's request; its `?lang=` picks the file first, its language
+ *   cookie second (`resolveContentLanguage`).
  * @param input.slug - the page, always a literal from the route.
  * @param input.reader - the folder to read, the instance's own unless a test passes one.
  */
@@ -33,7 +55,7 @@ export async function loadContentPageOrThrow(input: {
   reader?: ContentReader;
 }): Promise<ContentPage> {
   const reader = input.reader ?? CONTENT_READER;
-  const language = resolveRequestLanguage(input.request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
+  const language = resolveContentLanguage(input.request);
   let page: ContentPage | null;
   try {
     page = await reader.loadPage({ slug: input.slug, language });

@@ -85,9 +85,11 @@ async function statusThrownBy(promise: Promise<unknown>): Promise<number> {
   return thrownDataSchema.parse(thrown).init.status;
 }
 
-/** A request carrying the language cookie the app reads. */
-function requestIn(language: string): Request {
-  return new Request('http://localhost/terms', { headers: { cookie: `${LANGUAGE_COOKIE}=${language}` } });
+/** A request carrying the language cookie the app reads, and optionally a `?lang=` query (M267/01). */
+function requestIn(language: string, options?: { queryLang?: string }): Request {
+  const url = new URL('http://localhost/terms');
+  if (options?.queryLang !== undefined) url.searchParams.set('lang', options.queryLang);
+  return new Request(url, { headers: { cookie: `${LANGUAGE_COOKIE}=${language}` } });
 }
 
 beforeEach(() => {
@@ -274,6 +276,31 @@ describe('what a route answers', () => {
     const reader = createContentReader({ directory: root });
     const loaded = await loadContentPageOrThrow({ request: requestIn('it'), slug: 'terms', reader });
     assert.equal(loaded.title, 'Fixture italiano');
+  });
+
+  it('reads the page in the ?lang= query language, ahead of the cookie (M267/01)', async () => {
+    write({ language: 'en', slug: 'terms', content: page({ title: 'English fixture', body: 'Text.' }) });
+    write({ language: 'de', slug: 'terms', content: page({ title: 'Deutsches Fixture', body: 'Text.' }) });
+    const reader = createContentReader({ directory: root });
+    const loaded = await loadContentPageOrThrow({
+      request: requestIn('de', { queryLang: 'en' }),
+      slug: 'terms',
+      reader,
+    });
+    assert.equal(loaded.title, 'English fixture');
+    assert.equal(loaded.language, 'en');
+  });
+
+  it('CONTROL: a query naming a language this app does not ship is ignored, and the cookie is used', async () => {
+    write({ language: 'en', slug: 'terms', content: page({ title: 'English fixture', body: 'Text.' }) });
+    write({ language: 'de', slug: 'terms', content: page({ title: 'Deutsches Fixture', body: 'Text.' }) });
+    const reader = createContentReader({ directory: root });
+    const loaded = await loadContentPageOrThrow({
+      request: requestIn('de', { queryLang: 'xx' }),
+      slug: 'terms',
+      reader,
+    });
+    assert.equal(loaded.title, 'Deutsches Fixture');
   });
 
   it('shows legal links only where the imprint exists, in the language or in English', async () => {

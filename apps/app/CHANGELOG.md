@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Legal links from openplate.de open in the visitor's language.** The site's imprint, privacy, terms and cancellation links carried no language, so a reader of the English site could land on a German page. They now carry `?lang=<code>`, which the app reads before its own cookie, so the page is correct on the first paint, with or without JavaScript. The choice becomes the device's cookie once JavaScript runs. `/widerrufen` and `/kuendigung` keep their German statutory heading and button in every language. `tests/e2e/legal-link-language.spec.ts` checks it.
+
 ## [0.51.0] - 2026-09-29
 
 ### Fixed
