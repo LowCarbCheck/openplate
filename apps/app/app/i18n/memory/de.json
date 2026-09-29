@@ -230,6 +230,13 @@
     "at": "2026-09-14",
     "de": "Dein üblicher Snack"
   },
+  "02efddca214163a6": {
+    "en": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device, and it is not synced with your account.",
+    "path": "common:onboarding.firstFood.keyNoteSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Das Scannen von Fotos ist optional. Es verbindet sich mit einem KI-Dienst, den du selbst einrichtest, wie OpenAI. Diese Verbindung bleibt auf diesem Gerät und wird nicht mit deinem Konto synchronisiert."
+  },
   "02f29aa7a40d4dd5": {
     "en": "Carbs, protein and fat add up to {{sum}} g per 100 g, double-check before logging.",
     "path": "common:scan.review.sanity.macroSumOver100",
@@ -10835,6 +10842,13 @@
     "at": "2026-09-14",
     "de": "Zurück zur Suche"
   },
+  "88244b8c446a2b33": {
+    "en": "Your diary lives on <strong>this device</strong>, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.localFirstSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Dein Tagebuch liegt auf <strong>diesem Gerät</strong>, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen."
+  },
   "8827a4e1658be282": {
     "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
     "path": "releases:v0_36_0.fixed.04",
@@ -11142,6 +11156,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Für die Teilnahme wird eine feste Identität für dieses Konto benötigt, und dieses Gerät hat noch keine. Durch das Festlegen eines neuen Passworts wird sie erstellt."
+  },
+  "8c2a9635ba733476": {
+    "en": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary. Nothing here ever travels with a food lookup.",
+    "path": "common:bodyMetrics.card.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Alles optional. Damit können wir Referenzwerte für Vitamine und Mineralstoffe an dich anpassen und einen Kalorienwert vorschlagen. Wie der Rest deines Tagebuchs werden sie auf diesem Gerät gespeichert, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen. Nichts davon wird jemals bei einer Lebensmittelsuche übertragen."
   },
   "8c3cb23592bede53": {
     "en": "There is already a confirmation email waiting for you. Open the link in it to finish.",
@@ -18842,6 +18863,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Die Person erhält eine E-Mail mit einem Link, legt ein Passwort fest und ist direkt in der App."
+  },
+  "edd423fa7e9a4cbe": {
+    "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.step.body.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "de": "Optional. Damit können wir Referenzwerte für Nährstoffe anpassen und einen Kalorienwert vorschlagen. Wie der Rest deines Tagebuchs werden sie auf diesem Gerät gespeichert, und dein Konto verwahrt eine verschlüsselte Kopie auf dem Server. Wer diesen Server betreibt, verwahrt einen Sicherungsschlüssel, damit du ein vergessenes Passwort zurücksetzen kannst, und mit diesem Schlüssel kann die betreibende Person dein Tagebuch lesen."
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",

@@ -25,6 +25,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { withI18n } from './trends-i18n-harness';
 import { clientLoader } from '../../app/routes/settings.ai';
+import { localFirstKey } from '../../app/routes/onboarding';
 import { NoAiIntakeNotice } from '../../app/components/add/no-ai-intake-notice';
 import { resolveAiIntakeDoor, type AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 import enCommon from '../../app/i18n/locales/en/common.json';
@@ -123,12 +124,28 @@ describe('the two screens M196 first missed', () => {
 });
 
 describe('onboarding — the first-run trust card', () => {
+  // ASKED, not grepped (M265 follow-up): the card has three answers now, so a
+  // ternary in the source is no longer the thing to look for. The managed note
+  // is still chosen by who holds the diary, and a signed-in device on an open
+  // instance gets the synced note, which names the copy but not the operator's AI.
   it('swaps the local-first promise for the managed one', () => {
-    assertChosenByPolicy(readRoute('onboarding.tsx'), 'serverHoldsTheDiary', 'onboarding.localFirstManaged');
+    assert.equal(
+      localFirstKey({ serverHoldsTheDiary: true, diaryHasServerCopy: true }),
+      'onboarding.localFirstManaged',
+    );
+  });
+
+  it('gives a device signed in on an open instance the synced note, and keeps the promise without an account', () => {
+    assert.equal(
+      localFirstKey({ serverHoldsTheDiary: false, diaryHasServerCopy: true }),
+      'onboarding.localFirstSynced',
+    );
+    assert.equal(localFirstKey({ serverHoldsTheDiary: false, diaryHasServerCopy: false }), 'onboarding.localFirst');
   });
 
   it('keeps the emphasis tag the open string carries, so the <Trans> components still land', () => {
     assert.match(enCommon.onboarding.localFirstManaged, /<strong>[\s\S]+<\/strong>/);
+    assert.match(enCommon.onboarding.localFirstSynced, /<strong>[\s\S]+<\/strong>/);
   });
 });
 

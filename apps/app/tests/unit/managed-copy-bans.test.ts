@@ -121,6 +121,10 @@ const MANAGED_BRANCH_KEYS = [
   'chrome.requestAccessClose',
   'onboarding.firstFood.managedNote',
   'onboarding.localFirstManaged',
+  // M265 follow-up: where the answers are kept, said to anybody with an
+  // account, which on a managed instance is everybody.
+  'onboarding.step.body.descriptionSynced',
+  'bodyMetrics.card.descriptionSynced',
   'scan.setup.managed.description',
   'scan.setup.managedMissing.body',
   'scan.setup.managedMissing.askAdmin',

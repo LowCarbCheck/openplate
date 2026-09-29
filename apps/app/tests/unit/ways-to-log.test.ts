@@ -57,7 +57,7 @@ describe('the lesson is three ways, inside the wizard that already existed', () 
   it('lands on the step where a person is about to do the thing', () => {
     assert.match(
       ONBOARDING_ROUTE,
-      /\{step === 'first-food' && <FirstFoodStep \/>\}/,
+      /\{step === 'first-food' && <FirstFoodStep[^>]*\/>\}/,
       'the lesson is no longer rendered on the first-food step',
     );
   });

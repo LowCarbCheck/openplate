@@ -233,6 +233,7 @@
     },
     "card": {
       "description": "Tutti facoltativi. Servono per adattare a te i valori di riferimento di vitamine e minerali e suggerirti una quota calorica. Restano su questo dispositivo come il resto del tuo diario, e nessun dato inserito qui viene mai inviato durante la ricerca degli alimenti.",
+      "descriptionSynced": "Tutto facoltativo. Ci consentono di adattare i valori di riferimento di vitamine e minerali su di te e di suggerire un apporto calorico. Come il resto del tuo diario, sono memorizzati su questo dispositivo, e il tuo account conserva una copia cifrata sul server. Chi gestisce questo server conserva una chiave di backup per consentirti di reimpostare una password dimenticata, e tale chiave gli consente di leggere il tuo diario. Nessun dato qui presente viene mai trasmesso con una ricerca degli alimenti.",
       "title": "Informazioni su di te"
     },
     "clear": {
@@ -1600,6 +1601,7 @@
     "firstFood": {
       "finishing": "Completamento in corso…",
       "keyNote": "La scansione delle foto è facoltativa. Si collega a un servizio di IA che configuri tu, come OpenAI. Anche quella connessione rimane su questo dispositivo, proprio come il tuo diario.",
+      "keyNoteSynced": "La scansione delle foto è facoltativa. Si collega a un servizio di intelligenza artificiale che configuri tu stesso, come OpenAI. Questa connessione rimane su questo dispositivo e non viene sincronizzata con il tuo account.",
       "keyNoteLink": "Configurala in qualsiasi momento nelle Impostazioni.",
       "later": "Lo farò più tardi",
       "opening": "Apertura in corso…",
@@ -1632,12 +1634,14 @@
     "loading": "Caricamento in corso…",
     "localFirst": "I tuoi dati risiedono su <strong>questo dispositivo</strong>. Noi non li vediamo mai. Il diario che stai per iniziare resta in locale, sempre.",
     "localFirstManaged": "Il tuo diario risiede su <strong>questo dispositivo</strong> e si sincronizza con il server in forma cifrata. Il gestore conserva una chiave di backup per ripristinare il tuo diario se dimentichi la password. Quella chiave consente inoltre al gestore di leggere il tuo diario. Il gestore esegue l'IA, quindi le foto che invii per le stime transitano dal suo server.",
+    "localFirstSynced": "Il tuo diario risiede su <strong>questo dispositivo</strong>, e il tuo account conserva una copia cifrata sul server. Chi gestisce questo server conserva una chiave di backup per consentirti di reimpostare una password dimenticata, e tale chiave gli consente di leggere il tuo diario.",
     "mainGoal": {
       "label": "Quale valore conta di più?"
     },
     "step": {
       "body": {
         "description": "Facoltativo. Ci permettono di adattare i valori di riferimento dei nutrienti e suggerire una quota calorica, e come tutto il resto, rimangono su questo dispositivo.",
+        "descriptionSynced": "Facoltativo. Ci consentono di personalizzare i valori di riferimento dei nutrienti e di suggerire un apporto calorico. Come il resto del tuo diario, sono memorizzati su questo dispositivo, e il tuo account conserva una copia cifrata sul server. Chi gestisce questo server conserva una chiave di backup per consentirti di reimpostare una password dimenticata, e tale chiave gli consente di leggere il tuo diario.",
         "title": "Qualcosa su di te?"
       },
       "firstFood": {

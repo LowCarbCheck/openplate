@@ -233,6 +233,7 @@
     },
     "card": {
       "description": "Tous facultatifs. Ces détails permettent d'adapter les apports de référence en vitamines et minéraux à ton profil et de suggérer un objectif de calories. Ils restent sur cet appareil comme le reste de ton journal, et aucune de ces données n'est transmise lors d'une recherche d'aliment.",
+      "descriptionSynced": "Tout est facultatif. Ces informations nous permettent d'adapter tes apports de référence en vitamines et minéraux et de te suggérer un objectif calorique. Comme le reste de ton journal, elles sont stockées sur cet appareil, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal. Aucune de ces informations n'est transmise lors d'une recherche d'aliment.",
       "title": "À propos de toi"
     },
     "clear": {
@@ -1600,6 +1601,7 @@
     "firstFood": {
       "finishing": "Finalisation…",
       "keyNote": "L'analyse des photos est facultative. Elle se connecte à un service d'IA que tu configures toi-même, comme OpenAI. Cette connexion reste aussi sur cet appareil, tout comme ton journal.",
+      "keyNoteSynced": "L'analyse de photos est facultative. Elle se connecte à un service d'IA que tu configures toi-même, comme OpenAI. Cette connexion reste sur cet appareil et n'est pas synchronisée avec ton compte.",
       "keyNoteLink": "Configure-le quand tu veux dans les Paramètres.",
       "later": "Je le ferai plus tard",
       "opening": "Ouverture…",
@@ -1632,12 +1634,14 @@
     "loading": "Chargement…",
     "localFirst": "Tes données restent sur <strong>cet appareil</strong>. Nous ne les voyons jamais. Le journal que tu t'apprêtes à commencer reste local, toujours.",
     "localFirstManaged": "Ton journal réside sur <strong>cet appareil</strong> et se synchronise avec le serveur sous forme chiffrée. L'administrateur conserve une clé de secours pour restaurer ton journal si tu oublies ton mot de passe. Cette clé lui permet aussi de lire ton journal. L'administrateur gère l'IA, donc les photos que tu envoies pour estimation transitent par son serveur.",
+    "localFirstSynced": "Ton journal est stocké sur <strong>cet appareil</strong>, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal.",
     "mainGoal": {
       "label": "Quel chiffre compte le plus ?"
     },
     "step": {
       "body": {
         "description": "Facultatif. Ces informations permettent d'adapter les apports nutritionnels de référence et de suggérer un nombre de calories, et comme tout le reste, elles restent sur cet appareil.",
+        "descriptionSynced": "Facultatif. Ces informations nous permettent d'adapter tes apports de référence en nutriments et de te suggérer un objectif calorique. Comme le reste de ton journal, elles sont stockées sur cet appareil, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal.",
         "title": "Un peu sur toi ?"
       },
       "firstFood": {

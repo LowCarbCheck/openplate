@@ -42,7 +42,9 @@ import {
   readRememberedNutrientReferenceBasis,
 } from '#app/lib/nutrient-reference-basis-client';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useDiaryHasServerCopy } from '#app/hooks/use-diary-has-server-copy';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { hasDeviceSyncSession } from '#app/lib/sync/session-cache';
 import {
   ONBOARDING_STEPS,
   STYLE_CARB_PRESETS,
@@ -281,6 +283,11 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     // The body step turns a due date into a trimester line, and it does that
     // against the person's own calendar day rather than the browser's.
     today: todayInTimezone(resolveLocalTimezone(profile)),
+    // WHETHER THIS DEVICE IS SIGNED IN, open or cached, for the sentences that
+    // say where the answers are kept (`useDiaryHasServerCopy`). Read here, not
+    // off the live snapshot: this route sits under `_public`, where no resume
+    // ever runs, so a hard load would see nobody signed in.
+    hasDeviceSession: await hasDeviceSyncSession(),
   };
 }
 clientLoader.hydrate = true as const;
@@ -546,12 +553,15 @@ export default function Onboarding({ loaderData, actionData }: Route.ComponentPr
   // The only thing the action ever returns instead of a redirect (see
   // `clientAction`): the per-field errors of whichever step rejected.
   const errors: OnboardingStepErrors = actionData?.errors ?? NO_STEP_ERRORS;
+  // ONE ANSWER FOR THE WHOLE FLOW: three steps say where the answers are kept,
+  // and each must say the same thing the others do.
+  const diaryHasServerCopy = useDiaryHasServerCopy({ hasDeviceSession: loaderData.hasDeviceSession });
   return (
     <div className="min-h-screen bg-background">
       <ProgressBar />
       <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 py-8 sm:py-12">
         <OnboardingHeader step={step} />
-        {step === 'focus' && <LocalFirstExplainer />}
+        {step === 'focus' && <LocalFirstExplainer diaryHasServerCopy={diaryHasServerCopy} />}
         <main className="mt-8 flex-1">
           {/* The first step keeps the id `focus` (see `ONBOARDING_STEPS`): the
               question it asks changed, the URL and the funnel step name did
@@ -559,8 +569,10 @@ export default function Onboarding({ loaderData, actionData }: Route.ComponentPr
               screen. */}
           {step === 'focus' && <StyleStep loaderData={loaderData} errors={errors.style} />}
           {step === 'weight' && <WeightStep loaderData={loaderData} errors={errors.weight} />}
-          {step === 'body' && <BodyStep loaderData={loaderData} errors={errors.body} />}
-          {step === 'first-food' && <FirstFoodStep />}
+          {step === 'body' && (
+            <BodyStep loaderData={loaderData} errors={errors.body} diaryHasServerCopy={diaryHasServerCopy} />
+          )}
+          {step === 'first-food' && <FirstFoodStep diaryHasServerCopy={diaryHasServerCopy} />}
         </main>
       </div>
     </div>
@@ -605,7 +617,7 @@ function OnboardingHeader({ step }: { step: OnboardingStep }) {
  * terms there. This card sticks to the one fact that matters immediately:
  * the diary itself never leaves the device.
  */
-function LocalFirstExplainer() {
+function LocalFirstExplainer({ diaryHasServerCopy }: { diaryHasServerCopy: boolean }) {
   // MANAGED CHANGES THE FACT, not the tone (M196). "We never see it" is true
   // where there is no server holding anything; on an instance an organization
   // runs, the diary is on the server as ciphertext and the plate photo passes
@@ -621,13 +633,42 @@ function LocalFirstExplainer() {
               splitting the sentence into three keys around it would force every
               translation into English word order. */}
           <Trans
-            i18nKey={serverHoldsTheDiary ? 'onboarding.localFirstManaged' : 'onboarding.localFirst'}
+            i18nKey={localFirstKey({ serverHoldsTheDiary, diaryHasServerCopy })}
             components={{ strong: <strong /> }}
           />
         </span>
       </p>
     </div>
   );
+}
+
+/**
+ * The first screen's trust note, one of three.
+ *
+ * THREE, because two questions decide it. A managed instance keeps a copy and
+ * runs the AI, and its note says both. An open instance whose person signed in
+ * to its sync server keeps a copy too, but the AI there is still their own, so
+ * the managed note would be wrong about the photo: the synced note names the
+ * copy and the operator's backup key and nothing else. With no account the
+ * diary really does stay here, and the first note says so.
+ *
+ * Exported so `tests/unit/managed-instance-copy.test.ts` can ask it all three
+ * questions instead of grepping this file for a ternary.
+ *
+ * @param input.serverHoldsTheDiary - `InstancePolicy.serverHoldsTheDiary`.
+ * @param input.diaryHasServerCopy - `useDiaryHasServerCopy()`, true whenever the first is.
+ * @returns the catalog key for the note this person may be told.
+ */
+export function localFirstKey({
+  serverHoldsTheDiary,
+  diaryHasServerCopy,
+}: {
+  serverHoldsTheDiary: boolean;
+  diaryHasServerCopy: boolean;
+}): string {
+  if (serverHoldsTheDiary) return 'onboarding.localFirstManaged';
+  if (diaryHasServerCopy) return 'onboarding.localFirstSynced';
+  return 'onboarding.localFirst';
 }
 
 /** Progress-dot width/fill by position relative to the current step. */
@@ -1357,7 +1398,15 @@ function bodyStepChipClass(isSelected: boolean): string {
   );
 }
 
-function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; errors: BodyStepErrors }) {
+function BodyStep({
+  loaderData,
+  errors,
+  diaryHasServerCopy,
+}: {
+  loaderData: OnboardingLoaderData;
+  errors: BodyStepErrors;
+  diaryHasServerCopy: boolean;
+}) {
   const { t } = useTranslation();
   const stored: BodyMetrics = loaderData.bodyMetrics;
   const [heightCm, setHeightCm] = useState(stored.heightCm === null ? '' : String(stored.heightCm));
@@ -1376,7 +1425,13 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
   ];
 
   return (
-    <StepShell title={t('onboarding.step.body.title')} description={t('onboarding.step.body.description')}>
+    <StepShell
+      title={t('onboarding.step.body.title')}
+      // "They stay on this device" is false once an account keeps a copy.
+      description={t(
+        diaryHasServerCopy ? 'onboarding.step.body.descriptionSynced' : 'onboarding.step.body.description',
+      )}
+    >
       <Form method="post" className="space-y-6">
         <TimezoneField />
         <BodyNumberField
@@ -1477,12 +1532,12 @@ function BodyStep({ loaderData, errors }: { loaderData: OnboardingLoaderData; er
  * on tap: the Form has to stamp onboarding completion before the user lands
  * anywhere, unlike every other add-food surface.
  *
- * Exported (it takes no props and touches no loader data) so
+ * Exported (it touches no loader data, and its one prop is a plain boolean) so
  * `tests/unit/first-food-install.test.ts` can render it for real through
  * `renderToStaticMarkup` and prove the install footnote's position against
  * actual markup rather than the route's source text.
  */
-export function FirstFoodStep() {
+export function FirstFoodStep({ diaryHasServerCopy }: { diaryHasServerCopy: boolean }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const isBusy = navigation.state !== 'idle';
@@ -1516,7 +1571,7 @@ export function FirstFoodStep() {
           </Button>
         </div>
       </Form>
-      <FirstFoodKeyNote />
+      <FirstFoodKeyNote diaryHasServerCopy={diaryHasServerCopy} />
       <FirstFoodInstallNote />
     </StepShell>
   );
@@ -1578,7 +1633,7 @@ function WayToLogCard({
  * same exit machinery as the other actions — and lands on settings with a
  * `?next=diary` return, so connecting a key flows on to the diary.
  */
-function FirstFoodKeyNote() {
+function FirstFoodKeyNote({ diaryHasServerCopy }: { diaryHasServerCopy: boolean }) {
   const { t } = useTranslation();
   // There is nothing to go and set up when the estimates come with the
   // account, so the question is where the AI comes from (M201/07).
@@ -1601,7 +1656,9 @@ function FirstFoodKeyNote() {
       {aiComesFromTheInstance ?
         <span>{t('onboarding.firstFood.managedNote')}</span>
       : <span>
-          {t('onboarding.firstFood.keyNote')}{' '}
+          {/* The connection stays here either way; "just like your diary" is
+              the half that stops being true once an account keeps a copy. */}
+          {t(diaryHasServerCopy ? 'onboarding.firstFood.keyNoteSynced' : 'onboarding.firstFood.keyNote')}{' '}
           <button
             type="submit"
             name="destination"

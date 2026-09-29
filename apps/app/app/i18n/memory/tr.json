@@ -230,6 +230,13 @@
     "at": "2026-09-14",
     "tr": "Her zamanki atıştırmalığın"
   },
+  "02efddca214163a6": {
+    "en": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device, and it is not synced with your account.",
+    "path": "common:onboarding.firstFood.keyNoteSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Fotoğraf tarama isteğe bağlıdır. OpenAI gibi bizzat ayarladığın bir yapay zekâ hizmetine bağlanır. Bu bağlantı bu cihazda kalır ve hesabınla eşitlenmez."
+  },
   "02f29aa7a40d4dd5": {
     "en": "Carbs, protein and fat add up to {{sum}} g per 100 g, double-check before logging.",
     "path": "common:scan.review.sanity.macroSumOver100",
@@ -10835,6 +10842,13 @@
     "at": "2026-09-14",
     "tr": "Aramaya dön"
   },
+  "88244b8c446a2b33": {
+    "en": "Your diary lives on <strong>this device</strong>, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.localFirstSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Günlüğün <strong>bu cihazda</strong> yer alır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır."
+  },
   "8827a4e1658be282": {
     "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
     "path": "releases:v0_36_0.fixed.04",
@@ -11142,6 +11156,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Katılmak için bu hesap adına kalıcı bir kimlik gerekir ve bu cihazda henüz bir kimlik yok. Yeni bir parola belirlemek bunu oluşturur."
+  },
+  "8c2a9635ba733476": {
+    "en": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary. Nothing here ever travels with a food lookup.",
+    "path": "common:bodyMetrics.card.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "Tamamen isteğe bağlıdır. Bunlar, vitamin ve mineral referans miktarlarını sana uyarlamamızı ve bir kalori hedefi önermemizi sağlar. Günlüğünün geri kalanı gibi bu bilgiler de bu cihazda saklanır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır. Buradaki hiçbir bilgi asla bir yiyecek araması ile birlikte gönderilmez."
   },
   "8c3cb23592bede53": {
     "en": "There is already a confirmation email waiting for you. Open the link in it to finish.",
@@ -18842,6 +18863,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İçinde bağlantı olan bir e-posta alırlar. Bağlantı bir parola belirlemelerini ister ve doğrudan uygulamaya aktarır."
+  },
+  "edd423fa7e9a4cbe": {
+    "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.step.body.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "tr": "İsteğe bağlıdır. Bunlar, besin ögesi referans miktarlarını sana uyarlamamızı ve bir kalori hedefi önermemizi sağlar. Günlüğünün geri kalanı gibi bu bilgiler de bu cihazda saklanır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır."
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",

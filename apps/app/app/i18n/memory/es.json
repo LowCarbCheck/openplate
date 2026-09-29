@@ -230,6 +230,13 @@
     "at": "2026-09-14",
     "es": "Tu tentempié habitual"
   },
+  "02efddca214163a6": {
+    "en": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device, and it is not synced with your account.",
+    "path": "common:onboarding.firstFood.keyNoteSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "El escaneo de fotos es opcional. Se conecta a un servicio de IA que configuras tú, como OpenAI. Esa conexión permanece en este dispositivo y no se sincroniza con tu cuenta."
+  },
   "02f29aa7a40d4dd5": {
     "en": "Carbs, protein and fat add up to {{sum}} g per 100 g, double-check before logging.",
     "path": "common:scan.review.sanity.macroSumOver100",
@@ -10835,6 +10842,13 @@
     "at": "2026-09-14",
     "es": "Volver a la búsqueda"
   },
+  "88244b8c446a2b33": {
+    "en": "Your diary lives on <strong>this device</strong>, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.localFirstSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Tu diario está en <strong>este dispositivo</strong>, y tu cuenta guarda una copia cifrada en el servidor. Quien administra este servidor guarda una clave de respaldo para que puedas restablecer una contraseña olvidada, y esa clave le permite leer tu diario."
+  },
   "8827a4e1658be282": {
     "en": "The sign-out dialog says what to do about your keys, not just what it cannot check.",
     "path": "releases:v0_36_0.fixed.04",
@@ -11142,6 +11156,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Para unirse hace falta una identidad estable en esta cuenta, y este dispositivo todavía no tiene una. Definir una contraseña nueva la crea."
+  },
+  "8c2a9635ba733476": {
+    "en": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary. Nothing here ever travels with a food lookup.",
+    "path": "common:bodyMetrics.card.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Todo es opcional. Nos permiten adaptar a ti las cantidades de referencia de vitaminas y minerales y sugerirte un número de calorías. Al igual que el resto de tu diario, se guardan en este dispositivo, y tu cuenta guarda una copia cifrada en el servidor. Quien administra este servidor guarda una clave de respaldo para que puedas restablecer una contraseña olvidada, y esa clave le permite leer tu diario. Nada de lo que hay aquí se envía nunca en una búsqueda de alimentos."
   },
   "8c3cb23592bede53": {
     "en": "There is already a confirmation email waiting for you. Open the link in it to finish.",
@@ -18842,6 +18863,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Recibirá un correo con un enlace. Le pedirá una contraseña y le dará acceso directo a la aplicación."
+  },
+  "edd423fa7e9a4cbe": {
+    "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
+    "path": "common:onboarding.step.body.descriptionSynced",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "es": "Opcional. Nos permiten adaptar las cantidades de referencia de nutrientes y sugerirte un número de calorías. Al igual que el resto de tu diario, se guardan en este dispositivo, y tu cuenta guarda una copia cifrada en el servidor. Quien administra este servidor guarda una clave de respaldo para que puedas restablecer una contraseña olvidada, y esa clave le permite leer tu diario."
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",

@@ -233,6 +233,7 @@
     },
     "card": {
       "description": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. They stay on this device like the rest of your diary, and nothing here ever travels with a food lookup.",
+      "descriptionSynced": "All optional. These let us match vitamin and mineral reference amounts to you and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary. Nothing here ever travels with a food lookup.",
       "title": "About you"
     },
     "clear": {
@@ -1600,6 +1601,7 @@
     "firstFood": {
       "finishing": "Finishing…",
       "keyNote": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device too, just like your diary.",
+      "keyNoteSynced": "Photo scanning is optional. It connects to an AI service you set up yourself, like OpenAI. That connection stays on this device, and it is not synced with your account.",
       "keyNoteLink": "Set it up anytime in Settings.",
       "later": "I'll do it later",
       "opening": "Opening…",
@@ -1632,12 +1634,14 @@
     "loading": "Loading…",
     "localFirst": "Your data lives on <strong>this device</strong>. We never see it. The diary you’re about to start stays local, always.",
     "localFirstManaged": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator keeps a backup key to restore your diary if you forget your password. That key also lets the operator read your diary. The operator runs the AI, so photos you send for estimates pass through its server.",
+    "localFirstSynced": "Your diary lives on <strong>this device</strong>, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
     "mainGoal": {
       "label": "Which number matters most?"
     },
     "step": {
       "body": {
         "description": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number, and like everything else, they stay on this device.",
+        "descriptionSynced": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
         "title": "A bit about you?"
       },
       "firstFood": {

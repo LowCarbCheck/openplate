@@ -158,7 +158,14 @@ describe('the data and backup settings page', () => {
   });
 });
 
-/** The two twins added here, per locale, paired with the string each one replaces. */
+/**
+ * The twins added here, per locale, paired with the string each one replaces.
+ *
+ * The last three came with the M265 follow-up. They are chosen by whether an
+ * account keeps a copy (`useDiaryHasServerCopy`), not by the mode alone, so a
+ * device signed in on an open instance reads them too. Their English and
+ * German have to state the same fact the first two do, and deny nothing.
+ */
 const TWINS = [
   {
     path: 'offline.bodyManaged',
@@ -169,6 +176,21 @@ const TWINS = [
     path: 'settings.data.descriptionManaged',
     en: { managed: enCommon.settings.data.descriptionManaged, open: enCommon.settings.data.description },
     de: { managed: deCommon.settings.data.descriptionManaged, open: deCommon.settings.data.description },
+  },
+  {
+    path: 'onboarding.step.body.descriptionSynced',
+    en: { managed: enCommon.onboarding.step.body.descriptionSynced, open: enCommon.onboarding.step.body.description },
+    de: { managed: deCommon.onboarding.step.body.descriptionSynced, open: deCommon.onboarding.step.body.description },
+  },
+  {
+    path: 'bodyMetrics.card.descriptionSynced',
+    en: { managed: enCommon.bodyMetrics.card.descriptionSynced, open: enCommon.bodyMetrics.card.description },
+    de: { managed: deCommon.bodyMetrics.card.descriptionSynced, open: deCommon.bodyMetrics.card.description },
+  },
+  {
+    path: 'onboarding.localFirstSynced',
+    en: { managed: enCommon.onboarding.localFirstSynced, open: enCommon.onboarding.localFirst },
+    de: { managed: deCommon.onboarding.localFirstSynced, open: deCommon.onboarding.localFirst },
   },
 ];
 
