@@ -2696,6 +2696,10 @@
     "chosenMonthly": "Aylık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin.",
     "chosenYearly": "Yıllık planı seçtin. Hesabını oluşturduktan hemen sonra ödeme yapabilir veya önce ücretsiz taramalarını kullanabilirsin."
   },
+  "accountDoor": {
+    "inviteOnly": "Yalnızca davetle",
+    "siteLine": "openplate nedir ve maliyeti nedir: <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Çıkış yap",
     "title": "Çıkış yap",

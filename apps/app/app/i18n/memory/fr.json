@@ -6523,6 +6523,13 @@
     "at": "2026-09-14",
     "fr": "Glucides nets"
   },
+  "54a51a4a912d6b46": {
+    "en": "Invitation only",
+    "path": "common:accountDoor.inviteOnly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Sur invitation uniquement"
+  },
   "54bc1a62d858f20a": {
     "en": "Something went wrong setting up your account. Nothing was saved, you're safe to try again.",
     "path": "common:sync.setup.setupFailed",
@@ -19234,6 +19241,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Au-dessus de ton objectif calorique"
+  },
+  "f1846fd58ed78029": {
+    "en": "What openplate is, and what it costs: <site>{{site}}</site>",
+    "path": "common:accountDoor.siteLine",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-29",
+    "fr": "Ce qu'est openplate, et ce que ça coûte : <site>{{site}}</site>"
   },
   "f1b6ba944f2a155b": {
     "en": "No new data will be sent to this study.",

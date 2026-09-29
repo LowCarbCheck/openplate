@@ -2696,6 +2696,10 @@
     "chosenMonthly": "Du hast den Monatstarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen.",
     "chosenYearly": "Du hast den Jahrestarif gewählt. Du kannst ihn direkt nach der Registrierung bezahlen oder zuerst deine kostenlosen Scans nutzen."
   },
+  "accountDoor": {
+    "inviteOnly": "Nur auf Einladung",
+    "siteLine": "Was openplate ist und was es kostet: <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Abmelden",
     "title": "Abmelden",

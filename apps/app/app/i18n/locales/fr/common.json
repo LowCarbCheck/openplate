@@ -2696,6 +2696,10 @@
     "chosenMonthly": "Tu as choisi le forfait mensuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits.",
     "chosenYearly": "Tu as choisi le forfait annuel. Tu peux le payer juste après avoir créé ton compte, ou utiliser d'abord tes scans gratuits."
   },
+  "accountDoor": {
+    "inviteOnly": "Sur invitation uniquement",
+    "siteLine": "Ce qu'est openplate, et ce que ça coûte : <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Se déconnecter",
     "title": "Déconnexion",

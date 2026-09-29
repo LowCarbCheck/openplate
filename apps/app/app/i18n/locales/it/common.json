@@ -2696,6 +2696,10 @@
     "chosenMonthly": "Hai scelto il piano mensile. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite.",
     "chosenYearly": "Hai scelto il piano annuale. Puoi pagarlo subito dopo aver creato l'account, oppure usare prima le tue scansioni gratuite."
   },
+  "accountDoor": {
+    "inviteOnly": "Solo su invito",
+    "siteLine": "Cos'è openplate e quanto costa: <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Disconnettiti",
     "title": "Disconnettiti",

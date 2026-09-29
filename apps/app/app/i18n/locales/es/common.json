@@ -2696,6 +2696,10 @@
     "chosenMonthly": "Has elegido el plan mensual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis.",
     "chosenYearly": "Has elegido el plan anual. Puedes pagarlo justo después de crear tu cuenta o usar primero tus escaneos gratis."
   },
+  "accountDoor": {
+    "inviteOnly": "Solo con invitación",
+    "siteLine": "Qué es openplate y cuánto cuesta: <site>{{site}}</site>"
+  },
   "signOut": {
     "menuItem": "Cerrar sesión",
     "title": "Cerrar sesión",
