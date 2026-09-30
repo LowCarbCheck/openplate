@@ -1,7 +1,7 @@
 name: Release Image (core)
 
 # Builds and publishes the core self-host image to GHCR on every push to `main`
-# that touches core (moving `latest`) and on version tags (`core-v*`, e.g.
+# that touches core (moving `main`) and on version tags (`core-v*`, e.g.
 # `core-v0.1.0`).
 #
 # The package stays PRIVATE until this repo is flipped to public visibility.
@@ -22,7 +22,7 @@ name: Release Image (core)
 # hands the action a bare value.
 #
 # The `paths` filter is what keeps an app-only push to `main` from rebuilding
-# this image and moving its `latest`. GitHub does NOT evaluate `paths` for a
+# this image and moving its `main` tag. GitHub does NOT evaluate `paths` for a
 # tag push ("Path filters are not evaluated for pushes of tags", workflow
 # syntax reference), so a `core-v*` tag always releases.
 #
@@ -137,8 +137,9 @@ jobs:
   #
   # The source is keyed on the RESOLVED commit, never on `github.sha`: an
   # annotated tag's `github.sha` is the tag OBJECT, and no `sha-` image is ever
-  # published under it. `latest` is untouched, because it is emitted only with
-  # `enable={{is_default_branch}}`. `--annotation` rewrites the copied OCI
+  # published under it. `latest` moves here, and only on a tag: it names the
+  # newest release, which is what the docs describe; a push to `main` moves the
+  # `main` tag instead. `--annotation` rewrites the copied OCI
   # version label so the semver tag states its own version.
   #
   # This is a JOB, not a step, because each platform builds in a matrix job of
@@ -192,7 +193,7 @@ jobs:
           esac
           if docker buildx imagetools create \
             --annotation "index:org.opencontainers.image.version=$version" \
-            -t "$IMAGE:$version" "$src"; then
+            -t "$IMAGE:$version" -t "$IMAGE:latest" "$src"; then
             docker buildx imagetools inspect "$IMAGE:$version"
             echo "done=true" >> "$GITHUB_OUTPUT"
           else
@@ -360,8 +361,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # `latest` is the newest release and `main` the newest `main` push.
+          # `latest=false` stops the action adding its own `latest` to every
+          # semver tag, so the rows below are the only source of either.
+          flavor: latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=main,enable={{is_default_branch}}
             type=semver,pattern={{version}},value=${{ steps.version.outputs.semver }}
             type=sha,prefix=sha-,format=short
 
