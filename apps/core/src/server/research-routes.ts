@@ -82,7 +82,7 @@ export const RESEARCH_BODY_MIN_BYTES = 65 + 12 + 16;
 export const MAX_CONTRIBUTION_BYTES = 256 * 1024;
 
 /** Base64 inflates by 4/3, so the JSON limit must sit above the decoded cap or a legal maximum body 413s before a handler sees it. */
-const JSON_BODY_LIMIT = 512 * 1024;
+export const RESEARCH_JSON_BODY_LIMIT = 512 * 1024;
 
 /**
  * A bound, not a validation. The pseudonym is
@@ -157,14 +157,15 @@ async function requireCaller(
 
 export function registerResearchRoutes(app: Express, context: SyncResearchHostContext): void {
   const router = express.Router();
-  // SCOPED TO THE SYNC PREFIX, and the prefix is load-bearing. This router is
-  // mounted with `app.use(router)` at the ROOT, so an unscoped parser here runs
-  // on EVERY path in the service before routing. `express.json()` marks a
+  // SCOPED TO THE ROUTES THAT READ A BODY, NOT TO THE SYNC PREFIX. This router
+  // is mounted with `app.use(router)` at the ROOT, and `express.json()` marks a
   // request as parsed, so whichever parser runs first wins and every other
-  // router's declared limit becomes unreachable. That was a live defect until
-  // M192/03: it capped the AI proxy at the sync limit and, through the auth
-  // router, capped everything at 64 KB. See `accounts/register-auth-routes.ts`.
-  router.use(SYNC_API_PREFIX, express.json({ limit: JSON_BODY_LIMIT }));
+  // router's declared limit becomes unreachable. An unscoped parser capped the
+  // AI proxy until M192/03. A parser on `SYNC_API_PREFIX` did the same one
+  // level down until 2026-09-30: the blob router is registered first, so its
+  // 2.8 MB limit applied to every sync route, and this family, sized at 512 KB, accepted about 2.8 MB.
+  // `tests/integration/sync-body-limits.test.ts` proves each limit per route.
+  const parseJsonBody = express.json({ limit: RESEARCH_JSON_BODY_LIMIT });
 
   // ---------------------------------------------------------------------------
   // Contributor side
@@ -172,6 +173,7 @@ export function registerResearchRoutes(app: Express, context: SyncResearchHostCo
 
   router.put(
     SYNC_API_PREFIX + '/contributions/:studyAccountId',
+    parseJsonBody,
     asyncHandler(async (req, res) => {
       const caller = await requireCaller(req, res, context);
       if (!caller) return;

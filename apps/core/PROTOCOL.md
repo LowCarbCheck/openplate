@@ -273,7 +273,8 @@ A new field is a protocol revision, never a configuration. See ADR-0003.
   client that renders the code in groups of five can post back what it rendered.
   A conforming client accepts both forms too.
 - Every non-2xx response body is `{"error": "<human-readable text>"}`. The text is diagnostic only; clients must branch on the **status code**, never on the message.
-- Requests exceeding the body limit are rejected with `413`.
+- Requests exceeding the body limit are rejected with `413`. Each route family under `/v1/sync` has its own limit, and no family inherits another's: the blob and key records take the blob cap in base64 plus 4 KiB, `rotate-dek` the blob cap in base64 plus 64 KiB, the share family 8 KiB, and the research family 512 KiB.
+- An authenticated route checks the bearer token before it reads the body. A caller with no valid token gets `401`, never `413`, however large the body.
 
 ### 4.1 Authentication
 
