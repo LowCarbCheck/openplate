@@ -425,3 +425,17 @@ describe('the follow-up cell', () => {
     assert.ok(lowCarbShown[0]?.markup.includes(STYLE_CAUTION_SOURCE_URL));
   });
 });
+
+describe('the calorie target across follow-up layers', () => {
+  it('draws the stored target into every copy of the field, so a switch between calorie styles keeps it', () => {
+    const markup = renderStyleStep(fixture({ eatingStyle: 'low-kcal', goalKcalTarget: 1800 }));
+    const fields = followUpLayers(markup)
+      .map((layer) => /<input[^>]*type="number"[^>]*>/.exec(layer.markup)?.[0])
+      .filter((tag): tag is string => tag !== undefined);
+    assert.equal(fields.length, 2, 'the kcal layer and the carbs+kcal layer each draw the field');
+    assert.ok(fields.every((tag) => tag.includes('value="1800"')), fields.join('\n'));
+    // CONTROL: with nothing stored, no copy carries a number.
+    const blank = renderStyleStep(fixture({ eatingStyle: 'low-kcal' }));
+    assert.equal(blank.includes('value="1800"'), false);
+  });
+});

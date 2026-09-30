@@ -800,6 +800,12 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
   // The main goal the person PICKED on this screen, or the one stored before.
   // `null` means "follow the style": the list then shows the lens's own
   // answer, and it moves with the style until the person picks one.
+  // The calorie target as TYPED, held here rather than in the field: each
+  // follow-up layer draws its own copy of the field, and a number typed under
+  // "low-carb and calories" must still be there after a switch to "calories".
+  const [kcalTarget, setKcalTarget] = useState(() =>
+    loaderData.goalKcalTarget === null ? '' : String(loaderData.goalKcalTarget),
+  );
   const [pickedMainGoal, setPickedMainGoal] = useState<MainGoalId | null>(() =>
     isMainGoalId(loaderData.mainGoal) ? loaderData.mainGoal : null,
   );
@@ -835,7 +841,8 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
           reproductiveStatus={loaderData.bodyMetrics.reproductiveStatus}
           carbPreset={carbPreset}
           onCarbPresetSelect={setCarbPreset}
-          kcalDefaultValue={loaderData.goalKcalTarget}
+          kcalTarget={kcalTarget}
+          onKcalTargetChange={setKcalTarget}
           errors={errors}
         />
         {/* No Skip here: `just-track` in the list above IS the "no goal"
@@ -1055,14 +1062,16 @@ function StyleFollowUpCell({
   reproductiveStatus,
   carbPreset,
   onCarbPresetSelect,
-  kcalDefaultValue,
+  kcalTarget,
+  onKcalTargetChange,
   errors,
 }: {
   style: EatingStyleId | null;
   reproductiveStatus: ReproductiveStatus | null;
   carbPreset: string | null;
   onCarbPresetSelect: (id: string) => void;
-  kcalDefaultValue: number | null;
+  kcalTarget: string;
+  onKcalTargetChange: (value: string) => void;
   errors: StyleStepErrors;
 }) {
   const activeKey = style === null ? null : followUpKey(styleFollowUp(style, reproductiveStatus));
@@ -1088,7 +1097,12 @@ function StyleFollowUpCell({
               />
             )}
             {followUp.asksCalories && (
-              <KcalTargetField defaultValue={kcalDefaultValue} errorKey={errors.kcalTarget} isActive={isActive} />
+              <KcalTargetField
+                value={kcalTarget}
+                onValueChange={onKcalTargetChange}
+                errorKey={errors.kcalTarget}
+                isActive={isActive}
+              />
             )}
           </div>
         );
@@ -1253,11 +1267,14 @@ function chipClass(isSelected: boolean): string {
  * does not save without one.
  */
 function KcalTargetField({
-  defaultValue,
+  value,
+  onValueChange,
   errorKey,
   isActive,
 }: {
-  defaultValue: number | null;
+  /** The typed text, owned by `StyleStep` so it follows the person across layers. */
+  value: string;
+  onValueChange: (value: string) => void;
   errorKey?: string;
   /** False in a hidden layer of `StyleFollowUpCell`: no name, no ids, nothing submitted. */
   isActive: boolean;
@@ -1277,7 +1294,8 @@ function KcalTargetField({
         max={9999}
         step={1}
         placeholder={t('onboarding.kcal.placeholder')}
-        defaultValue={defaultValue ?? ''}
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
         aria-invalid={hasError ? true : undefined}
         aria-describedby={hasError && isActive ? 'kcalTarget-error' : undefined}
         className="h-11"

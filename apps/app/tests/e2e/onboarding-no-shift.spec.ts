@@ -566,6 +566,25 @@ for (const screen of MEASURED_SCREENS) {
       }
     });
 
+    test('a typed calorie target follows the person from one calorie style to the other', async ({ page }) => {
+      // Each follow-up layer draws its own copy of the field, so the typed
+      // text must live above them: typed under "low-carb and calories", it is
+      // still there after a switch to "calories", as it was when one field
+      // stayed mounted across the two.
+      await openFirstStep(page);
+      await styleCard(page, 'low-carb-low-kcal').click();
+      const kcal = page.locator('#kcalTarget');
+      await kcal.fill('1750');
+      await styleCard(page, 'low-kcal').click();
+      await expect(kcal, 'the calorie field after switching to "calories"').toHaveValue('1750');
+      expect(await submittedFields(page, ['kcalTarget'])).toEqual(['kcalTarget=1750']);
+      // CONTROL that the field is a new one to type into, not a stale read:
+      // an edit here is what the other style then shows.
+      await kcal.fill('1600');
+      await styleCard(page, 'low-carb-low-kcal').click();
+      await expect(kcal, 'the calorie field after switching back').toHaveValue('1600');
+    });
+
     test('a stored pregnancy re-entering the first step: cycling styles moves nothing', async ({ page }) => {
       test.setTimeout(60_000);
       await reachBodyStep(page);
