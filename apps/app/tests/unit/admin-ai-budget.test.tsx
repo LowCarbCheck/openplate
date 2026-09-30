@@ -17,11 +17,11 @@
  * where the list must NOT be invisible, or the test could pass on a card that
  * never shows a number.
  *
- * ── NO TRANSLATED PROSE IS PINNED BEYOND THE ENGLISH DEFAULTS ────────────
+ * ── LITTLE TRANSLATED PROSE IS PINNED ──────────────────────────────────────
  *
- * The keys are not in `common.json` yet (another change adds them), so the
- * render shows each `defaultValue`. The assertions look for the figures, which
- * are this card's facts, and for a few words of the defaults.
+ * The render reads the shipped English catalog (`admin.aiBudget.*` in
+ * `common.json`). The assertions look for the figures, which are this card's
+ * facts, and for a few words of the English.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

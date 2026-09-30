@@ -734,6 +734,13 @@
     "at": "2026-09-14",
     "es": "Las cifras y la foto se eliminan ahora, en vez de al terminar el plazo. Esto no se puede deshacer."
   },
+  "0989b6a06b41b229": {
+    "en": "{{remaining}} left of {{limit}}",
+    "path": "common:admin.aiBudget.left",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Quedan {{remaining}} de {{limit}}"
+  },
   "098a213d9c1d826e": {
     "en": "More",
     "path": "common:trends.grid.legendMore",
@@ -3555,6 +3562,13 @@
     "at": "2026-09-14",
     "es": "¿Eliminar {{name}}?"
   },
+  "2a2eb8b7bc01f880": {
+    "en": "Trials",
+    "path": "common:admin.aiBudget.trial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Pruebas"
+  },
   "2a568b6724f53920": {
     "en": "{{date}}:{{atLeast}} {{value}} calories{{estimate}}",
     "path": "common:trends.chart.bar.calories",
@@ -4373,6 +4387,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "es": "Guardaste algo en la despensa."
+  },
+  "3769618f18f7f370": {
+    "en": "The provider did not answer. Try again in a minute.",
+    "path": "common:admin.aiBudget.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "El proveedor no respondió. Vuelve a intentarlo en un minuto."
   },
   "376af1d8cf7f3612": {
     "en": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you.",
@@ -5851,6 +5872,13 @@
     "at": "2026-09-14",
     "es": "Las fotos se convierten en macros, sin necesidad de claves"
   },
+  "4b7197262d44ef53": {
+    "en": "Never resets",
+    "path": "common:admin.aiBudget.resetNever",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "No se restablece nunca"
+  },
   "4bbf5c14fa567225": {
     "en": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
     "path": "common:scan.setup.sharedPhotoNote",
@@ -6991,6 +7019,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cancelar"
+  },
+  "58816b9fbf00e1ef": {
+    "en": "What the provider key has left, and how much of today's AI capacity is used.",
+    "path": "common:admin.aiBudget.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Lo que le queda a la clave del proveedor y cuánta capacidad de IA de hoy se ha usado."
   },
   "588a39328793856b": {
     "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
@@ -8608,6 +8643,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "es": "Un nombre largo de alimento termina con puntos suspensivos en el estado de la cabecera."
+  },
+  "6c9e1cfa736f18b2": {
+    "en": "Resets every week",
+    "path": "common:admin.aiBudget.resetWeekly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Se restablece cada semana"
   },
   "6ca1ad408e3e136b": {
     "en": "Saved meals now tells you where the next one comes from.",
@@ -11731,6 +11773,13 @@
     "at": "2026-09-22",
     "es": "Análisis usa ahora un diseño de dos columnas en pantallas anchas."
   },
+  "8f4d4a573e292acb": {
+    "en": "Free photos per day",
+    "path": "common:admin.edit.freeAllowanceLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Fotos gratuitas al día"
+  },
   "8f5088e08f2dde88": {
     "en": "openplate, a food tracker that encrypts your diary on your device",
     "path": "common:meta.landingManaged",
@@ -11884,6 +11933,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Proveedor de IA"
+  },
+  "91972ce0c190066e": {
+    "en": "Provider key",
+    "path": "common:admin.aiBudget.keyHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Clave del proveedor"
   },
   "91a39cabadf8944b": {
     "en": "Add your height and sex below, or log a weight, and we can suggest an amount.",
@@ -12311,6 +12367,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-27",
     "es": "Esta página se cargó mediante HTTP sin cifrar, por lo que tu navegador desactivó lo que necesita esta conexión. Pega una clave de API en su lugar, o abre openplate en una dirección https:// o en localhost."
+  },
+  "9757a93303358d59": {
+    "en": "AI budget",
+    "path": "common:admin.aiBudget.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Presupuesto de IA"
   },
   "976ebf8986b4e834": {
     "en": "Contains milk",
@@ -12802,6 +12865,13 @@
     "at": "2026-09-14",
     "es": "en cerca de un minuto"
   },
+  "9cc228b7244fb0b2": {
+    "en": "These stay when no paid plan runs, and they never end. 0 takes them away.",
+    "path": "common:admin.edit.freeAllowanceHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Se mantienen cuando no hay ningún plan de pago activo y no caducan nunca. Con 0 se eliminan."
+  },
   "9cc2eaddfb18f409": {
     "en": "The diary day card leads with one large figure.",
     "path": "releases:v0_40_0.changed.03",
@@ -13123,6 +13193,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Aumento de cetonas"
+  },
+  "a0d6472bbf2b5880": {
+    "en": "Resets every day",
+    "path": "common:admin.aiBudget.resetDaily",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Se restablece cada día"
   },
   "a11ad9b2d97a9437": {
     "en": "Delete this weigh-in?",
@@ -15252,6 +15329,13 @@
     "at": "2026-09-14",
     "es": "Conectar un proveedor"
   },
+  "bbdf066e0bf7fff6": {
+    "en": "Resets every month",
+    "path": "common:admin.aiBudget.resetMonthly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Se restablece cada mes"
+  },
   "bbeb28cdef08c027": {
     "en": "Published reference amounts start at age 14, so there is none to show for the year of birth you saved.",
     "path": "common:nutrients.reference.ageOutOfBands",
@@ -15650,6 +15734,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cerrar sesión y eliminar"
+  },
+  "c18e132c4738d611": {
+    "en": "Could not read the AI budget.",
+    "path": "common:admin.aiBudget.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "No se pudo leer el presupuesto de IA."
   },
   "c1b2760a7ba86b11": {
     "en": "Free AI scans",
@@ -16203,6 +16294,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "es": "Elige qué valores de referencia muestra esta instancia para las vitaminas, los minerales y la referencia de proteínas. Esta elección se aplica a todos los usuarios de esta instancia, en todos los idiomas."
+  },
+  "c956306539139331": {
+    "en": "Paid",
+    "path": "common:admin.aiBudget.paid",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "De pago"
   },
   "c95c8cd0a216b35b": {
     "en": "New password",
@@ -16799,6 +16897,13 @@
     "at": "2026-09-14",
     "es": "No se pudo generar una clave para compartir."
   },
+  "d16e19193da1c02c": {
+    "en": "Spent today {{today}}, this month {{month}}",
+    "path": "common:admin.aiBudget.spent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Gastado hoy {{today}}, este mes {{month}}"
+  },
   "d1776a5e9c94e59f": {
     "en": "Yesterday had no entries. Today starts fresh.",
     "path": "common:catchUp.yesterdayEmpty",
@@ -16924,6 +17029,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "Cumplido en {{met}} de {{rated}} días"
+  },
+  "d279ece2d5442637": {
+    "en": "This instance offers no AI.",
+    "path": "common:admin.aiBudget.noAi",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Esta instancia no ofrece IA."
   },
   "d28b73f8417dbb74": {
     "en": "Research",
@@ -18493,6 +18605,13 @@
     "at": "2026-09-14",
     "es": "El enlace no es un secreto: lleva tu clave pública, que puede sellar datos para ti y nada más. Además, nunca llega a ningún servidor: todo lo que va después de # se queda en el navegador."
   },
+  "e53def49ee840daa": {
+    "en": "{{used}} units, no limit",
+    "path": "common:admin.aiBudget.unitsNoLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "{{used}} unidades, sin límite"
+  },
   "e548c148475890bd": {
     "en": "Suspended",
     "path": "common:admin.standing.suspended",
@@ -18737,6 +18856,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "es": "Contiene mostaza"
+  },
+  "e7b7a2fa2314a2a9": {
+    "en": "No spending limit",
+    "path": "common:admin.aiBudget.noLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Sin límite de gasto"
   },
   "e7c48c0634c8986b": {
     "en": "Add",
@@ -19256,12 +19382,26 @@
     "at": "2026-09-14",
     "es": "Recibirá un correo con un enlace. Le pedirá una contraseña y le dará acceso directo a la aplicación."
   },
+  "edcf81f8dad74320": {
+    "en": "Applies while a paid plan or free AI scans run. Setting this to 0 turns those off. Daily free photos stay.",
+    "path": "common:admin.edit.allowanceHint",
+    "model": "hand-written",
+    "at": "2026-09-30",
+    "es": "Se aplica mientras haya un plan de pago o escaneos gratis con IA activos. Si pones 0, se desactivan. Las fotos gratuitas diarias se mantienen."
+  },
   "edd423fa7e9a4cbe": {
     "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
     "path": "common:onboarding.step.body.descriptionSynced",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "es": "Opcional. Nos permiten adaptar las cantidades de referencia de nutrientes y sugerirte un número de calorías. Al igual que el resto de tu diario, se guardan en este dispositivo, y tu cuenta guarda una copia cifrada en el servidor. Quien administra este servidor guarda una clave de respaldo para que puedas restablecer una contraseña olvidada, y esa clave le permite leer tu diario."
+  },
+  "ee1db21a73ccfdfc": {
+    "en": "{{used}} of {{limit}} units",
+    "path": "common:admin.aiBudget.units",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "{{used}} de {{limit}} unidades"
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",
@@ -20662,6 +20802,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "calorías"
+  },
+  "fdd42fb336f9e41c": {
+    "en": "Today's capacity",
+    "path": "common:admin.aiBudget.capacityHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Capacidad de hoy"
   },
   "fe3d8a960a3dc75c": {
     "en": "unknown",

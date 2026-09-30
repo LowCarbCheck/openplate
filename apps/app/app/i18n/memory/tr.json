@@ -734,6 +734,13 @@
     "at": "2026-09-14",
     "tr": "Rakamlar ve fotoğraf, sürenin dolması beklenmeden hemen silinir. Bu işlem geri alınamaz."
   },
+  "0989b6a06b41b229": {
+    "en": "{{remaining}} left of {{limit}}",
+    "path": "common:admin.aiBudget.left",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "{{limit}} içinden {{remaining}} kaldı"
+  },
   "098a213d9c1d826e": {
     "en": "More",
     "path": "common:trends.grid.legendMore",
@@ -3555,6 +3562,13 @@
     "at": "2026-09-14",
     "tr": "{{name}} kaldırılsın mı?"
   },
+  "2a2eb8b7bc01f880": {
+    "en": "Trials",
+    "path": "common:admin.aiBudget.trial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Denemeler"
+  },
   "2a568b6724f53920": {
     "en": "{{date}}:{{atLeast}} {{value}} calories{{estimate}}",
     "path": "common:trends.chart.bar.calories",
@@ -4373,6 +4387,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "Kilere bir şey ekledin."
+  },
+  "3769618f18f7f370": {
+    "en": "The provider did not answer. Try again in a minute.",
+    "path": "common:admin.aiBudget.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Sağlayıcı yanıt vermedi. Bir dakika sonra tekrar dene."
   },
   "376af1d8cf7f3612": {
     "en": "Photo estimates are included. Take a photo of a plate and the carbs are worked out for you.",
@@ -5851,6 +5872,13 @@
     "at": "2026-09-14",
     "tr": "Fotoğraflar makrolara dönüşür, anahtar gerekmez"
   },
+  "4b7197262d44ef53": {
+    "en": "Never resets",
+    "path": "common:admin.aiBudget.resetNever",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Hiç sıfırlanmaz"
+  },
   "4bbf5c14fa567225": {
     "en": "We got the photo you shared, but cannot identify foods in it yet. That needs an AI provider connected first. Connect one below, then share or choose this photo again.",
     "path": "common:scan.setup.sharedPhotoNote",
@@ -6991,6 +7019,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İptal"
+  },
+  "58816b9fbf00e1ef": {
+    "en": "What the provider key has left, and how much of today's AI capacity is used.",
+    "path": "common:admin.aiBudget.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Sağlayıcı anahtarında kalanı ve bugünkü yapay zeka kapasitesinin ne kadarının kullanıldığını gösterir."
   },
   "588a39328793856b": {
     "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
@@ -8608,6 +8643,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "tr": "Üst bilgi durumundaki uzun bir yiyecek adı üç nokta ile biter."
+  },
+  "6c9e1cfa736f18b2": {
+    "en": "Resets every week",
+    "path": "common:admin.aiBudget.resetWeekly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Her hafta sıfırlanır"
   },
   "6ca1ad408e3e136b": {
     "en": "Saved meals now tells you where the next one comes from.",
@@ -11731,6 +11773,13 @@
     "at": "2026-09-22",
     "tr": "İçgörüler artık geniş ekranlarda iki sütunlu bir düzen kullanır."
   },
+  "8f4d4a573e292acb": {
+    "en": "Free photos per day",
+    "path": "common:admin.edit.freeAllowanceLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Günlük ücretsiz fotoğraflar"
+  },
   "8f5088e08f2dde88": {
     "en": "openplate, a food tracker that encrypts your diary on your device",
     "path": "common:meta.landingManaged",
@@ -11884,6 +11933,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yapay zeka sağlayıcısı"
+  },
+  "91972ce0c190066e": {
+    "en": "Provider key",
+    "path": "common:admin.aiBudget.keyHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Sağlayıcı anahtarı"
   },
   "91a39cabadf8944b": {
     "en": "Add your height and sex below, or log a weight, and we can suggest an amount.",
@@ -12311,6 +12367,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-27",
     "tr": "Bu sayfa düz HTTP üzerinden yüklendi, bu yüzden tarayıcın bu bağlantının ihtiyaç duyduğu özellikleri kapattı. Bunun yerine bir API anahtarı yapıştır veya openplate uygulamasını bir https:// adresinde ya da localhost üzerinde aç."
+  },
+  "9757a93303358d59": {
+    "en": "AI budget",
+    "path": "common:admin.aiBudget.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Yapay zeka bütçesi"
   },
   "976ebf8986b4e834": {
     "en": "Contains milk",
@@ -12802,6 +12865,13 @@
     "at": "2026-09-14",
     "tr": "yaklaşık bir dakika içinde"
   },
+  "9cc228b7244fb0b2": {
+    "en": "These stay when no paid plan runs, and they never end. 0 takes them away.",
+    "path": "common:admin.edit.freeAllowanceHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Ücretli plan olmadığında da kalırlar ve süreleri hiç bitmez. 0 değeri bunları kaldırır."
+  },
   "9cc2eaddfb18f409": {
     "en": "The diary day card leads with one large figure.",
     "path": "releases:v0_40_0.changed.03",
@@ -13123,6 +13193,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yükselen ketonlar"
+  },
+  "a0d6472bbf2b5880": {
+    "en": "Resets every day",
+    "path": "common:admin.aiBudget.resetDaily",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Her gün sıfırlanır"
   },
   "a11ad9b2d97a9437": {
     "en": "Delete this weigh-in?",
@@ -15252,6 +15329,13 @@
     "at": "2026-09-14",
     "tr": "Bir sağlayıcı bağla"
   },
+  "bbdf066e0bf7fff6": {
+    "en": "Resets every month",
+    "path": "common:admin.aiBudget.resetMonthly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Her ay sıfırlanır"
+  },
   "bbeb28cdef08c027": {
     "en": "Published reference amounts start at age 14, so there is none to show for the year of birth you saved.",
     "path": "common:nutrients.reference.ageOutOfBands",
@@ -15650,6 +15734,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Oturumu kapat ve sil"
+  },
+  "c18e132c4738d611": {
+    "en": "Could not read the AI budget.",
+    "path": "common:admin.aiBudget.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Yapay zeka bütçesi okunamadı."
   },
   "c1b2760a7ba86b11": {
     "en": "Free AI scans",
@@ -16203,6 +16294,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "tr": "Bu örneğin vitaminler, mineraller ve protein referansı için hangi referans değerlerini göstereceğini seç. Bu seçim, her dilde, bu örnekteki tüm kullanıcılar için geçerlidir."
+  },
+  "c956306539139331": {
+    "en": "Paid",
+    "path": "common:admin.aiBudget.paid",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Ücretli"
   },
   "c95c8cd0a216b35b": {
     "en": "New password",
@@ -16799,6 +16897,13 @@
     "at": "2026-09-14",
     "tr": "Paylaşım anahtarı üretilemedi."
   },
+  "d16e19193da1c02c": {
+    "en": "Spent today {{today}}, this month {{month}}",
+    "path": "common:admin.aiBudget.spent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Bugün harcanan {{today}}, bu ay {{month}}"
+  },
   "d1776a5e9c94e59f": {
     "en": "Yesterday had no entries. Today starts fresh.",
     "path": "common:catchUp.yesterdayEmpty",
@@ -16924,6 +17029,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "Hedefe ulaşılan gün sayısı: {{rated}} günde {{met}}"
+  },
+  "d279ece2d5442637": {
+    "en": "This instance offers no AI.",
+    "path": "common:admin.aiBudget.noAi",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Bu kurulum yapay zeka sunmuyor."
   },
   "d28b73f8417dbb74": {
     "en": "Research",
@@ -18493,6 +18605,13 @@
     "at": "2026-09-14",
     "tr": "Bağlantı gizli değildir: verileri yalnızca senin için mühürleyebilen açık anahtarını taşır. Ayrıca hiçbir sunucuya ulaşmaz: # işaretinden sonraki her şey tarayıcıda kalır."
   },
+  "e53def49ee840daa": {
+    "en": "{{used}} units, no limit",
+    "path": "common:admin.aiBudget.unitsNoLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "{{used}} birim, sınır yok"
+  },
   "e548c148475890bd": {
     "en": "Suspended",
     "path": "common:admin.standing.suspended",
@@ -18737,6 +18856,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "tr": "Hardal içerir"
+  },
+  "e7b7a2fa2314a2a9": {
+    "en": "No spending limit",
+    "path": "common:admin.aiBudget.noLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Harcama sınırı yok"
   },
   "e7c48c0634c8986b": {
     "en": "Add",
@@ -19256,12 +19382,26 @@
     "at": "2026-09-14",
     "tr": "İçinde bağlantı olan bir e-posta alırlar. Bağlantı bir parola belirlemelerini ister ve doğrudan uygulamaya aktarır."
   },
+  "edcf81f8dad74320": {
+    "en": "Applies while a paid plan or free AI scans run. Setting this to 0 turns those off. Daily free photos stay.",
+    "path": "common:admin.edit.allowanceHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Ücretli bir plan veya ücretsiz yapay zeka taramaları etkinken geçerlidir. Bunu 0 yapmak bunları kapatır. Günlük ücretsiz fotoğraflar kalır."
+  },
   "edd423fa7e9a4cbe": {
     "en": "Optional. These let us tailor nutrient reference amounts and suggest a calorie number. Like the rest of your diary, they are stored on this device, and your account keeps an encrypted copy on the server. Whoever runs that server keeps a backup key so you can reset a forgotten password, and that key lets them read your diary.",
     "path": "common:onboarding.step.body.descriptionSynced",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "tr": "İsteğe bağlıdır. Bunlar, besin ögesi referans miktarlarını sana uyarlamamızı ve bir kalori hedefi önermemizi sağlar. Günlüğünün geri kalanı gibi bu bilgiler de bu cihazda saklanır ve hesabın sunucuda şifrelenmiş bir kopya tutar. Bu sunucuyu kim işletiyorsa, unuttuğun parolayı sıfırlayabilmen için bir yedekleme anahtarı tutar ve bu anahtar günlüğünü okumasına olanak tanır."
+  },
+  "ee1db21a73ccfdfc": {
+    "en": "{{used}} of {{limit}} units",
+    "path": "common:admin.aiBudget.units",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "{{limit}} birimden {{used}} birim"
   },
   "ee3a19f79247cb3d": {
     "en": "Your plan is paid and running.",
@@ -20662,6 +20802,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "kalori"
+  },
+  "fdd42fb336f9e41c": {
+    "en": "Today's capacity",
+    "path": "common:admin.aiBudget.capacityHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Bugünkü kapasite"
   },
   "fe3d8a960a3dc75c": {
     "en": "unknown",

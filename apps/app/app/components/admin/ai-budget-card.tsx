@@ -17,11 +17,6 @@
  * with no limit all take the same room, and nothing under the card moves when
  * the answer lands. The capacity rows are always drawn and are invisible until
  * there are numbers, as the counts row above the tabs does.
- *
- * ── ENGLISH UNTIL THE CATALOGS CARRY IT ──────────────────────────────────
- *
- * Every string is `t(key, { defaultValue })`: the keys reach `common.json` in
- * a separate change, and until then the English default is what renders.
  */
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,34 +57,28 @@ function Bar({ percent }: { percent: number }): ReactElement {
 function resetText(t: Translate, reset: AiBudgetResetKind): string {
   switch (reset) {
     case 'daily':
-      return t('admin.aiBudget.resetDaily', { defaultValue: 'Resets every day' });
+      return t('admin.aiBudget.resetDaily');
     case 'weekly':
-      return t('admin.aiBudget.resetWeekly', { defaultValue: 'Resets every week' });
+      return t('admin.aiBudget.resetWeekly');
     case 'monthly':
-      return t('admin.aiBudget.resetMonthly', { defaultValue: 'Resets every month' });
+      return t('admin.aiBudget.resetMonthly');
     case 'none':
-      return t('admin.aiBudget.resetNever', { defaultValue: 'Never resets' });
+      return t('admin.aiBudget.resetNever');
   }
 }
 
 function spentText(t: Translate, input: { spentToday: string; spentMonth: string }): string {
-  return t('admin.aiBudget.spent', {
-    defaultValue: 'Spent today {{today}}, this month {{month}}',
-    today: input.spentToday,
-    month: input.spentMonth,
-  });
+  return t('admin.aiBudget.spent', { today: input.spentToday, month: input.spentMonth });
 }
 
 function messageText(t: Translate, message: 'failed' | 'no-ai' | 'unavailable'): string {
   switch (message) {
     case 'failed':
-      return t('admin.aiBudget.failed', { defaultValue: 'Could not read the AI budget.' });
+      return t('admin.aiBudget.failed');
     case 'no-ai':
-      return t('admin.aiBudget.noAi', { defaultValue: 'This instance offers no AI.' });
+      return t('admin.aiBudget.noAi');
     case 'unavailable':
-      return t('admin.aiBudget.unavailable', {
-        defaultValue: 'The provider did not answer. Try again in a minute.',
-      });
+      return t('admin.aiBudget.unavailable');
   }
 }
 
@@ -103,12 +92,8 @@ function KeyLayout({ t, line }: { t: Translate; line: AiKeyBudgetLine }): ReactE
   if (line.kind === 'message') return <p className="text-sm text-muted-foreground">{messageText(t, line.message)}</p>;
   const leftLabel =
     line.kind === 'limited' ?
-      t('admin.aiBudget.left', {
-        defaultValue: '{{remaining}} left of {{limit}}',
-        remaining: line.remaining,
-        limit: line.limit,
-      })
-    : t('admin.aiBudget.noLimit', { defaultValue: 'No spending limit' });
+      t('admin.aiBudget.left', { remaining: line.remaining, limit: line.limit })
+    : t('admin.aiBudget.noLimit');
   return (
     <div className="space-y-2">
       <p className="text-2xl font-semibold tabular-nums">{leftLabel}</p>
@@ -130,18 +115,11 @@ function CapacityCell({
   line: AiCapacityLine;
   formatCount: (value: number) => string;
 }): ReactElement {
-  const label =
-    line.id === 'paid' ?
-      t('admin.aiBudget.paid', { defaultValue: 'Paid' })
-    : t('admin.aiBudget.trial', { defaultValue: 'Trials' });
+  const label = line.id === 'paid' ? t('admin.aiBudget.paid') : t('admin.aiBudget.trial');
   const value =
     line.limit === null ?
-      t('admin.aiBudget.unitsNoLimit', { defaultValue: '{{used}} units, no limit', used: formatCount(line.used) })
-    : t('admin.aiBudget.units', {
-        defaultValue: '{{used}} of {{limit}} units',
-        used: formatCount(line.used),
-        limit: formatCount(line.limit),
-      });
+      t('admin.aiBudget.unitsNoLimit', { used: formatCount(line.used) })
+    : t('admin.aiBudget.units', { used: formatCount(line.used), limit: formatCount(line.limit) });
   return (
     <div className="space-y-1">
       <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -180,16 +158,12 @@ export function AiBudgetCard({ load }: AiBudgetCardProps): ReactElement {
   return (
     <Card data-ai-budget-state={load.kind}>
       <CardHeader>
-        <CardTitle>{t('admin.aiBudget.title', { defaultValue: 'AI budget' })}</CardTitle>
-        <CardDescription>
-          {t('admin.aiBudget.body', {
-            defaultValue: "What the provider key has left, and how much of today's AI capacity is used.",
-          })}
-        </CardDescription>
+        <CardTitle>{t('admin.aiBudget.title')}</CardTitle>
+        <CardDescription>{t('admin.aiBudget.body')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <section className="space-y-2">
-          <h3 className="text-sm font-medium">{t('admin.aiBudget.keyHeading', { defaultValue: 'Provider key' })}</h3>
+          <h3 className="text-sm font-medium">{t('admin.aiBudget.keyHeading')}</h3>
           <div className="grid">
             <div className="invisible [grid-area:1/1]" aria-hidden="true">
               <KeyLayout t={t} line={STAND_IN_KEY} />
@@ -200,9 +174,7 @@ export function AiBudgetCard({ load }: AiBudgetCardProps): ReactElement {
           </div>
         </section>
         <section className="space-y-2">
-          <h3 className="text-sm font-medium">
-            {t('admin.aiBudget.capacityHeading', { defaultValue: "Today's capacity" })}
-          </h3>
+          <h3 className="text-sm font-medium">{t('admin.aiBudget.capacityHeading')}</h3>
           {/* `invisible` rather than `hidden`: it keeps the box, and takes the
               stand-in numbers out of the accessibility tree. */}
           <dl className={`grid gap-3 sm:grid-cols-2 ${view.capacity === null ? 'invisible' : ''}`}>

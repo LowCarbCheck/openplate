@@ -114,12 +114,9 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
         </div>
         {/* THE STANDING FREE GRANT (2026-09-30), beside the paid limit above
             and always drawn: a Beta supporter's ten photos a day live here,
-            and they are what the person keeps when a paid plan ends. The copy
-            is English until the keys reach the catalogs, see the report. */}
+            and they are what the person keeps when a paid plan ends. */}
         <div className="space-y-1">
-          <Label htmlFor={`free-limit-${person.id}`}>
-            {t('admin.edit.freeAllowanceLabel', { defaultValue: 'Free photos per day' })}
-          </Label>
+          <Label htmlFor={`free-limit-${person.id}`}>{t('admin.edit.freeAllowanceLabel')}</Label>
           <Input
             id={`free-limit-${person.id}`}
             type="number"
@@ -130,11 +127,7 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
             value={freeLimit}
             onChange={(event) => setFreeLimit(event.target.value)}
           />
-          <p className="text-xs text-muted-foreground">
-            {t('admin.edit.freeAllowanceHint', {
-              defaultValue: 'These stay when no paid plan runs, and they never end. 0 takes them away.',
-            })}
-          </p>
+          <p className="text-xs text-muted-foreground">{t('admin.edit.freeAllowanceHint')}</p>
         </div>
         {hasTrialScans && (
           <div className="space-y-1">
