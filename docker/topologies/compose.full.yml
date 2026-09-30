@@ -111,22 +111,65 @@ services:
       - inference-models:/models
     environment:
       # lite | lite-apache | quality, see README "Hardware & measured latency".
-      MODEL_PROFILE: lite
+      # external runs no model here and uses your runtime, see below.
+      MODEL_PROFILE: ${MODEL_PROFILE:-lite}
       # The key callers must present. Set INFERENCE_API_KEY in .env (see the
       # top of this file); the placeholder below only keeps a first trial
       # booting. It must match DEFAULT_INFERENCE_API_KEY on the app.
       API_KEYS: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
-      LATENCY_CEILING_MS: '0'
+      LATENCY_CEILING_MS: ${LATENCY_CEILING_MS:-0}
       # Scans in flight at once. It also sets llama.cpp's slot count; it does
       # NOT add CPU threads, the slots share LLAMA_THREADS.
-      CONCURRENCY: '2'
+      CONCURRENCY: ${CONCURRENCY:-2}
       # CPU threads for the model. Empty means every core but two (nproc - 2),
       # which leaves room for the service and the OS.
       LLAMA_THREADS: ${LLAMA_THREADS:-}
       # Where macros come from. fdc = the bundled offline USDA-derived dataset.
       # See README "Food data" before switching to `off` (ODbL) or `lcc`.
-      FOOD_SOURCE: fdc
+      FOOD_SOURCE: ${FOOD_SOURCE:-fdc}
+
+      # ── Everything else the service reads. Empty means the default, and
+      # openplate-inference's .env.example explains each one.
+      #
+      # Your own runtime, with MODEL_PROFILE=external (see below). No trailing
+      # /v1, and the address must resolve from INSIDE this container.
+      MODEL_RUNTIME_URL: ${MODEL_RUNTIME_URL:-}
+      MODEL_RUNTIME_API_KEY: ${MODEL_RUNTIME_API_KEY:-}
+      # The model id sent to the runtime. Empty means openplate-plate-1. vLLM
+      # needs its exact served model name.
+      MODEL_ID: ${MODEL_ID:-}
+      # The waiting line, the bound on one completion call, the requests per
+      # key per minute, the largest decoded image, and the downscale target.
+      MAX_QUEUE_DEPTH: ${MAX_QUEUE_DEPTH:-8}
+      RUNTIME_COMPLETION_TIMEOUT_MS: ${RUNTIME_COMPLETION_TIMEOUT_MS:-600000}
+      RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-60}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES:-8388608}
+      IMAGE_MAX_LONG_EDGE: ${IMAGE_MAX_LONG_EDGE:-896}
+      # debug, info, warn or error.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # What the service reports as its profile. Empty follows MODEL_PROFILE.
+      PROFILE: ${PROFILE:-}
+      # Each is read only by its own FOOD_SOURCE. Empty FDC_DATASET_PATH is the
+      # bundled extract. Empty URLs are https://lowcarbcheck.org for lcc and
+      # https://world.openfoodfacts.org for off.
+      FDC_DATASET_PATH: ${FDC_DATASET_PATH:-}
+      LCC_API_URL: ${LCC_API_URL:-}
+      LCC_API_KEY: ${LCC_API_KEY:-}
+      OFF_API_URL: ${OFF_API_URL:-}
+      # A second runtime serving /v1/embeddings, for hybrid retrieval. Empty
+      # means lexical retrieval only.
+      EMBEDDING_RUNTIME_URL: ${EMBEDDING_RUNTIME_URL:-}
+      EMBEDDING_RUNTIME_API_KEY: ${EMBEDDING_RUNTIME_API_KEY:-}
+      # The bundled llama-server: its loopback port, the context per slot, the
+      # layers put on the GPU (empty means detect), and extra flags passed on
+      # as written.
+      RUNTIME_PORT: ${RUNTIME_PORT:-8080}
+      CONTEXT_SIZE: ${CONTEXT_SIZE:-8192}
+      GPU_LAYERS: ${GPU_LAYERS:-}
+      LLAMA_EXTRA_ARGS: ${LLAMA_EXTRA_ARGS:-}
+      # A mirror tried before Hugging Face for the first weight download.
+      WEIGHTS_MIRROR_BASE: ${WEIGHTS_MIRROR_BASE:-}
     # ── GPU (the `quality` profile): uncomment BOTH of these and switch the
     # image to the -cuda tag. The entrypoint detects the GPU and offloads every
     # layer automatically; there is no flag to set.
@@ -138,28 +181,34 @@ services:
     #           count: all
     #           capabilities: [gpu]
     #
-    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ─────────────────────────
-    # Replace the `environment:` block above with the one below and this
-    # container downloads no weights and starts no second model; it just turns
-    # your runtime into a plate scanner. You can drop the `volumes:` block and
-    # the `inference-models` volume entirely. Read README "Bring your own
-    # runtime" FIRST: your runtime must enforce grammar-constrained decoding,
-    # and there is a one-line curl there that tells you whether yours does.
+    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ────────────────────────
+    # Set these in `.env` and this container downloads no weights and starts
+    # no second model; it just turns your runtime into a plate scanner. You can
+    # drop the `volumes:` block and the `inference-models` volume entirely.
     #
-    # environment:
-    #   MODEL_PROFILE: external
-    #   MODEL_RUNTIME_URL: "http://your-runtime.lan:8000"   # no trailing /v1
-    #   MODEL_ID: "your-served-model-name"
-    #   MODEL_RUNTIME_API_KEY: "sk_your_runtime_key"
-    #   API_KEYS: "opk_CHANGE_ME"
-    #   LATENCY_CEILING_MS: "0"
-    #   CONCURRENCY: "2"
-    #   FOOD_SOURCE: fdc
+    # Read README "Bring your own runtime" FIRST: your runtime must enforce
+    # grammar-constrained decoding, and there is a one-line curl there that
+    # tells you whether yours does. vLLM's CPU build does NOT (it crashes).
     #
-    # REQUIRED with the block above. The image bakes in a 60-minute health
-    # start_period, sized for a first-boot weight download. External mode has no
-    # download, so without this override a wrong MODEL_RUNTIME_URL stays hidden
-    # for an hour instead of surfacing in seconds.
+    #   MODEL_PROFILE=external
+    #   # Must resolve from INSIDE this container, and no trailing /v1.
+    #   # `localhost` here means this container, not your host. Use the LAN
+    #   # address, or host.docker.internal on Docker Desktop.
+    #   MODEL_RUNTIME_URL=http://your-runtime.lan:8000
+    #   # vLLM requires an EXACT match with its served model name.
+    #   MODEL_ID=your-served-model-name
+    #   # Only if your runtime is behind auth (`vllm serve --api-key ...`).
+    #   # Separate from INFERENCE_API_KEY, which callers present to THIS service.
+    #   MODEL_RUNTIME_API_KEY=sk_your_runtime_key
+    #   # Match your runtime's real slot count:
+    #   #   llama.cpp --parallel N | vLLM --max-num-seqs N | OLLAMA_NUM_PARALLEL
+    #   CONCURRENCY=2
+    #
+    # REQUIRED with external mode, and the one edit to this file it needs. The
+    # image bakes in a 60-minute health start_period, sized for a first-boot
+    # weight download. External mode has no download, so without this override
+    # a wrong MODEL_RUNTIME_URL stays hidden for an hour instead of surfacing
+    # in seconds.
     # healthcheck:
     #   start_period: 30s
 
@@ -176,6 +225,10 @@ services:
       # Published on EVERY network interface. Behind a reverse proxy on this
       # machine, write '127.0.0.1:3000:3000' so only the proxy can reach it.
       - '${APP_PORT:-3000}:3000'
+    # To serve legal pages, uncomment this and set CONTENT_DIR in `.env`:
+    #   CONTENT_DIR=/srv/openplate/content
+    # volumes:
+    #   - ./content:/srv/openplate/content:ro
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -206,7 +259,7 @@ services:
       #   open to the internet without a VPN or auth proxy in front of it; in
       #   that case leave this unset and let people paste the key themselves.
       DEFAULT_INFERENCE_API_KEY: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
-      DEFAULT_INFERENCE_MODEL: 'openplate-plate-1'
+      DEFAULT_INFERENCE_MODEL: ${DEFAULT_INFERENCE_MODEL:-openplate-plate-1}
 
       # `open` (the default) or `managed`. See apps/app/docs/configuration.md, Managed
       # instances, and the AI proxy block on the sync service below.
@@ -239,7 +292,27 @@ services:
       # Extra origins the browser may call, space separated. Empty adds nothing.
       CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
 
+      # debug, info, warn or error, for the sync and inference services too.
       LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Which published reference values the Nutrients screen quotes: dge (the
+      # default), efsa or us.
+      NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
+      # Matomo analytics, off unless the first two are set together. The level
+      # is pageviews, product (the default when empty) or research, and only
+      # with the pair: a level on its own stops the boot.
+      MATOMO_URL: ${MATOMO_URL:-}
+      MATOMO_SITE_ID: ${MATOMO_SITE_ID:-}
+      MATOMO_EVENT_LEVEL: ${MATOMO_EVENT_LEVEL:-}
+      # A newsletter form on the landing page, off unless both are set.
+      NEWSLETTER_SUBSCRIBE_URL: ${NEWSLETTER_SUBSCRIBE_URL:-}
+      NEWSLETTER_TURNSTILE_SITE_KEY: ${NEWSLETTER_TURNSTILE_SITE_KEY:-}
+      # The folder of legal pages, mounted read-only. Set it to the container
+      # path of the volume line above. Empty means no legal pages.
+      CONTENT_DIR: ${CONTENT_DIR:-}
+      # The address the server binds to inside the container. Leave it empty:
+      # the published port reaches only a server on every interface.
+      HOST: ${HOST:-}
     healthcheck:
       # A shell line with no quotes and no brackets, run by the image's busybox
       # wget, so Docker Compose, podman-compose and Quadlet all run it alike.
@@ -273,6 +346,12 @@ services:
       # Published on EVERY network interface, like the app. Behind a reverse
       # proxy on this machine, write '127.0.0.1:3001:3000'.
       - '${SYNC_PORT:-3001}:3000'
+    # Uncomment what you use, and set the matching variable in `.env`:
+    #   CONTENT_DIR=/srv/openplate/content    (mount the same folder on the app)
+    #   NODE_EXTRA_CA_CERTS=/etc/openplate/ca.pem
+    # volumes:
+    #   - ./content:/srv/openplate/content:ro
+    #   - ./ca.pem:/etc/openplate/ca.pem:ro
     environment:
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${SYNC_DB_NAME:-openplate_sync}
@@ -299,9 +378,10 @@ services:
       SERVER_PUBLIC_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
       CLIENT_BASE_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
-      # Signup is INVITE-ONLY: an account is created by redeeming an invitation
-      # addressed to one email address. SIGNUP_MODE and the older SIGNUPS_OPEN
-      # are both boot failures in openplate-core, so neither is forwarded here.
+      # Signup is invite-only unless OPEN_SIGNUP is set below: an account is
+      # created by redeeming an invitation addressed to one email address.
+      # SIGNUP_MODE and the older SIGNUPS_OPEN are both boot failures in
+      # openplate-core, so neither is forwarded here.
 
       # The same TRUST_PROXY as the app above: the number of reverse proxies in
       # front of this service. Left at 0 behind a proxy, every request looks
@@ -310,10 +390,12 @@ services:
       # nothing in front, anyone can fake X-Forwarded-For and skip the throttle.
       TRUST_PROXY: ${TRUST_PROXY:-0}
 
+      # debug, info, warn or error. Empty is refused, so the default stays.
       LOG_LEVEL: ${LOG_LEVEL:-info}
 
-      # What the instance calls itself in its letters, and which language they
-      # are written in (en, de, fr, it, es or tr). Empty means openplate, en.
+      # What the instance calls itself on the /health handshake and in its
+      # start-up log, and which language its letters are written in when a
+      # request names none (en, de, fr, it, es or tr). Empty means openplate, en.
       INSTANCE_NAME: ${INSTANCE_NAME:-}
       INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-}
 
@@ -354,6 +436,13 @@ services:
       AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
       # The whole instance's AI requests per UTC day. Empty means no ceiling.
       AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+      # How long one proxied request may take, the most output tokens it may
+      # ask for, the requests per account per minute, and the largest request
+      # body, sized for a camera photograph after base64.
+      UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-120000}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-8192}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      AI_MAX_REQUEST_BYTES: ${AI_MAX_REQUEST_BYTES:-8000000}
 
       # ── Members inviting people (optional) ──
       # The first two together or neither; the cap only with them. Empty means
@@ -376,13 +465,74 @@ services:
       SYNC_NOTICE: ${SYNC_NOTICE:-}
       SYNC_NOTICE_URL: ${SYNC_NOTICE_URL:-}
 
-      # Everything else openplate-core reads (web push, open sign-up, the scan
-      # trial, reported estimates) is listed in openplate-core's
-      # docker/compose.yml and .env.example. To use one, add a line here in the
-      # same `NAME: ${NAME:-}` form.
-      #
-      # If you set SIGNUP_MODE, SIGNUPS_OPEN, EMAIL_FROM, SMTP_SECURE, any
-      # PIGEON_*, or REQUIRE_EMAIL_VERIFICATION, you get a BOOT FAILURE.
+      # ── Reported estimates (optional) ──
+      # On, this service KEEPS the photograph and the figures a person reports,
+      # readable, for its retention window. The two limits are per account per
+      # UTC day, and per request. Read openplate-core's .env.example first.
+      SYNC_FEEDBACK: ${SYNC_FEEDBACK:-false}
+      FEEDBACK_DAILY_LIMIT: ${FEEDBACK_DAILY_LIMIT:-5}
+      FEEDBACK_MAX_REQUEST_BYTES: ${FEEDBACK_MAX_REQUEST_BYTES:-8000000}
+
+      # ── Open sign-up (optional) ──
+      # Empty means invite-only. "true" needs the mail block above. The
+      # Turnstile pair is both or neither, and only with OPEN_SIGNUP.
+      OPEN_SIGNUP: ${OPEN_SIGNUP:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+
+      # ── Free AI scans for new accounts (optional) ──
+      # TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT together or neither, and the
+      # pepper with them. TRIAL_DAYS also ends the trial at midnight after that
+      # many days, in TRIAL_TIME_ZONE (an IANA name, empty means UTC).
+      # MEMBER_INVITE_TRIAL=true makes a member invitation grant the trial.
+      # Empty means no trial.
+      TRIAL_SCANS: ${TRIAL_SCANS:-}
+      TRIAL_DAILY_AI_LIMIT: ${TRIAL_DAILY_AI_LIMIT:-}
+      TRIAL_DAYS: ${TRIAL_DAYS:-}
+      TRIAL_TIME_ZONE: ${TRIAL_TIME_ZONE:-}
+      TRIAL_ADDRESS_PEPPER: ${TRIAL_ADDRESS_PEPPER:-}
+      MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
+      AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
+
+      # ── Web push (optional) ──
+      # All three or none. Empty means no notifications.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+
+      # ── Paid plans (optional) ──
+      # The URL and the secret together or neither, and only with a billing
+      # service behind this instance. BILLING_TOKEN is that service's own
+      # credential. Empty means no plans.
+      PLANS_UPSTREAM_URL: ${PLANS_UPSTREAM_URL:-}
+      PLANS_UPSTREAM_SECRET: ${PLANS_UPSTREAM_SECRET:-}
+      BILLING_TOKEN: ${BILLING_TOKEN:-}
+
+      # ── Everything else ──
+      # Which body's reference values the Nutrients screen quotes (dge, efsa or
+      # us), for the app above too. Only the boot default: an administrator
+      # changes the live setting, and the stored one wins from then on.
+      NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
+      # The health-data consent every account must agree to, a short string
+      # such as 2026-09-28. Empty asks for no consent.
+      HEALTH_CONSENT_VERSION: ${HEALTH_CONSENT_VERSION:-}
+      # The folder of letter texts, the same one the app above reads its legal
+      # pages from. Set it to the container path of the volume line below.
+      CONTENT_DIR: ${CONTENT_DIR:-}
+      # A PEM file of extra certificate authorities Node trusts, for an SMTP
+      # server with a private CA. The container path of the volume line below.
+      NODE_EXTRA_CA_CERTS: ${NODE_EXTRA_CA_CERTS:-}
+      # The address the listener binds to inside the container. Leave it empty:
+      # the published port reaches only a listener on every interface.
+      HOST: ${HOST:-}
+      # Only for an EXTERNAL database. The bundled Postgres speaks plain TCP on
+      # the compose network.
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+
+      # Every variable openplate-core reads is forwarded above, so a line in
+      # `.env` is all it takes. If you set SIGNUP_MODE, SIGNUPS_OPEN,
+      # EMAIL_FROM, SMTP_SECURE, any PIGEON_*, or REQUIRE_EMAIL_VERIFICATION,
+      # you get a BOOT FAILURE, so none of them is forwarded.
 
 volumes:
   pg-data:

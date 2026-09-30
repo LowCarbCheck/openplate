@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Every app setting now reaches the container from your .env file.** The four compose files, `docker/compose.yml` and the three in `docker/topologies/`, now forward every variable the app reads. Previously, an unlisted `.env` variable never reached the app, and the system gave no warning. Across all compose files, this affected `CONTENT_DIR`, `HOST`, `NUTRIENT_REFERENCE_BASIS`, the three `MATOMO_*` variables, and the two `NEWSLETTER_*` variables. Smaller compose files omitted more. With an empty `.env`, nothing changes. Every default matches the value the app already used. Check your `.env` before you update, because previously ignored lines now take effect. Each compose file adds a commented volume line for a `CONTENT_DIR` folder. The Quadlet `*.defaults.env` files list the new names too. `HMR_PORT` and `DEBUG_MODE` were removed because nothing read them. The development server's host list is empty when `VITE_ALLOWED_HOSTS` is unset, instead of naming two of the maintainer's hosts. `tests/unit/compose-env-surface.test.ts` fails when a variable the app reads is missing from a compose file or from `.env.example`. `tests/unit/compose-defaults-inert.test.ts` checks every compose default against the app's own parser.
+
 ## [0.53.0] - 2026-09-29
 
 ### Changed

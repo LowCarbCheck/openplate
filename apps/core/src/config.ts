@@ -93,7 +93,7 @@ export interface ServiceConfig {
   databaseSsl: boolean;
   /** Root secret; `lib/server-secrets.ts` derives the domain-separated subkeys from it. Never used directly. */
   serverSecret: string;
-  /** What this instance calls itself on the handshake and in its mail. `INSTANCE_NAME`, default `openplate`. */
+  /** What this instance calls itself on the handshake and in its start-up log. `INSTANCE_NAME`, default `openplate`. */
   instanceName: string;
   /**
    * Which language its letters are written in when the request names no reader's language.
@@ -641,7 +641,7 @@ function parseOptionalHost(env: NodeJS.ProcessEnv): string | null {
   return raw;
 }
 
-/** `INSTANCE_NAME`, what an instance calls itself in its mail and on the handshake. */
+/** `INSTANCE_NAME`, what an instance calls itself on the `/health` handshake and in its start-up log. */
 const DEFAULT_INSTANCE_NAME = 'openplate';
 
 /**

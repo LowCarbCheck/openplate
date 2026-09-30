@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **Every setting now reaches openplate-core from your .env file.** `docker/compose.yml` and the sync service in openplate's `docker/topologies/compose.sync.yml` and `compose.full.yml` forward every variable this service reads. The two topology files previously forwarded a subset and required manual additions for the rest. Because of that, web push, open sign-up and its Turnstile pair, the scan trial, reported estimates, paid plans, the AI limits, `NUTRIENT_REFERENCE_BASIS`, `HEALTH_CONSENT_VERSION`, `DATABASE_SSL`, `CONTENT_DIR` and `HOST` never arrived from `.env`. `docker/compose.yml` also lacked `HOST` and `CONTENT_DIR`. Every file forwards `NODE_EXTRA_CA_CERTS`, empty by default, so SMTP can trust a server whose certificate comes from your own certificate authority. Mount the PEM file with the commented volume line and set its container path. With an empty `.env` nothing changes. Check your `.env` before you update: a line that was ignored until now takes effect. The refused names stay out of every file. `.env.example` now states where `INSTANCE_NAME` appears today: on the `/health` handshake and in the start-up log, not in the letters. `tests/unit/compose-env-surface.test.ts` and `tests/unit/compose-defaults-inert.test.ts` keep the files and `.env.example` complete, and keep every default equal to the parser's.
+
 ## [0.25.0] - 2026-09-29
 
 ### Added

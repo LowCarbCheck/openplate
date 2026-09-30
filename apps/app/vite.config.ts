@@ -135,11 +135,14 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: serverPort,
-      // Dev-only: allow access via the machine hostname / tailnet MagicDNS name
-      // (Vite blocks non-IP hosts by default). Override with VITE_ALLOWED_HOSTS
-      // (comma-separated) for other setups.
-      allowedHosts:
-        env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',') : ['bluefin', '.sprqvntrs.tailnet.internal'],
+      // Dev-only: Vite answers only localhost and IP addresses by default. To
+      // reach the dev server by a machine or tailnet name, list the names in
+      // VITE_ALLOWED_HOSTS, comma-separated (a leading dot allows every
+      // subdomain). Unset, the list is empty and Vite's own default holds.
+      allowedHosts: (env.VITE_ALLOWED_HOSTS ?? '')
+        .split(',')
+        .map((host) => host.trim())
+        .filter((host) => host !== ''),
     },
     optimizeDeps: {
       // Dev-only QoL fix: the first navigation to a route using a
