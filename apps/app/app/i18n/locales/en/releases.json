@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Languages outside the six now fall back to English in checkout and legal forms."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Resending an invitation shows the new link without mail.",
       "03": "The link warning now checks the sync server address.",
       "04": "A reset link no longer pushes the page down."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "A refused sync or scan now opens the consent screen.",
-      "02": "A managed instance's front page is the door to an account.",
-      "03": "Public pages on a managed instance link back to openplate.de.",
-      "04": "The HTTPS and YAZIO guides open in the reader's language."
-    },
-    "fixed": {
-      "01": "Legal links from openplate.de open in the visitor's language.",
-      "02": "The landing's screenshots match the page's language.",
-      "03": "The footer links no longer run off a tablet screen."
     }
   }
 }

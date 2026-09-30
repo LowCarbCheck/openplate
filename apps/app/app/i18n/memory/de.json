@@ -12368,6 +12368,13 @@
     "at": "2026-09-20",
     "de": "Fortschritt heißt jetzt Einblicke und öffnet sich auf vier Tabs."
   },
+  "9887a44775fd19f6": {
+    "en": "Languages outside the six now fall back to English in checkout and legal forms.",
+    "path": "releases:v0_55_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "de": "Bei anderen Sprachen als den sechs wird im Checkout und bei rechtlichen Formularen jetzt auf Englisch zurückgegriffen."
+  },
   "988943f85b70bbe3": {
     "en": "Goals saved.",
     "path": "common:goals.toast.saved",

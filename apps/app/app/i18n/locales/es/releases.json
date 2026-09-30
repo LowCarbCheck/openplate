@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Los idiomas distintos de los seis ahora usan el inglés por defecto en el proceso de pago y en los formularios legales."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Reenviar una invitación muestra el enlace nuevo sin correo.",
       "03": "El aviso del enlace ahora comprueba la dirección del servidor de sincronización.",
       "04": "El enlace de restablecimiento ya no empuja la página hacia abajo."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "Si rechazas una sincronización o un escaneo, ahora se abre la pantalla de consentimiento.",
-      "02": "La portada de una instancia administrada es la puerta de entrada a una cuenta.",
-      "03": "Las páginas públicas de una instancia administrada enlazan de vuelta a openplate.de.",
-      "04": "Las guías de HTTPS e YAZIO se abren en el idioma del lector."
-    },
-    "fixed": {
-      "01": "Los enlaces legales de openplate.de se abren en el idioma del visitante.",
-      "02": "Las capturas de pantalla de la página de inicio coinciden con el idioma de la página.",
-      "03": "Los enlaces del pie de página ya no se salen de la pantalla de una tableta."
     }
   }
 }

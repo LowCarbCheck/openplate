@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Bei anderen Sprachen als den sechs wird im Checkout und bei rechtlichen Formularen jetzt auf Englisch zurückgegriffen."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Das erneute Senden einer Einladung zeigt den neuen Link ohne E-Mail an.",
       "03": "Die Link-Warnung prüft jetzt die Adresse des Sync-Servers.",
       "04": "Ein Link zum Zurücksetzen verschiebt die Seite nicht mehr nach unten."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "Ein abgelehnter Sync oder Scan öffnet jetzt den Einwilligungsbildschirm.",
-      "02": "Die Startseite einer verwalteten Instanz ist der Zugang zu einem Konto.",
-      "03": "Öffentliche Seiten auf einer verwalteten Instanz verlinken zurück zu openplate.de.",
-      "04": "Die Leitfäden zu HTTPS und YAZIO öffnen sich in der Sprache des Lesers."
-    },
-    "fixed": {
-      "01": "Rechtliche Links von openplate.de öffnen sich in der Sprache des Besuchers.",
-      "02": "Die Screenshots der Landingpage passen zur Sprache der Seite.",
-      "03": "Die Links in der Fußzeile ragen auf Tablet-Bildschirmen nicht mehr über den Rand hinaus."
     }
   }
 }

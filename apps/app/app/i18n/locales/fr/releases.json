@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Les langues en dehors des six reviennent désormais à l'anglais dans le paiement et les formulaires légaux."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Renvoyer une invitation affiche le nouveau lien sans envoyer de courriel.",
       "03": "L'avertissement de lien vérifie désormais l'adresse du serveur de synchronisation.",
       "04": "Un lien de réinitialisation ne décale plus la page vers le bas."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "Un refus de synchronisation ou de scan ouvre désormais l'écran de consentement.",
-      "02": "La page d'accueil d'une instance gérée ouvre l'accès à un compte.",
-      "03": "Les pages publiques d'une instance gérée renvoient vers openplate.de.",
-      "04": "Les guides HTTPS et YAZIO s'ouvrent dans la langue du lecteur."
-    },
-    "fixed": {
-      "01": "Les liens légaux depuis openplate.de s'ouvrent dans la langue du visiteur.",
-      "02": "Les captures d'écran de la page de présentation correspondent à la langue de la page.",
-      "03": "Les liens du pied de page ne dépassent plus de l'écran d'une tablette."
     }
   }
 }

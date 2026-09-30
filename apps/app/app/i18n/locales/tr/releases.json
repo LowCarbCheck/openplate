@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Bu altı dilin dışındaki diller, ödeme ve yasal formlarda artık İngilizceye geri döner."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Bir daveti yeniden göndermek, e-posta olmadan yeni bağlantıyı gösterir.",
       "03": "Bağlantı uyarısı artık eşitleme sunucusu adresini denetler.",
       "04": "Sıfırlama bağlantısı artık sayfayı aşağı kaydırmaz."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "Reddedilen bir eşitleme veya tarama artık onay ekranını açar.",
-      "02": "Yönetilen bir örneğin ön sayfası, bir hesaba açılan kapıdır.",
-      "03": "Yönetilen bir örnekteki herkese açık sayfalar, openplate.de adresine geri bağlantı verir.",
-      "04": "HTTPS ve YAZIO kılavuzları okuyucunun dilinde açılır."
-    },
-    "fixed": {
-      "01": "openplate.de üzerindeki yasal bağlantılar ziyaretçinin dilinde açılır.",
-      "02": "Açılış sayfasının ekran görüntüleri sayfanın diliyle eşleşir.",
-      "03": "Alt bilgi bağlantıları artık tablet ekranının dışına taşmaz."
     }
   }
 }

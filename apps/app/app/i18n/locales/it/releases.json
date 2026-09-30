@@ -1,4 +1,10 @@
 {
+  "v0_55_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Le lingue diverse dalle sei previste ora passano all'inglese nel checkout e nei moduli legali."
+    }
+  },
   "v0_54_0": {
     "date": "2026-09-30",
     "changed": {
@@ -20,20 +26,6 @@
       "02": "Il reinvio di un invito mostra il nuovo link senza inviare l'email.",
       "03": "L'avviso sui link ora controlla l'indirizzo del server di sincronizzazione.",
       "04": "Un link di ripristino non sposta più la pagina verso il basso."
-    }
-  },
-  "v0_52_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "Un rifiuto della sincronizzazione o della scansione apre ora la schermata del consenso.",
-      "02": "La pagina principale di un'istanza gestita è la porta di accesso a un account.",
-      "03": "Le pagine pubbliche su un'istanza gestita rimandano a openplate.de.",
-      "04": "Le guide su HTTPS e YAZIO si aprono nella lingua del lettore."
-    },
-    "fixed": {
-      "01": "I collegamenti alle note legali da openplate.de si aprono nella lingua del visitatore.",
-      "02": "Gli screenshot della pagina iniziale corrispondono alla lingua della pagina.",
-      "03": "I collegamenti a piè di pagina non escono più dallo schermo di un tablet."
     }
   }
 }
