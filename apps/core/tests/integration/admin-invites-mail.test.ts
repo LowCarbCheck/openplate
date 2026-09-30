@@ -68,6 +68,12 @@ let baseUrl: string;
 let received: ReceivedMail[];
 /** What the fake mail API answers next. `null` is the ordinary success. */
 let failNext: number | null;
+/**
+ * Work a handler scheduled for after its response (`AuthContext.afterResponse`):
+ * `reset/request` sends its letter there. `request` waits for it once the
+ * response is in hand, so a case can count letters right after a `202`.
+ */
+const pendingAfterResponse: Array<Promise<void>> = [];
 
 before(async () => {
   database = await setupTestDatabase();
@@ -126,6 +132,15 @@ before(async () => {
     mintResetToken: generatePasswordResetToken,
     mintFamilyId: generateFamilyId,
     logger,
+    afterResponse: (task) => {
+      pendingAfterResponse.push(
+        new Promise<void>((resolve) => {
+          setImmediate(() => {
+            void task().then(resolve);
+          });
+        }),
+      );
+    },
     // MEMBER INVITES ON, so the M212 letters travel this same real transport.
     // The two numbers are the instance's own and are asserted below on the
     // account a member's invitation creates.
@@ -214,6 +229,9 @@ async function request<T>(input: {
   // which is the point of the test. Every endpoint here answers JSON except a
   // 204, which has no body at all.
   const body = (response.status === 204 ? undefined : await response.json()) as T;
+  while (pendingAfterResponse.length > 0) {
+    await Promise.all(pendingAfterResponse.splice(0));
+  }
   return { status: response.status, body };
 }
 
