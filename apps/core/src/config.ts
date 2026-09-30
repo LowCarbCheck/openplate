@@ -522,6 +522,12 @@ function parseBillingToken(env: NodeJS.ProcessEnv): string | null {
   return raw;
 }
 
+/** The operator's credential and the biller's, each `null` when unset. */
+interface ServiceTokens {
+  adminToken: string | null;
+  billingToken: string | null;
+}
+
 /**
  * `ADMIN_TOKEN` and `BILLING_TOKEN` together, with the one rule that needs
  * both: they may not be the same string.
@@ -533,7 +539,7 @@ function parseBillingToken(env: NodeJS.ProcessEnv): string | null {
  * only answer an operator cannot miss. The message names both variables and
  * neither value.
  */
-function parseTokens(env: NodeJS.ProcessEnv): { adminToken: string | null; billingToken: string | null } {
+function parseTokens(env: NodeJS.ProcessEnv): ServiceTokens {
   const adminToken = parseAdminToken(env);
   const billingToken = parseBillingToken(env);
   if (adminToken !== null && adminToken === billingToken) {

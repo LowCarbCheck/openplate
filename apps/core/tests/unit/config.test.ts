@@ -850,12 +850,11 @@ test('a BILLING_TOKEN equal to ADMIN_TOKEN refuses to boot, and prints neither v
   // The admin door checks ADMIN_TOKEN first, so one string in both variables
   // would admit the biller as the operator and skip its scope entirely.
   const shared = 'd'.repeat(MIN_ADMIN_TOKEN_LENGTH);
+  const env = baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: shared });
+  assert.throws(() => parseConfig(env), /BILLING_TOKEN must differ from ADMIN_TOKEN/);
   assert.throws(
-    () => parseConfig(baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: shared })),
-    (error: unknown) =>
-      error instanceof Error &&
-      /BILLING_TOKEN must differ from ADMIN_TOKEN/.test(error.message) &&
-      !error.message.includes(shared),
+    () => parseConfig(env),
+    (error: Error) => !error.message.includes(shared),
   );
   // Surrounding whitespace is trimmed before the comparison, as before the use.
   assert.throws(() => parseConfig(baseEnv({ ADMIN_TOKEN: ` ${shared}`, BILLING_TOKEN: `${shared} ` })), /differ/);
