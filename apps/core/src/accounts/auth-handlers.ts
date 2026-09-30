@@ -155,6 +155,19 @@ export interface AuthContext {
    * it needs to agree, to leave and to read its own copy.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * Runs work AFTER the response is sent, without the response waiting for
+   * it. Absent means `setImmediate`, which is what `main.ts` runs.
+   *
+   * WHAT USES IT: `POST /v1/auth/reset/request`, whose store write and letter
+   * happen only for an address that exists. Awaited, they made a known
+   * address measurably slower than an unknown one. The task catches and logs
+   * its own failures; a scheduler must not expect a rejection.
+   *
+   * INJECTED so a test can wait for the work it scheduled (`settle` in the
+   * fixtures) rather than sleeping.
+   */
+  afterResponse?: (task: () => Promise<void>) => void;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -1080,17 +1093,19 @@ export async function handleRecoverRotate(
  * `POST /v1/auth/reset/request` — "I forgot my password".
  *
  * `202` ALWAYS, AFTER THE SAME WORK. A known address and an unknown one both
- * mint a token, both hash it, and both take the same path out; only the store
- * write and the send are skipped on the unknown branch. That symmetry is the
+ * look the address up, mint a token, hash it, and answer; that symmetry is the
  * whole anti-enumeration argument here, and it is the one PROTOCOL.md used to
  * record as MISSING (§5.13, before M181 deleted the endpoint): the old
  * `request-reset` did the expensive work only for addresses that existed, so
  * its timing said what its body did not.
  *
- * The residual asymmetry — one INSERT and one HTTP send on the known branch —
- * is bounded by the per (IP, email) throttle in `register-auth-routes.ts`,
- * which is never cleared on success. A person forgets their password once;
- * a caller measuring this endpoint does it thousands of times.
+ * THE STORE WRITE AND THE LETTER RUN AFTER THE RESPONSE (2026-09), through
+ * {@link AuthContext.afterResponse}, and nothing the response carries waits
+ * for them. Until then this handler awaited one INSERT and one HTTP send on
+ * the known branch only, and the difference was measurable. A failure in that
+ * work is logged with the account id and never reaches the caller, who has
+ * already been told `202`. The per (IP, email) throttle in
+ * `register-auth-routes.ts` still counts every request.
  *
  * WHAT THE LETTER CARRIES IS NOT A NEW AUTHORITY. It carries a link to
  * `handleResetOpen`, which hands back the recovery code the operator already
@@ -1118,22 +1133,46 @@ export async function handleResetRequest(
   // A suspended account is not told anything different, deliberately: this
   // endpoint answers `202` to everybody, and a suspended person who resets
   // their password still meets the `403` at the door.
-  await ctx.store.createPasswordReset({
-    accountId: account.id,
-    tokenHash: token.hash,
-    expiresAt,
-    now,
-  });
-  // The mailer never throws (see `mail/mailer.ts`): a send failure must not be
-  // able to turn this `202` into a `500` and make the status code the oracle.
-  await ctx.mailer.sendReset({
-    email: account.email,
-    resetToken: token.raw,
-    expiresAt: expiresAt.toISOString(),
-  });
-  // The account id, never the address and never the token.
-  ctx.logger.info('Password reset requested', { accountId: account.id });
+  const afterResponse = ctx.afterResponse ?? runOnNextTurn;
+  afterResponse(() => recordAndMailReset({ account, token, expiresAt, now }, ctx));
   return { status: 'accepted', body: {} };
+}
+
+/** The default {@link AuthContext.afterResponse}: the next turn of the event loop, after the response is written. */
+function runOnNextTurn(task: () => Promise<void>): void {
+  setImmediate(() => {
+    void task();
+  });
+}
+
+/**
+ * The known-address half of `reset/request`: store the token's digest, which
+ * supersedes every older live one, then send the letter. Never throws: it runs
+ * after the caller was answered, so a failure has nowhere to go but the log.
+ * The error itself is not logged, because a mail API echoes the recipient and
+ * the link back in its error body.
+ */
+async function recordAndMailReset(
+  input: { account: AccountRecord; token: GeneratedToken; expiresAt: Date; now: Date },
+  ctx: AuthContext,
+): Promise<void> {
+  try {
+    await ctx.store.createPasswordReset({
+      accountId: input.account.id,
+      tokenHash: input.token.hash,
+      expiresAt: input.expiresAt,
+      now: input.now,
+    });
+    await ctx.mailer.sendReset({
+      email: input.account.email,
+      resetToken: input.token.raw,
+      expiresAt: input.expiresAt.toISOString(),
+    });
+    // The account id, never the address and never the token.
+    ctx.logger.info('Password reset requested', { accountId: input.account.id });
+  } catch {
+    ctx.logger.error('A password reset could not be recorded or mailed', { accountId: input.account.id });
+  }
 }
 
 /**

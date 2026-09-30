@@ -511,6 +511,17 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   // `HEALTH_CONSENT_VERSION`, one binding for the context and `/health`.
   const healthConsent = options.healthConsent ?? null;
 
+  // Work a handler scheduled for after its response (`AuthContext.afterResponse`),
+  // remembered so `request` can wait for it once the response has arrived: a
+  // suite reads the mailer or the table right after a `202`, and must see the
+  // letter the request caused, without the response ever having waited for it.
+  const pendingAfterResponse: Array<Promise<void>> = [];
+  const settleAfterResponse = async (): Promise<void> => {
+    while (pendingAfterResponse.length > 0) {
+      await Promise.all(pendingAfterResponse.splice(0));
+    }
+  };
+
   const authContext: AuthContext = {
     // The zone the trial's last midnight falls in, as `main.ts` reads it from
     // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
@@ -532,6 +543,15 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     openSignup: openSignupSurface,
     // `null` by default, see `StartServiceOptions.healthConsent`.
     healthConsent,
+    afterResponse: (task) => {
+      pendingAfterResponse.push(
+        new Promise<void>((resolve) => {
+          setImmediate(() => {
+            void task().then(resolve);
+          });
+        }),
+      );
+    },
   };
 
   const aiSurface =
@@ -758,6 +778,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
       // this harness cannot know it, and a wrong `T` fails the assertion that
       // follows, which is the point of the test.
       const body = (response.status === 204 ? undefined : await response.json()) as T;
+      // After the response is in hand, never before: see `pendingAfterResponse`.
+      await settleAfterResponse();
       return { status: response.status, body, headers: response.headers };
     },
     async close() {

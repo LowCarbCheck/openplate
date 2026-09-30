@@ -706,11 +706,11 @@ These numbers were retired in 0.5.0, when `verify-email` and `request-reset` wen
 
 Request `{"email": "anna@example.org"}` → `202 {}`, always.
 
-`202` for a known address, an unknown one and a malformed one alike. A conforming server MUST do the same work on both branches: mint the token, digest it, and only then skip the store write and the send when there is no account. That symmetry is the whole anti-enumeration argument, and it is the one this document previously recorded as MISSING: the old `request-reset` did the expensive work only for addresses that existed, so its timing said what its body did not.
+`202` for a known address, an unknown one and a malformed one alike. A conforming server MUST do the same work on both branches before it answers: look the address up, mint the token, digest it. The store write and the send, which only a known address gets, MUST NOT delay the response: the reference server runs them after the `202` is sent (since 2026-09), and a failure there is logged, never returned. That symmetry is the whole anti-enumeration argument, and it is the one this document previously recorded as MISSING: the old `request-reset` did the expensive work only for addresses that existed, so its timing said what its body did not. Before 2026-09 this server still awaited one write and one send on the known branch only.
 
 A `400` is never returned, not even for a value that is obviously not an address: the status code would become a free oracle for the shape of the addresses this instance holds, and there is nothing a caller could usefully do with the distinction.
 
-The token is 32 random bytes, base64url, prefixed `sr_`. Only its SHA-256 digest is stored, in `password_resets`, with a **60-minute** TTL. **One live token per account**: a new request marks every older unconsumed row consumed, in the same transaction, so a person scrolling up in their inbox cannot redeem yesterday's letter.
+The token is 32 random bytes, base64url, prefixed `sr_`. Only its SHA-256 digest is stored, in `password_resets`, with a **60-minute** TTL. **One live token per account**: a new request marks every older unconsumed row consumed, in the same transaction, so a person scrolling up in their inbox cannot redeem yesterday's letter. Those transactions are serialised per account (a row lock on the account), so requests that overlap still leave exactly one live token.
 
 When mail is not configured the send is a no-op and the endpoint still answers `202`. A self-hoster's users then have no reset; the operator's remedy is `POST /v1/admin/accounts/:id/reset-mail`, which returns the link.
 

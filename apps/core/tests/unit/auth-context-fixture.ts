@@ -90,6 +90,12 @@ export interface AuthFixture {
   advance(ms: number): void;
   /** Current fixture time. */
   now(): Date;
+  /**
+   * Waits for every task a handler handed to `ctx.afterResponse`. A handler
+   * returns before that work finishes, which is the point of it; a test that
+   * asserts on the work settles first.
+   */
+  settle(): Promise<void>;
 }
 
 export interface AuthFixtureOptions {
@@ -111,6 +117,7 @@ export function createAuthFixture(options: AuthFixtureOptions = {}): AuthFixture
   let tokenCounter = 0;
   let resetCounter = 0;
   let familyCounter = 0;
+  const pending: Array<Promise<void>> = [];
 
   function mintToken(): GeneratedToken {
     tokenCounter += 1;
@@ -140,12 +147,22 @@ export function createAuthFixture(options: AuthFixtureOptions = {}): AuthFixture
       return `family-${familyCounter}`;
     },
     logger: createSilentLogger(),
+    // Started at once rather than on the next turn, and remembered, so
+    // `settle` can wait for exactly what was scheduled.
+    afterResponse: (task) => {
+      pending.push(task());
+    },
   };
 
   return {
     ctx,
     store,
     mailer,
+    async settle() {
+      while (pending.length > 0) {
+        await Promise.all(pending.splice(0));
+      }
+    },
     advance(ms: number) {
       clock = new Date(clock.getTime() + ms);
     },

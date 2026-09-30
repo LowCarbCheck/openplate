@@ -645,6 +645,13 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
 
     async createPasswordReset(input: CreatePasswordResetInput): Promise<void> {
       await db.transaction(async (tx) => {
+        // ONE REQUEST AT A TIME PER ACCOUNT. Two of these transactions running
+        // side by side each insert a row the other cannot see yet, so each
+        // supersedes nothing and both letters stay live. The account row lock
+        // queues the second behind the first, whose row it then supersedes.
+        // Since reset/request answers before this runs, two requests in quick
+        // succession are exactly the case that would otherwise overlap.
+        await tx.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, input.accountId)).for('update');
         const [row] = await tx
           .insert(passwordResets)
           .values({
