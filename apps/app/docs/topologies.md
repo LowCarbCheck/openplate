@@ -158,11 +158,12 @@ comes back. That also means the operator of the service
 can, in principle, open a diary on it. [sync.md](sync.md) states that trade-off in full, and
 so does the app before you finish setting sync up.
 
-**The same server also carries a shared AI bill, if you turn it on.** Set
+**The server can also cover a shared AI bill, if you turn it on.** Set
 `INSTANCE_MODE=managed` and the instance becomes one an administrator runs for a household or
-an organization: they invite people by email from `/admin` (or with the admin API), give each
-account a daily allowance, and every signed-in scan runs through the sync server's own AI
-proxy: no separate service, no separate invite link. See
+an organization: administrators invite people from `/admin` (or with the admin API), set a daily
+allowance for each account, and every signed-in scan runs through the sync server's own AI
+proxy: no separate service, no separate invite link. Mail is optional: `/admin` always shows the
+invitation as a link an administrator can copy and send, mailed or not. See
 [configuration.md#managed-instances](configuration.md#managed-instances) and
 [family-setup.md](family-setup.md) for when this is worth turning on instead of provider
 sub-keys.
