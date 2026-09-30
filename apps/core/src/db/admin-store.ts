@@ -65,6 +65,7 @@ interface AccountIdentityRow {
   healthConsentAt: Date | null;
   createdAt: Date;
   lastSeenAt: Date | null;
+  label: string | null;
 }
 
 /**
@@ -103,6 +104,10 @@ const IDENTITY_COLUMNS = {
   // and NOT on the user-facing `AccountView`, and it is nullable because an
   // invited account that never signed in has no honest value.
   lastSeenAt: accounts.lastSeenAt,
+  // The operator's own note on the account (`admin/account-label.ts`), such as
+  // "Beta supporter". An operator fact like `lastSeenAt`, so it is here and NOT
+  // on the user-facing `AccountView`: the account is not shown it.
+  label: accounts.label,
 } as const;
 
 /** `sum()` comes back as a numeric string (or `null` on an empty table), because a Postgres `bigint` does not fit a JS number by contract. */
@@ -222,6 +227,7 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       healthConsent: healthConsentFromColumns({ version: identity.healthConsentVersion, at: identity.healthConsentAt }),
       createdAt: identity.createdAt,
       lastSeenAt: identity.lastSeenAt,
+      label: identity.label,
       blob: blobs.get(identity.id) ?? null,
       keyRecordKinds: (kinds.get(identity.id) ?? []).toSorted(),
       invitesMinted: minted.get(identity.id) ?? 0,

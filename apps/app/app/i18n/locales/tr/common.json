@@ -3194,7 +3194,8 @@
       "notTheDiary": "Ne yediğin bu sayfalarda yer almaz. Bir kopya cihazdan çıkmadan önce günlüğün bu cihazda şifrelenir. İşletici, parola sıfırlama işlemleri için bir yedekleme anahtarı saklar ve bu anahtar işleticinin günlüğünü okumasına olanak tanır.",
       "allowanceExpiresAt": "Kotanın bittiği tarih.",
       "invitesLeft": "Kalan davetiye sayın.",
-      "trialScans": "Sana kaç ücretsiz yapay zekâ taraması tanımlandığı ve kaç tane kaldığı."
+      "trialScans": "Sana kaç ücretsiz yapay zekâ taraması tanımlandığı ve kaç tane kaldığı.",
+      "label": "Bir yöneticinin hesabına verdiği Beta destekçisi gibi herhangi bir etiket."
     },
     "password": {
       "title": "Parola",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 değeri, bu kişi için fotoğraf okumayı kapatır.",
       "trialScansLabel": "Ücretsiz yapay zekâ taramaları",
       "trialScansHint": "Bu kişiye kaç adet ücretsiz yapay zekâ taraması tanımlanacağı. Daha önce kullanılan taramalar kullanılmış kalır.",
+      "labelLabel": "Etiket",
+      "labelHint": "Yalnızca yöneticilerin gördüğü, Beta destekçisi gibi kısa bir not. En fazla {{max}} karakter. Kaldırmak için boş bırak.",
       "saved": "Kaydedildi.",
       "failed": "Bu değişiklik uygulanamadı."
     },

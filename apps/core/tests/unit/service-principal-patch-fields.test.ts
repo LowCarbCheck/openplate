@@ -133,6 +133,18 @@ test('a body naming displayName is refused and the name does not move', async ()
   assert.equal(account?.displayName, 'Anna Schmidt');
 });
 
+test("a body naming label is refused: the operator's note is not the biller's to write", async () => {
+  const refused = await patchAs({ token: BILLING_TOKEN, body: { label: 'Paid supporter' } });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.error, SERVICE_FIELD_REFUSAL);
+  assert.equal(harness.fakeAccounts.labelOf(accountId), null);
+
+  // THE CONTROL: the operator's own credential writes it.
+  const allowed = await patchAs({ token: ADMIN_TOKEN, body: { label: 'Paid supporter' } });
+  assert.equal(allowed.status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(accountId), 'Paid supporter');
+});
+
 test('an allowed field beside a refused one is not written either', async () => {
   const refused = await patchAs({
     token: BILLING_TOKEN,

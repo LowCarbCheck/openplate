@@ -3194,7 +3194,8 @@
       "notTheDiary": "Ciò che mangi non compare su queste pagine. Il tuo diario viene cifrato su questo dispositivo prima che una copia lo lasci. Il gestore conserva una chiave di backup per reimpostare la password, e quella chiave gli consente di leggere il tuo diario.",
       "allowanceExpiresAt": "La data in cui termina la tua quota.",
       "invitesLeft": "Il numero di inviti rimasti.",
-      "trialScans": "Quante scansioni IA gratuite hai ricevuto e quante ne restano."
+      "trialScans": "Quante scansioni IA gratuite hai ricevuto e quante ne restano.",
+      "label": "Qualsiasi etichetta assegnata al tuo account da un amministratore, come Sostenitore beta."
     },
     "password": {
       "title": "Password",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 disattiva la lettura delle foto per questa persona.",
       "trialScansLabel": "Scansioni IA gratuite",
       "trialScansHint": "Quante scansioni IA gratuite vengono assegnate a questa persona. Le scansioni già usate restano usate.",
+      "labelLabel": "Etichetta",
+      "labelHint": "Una breve nota visibile solo agli amministratori, come Sostenitore beta. Al massimo {{max}} caratteri. Lascia vuoto per rimuoverla.",
       "saved": "Salvataggio completato.",
       "failed": "La modifica non è andata a buon fine."
     },

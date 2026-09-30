@@ -3194,7 +3194,8 @@
       "notTheDiary": "What you eat is not on these pages. Your diary is encrypted on this device before a copy leaves it. The operator keeps a backup key for password resets, and that key lets the operator read your diary.",
       "allowanceExpiresAt": "The date your allowance ends.",
       "invitesLeft": "How many invitations you have left.",
-      "trialScans": "How many free AI scans you were given, and how many are left."
+      "trialScans": "How many free AI scans you were given, and how many are left.",
+      "label": "Any label an administrator gave your account, such as Beta supporter."
     },
     "password": {
       "title": "Password",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 turns photo reading off for this person.",
       "trialScansLabel": "Free AI scans",
       "trialScansHint": "How many free AI scans this person is given. Scans already used stay used.",
+      "labelLabel": "Label",
+      "labelHint": "A short note that only administrators see, such as Beta supporter. At most {{max}} characters. Leave empty to remove it.",
       "saved": "Saved.",
       "failed": "That change did not go through."
     },

@@ -45,6 +45,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Search } from 'lucide-react';
 
+import { AccountLabelChip } from '#app/components/admin/account-label-chip';
 import { ActivityStrip } from '#app/components/admin/activity-strip';
 import { LastSeenValue } from '#app/components/admin/last-seen';
 import { Link } from '#app/components/link';
@@ -272,7 +273,21 @@ function PersonRow({
               </Badge>
             )}
           </p>
-          <p className="truncate text-sm text-muted-foreground">{person.email}</p>
+          {/* THE LABEL RIDES ON THE ADDRESS LINE, LAST, and that placement is
+              the no-layout-shift argument. On the name line it took width
+              from the name, so "Administrator" beside a long name sat at a
+              different place with a label than without. Here nothing follows
+              it: a label only moves where the address is cut, and the chip is
+              kept under the line's own height (`py-0`, 18 px against 20), so
+              the row is exactly as tall and every badge is exactly where it
+              was (`tests/e2e/admin-account-label.spec.ts`). It keeps its width
+              up to `max-w-40` and the address yields, because the address is
+              on the person's page too and the label is what the operator came
+              to read. */}
+          <p className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+            <span className="truncate">{person.email}</span>
+            {person.label !== null && <AccountLabelChip label={person.label} className="max-w-40 py-0" />}
+          </p>
         </div>
 
         {days !== null && (

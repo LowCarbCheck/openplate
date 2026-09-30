@@ -97,6 +97,12 @@ export interface FakeAccountStore extends AccountStore {
   seedAiUsage(input: { accountId: number; day: string; count: number }): void;
   /** Test-only: when the proxy last stamped the account, so a test can prove it did. */
   lastSeenFor(accountId: number): Date | null;
+  /**
+   * Test-only: the operator's label on the account, `null` for none. Kept
+   * beside the record rather than on it, because `AccountRecord` has no label
+   * on purpose (`accounts/account-store.ts`).
+   */
+  labelOf(accountId: number): string | null;
   /** Test-only: every password-reset row, so a test can assert one token superseded another. */
   allPasswordResets(): FakeResetRow[];
   /**
@@ -130,6 +136,7 @@ export function createFakeAccountStore(): FakeAccountStore {
   const resets: FakeResetRow[] = [];
   const aiUsage = new Map<string, number>();
   const lastSeenByAccount = new Map<number, Date>();
+  const labelByAccount = new Map<number, string>();
   let nextAccountId = 1;
   let nextTokenId = 1;
   let seedCounter = 0;
@@ -206,6 +213,8 @@ export function createFakeAccountStore(): FakeAccountStore {
       if (input.allowanceExpiresAt !== undefined) account.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.trialScans !== undefined) account.trialScans = input.trialScans;
       if (input.displayName !== undefined) account.displayName = input.displayName;
+      if (input.label === null) labelByAccount.delete(input.accountId);
+      if (input.label !== undefined && input.label !== null) labelByAccount.set(input.accountId, input.label);
       return { ...account };
     },
 
@@ -235,6 +244,10 @@ export function createFakeAccountStore(): FakeAccountStore {
 
     lastSeenFor(accountId: number): Date | null {
       return lastSeenByAccount.get(accountId) ?? null;
+    },
+
+    labelOf(accountId: number): string | null {
+      return labelByAccount.get(accountId) ?? null;
     },
 
     async aiUsageOn(input: { accountId: number; day: string }): Promise<number> {
@@ -408,6 +421,7 @@ export function createFakeAccountStore(): FakeAccountStore {
       // Mirrors the ON DELETE CASCADE the real schema declares.
       accountsById.delete(accountId);
       escrowByAccount.delete(accountId);
+      labelByAccount.delete(accountId);
       keyRecords.delete(accountId);
       for (let index = resets.length - 1; index >= 0; index -= 1) {
         if (resets[index]?.accountId === accountId) resets.splice(index, 1);

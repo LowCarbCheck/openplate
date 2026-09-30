@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
+import { MAX_ACCOUNT_LABEL_LENGTH, changedAccountLabel } from '#app/lib/admin/account-label';
 import type { AccountRole, AdminAccountView } from '#app/lib/admin/admin-wire';
 
 /** What one save carries. Role and allowance go together, so one save is one change to one account. */
@@ -40,6 +41,13 @@ export interface PersonEdit {
   dailyAiLimit: number;
   /** The free AI scans given (M253/05). Sent only for an account that has a scan trial. */
   trialScans?: number;
+  /**
+   * The operator's note, or `null` to take it away. Sent ONLY when the field
+   * changed, so a core built before labels never receives a key it does not
+   * know, and a save that did not touch the note cannot overwrite a label a
+   * colleague set in another tab.
+   */
+  label?: string | null;
 }
 
 export interface PersonEditorProps {
@@ -49,13 +57,23 @@ export interface PersonEditorProps {
   onSave: (next: PersonEdit) => void;
 }
 
-/** Role and allowance, edited together. Both are sent in one request so a refusal is a refusal of one thing. */
+/** Role, allowance and label, edited together. All are sent in one request so a refusal is a refusal of one thing. */
 export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorProps) {
   const { t } = useTranslation();
   const [role, setRole] = useState<AccountRole>(person.role);
   const [limit, setLimit] = useState(String(person.dailyAiLimit));
   const [scans, setScans] = useState(String(person.trialScans?.granted ?? 0));
+  const [label, setLabel] = useState(person.label ?? '');
   const hasTrialScans = person.trialScans !== null;
+
+  /** The save, with the label only when it changed. See {@link PersonEdit.label}. */
+  function edit(): PersonEdit {
+    const base: PersonEdit = { role, dailyAiLimit: readAllowance(limit) };
+    if (hasTrialScans) base.trialScans = readTrialScans(scans);
+    const nextLabel = changedAccountLabel({ typed: label, current: person.label });
+    if (nextLabel !== undefined) base.label = nextLabel;
+    return base;
+  }
 
   return (
     <div className="space-y-3 bg-muted/30 p-3">
@@ -101,20 +119,22 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
             <p className="text-xs text-muted-foreground">{t('admin.edit.trialScansHint')}</p>
           </div>
         )}
+        <div className="space-y-1 sm:col-span-2">
+          <Label htmlFor={`label-${person.id}`}>{t('admin.edit.labelLabel')}</Label>
+          <Input
+            id={`label-${person.id}`}
+            type="text"
+            autoComplete="off"
+            maxLength={MAX_ACCOUNT_LABEL_LENGTH}
+            className="h-11"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">{t('admin.edit.labelHint', { max: MAX_ACCOUNT_LABEL_LENGTH })}</p>
+        </div>
       </div>
       <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={isBusy}
-          onClick={() =>
-            onSave(
-              hasTrialScans ?
-                { role, dailyAiLimit: readAllowance(limit), trialScans: readTrialScans(scans) }
-              : { role, dailyAiLimit: readAllowance(limit) },
-            )
-          }
-        >
+        <Button type="button" size="sm" disabled={isBusy} onClick={() => onSave(edit())}>
           {isBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {t('admin.edit.save')}
         </Button>

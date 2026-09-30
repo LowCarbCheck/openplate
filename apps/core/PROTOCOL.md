@@ -1366,7 +1366,7 @@ either token turns that `404` into the `401` a wrong value gets.
 | `GET /v1/admin/accounts/:id`                | One `AccountView`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `GET /v1/admin/accounts/:id/activity`       | Last sign-in, and one entry per UTC day over a bounded window                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `GET /v1/admin/activity`                    | The same day-by-day strip for a whole PAGE of accounts, in the list's order                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`. At least one required                                                                                                                                                                                                            |
+| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`, `label` (the operator's note, see below, or `null` to clear it). At least one required                                                                                                                                           |
 | `POST /v1/admin/accounts/:id/reset-mail`    | Starts the reset of §5.12 on the operator's initiative                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `DELETE /v1/admin/accounts/:id`             | Erases the account and everything attached to it                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `GET /v1/admin/accounts/:id/blob/versions`  | Every retained blob version: number, envelope version, byte count, time, and the pin if it has one. Never ciphertext                                                                                                                                                                                                                                                                                                                                                                           |
@@ -1399,6 +1399,25 @@ session; the person signs in again.
 that has locked everybody out of this tree, and the only remedy is a shell on
 the container. The static token is exempt, because it has no self and is the
 credential that exists for exactly that situation.
+
+**`label` is the operator's own note on an account**, such as
+`"Beta supporter"`, or `null` for none. Every account in `GET
+/v1/admin/accounts` and `GET /v1/admin/accounts/:id` carries the key.
+
+- `PATCH` with `{"label": "Beta supporter"}` sets it and `{"label": null}`
+  clears it. The value is trimmed, and a string that is blank once trimmed
+  clears it too, so an empty label is never stored.
+- At most **40 characters**, counted as Unicode code points, the unit
+  Postgres `char_length` counts. A longer label, one with a line break, a tab
+  or any other control character, and anything that is not a string or `null`
+  is `400` and nothing in the body is written. A check constraint on the column
+  enforces the same bound, so a tool that writes it directly meets it too.
+- **An operator fact, never an authorization input.** No route reads it to
+  decide anything. The account's own `GET /v1/auth/account` does not carry it,
+  the account cannot set it (`PATCH /v1/auth/account` reads `displayName`
+  only), and the billing principal can neither read nor write it.
+- `pnpm sync-api accounts set-label <id> "Beta supporter"` sets it and
+  `pnpm sync-api accounts clear-label <id>` clears it.
 
 **`GET /v1/admin/accounts/:id/activity` answers the question an operator opens
 the console with**: is this person still using the instance. It reads what the
@@ -1507,7 +1526,7 @@ carries the same 24-character minimum the operator token does.
 
 `AccountView` is the same shape the account's own `GET /v1/auth/account`
 returns (§5.15), `invitesLeft` included and computed the same way, plus
-`aiUsedToday`, and on the admin surface plus `lastSeenAt`,
+`aiUsedToday`, and on the admin surface plus `lastSeenAt`, `label`,
 `blob` and `keyRecordKinds`. `healthConsent` is on it too, and it is **read
 only** here: `PATCH /v1/admin/accounts/:id` does not read it, because a consent
 an operator could set on somebody's behalf would prove nothing (§5.15.1). It

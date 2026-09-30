@@ -3194,7 +3194,8 @@
       "notTheDiary": "Ce que tu manges ne figure pas sur ces pages. Ton journal est chiffré sur cet appareil avant qu'une copie n'en sorte. L'administrateur conserve une clé de secours pour réinitialiser les mots de passe, et cette clé lui permet de lire ton journal.",
       "allowanceExpiresAt": "La date de fin de ton quota.",
       "invitesLeft": "Le nombre d'invitations qu'il te reste.",
-      "trialScans": "Le nombre de scans IA gratuits qui t'ont été accordés, et combien il t'en reste."
+      "trialScans": "Le nombre de scans IA gratuits qui t'ont été accordés, et combien il t'en reste.",
+      "label": "Tout libellé attribué à ton compte par un administrateur, comme Soutien bêta."
     },
     "password": {
       "title": "Mot de passe",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 désactive la lecture de photos pour cette personne.",
       "trialScansLabel": "Scans IA gratuits",
       "trialScansHint": "Nombre de scans IA gratuits accordés à cette personne. Les scans déjà consommés le restent.",
+      "labelLabel": "Libellé",
+      "labelHint": "Une note courte visible uniquement par les administrateurs, comme Soutien bêta. Au maximum {{max}} caractères. Laisse ce champ vide pour la supprimer.",
       "saved": "Enregistré.",
       "failed": "Cette modification n'a pas été appliquée."
     },

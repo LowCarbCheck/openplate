@@ -46,6 +46,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
+import { AccountLabelChip } from '#app/components/admin/account-label-chip';
 import { ActivityStrip } from '#app/components/admin/activity-strip';
 import { LastSeenValue } from '#app/components/admin/last-seen';
 import { ConfirmButton, DeletePersonButton, PersonEditor, type PersonEdit } from '#app/components/admin/person-actions';
@@ -126,6 +127,7 @@ export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...act
             <Badge variant={isSuspended ? 'destructive' : 'outline'}>
               {isSuspended ? t('admin.standing.suspended') : t('admin.standing.active')}
             </Badge>
+            {person.label !== null && <AccountLabelChip label={person.label} />}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

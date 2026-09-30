@@ -425,6 +425,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       if (input.allowanceExpiresAt !== undefined) changes.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.trialScans !== undefined) changes.trialScans = input.trialScans;
       if (input.displayName !== undefined) changes.displayName = input.displayName;
+      if (input.label !== undefined) changes.label = input.label;
 
       // An empty patch is refused by the route, so this is unreachable; reading
       // the row back rather than issuing `SET` with nothing in it keeps the

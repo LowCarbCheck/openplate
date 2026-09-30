@@ -51,6 +51,7 @@ import { InviteTable } from '../../app/components/admin/invite-table';
 import { ActivityOverview } from '../../app/components/admin/activity-overview';
 import { PeopleTable } from '../../app/components/admin/people-table';
 import { PersonDetail } from '../../app/components/admin/person-detail';
+import { PersonEditor } from '../../app/components/admin/person-actions';
 import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '../../app/lib/admin/people-filter';
 import type { ActivityByAccount } from '../../app/lib/admin/activity-strip';
 import type {
@@ -77,6 +78,7 @@ const ADMIN: AdminAccountView = {
   trialScans: null,
   createdAt: '2026-08-01T09:00:00.000Z',
   lastSeenAt: '2026-09-06T18:30:00.000Z',
+  label: null,
 };
 
 const SUSPENDED_PERSON: AdminAccountView = {
@@ -92,6 +94,7 @@ const SUSPENDED_PERSON: AdminAccountView = {
   trialScans: null,
   createdAt: '2026-08-20T09:00:00.000Z',
   lastSeenAt: '2026-09-05T07:15:00.000Z',
+  label: null,
 };
 
 /** Somebody who was invited and never arrived. `lastSeenAt` is null and the screen owes them a sentence. */
@@ -108,6 +111,7 @@ const NEVER_ARRIVED: AdminAccountView = {
   trialScans: null,
   createdAt: '2026-09-05T09:00:00.000Z',
   lastSeenAt: null,
+  label: null,
 };
 
 /** A window of `days` days ending on 2026-09-07, with the counts given for the days named. */
@@ -762,4 +766,79 @@ test("a person with a scan trial shows the free scans used against those given (
     }),
   );
   assert.doesNotMatch(without, /person-trial-scans/);
+});
+
+// ---------------------------------------------------------------------------
+// 9. The operator's label
+// ---------------------------------------------------------------------------
+
+/** The chip's own marker. Counted, so a second chip, or one on the wrong row, is seen. */
+const LABEL_CHIP = /data-slot="account-label"/g;
+
+test('a labelled person carries the label as a chip on their row, and nobody else does', () => {
+  const labelled = { ...NEVER_ARRIVED, label: 'Beta supporter' };
+  const html = peopleList({ people: [ADMIN, labelled, SUSPENDED_PERSON] });
+
+  assert.equal(html.match(LABEL_CHIP)?.length, 1, 'exactly one chip, for the one labelled person');
+  assert.match(html, /data-slot="account-label"[^>]*title="Beta supporter"[^>]*>(<span[^>]*>)Beta supporter<\/span>/);
+  // The chip sits in the labelled person's own row, on the address line, after
+  // the address: nothing on the row follows it, so it moves nothing.
+  const row = html.split('<li>').find((item) => item.includes('carla@example.org')) ?? '';
+  assert.match(row, /<span class="truncate">carla@example\.org<\/span><span data-slot="account-label"/);
+
+  // THE CONTROL: the same list with no label anywhere draws no chip at all.
+  assert.equal(peopleList({ people: [ADMIN, NEVER_ARRIVED, SUSPENDED_PERSON] }).match(LABEL_CHIP), null);
+});
+
+test("a labelled person's page shows the chip beside the role and the standing", () => {
+  const html = render(
+    createElement(PersonDetail, {
+      person: { ...SUSPENDED_PERSON, label: 'Beta supporter' },
+      activity: { kind: 'loading' },
+      isSelf: false,
+      ...NEVER_ACTS,
+    }),
+  );
+  assert.equal(html.match(LABEL_CHIP)?.length, 1);
+  assert.match(html, />Beta supporter</);
+
+  // THE CONTROL: no label, no chip, and the text is nowhere on the page.
+  const without = render(
+    createElement(PersonDetail, { person: SUSPENDED_PERSON, activity: { kind: 'loading' }, isSelf: false, ...NEVER_ACTS }),
+  );
+  assert.equal(without.match(LABEL_CHIP), null);
+  assert.doesNotMatch(without, /Beta supporter/);
+});
+
+test('the Change form carries the label field, filled with the current label and bounded at 40', () => {
+  const html = render(
+    createElement(PersonEditor, {
+      person: { ...SUSPENDED_PERSON, label: 'Beta supporter' },
+      isBusy: false,
+      onCancel: () => undefined,
+      onSave: () => {
+        throw new Error('a render must not save');
+      },
+    }),
+  );
+  assert.match(html, /<label[^>]*for="label-2"[^>]*>Label<\/label>/);
+  assert.match(html, /<input[^>]*id="label-2"[^>]*>/);
+  const input = /<input[^>]*id="label-2"[^>]*>/.exec(html)?.[0] ?? '';
+  assert.match(input, /maxLength="40"/);
+  assert.match(input, /value="Beta supporter"/);
+  assert.match(html, /At most 40 characters/, 'the hint names the bound, interpolated');
+
+  // THE CONTROL: a person with no label gets the same field, empty.
+  const empty = render(
+    createElement(PersonEditor, {
+      person: SUSPENDED_PERSON,
+      isBusy: false,
+      onCancel: () => undefined,
+      onSave: () => {
+        throw new Error('a render must not save');
+      },
+    }),
+  );
+  const emptyInput = /<input[^>]*id="label-2"[^>]*>/.exec(empty)?.[0] ?? '';
+  assert.match(emptyInput, /value=""/);
 });

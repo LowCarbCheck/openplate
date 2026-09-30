@@ -25,6 +25,7 @@ function person(overrides: Partial<AdminAccountView> & { id: number; email: stri
     trialScans: null,
     createdAt: '2026-08-01T09:00:00.000Z',
     lastSeenAt: null,
+    label: null,
     ...overrides,
   };
 }

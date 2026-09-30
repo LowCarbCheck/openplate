@@ -30,6 +30,8 @@ export interface AccountView {
   trialScans: { granted: number; left: number } | null;
   suspendedAt: string | null;
   createdAt: string;
+  /** The operator's label, or `null` for none, and for an older instance that sends no key. */
+  label: string | null;
   blobBytes: number | null;
   blobUpdatedAt: string | null;
   keyRecordKinds: string[];
@@ -126,6 +128,8 @@ function decodeAccount(value: JsonValue | undefined): AccountView {
     trialScans: decodeTrialScans(account?.trialScans),
     suspendedAt: asString(account?.suspendedAt),
     createdAt,
+    // An older instance omits it, and "no label" is exactly what it means.
+    label: asString(account?.label),
     blobBytes: asNumber(blob?.sizeBytes),
     blobUpdatedAt: asString(blob?.updatedAt),
     keyRecordKinds: kinds.map((kind) => asString(kind)).filter((kind): kind is string => kind !== null),
@@ -404,7 +408,9 @@ function pad(value: string, width: number): string {
 export function formatAccountTable(page: AccountPageView): string {
   if (page.accounts.length === 0) return 'No accounts.';
 
-  const header = `${pad('ID', 6)}${pad('EMAIL', 32)}${pad('NAME', 20)}${pad('ROLE', 8)}${pad('AI', 12)}${pad('AI UNTIL', 26)}${pad('BLOB', 10)}STANDING`;
+  // LABEL IS LAST, so a row with none simply ends after its standing and no
+  // placeholder is needed, and a 40 character note never pushes a column.
+  const header = `${pad('ID', 6)}${pad('EMAIL', 32)}${pad('NAME', 20)}${pad('ROLE', 8)}${pad('AI', 12)}${pad('AI UNTIL', 26)}${pad('BLOB', 10)}${pad('STANDING', 11)}LABEL`;
   const rows = page.accounts.map((account) => {
     const blob = account.blobBytes === null ? '—' : formatBytes(account.blobBytes);
     // An allowance of 0 is a dash rather than `0/0`: the account cannot use the
@@ -422,7 +428,8 @@ export function formatAccountTable(page: AccountPageView): string {
       pad(ai, 12),
       pad(aiUntil, 26),
       pad(blob, 10),
-      standing,
+      account.label === null ? standing : pad(standing, 11),
+      account.label ?? '',
     ].join('');
   });
   const shown = page.offset + page.accounts.length;
@@ -439,6 +446,7 @@ export function formatAccountDetail(account: AccountView): string {
     `ai allowance    ${account.allowanceExpiresAt === null ? 'no end date' : `ends ${account.allowanceExpiresAt}`}`,
     `free scans      ${account.trialScans === null ? 'none' : `${account.trialScans.left} of ${account.trialScans.granted} left`}`,
     `standing        ${account.suspendedAt === null ? 'active' : `suspended ${account.suspendedAt}`}`,
+    `label           ${account.label ?? 'none'}`,
     `created         ${account.createdAt}`,
     `blob            ${account.blobBytes === null ? 'none' : `${formatBytes(account.blobBytes)}, updated ${account.blobUpdatedAt ?? 'unknown'}`}`,
     `key records     ${account.keyRecordKinds.length === 0 ? 'none' : account.keyRecordKinds.join(', ')}`,

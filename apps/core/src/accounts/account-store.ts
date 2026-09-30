@@ -495,6 +495,16 @@ export interface UpdateStandingInput {
    */
   allowanceExpiresAt?: Date | null;
   displayName?: string | null;
+  /**
+   * The operator's label (`admin/account-label.ts`), already trimmed and
+   * bounded, or `null` to clear it. Absent leaves it alone.
+   *
+   * WRITTEN HERE AND NEVER READ BACK THROUGH THIS STORE. `AccountRecord` has
+   * no label on purpose: the auth handlers build the account's own view from
+   * that record, and a label is an operator fact the account is not shown. The
+   * admin metadata store is the only reader.
+   */
+  label?: string | null;
 }
 
 export interface CreatePasswordResetInput {

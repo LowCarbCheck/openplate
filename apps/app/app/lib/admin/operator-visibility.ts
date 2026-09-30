@@ -102,6 +102,9 @@ export const OPERATOR_VISIBILITY = {
   invitesLeft: { copyKey: 'account.operatorSees.invitesLeft' },
   // M253/03: the free AI scans. A count the operator sees and can change.
   trialScans: { copyKey: 'account.operatorSees.trialScans' },
+  // The operator's own note on the account, such as "Beta supporter". The
+  // person is never shown it, which is exactly why they are told it can exist.
+  label: { copyKey: 'account.operatorSees.label' },
   // THE ONE FIELD WITH NO LINE. It is the primary key of the account row: an
   // administrator does see it, and it says nothing about the person that the
   // address above it does not say better. A line for it would spend a

@@ -90,6 +90,15 @@ export interface AdminAccountSummary {
    */
   lastSeenAt: Date | null;
   /**
+   * The operator's own note on this account, such as "Beta supporter", or
+   * `null` for none (`admin/account-label.ts`).
+   *
+   * AN OPERATOR FACT, like `lastSeenAt`, and for the same reason it is here and
+   * not on the user-facing `AccountView`: the operator wrote it, for the
+   * operator. Nothing authorizes on it.
+   */
+  label: string | null;
+  /**
    * The account's current blob, described and never handed over: how many
    * bytes it occupies, and when those bytes last changed. `null` when the
    * account has never pushed one.
