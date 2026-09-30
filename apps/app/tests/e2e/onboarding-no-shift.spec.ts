@@ -16,10 +16,16 @@
  * link and button in `main`, before and after, which names what moved and by
  * how many pixels. Each check fails with that list, never with a bare `false`.
  *
- * WHAT IS ALLOWED TO MOVE CONTENT: an expansion the person asked for, a picked
- * style revealing its own questions, a picked "Pregnant" revealing its dates.
- * Those are done BEFORE the baseline is taken, and everything after the
- * baseline is typing, picking one of several equal answers, or focus.
+ * NOTHING IS ALLOWED TO MOVE CONTENT HERE, not even a pick that reveals its
+ * own questions (owner report, 2026-10-01: "stuff plopping up after selecting
+ * something", on a desktop). A picked style, a picked sex, a picked life phase
+ * and a late install offer each swap what is shown INSIDE a box that was
+ * already as tall as its tallest answer at the first paint. So every pick is
+ * measured, from the very first one, at a phone width and a desktop width.
+ *
+ * WHAT A PICK SUBMITS is read too, off the live form with `new FormData`, so a
+ * reserved but hidden control is proven to submit nothing, and the answers a
+ * step sends are the ones it sent before its boxes were reserved.
  *
  * THE KEYBOARD IS NOT SIMULATED. Headless Chromium draws no on-screen keyboard
  * and never resizes the viewport for one, so a shift that only a phone's
@@ -110,19 +116,20 @@ async function typeAndWatch(page: Page, field: Locator, edits: readonly Edit[]):
 }
 
 /**
- * Clicks one control and reads what moved, for a pick among equal answers.
+ * Does one thing to the page and reads what moved: the tops of every element
+ * in `main` before and after, and the `layout-shift` entries in between.
  *
  * @param page - the page under test.
- * @param target - what to click.
- * @param label - how the failure message names the click.
+ * @param label - how the failure message names the act.
+ * @param act - the click, the event or the edit.
  * @returns every move and the score.
  */
-async function clickAndWatch(page: Page, target: Locator, label: string): Promise<EditReading> {
+async function watch(page: Page, label: string, act: () => Promise<void>): Promise<EditReading> {
   await settleAnimations(page);
   const baseline = await readTops(page);
   const entriesBefore = (await readShiftEntries(page)).length;
-  await target.click();
-  await settleFrames(page);
+  await act();
+  await settleAnimations(page);
   const entries = (await readShiftEntries(page)).slice(entriesBefore);
   return {
     moves: movedBetween(baseline, await readTops(page)).map((move) => ({
@@ -133,6 +140,18 @@ async function clickAndWatch(page: Page, target: Locator, label: string): Promis
     score: shiftScoreAfter(entries, 0),
     sources: entries.flatMap((entry) => entry.sources),
   };
+}
+
+/**
+ * Clicks one control and reads what moved.
+ *
+ * @param page - the page under test.
+ * @param target - what to click.
+ * @param label - how the failure message names the click.
+ * @returns every move and the score.
+ */
+async function clickAndWatch(page: Page, target: Locator, label: string): Promise<EditReading> {
+  return watch(page, label, () => target.click());
 }
 
 /**
@@ -176,19 +195,9 @@ test.beforeEach(async ({ page }) => {
 
 test('picking a carb limit on the first step moves nothing below it', async ({ page }) => {
   await openFirstStep(page);
-  // The deliberate expansion: a carb style reveals its own question.
+  // Picking the style itself is measured in the cycling test below.
   await page.locator('input[name="eatingStyle"][value="low-carb"]').check();
   await expect(carbChip(page, 'keto')).toBeVisible();
-
-  // THE CONTROL that the reading can see a move at all: a pick that reveals
-  // content (another style, with the kcal field) must be reported. Without it
-  // the claims below could pass against a reader that sees nothing.
-  const reveal = await clickAndWatch(
-    page,
-    page.locator('label:has(input[name="eatingStyle"][value="low-carb-low-kcal"])'),
-    'picking a style that asks for calories',
-  );
-  expect(reveal.moves.length, 'CONTROL: revealing the calorie field must move the Continue button').toBeGreaterThan(0);
 
   for (const presetId of ['keto', 'low-carb', 'moderate', 'keto']) {
     expectNoShift(await clickAndWatch(page, carbChip(page, presetId), `picking ${presetId}`), `carb chip ${presetId}`);
@@ -286,7 +295,7 @@ test('typing height and birth year, and a pregnancy week, moves nothing', async 
     expectNoShift(await clickAndWatch(page, chip, `toggling ${allergen}`), `allergen chip ${allergen}`);
   }
 
-  // The deliberate expansion: "Pregnant" reveals its two date questions.
+  // Picking "Pregnant" is measured in the life phase test below.
   await page.locator('label:has(input[name="reproductiveStatus"][value="pregnant"])').click();
   const weeks = page.locator('#pregnancyDueDate-weeks');
   await expect(weeks).toBeVisible();
@@ -319,3 +328,363 @@ test('a keyboard-sized viewport change moves nothing already on screen', async (
   const after = await readTops(page);
   expect(movedBetween(before, after), 'elements moved when the viewport lost a keyboard of height').toEqual([]);
 });
+
+////////////////////////////////////////////////////////////////////////////////
+// Every pick, from the first one, at a phone width and a desktop width
+////////////////////////////////////////////////////////////////////////////////
+
+/** One screen size every pick below is measured at. */
+interface MeasuredScreen {
+  name: string;
+  options: {
+    viewport: { width: number; height: number };
+    isMobile?: boolean;
+    hasTouch?: boolean;
+    deviceScaleFactor?: number;
+  };
+}
+
+/**
+ * The phone the tier is written for, and a desktop window, where the owner
+ * saw the report. A box is as tall as its tallest answer AT A WIDTH, so a
+ * reservation that holds on one can still fail on the other.
+ */
+const MEASURED_SCREENS: readonly MeasuredScreen[] = [
+  { name: 'phone 390x844', options: { viewport: { width: 390, height: 844 } } },
+  {
+    name: 'desktop 1280x800',
+    options: { viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 },
+  },
+];
+
+/** A Safari on an iPhone, so the install footnote takes its iOS answer after mount. */
+const IPHONE_USER_AGENT =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
+/** The style order the cycling test walks: every style, and every change between a carb, a calorie and a plain one. */
+const STYLE_CYCLE = [
+  'low-carb',
+  'low-carb-low-kcal',
+  'low-kcal',
+  'high-protein',
+  'just-track',
+  'low-carb',
+  'low-kcal',
+  'low-carb-low-kcal',
+  'high-protein',
+] as const;
+
+/** The card for one eating style: the label around its radio. */
+function styleCard(page: Page, style: string): Locator {
+  return page.locator(`label:has(input[name="eatingStyle"][value="${style}"])`);
+}
+
+/** The chip for one main goal: the label around its `sr-only` radio. */
+function mainGoalChip(page: Page, goal: string): Locator {
+  return page.locator(`label:has(input[name="mainGoal"][value="${goal}"])`);
+}
+
+/**
+ * The fields the step's form would submit right now, as sorted `key=value`
+ * lines, without the time zone every step carries. Read with `new FormData`,
+ * the browser's own answer to "what does this form send", so a hidden control
+ * that still submits shows up here.
+ *
+ * @param page - a page on an onboarding step.
+ * @param keys - the field names to keep.
+ * @returns the lines, sorted.
+ */
+async function submittedFields(page: Page, keys: readonly string[]): Promise<string[]> {
+  const lines = await page.evaluate(() => {
+    const form = document.querySelector('main form');
+    if (!(form instanceof HTMLFormElement)) throw new Error('the step has no form');
+    return Array.from(
+      new FormData(form).entries(),
+      ([key, value]) => `${key}=${value instanceof File ? 'file' : value}`,
+    );
+  });
+  return lines.filter((line) => keys.includes(line.slice(0, line.indexOf('=')))).toSorted();
+}
+
+/** The field NAMES the style step submits for one style, before any carb limit is picked. */
+function styleStepKeys(style: string): string[] {
+  const asksCalories = style === 'low-carb-low-kcal' || style === 'low-kcal';
+  return (asksCalories ? ['eatingStyle', 'kcalTarget', 'mainGoal'] : ['eatingStyle', 'mainGoal']).toSorted();
+}
+
+/** The names of the style step's own answers. */
+const STYLE_STEP_FIELDS = ['eatingStyle', 'carbPreset', 'kcalTarget', 'mainGoal'] as const;
+
+/** The names of the life phase answers on the body step. */
+const LIFE_PHASE_FIELDS = ['reproductiveStatus', 'pregnancyDueDate', 'lactationStartDate'] as const;
+
+/** Walks from the first step to the body step with the style that asks nothing more. */
+async function reachBodyStep(page: Page): Promise<void> {
+  await reachWeightStep(page);
+  await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();
+  await expect(page.getByText(EN.onboarding.step.body.title)).toBeVisible();
+}
+
+/** Walks from the first step to the last one, skipping the two optional steps. */
+async function reachFirstFoodStep(page: Page): Promise<void> {
+  await reachBodyStep(page);
+  await page.getByRole('button', { name: EN.onboarding.actions.skip }).click();
+  await expect(page.getByText(EN.onboarding.step.firstFood.title)).toBeVisible();
+}
+
+/**
+ * The install footnote: the last box in the step's card. Found by its place,
+ * not by a slot, so the same reader works on the markup before and after its
+ * box was reserved.
+ */
+const INSTALL_NOTE_SELECTOR = 'main [data-slot="card"] > :last-child > :last-child';
+
+/**
+ * Records every height the install footnote is laid out at, from the first
+ * frame it exists on the first-food step. A `ResizeObserver` reports the size
+ * after every layout that changed it, including the first one, so a footnote
+ * that paints one answer and then a taller one after an effect leaves two
+ * heights here, even when no test step ran between them.
+ *
+ * @param page - a page that has not navigated yet.
+ */
+async function recordInstallNoteHeights(page: Page): Promise<void> {
+  await page.addInitScript((selector) => {
+    const heights: number[] = [];
+    Object.defineProperty(window, '__installNoteHeights', { value: heights });
+    let watched: Element | null = null;
+    const resize = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        heights.push(Math.round(entry.target.getBoundingClientRect().height * 10) / 10);
+      }
+    });
+    new MutationObserver(() => {
+      const found = document.querySelector(selector);
+      // The footnote is the box that draws the download icon; on the other
+      // steps the same place holds a form, which is not read.
+      const node = found?.querySelector('svg[class*="lucide-download"]') ? found : null;
+      if (node === watched) return;
+      if (watched !== null) resize.unobserve(watched);
+      watched = node;
+      if (node !== null) resize.observe(node);
+    }).observe(document, { childList: true, subtree: true });
+  }, INSTALL_NOTE_SELECTOR);
+}
+
+/**
+ * Every height the footnote has had so far.
+ *
+ * @param page - a page with the recorder installed.
+ * @returns the heights, in the order they were laid out.
+ */
+async function readInstallNoteHeights(page: Page): Promise<number[]> {
+  return page.evaluate(() => {
+    const recorded = Object.getOwnPropertyDescriptor(window, '__installNoteHeights')?.value;
+    return Array.isArray(recorded) ? recorded.map(Number) : [];
+  });
+}
+
+/**
+ * Fires the event Chrome fires when it decides the app can be installed,
+ * with the two members the capture reads. The tier blocks the service worker,
+ * so the real one never comes; this is the moment a desktop Chrome can pick,
+ * and it can pick it while the first-food step is already on screen.
+ *
+ * @param page - a page on the app.
+ */
+async function fireInstallPrompt(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt', { cancelable: true });
+    Object.assign(event, {
+      prompt: () => Promise.resolve(),
+      userChoice: Promise.resolve({ outcome: 'dismissed', platform: 'web' }),
+    });
+    window.dispatchEvent(event);
+  });
+}
+
+/**
+ * The bottom edge of the step's card, page-relative: the one box that grows
+ * when anything inside it does, even the last line.
+ *
+ * @param page - a page on an onboarding step.
+ * @returns the bottom in CSS px.
+ */
+async function readCardBottom(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const card = document.querySelector('main [data-slot="card"]');
+    if (card === null) throw new Error('the step has no card');
+    return Math.round((card.getBoundingClientRect().bottom + window.scrollY) * 10) / 10;
+  });
+}
+
+test('CONTROL: the reading reports a line that appears above the step actions', async ({ page }) => {
+  // Without this, every "moves nothing" below could pass against a reader
+  // that sees nothing. A 24 px line is put in front of the actions the way a
+  // late hint would arrive, and both readings must name it.
+  await openFirstStep(page);
+  const reading = await watch(page, 'inserting a 24 px line', () =>
+    page.evaluate((continueLabel) => {
+      const button = Array.from(document.querySelectorAll('main button')).find(
+        (candidate) => candidate.textContent?.trim() === continueLabel,
+      );
+      const actions = button?.parentElement;
+      if (actions === undefined || actions === null) throw new Error('no step actions');
+      const line = document.createElement('div');
+      line.style.height = '24px';
+      actions.before(line);
+    }, EN.onboarding.actions.continue),
+  );
+  expect(reading.moves.length, 'CONTROL: the Continue button must be reported as moved').toBeGreaterThan(0);
+  expect(reading.score, 'CONTROL: the browser must record a layout shift').toBeGreaterThan(0);
+});
+
+for (const screen of MEASURED_SCREENS) {
+  test.describe(screen.name, () => {
+    test.use(screen.options);
+
+    test('picking every style and every main goal on the first step moves nothing', async ({ page }) => {
+      test.setTimeout(60_000);
+      await openFirstStep(page);
+      // Before any pick nothing is submitted but the question itself: no
+      // style, no main goal, no hidden follow-up.
+      expect(await submittedFields(page, STYLE_STEP_FIELDS)).toEqual([]);
+
+      for (const style of STYLE_CYCLE) {
+        expectNoShift(await clickAndWatch(page, styleCard(page, style), `picking ${style}`), `style ${style}`);
+        const keys = (await submittedFields(page, STYLE_STEP_FIELDS)).map((line) => line.slice(0, line.indexOf('=')));
+        expect(keys, `what the step submits on ${style}`).toEqual(styleStepKeys(style));
+      }
+      // The follow-up the last pick asked for is really on screen: the
+      // reservation hides the others, never the one in force.
+      await expect(page.locator('#kcalTarget')).toBeVisible();
+      await expect(page.locator('label:has(input[name="carbPreset"][value="keto"])')).toBeVisible();
+
+      for (const goal of ['calories', 'protein', 'net-carbs', 'calories']) {
+        expectNoShift(await clickAndWatch(page, mainGoalChip(page, goal), `picking ${goal}`), `main goal ${goal}`);
+        expect(await submittedFields(page, ['mainGoal'])).toEqual([`mainGoal=${goal}`]);
+      }
+    });
+
+    test('a stored pregnancy re-entering the first step: cycling styles moves nothing', async ({ page }) => {
+      test.setTimeout(60_000);
+      await reachBodyStep(page);
+      await page.locator('label:has(input[name="biologicalSex"][value="female"])').click();
+      await page.locator('label:has(input[name="reproductiveStatus"][value="pregnant"])').click();
+      await page.getByRole('button', { name: EN.onboarding.actions.continue }).click();
+      await expect(page.getByText(EN.onboarding.step.firstFood.title)).toBeVisible();
+
+      // Back to the first step with a status on file: the one case the
+      // caution note is written for.
+      await page.goto('/onboarding?step=focus');
+      await expect(page.getByText(EN.onboarding.style.title)).toBeVisible();
+      const cautionLink = page.getByRole('link', { name: EN.onboarding.style.sourceLabel });
+
+      for (const style of STYLE_CYCLE) {
+        expectNoShift(await clickAndWatch(page, styleCard(page, style), `picking ${style}`), `style ${style}`);
+        const isCautioned = style === 'low-carb' || style === 'low-carb-low-kcal' || style === 'low-kcal';
+        // CONTROL that the note really is part of what swaps: shown for the
+        // three restricting styles, gone for the other two.
+        if (isCautioned) await expect(cautionLink, `the caution note on ${style}`).toBeVisible();
+        else await expect(cautionLink, `no caution note on ${style}`).toBeHidden();
+      }
+    });
+
+    test('picking a sex and a life phase on the body step moves nothing', async ({ page }) => {
+      test.setTimeout(60_000);
+      await reachBodyStep(page);
+      const sexChip = (value: string): Locator =>
+        page.locator(`label:has(input[name="biologicalSex"][value="${value}"])`);
+      const statusChip = (value: string): Locator =>
+        page.locator(`label:has(input[name="reproductiveStatus"][value="${value}"])`);
+
+      // What each sex answer submits about a life phase: nothing for "male",
+      // whose question is not asked, and the untouched "none" for everyone else.
+      const sexCycle: readonly { value: string; submits: string[] }[] = [
+        { value: 'female', submits: ['reproductiveStatus=none'] },
+        { value: 'male', submits: [] },
+        { value: '', submits: ['reproductiveStatus=none'] },
+        { value: 'male', submits: [] },
+        { value: '', submits: ['reproductiveStatus=none'] },
+      ];
+      for (const { value, submits } of sexCycle) {
+        expectNoShift(await clickAndWatch(page, sexChip(value), `picking sex "${value}"`), `sex chip "${value}"`);
+        expect(await submittedFields(page, LIFE_PHASE_FIELDS), `what sex "${value}" submits`).toEqual(submits);
+      }
+
+      const statusCycle: readonly { value: string; submits: string[]; shows: string | null }[] = [
+        { value: 'none', submits: ['reproductiveStatus=none'], shows: null },
+        {
+          value: 'pregnant',
+          submits: ['pregnancyDueDate=', 'reproductiveStatus=pregnant'],
+          shows: '#pregnancyDueDate',
+        },
+        {
+          value: 'lactating',
+          submits: ['lactationStartDate=', 'reproductiveStatus=lactating'],
+          shows: '#lactationStartDate',
+        },
+        { value: 'none', submits: ['reproductiveStatus=none'], shows: null },
+      ];
+      for (const { value, submits, shows } of statusCycle) {
+        expectNoShift(await clickAndWatch(page, statusChip(value), `picking status ${value}`), `status chip ${value}`);
+        expect(await submittedFields(page, LIFE_PHASE_FIELDS), `what status ${value} submits`).toEqual(submits);
+        // CONTROL that the date a status asks for is really on screen.
+        if (shows !== null) await expect(page.locator(shows)).toBeVisible();
+        else await expect(page.locator('#pregnancyDueDate')).toBeHidden();
+      }
+    });
+
+    test('the install offer on the last step arriving late moves nothing', async ({ page }) => {
+      await recordInstallNoteHeights(page);
+      await reachFirstFoodStep(page);
+      await settleAnimations(page);
+      const cardBottom = await readCardBottom(page);
+
+      // A desktop Chrome decides the app is installable while the step is on
+      // screen: the plain sentence becomes the offer with its button.
+      const reading = await watch(page, 'the install prompt arriving', () => fireInstallPrompt(page));
+      await expect(page.locator('main button:has(svg[class*="lucide-download"])')).toBeVisible();
+      expectNoShift(reading, 'install prompt');
+      expect(await readCardBottom(page), 'the card grew when the install offer arrived').toBe(cardBottom);
+      const heights = await readInstallNoteHeights(page);
+      expect(heights.length, 'the recorder must have seen the footnote').toBeGreaterThan(0);
+      expect(new Set(heights).size, `the footnote was laid out at ${heights.join(', ')} px`).toBe(1);
+
+      // CONTROL that the recorder sees a change of height at all.
+      await page.evaluate((selector) => {
+        const line = document.createElement('div');
+        line.style.height = '30px';
+        document.querySelector(selector)?.append(line);
+      }, INSTALL_NOTE_SELECTOR);
+      await settleFrames(page);
+      expect(
+        new Set(await readInstallNoteHeights(page)).size,
+        'CONTROL: a grown footnote must be recorded',
+      ).toBeGreaterThan(1);
+    });
+
+    test.describe('on an iPhone', () => {
+      test.use({ userAgent: IPHONE_USER_AGENT });
+
+      test('the install footnote keeps one height from its first paint through every answer', async ({ page }) => {
+        await recordInstallNoteHeights(page);
+        await reachFirstFoodStep(page);
+        await settleAnimations(page);
+        // The first paint knows nothing of the device; an effect then finds
+        // an iPhone and swaps in the Safari instructions.
+        await expect(page.locator('main svg[class*="lucide-share"]')).toBeVisible();
+        const cardBottom = await readCardBottom(page);
+        expectNoShift(
+          await watch(page, 'the install prompt arriving', () => fireInstallPrompt(page)),
+          'install prompt',
+        );
+        await expect(page.locator('main button:has(svg[class*="lucide-download"])')).toBeVisible();
+        expect(await readCardBottom(page), 'the card grew when the install offer arrived').toBe(cardBottom);
+        const heights = await readInstallNoteHeights(page);
+        expect(heights.length, 'the recorder must have seen the footnote').toBeGreaterThan(0);
+        expect(new Set(heights).size, `the footnote was laid out at ${heights.join(', ')} px`).toBe(1);
+      });
+    });
+  });
+}
