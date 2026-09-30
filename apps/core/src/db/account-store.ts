@@ -809,6 +809,26 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       return changed.length === 0 ? 'already-revoked' : 'revoked';
     },
 
+    async spendRefreshToken(input: {
+      tokenId: number;
+      revokedAt: Date;
+      issue: NewTokenInput[];
+    }): Promise<RevokeTokenResult> {
+      return await db.transaction(async (tx): Promise<RevokeTokenResult> => {
+        // The same guarded UPDATE `revokeToken` runs. Its row lock is held to
+        // commit, so a concurrent spend of this token waits here and then
+        // matches nothing, after the pair below is already visible.
+        const spent = await tx
+          .update(accountTokens)
+          .set({ revokedAt: input.revokedAt })
+          .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)))
+          .returning({ id: accountTokens.id });
+        if (spent.length === 0) return 'already-revoked';
+        if (input.issue.length > 0) await tx.insert(accountTokens).values(tokenValues(input.issue));
+        return 'revoked';
+      });
+    },
+
     async revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void> {
       await db
         .update(accountTokens)

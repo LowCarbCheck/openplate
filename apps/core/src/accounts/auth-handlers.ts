@@ -776,20 +776,20 @@ export async function handleRefresh(
   if (account.suspendedAt !== null) return suspended();
 
   // THE SPEND IS THE CHECK THAT COUNTS. The read above says the token was
-  // live a moment ago; only this conditional UPDATE says it was still live
-  // when this request spent it. A concurrent refresh with the same token that
-  // got there first leaves nothing to spend, and that is reuse by definition:
-  // two holders presented one token. PROTOCOL.md §4.2 answers reuse by
-  // revoking the family, so the loser does, rather than minting a second
-  // session from a token that is already gone.
-  if ((await ctx.store.revokeToken({ tokenId: stored.id, revokedAt: now })) === 'already-revoked') {
-    return await answerRefreshReuse(stored, { ctx, now });
-  }
+  // live a moment ago; only the conditional UPDATE inside `spendRefreshToken`
+  // says it was still live when this request spent it. A concurrent refresh
+  // with the same token that got there first leaves nothing to spend, and
+  // that is reuse by definition: two holders presented one token. PROTOCOL.md
+  // §4.2 answers reuse by revoking the family, so the loser does, rather than
+  // minting a second session from a token that is already gone. The new pair
+  // is inserted in the spend's transaction, so the loser's revocation cannot
+  // land before it and miss it.
   const session = mintSession(ctx, {
     accountId: stored.accountId,
     familyId: stored.familyId ?? ctx.mintFamilyId(),
   });
-  await ctx.store.insertTokens(session.rows);
+  const spent = await ctx.store.spendRefreshToken({ tokenId: stored.id, revokedAt: now, issue: session.rows });
+  if (spent === 'already-revoked') return await answerRefreshReuse(stored, { ctx, now });
   return { status: 'ok', body: { tokens: session.tokens } };
 }
 

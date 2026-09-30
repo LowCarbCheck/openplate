@@ -357,6 +357,22 @@ export interface AccountStore {
    * treats that answer as reuse (PROTOCOL.md §4.2).
    */
   revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<RevokeTokenResult>;
+  /**
+   * `POST /v1/auth/refresh`: spends the presented refresh token and inserts
+   * the new pair, in ONE transaction, or does neither.
+   *
+   * WHY THE INSERT RIDES WITH THE SPEND. The request that loses a race on one
+   * refresh token answers as reuse and revokes the family. Were the spend and
+   * the insert two statements, that revocation could land between them, and
+   * the winner's new pair, inserted afterwards, would survive it: a thief who
+   * won the race would keep a session reuse detection had just tried to end.
+   * In one transaction the loser's spend waits on the winner's row lock until
+   * the new pair is committed, so the family it then revokes includes it.
+   *
+   * `already-revoked` means nothing was written; see
+   * {@link AccountStore.revokeToken}.
+   */
+  spendRefreshToken(input: { tokenId: number; revokedAt: Date; issue: NewTokenInput[] }): Promise<RevokeTokenResult>;
   /** Revokes one device's lineage — used by logout and by refresh-reuse detection. */
   revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void>;
   /** Revokes every `access`/`refresh` token for the account. */

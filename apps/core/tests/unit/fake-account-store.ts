@@ -447,6 +447,20 @@ export function createFakeAccountStore(): FakeAccountStore {
       return live ? 'revoked' : 'already-revoked';
     },
 
+    async spendRefreshToken(input: {
+      tokenId: number;
+      revokedAt: Date;
+      issue: NewTokenInput[];
+    }): Promise<RevokeTokenResult> {
+      // Synchronous from the check to the insert, which is the atomicity the
+      // real store gets from its transaction.
+      const live = tokens.some((token) => token.id === input.tokenId && token.revokedAt === null);
+      if (!live) return 'already-revoked';
+      revokeMatching((token) => token.id === input.tokenId, input.revokedAt);
+      insertTokenRows(input.issue);
+      return 'revoked';
+    },
+
     async revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void> {
       revokeMatching(
         (token) => token.accountId === input.accountId && token.familyId === input.familyId,
