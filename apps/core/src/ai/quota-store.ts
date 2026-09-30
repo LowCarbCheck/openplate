@@ -531,8 +531,8 @@ export interface AiTrialScanStore {
   /**
    * Claims a scan for this intake, refuses while an earlier request on it is
    * in flight, or takes over one abandoned past the reuse window. Called only
-   * for an account the scan gate applies to
-   * (`accounts/scan-trial.ts`, `isScanGated`). `intakeId` is the client's
+   * for an account the scan gate applies to, the `trial` grant
+   * `accounts/ai-allowance.ts` picks. `intakeId` is the client's
    * `X-Intake-Id`, or a server-made one for a request that sent none.
    */
   claimTrialScan(input: { accountId: number; intakeId: string; now: Date }): Promise<TrialClaim>;
