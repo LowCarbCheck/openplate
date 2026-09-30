@@ -3194,7 +3194,8 @@
       "notTheDiary": "Lo que comes no está en estas páginas. Tu diario se cifra en este dispositivo antes de que una copia salga de él. Quien opera el servidor conserva una clave de respaldo para restablecer contraseñas, y esa clave le permite leer tu diario.",
       "allowanceExpiresAt": "La fecha en la que termina tu cuota.",
       "invitesLeft": "Cuántas invitaciones te quedan.",
-      "trialScans": "Cuántos escaneos gratis con IA recibiste y cuántos te quedan."
+      "trialScans": "Cuántos escaneos gratis con IA recibiste y cuántos te quedan.",
+      "label": "Cualquier etiqueta que un administrador haya asignado a tu cuenta, como Beta supporter."
     },
     "password": {
       "title": "Contraseña",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 desactiva la lectura de fotos para esta persona.",
       "trialScansLabel": "Escaneos gratis con IA",
       "trialScansHint": "Cuántos escaneos gratis con IA recibe esta persona. Los escaneos ya usados siguen usados.",
+      "labelLabel": "Etiqueta",
+      "labelHint": "Una nota breve que solo ven los administradores, como Beta supporter. Como máximo {{max}} caracteres. Déjala vacía para eliminarla.",
       "saved": "Guardado.",
       "failed": "El cambio no se aplicó."
     },

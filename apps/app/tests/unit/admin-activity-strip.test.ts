@@ -131,6 +131,7 @@ function quietPerson(overrides: { id: number; email: string; lastSeenAt: string 
     invitesLeft: null,
     trialScans: null,
     createdAt: '2026-08-01T09:00:00.000Z',
+    label: null,
     ...overrides,
   };
 }

@@ -30,6 +30,14 @@
  * the page a link on another origin and, as its control, one on its own.
  * `sendsMail` answers all three the way an instance with mail does instead.
  *
+ * ── Labels only when a spec asks for them ────────────────────────────────
+ *
+ * `labels` makes the stub a core that knows the operator's label: every
+ * account then carries a `label` key, the named ones a string and the rest
+ * `null`. Left out, no account carries the key at all, which is exactly what a
+ * core built before labels sends, so every other spec keeps talking to that
+ * older core.
+ *
  * ── A request this file has no answer for is recorded, not guessed ───────
  *
  * It gets a 404 and its method and path go into `unanswered`, which a spec
@@ -72,6 +80,11 @@ export interface AdminConsoleStub {
    * they answer at once, often before the busy state is ever painted.
    */
   writeGate?: Promise<void>;
+  /**
+   * The operator's label per account id, as a core with labels sends it. Left
+   * out, no account carries a `label` key, as a core built before labels.
+   */
+  labels?: ReadonlyMap<number, string>;
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -117,6 +130,8 @@ interface AccountFixture {
   trialScans: { granted: number; left: number } | null;
   createdAt: string;
   lastSeenAt: string | null;
+  /** Present only when the stub plays a core with labels. See `labels`. */
+  label?: string | null;
 }
 
 /** Everybody but the signed-in administrator, whose row is added with the id the session carries. */
@@ -185,7 +200,12 @@ function selfAccount(id: number): AccountFixture {
 
 /** Everybody the list shows. The administrator's own row only once the session has named them. */
 function everybody(stub: AdminConsoleStub): AccountFixture[] {
-  return stub.selfId === null ? [...OTHER_PEOPLE] : [selfAccount(stub.selfId), ...OTHER_PEOPLE];
+  const people = stub.selfId === null ? [...OTHER_PEOPLE] : [selfAccount(stub.selfId), ...OTHER_PEOPLE];
+  const { labels } = stub;
+  if (labels === undefined) return people;
+  const labelled: AccountFixture[] = [];
+  for (const person of people) labelled.push({ ...person, label: labels.get(person.id) ?? null });
+  return labelled;
 }
 
 /** Two pending invitations, one of them an administrator's with a long address. */

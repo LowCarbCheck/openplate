@@ -3194,7 +3194,8 @@
       "notTheDiary": "Was du isst, erscheint nicht auf diesen Seiten. Dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie das Gerät verlässt. Die betreibende Person verwahrt einen Sicherungsschlüssel für Passwort-Zurücksetzungen. Mit diesem Schlüssel kann sie dein Tagebuch lesen.",
       "allowanceExpiresAt": "Das Datum, an dem dein Kontingent abläuft.",
       "invitesLeft": "Wie viele Einladungen du noch übrig hast.",
-      "trialScans": "Wie viele kostenlose KI-Scans du bekommen hast und wie viele noch übrig sind."
+      "trialScans": "Wie viele kostenlose KI-Scans du bekommen hast und wie viele noch übrig sind.",
+      "label": "Jede Kennzeichnung, die ein Administrator deinem Konto zugewiesen hat, wie etwa Beta-Unterstützer."
     },
     "password": {
       "title": "Passwort",
@@ -3315,6 +3316,8 @@
       "allowanceHint": "0 schaltet Foto-Schätzungen für diese Person ab.",
       "trialScansLabel": "Kostenlose KI-Scans",
       "trialScansHint": "Wie viele kostenlose KI-Scans diese Person erhält. Bereits verbrauchte Scans bleiben verbraucht.",
+      "labelLabel": "Kennzeichnung",
+      "labelHint": "Eine kurze Notiz, die nur Administratoren sehen, wie etwa Beta-Unterstützer. Höchstens {{max}} Zeichen. Leer lassen, um sie zu entfernen.",
       "saved": "Gespeichert.",
       "failed": "Die Änderung konnte nicht übernommen werden."
     },

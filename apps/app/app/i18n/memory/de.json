@@ -9673,6 +9673,13 @@
     "at": "2026-09-14",
     "de": "Tageslimit Kohlenhydrate"
   },
+  "790bdc97b9c6c1d2": {
+    "en": "Label",
+    "path": "common:admin.edit.labelLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "de": "Kennzeichnung"
+  },
   "790d1f6bbd6b86bc": {
     "en": "Your data key was replaced.",
     "path": "common:sharing.rotate.doneTitle",
@@ -14824,6 +14831,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{count}} Tassen"
+  },
+  "b6b168e14fc87261": {
+    "en": "Any label an administrator gave your account, such as Beta supporter.",
+    "path": "common:account.operatorSees.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "de": "Jede Kennzeichnung, die ein Administrator deinem Konto zugewiesen hat, wie etwa Beta-Unterstützer."
   },
   "b705b3f7c5bf5973": {
     "en": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
@@ -19997,6 +20011,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "de": "{{count}} Eintrag aus YAZIO importiert."
+  },
+  "f7fed8255f6daa43": {
+    "en": "A short note that only administrators see, such as Beta supporter. At most {{max}} characters. Leave empty to remove it.",
+    "path": "common:admin.edit.labelHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "de": "Eine kurze Notiz, die nur Administratoren sehen, wie etwa Beta-Unterstützer. Höchstens {{max}} Zeichen. Leer lassen, um sie zu entfernen."
   },
   "f8333121df387e51": {
     "en": "Iron",
