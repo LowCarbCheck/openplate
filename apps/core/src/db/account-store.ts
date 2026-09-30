@@ -195,6 +195,27 @@ async function revokeSessionsIn(tx: Transaction, input: { accountId: number; rev
     );
 }
 
+/**
+ * Stamps revoked every invitation the account sent that is still unspent,
+ * inside the caller's transaction. Redeemed rows are the record of an account
+ * that exists and are left alone.
+ */
+async function withdrawPendingInvitesSentBy(
+  tx: Transaction,
+  input: { accountId: number; revokedAt: Date },
+): Promise<void> {
+  await tx
+    .update(signupInvites)
+    .set({ revokedAt: input.revokedAt })
+    .where(
+      and(
+        eq(signupInvites.invitedByAccountId, input.accountId),
+        isNull(signupInvites.redeemedAt),
+        isNull(signupInvites.revokedAt),
+      ),
+    );
+}
+
 /** The invite row redemption decides the account's standing from. */
 type InviteRow = typeof signupInvites.$inferSelect;
 
@@ -345,6 +366,8 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
         .limit(1);
       if (!account) return;
       const mailbox = hash(account.email);
+
+      await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
 
       const [memberCaused] = await tx
         .select({ id: signupInvites.id })
@@ -725,8 +748,18 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       // rather than of this line, which is exactly why
       // `tests/integration/ai-usage-retention.test.ts` COUNTS the usage rows
       // for the id afterwards instead of trusting a 204.
+      //
+      // THE INVITATIONS THIS ACCOUNT SENT AND NOBODY HAS REDEEMED go in the
+      // same transaction, withdrawn rather than deleted, and BEFORE the row:
+      // `invited_by_account_id` is `ON DELETE SET NULL`, and afterwards a
+      // member's pending letter would look like the operator's. Left pending,
+      // a letter could still be redeemed after its sender left, and a day-trial
+      // letter's allowance only starts at redemption.
       if (hashAddress === null) {
-        await db.delete(accounts).where(eq(accounts.id, accountId));
+        await db.transaction(async (tx): Promise<void> => {
+          await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
+          await tx.delete(accounts).where(eq(accounts.id, accountId));
+        });
         return;
       }
       await deleteKeepingOnlyTheHash(accountId, hashAddress);

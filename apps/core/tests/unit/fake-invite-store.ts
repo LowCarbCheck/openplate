@@ -148,7 +148,7 @@ export function createFakeInviteStore(): FakeInviteStore {
           candidate.revokedAt === null &&
           candidate.expiresAt.getTime() > input.now.getTime(),
       );
-      return row === undefined ? null : { source: row.source };
+      return row === undefined ? null : { source: row.source, invitedByAccountId: row.invitedByAccountId };
     },
 
     digestOf(inviteId: number): string | undefined {

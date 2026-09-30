@@ -1413,6 +1413,23 @@ export async function handleMintMemberInvite(
       ctx.logger.info('Member invite withheld: that address already spent one', { accountId: account.id });
       return MEMBER_INVITE_ACCEPTED;
     }
+
+    // A PENDING LETTER FROM ANOTHER DOOR IS LEFT ALONE, as the open sign-up
+    // door leaves it (`handleSignupRequest`). A mint supersedes the address's
+    // pending invite, so without this a member could withdraw the letter an
+    // operator or another member had just sent, and put their own door's
+    // terms in its place. The member's own pending letter may be re-sent.
+    // THE ANSWER IS THE SAME `202`, and not a named refusal: this route
+    // promises that an address with a pending invitation is indistinguishable
+    // from a new one, and a refusal naming it would tell the caller that
+    // somebody else already invited their colleague.
+    const pending = await surface.invites.findPendingInvite({ email: email.value, now: ctx.now() });
+    if (pending !== null && (pending.source !== null || pending.invitedByAccountId !== account.id)) {
+      ctx.logger.info('Member invite withheld: that address holds a pending letter from another door', {
+        accountId: account.id,
+      });
+      return MEMBER_INVITE_ACCEPTED;
+    }
   }
 
   const now = ctx.now();

@@ -127,6 +127,12 @@ export interface MintInviteInput {
 export interface PendingInvite {
   /** `null` for an operator or member mint, see {@link InviteSource}. */
   source: InviteSource | null;
+  /**
+   * The member whose invitation this is, or `null` for the operator and the
+   * open sign-up door. What the member door compares with its caller: a
+   * member may re-send their own letter and replace nobody else's.
+   */
+  invitedByAccountId: number | null;
 }
 
 export interface ReissueInviteInput {
@@ -232,11 +238,12 @@ export interface InviteStore {
    * The still-spendable invite for this address, or `null` when it has none
    * (M253). Pending means not redeemed, not revoked and not expired at `now`.
    *
-   * THE OPEN SIGN-UP DOOR ASKS THIS BEFORE IT MINTS. A mint supersedes the
-   * address's pending invite, which is right for the operator and the member
-   * doors, and wrong for a stranger: without this question, anybody could post
-   * somebody's address and withdraw the letter an operator had just sent them,
-   * and replace a standing grant with a trial.
+   * THE OPEN SIGN-UP DOOR AND THE MEMBER DOOR ASK THIS BEFORE THEY MINT. A
+   * mint supersedes the address's pending invite, which is right for the
+   * operator, and wrong for a stranger or a member: without this question,
+   * anybody could post somebody's address and withdraw the letter an operator
+   * or another member had just sent them, and replace its terms with their
+   * door's.
    */
   findPendingInvite(input: { email: string; now: Date }): Promise<PendingInvite | null>;
 }

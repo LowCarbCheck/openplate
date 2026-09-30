@@ -267,6 +267,10 @@ export interface AccountStore {
   /**
    * Cascades to `sync_blobs` and `sync_key_records` via the schema's FKs — the self-serve DSAR path.
    *
+   * IN THE SAME TRANSACTION, the invitations the account sent that nobody has
+   * redeemed are withdrawn (stamped revoked), so none of them can be redeemed
+   * after their sender is gone.
+   *
    * ON AN INSTANCE WITH `TRIAL_ADDRESS_PEPPER` (M253), in the same
    * transaction: the address and the name are scrubbed from every invite row
    * about this mailbox, and when the account held a trial, one keyed hash of
