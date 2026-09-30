@@ -31,6 +31,7 @@ import {
   activityListSchema,
   accountResponseSchema,
   adminStatsResponseSchema,
+  aiBudgetSchema,
   deliverySchema,
   feedbackListSchema,
   feedbackReportResponseSchema,
@@ -43,6 +44,7 @@ import {
   type AdminActivityList,
   type AdminActivityRow,
   type AdminActivityWindow,
+  type AdminAiBudget,
   type AdminFeedbackReport,
   type AdminFeedbackReportDetail,
   type AdminInstanceSettings,
@@ -98,9 +100,7 @@ export type AdminOutcome<T> = { status: 'ok'; value: T } | { status: 'forbidden'
  * three, so collapsing them here would take that distinction away from it.
  */
 export type FeedbackImageOutcome =
-  | { status: 'ok'; image: AuthorizedBytes }
-  | { status: 'gone' }
-  | { status: 'forbidden' };
+  { status: 'ok'; image: AuthorizedBytes } | { status: 'gone' } | { status: 'forbidden' };
 
 /** The reported-estimate subtree, under {@link ADMIN_API_PREFIX}. One name, so no call site spells it twice. */
 const ADMIN_FEEDBACK_PATH = '/feedback';
@@ -429,9 +429,9 @@ export class AdminClient {
    * M234. There is nothing a page can do about that except say the change did
    * not go through, which is what the caller's failure branch says.
    */
-  async patchSettings(input: { nutrientReferenceBasis: NutrientReferenceBasis }): Promise<
-    AdminOutcome<AdminInstanceSettings>
-  > {
+  async patchSettings(input: {
+    nutrientReferenceBasis: NutrientReferenceBasis;
+  }): Promise<AdminOutcome<AdminInstanceSettings>> {
     return this.send({
       path: `${ADMIN_API_PREFIX}/settings`,
       method: 'PATCH',
@@ -447,6 +447,26 @@ export class AdminClient {
       method: 'GET',
       parse: (body) => adminStatsResponseSchema.parse(body).stats,
     });
+  }
+
+  /**
+   * The provider key's budget and today's AI capacity (2026-09-30).
+   *
+   * A `404` IS AN ANSWER HERE, `null`: the instance offers no AI, or its
+   * service is older than this route. The card says so instead of failing.
+   * Everything else that is not a `403` throws, like every other read.
+   */
+  async aiBudget(): Promise<AdminOutcome<AdminAiBudget | null>> {
+    try {
+      return await this.send({
+        path: `${ADMIN_API_PREFIX}/ai/budget`,
+        method: 'GET',
+        parse: (body): AdminAiBudget | null => aiBudgetSchema.parse(body),
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.kind === 'not-found') return { status: 'ok', value: null };
+      throw error;
+    }
   }
 
   /**

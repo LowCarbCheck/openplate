@@ -254,6 +254,51 @@ export type AdminStats = z.infer<typeof adminStatsSchema>;
  */
 export const adminStatsResponseSchema = z.object({ stats: adminStatsSchema });
 
+// ─── The AI budget ──────────────────────────────────────────────────────────
+//
+// `GET /v1/admin/ai/budget` (2026-09-30), transcribed from
+// `apps/core/PROTOCOL.md` §5.20, "`GET /v1/admin/ai/budget` is the operator's
+// AI budget". NOT WRAPPED: the body is `{ day, capacity, upstream }` at the top
+// level, as the contract writes it.
+
+/** One instance counter today, in units, against its ceiling or `null` for none. */
+export const aiCapacityCounterSchema = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().positive().nullable(),
+});
+export type AdminAiCapacityCounter = z.infer<typeof aiCapacityCounterSchema>;
+
+/** How often the provider resets the key's limit, or `null` for never. */
+export const aiBudgetResetSchema = z.union([z.literal('daily'), z.literal('weekly'), z.literal('monthly')]).nullable();
+export type AdminAiBudgetReset = z.infer<typeof aiBudgetResetSchema>;
+
+/** The key read, in dollars, or the one word a failed read is. */
+export const aiUpstreamBudgetSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('ok'),
+    limitUsd: z.number().nullable(),
+    remainingUsd: z.number().nullable(),
+    reset: aiBudgetResetSchema,
+    usageDailyUsd: z.number(),
+    usageWeeklyUsd: z.number(),
+    usageMonthlyUsd: z.number(),
+    checkedAt: z.string(),
+  }),
+  z.object({ status: z.literal('unavailable'), checkedAt: z.string() }),
+]);
+export type AdminAiUpstreamBudget = z.infer<typeof aiUpstreamBudgetSchema>;
+
+/**
+ * The whole answer. `upstream` is `null` when the instance's provider is not
+ * OpenRouter, which has no key read; the card then hides its budget half.
+ */
+export const aiBudgetSchema = z.object({
+  day: z.string(),
+  capacity: z.object({ paid: aiCapacityCounterSchema, trial: aiCapacityCounterSchema }),
+  upstream: aiUpstreamBudgetSchema.nullable(),
+});
+export type AdminAiBudget = z.infer<typeof aiBudgetSchema>;
+
 // ─── Reported estimates ─────────────────────────────────────────────────────
 //
 // `GET /v1/admin/feedback`, `GET /v1/admin/feedback/:id` and

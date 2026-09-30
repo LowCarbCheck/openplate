@@ -35,6 +35,13 @@
  * call throws and `activity` stays `null` and the rows are drawn WITHOUT
  * strips. A list of people must never be broken by an ornament on it.
  *
+ * ── The AI budget card sits above the list (2026-09-30) ──────────────────
+ *
+ * It is read on its own, beside the list, and it is allowed to fail on its
+ * own: a provider that does not answer is a sentence in the card, never the
+ * retry card of the whole tab. It keeps its size from the first paint, so the
+ * list under it does not move when its numbers land (`ai-budget-card.tsx`).
+ *
  * ── A 403 replaces the page, it does not blank it ────────────────────────
  *
  * Being demoted, or suspended, mid-session is ordinary. `AdminClient` returns
@@ -45,6 +52,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { AiBudgetCard } from '#app/components/admin/ai-budget-card';
 import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrator';
 import { PeopleTable, ROW_STRIP_DAYS } from '#app/components/admin/people-table';
 import { useSyncSession } from '#app/components/sync-status';
@@ -52,6 +60,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '#app/components/ui/card';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
+import type { AiBudgetLoad } from '#app/lib/admin/ai-budget-view';
 import type { AdminOutcome } from '#app/lib/admin/admin-client';
 import type { AdminAccountView, AdminActivityDay, AdminActivityList } from '#app/lib/admin/admin-wire';
 import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '#app/lib/admin/people-filter';
@@ -64,7 +73,6 @@ type PeopleState =
   | { kind: 'ready'; people: AdminAccountView[]; activity: ActivityByAccount | null };
 
 export default function AdminPeople() {
-  const { t } = useTranslation();
   const session = useSyncSession();
   const [state, setState] = useState<PeopleState>({ kind: 'loading' });
   const [filter, setFilter] = useState<PeopleFilter>(EMPTY_PEOPLE_FILTER);
@@ -98,7 +106,69 @@ export default function AdminPeople() {
     void load();
   }, [load]);
 
+  const budget = useAiBudgetLoad();
+
   if (state.kind === 'forbidden') return <NotAnAdministratorCard />;
+
+  return (
+    <div className="space-y-6">
+      <AiBudgetCard load={budget} />
+      <PeopleContent
+        state={state}
+        currentAccountId={session.account?.id ?? -1}
+        filter={filter}
+        onFilterChange={setFilter}
+        onRetry={() => void load()}
+      />
+    </div>
+  );
+}
+
+/**
+ * The budget read, on its own. A 403 or a throw is `failed`: the list beside
+ * it answers the 403 for the whole tab, and a failed budget read must not
+ * take the list down with it.
+ */
+function useAiBudgetLoad(): AiBudgetLoad {
+  const [budget, setBudget] = useState<AiBudgetLoad>({ kind: 'loading' });
+  useEffect(() => {
+    let isCurrent = true;
+    const client = currentAdminClient();
+    if (client === null) {
+      setBudget({ kind: 'failed' });
+      return;
+    }
+    void (async (): Promise<void> => {
+      try {
+        const outcome = await client.aiBudget();
+        if (!isCurrent) return;
+        setBudget(outcome.status === 'ok' ? { kind: 'ready', budget: outcome.value } : { kind: 'failed' });
+      } catch {
+        if (isCurrent) setBudget({ kind: 'failed' });
+      }
+    })();
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+  return budget;
+}
+
+/** The list half of the tab, in each of its three drawable states. */
+function PeopleContent({
+  state,
+  currentAccountId,
+  filter,
+  onFilterChange,
+  onRetry,
+}: {
+  state: Exclude<PeopleState, { kind: 'forbidden' }>;
+  currentAccountId: number;
+  filter: PeopleFilter;
+  onFilterChange: (filter: PeopleFilter) => void;
+  onRetry: () => void;
+}) {
+  const { t } = useTranslation();
 
   if (state.kind === 'loading') {
     return (
@@ -116,7 +186,7 @@ export default function AdminPeople() {
           <CardDescription>{t('admin.people.failed')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button type="button" variant="outline" className="h-11" onClick={() => void load()}>
+          <Button type="button" variant="outline" className="h-11" onClick={onRetry}>
             {t('admin.people.retry')}
           </Button>
         </CardContent>
@@ -133,10 +203,10 @@ export default function AdminPeople() {
       <CardContent className="pt-6">
         <PeopleTable
           people={state.people}
-          currentAccountId={session.account?.id ?? -1}
+          currentAccountId={currentAccountId}
           activity={state.activity}
           filter={filter}
-          onFilterChange={setFilter}
+          onFilterChange={onFilterChange}
         />
       </CardContent>
     </Card>
