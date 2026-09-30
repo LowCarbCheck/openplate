@@ -3,6 +3,14 @@
  * single ESM `dist/server.js` via esbuild. That file is what the Docker image
  * runs and what `pnpm start` executes.
  *
+ * A SECOND ENTRY, `src/move-accounts.ts` into `dist/move-accounts.js`, is the
+ * operator's account move (`docs/operations/move-accounts.md`). It ships in the
+ * same image because the move runs on the database host in a throwaway
+ * container of that image, so the two instances' secrets never leave the host.
+ * Same options, same externals, same shim guard: it is started as rarely as a
+ * tool can be, which is exactly when a bundle that dies on its first line would
+ * be found too late.
+ *
  * WHY BUNDLE AT ALL: the runtime image then carries one file plus a handful of
  * externals, rather than a `node_modules` tree a self-hoster has to trust and
  * scan, and the artifact is reproducible from one command.
@@ -72,7 +80,7 @@ async function assertBundleHasNoDynamicRequire(outfile: string): Promise<void> {
   const bundle = await readFile(outfile, 'utf8');
   if (!bundle.includes(DYNAMIC_REQUIRE_SHIM)) return;
   throw new Error(
-    `dist/server.js contains esbuild's dynamic-require shim, so it will throw on startup. ` +
+    `${outfile} contains esbuild's dynamic-require shim, so it will throw on startup. ` +
       `A CommonJS dependency was inlined into the ESM bundle, add it to \`external\` in scripts/build.ts.`,
   );
 }
@@ -114,11 +122,11 @@ async function assertBundleReportsVersion(outfile: string, version: string): Pro
   );
 }
 
-async function main(): Promise<void> {
-  const outfile = resolve(repoRoot, 'dist/server.js');
+/** The options both bundles share; see the header for why they must not differ. */
+async function bundleEntry(input: { entry: string; outfile: string }): Promise<void> {
   await build({
-    entryPoints: [resolve(repoRoot, 'src/main.ts')],
-    outfile,
+    entryPoints: [resolve(repoRoot, input.entry)],
+    outfile: input.outfile,
     bundle: true,
     platform: 'node',
     format: 'esm',
@@ -128,8 +136,14 @@ async function main(): Promise<void> {
     logLevel: 'info',
     define: { 'globalThis.__SERVICE_VERSION__': JSON.stringify(await packageVersion()) },
   });
-  await assertBundleHasNoDynamicRequire(outfile);
+  await assertBundleHasNoDynamicRequire(input.outfile);
+}
+
+async function main(): Promise<void> {
+  const outfile = resolve(repoRoot, 'dist/server.js');
+  await bundleEntry({ entry: 'src/main.ts', outfile });
   await assertBundleReportsVersion(outfile, await packageVersion());
+  await bundleEntry({ entry: 'src/move-accounts.ts', outfile: resolve(repoRoot, 'dist/move-accounts.js') });
 }
 
 main().catch((cause: unknown) => {

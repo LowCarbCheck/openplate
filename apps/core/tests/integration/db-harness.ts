@@ -55,6 +55,39 @@ async function ensureTestDatabaseExists(url: string): Promise<void> {
   }
 }
 
+/**
+ * A SIBLING of the test database with its own name, dropped and created again
+ * from nothing, then migrated. For a suite that needs two databases at once
+ * (the account move reads one and writes another) and must not share either
+ * with the rest of the suite. `WITH (FORCE)` ends a connection a crashed
+ * earlier run left open.
+ */
+export async function setupFreshDatabase(input: { suffix: string }): Promise<DatabaseHandle & { url: string }> {
+  const url = new URL(testDatabaseUrl());
+  url.pathname = `${url.pathname}_${input.suffix}`;
+  await dropDatabase({ url: url.toString() });
+  await ensureTestDatabaseExists(url.toString());
+  const handle = createDatabase({ connectionString: url.toString(), ssl: false });
+  await runMigrations({ db: handle.db, migrationsFolder: 'drizzle/migrations' });
+  return { ...handle, url: url.toString() };
+}
+
+/** Drops a database made by {@link setupFreshDatabase}, if it exists. */
+export async function dropDatabase(input: { url: string }): Promise<void> {
+  const target = new URL(input.url);
+  const databaseName = target.pathname.replace(/^\//, '');
+  const adminUrl = new URL(input.url);
+  adminUrl.pathname = '/postgres';
+  const admin = new pg.Client({ connectionString: adminUrl.toString() });
+  await admin.connect();
+  try {
+    // Same identifier rule as `ensureTestDatabaseExists`: our own test name, quoted.
+    await admin.query(`DROP DATABASE IF EXISTS "${databaseName.replace(/"/g, '""')}" WITH (FORCE)`);
+  } finally {
+    await admin.end();
+  }
+}
+
 export interface TestDatabase extends DatabaseHandle {
   /** Empties every table, resetting identity sequences so ids are predictable per test. */
   reset(): Promise<void>;

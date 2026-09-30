@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **Accounts can move to another instance with their passwords and diaries.** The image contains a second entrypoint, `node dist/move-accounts.js`. Run this command on the database host. Set `SOURCE_DATABASE_URL`, `TARGET_DATABASE_URL`, `SOURCE_SERVER_SECRET`, and `TARGET_OLD_SERVER_SECRET`. The tool runs a dry run unless you supply `--apply`. It keeps every account id. The app binds the id into the encryption of every blob. The tool rejects an account if the target already uses that id or address. Moved accounts get the daily AI limit from `--daily-ai-limit` (default 10). They get no allowance end date and no scan trial. They get the label from `--label` (default "Beta supporter"). The target must then run with the source `SERVER_SECRET`. A password verifier uses this secret, and the system cannot recalculate it. The tool re-seals the escrow of every existing target account under the new secret. It recalculates the recovery verifier for each target account. Each existing target account requires one mailed password reset after the switch. Each account moves in its own transaction. The tool compares data after the write. It checks row counts, row digests, and a SHA-256 of every blob. Postgres calculates these hashes on both sides. A second run writes nothing. The tool only reads from the source. Read `docs/operations/move-accounts.md` for the runbook. `tests/integration/move-accounts.test.ts` moves accounts made through real sign-up under two secrets. It signs them in after the switch. `tests/unit/recovery-auth.test.ts` pins the server copy of the app recovery derivation to vectors made by the app code.
+
 ## [0.26.1] - 2026-09-30
 
 ### Fixed
