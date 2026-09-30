@@ -19,6 +19,7 @@
  * The DECISION functions are pure and unit-tested; the `Map`-backed wrappers
  * at the bottom are the imperative shell.
  */
+import { normalizeEmail } from './verifier.js';
 
 export interface ThrottleConfig {
   /** Consecutive failures allowed before any lockout kicks in. */
@@ -58,9 +59,31 @@ export interface ThrottleKeyInput {
   identifier?: string;
 }
 
+/**
+ * THE IDENTIFIER IS FOLDED EXACTLY AS THE ACCOUNT LOOKUP FOLDS IT
+ * (`normalizeEmail`: NFKC, trim, lowercase). A weaker fold here gave an
+ * attacker a fresh bucket for every spelling the lookup treats as one address:
+ * `ａnna@example.org` in fullwidth letters reaches Anna's account and, before
+ * this, a bucket of its own.
+ */
 export function throttleKey({ namespace, ip, identifier }: ThrottleKeyInput): string {
-  const scope = identifier ? `${ip}::${identifier.trim().toLowerCase()}` : ip;
+  const scope = identifier ? `${ip}::${normalizeEmail(identifier)}` : ip;
   return `${namespace}::${scope}`;
+}
+
+/**
+ * A bucket for ONE ACCOUNT, whatever address the request came from.
+ *
+ * FOR THE ROUTES THAT CHECK A PASSPHRASE BEHIND A BEARER TOKEN
+ * (change-passphrase, account delete, rotate-dek, a key-record overwrite).
+ * Their caller already holds a session, so the account is known before any
+ * guess is made, and the thing to bound is guesses against THAT account. An
+ * IP key would let a stolen token guess from as many addresses as its holder
+ * has. The lockout this makes possible is a lockout of the token holder from
+ * those four routes, never from sign-in.
+ */
+export function accountThrottleKey(input: { namespace: string; accountId: number }): string {
+  return `${input.namespace}::account::${input.accountId}`;
 }
 
 function lockoutDurationMs(overBy: number, config: ThrottleConfig): number {
@@ -94,8 +117,8 @@ export function registerFailure(
 // ── Memory-growth control ──────────────────────────────────────────────────
 // An attacker cycling through many fake IP/identifier pairs would otherwise
 // grow the store forever. Two independent guards: a time-gated sweep of stale
-// entries, and a hard entry cap with oldest-first eviction as the backstop
-// between sweeps.
+// entries, and a hard entry cap as the backstop between sweeps, which evicts
+// stale entries and then the oldest UNLOCKED ones, never a lock.
 
 export const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 export const MAX_THROTTLE_ENTRIES = 10_000;
@@ -122,12 +145,30 @@ export function findStaleKeys(
   return stale;
 }
 
-/** Oldest-first keys to drop to bring the count back to `maxEntries`. Empty when already at or under the cap. */
-export function findOverflowKeys(entries: Array<[string, AttemptRecord]>, maxEntries: number): string[] {
-  if (entries.length <= maxEntries) return [];
-  return entries
-    .toSorted((a, b) => a[1].lastFailureAt - b[1].lastFailureAt)
-    .slice(0, entries.length - maxEntries)
+/**
+ * The keys to drop to bring the count back to `maxEntries`.
+ *
+ * A LOCKED ENTRY IS NEVER DROPPED. Oldest-first alone let a caller clear every
+ * lock in the store by recording failures against enough junk identifiers:
+ * the locked bucket was usually the oldest one there. Stale entries go first,
+ * then the oldest unlocked ones. When every entry is locked this returns fewer
+ * keys than the excess, and the store runs over its cap until the locks lift;
+ * a lock lasts at most `maxLockoutMs`, which bounds that growth.
+ */
+export function findOverflowKeys(input: {
+  entries: Array<[string, AttemptRecord]>;
+  maxEntries: number;
+  now: number;
+  config?: ThrottleConfig;
+}): string[] {
+  const excess = input.entries.length - input.maxEntries;
+  if (excess <= 0) return [];
+  const config = input.config ?? DEFAULT_THROTTLE_CONFIG;
+  const evictionRank = (record: AttemptRecord): number => (isEntryStale(record, input.now, config) ? 0 : 1);
+  return input.entries
+    .filter(([, record]) => !evaluateThrottle(record, input.now).locked)
+    .toSorted((a, b) => evictionRank(a[1]) - evictionRank(b[1]) || a[1].lastFailureAt - b[1].lastFailureAt)
+    .slice(0, excess)
     .map(([key]) => key);
 }
 
@@ -159,7 +200,12 @@ export function createThrottleStore(config: ThrottleConfig = DEFAULT_THROTTLE_CO
       }
     }
     if (buckets.size > MAX_THROTTLE_ENTRIES) {
-      for (const key of findOverflowKeys([...buckets.entries()], MAX_THROTTLE_ENTRIES)) {
+      for (const key of findOverflowKeys({
+        entries: [...buckets.entries()],
+        maxEntries: MAX_THROTTLE_ENTRIES,
+        now,
+        config,
+      })) {
         buckets.delete(key);
       }
     }
