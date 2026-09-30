@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Languages outside the six now fall back to English in checkout and legal forms.** The plan page requests its order texts in English, the payment portal opens in English, and the cancellation and withdrawal forms send the declaration in English, where all three previously used German. Against an openplate-core that accepts only German and English, a French, Italian, Spanish, or Turkish declaration is sent again in English, no longer in German. `tests/unit/plans-door.test.ts`, `tests/unit/declaration-submit.test.ts`, and `tests/e2e/statutory-buttons.spec.ts` check this.
+
 ## [0.54.0] - 2026-09-30
 
 ### Changed

@@ -112,10 +112,12 @@ export async function requirePlansDoor({
  * drawn in. The portal is opened in the same language (2026-09-30).
  *
  * The six app languages pass through, because the biller holds its order texts
- * in all six (M245 decision). Anything else is German: the instance sells in
- * Germany and the contract is under German law.
+ * in all six (M245 decision). Anything else is English (owner decision,
+ * 2026-09-30), as everywhere in the checkout and the legal forms. Which text
+ * BINDS is a separate answer, the German one, and the legal pages give it; a
+ * display fallback does not.
  */
 export function offerLocaleFor(uiLanguage: string): LanguageCode {
   const base = uiLanguage.split('-')[0] ?? '';
-  return isLanguageCode(base) ? base : 'de';
+  return isLanguageCode(base) ? base : 'en';
 }

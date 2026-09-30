@@ -9,16 +9,25 @@
  * French, Italian, Spanish and Turkish to German, because the core took `de`
  * and `en` only.
  *
+ * ── A LANGUAGE NOBODY KNOWS IS ENGLISH (owner decision, 2026-09-30) ───────
+ *
+ * A language outside the six, and a language the core it reaches does not
+ * take, is sent as English, as everywhere in the checkout and the legal forms.
+ * That is a DISPLAY fallback. It says nothing about which text binds, which
+ * is the German one, and the core keeps its own order for the receipt FILE it
+ * reads (the reader's language, then German, then English), because that
+ * order is about which file an operator has written.
+ *
  * ── AN OLDER CORE STILL RECEIVES THE DECLARATION ──────────────────────────
  *
  * This app and openplate-core are released and deployed apart, so a form may
  * post to a core that still takes `de` and `en` only. That core refuses any
  * other language with `400 {"error":"declaration-invalid","field":"language"}`
  * and stores nothing, because it checks the body before it writes the row.
- * The request then goes again, ONCE, in German, which is exactly what this
- * form sent before. A § 312k button that failed over a display language would
- * be the expensive outcome the statute describes. A German request is never
- * sent again, so the retry cannot loop.
+ * The request then goes again, ONCE, in English, by the rule above. A § 312k
+ * button that failed over a display language would be the expensive outcome
+ * the statute describes. An English request is never sent again, so the
+ * retry cannot loop.
  *
  * ── NOT THROUGH THIS APP'S SERVER ─────────────────────────────────────────
  *
@@ -35,8 +44,12 @@ const log = createComponentLogger('declaration-submit');
 /** Where a browser posts a declaration: `openplate-core`'s own origin, never this server. */
 export const DECLARATIONS_API_PATH = '/v1/legal/declarations';
 
-/** The language a core older than the six languages accepts in place of any other: what the forms sent before 2026-09-30. */
-const OLDER_CORE_LANGUAGE: LanguageCode = 'de';
+/**
+ * The language a declaration goes in when the language it named is not taken:
+ * outside the six, or refused by a core older than the six. A core of any
+ * age takes it.
+ */
+const FALLBACK_LANGUAGE: LanguageCode = 'en';
 
 export type DeclarationKind = 'kuendigung' | 'widerruf';
 
@@ -80,12 +93,11 @@ const refusalSchema = z.object({ error: z.literal('declaration-invalid'), field:
 /**
  * The language a declaration is sent in, from the language the app is drawn
  * in. The six app languages pass through by their bare code; anything else is
- * German, as every language but English was before 2026-09-30, because the
- * contract is under German law.
+ * English. See the module header.
  */
 export function declarationLanguageFor(uiLanguage: string): LanguageCode {
   const base = uiLanguage.split('-')[0] ?? '';
-  return isLanguageCode(base) ? base : 'de';
+  return isLanguageCode(base) ? base : FALLBACK_LANGUAGE;
 }
 
 /** Reads a `400`: a refusal of the language alone, or of anything else. */
@@ -130,7 +142,7 @@ async function postOnce(input: {
 }
 
 /**
- * Sends one declaration, and once more in German when a core older than the
+ * Sends one declaration, and once more in English when a core older than the
  * six languages refused the language. See the module header.
  *
  * @param input.fetchDeclaration - how to send it. Defaults to the browser's
@@ -147,14 +159,14 @@ export async function submitDeclaration({
 }): Promise<DeclarationOutcome> {
   const first = await postOnce({ serverUrl, request, fetchDeclaration });
   if (first.status !== 'language-refused') return first;
-  if (request.language === OLDER_CORE_LANGUAGE) return { status: 'invalid' };
+  if (request.language === FALLBACK_LANGUAGE) return { status: 'invalid' };
 
-  log.warn('the declarations endpoint refused the language, so the declaration goes again in German', {
+  log.warn('the declarations endpoint refused the language, so the declaration goes again in English', {
     language: request.language,
   });
   const second = await postOnce({
     serverUrl,
-    request: { ...request, language: OLDER_CORE_LANGUAGE },
+    request: { ...request, language: FALLBACK_LANGUAGE },
     fetchDeclaration,
   });
   return second.status === 'language-refused' ? { status: 'invalid' } : second;

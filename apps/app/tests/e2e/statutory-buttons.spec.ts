@@ -237,7 +237,7 @@ test.describe('the reader language on the two statutory forms', () => {
     });
   }
 
-  test('against a core older than the six languages, a French cancellation goes again in German and is received', async ({
+  test('against a core older than the six languages, a French cancellation goes again in English and is received', async ({
     page,
   }) => {
     await useLanguage(page, 'fr');
@@ -250,6 +250,6 @@ test.describe('the reader language on the two statutory forms', () => {
 
     await page.waitForURL(/\/kuendigung\/bestaetigt$/u);
     await expect(page.locator('article')).toContainText(RECEIPT_ID);
-    expect(languages).toEqual(['fr', 'de']);
+    expect(languages).toEqual(['fr', 'en']);
   });
 });

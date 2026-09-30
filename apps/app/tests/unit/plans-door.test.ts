@@ -117,10 +117,16 @@ describe('the offer language', () => {
     assert.equal(offerLocaleFor('en-GB'), 'en');
   });
 
-  it('falls back to German for a language the app does not ship', () => {
+  it('falls back to English for a language the app does not ship (owner decision, 2026-09-30)', () => {
     // THE CONTROL for the case above: a real language, just not one of the six.
-    assert.equal(offerLocaleFor('pt-BR'), 'de');
-    assert.equal(offerLocaleFor(''), 'de');
+    assert.equal(offerLocaleFor('pt-BR'), 'en');
+    assert.equal(offerLocaleFor(''), 'en');
+    assert.equal(offerLocaleFor('nonsense'), 'en');
+  });
+
+  it('CONTROL: German is still German, so the English fallback is not a constant answer', () => {
+    assert.equal(offerLocaleFor('de'), 'de');
+    assert.equal(offerLocaleFor('de-AT'), 'de');
   });
 });
 
