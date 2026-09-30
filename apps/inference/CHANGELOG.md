@@ -7,6 +7,8 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-30
+
 ### Changed
 
 - **The plate contract knows the client's flags and translations.** openplate
@@ -14,14 +16,16 @@ change moves the minor.
   food's name in each app language). The vendored contract accepts both as
   optional fields, and its JSON Schema lists them. This service does not fill
   them yet. openplate reads an answer without them as before.
-- **The Quadlet unit reads every setting from an env file you own.** The
-  unit carried each compose default as an `Environment=` line. Podman ranks
-  those above an env file. On Podman 4.9, which reads no drop-in, `API_KEYS`
-  and `MODEL_PROFILE` could only be changed by editing the installed unit.
-  The unit now reads `inference.defaults.env`, which ships beside it, and
-  then `inference.env`, which is yours and wins. Before you copy the new unit
-  over an install, put your key in `inference.env` as `API_KEYS=`. The unit
-  does not start without that file.
+  ([cc96887](https://github.com/LowCarbCheck/openplate/commit/cc96887))
+- **The Quadlet unit reads every setting from an env file you own.** The unit
+  carried each compose default as an `Environment=` line. Podman ranks those
+  above an env file. On Podman 4.9, which reads no drop-in, `API_KEYS` and
+  `MODEL_PROFILE` could only be changed by editing the installed unit. The
+  unit now reads `inference.defaults.env`, which ships beside it, and then
+  `inference.env`, which is yours and wins. Before you copy the new unit over
+  an install, put your key in `inference.env` as `API_KEYS=`. The unit does
+  not start without that file.
+  ([4158a79](https://github.com/LowCarbCheck/openplate/commit/4158a79))
 - **Every setting now reaches the inference container from your .env file.**
   The three compose files that run this service, `docker/compose.yml` here and
   openplate's `compose.inference.yml` and `compose.full.yml`, previously set
@@ -38,6 +42,29 @@ change moves the minor.
   line. That line now reaches the service, which then reports `custom` instead
   of following `MODEL_PROFILE`. `tests/unit/compose-env-surface.test.ts` and
   `tests/unit/compose-defaults-inert.test.ts` keep it that way.
+  ([fd225c3](https://github.com/LowCarbCheck/openplate/commit/fd225c3),
+  [c4546c6](https://github.com/LowCarbCheck/openplate/commit/c4546c6))
+
+### Fixed
+
+- **Dependencies moved past known advisories.** `sharp`, `esbuild` and
+  `express` are on versions without the published advisories.
+  ([3353929](https://github.com/LowCarbCheck/openplate/commit/3353929))
+- **`latest` and `cuda` now name the newest release.** Both tags moved with
+  every change to the main branch. They now move only when a release is cut.
+  The new `main` and `main-cuda` tags follow the main branch.
+  ([f047e1e](https://github.com/LowCarbCheck/openplate/commit/f047e1e))
+
+### Docs
+
+- **The configuration guide lists the settings it missed.** It adds
+  `MAX_IMAGE_BYTES`, `LLAMA_EXTRA_ARGS`, `RUNTIME_PORT`,
+  `NVIDIA_VISIBLE_DEVICES`, `PROFILE` and `OFF_API_URL`. It links the page of
+  every environment variable. The hardware guide gives the latency of a simple
+  plate and of a full breakfast, measured on a 6-core machine, instead of one
+  figure.
+  ([4564174](https://github.com/LowCarbCheck/openplate/commit/4564174),
+  [9191419](https://github.com/LowCarbCheck/openplate/commit/9191419))
 
 ## [0.1.4] - 2026-09-20
 
