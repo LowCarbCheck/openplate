@@ -409,10 +409,7 @@ const instanceDescriptorSchema = z.object({
   // the AI model down with it. A window that is not a positive whole number of
   // days is not a promise anybody can read, so it is dropped and the client
   // treats the instance as having advertised none.
-  feedback: z
-    .object({ retentionDays: z.number().int().positive() })
-    .optional()
-    .catch(undefined),
+  feedback: z.object({ retentionDays: z.number().int().positive() }).optional().catch(undefined),
   // `.optional()` because a service older than M234, and one with no answer to
   // give, both send no key. `.catch(undefined)` because a fourth name is a
   // basis this build cannot render: dropping it leaves the client asking for
@@ -425,7 +422,10 @@ const instanceDescriptorSchema = z.object({
   // descriptor. Any non-empty string is accepted as the version: it is never
   // shown, only compared and sent back byte for byte, and a client stricter
   // than the core would draw no box where the core then refuses the sign-up.
-  healthConsent: z.object({ version: z.string().min(1) }).nullable().catch(null),
+  healthConsent: z
+    .object({ version: z.string().min(1) })
+    .nullable()
+    .catch(null),
 });
 
 /** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */
@@ -631,6 +631,12 @@ export interface PutKeyRecordRequest {
    * field.
    */
   expectedUpdatedAt: IsoTimestamp | null;
+  /**
+   * The current passphrase's auth branch, REQUIRED by the service when
+   * `expectedUpdatedAt` is not `null` (an overwrite) and ignored on a create.
+   * This client only ever creates, so it never sends it.
+   */
+  currentAuthHash?: Base64Bytes;
 }
 
 /** `409` from a key-record PUT whose `expectedUpdatedAt` no longer matches. */
@@ -786,7 +792,22 @@ export interface RotateDekRequest {
    */
   newRecoveryAuthHash: Base64Bytes;
   recoveryCode: string;
+  /**
+   * The CURRENT passphrase's auth branch, the same value `change-passphrase`
+   * sends as `currentAuthHash`. REQUIRED by the service since 2026-09: a
+   * rotation writes the recovery verifier `recover` accepts, so a bearer token
+   * alone must not be able to run one. A service older than that ignores the
+   * field, which is why this client can ship first.
+   */
+  currentAuthHash: Base64Bytes;
 }
+
+/**
+ * The `error` text of a `401` from a route that checked `currentAuthHash` and
+ * found it wrong (`rotate-dek`, `change-passphrase`, a key-record overwrite).
+ * The one `401` on those routes that does NOT mean the session is gone.
+ */
+export const PASSPHRASE_REJECTED_ERROR = 'current passphrase is incorrect';
 
 /** `200` from a rotation. `revokedShares` counts the rows the keep list did not name. */
 export interface RotateDekAcceptedResponse {

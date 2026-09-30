@@ -83,6 +83,7 @@ import { createSyncAccount, recoverSyncAccount } from '../../app/lib/sync/sync-a
 import { closeAndForgetSyncSession } from '../../app/lib/sync/session-cache';
 import { ensureShareIdentity, forgetPinnedPeer, grantShare, rotateSyncDek } from '../../app/lib/sync/share-actions';
 import { getSyncVault, type SyncVault } from '../../app/lib/sync/sync-session';
+import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import { decryptWithSchemaProbe } from '../../app/lib/sync/orchestrator';
 import { createPrivateStoreSession, openOwnerPrivateRegion } from '../../app/lib/sync/private-store';
 import { readSealedPrivateStore, type OwnerPrivateRegion } from '../../app/lib/sync/snapshot-partition';
@@ -437,6 +438,39 @@ test('a DEK rotation replaces the escrowed recovery code, not just the key recor
     params: FAST_PARAMS,
   });
   assert.notEqual(getSyncVault(), null, 'the code the rotation escrowed must open the account');
+});
+
+/**
+ * The service's own passphrase check (2026-09). A rotation writes the recovery
+ * verifier `recover` accepts, so the service refuses one whose
+ * `currentAuthHash` is not the account's; the fake does the same. The case a
+ * person can meet is a passphrase change on another device that lands after
+ * this device's own check, and it must read as a wrong passphrase, not as a
+ * lost session and not as a generic failure.
+ */
+test('a rotation the service refuses for the passphrase says so, and changes nothing', async () => {
+  const email = `rotation-refused-${Date.now()}-${accountCounter++}@example.org`;
+  await createSyncAccount({
+    serverUrl: service.url,
+    inviteToken: service.createInvite({ email }),
+    passphrase: PASSPHRASE,
+    deriveHash: fastDeriver,
+    params: FAST_PARAMS,
+  });
+  await ensureShareIdentity();
+  const beforeCode = await escrowedCodeOf(email);
+
+  service.replaceVerifier(email, 'a verifier another device just wrote');
+
+  // The same error the local check throws for a wrong passphrase: its class,
+  // its kind and its words.
+  await assert.rejects(rotateSyncDek({ passphrase: PASSPHRASE, deriveHash: fastDeriver }), SyncRequestError);
+  await assert.rejects(rotateSyncDek({ passphrase: PASSPHRASE, deriveHash: fastDeriver }), {
+    kind: 'unauthorized',
+    message: 'That passphrase is not this account’s passphrase.',
+  });
+  assert.equal(await escrowedCodeOf(email), beforeCode, 'a refused rotation must not move the escrow');
+  assert.notEqual(getSyncVault(), null, 'a passphrase refusal is not a signed-out session');
 });
 
 /** The escrowed code as the SERVICE holds it, read through a reset link — the only path a code takes to a client. */
