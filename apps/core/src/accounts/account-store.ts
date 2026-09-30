@@ -258,6 +258,9 @@ export interface RecoverAndRotatePassphraseInput {
  */
 export type RecoverAndRotatePassphraseResult = { ok: true } | { ok: false; reason: 'recovery-superseded' };
 
+/** Whether {@link AccountStore.revokeToken} moved the token from live to revoked, or found it already revoked. */
+export type RevokeTokenResult = 'revoked' | 'already-revoked';
+
 export interface AccountStore {
   findAccountByEmail(email: string): Promise<AccountRecord | null>;
   findAccountById(accountId: number): Promise<AccountRecord | null>;
@@ -343,7 +346,17 @@ export interface AccountStore {
 
   insertTokens(tokens: NewTokenInput[]): Promise<void>;
   findToken(input: { kind: AccountTokenKind; tokenHash: string }): Promise<StoredToken | null>;
-  revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<void>;
+  /**
+   * Stamps one token revoked, ONCE, and says whether this call was the one
+   * that did it.
+   *
+   * `already-revoked` IS WHAT MAKES A REFRESH SINGLE USE UNDER A RACE. Two
+   * requests carrying one refresh token both read it as valid; only one of
+   * them can move `revoked_at` from `NULL`, and the other is told so here
+   * rather than minting a second session from a spent token. `handleRefresh`
+   * treats that answer as reuse (PROTOCOL.md §4.2).
+   */
+  revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<RevokeTokenResult>;
   /** Revokes one device's lineage — used by logout and by refresh-reuse detection. */
   revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void>;
   /** Revokes every `access`/`refresh` token for the account. */

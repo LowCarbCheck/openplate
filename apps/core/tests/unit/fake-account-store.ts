@@ -30,6 +30,7 @@ import type {
   RecoverAndRotatePassphraseResult,
   RedeemInviteAndCreateAccountInput,
   RedeemInviteResult,
+  RevokeTokenResult,
   RotateCredentialInput,
   StoredToken,
   UpdateStandingInput,
@@ -440,8 +441,10 @@ export function createFakeAccountStore(): FakeAccountStore {
       return found ? { ...found } : null;
     },
 
-    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<void> {
+    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<RevokeTokenResult> {
+      const live = tokens.some((token) => token.id === input.tokenId && token.revokedAt === null);
       revokeMatching((token) => token.id === input.tokenId, input.revokedAt);
+      return live ? 'revoked' : 'already-revoked';
     },
 
     async revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void> {

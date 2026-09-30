@@ -312,6 +312,7 @@ Two token kinds, both opaque random strings, both stored **only as SHA-256 diges
 
 - `POST /v1/auth/refresh` with a valid refresh token revokes it and returns a fresh pair in the same family.
 - Presenting a refresh token that is **already revoked** is the reuse signal: the legitimate client rotated it, so whoever is presenting it now holds a copy they should not. The whole family is revoked. This logs out the attacker _and_ the real user, which is the correct outcome; the alternative leaves a thief with a working session.
+- **The spend decides, not the read.** Two requests carrying one refresh token can both find it live. Only one of them can spend it (a conditional update from "live" to "revoked"), and the other is answered as reuse: `401`, and the family is revoked. So exactly one of two concurrent refreshes with one token gets a `200`, and that pair does not survive the other's reuse answer. A client must serialise its own refreshes (§11); a second holder racing the first is exactly the case reuse detection exists for.
 - Access tokens minted by earlier rotations are deliberately left alone; they expire within minutes on their own, and revoking them at rotation time would break a request that is legitimately in flight.
 
 **Revocation triggers.** Every one of these revokes **all** outstanding `access` and `refresh` tokens for the account:

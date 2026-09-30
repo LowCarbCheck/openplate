@@ -475,6 +475,25 @@ test('reusing an already-rotated refresh token revokes the whole family', async 
   );
 });
 
+test('two concurrent refreshes with one token: exactly one succeeds, and the loser revokes the family', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const first = requireTokens(session);
+
+  // Both read the token as live before either spends it.
+  const outcomes = await Promise.all([
+    handleRefresh({ refreshToken: first.refreshToken }, fixture.ctx),
+    handleRefresh({ refreshToken: first.refreshToken }, fixture.ctx),
+  ]);
+  const statuses = outcomes.map((outcome) => outcome.status).toSorted();
+  assert.deepEqual(statuses, ['ok', 'unauthorized']);
+
+  // The loser treated the race as reuse, so the winner's new pair is gone too.
+  const winner = outcomes.find((outcome) => outcome.status === 'ok');
+  if (winner?.status !== 'ok') throw new Error('unreachable');
+  assert.equal(await resolvedSession(winner.body.tokens.accessToken, fixture.ctx), null);
+});
+
 test('an expired refresh token is rejected without revoking anything', async () => {
   const fixture = inviteFixture();
   const session = await signUp(fixture);

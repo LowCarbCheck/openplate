@@ -384,6 +384,29 @@ test('refresh rotates against the database and the spent token stops working', a
   assert.equal(afterReuse.status, 401);
 });
 
+test('two concurrent refreshes with one token against the database: exactly one 200', async () => {
+  const { refreshToken } = await signUp();
+
+  const responses = await Promise.all(
+    [1, 2].map(() =>
+      service.request<{ tokens?: { accessToken: string } }>({
+        method: 'POST',
+        path: '/v1/auth/refresh',
+        body: { refreshToken },
+      }),
+    ),
+  );
+  assert.deepEqual(responses.map((response) => response.status).toSorted(), [200, 401]);
+
+  // The loser answered as reuse (PROTOCOL.md §4.2), so the family is gone and
+  // the pair the winner got no longer authenticates.
+  const winner = responses.find((response) => response.status === 200);
+  const accessToken = winner?.body.tokens?.accessToken;
+  assert.ok(accessToken);
+  const probe = await service.request({ method: 'GET', path: '/v1/auth/account', accessToken });
+  assert.equal(probe.status, 401);
+});
+
 test('change-passphrase commits verifier and key record together and revokes other sessions', async () => {
   const { accountId, accessToken } = await signUp();
 

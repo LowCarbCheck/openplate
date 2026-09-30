@@ -36,6 +36,7 @@ import type {
   RecoverAndRotatePassphraseResult,
   RedeemInviteAndCreateAccountInput,
   RedeemInviteResult,
+  RevokeTokenResult,
   RotateCredentialInput,
   StoredToken,
   UpdateStandingInput,
@@ -794,13 +795,18 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       return row ? mapTokenRow(row) : null;
     },
 
-    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<void> {
+    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<RevokeTokenResult> {
       // `isNull` guard: revocation is stamped once, so a re-revoked token keeps
-      // the instant it was actually invalidated.
-      await db
+      // the instant it was actually invalidated. The guard is also the race
+      // arbiter for a refresh: of two concurrent statements on one row, the
+      // second re-evaluates the predicate after the first commits, matches
+      // nothing, and returns no row.
+      const changed = await db
         .update(accountTokens)
         .set({ revokedAt: input.revokedAt })
-        .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)));
+        .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)))
+        .returning({ id: accountTokens.id });
+      return changed.length === 0 ? 'already-revoked' : 'revoked';
     },
 
     async revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void> {

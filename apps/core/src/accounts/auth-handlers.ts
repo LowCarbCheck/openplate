@@ -30,6 +30,7 @@ import type {
   MemberInviteGrant,
   NewTokenInput,
   RedeemInviteResult,
+  StoredToken,
 } from './account-store.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
 import { deriveDummyKdfDescriptor } from '../lib/kdf-descriptor.js';
@@ -760,13 +761,7 @@ export async function handleRefresh(
 
   const now = ctx.now();
   const state = classifyToken(stored, now);
-  if (state === 'revoked') {
-    if (stored.familyId !== null) {
-      await ctx.store.revokeFamily({ accountId: stored.accountId, familyId: stored.familyId, revokedAt: now });
-    }
-    ctx.logger.warn('Refresh token reuse detected; family revoked', { accountId: stored.accountId });
-    return { status: 'unauthorized', reason: 'invalid refresh token' };
-  }
+  if (state === 'revoked') return await answerRefreshReuse(stored, { ctx, now });
   if (state === 'expired') {
     return { status: 'unauthorized', reason: 'refresh token has expired' };
   }
@@ -780,13 +775,43 @@ export async function handleRefresh(
   // they will get back.
   if (account.suspendedAt !== null) return suspended();
 
-  await ctx.store.revokeToken({ tokenId: stored.id, revokedAt: now });
+  // THE SPEND IS THE CHECK THAT COUNTS. The read above says the token was
+  // live a moment ago; only this conditional UPDATE says it was still live
+  // when this request spent it. A concurrent refresh with the same token that
+  // got there first leaves nothing to spend, and that is reuse by definition:
+  // two holders presented one token. PROTOCOL.md §4.2 answers reuse by
+  // revoking the family, so the loser does, rather than minting a second
+  // session from a token that is already gone.
+  if ((await ctx.store.revokeToken({ tokenId: stored.id, revokedAt: now })) === 'already-revoked') {
+    return await answerRefreshReuse(stored, { ctx, now });
+  }
   const session = mintSession(ctx, {
     accountId: stored.accountId,
     familyId: stored.familyId ?? ctx.mintFamilyId(),
   });
   await ctx.store.insertTokens(session.rows);
   return { status: 'ok', body: { tokens: session.tokens } };
+}
+
+/**
+ * A refresh token presented after it was spent: the whole family goes, and the
+ * caller gets the same `401` an unknown token gets. Reached from the read
+ * (the token was already revoked) and from the spend (a concurrent refresh
+ * spent it first).
+ */
+async function answerRefreshReuse(
+  stored: StoredToken,
+  input: { ctx: AuthContext; now: Date },
+): Promise<AuthOutcome<{ tokens: SessionTokens }>> {
+  if (stored.familyId !== null) {
+    await input.ctx.store.revokeFamily({
+      accountId: stored.accountId,
+      familyId: stored.familyId,
+      revokedAt: input.now,
+    });
+  }
+  input.ctx.logger.warn('Refresh token reuse detected; family revoked', { accountId: stored.accountId });
+  return { status: 'unauthorized', reason: 'invalid refresh token' };
 }
 
 /** `POST /v1/auth/logout` — revokes the caller's whole family (this device), not just the presented access token. */
