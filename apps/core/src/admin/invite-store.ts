@@ -128,7 +128,10 @@ export interface MintInviteInput {
 
 /** A still-spendable invite for one address, as the open sign-up door needs to see it (M253). */
 export interface PendingInvite {
-  /** `null` for an operator or member mint, see {@link InviteSource}. */
+  /**
+   * `'member'` for a member mint since 2026-09-30, `null` for an operator's
+   * mint or an older member's, see {@link InviteSource}.
+   */
   source: InviteSource | null;
   /**
    * The member whose invitation this is, or `null` for the operator and the

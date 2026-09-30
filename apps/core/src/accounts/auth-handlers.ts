@@ -48,7 +48,7 @@ import {
 } from '../lib/tokens.js';
 import type { Logger } from '../logger.js';
 import type { Mailer } from '../mail/mailer.js';
-import { DEFAULT_INVITE_TTL_MS, type InviteStore } from '../admin/invite-store.js';
+import { DEFAULT_INVITE_TTL_MS, type InviteStore, type PendingInvite } from '../admin/invite-store.js';
 import {
   MEMBER_INVITE_CAP_REACHED,
   MEMBER_INVITES_NEED_A_PLAN,
@@ -1339,6 +1339,20 @@ export async function handleRecordHealthConsent(
 const MEMBER_INVITE_ACCEPTED: AuthOutcome<Record<string, never>> = { status: 'accepted', body: {} };
 
 /**
+ * Whether a pending letter is the calling member's own, which they may re-send.
+ *
+ * TWO MARKS, ONE ANSWER. The row names its inviter, and the member door
+ * writes `source = 'member'` since 2026-09-30 (the free grant needed a mark
+ * that survives the inviter's deletion). A member letter minted before that
+ * carries `null`. Both are the caller's when the inviter is the caller; an
+ * `'open-signup'` row never is, whoever it names.
+ */
+function isOwnMemberLetter(input: { pending: PendingInvite; accountId: number }): boolean {
+  if (input.pending.invitedByAccountId !== input.accountId) return false;
+  return input.pending.source === null || input.pending.source === 'member';
+}
+
+/**
  * `POST /v1/auth/invites`, the route a member invites somebody through.
  *
  * IT IS THE ONLY ROUTE IN THIS SERVICE WHERE AN ORDINARY MEMBER CAUSES THE
@@ -1434,7 +1448,7 @@ export async function handleMintMemberInvite(
     // from a new one, and a refusal naming it would tell the caller that
     // somebody else already invited their colleague.
     const pending = await surface.invites.findPendingInvite({ email: email.value, now: ctx.now() });
-    if (pending !== null && (pending.source !== null || pending.invitedByAccountId !== account.id)) {
+    if (pending !== null && !isOwnMemberLetter({ pending, accountId: account.id })) {
       ctx.logger.info('Member invite withheld: that address holds a pending letter from another door', {
         accountId: account.id,
       });

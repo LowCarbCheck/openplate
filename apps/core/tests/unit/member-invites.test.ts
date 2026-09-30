@@ -379,6 +379,24 @@ test('a member may re-send their own pending letter, which supersedes it', async
   assert.equal(rows.filter((row) => row.revokedAt === null).length, 1);
 });
 
+test('a member may re-send a letter of their own minted before the member mark existed', async () => {
+  // Rows from before 2026-09-30 carry `source = NULL` and name the inviter;
+  // new ones carry `'member'`. Both are the caller's own.
+  const { fixture, invites, ctx } = withMemberInvites();
+  const accountId = await seedMember(fixture);
+  const older = await pendingFrom(invites, fixture, {
+    email: FRIEND_EMAIL,
+    invitedByAccountId: accountId,
+    source: null,
+  });
+
+  await mint(ctx, { accountId, email: FRIEND_EMAIL });
+
+  assert.equal(fixture.mailer.invites.length, 1);
+  const row = invites.rows().find((candidate) => candidate.id === older);
+  assert.notEqual(row?.revokedAt, null, 'the older letter was superseded');
+});
+
 test('an administrator using the member door may still replace a pending letter, as the admin door does', async () => {
   const { fixture, invites, ctx } = withMemberInvites();
   const adminId = await seedAdmin(fixture);
