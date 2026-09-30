@@ -22,6 +22,22 @@ change moves the minor.
   then `inference.env`, which is yours and wins. Before you copy the new unit
   over an install, put your key in `inference.env` as `API_KEYS=`. The unit
   does not start without that file.
+- **Every setting now reaches the inference container from your .env file.**
+  The three compose files that run this service, `docker/compose.yml` here and
+  openplate's `compose.inference.yml` and `compose.full.yml`, previously set
+  five or six variables, mostly as fixed values. They now forward all 27
+  variables that the service and its entrypoint read. To bring your own
+  runtime, set `MODEL_PROFILE=external`, `MODEL_RUNTIME_URL` and `MODEL_ID` in
+  `.env`, plus the health start period override in the file. A new setting,
+  `OFF_API_URL`, points `FOOD_SOURCE=off` at a national OpenFoodFacts host or
+  a mirror. It defaults to `https://world.openfoodfacts.org`, the host that
+  was hard-coded. With an empty `.env`, nothing changes. Every entry in
+  `.env.example` is now commented out. It also gains the seven entrypoint
+  settings it lacked, including `LLAMA_THREADS` and `WEIGHTS_MIRROR_BASE`. If
+  your `.env` is a copy of the old `.env.example`, delete its `PROFILE=custom`
+  line. That line now reaches the service, which then reports `custom` instead
+  of following `MODEL_PROFILE`. `tests/unit/compose-env-surface.test.ts` and
+  `tests/unit/compose-defaults-inert.test.ts` keep it that way.
 
 ## [0.1.4] - 2026-09-20
 

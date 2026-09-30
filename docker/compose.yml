@@ -53,6 +53,10 @@ services:
       # proxy on this machine, write '127.0.0.1:3000:3000' instead: then only
       # the proxy can reach the app, and the plain HTTP port is gone.
       - '3000:3000'
+    # To serve legal pages, uncomment this and set CONTENT_DIR in `.env`:
+    #   CONTENT_DIR=/srv/openplate/content
+    # volumes:
+    #   - ./content:/srv/openplate/content:ro
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -87,6 +91,39 @@ services:
       # Extra origins the browser may call, space separated, for example a
       # remote AI endpoint of your own. Empty adds nothing.
       CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
+      # debug, info, warn or error.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # The address of an openplate-core sync service, one a BROWSER can reach.
+      # Empty means no sync. docker/topologies/compose.sync.yml runs one.
+      SYNC_SERVER_URL: ${SYNC_SERVER_URL:-}
+      # open (the default) or managed, which needs SYNC_SERVER_URL. See
+      # apps/app/docs/configuration.md, Managed instances.
+      INSTANCE_MODE: ${INSTANCE_MODE:-open}
+      # An OpenAI-compatible vision endpoint every browser here may use with
+      # one tap, at an address a BROWSER can reach. The key is PUBLIC: every
+      # browser that loads the app can read it. Empty means each person brings
+      # their own key. The model defaults to openplate-plate-1.
+      DEFAULT_INFERENCE_BASE_URL: ${DEFAULT_INFERENCE_BASE_URL:-}
+      DEFAULT_INFERENCE_API_KEY: ${DEFAULT_INFERENCE_API_KEY:-}
+      DEFAULT_INFERENCE_MODEL: ${DEFAULT_INFERENCE_MODEL:-}
+      # Which published reference values the Nutrients screen quotes: dge (the
+      # default), efsa or us.
+      NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
+      # Matomo analytics, off unless the first two are set together. The level
+      # is pageviews, product (the default when empty) or research, and only
+      # with the pair: a level on its own stops the boot.
+      MATOMO_URL: ${MATOMO_URL:-}
+      MATOMO_SITE_ID: ${MATOMO_SITE_ID:-}
+      MATOMO_EVENT_LEVEL: ${MATOMO_EVENT_LEVEL:-}
+      # A newsletter form on the landing page, off unless both are set.
+      NEWSLETTER_SUBSCRIBE_URL: ${NEWSLETTER_SUBSCRIBE_URL:-}
+      NEWSLETTER_TURNSTILE_SITE_KEY: ${NEWSLETTER_TURNSTILE_SITE_KEY:-}
+      # The folder of legal pages, mounted read-only. Set it to the container
+      # path of the volume line above. Empty means no legal pages.
+      CONTENT_DIR: ${CONTENT_DIR:-}
+      # The address the server binds to inside the container. Leave it empty:
+      # the published port reaches only a server on every interface.
+      HOST: ${HOST:-}
     healthcheck:
       # A shell line with no quotes and no brackets, run by the image's busybox
       # wget. Docker Compose, podman-compose and Quadlet all pass it through

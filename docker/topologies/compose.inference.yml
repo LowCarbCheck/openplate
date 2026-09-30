@@ -66,23 +66,66 @@ services:
       # `docker compose down` does not throw the download away.
       - inference-models:/models
     environment:
-      # lite | lite-apache | quality -- see README "Hardware & measured latency".
-      MODEL_PROFILE: lite
+      # lite | lite-apache | quality, see README "Hardware & measured latency".
+      # external runs no model here and uses your runtime, see below.
+      MODEL_PROFILE: ${MODEL_PROFILE:-lite}
       # The key callers must present. Set INFERENCE_API_KEY in .env (see the
       # top of this file); the placeholder below only keeps a first trial
       # booting. It must match DEFAULT_INFERENCE_API_KEY on the app.
       API_KEYS: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
-      LATENCY_CEILING_MS: '0'
+      LATENCY_CEILING_MS: ${LATENCY_CEILING_MS:-0}
       # Scans in flight at once. It also sets llama.cpp's slot count; it does
       # NOT add CPU threads, the slots share LLAMA_THREADS.
-      CONCURRENCY: '2'
+      CONCURRENCY: ${CONCURRENCY:-2}
       # CPU threads for the model. Empty means every core but two (nproc - 2),
       # which leaves room for the service and the OS.
       LLAMA_THREADS: ${LLAMA_THREADS:-}
       # Where macros come from. fdc = the bundled offline USDA-derived dataset.
       # See README "Food data" before switching to `off` (ODbL) or `lcc`.
-      FOOD_SOURCE: fdc
+      FOOD_SOURCE: ${FOOD_SOURCE:-fdc}
+
+      # -- Everything else the service reads. Empty means the default, and
+      # openplate-inference's .env.example explains each one.
+      #
+      # Your own runtime, with MODEL_PROFILE=external (see below). No trailing
+      # /v1, and the address must resolve from INSIDE this container.
+      MODEL_RUNTIME_URL: ${MODEL_RUNTIME_URL:-}
+      MODEL_RUNTIME_API_KEY: ${MODEL_RUNTIME_API_KEY:-}
+      # The model id sent to the runtime. Empty means openplate-plate-1. vLLM
+      # needs its exact served model name.
+      MODEL_ID: ${MODEL_ID:-}
+      # The waiting line, the bound on one completion call, the requests per
+      # key per minute, the largest decoded image, and the downscale target.
+      MAX_QUEUE_DEPTH: ${MAX_QUEUE_DEPTH:-8}
+      RUNTIME_COMPLETION_TIMEOUT_MS: ${RUNTIME_COMPLETION_TIMEOUT_MS:-600000}
+      RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-60}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES:-8388608}
+      IMAGE_MAX_LONG_EDGE: ${IMAGE_MAX_LONG_EDGE:-896}
+      # debug, info, warn or error.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # What the service reports as its profile. Empty follows MODEL_PROFILE.
+      PROFILE: ${PROFILE:-}
+      # Each is read only by its own FOOD_SOURCE. Empty FDC_DATASET_PATH is the
+      # bundled extract. Empty URLs are https://lowcarbcheck.org for lcc and
+      # https://world.openfoodfacts.org for off.
+      FDC_DATASET_PATH: ${FDC_DATASET_PATH:-}
+      LCC_API_URL: ${LCC_API_URL:-}
+      LCC_API_KEY: ${LCC_API_KEY:-}
+      OFF_API_URL: ${OFF_API_URL:-}
+      # A second runtime serving /v1/embeddings, for hybrid retrieval. Empty
+      # means lexical retrieval only.
+      EMBEDDING_RUNTIME_URL: ${EMBEDDING_RUNTIME_URL:-}
+      EMBEDDING_RUNTIME_API_KEY: ${EMBEDDING_RUNTIME_API_KEY:-}
+      # The bundled llama-server: its loopback port, the context per slot, the
+      # layers put on the GPU (empty means detect), and extra flags passed on
+      # as written.
+      RUNTIME_PORT: ${RUNTIME_PORT:-8080}
+      CONTEXT_SIZE: ${CONTEXT_SIZE:-8192}
+      GPU_LAYERS: ${GPU_LAYERS:-}
+      LLAMA_EXTRA_ARGS: ${LLAMA_EXTRA_ARGS:-}
+      # A mirror tried before Hugging Face for the first weight download.
+      WEIGHTS_MIRROR_BASE: ${WEIGHTS_MIRROR_BASE:-}
     # -- GPU (the `quality` profile) -- uncomment BOTH of these and switch the
     # image to the -cuda tag. The entrypoint detects the GPU and offloads every
     # layer automatically; there is no flag to set.
@@ -94,38 +137,34 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
-    # -- ALREADY RUNNING vLLM / llama.cpp / OLLAMA? -------------------------
-    # Replace the `environment:` block above with the one below and this
-    # container downloads no weights and starts no second model -- it just turns
-    # your runtime into a plate scanner. You can drop the `volumes:` block and
-    # the `inference-models` volume entirely.
+    # -- ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ------------------------
+    # Set these in `.env` and this container downloads no weights and starts
+    # no second model; it just turns your runtime into a plate scanner. You can
+    # drop the `volumes:` block and the `inference-models` volume entirely.
     #
     # Read README "Bring your own runtime" FIRST: your runtime must enforce
     # grammar-constrained decoding, and there is a one-line curl there that
     # tells you whether yours does. vLLM's CPU build does NOT (it crashes).
     #
-    # environment:
-    #   MODEL_PROFILE: external
+    #   MODEL_PROFILE=external
     #   # Must resolve from INSIDE this container, and no trailing /v1.
-    #   # `localhost` here means this container, not your host -- use the LAN
+    #   # `localhost` here means this container, not your host. Use the LAN
     #   # address, or host.docker.internal on Docker Desktop.
-    #   MODEL_RUNTIME_URL: "http://your-runtime.lan:8000"
+    #   MODEL_RUNTIME_URL=http://your-runtime.lan:8000
     #   # vLLM requires an EXACT match with its served model name.
-    #   MODEL_ID: "your-served-model-name"
-    #   # Only if your runtime is behind auth (`vllm serve --api-key …`).
-    #   # Separate from API_KEYS, which is what callers present to THIS service.
-    #   MODEL_RUNTIME_API_KEY: "sk_your_runtime_key"
-    #   API_KEYS: "opk_CHANGE_ME"
-    #   LATENCY_CEILING_MS: "0"
+    #   MODEL_ID=your-served-model-name
+    #   # Only if your runtime is behind auth (`vllm serve --api-key ...`).
+    #   # Separate from INFERENCE_API_KEY, which callers present to THIS service.
+    #   MODEL_RUNTIME_API_KEY=sk_your_runtime_key
     #   # Match your runtime's real slot count:
     #   #   llama.cpp --parallel N | vLLM --max-num-seqs N | OLLAMA_NUM_PARALLEL
-    #   CONCURRENCY: "2"
-    #   FOOD_SOURCE: fdc
+    #   CONCURRENCY=2
     #
-    # REQUIRED with the block above. The image bakes in a 60-minute health
-    # start_period, sized for a first-boot weight download. External mode has no
-    # download, so without this override a wrong MODEL_RUNTIME_URL stays hidden
-    # for an hour instead of surfacing in seconds.
+    # REQUIRED with external mode, and the one edit to this file it needs. The
+    # image bakes in a 60-minute health start_period, sized for a first-boot
+    # weight download. External mode has no download, so without this override
+    # a wrong MODEL_RUNTIME_URL stays hidden for an hour instead of surfacing
+    # in seconds.
     # healthcheck:
     #   start_period: 30s
 
@@ -142,6 +181,10 @@ services:
       - '3000:3000'
     depends_on:
       - inference
+    # To serve legal pages, uncomment this and set CONTENT_DIR in `.env`:
+    #   CONTENT_DIR=/srv/openplate/content
+    # volumes:
+    #   - ./content:/srv/openplate/content:ro
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -156,6 +199,12 @@ services:
       # outages). An EMPTY string disables it entirely so no food names ever
       # leave your machine.
       FOOD_DB_API_URL: ${FOOD_DB_API_URL-https://lowcarbcheck.org}
+      # Optional free key for that database. Empty is the shared anonymous
+      # allowance; set one if more than one person scans on this instance.
+      FOOD_DB_API_KEY: ${FOOD_DB_API_KEY:-}
+      # "true" passes foods people save from an AI answer on to LowCarbCheck as
+      # proposals. Needs FOOD_DB_API_KEY. Empty means off.
+      FOOD_DB_BACKFILL: ${FOOD_DB_BACKFILL:-}
 
       # Number of reverse proxies in front of this container. Behind one proxy
       # keep 1: React Router compares the browser Origin against the host it
@@ -181,7 +230,43 @@ services:
       #   open to the internet without a VPN or auth proxy in front of it -- in
       #   that case leave this unset and let people paste the key themselves.
       DEFAULT_INFERENCE_API_KEY: ${INFERENCE_API_KEY:-opk_CHANGE_ME}
-      DEFAULT_INFERENCE_MODEL: 'openplate-plate-1'
+      DEFAULT_INFERENCE_MODEL: ${DEFAULT_INFERENCE_MODEL:-openplate-plate-1}
+
+      # -- Everything else the app reads. Empty means the default.
+      #
+      # The address of an openplate-core sync service, one a BROWSER can reach
+      # (the same name compose.sync.yml uses). Empty means no sync.
+      SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-}
+      # open (the default) or managed, which needs a sync service. See
+      # apps/app/docs/configuration.md, Managed instances.
+      INSTANCE_MODE: ${INSTANCE_MODE:-open}
+      # The language a first-time visitor sees: en, de, fr, it, es or tr.
+      # Empty means en.
+      DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
+      # "off" stops the six-hourly question to GitHub about a newer release.
+      UPDATE_CHECK: ${UPDATE_CHECK:-}
+      # Extra origins the browser may call, space separated. Empty adds nothing.
+      CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
+      # debug, info, warn or error, for the inference service as well.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Which published reference values the Nutrients screen quotes: dge (the
+      # default), efsa or us.
+      NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
+      # Matomo analytics, off unless the first two are set together. The level
+      # is pageviews, product (the default when empty) or research, and only
+      # with the pair: a level on its own stops the boot.
+      MATOMO_URL: ${MATOMO_URL:-}
+      MATOMO_SITE_ID: ${MATOMO_SITE_ID:-}
+      MATOMO_EVENT_LEVEL: ${MATOMO_EVENT_LEVEL:-}
+      # A newsletter form on the landing page, off unless both are set.
+      NEWSLETTER_SUBSCRIBE_URL: ${NEWSLETTER_SUBSCRIBE_URL:-}
+      NEWSLETTER_TURNSTILE_SITE_KEY: ${NEWSLETTER_TURNSTILE_SITE_KEY:-}
+      # The folder of legal pages, mounted read-only. Set it to the container
+      # path of the volume line above. Empty means no legal pages.
+      CONTENT_DIR: ${CONTENT_DIR:-}
+      # The address the server binds to inside the container. Leave it empty:
+      # the published port reaches only a server on every interface.
+      HOST: ${HOST:-}
     healthcheck:
       # A shell line with no quotes and no brackets, run by the image's busybox
       # wget, so Docker Compose, podman-compose and Quadlet all run it alike.

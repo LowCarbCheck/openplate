@@ -83,6 +83,12 @@ export const DEFAULT_FDC_DATASET_PATH = './data/fdc-foods.json';
 /** Public LCC deployment. Only ever contacted when `FOOD_SOURCE=lcc`. */
 export const DEFAULT_LCC_API_URL = 'https://lowcarbcheck.org';
 
+/**
+ * Public OpenFoodFacts host. Only ever contacted when `FOOD_SOURCE=off`. An
+ * operator may point `OFF_API_URL` at a national host or a mirror instead.
+ */
+export const DEFAULT_OFF_API_URL = 'https://world.openfoodfacts.org';
+
 export type ServiceProfile = 'lite' | 'quality' | 'custom';
 
 export interface ServiceConfig {
@@ -146,6 +152,13 @@ export interface ServiceConfig {
    */
   lccApiKey: string | null;
   /**
+   * OpenFoodFacts host, no trailing slash. Only contacted when
+   * `foodSource === 'off'`. The backend builds its own paths
+   * (`/cgi/search.pl`, `/api/v2/product/…`) on this host, so a path in the
+   * value is not kept.
+   */
+  offApiUrl: string;
+  /**
    * OpenAI-compatible embeddings endpoint for the semantic half of hybrid
    * retrieval. `null` (the default) means lexical-only retrieval, which is a
    * degraded ranking and never a failure — see `food-source/embedding.ts`.
@@ -202,6 +215,12 @@ const EnvSchema = z.object({
   FDC_DATASET_PATH: z.string().min(1).default(DEFAULT_FDC_DATASET_PATH),
   LCC_API_URL: z.string().min(1).default(DEFAULT_LCC_API_URL),
   LCC_API_KEY: z.string().min(1).optional(),
+  OFF_API_URL: z
+    .string()
+    .refine((value) => /^https?:\/\//.test(value), {
+      message: 'must be an http(s) URL, e.g. https://world.openfoodfacts.org',
+    })
+    .default(DEFAULT_OFF_API_URL),
   EMBEDDING_RUNTIME_URL: z
     .string()
     .refine((value) => /^https?:\/\//.test(value), {
@@ -268,6 +287,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     // for a model runtime and wrong for a site whose API paths we build ourselves.
     lccApiUrl: stripTrailingSlashes(raw.LCC_API_URL),
     lccApiKey: raw.LCC_API_KEY ?? null,
+    offApiUrl: stripTrailingSlashes(raw.OFF_API_URL),
     embeddingRuntimeUrl: raw.EMBEDDING_RUNTIME_URL
       ? normalizeRuntimeUrl(raw.EMBEDDING_RUNTIME_URL)
       : null,

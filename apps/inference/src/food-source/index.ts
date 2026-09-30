@@ -49,8 +49,9 @@ export function createFoodSourceFromConfig(options: CreateFoodSourceOptions): Fo
     logger.warn('Nutrition resolution using OpenFoodFacts — ODbL data fetched at YOUR runtime', {
       stage: SEARCH_FOODS,
       license: 'ODbL 1.0',
+      apiUrl: config.offApiUrl,
     });
-    return createOffFoodSource();
+    return createOffFoodSource({ baseUrl: config.offApiUrl });
   }
 
   if (config.foodSource === 'lcc') {

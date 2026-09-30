@@ -1,11 +1,16 @@
 # openplate-inference, on its own.
 #
-# A single-service compose file for running the inference endpoint by itself —
-# a plate scanner any OpenAI-compatible client can call. Copy it, edit the one
-# marked value, `docker compose up -d`.
+# A single-service compose file for running the inference endpoint by itself:
+# a plate scanner any OpenAI-compatible client can call. Copy it into a folder
+# of its own, put a `.env` beside it with at least API_KEYS, and run
+# `docker compose up -d` there. Every variable the service reads is forwarded
+# below, so any line of `.env.example` works in that `.env`.
 #
-#   docker compose -f docker/compose.yml up -d
-#   docker compose -f docker/compose.yml logs -f inference   # weight download + model load + ready
+# From a checkout, run it from the openplate-inference folder, so the `.env`
+# there is the one Compose reads:
+#
+#   docker compose --project-directory . -f docker/compose.yml up -d
+#   docker compose --project-directory . -f docker/compose.yml logs -f inference   # weight download + model load + ready
 #
 # Want to run this TOGETHER with the openplate app? That two-service topology
 # lives in the openplate repo, not here:
@@ -33,18 +38,66 @@ services:
       # `docker compose down` does not throw the download away.
       - inference-models:/models
     environment:
-      # lite | lite-apache | quality — see README "Hardware & measured latency".
-      MODEL_PROFILE: lite
-      # ── EDIT ME ── A stable key. Without it a new key is generated on every
-      # restart and every browser has to reconnect. Any random string:
-      #   openssl rand -base64 24
-      API_KEYS: "opk_CHANGE_ME"
+      # lite | lite-apache | quality, see README "Hardware & measured latency".
+      # external runs no model here and uses your runtime, see below.
+      MODEL_PROFILE: ${MODEL_PROFILE:-lite}
+      # SET THIS in `.env`: a stable key callers must present. The placeholder
+      # only keeps a first trial booting. Any random string:
+      #   echo "API_KEYS=opk_$(openssl rand -hex 24)" >> .env
+      API_KEYS: ${API_KEYS:-opk_CHANGE_ME}
       # Self-host has no latency ceiling. 0 = never shed load for being slow.
-      LATENCY_CEILING_MS: "0"
-      CONCURRENCY: "2"
+      LATENCY_CEILING_MS: ${LATENCY_CEILING_MS:-0}
+      # Scans in flight at once. It also sets llama.cpp's slot count; it does
+      # NOT add CPU threads, the slots share LLAMA_THREADS.
+      CONCURRENCY: ${CONCURRENCY:-2}
+      # CPU threads for the model. Empty means every core but two (nproc - 2),
+      # which leaves room for the service and the OS.
+      LLAMA_THREADS: ${LLAMA_THREADS:-}
       # Where macros come from. fdc = the bundled offline USDA-derived dataset.
       # See README "Food data" before switching to `off` (ODbL) or `lcc`.
-      FOOD_SOURCE: fdc
+      FOOD_SOURCE: ${FOOD_SOURCE:-fdc}
+
+      # ── Everything else the service reads. Empty means the default, and
+      # openplate-inference's .env.example explains each one.
+      #
+      # Your own runtime, with MODEL_PROFILE=external (see below). No trailing
+      # /v1, and the address must resolve from INSIDE this container.
+      MODEL_RUNTIME_URL: ${MODEL_RUNTIME_URL:-}
+      MODEL_RUNTIME_API_KEY: ${MODEL_RUNTIME_API_KEY:-}
+      # The model id sent to the runtime. Empty means openplate-plate-1. vLLM
+      # needs its exact served model name.
+      MODEL_ID: ${MODEL_ID:-}
+      # The waiting line, the bound on one completion call, the requests per
+      # key per minute, the largest decoded image, and the downscale target.
+      MAX_QUEUE_DEPTH: ${MAX_QUEUE_DEPTH:-8}
+      RUNTIME_COMPLETION_TIMEOUT_MS: ${RUNTIME_COMPLETION_TIMEOUT_MS:-600000}
+      RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-60}
+      MAX_IMAGE_BYTES: ${MAX_IMAGE_BYTES:-8388608}
+      IMAGE_MAX_LONG_EDGE: ${IMAGE_MAX_LONG_EDGE:-896}
+      # debug, info, warn or error.
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # What the service reports as its profile. Empty follows MODEL_PROFILE.
+      PROFILE: ${PROFILE:-}
+      # Each is read only by its own FOOD_SOURCE. Empty FDC_DATASET_PATH is the
+      # bundled extract. Empty URLs are https://lowcarbcheck.org for lcc and
+      # https://world.openfoodfacts.org for off.
+      FDC_DATASET_PATH: ${FDC_DATASET_PATH:-}
+      LCC_API_URL: ${LCC_API_URL:-}
+      LCC_API_KEY: ${LCC_API_KEY:-}
+      OFF_API_URL: ${OFF_API_URL:-}
+      # A second runtime serving /v1/embeddings, for hybrid retrieval. Empty
+      # means lexical retrieval only.
+      EMBEDDING_RUNTIME_URL: ${EMBEDDING_RUNTIME_URL:-}
+      EMBEDDING_RUNTIME_API_KEY: ${EMBEDDING_RUNTIME_API_KEY:-}
+      # The bundled llama-server: its loopback port, the context per slot, the
+      # layers put on the GPU (empty means detect), and extra flags passed on
+      # as written.
+      RUNTIME_PORT: ${RUNTIME_PORT:-8080}
+      CONTEXT_SIZE: ${CONTEXT_SIZE:-8192}
+      GPU_LAYERS: ${GPU_LAYERS:-}
+      LLAMA_EXTRA_ARGS: ${LLAMA_EXTRA_ARGS:-}
+      # A mirror tried before Hugging Face for the first weight download.
+      WEIGHTS_MIRROR_BASE: ${WEIGHTS_MIRROR_BASE:-}
     # ── GPU (the `quality` profile) ── uncomment BOTH of these and switch the
     # image/build to the -cuda base. The entrypoint detects the GPU and offloads
     # every layer automatically; there is no flag to set.
@@ -56,38 +109,34 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
-    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ─────────────────────────
-    # Replace the `environment:` block above with the one below and this
-    # container downloads no weights and starts no second model — it just turns
-    # your runtime into a plate scanner. You can drop the `volumes:` block and
-    # the `inference-models` volume entirely.
+    # ── ALREADY RUNNING vLLM / llama.cpp / OLLAMA? ────────────────────────
+    # Set these in `.env` and this container downloads no weights and starts
+    # no second model; it just turns your runtime into a plate scanner. You can
+    # drop the `volumes:` block and the `inference-models` volume entirely.
     #
     # Read README "Bring your own runtime" FIRST: your runtime must enforce
     # grammar-constrained decoding, and there is a one-line curl there that
     # tells you whether yours does. vLLM's CPU build does NOT (it crashes).
     #
-    # environment:
-    #   MODEL_PROFILE: external
+    #   MODEL_PROFILE=external
     #   # Must resolve from INSIDE this container, and no trailing /v1.
-    #   # `localhost` here means this container, not your host — use the LAN
+    #   # `localhost` here means this container, not your host. Use the LAN
     #   # address, or host.docker.internal on Docker Desktop.
-    #   MODEL_RUNTIME_URL: "http://your-runtime.lan:8000"
+    #   MODEL_RUNTIME_URL=http://your-runtime.lan:8000
     #   # vLLM requires an EXACT match with its served model name.
-    #   MODEL_ID: "your-served-model-name"
-    #   # Only if your runtime is behind auth (`vllm serve --api-key …`).
-    #   # Separate from API_KEYS, which is what callers present to THIS service.
-    #   MODEL_RUNTIME_API_KEY: "sk_your_runtime_key"
-    #   API_KEYS: "opk_CHANGE_ME"
-    #   LATENCY_CEILING_MS: "0"
+    #   MODEL_ID=your-served-model-name
+    #   # Only if your runtime is behind auth (`vllm serve --api-key ...`).
+    #   # Separate from API_KEYS, which callers present to THIS service.
+    #   MODEL_RUNTIME_API_KEY=sk_your_runtime_key
     #   # Match your runtime's real slot count:
     #   #   llama.cpp --parallel N | vLLM --max-num-seqs N | OLLAMA_NUM_PARALLEL
-    #   CONCURRENCY: "2"
-    #   FOOD_SOURCE: fdc
+    #   CONCURRENCY=2
     #
-    # REQUIRED with the block above. The image bakes in a 60-minute health
-    # start_period, sized for a first-boot weight download. External mode has no
-    # download, so without this override a wrong MODEL_RUNTIME_URL stays hidden
-    # for an hour instead of surfacing in seconds.
+    # REQUIRED with external mode, and the one edit to this file it needs. The
+    # image bakes in a 60-minute health start_period, sized for a first-boot
+    # weight download. External mode has no download, so without this override
+    # a wrong MODEL_RUNTIME_URL stays hidden for an hour instead of surfacing
+    # in seconds.
     # healthcheck:
     #   start_period: 30s
 

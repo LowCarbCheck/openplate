@@ -70,12 +70,13 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-openplate}:${POSTGRES_PASSWORD:-openplate}@postgres:5432/${POSTGRES_DB:-openplate_sync}
       SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env, see .env.example}
-      # Signup is INVITE-ONLY, always: there is no mode to set. SIGNUP_MODE and
+      # Signup is invite-only unless OPEN_SIGNUP is set below. SIGNUP_MODE and
       # the older SIGNUPS_OPEN are both boot failures, so neither is forwarded
       # here. Mint an invite with `pnpm sync-api invites create --email …`.
       #
-      # What the instance calls itself, and which language its two letters are
-      # written in (en | de).
+      # What the instance calls itself on the /health handshake and in its
+      # start-up log, and which language its letters are written in when a
+      # request names none: en, de, fr, it, es or tr.
       INSTANCE_NAME: ${INSTANCE_NAME:-openplate}
       INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-en}
       # Which body's micronutrient reference values it shows: dge | efsa | us.
@@ -94,10 +95,19 @@ services:
       # Set to the number of reverse proxies in front of this service, or the
       # per-IP throttle collapses into one bucket anyone can lock for everyone.
       TRUST_PROXY: ${TRUST_PROXY:-0}
+      # debug, info, warn or error. Empty is refused, so the default stays.
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      # Off by default, and each is inert until forwarded here: Compose passes
-      # only what this block names, so a variable set in `.env` alone never
-      # reaches the container.
+      # The address the listener binds to inside the container. Leave it empty:
+      # the published port reaches only a listener on every interface.
+      HOST: ${HOST:-}
+      # The folder of letter texts, mounted read-only, see .env.example. Set it
+      # to the container path of the volume line under `volumes:` below.
+      CONTENT_DIR: ${CONTENT_DIR:-}
+      # A PEM file of extra certificate authorities Node trusts, for an SMTP
+      # server with a private CA. The container path of the volume line below.
+      NODE_EXTRA_CA_CERTS: ${NODE_EXTRA_CA_CERTS:-}
+      # Every variable this service reads is forwarded here, so a line in
+      # `.env` is all it takes. Empty means the default.
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       SYNC_SHARING: ${SYNC_SHARING:-false}
       SYNC_RESEARCH: ${SYNC_RESEARCH:-false}
@@ -197,6 +207,12 @@ services:
       retries: 3
     ports:
       - '${SYNC_PORT:-3000}:3000'
+    # Uncomment what you use, and set the matching variable in `.env`:
+    #   CONTENT_DIR=/srv/openplate/content
+    #   NODE_EXTRA_CA_CERTS=/etc/openplate/ca.pem
+    # volumes:
+    #   - ./content:/srv/openplate/content:ro
+    #   - ./ca.pem:/etc/openplate/ca.pem:ro
 
 volumes:
   postgres-data:

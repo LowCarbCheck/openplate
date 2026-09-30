@@ -17,9 +17,14 @@
  * const port = CONFIG.server.port;
  * const isProduction = CONFIG.app.isProduction;
  * ```
+ *
+ * `CONFIG` is `parseAppConfig(process.env)`, built once at import. The parser
+ * itself is pure: it reads only the env bag it is given, so a test can parse
+ * the environment a compose file hands the container
+ * (`tests/unit/compose-defaults-inert.test.ts`) without touching `process.env`.
  */
 
-import { optionalEnv, optionalBoolEnv, optionalIntEnv } from '#app/lib/env';
+import { optionalEnv, optionalIntEnv } from '#app/lib/env';
 import {
   assertGatewayUrlUnset,
   isManagedInstance,
@@ -301,275 +306,273 @@ export function parseUpdateCheck(raw: string | undefined): boolean {
 }
 
 /**
- * What KIND of instance this is, decided once before `CONFIG` is built.
+ * Parses the whole application config from one env bag. Throws on anything
+ * invalid, like each parser above, so a bad value stops the boot.
  *
- * `managed` is derived from BOTH values, so they are read here rather than
- * inline below: parsing either one twice inside the object literal would mean
- * two chances for the two readings to drift apart.
+ * What KIND of instance this is is decided first, before the object is built.
+ * `managed` is derived from BOTH values, so they are read once at the top
+ * rather than inline below: parsing either one twice inside the object literal
+ * would mean two chances for the two readings to drift apart.
  *
  * The refusal comes FIRST. `GATEWAY_URL` is the variable that used to make an
  * instance managed, and an operator who upgrades without editing their
  * environment must not get an open instance out of a file that still reads as
  * a closed one — see `assertGatewayUrlUnset`.
  */
-assertGatewayUrlUnset(process.env.GATEWAY_URL);
-const SYNC_SERVER_URL = parseSyncServerUrl(process.env.SYNC_SERVER_URL);
-const INSTANCE_MODE = parseInstanceMode(process.env.INSTANCE_MODE);
+export function parseAppConfig(env: NodeJS.ProcessEnv) {
+  assertGatewayUrlUnset(env.GATEWAY_URL);
+  const syncServerUrl = parseSyncServerUrl(env.SYNC_SERVER_URL);
+  const instanceMode = parseInstanceMode(env.INSTANCE_MODE);
 
-export const CONFIG = {
-  /**
-   * Application Environment
-   */
-  app: {
-    nodeEnv: optionalEnv('NODE_ENV', 'development'),
-    isDevelopment: process.env.NODE_ENV !== 'production',
-    isProduction: process.env.NODE_ENV === 'production',
-    isTest: process.env.NODE_ENV === 'test',
-    url: optionalEnv('APP_URL', 'http://localhost:3000'),
-  },
-
-  /**
-   * UI language (M167 spec 01).
-   *
-   * `defaultLanguage` answers exactly one question: what does a visitor see
-   * BEFORE they have chosen? The locale cookie always wins over it — see
-   * `app/root.tsx`'s loader, the only consumer. It is emphatically not a lock,
-   * and it does not translate food names, AI replies, or anything the user typed.
-   */
-  i18n: {
-    defaultLanguage: parseDefaultUiLanguage(process.env.DEFAULT_UI_LANGUAGE),
-  },
-
-  /**
-   * Server Configuration
-   */
-  server: {
-    port: optionalIntEnv('PORT', 3000),
-    hmrPort: optionalIntEnv('HMR_PORT', 24678),
+  return {
     /**
-     * Express `trust proxy` setting. Required behind a reverse proxy (Traefik)
-     * so `request.url`'s host/proto reflect X-Forwarded-* headers — React
-     * Router v8's CSRF check compares the browser's Origin against that host,
-     * so without this, same-origin POST actions get aborted in production.
-     * Configurable via TRUST_PROXY (see parseTrustProxy above for accepted formats).
+     * Application Environment
      */
-    trustProxy: parseTrustProxy(process.env.TRUST_PROXY, process.env.NODE_ENV === 'production'),
-  },
+    app: {
+      nodeEnv: optionalEnv({ env, name: 'NODE_ENV', fallback: 'development' }),
+      isDevelopment: env.NODE_ENV !== 'production',
+      isProduction: env.NODE_ENV === 'production',
+      isTest: env.NODE_ENV === 'test',
+      url: optionalEnv({ env, name: 'APP_URL', fallback: 'http://localhost:3000' }),
+    },
 
-  /**
-   * Security Configuration
-   *
-   * ZERO-SECRET BOOT (M128 spec 03): this app reads no secret from the
-   * environment at all. The cookie-session signing key went with the sessions
-   * themselves (there are no accounts), and the AES-256-GCM key went with the
-   * server-side BYOK-at-rest encryption — the AI provider key lives on the
-   * device (`app/lib/local-store/ai-settings.ts`) and never reaches this
-   * server. There is no database either (the data-migration ledger and the
-   * whole Postgres dependency went with it), so an empty environment is a
-   * complete boot. Anything added below must keep that true.
-   */
-  security: {
     /**
-     * Extra `connect-src` origins for the strict CSP (`server.ts`), space-
-     * separated (e.g. `"https://ai.example.com https://ai2.example.com"`).
-     * A self-hoster running their own remote (non-localhost) openai-compatible
-     * endpoint sets this so their browser is allowed to call it directly —
-     * the CSP otherwise only permits `'self'`, OpenRouter, Anthropic, and
-     * localhost/127.0.0.1/[::1] (see the self-host docs in README.md).
+     * UI language (M167 spec 01).
+     *
+     * `defaultLanguage` answers exactly one question: what does a visitor see
+     * BEFORE they have chosen? The locale cookie always wins over it — see
+     * `app/root.tsx`'s loader, the only consumer. It is emphatically not a lock,
+     * and it does not translate food names, AI replies, or anything the user typed.
      */
-    cspConnectExtra: parseCspConnectExtra(process.env.CSP_CONNECT_EXTRA),
-  },
+    i18n: {
+      defaultLanguage: parseDefaultUiLanguage(env.DEFAULT_UI_LANGUAGE),
+    },
 
-  /**
-   * Logging Configuration
-   */
-  logging: {
-    level: optionalEnv('LOG_LEVEL', 'info'),
-  },
+    /**
+     * Server Configuration
+     */
+    server: {
+      port: optionalIntEnv({ env, name: 'PORT', fallback: 3000 }),
+      /**
+       * Express `trust proxy` setting. Required behind a reverse proxy (Traefik)
+       * so `request.url`'s host/proto reflect X-Forwarded-* headers — React
+       * Router v8's CSRF check compares the browser's Origin against that host,
+       * so without this, same-origin POST actions get aborted in production.
+       * Configurable via TRUST_PROXY (see parseTrustProxy above for accepted formats).
+       */
+      trustProxy: parseTrustProxy(env.TRUST_PROXY, env.NODE_ENV === 'production'),
+    },
 
-  /**
-   * LowCarbCheck Food Database Integration
-   *
-   * openplate resolves each identified plate food against the public
-   * LowCarbCheck food API to attach curated per-100g nutrition + images.
-   * Only food NAMES are ever sent — never photos, never user data. The whole
-   * integration is fail-open and can be turned off by setting
-   * `FOOD_DB_API_URL` to an empty string.
-   *
-   * `FOOD_DB_API_KEY` is optional and server-only: unset is the anonymous
-   * tier, which is what every instance ran on before M238.
-   */
-  foodDb: parseFoodDbConfig({
-    apiUrl: process.env.FOOD_DB_API_URL,
-    apiKey: process.env.FOOD_DB_API_KEY,
-    backfill: process.env.FOOD_DB_BACKFILL,
-  }),
+    /**
+     * Security Configuration
+     *
+     * ZERO-SECRET BOOT (M128 spec 03): this app reads no secret from the
+     * environment at all. The cookie-session signing key went with the sessions
+     * themselves (there are no accounts), and the AES-256-GCM key went with the
+     * server-side BYOK-at-rest encryption — the AI provider key lives on the
+     * device (`app/lib/local-store/ai-settings.ts`) and never reaches this
+     * server. There is no database either (the data-migration ledger and the
+     * whole Postgres dependency went with it), so an empty environment is a
+     * complete boot. Anything added below must keep that true.
+     */
+    security: {
+      /**
+       * Extra `connect-src` origins for the strict CSP (`server.ts`), space-
+       * separated (e.g. `"https://ai.example.com https://ai2.example.com"`).
+       * A self-hoster running their own remote (non-localhost) openai-compatible
+       * endpoint sets this so their browser is allowed to call it directly —
+       * the CSP otherwise only permits `'self'`, OpenRouter, Anthropic, and
+       * localhost/127.0.0.1/[::1] (see the self-host docs in README.md).
+       */
+      cspConnectExtra: parseCspConnectExtra(env.CSP_CONNECT_EXTRA),
+    },
 
-  /**
-   * Micronutrient reference basis (M234 spec 05)
-   *
-   * Which published document the `/nutrients` screen quotes: the German DGE
-   * (default), EFSA, or the US NASEM/IOM values. One basis per instance, named
-   * on screen by its own `source` string. `/api/nutrients?basis=` overrides it
-   * per request; see that route for why a typo there is a 400 rather than a
-   * quiet fall back to this default.
-   *
-   * The protein reference follows it too (M263/04): DGE's table under `dge`,
-   * EFSA's 0.83 g/kg under the other two. That figure is computed in the
-   * browser, so the routes that show it publish this value through their own
-   * server loaders (`nutrient-reference-basis-client.ts`).
-   */
-  nutrients: {
-    referenceBasis: parseNutrientReferenceBasis(process.env.NUTRIENT_REFERENCE_BASIS),
-  },
+    /**
+     * Logging Configuration
+     */
+    logging: {
+      level: optionalEnv({ env, name: 'LOG_LEVEL', fallback: 'info' }),
+    },
 
-  /**
-   * E2EE Sync (M128 spec 04)
-   *
-   * `syncServerUrl` is the ONE value this server publishes to the browser
-   * (through the root loader's `publicConfig` — see
-   * `app/config/public-config.ts` for why the channel is an allowlist rather
-   * than an env dump). It is not a secret: the browser has to know the
-   * address it is about to send encrypted blobs to.
-   *
-   * `null` (unset) turns sync off completely — no UI renders, no request
-   * leaves. That is the self-host default; the hosted deployment sets it.
-   * A malformed value throws at boot rather than degrading to `null`, so a
-   * typo can't present as "sync is quietly disabled".
-   */
-  sync: {
-    syncServerUrl: SYNC_SERVER_URL,
-  },
-
-  /**
-   * What KIND of instance this is (M192)
-   *
-   * `INSTANCE_MODE` unset is the DEFAULT and the self-host default: `managed`
-   * is `false` and the app is an anonymous local diary anyone can start, with
-   * sync an optional extra and AI a provider key the person brings.
-   *
-   * `INSTANCE_MODE=managed` says an organization runs this instance for its
-   * people: an admin invites by email, there is no anonymous path because on
-   * such an instance it leads nowhere, and the AI comes from the sync server
-   * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
-   * stops the boot without it — see `isManagedInstance`.
-   *
-   * It replaced `GATEWAY_URL`, which said the same thing by naming a second
-   * service. There is no second service.
-   */
-  instance: {
-    mode: INSTANCE_MODE,
-    managed: isManagedInstance({ instanceMode: INSTANCE_MODE, syncServerUrl: SYNC_SERVER_URL }),
-  },
-
-  /**
-   * Optional Matomo analytics (M165/05) — `null` unless BOTH `MATOMO_URL` and
-   * `MATOMO_SITE_ID` are set.
-   *
-   * `null` is the self-host default and is what keeps two public claims true
-   * at once: the landing page's tracking card and `content-security-policy.ts`'s
-   * "no third-party script on an unconfigured instance". A half-configured pair
-   * throws at boot rather than degrading, exactly as the newsletter pair does —
-   * see `app/config/analytics.ts` for why silence would be worse here.
-   *
-   * `MATOMO_EVENT_LEVEL` decides how much the custom events may say once the
-   * pair is set: `pageviews`, `product` (the default) or `research`. The
-   * research level counts fasting, weight, clinician sharing and study
-   * participation, which is why an operator has to name it rather than get it
-   * by turning analytics on. A level set with no pair throws, for the same
-   * reason a half-configured pair does.
-   */
-  analytics: parseAnalyticsConfig({
-    matomoUrl: process.env.MATOMO_URL,
-    siteId: process.env.MATOMO_SITE_ID,
-    eventLevel: process.env.MATOMO_EVENT_LEVEL,
-  }),
-
-  /**
-   * Instance-provided AI endpoint (M138 spec 06)
-   *
-   * An operator running openplate next to an `openplate-inference` container
-   * sets `DEFAULT_INFERENCE_BASE_URL` (plus optionally `_API_KEY`/`_MODEL`) and
-   * every browser on that instance gets a one-click "use this instance's AI"
-   * option instead of having to bring its own provider key.
-   *
-   * NOT A SECRET, BY CONSTRUCTION: like `syncServerUrl`, this whole object
-   * travels to the browser through the root loader's `publicConfig` — including
-   * the API key, which every visitor to the instance can therefore read. That
-   * is household/private-deployment trust, and it is spelled out in
-   * `public-config.ts`'s `InstanceInferencePreset` doc and in `.env.example`.
-   * Never put a metered cloud provider key here.
-   *
-   * `DEFAULT_INFERENCE_MODEL` defaults to `openplate-plate-1` (the model id
-   * openplate-inference serves) and `DEFAULT_INFERENCE_API_KEY` may be omitted
-   * entirely for an endpoint that needs no key — the common local case.
-   *
-   * `null` (unset base URL) is the default and means zero UI and zero payload
-   * difference. A malformed base URL throws at boot rather than silently
-   * disabling the feature. See `parseInstanceInferencePreset`.
-   */
-  inference: {
-    instancePreset: parseInstanceInferencePreset({
-      baseUrl: process.env.DEFAULT_INFERENCE_BASE_URL,
-      apiKey: process.env.DEFAULT_INFERENCE_API_KEY,
-      model: process.env.DEFAULT_INFERENCE_MODEL,
+    /**
+     * LowCarbCheck Food Database Integration
+     *
+     * openplate resolves each identified plate food against the public
+     * LowCarbCheck food API to attach curated per-100g nutrition + images.
+     * Only food NAMES are ever sent — never photos, never user data. The whole
+     * integration is fail-open and can be turned off by setting
+     * `FOOD_DB_API_URL` to an empty string.
+     *
+     * `FOOD_DB_API_KEY` is optional and server-only: unset is the anonymous
+     * tier, which is what every instance ran on before M238.
+     */
+    foodDb: parseFoodDbConfig({
+      apiUrl: env.FOOD_DB_API_URL,
+      apiKey: env.FOOD_DB_API_KEY,
+      backfill: env.FOOD_DB_BACKFILL,
     }),
-  },
 
-  /**
-   * Optional newsletter capture on the landing page (M146 spec 02)
-   *
-   * `null` (both variables unset) is the DEFAULT and the self-host default: no
-   * section renders, the landing action 404s, no Turnstile script loads and
-   * the production CSP is byte-for-byte what it was before this existed. The
-   * mailing list belongs to whoever runs the instance, so the software ships
-   * with none — the same contract `sync` above has.
-   *
-   * `subscribeUrl` is SERVER-ONLY (operator topology); only the Turnstile site
-   * key reaches the browser. See `app/config/newsletter.ts`.
-   */
-  newsletter: parseNewsletterConfig({
-    subscribeUrl: process.env.NEWSLETTER_SUBSCRIBE_URL,
-    turnstileSiteKey: process.env.NEWSLETTER_TURNSTILE_SITE_KEY,
-  }),
+    /**
+     * Micronutrient reference basis (M234 spec 05)
+     *
+     * Which published document the `/nutrients` screen quotes: the German DGE
+     * (default), EFSA, or the US NASEM/IOM values. One basis per instance, named
+     * on screen by its own `source` string. `/api/nutrients?basis=` overrides it
+     * per request; see that route for why a typo there is a 400 rather than a
+     * quiet fall back to this default.
+     *
+     * The protein reference follows it too (M263/04): DGE's table under `dge`,
+     * EFSA's 0.83 g/kg under the other two. That figure is computed in the
+     * browser, so the routes that show it publish this value through their own
+     * server loaders (`nutrient-reference-basis-client.ts`).
+     */
+    nutrients: {
+      referenceBasis: parseNutrientReferenceBasis(env.NUTRIENT_REFERENCE_BASIS),
+    },
 
-  /**
-   * Build-time identity (M203)
-   *
-   * `OPENPLATE_BUILD_SHA` is the commit the image was built from. It is a DOCKER
-   * BUILD ARGUMENT first and foremost, read by `vite.config.ts` and baked into
-   * the bundles, because `.dockerignore` excludes `.git` and the alpine base has
-   * no git binary, so the build cannot work it out for itself.
-   *
-   * It is read here as well, and only the DEV server consults the result
-   * (`app/lib/build-info.server.ts`). Vite prefers the override over git when it
-   * stamps the bundle, so a developer who sets the variable and did not get the
-   * same preference on the server side would see the bundle and the server
-   * disagree, which renders as a permanent and false "a newer version of this
-   * page is ready". `null` when unset, which is every normal case.
-   */
-  build: {
-    shaOverride: parseBuildShaOverride(process.env.OPENPLATE_BUILD_SHA),
-  },
+    /**
+     * E2EE Sync (M128 spec 04)
+     *
+     * `syncServerUrl` is the ONE value this server publishes to the browser
+     * (through the root loader's `publicConfig` — see
+     * `app/config/public-config.ts` for why the channel is an allowlist rather
+     * than an env dump). It is not a secret: the browser has to know the
+     * address it is about to send encrypted blobs to.
+     *
+     * `null` (unset) turns sync off completely — no UI renders, no request
+     * leaves. That is the self-host default; the hosted deployment sets it.
+     * A malformed value throws at boot rather than degrading to `null`, so a
+     * typo can't present as "sync is quietly disabled".
+     */
+    sync: {
+      syncServerUrl,
+    },
 
-  /**
-   * The release check (M203)
-   *
-   * `checkEnabled` is the single switch behind `UPDATE_CHECK`. It gates the boot
-   * timer, the six-hourly one, and the manual button alike, so `off` means no
-   * request to GitHub can originate here by any path. See
-   * `app/lib/update-check.server.ts` for what the request contains.
-   */
-  updates: {
-    checkEnabled: parseUpdateCheck(process.env.UPDATE_CHECK),
-  },
+    /**
+     * What KIND of instance this is (M192)
+     *
+     * `INSTANCE_MODE` unset is the DEFAULT and the self-host default: `managed`
+     * is `false` and the app is an anonymous local diary anyone can start, with
+     * sync an optional extra and AI a provider key the person brings.
+     *
+     * `INSTANCE_MODE=managed` says an organization runs this instance for its
+     * people: an admin invites by email, there is no anonymous path because on
+     * such an instance it leads nowhere, and the AI comes from the sync server
+     * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
+     * stops the boot without it — see `isManagedInstance`.
+     *
+     * It replaced `GATEWAY_URL`, which said the same thing by naming a second
+     * service. There is no second service.
+     */
+    instance: {
+      mode: instanceMode,
+      managed: isManagedInstance({ instanceMode, syncServerUrl }),
+    },
 
-  /**
-   * Feature Flags
-   */
-  features: {
-    debugMode: optionalBoolEnv('DEBUG_MODE', false),
-  },
-} as const;
+    /**
+     * Optional Matomo analytics (M165/05) — `null` unless BOTH `MATOMO_URL` and
+     * `MATOMO_SITE_ID` are set.
+     *
+     * `null` is the self-host default and is what keeps two public claims true
+     * at once: the landing page's tracking card and `content-security-policy.ts`'s
+     * "no third-party script on an unconfigured instance". A half-configured pair
+     * throws at boot rather than degrading, exactly as the newsletter pair does —
+     * see `app/config/analytics.ts` for why silence would be worse here.
+     *
+     * `MATOMO_EVENT_LEVEL` decides how much the custom events may say once the
+     * pair is set: `pageviews`, `product` (the default) or `research`. The
+     * research level counts fasting, weight, clinician sharing and study
+     * participation, which is why an operator has to name it rather than get it
+     * by turning analytics on. A level set with no pair throws, for the same
+     * reason a half-configured pair does.
+     */
+    analytics: parseAnalyticsConfig({
+      matomoUrl: env.MATOMO_URL,
+      siteId: env.MATOMO_SITE_ID,
+      eventLevel: env.MATOMO_EVENT_LEVEL,
+    }),
+
+    /**
+     * Instance-provided AI endpoint (M138 spec 06)
+     *
+     * An operator running openplate next to an `openplate-inference` container
+     * sets `DEFAULT_INFERENCE_BASE_URL` (plus optionally `_API_KEY`/`_MODEL`) and
+     * every browser on that instance gets a one-click "use this instance's AI"
+     * option instead of having to bring its own provider key.
+     *
+     * NOT A SECRET, BY CONSTRUCTION: like `syncServerUrl`, this whole object
+     * travels to the browser through the root loader's `publicConfig` — including
+     * the API key, which every visitor to the instance can therefore read. That
+     * is household/private-deployment trust, and it is spelled out in
+     * `public-config.ts`'s `InstanceInferencePreset` doc and in `.env.example`.
+     * Never put a metered cloud provider key here.
+     *
+     * `DEFAULT_INFERENCE_MODEL` defaults to `openplate-plate-1` (the model id
+     * openplate-inference serves) and `DEFAULT_INFERENCE_API_KEY` may be omitted
+     * entirely for an endpoint that needs no key — the common local case.
+     *
+     * `null` (unset base URL) is the default and means zero UI and zero payload
+     * difference. A malformed base URL throws at boot rather than silently
+     * disabling the feature. See `parseInstanceInferencePreset`.
+     */
+    inference: {
+      instancePreset: parseInstanceInferencePreset({
+        baseUrl: env.DEFAULT_INFERENCE_BASE_URL,
+        apiKey: env.DEFAULT_INFERENCE_API_KEY,
+        model: env.DEFAULT_INFERENCE_MODEL,
+      }),
+    },
+
+    /**
+     * Optional newsletter capture on the landing page (M146 spec 02)
+     *
+     * `null` (both variables unset) is the DEFAULT and the self-host default: no
+     * section renders, the landing action 404s, no Turnstile script loads and
+     * the production CSP is byte-for-byte what it was before this existed. The
+     * mailing list belongs to whoever runs the instance, so the software ships
+     * with none — the same contract `sync` above has.
+     *
+     * `subscribeUrl` is SERVER-ONLY (operator topology); only the Turnstile site
+     * key reaches the browser. See `app/config/newsletter.ts`.
+     */
+    newsletter: parseNewsletterConfig({
+      subscribeUrl: env.NEWSLETTER_SUBSCRIBE_URL,
+      turnstileSiteKey: env.NEWSLETTER_TURNSTILE_SITE_KEY,
+    }),
+
+    /**
+     * Build-time identity (M203)
+     *
+     * `OPENPLATE_BUILD_SHA` is the commit the image was built from. It is a DOCKER
+     * BUILD ARGUMENT first and foremost, read by `vite.config.ts` and baked into
+     * the bundles, because `.dockerignore` excludes `.git` and the alpine base has
+     * no git binary, so the build cannot work it out for itself.
+     *
+     * It is read here as well, and only the DEV server consults the result
+     * (`app/lib/build-info.server.ts`). Vite prefers the override over git when it
+     * stamps the bundle, so a developer who sets the variable and did not get the
+     * same preference on the server side would see the bundle and the server
+     * disagree, which renders as a permanent and false "a newer version of this
+     * page is ready". `null` when unset, which is every normal case.
+     */
+    build: {
+      shaOverride: parseBuildShaOverride(env.OPENPLATE_BUILD_SHA),
+    },
+
+    /**
+     * The release check (M203)
+     *
+     * `checkEnabled` is the single switch behind `UPDATE_CHECK`. It gates the boot
+     * timer, the six-hourly one, and the manual button alike, so `off` means no
+     * request to GitHub can originate here by any path. See
+     * `app/lib/update-check.server.ts` for what the request contains.
+     */
+    updates: {
+      checkEnabled: parseUpdateCheck(env.UPDATE_CHECK),
+    },
+  } as const;
+}
+
+export const CONFIG = parseAppConfig(process.env);
 
 export type Config = typeof CONFIG;
