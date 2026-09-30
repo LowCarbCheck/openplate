@@ -25,6 +25,7 @@ import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/pr
 import { EN } from './copy';
 import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
 import { FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW } from './plans-stub';
+import { fetchRouteText, fulfilUnlessAbandoned } from './route-fetch';
 
 /** What the stubbed core says. Mutate it between loads to move the account. */
 export interface ManagedCoreStub {
@@ -156,14 +157,18 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
   await page.route(
     (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
     async (route) => {
-      const response = await route.fetch();
-      const text = await response.text();
+      // A spec that loads a new document mid-request drops this one: see `route-fetch.ts`.
+      const fetched = await fetchRouteText(route);
+      if (fetched === null) return;
+      const { response, text } = fetched;
       const envelope = accountEnvelopeSchema.safeParse(text === '' ? null : JSON.parse(text));
-      if (!envelope.success) return route.fulfill({ response, body: text });
-      return route.fulfill({
-        response,
-        json: { ...envelope.data, account: { ...envelope.data.account, ...accountPatch(stub) } },
-      });
+      if (!envelope.success) return fulfilUnlessAbandoned(() => route.fulfill({ response, body: text }));
+      return fulfilUnlessAbandoned(() =>
+        route.fulfill({
+          response,
+          json: { ...envelope.data, account: { ...envelope.data.account, ...accountPatch(stub) } },
+        }),
+      );
     },
   );
   // REGISTERED AFTER the route above, so it answers first (`PROTOCOL.md`
