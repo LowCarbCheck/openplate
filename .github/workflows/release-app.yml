@@ -1,7 +1,7 @@
 name: Release Image (app)
 
 # Builds and publishes the app's self-host image to GHCR on every push to `main`
-# that touches the app (moving `latest`) and on version tags (`v*`, e.g.
+# that touches the app (moving `main`) and on version tags (`v*`, e.g.
 # `v1.2.0`).
 #
 # Public `docker pull` access is gated on this repo (and the resulting
@@ -17,7 +17,7 @@ name: Release Image (app)
 # `inference-v0.2.0`.
 #
 # The `paths` filter is what keeps a core-only push to `main` from rebuilding
-# this image and moving its `latest`. `docker/**` is in it because the app's
+# this image and moving its `main` tag. `docker/**` is in it because the app's
 # compose files live at the repository root, where self-hosters fetch them.
 # GitHub does NOT evaluate `paths` for a tag push ("Path filters are not
 # evaluated for pushes of tags", workflow syntax reference), so a `v*` tag
@@ -155,8 +155,9 @@ jobs:
   # same reason the group is: an annotated tag's `github.sha` is the tag OBJECT,
   # and no `sha-` image is ever published under it.
   #
-  # `latest` is untouched. It is emitted only with `enable={{is_default_branch}}`,
-  # so a tag run never moved it and still does not.
+  # `latest` moves HERE, and only on a tag: it names the newest RELEASE, which
+  # is what the docs on openplate.de describe, never an unreleased `main`. A
+  # push to `main` moves the `main` tag instead.
   #
   # A copy carries the source's OCI labels, whose version says the `sha-` tag.
   # `--annotation` rewrites that one value on the new index so the semver tag
@@ -239,7 +240,7 @@ jobs:
           esac
           if docker buildx imagetools create \
             --annotation "index:org.opencontainers.image.version=$version" \
-            -t "$IMAGE:$version" "$src"; then
+            -t "$IMAGE:$version" -t "$IMAGE:latest" "$src"; then
             docker buildx imagetools inspect "$IMAGE:$version"
             echo "done=true" >> "$GITHUB_OUTPUT"
           else
@@ -519,8 +520,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # `latest` is the newest release and `main` the newest `main` push.
+          # `latest=false` stops the action adding its own `latest` to every
+          # semver tag, so the rows below are the only source of either.
+          flavor: latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=main,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=sha,prefix=sha-,format=short
 
@@ -623,7 +629,7 @@ jobs:
   release-notes:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Tags only. A push to `main` moves `latest` and publishes no release page.
+    # Tags only. A push to `main` moves the `main` image tag and publishes no release page.
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     # The one job here that writes anything back to the repository.
     permissions:

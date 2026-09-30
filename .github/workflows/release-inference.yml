@@ -28,7 +28,7 @@ name: Release Image (inference)
 # semver, so the `version` step below strips the prefix first.
 #
 # The `paths` filter is what keeps an app-only push to `main` from rebuilding
-# both variants and moving `latest` and `cuda`. GitHub does NOT evaluate
+# both variants and moving `main` and `main-cuda`. GitHub does NOT evaluate
 # `paths` for a tag push ("Path filters are not evaluated for pushes of tags",
 # workflow syntax reference), so an `inference-v*` tag always releases.
 #
@@ -100,7 +100,8 @@ jobs:
             base_image: ghcr.io/ggml-org/llama.cpp:server
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=raw,value=latest,enable={{is_default_branch}}
+              type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.version != '') }}
+              type=raw,value=main,enable={{is_default_branch}}
               type=semver,pattern={{version}},value={{SEMVER}}
               type=raw,value=${{ inputs.version }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
               type=sha,prefix=sha-,format=short
@@ -108,7 +109,8 @@ jobs:
             base_image: ghcr.io/ggml-org/llama.cpp:server-cuda
             platforms: linux/amd64
             tags: |
-              type=raw,value=cuda,enable={{is_default_branch}}
+              type=raw,value=cuda,enable=${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.version != '') }}
+              type=raw,value=main-cuda,enable={{is_default_branch}}
               type=semver,pattern={{version}},suffix=-cuda,value={{SEMVER}}
               type=raw,value=${{ inputs.version }}-cuda,enable=${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
               type=sha,prefix=sha-,format=short,suffix=-cuda
@@ -159,8 +161,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: ${{ steps.version.outputs.tags }}
-          # `latest` and `cuda` come ONLY from the `enable={{is_default_branch}}`
-          # rows above. The action's default, `latest=auto`, adds a bare
+          # `latest` and `cuda` come ONLY from the release rows above (a tag, or
+          # a manual run with a version): they name the newest release, which is
+          # what the docs describe. A push to `main` moves `main` and `main-cuda`. The action's default, `latest=auto`, adds a bare
           # `latest` to every non-prerelease semver tag and ignores the row's
           # `-cuda` suffix, so a tag run of the cuda row would push the
           # amd64-only cuda image as `latest`, over the cpu one. Found in M262,
