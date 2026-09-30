@@ -52,10 +52,3 @@ export async function handlePutKeyRecord(
   }
   return { status: 'ok', record: result.record };
 }
-
-export async function handleDeleteKeyRecord(
-  input: { accountId: number; kind: SyncKeyRecordKind },
-  storage: SyncStorageAdapter,
-): Promise<void> {
-  await storage.deleteKeyRecord(input);
-}

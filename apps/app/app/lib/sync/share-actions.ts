@@ -28,8 +28,8 @@ import { base64ToBytes, bytesToBase64 } from './engine/crypto/base64';
 import { generateShareKeyPair, shareFingerprintDisplay, shareKeyFingerprint } from './engine/crypto/share-wrap';
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
 import { buildEnvelope } from './engine/envelope/build-envelope';
-import { ENVELOPE_VERSION } from './engine/protocol';
-import type { RotateDekKeyRecordWire } from './engine/protocol';
+import { ENVELOPE_VERSION, PASSPHRASE_REJECTED_ERROR } from './engine/protocol';
+import type { RotateDekKeyRecordWire, RotateDekRequest } from './engine/protocol';
 import { SyncRequestError } from './engine/client/sync-error';
 import { workerArgon2idDeriver } from './engine/client/argon2-worker';
 import { deriveCredentialsFromPassphrase } from './engine/client/derive-credentials';
@@ -40,7 +40,7 @@ import {
   generateRecoveryCode,
 } from './engine/client/recovery-kek';
 import type { Argon2idDeriver } from './engine/client/setup-keys';
-import type { ReceivedShare } from './engine/client/http-client';
+import type { ReceivedShare, RotateDekHttpResult } from './engine/client/http-client';
 import { decryptWithSchemaProbe } from './orchestrator';
 import { adoptRewrappedSlots } from './private-store';
 import { rewrapPrivateStoreOnServer } from './private-store-rewrap';
@@ -235,6 +235,9 @@ export async function planDekRotation(): Promise<SharingRead<{ keep: number; dro
   return { status: 'available', value: { keep: plan.keep.length, drop: plan.drop } };
 }
 
+/** What a wrong passphrase says, from the local check in `rotateSyncDek` and from the service alike. */
+const WRONG_PASSPHRASE_MESSAGE = 'That passphrase is not this account’s passphrase.';
+
 /**
  * TIER 2 REVOCATION — a new data key, the whole blob re-encrypted under it,
  * both key records re-wrapped, and a fresh wrap for every share being kept.
@@ -287,7 +290,7 @@ export async function rotateSyncDek({
   try {
     (await unwrapDek({ wrappedDek: passphraseRecord.wrappedDek, kek: credentials.passphraseKek })).fill(0);
   } catch {
-    throw new SyncRequestError({ kind: 'unauthorized', message: 'That passphrase is not this account’s passphrase.' });
+    throw new SyncRequestError({ kind: 'unauthorized', message: WRONG_PASSPHRASE_MESSAGE });
   }
 
   const pulled = await vault.http.pullBlob();
@@ -344,7 +347,7 @@ export async function rotateSyncDek({
     },
   ];
 
-  const result = await vault.http.rotateDek({
+  const result = await submitRotation(vault, {
     blob: {
       baseVersion: pulled.blobVersion,
       envelopeVersion: ENVELOPE_VERSION,
@@ -360,6 +363,11 @@ export async function rotateSyncDek({
     // surfaced on a later reset.
     newRecoveryAuthHash: await deriveRecoveryAuthHash(recovery.raw),
     recoveryCode: recovery.formatted,
+    // THE PASSPHRASE PROVES ITSELF TO THE SERVICE TOO, not only to this device
+    // (`currentAuthHash`, required since 2026-09). The unwrap above shows the
+    // passphrase opens the record; this shows the service the person holds
+    // it, because a rotation writes the recovery verifier that signs people in.
+    currentAuthHash: credentials.authHash,
   });
   if (result.status === 'conflict') {
     throw new SyncRequestError({
@@ -374,6 +382,27 @@ export async function rotateSyncDek({
   await moveCompartmentOntoNewRecoveryCode({ vault, recoveryRaw: recovery.raw });
 
   return { keptShares: result.keptShares, revokedShares: result.revokedShares, dropped: plan.drop };
+}
+
+/**
+ * Sends the rotation, and turns the service's passphrase refusal into the
+ * error a wrong passphrase gets here.
+ *
+ * ONLY THAT `401`. It arrives when the passphrase opened the key record but
+ * the service's verifier moved, a passphrase change on another device that
+ * landed during this rotation. Every other `401` means the session is gone,
+ * and saying "wrong passphrase" for it would send the person looking for a
+ * typo that is not there.
+ */
+async function submitRotation(vault: SyncVault, request: RotateDekRequest): Promise<RotateDekHttpResult> {
+  try {
+    return await vault.http.rotateDek(request);
+  } catch (error) {
+    if (error instanceof SyncRequestError && error.status === 401 && error.code === PASSPHRASE_REJECTED_ERROR) {
+      throw new SyncRequestError({ kind: 'unauthorized', message: WRONG_PASSPHRASE_MESSAGE, status: 401 });
+    }
+    throw error;
+  }
 }
 
 /**

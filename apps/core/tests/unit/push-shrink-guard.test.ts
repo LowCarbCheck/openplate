@@ -20,6 +20,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { handlePushBlob } from '../../src/server/push-handler.js';
 import { registerSyncRoutes } from '../../src/server/register-routes.js';
+import { createFakePassphraseGate } from './fake-passphrase-gate.js';
 import { createFakeStorageAdapter } from './fake-storage-adapter.js';
 import type { SyncHostContext, SyncStorageAdapter } from '../../src/contract-types.js';
 import { SHRINK_REFUSED_ERROR } from '../../src/protocol.js';
@@ -145,7 +146,11 @@ let entitledUserId = 100;
 before(async () => {
   const app = express();
   storage = createFakeStorageAdapter();
-  const context: SyncHostContext = { storage, resolveEntitledUser: async () => ({ userId: entitledUserId }) };
+  const context: SyncHostContext = {
+    storage,
+    resolveEntitledUser: async () => ({ userId: entitledUserId }),
+    passphrase: createFakePassphraseGate(),
+  };
   registerSyncRoutes(app, context);
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));

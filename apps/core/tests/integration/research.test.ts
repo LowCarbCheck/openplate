@@ -22,6 +22,7 @@ import { accounts, researchContributions, researchWithdrawals } from '../../src/
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import {
   sampleAuthHash,
+  recoveryAuthHashFor,
   sampleRecoveryCode,
   sampleCiphertext,
   sampleContributionBody,
@@ -496,9 +497,12 @@ test('rotate-dek never touches a contribution — two unrelated key domains', as
         { kind: 'passphrase', kdfDescriptor: sampleKdfDescriptor(3), wrappedDek: sampleWrappedDek(53) },
         { kind: 'recovery', kdfDescriptor: null, wrappedDek: sampleWrappedDek(54) },
       ],
-      // Required since the M192 addendum: a rotation always mints a new code.
-      newRecoveryAuthHash: sampleAuthHash(71),
+      // Required since the M192 addendum: a rotation always mints a new code,
+      // and its proof must be the one that code derives.
+      newRecoveryAuthHash: recoveryAuthHashFor(sampleRecoveryCode(5)),
       recoveryCode: sampleRecoveryCode(5),
+      // The contributor's passphrase: `enrolledPair` signs them up with seed 51.
+      currentAuthHash: sampleAuthHash(51),
       shares: [],
     },
   });

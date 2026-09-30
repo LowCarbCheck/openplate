@@ -61,6 +61,8 @@ import { createDrizzleInstanceSettingsStore } from '../../src/db/settings-store.
 import { startInstanceSettings, type InstanceSettings } from '../../src/instance/instance-settings.js';
 import type { InstanceHealthConsent, InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { parseRecoveryCode } from '../../src/accounts/auth-input.js';
+import { deriveRecoveryAuthHash } from '../../src/lib/recovery-auth.js';
 
 export interface HttpResponse<T> {
   status: number;
@@ -509,6 +511,17 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   // `HEALTH_CONSENT_VERSION`, one binding for the context and `/health`.
   const healthConsent = options.healthConsent ?? null;
 
+  // Work a handler scheduled for after its response (`AuthContext.afterResponse`),
+  // remembered so `request` can wait for it once the response has arrived: a
+  // suite reads the mailer or the table right after a `202`, and must see the
+  // letter the request caused, without the response ever having waited for it.
+  const pendingAfterResponse: Array<Promise<void>> = [];
+  const settleAfterResponse = async (): Promise<void> => {
+    while (pendingAfterResponse.length > 0) {
+      await Promise.all(pendingAfterResponse.splice(0));
+    }
+  };
+
   const authContext: AuthContext = {
     // The zone the trial's last midnight falls in, as `main.ts` reads it from
     // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
@@ -530,6 +543,15 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     openSignup: openSignupSurface,
     // `null` by default, see `StartServiceOptions.healthConsent`.
     healthConsent,
+    afterResponse: (task) => {
+      pendingAfterResponse.push(
+        new Promise<void>((resolve) => {
+          setImmediate(() => {
+            void task().then(resolve);
+          });
+        }),
+      );
+    },
   };
 
   const aiSurface =
@@ -756,6 +778,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
       // this harness cannot know it, and a wrong `T` fails the assertion that
       // follows, which is the point of the test.
       const body = (response.status === 204 ? undefined : await response.json()) as T;
+      // After the response is in hand, never before: see `pendingAfterResponse`.
+      await settleAfterResponse();
       return { status: response.status, body, headers: response.headers };
     },
     async close() {
@@ -817,6 +841,17 @@ export function sampleRecoveryCode(seed = 0): string {
   const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   const characters = Array.from({ length: 32 }, (_unused, index) => alphabet[(index * 7 + seed) % alphabet.length]);
   return (characters.join('').match(/.{1,5}/g) ?? []).join('-');
+}
+
+/**
+ * The recovery proof a client derives from `code`, grouped or not: the value
+ * `newRecoveryAuthHash` must carry, since rotate-dek derives the same proof
+ * itself and refuses one that disagrees (PROTOCOL.md §5.17).
+ */
+export function recoveryAuthHashFor(code: string): string {
+  const canonical = parseRecoveryCode(code);
+  if (!canonical.ok) throw new Error(canonical.reason);
+  return deriveRecoveryAuthHash(canonical.value);
 }
 
 export function sampleCiphertext(seed = 3, bytes = 256): string {

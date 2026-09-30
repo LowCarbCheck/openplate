@@ -318,6 +318,81 @@ test('an operator-minted invitation is not a member one, so that address can sti
   assert.equal(fixture.mailer.invites.length, 1, 'the rule must not withhold an invitation over an operator mint');
 });
 
+// ── Another door's pending letter ──────────────────────────────────────────
+
+/** A pending invitation for `email` from a door other than the calling member's. */
+async function pendingFrom(
+  invites: FakeInviteStore,
+  fixture: AuthFixture,
+  input: { email: string; invitedByAccountId: number | null; source: 'open-signup' | null },
+): Promise<number> {
+  const minted = await invites.mint({
+    email: input.email,
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: 0,
+    expiresAt: new Date(fixture.now().getTime() + 60_000),
+    now: fixture.now(),
+    invitedByAccountId: input.invitedByAccountId,
+    source: input.source,
+    trialScans: null,
+    trialDays: null,
+  });
+  assert.ok(minted.ok);
+  return minted.minted.invite.id;
+}
+
+test('a member cannot replace a pending letter from the operator, the open door or another member, and is told nothing', async () => {
+  const { fixture, invites, ctx } = withMemberInvites();
+  const accountId = await seedMember(fixture);
+  const otherMember = await seedMember(fixture, 'other-member@example.org');
+  const fresh = JSON.stringify(await mint(ctx, { accountId, email: 'fresh@example.org' }));
+  const lettersBefore = fixture.mailer.invites.length;
+
+  const doors = [
+    { email: 'from-operator@example.org', invitedByAccountId: null, source: null },
+    { email: 'from-open-door@example.org', invitedByAccountId: null, source: 'open-signup' },
+    { email: 'from-other-member@example.org', invitedByAccountId: otherMember, source: null },
+  ] as const;
+  for (const door of doors) {
+    const inviteId = await pendingFrom(invites, fixture, door);
+    const outcome = await mint(ctx, { accountId, email: door.email });
+    // The same bytes a fresh address gets: a refusal naming the pending letter
+    // would tell the member somebody else already invited this person.
+    assert.equal(JSON.stringify(outcome), fresh, door.email);
+    const row = invites.rows().find((candidate) => candidate.id === inviteId);
+    assert.equal(row?.revokedAt, null, `${door.email}: the other door's letter must stay live`);
+  }
+  assert.equal(fixture.mailer.invites.length, lettersBefore, 'no letter may replace another door’s');
+});
+
+test('a member may re-send their own pending letter, which supersedes it', async () => {
+  const { fixture, invites, ctx } = withMemberInvites();
+  const accountId = await seedMember(fixture);
+
+  await mint(ctx, { accountId, email: FRIEND_EMAIL });
+  await mint(ctx, { accountId, email: FRIEND_EMAIL });
+
+  assert.equal(fixture.mailer.invites.length, 2);
+  const rows = invites.rows().filter((row) => row.email === FRIEND_EMAIL);
+  assert.equal(rows.length, 2);
+  assert.equal(rows.filter((row) => row.revokedAt === null).length, 1);
+});
+
+test('an administrator using the member door may still replace a pending letter, as the admin door does', async () => {
+  const { fixture, invites, ctx } = withMemberInvites();
+  const adminId = await seedAdmin(fixture);
+  const inviteId = await pendingFrom(invites, fixture, {
+    email: FRIEND_EMAIL,
+    invitedByAccountId: null,
+    source: 'open-signup',
+  });
+
+  await mint(ctx, { accountId: adminId, email: FRIEND_EMAIL });
+  assert.notEqual(invites.rows().find((row) => row.id === inviteId)?.revokedAt, null);
+  assert.equal(fixture.mailer.invites.length, 1);
+});
+
 // ── invitesLeft ────────────────────────────────────────────────────────────
 
 test('invitesLeft counts down for a member, and is null for an administrator', async () => {

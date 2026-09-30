@@ -185,7 +185,12 @@ const putKeyRecordRequestSchema = z.object({
   kdfDescriptor: kdfDescriptorSchema.nullable().optional(),
   wrappedDek: z.string().min(1),
   expectedUpdatedAt: z.string().nullable(),
+  // Required on an overwrite, ignored on a create (§5.4, 2026-09).
+  currentAuthHash: z.string().optional(),
 });
+
+/** The service's `401` body for a `currentAuthHash` that does not match. */
+const PASSPHRASE_REJECTED = 'current passphrase is incorrect';
 
 /**
  * §5.17's rotation, with the two fields M192's addendum made REQUIRED.
@@ -202,6 +207,8 @@ const rotateDekRequestSchema = z.object({
   shares: z.unknown(),
   newRecoveryAuthHash: z.string().min(1),
   recoveryCode: z.string().min(1),
+  // REQUIRED since 2026-09: a bearer token alone may not rotate (§5.17).
+  currentAuthHash: z.string().min(1),
 });
 
 const rotateDekShareSchema = z.object({
@@ -458,6 +465,14 @@ export interface FakeSyncService {
    * so nothing a current client does can produce one to test against.
    */
   stripKeyRecords(email: string): void;
+  /**
+   * Moves an account's passphrase verifier without touching its key records,
+   * which is what a passphrase change on another device looks like to a
+   * rotation that already checked the passphrase against the old record. The
+   * only way to make the service refuse `currentAuthHash` after the client's
+   * own check passed.
+   */
+  replaceVerifier(email: string, verifier: string): void;
   /** Everything the service holds at rest, as JSON — the other half of the zero-knowledge search. */
   dump(): string;
   close(): Promise<void>;
@@ -1110,7 +1125,16 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       res.status(400).json({ error: 'wrappedDek must not be empty' });
       return;
     }
-    const { kdfDescriptor, wrappedDek, expectedUpdatedAt } = parsed.data;
+    const { kdfDescriptor, wrappedDek, expectedUpdatedAt, currentAuthHash } = parsed.data;
+    // AN OVERWRITE PROVES THE PASSPHRASE (§5.4). A create does not.
+    if (expectedUpdatedAt !== null && currentAuthHash === undefined) {
+      res.status(400).json({ error: 'overwriting a key record requires currentAuthHash' });
+      return;
+    }
+    if (expectedUpdatedAt !== null && currentAuthHash !== account.verifier) {
+      res.status(401).json({ error: PASSPHRASE_REJECTED });
+      return;
+    }
     if (kind === 'recovery' && kdfDescriptor !== null) {
       res.status(400).json({ error: 'recovery key records must not carry a kdfDescriptor' });
       return;
@@ -1134,13 +1158,7 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
     res.json(record);
   });
 
-  app.delete(`${SYNC_API_PREFIX}/key-records/:kind`, (req, res) => {
-    const account = requireAccount(req, res);
-    if (account === null) return;
-    const kind = req.params.kind;
-    if (isSyncKeyRecordKind(kind)) account.keyRecords.delete(kind);
-    res.status(204).end();
-  });
+  // NO `DELETE /key-records/:kind`: the service removed it (§5.5, 2026-09).
 
   // ---------------------------------------------------------------------
   // Shares — grantor side (§5.16, `openplate-core` ADR-0002)
@@ -1183,7 +1201,12 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       // THE ADDENDUM'S REFUSAL. A rotation without the new verifier and the
       // new escrow would leave this account with a recovery code that
       // authenticates and a different one that decrypts.
-      res.status(400).json({ error: 'a rotation must carry newRecoveryAuthHash and recoveryCode' });
+      res.status(400).json({ error: 'a rotation must carry newRecoveryAuthHash, recoveryCode and currentAuthHash' });
+      return;
+    }
+    // After the shape, before any write: a bearer token alone may not rotate.
+    if (parsed.data.currentAuthHash !== account.verifier) {
+      res.status(401).json({ error: PASSPHRASE_REJECTED });
       return;
     }
     const submissions = keyRecordSubmissionsSchema.safeParse(parsed.data.keyRecords);
@@ -1489,6 +1512,11 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       const account = findAccountByEmail(email);
       if (account === undefined) throw new Error(`no account at ${email} to strip`);
       account.keyRecords.clear();
+    },
+    replaceVerifier: (email: string, verifier: string) => {
+      const account = findAccountByEmail(email);
+      if (account === undefined) throw new Error(`no account at ${email} to re-key`);
+      account.verifier = verifier;
     },
     dump: () =>
       JSON.stringify({

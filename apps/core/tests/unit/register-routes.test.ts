@@ -15,6 +15,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { registerSyncRoutes } from '../../src/server/register-routes.js';
 import { createFakeStorageAdapter } from './fake-storage-adapter.js';
+import { createFakePassphraseGate } from './fake-passphrase-gate.js';
 import type { SyncHostContext } from '../../src/contract-types.js';
 import { asArray, asObject, asString, type JsonValue } from '../../src/lib/json.js';
 
@@ -24,11 +25,14 @@ let baseUrl: string;
 /** `null` makes every route's `resolveEntitledUser` resolve `null` (not entitled); a number entitles that userId. */
 let currentEntitledUserId: number | null = null;
 
+const passphrase = createFakePassphraseGate();
+
 before(async () => {
   const app = express();
   const context: SyncHostContext = {
     storage: createFakeStorageAdapter(),
     resolveEntitledUser: async () => (currentEntitledUserId === null ? null : { userId: currentEntitledUserId }),
+    passphrase,
   };
   registerSyncRoutes(app, context);
 
@@ -128,16 +132,98 @@ test('PUT /v1/sync/key-records/:kind reaches the handler once entitled (200 crea
   assert.equal(response.status, 200);
 });
 
-test('DELETE /v1/sync/key-records/:kind returns 403 when not entitled', async () => {
-  currentEntitledUserId = null;
-  const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, { method: 'DELETE' });
-  assert.equal(response.status, 403);
+test('DELETE /v1/sync/key-records/:kind is not a route: 404 whether entitled or not, and nothing is deleted', async () => {
+  currentEntitledUserId = 105;
+  const created = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: sampleKeyRecordBody(),
+  });
+  assert.equal(created.status, 200);
+
+  for (const entitled of [105, null]) {
+    currentEntitledUserId = entitled;
+    const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, { method: 'DELETE' });
+    assert.equal(response.status, 404);
+  }
+
+  currentEntitledUserId = 105;
+  const listed = await fetch(`${baseUrl}/v1/sync/key-records`);
+  assert.equal(asArray(asObject(await listed.json())?.records)?.length, 1);
 });
 
-test('DELETE /v1/sync/key-records/:kind reaches the handler once entitled (204)', async () => {
-  currentEntitledUserId = 105;
-  const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, { method: 'DELETE' });
-  assert.equal(response.status, 204);
+/** A key-record body that asserts an existing record: an overwrite. */
+function overwriteBody(input: { expectedUpdatedAt: string; currentAuthHash?: string }): string {
+  return JSON.stringify({
+    kdfDescriptor: null,
+    wrappedDek: Buffer.from('a-replacement-wrap').toString('base64'),
+    expectedUpdatedAt: input.expectedUpdatedAt,
+    currentAuthHash: input.currentAuthHash,
+  });
+}
+
+async function createRecoveryRecord(accountId: number): Promise<string> {
+  currentEntitledUserId = accountId;
+  const created = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: sampleKeyRecordBody(),
+  });
+  assert.equal(created.status, 200);
+  const updatedAt = asString(asObject(await created.json())?.updatedAt);
+  if (updatedAt === null) throw new Error('expected an updatedAt');
+  return updatedAt;
+}
+
+const OWNER_AUTH_HASH = Buffer.alloc(32, 7).toString('base64');
+const WRONG_AUTH_HASH = Buffer.alloc(32, 8).toString('base64');
+
+test('a key-record OVERWRITE without currentAuthHash is 400 naming the field, and nothing changes', async () => {
+  const updatedAt = await createRecoveryRecord(106);
+  const checksBefore = passphrase.checks.length;
+  const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: overwriteBody({ expectedUpdatedAt: updatedAt }),
+  });
+  assert.equal(response.status, 400);
+  assert.match(asString(asObject(await response.json())?.error) ?? '', /currentAuthHash/);
+  // Refused as a request, before any guess was spent.
+  assert.equal(passphrase.checks.length, checksBefore);
+});
+
+test('a key-record OVERWRITE with a wrong currentAuthHash is 401 and the record keeps its wrap', async () => {
+  const updatedAt = await createRecoveryRecord(107);
+  passphrase.passphrases.set(107, OWNER_AUTH_HASH);
+  const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: overwriteBody({ expectedUpdatedAt: updatedAt, currentAuthHash: WRONG_AUTH_HASH }),
+  });
+  assert.equal(response.status, 401);
+  assert.equal(asString(asObject(await response.json())?.error), 'current passphrase is incorrect');
+
+  const listed = await fetch(`${baseUrl}/v1/sync/key-records`);
+  const record = asObject(asArray(asObject(await listed.json())?.records)?.[0] ?? null);
+  assert.equal(asString(record?.updatedAt), updatedAt);
+});
+
+test('a key-record OVERWRITE with the right currentAuthHash is 200', async () => {
+  const updatedAt = await createRecoveryRecord(108);
+  passphrase.passphrases.set(108, OWNER_AUTH_HASH);
+  const response = await fetch(`${baseUrl}/v1/sync/key-records/recovery`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: overwriteBody({ expectedUpdatedAt: updatedAt, currentAuthHash: OWNER_AUTH_HASH }),
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(passphrase.checks.at(-1), { accountId: 108, authHash: OWNER_AUTH_HASH });
+});
+
+test('a key-record CREATE stays token-only: no currentAuthHash, and the gate is never asked', async () => {
+  const checksBefore = passphrase.checks.length;
+  await createRecoveryRecord(109);
+  assert.equal(passphrase.checks.length, checksBefore);
 });
 
 test('the 403 body never leaks handler-shaped data — same generic message across every route', async () => {
@@ -145,7 +231,11 @@ test('the 403 body never leaks handler-shaped data — same generic message acro
   const responses = await Promise.all([
     fetch(`${baseUrl}/v1/sync/blob`),
     fetch(`${baseUrl}/v1/sync/key-records`),
-    fetch(`${baseUrl}/v1/sync/key-records/passphrase`, { method: 'DELETE' }),
+    fetch(`${baseUrl}/v1/sync/key-records/passphrase`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: sampleKeyRecordBody(),
+    }),
   ]);
   for (const response of responses) {
     assert.equal(response.status, 403);

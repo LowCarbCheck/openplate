@@ -238,7 +238,7 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
       // The SAME three predicates a redemption applies, so "pending" here is
       // exactly "a letter somebody could still spend".
       const [row] = await db
-        .select({ source: signupInvites.source })
+        .select({ source: signupInvites.source, invitedByAccountId: signupInvites.invitedByAccountId })
         .from(signupInvites)
         .where(
           and(
@@ -249,7 +249,7 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
           ),
         )
         .limit(1);
-      return row === undefined ? null : { source: row.source };
+      return row === undefined ? null : { source: row.source, invitedByAccountId: row.invitedByAccountId };
     },
   };
 }

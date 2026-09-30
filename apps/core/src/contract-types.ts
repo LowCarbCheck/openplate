@@ -19,6 +19,7 @@ import type { SyncKeyRecordKind } from './protocol.js';
 import type { JsonObject } from './lib/json.js';
 import type { BlobVersionSummary, RollbackRefusal } from './lib/blob-rollback.js';
 import type { Logger } from './logger.js';
+import type { PassphraseGate } from './accounts/passphrase-gate.js';
 
 export interface SyncKeyRecord {
   accountId: number;
@@ -106,7 +107,6 @@ export interface SyncStorageAdapter {
   putKeyRecord(
     input: Omit<SyncKeyRecord, 'updatedAt'> & { expectedUpdatedAt: Date | null },
   ): Promise<PutKeyRecordResult>;
-  deleteKeyRecord(input: { accountId: number; kind: SyncKeyRecordKind }): Promise<void>;
 }
 
 /**
@@ -197,6 +197,13 @@ export interface SyncHostContext {
    * can see is a capacity cliff discovered by a user.
    */
   logger?: Logger;
+  /**
+   * Matches `currentAuthHash` on a key-record OVERWRITE (§5.4), throttled per
+   * account. REQUIRED: a host that could omit it would mount a key-record
+   * route that overwrites on a bearer token alone, which is the hole this
+   * field closes. See `accounts/passphrase-gate.ts`.
+   */
+  passphrase: PassphraseGate;
 }
 
 /**
@@ -262,6 +269,27 @@ export interface RotateDekInput {
   recoveryVerifier: string;
   /** The re-sealed recovery code (`lib/escrow.ts`), written beside the verifier above. */
   recoveryCodeEscrow: Uint8Array;
+  /**
+   * The `accounts.verifier` the route matched `currentAuthHash` against, and
+   * the compare-and-swap guard on the account row.
+   *
+   * The passphrase is checked before the transaction opens; a passphrase
+   * change that commits in between leaves this value stale, and the rotation
+   * must then write nothing. Checking it again inside the transaction is what
+   * makes "the caller knew the passphrase" true at the moment of the write.
+   */
+  expectedVerifier: string;
+  /**
+   * The caller's own session, the only one this rotation leaves standing.
+   *
+   * A rotation retires a DEK its owner believes leaked, and replaces the
+   * recovery code. Every other session is revoked in the same transaction, so
+   * a stolen token cannot outlive the rotation that was run against it. The
+   * caller's family survives, so the device that rotated stays signed in.
+   * `familyId` is `null` only for a token minted before families existed;
+   * then the one token survives and its lineage does not.
+   */
+  keepSession: { tokenId: number; familyId: string | null };
 }
 
 export type RotateDekResult =
@@ -269,7 +297,9 @@ export type RotateDekResult =
   /** The blob CAS did not hold — same meaning as {@link PutBlobResult}'s conflict, and nothing was written. */
   | { ok: false; reason: 'blob-conflict'; currentVersion: number }
   /** A share named in the keep list does not exist. Rolled back rather than treated as a grant. */
-  | { ok: false; reason: 'unknown-share'; granteeAccountId: number };
+  | { ok: false; reason: 'unknown-share'; granteeAccountId: number }
+  /** The account's passphrase verifier is no longer {@link RotateDekInput.expectedVerifier}. Nothing was written. */
+  | { ok: false; reason: 'credential-superseded' };
 
 /**
  * The atomic rotation, kept in its OWN store rather than added to

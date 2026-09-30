@@ -79,9 +79,5 @@ export function createFakeStorageAdapter(): SyncStorageAdapter {
       keyRecordsByAccount.set(input.accountId, accountRecords);
       return { ok: true, record: full };
     },
-
-    async deleteKeyRecord(input): Promise<void> {
-      keyRecordsByAccount.get(input.accountId)?.delete(input.kind);
-    },
   };
 }

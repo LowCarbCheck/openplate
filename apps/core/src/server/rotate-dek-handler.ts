@@ -59,7 +59,8 @@ export type RotateDekHandlerResult =
   | { status: 'ok'; newVersion: number; keptShares: number; revokedShares: number }
   | { status: 'invalid'; reason: string }
   | { status: 'conflict'; currentVersion: number }
-  | { status: 'unknown-share'; granteeAccountId: number };
+  | { status: 'unknown-share'; granteeAccountId: number }
+  | { status: 'credential-superseded' };
 
 function validateKeyRecords(input: RotateDekInput): string | null {
   const kinds = input.keyRecords.map((record) => record.kind);
@@ -141,6 +142,10 @@ export async function handleRotateDek(
     // transaction as everything else — see `SyncRotationStore`.
     recoveryVerifier: request.recoveryVerifier,
     recoveryCodeEscrow: request.recoveryCodeEscrow,
+    // The passphrase guard and the one session that survives, both decided by
+    // the route: it matched `currentAuthHash` and it knows the caller's family.
+    expectedVerifier: request.expectedVerifier,
+    keepSession: request.keepSession,
   });
 
   if (result.ok) {
@@ -152,5 +157,6 @@ export async function handleRotateDek(
     };
   }
   if (result.reason === 'blob-conflict') return { status: 'conflict', currentVersion: result.currentVersion };
+  if (result.reason === 'credential-superseded') return { status: 'credential-superseded' };
   return { status: 'unknown-share', granteeAccountId: result.granteeAccountId };
 }

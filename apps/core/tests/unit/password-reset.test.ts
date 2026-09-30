@@ -71,10 +71,59 @@ async function withAccount(): Promise<AuthFixture> {
 
 // ── reset/request ──────────────────────────────────────────────────────────
 
+/**
+ * `reset/request`, then the work it scheduled for after its response. The
+ * handler answers before the store write and the letter, so a test that
+ * asserts on either settles first.
+ */
+async function requestReset(
+  fixture: AuthFixture,
+  body: Parameters<typeof handleResetRequest>[0],
+): Promise<Awaited<ReturnType<typeof handleResetRequest>>> {
+  const outcome = await handleResetRequest(body, fixture.ctx);
+  await fixture.settle();
+  return outcome;
+}
+
+/** A store write the test holds open, and the hand that lets it go. */
+interface HeldWrite {
+  release: (() => void) | null;
+}
+
+test('reset/request answers before the known-address work finishes, and a failure there is still a 202', async () => {
+  // THE TIMING PROPERTY, asserted without a stopwatch: a store write that
+  // never finishes must not hold the response. Before 2026-09 the handler
+  // awaited it on the known branch only, and that wait was the oracle.
+  const fixture = await withAccount();
+  const gate: HeldWrite = { release: null };
+  const writeStarted = new Promise<void>((resolve) => {
+    fixture.store.createPasswordReset = async () => {
+      resolve();
+      await new Promise<void>((release) => {
+        gate.release = release;
+      });
+      throw new Error('the database went away');
+    };
+  });
+
+  const outcome = await Promise.race([
+    handleResetRequest({ email: EMAIL }, fixture.ctx),
+    new Promise<'held'>((resolve) => setTimeout(() => resolve('held'), 200)),
+  ]);
+  assert.deepEqual(outcome, { status: 'accepted', body: {} });
+
+  // The work did start, and its failure is swallowed rather than thrown into
+  // a caller that has already been answered.
+  await writeStarted;
+  gate.release?.();
+  await fixture.settle();
+  assert.equal(fixture.mailer.resets.length, 0);
+});
+
 test('a reset request for a known address is 202, stores a token and asks for a letter', async () => {
   const fixture = await withAccount();
 
-  const outcome = await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  const outcome = await requestReset(fixture, { email: EMAIL });
   assert.equal(outcome.status, 'accepted');
   if (outcome.status !== 'accepted') throw new Error('unreachable');
   assert.deepEqual(outcome.body, {});
@@ -94,8 +143,8 @@ test('a reset request for a known address is 202, stores a token and asks for a 
 test('a reset request for an unknown address is the SAME 202, and sends nothing', async () => {
   const fixture = await withAccount();
 
-  const known = await handleResetRequest({ email: EMAIL }, fixture.ctx);
-  const unknown = await handleResetRequest({ email: 'nobody@example.org' }, fixture.ctx);
+  const known = await requestReset(fixture, { email: EMAIL });
+  const unknown = await requestReset(fixture, { email: 'nobody@example.org' });
   // Byte-identical outcomes: the response must say nothing about whether the
   // address exists.
   assert.deepEqual(known, unknown);
@@ -109,7 +158,7 @@ test('a malformed address is also a 202, so the status code is not an address-sh
   const fixture = await withAccount();
 
   for (const email of ['', 'not-an-address', 42, undefined]) {
-    const outcome = await handleResetRequest({ email }, fixture.ctx);
+    const outcome = await requestReset(fixture, { email });
     assert.equal(outcome.status, 'accepted', `email=${String(email)}`);
   }
   assert.equal(fixture.mailer.resets.length, 0);
@@ -122,9 +171,9 @@ test('both branches mint and digest a token, so the known one is not the only on
   // fail if somebody "optimised" the mint into the `account !== null` branch.
   const fixture = await withAccount();
 
-  await handleResetRequest({ email: 'nobody@example.org' }, fixture.ctx);
-  await handleResetRequest({ email: 'also-nobody@example.org' }, fixture.ctx);
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: 'nobody@example.org' });
+  await requestReset(fixture, { email: 'also-nobody@example.org' });
+  await requestReset(fixture, { email: EMAIL });
 
   // Three mints, one of which was stored. The two thrown away were paid for.
   const stored = fixture.store.allPasswordResets();
@@ -136,9 +185,9 @@ test('both branches mint and digest a token, so the known one is not the only on
 test('a new request supersedes the older live token', async () => {
   const fixture = await withAccount();
 
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const first = fixture.mailer.resets[0]?.resetToken ?? '';
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const second = fixture.mailer.resets[1]?.resetToken ?? '';
   assert.notEqual(first, second);
 
@@ -156,7 +205,7 @@ test('a new request supersedes the older live token', async () => {
 
 test('opening a reset returns the escrowed code once, and spends the token', async () => {
   const fixture = await withAccount();
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const token = fixture.mailer.resets[0]?.resetToken ?? '';
 
   const first = await handleResetOpen({ resetToken: token }, fixture.ctx);
@@ -179,7 +228,7 @@ test('opening a reset writes nothing to the account', async () => {
   // the verifier and the key records; this one hands over a code and leaves the
   // account exactly as it was. Whoever redeems it gets no login by doing so.
   const fixture = await withAccount();
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const token = fixture.mailer.resets[0]?.resetToken ?? '';
   const escrowBefore = fixture.store.escrowFor(1);
 
@@ -195,11 +244,11 @@ test('opening a reset writes nothing to the account', async () => {
 
 test('unknown, spent and expired tokens are ONE 404 after the same work', async () => {
   const fixture = await withAccount();
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const spent = fixture.mailer.resets[0]?.resetToken ?? '';
   assert.equal((await handleResetOpen({ resetToken: spent }, fixture.ctx)).status, 'ok');
 
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const expiring = fixture.mailer.resets[1]?.resetToken ?? '';
   fixture.advance(RESET_TOKEN_TTL_MS + 1000);
 
@@ -221,7 +270,7 @@ test('unknown, spent and expired tokens are ONE 404 after the same work', async 
 
 test('a reset token lives one hour and not a minute more', async () => {
   const fixture = await withAccount();
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const token = fixture.mailer.resets[0]?.resetToken ?? '';
 
   // A minute before the TTL, it still opens.
@@ -230,7 +279,7 @@ test('a reset token lives one hour and not a minute more', async () => {
   assert.equal(early.status, 'ok');
 
   // A fresh one, and this time past the boundary.
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const second = fixture.mailer.resets[1]?.resetToken ?? '';
   fixture.advance(RESET_TOKEN_TTL_MS + 1);
   assert.equal((await handleResetOpen({ resetToken: second }, fixture.ctx)).status, 'not-found');
@@ -247,7 +296,7 @@ test('the recovery code never appears in a log line', async () => {
     error: (message, fields) => lines.push(JSON.stringify({ message, fields })),
   };
 
-  await handleResetRequest({ email: EMAIL }, fixture.ctx);
+  await requestReset(fixture, { email: EMAIL });
   const token = fixture.mailer.resets[0]?.resetToken ?? '';
   assert.equal((await handleResetOpen({ resetToken: token }, fixture.ctx)).status, 'ok');
 

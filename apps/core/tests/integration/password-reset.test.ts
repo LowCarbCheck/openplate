@@ -254,3 +254,25 @@ test('deleting an account takes its reset tokens with it', async () => {
   // The cascade, which is what makes erasure complete without a cleanup job.
   assert.deepEqual(await database.db.select().from(passwordResets), []);
 });
+
+test('reset requests that overlap still leave exactly one live letter', async () => {
+  // reset/request answers before its store write runs (2026-09), so a burst of
+  // requests is a burst of overlapping transactions. Each inserts a row the
+  // others cannot see yet; without the account row lock each supersedes
+  // nothing, and several letters stay live at once.
+  const accountId = await setUpAccount();
+
+  const responses = await Promise.all(
+    Array.from({ length: 6 }, () =>
+      service.request({ method: 'POST', path: '/v1/auth/reset/request', body: { email: EMAIL } }),
+    ),
+  );
+  assert.deepEqual(
+    responses.map((response) => response.status),
+    [202, 202, 202, 202, 202, 202],
+  );
+
+  const rows = await database.db.select().from(passwordResets).where(eq(passwordResets.accountId, accountId));
+  assert.equal(rows.length, 6);
+  assert.equal(rows.filter((row) => row.consumedAt === null).length, 1, 'exactly one letter may stay live');
+});

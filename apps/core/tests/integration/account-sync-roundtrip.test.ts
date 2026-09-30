@@ -113,7 +113,12 @@ test('the full round trip: signup, login, key record, push, pull, conflict, dele
     method: 'PUT',
     path: '/v1/sync/key-records/passphrase',
     accessToken,
-    body: { kdfDescriptor: sampleKdfDescriptor(2), wrappedDek, expectedUpdatedAt: seeded.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: sampleKdfDescriptor(2),
+      wrappedDek,
+      expectedUpdatedAt: seeded.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(put.status, 200);
   assert.equal(put.body.kind, 'passphrase');
@@ -123,7 +128,12 @@ test('the full round trip: signup, login, key record, push, pull, conflict, dele
     method: 'PUT',
     path: '/v1/sync/key-records/passphrase',
     accessToken,
-    body: { kdfDescriptor: sampleKdfDescriptor(2), wrappedDek, expectedUpdatedAt: seeded.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: sampleKdfDescriptor(2),
+      wrappedDek,
+      expectedUpdatedAt: seeded.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(putAgain.status, 409);
 
@@ -384,6 +394,29 @@ test('refresh rotates against the database and the spent token stops working', a
   assert.equal(afterReuse.status, 401);
 });
 
+test('two concurrent refreshes with one token against the database: exactly one 200', async () => {
+  const { refreshToken } = await signUp();
+
+  const responses = await Promise.all(
+    [1, 2].map(() =>
+      service.request<{ tokens?: { accessToken: string } }>({
+        method: 'POST',
+        path: '/v1/auth/refresh',
+        body: { refreshToken },
+      }),
+    ),
+  );
+  assert.deepEqual(responses.map((response) => response.status).toSorted(), [200, 401]);
+
+  // The loser answered as reuse (PROTOCOL.md §4.2), so the family is gone and
+  // the pair the winner got no longer authenticates.
+  const winner = responses.find((response) => response.status === 200);
+  const accessToken = winner?.body.tokens?.accessToken;
+  assert.ok(accessToken);
+  const probe = await service.request({ method: 'GET', path: '/v1/auth/account', accessToken });
+  assert.equal(probe.status, 401);
+});
+
 test('change-passphrase commits verifier and key record together and revokes other sessions', async () => {
   const { accountId, accessToken } = await signUp();
 
@@ -561,7 +594,12 @@ async function seedRecoveryRecord(accessToken: string, seed: number): Promise<st
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(seed), expectedUpdatedAt: current },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(seed),
+      expectedUpdatedAt: current,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(created.status, 200);
   return created.body.updatedAt;
@@ -619,7 +657,7 @@ test('key-record rotation survives a wire round-trip of its CAS token', async ()
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: rotatedDek, expectedUpdatedAt: observedToken },
+    body: { kdfDescriptor: null, wrappedDek: rotatedDek, expectedUpdatedAt: observedToken, currentAuthHash: AUTH_HASH },
   });
   assert.equal(rotated.status, 200, 'a token read back over the wire must still win its CAS');
   assert.equal(rotated.body.wrappedDek, rotatedDek);
@@ -634,7 +672,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(52), expectedUpdatedAt: staleToken },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(52),
+      expectedUpdatedAt: staleToken,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(rotated.status, 200);
   const currentToken = rotated.body.updatedAt;
@@ -645,7 +688,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(53), expectedUpdatedAt: staleToken },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(53),
+      expectedUpdatedAt: staleToken,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(replayed.status, 409);
   assert.equal(replayed.body.currentUpdatedAt, currentToken, 'the 409 must name the REAL current token');
@@ -656,7 +704,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(54), expectedUpdatedAt: replayed.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(54),
+      expectedUpdatedAt: replayed.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(retried.status, 200, 'the token the 409 reported must be usable on the retry');
 });

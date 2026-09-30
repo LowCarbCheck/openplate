@@ -22,8 +22,10 @@ import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { accounts } from '../../src/db/schema.js';
+import { createDrizzleRotationStore } from '../../src/db/rotation-store.js';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import {
+  recoveryAuthHashFor,
   sampleAuthHash,
   sampleRecoveryCode,
   sampleCiphertext,
@@ -105,9 +107,11 @@ const NEW_RECOVERY_WRAP = sampleWrappedDek(22);
 const OLD_SHARE_WRAP = sampleShareWrap(31);
 const NEW_SHARE_WRAP = sampleShareWrap(41);
 const OLD_CIPHERTEXT = sampleCiphertext(17, 512);
-/** The recovery credential every rotation below mints (M192 addendum). */
-const NEW_RECOVERY_AUTH_HASH = sampleAuthHash(71);
+/** The recovery credential every rotation below mints (M192 addendum), its proof derived as a client derives it. */
 const NEW_RECOVERY_CODE = sampleRecoveryCode(5);
+const NEW_RECOVERY_AUTH_HASH = recoveryAuthHashFor(NEW_RECOVERY_CODE);
+/** The owner's passphrase proof: `setUpOwner` signs the patient up with seed 41. */
+const OWNER_AUTH_HASH = sampleAuthHash(41);
 const NEW_CIPHERTEXT = sampleCiphertext(23, 512);
 
 /** An account set up the way a real one is: one blob, both key records. */
@@ -134,6 +138,7 @@ async function setUpOwner(): Promise<Party> {
       kdfDescriptor: sampleKdfDescriptor(41),
       wrappedDek: OLD_PASSPHRASE_WRAP,
       expectedUpdatedAt: await service.currentKeyRecordToken({ accessToken: owner.accessToken, kind: 'passphrase' }),
+      currentAuthHash: OWNER_AUTH_HASH,
     },
   });
   assert.equal(passphrase.status, 200);
@@ -146,6 +151,7 @@ async function setUpOwner(): Promise<Party> {
       kdfDescriptor: null,
       wrappedDek: OLD_RECOVERY_WRAP,
       expectedUpdatedAt: await service.currentKeyRecordToken({ accessToken: owner.accessToken, kind: 'recovery' }),
+      currentAuthHash: OWNER_AUTH_HASH,
     },
   });
   assert.equal(recovery.status, 200);
@@ -175,6 +181,8 @@ function rotationBody(shares: { granteeAccountId: number; wrappedDek: string }[]
     // escrow move with it in the same transaction.
     newRecoveryAuthHash: NEW_RECOVERY_AUTH_HASH,
     recoveryCode: NEW_RECOVERY_CODE,
+    // The owner's current passphrase: a bearer token alone may not rotate.
+    currentAuthHash: OWNER_AUTH_HASH,
     shares: shares.map((share) => ({ ...share, recipientKeyFingerprint: FINGERPRINT })),
   };
 }
@@ -361,7 +369,7 @@ test('a rotation without the new recovery credential is a 400, and nothing moves
   const owner = await setUpOwner();
   const complete = rotationBody([]);
 
-  for (const missing of ['newRecoveryAuthHash', 'recoveryCode'] as const) {
+  for (const missing of ['newRecoveryAuthHash', 'recoveryCode', 'currentAuthHash'] as const) {
     // Inference keeps the builder's own shape, so `delete` below names a key
     // the compiler knows exists rather than an open dictionary's.
     const body: Partial<ReturnType<typeof rotationBody>> = { ...complete };
@@ -500,6 +508,7 @@ test('rotation CAS: a stale baseVersion is refused, and the tokens a rotation wr
       kdfDescriptor: sampleKdfDescriptor(88),
       wrappedDek: sampleWrappedDek(31),
       expectedUpdatedAt: passphraseToken,
+      currentAuthHash: OWNER_AUTH_HASH,
     },
   });
   assert.equal(reRotate.status, 200, 'the key-record token a rotation wrote must still satisfy the CAS');
@@ -522,4 +531,207 @@ test('rotation CAS: a stale baseVersion is refused, and the tokens a rotation wr
     },
   });
   assert.equal(reGrant.status, 200, 'the share token a rotation wrote must still satisfy the CAS');
+});
+
+// ---------------------------------------------------------------------------
+// The takeover this route used to allow (2026-09): a bearer token alone wrote
+// a recovery verifier, and `POST /v1/auth/recover` turned it into a session.
+// ---------------------------------------------------------------------------
+
+/** A code the token holder chose, and its proof. */
+const PLANTED_CODE = sampleRecoveryCode(9);
+const PLANTED_PROOF = recoveryAuthHashFor(PLANTED_CODE);
+
+test('a bearer token without the passphrase cannot rotate, so it cannot plant a recovery code', async () => {
+  const owner = await setUpOwner();
+  const [rowBefore] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+
+  const refused = await service.request<{ error: string }>({
+    method: 'POST',
+    path: '/v1/sync/rotate-dek',
+    accessToken: owner.accessToken,
+    body: {
+      ...rotationBody([]),
+      newRecoveryAuthHash: PLANTED_PROOF,
+      recoveryCode: PLANTED_CODE,
+      currentAuthHash: sampleAuthHash(99),
+    },
+  });
+  assert.equal(refused.status, 401);
+  assert.equal(refused.body.error, 'current passphrase is incorrect');
+
+  // Nothing moved: not the blob, not the recovery verifier, not the escrow.
+  assert.equal((await readBlob(owner)).blobVersion, 1);
+  const [rowAfter] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+  assert.equal(rowAfter?.recoveryVerifier, rowBefore?.recoveryVerifier);
+  assert.deepEqual(rowAfter?.recoveryCodeEscrow, rowBefore?.recoveryCodeEscrow);
+
+  // And the planted code signs nobody in.
+  const recovered = await service.request({
+    method: 'POST',
+    path: '/v1/auth/recover',
+    body: { email: 'patient@example.org', recoveryAuthHash: PLANTED_PROOF },
+  });
+  assert.equal(recovered.status, 401);
+});
+
+test('a newRecoveryAuthHash that is not the code’s own proof is a 400, and nothing moves', async () => {
+  const owner = await setUpOwner();
+  const [rowBefore] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+
+  // A proof for one code beside a different code: sealing either would leave
+  // an escrow that does not sign in.
+  const refused = await service.request<{ error: string }>({
+    method: 'POST',
+    path: '/v1/sync/rotate-dek',
+    accessToken: owner.accessToken,
+    body: { ...rotationBody([]), newRecoveryAuthHash: PLANTED_PROOF },
+  });
+  assert.equal(refused.status, 400);
+  assert.match(refused.body.error, /newRecoveryAuthHash/);
+
+  assert.equal((await readBlob(owner)).blobVersion, 1);
+  const [rowAfter] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+  assert.equal(rowAfter?.recoveryVerifier, rowBefore?.recoveryVerifier);
+});
+
+test('a rotation revokes every other session and keeps the caller signed in', async () => {
+  const owner = await setUpOwner();
+  // A second device, the kind of session a stolen token is.
+  const other = await service.request<{ tokens: { accessToken: string; refreshToken: string } }>({
+    method: 'POST',
+    path: '/v1/auth/login',
+    body: { email: 'patient@example.org', authHash: OWNER_AUTH_HASH },
+  });
+  assert.equal(other.status, 200);
+
+  const rotated = await service.request({
+    method: 'POST',
+    path: '/v1/sync/rotate-dek',
+    accessToken: owner.accessToken,
+    body: rotationBody([]),
+  });
+  assert.equal(rotated.status, 200);
+
+  const otherAccess = await service.request({
+    method: 'GET',
+    path: '/v1/auth/account',
+    accessToken: other.body.tokens.accessToken,
+  });
+  assert.equal(otherAccess.status, 401, 'another session must not survive a rotation');
+  const otherRefresh = await service.request({
+    method: 'POST',
+    path: '/v1/auth/refresh',
+    body: { refreshToken: other.body.tokens.refreshToken },
+  });
+  assert.equal(otherRefresh.status, 401, 'nor may its refresh token mint a new one');
+
+  const callerAccess = await service.request({
+    method: 'GET',
+    path: '/v1/auth/account',
+    accessToken: owner.accessToken,
+  });
+  assert.equal(callerAccess.status, 200, 'the rotating device stays signed in');
+});
+
+test('the store refuses a rotation whose passphrase verifier moved since the check, and writes nothing', async () => {
+  const owner = await setUpOwner();
+  const [rowBefore] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+  const store = createDrizzleRotationStore(database.db);
+
+  const result = await store.rotateDek({
+    accountId: owner.accountId,
+    blob: { baseVersion: 1, envelopeVersion: 1, ciphertext: Buffer.from(NEW_CIPHERTEXT, 'base64') },
+    keyRecords: [
+      {
+        kind: 'passphrase',
+        kdfDescriptor: sampleKdfDescriptor(77),
+        wrappedDek: Buffer.from(NEW_PASSPHRASE_WRAP, 'base64'),
+      },
+      { kind: 'recovery', kdfDescriptor: null, wrappedDek: Buffer.from(NEW_RECOVERY_WRAP, 'base64') },
+    ],
+    shares: [],
+    recoveryVerifier: 'c'.repeat(64),
+    recoveryCodeEscrow: new Uint8Array(60).fill(3),
+    // What a passphrase change committed between the check and this call
+    // leaves: the verifier the route matched is no longer on the row.
+    expectedVerifier: 'd'.repeat(64),
+    keepSession: { tokenId: 0, familyId: null },
+  });
+  assert.deepEqual(result, { ok: false, reason: 'credential-superseded' });
+
+  assert.equal((await readBlob(owner)).blobVersion, 1);
+  assert.equal((await readKeyRecords(owner)).get('passphrase')?.wrappedDek, OLD_PASSPHRASE_WRAP);
+  const [rowAfter] = await database.db.select().from(accounts).where(eq(accounts.id, owner.accountId));
+  assert.equal(rowAfter?.recoveryVerifier, rowBefore?.recoveryVerifier);
+});
+
+test('a key-record overwrite without the passphrase is refused, so a token cannot swap the recovery wrap', async () => {
+  const owner = await setUpOwner();
+  const token = await service.currentKeyRecordToken({ accessToken: owner.accessToken, kind: 'recovery' });
+
+  const missing = await service.request<{ error: string }>({
+    method: 'PUT',
+    path: '/v1/sync/key-records/recovery',
+    accessToken: owner.accessToken,
+    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(66), expectedUpdatedAt: token },
+  });
+  assert.equal(missing.status, 400);
+  assert.match(missing.body.error, /currentAuthHash/);
+
+  const wrong = await service.request({
+    method: 'PUT',
+    path: '/v1/sync/key-records/recovery',
+    accessToken: owner.accessToken,
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(66),
+      expectedUpdatedAt: token,
+      currentAuthHash: sampleAuthHash(99),
+    },
+  });
+  assert.equal(wrong.status, 401);
+
+  assert.equal((await readKeyRecords(owner)).get('recovery')?.wrappedDek, OLD_RECOVERY_WRAP);
+});
+
+test('passphrase guesses on rotate-dek are throttled per account, in the bucket change-passphrase spends', async () => {
+  const strict = await startService({
+    db: database.db,
+    throttleConfig: { freeAttempts: 2, baseLockoutMs: 60_000, maxLockoutMs: 60_000, attemptResetMs: 60_000 },
+  });
+  try {
+    const session = await strict.signupThroughInvite({ email: 'guessed@example.org', authHash: OWNER_AUTH_HASH });
+    const accessToken = session.tokens.accessToken;
+    const wrongRotation = {
+      ...rotationBody([], 0),
+      currentAuthHash: sampleAuthHash(99),
+    };
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const response = await strict.request({
+        method: 'POST',
+        path: '/v1/sync/rotate-dek',
+        accessToken,
+        body: wrongRotation,
+      });
+      assert.equal(response.status, 401, `guess ${attempt}`);
+    }
+    // Locked now, and the lock is the ACCOUNT's: change-passphrase shares it,
+    // even with the right passphrase.
+    const locked = await strict.request({
+      method: 'POST',
+      path: '/v1/auth/change-passphrase',
+      accessToken,
+      body: {
+        currentAuthHash: OWNER_AUTH_HASH,
+        newAuthHash: sampleAuthHash(98),
+        kdfDescriptor: sampleKdfDescriptor(5),
+        keyRecords: [{ kind: 'passphrase', kdfDescriptor: sampleKdfDescriptor(5), wrappedDek: sampleWrappedDek(5) }],
+      },
+    });
+    assert.equal(locked.status, 429);
+    assert.ok(locked.headers.get('retry-after'));
+  } finally {
+    await strict.close();
+  }
 });

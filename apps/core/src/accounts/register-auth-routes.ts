@@ -84,6 +84,7 @@ import { handleNotFound } from '../server/error-middleware.js';
 import { getRequestSession } from '../server/bearer-auth.js';
 import { createThrottleStore, throttleKey, type ThrottleStore } from '../lib/throttle.js';
 import { SIGNUP_REQUEST_IP_THROTTLE } from './open-signup.js';
+import { passphraseThrottleKey, sendThrottled } from './passphrase-gate.js';
 import { asFields } from './auth-input.js';
 import { asString } from '../lib/json.js';
 
@@ -156,11 +157,17 @@ function sendOutcome<T>(res: Response, outcome: AuthOutcome<T>): void {
   }
 }
 
-/** `429` with a `Retry-After` in whole seconds, rounded up so a client never retries a millisecond too early. */
-function sendThrottled(res: Response, retryAfterMs: number): void {
-  const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
-  res.setHeader('Retry-After', String(retryAfterSeconds));
-  res.status(429).json({ error: `too many attempts; try again in ${retryAfterSeconds}s` });
+/**
+ * Books one passphrase-checking outcome against the account's bucket: a
+ * refusal of the credential is a failure, a success clears the bucket, and
+ * anything else (a malformed body) is neither.
+ */
+function recordPassphraseOutcome(input: { throttle: ThrottleStore; key: string; outcome: AuthOutcome<unknown> }): void {
+  if (input.outcome.status === 'unauthorized') {
+    input.throttle.recordFailure(input.key);
+    return;
+  }
+  if (input.outcome.status === 'ok' || input.outcome.status === 'no-content') input.throttle.clear(input.key);
 }
 
 /**
@@ -372,6 +379,11 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
   // consent. Accepting this half alone would revoke every session and leave
   // the compartment on a passphrase nobody has any more, so the whole change
   // waits until the person has agreed.
+  //
+  // THROTTLED PER ACCOUNT, in the bucket rotate-dek and a key-record overwrite
+  // spend from too (`passphrase-gate.ts`). The caller holds a token already,
+  // and `currentAuthHash` is a guess at the passphrase that token cannot
+  // prove; per IP, a stolen token would buy a fresh allowance per address.
   router.post(`${AUTH_API_PREFIX}/change-passphrase`, requireAuth, requireConsent, async (req, res, next) => {
     try {
       const session = getRequestSession(req);
@@ -379,7 +391,15 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
         res.status(401).json({ error: 'authentication required' });
         return;
       }
-      sendOutcome(res, await handleChangePassphrase({ accountId: session.accountId, body: req.body }, ctx));
+      const key = passphraseThrottleKey(session.accountId);
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      const outcome = await handleChangePassphrase({ accountId: session.accountId, body: req.body }, ctx);
+      recordPassphraseOutcome({ throttle, key, outcome });
+      sendOutcome(res, outcome);
     } catch (error) {
       next(error);
     }
@@ -515,6 +535,9 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
     router.use(`${AUTH_API_PREFIX}/signup-request`, handleNotFound);
   }
 
+  // Throttled per account in the passphrase bucket, for the reason
+  // change-passphrase above gives: `authHash` here is a guess at the
+  // passphrase from a caller who already holds a token.
   router.post(`${AUTH_API_PREFIX}/delete`, requireAuth, async (req, res, next) => {
     try {
       const session = getRequestSession(req);
@@ -522,7 +545,15 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
         res.status(401).json({ error: 'authentication required' });
         return;
       }
-      sendOutcome(res, await handleDeleteAccount({ accountId: session.accountId, body: req.body }, ctx));
+      const key = passphraseThrottleKey(session.accountId);
+      const decision = throttle.check(key);
+      if (decision.locked) {
+        sendThrottled(res, decision.retryAfterMs);
+        return;
+      }
+      const outcome = await handleDeleteAccount({ accountId: session.accountId, body: req.body }, ctx);
+      recordPassphraseOutcome({ throttle, key, outcome });
+      sendOutcome(res, outcome);
     } catch (error) {
       next(error);
     }

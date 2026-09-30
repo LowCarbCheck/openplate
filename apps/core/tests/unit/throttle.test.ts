@@ -6,8 +6,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { normalizeEmail } from '../../src/lib/verifier.js';
 import {
   DEFAULT_THROTTLE_CONFIG,
+  accountThrottleKey,
   MAX_THROTTLE_ENTRIES,
   createThrottleStore,
   evaluateThrottle,
@@ -35,6 +37,27 @@ test('throttleKey separates namespaces, IPs and identifiers', () => {
   assert.equal(
     throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: ' A@B.TEST ' }),
     throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: 'a@b.test' }),
+  );
+});
+
+test('throttleKey folds an identifier exactly as the account lookup does, NFKC included', () => {
+  // Fullwidth Latin reaches the same account through `normalizeEmail`, so it
+  // must reach the same bucket. A trim and a lowercase alone gave it its own.
+  assert.equal(
+    throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: '\uFF41nna@example.org' }),
+    throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: 'anna@example.org' }),
+  );
+  assert.equal(normalizeEmail('\uFF41nna@example.org'), 'anna@example.org');
+});
+
+test('accountThrottleKey separates accounts and namespaces, and ignores the address', () => {
+  assert.notEqual(
+    accountThrottleKey({ namespace: 'passphrase', accountId: 1 }),
+    accountThrottleKey({ namespace: 'passphrase', accountId: 2 }),
+  );
+  assert.notEqual(
+    accountThrottleKey({ namespace: 'passphrase', accountId: 1 }),
+    accountThrottleKey({ namespace: 'login', accountId: 1 }),
   );
 });
 
@@ -90,16 +113,53 @@ test('stale entries are droppable and overflow eviction is oldest-first', () => 
     ['stale'],
   );
   assert.deepEqual(
-    findOverflowKeys(
-      [
+    findOverflowKeys({
+      entries: [
         ['new', fresh],
         ['old', stale],
       ],
-      1,
-    ),
+      maxEntries: 1,
+      now: NOW,
+    }),
     ['old'],
   );
-  assert.deepEqual(findOverflowKeys([['only', fresh]], MAX_THROTTLE_ENTRIES), []);
+  assert.deepEqual(findOverflowKeys({ entries: [['only', fresh]], maxEntries: MAX_THROTTLE_ENTRIES, now: NOW }), []);
+});
+
+test('overflow eviction never picks a locked entry, even the oldest one', () => {
+  const locked = { failures: 9, lastFailureAt: NOW - 1000, lockedUntil: NOW + 60_000 };
+  const older = { failures: 1, lastFailureAt: NOW - 500, lockedUntil: null };
+  const newer = { failures: 1, lastFailureAt: NOW, lockedUntil: null };
+  assert.deepEqual(
+    findOverflowKeys({
+      entries: [
+        ['locked', locked],
+        ['newer', newer],
+        ['older', older],
+      ],
+      maxEntries: 1,
+      now: NOW,
+    }),
+    ['older', 'newer'],
+  );
+  // Everything locked: nothing is evicted, and the store runs over its cap
+  // until the locks lift.
+  assert.deepEqual(findOverflowKeys({ entries: [['locked', locked]], maxEntries: 0, now: NOW }), []);
+});
+
+test('a flood of junk identifiers cannot clear a lock in the store', () => {
+  const store = createThrottleStore();
+  const victim = throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: 'anna@example.org' });
+  for (let attempt = 0; attempt <= DEFAULT_THROTTLE_CONFIG.freeAttempts; attempt += 1) {
+    store.recordFailure(victim, NOW);
+  }
+  assert.equal(store.check(victim, NOW).locked, true);
+
+  // More junk buckets than the cap, every one of them newer than the lock.
+  for (let index = 0; index < MAX_THROTTLE_ENTRIES + 5; index += 1) {
+    store.recordFailure(throttleKey({ namespace: 'login', ip: '1.1.1.1', identifier: `junk${index}@x.test` }), NOW + 1);
+  }
+  assert.equal(store.check(victim, NOW + 2).locked, true);
 });
 
 test('shouldSweep is time-gated', () => {

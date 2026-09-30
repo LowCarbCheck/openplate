@@ -344,18 +344,6 @@ export class SyncHttpClient {
     return { status: 'accepted', record: decodeKeyRecord((await response.json()) as KeyRecordWire) };
   }
 
-  /**
-   * Deletes a key record (§5.5). Idempotent.
-   *
-   * Deleting the LAST remaining record makes every stored blob permanently
-   * undecryptable. The service does not stop you; no caller here should reach
-   * this without an unmistakable warning in front of it.
-   */
-  async deleteKeyRecord(kind: SyncKeyRecordKind): Promise<void> {
-    const response = await this.send({ path: `${SYNC_API_PREFIX}/key-records/${kind}`, method: 'DELETE' });
-    if (!response.ok) throw await toRequestError(response);
-  }
-
   // -------------------------------------------------------------------------
   // Shares — grantor side (§5.16)
   // -------------------------------------------------------------------------

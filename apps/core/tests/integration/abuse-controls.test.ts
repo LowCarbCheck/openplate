@@ -285,6 +285,50 @@ test('reset requests throttle per address and are never cleared by a success', a
   }
 });
 
+test('account delete and change-passphrase guesses are throttled per account, from any address', async () => {
+  // THE CALLER HOLDS A TOKEN ALREADY, and `authHash` is a guess at the
+  // passphrase that token cannot prove. Keyed by IP, a stolen token would buy a
+  // fresh allowance on every address its holder can send from; keyed by the
+  // account, it buys `freeAttempts` guesses in all.
+  const service = await startService({ db: database.db, throttleConfig: DEFAULT_THROTTLE_CONFIG, trustProxy: true });
+  try {
+    const session = await service.signupThroughInvite({ email: 'guarded@example.org', authHash: sampleAuthHash(3) });
+    const accessToken = session.tokens.accessToken;
+
+    for (let attempt = 0; attempt <= DEFAULT_THROTTLE_CONFIG.freeAttempts; attempt += 1) {
+      const response = await service.request({
+        method: 'POST',
+        path: '/v1/auth/delete',
+        accessToken,
+        body: { authHash: sampleAuthHash(99) },
+        // A new address for every guess.
+        headers: { 'x-forwarded-for': `203.0.113.${attempt + 1}` },
+      });
+      assert.equal(response.status, 401, `guess ${attempt + 1}`);
+    }
+
+    // Locked, from yet another address, even with the right passphrase, and on
+    // change-passphrase too: one bucket for every route that checks it.
+    for (const path of ['/v1/auth/delete', '/v1/auth/change-passphrase']) {
+      const blocked = await service.request({
+        method: 'POST',
+        path,
+        accessToken,
+        body: { authHash: sampleAuthHash(3), currentAuthHash: sampleAuthHash(3) },
+        headers: { 'x-forwarded-for': '198.51.100.7' },
+      });
+      assert.equal(blocked.status, 429, path);
+      assert.ok(Number(blocked.headers.get('retry-after')) >= 1);
+    }
+
+    // The account is still there: the lock refused the right passphrase too.
+    const account = await service.request({ method: 'GET', path: '/v1/auth/account', accessToken });
+    assert.equal(account.status, 200);
+  } finally {
+    await service.close();
+  }
+});
+
 test('deleting an account does not refund the instance ceiling it spent', async () => {
   // THE ATTACK THIS SHAPE OF COUNTER EXISTS TO STOP. A ceiling read as a `SUM`
   // over `ai_usage_days` would be refundable: `account_id` cascades on delete

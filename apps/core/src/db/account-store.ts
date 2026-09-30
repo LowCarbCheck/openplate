@@ -36,6 +36,7 @@ import type {
   RecoverAndRotatePassphraseResult,
   RedeemInviteAndCreateAccountInput,
   RedeemInviteResult,
+  RevokeTokenResult,
   RotateCredentialInput,
   StoredToken,
   UpdateStandingInput,
@@ -194,6 +195,27 @@ async function revokeSessionsIn(tx: Transaction, input: { accountId: number; rev
     );
 }
 
+/**
+ * Stamps revoked every invitation the account sent that is still unspent,
+ * inside the caller's transaction. Redeemed rows are the record of an account
+ * that exists and are left alone.
+ */
+async function withdrawPendingInvitesSentBy(
+  tx: Transaction,
+  input: { accountId: number; revokedAt: Date },
+): Promise<void> {
+  await tx
+    .update(signupInvites)
+    .set({ revokedAt: input.revokedAt })
+    .where(
+      and(
+        eq(signupInvites.invitedByAccountId, input.accountId),
+        isNull(signupInvites.redeemedAt),
+        isNull(signupInvites.revokedAt),
+      ),
+    );
+}
+
 /** The invite row redemption decides the account's standing from. */
 type InviteRow = typeof signupInvites.$inferSelect;
 
@@ -344,6 +366,8 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
         .limit(1);
       if (!account) return;
       const mailbox = hash(account.email);
+
+      await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
 
       const [memberCaused] = await tx
         .select({ id: signupInvites.id })
@@ -644,6 +668,13 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
 
     async createPasswordReset(input: CreatePasswordResetInput): Promise<void> {
       await db.transaction(async (tx) => {
+        // ONE REQUEST AT A TIME PER ACCOUNT. Two of these transactions running
+        // side by side each insert a row the other cannot see yet, so each
+        // supersedes nothing and both letters stay live. The account row lock
+        // queues the second behind the first, whose row it then supersedes.
+        // Since reset/request answers before this runs, two requests in quick
+        // succession are exactly the case that would otherwise overlap.
+        await tx.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, input.accountId)).for('update');
         const [row] = await tx
           .insert(passwordResets)
           .values({
@@ -717,8 +748,18 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       // rather than of this line, which is exactly why
       // `tests/integration/ai-usage-retention.test.ts` COUNTS the usage rows
       // for the id afterwards instead of trusting a 204.
+      //
+      // THE INVITATIONS THIS ACCOUNT SENT AND NOBODY HAS REDEEMED go in the
+      // same transaction, withdrawn rather than deleted, and BEFORE the row:
+      // `invited_by_account_id` is `ON DELETE SET NULL`, and afterwards a
+      // member's pending letter would look like the operator's. Left pending,
+      // a letter could still be redeemed after its sender left, and a day-trial
+      // letter's allowance only starts at redemption.
       if (hashAddress === null) {
-        await db.delete(accounts).where(eq(accounts.id, accountId));
+        await db.transaction(async (tx): Promise<void> => {
+          await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
+          await tx.delete(accounts).where(eq(accounts.id, accountId));
+        });
         return;
       }
       await deleteKeepingOnlyTheHash(accountId, hashAddress);
@@ -794,13 +835,38 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       return row ? mapTokenRow(row) : null;
     },
 
-    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<void> {
+    async revokeToken(input: { tokenId: number; revokedAt: Date }): Promise<RevokeTokenResult> {
       // `isNull` guard: revocation is stamped once, so a re-revoked token keeps
-      // the instant it was actually invalidated.
-      await db
+      // the instant it was actually invalidated. The guard is also the race
+      // arbiter for a refresh: of two concurrent statements on one row, the
+      // second re-evaluates the predicate after the first commits, matches
+      // nothing, and returns no row.
+      const changed = await db
         .update(accountTokens)
         .set({ revokedAt: input.revokedAt })
-        .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)));
+        .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)))
+        .returning({ id: accountTokens.id });
+      return changed.length === 0 ? 'already-revoked' : 'revoked';
+    },
+
+    async spendRefreshToken(input: {
+      tokenId: number;
+      revokedAt: Date;
+      issue: NewTokenInput[];
+    }): Promise<RevokeTokenResult> {
+      return await db.transaction(async (tx): Promise<RevokeTokenResult> => {
+        // The same guarded UPDATE `revokeToken` runs. Its row lock is held to
+        // commit, so a concurrent spend of this token waits here and then
+        // matches nothing, after the pair below is already visible.
+        const spent = await tx
+          .update(accountTokens)
+          .set({ revokedAt: input.revokedAt })
+          .where(and(eq(accountTokens.id, input.tokenId), isNull(accountTokens.revokedAt)))
+          .returning({ id: accountTokens.id });
+        if (spent.length === 0) return 'already-revoked';
+        if (input.issue.length > 0) await tx.insert(accountTokens).values(tokenValues(input.issue));
+        return 'revoked';
+      });
     },
 
     async revokeFamily(input: { accountId: number; familyId: string; revokedAt: Date }): Promise<void> {

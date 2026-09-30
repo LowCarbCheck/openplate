@@ -1,10 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  handleDeleteKeyRecord,
-  handleListKeyRecords,
-  handlePutKeyRecord,
-} from '../../src/server/key-records-handler.js';
+import { handleListKeyRecords, handlePutKeyRecord } from '../../src/server/key-records-handler.js';
 import { createFakeStorageAdapter } from './fake-storage-adapter.js';
 
 function wrappedDek(): Uint8Array {
@@ -61,17 +57,6 @@ test('a valid recovery key record (no kdfDescriptor) is stored and listable', as
   const records = await handleListKeyRecords(1, storage);
   assert.equal(records.length, 1);
   assert.equal(records[0]?.kdfDescriptor, null);
-});
-
-test('deleting a key record removes it', async () => {
-  const storage = createFakeStorageAdapter();
-  await handlePutKeyRecord(
-    { accountId: 1, kind: 'recovery', kdfDescriptor: null, wrappedDek: wrappedDek(), expectedUpdatedAt: null },
-    storage,
-  );
-  await handleDeleteKeyRecord({ accountId: 1, kind: 'recovery' }, storage);
-  const records = await handleListKeyRecords(1, storage);
-  assert.equal(records.length, 0);
 });
 
 test('rejects an empty wrappedDek as invalid', async () => {

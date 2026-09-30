@@ -30,6 +30,7 @@ import type {
   MemberInviteGrant,
   NewTokenInput,
   RedeemInviteResult,
+  StoredToken,
 } from './account-store.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
 import { deriveDummyKdfDescriptor } from '../lib/kdf-descriptor.js';
@@ -72,6 +73,7 @@ import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
 import { isUnpaidTrial, trialScansView } from './scan-trial.js';
 import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
+import { PASSPHRASE_REJECTED } from './passphrase-gate.js';
 
 /** Everything the handlers need from the outside world. All of it injected — none of it imported. */
 export interface AuthContext {
@@ -153,6 +155,19 @@ export interface AuthContext {
    * it needs to agree, to leave and to read its own copy.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * Runs work AFTER the response is sent, without the response waiting for
+   * it. Absent means `setImmediate`, which is what `main.ts` runs.
+   *
+   * WHAT USES IT: `POST /v1/auth/reset/request`, whose store write and letter
+   * happen only for an address that exists. Awaited, they made a known
+   * address measurably slower than an unknown one. The task catches and logs
+   * its own failures; a scheduler must not expect a rejection.
+   *
+   * INJECTED so a test can wait for the work it scheduled (`settle` in the
+   * fixtures) rather than sleeping.
+   */
+  afterResponse?: (task: () => Promise<void>) => void;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -760,13 +775,7 @@ export async function handleRefresh(
 
   const now = ctx.now();
   const state = classifyToken(stored, now);
-  if (state === 'revoked') {
-    if (stored.familyId !== null) {
-      await ctx.store.revokeFamily({ accountId: stored.accountId, familyId: stored.familyId, revokedAt: now });
-    }
-    ctx.logger.warn('Refresh token reuse detected; family revoked', { accountId: stored.accountId });
-    return { status: 'unauthorized', reason: 'invalid refresh token' };
-  }
+  if (state === 'revoked') return await answerRefreshReuse(stored, { ctx, now });
   if (state === 'expired') {
     return { status: 'unauthorized', reason: 'refresh token has expired' };
   }
@@ -780,13 +789,43 @@ export async function handleRefresh(
   // they will get back.
   if (account.suspendedAt !== null) return suspended();
 
-  await ctx.store.revokeToken({ tokenId: stored.id, revokedAt: now });
+  // THE SPEND IS THE CHECK THAT COUNTS. The read above says the token was
+  // live a moment ago; only the conditional UPDATE inside `spendRefreshToken`
+  // says it was still live when this request spent it. A concurrent refresh
+  // with the same token that got there first leaves nothing to spend, and
+  // that is reuse by definition: two holders presented one token. PROTOCOL.md
+  // §4.2 answers reuse by revoking the family, so the loser does, rather than
+  // minting a second session from a token that is already gone. The new pair
+  // is inserted in the spend's transaction, so the loser's revocation cannot
+  // land before it and miss it.
   const session = mintSession(ctx, {
     accountId: stored.accountId,
     familyId: stored.familyId ?? ctx.mintFamilyId(),
   });
-  await ctx.store.insertTokens(session.rows);
+  const spent = await ctx.store.spendRefreshToken({ tokenId: stored.id, revokedAt: now, issue: session.rows });
+  if (spent === 'already-revoked') return await answerRefreshReuse(stored, { ctx, now });
   return { status: 'ok', body: { tokens: session.tokens } };
+}
+
+/**
+ * A refresh token presented after it was spent: the whole family goes, and the
+ * caller gets the same `401` an unknown token gets. Reached from the read
+ * (the token was already revoked) and from the spend (a concurrent refresh
+ * spent it first).
+ */
+async function answerRefreshReuse(
+  stored: StoredToken,
+  input: { ctx: AuthContext; now: Date },
+): Promise<AuthOutcome<{ tokens: SessionTokens }>> {
+  if (stored.familyId !== null) {
+    await input.ctx.store.revokeFamily({
+      accountId: stored.accountId,
+      familyId: stored.familyId,
+      revokedAt: input.now,
+    });
+  }
+  input.ctx.logger.warn('Refresh token reuse detected; family revoked', { accountId: stored.accountId });
+  return { status: 'unauthorized', reason: 'invalid refresh token' };
 }
 
 /** `POST /v1/auth/logout` — revokes the caller's whole family (this device), not just the presented access token. */
@@ -855,7 +894,7 @@ export async function handleChangePassphrase(
 
   const candidate = computeVerifier({ authHash: currentAuthHash.value, pepper: ctx.pepper });
   if (!verifierMatches({ candidate, stored: account.verifier })) {
-    return { status: 'unauthorized', reason: 'current passphrase is incorrect' };
+    return { status: 'unauthorized', reason: PASSPHRASE_REJECTED };
   }
 
   const now = ctx.now();
@@ -1054,17 +1093,19 @@ export async function handleRecoverRotate(
  * `POST /v1/auth/reset/request` — "I forgot my password".
  *
  * `202` ALWAYS, AFTER THE SAME WORK. A known address and an unknown one both
- * mint a token, both hash it, and both take the same path out; only the store
- * write and the send are skipped on the unknown branch. That symmetry is the
+ * look the address up, mint a token, hash it, and answer; that symmetry is the
  * whole anti-enumeration argument here, and it is the one PROTOCOL.md used to
  * record as MISSING (§5.13, before M181 deleted the endpoint): the old
  * `request-reset` did the expensive work only for addresses that existed, so
  * its timing said what its body did not.
  *
- * The residual asymmetry — one INSERT and one HTTP send on the known branch —
- * is bounded by the per (IP, email) throttle in `register-auth-routes.ts`,
- * which is never cleared on success. A person forgets their password once;
- * a caller measuring this endpoint does it thousands of times.
+ * THE STORE WRITE AND THE LETTER RUN AFTER THE RESPONSE (2026-09), through
+ * {@link AuthContext.afterResponse}, and nothing the response carries waits
+ * for them. Until then this handler awaited one INSERT and one HTTP send on
+ * the known branch only, and the difference was measurable. A failure in that
+ * work is logged with the account id and never reaches the caller, who has
+ * already been told `202`. The per (IP, email) throttle in
+ * `register-auth-routes.ts` still counts every request.
  *
  * WHAT THE LETTER CARRIES IS NOT A NEW AUTHORITY. It carries a link to
  * `handleResetOpen`, which hands back the recovery code the operator already
@@ -1092,22 +1133,46 @@ export async function handleResetRequest(
   // A suspended account is not told anything different, deliberately: this
   // endpoint answers `202` to everybody, and a suspended person who resets
   // their password still meets the `403` at the door.
-  await ctx.store.createPasswordReset({
-    accountId: account.id,
-    tokenHash: token.hash,
-    expiresAt,
-    now,
-  });
-  // The mailer never throws (see `mail/mailer.ts`): a send failure must not be
-  // able to turn this `202` into a `500` and make the status code the oracle.
-  await ctx.mailer.sendReset({
-    email: account.email,
-    resetToken: token.raw,
-    expiresAt: expiresAt.toISOString(),
-  });
-  // The account id, never the address and never the token.
-  ctx.logger.info('Password reset requested', { accountId: account.id });
+  const afterResponse = ctx.afterResponse ?? runOnNextTurn;
+  afterResponse(() => recordAndMailReset({ account, token, expiresAt, now }, ctx));
   return { status: 'accepted', body: {} };
+}
+
+/** The default {@link AuthContext.afterResponse}: the next turn of the event loop, after the response is written. */
+function runOnNextTurn(task: () => Promise<void>): void {
+  setImmediate(() => {
+    void task();
+  });
+}
+
+/**
+ * The known-address half of `reset/request`: store the token's digest, which
+ * supersedes every older live one, then send the letter. Never throws: it runs
+ * after the caller was answered, so a failure has nowhere to go but the log.
+ * The error itself is not logged, because a mail API echoes the recipient and
+ * the link back in its error body.
+ */
+async function recordAndMailReset(
+  input: { account: AccountRecord; token: GeneratedToken; expiresAt: Date; now: Date },
+  ctx: AuthContext,
+): Promise<void> {
+  try {
+    await ctx.store.createPasswordReset({
+      accountId: input.account.id,
+      tokenHash: input.token.hash,
+      expiresAt: input.expiresAt,
+      now: input.now,
+    });
+    await ctx.mailer.sendReset({
+      email: input.account.email,
+      resetToken: input.token.raw,
+      expiresAt: input.expiresAt.toISOString(),
+    });
+    // The account id, never the address and never the token.
+    ctx.logger.info('Password reset requested', { accountId: input.account.id });
+  } catch {
+    ctx.logger.error('A password reset could not be recorded or mailed', { accountId: input.account.id });
+  }
 }
 
 /**
@@ -1346,6 +1411,23 @@ export async function handleMintMemberInvite(
     if (await surface.invites.hasRedeemedMemberInvite({ email: email.value })) {
       // The caller's account id, never the address they typed.
       ctx.logger.info('Member invite withheld: that address already spent one', { accountId: account.id });
+      return MEMBER_INVITE_ACCEPTED;
+    }
+
+    // A PENDING LETTER FROM ANOTHER DOOR IS LEFT ALONE, as the open sign-up
+    // door leaves it (`handleSignupRequest`). A mint supersedes the address's
+    // pending invite, so without this a member could withdraw the letter an
+    // operator or another member had just sent, and put their own door's
+    // terms in its place. The member's own pending letter may be re-sent.
+    // THE ANSWER IS THE SAME `202`, and not a named refusal: this route
+    // promises that an address with a pending invitation is indistinguishable
+    // from a new one, and a refusal naming it would tell the caller that
+    // somebody else already invited their colleague.
+    const pending = await surface.invites.findPendingInvite({ email: email.value, now: ctx.now() });
+    if (pending !== null && (pending.source !== null || pending.invitedByAccountId !== account.id)) {
+      ctx.logger.info('Member invite withheld: that address holds a pending letter from another door', {
+        accountId: account.id,
+      });
       return MEMBER_INVITE_ACCEPTED;
     }
   }

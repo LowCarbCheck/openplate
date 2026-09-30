@@ -287,6 +287,8 @@ test('grantee is read-only: no key records, no push, no history, no third-party 
       kdfDescriptor: null,
       wrappedDek: GRANTOR_RECOVERY_WRAP,
       expectedUpdatedAt: await service.currentKeyRecordToken({ accessToken: patient.accessToken, kind: 'recovery' }),
+      // An overwrite proves the passphrase (§5.4); `grantedPair` signs the patient up with seed 41.
+      currentAuthHash: sampleAuthHash(41),
     },
   });
   assert.equal(seedRecord.status, 200);

@@ -554,6 +554,69 @@ test('a re-invite after a self-delete is not a fresh allowance, while an admin m
   }
 });
 
+for (const pepper of [null, 'a-trial-address-pepper-for-this-suite']) {
+  test(`deleting an account withdraws the invitations it sent that nobody redeemed (pepper ${pepper === null ? 'off' : 'on'})`, async () => {
+    // A day-trial letter's allowance starts at redemption, so a letter left
+    // pending after its sender is gone could still be turned into an account.
+    const service = await startService({
+      db: database.db,
+      memberInvites: MEMBER_INVITE_POLICY,
+      adminToken: MEMBER_SUITE_ADMIN_TOKEN,
+      trialAddressPepper: pepper,
+    });
+    try {
+      const member = await service.signupThroughInvite({ email: 'anna@example.org' });
+      const accessToken = member.tokens.accessToken;
+      assert.equal((await memberMint(service, { accessToken, email: 'redeemed@example.org' })).status, 202);
+      const redeemedToken = service.mailer.invites.at(-1)?.inviteToken ?? '';
+      const redeemed = await service.request({
+        method: 'POST',
+        path: '/v1/auth/signup',
+        body: signupBody(redeemedToken),
+      });
+      assert.equal(redeemed.status, 201);
+      assert.equal((await memberMint(service, { accessToken, email: 'pending@example.org' })).status, 202);
+      const pendingToken = service.mailer.invites.at(-1)?.inviteToken ?? '';
+
+      // An operator's pending letter for somebody else, which the deletion must not touch.
+      const operator = await service.request({
+        method: 'POST',
+        path: '/v1/admin/invites',
+        adminToken: MEMBER_SUITE_ADMIN_TOKEN,
+        body: { email: 'operators-own@example.org' },
+      });
+      assert.equal(operator.status, 201);
+
+      const deleted = await service.request({
+        method: 'POST',
+        path: '/v1/auth/delete',
+        accessToken,
+        body: { authHash: sampleAuthHash() },
+      });
+      assert.equal(deleted.status, 204);
+
+      const rows = await database.db.select().from(signupInvites);
+      const rowFor = (email: string) => rows.find((row) => row.email === email);
+      assert.notEqual(rowFor('pending@example.org')?.revokedAt, null, 'the pending letter is withdrawn');
+      assert.equal(rowFor('redeemed@example.org')?.revokedAt, null, 'a redeemed letter is not withdrawn');
+      assert.notEqual(rowFor('redeemed@example.org')?.redeemedAt, null);
+      assert.equal(rowFor('operators-own@example.org')?.revokedAt, null, 'the operator’s letter is untouched');
+
+      // The letter the deleted member sent can no longer be redeemed.
+      const lookup = await service.request({
+        method: 'POST',
+        path: '/v1/auth/invite-lookup',
+        body: { inviteToken: pendingToken },
+      });
+      assert.equal(lookup.status, 404);
+      const late = await service.request({ method: 'POST', path: '/v1/auth/signup', body: signupBody(pendingToken) });
+      assert.notEqual(late.status, 201);
+    } finally {
+      await service.close();
+    }
+  });
+}
+
 test('a redeemed member invitation writes allowanceExpiresAt as redemption plus the instance days', async () => {
   const service = await startWithMemberInvites();
   try {
