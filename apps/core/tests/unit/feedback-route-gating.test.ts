@@ -168,6 +168,29 @@ test('the same paths stop being 404 once the operator turns the feature on', asy
   }
 });
 
+test('an anonymous oversized body meets the bearer gate before the parser reads it', async () => {
+  // AUTHENTICATION RUNS FIRST. With the parser in front, this request was a
+  // 413: the service had buffered the whole body for a caller with no token.
+  // A 401 here proves the gate answered before the body was read.
+  const lit = await startFeedbackHarness({ enabled: true, maxRequestBytes: 1024 });
+  try {
+    const oversized = { ...sampleReport(), measurements: { note: 'x'.repeat(4096) } };
+    const anonymous = await lit.request({ method: 'POST', path: '/v1/feedback', body: oversized });
+    assert.equal(anonymous.status, 401);
+
+    const bogusToken = await lit.request({
+      method: 'POST',
+      path: '/v1/feedback',
+      body: oversized,
+      token: VALID_LOOKING_TOKEN,
+    });
+    assert.equal(bogusToken.status, 401);
+    assert.deepEqual(lit.reports.submitted, []);
+  } finally {
+    await lit.close();
+  }
+});
+
 test('an administrator with a real credential still finds nothing on a dark instance', async () => {
   // THE POINT OF THE `adminToken` HERE. Without one, `/v1/admin/*` answers 404
   // for the admin middleware's own reason and this test would pass on a service

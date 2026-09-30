@@ -20,16 +20,18 @@
  * nothing, this KEEPS what it is given. See
  * `docs/adr/0006-a-reported-photograph-is-the-second-hole-in-the-claim.md`.
  *
- * ORDER OF MIDDLEWARE, borrowed from `ai/register-ai-route.ts` because the
- * shape of the problem is the same:
+ * ORDER OF MIDDLEWARE:
  *
- *  1. `express.json()` with a limit sized for a PHOTOGRAPH
+ *  1. The BEARER GATE, and the consent behind it, FIRST. Both read headers
+ *     only. Before 2026-09-30 the parser below ran first, so an anonymous
+ *     caller could make this process buffer and parse 8 MB per request
+ *     without holding any credential. Now a caller with no valid token gets
+ *     its 401 before one byte of the body is read.
+ *  2. `express.json()` with a limit sized for a PHOTOGRAPH
  *     (`FEEDBACK_MAX_REQUEST_BYTES`, default 8 MB), scoped to this route only.
  *     An unscoped parser here would run before every other router in the
  *     service and quietly become the limit for all of them, which was a live
  *     defect until M192/03. See `server/share-routes.ts`.
- *  2. The BEARER GATE. The daily limit keys on the resolved account, so it has
- *     nothing to key on before this runs.
  *  3. The handler, which decides the limit inside one transaction rather than
  *     as a middleware: the count and the insert have to be the same statement
  *     sequence or a burst gets counted once. See `feedback-store.ts`.
@@ -244,11 +246,13 @@ export function registerFeedbackRoute(app: Express, options: FeedbackRouteOption
 
   router.post(
     FEEDBACK_API_PREFIX,
-    express.json({ limit: options.maxRequestBytes }),
+    // AUTHENTICATION BEFORE THE PARSER. See the module header: the 8 MB body
+    // is read only for a caller who holds a valid token.
     options.requireAuth,
     // BEHIND THE CONSENT TO HEALTH DATA (2026-09-29): a report keeps a
     // photograph of the person's food and the entry it was logged as.
     options.requireConsent,
+    express.json({ limit: options.maxRequestBytes }),
     asyncHandler(async (req, res) => {
       const session = getRequestSession(req);
       if (session === null) {
