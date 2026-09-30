@@ -128,6 +128,7 @@ echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
+echo "TRUST_PROXY=1"                                 >> .env  # 1 behind one reverse proxy, 0 with none
 docker compose -f compose.sync.yml up -d
 ```
 
@@ -138,6 +139,7 @@ echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
+echo "TRUST_PROXY=1"                                 >> .env  # 1 behind one reverse proxy, 0 with none
 podman compose -f compose.sync.yml up -d
 ```
 
@@ -145,8 +147,9 @@ podman compose -f compose.sync.yml up -d
 > plain `http://<LAN address>`. Use HTTPS, with a domain name or on a home network without one,
 > or `localhost` through an ssh tunnel for a test.
 > Nobody signs up on their own. You mint the first invitation on the server with
-> `ADMIN_TOKEN`. Both are in [self-hosting.md](self-hosting.md#create-the-first-account) and
-> [self-hosting.md](self-hosting.md#https).
+> `ADMIN_TOKEN`, as [Create the first account](self-hosting.md#create-the-first-account) shows.
+> A home network with no domain name gets HTTPS from
+> [Caddy with a local certificate](self-hosting.md#no-domain-name-home-network-only-caddy-with-a-local-certificate).
 
 The service stores each entry as ciphertext and never receives your password. It does hold
 each account's recovery code, sealed under a secret of its own, so a forgotten password is
@@ -210,12 +213,23 @@ curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/top
 echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
 echo "PUBLIC_APP_URL=http://192.168.1.20:3000" >> .env
 echo "PUBLIC_INFERENCE_URL=http://192.168.1.20:8300/v1" >> .env
+echo "TRUST_PROXY=0" >> .env  # 0 with no reverse proxy, 1 behind one
 docker compose -f compose.inference.yml up -d
 ```
 
-Replace `192.168.1.20` with your server's address. Once the app is on HTTPS, the inference
-address must be `https://` too. [self-hosting.md](self-hosting.md#the-app-plus-self-hosted-inference)
-walks through it. Podman runs this the same way: `podman compose -f compose.inference.yml up -d`.
+```bash
+mkdir -p ~/openplate && cd ~/openplate
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.inference.yml
+echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
+echo "PUBLIC_APP_URL=http://192.168.1.20:3000" >> .env
+echo "PUBLIC_INFERENCE_URL=http://192.168.1.20:8300/v1" >> .env
+echo "TRUST_PROXY=0" >> .env  # 0 with no reverse proxy, 1 behind one
+podman compose -f compose.inference.yml up -d
+```
+
+Replace `192.168.1.20` with your server's address. Once the app is on HTTPS behind a reverse
+proxy, the inference address must use `https://` too, and `TRUST_PROXY` must be set to `1`.
+[self-hosting.md](self-hosting.md#the-app-plus-self-hosted-inference) walks through it.
 
 This rung is for two kinds of people:
 
