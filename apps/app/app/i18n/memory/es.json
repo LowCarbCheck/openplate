@@ -14356,6 +14356,13 @@
     "at": "2026-09-17",
     "es": "No ha funcionado"
   },
+  "b02c56b8be90908d": {
+    "en": "{{name}}, open menu",
+    "path": "common:chrome.accountMenuLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "{{name}}, abrir menú"
+  },
   "b09b8b6047637931": {
     "en": "Reference values",
     "path": "common:admin.settings.title",
