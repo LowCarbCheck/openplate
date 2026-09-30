@@ -13,10 +13,12 @@
  * package does not have. A regular expression over the file needs neither.
  *
  * WHAT COUNTS AS A READ. In TypeScript: `env.NAME` and `process.env.NAME`, the app's
- * `optionalEnv('NAME', ...)` family, core's `helper(env, 'NAME', ...)` calls, core's
- * `const X_VARIABLES = [...]` name lists, and the keys of inference's `EnvSchema`. In shell: a
- * `${NAME:-default}` expansion, which is how the inference entrypoint reads its settings. Comments
- * are removed first, so a comment that names a variable reads nothing.
+ * `optionalEnv('NAME', ...)` family, either called positionally or with an options object
+ * (`optionalEnv({ env, name: 'NAME', fallback })`, which is how the app itself calls it), core's
+ * `helper(env, 'NAME', ...)` calls, core's `const X_VARIABLES = [...]` name lists, and the keys of
+ * inference's `EnvSchema`. In shell: a `${NAME:-default}` expansion, which is how the inference
+ * entrypoint reads its settings. Comments are removed first, so a comment that names a variable
+ * reads nothing.
  *
  * WHAT COUNTS AS LISTED. A code span in the FIRST cell of a table row inside that service's `##`
  * section, or a row of the refused-names table whose second cell names that service. A name in a
@@ -90,11 +92,21 @@ function withoutShellComments(source: string): string {
   return source.replaceAll(/^\s*#.*$/gm, '');
 }
 
-/** `env.NAME`, `process.env.NAME`, `optionalEnv('NAME'`, and core's `helper(env, 'NAME'`. */
+/**
+ * `env.NAME`, `process.env.NAME`, `optionalEnv('NAME'` (positional), `optionalEnv({ name: 'NAME'`
+ * (the app's own options-object call), and core's `helper(env, 'NAME'`.
+ *
+ * The `name:` pattern is deliberately NOT scoped to sit inside an `optionalEnv`/`optionalIntEnv`/
+ * `requireEnv` call: a bare `\bname:\s*'NAME'` is simpler and, checked against every file this test
+ * scans, matches nothing but genuine env reads (see the control below). If a future scanned file
+ * ever adds an unrelated `name: 'SOME_CONSTANT'` field, this pattern would misread it as a read;
+ * narrow it to the call sites above if that ever happens.
+ */
 const TYPESCRIPT_READS: readonly RegExp[] = [
   /\benv\.([A-Z][A-Z0-9_]*)\b/g,
   /\b(?:optionalEnv|optionalIntEnv|optionalBoolEnv|requireEnv)\(\s*'([A-Z][A-Z0-9_]*)'/g,
   /\(\s*env,\s*'([A-Z][A-Z0-9_]*)'/g,
+  /\bname:\s*'([A-Z][A-Z0-9_]*)'/g,
 ];
 
 /** Core names a block once, `const MAIL_VARIABLES = ['MAIL_API_URL', ...]`, and reads it as `env[name]`. */
@@ -332,6 +344,14 @@ describe('the scanner finds what the three services read', () => {
     const source = "/* process.env.GHOST_A */\n// optionalEnv('GHOST_B', 'x')\nconst real = process.env.REAL_ONE;";
     assert.deepEqual(namesReadByTypeScript(source), ['REAL_ONE']);
     assert.deepEqual(namesReadByShell('# ${GHOST_C:-x}\nA="${REAL_TWO:-y}"'), ['REAL_TWO']);
+  });
+
+  it('reads `name:` inside an options-object optionalEnv call, real or commented out', () => {
+    const real = "const x = optionalEnv({ env, name: 'GHOST_C', fallback: 'x' });";
+    assert.deepEqual(namesReadByTypeScript(real), ['GHOST_C']);
+
+    const commented = "// optionalEnv({ env, name: 'GHOST_C', fallback: 'x' })\nconst real = process.env.REAL_ONE;";
+    assert.deepEqual(namesReadByTypeScript(commented), ['REAL_ONE']);
   });
 });
 
