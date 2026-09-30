@@ -26,6 +26,7 @@ import type { SmtpMailConfig, SmtpTlsMode } from './mail/smtp-transport.js';
 import type { AiUpstreamConfig } from './ai/proxy.js';
 import type { PlansUpstreamConfig } from './server/plans-proxy.js';
 import type { VapidCredentials } from './push/web-push-sender.js';
+import { isPushHostPattern } from './push/endpoint-policy.js';
 import { MAX_DAILY_AI_LIMIT } from './admin/invite-store.js';
 import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } from './server/service-principal-scope.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
@@ -392,6 +393,13 @@ export interface ServiceConfig {
    */
   push: VapidCredentials | null;
   /**
+   * Extra push service hosts a device may register an endpoint at
+   * (`PUSH_ENDPOINT_HOSTS`, comma separated, `*.` allowed as a prefix), on top
+   * of the browsers' own push services in `push/endpoint-policy.ts`. Empty by
+   * default, and only a self-hoster running their own push service needs it.
+   */
+  pushEndpointHosts: string[];
+  /**
    * Whether this instance implements ADR-0002's clinician sharing.
    *
    * `false`, the default, and what every deployment gets until an operator
@@ -675,6 +683,29 @@ function parsePush(env: NodeJS.ProcessEnv): VapidCredentials | null {
     privateKey: env.VAPID_PRIVATE_KEY?.trim() ?? '',
     subject,
   };
+}
+
+/**
+ * `PUSH_ENDPOINT_HOSTS`: host names, or `*.` and a host name, separated by
+ * commas. Lower-cased here, because `URL` lower-cases the host it compares.
+ * A malformed entry is a boot failure that names it: a typo here would leave
+ * a self-hoster's devices refused at registration with nothing in the log to
+ * say why. A bare `*` is malformed, on purpose.
+ */
+function parsePushEndpointHosts(env: NodeJS.ProcessEnv): string[] {
+  const raw = env.PUSH_ENDPOINT_HOSTS?.trim() ?? '';
+  if (raw === '') return [];
+  const hosts = raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry !== '');
+  const malformed = hosts.filter((host) => !isPushHostPattern(host));
+  if (malformed.length > 0) {
+    throw new Error(
+      `Invalid PUSH_ENDPOINT_HOSTS entry "${malformed.join('", "')}": expected a host name such as push.example.org, or *.example.org`,
+    );
+  }
+  return hosts;
 }
 
 /**
@@ -1762,6 +1793,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     billingMaxDailyAiLimit: parseBillingMaxDailyAiLimit(env),
     plans: parsePlans(env),
     push: parsePush(env),
+    pushEndpointHosts: parsePushEndpointHosts(env),
     sharingEnabled: parseBoolean(env, 'SYNC_SHARING', false),
     researchEnabled: parseBoolean(env, 'SYNC_RESEARCH', false),
     feedbackEnabled: parseBoolean(env, 'SYNC_FEEDBACK', false),

@@ -870,6 +870,17 @@ test('BILLING_MAX_DAILY_AI_LIMIT defaults to 1000 and may not exceed the operato
   assert.throws(() => parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '0' })), /BILLING_MAX_DAILY_AI_LIMIT/);
 });
 
+test('PUSH_ENDPOINT_HOSTS is empty by default, lower-cased, and refuses a malformed entry', () => {
+  assert.deepEqual(parseConfig(baseEnv()).pushEndpointHosts, []);
+  assert.deepEqual(
+    parseConfig(baseEnv({ PUSH_ENDPOINT_HOSTS: ' Push.Example.org , *.relay.example.net ' })).pushEndpointHosts,
+    ['push.example.org', '*.relay.example.net'],
+  );
+  for (const bad of ['*', 'https://push.example.org', 'push.example.org:8443', '10.0.0.5/32', 'a..b']) {
+    assert.throws(() => parseConfig(baseEnv({ PUSH_ENDPOINT_HOSTS: bad })), /PUSH_ENDPOINT_HOSTS/, bad);
+  }
+});
+
 test('a plans URL with no secret refuses to boot, and names the missing variable', () => {
   assert.throws(
     () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans' })),

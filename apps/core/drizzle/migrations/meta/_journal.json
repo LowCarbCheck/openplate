@@ -176,6 +176,13 @@
       "when": 1790769730459,
       "tag": "0024_yummy_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790801270593,
+      "tag": "0025_gifted_shard",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { runPushTick } from '../../src/push/push-scheduler.js';
 import { createSilentLogger } from '../../src/logger.js';
 import type { InstanceHealthConsent } from '../../src/protocol.js';
-import { createFakePushStore, type FakePushStore } from './fake-push-store.js';
+import { createFakePushStore, type FakePushStore, FIXTURE_PUSH_ENDPOINT_POLICY } from './fake-push-store.js';
 
 /** A fixed zone with no changeover near the instant below. */
 const ZONE = 'Europe/Berlin';
@@ -69,6 +69,7 @@ async function endpointsSent(input: {
 }): Promise<string[]> {
   const sent: string[] = [];
   await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     store: input.store,
     sender: async (subscription) => {
       sent.push(subscription.endpoint);

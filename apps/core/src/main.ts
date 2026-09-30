@@ -54,6 +54,7 @@ import {
 import { createDrizzlePulseStore } from './pulse/pulse-store.js';
 import { PULSE_RETENTION_DAYS, startPulseRetention } from './pulse/pulse-retention.js';
 import { createDrizzlePushStore } from './push/push-store.js';
+import { createPushEndpointPolicy } from './push/endpoint-policy.js';
 import { createWebPushSender } from './push/web-push-sender.js';
 import { createPlansEraseNotifier } from './accounts/erase-notifier.js';
 import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.js';
@@ -372,8 +373,19 @@ async function main(): Promise<void> {
   // key to sign with: unlike the AI quota store above there is no counter here
   // that outlives the feature being on, so an instance with no keys has nothing
   // to read and nothing to sweep.
+  //
+  // THE ENDPOINT POLICY IS ONE OBJECT for the route that registers and the
+  // tick that sends, so a row cannot be accepted by one and refused by the
+  // other. See `push/endpoint-policy.ts`.
+  const pushEndpointPolicy = createPushEndpointPolicy({ extraHosts: config.pushEndpointHosts });
   const push =
-    config.push === null ? null : { store: createDrizzlePushStore(database.db), publicKey: config.push.publicKey };
+    config.push === null
+      ? null
+      : {
+          store: createDrizzlePushStore(database.db),
+          publicKey: config.push.publicKey,
+          endpointPolicy: pushEndpointPolicy,
+        };
 
   // THE ONE SETTING AN ADMINISTRATOR CHANGES WITHOUT A REDEPLOY (M234). It is
   // read ONCE here and then served from memory, because `/health` publishes it
@@ -529,6 +541,7 @@ async function main(): Promise<void> {
           // THE SAME BINDING the routes and `/health` use, so the tick cannot
           // push to an account the routes would refuse (M266).
           healthConsent,
+          endpointPolicy: push.endpointPolicy,
         });
   if (pushScheduler !== null) {
     logger.info('Push scheduler started', { dailySendCap: PUSH_DAILY_SEND_CAP });

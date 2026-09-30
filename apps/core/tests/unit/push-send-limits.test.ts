@@ -15,7 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PUSH_DAILY_SEND_CAP, PUSH_LAST_SEEN_DAYS, runPushTick } from '../../src/push/push-scheduler.js';
 import { createSilentLogger } from '../../src/logger.js';
-import { createFakePushStore, type FakePushStore } from './fake-push-store.js';
+import { createFakePushStore, type FakePushStore, FIXTURE_PUSH_ENDPOINT_POLICY } from './fake-push-store.js';
 
 /** A fixed zone with no changeover anywhere near the instants below, so this file is about the rules and not the clock. */
 const ZONE = 'Europe/Berlin';
@@ -34,6 +34,7 @@ function daysAgo(days: number): string {
 async function tickAndCount(store: FakePushStore, now: Date): Promise<number> {
   let calls = 0;
   await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     healthConsent: null,
     store,
     sender: async () => {
@@ -95,6 +96,7 @@ test('a third send in one UTC day is skipped, and the row is not touched', async
 
   let calls = 0;
   const result = await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     healthConsent: null,
     store,
     sender: async () => {
@@ -129,6 +131,7 @@ test('the two sends under the cap DO go out, which is what makes the skip above 
 
   const kinds: string[] = [];
   const result = await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     healthConsent: null,
     store,
     sender: async (_credential, payload) => {
@@ -183,6 +186,7 @@ test('the fast target alert waits for its instant and rides its own topic', asyn
   const topics: string[] = [];
   const urgencies: string[] = [];
   await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     healthConsent: null,
     store,
     sender: async (_credential, _payload, options) => {

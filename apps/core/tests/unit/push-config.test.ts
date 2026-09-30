@@ -43,7 +43,7 @@ import { createFakeLegalDeclarationsStore } from './fake-legal-declarations-stor
 import { createFakeAdminStore } from './fake-admin-store.js';
 import { createFakeInviteStore } from './fake-invite-store.js';
 import { createAuthFixture } from './auth-context-fixture.js';
-import { createFakePushStore } from './fake-push-store.js';
+import { createFakePushStore, FIXTURE_PUSH_ENDPOINT_POLICY } from './fake-push-store.js';
 import { createFakeBlobRollbackStore } from './fake-blob-rollback-store.js';
 
 /** Every path the push family occupies, plus the subtree around it and the bare prefix. */
@@ -106,7 +106,9 @@ async function startConfigHarness(options: { push: boolean }): Promise<ConfigHar
     // BUILT FROM THE SAME FLAG that decides the surface, exactly as `main.ts`
     // builds both from `config.push`. A harness that reported one and mounted
     // the other would let a service that advertises a door it has not got pass.
-    push: options.push ? { store: createFakePushStore(), publicKey: PUBLIC_KEY } : null,
+    push: options.push
+      ? { store: createFakePushStore(), publicKey: PUBLIC_KEY, endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY }
+      : null,
     instance: {
       name: 'openplate',
       language: 'en',

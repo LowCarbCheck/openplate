@@ -118,6 +118,7 @@ import { registerPulseRoutes } from './register-pulse-routes.js';
 import type { PulseStore } from '../pulse/pulse-store.js';
 import { PUSH_API_PREFIX, registerPushRoutes } from './register-push-routes.js';
 import type { PushStore } from '../push/push-store.js';
+import type { PushEndpointPolicy } from '../push/endpoint-policy.js';
 import { registerPlansRoutes, type PlansUpstreamConfig } from './plans-proxy.js';
 import { registerLegalDeclarationsRoute } from './legal-declarations.js';
 import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
@@ -249,6 +250,8 @@ export interface PushSurfaceOptions {
   store: PushStore;
   /** The VAPID application server key `GET /v1/push/config` hands a browser. Public by definition. */
   publicKey: string;
+  /** Which endpoints a registration may name. The same object the tick checks, see `main.ts`. */
+  endpointPolicy: PushEndpointPolicy;
 }
 
 export interface CreateAppOptions {
@@ -689,6 +692,7 @@ export function createApp(options: CreateAppOptions): Express {
     registerPushRoutes(app, {
       store: push.store,
       publicKey: push.publicKey,
+      endpointPolicy: push.endpointPolicy,
       requireAuth,
       requireConsent,
       logger: options.logger,

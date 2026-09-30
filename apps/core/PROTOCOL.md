@@ -1758,6 +1758,16 @@ Nine properties a conforming implementation MUST hold:
 
 The collapse topics are `openplate-catchups` and `openplate-fast`, the TTL is 6 hours, and the urgency is normal for the catch-up and high for the fast target. A topic MUST be URL-safe base64 characters, at most 32 of them, and a length that is **never 1 mod 4**: Apple decodes the topic and answers `400 BadWebPushTopic` otherwise, while other push services accept it, so the defect is invisible on everything but an iPhone.
 
+**The five bounds (2026-09-30).** So that one account cannot stall every delivery or aim this server at an internal host:
+
+1. **The endpoint must be `https`, on the default port, with no user name or password, at a known push service**: `fcm.googleapis.com`, `updates.push.services.mozilla.com` and `*.push.services.mozilla.com`, `web.push.apple.com` and `*.push.apple.com`, `*.notify.windows.com`, plus any host the operator lists in `PUSH_ENDPOINT_HOSTS`. Anything else is `400 {"error":"endpoint must be an https URL at a known push service"}` and writes nothing. A stored row that fails this rule is deleted by the next tick, unsent.
+2. **One account holds at most 10 subscriptions.** A registration past that deletes the account's oldest other rows; the row just registered always stays.
+3. **A delivery gives up after 10 seconds**, and the tick sends to 8 endpoints at a time, so a slow endpoint delays nobody else.
+4. **A delivery that fails with anything but `404` or `410` backs the row off**: the next try is one minute later, then two, four, and so on up to a day. After 15 failures in a row, about four and a half days, the row is deleted. A delivery that lands, and a new registration of the endpoint, reset the count.
+5. **A tick that outlives its minute is not joined by a second one.**
+
+`PUT` on an endpoint that another account holds moves the row to the caller. This is needed: the app reuses the browser's existing subscription, and when a device erase could not drop it, the next account on that browser registers the same endpoint. The previous owner's row then stops waking that device, which is what the new owner wants.
+
 No route ever returns an endpoint or a device key, and the routes log a path, a method, a status and a byte count only: never the account id and never the endpoint, which is a capability.
 
 `GET /v1/admin/stats` (§5.20) reports `push: { subscriptions, sentToday }` to the operator, which is two integers and never a row.

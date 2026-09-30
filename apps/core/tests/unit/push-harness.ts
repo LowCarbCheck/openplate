@@ -19,7 +19,7 @@ import { createBearerAuthMiddleware, createHealthConsentMiddleware } from '../..
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import { createAuthFixture } from './auth-context-fixture.js';
-import { createFakePushStore, type FakePushStore } from './fake-push-store.js';
+import { createFakePushStore, FIXTURE_PUSH_ENDPOINT_POLICY, type FakePushStore } from './fake-push-store.js';
 import { createRecordingLogger, type RecordedLine } from './pulse-harness.js';
 
 export { PUSH_API_PREFIX };
@@ -77,6 +77,7 @@ export async function startPushHarness(): Promise<PushHarness> {
   registerPushRoutes(app, {
     store,
     publicKey: HARNESS_PUBLIC_KEY,
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     requireAuth: createBearerAuthMiddleware(fixture.ctx),
     // An instance that asks for no consent: the refusal is
     // `tests/integration/health-consent-required.test.ts`'s to prove.
