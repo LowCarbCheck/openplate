@@ -3859,5 +3859,13 @@
     "failed": "Rızan kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
     "exportDiary": "Günlüğümü dışa aktar",
     "deleteAccount": "Hesabımı sil"
+  },
+  "moved": {
+    "title": "openplate taşındı",
+    "body": "openplate artık {{host}} adresinde. Hesabın ve günlüğün de seninle birlikte taşındı. Aynı e-posta adresi ve parolayla giriş yap.",
+    "signIn": "{{host}} adresinde giriş yap",
+    "homeScreen": "openplate uygulamasını ana ekranına eklediysen bu simgeyi kaldır ve yerine {{host}} adresini ekle.",
+    "iphone": "iPhone (Safari): Paylaş'a, ardından Ana Ekrana Ekle'ye dokun.",
+    "android": "Android (Chrome): menüyü aç, ardından Uygulamayı yükle'ye veya Ana ekrana ekle'ye dokun."
   }
 }

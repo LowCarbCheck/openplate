@@ -41,6 +41,7 @@ import {
 import type { NutrientReferenceBasis } from '#app/lib/nutrient-reference';
 import { parseAnalyticsConfig } from '#app/config/analytics';
 import { parseNewsletterConfig } from './newsletter';
+import { parseMovedConfig } from './moved';
 
 /**
  * Parses the `TRUST_PROXY` env var into a value suitable for Express's
@@ -323,6 +324,8 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
   assertGatewayUrlUnset(env.GATEWAY_URL);
   const syncServerUrl = parseSyncServerUrl(env.SYNC_SERVER_URL);
   const instanceMode = parseInstanceMode(env.INSTANCE_MODE);
+  // Read once, because `moved` below compares its own address against it.
+  const appUrl = optionalEnv({ env, name: 'APP_URL', fallback: 'http://localhost:3000' });
 
   return {
     /**
@@ -333,7 +336,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
       isDevelopment: env.NODE_ENV !== 'production',
       isProduction: env.NODE_ENV === 'production',
       isTest: env.NODE_ENV === 'test',
-      url: optionalEnv({ env, name: 'APP_URL', fallback: 'http://localhost:3000' }),
+      url: appUrl,
     },
 
     /**
@@ -570,6 +573,18 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
     updates: {
       checkEnabled: parseUpdateCheck(env.UPDATE_CHECK),
     },
+
+    /**
+     * Moved mode (`MOVED_TO_URL`)
+     *
+     * `null` is the default and means nothing about this app changes. Set, this instance is
+     * closed: `/sw.js` answers a worker that clears the caches and unregisters itself, every page
+     * answers one static page that names the new address, and the API answers 410. An operator
+     * sets it on an instance whose people were moved to another one, so a copy installed on a
+     * phone learns where they went. See `app/config/moved.ts` for what is refused at boot, and
+     * `app/lib/moved/moved-mode.server.ts` for the routes.
+     */
+    moved: parseMovedConfig({ movedToUrl: env.MOVED_TO_URL, appUrl }),
   } as const;
 }
 

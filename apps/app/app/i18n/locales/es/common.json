@@ -3859,5 +3859,13 @@
     "failed": "No se guardó tu consentimiento. Comprueba tu conexión e inténtalo de nuevo.",
     "exportDiary": "Exportar mi diario",
     "deleteAccount": "Eliminar mi cuenta"
+  },
+  "moved": {
+    "title": "openplate se ha mudado",
+    "body": "openplate ahora está en {{host}}. Tu cuenta y tu diario se han mudado contigo. Inicia sesión con la misma dirección de correo electrónico y contraseña.",
+    "signIn": "Iniciar sesión en {{host}}",
+    "homeScreen": "Si añadiste openplate a tu pantalla de inicio, elimina este icono y añade {{host}} en su lugar.",
+    "iphone": "iPhone (Safari): toca Compartir y luego Añadir a la pantalla de inicio.",
+    "android": "Android (Chrome): abre el menú y luego toca Instalar aplicación o Añadir a pantalla de inicio."
   }
 }

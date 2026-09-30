@@ -12,6 +12,10 @@
  * test a page no server ever sends. This boots the same build with the one
  * variable changed, which is what app.openplate.de runs.
  *
+ * `startAppServer` is the same boot with any variables, managed or not. The
+ * moved-mode spec uses it to stop one server and start another on the SAME
+ * port, because a service worker belongs to its origin.
+ *
  * ── Why its port is picked at run time ───────────────────────────────────
  *
  * ADR-0017 derives the tier's three ports from the checkout path because
@@ -47,7 +51,7 @@ const PROBE_INTERVAL_MS = 250;
 /** A TCP listener's address. A pipe or an unbound socket has no port and fails the parse. */
 const tcpAddressSchema = z.object({ port: z.number().int().positive() });
 
-/** A running managed server, and the way to stop it. */
+/** A running production server of this build, managed or not, and the way to stop it. */
 export interface ManagedAppServer {
   /** Its base URL, `http://127.0.0.1:<port>`. */
   readonly url: string;
@@ -105,17 +109,21 @@ export async function stopChild(child: ChildProcess): Promise<void> {
 }
 
 /**
- * Boots the production build as a managed instance.
+ * Boots the production build: an OPEN instance, as the tier's own server is, unless `env` says
+ * otherwise.
  *
- * @param options.extraEnv - variables laid over the managed set, for a spec that needs one more fact about the
- *   instance (analytics, for the landing's visit counting card). The hermetic set still wins over them.
- * @returns its URL and a stop function. Call `stop` in `afterAll`.
+ * @param options.port - the port to listen on. A spec that must meet two servers on ONE origin
+ *   (moved mode, where a browser's service worker is tied to the origin) stops the first and
+ *   starts the second on the same port. Unset, the kernel picks a free one.
+ * @param options.env - variables laid over the tier's set. The hermetic set still wins over them.
+ * @returns its URL and a stop function. Call `stop` in `afterAll`, or before starting the next
+ *   server on the same port.
  * @throws when the server exits or stays silent past the boot deadline.
  */
-export async function startManagedAppServer(
-  options: { readonly extraEnv?: Readonly<Record<string, string>> } = {},
+export async function startAppServer(
+  options: { readonly port?: number; readonly env?: Readonly<Record<string, string>> } = {},
 ): Promise<ManagedAppServer> {
-  const port = await pickFreePort();
+  const port = options.port ?? (await pickFreePort());
   const url = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, ['--import', 'tsx', './server.ts'], {
     cwd: REPO_ROOT,
@@ -129,10 +137,9 @@ export async function startManagedAppServer(
         HOST: '127.0.0.1',
         APP_URL: url,
         SYNC_SERVER_URL: E2E_SYNC_SERVER_URL,
-        INSTANCE_MODE: 'managed',
         CONTENT_DIR,
         FOOD_DB_API_URL: E2E_FOOD_DB_URL,
-        ...options.extraEnv,
+        ...options.env,
       },
     }),
     stdio: 'ignore',
@@ -144,4 +151,18 @@ export async function startManagedAppServer(
     throw error;
   }
   return { url, stop: async () => stopChild(child) };
+}
+
+/**
+ * Boots the production build as a managed instance.
+ *
+ * @param options.extraEnv - variables laid over the managed set, for a spec that needs one more fact about the
+ *   instance (analytics, for the landing's visit counting card). The hermetic set still wins over them.
+ * @returns its URL and a stop function. Call `stop` in `afterAll`.
+ * @throws when the server exits or stays silent past the boot deadline.
+ */
+export async function startManagedAppServer(
+  options: { readonly extraEnv?: Readonly<Record<string, string>> } = {},
+): Promise<ManagedAppServer> {
+  return startAppServer({ env: { INSTANCE_MODE: 'managed', ...options.extraEnv } });
 }

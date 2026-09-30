@@ -3859,5 +3859,13 @@
     "failed": "Ton consentement n'a pas été enregistré. Vérifie ta connexion et réessaie.",
     "exportDiary": "Exporter mon journal",
     "deleteAccount": "Supprimer mon compte"
+  },
+  "moved": {
+    "title": "openplate a changé d'adresse",
+    "body": "openplate est maintenant accessible à l'adresse {{host}}. Ton compte et ton journal ont été transférés. Connecte-toi avec la même adresse e-mail et le même mot de passe.",
+    "signIn": "Se connecter sur {{host}}",
+    "homeScreen": "Si tu as ajouté openplate à ton écran d'accueil, supprime cette icône et ajoute {{host}} à la place.",
+    "iphone": "iPhone (Safari) : touche Partager, puis Sur l'écran d'accueil.",
+    "android": "Android (Chrome) : ouvre le menu, puis touche Installer l'application ou Ajouter à l'écran d'accueil."
   }
 }

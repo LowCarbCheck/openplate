@@ -89,6 +89,12 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 | --- | --- | --- | --- |
 | `LOG_LEVEL` | `info` | How much the server logs, as a pino level: `debug`, `info`, `warn` or `error`. | |
 
+### Closing an instance
+
+| Variable | Default | What it does | More |
+| --- | --- | --- | --- |
+| `MOVED_TO_URL` | unset | Closes this instance and directs users to another one, for example `https://app.openplate.de`. Every page request serves a page that names the new address, the service worker installed on phones clears its caches and unregisters itself, and the API returns 410. The value must be an `https://` address on a host other than `APP_URL`; anything else stops the boot. | [Moving people to another instance](configuration.md#moving-people-to-another-instance) |
+
 ## The sync service (openplate-core)
 
 The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two values: `DATABASE_URL`, which the compose files fill for you, and `SERVER_SECRET`. Everything else is optional and off until you set it. [openplate-core's README](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md) explains the features.
@@ -296,6 +302,7 @@ These names were settings once. Now the service refuses to start while one is se
 - `NEWSLETTER_SUBSCRIBE_URL` and `NEWSLETTER_TURNSTILE_SITE_KEY`: set both or neither.
 - `INSTANCE_MODE=managed` needs `SYNC_SERVER_URL`.
 - `APP_URL` is required when `NODE_ENV=production`.
+- `MOVED_TO_URL` must be an `https://` address on a host other than `APP_URL`, without a user name or password.
 - A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. Malformed addresses in `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
 
 **The sync service.**

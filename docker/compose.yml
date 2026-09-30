@@ -88,6 +88,9 @@ services:
       # "off" stops the six-hourly question to GitHub about a newer release.
       # Empty means on.
       UPDATE_CHECK: ${UPDATE_CHECK:-}
+      # Closes this instance: an https:// address where its people went.
+      # Every page then names it. Empty means open as usual.
+      MOVED_TO_URL: ${MOVED_TO_URL:-}
       # Extra origins the browser may call, space separated, for example a
       # remote AI endpoint of your own. Empty adds nothing.
       CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}

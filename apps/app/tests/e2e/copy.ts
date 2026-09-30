@@ -291,6 +291,15 @@ const catalogSchema = z.object({
     withdraw: z.object({ submit: z.string(), subtitle: z.string() }),
     cancel: z.object({ submit: z.string(), subtitle: z.string() }),
   }),
+  /** The one page a moved instance serves (`MOVED_TO_URL`, `app/lib/moved/`). */
+  moved: z.object({
+    title: z.string(),
+    body: z.string(),
+    signIn: z.string(),
+    homeScreen: z.string(),
+    iphone: z.string(),
+    android: z.string(),
+  }),
 });
 
 /** Every string this tier reads, in one language, validated against that language's shipped bundle. */

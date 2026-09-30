@@ -3859,5 +3859,13 @@
     "failed": "Your consent was not saved. Check your connection and try again.",
     "exportDiary": "Export my diary",
     "deleteAccount": "Delete my account"
+  },
+  "moved": {
+    "title": "openplate moved",
+    "body": "openplate is now at {{host}}. Your account and your diary moved with you. Sign in with the same email address and password.",
+    "signIn": "Sign in at {{host}}",
+    "homeScreen": "If you added openplate to your home screen, remove this icon and add {{host}} instead.",
+    "iphone": "iPhone (Safari): tap Share, then Add to Home Screen.",
+    "android": "Android (Chrome): open the menu, then tap Install app or Add to Home screen."
   }
 }
