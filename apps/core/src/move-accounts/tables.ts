@@ -350,6 +350,7 @@ export const SKIPPED_TABLES = [
   'ai_trial_intakes',
   'trial_address_hashes',
   'ai_instance_days',
+  'ai_budget_alerts',
   'pulse_days',
   'pulse_day_contributors',
   'pulse_presence',

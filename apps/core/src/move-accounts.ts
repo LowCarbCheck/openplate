@@ -69,6 +69,9 @@
  *    own `TRIAL_ADDRESS_PEPPER`, linked to no account.
  *  - `ai_instance_days`, `pulse_days`, `instance_settings`: the source
  *    instance's own totals and settings, not any account's.
+ *  - `ai_budget_alerts`: one row per budget reset period for the low-budget
+ *    operator mail, instance state about the operator's provider key, not any
+ *    account's.
  *  - `pulse_day_contributors`, `pulse_presence`, `pulse_idempotency`: live
  *    pulse bookkeeping for sums that stay on the source; copied, they would
  *    stop a moved person contributing to today's target pulse.
