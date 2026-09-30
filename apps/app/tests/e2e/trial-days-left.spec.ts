@@ -16,14 +16,28 @@
  *
  * THE CONTROL is the account with no scan trial (the "Beta supporter"
  * standing): the same end date on the wire, the page read to its allowance
- * line, and no day line.
+ * line, and no day line and no reserved box.
+ *
+ * THE LATE DATE. An account saved on this device before the core sent
+ * `trialEndsAt` opens the page with no date; the next account read brings it.
+ * The line's box is reserved from the first paint, so the date fills it and
+ * nothing below moves. The control for that reading was the unreserved line
+ * (drawn only once the date was known): against it this check failed.
  */
 import { expect, test, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
-import { installShiftObserver, readShiftEntries, settleAnimations, settleFrames } from './layout-shift';
+import { E2E_SYNC_SERVER_URL } from './env';
+import {
+  installShiftObserver,
+  readShiftEntries,
+  settleAnimations,
+  settleFrames,
+  shiftScoreAfter,
+} from './layout-shift';
 import { routeManagedCore, signInManaged, trialAccountStub, type ManagedCoreStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
+import { createGate } from './plans-stub';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -32,11 +46,11 @@ const BOOT_BUDGET_MS = 90_000;
 
 const HOUR_MS = 60 * 60 * 1000;
 
-/** Five days and two hours ahead: rounded up, that is 6 days. */
-const ENDS_IN_MS = (5 * 24 + 2) * HOUR_MS;
+/** Five days and twenty hours ahead: rounded down, that is 5 days, and never the 6 of rounding up. */
+const ENDS_IN_MS = (5 * 24 + 20) * HOUR_MS;
 
 /** The day count {@link ENDS_IN_MS} must draw. */
-const EXPECTED_DAYS = '6';
+const EXPECTED_DAYS = '5';
 
 let server: ManagedAppServer;
 
@@ -120,10 +134,70 @@ test('control: an account with no scan trial reads no day line, even with an end
   const todayLine = fill(EN.account.allowance.today, { used: '0', limit: '20' });
   await expect(main.getByText(todayLine).first()).toBeVisible({ timeout: 10_000 });
   await expect(main.locator('[data-slot="trial-days-left"]')).toHaveCount(0);
+  await expect(main.locator('[data-slot="trial-days-left-reserved"]')).toHaveCount(0);
   await expect(main.getByText(fill(EN.account.allowance.trialDaysLeft_other, { count: EXPECTED_DAYS }))).toHaveCount(0);
 
   await page.locator('header').getByRole('button', { name: EN.chrome.deviceMenuLabel, exact: true }).click();
   const menu = page.getByRole('menu');
   await expect(menu.getByText(todayLine)).toBeVisible();
   await expect(menu.locator('[data-slot="trial-days-left"]')).toHaveCount(0);
+});
+
+test('a date that arrives after the first paint fills the reserved line and moves nothing', async ({ page }) => {
+  test.setTimeout(90_000);
+  // SAVED WITHOUT A DATE: the stub leaves `trialEndsAt` out, as a core older than the field did.
+  const stub: ManagedCoreStub = { ...trialAccountStub(4), trialDays: 14 };
+  await routeManagedCore(page, stub);
+  await signInManaged(page, server.url);
+
+  // THE BOOT'S ACCOUNT READ GOES THROUGH, still with no date: the consent
+  // gate holds the whole page on it. Every later read, the page's own
+  // refresh on open, is held, so the page is read with the account the boot
+  // brought and the date arrives only when this spec lets it.
+  const accountRead = createGate();
+  let accountReads = 0;
+  await page.route(
+    (url) => url.href === `${E2E_SYNC_SERVER_URL}/v1/auth/account`,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        accountReads += 1;
+        if (accountReads > 1) await accountRead.promise;
+      }
+      await route.fallback();
+    },
+  );
+  await installShiftObserver(page);
+  await page.goto(`${server.url}/settings/account`);
+  const main = page.locator('main');
+  const scansLine = fill(EN.account.allowance.trialScans, { left: '4', granted: '10' });
+  await expect(main.getByText(scansLine).first()).toBeVisible({ timeout: 10_000 });
+  // The identity line and the allowance card each hold an empty, invisible box.
+  await expect(main.locator('[data-slot="trial-days-left-reserved"]')).toHaveCount(2);
+  await expect(main.locator('[data-slot="trial-days-left"]')).toHaveCount(0);
+
+  const nameField = page.locator('#account-display-name');
+  const planLink = main.getByRole('link', { name: EN.account.allowance.planLink });
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await settleAnimations(page);
+  const since = (await readShiftEntries(page)).length;
+  const nameTopBefore = await nameField.evaluate((element) => element.getBoundingClientRect().top);
+  const linkTopBefore = await planLink.evaluate((element) => element.getBoundingClientRect().top);
+
+  stub.trialEndsAt = trialEnd();
+  accountRead.open();
+  const daysLine = fill(EN.account.allowance.trialDaysLeft_other, { count: EXPECTED_DAYS });
+  await expect(main.getByText(daysLine)).toHaveCount(2);
+  await expect(main.locator('[data-slot="trial-days-left-reserved"]')).toHaveCount(0);
+  await settleFrames(page);
+
+  expect(await nameField.evaluate((element) => element.getBoundingClientRect().top)).toBe(nameTopBefore);
+  expect(await planLink.evaluate((element) => element.getBoundingClientRect().top)).toBe(linkTopBefore);
+  const entries = await readShiftEntries(page);
+  const detail = entries
+    .slice(since)
+    .map((entry) => `${entry.value.toFixed(4)}: ${entry.sources.join('; ')}`)
+    .join('\n');
+  expect(shiftScoreAfter(entries, since), detail).toBe(0);
 });

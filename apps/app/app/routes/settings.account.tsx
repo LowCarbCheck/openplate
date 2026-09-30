@@ -43,6 +43,7 @@ import { PasswordFields } from '#app/components/password-fields';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
+import { TrialDaysLeftLine } from '#app/components/plans/trial-days-left-line';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import {
@@ -339,14 +340,9 @@ function IdentityCard({
           {trialScans === null ?
             t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })
           : t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted })}
-          {/* THE DAYS, INSIDE THE SAME LINE'S BOX: both come from the one
-              account read, so they arrive in the same render and the form
-              below moves once, with the scans, or not at all. */}
-          {trialScans !== null && daysLeft !== null && (
-            <span className="block" data-slot="trial-days-left">
-              {t('account.allowance.trialDaysLeft', { count: daysLeft })}
-            </span>
-          )}
+          {/* THE DAYS, INSIDE THE SAME LINE'S BOX, reserved with the scans:
+              a date that arrives after the first paint moves nothing below. */}
+          {trialScans !== null && <TrialDaysLeftLine daysLeft={daysLeft} />}
         </p>
       )}
       <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
@@ -442,11 +438,11 @@ function AllowanceCard({
     >
       {/* THE DAYS, NEXT TO THE SCANS the description states (owner decision
           2026-09-30). A child line and not a second description: a section
-          carries one. The card arrives whole, after the handshake, so this
-          line never lands under a card already on screen. */}
-      {dailyLimit > 0 && trialScans !== null && daysLeft !== null && (
-        <p className="text-sm text-muted-foreground" data-slot="trial-days-left">
-          {t('account.allowance.trialDaysLeft', { count: daysLeft })}
+          carries one. Its box is reserved with the scans the description
+          states, so a date that arrives later moves nothing. */}
+      {dailyLimit > 0 && trialScans !== null && (
+        <p className="text-sm text-muted-foreground">
+          <TrialDaysLeftLine daysLeft={daysLeft} />
         </p>
       )}
       {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in

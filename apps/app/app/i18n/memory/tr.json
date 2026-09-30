@@ -13799,7 +13799,7 @@
   "a8e99dc83b7a3d20": {
     "en": "{{count}} day left in your free trial",
     "path": "common:account.allowance.trialDaysLeft_one",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-09-30",
     "tr": "Ücretsiz deneme sürende {{count}} gün kaldı"
   },
@@ -19875,7 +19875,7 @@
   "f53d90ad52fac740": {
     "en": "{{count}} days left in your free trial",
     "path": "common:account.allowance.trialDaysLeft_other",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-09-30",
     "tr": "Ücretsiz deneme sürende {{count}} gün kaldı"
   },

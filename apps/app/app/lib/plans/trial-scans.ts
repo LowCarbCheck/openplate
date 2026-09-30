@@ -111,8 +111,11 @@ export function grantedTrialDays({
  * How many days of the free tier are left, beside its scans left, or `null`
  * when there is no day line to draw (owner decision 2026-09-30).
  *
- * WHOLE DAYS, ROUNDED UP, as `planStanding`'s `daysLeft` counts them: 30
- * hours left is 2 days, and the last minute is still 1 day, never 0.
+ * WHOLE DAYS, ROUNDED DOWN, NEVER BELOW 1 while the trial runs (owner
+ * decision 2026-09-30). The promise is "14 days", and the core ends the trial
+ * at midnight after the fourteenth day, so right after sign-up there are 14
+ * days and some hours left: rounded up that read 15. So 14 days 14 hours is
+ * 14, 30 hours is 1, and the last minute is still 1, never 0.
  *
  * ONLY FOR A SCAN TRIAL THAT STILL RUNS. `trialScans` is the trial that binds
  * (`bindingTrialScans`), so a paid or granted window, which carries a date
@@ -133,7 +136,7 @@ export function trialDaysLeft({
   if (trialEndsAt === null || trialEndsAt === undefined) return null;
   const remainingMs = Date.parse(trialEndsAt) - now.getTime();
   if (Number.isNaN(remainingMs) || remainingMs <= 0) return null;
-  return Math.ceil(remainingMs / DAY_MS);
+  return Math.max(1, Math.floor(remainingMs / DAY_MS));
 }
 
 /**

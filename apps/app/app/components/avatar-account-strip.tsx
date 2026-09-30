@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Loader2, LogIn, RefreshCw } from 'lucide-react';
 
 import { Link } from '#app/components/link';
+import { TrialDaysLeftLine } from '#app/components/plans/trial-days-left-line';
 import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
@@ -232,12 +233,10 @@ export function AccountStripView({ state, title, allowance }: AccountStripViewPr
               </span>
             )}
             {/* THE DAYS, UNDER THE SCANS (owner decision 2026-09-30): the free
-                tier ends at whichever runs out first. Both come from the same
-                account read, so the two lines arrive in the same render. */}
-            {allowance.kind === 'trial-scans' && allowance.daysLeft !== null && (
-              <span className="block truncate text-xs text-muted-foreground" data-slot="trial-days-left">
-                {t('account.allowance.trialDaysLeft', { count: allowance.daysLeft })}
-              </span>
+                tier ends at whichever runs out first. Its box comes with the
+                scans line, so a date that arrives later moves nothing. */}
+            {allowance.kind === 'trial-scans' && (
+              <TrialDaysLeftLine daysLeft={allowance.daysLeft} className="truncate text-xs text-muted-foreground" />
             )}
             {allowance.kind === 'no-allowance' && (
               <span className="block truncate text-xs text-muted-foreground">{t('account.allowance.none')}</span>

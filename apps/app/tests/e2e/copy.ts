@@ -284,6 +284,7 @@ const catalogSchema = z.object({
       trialScans: z.string(),
       trialDaysLeft_one: z.string(),
       trialDaysLeft_other: z.string(),
+      planLink: z.string(),
     }),
     invites: z.object({
       title: z.string(),

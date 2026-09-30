@@ -1,7 +1,8 @@
 /**
  * The free tier's days left, drawn beside its scans left (owner decision
- * 2026-09-30): whole days, rounded UP, and only for a scan trial that still
- * runs. Every boundary has a control a step away that answers differently.
+ * 2026-09-30): whole days, rounded DOWN but never below 1 while it runs, and
+ * only for a scan trial that still runs. Every boundary has a control a step
+ * away that answers differently.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,20 +25,28 @@ function daysLeftFor(ms: number): number | null {
 }
 
 describe('trialDaysLeft', () => {
-  it('rounds 30 hours up to 2 days', () => {
-    assert.equal(daysLeftFor(30 * HOUR_MS), 2);
+  it('says 14 right after sign-up, with 14 days and 14 hours left', () => {
+    assert.equal(daysLeftFor((14 * 24 + 14) * HOUR_MS), 14);
   });
 
-  it('CONTROL: 18 hours is 1 day, so the 2 above is not a constant', () => {
-    assert.equal(daysLeftFor(18 * HOUR_MS), 1);
+  it('CONTROL: 14 days 14 hours never reads 15, the count rounded up', () => {
+    assert.notEqual(daysLeftFor((14 * 24 + 14) * HOUR_MS), 15);
+  });
+
+  it('rounds 30 hours down to 1 day', () => {
+    assert.equal(daysLeftFor(30 * HOUR_MS), 1);
+  });
+
+  it('CONTROL: 48 hours is 2 days, so the 1 above is not a constant', () => {
+    assert.equal(daysLeftFor(48 * HOUR_MS), 2);
   });
 
   it('counts exactly 24 hours as 1 day', () => {
     assert.equal(daysLeftFor(24 * HOUR_MS), 1);
   });
 
-  it('CONTROL: one minute past 24 hours is 2 days, so the edge is the day itself', () => {
-    assert.equal(daysLeftFor(24 * HOUR_MS + MINUTE_MS), 2);
+  it('CONTROL: one minute short of 48 hours is still 1 day, so the step is at the whole day', () => {
+    assert.equal(daysLeftFor(48 * HOUR_MS - MINUTE_MS), 1);
   });
 
   it('says 1 day in the last minute, never 0', () => {
