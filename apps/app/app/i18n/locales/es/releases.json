@@ -1,4 +1,11 @@
 {
+  "v0_56_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "Los administradores pueden ver y asignar una etiqueta a cada persona.",
+      "02": "Una instancia cerrada puede remitir a sus usuarios a una nueva dirección."
+    }
+  },
   "v0_55_0": {
     "date": "2026-09-30",
     "changed": {
@@ -14,18 +21,6 @@
     "fixed": {
       "01": "La pasarela de pago se abre ahora en el idioma de la página.",
       "02": "La etiqueta de imagen \"latest\" apunta ahora a la versión más reciente."
-    }
-  },
-  "v0_53_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "La prueba gratuita termina ahora al agotar sus escaneos gratuitos o al cumplir sus días fijados, lo que ocurra primero."
-    },
-    "fixed": {
-      "01": "Los enlaces copiados ahora indican cuándo apuntan a otra dirección.",
-      "02": "Reenviar una invitación muestra el enlace nuevo sin correo.",
-      "03": "El aviso del enlace ahora comprueba la dirección del servidor de sincronización.",
-      "04": "El enlace de restablecimiento ya no empuja la página hacia abajo."
     }
   }
 }

@@ -636,6 +636,13 @@
     "at": "2026-09-14",
     "tr": "Kopyalandı"
   },
+  "0811fd5e1fd000ae": {
+    "en": "A closed instance can send its people to a new address.",
+    "path": "releases:v0_56_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Kapatılan bir örnek, kullanıcılarını yeni bir adrese yönlendirebilir."
+  },
   "0843bb8c4a6a226f": {
     "en": "Outline: total carbs, the gap is fiber and sugar alcohols",
     "path": "common:trends.legend.totalCarbs",
@@ -13410,6 +13417,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Dünkü gibi"
+  },
+  "a455a873e78bb4c1": {
+    "en": "Administrators can see and set a label on each person.",
+    "path": "releases:v0_56_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Yöneticiler her kullanıcıda bir etiket görebilir ve ayarlayabilir."
   },
   "a47a850b4a669b7b": {
     "en": "The server could not be reached. Check your connection and try again.",

@@ -1,4 +1,11 @@
 {
+  "v0_56_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "Les administrateurs peuvent voir et définir une étiquette pour chaque personne.",
+      "02": "Une instance fermée peut rediriger ses utilisateurs vers une nouvelle adresse."
+    }
+  },
   "v0_55_0": {
     "date": "2026-09-30",
     "changed": {
@@ -14,18 +21,6 @@
     "fixed": {
       "01": "Le portail de paiement s'ouvre désormais dans la langue de la page.",
       "02": "Le tag d'image « latest » désigne désormais la version la plus récente."
-    }
-  },
-  "v0_53_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "La période d'essai gratuit prend désormais fin une fois ses scans gratuits épuisés ou son nombre de jours atteint, selon la première échéance."
-    },
-    "fixed": {
-      "01": "Les liens copiés indiquent maintenant lorsqu'ils mènent à une autre adresse.",
-      "02": "Renvoyer une invitation affiche le nouveau lien sans envoyer de courriel.",
-      "03": "L'avertissement de lien vérifie désormais l'adresse du serveur de synchronisation.",
-      "04": "Un lien de réinitialisation ne décale plus la page vers le bas."
     }
   }
 }

@@ -636,6 +636,13 @@
     "at": "2026-09-14",
     "it": "Copiato"
   },
+  "0811fd5e1fd000ae": {
+    "en": "A closed instance can send its people to a new address.",
+    "path": "releases:v0_56_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "it": "Un'istanza chiusa può reindirizzare le proprie persone a un nuovo indirizzo."
+  },
   "0843bb8c4a6a226f": {
     "en": "Outline: total carbs, the gap is fiber and sugar alcohols",
     "path": "common:trends.legend.totalCarbs",
@@ -13410,6 +13417,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Come ieri"
+  },
+  "a455a873e78bb4c1": {
+    "en": "Administrators can see and set a label on each person.",
+    "path": "releases:v0_56_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "it": "Gli amministratori possono visualizzare e impostare un'etichetta per ogni persona."
   },
   "a47a850b4a669b7b": {
     "en": "The server could not be reached. Check your connection and try again.",

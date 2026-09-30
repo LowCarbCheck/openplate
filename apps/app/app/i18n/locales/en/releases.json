@@ -1,4 +1,11 @@
 {
+  "v0_56_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "Administrators can see and set a label on each person.",
+      "02": "A closed instance can send its people to a new address."
+    }
+  },
   "v0_55_0": {
     "date": "2026-09-30",
     "changed": {
@@ -14,18 +21,6 @@
     "fixed": {
       "01": "The payment portal now opens in the page's language.",
       "02": "The \"latest\" image tag now names the newest release."
-    }
-  },
-  "v0_53_0": {
-    "date": "2026-09-29",
-    "changed": {
-      "01": "The free trial now ends after its free scans or its set days, whichever comes first."
-    },
-    "fixed": {
-      "01": "Copied links now state when they point to another address.",
-      "02": "Resending an invitation shows the new link without mail.",
-      "03": "The link warning now checks the sync server address.",
-      "04": "A reset link no longer pushes the page down."
     }
   }
 }
