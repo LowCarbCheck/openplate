@@ -1,4 +1,15 @@
 {
+  "v0_54_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "İptal ve cayma formları okuyucunun dilini gönderir.",
+      "02": "Tüm uygulama ayarları artık konteynere .env dosyandan ulaşır."
+    },
+    "fixed": {
+      "01": "Ödeme portalı artık sayfanın dilinde açılır.",
+      "02": "\"latest\" imaj etiketi artık en yeni sürümü belirtir."
+    }
+  },
   "v0_53_0": {
     "date": "2026-09-29",
     "changed": {
@@ -23,23 +34,6 @@
       "01": "openplate.de üzerindeki yasal bağlantılar ziyaretçinin dilinde açılır.",
       "02": "Açılış sayfasının ekran görüntüleri sayfanın diliyle eşleşir.",
       "03": "Alt bilgi bağlantıları artık tablet ekranının dışına taşmaz."
-    }
-  },
-  "v0_51_0": {
-    "date": "2026-09-29",
-    "fixed": {
-      "10": "Giriş sayfası, bağlantının dilinde açılır.",
-      "11": "Şifremi unuttum ve kayıt formlarındaki buton artık anlık olarak yanıp sönmez.",
-      "12": "Bağımlılıklar, uygulamadaki bilinen birkaç güvenlik uyarısını aşacak şekilde güncellenir.",
-      "01": "Kilitli hesaplar artık plan sayfasından önce günlüğü görmez.",
-      "02": "Sipariş sayfası, çevrim içi cayma hakkı sayfasına bağlantı verir.",
-      "03": "Cayma ve iptal sayfaları, Almanca başlıklarının ne anlama geldiğini açıklar.",
-      "04": "Önce bir plan seçen alıcı, ödeme yaptıktan sonra günlüğü kurar.",
-      "05": "Giriş yapmış kişilere artık günlüklerinin bu cihazda kaldığı söylenmez.",
-      "06": "Deneme süresi geri sayımı ve özet satırı, her dilde bir telefona sığar.",
-      "07": "Üst bilgideki her Geri al yeniden bir buton haline geldi, artık metin içermiyor ve bir simgesi var.",
-      "08": "Üst bilgi durumundaki uzun bir yiyecek adı üç nokta ile biter.",
-      "09": "Geçmiş bir güne kaydedilen bir yiyecek için Almanca satır tek bir noktayla biter."
     }
   }
 }

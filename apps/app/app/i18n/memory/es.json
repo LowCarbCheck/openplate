@@ -4647,6 +4647,13 @@
     "at": "2026-09-14",
     "es": "Alimento"
   },
+  "3b8e454185456a40": {
+    "en": "Every app setting now reaches the container from your .env file.",
+    "path": "releases:v0_54_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Cada ajuste de la app llega ahora al contenedor desde tu archivo .env."
+  },
   "3bafc24edfe928c9": {
     "en": "Remove YAZIO entries",
     "path": "common:settings.data.yazio.remove.button",
@@ -4716,6 +4723,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "es": "Hoy termina tu prueba con IA."
+  },
+  "3c78b6376fb4aff2": {
+    "en": "The payment portal now opens in the page's language.",
+    "path": "releases:v0_54_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "La pasarela de pago se abre ahora en el idioma de la página."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",
@@ -18346,6 +18360,13 @@
     "at": "2026-09-14",
     "es": "Sin objetivo, solo los números"
   },
+  "e50b9a5433b19145": {
+    "en": "The \"latest\" image tag now names the newest release.",
+    "path": "releases:v0_54_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "La etiqueta de imagen \"latest\" apunta ahora a la versión más reciente."
+  },
   "e52c826e8287ac0f": {
     "en": "e.g. 2000",
     "path": "common:onboarding.kcal.placeholder",
@@ -20018,6 +20039,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "Los nombres de los alimentos siguen el idioma de la aplicación."
+  },
+  "f8b84c3e2d43f48c": {
+    "en": "The cancellation and withdrawal forms send the reader's language.",
+    "path": "releases:v0_54_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Los formularios de cancelación y desistimiento envían el idioma del lector."
   },
   "f8c068a701f4774b": {
     "en": "This page loaded over plain HTTP. Your browser turned off the encryption accounts need. Open openplate at an https:// address, or at localhost on the computer that runs it.",

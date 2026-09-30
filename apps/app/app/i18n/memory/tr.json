@@ -4647,6 +4647,13 @@
     "at": "2026-09-14",
     "tr": "Yiyecek"
   },
+  "3b8e454185456a40": {
+    "en": "Every app setting now reaches the container from your .env file.",
+    "path": "releases:v0_54_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Tüm uygulama ayarları artık konteynere .env dosyandan ulaşır."
+  },
   "3bafc24edfe928c9": {
     "en": "Remove YAZIO entries",
     "path": "common:settings.data.yazio.remove.button",
@@ -4716,6 +4723,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "tr": "Deneme süren bugün bitiyor."
+  },
+  "3c78b6376fb4aff2": {
+    "en": "The payment portal now opens in the page's language.",
+    "path": "releases:v0_54_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "Ödeme portalı artık sayfanın dilinde açılır."
   },
   "3c808477cf8c2d4a": {
     "en": "Decide later",
@@ -18346,6 +18360,13 @@
     "at": "2026-09-14",
     "tr": "Hedef yok, yalnızca sayılar"
   },
+  "e50b9a5433b19145": {
+    "en": "The \"latest\" image tag now names the newest release.",
+    "path": "releases:v0_54_0.fixed.02",
+    "model": "hand-written",
+    "at": "2026-09-30",
+    "tr": "\"latest\" imaj etiketi artık en yeni sürümü belirtir."
+  },
   "e52c826e8287ac0f": {
     "en": "e.g. 2000",
     "path": "common:onboarding.kcal.placeholder",
@@ -20018,6 +20039,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "tr": "Yiyecek adları uygulama dilini izler."
+  },
+  "f8b84c3e2d43f48c": {
+    "en": "The cancellation and withdrawal forms send the reader's language.",
+    "path": "releases:v0_54_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "tr": "İptal ve cayma formları okuyucunun dilini gönderir."
   },
   "f8c068a701f4774b": {
     "en": "This page loaded over plain HTTP. Your browser turned off the encryption accounts need. Open openplate at an https:// address, or at localhost on the computer that runs it.",

@@ -1,4 +1,15 @@
 {
+  "v0_54_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Los formularios de cancelación y desistimiento envían el idioma del lector.",
+      "02": "Cada ajuste de la app llega ahora al contenedor desde tu archivo .env."
+    },
+    "fixed": {
+      "01": "La pasarela de pago se abre ahora en el idioma de la página.",
+      "02": "La etiqueta de imagen \"latest\" apunta ahora a la versión más reciente."
+    }
+  },
   "v0_53_0": {
     "date": "2026-09-29",
     "changed": {
@@ -23,23 +34,6 @@
       "01": "Los enlaces legales de openplate.de se abren en el idioma del visitante.",
       "02": "Las capturas de pantalla de la página de inicio coinciden con el idioma de la página.",
       "03": "Los enlaces del pie de página ya no se salen de la pantalla de una tableta."
-    }
-  },
-  "v0_51_0": {
-    "date": "2026-09-29",
-    "fixed": {
-      "10": "La página de inicio de sesión se abre en el idioma del enlace.",
-      "11": "Los formularios de recuperación de contraseña y de registro ya no muestran un parpadeo en su botón.",
-      "12": "Se actualizan las dependencias para resolver varios avisos de seguridad conocidos en la app.",
-      "01": "Las cuentas bloqueadas ya no ven el diario antes de la página del plan.",
-      "02": "La página de pedido enlaza a la página de desistimiento en línea.",
-      "03": "Las páginas de desistimiento y cancelación explican el significado de sus encabezados en alemán.",
-      "04": "Quien compra y elige primero un plan configura el diario tras pagar.",
-      "05": "A las personas con la sesión iniciada ya no se les indica que su diario permanece en este dispositivo.",
-      "06": "La cuenta atrás de la prueba y su línea de resumen caben en un teléfono en cualquier idioma.",
-      "07": "Cada Deshacer de la cabecera vuelve a ser un botón, ahora con un icono y sin texto.",
-      "08": "Un nombre largo de alimento termina con puntos suspensivos en el estado de la cabecera.",
-      "09": "La línea en alemán para un alimento registrado en un día anterior termina con un solo punto."
     }
   }
 }

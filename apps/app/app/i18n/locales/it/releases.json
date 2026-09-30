@@ -1,4 +1,15 @@
 {
+  "v0_54_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "I moduli di annullamento e recesso inviano la lingua del lettore.",
+      "02": "Ogni impostazione dell'app ora arriva al container dal tuo file .env."
+    },
+    "fixed": {
+      "01": "Il portale dei pagamenti ora si apre nella lingua della pagina.",
+      "02": "Il tag di immagine \"latest\" ora fa riferimento alla versione più recente."
+    }
+  },
   "v0_53_0": {
     "date": "2026-09-29",
     "changed": {
@@ -23,23 +34,6 @@
       "01": "I collegamenti alle note legali da openplate.de si aprono nella lingua del visitatore.",
       "02": "Gli screenshot della pagina iniziale corrispondono alla lingua della pagina.",
       "03": "I collegamenti a piè di pagina non escono più dallo schermo di un tablet."
-    }
-  },
-  "v0_51_0": {
-    "date": "2026-09-29",
-    "fixed": {
-      "10": "La pagina di accesso si apre nella lingua del link.",
-      "11": "I moduli per il recupero password e la registrazione non mostrano più il pulsante a intermittenza.",
-      "12": "L'aggiornamento delle dipendenze risolve diversi avvisi di sicurezza noti nell'app.",
-      "01": "Gli account bloccati non vedono più il diario prima della pagina del piano.",
-      "02": "La pagina dell'ordine rimanda alla pagina per il recesso online.",
-      "03": "Le pagine di recesso e annullamento spiegano il significato delle rispettive intestazioni in tedesco.",
-      "04": "Chi acquista selezionando prima un piano configura il diario dopo il pagamento.",
-      "05": "Agli utenti autenticati non viene più mostrato che il diario rimane su questo dispositivo.",
-      "06": "Il conto alla rovescia del periodo di prova e la riga di riepilogo si adattano allo schermo del telefono in ogni lingua.",
-      "07": "Ogni voce Annulla nell'intestazione torna a essere un pulsante, ora con un'icona e senza testo.",
-      "08": "Un nome lungo per un alimento si interrompe con puntini di sospensione nello stato dell'intestazione.",
-      "09": "La riga in tedesco per un alimento registrato in una data passata termina con un solo punto."
     }
   }
 }

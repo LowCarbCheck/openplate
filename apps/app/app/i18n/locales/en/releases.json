@@ -1,4 +1,15 @@
 {
+  "v0_54_0": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "The cancellation and withdrawal forms send the reader's language.",
+      "02": "Every app setting now reaches the container from your .env file."
+    },
+    "fixed": {
+      "01": "The payment portal now opens in the page's language.",
+      "02": "The \"latest\" image tag now names the newest release."
+    }
+  },
   "v0_53_0": {
     "date": "2026-09-29",
     "changed": {
@@ -23,23 +34,6 @@
       "01": "Legal links from openplate.de open in the visitor's language.",
       "02": "The landing's screenshots match the page's language.",
       "03": "The footer links no longer run off a tablet screen."
-    }
-  },
-  "v0_51_0": {
-    "date": "2026-09-29",
-    "fixed": {
-      "10": "The sign-in page opens in the language of the link.",
-      "11": "The forgot-password and sign-up forms no longer flash their button.",
-      "12": "Dependencies update past several known security advisories in the app.",
-      "01": "Locked accounts no longer see the diary before the plan page.",
-      "02": "The order page links to the online withdrawal page.",
-      "03": "The withdrawal and cancellation pages explain what their German headings mean.",
-      "04": "A buyer who picks a plan first sets up the diary after paying.",
-      "05": "Signed-in people are no longer told their diary stays on this device.",
-      "06": "The trial countdown and its recap line fit a phone in every language.",
-      "07": "Every Undo in the header is a button again, now with an icon and no text.",
-      "08": "A long food name ends in an ellipsis in the header status.",
-      "09": "The German line for a food logged on a past day ends on one period."
     }
   }
 }
