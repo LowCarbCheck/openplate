@@ -7,9 +7,11 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-09-30
+
 ### Fixed
 
-- **Withdrawal receipts now label the date the contract was made.** The withdrawal form asks for the date the contract was made, but the receipt listed that date as "Requested date", the cancellation label, in all six languages. The receipt and the operator alert for a withdrawal now use the withdrawal form's own label, for example "Date the contract was made" or "Datum des Vertragsschlusses". A cancellation keeps "Requested date". `tests/unit/declaration-message.test.ts` compares both labels with the app's form labels in every language.
+- **Withdrawal receipts now label the date the contract was made.** The withdrawal form asks for the date the contract was made, but the receipt listed that date as "Requested date", the cancellation label, in all six languages. The receipt and the operator alert for a withdrawal now use the withdrawal form's own label, for example "Date the contract was made" or "Datum des Vertragsschlusses". A cancellation keeps "Requested date". `tests/unit/declaration-message.test.ts` compares both labels with the app's form labels in every language. ([2f9438c](https://github.com/LowCarbCheck/openplate/commit/2f9438c))
 
 ## [0.26.0] - 2026-09-30
 
