@@ -249,6 +249,28 @@ const REPORTS = [
 /** Four digit counts, the widest the cells are likely to meet. */
 const STATS = { accounts: 1234, admins: 2, pendingInvites: 2, aiRequestsToday: 1987 };
 
+/**
+ * The AI budget card's answer, with both halves drawn: a key with a limit and
+ * what is left of it, and a paid and a trial ceiling with some of each spent.
+ * Parsed by `aiBudgetSchema`, so a drifted field fails as a broken card.
+ */
+function aiBudget() {
+  return {
+    day: dayKey(0),
+    capacity: { paid: { used: 120, limit: 2000 }, trial: { used: 340, limit: 1000 } },
+    upstream: {
+      status: 'ok',
+      limitUsd: 50,
+      remainingUsd: 38.5,
+      reset: 'monthly',
+      usageDailyUsd: 0.4,
+      usageWeeklyUsd: 2.9,
+      usageMonthlyUsd: 11.5,
+      checkedAt: new Date().toISOString(),
+    },
+  };
+}
+
 /** `YYYY-MM-DD` for the UTC day `daysAgo` before today. */
 function dayKey(daysAgo: number): string {
   return new Date(Date.now() - daysAgo * DAY_MS).toISOString().slice(0, 10);
@@ -329,6 +351,9 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
   if (request.method() === 'GET' && path === '/stats') {
     await stub.statsGate;
     return route.fulfill({ json: { stats: STATS } });
+  }
+  if (request.method() === 'GET' && path === '/ai/budget') {
+    return route.fulfill({ json: aiBudget() });
   }
   if (request.method() === 'GET' && path === '/accounts') {
     return route.fulfill({ json: { accounts: firstPageOnly({ items: people, offset }), total: people.length } });
