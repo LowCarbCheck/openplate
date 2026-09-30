@@ -73,7 +73,7 @@ const BOOT_BUDGET_MS = 90_000;
 const TEST_BUDGET_MS = 90_000;
 
 /** The name the owner gave when they signed up, in the fixture's words. */
-const NAME = 'Altan Sarisin';
+const NAME = 'Ada Lovelace';
 
 /** Sixty characters, far past the name box's 160 px of 14 px Victor Mono. */
 const LONG_NAME = 'Maximiliane Konstantina Alexandropoulos-Weatherby Schoenberg';
@@ -201,17 +201,17 @@ test('signed in with a name, the button and the menu say the name', async ({ pag
 
 test('a name that is an address shows the part before the @', async ({ page }) => {
   test.setTimeout(TEST_BUDGET_MS);
-  await routeManagedCore(page, accountStub('altan@example.com'));
+  await routeManagedCore(page, accountStub('ada@example.com'));
   await signInManaged(page, server.url);
   await page.goto(`${server.url}/diary`);
 
   const trigger = page
     .locator('header')
-    .getByRole('button', { name: fill(EN.chrome.accountMenuLabel, { name: 'altan' }), exact: true });
+    .getByRole('button', { name: fill(EN.chrome.accountMenuLabel, { name: 'ada' }), exact: true });
   await expect(trigger).toBeVisible({ timeout: 10_000 });
-  await expect(trigger.locator('[data-slot="avatar-menu-name"]')).toHaveText('altan');
+  await expect(trigger.locator('[data-slot="avatar-menu-name"]')).toHaveText('ada');
   await trigger.click();
-  await expect(page.getByRole('menu').locator('[data-slot="avatar-menu-label"]')).toHaveText('altan');
+  await expect(page.getByRole('menu').locator('[data-slot="avatar-menu-label"]')).toHaveText('ada');
 });
 
 test('control: signed in with no name, the button still says This device', async ({ page }) => {

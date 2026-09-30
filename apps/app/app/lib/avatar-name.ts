@@ -8,7 +8,7 @@
  * no name to show: no session, or an account with an empty name.
  *
  * AN ADDRESS IS CUT TO ITS FIRST PART. Somebody who typed their email into
- * the name field gets "altan", not "altan@example.com". A full address is long
+ * the name field gets "ada", not "ada@example.com". A full address is long
  * in a fixed box, and the account strip at the foot of the same menu already
  * prints it in full.
  *

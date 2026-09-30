@@ -17,16 +17,16 @@ import { resolveAvatarLabel, resolveAvatarName } from '../../app/lib/avatar-name
 
 describe('resolveAvatarName', () => {
   it('shows a display name as it is', () => {
-    assert.equal(resolveAvatarName('Altan Sarisin'), 'Altan Sarisin');
+    assert.equal(resolveAvatarName('Ada Lovelace'), 'Ada Lovelace');
     // CONTROL: another name answers that name, so the answer is not a constant.
     assert.equal(resolveAvatarName('Maria'), 'Maria');
   });
 
   it('shows the part before the @ of a name that is an email address', () => {
-    assert.equal(resolveAvatarName('altan@example.com'), 'altan');
+    assert.equal(resolveAvatarName('ada@example.com'), 'ada');
     assert.equal(resolveAvatarName('  first.last@example.com  '), 'first.last');
     // CONTROL: the same letters with no @ are kept whole, so the cut is the @'s doing.
-    assert.equal(resolveAvatarName('altan.example.com'), 'altan.example.com');
+    assert.equal(resolveAvatarName('ada.example.com'), 'ada.example.com');
   });
 
   it('shows nothing for an address with nothing before the @', () => {
@@ -45,14 +45,14 @@ describe('resolveAvatarName', () => {
   it('shows nothing without a session', () => {
     assert.equal(resolveAvatarName(null), null);
     // CONTROL: the same call with a name answers it.
-    assert.equal(resolveAvatarName('Altan'), 'Altan');
+    assert.equal(resolveAvatarName('Ada'), 'Ada');
   });
 
   it('shows nothing for a name of only whitespace', () => {
     assert.equal(resolveAvatarName('   '), null);
     assert.equal(resolveAvatarName('\t\n'), null);
     // CONTROL: whitespace around a name is trimmed, and the name is kept.
-    assert.equal(resolveAvatarName('  Altan  '), 'Altan');
+    assert.equal(resolveAvatarName('  Ada  '), 'Ada');
   });
 });
 
@@ -60,10 +60,10 @@ describe('resolveAvatarLabel', () => {
   const settled = { isResuming: false, hasSyncServer: true };
 
   it('names a signed-in account', () => {
-    assert.deepEqual(resolveAvatarLabel({ ...settled, displayName: 'Altan' }), { kind: 'name', name: 'Altan' });
-    assert.deepEqual(resolveAvatarLabel({ ...settled, displayName: 'altan@example.com' }), {
+    assert.deepEqual(resolveAvatarLabel({ ...settled, displayName: 'Ada' }), { kind: 'name', name: 'Ada' });
+    assert.deepEqual(resolveAvatarLabel({ ...settled, displayName: 'ada@example.com' }), {
       kind: 'name',
-      name: 'altan',
+      name: 'ada',
     });
     // CONTROL: the same account with no name is the device.
     assert.deepEqual(resolveAvatarLabel({ ...settled, displayName: null }), { kind: 'device' });
@@ -94,9 +94,9 @@ describe('resolveAvatarLabel', () => {
   });
 
   it('shows a known name even while the flag still says resuming', () => {
-    assert.deepEqual(resolveAvatarLabel({ displayName: 'Altan', isResuming: true, hasSyncServer: true }), {
+    assert.deepEqual(resolveAvatarLabel({ displayName: 'Ada', isResuming: true, hasSyncServer: true }), {
       kind: 'name',
-      name: 'Altan',
+      name: 'Ada',
     });
     // CONTROL: without the name the same snapshot waits.
     assert.equal(resolveAvatarLabel({ displayName: '', isResuming: true, hasSyncServer: true }).kind, 'pending');
