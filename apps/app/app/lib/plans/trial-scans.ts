@@ -108,6 +108,35 @@ export function grantedTrialDays({
 }
 
 /**
+ * How many days of the free tier are left, beside its scans left, or `null`
+ * when there is no day line to draw (owner decision 2026-09-30).
+ *
+ * WHOLE DAYS, ROUNDED UP, as `planStanding`'s `daysLeft` counts them: 30
+ * hours left is 2 days, and the last minute is still 1 day, never 0.
+ *
+ * ONLY FOR A SCAN TRIAL THAT STILL RUNS. `trialScans` is the trial that binds
+ * (`bindingTrialScans`), so a paid or granted window, which carries a date
+ * and no scan gate, is `null` here. So is an account with no scan trial at
+ * all (the "Beta supporter" standing), a trial whose scans are spent, an end
+ * that has passed or cannot be read, and no end date.
+ */
+export function trialDaysLeft({
+  trialScans,
+  trialEndsAt,
+  now,
+}: {
+  trialScans: TrialScans | null;
+  trialEndsAt: string | null | undefined;
+  now: Date;
+}): number | null {
+  if (trialScans === null || trialScans.left <= 0) return null;
+  if (trialEndsAt === null || trialEndsAt === undefined) return null;
+  const remainingMs = Date.parse(trialEndsAt) - now.getTime();
+  if (Number.isNaN(remainingMs) || remainingMs <= 0) return null;
+  return Math.ceil(remainingMs / DAY_MS);
+}
+
+/**
  * The count a proxied response carried, or `null` when it carried none.
  *
  * A value that is not a whole number at or above zero is `null`: a garbled

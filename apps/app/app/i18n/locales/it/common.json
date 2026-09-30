@@ -3170,6 +3170,8 @@
       "askAdmin": "Questa impostazione è definita dal tuo amministratore.",
       "today": "Stime dalle foto oggi: {{used}} su {{limit}}",
       "trialScans": "{{left}} di {{granted}} scansioni gratuite con IA rimaste.",
+      "trialDaysLeft_one": "Resta {{count}} giorno della tua prova gratuita",
+      "trialDaysLeft_other": "Restano {{count}} giorni della tua prova gratuita",
       "expires": "Le stime dalle foto per questo account sono attive fino al {{date}}.",
       "expired": "Le stime dalle foto per questo account sono terminate il {{date}}.",
       "planLink": "Vedi il tuo piano"

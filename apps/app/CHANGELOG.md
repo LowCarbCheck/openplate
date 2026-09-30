@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The free trial now says how many days are left.** On an instance that sells plans, a new account is free until it has used 10 photo scans or 14 days have passed, whichever comes first. The account page and the account strip in the avatar menu already said how many free scans are left. They now also say how many days are left, on the line after it, for example "6 days left in your free trial". The count is in whole days, rounded up: 30 hours left reads 2 days, and the last day reads 1 day. It is read from `trialEndsAt` on the account (openplate-core 0.25.0). The line is not shown for an account with no free trial, for a paid plan, after the scans are spent, or after the end date. German is hand-written. French, Italian, Spanish and Turkish are machine-translated. Tests: `tests/unit/trial-days-left.test.ts`, `tests/unit/trial-scans.test.ts`, `tests/e2e/trial-days-left.spec.ts`.
+
 ## [0.56.0] - 2026-09-30
 
 ### Added

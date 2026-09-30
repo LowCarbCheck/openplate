@@ -278,6 +278,13 @@ const catalogSchema = z.object({
   signOut: z.object({ confirm: z.string() }),
   join: z.object({ working: z.string(), invitedAs: z.string() }),
   account: z.object({
+    /** The scan trial's two lines: the scans left, and beside them the days left (2026-09-30). */
+    allowance: z.object({
+      today: z.string(),
+      trialScans: z.string(),
+      trialDaysLeft_one: z.string(),
+      trialDaysLeft_other: z.string(),
+    }),
     invites: z.object({
       title: z.string(),
       left: z.string(),

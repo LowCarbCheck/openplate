@@ -3170,6 +3170,8 @@
       "askAdmin": "Tu administrador establece esto.",
       "today": "Estimaciones por foto hoy: {{used}} de {{limit}}",
       "trialScans": "Te quedan {{left}} de {{granted}} escaneos con IA gratis.",
+      "trialDaysLeft_one": "Queda {{count}} día de tu prueba gratuita",
+      "trialDaysLeft_other": "Quedan {{count}} días de tu prueba gratuita",
       "expires": "Las estimaciones por foto para esta cuenta funcionan hasta el {{date}}.",
       "expired": "Las estimaciones por foto para esta cuenta terminaron el {{date}}.",
       "planLink": "Ver tu plan"

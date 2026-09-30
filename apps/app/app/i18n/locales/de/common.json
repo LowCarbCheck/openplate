@@ -3170,6 +3170,8 @@
       "askAdmin": "Das legt deine Administration fest.",
       "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
       "trialScans": "Noch {{left}} von {{granted}} kostenlosen KI-Scans übrig.",
+      "trialDaysLeft_one": "Noch {{count}} Tag in deiner kostenlosen Testphase",
+      "trialDaysLeft_other": "Noch {{count}} Tage in deiner kostenlosen Testphase",
       "expires": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}.",
       "expired": "Foto-Schätzungen für dieses Konto endeten am {{date}}.",
       "planLink": "Deinen Tarif ansehen"
