@@ -281,6 +281,31 @@ describe('action — rate-limit budget fits realistic use (M123/07)', () => {
   });
 });
 
+/**
+ * An OPEN instance keeps the door it always had (2026-09-30 security fix): the
+ * account check runs on a managed instance only, and this file's environment
+ * is the default, open one. `api-food-matches-managed.test.ts` holds the
+ * managed side, where the same request is a `401`.
+ */
+describe('action, an open instance needs no account', () => {
+  it('serves a caller with no Authorization header, and the lookup runs', async () => {
+    resetBudget();
+    let fetchCallCount = 0;
+    stubFetch(async () => {
+      fetchCallCount += 1;
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    });
+    try {
+      assert.equal(CONFIG.instance.managed, false, 'this file runs an open instance');
+      const response = await invokeAction(foodMatchesRequest([uniquePrefix('open-instance-food')]));
+      assert.equal(response.status, 200);
+      assert.equal(fetchCallCount, 1);
+    } finally {
+      restoreFetch();
+    }
+  });
+});
+
 describe('foodMatchesRateLimitKey', () => {
   it('buckets by client IP only — there is no account identifier left to key on (M128 spec 03)', () => {
     const key = foodMatchesRateLimitKey(foodMatchesRequest(['egg']));

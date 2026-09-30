@@ -12,7 +12,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveClientIp, DIRECT_CONNECTION_IP, UNKNOWN_CLIENT_IP } from '../../app/lib/client-ip';
+import {
+  rateLimitAddressBucket,
+  resolveClientIp,
+  DIRECT_CONNECTION_IP,
+  UNKNOWN_CLIENT_IP,
+} from '../../app/lib/client-ip';
 
 describe('resolveClientIp — trust proxy disabled (dev default)', () => {
   it('ignores X-Forwarded-For entirely when trustProxy is false', () => {
@@ -86,5 +91,50 @@ describe('resolveClientIp — non-numeric trustProxy (true / CIDR string)', () =
 
   it('falls back to single-hop semantics for a CIDR/preset string', () => {
     assert.equal(resolveClientIp({ forwardedFor: 'spoof, 9.9.9.9', trustProxy: 'loopback' }), '9.9.9.9');
+  });
+});
+
+/**
+ * The per-address limiter counts an IPv6 caller by its /64 (2026-09-30
+ * security fix). Before, the full address was the key, and one home
+ * connection could pick a fresh address, and so a fresh bucket, for every
+ * request.
+ */
+describe('rateLimitAddressBucket', () => {
+  it('puts two addresses inside one /64 into one bucket', () => {
+    assert.equal(
+      rateLimitAddressBucket('2001:db8:1:2:aaaa::1'),
+      rateLimitAddressBucket('2001:db8:1:2:ffff:ffff:ffff:ffff'),
+    );
+  });
+
+  it('control: keeps two different /64 networks apart', () => {
+    assert.notEqual(rateLimitAddressBucket('2001:db8:1:2::1'), rateLimitAddressBucket('2001:db8:1:3::1'));
+  });
+
+  it('writes the /64 the same however the address was spelled', () => {
+    const expected = '2001:db8:0:2::/64';
+    assert.equal(rateLimitAddressBucket('2001:0DB8:0000:0002:0000:0000:0000:0001'), expected);
+    assert.equal(rateLimitAddressBucket('2001:db8::2:0:0:0:1'), expected);
+    assert.equal(rateLimitAddressBucket('[2001:db8:0:2::1]:443'), expected);
+    assert.equal(rateLimitAddressBucket('2001:db8:0:2::1%eth0'), expected);
+  });
+
+  it('reads an IPv4-mapped address as the IPv4 address it carries, in both spellings', () => {
+    assert.equal(rateLimitAddressBucket('::ffff:203.0.113.7'), '203.0.113.7');
+    assert.equal(rateLimitAddressBucket('::FFFF:cb00:7107'), '203.0.113.7');
+  });
+
+  it('control: two different IPv4-mapped addresses stay two buckets, not one ::ffff:0:0/64', () => {
+    assert.notEqual(rateLimitAddressBucket('::ffff:203.0.113.7'), rateLimitAddressBucket('::ffff:198.51.100.9'));
+  });
+
+  it('leaves an IPv4 address, a placeholder and a malformed value as they are', () => {
+    assert.equal(rateLimitAddressBucket('203.0.113.7'), '203.0.113.7');
+    assert.equal(rateLimitAddressBucket(DIRECT_CONNECTION_IP), DIRECT_CONNECTION_IP);
+    assert.equal(rateLimitAddressBucket(UNKNOWN_CLIENT_IP), UNKNOWN_CLIENT_IP);
+    assert.equal(rateLimitAddressBucket('1:2:3'), '1:2:3');
+    assert.equal(rateLimitAddressBucket('1::2::3'), '1::2::3');
+    assert.equal(rateLimitAddressBucket('zzzz::1'), 'zzzz::1');
   });
 });

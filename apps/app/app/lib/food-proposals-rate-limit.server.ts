@@ -8,9 +8,9 @@
  *
  * @see app/routes/api.food-proposals.ts, the sole production caller.
  */
-import { getClientIp } from '#app/lib/client-ip.server';
+import { getClientRateLimitBucket } from '#app/lib/client-ip.server';
 
-/** Buckets by client IP, and only by that: there are no accounts to key on. */
+/** Buckets by client address, an IPv6 address by its /64 network, as `/api/food-matches` does. */
 export function foodProposalsRateLimitKey(request: Request): string {
-  return `food-proposals:ip:${getClientIp(request)}`;
+  return `food-proposals:ip:${getClientRateLimitBucket(request)}`;
 }

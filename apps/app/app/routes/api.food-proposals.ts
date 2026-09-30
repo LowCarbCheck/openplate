@@ -2,7 +2,10 @@ import type { Route } from './+types/api.food-proposals';
 import { z } from 'zod';
 
 import { CONFIG } from '#app/config';
+import { DailyCallLimitExceededError } from '#app/lib/food-db-daily-budget';
+import { reserveFoodDbCalls } from '#app/lib/food-db-daily-budget.server';
 import { foodProposalsRateLimitKey } from '#app/lib/food-proposals-rate-limit.server';
+import { refuseWithoutAccount } from '#app/lib/managed-account-gate.server';
 import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.server';
 import { parseFoodProposalBatch } from '#app/services/food-db/proposals';
 import { forwardFoodProposals } from '#app/services/food-db/proposals.server';
@@ -25,6 +28,13 @@ import { forwardFoodProposals } from '#app/services/food-db/proposals.server';
  * body worth reading, and the page ignores it: a proposal never delays or
  * fails a log. The rate limit has the `/api/food-matches` shape, one bucket per
  * address, because the upstream allowance is the instance's and is shared.
+ *
+ * THE SAME GUARDS AS `/api/food-matches` (2026-09-30), because the relay
+ * spends the same key: on a managed instance a live account token or `401`
+ * (`503` when core cannot be asked), then the per-address limiter, then one
+ * call reserved from the server's daily cap (`429` once it is spent). With
+ * backfill off none of them runs: the `404` below reads nothing, the header
+ * included.
  */
 
 /** A generous window: one confirm posts one request. */
@@ -36,6 +46,9 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
   const { backfill, apiUrl, apiKey } = CONFIG.foodDb;
   if (!backfill) return new Response(null, { status: 404 });
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { Allow: 'POST' } });
+
+  const refusal = await refuseWithoutAccount(request);
+  if (refusal !== null) return refusal;
 
   try {
     checkRateLimit(foodProposalsRateLimitKey(request), { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX_REQUESTS });
@@ -52,6 +65,15 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
   }
   const proposals = parseFoodProposalBatch(body);
   if (proposals.length === 0) return new Response(null, { status: 400 });
+
+  // One call, whatever the batch holds: the relay posts the batch once, and
+  // its single retry is for weather, not a second spend worth reserving.
+  try {
+    reserveFoodDbCalls(1);
+  } catch (error) {
+    if (!(error instanceof DailyCallLimitExceededError)) throw error;
+    return new Response(null, { status: 429 });
+  }
 
   // Awaited rather than fired and forgotten, so the retry happens inside the
   // request the page is already not waiting for, and a test can read the

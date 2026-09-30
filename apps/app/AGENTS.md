@@ -162,6 +162,7 @@ The core product promise is "your key, your provider, your data." **BYOK is full
 ### The food database key
 
 - **`FOOD_DB_API_KEY` is the one server-side secret, and it stays one.** It lives in `CONFIG.foodDb` (`app/config/index.ts`), is never part of `PublicConfig`, is sent only as a bearer token to `FOOD_DB_API_URL` (`app/services/food-db/request.ts`), and is logged by its 16-character display prefix only. The food lookups (`/api/food-matches`, `/api/nutrients`) run on the server for exactly this reason. Never read it in a module that ships to the browser. The 2026-09-19 update in [ADR-0006](.adr/0006-the-app-server-holds-no-accounts.md) records why this one key leaves the no-accounts promise intact.
+- **Every route that spends the key is guarded, on the server.** `/api/food-matches` and `/api/food-proposals` check, in order: on a managed instance a live account bearer (`app/lib/managed-account-gate.server.ts` asks openplate-core's `GET /v1/auth/account` and caches the answer by token hash; `401` without one, `503` when core cannot be asked), then the per-address limiter (an IPv6 caller by its /64), then the server's daily call cap (`FOOD_DB_DAILY_CALL_LIMIT`, `429`). A new route that calls LowCarbCheck under the key takes all three.
 
 ## Migrations live on the device
 

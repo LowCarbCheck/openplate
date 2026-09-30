@@ -3,7 +3,10 @@ import type { Route } from './+types/api.food-matches';
 import { CONFIG } from '#app/config';
 import { resolveRequestLanguage } from '#app/i18n/language-prefs';
 import { foodMatchesRateLimitKey } from '#app/lib/food-matches-rate-limit.server';
-import { allNamesCached, foodResolutionOptions, resolveIdentifiedFoods } from '#app/services/food-resolution';
+import { DailyCallLimitExceededError } from '#app/lib/food-db-daily-budget';
+import { reserveFoodDbCalls } from '#app/lib/food-db-daily-budget.server';
+import { refuseWithoutAccount } from '#app/lib/managed-account-gate.server';
+import { foodResolutionOptions, resolveIdentifiedFoods, uncachedNameCount } from '#app/services/food-resolution';
 import type { FoodMatch } from '#app/services/food-resolution';
 import { foodDbStatus } from '#app/services/food-db/status';
 import type { FoodDbStatus } from '#app/services/food-db/wire';
@@ -19,17 +22,33 @@ import { checkRateLimit, RateLimitExceededError } from '#app/lib/rate-limit.serv
  * names, and this keeps the self-hoster `FOOD_DB_API_URL` opt-out/override
  * (`#app/config`) working without exposing it to the client bundle.
  *
- * The rate-limit bucket is keyed by the caller's IP, and only by that (M128
- * spec 03): there are no accounts, so there is no per-caller identifier to
- * bucket on. That makes the budget a SHARED resource in any IP-shared context
- * (office NAT, campus wifi, mobile carrier CGNAT) — unrelated people can
- * exhaust each other's window (M123/05). The cache-miss-only accounting below
- * is what keeps that tolerable.
+ * WHO MAY ASK (2026-09-30 security fix). Every uncached name is a call under
+ * the operator's `FOOD_DB_API_KEY`, and the key's allowance is shared by the
+ * whole instance, so an open door here let anybody spend it and stop food
+ * search for everyone. Three guards now stand in front of the lookup, in this
+ * order, and each answers before anything leaves for LowCarbCheck:
  *
- * FAIL OPEN, always: `resolveIdentifiedFoods` itself never throws, and this
- * route never returns a non-2xx for a malformed/oversized request — it just
- * resolves fewer (or zero) names. A curated-match suggestion is an
- * enrichment, never a dependency of the confirm-draft flow.
+ * 1. ON A MANAGED INSTANCE, a live account token (`refuseWithoutAccount`):
+ *    `401` without one, `503` when core cannot be asked. The page sends the
+ *    bearer it already sends to core. An open instance skips this entirely
+ *    and answers whoever reaches it, as it always has.
+ * 2. The per-address limiter below, an IPv6 caller counted by its /64.
+ * 3. The server's daily cap on LowCarbCheck calls (`FOOD_DB_DAILY_CALL_LIMIT`,
+ *    `food-db-daily-budget.ts`): `429` with the throttled body once the day's
+ *    calls are spent.
+ *
+ * The rate-limit bucket is keyed by the caller's address. That makes the
+ * budget a SHARED resource in any IP-shared context (office NAT, campus wifi,
+ * mobile carrier CGNAT): unrelated people can exhaust each other's window
+ * (M123/05). The cache-miss-only accounting below is what keeps that
+ * tolerable.
+ *
+ * FAIL OPEN toward the person: `resolveIdentifiedFoods` itself never throws,
+ * and a malformed or oversized request is answered `200` with fewer (or zero)
+ * names resolved. The only non-2xx answers are the three guards above, and
+ * the client reads every one of them as "no curated matches", the throttled
+ * `429` as a pause. A curated-match suggestion is an enrichment, never a
+ * dependency of the confirm-draft flow.
  *
  * M123/05: a rate-limited caller must never be told "no matches" — that
  * message is reserved for a genuine, checked, empty result. The rate-limit
@@ -146,6 +165,11 @@ export function parseNames(body: JsonValue): string[] {
 }
 
 export async function action({ request }: Route.ActionArgs): Promise<Response> {
+  // FIRST, before the body is read: a caller this instance does not serve
+  // costs nothing beyond this check (see the module doc comment).
+  const refusal = await refuseWithoutAccount(request);
+  if (refusal !== null) return refusal;
+
   const rateLimitKey = foodMatchesRateLimitKey(request);
 
   let body: JsonValue;
@@ -160,8 +184,8 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
 
   const names = parseNames(body);
 
-  // Resolved once and passed to BOTH calls below: `allNamesCached` reads the
-  // same language-keyed cache `resolveIdentifiedFoods` writes, so a
+  // Resolved once and passed to BOTH calls below: `uncachedNameCount` reads
+  // the same language-keyed cache `resolveIdentifiedFoods` writes, so a
   // mismatch here would charge (or exempt) the wrong bucket.
   const language = resolveRequestLanguage(request.headers.get('cookie'), CONFIG.i18n.defaultLanguage);
   const options = foodResolutionOptions(language);
@@ -171,18 +195,24 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
   // the full rationale. Checked BEFORE calling `resolveIdentifiedFoods` so a
   // throttled caller (the `false` branch below, once over budget) still
   // never reaches the upstream lookup.
-  if (!allNamesCached(names, options)) {
+  const upstreamCalls = uncachedNameCount(names, options);
+  if (upstreamCalls > 0) {
     try {
       checkRateLimit(rateLimitKey, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX_REQUESTS });
     } catch (error) {
       if (!(error instanceof RateLimitExceededError)) throw error;
-      const throttled: FoodMatchesThrottledResponseBody = {
-        matches: [],
-        throttled: true,
-        retryAfterMs: error.retryAfterMs,
-        foodDb: foodDbStatus(),
-      };
-      return Response.json(throttled);
+      return Response.json(throttledBody(error.retryAfterMs));
+    }
+    // AFTER the per-address limiter, so a request it refuses reserves nothing
+    // from the day's calls.
+    try {
+      reserveFoodDbCalls(upstreamCalls);
+    } catch (error) {
+      if (!(error instanceof DailyCallLimitExceededError)) throw error;
+      // The throttled body, so the page shows a pause and never a false "no
+      // matches" (M123/05), and a `429` so anything else reading this route
+      // can tell a cap from a result.
+      return Response.json(throttledBody(error.retryAfterMs), { status: 429 });
     }
   }
 
@@ -195,4 +225,9 @@ export async function action({ request }: Route.ActionArgs): Promise<Response> {
   // was a moment ago.
   const success: FoodMatchesResponseBody = { matches, foodDb: foodDbStatus() };
   return Response.json(success);
+}
+
+/** The throttled shape both limits answer with (M123/05): empty matches, never a bare "none found". */
+function throttledBody(retryAfterMs: number): FoodMatchesThrottledResponseBody {
+  return { matches: [], throttled: true, retryAfterMs, foodDb: foodDbStatus() };
 }

@@ -53,7 +53,7 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 
 | Variable | Default | What it does | More |
 | --- | --- | --- | --- |
-| `SYNC_SERVER_URL` | unset, sync off | The address of your sync service, as a browser reaches it. Its origin goes into the Content-Security-Policy. A malformed value stops the boot. | [Sync](sync.md) |
+| `SYNC_SERVER_URL` | unset, sync off | The address of your sync service, as a browser reaches it. Its origin goes into the Content-Security-Policy. On a managed instance the app server also reaches it, to check the account of each food lookup. A malformed value stops the boot. | [Sync](sync.md) |
 | `INSTANCE_MODE` | `open` | `open` or `managed`. On a managed instance an administrator invites people, and the sync service supplies the AI. `managed` needs `SYNC_SERVER_URL`. Any other value stops the boot. | [Managed instances](configuration.md#managed-instances) |
 
 ### Instance-provided AI
@@ -71,6 +71,7 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 | `FOOD_DB_API_URL` | `https://lowcarbcheck.org` | The LowCarbCheck food database the server looks food names up in. An empty value turns the lookup off. | [The food database key](configuration.md#the-food-database-key) |
 | `FOOD_DB_API_KEY` | unset, the anonymous tier | Your LowCarbCheck key. Only the server reads it, and it never reaches a browser. | [The food database key](configuration.md#the-food-database-key) |
 | `FOOD_DB_BACKFILL` | `false` | `true` passes the foods people save from an AI answer on to LowCarbCheck as proposals. It needs `FOOD_DB_API_KEY` and stays off without it. Any value other than `true` or `false` stops the boot. | [Proposals to the food database](configuration.md#proposals-to-the-food-database) |
+| `FOOD_DB_DAILY_CALL_LIMIT` | `3200` | The most LowCarbCheck calls this server makes in one UTC day. Past it, food lookups pause until midnight UTC and the app says so. The default keeps a free key's 100,000 a month. Anything but a positive whole number stops the boot. | [The food database key](configuration.md#the-food-database-key) |
 
 ### Analytics, newsletter and updates
 
@@ -303,7 +304,7 @@ These names were settings once. Now the service refuses to start while one is se
 - `INSTANCE_MODE=managed` needs `SYNC_SERVER_URL`.
 - `APP_URL` is required when `NODE_ENV=production`.
 - `MOVED_TO_URL` must be an `https://` address on a host other than `APP_URL`, without a user name or password.
-- A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. Malformed addresses in `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
+- A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. So does a `FOOD_DB_DAILY_CALL_LIMIT` that is not a positive whole number. Malformed addresses in `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
 
 **The sync service.**
 
