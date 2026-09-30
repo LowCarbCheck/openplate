@@ -39,6 +39,12 @@ import type { AccountRole, AdminAccountView } from '#app/lib/admin/admin-wire';
 export interface PersonEdit {
   role: AccountRole;
   dailyAiLimit: number;
+  /**
+   * The standing free grant per day (2026-09-30), photos that stay when no paid
+   * plan runs and never end. Sent ONLY when the field changed, for the reason
+   * {@link PersonEdit.label} gives.
+   */
+  freeDailyAiLimit?: number;
   /** The free AI scans given (M253/05). Sent only for an account that has a scan trial. */
   trialScans?: number;
   /**
@@ -62,6 +68,7 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
   const { t } = useTranslation();
   const [role, setRole] = useState<AccountRole>(person.role);
   const [limit, setLimit] = useState(String(person.dailyAiLimit));
+  const [freeLimit, setFreeLimit] = useState(String(person.freeDailyAiLimit));
   const [scans, setScans] = useState(String(person.trialScans?.granted ?? 0));
   const [label, setLabel] = useState(person.label ?? '');
   const hasTrialScans = person.trialScans !== null;
@@ -69,6 +76,8 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
   /** The save, with the label only when it changed. See {@link PersonEdit.label}. */
   function edit(): PersonEdit {
     const base: PersonEdit = { role, dailyAiLimit: readAllowance(limit) };
+    const nextFreeLimit = readAllowance(freeLimit);
+    if (nextFreeLimit !== person.freeDailyAiLimit) base.freeDailyAiLimit = nextFreeLimit;
     if (hasTrialScans) base.trialScans = readTrialScans(scans);
     const nextLabel = changedAccountLabel({ typed: label, current: person.label });
     if (nextLabel !== undefined) base.label = nextLabel;
@@ -102,6 +111,30 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
             onChange={(event) => setLimit(event.target.value)}
           />
           <p className="text-xs text-muted-foreground">{t('admin.edit.allowanceHint')}</p>
+        </div>
+        {/* THE STANDING FREE GRANT (2026-09-30), beside the paid limit above
+            and always drawn: a Beta supporter's ten photos a day live here,
+            and they are what the person keeps when a paid plan ends. The copy
+            is English until the keys reach the catalogs, see the report. */}
+        <div className="space-y-1">
+          <Label htmlFor={`free-limit-${person.id}`}>
+            {t('admin.edit.freeAllowanceLabel', { defaultValue: 'Free photos per day' })}
+          </Label>
+          <Input
+            id={`free-limit-${person.id}`}
+            type="number"
+            min={0}
+            max={MAX_DAILY_AI_LIMIT}
+            step={1}
+            className="h-11"
+            value={freeLimit}
+            onChange={(event) => setFreeLimit(event.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('admin.edit.freeAllowanceHint', {
+              defaultValue: 'These stay when no paid plan runs, and they never end. 0 takes them away.',
+            })}
+          </p>
         </div>
         {hasTrialScans && (
           <div className="space-y-1">
@@ -148,6 +181,9 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
 
 /** The core's bound on a scan trial (`PROTOCOL.md` §5.20, M253/03). */
 const MAX_TRIAL_SCANS = 100;
+
+/** The core's bound on either daily limit (`PROTOCOL.md` §5.20). */
+const MAX_DAILY_AI_LIMIT = 10_000;
 
 /**
  * The typed field turned into a number of free scans, clamped to the core's

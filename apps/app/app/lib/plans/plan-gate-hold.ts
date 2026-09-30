@@ -76,6 +76,8 @@ function locksByTheClockAt(standing: PlanStanding): number | null {
     case 'no-plans':
     case 'trial-ended':
     case 'lapsed':
+    // A free grant has no end date, so the clock never locks it.
+    case 'free':
       return null;
   }
 }

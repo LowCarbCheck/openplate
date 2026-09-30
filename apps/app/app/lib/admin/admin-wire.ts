@@ -47,6 +47,12 @@ export const accountViewSchema = z.object({
    * inventing one.
    */
   allowanceExpiresAt: z.string().nullable().catch(null),
+  /**
+   * The standing free grant per UTC day, `0` for none (2026-09-30,
+   * `PROTOCOL.md` §5.15). `.catch(0)` like the end date above: an older core
+   * sends no key, and "no free grant" is exactly what it means.
+   */
+  freeDailyAiLimit: z.number().int().min(0).catch(0),
   suspendedAt: z.string().nullable(),
   /**
    * How many invitations this account may still send, or `null` when the cap is

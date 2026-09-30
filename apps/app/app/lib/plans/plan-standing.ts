@@ -55,6 +55,15 @@
  * both spent, the scans ran out first, because a free tier past its end date
  * cannot spend another scan. The boundary instant counts as ended.
  *
+ * ── AND A FREE GRANT OUTLIVES A PLAN (2026-09-30) ───────────────────────
+ *
+ * An account may hold a standing free grant (`AccountView.freeDailyAiLimit`):
+ * AI with no end date that the proxy falls back to whenever no paid window is
+ * live. A Beta supporter holds one. So with no live subscription a free grant
+ * answers `free` BEFORE `lapsed` and before any trial: the person who bought a
+ * plan and cancelled it keeps the free AI they had, and the app must not lock
+ * them. The plan page still offers the plans to a `free` standing.
+ *
  * PURE, AND THE CLOCK IS AN ARGUMENT, so the last minute of a trial and a
  * subscription that ends today are ordinary test cases.
  */
@@ -63,6 +72,7 @@ import type { PlanInterval, PlanKey, PlanView } from '#app/lib/sync/engine/clien
 
 import type { TrialScans } from './trial-scans';
 
+import { hasFreeGrant } from './free-grant';
 import { hasPlansDoor } from './plans-door';
 
 /** One day, the unit a trial countdown speaks in. */
@@ -91,6 +101,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *   when it was cancelled and runs out at `periodEnd`. `planKey` and
  *   `interval` are `null` when the biller could not name the plan.
  * - `lapsed`: a subscription existed and is over.
+ * - `free`: no live subscription, and a standing free grant of `dailyLimit` AI
+ *   requests a day with no end date (2026-09-30). Never locks; the plan page
+ *   still offers the plans.
  */
 export type PlanStanding =
   | { kind: 'no-plans' }
@@ -109,7 +122,8 @@ export type PlanStanding =
       /** The last payment failed and Stripe is retrying it. Still subscribed, and worth saying so. */
       isPastDue: boolean;
     }
-  | { kind: 'lapsed' };
+  | { kind: 'lapsed' }
+  | { kind: 'free'; dailyLimit: number };
 
 /** The account facts a standing needs, a subset of the session snapshot's `account`. */
 export interface StandingAccount {
@@ -128,6 +142,12 @@ export interface StandingAccount {
    * than the field has no day limit.
    */
   trialEndsAt?: string | null;
+  /**
+   * The standing free grant per UTC day, `0`, `null` or absent for none
+   * (2026-09-30). OPTIONAL, like `trialScans`: an account read from a core
+   * older than the field has none.
+   */
+  freeDailyAiLimit?: number | null;
 }
 
 /** The single `no-plans` value, so no caller builds a second one. */
@@ -158,6 +178,9 @@ export function planStanding({
   if (!hasPlansDoor(instance)) return NO_PLANS;
   if (planView === null) return NO_PLANS;
   if (LIVE_STATUSES.has(planView.plan)) return subscribedStanding(planView);
+  // THE FREE GRANT BEFORE THE ENDED PLAN: it is what the proxy falls back to
+  // when a paid window ends, so a lapsed plan above it locks nothing.
+  if (account !== null && hasFreeGrant(account)) return { kind: 'free', dailyLimit: account.freeDailyAiLimit ?? 0 };
   if (planView.plan === 'canceled') return { kind: 'lapsed' };
   return neverSubscribedStanding({ account, now });
 }

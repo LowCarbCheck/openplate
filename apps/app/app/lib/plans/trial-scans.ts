@@ -172,15 +172,22 @@ export function withScansLeft({ trial, left }: { trial: TrialScans | null; left:
  * `allowance-expired`. Only an account with no date is held to its count, so
  * only then does a screen state it. A paying person must never read "0 of 10
  * free scans left" beside a plan that has no such limit.
+ *
+ * A STANDING FREE GRANT LIFTS IT TOO (2026-09-30): the proxy never counts
+ * scans for an account that holds one, so nor does a screen.
  */
 export function bindingTrialScans({
   trialScans,
   allowanceExpiresAt,
+  freeDailyAiLimit,
 }: {
   trialScans: TrialScans | null | undefined;
   allowanceExpiresAt: string | null;
+  /** The standing free grant, or `null`/absent for none or not read. */
+  freeDailyAiLimit?: number | null;
 }): TrialScans | null {
   if (allowanceExpiresAt !== null) return null;
+  if ((freeDailyAiLimit ?? 0) > 0) return null;
   return trialScans ?? null;
 }
 

@@ -73,6 +73,7 @@ const ADMIN: AdminAccountView = {
   dailyAiLimit: 500,
   aiUsedToday: 12,
   allowanceExpiresAt: null,
+  freeDailyAiLimit: 0,
   suspendedAt: null,
   invitesLeft: null,
   trialScans: null,
@@ -89,6 +90,7 @@ const SUSPENDED_PERSON: AdminAccountView = {
   dailyAiLimit: 200,
   aiUsedToday: 7,
   allowanceExpiresAt: null,
+  freeDailyAiLimit: 0,
   suspendedAt: '2026-09-03T09:00:00.000Z',
   invitesLeft: null,
   trialScans: null,
@@ -106,6 +108,7 @@ const NEVER_ARRIVED: AdminAccountView = {
   dailyAiLimit: 200,
   aiUsedToday: 0,
   allowanceExpiresAt: null,
+  freeDailyAiLimit: 0,
   suspendedAt: null,
   invitesLeft: null,
   trialScans: null,
@@ -808,6 +811,27 @@ test("a labelled person's page shows the chip beside the role and the standing",
   );
   assert.equal(without.match(LABEL_CHIP), null);
   assert.doesNotMatch(without, /Beta supporter/);
+});
+
+test('the Change form carries the standing free grant, filled with its current value (2026-09-30)', () => {
+  const html = render(
+    createElement(PersonEditor, {
+      person: { ...SUSPENDED_PERSON, freeDailyAiLimit: 10 },
+      isBusy: false,
+      onCancel: () => undefined,
+      onSave: () => {
+        throw new Error('a render must not save');
+      },
+    }),
+  );
+  assert.match(html, /<label[^>]*for="free-limit-2"[^>]*>Free photos per day<\/label>/);
+  const input = /<input[^>]*id="free-limit-2"[^>]*>/.exec(html)?.[0] ?? '';
+  assert.match(input, /value="10"/);
+  assert.match(input, /max="10000"/);
+
+  // THE CONTROL: the paid limit keeps its own field and its own value.
+  const paid = /<input[^>]*id="limit-2"[^>]*>/.exec(html)?.[0] ?? '';
+  assert.match(paid, /value="200"/);
 });
 
 test('the Change form carries the label field, filled with the current label and bounded at 40', () => {

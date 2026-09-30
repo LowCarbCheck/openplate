@@ -158,8 +158,10 @@ export function resolveEffectiveAiSettings({
   // AN ALLOWANCE OF ZERO IS THE DEFAULT for a new account, not an error state:
   // an admin decides who gets AI and how much. So "signed in, no AI" is an
   // ordinary standing, and the screen for it says "ask your administrator"
-  // rather than "something went wrong".
-  if (account.dailyAiLimit <= 0) return null;
+  // rather than "something went wrong". A STANDING FREE GRANT (2026-09-30) is
+  // an allowance too: an operator's invite writes its number there and leaves
+  // the paid limit at zero.
+  if (account.dailyAiLimit <= 0 && (account.freeDailyAiLimit ?? 0) <= 0) return null;
   return {
     source: 'managed',
     provider: 'managed',

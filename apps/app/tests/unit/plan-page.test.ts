@@ -52,7 +52,7 @@ import {
   type PlanView,
 } from '../../app/lib/sync/engine/client/plans-wire';
 import fixtureOffer from '../fixtures/plan-offer.json';
-import { planStanding } from '../../app/lib/plans/plan-standing';
+import { planStanding, type StandingAccount } from '../../app/lib/plans/plan-standing';
 import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { SELF_HOSTING_DOCS_URL } from '../../app/lib/brand';
@@ -113,12 +113,14 @@ interface RenderOverrides {
   offersFreeScansFirst?: boolean;
   paymentConfirmation?: PaymentConfirmation;
   afterPaymentDoor?: PaymentReturnDoor;
+  /** The session's account facts the standing reads. Absent is no account, the default. */
+  account?: StandingAccount | null;
 }
 
 function render(state: PlanReadState, overrides: RenderOverrides = {}): string {
   const standing = planStanding({
     instance: SELLING,
-    account: null,
+    account: overrides.account ?? null,
     planView: state.kind === 'ready' ? state.plan : null,
     now: NOW,
   });
@@ -207,6 +209,23 @@ describe('the plan page', () => {
     assert.equal(buttonCount(markup), 2);
     assert.ok(orderButton(markup) !== null);
     assert.ok(markup.includes(enCommon.plan.manage));
+  });
+
+  it('tells a Beta supporter whose plan ended that they are on the free part, and still offers the plans', () => {
+    // 2026-09-30: the biller's paid limit and past end, above a standing free grant.
+    const betaSupporter: StandingAccount = {
+      dailyAiLimit: 200,
+      allowanceExpiresAt: '2026-08-09T00:00:00.000Z',
+      freeDailyAiLimit: 10,
+    };
+    const markup = render({ kind: 'ready', plan: LAPSED }, { account: betaSupporter });
+    assert.ok(markup.includes(enCommon.plan.status.none), 'the free standing is named');
+    assert.ok(!markup.includes(enCommon.plan.status.canceled), 'and not as an ended plan');
+    assert.ok(orderButton(markup) !== null, 'the upgrade is still offered');
+
+    // THE CONTROL: the same account with no free grant reads as an ended plan.
+    const lapsed = render({ kind: 'ready', plan: LAPSED }, { account: { ...betaSupporter, freeDailyAiLimit: 0 } });
+    assert.ok(lapsed.includes(enCommon.plan.status.canceled));
   });
 
   it('draws no manage button when there is nothing to manage', () => {

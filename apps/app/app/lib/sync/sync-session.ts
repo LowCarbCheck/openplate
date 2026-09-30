@@ -37,6 +37,7 @@ import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { browserStorage, unlockDevice } from './sync-state';
+import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
 
@@ -116,6 +117,12 @@ export interface SyncSessionSnapshot {
      * moments after every reload.
      */
     allowanceExpiresAt: string | null;
+    /**
+     * The standing free grant per UTC day (2026-09-30), `0` for none, or
+     * `null`/absent while the real view has not been read. A core older than
+     * the field reads `0`. OPTIONAL for the reason `trialScans` below is.
+     */
+    freeDailyAiLimit?: number | null;
     /**
      * How many invitations this account may still send, or `null`.
      *
@@ -347,6 +354,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       // older than the fields, which sends no key at all and would otherwise
       // put `undefined` where every reader tests for `null`.
       allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
+      freeDailyAiLimit: knownAccount === null ? null : decodeFreeDailyAiLimit(knownAccount.freeDailyAiLimit),
       invitesLeft: knownAccount?.invitesLeft ?? null,
       invitesNeedAPlan: knownAccount?.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(knownAccount?.trialScans),

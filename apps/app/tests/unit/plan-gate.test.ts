@@ -43,6 +43,8 @@ const STANDINGS = {
   trialEndedScans: { kind: 'trial-ended', basis: 'scans', endedBy: 'scans', endedAt: null },
   // M267: the free tier's fourteen days are over, with scans still left.
   trialEndedDays: { kind: 'trial-ended', basis: 'scans', endedBy: 'days', endedAt: '2026-09-27T12:00:00.000Z' },
+  // 2026-09-30: a standing free grant, a Beta supporter's, with no plan running.
+  free: { kind: 'free', dailyLimit: 10 },
   subscribed: {
     kind: 'subscribed',
     planKey: 'monthly',
@@ -88,6 +90,7 @@ const LOCKING = [
 ];
 const OPEN = [
   STANDINGS.noPlans,
+  STANDINGS.free,
   STANDINGS.trialDays,
   STANDINGS.trialScans,
   STANDINGS.trialScansAndDays,
@@ -294,6 +297,55 @@ describe('planGateStanding: an administrator is never locked', () => {
       planGateStanding({ instance: SELLING, account: null, planView: NO_SUBSCRIPTION, now: NOW }),
       NO_PLANS,
     );
+  });
+});
+
+describe('planGateStanding: a Beta supporter whose plan ended is not locked (2026-09-30)', () => {
+  /** A cancelled subscription whose period is over, as the biller answers it. */
+  const CANCELED: PlanView = { ...NO_SUBSCRIPTION, plan: 'canceled' };
+  /** What the biller leaves on a Beta supporter who bought a plan and cancelled it. */
+  const PAID_AND_ENDED: PlanGateAccount = {
+    role: 'member',
+    dailyAiLimit: 200,
+    allowanceExpiresAt: '2026-09-01T00:00:00.000Z',
+    trialScans: null,
+    freeDailyAiLimit: 10,
+  };
+
+  it('keeps the app open, with the free grant as the standing', () => {
+    const standing = planGateStanding({ instance: SELLING, account: PAID_AND_ENDED, planView: CANCELED, now: NOW });
+    assert.deepEqual(standing, { kind: 'free', dailyLimit: 10 });
+    assert.deepEqual(gate(standing, '/dashboard'), { kind: 'open' });
+  });
+
+  it('CONTROL: the same account with no free grant is locked as lapsed', () => {
+    const standing = planGateStanding({
+      instance: SELLING,
+      account: { ...PAID_AND_ENDED, freeDailyAiLimit: 0 },
+      planView: CANCELED,
+      now: NOW,
+    });
+    assert.deepEqual(standing, { kind: 'lapsed' });
+    assert.deepEqual(gate(standing, '/dashboard'), { kind: 'paywall', destination: PLAN_PAGE_HREF });
+  });
+
+  it('keeps a free grant open whose scan trial is spent, and locks the same trial without one', () => {
+    const spent: PlanGateAccount = {
+      role: 'member',
+      dailyAiLimit: 20,
+      allowanceExpiresAt: null,
+      trialScans: { granted: 10, left: 0 },
+      freeDailyAiLimit: 5,
+    };
+    const open = planGateStanding({ instance: SELLING, account: spent, planView: NO_SUBSCRIPTION, now: NOW });
+    assert.equal(gate(open, '/dashboard').kind, 'open');
+    const locked = planGateStanding({
+      instance: SELLING,
+      account: { ...spent, freeDailyAiLimit: 0 },
+      planView: NO_SUBSCRIPTION,
+      now: NOW,
+    });
+    assert.equal(gate(locked, '/dashboard').kind, 'paywall');
   });
 });
 

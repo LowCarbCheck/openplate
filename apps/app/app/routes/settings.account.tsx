@@ -62,6 +62,7 @@ import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
+import { hasFreeGrant, isPaidWindowLive, shownDailyAiLimit } from '#app/lib/plans/free-grant';
 import { bindingTrialScans, trialDaysLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import type { Translate } from '#app/lib/sync/setup-flow';
 import { canSendMemberInvites } from '#app/lib/sync/member-invites';
@@ -131,10 +132,29 @@ export default function SettingsAccount() {
   const trialScans = bindingTrialScans({
     trialScans: account?.trialScans,
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    freeDailyAiLimit: account?.freeDailyAiLimit,
   });
+  // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO TODAY (2026-09-30): the paid
+  // window's while it runs, otherwise the standing free grant's. `null` while
+  // the account view is not read, like the raw limit.
+  const now = new Date();
+  const dailyLimit = shownDailyAiLimit({
+    dailyAiLimit: account?.dailyAiLimit ?? null,
+    freeDailyAiLimit: account?.freeDailyAiLimit,
+    allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    now,
+  });
+  // AND THE PAID WINDOW'S END ONLY WHILE IT BINDS. A plan that ended above a
+  // free grant is not an allowance that ended: the free grant goes on, so the
+  // card must not say "ended on" beside a working daily count.
+  const isFreeAfterPaid =
+    account !== null &&
+    hasFreeGrant(account) &&
+    !isPaidWindowLive({ allowanceExpiresAt: account.allowanceExpiresAt, now });
+  const shownExpiresAt = isFreeAfterPaid ? null : (account?.allowanceExpiresAt ?? null);
   // AND ITS DAYS (owner decision 2026-09-30): the free tier ends after its
   // scans or its days, whichever comes first, so both are stated together.
-  const daysLeft = trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now: new Date() });
+  const daysLeft = trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now });
   // AND WHETHER THERE IS A PAGE THAT CHANGES IT (M213 spec 05). The same
   // handshake read, one line down: on an instance with a biller behind it the
   // allowance is a thing a person buys, so the card that explains the
@@ -167,8 +187,8 @@ export default function SettingsAccount() {
             // account's allowance. The `useEffect` above refreshes on open,
             // so this is a loading flicker, not a dead end.
             allowance={
-              aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null ?
-                { usedToday: account.aiUsedToday, dailyLimit: account.dailyAiLimit }
+              aiComesFromTheInstance && dailyLimit !== null && account.aiUsedToday !== null ?
+                { usedToday: account.aiUsedToday, dailyLimit }
               : null
             }
             trialScans={trialScans}
@@ -183,11 +203,11 @@ export default function SettingsAccount() {
               card, where nothing sits below it to be pushed. */}
           {instanceRead.isSettled && (
             <>
-              {aiComesFromTheInstance && account.dailyAiLimit !== null && account.aiUsedToday !== null && (
+              {aiComesFromTheInstance && dailyLimit !== null && account.aiUsedToday !== null && (
                 <AllowanceCard
-                  dailyLimit={account.dailyAiLimit}
+                  dailyLimit={dailyLimit}
                   usedToday={account.aiUsedToday}
-                  expiresAt={account.allowanceExpiresAt}
+                  expiresAt={shownExpiresAt}
                   door={allowanceDoor}
                   plansAvailable={plansAvailable}
                   trialScans={trialScans}

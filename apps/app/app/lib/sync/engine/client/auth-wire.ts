@@ -85,6 +85,16 @@ export interface AccountViewWire {
    * diary belongs to the account and a new device must be able to pull it.
    */
   allowanceExpiresAt: IsoTimestamp | null;
+  /**
+   * The standing free grant: AI requests per UTC day whenever no paid window
+   * is live, with no end date and no scan gate (2026-09-30, `PROTOCOL.md`
+   * §5.15). `0` is none. ABSENT on a core older than the field, which means
+   * the same thing.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. Read only through
+   * `decodeFreeDailyAiLimit`, because this interface is a cast, not a parse.
+   */
+  freeDailyAiLimit?: number;
   /** When an admin suspended this account, or `null`. A suspended account cannot log in, refresh, sync or scan. */
   suspendedAt: IsoTimestamp | null;
   /**

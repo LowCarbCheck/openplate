@@ -56,7 +56,9 @@ const SIGNED_OUT: SyncSessionSnapshot = {
   storageHealNotice: { kind: 'none' },
 };
 
-function signedIn(overrides: { dailyAiLimit?: number; allowanceExpiresAt?: string } = {}): SyncSessionSnapshot {
+function signedIn(
+  overrides: { dailyAiLimit?: number; allowanceExpiresAt?: string; freeDailyAiLimit?: number } = {},
+): SyncSessionSnapshot {
   return {
     ...SIGNED_OUT,
     account: {
@@ -67,6 +69,7 @@ function signedIn(overrides: { dailyAiLimit?: number; allowanceExpiresAt?: strin
       dailyAiLimit: overrides.dailyAiLimit ?? 200,
       aiUsedToday: 3,
       allowanceExpiresAt: overrides.allowanceExpiresAt ?? null,
+      freeDailyAiLimit: overrides.freeDailyAiLimit ?? 0,
       invitesLeft: null,
     },
   };
@@ -126,6 +129,25 @@ test('an allowance of zero is no AI, and still not a fallback to a stored key', 
       instance: MANAGED,
       session: signedIn({ dailyAiLimit: 0 }),
       storedSettings: BYOK,
+    }),
+    null,
+  );
+});
+
+test('a standing free grant with no paid limit scans through its own server (2026-09-30)', () => {
+  // What an operator's invite writes now: the free grant, and a paid limit of 0.
+  const effective = resolveEffectiveAiSettings({
+    instance: MANAGED,
+    session: signedIn({ dailyAiLimit: 0, freeDailyAiLimit: 10 }),
+    storedSettings: null,
+  });
+  assert.equal(effective?.source, 'managed');
+  // THE CONTROL: the same account with neither limit has no AI.
+  assert.equal(
+    resolveEffectiveAiSettings({
+      instance: MANAGED,
+      session: signedIn({ dailyAiLimit: 0, freeDailyAiLimit: 0 }),
+      storedSettings: null,
     }),
     null,
   );
