@@ -30,6 +30,7 @@ import {
   sampleRecoveryCode,
   sampleShareWrap,
   sampleWrappedDek,
+  recoveryAuthHashFor,
   startService,
   type ServiceHarness,
 } from './service-harness.js';
@@ -162,7 +163,10 @@ test('a rotation carrying a maximum-size blob and more than 4 KB beside it reach
       { kind: 'passphrase', kdfDescriptor: sampleKdfDescriptor(77), wrappedDek: sampleWrappedDek(21) },
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: sampleWrappedDek(22) },
     ],
-    newRecoveryAuthHash: sampleAuthHash(71),
+    // What the rotation must prove since the auth pass (2026-09-30): the
+    // owner's current passphrase, and a recovery proof derived from the code.
+    currentAuthHash: sampleAuthHash(31),
+    newRecoveryAuthHash: recoveryAuthHashFor(sampleRecoveryCode(5)),
     recoveryCode: sampleRecoveryCode(5),
     shares: [],
   };
