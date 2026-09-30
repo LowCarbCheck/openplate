@@ -846,6 +846,24 @@ test('BILLING_TOKEN and ADMIN_TOKEN are two independent variables', () => {
   assert.notEqual(adminOnly.adminToken, null);
 });
 
+test('a BILLING_TOKEN equal to ADMIN_TOKEN refuses to boot, and prints neither value', () => {
+  // The admin door checks ADMIN_TOKEN first, so one string in both variables
+  // would admit the biller as the operator and skip its scope entirely.
+  const shared = 'd'.repeat(MIN_ADMIN_TOKEN_LENGTH);
+  assert.throws(
+    () => parseConfig(baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: shared })),
+    (error: unknown) =>
+      error instanceof Error &&
+      /BILLING_TOKEN must differ from ADMIN_TOKEN/.test(error.message) &&
+      !error.message.includes(shared),
+  );
+  // Surrounding whitespace is trimmed before the comparison, as before the use.
+  assert.throws(() => parseConfig(baseEnv({ ADMIN_TOKEN: ` ${shared}`, BILLING_TOKEN: `${shared} ` })), /differ/);
+  // Two different values still boot.
+  const both = parseConfig(baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: 'e'.repeat(MIN_ADMIN_TOKEN_LENGTH) }));
+  assert.equal(both.adminToken, shared);
+});
+
 test('a plans URL with no secret refuses to boot, and names the missing variable', () => {
   assert.throws(
     () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans' })),

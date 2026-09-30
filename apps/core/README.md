@@ -585,7 +585,7 @@ limits everything it can do: `GET /v1/admin/accounts/expiring`,
 `403 service-scope`. A `PATCH` naming any other field is refused completely and
 writes nothing. It can change an allowance and its end date. It cannot suspend,
 erase or promote accounts. Generate it as you would `ADMIN_TOKEN`. Values under
-24 characters cause a boot failure. Once set, an invalid credential on
+24 characters cause a boot failure, and so does a value equal to `ADMIN_TOKEN`. Once set, an invalid credential on
 `/v1/admin` gets a `401` rather than the `404` described above.
 
 ---

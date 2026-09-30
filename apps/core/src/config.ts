@@ -340,8 +340,11 @@ export interface ServiceConfig {
    * `server/service-principal-scope.ts` is the whole policy. It cannot list
    * the accounts on the instance, cannot read an address, cannot suspend,
    * cannot change a role, cannot erase and cannot open a reported
-   * photograph. Setting BOTH variables to the same string would therefore
-   * widen nothing; setting this one alone is the shape a paid instance wants.
+   * photograph. Setting this one alone is the shape a paid instance wants.
+   *
+   * IT MAY NOT EQUAL `ADMIN_TOKEN`, and that is a boot refusal. The admin door
+   * tries the operator's credential first, so one string in both variables
+   * would hand the biller the whole admin API. See `parseTokens`.
    *
    * `null` behaves exactly as `adminToken`'s does: with both unset the whole
    * `/v1/admin` tree answers the ordinary unknown-path `404` to everybody.
@@ -517,6 +520,28 @@ function parseBillingToken(env: NodeJS.ProcessEnv): string | null {
     );
   }
   return raw;
+}
+
+/**
+ * `ADMIN_TOKEN` and `BILLING_TOKEN` together, with the one rule that needs
+ * both: they may not be the same string.
+ *
+ * THE ADMIN DOOR TRIES `ADMIN_TOKEN` FIRST (`server/admin-auth.ts`), so a
+ * biller holding a token equal to the operator's would be admitted as the
+ * operator, with every route and every field, and the scope in
+ * `server/service-principal-scope.ts` would never run. A boot refusal is the
+ * only answer an operator cannot miss. The message names both variables and
+ * neither value.
+ */
+function parseTokens(env: NodeJS.ProcessEnv): { adminToken: string | null; billingToken: string | null } {
+  const adminToken = parseAdminToken(env);
+  const billingToken = parseBillingToken(env);
+  if (adminToken !== null && adminToken === billingToken) {
+    throw new Error(
+      'BILLING_TOKEN must differ from ADMIN_TOKEN: the admin door checks ADMIN_TOKEN first, so the biller would get the whole admin API. Generate a separate value.',
+    );
+  }
+  return { adminToken, billingToken };
 }
 
 /** The two names that make up the plans block. Listed once so every message below can name both. */
@@ -1677,6 +1702,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   const openSignup = parseOpenSignup(env, mail);
   // Read before the member door, which may grant it.
   const trial = parseTrial(env);
+  const tokens = parseTokens(env);
 
   return {
     port: parsePositiveInteger(env, 'PORT', 3000),
@@ -1703,8 +1729,8 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     turnstile: parseTurnstile(env, openSignup),
     aiMaxRequestBytes: parsePositiveInteger(env, 'AI_MAX_REQUEST_BYTES', DEFAULT_AI_MAX_REQUEST_BYTES),
     trustProxy: parseTrustProxy(env),
-    adminToken: parseAdminToken(env),
-    billingToken: parseBillingToken(env),
+    adminToken: tokens.adminToken,
+    billingToken: tokens.billingToken,
     plans: parsePlans(env),
     push: parsePush(env),
     sharingEnabled: parseBoolean(env, 'SYNC_SHARING', false),
