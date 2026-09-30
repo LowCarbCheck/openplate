@@ -104,26 +104,6 @@ export const redirectTargetSchema = z.object({ url: z.string() });
 
 export type RedirectTarget = z.infer<typeof redirectTargetSchema>;
 
-/**
- * The languages the biller holds a reviewed consumer acknowledgement in
- * (`openplate-billing/src/plans/consumer-consent.ts`). The legal pages that
- * name that acknowledgement still ask in one of these two; the order itself
- * asks in the offer's own language.
- */
-export const CHECKOUT_LOCALES = ['de', 'en'] as const;
-
-export type CheckoutLocale = (typeof CHECKOUT_LOCALES)[number];
-
-/** Whether a UI language is one the biller holds a reviewed sentence for. */
-export function isCheckoutLocale(value: string): value is CheckoutLocale {
-  // SAFETY: widening a `readonly ['de','en']` to `readonly string[]` so an
-  // arbitrary string can be looked up in it. Nothing is narrowed by the
-  // assertion; the narrowing is the predicate's return, and it is true exactly
-  // when the value is one of the two members.
-  const known: readonly string[] = CHECKOUT_LOCALES;
-  return known.includes(value);
-}
-
 /** Which interval each key bills at, transcribed from the catalogue, so an offer that pairs them wrongly is refused. */
 export const PLAN_INTERVAL_BY_KEY = { monthly: 'month', yearly: 'year' } satisfies Record<PlanKey, PlanInterval>;
 
@@ -220,6 +200,16 @@ export type OrderRequestWire = {
   locale: string;
   consentVersion: string;
   consents: OrderConsents;
+};
+
+/**
+ * `POST /plans/portal` (2026-09-30): the language the portal is shown in, the
+ * same one an order carries. The biller reads it with the order's own rule
+ * and falls back, never refuses, so a value it does not sell in still opens
+ * the portal. A type alias for the reason `JsonValue` needs one.
+ */
+export type PortalRequestWire = {
+  locale: string;
 };
 
 /**

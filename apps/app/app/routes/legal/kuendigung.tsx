@@ -67,8 +67,7 @@ import { useSyncServerUrl } from '#app/hooks/use-public-config';
 import { loadContentPageOrThrow } from '#app/lib/content/content-route.server';
 import { contentPageTitle } from '#app/lib/content/content-page-title';
 import { sectionBlocks } from '#app/lib/content/markdown';
-import { createComponentLogger } from '#app/lib/logger';
-import { checkoutLocaleFor } from '#app/lib/plans/plans-door';
+import { declarationLanguageFor, submitDeclaration } from '#app/lib/declaration-submit';
 import { canonicalizeEmail } from '#app/lib/sync/email';
 import '#app/i18n/i18n';
 
@@ -78,11 +77,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: contentPageTitle(loaderData?.page.title ?? null) }];
-
-const log = createComponentLogger('kuendigung');
-
-/** Where a browser posts a declaration — `openplate-core`'s own origin, never this server. */
-const DECLARATIONS_API_PATH = '/v1/legal/declarations';
 
 const TERMINATION_TYPES = ['ordentlich', 'ausserordentlich'] as const;
 type TerminationType = (typeof TERMINATION_TYPES)[number];
@@ -121,55 +115,6 @@ function makeCancelDeclarationSchema(t: Translate) {
 }
 
 type CancelDeclarationValues = z.infer<ReturnType<typeof makeCancelDeclarationSchema>>;
-
-/** The server's 202 body — `PROTOCOL.md`-style: parsed, never trusted. */
-const acceptedResponseSchema = z.object({
-  receiptId: z.string().min(1),
-  receivedAt: z.string().min(1),
-  kind: z.literal('kuendigung'),
-});
-
-type DeclarationOutcome =
-  | { status: 'accepted'; receiptId: string; receivedAt: string }
-  | { status: 'invalid' }
-  | { status: 'rate-limited' }
-  | { status: 'unreachable' };
-
-/**
- * One POST, three outcomes an unreachable core can produce, and one it
- * cannot: a SHAPE MISMATCH on the 202 body is logged and folded into
- * `unreachable` rather than thrown past this page's boundary — the one thing
- * this button may never do is claim a receipt it cannot show.
- */
-async function submitCancelDeclaration(input: {
-  serverUrl: string;
-  request: Record<string, string | null>;
-}): Promise<DeclarationOutcome> {
-  let response: Response;
-  try {
-    response = await fetch(`${input.serverUrl}${DECLARATIONS_API_PATH}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input.request),
-    });
-  } catch (error) {
-    log.error('the declarations endpoint could not be reached', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return { status: 'unreachable' };
-  }
-  if (response.status === 202) {
-    const parsed = acceptedResponseSchema.safeParse(await response.json().catch(() => null));
-    if (!parsed.success) {
-      log.error('a 202 declaration response did not match its schema');
-      return { status: 'unreachable' };
-    }
-    return { status: 'accepted', receiptId: parsed.data.receiptId, receivedAt: parsed.data.receivedAt };
-  }
-  if (response.status === 400) return { status: 'invalid' };
-  if (response.status === 429) return { status: 'rate-limited' };
-  return { status: 'unreachable' };
-}
 
 export default function Kuendigung({ loaderData }: Route.ComponentProps) {
   const { page } = loaderData;
@@ -212,7 +157,7 @@ export default function Kuendigung({ loaderData }: Route.ComponentProps) {
     setIsSubmitting(true);
     setFailure(null);
     const email = canonicalizeEmail(value.email);
-    const outcome = await submitCancelDeclaration({
+    const outcome = await submitDeclaration({
       serverUrl,
       request: {
         kind: 'kuendigung',
@@ -223,7 +168,9 @@ export default function Kuendigung({ loaderData }: Route.ComponentProps) {
         reason: value.terminationType === 'ausserordentlich' ? value.reason.trim() : null,
         requestedDate: value.requestedDate.trim() === '' ? null : value.requestedDate.trim(),
         timing: value.timing,
-        language: checkoutLocaleFor(i18n.language),
+        // The reader's own language, one of the six (2026-09-30). See
+        // `declaration-submit.ts` for a core that still takes de and en only.
+        language: declarationLanguageFor(i18n.language),
       },
     });
     setIsSubmitting(false);

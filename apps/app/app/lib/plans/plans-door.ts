@@ -46,7 +46,6 @@
  */
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { readFreshServerInstance } from '#app/hooks/use-server-instance';
-import { isCheckoutLocale, type CheckoutLocale } from '#app/lib/sync/engine/client/plans-wire';
 import { isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 
 /**
@@ -109,25 +108,12 @@ export async function requirePlansDoor({
 }
 
 /**
- * Which reviewed consumer acknowledgement a checkout should display, from the
- * language this app is currently drawn in.
- *
- * ANYTHING ELSE IS GERMAN, matching the biller's own fallback: the instance
- * sells in Germany and the obligation is German law, so a language nobody
- * wrote a reviewed sentence for must not become an empty consent.
- */
-export function checkoutLocaleFor(uiLanguage: string): CheckoutLocale {
-  const base = uiLanguage.split('-')[0] ?? '';
-  return isCheckoutLocale(base) ? base : 'de';
-}
-
-/**
  * Which language the offer's texts are asked in, from the language this app is
- * drawn in.
+ * drawn in. The portal is opened in the same language (2026-09-30).
  *
  * The six app languages pass through, because the biller holds its order texts
- * in all six (M245 decision). Anything else is German, for the reason
- * {@link checkoutLocaleFor} gives.
+ * in all six (M245 decision). Anything else is German: the instance sells in
+ * Germany and the contract is under German law.
  */
 export function offerLocaleFor(uiLanguage: string): LanguageCode {
   const base = uiLanguage.split('-')[0] ?? '';

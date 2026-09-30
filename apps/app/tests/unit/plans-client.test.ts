@@ -180,18 +180,26 @@ describe('the plan client', () => {
     assert.equal(calls.length, 1, 'the plan read made more than one request');
   });
 
-  it('opens the portal with a POST and no body at all', async () => {
+  it('opens the portal with a POST that names the page language, as an order does', async () => {
+    // Transcribed from `openplate-billing/src/plans/portal.ts` (2026-09-30):
+    // the body is `{ locale }`, read with the order's own language rule.
     const { transport, calls } = fakeTransport({ answers: { url: 'https://portal.example.test/p/1' } });
-    const outcome = await new PlansClient({ transport }).openPortal();
+    const outcome = await new PlansClient({ transport }).openPortal({ locale: 'fr' });
     assert.equal(outcome.status, 'ok');
-    assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/portal`, method: 'POST', body: undefined }]);
+    assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/portal`, method: 'POST', body: { locale: 'fr' } }]);
+  });
+
+  it('CONTROL: another page language is another body, so the language above is not a constant', async () => {
+    const { transport, calls } = fakeTransport({ answers: { url: 'https://portal.example.test/p/1' } });
+    await new PlansClient({ transport }).openPortal({ locale: 'tr' });
+    assert.deepEqual(calls[0]?.body, { locale: 'tr' });
   });
 
   it('reads a 404 as absent on every route, because that is the shut door', async () => {
     const { transport } = fakeTransport({ fails: notFound });
     const client = new PlansClient({ transport });
     assert.deepEqual(await client.readPlan(), { status: 'absent' });
-    assert.deepEqual(await client.openPortal(), { status: 'absent' });
+    assert.deepEqual(await client.openPortal({ locale: 'de' }), { status: 'absent' });
     assert.deepEqual(await client.placeOrder(ORDER), { kind: 'absent' });
   });
 

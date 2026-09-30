@@ -11,6 +11,14 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The cancellation and withdrawal forms send the reader's language.** Declarations submitted from `/kuendigung` or `/widerrufen` in French, Italian, Spanish or Turkish now carry that language instead of German, so openplate-core mails the receipt in that language. Against an openplate-core instance that accepts only German and English, the form resends the declaration in German, so the button continues to work. `tests/e2e/statutory-buttons.spec.ts` checks both cases.
+
+### Fixed
+
+- **The payment portal now opens in the page's language.** The Manage button on the plan page passes the current page language, matching the order language. The customer portal for cancelling, updating a card and downloading invoices opens in that language. Older billing services ignore this parameter and open the portal as before. `tests/e2e/plan-portal-language.spec.ts` checks this behavior.
+
 ## [0.53.0] - 2026-09-29
 
 ### Changed

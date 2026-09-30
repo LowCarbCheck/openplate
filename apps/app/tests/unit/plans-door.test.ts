@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url';
 
 import {
   PLAN_PAGE_HREF,
-  checkoutLocaleFor,
   offerLocaleFor,
   hasPlanNavigationEntry,
   hasPlansDoor,
@@ -93,24 +92,6 @@ describe('the plans door', () => {
     // policy questions, so the assertion above is not passing on an empty
     // read.
     assert.match(policy, /aiComesFromTheInstance/);
-  });
-});
-
-describe('the consent language a checkout is opened in', () => {
-  it('matches the language the app is drawn in, where the biller holds a reviewed sentence', () => {
-    assert.equal(checkoutLocaleFor('en'), 'en');
-    assert.equal(checkoutLocaleFor('de'), 'de');
-    assert.equal(checkoutLocaleFor('de-DE'), 'de');
-    assert.equal(checkoutLocaleFor('en-GB'), 'en');
-  });
-
-  it('falls back to German rather than to nothing', () => {
-    // The obligation is German law and the instance sells in Germany, so an
-    // unknown language must not become an empty consent. Matches the biller's
-    // own `DEFAULT_CONSENT_LOCALE`.
-    for (const unknown of ['fr', 'pt-BR', '', 'nonsense']) {
-      assert.equal(checkoutLocaleFor(unknown), 'de');
-    }
   });
 });
 

@@ -58,6 +58,7 @@ import type {
   OrderAnswer,
   OrderConsents,
   OrderRequestWire,
+  PortalRequestWire,
   PlanKey,
   PlanOffer,
   PlanView,
@@ -221,11 +222,17 @@ export class PlansClient {
    * `absent` here is an account that has never paid: there is no customer to
    * open a portal onto. It is not an oracle, because the caller already proved
    * it holds this account's own session.
+   *
+   * @param input.locale - the language the portal is shown in, the same one
+   *   an order is sent in (`offerLocaleFor`). A biller older than the field
+   *   ignores it and opens the portal as it did before.
    */
-  async openPortal(): Promise<PlansOutcome<RedirectTarget>> {
+  async openPortal(input: { locale: string }): Promise<PlansOutcome<RedirectTarget>> {
+    const request: PortalRequestWire = { locale: input.locale };
     return this.send({
       path: `${PLANS_API_PREFIX}/portal`,
       method: 'POST',
+      body: request,
       parse: (body) => redirectTargetSchema.parse(body),
     });
   }

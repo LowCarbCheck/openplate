@@ -22,6 +22,7 @@
  * does with the receipt, not the transport.
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { z } from 'zod';
 
 import { E2E_SYNC_SERVER_URL } from './env';
 import { useLanguage } from './helpers';
@@ -50,8 +51,29 @@ const RECEIPT_ID = 'e2e-9f2c9b1a-0000-4000-8000-000000000000';
 /** A full instant with an explicit offset, so the page's `dateStyle: 'long', timeStyle: 'long'` render has both a date and a time to show. */
 const RECEIVED_AT = '2026-09-21T14:30:00+02:00';
 
-/** Answers the preflight and the POST for one declaration kind, on `openplate-core`'s own origin. */
-async function mockDeclarationsEndpoint(page: Page, kind: 'kuendigung' | 'widerruf'): Promise<void> {
+/** The one field of a posted declaration these checks read. */
+const postedLanguageSchema = z.object({ language: z.string() });
+
+/**
+ * The languages an older openplate-core accepts: `de` and `en` only, before
+ * 2026-09-30. It refuses any other with the `400` the route still gives for
+ * a language outside its list.
+ */
+const OLDER_CORE_LANGUAGES: readonly string[] = ['de', 'en'];
+
+/**
+ * Answers the preflight and the POST for one declaration kind, on
+ * `openplate-core`'s own origin, and records the language of every POST.
+ *
+ * @param options.acceptedLanguages - answer a `400` naming `language` for any
+ *   other, as a core older than the six languages does. Absent accepts all.
+ */
+async function mockDeclarationsEndpoint(
+  page: Page,
+  kind: 'kuendigung' | 'widerruf',
+  options: { acceptedLanguages?: readonly string[] } = {},
+): Promise<string[]> {
+  const languages: string[] = [];
   await page.route(`${E2E_SYNC_SERVER_URL}${DECLARATIONS_PATH}`, async (route: Route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({
@@ -64,6 +86,17 @@ async function mockDeclarationsEndpoint(page: Page, kind: 'kuendigung' | 'widerr
       });
       return;
     }
+    const { language } = postedLanguageSchema.parse(route.request().postDataJSON());
+    languages.push(language);
+    if (options.acceptedLanguages !== undefined && !options.acceptedLanguages.includes(language)) {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'declaration-invalid', field: 'language' }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 202,
       contentType: 'application/json',
@@ -71,7 +104,17 @@ async function mockDeclarationsEndpoint(page: Page, kind: 'kuendigung' | 'widerr
       body: JSON.stringify({ receiptId: RECEIPT_ID, receivedAt: RECEIVED_AT, kind }),
     });
   });
+  return languages;
 }
+
+/** The four languages the forms narrowed to German before 2026-09-30. */
+const NEWER_LANGUAGES = ['fr', 'it', 'es', 'tr'] as const;
+
+/** The two forms, each with its statutory submit label and where it lands. */
+const FORMS = [
+  { path: '/kuendigung', kind: 'kuendigung', submit: CANCEL_SUBMIT },
+  { path: '/widerrufen', kind: 'widerruf', submit: WITHDRAW_SUBMIT },
+] as const;
 
 test.describe('the two statutory buttons', () => {
   test('/kuendigung is reachable with no account, carries the exact § 312k labels, and does not redirect', async ({
@@ -153,5 +196,60 @@ test.describe('the two statutory buttons', () => {
     for (const word of RETENTION_WORDS) {
       expect(text, `the confirmation page must not carry "${word}"`).not.toContain(word);
     }
+  });
+});
+
+// ── The language a declaration carries (2026-09-30) ────────────────────────
+//
+// One test per form and language, so no walk shares the 30 second budget. The
+// fixture folder has no file in these four languages, so each page draws the
+// English article; the declaration still carries the reader's own language,
+// which is what chooses the receipt.
+
+test.describe('the reader language on the two statutory forms', () => {
+  for (const form of FORMS) {
+    for (const language of NEWER_LANGUAGES) {
+      test(`${form.path} in ${language} sends the declaration in ${language}`, async ({ page }) => {
+        await useLanguage(page, language);
+        const languages = await mockDeclarationsEndpoint(page, form.kind);
+
+        await page.goto(form.path);
+        await page.locator('input[name="name"]').fill('Erika Musterfrau');
+        await page.locator('input[name="email"]').fill('erika@example.invalid');
+        await page.getByRole('button', { name: form.submit, exact: true }).click();
+
+        await page.waitForURL(new RegExp(`${form.path}/bestaetigt$`, 'u'));
+        expect(languages).toEqual([language]);
+      });
+    }
+
+    test(`CONTROL: ${form.path} in German still sends de`, async ({ page }) => {
+      await useLanguage(page, 'de');
+      const languages = await mockDeclarationsEndpoint(page, form.kind);
+
+      await page.goto(form.path);
+      await page.locator('input[name="name"]').fill('Erika Musterfrau');
+      await page.locator('input[name="email"]').fill('erika@example.invalid');
+      await page.getByRole('button', { name: form.submit, exact: true }).click();
+
+      await page.waitForURL(new RegExp(`${form.path}/bestaetigt$`, 'u'));
+      expect(languages).toEqual(['de']);
+    });
+  }
+
+  test('against a core older than the six languages, a French cancellation goes again in German and is received', async ({
+    page,
+  }) => {
+    await useLanguage(page, 'fr');
+    const languages = await mockDeclarationsEndpoint(page, 'kuendigung', { acceptedLanguages: OLDER_CORE_LANGUAGES });
+
+    await page.goto('/kuendigung');
+    await page.locator('input[name="name"]').fill('Erika Musterfrau');
+    await page.locator('input[name="email"]').fill('erika@example.invalid');
+    await page.getByRole('button', { name: CANCEL_SUBMIT, exact: true }).click();
+
+    await page.waitForURL(/\/kuendigung\/bestaetigt$/u);
+    await expect(page.locator('article')).toContainText(RECEIPT_ID);
+    expect(languages).toEqual(['fr', 'de']);
   });
 });

@@ -222,6 +222,29 @@ export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): P
   return requests;
 }
 
+/** What the page posted to the portal route. */
+export interface PortalRequests {
+  bodies: unknown[];
+}
+
+/**
+ * Routes `POST /v1/plans/portal` and records each body the page sent. The
+ * answer sends the browser to `returnTo`, standing in for Stripe's portal, so
+ * the press ends on a page of this app rather than on the network.
+ *
+ * @param page - the page, before the button is pressed.
+ * @param returnTo - the address the answer names.
+ * @returns the portal bodies, recorded as they arrive.
+ */
+export async function routePortal(page: Page, returnTo: string): Promise<PortalRequests> {
+  const requests: PortalRequests = { bodies: [] };
+  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/portal`, (route) => {
+    requests.bodies.push(route.request().postDataJSON());
+    return route.fulfill({ status: 200, json: { url: returnTo } });
+  });
+  return requests;
+}
+
 /** The fields an allowance sets, leaving an absent `createdAt` and `trialScans` as the fake's own. */
 function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt, trialScans }: AccountAllowance): AccountAllowance {
   const patch: AccountAllowance = { dailyAiLimit, allowanceExpiresAt };

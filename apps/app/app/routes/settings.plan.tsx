@@ -750,13 +750,15 @@ export default function SettingsPlan() {
     setConsents((current) => ({ ...current, [key]: isTicked }));
   }, []);
 
+  // The portal opens in the page's language, the one the order is sent in.
+  const portalLocale = offerLocaleFor(i18n.language);
   const onManage = useCallback(() => {
     setBusy('portal');
     setPortalFailed(false);
     void (async () => {
       try {
         const client = currentPlansClient();
-        const outcome = client === null ? null : await client.openPortal();
+        const outcome = client === null ? null : await client.openPortal({ locale: portalLocale });
         if (outcome === null || outcome.status !== 'ok') {
           setPortalFailed(true);
           setBusy('none');
@@ -768,7 +770,7 @@ export default function SettingsPlan() {
       }
       setBusy('none');
     })();
-  }, []);
+  }, [portalLocale]);
 
   return (
     <PlanScreen
