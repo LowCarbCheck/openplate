@@ -324,7 +324,12 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
             the header's right edge as the brand mark sits from the left
             edge. Otherwise the default size's
             16px right padding stacks on top of the header's own `px-4`. */}
-        <Button variant="ghost" className="flex items-center gap-2 pr-2 -mr-2" aria-label={triggerLabel}>
+        <Button
+          variant="ghost"
+          data-slot="avatar-menu-trigger"
+          className="flex items-center gap-2 pr-2 -mr-2"
+          aria-label={triggerLabel}
+        >
           {/* THE NAME'S BOX IS A FIXED `w-40` FROM THE FIRST PAINT, and it
               sits LEFT of the circle with its text set to the right, so the
               words end beside the circle whatever their length. The session
