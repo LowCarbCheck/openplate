@@ -3856,5 +3856,13 @@
     "failed": "Deine Einwilligung wurde nicht gespeichert. Prüfe deine Verbindung und versuche es erneut.",
     "exportDiary": "Mein Tagebuch exportieren",
     "deleteAccount": "Mein Konto löschen"
+  },
+  "moved": {
+    "title": "openplate ist umgezogen",
+    "body": "openplate liegt jetzt unter {{host}}. Dein Konto und dein Tagebuch sind mit umgezogen. Melde dich mit derselben E-Mail-Adresse und demselben Passwort an.",
+    "signIn": "Unter {{host}} anmelden",
+    "homeScreen": "Wenn du openplate zu deinem Startbildschirm hinzugefügt hast, entferne dieses Symbol und füge stattdessen {{host}} hinzu.",
+    "iphone": "iPhone (Safari): Tippe auf Teilen, dann auf Zum Home-Bildschirm.",
+    "android": "Android (Chrome): Öffne das Menü, tippe dann auf App installieren oder Zum Startbildschirm hinzufügen."
   }
 }

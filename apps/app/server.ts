@@ -36,6 +36,7 @@ import {
   toUpdateStatus,
 } from '#app/lib/update-check.server';
 import { REPO_URL } from '#app/lib/brand';
+import { createMovedModeHandlers } from '#app/lib/moved/moved-mode.server';
 
 const logger = createComponentLogger('server');
 
@@ -260,14 +261,31 @@ const viteDevServer =
 
 // handle SSR requests
 
-const remixHandler = createRequestHandler({
-  build:
-    viteDevServer ?
-      () => viteDevServer.ssrLoadModule('virtual:react-router/server-build')
-      // @ts-expect-error this file is generated at build time and relative to build directory
-      // eslint-disable-next-line import/no-unresolved
-    : await import('#build/server/index.js'),
-});
+// Held apart from the handler because moved mode reads the same build (its page links the root
+// route's stylesheets, see `app/lib/moved/moved-page-links.ts`).
+const serverBuild =
+  viteDevServer ?
+    () => viteDevServer.ssrLoadModule('virtual:react-router/server-build')
+    // @ts-expect-error this file is generated at build time and relative to build directory
+    // eslint-disable-next-line import/no-unresolved
+  : await import('#build/server/index.js');
+
+const remixHandler = createRequestHandler({ build: serverBuild });
+
+// MOVED MODE (`MOVED_TO_URL`): this instance is closed and its people use another address. `null`
+// on every instance that left the variable unset, and then nothing below is mounted and the app
+// is exactly what it was. Built here, before any route, so a server build it cannot read stops
+// the boot. See `app/lib/moved/moved-mode.server.ts` for every route it answers and why.
+const movedMode =
+  CONFIG.moved === null ? null : (
+    await createMovedModeHandlers({
+      moved: CONFIG.moved,
+      defaultLanguage: CONFIG.i18n.defaultLanguage,
+      // `serverBuild` is Vite's loader in dev and the built module in production, the two shapes
+      // `createRequestHandler` accepts; this reads either the same way.
+      loadServerBuild: async () => (serverBuild instanceof Function ? serverBuild() : serverBuild),
+    })
+  );
 
 // Trust the reverse proxy (Traefik) so req.protocol/req.hostname/req.ip and the
 // URL the @react-router/express adapter builds reflect X-Forwarded-* headers.
@@ -305,6 +323,13 @@ if (CONFIG.app.isProduction) {
 // the redirect response carries them too. See `createWwwRedirectMiddleware`.
 app.use(createWwwRedirectMiddleware());
 
+// Above the static files, because `/sw.js` is one (the app's own worker) and moved mode must never
+// serve it: it answers the kill switch there, 410 on the API, and React Router's reload signal on
+// route data. Everything else falls through to the files below.
+if (movedMode !== null) {
+  app.use(movedMode.beforeFiles);
+}
+
 // handle asset requests
 if (viteDevServer) {
   app.use(viteDevServer.middlewares);
@@ -332,6 +357,13 @@ app.use(express.static('build/client', { maxAge: '1h' }));
 // `app/lib/sync/engine/protocol.ts` — and the client reaches it directly at
 // its own origin (`SYNC_SERVER_URL`, M128 spec 04). Nothing sync-related
 // belongs in this file again.
+
+// In place of React Router for every page: a closed instance serves one page, the moved page,
+// and passes on only `/healthcheck`. No app page may reach a browser in this mode, because the
+// app registers `/sw.js` as it starts, and here that is the kill switch, which reloads the tab.
+if (movedMode !== null) {
+  app.use(movedMode.everyPage);
+}
 
 // The update endpoints sit above the React Router handler, which owns `*`.
 mountUpdateStatusRoutes();

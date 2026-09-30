@@ -3856,5 +3856,13 @@
     "failed": "Il tuo consenso non è stato salvato. Controlla la connessione e riprova.",
     "exportDiary": "Esporta il mio diario",
     "deleteAccount": "Elimina il mio account"
+  },
+  "moved": {
+    "title": "openplate si è spostato",
+    "body": "openplate si trova ora all'indirizzo {{host}}. Il tuo account e il tuo diario si sono trasferiti con te. Accedi con lo stesso indirizzo email e la stessa password.",
+    "signIn": "Accedi su {{host}}",
+    "homeScreen": "Se hai aggiunto openplate alla schermata iniziale, rimuovi questa icona e aggiungi invece {{host}}.",
+    "iphone": "iPhone (Safari): tocca Condividi, poi Aggiungi alla schermata Home.",
+    "android": "Android (Chrome): apri il menu, poi tocca Installa app o Aggiungi a schermata Home."
   }
 }

@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **A closed instance can send its people to a new address.** Set `MOVED_TO_URL` to an `https://` address, for example `https://app.openplate.de`. Every route then serves a notice in the user's language: where openplate is now, a button to sign in there, and instructions for replacing the home-screen icon. `/sw.js` serves a worker that clears old caches, unregisters itself, and reloads the page, so an installed app learns about the move instead of opening its saved copy. The API returns 410 with the new address, while `/healthcheck` and the web app manifest stay as they were. If unset, nothing changes. A plain `http://` address, an address with credentials, or this instance's own `APP_URL` stops the boot. `tests/e2e/moved-instance.spec.ts` verifies this flow against an app that installed its worker before the move.
+
 ## [0.55.0] - 2026-09-30
 
 ### Changed

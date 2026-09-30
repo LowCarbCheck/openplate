@@ -1000,6 +1000,13 @@
     "at": "2026-09-14",
     "fr": "Ignorer ce message de la personne administrant le serveur"
   },
+  "0b92a5ba1936fe63": {
+    "en": "iPhone (Safari): tap Share, then Add to Home Screen.",
+    "path": "common:moved.iphone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "iPhone (Safari) : touche Partager, puis Sur l'écran d'accueil."
+  },
   "0be36769d1701f27": {
     "en": "Create an API key in the <providerLink>{{provider}} console</providerLink>.",
     "path": "common:settingsAi.quickstart.step2",
@@ -2728,6 +2735,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Envoyer ces journées"
+  },
+  "1f8efe674ec030a1": {
+    "en": "Sign in at {{host}}",
+    "path": "common:moved.signIn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "Se connecter sur {{host}}"
   },
   "1fb17e1073e6c9d6": {
     "en": "{{count}} meal",
@@ -11080,6 +11094,13 @@
     "at": "2026-09-21",
     "fr": "Saisissez votre nom."
   },
+  "8979c81651c521a0": {
+    "en": "openplate is now at {{host}}. Your account and your diary moved with you. Sign in with the same email address and password.",
+    "path": "common:moved.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "openplate est maintenant accessible à l'adresse {{host}}. Ton compte et ton journal ont été transférés. Connecte-toi avec la même adresse e-mail et le même mot de passe."
+  },
   "8983e5368f3622db": {
     "en": "target {{value}} {{unit}}",
     "path": "common:trends.weight.target",
@@ -11555,6 +11576,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Impossible de démarrer la connexion. Vérifie ta connexion et réessaie."
+  },
+  "8dcb0c54b29268f6": {
+    "en": "Android (Chrome): open the menu, then tap Install app or Add to Home screen.",
+    "path": "common:moved.android",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "Android (Chrome) : ouvre le menu, puis touche Installer l'application ou Ajouter à l'écran d'accueil."
   },
   "8de6a3ea6bbbe969": {
     "en": "Connection cancelled",
@@ -16701,6 +16729,13 @@
     "at": "2026-09-14",
     "fr": "Type d'image non pris en charge. Utilise JPEG, PNG, WEBP ou HEIC."
   },
+  "d136f069d7e3e140": {
+    "en": "If you added openplate to your home screen, remove this icon and add {{host}} instead.",
+    "path": "common:moved.homeScreen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "Si tu as ajouté openplate à ton écran d'accueil, supprime cette icône et ajoute {{host}} à la place."
+  },
   "d143bebea2aea441": {
     "en": "of {{left}} left",
     "path": "common:recipes.macros.ofLeft",
@@ -17197,6 +17232,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "fr": "Qu'est-ce que tu as ?"
+  },
+  "d625b2b017e4af8d": {
+    "en": "openplate moved",
+    "path": "common:moved.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "openplate a changé d'adresse"
   },
   "d63a8c480c59d380": {
     "en": "Requested date (optional)",

@@ -126,6 +126,39 @@ The one button in the app that does change something is "Reload to update", whic
 when the server is already serving a newer build than the open page is running. That reloads
 the browser onto assets the server has, and touches nothing on the host.
 
+## Moving people to another instance
+
+When you close an instance and its users move to another one, keep the old container running
+with one setting:
+
+```bash
+MOVED_TO_URL=https://app.openplate.example
+```
+
+Every route on the old instance then serves a single notice page. It states where openplate
+is now, provides a button to the sign-in page there, and tells people who added the app to
+their home screen to remove that icon and add the new address. The page chooses its language
+in this order: the user's saved choice, the languages requested by the browser, then
+`DEFAULT_UI_LANGUAGE`.
+
+The page tells users that their account and diary moved with them. Enable this mode only when
+that is true: the new instance uses the same sync service, or you migrated the accounts
+there. A diary stored only in one browser stays in that browser under the old address; the
+new address cannot read it.
+
+An HTTP redirect cannot handle this migration. A phone with the installed app runs a service
+worker that caches application pages. Browsers do not follow redirects when checking that
+worker for updates, so an installed app would keep opening its saved copy. In this mode,
+`/sw.js` serves a small worker that deletes every cache under the old address, unregisters
+itself, and reloads the page. The next request then loads the notice directly from the
+server. The worker leaves diary data stored in the browser untouched.
+
+The API returns `410 Gone` with the new address in the response body. `/healthcheck` answers
+as before, and the web app manifest stays unchanged, so a home-screen icon still opens the
+old address and loads the page. Keep this mode running until traffic to the old address
+stops. The value must be an `https://` address on a host other than `APP_URL`, without a user
+name or password; anything else stops the boot.
+
 ## The Content-Security-Policy
 
 The BYOK vision call and the key both live entirely in the browser, so the production build
