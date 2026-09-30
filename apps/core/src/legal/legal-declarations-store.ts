@@ -12,6 +12,7 @@
 import { eq, lt } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { legalDeclarations, type SelectLegalDeclaration } from '../db/schema.js';
+import type { InstanceLanguage } from '../protocol.js';
 
 export interface CreateLegalDeclarationInput {
   id: string;
@@ -23,7 +24,7 @@ export interface CreateLegalDeclarationInput {
   reason: string | null;
   requestedDate: string | null;
   timing: 'earliest' | 'onDate' | null;
-  language: 'de' | 'en';
+  language: InstanceLanguage;
   receivedAt: Date;
   accountId: number | null;
 }

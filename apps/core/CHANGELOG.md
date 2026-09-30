@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **The declaration receipt now goes out in all six languages.** `POST /v1/legal/declarations` accepts `language` as `en`, `de`, `fr`, `it`, `es` or `tr`. It previously accepted `de` and `en` only. Any other value returns a `400` naming `language`. The service reads `<lang>/mail/declaration-receipt-<kind>.md` from `CONTENT_DIR` in that language, then falls back to the German file, then to the English file. A folder that holds only German and English receipts still delivers a message to every recipient. A missing file previously fell back to English; it now falls back to German first. Field labels in the message, and the fallback text used when no file is usable, exist in all six languages. The operator alert remains English only. The database row keeps the language without a schema migration. `tests/unit/mailer.test.ts` and `tests/integration/legal-declarations.test.ts` check this flow.
+
 ## [0.25.0] - 2026-09-29
 
 ### Added

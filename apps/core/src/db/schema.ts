@@ -1519,7 +1519,8 @@ export const legalDeclarations = pgTable('legal_declarations', {
   reason: text('reason'),
   requestedDate: date('requested_date', { mode: 'string' }),
   timing: text('timing').$type<'earliest' | 'onDate'>(),
-  language: text('language').$type<'de' | 'en'>().notNull(),
+  /** The language of the form the person sent, an `InstanceLanguage`. `de` or `en` only before 2026-09-30; a type, not a constraint, so no migration. */
+  language: text('language').$type<InstanceLanguage>().notNull(),
   /** This service's own clock, at the moment the row was written. What the receipt and both letters show as "received". */
   receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow().notNull(),
   /** The account found by `normalizeEmail(email)`, or `null` for nobody this instance recognizes. */

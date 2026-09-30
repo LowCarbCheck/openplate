@@ -63,6 +63,7 @@ import {
   alertTemplateName,
   buildDeclarationOperatorAlertMessage,
   buildDeclarationReceiptMessage,
+  receiptTemplateLanguages,
   receiptTemplateName,
   type DeclarationOperatorAlertInput,
   type DeclarationReceiptInput,
@@ -408,10 +409,10 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
     },
 
     async sendDeclarationReceipt(input: SendDeclarationReceiptInput): Promise<void> {
-      // The reader's language first, then English, CONTRACT.md section 6.
+      // The reader's language, then German, then English, CONTRACT.md section 6.
       const template = await templates.find({
         name: receiptTemplateName(input.kind),
-        languages: input.language === 'en' ? ['en'] : [input.language, 'en'],
+        languages: receiptTemplateLanguages(input.language),
       });
       const message = buildDeclarationReceiptMessage({ declaration: input, template });
       await transport.send({ to: input.to, subject: message.subject, text: message.text, html: message.html });

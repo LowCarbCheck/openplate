@@ -328,7 +328,11 @@ test('a malformed field is a 400 that names it', async () => {
     { overrides: { requestedDate: '2026-02-30' }, field: 'requestedDate' },
     { overrides: { requestedDate: 'not-a-date' }, field: 'requestedDate' },
     { overrides: { timing: 'yesterday' }, field: 'timing' },
-    { overrides: { language: 'fr' }, field: 'language' },
+    // A language outside the six the instance writes mail in (2026-09-30).
+    // Until then `fr` was refused here too; it is accepted below.
+    { overrides: { language: 'pt' }, field: 'language' },
+    { overrides: { language: 'DE' }, field: 'language' },
+    { overrides: { language: null }, field: 'language' },
   ];
 
   for (const testCase of cases) {
@@ -345,6 +349,23 @@ test('a malformed field is a 400 that names it', async () => {
   assert.equal(biller.received.length, 0, 'no request that failed validation ever reached the biller');
   const rows = await database.db.select().from(legalDeclarations);
   assert.equal(rows.length, 0, 'no request that failed validation ever wrote a row');
+});
+
+test('a declaration in each of the six languages is accepted, and the row keeps its language', async () => {
+  // CONTROL: `pt` in the case above is refused, so a 202 here is the
+  // language list's doing and not a route that takes any string.
+  const languages = ['en', 'de', 'fr', 'it', 'es', 'tr'] as const;
+  for (const language of languages) {
+    const response = await harness.request<DeclarationResponse>({
+      method: 'POST',
+      path: '/v1/legal/declarations',
+      body: sampleDeclaration({ language, email: `anna-${language}@example.org` }),
+    });
+    assert.equal(response.status, 202, `${language} must be accepted`);
+  }
+
+  const rows = await database.db.select().from(legalDeclarations);
+  assert.deepEqual(rows.map((row) => row.language).toSorted(), [...languages].toSorted());
 });
 
 test('a sixth request from the same IP inside a minute is refused, and the fifth was not', async () => {

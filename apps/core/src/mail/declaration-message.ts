@@ -18,10 +18,18 @@
  * page already shows (`legal:declarations.confirmed.*`), so a reader sees the
  * same words on the page and in the mail.
  *
- * TWO LANGUAGES, NOT SIX, AND DELIBERATELY SEPARATE FROM `strings.ts`. The
- * request body this route accepts carries `language: "de" | "en"` and no
- * other value, per PROTOCOL: the PWA's two statutory buttons are German legal
- * instruments and the reader chose one of exactly two languages on the form.
+ * SIX LANGUAGES, THE SIX OF `InstanceLanguage`, AND STILL SEPARATE FROM
+ * `strings.ts` (2026-09-30). The request carries `language`, the language of
+ * the form the person sent, and the app draws that form in all six. The two
+ * statutory buttons are still German legal instruments: German law governs
+ * the contract and the declaration, and the German receipt is the
+ * authoritative text, which the other five render for a reader who used the
+ * form in their own language. Until 2026-09-30 the route took `de` or `en`
+ * only, and the app sent the other four as `de`, so a reader of the French
+ * form got a German letter. A missing file falls back to German first
+ * ({@link receiptTemplateLanguages}), so an instance whose folder holds only
+ * the German and English receipts still sends one. The labels below are not
+ * `strings.ts`'s: they are the app's, see above.
  *
  * THE RECEIPT IS THE ONLY ONE THAT IS TRANSLATED. The operator alert is
  * English only, template and fallback alike.
@@ -30,6 +38,7 @@
  * carries an em dash or an en dash. `tests/unit/declaration-message.test.ts`
  * holds the fallback to it; the template text is the private repo's to hold.
  */
+import type { InstanceLanguage } from '../protocol.js';
 import { renderHtml } from './invite-message.js';
 import {
   MailTemplateError,
@@ -39,7 +48,8 @@ import {
   type MailTemplate,
 } from './mail-template.js';
 
-export type DeclarationLanguage = 'de' | 'en';
+/** The language of the form the person sent: one of the six the instance writes mail in. */
+export type DeclarationLanguage = InstanceLanguage;
 
 export type DeclarationKind = 'kuendigung' | 'widerruf';
 
@@ -104,6 +114,21 @@ export function alertTemplateName(kind: DeclarationKind): DeclarationTemplateNam
   return kind === 'kuendigung' ? 'declaration-alert-kuendigung' : 'declaration-alert-widerruf';
 }
 
+/**
+ * The languages a receipt's file is looked up in, in order: the reader's,
+ * then German, then English, each once (CONTRACT.md section 6).
+ *
+ * GERMAN BEFORE ENGLISH because German law governs and the German receipt is
+ * the authoritative text, and because until 2026-09-30 every reader of the
+ * French, Italian, Spanish or Turkish form got the German receipt: an
+ * instance whose folder has not been given those four keeps sending exactly
+ * that. English stays last, for a folder that holds nothing else.
+ */
+export function receiptTemplateLanguages(language: DeclarationLanguage): readonly DeclarationLanguage[] {
+  const order: readonly DeclarationLanguage[] = [language, 'de', 'en'];
+  return order.filter((candidate, index) => order.indexOf(candidate) === index);
+}
+
 /** The field labels of the detail lines. Form chrome, not prose, so they stay in code (CONTRACT.md section 6). */
 interface DetailLabels {
   name: string;
@@ -146,6 +171,61 @@ const DETAIL_LABELS = {
     timingEarliest: 'zum nächstmöglichen Zeitpunkt',
     timingOnDate: 'zum angegebenen Datum',
   },
+  // fr, it, es and tr from wordsmith translate (Gemini 3.8 Flash, 2026-09-30),
+  // from the English with the German as the authority, in the formal register
+  // and with the app's own words for a cancellation and a withdrawal.
+  fr: {
+    name: 'Nom',
+    email: 'Adresse e-mail',
+    contractReference: 'Numéro de contrat ou de client',
+    terminationType: 'Type de résiliation',
+    reason: 'Motif',
+    requestedDate: 'Date souhaitée',
+    timing: "Date d'effet",
+    terminationTypeOrdentlich: 'résiliation ordinaire',
+    terminationTypeAusserordentlich: 'résiliation extraordinaire',
+    timingEarliest: 'à la date la plus proche possible',
+    timingOnDate: 'à la date indiquée',
+  },
+  it: {
+    name: 'Nome',
+    email: 'Indirizzo e-mail',
+    contractReference: 'Numero di contratto o codice cliente',
+    terminationType: 'Tipo di disdetta',
+    reason: 'Motivo',
+    requestedDate: 'Data richiesta',
+    timing: 'Decorrenza',
+    terminationTypeOrdentlich: 'disdetta ordinaria',
+    terminationTypeAusserordentlich: 'disdetta straordinaria',
+    timingEarliest: 'alla prima data utile',
+    timingOnDate: 'alla data da Lei indicata',
+  },
+  es: {
+    name: 'Nombre',
+    email: 'Correo electrónico',
+    contractReference: 'Número de contrato o de cliente',
+    terminationType: 'Tipo de cancelación',
+    reason: 'Motivo',
+    requestedDate: 'Fecha solicitada',
+    timing: 'Momento',
+    terminationTypeOrdentlich: 'cancelación ordinaria',
+    terminationTypeAusserordentlich: 'cancelación extraordinaria',
+    timingEarliest: 'en la fecha más próxima posible',
+    timingOnDate: 'en la fecha indicada',
+  },
+  tr: {
+    name: 'Ad Soyad',
+    email: 'E-posta',
+    contractReference: 'Sözleşme veya müşteri numarası',
+    terminationType: 'Fesih türü',
+    reason: 'Gerekçe',
+    requestedDate: 'Talep edilen tarih',
+    timing: 'Zamanlama',
+    terminationTypeOrdentlich: 'olağan fesih',
+    terminationTypeAusserordentlich: 'olağanüstü fesih',
+    timingEarliest: 'mümkün olan en erken tarihte',
+    timingOnDate: 'belirtilen tarihte',
+  },
 } satisfies Record<DeclarationLanguage, DetailLabels>;
 
 /** The neutral fallback's own lines. `{receiptId}` and `{date}` are filled in code. */
@@ -158,7 +238,10 @@ interface FallbackLabels {
   receivedAt: string;
 }
 
-/** The app's confirmation page labels, `legal:declarations.confirmed.*`, word for word. */
+/**
+ * The app's confirmation page labels, `legal:declarations.confirmed.*`, word
+ * for word, and each language's confirmation page title as the subject.
+ */
 const FALLBACK_LABELS = {
   en: {
     subjectKuendigung: 'Cancellation confirmed',
@@ -176,12 +259,48 @@ const FALLBACK_LABELS = {
     receiptId: 'Beleg-Nr.: {receiptId}',
     receivedAt: 'Eingegangen am: {date}',
   },
+  fr: {
+    subjectKuendigung: 'Résiliation confirmée',
+    subjectWiderruf: 'Rétractation confirmée',
+    kindKuendigung: 'Type : Résiliation',
+    kindWiderruf: 'Type : Rétractation',
+    receiptId: 'Récépissé n° : {receiptId}',
+    receivedAt: 'Reçu le : {date}',
+  },
+  it: {
+    subjectKuendigung: 'Disdetta confermata',
+    subjectWiderruf: 'Recesso confermato',
+    kindKuendigung: 'Tipo: Disdetta',
+    kindWiderruf: 'Tipo: Recesso',
+    receiptId: 'Ricevuta n.: {receiptId}',
+    receivedAt: 'Ricevuto il: {date}',
+  },
+  es: {
+    subjectKuendigung: 'Cancelación confirmada',
+    subjectWiderruf: 'Desistimiento confirmado',
+    kindKuendigung: 'Tipo: Cancelación',
+    kindWiderruf: 'Tipo: Desistimiento',
+    receiptId: 'N.º de recibo: {receiptId}',
+    receivedAt: 'Recibido el: {date}',
+  },
+  tr: {
+    subjectKuendigung: 'Fesih onaylandı',
+    subjectWiderruf: 'Cayma onaylandı',
+    kindKuendigung: 'Tür: Fesih',
+    kindWiderruf: 'Tür: Cayma',
+    receiptId: 'Makbuz no.: {receiptId}',
+    receivedAt: 'Alınma zamanı: {date}',
+  },
 } satisfies Record<DeclarationLanguage, FallbackLabels>;
 
-/** The `Intl` locale each language's date is rendered in, mirroring `strings.ts`'s `DATE_LOCALES` for the two languages this module carries. */
+/** The `Intl` locale each language's date is rendered in, the same as `strings.ts`'s `DATE_LOCALES`. */
 const RECEIPT_DATE_LOCALES = {
   en: 'en-GB',
   de: 'de-DE',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  es: 'es-ES',
+  tr: 'tr-TR',
 } satisfies Record<DeclarationLanguage, string>;
 
 /**

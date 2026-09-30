@@ -17,14 +17,18 @@
  */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHttpMailer, createMailer, createNoopMailer } from '../../src/mail/mailer.js';
 import type { CreateHttpMailerOptions, Mailer } from '../../src/mail/mailer.js';
 import { createDeclarationTemplateSource } from '../../src/mail/declaration-templates.js';
+import { detailLines } from '../../src/mail/declaration-message.js';
 import type { LogFields, Logger } from '../../src/logger.js';
-import type { InstanceLanguage } from '../../src/protocol.js';
+import { INSTANCE_LANGUAGES, type InstanceLanguage } from '../../src/protocol.js';
 
 /** The neutral stand-in for a mounted `CONTENT_DIR`, see its README. */
 const FIXTURE_CONTENT = fileURLToPath(new URL('../fixtures/content', import.meta.url));
@@ -578,4 +582,128 @@ test('nothing a declaration send logs carries a name, a reason or a contract ref
   for (const secret of ['anna@example.org', 'Anna Beispiel', 'K-1234', 'a very personal reason']) {
     assert.ok(!serialized.includes(secret), `the log carries "${secret}"`);
   }
+});
+
+// ── The receipt in each of the six languages (2026-09-30) ──────────────────
+//
+// A scratch content folder per test, so each test states which receipt files
+// exist: all six, or only German and English, like an instance whose folder
+// has not been given the other four. The fixture folder above is left alone.
+
+/** The four languages that had no receipt of their own before 2026-09-30. */
+const NEWER_LANGUAGES = ['fr', 'it', 'es', 'tr'] as const satisfies readonly InstanceLanguage[];
+
+/** A neutral cancellation receipt for one language, marked with that language in its subject. */
+function receiptFixture(language: InstanceLanguage): string {
+  return [
+    '---',
+    `title: Fixture receipt kuendigung ${language}`,
+    'updated: 2026-09-30',
+    `subject: Fixture subject receipt kuendigung ${language}`,
+    '---',
+    '',
+    'Fixture received on {{date}}.',
+    '',
+    '{{details}}',
+    '',
+    `Fixture closing line kuendigung ${language}.`,
+    '',
+  ].join('\n');
+}
+
+/** A scratch content folder holding the cancellation receipt in `languages` and in nothing else. */
+async function contentFolderWith(languages: readonly InstanceLanguage[]): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'openplate-core-receipts-'));
+  for (const language of languages) {
+    await mkdir(join(root, language, 'mail'), { recursive: true });
+    await writeFile(join(root, language, 'mail', 'declaration-receipt-kuendigung.md'), receiptFixture(language));
+  }
+  return root;
+}
+
+/** Sends one cancellation receipt in `language` through a mailer reading `contentDir`, and answers what was posted. */
+async function postedReceipt(input: { contentDir: string | null; language: InstanceLanguage }): Promise<MailPayload> {
+  const api = await startFakeMailApi();
+  const captured = createCapturingLogger();
+  const mailer = createHttpMailer({
+    mail: { url: api.url, apiKey: 'k', from: 'f', operatorEmail: 'operator@example.org' },
+    links: LINKS,
+    language: 'en',
+    templates: createDeclarationTemplateSource({ contentDir: input.contentDir, logger: captured.logger }),
+    logger: captured.logger,
+  });
+  await mailer.sendDeclarationReceipt({
+    ...sampleDeclarationFields(),
+    receiptId: 'a-receipt-id',
+    to: 'anna@example.org',
+    language: input.language,
+  });
+  // SAFETY: as above, our own adapter posted this body.
+  return JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
+}
+
+/** The contract reference line as the letter writes it in `language`: a label in that language. */
+function contractLineIn(language: InstanceLanguage): string {
+  const line = detailLines({ fields: sampleDeclarationFields(), language }).find((one) => one.endsWith(': K-1234'));
+  if (line === undefined) throw new Error(`no contract reference line in ${language}`);
+  return line;
+}
+
+test('the six contract reference lines are six different labels, so the checks below can tell the languages apart', () => {
+  // CONTROL for the two tests that follow: a letter that wrote every label in
+  // one language would pass a check against a label all six shared.
+  assert.equal(new Set(INSTANCE_LANGUAGES.map(contractLineIn)).size, INSTANCE_LANGUAGES.length);
+});
+
+test('a receipt in each of the six languages reads its own file, and fills its labels in that language', async () => {
+  const folder = await contentFolderWith(INSTANCE_LANGUAGES);
+  try {
+    for (const language of INSTANCE_LANGUAGES) {
+      const payload = await postedReceipt({ contentDir: folder, language });
+      assert.equal(payload.subject, `Fixture subject receipt kuendigung ${language}`, `${language} read another file`);
+      assert.ok(payload.text.includes(contractLineIn(language)), `${language} filled its labels in another language`);
+    }
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test('a folder with only German and English sends the German receipt to a fr, it, es or tr reader', async () => {
+  const folder = await contentFolderWith(['de', 'en']);
+  try {
+    for (const language of NEWER_LANGUAGES) {
+      const payload = await postedReceipt({ contentDir: folder, language });
+      assert.equal(payload.subject, 'Fixture subject receipt kuendigung de', `${language} did not fall back to German`);
+      // The letter is in one language throughout: the German file's labels.
+      assert.ok(payload.text.includes(contractLineIn('de')));
+    }
+    // CONTROL: the same folder answers an English reader with the English
+    // file, so the German above is the fallback and not the only file read.
+    const english = await postedReceipt({ contentDir: folder, language: 'en' });
+    assert.equal(english.subject, 'Fixture subject receipt kuendigung en');
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test('a folder with only English still sends a letter to every reader, from the English file', async () => {
+  const folder = await contentFolderWith(['en']);
+  try {
+    for (const language of INSTANCE_LANGUAGES) {
+      const payload = await postedReceipt({ contentDir: folder, language });
+      assert.equal(payload.subject, 'Fixture subject receipt kuendigung en', `${language} sent no English letter`);
+    }
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test('with no content folder, the neutral receipt is in the reader language, for each of the six', async () => {
+  const subjects: string[] = [];
+  for (const language of INSTANCE_LANGUAGES) {
+    const payload = await postedReceipt({ contentDir: null, language });
+    assert.ok(payload.text.includes(contractLineIn(language)), `${language} fallback used another language`);
+    subjects.push(payload.subject);
+  }
+  assert.equal(new Set(subjects).size, INSTANCE_LANGUAGES.length, 'two languages share a fallback subject');
 });

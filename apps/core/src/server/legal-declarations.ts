@@ -56,6 +56,7 @@ import { forwardDeclaration, type ForwardDeclarationUpstream } from '../legal/fo
 import type { AccountStore } from '../accounts/account-store.js';
 import type { Mailer } from '../mail/mailer.js';
 import type { Logger } from '../logger.js';
+import { INSTANCE_LANGUAGES, type InstanceLanguage } from '../protocol.js';
 
 /** `/v1/legal/declarations`, the one path this family owns. */
 export const LEGAL_DECLARATIONS_PATH = '/v1/legal/declarations';
@@ -97,7 +98,8 @@ interface DeclarationInput {
   reason: string | null;
   requestedDate: string | null;
   timing: 'earliest' | 'onDate' | null;
-  language: 'de' | 'en';
+  /** The language of the form the person sent, one of the six the instance writes mail in. It chooses the receipt's language. */
+  language: InstanceLanguage;
 }
 
 type FieldResult<T> = { ok: true; value: T } | { ok: false };
@@ -169,7 +171,6 @@ function requiredEmail(value: JsonValue | undefined): FieldResult<string> {
 const KINDS = ['kuendigung', 'widerruf'] as const;
 const TERMINATION_TYPES = ['ordentlich', 'ausserordentlich'] as const;
 const TIMINGS = ['earliest', 'onDate'] as const;
-const LANGUAGES = ['de', 'en'] as const;
 
 /** Answers `400 {"error":"declaration-invalid","field":"<name>"}` and returns `null`, so every guard clause below reads `if (!x.ok) return fail(res, 'x');`. */
 function fail(res: Response, field: string): null {
@@ -212,7 +213,9 @@ function decodeDeclaration(req: Request, res: Response): DeclarationInput | null
   if (!requestedDate.ok) return fail(res, 'requestedDate');
   const timing = optionalEnum(body.timing, TIMINGS);
   if (!timing.ok) return fail(res, 'timing');
-  const language = requiredEnum(body.language, LANGUAGES);
+  // The six languages the rest of the mail is written in (2026-09-30). Until
+  // then only `de` and `en`; an older app still sends one of those two.
+  const language = requiredEnum(body.language, INSTANCE_LANGUAGES);
   if (!language.ok) return fail(res, 'language');
 
   return {

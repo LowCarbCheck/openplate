@@ -14,16 +14,14 @@ Set `CONTENT_DIR` to a folder, and mount that folder read-only into the
 container. It is the same variable, and can be the same folder, the openplate
 app reads its legal pages from. This service reads four files from it:
 
-| File                                            | Languages  | Placeholders                                              |
-| ----------------------------------------------- | ---------- | --------------------------------------------------------- |
-| `<lang>/mail/declaration-receipt-kuendigung.md` | `de`, `en` | `{{date}}`, `{{details}}`                                 |
-| `<lang>/mail/declaration-receipt-widerruf.md`   | `de`, `en` | `{{date}}`, `{{details}}`                                 |
-| `<lang>/mail/declaration-alert-kuendigung.md`   | `en`       | `{{date}}`, `{{receiptId}}`, `{{details}}`, `{{matched}}` |
-| `<lang>/mail/declaration-alert-widerruf.md`     | `en`       | `{{date}}`, `{{receiptId}}`, `{{details}}`, `{{matched}}` |
+| File                                            | Languages | Placeholders                                              |
+| ----------------------------------------------- | --------- | --------------------------------------------------------- |
+| `<lang>/mail/declaration-receipt-kuendigung.md` | all six   | `{{date}}`, `{{details}}`                                 |
+| `<lang>/mail/declaration-receipt-widerruf.md`   | all six   | `{{date}}`, `{{details}}`                                 |
+| `<lang>/mail/declaration-alert-kuendigung.md`   | `en`      | `{{date}}`, `{{receiptId}}`, `{{details}}`, `{{matched}}` |
+| `<lang>/mail/declaration-alert-widerruf.md`     | `en`      | `{{date}}`, `{{receiptId}}`, `{{details}}`, `{{matched}}` |
 
-The receipt is sent in the language the person chose on the form, `de` or
-`en`. When that file is missing or refused, the English file is used instead.
-The alert is English only.
+The service sends the receipt in the language of the submitted form: `en`, `de`, `fr`, `it`, `es` or `tr`. When that file is missing or rejected, the service uses the German file, then the English file. A folder containing only German and English receipts still sends a message to every recipient. The operator alert is English only.
 
 ## What a file looks like
 
@@ -115,6 +113,8 @@ Eingegangen am: <date>
 
 <one "Label: value" paragraph per field the person gave>
 ```
+
+The French, Italian, Spanish and Turkish receipts use the same text lines, with labels matching the app confirmation page in that language.
 
 The operator alert, in English:
 

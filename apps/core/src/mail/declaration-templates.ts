@@ -36,7 +36,9 @@ import {
 export interface DeclarationTemplateSource {
   /**
    * The first of `languages` whose file exists and parses, or `null` when
-   * none does. The caller lists the order: the reader's language, then `en`.
+   * none does. The caller lists the order: for a receipt, the reader's
+   * language, then `de`, then `en` (`receiptTemplateLanguages`); for the
+   * operator alert, `en` alone.
    */
   find(input: {
     name: DeclarationTemplateName;

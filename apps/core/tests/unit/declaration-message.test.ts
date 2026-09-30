@@ -12,11 +12,13 @@ import {
   buildDeclarationOperatorAlertMessage,
   buildDeclarationReceiptMessage,
   DECLARATION_TEMPLATE_PLACEHOLDERS,
+  receiptTemplateLanguages,
   type DeclarationFields,
   type DeclarationTemplateName,
   type FoundMailTemplate,
 } from '../../src/mail/declaration-message.js';
 import { parseMailTemplate } from '../../src/mail/mail-template.js';
+import { INSTANCE_LANGUAGES } from '../../src/protocol.js';
 
 const RECEIVED_AT = new Date('2026-09-21T10:15:00.000Z');
 
@@ -97,6 +99,42 @@ test('with no template, the receipt is the neutral fallback: kind, receipt numbe
   ]);
 });
 
+test('the neutral receipt in fr, it, es and tr uses the confirmation page labels of that language', () => {
+  // The app's `legal:declarations.confirmed.*` and the title of each
+  // language's confirmation page, word for word, as for de and en above.
+  const cases = [
+    { language: 'fr', lines: ['Résiliation confirmée', 'Type : Résiliation', 'Récépissé n° : r-3', 'Reçu le : '] },
+    { language: 'it', lines: ['Disdetta confermata', 'Tipo: Disdetta', 'Ricevuta n.: r-3', 'Ricevuto il: '] },
+    { language: 'es', lines: ['Cancelación confirmada', 'Tipo: Cancelación', 'N.º de recibo: r-3', 'Recibido el: '] },
+    { language: 'tr', lines: ['Fesih onaylandı', 'Tür: Fesih', 'Makbuz no.: r-3', 'Alınma zamanı: '] },
+  ] as const;
+  for (const {
+    language,
+    lines: [subject, kind, receipt, received],
+  } of cases) {
+    const message = buildDeclarationReceiptMessage({
+      declaration: { ...baseFields(), receiptId: 'r-3', language },
+      template: null,
+    });
+    const [kindLine, receiptLine, receivedLine] = message.text.split('\n\n');
+    assert.equal(message.subject, subject);
+    assert.equal(kindLine, kind);
+    assert.equal(receiptLine, receipt);
+    assert.ok(receivedLine?.startsWith(received), `${language}: ${receivedLine}`);
+    assert.ok(receivedLine?.includes('2026'), `${language}: ${receivedLine}`);
+  }
+});
+
+test('the receipt is looked up in the reader language, then German, then English, each once', () => {
+  assert.deepEqual(receiptTemplateLanguages('fr'), ['fr', 'de', 'en']);
+  assert.deepEqual(receiptTemplateLanguages('it'), ['it', 'de', 'en']);
+  assert.deepEqual(receiptTemplateLanguages('es'), ['es', 'de', 'en']);
+  assert.deepEqual(receiptTemplateLanguages('tr'), ['tr', 'de', 'en']);
+  // CONTROL: German and English are not asked for twice.
+  assert.deepEqual(receiptTemplateLanguages('de'), ['de', 'en']);
+  assert.deepEqual(receiptTemplateLanguages('en'), ['en', 'de']);
+});
+
 test('an optional field the person left out produces no line at all', () => {
   const withReason = buildDeclarationReceiptMessage({
     declaration: { ...baseFields({ reason: 'a stated reason' }), receiptId: 'r', language: 'en' },
@@ -110,8 +148,8 @@ test('an optional field the person left out produces no line at all', () => {
   assert.ok(!withoutReason.text.includes('Reason:'));
 });
 
-test('neither fallback carries a link, names a service, or carries a dash', () => {
-  const receipts = (['de', 'en'] as const).map((language) =>
+test('no fallback carries a link, names a service, or carries a dash, in any of the six languages', () => {
+  const receipts = INSTANCE_LANGUAGES.map((language) =>
     buildDeclarationReceiptMessage({ declaration: { ...baseFields(), receiptId: 'r', language }, template: null }),
   );
   const alert = buildDeclarationOperatorAlertMessage({
