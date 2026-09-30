@@ -179,6 +179,7 @@ The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two 
 | `AI_MAX_OUTPUT_TOKENS` | `8192` | The maximum output tokens one request can ask for. | |
 | `AI_RATE_LIMIT_PER_MINUTE` | `20` | The maximum requests one account can make in any 60 seconds. | |
 | `AI_INSTANCE_DAILY_LIMIT` | unset, no limit | The daily instance limit in AI units per UTC day. One plate scan costs one unit. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
+| `AI_BUDGET_ALERT_FRACTION` | `0.2` | On an OpenRouter key, mail `MAIL_OPERATOR_EMAIL` once per reset period when less than this share of the key's limit is left. Above 0 and below 1. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
 | `AI_MAX_REQUEST_BYTES` | `8000000` | The largest request the proxy accepts, in bytes. | |
 | `AI_MAX_IMAGE_PARTS` | `1` | Maximum images per request. Requests exceeding this limit return `400 ai-request-too-large` before counting starts. | |
 | `AI_MAX_TEXT_BYTES` | `49152` | Maximum text bytes per request, combining message text and `response_format`. Requests with more return the same `400`. | |

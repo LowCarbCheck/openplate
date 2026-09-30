@@ -204,6 +204,13 @@
       "when": 1790802968138,
       "tag": "0028_free_tier_default",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790804526970,
+      "tag": "0029_ai_budget_alerts",
+      "breakpoints": true
     }
   ]
 }

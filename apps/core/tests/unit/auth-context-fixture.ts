@@ -19,6 +19,7 @@ import type { AuthContext } from '../../src/accounts/auth-handlers.js';
 import type {
   Mailer,
   SendAccountNoticeInput,
+  SendAiBudgetAlertInput,
   SendDeclarationOperatorAlertInput,
   SendDeclarationReceiptInput,
   SendInviteInput,
@@ -40,6 +41,8 @@ export interface RecordingMailer extends Mailer {
   /** M214/09, unused by the auth handlers themselves but required by `Mailer`. */
   declarationReceipts: SendDeclarationReceiptInput[];
   declarationOperatorAlerts: SendDeclarationOperatorAlertInput[];
+  /** The operator's low-budget letters (2026-09-30). */
+  aiBudgetAlerts: SendAiBudgetAlertInput[];
 }
 
 export function createRecordingMailer(): RecordingMailer {
@@ -50,6 +53,7 @@ export function createRecordingMailer(): RecordingMailer {
   const signupAccountNotices: SendSignupAccountNoticeInput[] = [];
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
+  const aiBudgetAlerts: SendAiBudgetAlertInput[] = [];
   return {
     invites,
     resets,
@@ -58,6 +62,7 @@ export function createRecordingMailer(): RecordingMailer {
     signupAccountNotices,
     declarationReceipts,
     declarationOperatorAlerts,
+    aiBudgetAlerts,
     async sendInvite(input: SendInviteInput): Promise<void> {
       invites.push(input);
     },
@@ -78,6 +83,9 @@ export function createRecordingMailer(): RecordingMailer {
     },
     async sendDeclarationOperatorAlert(input: SendDeclarationOperatorAlertInput): Promise<void> {
       declarationOperatorAlerts.push(input);
+    },
+    async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
+      aiBudgetAlerts.push(input);
     },
   };
 }

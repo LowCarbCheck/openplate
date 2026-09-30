@@ -704,6 +704,30 @@ export const aiInstanceDays = pgTable('ai_instance_days', {
 });
 
 /**
+ * ONE ROW PER PROVIDER BUDGET PERIOD IN WHICH THE OPERATOR WAS ALERTED
+ * (2026-09-30): the low-budget mail of `ai/budget-alert.ts`.
+ *
+ * WHY A TABLE AND NOT A VARIABLE. The alert goes out at most once per reset
+ * period of the provider key, and the process restarts on every deploy. A
+ * variable would forget the mail it sent and send it again after each
+ * restart, so the claim lives here. The primary key IS the rule: the insert
+ * that claims a period is `ON CONFLICT DO NOTHING`, so two replicas or two
+ * overlapping reads decide once, in the database.
+ *
+ * `period` names the provider's reset window, such as `monthly:2026-09`
+ * (`budgetAlertPeriod`). A failed send deletes its row again, so the next read
+ * retries. NOTHING HERE IS PERSONAL DATA: a period and a time, one row a month
+ * on a monthly key.
+ */
+export const aiBudgetAlerts = pgTable('ai_budget_alerts', {
+  period: text('period').primaryKey(),
+  alertedAt: timestamp('alerted_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type InsertAiBudgetAlert = InferInsertModel<typeof aiBudgetAlerts>;
+export type SelectAiBudgetAlert = InferSelectModel<typeof aiBudgetAlerts>;
+
+/**
  * ONE ROW PER AI ACTION OF A SCAN-TRIAL ACCOUNT, kept twenty-four hours
  * (M253).
  *

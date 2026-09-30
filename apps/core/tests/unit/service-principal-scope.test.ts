@@ -78,8 +78,13 @@ const ADMIN_TOKEN = 'admin-9d41c7b8e0a25f36471dcb9e';
  * forced: NOT on the allow list. It writes a trial onto accounts nobody pays
  * for, which is the operator's gift to give, and a biller that could call it
  * could hand out free scans in bulk.
+ *
+ * 2026-09-30 took it to twenty-two with `GET /ai/budget`, the provider key's
+ * budget and today's AI capacity. The decision it forced: NOT on the allow
+ * list. It is the operator's spend on their own provider, and a biller has
+ * no plan to sell that needs it.
  */
-const ADMIN_ROUTE_COUNT = 21;
+const ADMIN_ROUTE_COUNT = 22;
 
 let harness: AdminHarness;
 let routes: AdminRouteRef[];
@@ -128,6 +133,9 @@ function buildAdminRouters(): Router[] {
       links: null,
       aiInstanceDailyLimit: null,
       aiTrialInstanceDailyLimit: null,
+      // Registered either way, like `settings` below: the budget route is in
+      // this enumeration whether or not an AI surface stands behind it.
+      aiBudget: null,
       trial: null,
       memberInvites: null,
       // `null` is what a build that wires no settings surface passes. The route

@@ -248,6 +248,37 @@ export function createDrizzleAiInstanceCeiling(db: Database): AiInstanceCeilingS
 }
 
 /**
+ * One UTC day of the two instance counters, as `GET /v1/admin/ai/budget`
+ * reports them: `paid` is `ai_instance_days.count`, the units taken against
+ * `AI_INSTANCE_DAILY_LIMIT`, and `trial` is `trial_count`, the scan-trial
+ * accounts' units. Both are zero for a day with no row.
+ */
+export interface AiDayCapacityUsage {
+  paid: number;
+  trial: number;
+}
+
+/**
+ * A READ of the instance counters, apart from the store that writes them. The
+ * console asks for a day; nothing here can take or give back a unit.
+ */
+export interface AiCapacityReader {
+  readDay(input: { day: string }): Promise<AiDayCapacityUsage>;
+}
+
+export function createDrizzleAiCapacityReader(db: Database): AiCapacityReader {
+  return {
+    async readDay(input: { day: string }): Promise<AiDayCapacityUsage> {
+      const [row] = await db
+        .select({ paid: aiInstanceDays.count, trial: aiInstanceDays.trialCount })
+        .from(aiInstanceDays)
+        .where(eq(aiInstanceDays.day, input.day));
+      return { paid: row?.paid ?? 0, trial: row?.trial ?? 0 };
+    },
+  };
+}
+
+/**
  * The operator's TOTAL daily bound, which every account shares. `AiQuotaStore`
  * extends this, so the proxy is handed one store and one factory builds both
  * halves.

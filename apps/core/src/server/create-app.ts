@@ -126,7 +126,8 @@ import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.j
 import type { FeedbackAdminStore } from '../feedback/feedback-admin-store.js';
 import type { FeedbackImageStore } from '../feedback/feedback-image-store.js';
 import type { FeedbackStore } from '../feedback/feedback-store.js';
-import type { AiQuotaStore } from '../ai/quota-store.js';
+import type { AiCapacityReader, AiQuotaStore } from '../ai/quota-store.js';
+import type { UpstreamBudgetSource } from '../ai/upstream-budget.js';
 import type { AiUpstreamConfig } from '../ai/proxy.js';
 import type { ChatBodyPolicy } from '../ai/chat-body-policy.js';
 import type { ChatInputPolicy } from '../ai/chat-input-bounds.js';
@@ -245,6 +246,19 @@ export interface AiSurfaceOptions {
    * (2026-09-30). Required: see `ChatCompletionsDeps.inputPolicy`.
    */
   inputPolicy: ChatInputPolicy;
+  /**
+   * What `GET /v1/admin/ai/budget` reads (2026-09-30): today's instance
+   * counters, and the provider key's budget, or `null` for an upstream with no
+   * key read. Absent leaves that route answering 404. The two limits it
+   * reports are the ones above, so the console and the proxy cannot disagree.
+   */
+  budget?: AiBudgetSurfaceOptions | null;
+}
+
+/** The budget read's two sources. See {@link AiSurfaceOptions.budget}. */
+export interface AiBudgetSurfaceOptions {
+  capacity: AiCapacityReader;
+  upstream: UpstreamBudgetSource | null;
 }
 
 /**
@@ -632,6 +646,9 @@ export function createApp(options: CreateAppOptions): Express {
   // that path is pinned to the 404 and cannot be turned into a 401 by some
   // future middleware between here and the fallthrough below.
   const ai = options.ai ?? null;
+  // The budget read (2026-09-30) exists only beside an AI surface: without one
+  // there is no key and no ceiling, and `GET /v1/admin/ai/budget` is a 404.
+  const aiBudget = ai?.budget ?? null;
   if (ai === null) {
     app.use(CHAT_COMPLETIONS_PATH, handleNotFound);
   } else {
@@ -809,6 +826,16 @@ export function createApp(options: CreateAppOptions): Express {
       aiInstanceDailyLimit: ai?.instanceDailyLimit ?? null,
       // The same number the proxy enforces, read off the same surface (M253).
       aiTrialInstanceDailyLimit: ai?.trialInstanceDailyLimit ?? null,
+      // The budget read, with the SAME two limits the proxy enforces.
+      aiBudget:
+        aiBudget === null
+          ? null
+          : {
+              capacity: aiBudget.capacity,
+              upstream: aiBudget.upstream,
+              paidDailyLimit: ai?.instanceDailyLimit ?? null,
+              trialDailyLimit: ai?.trialInstanceDailyLimit ?? null,
+            },
       // The instance's scan trial, which `"trial": true` and the lapsed-trial
       // grant write. `null` refuses both with a sentence that says why.
       trial: options.trial ?? null,

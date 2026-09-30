@@ -188,6 +188,7 @@ AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 819
 AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
 UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
 AI_INSTANCE_DAILY_LIMIT=2000       # optional, whole instance, per UTC day
+AI_BUDGET_ALERT_FRACTION=0.2       # optional, OpenRouter only: mail when less than this share is left
 ```
 
 With both set, a signed-in account posts an ordinary OpenAI-compatible request
@@ -268,6 +269,16 @@ with `Retry-After` naming the next UTC midnight. Unset means no ceiling, which
 is the default. `0` stops the boot rather than turning AI off. To disable AI
 completely, unset `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY`. The ceiling is not
 published on `/health`. `GET /v1/admin/stats` reports it to you.
+
+**On OpenRouter you can see and watch the key's budget.** `GET
+/v1/admin/ai/budget` reports what is left of the key's limit, when it resets,
+what was spent today, this week and this month, and today's units against both
+ceilings. The console shows it on the admin overview. The service reads the key
+at most once a minute for the console and every 15 minutes on its own. When
+less than `AI_BUDGET_ALERT_FRACTION` of the limit is left (default `0.2`),
+`MAIL_OPERATOR_EMAIL` gets one mail per reset period. A restart does not send it
+again. Another provider has no such read, so the route then reports capacity
+only.
 
 **New accounts can get free AI scans.** Set `TRIAL_SCANS` and
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside

@@ -42,6 +42,7 @@ import { createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import type { Mailer } from '../../src/mail/mailer.js';
+import type { AiBudgetSurfaceOptions } from '../../src/server/create-app.js';
 
 /** One emitted log line, kept whole so a test can assert on the message AND the fields. */
 export interface CapturedLogLine {
@@ -123,6 +124,14 @@ export interface StartAdminHarnessOptions {
    * pass a test the production wiring fails.
    */
   aiInstanceDailyLimit?: number;
+  /** `AI_TRIAL_INSTANCE_DAILY_LIMIT`, only beside `aiInstanceDailyLimit`. Absent is no sub-ceiling. */
+  aiTrialInstanceDailyLimit?: number;
+  /**
+   * What `GET /v1/admin/ai/budget` reads (2026-09-30), only beside
+   * `aiInstanceDailyLimit`, which builds the AI surface it hangs off. Absent
+   * leaves that route answering 404.
+   */
+  aiBudget?: AiBudgetSurfaceOptions;
   /**
    * A real mailer, for a test about what a send does to an admin answer. Given,
    * the app is told mail is configured, as `main.ts` tells it whenever a mail
@@ -222,6 +231,8 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
             perMinute: 10_000,
             maxRequestBytes: 8_000_000,
             instanceDailyLimit: options.aiInstanceDailyLimit,
+            trialInstanceDailyLimit: options.aiTrialInstanceDailyLimit ?? null,
+            budget: options.aiBudget ?? null,
             bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
             inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
           },

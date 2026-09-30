@@ -41,7 +41,10 @@ import { DEFAULT_TRIAL_TIME_ZONE, instanceTrialOf } from './accounts/scan-trial.
 import { generateFamilyId, generatePasswordResetToken, generateToken } from './lib/tokens.js';
 import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
-import { createDrizzleAiQuotaStore } from './ai/quota-store.js';
+import { createDrizzleAiCapacityReader, createDrizzleAiQuotaStore } from './ai/quota-store.js';
+import { createUpstreamBudgetSource, upstreamBudgetKeyUrl } from './ai/upstream-budget.js';
+import { createBudgetAlerter, startBudgetWatch, type BudgetWatch } from './ai/budget-alert.js';
+import { createDrizzleBudgetAlertStore } from './db/budget-alert-store.js';
 import { AI_USAGE_RETENTION_DAYS, startAiUsageRetention } from './ai/usage-retention.js';
 import { createDrizzleFeedbackStore } from './feedback/feedback-store.js';
 import { createDrizzleFeedbackAdminStore } from './feedback/feedback-admin-store.js';
@@ -224,6 +227,37 @@ async function main(): Promise<void> {
   // behind the flag would leave exactly those rows in place forever.
   const aiQuota = createDrizzleAiQuotaStore(database.db);
 
+  // THE PROVIDER KEY'S BUDGET (2026-09-30), read for `GET /v1/admin/ai/budget`
+  // and on a 15 minute timer that mails the operator once per reset period
+  // when it runs low. Only an OpenRouter upstream has a key read; any other
+  // leaves `upstream: null` and no timer. See `ai/budget-alert.ts`.
+  const budgetKeyUrl = config.ai === null ? null : upstreamBudgetKeyUrl(config.ai);
+  const budgetWatch: BudgetWatch | null =
+    config.ai === null || budgetKeyUrl === null
+      ? null
+      : startBudgetWatch({
+          source: createUpstreamBudgetSource({
+            keyUrl: budgetKeyUrl,
+            apiKey: config.ai.apiKey,
+            logger,
+            now: () => new Date(),
+          }),
+          alerter: createBudgetAlerter({
+            store: createDrizzleBudgetAlertStore(database.db),
+            mailer,
+            mailConfigured: config.mail !== null,
+            fraction: config.aiBudgetAlertFraction,
+            logger,
+            now: () => new Date(),
+          }),
+          logger,
+        });
+  // One read at boot, so a restart during a low period finds its claim in the
+  // database rather than waiting fifteen minutes to look.
+  budgetWatch?.tick().catch((cause: unknown) => {
+    logger.warn('AI budget watch tick failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
+  });
+
   const ai =
     config.ai === null
       ? null
@@ -239,6 +273,7 @@ async function main(): Promise<void> {
           // disagree.
           bodyPolicy: { model: config.aiAdvertisedModel, maxOutputTokens: config.aiMaxOutputTokens },
           inputPolicy: config.aiInputPolicy,
+          budget: { capacity: createDrizzleAiCapacityReader(database.db), upstream: budgetWatch },
         };
 
   // AN UPSTREAM KEY WITH NO NAMED MODEL. Non-fatal, like the two warnings
@@ -458,6 +493,8 @@ async function main(): Promise<void> {
       billingToken: config.billingToken !== null,
       mail: config.mail !== null,
       ai: ai !== null,
+      // Whether the provider key's budget is read and alerted on, never the key.
+      aiBudgetWatch: budgetWatch !== null,
       sharing: shares !== null,
       research: research !== null,
       feedback: feedback !== null,
@@ -580,6 +617,7 @@ async function main(): Promise<void> {
     aiUsageRetention.stop();
     pulseRetention.stop();
     pushScheduler?.stop();
+    budgetWatch?.stop();
     await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
     await database.close();
     process.exit(0);

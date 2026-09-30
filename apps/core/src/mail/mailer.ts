@@ -2,7 +2,7 @@
  * The mail PORT — what this service needs from a mailer, and nothing about how
  * one is built.
  *
- * FIVE LETTERS NOW, EACH ONE NAMED HERE AND NOWHERE ELSE. The bound that used
+ * SIX LETTERS NOW, EACH ONE NAMED HERE AND NOWHERE ELSE. The bound that used
  * to read "three letters, ever" held while every letter this service sent was
  * part of the account lifecycle: an invitation, a password reset, and the note
  * that says an invited address already has an account. M214/09 added two more
@@ -70,6 +70,7 @@ import {
 } from './declaration-message.js';
 import type { DeclarationTemplateSource } from './declaration-templates.js';
 import { createSmtpTransport, type SmtpMailConfig } from './smtp-transport.js';
+import { buildAiBudgetAlertMessage, type AiBudgetAlertInput } from './ai-budget-message.js';
 
 export interface SendInviteInput {
   /** The address the invitation goes to — the invite's own `email`, never one from a request body. */
@@ -133,6 +134,9 @@ export interface SendDeclarationReceiptInput extends DeclarationReceiptInput {
 /** The operator's copy, sent once per declaration regardless of how many receipts went out. English only, see `declaration-message.ts`. */
 export type SendDeclarationOperatorAlertInput = DeclarationOperatorAlertInput;
 
+/** The operator's low-budget letter (2026-09-30). Numbers only, English only, see `ai-budget-message.ts`. */
+export type SendAiBudgetAlertInput = AiBudgetAlertInput;
+
 export interface Mailer {
   sendInvite(input: SendInviteInput): Promise<void>;
   sendReset(input: SendResetInput): Promise<void>;
@@ -150,6 +154,12 @@ export interface Mailer {
   sendDeclarationReceipt(input: SendDeclarationReceiptInput): Promise<void>;
   /** M214/09. See `SendDeclarationOperatorAlertInput` above and the module header. */
   sendDeclarationOperatorAlert(input: SendDeclarationOperatorAlertInput): Promise<void>;
+  /**
+   * The SIXTH letter (2026-09-30), to `MAIL_OPERATOR_EMAIL` like the
+   * declaration alert: the provider key is running low. Sent at most once per
+   * reset period by `ai/budget-alert.ts`, which owns that rule.
+   */
+  sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void>;
 }
 
 /**
@@ -192,6 +202,10 @@ export function createNoopMailer(): Mailer {
     async sendDeclarationOperatorAlert(): Promise<void> {
       // Deliberately nothing, for the same reason. An operator running with
       // no mail configured reads the row instead.
+    },
+    async sendAiBudgetAlert(): Promise<void> {
+      // Deliberately nothing. `ai/budget-alert.ts` never calls this without
+      // mail configured; it logs the low budget instead.
     },
   };
 }
@@ -432,6 +446,11 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
         matched: input.matched,
         text: message.origin,
       });
+    },
+
+    async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
+      const message = buildAiBudgetAlertMessage(input);
+      await transport.send({ to: operatorEmail, subject: message.subject, text: message.text, html: message.html });
     },
   };
 }

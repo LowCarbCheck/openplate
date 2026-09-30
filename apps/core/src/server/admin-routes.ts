@@ -110,6 +110,8 @@ import {
 import type { AccountEraseNotifier } from '../accounts/erase-notifier.js';
 import { healthConsentView } from '../accounts/health-consent.js';
 import { parseAccountLabel } from '../admin/account-label.js';
+import type { AiCapacityReader } from '../ai/quota-store.js';
+import type { UpstreamBudgetRead, UpstreamBudgetReset, UpstreamBudgetSource } from '../ai/upstream-budget.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -352,6 +354,69 @@ interface ExpiringAllowanceView {
 
 function toExpiringAllowanceView(row: ExpiringAllowance): ExpiringAllowanceView {
   return { id: row.id, allowanceExpiresAt: row.allowanceExpiresAt.toISOString() };
+}
+
+/**
+ * `GET /v1/admin/ai/budget` (2026-09-30): what the provider key has left, and
+ * how much of today's instance capacity is used.
+ *
+ * `capacity` is in UNITS, the size-weighted counts the proxy reserves
+ * (`ai/chat-input-bounds.ts`), against the configured ceilings. `upstream` is
+ * `null` when the upstream is not OpenRouter, which has no key read to ask.
+ * Every field is named here: nothing from the provider's body is spread in,
+ * and the key's label never reaches this view.
+ */
+interface AiBudgetView {
+  day: string;
+  capacity: {
+    paid: { used: number; limit: number | null };
+    trial: { used: number; limit: number | null };
+  };
+  upstream: AiBudgetUpstreamView | null;
+}
+
+type AiBudgetUpstreamView =
+  | {
+      status: 'ok';
+      limitUsd: number | null;
+      remainingUsd: number | null;
+      reset: UpstreamBudgetReset | null;
+      usageDailyUsd: number;
+      usageWeeklyUsd: number;
+      usageMonthlyUsd: number;
+      checkedAt: string;
+    }
+  | { status: 'unavailable'; checkedAt: string };
+
+/** The provider half of the view, projected field by field from the read. */
+function toAiBudgetUpstreamView(read: UpstreamBudgetRead): AiBudgetUpstreamView {
+  const checkedAt = read.checkedAt.toISOString();
+  if (read.status === 'unavailable') return { status: 'unavailable', checkedAt };
+  return {
+    status: 'ok',
+    limitUsd: read.budget.limitUsd,
+    remainingUsd: read.budget.remainingUsd,
+    reset: read.budget.reset,
+    usageDailyUsd: read.budget.usageDailyUsd,
+    usageWeeklyUsd: read.budget.usageWeeklyUsd,
+    usageMonthlyUsd: read.budget.usageMonthlyUsd,
+    checkedAt,
+  };
+}
+
+/**
+ * What `GET /v1/admin/ai/budget` reads. `null` on {@link AdminRoutesOptions}
+ * for an instance with no AI surface, where the route answers the ordinary 404.
+ */
+export interface AdminAiBudgetSurface {
+  /** Today's two instance counters. */
+  capacity: AiCapacityReader;
+  /** The cached key read, or `null` when the upstream is not OpenRouter. */
+  upstream: UpstreamBudgetSource | null;
+  /** `AI_INSTANCE_DAILY_LIMIT`, read off the AI surface the proxy enforces, like `aiInstanceDailyLimit`. */
+  paidDailyLimit: number | null;
+  /** `AI_TRIAL_INSTANCE_DAILY_LIMIT`, read off the same surface. */
+  trialDailyLimit: number | null;
 }
 
 function toStatsView(input: {
@@ -826,6 +891,11 @@ export interface AdminRoutesOptions {
   aiInstanceDailyLimit: number | null;
   /** The scan-trial sub-ceiling (M253), reported beside today's trial requests. Read off the AI surface. */
   aiTrialInstanceDailyLimit: number | null;
+  /**
+   * The budget and capacity read (2026-09-30), or `null` on an instance with
+   * no AI surface, which leaves `GET /ai/budget` answering the ordinary 404.
+   */
+  aiBudget: AdminAiBudgetSurface | null;
   /**
    * The instance's scan trial (M253), or `null`. `"trial": true` on a mint and
    * the lapsed-trial grant write exactly this pair.
@@ -1480,6 +1550,36 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       // A count, never the ids and never an address.
       logger.info('Lapsed day trials given the scan trial', { granted: granted.length });
       res.status(200).json({ accountIds: granted, applied: true });
+    }),
+  );
+
+  // THE OPERATOR'S BUDGET (2026-09-30). The BILLING_TOKEN never gets here:
+  // `enforceServicePrincipalScope` refuses every path it does not name, and
+  // it names three account routes.
+  router.get(
+    '/ai/budget',
+    asyncHandler(async (req, res) => {
+      const surface = options.aiBudget;
+      if (surface === null) {
+        handleNotFound(req, res);
+        return;
+      }
+      // THE DAY THE CEILINGS KEY ON, read once, so the two counters and the
+      // `day` in the body are the same day even across midnight.
+      const day = utcDayKey(options.now());
+      const [usage, upstream] = await Promise.all([
+        surface.capacity.readDay({ day }),
+        surface.upstream === null ? Promise.resolve(null) : surface.upstream.read(),
+      ]);
+      const view: AiBudgetView = {
+        day,
+        capacity: {
+          paid: { used: usage.paid, limit: surface.paidDailyLimit },
+          trial: { used: usage.trial, limit: surface.trialDailyLimit },
+        },
+        upstream: upstream === null ? null : toAiBudgetUpstreamView(upstream),
+      };
+      res.status(200).json(view);
     }),
   );
 

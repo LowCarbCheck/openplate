@@ -699,6 +699,21 @@ test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says 
   assert.throws(() => parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: 'lots' })), /AI_INSTANCE_DAILY_LIMIT/);
 });
 
+test('AI_BUDGET_ALERT_FRACTION defaults to 0.2, takes a share, and refuses 0, 1 and words', () => {
+  // THE CONTROL FIRST: a real share parses and is carried whole.
+  assert.equal(parseConfig(baseEnv({ AI_BUDGET_ALERT_FRACTION: '0.15' })).aiBudgetAlertFraction, 0.15);
+  assert.equal(parseConfig(baseEnv()).aiBudgetAlertFraction, 0.2);
+  assert.equal(parseConfig(baseEnv({ AI_BUDGET_ALERT_FRACTION: '  ' })).aiBudgetAlertFraction, 0.2);
+  // `0` would never alert and `1` would alert on a full key: neither is "off".
+  for (const refused of ['0', '1', '-0.1', '1.5', 'twenty']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ AI_BUDGET_ALERT_FRACTION: refused })),
+      /AI_BUDGET_ALERT_FRACTION/,
+      refused,
+    );
+  }
+});
+
 test('the two member-invite settings are all-or-nothing, and the allowance has a ceiling', () => {
   // THE CONTROL FIRST: both set parse into the policy whole, so the refusals
   // below cannot pass by the parser rejecting everything.

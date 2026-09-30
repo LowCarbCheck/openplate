@@ -28,7 +28,12 @@ import { createDrizzlePulseStore } from '../../src/pulse/pulse-store.js';
 import { createDrizzlePushStore } from '../../src/push/push-store.js';
 import { createPushEndpointPolicy } from '../../src/push/endpoint-policy.js';
 import { createDrizzleResearchStore } from '../../src/db/research-store.js';
-import { createDrizzleAiQuotaStore, type AiQuotaStore } from '../../src/ai/quota-store.js';
+import {
+  createDrizzleAiCapacityReader,
+  createDrizzleAiQuotaStore,
+  type AiQuotaStore,
+} from '../../src/ai/quota-store.js';
+import type { UpstreamBudgetSource } from '../../src/ai/upstream-budget.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
 import { createDrizzleFeedbackAdminStore } from '../../src/feedback/feedback-admin-store.js';
 import { createDrizzleFeedbackImageStore } from '../../src/feedback/feedback-image-store.js';
@@ -45,6 +50,7 @@ import type { CaptchaVerifier } from '../../src/accounts/captcha.js';
 import type {
   Mailer,
   SendAccountNoticeInput,
+  SendAiBudgetAlertInput,
   SendDeclarationOperatorAlertInput,
   SendDeclarationReceiptInput,
   SendInviteInput,
@@ -102,6 +108,8 @@ export interface RecordingMailer extends Mailer {
   declarationReceipts: SendDeclarationReceiptInput[];
   /** M214/09. One entry per declaration, matched or not. */
   declarationOperatorAlerts: SendDeclarationOperatorAlertInput[];
+  /** The operator's low-budget letters (2026-09-30). */
+  aiBudgetAlerts: SendAiBudgetAlertInput[];
 }
 
 function createRecordingMailer(): RecordingMailer {
@@ -112,6 +120,7 @@ function createRecordingMailer(): RecordingMailer {
   const signupAccountNotices: SendSignupAccountNoticeInput[] = [];
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
+  const aiBudgetAlerts: SendAiBudgetAlertInput[] = [];
   return {
     invites,
     resets,
@@ -120,6 +129,7 @@ function createRecordingMailer(): RecordingMailer {
     signupAccountNotices,
     declarationReceipts,
     declarationOperatorAlerts,
+    aiBudgetAlerts,
     async sendInvite(input: SendInviteInput): Promise<void> {
       invites.push(input);
     },
@@ -140,6 +150,9 @@ function createRecordingMailer(): RecordingMailer {
     },
     async sendDeclarationOperatorAlert(input: SendDeclarationOperatorAlertInput): Promise<void> {
       declarationOperatorAlerts.push(input);
+    },
+    async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
+      aiBudgetAlerts.push(input);
     },
   };
 }
@@ -296,6 +309,8 @@ export interface StartServiceOptions {
      * where only a broken database would. Absent is the real store alone.
      */
     wrapQuota?: (quota: AiQuotaStore) => AiQuotaStore;
+    /** The provider key read behind `GET /v1/admin/ai/budget`. Absent is `null`, a non-OpenRouter upstream. */
+    budgetUpstream?: UpstreamBudgetSource | null;
   } | null;
   /**
    * Absent (the default) boots the service the way every deployment boots
@@ -599,6 +614,13 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           instanceDailyLimit: options.ai.instanceDailyLimit ?? null,
           // `null` by default for the reason `instanceDailyLimit` is (M253).
           trialInstanceDailyLimit: options.ai.trialInstanceDailyLimit ?? null,
+          // The budget read (2026-09-30), as `main.ts` builds it: the real
+          // counters always, and the key read only for an OpenRouter upstream,
+          // which a fake upstream on a loopback port never is.
+          budget: {
+            capacity: createDrizzleAiCapacityReader(options.db),
+            upstream: options.ai.budgetUpstream ?? null,
+          },
           // ONE BINDING FOR `/health` AND THE PROXY, as in `main.ts` (M256).
           bodyPolicy: {
             model: options.ai.advertisedModel ?? null,

@@ -33,6 +33,7 @@ import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './a
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
+import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
 import {
   DEFAULT_AI_IMAGE_INPUT_TOKENS,
   DEFAULT_AI_MAX_IMAGE_PARTS,
@@ -218,6 +219,14 @@ export interface ServiceConfig {
    * ZERO IS A BOOT FAILURE, not "off". See `parseAiInstanceDailyLimit`.
    */
   aiInstanceDailyLimit: number | null;
+  /**
+   * The low-budget alert line (`AI_BUDGET_ALERT_FRACTION`, 2026-09-30): the
+   * operator gets one mail per reset period once the provider key has less
+   * than this share of its limit left. Above 0 and below 1; default 0.2. Read
+   * only on an OpenRouter upstream, the one with a key read, and sent only
+   * with mail configured. See `ai/budget-alert.ts`.
+   */
+  aiBudgetAlertFraction: number;
   /**
    * What an invitation a MEMBER causes is worth, or `null` for an instance
    * where members cannot invite anybody, which is the default and what every existing
@@ -1334,6 +1343,24 @@ function parseAiInstanceDailyLimit(env: NodeJS.ProcessEnv): number | null {
   return parsed;
 }
 
+/**
+ * `AI_BUDGET_ALERT_FRACTION`: a share of the provider key's limit, above 0 and
+ * below 1. `0` would never alert and `1` would alert on a full key, so both
+ * are refused rather than read as "off" or "always".
+ */
+function parseAiBudgetAlertFraction(env: NodeJS.ProcessEnv): number {
+  const raw = env.AI_BUDGET_ALERT_FRACTION?.trim();
+  if (raw === undefined || raw === '') return DEFAULT_AI_BUDGET_ALERT_FRACTION;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0 || parsed >= 1) {
+    throw new Error(
+      `Invalid AI_BUDGET_ALERT_FRACTION: expected a number above 0 and below 1, got "${raw}". ` +
+        `Unset it for the default of ${DEFAULT_AI_BUDGET_ALERT_FRACTION}.`,
+    );
+  }
+  return parsed;
+}
+
 /** The two names that make up the member-invite block. Listed once so every message below can name both. */
 const MEMBER_INVITE_VARIABLES = ['MEMBER_INVITE_DAILY_AI_LIMIT', 'MEMBER_INVITE_ALLOWANCE_DAYS'] as const;
 
@@ -1811,6 +1838,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     },
     aiRateLimitPerMinute: parsePositiveInteger(env, 'AI_RATE_LIMIT_PER_MINUTE', 20),
     aiInstanceDailyLimit: parseAiInstanceDailyLimit(env),
+    aiBudgetAlertFraction: parseAiBudgetAlertFraction(env),
     memberInvites: parseMemberInvites(env, trial),
     trial,
     aiTrialInstanceDailyLimit: parseAiTrialInstanceDailyLimit(env, trial),

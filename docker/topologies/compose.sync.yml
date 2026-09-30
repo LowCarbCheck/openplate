@@ -294,6 +294,9 @@ services:
       AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
       # The whole instance's AI requests per UTC day. Empty means no ceiling.
       AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+      # On an OpenRouter key: mail MAIL_OPERATOR_EMAIL once per reset period
+      # when less than this share of the key's limit is left. Empty means 0.2.
+      AI_BUDGET_ALERT_FRACTION: ${AI_BUDGET_ALERT_FRACTION:-}
       # How long one proxied request may take, the most output tokens it may
       # ask for, the requests per account per minute, and the largest request
       # body, sized for a camera photograph after base64.

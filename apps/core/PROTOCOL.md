@@ -1483,6 +1483,7 @@ either token turns that `404` into the `401` a wrong value gets.
 | Endpoint                                    | Does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /v1/admin/stats`                       | Aggregate counts: accounts, blobs, bytes, key records, `pendingInvites`, `admins`, `aiRequestsToday`, and the `aiInstanceDailyLimit` that bounds it (`null` for no ceiling); `aiTrialInstanceDailyLimit`; and `signup`: invites the request door of §5.8.3 minted today and in the last seven days, trials granted in the last seven days, and today's scan-trial requests                                                                                                                     |
+| `GET /v1/admin/ai/budget`                   | The provider key's budget and today's AI capacity, see "The AI budget" below. `404` on an instance with no AI. Not reachable with `BILLING_TOKEN`                                                                                                                                                                                                                                                                                                                                              |
 | `GET /v1/admin/accounts`                    | A page of `AccountView`s, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `GET /v1/admin/accounts/expiring`           | A page of `{ id, allowanceExpiresAt }` for accounts whose allowance ends in the future, plus `total`                                                                                                                                                                                                                                                                                                                                                                                           |
 | `GET /v1/admin/accounts/:id`                | One `AccountView`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -1503,6 +1504,48 @@ either token turns that `404` into the `401` a wrong value gets.
 | `GET /v1/admin/feedback/:id`                | One report: the list fields, `measurements` exactly as the device sent them, and `consent: { agreedAt, wordingVersion }`                                                                                                                                                                                                                                                                                                                                                                       |
 | `GET /v1/admin/feedback/:id/image`          | The photograph's bytes under its stored `Content-Type`, with `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. `404` when the report has none. Every read is logged with the report id and which credential asked                                                                                                                                                                                                                                                               |
 | `DELETE /v1/admin/feedback/:id`             | Deletes the photograph, then the report. `204`, or `404` for an unknown id                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+**`GET /v1/admin/ai/budget` is the operator's AI budget**: what the provider
+key has left, and how much of today's instance capacity is used.
+
+```json
+{
+  "day": "2026-09-30",
+  "capacity": {
+    "paid": { "used": 412, "limit": 2000 },
+    "trial": { "used": 37, "limit": 500 }
+  },
+  "upstream": {
+    "status": "ok",
+    "limitUsd": 5,
+    "remainingUsd": 3.94,
+    "reset": "monthly",
+    "usageDailyUsd": 0.12,
+    "usageWeeklyUsd": 0.4,
+    "usageMonthlyUsd": 1.06,
+    "checkedAt": "2026-09-30T10:00:00.000Z"
+  }
+}
+```
+
+- `day` is the UTC day the ceilings count on. `capacity` is in units, the
+  size-weighted counts the proxy reserves. `paid.used` is what counted against
+  `AI_INSTANCE_DAILY_LIMIT` and `trial.used` what the scan-trial accounts
+  spent. Each `limit` is the configured ceiling, or `null` for none. Without a
+  trial ceiling, trial requests also count in `paid.used`.
+- `upstream` is `null` when the upstream is not OpenRouter. Otherwise it is the
+  key read of OpenRouter's `GET /key`, in dollars: `limitUsd` and `remainingUsd`
+  are `null` for a key with no limit, and `reset` is `"daily"`, `"weekly"`,
+  `"monthly"` or `null` for a limit that never resets. A failed read is
+  `{"status": "unavailable", "checkedAt": ...}`, and `capacity` is still
+  reported.
+- The key read runs on the server with a 5 second timeout, and is served from
+  memory for 60 seconds, a failed one for 15. The body carries no key, no key
+  label and nothing else the provider sent.
+- On the same read, when `remainingUsd` is below `AI_BUDGET_ALERT_FRACTION`
+  (default 0.2) of `limitUsd`, the operator gets one mail per reset period at
+  `MAIL_OPERATOR_EMAIL`. The service also reads the key every 15 minutes, so
+  the mail does not wait for somebody to open the console.
 
 **`PATCH` is the one auth-adjacent write an operator has**, and it is bounded
 deliberately. It cannot set a passphrase, and there is no endpoint that can:

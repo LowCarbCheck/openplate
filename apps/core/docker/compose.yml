@@ -160,6 +160,9 @@ services:
       AI_IMAGE_INPUT_TOKENS: ${AI_IMAGE_INPUT_TOKENS:-1500}
       # The whole instance's AI requests per UTC day. Empty means no ceiling.
       AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
+      # On an OpenRouter key: mail MAIL_OPERATOR_EMAIL once per reset period
+      # when less than this share of the key's limit is left. Empty means 0.2.
+      AI_BUDGET_ALERT_FRACTION: ${AI_BUDGET_ALERT_FRACTION:-}
       # Members inviting people: the first two together or neither, and the
       # cap only with the pair. Empty means only an administrator invites.
       MEMBER_INVITE_DAILY_AI_LIMIT: ${MEMBER_INVITE_DAILY_AI_LIMIT:-}
