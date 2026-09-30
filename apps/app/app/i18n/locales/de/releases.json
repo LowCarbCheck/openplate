@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "Der kostenlose Testzeitraum zeigt nun an, wie viele Tage verbleiben."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Bei anderen Sprachen als den sechs wird im Checkout und bei rechtlichen Formularen jetzt auf Englisch zurückgegriffen."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Die Formulare für Kündigung und Widerruf übermitteln die Sprache des Lesers.",
-      "02": "Jede App-Einstellung gelangt nun aus deiner .env-Datei in den Container."
-    },
-    "fixed": {
-      "01": "Das Zahlungsportal öffnet sich nun in der Sprache der Seite.",
-      "02": "Das Image-Tag \"latest\" bezeichnet nun das neueste Release."
     }
   }
 }

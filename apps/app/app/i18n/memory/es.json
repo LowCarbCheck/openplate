@@ -17163,6 +17163,13 @@
     "at": "2026-09-14",
     "es": "Añadiendo…"
   },
+  "d4d74fa78e1919fd": {
+    "en": "The free trial now says how many days are left.",
+    "path": "releases:v0_57_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "El periodo de prueba gratuito ahora muestra cuántos días quedan."
+  },
   "d4e3e6ac321c3964": {
     "en": "Stored only on this device",
     "path": "common:entry.photo.caption",

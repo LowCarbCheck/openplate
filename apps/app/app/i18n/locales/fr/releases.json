@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "L'essai gratuit indique désormais le nombre de jours restants."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Les langues en dehors des six reviennent désormais à l'anglais dans le paiement et les formulaires légaux."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Les formulaires de résiliation et de rétractation envoient la langue du lecteur.",
-      "02": "Chaque paramètre de l'application est désormais transmis au conteneur depuis ton fichier .env."
-    },
-    "fixed": {
-      "01": "Le portail de paiement s'ouvre désormais dans la langue de la page.",
-      "02": "Le tag d'image « latest » désigne désormais la version la plus récente."
     }
   }
 }

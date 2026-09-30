@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "The free trial now says how many days are left."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Languages outside the six now fall back to English in checkout and legal forms."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "The cancellation and withdrawal forms send the reader's language.",
-      "02": "Every app setting now reaches the container from your .env file."
-    },
-    "fixed": {
-      "01": "The payment portal now opens in the page's language.",
-      "02": "The \"latest\" image tag now names the newest release."
     }
   }
 }

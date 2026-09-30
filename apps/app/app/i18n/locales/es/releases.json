@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "El periodo de prueba gratuito ahora muestra cuántos días quedan."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Los idiomas distintos de los seis ahora usan el inglés por defecto en el proceso de pago y en los formularios legales."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Los formularios de cancelación y desistimiento envían el idioma del lector.",
-      "02": "Cada ajuste de la app llega ahora al contenedor desde tu archivo .env."
-    },
-    "fixed": {
-      "01": "La pasarela de pago se abre ahora en el idioma de la página.",
-      "02": "La etiqueta de imagen \"latest\" apunta ahora a la versión más reciente."
     }
   }
 }

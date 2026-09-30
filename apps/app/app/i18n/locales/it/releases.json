@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "La prova gratuita ora indica quanti giorni rimangono."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Le lingue diverse dalle sei previste ora passano all'inglese nel checkout e nei moduli legali."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "I moduli di annullamento e recesso inviano la lingua del lettore.",
-      "02": "Ogni impostazione dell'app ora arriva al container dal tuo file .env."
-    },
-    "fixed": {
-      "01": "Il portale dei pagamenti ora si apre nella lingua della pagina.",
-      "02": "Il tag di immagine \"latest\" ora fa riferimento alla versione più recente."
     }
   }
 }

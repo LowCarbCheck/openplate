@@ -1,4 +1,10 @@
 {
+  "v0_57_0": {
+    "date": "2026-09-30",
+    "added": {
+      "01": "Ücretsiz deneme artık kaç gün kaldığını gösteriyor."
+    }
+  },
   "v0_56_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,17 +16,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Bu altı dilin dışındaki diller, ödeme ve yasal formlarda artık İngilizceye geri döner."
-    }
-  },
-  "v0_54_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "İptal ve cayma formları okuyucunun dilini gönderir.",
-      "02": "Tüm uygulama ayarları artık konteynere .env dosyandan ulaşır."
-    },
-    "fixed": {
-      "01": "Ödeme portalı artık sayfanın dilinde açılır.",
-      "02": "\"latest\" imaj etiketi artık en yeni sürümü belirtir."
     }
   }
 }
