@@ -26,7 +26,9 @@ import type { SmtpMailConfig, SmtpTlsMode } from './mail/smtp-transport.js';
 import type { AiUpstreamConfig } from './ai/proxy.js';
 import type { PlansUpstreamConfig } from './server/plans-proxy.js';
 import type { VapidCredentials } from './push/web-push-sender.js';
+import { isPushHostPattern } from './push/endpoint-policy.js';
 import { MAX_DAILY_AI_LIMIT } from './admin/invite-store.js';
+import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } from './server/service-principal-scope.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
@@ -340,13 +342,24 @@ export interface ServiceConfig {
    * `server/service-principal-scope.ts` is the whole policy. It cannot list
    * the accounts on the instance, cannot read an address, cannot suspend,
    * cannot change a role, cannot erase and cannot open a reported
-   * photograph. Setting BOTH variables to the same string would therefore
-   * widen nothing; setting this one alone is the shape a paid instance wants.
+   * photograph. Setting this one alone is the shape a paid instance wants.
+   *
+   * IT MAY NOT EQUAL `ADMIN_TOKEN`, and that is a boot refusal. The admin door
+   * tries the operator's credential first, so one string in both variables
+   * would hand the biller the whole admin API. See `parseTokens`.
    *
    * `null` behaves exactly as `adminToken`'s does: with both unset the whole
    * `/v1/admin` tree answers the ordinary unknown-path `404` to everybody.
    */
   billingToken: string | null;
+  /**
+   * The largest `dailyAiLimit` the biller's credential may write
+   * (`BILLING_MAX_DAILY_AI_LIMIT`, default 1000, at most `MAX_DAILY_AI_LIMIT`).
+   * It may also never clear an allowance's end date. The operator's
+   * credentials are bounded by neither. See
+   * `server/service-principal-scope.ts`.
+   */
+  billingMaxDailyAiLimit: number;
   /**
    * The biller this instance forwards `/v1/plans/*` to, or `null` when no
    * biller stands behind it, which is the default and what every self-hoster
@@ -379,6 +392,13 @@ export interface ServiceConfig {
    * `docs/adr/0008-push-is-a-scheduling-exception.md`.
    */
   push: VapidCredentials | null;
+  /**
+   * Extra push service hosts a device may register an endpoint at
+   * (`PUSH_ENDPOINT_HOSTS`, comma separated, `*.` allowed as a prefix), on top
+   * of the browsers' own push services in `push/endpoint-policy.ts`. Empty by
+   * default, and only a self-hoster running their own push service needs it.
+   */
+  pushEndpointHosts: string[];
   /**
    * Whether this instance implements ADR-0002's clinician sharing.
    *
@@ -519,6 +539,47 @@ function parseBillingToken(env: NodeJS.ProcessEnv): string | null {
   return raw;
 }
 
+/** The operator's credential and the biller's, each `null` when unset. */
+interface ServiceTokens {
+  adminToken: string | null;
+  billingToken: string | null;
+}
+
+/**
+ * `BILLING_MAX_DAILY_AI_LIMIT`: a positive integer no larger than the ceiling
+ * the operator's own PATCH has, because a biller ceiling above the operator's
+ * would be a number no write could ever reach.
+ */
+function parseBillingMaxDailyAiLimit(env: NodeJS.ProcessEnv): number {
+  const limit = parsePositiveInteger(env, 'BILLING_MAX_DAILY_AI_LIMIT', DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT);
+  if (limit > MAX_DAILY_AI_LIMIT) {
+    throw new Error(`BILLING_MAX_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT}, got ${limit}`);
+  }
+  return limit;
+}
+
+/**
+ * `ADMIN_TOKEN` and `BILLING_TOKEN` together, with the one rule that needs
+ * both: they may not be the same string.
+ *
+ * THE ADMIN DOOR TRIES `ADMIN_TOKEN` FIRST (`server/admin-auth.ts`), so a
+ * biller holding a token equal to the operator's would be admitted as the
+ * operator, with every route and every field, and the scope in
+ * `server/service-principal-scope.ts` would never run. A boot refusal is the
+ * only answer an operator cannot miss. The message names both variables and
+ * neither value.
+ */
+function parseTokens(env: NodeJS.ProcessEnv): ServiceTokens {
+  const adminToken = parseAdminToken(env);
+  const billingToken = parseBillingToken(env);
+  if (adminToken !== null && adminToken === billingToken) {
+    throw new Error(
+      'BILLING_TOKEN must differ from ADMIN_TOKEN: the admin door checks ADMIN_TOKEN first, so the biller would get the whole admin API. Generate a separate value.',
+    );
+  }
+  return { adminToken, billingToken };
+}
+
 /** The two names that make up the plans block. Listed once so every message below can name both. */
 const PLANS_VARIABLES = ['PLANS_UPSTREAM_URL', 'PLANS_UPSTREAM_SECRET'] as const;
 
@@ -622,6 +683,29 @@ function parsePush(env: NodeJS.ProcessEnv): VapidCredentials | null {
     privateKey: env.VAPID_PRIVATE_KEY?.trim() ?? '',
     subject,
   };
+}
+
+/**
+ * `PUSH_ENDPOINT_HOSTS`: host names, or `*.` and a host name, separated by
+ * commas. Lower-cased here, because `URL` lower-cases the host it compares.
+ * A malformed entry is a boot failure that names it: a typo here would leave
+ * a self-hoster's devices refused at registration with nothing in the log to
+ * say why. A bare `*` is malformed, on purpose.
+ */
+function parsePushEndpointHosts(env: NodeJS.ProcessEnv): string[] {
+  const raw = env.PUSH_ENDPOINT_HOSTS?.trim() ?? '';
+  if (raw === '') return [];
+  const hosts = raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry !== '');
+  const malformed = hosts.filter((host) => !isPushHostPattern(host));
+  if (malformed.length > 0) {
+    throw new Error(
+      `Invalid PUSH_ENDPOINT_HOSTS entry "${malformed.join('", "')}": expected a host name such as push.example.org, or *.example.org`,
+    );
+  }
+  return hosts;
 }
 
 /**
@@ -1677,6 +1761,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   const openSignup = parseOpenSignup(env, mail);
   // Read before the member door, which may grant it.
   const trial = parseTrial(env);
+  const tokens = parseTokens(env);
 
   return {
     port: parsePositiveInteger(env, 'PORT', 3000),
@@ -1703,10 +1788,12 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     turnstile: parseTurnstile(env, openSignup),
     aiMaxRequestBytes: parsePositiveInteger(env, 'AI_MAX_REQUEST_BYTES', DEFAULT_AI_MAX_REQUEST_BYTES),
     trustProxy: parseTrustProxy(env),
-    adminToken: parseAdminToken(env),
-    billingToken: parseBillingToken(env),
+    adminToken: tokens.adminToken,
+    billingToken: tokens.billingToken,
+    billingMaxDailyAiLimit: parseBillingMaxDailyAiLimit(env),
     plans: parsePlans(env),
     push: parsePush(env),
+    pushEndpointHosts: parsePushEndpointHosts(env),
     sharingEnabled: parseBoolean(env, 'SYNC_SHARING', false),
     researchEnabled: parseBoolean(env, 'SYNC_RESEARCH', false),
     feedbackEnabled: parseBoolean(env, 'SYNC_FEEDBACK', false),

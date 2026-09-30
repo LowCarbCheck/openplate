@@ -20,7 +20,8 @@ import { eq } from 'drizzle-orm';
 import { accounts, pushSubscriptions } from '../../src/db/schema.js';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import { sampleAuthHash, startService, TEST_VAPID_PUBLIC_KEY, type ServiceHarness } from './service-harness.js';
-import { createDrizzlePushStore } from '../../src/push/push-store.js';
+import { createDrizzlePushStore, PUSH_SUBSCRIPTIONS_PER_ACCOUNT } from '../../src/push/push-store.js';
+import { PUSH_ENDPOINT_REFUSED } from '../../src/server/register-push-routes.js';
 
 let database: TestDatabase;
 let service: ServiceHarness;
@@ -372,4 +373,78 @@ test('the store stats count what the operator sees, and never a row', async () =
     sends: 1,
   });
   assert.deepEqual(await store.stats({ day: today }), { subscriptions: 2, sentToday: 1 });
+});
+
+test('an endpoint at an internal host is refused and never reaches the table', async () => {
+  const accessToken = await seedPerson();
+  const refused = await service.request<{ error: string }>({
+    method: 'PUT',
+    path: '/v1/push/subscriptions',
+    accessToken,
+    body: registration({ endpoint: 'https://169.254.169.254/latest/meta-data/' }),
+  });
+  assert.equal(refused.status, 400);
+  assert.equal(refused.body.error, PUSH_ENDPOINT_REFUSED);
+  assert.equal((await database.db.select().from(pushSubscriptions)).length, 0);
+});
+
+test('an eleventh device replaces the oldest, and the one just registered always stays', async () => {
+  const accessToken = await seedPerson();
+  for (let device = 1; device <= PUSH_SUBSCRIPTIONS_PER_ACCOUNT + 1; device += 1) {
+    // A minute apart, so `created_at` orders them.
+    service.advance(60_000);
+    const response = await service.request({
+      method: 'PUT',
+      path: '/v1/push/subscriptions',
+      accessToken,
+      body: registration({ endpoint: `https://push.example.org/device-${device}` }),
+    });
+    assert.equal(response.status, 201);
+  }
+
+  const endpoints = (await database.db.select().from(pushSubscriptions)).map((row) => row.endpoint);
+  assert.equal(endpoints.length, PUSH_SUBSCRIPTIONS_PER_ACCOUNT);
+  assert.equal(endpoints.includes('https://push.example.org/device-1'), false, 'the oldest goes');
+  assert.equal(endpoints.includes('https://push.example.org/device-2'), true);
+  assert.equal(endpoints.includes(`https://push.example.org/device-${PUSH_SUBSCRIPTIONS_PER_ACCOUNT + 1}`), true);
+
+  // A re-registration of the OLDEST remaining row keeps it: it is the row
+  // just written, whatever its `created_at` says.
+  const refreshed = await service.request({
+    method: 'PUT',
+    path: '/v1/push/subscriptions',
+    accessToken,
+    body: registration({ endpoint: 'https://push.example.org/device-2' }),
+  });
+  assert.equal(refreshed.status, 200);
+  assert.ok((await storedRow('https://push.example.org/device-2')) !== undefined);
+
+  // Another account's devices are not counted against this one.
+  const otherToken = await seedPerson();
+  await service.request({
+    method: 'PUT',
+    path: '/v1/push/subscriptions',
+    accessToken: otherToken,
+    body: registration({ endpoint: 'https://push.example.org/other-account' }),
+  });
+  assert.equal((await database.db.select().from(pushSubscriptions)).length, PUSH_SUBSCRIPTIONS_PER_ACCOUNT + 1);
+});
+
+test('a failed send is recorded in the two new columns, and a re-registration clears them', async () => {
+  const accessToken = await seedPerson();
+  await service.request({ method: 'PUT', path: '/v1/push/subscriptions', accessToken, body: registration() });
+  const store = createDrizzlePushStore(database.db);
+  const retryAt = new Date(service.now() + 60_000);
+  await store.markSendFailed({ endpoint: 'https://push.example.org/one', failedSends: 3, retryAt });
+
+  const failed = await storedRow('https://push.example.org/one');
+  assert.equal(failed?.failedSends, 3);
+  assert.equal(failed?.retryAt?.getTime(), retryAt.getTime());
+  const [listed] = await store.listSchedulable();
+  assert.equal(listed?.failedSends, 3, 'the tick reads the count');
+
+  await service.request({ method: 'PUT', path: '/v1/push/subscriptions', accessToken, body: registration() });
+  const cleared = await storedRow('https://push.example.org/one');
+  assert.equal(cleared?.failedSends, 0);
+  assert.equal(cleared?.retryAt, null);
 });

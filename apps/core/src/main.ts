@@ -54,7 +54,9 @@ import {
 import { createDrizzlePulseStore } from './pulse/pulse-store.js';
 import { PULSE_RETENTION_DAYS, startPulseRetention } from './pulse/pulse-retention.js';
 import { createDrizzlePushStore } from './push/push-store.js';
+import { createPushEndpointPolicy } from './push/endpoint-policy.js';
 import { createWebPushSender } from './push/web-push-sender.js';
+import { createPlansEraseNotifier } from './accounts/erase-notifier.js';
 import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.js';
 import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
@@ -174,6 +176,9 @@ async function main(): Promise<void> {
     // `null` leaves `POST /v1/auth/account/health-consent` answering the
     // ordinary unknown-path 404 and signup ignoring the field.
     healthConsent,
+    // Both erasure paths tell the biller first, when there is one, so a
+    // deleted account is never charged again. `null` without a biller.
+    accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),
   };
 
   // ALWAYS PRESENT, because signup is invite-only and the invite store is the
@@ -186,6 +191,7 @@ async function main(): Promise<void> {
     // not set `BILLING_TOKEN`, which means the third principal does not exist
     // there and its three routes are the operator's alone.
     billingToken: config.billingToken,
+    billingMaxDailyAiLimit: config.billingMaxDailyAiLimit,
     metadata: createDrizzleAdminStore(database.db),
     invites,
     // The restore path of ADR-0009. Its own store, so nothing on the sync
@@ -367,8 +373,19 @@ async function main(): Promise<void> {
   // key to sign with: unlike the AI quota store above there is no counter here
   // that outlives the feature being on, so an instance with no keys has nothing
   // to read and nothing to sweep.
+  //
+  // THE ENDPOINT POLICY IS ONE OBJECT for the route that registers and the
+  // tick that sends, so a row cannot be accepted by one and refused by the
+  // other. See `push/endpoint-policy.ts`.
+  const pushEndpointPolicy = createPushEndpointPolicy({ extraHosts: config.pushEndpointHosts });
   const push =
-    config.push === null ? null : { store: createDrizzlePushStore(database.db), publicKey: config.push.publicKey };
+    config.push === null
+      ? null
+      : {
+          store: createDrizzlePushStore(database.db),
+          publicKey: config.push.publicKey,
+          endpointPolicy: pushEndpointPolicy,
+        };
 
   // THE ONE SETTING AN ADMINISTRATOR CHANGES WITHOUT A REDEPLOY (M234). It is
   // read ONCE here and then served from memory, because `/health` publishes it
@@ -524,6 +541,7 @@ async function main(): Promise<void> {
           // THE SAME BINDING the routes and `/health` use, so the tick cannot
           // push to an account the routes would refuse (M266).
           healthConsent,
+          endpointPolicy: push.endpointPolicy,
         });
   if (pushScheduler !== null) {
     logger.info('Push scheduler started', { dailySendCap: PUSH_DAILY_SEND_CAP });

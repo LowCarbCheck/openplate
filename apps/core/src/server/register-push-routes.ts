@@ -38,6 +38,7 @@ import type { Logger } from '../logger.js';
 import { INSTANCE_LANGUAGES, isInstanceLanguage, type InstanceLanguage } from '../protocol.js';
 import { isTimeZone, localDayKey } from '../push/local-day.js';
 import type { PushStore } from '../push/push-store.js';
+import type { PushEndpointPolicy } from '../push/endpoint-policy.js';
 
 /**
  * The one prefix this family owns. OUTSIDE `SYNC_API_PREFIX` on purpose: a
@@ -67,6 +68,12 @@ export interface PushRouteOptions {
   store: PushStore;
   /** The application server key a browser passes to `pushManager.subscribe`. Public by definition. */
   publicKey: string;
+  /**
+   * Which endpoints a registration may name: https, the default port, and a
+   * known push service. The tick checks the same object. See
+   * `push/endpoint-policy.ts` on the request forgery this closes.
+   */
+  endpointPolicy: PushEndpointPolicy;
   /** The bearer middleware, injected so this module never reaches for a singleton. */
   requireAuth: RequestHandler;
   /**
@@ -151,9 +158,16 @@ function decodeLocale(value: JsonValue | undefined): Decoded<InstanceLanguage> {
   return { ok: true, value };
 }
 
-function decodeRegistration(body: JsonObject): Decoded<Registration> {
+/** The refusal for an endpoint that is not at a known push service. One sentence, whatever the reason. */
+export const PUSH_ENDPOINT_REFUSED = 'endpoint must be an https URL at a known push service';
+
+function decodeRegistration(input: { body: JsonObject; endpointPolicy: PushEndpointPolicy }): Decoded<Registration> {
+  const { body } = input;
   const endpoint = asString(body.endpoint);
   if (endpoint === null || endpoint.length === 0) return { ok: false, error: 'endpoint is required' };
+  // CHECKED HERE, before anything is written, so a row that names an internal
+  // host never exists for the tick to POST to.
+  if (!input.endpointPolicy.isAllowed(endpoint)) return { ok: false, error: PUSH_ENDPOINT_REFUSED };
 
   const keys = asObject(body.keys);
   const p256dh = keys === null ? null : asString(keys.p256dh);
@@ -241,7 +255,7 @@ export function registerPushRoutes(app: Express, options: PushRouteOptions): voi
       // JSON-shaped by construction; `asObject` re-establishes that at the type
       // level and yields `null` for anything that is not an object.
       const body = asObject(req.body as JsonValue) ?? {};
-      const decoded = decodeRegistration(body);
+      const decoded = decodeRegistration({ body, endpointPolicy: options.endpointPolicy });
       if (!decoded.ok) {
         sendInvalidBody(res, decoded.error);
         return;

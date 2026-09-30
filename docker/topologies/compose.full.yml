@@ -502,6 +502,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      PUSH_ENDPOINT_HOSTS: ${PUSH_ENDPOINT_HOSTS:-}
 
       # ── Paid plans (optional) ──
       # The URL and the secret together or neither, and only with a billing
@@ -510,6 +511,7 @@ services:
       PLANS_UPSTREAM_URL: ${PLANS_UPSTREAM_URL:-}
       PLANS_UPSTREAM_SECRET: ${PLANS_UPSTREAM_SECRET:-}
       BILLING_TOKEN: ${BILLING_TOKEN:-}
+      BILLING_MAX_DAILY_AI_LIMIT: ${BILLING_MAX_DAILY_AI_LIMIT:-}
 
       # ── Everything else ──
       # Which body's reference values the Nutrients screen quotes (dge, efsa or

@@ -26,7 +26,7 @@ import assert from 'node:assert/strict';
 import { runPushTick } from '../../src/push/push-scheduler.js';
 import { localClock, localDayKey } from '../../src/push/local-day.js';
 import { createSilentLogger } from '../../src/logger.js';
-import { createFakePushStore } from './fake-push-store.js';
+import { createFakePushStore, FIXTURE_PUSH_ENDPOINT_POLICY } from './fake-push-store.js';
 
 const BERLIN = 'Europe/Berlin';
 /** 08:00 local, the hour the whole feature is about. */
@@ -71,6 +71,7 @@ async function walk(input: { from: Date; minutes: number }): Promise<WalkResult>
     if (local.minuteOfDay >= EIGHT_AM) dueDays.add(local.day);
 
     await runPushTick({
+      endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
       healthConsent: null,
       store,
       sender: async (_credential, payload, options) => {
@@ -154,6 +155,7 @@ test('the control: a subscription with no catch-up minute is never sent to', asy
 
   let calls = 0;
   const result = await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     healthConsent: null,
     store,
     sender: async () => {

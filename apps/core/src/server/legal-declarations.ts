@@ -37,7 +37,12 @@
  *     nothing about the forward.
  *  5. Mail the receipt (once, or twice when the typed address and the matched
  *     account's differ) and the operator alert. Best-effort: a failed send is
- *     logged and swallowed, never surfaced to the caller.
+ *     logged and swallowed, never surfaced to the caller. The receipt, and
+ *     only the receipt, is skipped once its mailbox has had
+ *     `LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY` declarations in the
+ *     trailing 24 hours, so the form cannot be used to mail a stranger without
+ *     limit. The declaration itself, its forward and the operator alert never
+ *     depend on that count.
  *  6. Answer `202 {receiptId, receivedAt, kind}` — BYTE IDENTICAL whether the
  *     email matched an account or not, whether the forward succeeded or not,
  *     and whether either letter sent or not. None of that is the caller's to
@@ -64,6 +69,19 @@ export const LEGAL_DECLARATIONS_PATH = '/v1/legal/declarations';
 /** A declaration carries a handful of short fields and a photograph never enters it; 16 KB is `plans-proxy.ts`'s own bound for the same reason. */
 export const LEGAL_DECLARATIONS_MAX_REQUEST_BYTES = 16 * 1024;
 
+/**
+ * Receipts one mailbox may receive in any trailing 24 hours, counted from the
+ * stored rows by normalised address. The form needs no login, so without this
+ * anybody could make this service mail one stranger without limit, from as
+ * many source addresses as they hold. Three covers a person who files twice
+ * and retries once. A declaration over the cap is still stored, forwarded and
+ * sent to the operator; only its receipt is skipped, and that is logged.
+ */
+export const LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY = 3;
+
+/** The trailing window {@link LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY} counts over. */
+const RECEIPT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 /** Requests one IP may file in any trailing 60-second window, when nothing overrides it. Five is generous for a person retrying a flaky connection and stingy for a script. */
 export const LEGAL_DECLARATIONS_RATE_LIMIT_PER_MINUTE = 5;
 
@@ -85,6 +103,8 @@ export interface LegalDeclarationsRouteOptions {
   rateLimitPerMinute?: number;
   /** Injected so a test can watch the limiter without sixty real seconds. Defaults to `Date.now`. */
   rateLimitNow?: () => number;
+  /** Receipts one mailbox may receive per trailing 24 hours. Defaults to `LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY`. */
+  receiptsPerAddressPerDay?: number;
 }
 
 /** Every field the wire contract accepts, already decoded to its domain type. */
@@ -231,12 +251,37 @@ function decodeDeclaration(req: Request, res: Response): DeclarationInput | null
   };
 }
 
+/**
+ * The receipts one mailbox had in the window, or `0` when the count fails.
+ *
+ * FAIL OPEN, and only here. The row is already stored, and §312k BGB asks the
+ * business to confirm receipt without delay; a count that could not be read is
+ * no reason to withhold that confirmation, and it must never turn the `202`
+ * into a `500`. The failure is logged.
+ */
+async function countReceiptsInWindow(input: {
+  store: LegalDeclarationsStore;
+  logger: Logger;
+  normalizedEmail: string;
+  since: Date;
+}): Promise<number> {
+  try {
+    return await input.store.countReceivedFor({ normalizedEmail: input.normalizedEmail, since: input.since });
+  } catch (cause) {
+    input.logger.error('Could not count declaration receipts, sending the receipt', {
+      error: cause instanceof Error ? cause.name : 'unknown error',
+    });
+    return 0;
+  }
+}
+
 export function registerLegalDeclarationsRoute(app: Express, options: LegalDeclarationsRouteOptions): void {
   const router = express.Router();
   const rateLimit = createLegalDeclarationsRateLimit({
     perMinute: options.rateLimitPerMinute ?? LEGAL_DECLARATIONS_RATE_LIMIT_PER_MINUTE,
     now: options.rateLimitNow,
   });
+  const receiptCap = options.receiptsPerAddressPerDay ?? LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY;
 
   router.post(
     LEGAL_DECLARATIONS_PATH,
@@ -307,19 +352,40 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
         receivedAt: row.receivedAt,
       };
       const mailSends: Promise<void>[] = [
-        options.mailer.sendDeclarationReceipt({
-          ...declarationFields,
-          receiptId: id,
-          to: row.email,
-          language: input.language,
-        }),
         options.mailer.sendDeclarationOperatorAlert({ ...declarationFields, receiptId: id, matched: account !== null }),
       ];
+      // THE RECEIPT CAP, counted from the rows, this one included. Both
+      // receipts below go to ONE mailbox (the account was found by this same
+      // normalised address), so one count covers them.
+      const receiptsInWindow = await countReceiptsInWindow({
+        store: options.store,
+        logger: options.logger,
+        normalizedEmail: normalizeEmail(row.email),
+        since: new Date(receivedAt.getTime() - RECEIPT_WINDOW_MS),
+      });
+      const isOverReceiptCap = receiptsInWindow > receiptCap;
+      if (isOverReceiptCap) {
+        // The receipt id and nothing else: the address is exactly what a log
+        // line must not carry, and the operator alert names the row.
+        options.logger.warn('Skipped a declaration receipt over the per-address cap', {
+          receiptId: id,
+          cap: receiptCap,
+        });
+      } else {
+        mailSends.push(
+          options.mailer.sendDeclarationReceipt({
+            ...declarationFields,
+            receiptId: id,
+            to: row.email,
+            language: input.language,
+          }),
+        );
+      }
       // TWICE ONLY WHEN THE STRINGS DIFFER. See `db/schema.ts` on why a
       // matched account's own address can differ from what was typed even
       // though both name the same mailbox: this compares the two as written,
       // not as folded.
-      if (account !== null && account.email !== row.email) {
+      if (!isOverReceiptCap && account !== null && account.email !== row.email) {
         mailSends.push(
           options.mailer.sendDeclarationReceipt({
             ...declarationFields,

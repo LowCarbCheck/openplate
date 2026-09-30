@@ -26,6 +26,7 @@ import { createDrizzleShareStore } from '../../src/db/share-store.js';
 import { createDrizzleRotationStore } from '../../src/db/rotation-store.js';
 import { createDrizzlePulseStore } from '../../src/pulse/pulse-store.js';
 import { createDrizzlePushStore } from '../../src/push/push-store.js';
+import { createPushEndpointPolicy } from '../../src/push/endpoint-policy.js';
 import { createDrizzleResearchStore } from '../../src/db/research-store.js';
 import { createDrizzleAiQuotaStore } from '../../src/ai/quota-store.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
@@ -52,6 +53,7 @@ import type {
   SendSignupRequestInput,
 } from '../../src/mail/mailer.js';
 import { createDrizzleLegalDeclarationsStore } from '../../src/legal/legal-declarations-store.js';
+import { createPlansEraseNotifier } from '../../src/accounts/erase-notifier.js';
 import type { SyncKeyRecordKind } from '../../src/protocol.js';
 import type { Database } from '../../src/db/client.js';
 import { SHARE_WRAPPED_DEK_BYTES } from '../../src/server/share-routes.js';
@@ -552,6 +554,16 @@ export async function startService(options: StartServiceOptions): Promise<Servic
         }),
       );
     },
+    // As `main.ts` builds it: both erasure paths tell the biller first when
+    // the suite stands one up, and nothing is called otherwise.
+    accountEraseNotifier:
+      options.plans == null
+        ? null
+        : createPlansEraseNotifier({
+            upstream: options.plans,
+            logger: options.authLogger ?? createSilentLogger(),
+            timeoutMs: options.plans.timeoutMs,
+          }),
   };
 
   const aiSurface =
@@ -598,7 +610,13 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   const pushSurface =
     options.push == null
       ? null
-      : { store: createDrizzlePushStore(options.db), publicKey: options.push.publicKey ?? TEST_VAPID_PUBLIC_KEY };
+      : {
+          store: createDrizzlePushStore(options.db),
+          publicKey: options.push.publicKey ?? TEST_VAPID_PUBLIC_KEY,
+          // The browsers' push services, plus the host every fixture
+          // endpoint names, added as an operator adds one.
+          endpointPolicy: createPushEndpointPolicy({ extraHosts: ['push.example.org'] }),
+        };
 
   // The REAL store against the real table, always: see
   // `StartServiceOptions.nutrientReferenceBasis`.

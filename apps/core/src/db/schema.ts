@@ -928,6 +928,15 @@ export const pushSubscriptions = pgTable(
     sendsTodayDay: date('sends_today_day', { mode: 'string' }),
     /** How many pushes went to this subscription on `sendsTodayDay`. The cap is two, see `push/push-scheduler.ts`. */
     sendsToday: integer('sends_today').default(0).notNull(),
+    /**
+     * Deliveries that failed in a row, for any reason but a 404 or a 410
+     * (those delete the row). Reset by a delivery that lands and by a
+     * re-registration. The tick backs off on it and deletes the row at the
+     * limit, see `push/push-scheduler.ts` (2026-09-30).
+     */
+    failedSends: integer('failed_sends').default(0).notNull(),
+    /** No delivery is tried before this instant, or `null` for "any time". Set by a failure, cleared by a success. */
+    retryAt: timestamp('retry_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

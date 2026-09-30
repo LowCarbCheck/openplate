@@ -23,8 +23,11 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { startAdminHarness, type AdminHarness } from './admin-harness.js';
-import { MAX_DAILY_AI_LIMIT } from '../../src/admin/invite-store.js';
-import { SERVICE_FIELD_REFUSAL } from '../../src/server/service-principal-scope.js';
+import {
+  DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
+  SERVICE_FIELD_REFUSAL,
+  SERVICE_VALUE_REFUSAL,
+} from '../../src/server/service-principal-scope.js';
 
 const BILLING_TOKEN = 'billing-6b90d3f7c2a1458e0fd63b7a';
 const ADMIN_TOKEN = 'admin-41ce7a02b95d8f36c1b7e04a';
@@ -178,12 +181,82 @@ test('the two allowed fields are written', async () => {
   assert.equal(account?.allowanceExpiresAt?.toISOString(), '2099-01-01T00:00:00.000Z');
 });
 
-test('the ceiling on dailyAiLimit still applies to the billing principal', async () => {
-  const refused = await patchAs({ token: BILLING_TOKEN, body: { dailyAiLimit: MAX_DAILY_AI_LIMIT + 1 } });
-  // A 400 and not a 403: the field is in scope, the value is not a legal one.
-  // The credential relaxes no existing validation.
+test('the billing principal may not set dailyAiLimit above its own ceiling, and the operator may', async () => {
+  // A leaked BILLING_TOKEN must stay inside what a plan could sell. The
+  // operator's ceiling is MAX_DAILY_AI_LIMIT, the biller's is far lower.
+  const refused = await patchAs({
+    token: BILLING_TOKEN,
+    body: { dailyAiLimit: DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT + 1 },
+  });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.error, SERVICE_VALUE_REFUSAL);
+  const unchanged = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(unchanged?.dailyAiLimit, 20);
+
+  // The value AT the ceiling is written.
+  const atCeiling = await patchAs({ token: BILLING_TOKEN, body: { dailyAiLimit: DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } });
+  assert.equal(atCeiling.status, 200);
+
+  // THE CONTROL: the operator's own credential writes the value refused above.
+  const allowed = await patchAs({ token: ADMIN_TOKEN, body: { dailyAiLimit: DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT + 1 } });
+  assert.equal(allowed.status, 200);
+  const raised = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(raised?.dailyAiLimit, DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT + 1);
+});
+
+test('the billing principal may not clear allowanceExpiresAt, and the operator may', async () => {
+  // `null` is an allowance that never ends, which no payment buys.
+  const dated = await patchAs({ token: BILLING_TOKEN, body: { allowanceExpiresAt: '2099-01-01T00:00:00.000Z' } });
+  assert.equal(dated.status, 200);
+
+  const refused = await patchAs({ token: BILLING_TOKEN, body: { allowanceExpiresAt: null } });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.error, SERVICE_VALUE_REFUSAL);
+  const unchanged = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(unchanged?.allowanceExpiresAt?.toISOString(), '2099-01-01T00:00:00.000Z');
+
+  // A refused value takes the allowed field beside it down too.
+  const mixed = await patchAs({ token: BILLING_TOKEN, body: { dailyAiLimit: 60, allowanceExpiresAt: null } });
+  assert.equal(mixed.status, 403);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.dailyAiLimit, 20);
+
+  // THE CONTROL: the operator clears it.
+  const allowed = await patchAs({ token: ADMIN_TOKEN, body: { allowanceExpiresAt: null } });
+  assert.equal(allowed.status, 200);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.allowanceExpiresAt, null);
+});
+
+test('the billing ceiling is configurable', async () => {
+  const narrow = await startAdminHarness({
+    adminToken: ADMIN_TOKEN,
+    billingToken: BILLING_TOKEN,
+    billingMaxDailyAiLimit: 100,
+  });
+  try {
+    const account = await narrow.fakeAccounts.seedAccount({
+      email: nextEmail(),
+      displayName: 'Anna Schmidt',
+      role: 'member',
+      dailyAiLimit: 20,
+    });
+    const over = await narrow.request({
+      method: 'PATCH',
+      path: `/v1/admin/accounts/${account.id}`,
+      token: BILLING_TOKEN,
+      body: { dailyAiLimit: 101 },
+    });
+    assert.equal(over.status, 403);
+    await over.body?.cancel();
+  } finally {
+    await narrow.close();
+  }
+});
+
+test('a malformed dailyAiLimit from the billing principal is still the ordinary 400', async () => {
+  // The value scope refuses only what the biller may not write. A value that
+  // is not a legal one at all keeps the operator's validation and its 400.
+  const refused = await patchAs({ token: BILLING_TOKEN, body: { dailyAiLimit: -1 } });
   assert.equal(refused.status, 400);
-  assert.ok(refused.error?.includes(String(MAX_DAILY_AI_LIMIT)));
 
   const account = await harness.fakeAccounts.findAccountById(accountId);
   assert.equal(account?.dailyAiLimit, 20);

@@ -20,6 +20,16 @@ import type {
   PushUpsertOutcome,
   SchedulableSubscription,
 } from '../../src/push/push-store.js';
+import { PUSH_SUBSCRIPTIONS_PER_ACCOUNT } from '../../src/push/push-store.js';
+import { createPushEndpointPolicy } from '../../src/push/endpoint-policy.js';
+
+/**
+ * The endpoint policy every push test runs under: the real browser push
+ * services, plus `push.example.org`, the host every fixture endpoint names.
+ * Added the way an operator adds a self-hosted push service, through the
+ * same extra-hosts list `PUSH_ENDPOINT_HOSTS` feeds.
+ */
+export const FIXTURE_PUSH_ENDPOINT_POLICY = createPushEndpointPolicy({ extraHosts: ['push.example.org'] });
 
 export interface FakePushStore extends PushStore {
   /** Every live row, by endpoint, in insertion order. A test reads it directly. */
@@ -56,6 +66,8 @@ function withDefaults(
     wakeAt: row.wakeAt ?? null,
     sendsTodayDay: row.sendsTodayDay ?? null,
     sendsToday: row.sendsToday ?? 0,
+    failedSends: row.failedSends ?? 0,
+    retryAt: row.retryAt ?? null,
     createdAt: row.createdAt ?? new Date(0),
   };
 }
@@ -97,10 +109,19 @@ export function createFakePushStore(): FakePushStore {
         wakeAt: existing?.wakeAt ?? null,
         sendsTodayDay: existing?.sendsTodayDay ?? null,
         sendsToday: existing?.sendsToday ?? 0,
+        // Fresh keys: the real upsert clears both, see `push/push-store.ts`.
+        failedSends: 0,
+        retryAt: null,
         // "Since when has this device been subscribed", so a re-registration
         // does not restart the clock. The real store compares the same column.
         createdAt: existing?.createdAt ?? input.createdAt,
       });
+      // The per-account cap, as the real store applies it: the row just
+      // written stays, and of the others the newest `cap - 1` stay.
+      const others = [...rows.values()]
+        .filter((row) => row.accountId === input.accountId && row.endpoint !== input.endpoint)
+        .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id);
+      for (const row of others.slice(PUSH_SUBSCRIPTIONS_PER_ACCOUNT - 1)) rows.delete(row.endpoint);
       if (existing !== undefined) return 'refreshed';
       nextId += 1;
       return 'created';
@@ -170,13 +191,28 @@ export function createFakePushStore(): FakePushStore {
         lastCatchUpDay: input.localDay,
         sendsTodayDay: input.sendsDay,
         sendsToday: input.sends,
+        failedSends: 0,
+        retryAt: null,
       });
     },
 
     async markFastTargetSent(input: { endpoint: string; sendsDay: string; sends: number }): Promise<void> {
       const row = rows.get(input.endpoint);
       if (row === undefined) return;
-      rows.set(input.endpoint, { ...row, wakeAt: null, sendsTodayDay: input.sendsDay, sendsToday: input.sends });
+      rows.set(input.endpoint, {
+        ...row,
+        wakeAt: null,
+        sendsTodayDay: input.sendsDay,
+        sendsToday: input.sends,
+        failedSends: 0,
+        retryAt: null,
+      });
+    },
+
+    async markSendFailed(input: { endpoint: string; failedSends: number; retryAt: Date }): Promise<void> {
+      const row = rows.get(input.endpoint);
+      if (row === undefined) return;
+      rows.set(input.endpoint, { ...row, failedSends: input.failedSends, retryAt: input.retryAt });
     },
 
     async stats(input: { day: string }): Promise<PushStats> {

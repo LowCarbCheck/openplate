@@ -394,3 +394,37 @@ test('a sixth request from the same IP inside a minute is refused, and the fifth
   assert.equal(sixth.body.error, 'declaration-rate-limited');
   assert.equal(sixth.headers.get('retry-after') !== null, true);
 });
+
+test('a fourth declaration for one mailbox in 24 hours is stored, forwarded and alerted, but mails no receipt', async () => {
+  // THE RECEIPT CAP. The form needs no login, so without it anybody could make
+  // this service mail one stranger without limit. Spellings that normalise to
+  // one mailbox count together, because they reach one inbox.
+  const spellings = ['anna@example.org', 'Anna@Example.org', 'ANNA@EXAMPLE.ORG', 'anna@example.ORG'];
+  for (const email of spellings) {
+    const response = await harness.request<DeclarationResponse>({
+      method: 'POST',
+      path: '/v1/legal/declarations',
+      body: sampleDeclaration({ email }),
+    });
+    assert.equal(response.status, 202, `${email} must still be accepted`);
+  }
+
+  const rows = await database.db.select().from(legalDeclarations);
+  assert.equal(rows.length, 4, 'every declaration is the statutory record, capped or not');
+  assert.equal(biller.received.length, 4, 'every declaration is forwarded');
+  assert.equal(harness.mailer.declarationOperatorAlerts.length, 4, 'the operator hears about every one');
+  assert.equal(harness.mailer.declarationReceipts.length, 3, 'the fourth receipt is skipped');
+
+  // Another mailbox is not affected.
+  await harness.request({
+    method: 'POST',
+    path: '/v1/legal/declarations',
+    body: sampleDeclaration({ email: 'bert@example.org' }),
+  });
+  assert.equal(harness.mailer.declarationReceipts.length, 4);
+
+  // The window trails: a day later the same mailbox gets a receipt again.
+  harness.advance(24 * 60 * 60 * 1000 + 1);
+  await harness.request({ method: 'POST', path: '/v1/legal/declarations', body: sampleDeclaration() });
+  assert.equal(harness.mailer.declarationReceipts.length, 5);
+});

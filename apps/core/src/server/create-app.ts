@@ -108,7 +108,7 @@ import { createPassphraseGate } from '../accounts/passphrase-gate.js';
 import { ADMIN_API_PREFIX, createAdminRoutes, type AdminLinkBases } from './admin-routes.js';
 import { createAdminFeedbackRoutes } from './admin-feedback-routes.js';
 import { createAdminAuthMiddleware } from './admin-auth.js';
-import { enforceServicePrincipalScope } from './service-principal-scope.js';
+import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT, enforceServicePrincipalScope } from './service-principal-scope.js';
 import { registerSyncRoutes } from './register-routes.js';
 import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
 import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
@@ -119,6 +119,7 @@ import { registerPulseRoutes } from './register-pulse-routes.js';
 import type { PulseStore } from '../pulse/pulse-store.js';
 import { PUSH_API_PREFIX, registerPushRoutes } from './register-push-routes.js';
 import type { PushStore } from '../push/push-store.js';
+import type { PushEndpointPolicy } from '../push/endpoint-policy.js';
 import { registerPlansRoutes, type PlansUpstreamConfig } from './plans-proxy.js';
 import { registerLegalDeclarationsRoute } from './legal-declarations.js';
 import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
@@ -164,6 +165,12 @@ export interface AdminSurfaceOptions {
    * third principal does not have to state one.
    */
   billingToken?: string | null;
+  /**
+   * The largest `dailyAiLimit` that credential may write
+   * (`BILLING_MAX_DAILY_AI_LIMIT`). Absent means
+   * `DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT`.
+   */
+  billingMaxDailyAiLimit?: number;
   /** Metadata reads. Erasure goes through `authContext.store`, the same method the self-service path calls. */
   metadata: AdminMetadataStore;
   /** Invite minting and revocation, the only door onto this service. */
@@ -244,6 +251,8 @@ export interface PushSurfaceOptions {
   store: PushStore;
   /** The VAPID application server key `GET /v1/push/config` hands a browser. Public by definition. */
   publicKey: string;
+  /** Which endpoints a registration may name. The same object the tick checks, see `main.ts`. */
+  endpointPolicy: PushEndpointPolicy;
 }
 
 export interface CreateAppOptions {
@@ -694,6 +703,7 @@ export function createApp(options: CreateAppOptions): Express {
     registerPushRoutes(app, {
       store: push.store,
       publicKey: push.publicKey,
+      endpointPolicy: push.endpointPolicy,
       requireAuth,
       requireConsent,
       logger: options.logger,
@@ -772,6 +782,10 @@ export function createApp(options: CreateAppOptions): Express {
     }),
     createAdminRoutes({
       metadata: options.admin.metadata,
+      serviceMaxDailyAiLimit: options.admin.billingMaxDailyAiLimit ?? DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
+      // The SAME notifier the self-service delete calls, read off the auth
+      // context, so both erasure paths tell the biller or neither does.
+      accountEraseNotifier: options.authContext.accountEraseNotifier ?? null,
       invites: options.admin.invites,
       accounts: options.authContext.store,
       blobs: options.admin.blobs,

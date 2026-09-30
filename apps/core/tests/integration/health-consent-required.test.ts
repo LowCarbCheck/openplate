@@ -36,6 +36,7 @@ import {
 } from './service-harness.js';
 import { aiUsageDays } from '../../src/db/schema.js';
 import { createDrizzlePushStore } from '../../src/push/push-store.js';
+import { FIXTURE_PUSH_ENDPOINT_POLICY } from '../unit/fake-push-store.js';
 import { runPushTick } from '../../src/push/push-scheduler.js';
 import { createSilentLogger } from '../../src/logger.js';
 import type { SessionResponse } from '../../src/accounts/auth-handlers.js';
@@ -460,6 +461,7 @@ test('the push tick sends to the account that agreed and to nobody else, from th
 
   const sent: string[] = [];
   const result = await runPushTick({
+    endpointPolicy: FIXTURE_PUSH_ENDPOINT_POLICY,
     store: createDrizzlePushStore(database.db),
     sender: async (subscription) => {
       sent.push(subscription.endpoint);

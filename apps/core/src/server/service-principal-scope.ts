@@ -31,8 +31,19 @@
  * suspended somebody, read as success forever. The refusal is in
  * `server/admin-routes.ts`, where the body is, and it reads its list from
  * here so there is one answer to "what can that credential change".
+ *
+ * ── AND THE VALUES ARE PART OF THE SCOPE TOO (2026-09-30) ───────────────────
+ * The two fields are bounded as well: {@link isServiceValueInScope}. A payment
+ * buys an allowance that ENDS, so the biller may set `allowanceExpiresAt` to a
+ * date and never to `null`, which would be an allowance that never runs out.
+ * And it may set `dailyAiLimit` only up to a configured ceiling
+ * (`BILLING_MAX_DAILY_AI_LIMIT`, default 1000), well under the 10,000 the
+ * operator may set. A leaked `BILLING_TOKEN` can therefore move one account's
+ * allowance inside what a plan could sell, and no further. The operator's
+ * `ADMIN_TOKEN` keeps both powers.
  */
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { asNumber, type JsonObject } from '../lib/json.js';
 import { getAdminPrincipal } from './admin-auth.js';
 
 /** One admin route, as a verb and a path RELATIVE to `ADMIN_API_PREFIX`, the form an express router registers. */
@@ -69,6 +80,29 @@ export const SERVICE_SCOPE_REFUSAL = 'service-scope';
 
 /** The machine code for a body naming a field this credential may not write. */
 export const SERVICE_FIELD_REFUSAL = 'service-scope-field';
+
+/** The machine code for an allowed field set to a value this credential may not write. */
+export const SERVICE_VALUE_REFUSAL = 'service-scope-value';
+
+/** The largest `dailyAiLimit` the biller may write when nothing overrides it. Five times the largest plan sold today. */
+export const DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT = 1000;
+
+/**
+ * Whether the values of a service-principal PATCH body are ones the biller may
+ * write. Read on the RAW body, before the ordinary parse, so a refusal writes
+ * nothing, like the field refusal beside it.
+ *
+ * `allowanceExpiresAt: null` is refused: it clears the end date, and an
+ * allowance with no end is not something a payment buys. A `dailyAiLimit`
+ * over `maxDailyAiLimit` is refused. Anything else malformed is left to the
+ * ordinary parse, which answers the operator's `400` for it.
+ */
+export function isServiceValueInScope(input: { body: JsonObject; maxDailyAiLimit: number }): boolean {
+  if (input.body.allowanceExpiresAt === null) return false;
+  const limit = asNumber(input.body.dailyAiLimit);
+  if (limit !== null && limit > input.maxDailyAiLimit) return false;
+  return true;
+}
 
 /** `:id` stands for an account's serial primary key, and matches nothing else. See `parseAccountId`. */
 function isAccountIdSegment(segment: string): boolean {

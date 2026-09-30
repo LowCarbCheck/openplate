@@ -10,7 +10,7 @@
  * router mounts its own, far smaller limit, and a 2 MiB body allowance has no
  * business anywhere near a login endpoint.
  *
- * THE TWO-STAGE 413 (M128 spec 01 review carry-over). `JSON_BODY_LIMIT` sits
+ * THE TWO-STAGE 413 (M128 spec 01 review carry-over). `SYNC_JSON_BODY_LIMIT` sits
  * DELIBERATELY ABOVE `MAX_BLOB_BYTES`: base64 inflates by 4/3, so a body
  * limit set at the raw cap would reject a legitimate maximum-size blob before
  * any handler saw it. The consequence is that body-parser alone cannot
@@ -38,7 +38,7 @@ const SYNC_ROUTE_PREFIX = SYNC_API_PREFIX;
  * for the JSON envelope around it. See the module header for why this being
  * larger than `MAX_BLOB_BYTES` is intentional and what compensates for it.
  */
-const JSON_BODY_LIMIT = Math.ceil((MAX_BLOB_BYTES * 4) / 3) + 4096;
+export const SYNC_JSON_BODY_LIMIT = Math.ceil((MAX_BLOB_BYTES * 4) / 3) + 4096;
 
 function toBase64(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('base64');
@@ -102,16 +102,17 @@ function parseShrinkAcknowledged(value: JsonValue | undefined): { ok: true; valu
 
 export function registerSyncRoutes(app: Express, context: SyncHostContext): void {
   const router = express.Router();
-  // SCOPED TO THE SYNC PREFIX, and the prefix is load-bearing. This router is
-  // mounted with `app.use(router)` at the ROOT, so an unscoped parser here runs
-  // on EVERY path in the service before routing. `express.json()` marks a
+  // SCOPED TO THE ROUTES THAT READ A BODY, NOT TO THE SYNC PREFIX. This router
+  // is mounted with `app.use(router)` at the ROOT, and `express.json()` marks a
   // request as parsed, so whichever parser runs first wins and every other
-  // router's declared limit becomes unreachable. That was a live defect until
-  // M192/03: it capped the AI proxy at the sync limit and, through the auth
-  // router, capped everything at 64 KB. See `accounts/register-auth-routes.ts`.
-  router.use(SYNC_ROUTE_PREFIX, express.json({ limit: JSON_BODY_LIMIT }));
+  // router's declared limit becomes unreachable. An unscoped parser capped the
+  // AI proxy until M192/03. A parser on `SYNC_API_PREFIX` did the same one
+  // level down until 2026-09-30: the blob router is registered first, so its
+  // 2.8 MB limit applied to every sync route, and every router that shares the prefix now names its own parser per route.
+  // `tests/integration/sync-body-limits.test.ts` proves each limit per route.
+  const parseJsonBody = express.json({ limit: SYNC_JSON_BODY_LIMIT });
 
-  router.post(`${SYNC_ROUTE_PREFIX}/blob`, async (req, res, next) => {
+  router.post(`${SYNC_ROUTE_PREFIX}/blob`, parseJsonBody, async (req, res, next) => {
     try {
       const user = await requireEntitledUser(req, res, context);
       if (!user) return;
@@ -236,7 +237,7 @@ export function registerSyncRoutes(app: Express, context: SyncHostContext): void
     }
   });
 
-  router.put(`${SYNC_ROUTE_PREFIX}/key-records/:kind`, async (req, res, next) => {
+  router.put(`${SYNC_ROUTE_PREFIX}/key-records/:kind`, parseJsonBody, async (req, res, next) => {
     try {
       const user = await requireEntitledUser(req, res, context);
       if (!user) return;

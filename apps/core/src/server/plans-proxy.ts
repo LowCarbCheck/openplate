@@ -188,6 +188,20 @@ export interface PlansRouteOptions {
   now: () => Date;
 }
 
+/**
+ * The two headers every account-scoped call to the biller carries: the shared
+ * secret that says a gateway authenticated somebody, and the id of the
+ * account it authenticated. Built from nothing, per call, so no caller header
+ * can reach the biller. Shared with `accounts/erase-notifier.ts`, so the
+ * erasure notice and the pass-through name an account the same way.
+ */
+export function buildPlansAccountHeaders(input: { secret: string; accountId: number }): Headers {
+  const headers = new Headers();
+  headers.set('X-Account-Id', String(input.accountId));
+  headers.set('X-Plans-Secret', input.secret);
+  return headers;
+}
+
 /** `body-parser` marks its own failures with this `type`. */
 const BODY_PARSER_TOO_LARGE = 'entity.too.large';
 
@@ -345,10 +359,8 @@ function createPlansForwarder(options: PlansRouteOptions): RequestHandler {
 
         // BUILT, NEVER COPIED. Nothing the caller sent reaches the upstream
         // except the content type of the body it sent with it.
-        const headers = new Headers();
-        headers.set('X-Account-Id', String(session.accountId));
+        const headers = buildPlansAccountHeaders({ secret: options.upstream.secret, accountId: session.accountId });
         headers.set('X-Account-Email', account.email);
-        headers.set('X-Plans-Secret', options.upstream.secret);
         const contentType = req.header('content-type');
         if (contentType !== undefined && contentType !== '') headers.set('Content-Type', contentType);
 

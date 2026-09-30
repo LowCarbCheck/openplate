@@ -273,7 +273,8 @@ A new field is a protocol revision, never a configuration. See ADR-0003.
   client that renders the code in groups of five can post back what it rendered.
   A conforming client accepts both forms too.
 - Every non-2xx response body is `{"error": "<human-readable text>"}`. The text is diagnostic only; clients must branch on the **status code**, never on the message.
-- Requests exceeding the body limit are rejected with `413`.
+- Requests exceeding the body limit are rejected with `413`. Each route family under `/v1/sync` has its own limit, and no family inherits another's: the blob and key records take the blob cap in base64 plus 4 KiB, `rotate-dek` the blob cap in base64 plus 64 KiB, the share family 8 KiB, and the research family 512 KiB.
+- An authenticated route checks the bearer token before it reads the body. A caller with no valid token gets `401`, never `413`, however large the body.
 
 ### 4.1 Authentication
 
@@ -832,7 +833,7 @@ The admin account endpoints return the same shape plus two operator fields, `blo
 
 That is the only field an account may change about itself. `email` is the identity and moves only through an operator; `role` and `dailyAiLimit` are standing an account must not be able to raise for itself; everything authentication-shaped moves through §5.14.
 
-**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly. A wrong `authHash` is `401`; guesses are throttled per account in the bucket §5.4 describes, and a locked account gets `429` with `Retry-After`.
+**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly. A wrong `authHash` is `401`; guesses are throttled per account in the bucket §5.4 describes, and a locked account gets `429` with `Retry-After`. On an instance with a biller (§5.22), once both checks pass, the service sends `POST <PLANS_UPSTREAM_URL>/erase` with `X-Plans-Secret` and `X-Account-Id` and no body, so the biller cancels the account's subscriptions before the account is gone. It waits five seconds at most and deletes whatever the biller answers; `DELETE /v1/admin/accounts/:id` does the same.
 
 Deletion removes the account and, by cascade, every blob, key record, reset token and usage row it owns. There is no soft delete and no grace period. This is the self-serve erasure path, and it is complete by construction rather than by a cleanup job someone has to remember to run.
 
@@ -1551,8 +1552,12 @@ carries the same 24-character minimum the operator token does.
   `{"error": "service-scope-field"}`, and nothing is written**, not even the
   allowed fields beside it. A silent drop would let a defect in the billing
   service read as success.
-- `dailyAiLimit` is bounded exactly as it is for an operator. The credential
-  relaxes no validation.
+- **The values are scoped too.** `allowanceExpiresAt: null` (an allowance with
+  no end) and a `dailyAiLimit` above the instance's `BILLING_MAX_DAILY_AI_LIMIT`
+  (default 1000) are `403` with `{"error": "service-scope-value"}`, and nothing
+  is written. The operator's credentials may write both.
+- Beyond that, `dailyAiLimit` is validated exactly as it is for an operator. The
+  credential relaxes no validation.
 - **The two reads are projections and never an `AccountView`.** No address, no
   display name, no role, no suspension, no usage, no blob. `GET
 /v1/admin/accounts/expiring` selects two columns in the query rather than
@@ -1643,6 +1648,8 @@ An upstream that is unreachable, times out, answers something that is not JSON, 
 
 The outbound call carries an explicit timeout. It is short, because every route here is a button somebody just pressed, and it exists as much to bound undici's hidden 300 second cap as to bound a slow biller.
 
+**Erasure notice (service to biller).** Before either erasure path (§5.15, §5.20) deletes an account, the service sends `POST <PLANS_UPSTREAM_URL>/erase` with exactly `X-Plans-Secret` and `X-Account-Id`, and an empty body. The biller answers `204` once every live subscription of that account is cancelled, and `204` when there is none. The call has a five second timeout. A refusal, a timeout or a dead host is logged at `error` with the account id, and the account is deleted anyway; the biller's nightly reconciliation stays the backstop.
+
 The operator configures `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET`, **both or neither**. A URL with no secret is a refusal to boot rather than a silent downgrade: the secret is the only thing that tells the biller the account id it is reading came from a gateway that authenticated somebody.
 
 #### `GET /v1/plans/prices`: the price list, before sign-in
@@ -1671,7 +1678,7 @@ Four properties set this route apart from the rest of the subtree:
 
 1. **It goes out with `X-Plans-Secret` alone.** There is no account, so there is no `X-Account-Id` and no `X-Account-Email`, and nothing from the inbound request travels: not a header, not the query string.
 2. **A `200` is kept for five minutes** and served from memory, so a burst of readers is one call to the biller. A refusal from the biller and a failed call are relayed as above and not kept, so the next reader asks again.
-3. **One source address may read it 60 times in any trailing minute.** The next read is `429 {"error":"plans-prices-rate-limited"}` with `Retry-After` in seconds.
+3. **One source address may read it 60 times in any trailing minute.** An IPv6 caller counts as its /64, and an IPv4-mapped IPv6 address as the IPv4 address it carries. The next read is `429 {"error":"plans-prices-rate-limited"}` with `Retry-After` in seconds.
 4. **Without a biller it is the ordinary unknown-path `404`**, like the rest of the subtree, and `/health` publishes nothing new for it: a client that reads `instance.plans` already knows whether to ask.
 
 ### 5.23 `/v1/pulse/*`: the community pulse (ADR-0007)
@@ -1796,6 +1803,16 @@ Nine properties a conforming implementation MUST hold:
 
 The collapse topics are `openplate-catchups` and `openplate-fast`, the TTL is 6 hours, and the urgency is normal for the catch-up and high for the fast target. A topic MUST be URL-safe base64 characters, at most 32 of them, and a length that is **never 1 mod 4**: Apple decodes the topic and answers `400 BadWebPushTopic` otherwise, while other push services accept it, so the defect is invisible on everything but an iPhone.
 
+**The five bounds (2026-09-30).** So that one account cannot stall every delivery or aim this server at an internal host:
+
+1. **The endpoint must be `https`, on the default port, with no user name or password, at a known push service**: `fcm.googleapis.com`, `updates.push.services.mozilla.com` and `*.push.services.mozilla.com`, `web.push.apple.com` and `*.push.apple.com`, `*.notify.windows.com`, plus any host the operator lists in `PUSH_ENDPOINT_HOSTS`. Anything else is `400 {"error":"endpoint must be an https URL at a known push service"}` and writes nothing. A stored row that fails this rule is deleted by the next tick, unsent.
+2. **One account holds at most 10 subscriptions.** A registration past that deletes the account's oldest other rows; the row just registered always stays.
+3. **A delivery gives up after 10 seconds**, and the tick sends to 8 endpoints at a time, so a slow endpoint delays nobody else.
+4. **A delivery that fails with anything but `404` or `410` backs the row off**: the next try is one minute later, then two, four, and so on up to a day. After 15 failures in a row, about four and a half days, the row is deleted. A delivery that lands, and a new registration of the endpoint, reset the count.
+5. **A tick that outlives its minute is not joined by a second one.**
+
+`PUT` on an endpoint that another account holds moves the row to the caller. This is needed: the app reuses the browser's existing subscription, and when a device erase could not drop it, the next account on that browser registers the same endpoint. The previous owner's row then stops waking that device, which is what the new owner wants.
+
 No route ever returns an endpoint or a device key, and the routes log a path, a method, a status and a byte count only: never the account id and never the endpoint, which is a capability.
 
 `GET /v1/admin/stats` (§5.20) reports `push: { subscriptions, sentToday }` to the operator, which is two integers and never a row.
@@ -1917,7 +1934,7 @@ Being honest about the metadata, because "end-to-end encrypted" is often heard a
 - **A push subscription**, for a device whose owner turned notifications on (§5.24, ADR-0008): the push service endpoint, the two keys it encrypts to, a capped user agent string, an IANA time zone, a locale, the minute of the local day a catch-up is due, the local day one last went out, the local day the device was last seen, the instant it asked to be woken, and a count of what has been sent today. Together those say roughly when this person is awake, roughly where in the world they are, and, through `wake_at`, when a fast of theirs ends. **That last one lines up with the pulse's presence row**, which says the same fast is running; ADR-0008 names the correlation rather than leaving it to be discovered. What is NOT stored is a word of any notification's text: every push carries a kind. The row goes when the device unsubscribes, when the push service disowns it, or with the account.
 - **A health-data consent**, on an instance that asks for one (§5.15.1): the version of the wording the person agreed to and the instant this service recorded it, two columns on the account row. It says that the person uses a health app and agreed to have the operator process that data, which the operator must be able to show. It is visible to an operator (§5.20), no route clears it, and it goes with the account row on deletion.
 - **When a person last did something**: `accounts.last_seen_at`, written by a login and by a proxied completion, and deliberately not by a token refresh or a sync poll, so it means "somebody acted" rather than "a client was running". It is visible to an operator (§5.20) and goes with the account row on deletion.
-- **Statutory declarations** (`POST /v1/legal/declarations`, a cancellation or a withdrawal, on every instance): the name, the address, the contract reference, the reason and the dates the person typed, the time it arrived, and the account it matched, if any. It is **kept until the end of the third calendar year after the year it arrived**, counted in Europe/Berlin time, and then deleted by the hourly sweep: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. **Deleting the account does not delete it earlier**; the row loses its account id and stays, because it is the record of what the person declared.
+- **Statutory declarations** (`POST /v1/legal/declarations`, a cancellation or a withdrawal, on every instance): the name, the address, the contract reference, the reason and the dates the person typed, the time it arrived, and the account it matched, if any. It is **kept until the end of the third calendar year after the year it arrived**, counted in Europe/Berlin time, and then deleted by the hourly sweep: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. **Deleting the account does not delete it earlier**; the row loses its account id and stays, because it is the record of what the person declared. The receipt mail is capped at three per normalised address in any trailing 24 hours, counted from these rows; a declaration over the cap is still stored, forwarded and sent to the operator, and the `202` is the same.
 - **Session metadata**: how many active sessions exist, when each was created, and when tokens were last rotated or revoked. Token values themselves are stored only as digests.
 - **The study graph**, on a deployment with `SYNC_RESEARCH` set (§5.18): which
   account contributes to which study, when, how often, and how large each

@@ -11,7 +11,7 @@
  * caller that did not already hold the endpoint. See ADR-0008 on what a row is
  * allowed to hold at all.
  */
-import { and, count, eq, isNotNull, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, ne, notInArray, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { accounts, pushSubscriptions } from '../db/schema.js';
 import type { InstanceLanguage } from '../protocol.js';
@@ -34,8 +34,28 @@ export interface PushSubscriptionRow {
   wakeAt: Date | null;
   sendsTodayDay: string | null;
   sendsToday: number;
+  /** Deliveries that failed in a row. See `push/push-scheduler.ts` on the backoff it drives. */
+  failedSends: number;
+  /** No delivery before this instant, or `null`. */
+  retryAt: Date | null;
   createdAt: Date;
 }
+
+/**
+ * How many subscriptions one account may hold. A new registration past it
+ * replaces the account's oldest ones, so a person with a new phone every week
+ * is never refused, and a script cannot fill the table under one account
+ * (2026-09-30). Ten is every browser a person plausibly uses, twice.
+ */
+export const PUSH_SUBSCRIPTIONS_PER_ACCOUNT = 10;
+
+/**
+ * The advisory-lock namespace for the per-account cap, so two registrations of
+ * one account cannot both count nine and both insert. The value only has to
+ * differ from every other namespace in this service (`feedback-store.ts`,
+ * `db/trial-mailbox.ts`).
+ */
+const PUSH_CAP_LOCK_NAMESPACE = 200_223;
 
 /**
  * A subscription the minute tick may send to, with the one account fact the
@@ -94,7 +114,13 @@ export interface PushStats {
 }
 
 export interface PushStore {
-  /** Registers a device, or refreshes the row it already has. One statement, see the module header. */
+  /**
+   * Registers a device, or refreshes the row it already has. One statement,
+   * see the module header, and then the per-account cap: past
+   * {@link PUSH_SUBSCRIPTIONS_PER_ACCOUNT}, the account's oldest OTHER rows go.
+   * A refresh also clears the failure count, because a device that registers
+   * again has handed over fresh keys.
+   */
   upsert(input: PushSubscriptionUpsert): Promise<PushUpsertOutcome>;
   /**
    * Deletes the predecessor a re-registration named, and ONLY when it belongs
@@ -135,6 +161,12 @@ export interface PushStore {
   markCatchUpSent(input: { endpoint: string; localDay: string; sendsDay: string; sends: number }): Promise<void>;
   /** Records a fast target alert and CLEARS `wake_at` in the same write, so it can never fire twice. */
   markFastTargetSent(input: { endpoint: string; sendsDay: string; sends: number }): Promise<void>;
+  /**
+   * Records a delivery that failed with anything but a 404 or a 410: the
+   * failure count it now has, and the instant before which the tick tries
+   * nothing. Both marks above reset the two columns.
+   */
+  markSendFailed(input: { endpoint: string; failedSends: number; retryAt: Date }): Promise<void>;
   /** The two numbers `GET /v1/admin/stats` reports. Never a row, never an endpoint. */
   stats(input: { day: string }): Promise<PushStats>;
 }
@@ -157,6 +189,8 @@ function toRow(row: typeof pushSubscriptions.$inferSelect): PushSubscriptionRow 
     wakeAt: row.wakeAt,
     sendsTodayDay: row.sendsTodayDay,
     sendsToday: row.sendsToday,
+    failedSends: row.failedSends,
+    retryAt: row.retryAt,
     createdAt: row.createdAt,
   };
 }
@@ -164,29 +198,16 @@ function toRow(row: typeof pushSubscriptions.$inferSelect): PushSubscriptionRow 
 export function createDrizzlePushStore(db: Database): PushStore {
   return {
     async upsert(input: PushSubscriptionUpsert): Promise<PushUpsertOutcome> {
-      const rows = await db
-        .insert(pushSubscriptions)
-        .values({
-          accountId: input.accountId,
-          endpoint: input.endpoint,
-          p256dh: input.p256dh,
-          auth: input.auth,
-          userAgent: input.userAgent,
-          timeZone: input.timeZone,
-          locale: input.locale,
-          catchUpMinute: input.catchUpMinute,
-          fastTargetEnabled: input.fastTargetEnabled,
-          lastSeenDay: input.lastSeenDay,
-          createdAt: input.createdAt,
-        })
-        .onConflictDoUpdate({
-          target: pushSubscriptions.endpoint,
-          set: {
-            // THE OWNER IS REWRITTEN TOO. An endpoint is minted per device per
-            // browser profile, so the same string arriving under a second
-            // account means the push service reissued it, and the row belongs
-            // to whoever holds it now.
+      return db.transaction(async (tx) => {
+        // Serialises this account's registrations, so the cap below counts
+        // what is really there. Released when the transaction ends.
+        await tx.execute(sql`select pg_advisory_xact_lock(${PUSH_CAP_LOCK_NAMESPACE}, ${input.accountId})`);
+
+        const rows = await tx
+          .insert(pushSubscriptions)
+          .values({
             accountId: input.accountId,
+            endpoint: input.endpoint,
             p256dh: input.p256dh,
             auth: input.auth,
             userAgent: input.userAgent,
@@ -195,19 +216,69 @@ export function createDrizzlePushStore(db: Database): PushStore {
             catchUpMinute: input.catchUpMinute,
             fastTargetEnabled: input.fastTargetEnabled,
             lastSeenDay: input.lastSeenDay,
-          },
-        })
-        // `xmax = 0` IS POSTGRES SAYING "THIS ROW IS NEW". On a row an upsert
-        // inserted, the system column holds 0; on one it updated, it holds the
-        // transaction that locked it. It is the only honest answer available
-        // from one statement, and the alternative, comparing the returned
-        // `created_at` with the one this call asked for, is wrong on any
-        // instance whose clock did not move between two registrations, which is
-        // every test with a frozen clock and every device that retries fast.
-        .returning({ inserted: sql<boolean>`(xmax = 0)` });
+            createdAt: input.createdAt,
+          })
+          .onConflictDoUpdate({
+            target: pushSubscriptions.endpoint,
+            set: {
+              // THE OWNER IS REWRITTEN TOO, and a real flow needs it. The app
+              // reuses the browser's existing subscription when it was minted
+              // for this instance's key (`subscribeInBrowser` in the app's
+              // `lib/push.ts`), and the device erase that drops it is best
+              // effort: offline, or with a session that already expired, the
+              // browser keeps its subscription. The next account to sign in
+              // on that browser then registers the SAME endpoint, and a
+              // refusal here would leave that person with no notifications on
+              // their own device while the previous owner's row kept waking
+              // it. What moving costs: a caller holding somebody's endpoint
+              // (a capability that is never logged or returned) can take the
+              // row over and silence that device. It cannot read or send
+              // anything with it, because the keys are replaced with its own.
+              accountId: input.accountId,
+              p256dh: input.p256dh,
+              auth: input.auth,
+              userAgent: input.userAgent,
+              timeZone: input.timeZone,
+              locale: input.locale,
+              catchUpMinute: input.catchUpMinute,
+              fastTargetEnabled: input.fastTargetEnabled,
+              lastSeenDay: input.lastSeenDay,
+              // Fresh keys from a device that is here: whatever failed before
+              // is no evidence against them.
+              failedSends: 0,
+              retryAt: null,
+            },
+          })
+          // `xmax = 0` IS POSTGRES SAYING "THIS ROW IS NEW". On a row an upsert
+          // inserted, the system column holds 0; on one it updated, it holds the
+          // transaction that locked it. It is the only honest answer available
+          // from one statement, and the alternative, comparing the returned
+          // `created_at` with the one this call asked for, is wrong on any
+          // instance whose clock did not move between two registrations, which is
+          // every test with a frozen clock and every device that retries fast.
+          .returning({ inserted: sql<boolean>`(xmax = 0)` });
 
-      const [row] = rows;
-      return row?.inserted === true ? 'created' : 'refreshed';
+        // THE CAP. The row just written always stays; of the account's other
+        // rows, the newest `cap - 1` stay and the rest go.
+        const keep = tx
+          .select({ id: pushSubscriptions.id })
+          .from(pushSubscriptions)
+          .where(and(eq(pushSubscriptions.accountId, input.accountId), ne(pushSubscriptions.endpoint, input.endpoint)))
+          .orderBy(desc(pushSubscriptions.createdAt), desc(pushSubscriptions.id))
+          .limit(PUSH_SUBSCRIPTIONS_PER_ACCOUNT - 1);
+        await tx
+          .delete(pushSubscriptions)
+          .where(
+            and(
+              eq(pushSubscriptions.accountId, input.accountId),
+              ne(pushSubscriptions.endpoint, input.endpoint),
+              notInArray(pushSubscriptions.id, keep),
+            ),
+          );
+
+        const [row] = rows;
+        return row?.inserted === true ? 'created' : 'refreshed';
+      });
     },
 
     async deleteSupersededEndpoint(input: { accountId: number; endpoint: string }): Promise<number> {
@@ -285,7 +356,13 @@ export function createDrizzlePushStore(db: Database): PushStore {
     }): Promise<void> {
       await db
         .update(pushSubscriptions)
-        .set({ lastCatchUpDay: input.localDay, sendsTodayDay: input.sendsDay, sendsToday: input.sends })
+        .set({
+          lastCatchUpDay: input.localDay,
+          sendsTodayDay: input.sendsDay,
+          sendsToday: input.sends,
+          failedSends: 0,
+          retryAt: null,
+        })
         .where(eq(pushSubscriptions.endpoint, input.endpoint));
     },
 
@@ -295,7 +372,14 @@ export function createDrizzlePushStore(db: Database): PushStore {
         // CLEARED IN THE SAME WRITE as the count is recorded. A wake instant
         // that survived the send would fire again on the next tick, and the cap
         // would be the only thing stopping it.
-        .set({ wakeAt: null, sendsTodayDay: input.sendsDay, sendsToday: input.sends })
+        .set({ wakeAt: null, sendsTodayDay: input.sendsDay, sendsToday: input.sends, failedSends: 0, retryAt: null })
+        .where(eq(pushSubscriptions.endpoint, input.endpoint));
+    },
+
+    async markSendFailed(input: { endpoint: string; failedSends: number; retryAt: Date }): Promise<void> {
+      await db
+        .update(pushSubscriptions)
+        .set({ failedSends: input.failedSends, retryAt: input.retryAt })
         .where(eq(pushSubscriptions.endpoint, input.endpoint));
     },
 

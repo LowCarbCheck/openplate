@@ -846,6 +846,41 @@ test('BILLING_TOKEN and ADMIN_TOKEN are two independent variables', () => {
   assert.notEqual(adminOnly.adminToken, null);
 });
 
+test('a BILLING_TOKEN equal to ADMIN_TOKEN refuses to boot, and prints neither value', () => {
+  // The admin door checks ADMIN_TOKEN first, so one string in both variables
+  // would admit the biller as the operator and skip its scope entirely.
+  const shared = 'd'.repeat(MIN_ADMIN_TOKEN_LENGTH);
+  const env = baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: shared });
+  assert.throws(() => parseConfig(env), /BILLING_TOKEN must differ from ADMIN_TOKEN/);
+  assert.throws(
+    () => parseConfig(env),
+    (error: Error) => !error.message.includes(shared),
+  );
+  // Surrounding whitespace is trimmed before the comparison, as before the use.
+  assert.throws(() => parseConfig(baseEnv({ ADMIN_TOKEN: ` ${shared}`, BILLING_TOKEN: `${shared} ` })), /differ/);
+  // Two different values still boot.
+  const both = parseConfig(baseEnv({ ADMIN_TOKEN: shared, BILLING_TOKEN: 'e'.repeat(MIN_ADMIN_TOKEN_LENGTH) }));
+  assert.equal(both.adminToken, shared);
+});
+
+test('BILLING_MAX_DAILY_AI_LIMIT defaults to 1000 and may not exceed the operator ceiling', () => {
+  assert.equal(parseConfig(baseEnv()).billingMaxDailyAiLimit, 1000);
+  assert.equal(parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '250' })).billingMaxDailyAiLimit, 250);
+  assert.throws(() => parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '10001' })), /BILLING_MAX_DAILY_AI_LIMIT/);
+  assert.throws(() => parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '0' })), /BILLING_MAX_DAILY_AI_LIMIT/);
+});
+
+test('PUSH_ENDPOINT_HOSTS is empty by default, lower-cased, and refuses a malformed entry', () => {
+  assert.deepEqual(parseConfig(baseEnv()).pushEndpointHosts, []);
+  assert.deepEqual(
+    parseConfig(baseEnv({ PUSH_ENDPOINT_HOSTS: ' Push.Example.org , *.relay.example.net ' })).pushEndpointHosts,
+    ['push.example.org', '*.relay.example.net'],
+  );
+  for (const bad of ['*', 'https://push.example.org', 'push.example.org:8443', '10.0.0.5/32', 'a..b']) {
+    assert.throws(() => parseConfig(baseEnv({ PUSH_ENDPOINT_HOSTS: bad })), /PUSH_ENDPOINT_HOSTS/, bad);
+  }
+});
+
 test('a plans URL with no secret refuses to boot, and names the missing variable', () => {
   assert.throws(
     () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans' })),
