@@ -2,7 +2,7 @@
 
 Every setting of the three openplate containers is an environment variable. This page lists all of them, for the app, the sync service (openplate-core) and the inference service. Most are optional. When you leave one unset, the default in its row applies.
 
-Some settings stop the boot on purpose. A value the service cannot use, or one half of a pair, makes the container exit. The exit message names the variable. It does not start with a guess. [Settings that stop the boot](#settings-that-stop-the-boot) lists every such rule.
+Some settings stop the boot on purpose. A value the service cannot use, or one half of a pair, makes the container exit. The exit message names the variable. The container does not start with a guess. [Settings that stop the boot](#settings-that-stop-the-boot) lists every such rule.
 
 ## How to set a variable
 
