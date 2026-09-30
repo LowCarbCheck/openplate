@@ -84,6 +84,14 @@ async function seedAccount(input: { role?: 'admin' | 'member'; dailyAiLimit?: nu
     role: input.role ?? 'member',
     dailyAiLimit: input.dailyAiLimit ?? 0,
   });
+  // The limit as a PAID limit, the column these tests move. An operator's
+  // invite writes it as the free grant since 2026-09-30, which is not what
+  // they are about.
+  await harness.fakeAccounts.updateStanding({
+    accountId: account.id,
+    dailyAiLimit: input.dailyAiLimit ?? 0,
+    freeDailyAiLimit: 0,
+  });
   harness.admin.seed({
     id: account.id,
     email,
@@ -133,6 +141,8 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'dailyAiLimit',
     'displayName',
     'email',
+    // The standing free grant (2026-09-30), an operator's field.
+    'freeDailyAiLimit',
     // The person's health-data consent, read only here: see
     // `admin-no-forbidden-fields.test.ts` for why an operator may read it.
     'healthConsent',
@@ -190,6 +200,10 @@ test('a malformed field is a 400 that names it, and changes nothing', async () =
     [{ allowanceExpiresAt: '' }, /allowanceExpiresAt/],
     [{ allowanceExpiresAt: 1_764_547_200_000 }, /allowanceExpiresAt/],
     [{ allowanceExpiresAt: true }, /allowanceExpiresAt/],
+    [{ freeDailyAiLimit: -1 }, /freeDailyAiLimit/],
+    [{ freeDailyAiLimit: 10_001 }, /freeDailyAiLimit/],
+    [{ freeDailyAiLimit: 2.5 }, /freeDailyAiLimit/],
+    [{ freeDailyAiLimit: null }, /freeDailyAiLimit/],
   ] as const) {
     const refused = await patchAccount({ id, body });
     assert.equal(refused.status, 400, JSON.stringify(body));
@@ -199,6 +213,20 @@ test('a malformed field is a 400 that names it, and changes nothing', async () =
   const account = await harness.fakeAccounts.findAccountById(id);
   assert.equal(account?.role, 'member');
   assert.equal(account?.dailyAiLimit, 5);
+  assert.equal(account?.freeDailyAiLimit, 0);
+});
+
+test('PATCH sets the standing free grant, leaves the paid limit alone, and 0 takes it away', async () => {
+  const id = await seedAccount({ dailyAiLimit: 200 });
+
+  const set = await patchAccount({ id, body: { freeDailyAiLimit: 10 } });
+  assert.equal(set.status, 200);
+  const account = await harness.fakeAccounts.findAccountById(id);
+  assert.equal(account?.freeDailyAiLimit, 10);
+  assert.equal(account?.dailyAiLimit, 200, 'the paid limit is a different column');
+
+  assert.equal((await patchAccount({ id, body: { freeDailyAiLimit: 0 } })).status, 200);
+  assert.equal((await harness.fakeAccounts.findAccountById(id))?.freeDailyAiLimit, 0);
 });
 
 test('PATCH sets the allowance end date, reads it back, and clears it with null', async () => {

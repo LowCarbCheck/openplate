@@ -89,7 +89,9 @@ test('a signup commits the account, both key records and the escrow, and spends 
   // (1) the account, standing and all, from the invite.
   assert.equal(account.email, EMAIL);
   assert.equal(account.role, 'admin');
-  assert.equal(account.dailyAiLimit, 200);
+  // An operator's invite with no trial is the standing free grant (2026-09-30).
+  assert.equal(account.freeDailyAiLimit, 200);
+  assert.equal(account.dailyAiLimit, 0);
   // The DISPLAY NAME comes from the body, not from the invite: the operator's
   // guess is a suggestion, and the person is the one who knows their name.
   assert.equal(account.displayName, 'Anna');

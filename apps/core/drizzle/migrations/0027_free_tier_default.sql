@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ALTER COLUMN "free_daily_ai_limit" SET DEFAULT 0;

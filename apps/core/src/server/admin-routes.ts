@@ -281,6 +281,7 @@ function toAccountView(input: {
     dailyAiLimit: summary.dailyAiLimit,
     aiUsedToday: summary.aiUsedToday,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
+    freeDailyAiLimit: summary.freeDailyAiLimit,
     trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
     trialEndsAt: summary.trialEndsAt?.toISOString() ?? null,
     suspendedAt: summary.suspendedAt?.toISOString() ?? null,
@@ -612,6 +613,12 @@ interface AccountPatch {
    * both are keyed on the property's PRESENCE rather than on its nullness.
    */
   allowanceExpiresAt?: Date | null;
+  /**
+   * The standing free grant (2026-09-30), `0` to {@link MAX_DAILY_AI_LIMIT}.
+   * AN OPERATOR'S FIELD: the biller's credential cannot name it, because
+   * `server/service-principal-scope.ts` lists only the paid window's two.
+   */
+  freeDailyAiLimit?: number;
   /** The scans granted (M253), `0` to {@link MAX_TRIAL_SCANS}, or `null` to take the scan trial away. */
   trialScans?: number | null;
   suspended?: boolean;
@@ -714,6 +721,13 @@ function parseAccountPatch(body: JsonValue): ParseAccountPatchResult {
     const expiry = parseAllowanceExpiresAt(fields.allowanceExpiresAt);
     if (!expiry.ok) return { ok: false, reason: expiry.reason };
     patch.allowanceExpiresAt = expiry.value;
+  }
+  if (fields.freeDailyAiLimit !== undefined) {
+    const limit = asNumber(fields.freeDailyAiLimit);
+    if (limit === null || !Number.isInteger(limit) || limit < 0 || limit > MAX_DAILY_AI_LIMIT) {
+      return { ok: false, reason: `freeDailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
+    }
+    patch.freeDailyAiLimit = limit;
   }
   if (fields.trialScans !== undefined) {
     const trialScans = parseTrialScans(fields.trialScans);
@@ -1143,12 +1157,13 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         // silence must never read as consent.
         res.status(400).json({
           error:
-            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, trialScans, suspended, displayName, label',
+            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, freeDailyAiLimit, trialScans, suspended, displayName, label',
         });
         return;
       }
 
-      const { allowanceExpiresAt, displayName, label, role, dailyAiLimit, suspended, trialScans } = patch.value;
+      const { allowanceExpiresAt, displayName, label, role, dailyAiLimit, freeDailyAiLimit, suspended, trialScans } =
+        patch.value;
       // Demoting or suspending oneself is the lockout; a rename is not.
       if (isSelfLockout({ req, targetAccountId: accountId, lockingOut: suspended === true || role === 'member' })) {
         res.status(400).json({ error: 'self-change' });
@@ -1176,6 +1191,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         role !== undefined ||
         dailyAiLimit !== undefined ||
         allowanceExpiresAt !== undefined ||
+        freeDailyAiLimit !== undefined ||
         trialScans !== undefined ||
         displayName !== undefined ||
         label !== undefined
@@ -1185,6 +1201,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
           role,
           dailyAiLimit,
           allowanceExpiresAt,
+          freeDailyAiLimit,
           trialScans,
           displayName,
           label,

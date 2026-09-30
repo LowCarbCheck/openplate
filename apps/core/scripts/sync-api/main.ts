@@ -81,9 +81,12 @@ const USAGE = `sync-api, the openplate-core admin CLI
     accounts get <id>          One account's metadata
     accounts delete <id> --yes Erase an account and everything attached to it
     accounts set-role <id> admin|member   Change what an account may do
-    accounts set-limit <id> <n>           Change its AI requests per UTC day
+    accounts set-limit <id> <n>           Change its paid AI requests per UTC day
+    accounts set-free-limit <id> <n>      Change its standing free AI requests per
+                               UTC day, which apply when no paid window is live
+                               and never end (0 takes the free grant away)
     accounts set-expiry <id> --allowance-expires <iso|none>
-                               Set or clear the date its AI allowance ends
+                               Set or clear the date its paid AI window ends
     accounts set-trial <id> <n|none>      Set its free AI scans (0-100), or
                                take the scan trial away
     accounts set-label <id> "<text>"      Pin a note only admins see, such as
@@ -122,8 +125,9 @@ const USAGE = `sync-api, the openplate-core admin CLI
     --display-name <text>  The person's name, carried onto the account
     --role <admin|member>  What the redeemed account may do (default member)
     --daily-ai-limit <n>   AI requests a day for the redeemed account (default 0)
-    --allowance-expires <iso|none>  When an account's AI allowance ends.
-                           "none" clears the date, so the allowance never ends
+    --allowance-expires <iso|none>  When an account's paid AI window ends.
+                           "none" clears the date: the account keeps only its
+                           free grant (set-free-limit), or no AI without one
     --expires-in-days <n>  Invite lifetime, 1-30 (default 7)
     --trial                The invite carries the instance's free scans
     --trial-days <n>       How long the old day trial was (for grant-lapsed)
@@ -236,9 +240,23 @@ function limitFrom(value: string): AccountPatchBody {
 }
 
 /**
+ * The allowance argument of `accounts set-free-limit` (2026-09-30), or a
+ * refusal: the standing free grant, which applies whenever no paid window is
+ * live and never ends. `0` takes it away.
+ */
+function freeLimitFrom(value: string): AccountPatchBody {
+  const limit = Number(value);
+  if (value.trim() === '' || !Number.isInteger(limit) || limit < 0 || limit > 10_000) {
+    throw new CliError('accounts set-free-limit needs a whole number of requests a day, from 0 to 10000.');
+  }
+  return { freeDailyAiLimit: limit };
+}
+
+/**
  * The count argument of `accounts set-trial` (M253), or a refusal. `none`
  * takes the scan trial away, which is a different statement from `0`: an
- * account with `0` is refused every scan, one with none is a standing grant.
+ * account with `0` is refused every scan, one with none is decided by its
+ * paid window and its free grant.
  */
 function trialFrom(value: string): AccountPatchBody {
   if (value === 'none') return { trialScans: null };
@@ -360,10 +378,14 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-/** The PATCH body of the three one-value `accounts` commands. */
-function patchFor(input: { subcommand: 'set-role' | 'set-limit' | 'set-trial'; value: string }): AccountPatchBody {
+/** The PATCH body of the four one-value `accounts` commands. */
+function patchFor(input: {
+  subcommand: 'set-role' | 'set-limit' | 'set-free-limit' | 'set-trial';
+  value: string;
+}): AccountPatchBody {
   if (input.subcommand === 'set-role') return roleFrom(input.value);
   if (input.subcommand === 'set-limit') return limitFrom(input.value);
+  if (input.subcommand === 'set-free-limit') return freeLimitFrom(input.value);
   return trialFrom(input.value);
 }
 
@@ -456,7 +478,12 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
     return;
   }
 
-  if (subcommand === 'set-role' || subcommand === 'set-limit' || subcommand === 'set-trial') {
+  if (
+    subcommand === 'set-role' ||
+    subcommand === 'set-limit' ||
+    subcommand === 'set-free-limit' ||
+    subcommand === 'set-trial'
+  ) {
     const id = accountIdArgument(invocation);
     // The third positional, because a value this short is clearer beside the id
     // than behind a flag: `accounts set-role 7 admin` reads as the sentence it is.
@@ -511,7 +538,7 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
   }
 
   throw new CliError(
-    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-expiry, set-trial, set-label, clear-label, suspend, reactivate, reset-mail, blob-versions, rollback.`,
+    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-free-limit, set-expiry, set-trial, set-label, clear-label, suspend, reactivate, reset-mail, blob-versions, rollback.`,
   );
 }
 

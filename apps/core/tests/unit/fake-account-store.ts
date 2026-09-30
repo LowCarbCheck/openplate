@@ -211,6 +211,7 @@ export function createFakeAccountStore(): FakeAccountStore {
       if (input.role !== undefined) account.role = input.role;
       if (input.dailyAiLimit !== undefined) account.dailyAiLimit = input.dailyAiLimit;
       if (input.allowanceExpiresAt !== undefined) account.allowanceExpiresAt = input.allowanceExpiresAt;
+      if (input.freeDailyAiLimit !== undefined) account.freeDailyAiLimit = input.freeDailyAiLimit;
       if (input.trialScans !== undefined) account.trialScans = input.trialScans;
       if (input.displayName !== undefined) account.displayName = input.displayName;
       if (input.label === null) labelByAccount.delete(input.accountId);
@@ -280,24 +281,28 @@ export function createFakeAccountStore(): FakeAccountStore {
         if (existing.email === invite.email) return { ok: false, reason: 'email-taken' };
       }
 
+      // THE ROW DECIDES, exactly as `standingFor` in `db/account-store.ts`
+      // does, minus the scan trial, which no seeded invite carries.
+      //
+      // AN OPERATOR'S INVITE IS A STANDING FREE GRANT (2026-09-30): its limit
+      // lands in `freeDailyAiLimit`, the paid limit is `0` and there is no
+      // expiry. A MEMBER-CAUSED ONE under the day pair (M212) keeps its limit
+      // and ends `redeemedAt + memberInviteAllowanceDays` after the same
+      // injected instant the redemption is stamped with. A member-caused one
+      // with no member door left grants no AI at all.
+      const isMember = invite.invitedByAccountId !== null;
+      const memberGrant = isMember ? input.memberInviteGrant : null;
       const account: AccountRecord = {
         id: nextAccountId++,
         // THE ADDRESS COMES FROM THE INVITE, exactly as it does in Postgres.
         email: invite.email,
         displayName: input.account.displayName,
         role: invite.role,
-        dailyAiLimit: invite.dailyAiLimit,
-        // AN OPERATOR'S INVITE CARRIES NO EXPIRY, exactly as it does in
-        // Postgres: the column has no default beyond `NULL`, and an operator
-        // sets the date afterwards through `updateStanding`.
-        //
-        // A MEMBER-CAUSED ONE DOES (M212), and the ROW decides, not the
-        // caller: `redeemedAt + memberInviteAllowanceDays`, computed off the
-        // same injected instant the redemption is stamped with. The real store
-        // does the same arithmetic in `db/account-store.ts`.
+        dailyAiLimit: memberGrant === null ? 0 : invite.dailyAiLimit,
+        freeDailyAiLimit: isMember ? 0 : invite.dailyAiLimit,
         allowanceExpiresAt:
-          invite.invitedByAccountId !== null && input.memberInviteGrant?.kind === 'days'
-            ? new Date(input.now.getTime() + input.memberInviteGrant.allowanceDays * 24 * 60 * 60 * 1000)
+          memberGrant?.kind === 'days'
+            ? new Date(input.now.getTime() + memberGrant.allowanceDays * 24 * 60 * 60 * 1000)
             : null,
         // No seeded invite carries a scan trial: `tests/integration` owns the
         // trial doors against the real store (M253).

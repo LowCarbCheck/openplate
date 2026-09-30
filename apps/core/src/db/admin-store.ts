@@ -57,6 +57,7 @@ interface AccountIdentityRow {
   role: AccountRole;
   dailyAiLimit: number;
   allowanceExpiresAt: Date | null;
+  freeDailyAiLimit: number;
   trialScans: number | null;
   trialScansUsed: number;
   trialEndsAt: Date | null;
@@ -84,6 +85,9 @@ const IDENTITY_COLUMNS = {
   // is the only thing that reads it; it is on the user-facing `AccountView`
   // too, because the person whose trial ends has to be told when.
   allowanceExpiresAt: accounts.allowanceExpiresAt,
+  // The standing free grant (2026-09-30), on the user-facing `AccountView`
+  // too, because the person has to be told what stays when a plan ends.
+  freeDailyAiLimit: accounts.freeDailyAiLimit,
   // The scan trial (M253): on the user-facing `AccountView` too, as
   // `trialScans: {granted, left}`, because the person counting down has to be
   // told how many are left.
@@ -220,6 +224,7 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       dailyAiLimit: identity.dailyAiLimit,
       aiUsedToday: usage.get(identity.id) ?? 0,
       allowanceExpiresAt: identity.allowanceExpiresAt,
+      freeDailyAiLimit: identity.freeDailyAiLimit,
       trialScans: identity.trialScans,
       trialScansUsed: identity.trialScansUsed,
       trialEndsAt: identity.trialEndsAt,

@@ -26,6 +26,8 @@ export interface AccountView {
   aiUsedToday: number;
   /** When the account's AI allowance ends, or `null` for no end at all. */
   allowanceExpiresAt: string | null;
+  /** The standing free grant per UTC day (2026-09-30), `0` for none and for an older instance. */
+  freeDailyAiLimit: number;
   /** The free scans (M253), or `null` for no scan trial. */
   trialScans: { granted: number; left: number } | null;
   suspendedAt: string | null;
@@ -125,6 +127,7 @@ function decodeAccount(value: JsonValue | undefined): AccountView {
     dailyAiLimit: asNumber(account?.dailyAiLimit) ?? 0,
     aiUsedToday: asNumber(account?.aiUsedToday) ?? 0,
     allowanceExpiresAt: asString(account?.allowanceExpiresAt),
+    freeDailyAiLimit: asNumber(account?.freeDailyAiLimit) ?? 0,
     trialScans: decodeTrialScans(account?.trialScans),
     suspendedAt: asString(account?.suspendedAt),
     createdAt,
@@ -444,6 +447,7 @@ export function formatAccountDetail(account: AccountView): string {
     `role            ${account.role}`,
     `ai today        ${account.aiUsedToday} of ${account.dailyAiLimit}`,
     `ai allowance    ${account.allowanceExpiresAt === null ? 'no end date' : `ends ${account.allowanceExpiresAt}`}`,
+    `free ai a day   ${account.freeDailyAiLimit === 0 ? 'none' : account.freeDailyAiLimit}`,
     `free scans      ${account.trialScans === null ? 'none' : `${account.trialScans.left} of ${account.trialScans.granted} left`}`,
     `standing        ${account.suspendedAt === null ? 'active' : `suspended ${account.suspendedAt}`}`,
     `label           ${account.label ?? 'none'}`,

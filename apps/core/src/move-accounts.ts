@@ -31,7 +31,8 @@
  *
  * ── WHAT MOVES (the SQL is in `move-accounts/tables.ts`) ────────────────────
  *  - `accounts`: copied byte for byte, id included, EXCEPT the standing, which
- *    the move sets: `daily_ai_limit` from `--daily-ai-limit`, no
+ *    the move sets: `free_daily_ai_limit` from `--free-daily-ai-limit`
+ *    (the standing free grant, 2026-09-30), `daily_ai_limit` 0, no
  *    `allowance_expires_at`, no scan trial (`trial_scans` and `trial_ends_at`
  *    NULL, `trial_scans_used` 0 because the column is NOT NULL), the label
  *    from `--label`, and `updated_at` now. The health-consent pair is kept:

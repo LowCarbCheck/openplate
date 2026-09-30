@@ -38,6 +38,12 @@ export interface AccountRecord {
    */
   allowanceExpiresAt: Date | null;
   /**
+   * The standing free grant: AI requests per UTC day whenever no paid window
+   * is live, with no end date and no scan gate. `0` is none. See
+   * `accounts/ai-allowance.ts` for the order the proxy reads the grants in.
+   */
+  freeDailyAiLimit: number;
+  /**
    * Non-`null` while the account is suspended. Every caller that authenticates
    * an account MUST check this — login, refresh, the bearer middleware and the
    * recovery paths all answer `403 account-suspended` for a non-`null` value.
@@ -494,6 +500,8 @@ export interface UpdateStandingInput {
    * value that CLEARS it, exactly as `displayName: null` clears the name.
    */
   allowanceExpiresAt?: Date | null;
+  /** The standing free grant, `0` to take it away. Absent leaves it alone. An operator's field only. */
+  freeDailyAiLimit?: number;
   displayName?: string | null;
   /**
    * The operator's label (`admin/account-label.ts`), already trimmed and

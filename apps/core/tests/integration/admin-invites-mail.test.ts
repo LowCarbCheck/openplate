@@ -283,16 +283,20 @@ test('the token in the delivered letter is the one that creates the account', as
   const inviteToken = tokenFromLink(link);
   assert.ok(inviteToken.startsWith('si_'), `expected an si_ token in the letter, got "${inviteToken}"`);
 
-  const signedUp = await request<{ account: { email: string; role: string; dailyAiLimit: number } }>({
+  const signedUp = await request<{
+    account: { email: string; role: string; dailyAiLimit: number; freeDailyAiLimit: number };
+  }>({
     method: 'POST',
     path: '/v1/auth/signup',
     body: signupBody(inviteToken),
   });
   assert.equal(signedUp.status, 201);
-  // The standing the operator granted rode along with the address.
+  // The standing the operator granted rode along with the address. With no
+  // trial it is the standing free grant (2026-09-30), and no paid limit.
   assert.equal(signedUp.body.account.email, 'anna@example.org');
   assert.equal(signedUp.body.account.role, 'admin');
-  assert.equal(signedUp.body.account.dailyAiLimit, 200);
+  assert.equal(signedUp.body.account.freeDailyAiLimit, 200);
+  assert.equal(signedUp.body.account.dailyAiLimit, 0);
 });
 
 test('a resend mails a NEW token and the old link stops working', async () => {

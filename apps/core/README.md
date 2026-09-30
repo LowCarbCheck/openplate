@@ -219,9 +219,17 @@ mints an ordinary invitation has not given away their provider key by accident:
 
 ```bash
 pnpm sync-api invites create --email anna@example.org --display-name Anna --daily-ai-limit 200
-pnpm sync-api accounts set-limit 42 200      # or change it later
-pnpm sync-api accounts set-limit 42 0        # or turn it off
+pnpm sync-api accounts set-free-limit 42 200 # or change it later
+pnpm sync-api accounts set-free-limit 42 0   # or turn it off
 ```
+
+**An account has two daily limits.** The invite above writes a standing free
+grant (`freeDailyAiLimit`): it never ends and it is never scan gated. A paid
+window is the other one, a `dailyAiLimit` with an end date
+(`accounts set-limit` and `accounts set-expiry`, or the biller), and it wins
+while it runs. When it ends, the account falls back to its free grant, or to
+no AI without one. A `dailyAiLimit` with no date and no scan trial grants
+nothing since 2026-09-30: use `set-free-limit` for a grant with no end.
 
 Every proxied answer carries `X-Quota-Used` and `X-Quota-Limit`. An account at
 its limit gets a `429` naming the UTC midnight it resets at, with `Retry-After`
@@ -624,6 +632,7 @@ ADMIN_TOKEN=... pnpm sync-api status
 ADMIN_TOKEN=... pnpm sync-api accounts list --limit 20
 ADMIN_TOKEN=... pnpm sync-api accounts get 42 --json
 ADMIN_TOKEN=... pnpm sync-api accounts set-role 42 admin
+ADMIN_TOKEN=... pnpm sync-api accounts set-free-limit 42 10
 ADMIN_TOKEN=... pnpm sync-api accounts set-limit 42 200
 ADMIN_TOKEN=... pnpm sync-api accounts suspend 42
 ADMIN_TOKEN=... pnpm sync-api accounts reset-mail 42

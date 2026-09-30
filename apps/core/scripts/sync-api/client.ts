@@ -65,6 +65,8 @@ export interface AccountPatchBody {
   dailyAiLimit?: number;
   /** An ISO instant, or `null` to clear the date. Absent leaves it alone. */
   allowanceExpiresAt?: string | null;
+  /** The standing free grant per UTC day (2026-09-30), `0` to take it away. Absent leaves it alone. */
+  freeDailyAiLimit?: number;
   /** The free scans granted (M253), or `null` to take the scan trial away. */
   trialScans?: number | null;
   suspended?: boolean;

@@ -224,7 +224,7 @@ function optionsFor(input: { mode: MoveOptions['mode']; sourceServerSecret?: str
     sourceServerSecret: input.sourceServerSecret ?? SOURCE_SECRET,
     targetOldServerSecret: TARGET_OLD_SECRET,
     skipEmails: [SOURCE_PEOPLE.owner.email, SOURCE_PEOPLE.skipped.email],
-    standing: { dailyAiLimit: 10, label: LABEL },
+    standing: { freeDailyAiLimit: 10, label: LABEL },
   };
 }
 
@@ -380,11 +380,15 @@ test('the moved rows are the source rows, with the new standing, and nothing ski
   );
   const standing = await read(
     target.pool,
-    'SELECT daily_ai_limit, allowance_expires_at, trial_scans, trial_scans_used, trial_ends_at, label, health_consent_version FROM accounts WHERE id = 2',
+    'SELECT daily_ai_limit, free_daily_ai_limit, allowance_expires_at, trial_scans, trial_scans_used, trial_ends_at, ' +
+      'label, health_consent_version FROM accounts WHERE id = 2',
   );
   assert.deepEqual(standing, [
     {
-      daily_ai_limit: 10,
+      // A standing free grant with no paid window (2026-09-30), so a plan
+      // bought and cancelled later falls back to it rather than to nothing.
+      daily_ai_limit: 0,
+      free_daily_ai_limit: 10,
       allowance_expires_at: null,
       trial_scans: null,
       trial_scans_used: 0,
@@ -394,8 +398,8 @@ test('the moved rows are the source rows, with the new standing, and nothing ski
     },
   ]);
   // Control: the source granted 200, so 10 is the move's doing.
-  assert.deepEqual(await read(source.pool, 'SELECT daily_ai_limit FROM accounts WHERE id = 2'), [
-    { daily_ai_limit: 200 },
+  assert.deepEqual(await read(source.pool, 'SELECT free_daily_ai_limit FROM accounts WHERE id = 2'), [
+    { free_daily_ai_limit: 200 },
   ]);
 
   for (const table of ['sync_key_records', 'sync_blobs']) {

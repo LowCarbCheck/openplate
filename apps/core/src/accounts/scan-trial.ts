@@ -113,21 +113,10 @@ export function trialScansView(input: { granted: number | null; used: number }):
 }
 
 /**
- * Whether the scan gate applies to this account right now.
- *
- * A DATE LIFTS IT. An allowance date in the future is a paid or granted
- * window, and the proxy's earlier step already refused a date in the past, so
- * "no date" is the only standing in which the count decides. An account with
- * no trial is a standing grant, exactly as before M253.
- */
-export function isScanGated(input: { trialScans: number | null; allowanceExpiresAt: Date | null }): boolean {
-  return input.allowanceExpiresAt === null && input.trialScans !== null;
-}
-
-/**
  * Whether this account is a scan trial nobody has paid for yet (M253/11).
  *
- * THE SAME DATE RULE AS {@link isScanGated}, READ FOR A DIFFERENT QUESTION.
+ * THE DATE RULE THE PROXY'S TRIAL BRANCH READS (`accounts/ai-allowance.ts`),
+ * READ FOR A DIFFERENT QUESTION.
  * The biller extends `allowanceExpiresAt` on payment and never touches
  * `trialScans`, so a paying account may still carry its trial. What tells the
  * two apart is the date: one in the future is a paid or granted window. The
@@ -288,8 +277,9 @@ function localMidnight(input: { year: number; month: number; day: number; timeZo
  * Whether the free tier has ended for this account right now, and by which
  * limit, or `null` while it still runs or does not apply (M267).
  *
- * ONLY WHERE THE SCAN GATE APPLIES ({@link isScanGated}): a paid or granted
- * window lifts both limits, and an account with no scan trial has neither.
+ * ONLY WHERE THE SCAN GATE APPLIES (`accounts/ai-allowance.ts`, the `trial`
+ * kind): a paid or granted window lifts both limits, so does a standing free
+ * grant, and an account with no scan trial has neither.
  *
  * THE SCANS ARE ASKED FIRST, and that is what "whichever comes first" means
  * here. With both limits spent the scans ran out first, because a trial past
@@ -306,9 +296,10 @@ export function trialEndedBy(input: {
   trialScansUsed: number;
   trialEndsAt: Date | null;
   allowanceExpiresAt: Date | null;
+  freeDailyAiLimit: number;
   now: Date;
 }): TrialEndedBy | null {
-  if (input.allowanceExpiresAt !== null || input.trialScans === null) return null;
+  if (input.allowanceExpiresAt !== null || input.trialScans === null || input.freeDailyAiLimit > 0) return null;
   if (input.trialScansUsed >= input.trialScans) return 'scans';
   if (input.trialEndsAt !== null && input.trialEndsAt.getTime() <= input.now.getTime()) return 'days';
   return null;

@@ -262,6 +262,20 @@ export interface AccountView {
    */
   allowanceExpiresAt: IsoTimestamp | null;
   /**
+   * The standing free grant (2026-09-30): AI requests per UTC day whenever no
+   * paid window is live, with no end date and no scan gate. `0` is none.
+   *
+   * WHAT IT TELLS A CLIENT. The proxy's order (PROTOCOL.md §5.19) is a live
+   * paid window (`allowanceExpiresAt` in the future) at `dailyAiLimit`, then
+   * this grant, then the scan trial. So an account with a grant here is never
+   * out of AI when a plan ends: it falls back to this many a day. A client
+   * that shows a limit shows this one whenever no paid window is live.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. ADDITIVE: an older
+   * client ignores the key.
+   */
+  freeDailyAiLimit: number;
+  /**
    * The account's free AI scans (M253): `{granted, left}`, or `null` for an
    * account with no scan trial, which is every account on an instance that
    * runs none.

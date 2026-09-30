@@ -21,7 +21,11 @@ import {
 import { planMove, type AccountIdentity } from '../../src/move-accounts/plan.js';
 import { proveResidentEscrow, proveSourceEscrow } from '../../src/move-accounts/escrow-proof.js';
 import { checkSchemas, type SchemaColumns } from '../../src/move-accounts/schema-check.js';
-import { DEFAULT_MOVE_DAILY_AI_LIMIT, DEFAULT_MOVE_LABEL, parseMoveCommand } from '../../src/move-accounts/options.js';
+import {
+  DEFAULT_MOVE_FREE_DAILY_AI_LIMIT,
+  DEFAULT_MOVE_LABEL,
+  parseMoveCommand,
+} from '../../src/move-accounts/options.js';
 import { maskEmail } from '../../src/move-accounts/report.js';
 import { deriveServerSecrets } from '../../src/lib/server-secrets.js';
 import { openRecoveryCode, sealRecoveryCode } from '../../src/lib/escrow.js';
@@ -166,6 +170,20 @@ test('the drift check accepts a source without accounts.label and refuses a targ
   assert.match(refused[0] ?? '', /migration 0024/);
 });
 
+test('the drift check accepts a source without accounts.free_daily_ai_limit and refuses a target without it', () => {
+  const full = currentSchema();
+  const withoutFree = new Map(full);
+  withoutFree.set(
+    'accounts',
+    new Set([...(full.get('accounts') ?? [])].filter((column) => column !== 'free_daily_ai_limit')),
+  );
+  assert.deepEqual(checkSchemas({ source: withoutFree, target: full }), []);
+
+  const refused = checkSchemas({ source: full, target: withoutFree });
+  assert.equal(refused.length, 1);
+  assert.match(refused[0] ?? '', /migration 0027/);
+});
+
 test('the drift check refuses an unknown table and an unknown column on either side', () => {
   const full = currentSchema();
   const withTable = new Map(full);
@@ -196,8 +214,11 @@ test('the command line defaults to a dry run with the owner-decided standing', (
   assert.equal(command.kind, 'run');
   if (command.kind !== 'run') return;
   assert.equal(command.options.mode, 'dry-run');
-  assert.deepEqual(command.options.standing, { dailyAiLimit: DEFAULT_MOVE_DAILY_AI_LIMIT, label: DEFAULT_MOVE_LABEL });
-  assert.equal(DEFAULT_MOVE_DAILY_AI_LIMIT, 10);
+  assert.deepEqual(command.options.standing, {
+    freeDailyAiLimit: DEFAULT_MOVE_FREE_DAILY_AI_LIMIT,
+    label: DEFAULT_MOVE_LABEL,
+  });
+  assert.equal(DEFAULT_MOVE_FREE_DAILY_AI_LIMIT, 10);
   assert.equal(DEFAULT_MOVE_LABEL, 'Beta supporter');
   assert.deepEqual(command.options.skipEmails, ['owner@example.org'], 'addresses are canonicalised like account rows');
   // Control: --apply is the only way to write.
@@ -211,8 +232,10 @@ test('the command line refuses what would make a move ambiguous or unsafe', () =
     [['--label', ''], ENVIRONMENT, /--label must be one line of 1 to 40/],
     [['--label', 'x'.repeat(41)], ENVIRONMENT, /--label must be one line of 1 to 40/],
     [['--label', 'Beta\nsupporter'], ENVIRONMENT, /--label must be one line of 1 to 40/],
-    [['--daily-ai-limit', '-1'], ENVIRONMENT, /--daily-ai-limit/],
-    [['--daily-ai-limit', '10001'], ENVIRONMENT, /--daily-ai-limit/],
+    [['--free-daily-ai-limit', '-1'], ENVIRONMENT, /--free-daily-ai-limit/],
+    [['--free-daily-ai-limit', '10001'], ENVIRONMENT, /--free-daily-ai-limit/],
+    // The first move's flag wrote a paid limit with no date; it is gone.
+    [['--daily-ai-limit', '10'], ENVIRONMENT, /Unknown option/],
     [['--skip-email', 'not-an-address'], ENVIRONMENT, /--skip-email/],
     [['--token', 'x'], ENVIRONMENT, /Unknown option/],
     [[], { ...ENVIRONMENT, TARGET_OLD_SERVER_SECRET: '' }, /TARGET_OLD_SERVER_SECRET is not set/],

@@ -20,10 +20,14 @@ import type { MoveOptions } from './run.js';
 /** What a moved account is labelled when `--label` is absent (owner decision, 2026-09-30). */
 export const DEFAULT_MOVE_LABEL = 'Beta supporter';
 
-/** The daily AI allowance a moved account gets when `--daily-ai-limit` is absent (owner decision, 2026-09-30). */
-export const DEFAULT_MOVE_DAILY_AI_LIMIT = 10;
+/**
+ * The standing free grant a moved account gets when `--free-daily-ai-limit`
+ * is absent (owner decision, 2026-09-30): ten AI requests a day, with no end
+ * date, beneath any plan the person buys later.
+ */
+export const DEFAULT_MOVE_FREE_DAILY_AI_LIMIT = 10;
 
-export const MOVE_USAGE = `Usage: node dist/move-accounts.js [--dry-run | --apply] [--skip-email <address>]... [--label <text>] [--daily-ai-limit <n>]
+export const MOVE_USAGE = `Usage: node dist/move-accounts.js [--dry-run | --apply] [--skip-email <address>]... [--label <text>] [--free-daily-ai-limit <n>]
 
 Moves accounts from one openplate-core database to another. Dry run unless --apply.
 
@@ -38,7 +42,7 @@ Options:
   --apply                    write, one transaction per account
   --skip-email <address>     leave this account on the source (repeatable)
   --label <text>             the label moved accounts get (default "${DEFAULT_MOVE_LABEL}")
-  --daily-ai-limit <n>       the daily AI allowance moved accounts get (default ${DEFAULT_MOVE_DAILY_AI_LIMIT})
+  --free-daily-ai-limit <n>  the standing free AI grant per day moved accounts get (default ${DEFAULT_MOVE_FREE_DAILY_AI_LIMIT})
 `;
 
 export type MoveCommand =
@@ -68,8 +72,8 @@ function parseLabel(raw: string | undefined): string | null {
   return parsed.ok ? parsed.value : null;
 }
 
-function parseDailyAiLimit(raw: string | undefined): number | null {
-  if (raw === undefined) return DEFAULT_MOVE_DAILY_AI_LIMIT;
+function parseFreeDailyAiLimit(raw: string | undefined): number | null {
+  if (raw === undefined) return DEFAULT_MOVE_FREE_DAILY_AI_LIMIT;
   if (!/^\d+$/.test(raw)) return null;
   const limit = Number(raw);
   return limit <= MAX_DAILY_AI_LIMIT ? limit : null;
@@ -112,9 +116,9 @@ export function parseMoveCommand(input: { argv: readonly string[]; env: NodeJS.P
 
   const label = parseLabel(parsed.label);
   if (label === null) return usageError(`--label must be one line of 1 to ${MAX_ACCOUNT_LABEL_LENGTH} characters`);
-  const dailyAiLimit = parseDailyAiLimit(parsed['daily-ai-limit']);
-  if (dailyAiLimit === null)
-    return usageError(`--daily-ai-limit must be a whole number from 0 to ${MAX_DAILY_AI_LIMIT}`);
+  const freeDailyAiLimit = parseFreeDailyAiLimit(parsed['free-daily-ai-limit']);
+  if (freeDailyAiLimit === null)
+    return usageError(`--free-daily-ai-limit must be a whole number from 0 to ${MAX_DAILY_AI_LIMIT}`);
   const skipEmails = parseSkipEmails(parsed['skip-email'] ?? []);
   if (skipEmails === null) return usageError('every --skip-email must be an email address');
 
@@ -129,7 +133,7 @@ export function parseMoveCommand(input: { argv: readonly string[]; env: NodeJS.P
       sourceServerSecret: environment.get('SOURCE_SERVER_SECRET') ?? '',
       targetOldServerSecret: environment.get('TARGET_OLD_SERVER_SECRET') ?? '',
       skipEmails,
-      standing: { dailyAiLimit, label },
+      standing: { freeDailyAiLimit, label },
     },
   };
 }
@@ -144,7 +148,7 @@ function parseFlags(argv: readonly string[]) {
       apply: { type: 'boolean' },
       'skip-email': { type: 'string', multiple: true },
       label: { type: 'string' },
-      'daily-ai-limit': { type: 'string' },
+      'free-daily-ai-limit': { type: 'string' },
       help: { type: 'boolean' },
     },
   }).values;

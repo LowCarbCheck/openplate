@@ -44,6 +44,8 @@ export interface AdminSeedInput {
   dailyAiLimit?: number;
   aiUsedToday?: number;
   allowanceExpiresAt?: Date | null;
+  /** The standing free grant (2026-09-30). Absent is none. */
+  freeDailyAiLimit?: number;
   /** The scan trial (M253). Absent is none. */
   trialScans?: number | null;
   trialScansUsed?: number;
@@ -94,6 +96,7 @@ export function createFakeAdminStore(): FakeAdminStore {
         aiUsedToday: input.aiUsedToday ?? 0,
         // `null` is the default because it is the column's: no end date at all.
         allowanceExpiresAt: input.allowanceExpiresAt ?? null,
+        freeDailyAiLimit: input.freeDailyAiLimit ?? 0,
         trialScans: input.trialScans ?? null,
         trialScansUsed: input.trialScansUsed ?? 0,
         trialEndsAt: input.trialEndsAt ?? null,

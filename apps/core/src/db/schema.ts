@@ -134,6 +134,33 @@ export const accounts = pgTable(
      */
     allowanceExpiresAt: timestamp('allowance_expires_at'),
     /**
+     * The standing free grant: AI requests per UTC day that apply whenever no
+     * paid allowance is live, with no end date and no scan gate. `0`, the
+     * default, is no free grant.
+     *
+     * WHY A SECOND LIMIT. `daily_ai_limit` belongs to the paid window: the
+     * biller raises it on a payment and writes the period's end into
+     * `allowance_expires_at`, and after a cancelled period it writes that end
+     * and never lowers the limit. An account whose only AI was the free kind
+     * (a Beta supporter, an operator's standing grant) therefore lost it for
+     * good the day a paid period ended, and clearing the date by hand left the
+     * paid limit standing for ever. Kept apart, the paid window can end and
+     * this grant is still there underneath it.
+     *
+     * THE PROXY'S ORDER (`accounts/ai-allowance.ts`): a live paid window
+     * first, at `daily_ai_limit`; otherwise this grant, when above zero;
+     * otherwise the scan trial, or no AI.
+     *
+     * BACKFILLED ONCE, by migrations 0025 to 0027: every account that had
+     * no date, no scan trial and a limit above zero, the old "standing grant"
+     * shape, got that limit here. That shape means no grant since.
+     *
+     * WRITTEN BY an operator only (the admin PATCH, the invite an operator
+     * minted without a trial, `move-accounts`). The biller's credential
+     * cannot name it (`server/service-principal-scope.ts`).
+     */
+    freeDailyAiLimit: integer('free_daily_ai_limit').default(0).notNull(),
+    /**
      * Free AI scans granted with no end date, or `NULL` for an account with no
      * scan trial (M253). `0` is a real value: an account whose mailbox already
      * had its trial, which the proxy refuses with `403 trial-scans-spent`.
@@ -459,9 +486,11 @@ export const signupInvites = pgTable(
      * Which door wrote this row, or `NULL` for the two older ones (M253).
      *
      * `'open-signup'` is a person who asked for an account with their own
-     * address (`POST /v1/auth/signup-request`). `NULL` is an operator mint or
-     * a member mint, which `invited_by_account_id` already tells apart, so a
-     * third value for them would be a second place to say the same thing.
+     * address (`POST /v1/auth/signup-request`). `'member'` (2026-09-30) is a
+     * member's invitation: `invited_by_account_id` goes `NULL` when the
+     * inviter deletes their account, and redemption must still tell that row
+     * from an operator's mint, which grants a standing free allowance. `NULL`
+     * is an operator mint, or a member mint from before the value existed.
      *
      * IT IS WHAT THE FARMING SIGNAL COUNTS. `GET /v1/admin/stats` reports how
      * many rows this door wrote today and in the last seven days, and that is
