@@ -121,28 +121,13 @@ who can lock themselves out. Read
 put it on the public internet.
 **Compose file:** [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml).
 
-```bash
-mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
-echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
-echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
-echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
-echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
-docker compose -f compose.sync.yml up -d
-```
-
-```bash
-mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
-echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
-echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
-echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
-echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
-podman compose -f compose.sync.yml up -d
-```
+The setup needs one file and five lines in `.env`: a secret, an admin token, the two public
+addresses, and `TRUST_PROXY`. [self-hosting.md](self-hosting.md#the-app-plus-your-own-sync-service)
+has the commands for Docker and Podman, with each line explained.
 
 > **Accounts need a secure page.** Signing in, signing up, and opening an invitation fail on
-> plain `http://<LAN address>`. Use HTTPS, or `localhost` through an ssh tunnel for a test.
+> plain `http://<LAN address>`. Use HTTPS, with a domain name or on a home network without one,
+> or `localhost` through an ssh tunnel for a test.
 > Nobody signs up on their own. You mint the first invitation on the server with
 > `ADMIN_TOKEN`. Both are in [self-hosting.md](self-hosting.md#create-the-first-account) and
 > [self-hosting.md](self-hosting.md#https).
@@ -203,18 +188,11 @@ make the endpoint reachable **from your browsers** (the photo goes device → en
 compose hostname does not work here).
 **Compose file:** [`docker/topologies/compose.inference.yml`](../../../docker/topologies/compose.inference.yml).
 
-```bash
-mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.inference.yml
-echo "INFERENCE_API_KEY=opk_$(openssl rand -hex 24)" >> .env
-echo "PUBLIC_APP_URL=http://192.168.1.20:3000" >> .env
-echo "PUBLIC_INFERENCE_URL=http://192.168.1.20:8300/v1" >> .env
-docker compose -f compose.inference.yml up -d
-```
-
-Replace `192.168.1.20` with your server's address. Once the app is on HTTPS, the inference
-address must be `https://` too. [self-hosting.md](self-hosting.md#the-app-plus-self-hosted-inference)
-walks through it. Podman runs this the same way: `podman compose -f compose.inference.yml up -d`.
+The setup uses one file and four lines in `.env`. These set one key, the two addresses a
+browser uses for the app and for the inference container, and `TRUST_PROXY`.
+[self-hosting.md](self-hosting.md#the-app-plus-self-hosted-inference) has the commands. Once
+the app is on HTTPS, the inference address must be `https://` too. Podman runs this the same
+way: `podman compose -f compose.inference.yml up -d`.
 
 This rung is for two kinds of people:
 
@@ -249,7 +227,7 @@ They are easy to confuse and they compose.
   to spend, how much, and how do I take it away*. It carries no model and forwards everything.
 
 Point a managed instance's AI proxy at your inference box (openplate-core's
-`UPSTREAM_BASE_URL`, with `UPSTREAM_API_KEY` left empty) and you get both: scans on your own hardware, with per-account
+`UPSTREAM_BASE_URL`, with one of the inference service's `API_KEYS` as `UPSTREAM_API_KEY`) and you get both: scans on your own hardware, with per-account
 allowances in front of them. Point it at a cloud provider instead and you get shared spend
 with no hardware. Either way, the same sync server also carries the diary: sync and the AI
 proxy are one service now, not two ([architecture.md](architecture.md)).

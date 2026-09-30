@@ -2,9 +2,9 @@
 
 openplate boots with nothing configured. There is no database URL, no session key and no
 encryption key, because the server keeps no accounts and stores nothing. Every variable
-below is optional tuning.
+is optional tuning.
 
-All variables are read in one place, `app/config/index.ts`, and exposed as a typed `CONFIG`
+Most variables are read in one place, `app/config/index.ts`, and exposed as a typed `CONFIG`
 object:
 
 ```typescript
@@ -18,32 +18,14 @@ const appUrl = CONFIG.app.url;
 
 ## Environment variables
 
-| Variable                    | Default                     | Description                                                                                                                                                                                    |
-| --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                  | `development`               | Standard Node environment flag.                                                                                                                                                                |
-| `PORT`                      | `3000`                      | HTTP port the app listens on.                                                                                                                                                                  |
-| `LOG_LEVEL`                 | `info`                      | pino log level.                                                                                                                                                                                |
-| `APP_URL`                   | `http://localhost:3000`     | Public URL this instance is reachable at. Required in production: the server refuses to boot without it. Behind a reverse proxy this is the public `https://` address, not the container port. |
-| `TRUST_PROXY`               | `1` in prod, off in dev     | Express `trust proxy`. Required behind a proxy: React Router's CSRF check compares the browser `Origin` against the host it thinks it is serving. Use the hop count (1 = one proxy, 2 = Cloudflare → Traefik). |
-| `VITE_ALLOWED_HOSTS`        | unset                       | Dev only. Comma-separated extra hostnames Vite should accept (for example your tailnet MagicDNS name).                                                                                          |
-| `FOOD_DB_API_URL`           | `https://lowcarbcheck.org`  | Curated nutrition data and food images for identified foods. Only food **names** are sent (never photos, never anything about you), and the lookup fails open. Set to an empty string to disable it entirely. |
-| `FOOD_DB_API_KEY`           | unset                       | Optional key for the food database above. Unset is the free anonymous tier, which is rate limited and is enough to try openplate out. A free key with a generous monthly allowance takes an email address and one click at [lowcarbcheck.org/developers](https://lowcarbcheck.org/developers). Read server side only and never sent to a browser, so it is safe in your environment file. |
-| `FOOD_DB_BACKFILL`          | `false`                     | Set to `true` to pass foods people save from an AI answer on to LowCarbCheck as proposals, so the food database gains new foods and the titles it lacks. Needs `FOOD_DB_API_KEY`. Without a key it stays off. A person can still turn it off for their own device in **Settings → AI**. See [Proposals to the food database](#proposals-to-the-food-database). Any value other than `true` or `false` stops the boot on purpose. |
-| `NUTRIENT_REFERENCE_BASIS`  | `dge`                       | Which published document the **Nutrients** screen quotes: `dge` (German DGE Referenzwerte), `efsa` (EU) or `us` (NASEM/IOM). One basis per instance, for every language, because a reference body follows where a person lives and not which language they read. The screen names the document it used under every amount. An unknown value stops the boot on purpose. |
-| `SYNC_SERVER_URL`           | unset (sync off)            | Base URL of an [openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) service. See [sync.md](sync.md). Its origin is added to the production CSP automatically. A malformed value stops the boot on purpose. |
-| `CONTENT_DIR`               | unset (no legal pages)      | A folder of markdown files for the legal pages (`<CONTENT_DIR>/<lang>/<slug>.md`), mounted read only. Unset, every content route answers 404 and no legal link is drawn. A value that names no folder stops the boot on purpose. See [content.md](content.md). |
-| `INSTANCE_MODE`             | `open`                      | `open` or `managed`. Setting `managed` declares a **managed instance**, see [Managed instances](#managed-instances) below. Requires `SYNC_SERVER_URL`. Any other value stops the boot on purpose. |
-| `GATEWAY_URL`               | must be unset                | Retired by M192 (September 2026): the sync server took over the AI proxy that openplate-gateway used to provide. A non-empty `GATEWAY_URL` fails the boot. Use `INSTANCE_MODE=managed` instead. |
-| `DEFAULT_INFERENCE_BASE_URL`| unset                       | An OpenAI-compatible vision endpoint this instance offers to every visitor. See [Instance-provided AI](#instance-provided-ai) below.                                                            |
-| `DEFAULT_INFERENCE_API_KEY` | unset                       | Optional key for that endpoint. **Read the security warning below before setting it.**                                                                                                         |
-| `DEFAULT_INFERENCE_MODEL`   | `openplate-plate-1`         | Model name to request from that endpoint. Blank or unset falls back to `openplate-plate-1`.                                                                                                                                                      |
-| `CSP_CONNECT_EXTRA`         | unset                       | Space-separated extra origins for the production CSP's `connect-src`. Needed when your own AI endpoint is a **remote** host. See [Custom AI endpoints](#custom-ai-endpoints).                    |
-| `MATOMO_URL`                | unset (analytics off)       | Base URL of a [Matomo](https://matomo.org) install you run yourself. Unset, the default, means no analytics script, no request and an unchanged CSP header. See [Analytics](#analytics). |
-| `MATOMO_SITE_ID`            | unset (analytics off)       | The Matomo site id this instance reports as. Set both this and `MATOMO_URL`, or neither. Setting one alone stops the boot on purpose. |
-| `MATOMO_EVENT_LEVEL`        | `product`                   | How much the instance reports: `pageviews`, `product` or `research`. Applies only when analytics are on. See [What a level decides](#what-a-level-decides). |
-| `UPDATE_CHECK`              | on                          | Set to `off` to stop the server asking GitHub whether a newer openplate exists. See [The release check](#the-release-check) below. |
-| `NEWSLETTER_SUBSCRIBE_URL`  | unset (off)                 | Where the landing page's newsletter form is forwarded. Set this and `NEWSLETTER_TURNSTILE_SITE_KEY`, or neither. See [Newsletter sign-up](#newsletter-sign-up). |
-| `NEWSLETTER_TURNSTILE_SITE_KEY` | unset (off)             | The public Cloudflare Turnstile site key that guards that form. |
+[environment-variables.md](environment-variables.md#the-app) lists every variable the app
+reads, with its default. It also lists the variables for the sync service and the inference
+service. The sections below explain the larger features in depth.
+
+One variable has no section of its own. `DEFAULT_UI_LANGUAGE` sets the language a visitor
+sees before choosing one: `en`, the default, `de`, `fr`, `it`, `es` or `tr`. A person's own
+choice always wins. The setting translates no food name, no AI answer, and nothing a person
+typed. Any other value stops the boot.
 
 Provider API keys are never read from the environment. A user's key is entered in the
 browser, stored on the device and sent browser → provider directly; the server has no copy.

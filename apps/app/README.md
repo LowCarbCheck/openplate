@@ -133,7 +133,8 @@ database, through its own server: names only, never a photo or a diary entry. Se
 | --- | --- |
 | [**Architecture**](./docs/architecture.md) | The three programs and the food database, what each one holds, and how they compose |
 | [**Self-hosting**](./docs/self-hosting.md) | Compose walkthroughs, the first account, running without Docker, first run, HTTPS, backups, upgrading |
-| [**Configuration**](./docs/configuration.md) | Every environment variable, the Content-Security-Policy, custom and instance-provided AI endpoints |
+| [**Configuration**](./docs/configuration.md) | The food database key, the Content-Security-Policy, analytics, managed instances, custom and instance-provided AI endpoints |
+| [**Environment variables**](./docs/environment-variables.md) | Every variable the app, the sync service and the inference service read, with its default, and the settings that stop the boot |
 | [**Sync**](./docs/sync.md) | Enabling sync across devices, the encryption, and the operator's escrowed recovery key |
 | [**Topologies**](./docs/topologies.md) | What to run, from a browser-only install up to a self-hosted household |
 | [**Family setup**](./docs/family-setup.md) | Sharing one AI bill across a household, with a spend limit and revocation per person |

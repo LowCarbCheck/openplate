@@ -1,8 +1,9 @@
 # Self-hosting
 
 openplate ships as a prebuilt multi-arch Docker image (`linux/amd64` + `linux/arm64`;
-Raspberry-Pi-class boxes are a first-class target) published to the GitHub Container Registry
-on every push to `main` and on version tags. There are no secrets to generate and nothing to
+Raspberry-Pi-class boxes are a first-class target) published to the GitHub Container Registry.
+The `latest` tag is the newest release. Each release also has its own version tag. The `main`
+tag follows every change on the main branch. There are no secrets to generate and nothing to
 sign up for beyond your own AI provider key.
 
 Nothing here is a reduced edition. Local-first tracking, BYOK AI plate scanning, PWA install,
@@ -24,6 +25,7 @@ Each shape is one compose file under [`docker/topologies/`](../../../docker/topo
 **Install Docker.** A fresh server does not have it. Follow Docker's guide for your distribution at [docs.docker.com/engine/install](https://docs.docker.com/engine/install/). On Ubuntu 24.04, the distribution packages work too:
 
 ```bash
+sudo apt-get update
 sudo apt install docker.io docker-compose-v2
 sudo usermod -aG docker "$USER"   # then log out and back in, to use docker without sudo
 ```
@@ -31,6 +33,20 @@ sudo usermod -aG docker "$USER"   # then log out and back in, to use docker with
 Podman works as well. Read [podman.md](podman.md) for what differs.
 
 **Pick a folder that lasts.** Every walkthrough below starts with `mkdir -p ~/openplate && cd ~/openplate`. The compose file and its `.env` live there. Run every later command from there, including upgrades, backups, and logs. Do not use `/tmp`. A reboot can empty it, and your `.env` with its secrets will disappear.
+
+> **If you run this for your family, do two things early.**
+>
+> - **Back up `.env` and the database.** Copy `.env` to a safe place, above all the `SERVER_SECRET` line. Without it, a restored database opens no account. Then dump the database on a schedule. [Backups](#backups) has the commands.
+> - **Let other devices reach only the HTTPS port.** Many servers start with no firewall, so every port a container publishes is open to your network. Keep the container ports on `127.0.0.1`, as the [HTTPS](#https) section shows, so that only your reverse proxy reaches them. A firewall such as `ufw` does not close them for you, because Docker publishes its ports past it. `ufw` still closes everything else on the server. Allow SSH first, then HTTPS:
+>
+>   ```bash
+>   sudo ufw allow OpenSSH
+>   sudo ufw allow 443/tcp
+>   sudo ufw allow 8443/tcp   # the sync service's HTTPS port, in the recipes below
+>   sudo ufw enable
+>   ```
+>
+>   With a domain name, Caddy also needs port 80 for its certificate: `sudo ufw allow 80/tcp`.
 
 ## The app on its own
 
@@ -128,11 +144,11 @@ podman compose -f compose.sync.yml up -d
 
 **Read [openplate-core's README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) before you run that last line on a machine other people can reach.** Both services publish their ports on every interface. The account service is exposed the moment it starts, and running an account service is a bigger undertaking than running the app.
 
-The file is annotated line by line, including the two settings that cause problems if set incorrectly (`SERVER_SECRET` and `TRUST_PROXY`). `TRUST_PROXY` applies to both services, because they sit behind the same proxy or behind none. Compose passes on only the variables the file names. A line in `.env` that the file never mentions reaches no container. See [sync.md](sync.md) for what sync is and how the client reaches it.
+The file is annotated line by line, including the two settings that cause problems if set incorrectly (`SERVER_SECRET` and `TRUST_PROXY`). `TRUST_PROXY` applies to both services, because they sit behind the same proxy or behind none. The file passes every variable the services read from `.env` to their containers. [environment-variables.md](environment-variables.md) lists them all. See [sync.md](sync.md) for what sync is and how the client reaches it.
 
 ### Create the first account
 
-Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address:
+Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address. Port 3001 is where `compose.sync.yml` and `compose.full.yml` publish the sync service. The sync service's own compose file in `apps/core` uses port 3000 instead:
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -169,7 +185,7 @@ The model name must match the provider's exact spelling. See [configuration.md](
 With mail configured, **Forgot password** in the app mails a reset link, and the diary returns after the reset. With no mail, the app cannot send anything, and the forgot page tells the user to ask the administrator. You make the link:
 
 - **In the app:** **Administration**, under **People**, open the person and choose **Send a reset link**. With no mail, the page displays the link. Share it the same way you would share a password.
-- **On the server:** find the account's `id`, then ask for a link for it.
+- **On the server:** find the account's `id`, then ask for a link for it. The port is 3001 again, as in the topology compose files.
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -194,7 +210,7 @@ Leave every mail setting unset. The sync service sends no letters. It shows each
 
 If the link uses an address different from your browser, a warning appears below it. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the addresses your family uses, then generate the link again. The page also warns you if the link opens the page but directs the app to a sync server at `localhost` or a plain `http://` address that other devices cannot reach. Set `PUBLIC_SYNC_URL` to the `https://` address your family uses, then generate the link again.
 
-`OPEN_SIGNUP=true` lets strangers ask for an account. The sync service refuses to start with that setting when there is no mail configured. A family instance leaves it off. The compose files do not pass it on, so it stays off unless you add it.
+`OPEN_SIGNUP=true` lets strangers ask for an account. The sync service refuses to start with that setting when there is no mail configured. A family instance leaves it off, and it stays off until you set it. [Sign-up with Turnstile](environment-variables.md#sign-up-with-turnstile) explains the setting and its captcha.
 
 #### SMTP
 
@@ -206,7 +222,7 @@ Any standard mail account can send the letters over SMTP. Add these lines to `.e
 - `SMTP_FROM`: the sender address, as a bare address or `Name <address>`.
 - `MAIL_OPERATOR_EMAIL`: your own address. It receives your copy of a cancellation or a withdrawal. Both transports require it.
 
-The port decides the encryption mode. Port 465 uses TLS from the start. Any other port must upgrade through STARTTLS, and the service sends no letters to a server that lacks it. Plain text is allowed only when `SMTP_HOST` is a loopback address such as `localhost`, for a local catcher such as Mailpit. The service always checks certificates.
+The port decides the encryption mode. Port 465 uses TLS from the start. Any other port must upgrade through STARTTLS, and the service sends no letters to a server that lacks it. Plain text is allowed only when `SMTP_HOST` is a loopback address such as `localhost`, for a local catcher such as Mailpit (see [Test with Mailpit](#test-with-mailpit)). The service always checks certificates.
 
 A Gmail account needs an [app password](https://support.google.com/accounts/answer/185833). Google generates one only for accounts with 2-Step Verification turned on. [Google's SMTP settings](https://support.google.com/mail/answer/7104828) specify `smtp.gmail.com` and port 587:
 
@@ -251,6 +267,62 @@ The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_U
 #### Check that mail works
 
 Send an invitation to a second address of your own in `/admin`. The page should display **Invitation sent to** that address, and the letter should arrive in your inbox. If the page displays **Invitation ready for** and prints a link, the delivery failed. The link remains valid. Check the sync service log for a `Mail send failed` line to see the reason. When you finish testing, choose **Withdraw** for the test invitation under **Invitations**.
+
+#### Test with Mailpit
+
+[Mailpit](https://mailpit.axllent.org) catches every letter and shows it on a web page, so you can test mail with no mail account. Run it as a sidecar that shares the network of the sync container. The sync service then reaches it as `localhost`, where plain text is allowed. Save this file next to your compose file as `compose.mailpit.yml`:
+
+```yaml
+# compose.mailpit.yml: a mail catcher for testing, next to your compose file
+services:
+  sync:
+    ports:
+      - '127.0.0.1:8025:8025' # Mailpit's web page, on this machine only
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    restart: unless-stopped
+    network_mode: 'service:sync'
+```
+
+Add these lines to `.env`. Mailpit takes letters on port 1025:
+
+```bash
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_FROM="openplate <test@example.org>"
+MAIL_OPERATOR_EMAIL=you@example.org
+```
+
+Start both files together, then send an invitation and read it at `http://localhost:8025` on the server:
+
+```bash
+docker compose -f compose.sync.yml -f compose.mailpit.yml up -d
+```
+
+The rule in [Mail needs the public addresses](#mail-needs-the-public-addresses) still applies. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to `https://` addresses first, or the sync service does not start.
+
+A separate Mailpit container reached by service name, such as `SMTP_HOST=mailpit`, does not work. The sync service sends plain text only to this machine. A service name counts as another host. The service asks for STARTTLS, Mailpit offers none, and every letter fails with `Mail send failed` in the log. The shared network puts Mailpit on the same machine.
+
+When you finish testing, remove the four lines from `.env`. Then drop Mailpit with `docker compose -f compose.sync.yml up -d --remove-orphans`.
+
+#### A relay with a private certificate authority
+
+The sync service checks the certificate of every mail server. A relay inside a company network may use a certificate signed by a private certificate authority. Node.js does not trust that authority by default. Give the sync service that authority's certificate as a PEM file. Mount the file into the container and set `NODE_EXTRA_CA_CERTS` to its path. For example, in a `compose.ca.yml` next to your compose file:
+
+```yaml
+# compose.ca.yml: trust a private certificate authority for the mail relay
+services:
+  sync:
+    volumes:
+      - ./relay-ca.pem:/etc/openplate/relay-ca.pem:ro
+```
+
+```bash
+echo "NODE_EXTRA_CA_CERTS=/etc/openplate/relay-ca.pem" >> .env
+docker compose -f compose.sync.yml -f compose.ca.yml up -d
+```
+
+Node.js reads the file once, at start. The certificate is added to the ones Node.js already trusts, so public mail servers keep working.
 
 ## The app plus self-hosted inference
 
@@ -360,7 +432,7 @@ TRUST_PROXY=0
 EOF
 ```
 
-Set `APP_URL` to the address people open, and `TRUST_PROXY=1` once a reverse proxy stands in front. Every other variable in [configuration.md](configuration.md) goes in the same file. `HOST=127.0.0.1` makes the server listen on this machine only, which is what you want behind a proxy on the same box.
+Set `APP_URL` to the address people open, and `TRUST_PROXY=1` once a reverse proxy stands in front. Every other variable of [the app](environment-variables.md#the-app) goes in the same file. `HOST=127.0.0.1` makes the server listen on this machine only, which is what you want behind a proxy on the same box.
 
 **A systemd unit**, so the app starts at boot and keeps running after you log out. The `$USER` and `$HOME` below are filled in as you paste it:
 
@@ -428,7 +500,7 @@ Browsers restrict several features to a [secure context](https://developer.mozil
 
 On plain HTTP from another device, the diary, manual logging, backups and plate photos still work. The photo button hands over to the phone's own camera through a file picker, which needs no secure page. The quickstart works without changes on the server itself, because `localhost` counts as secure.
 
-Your devices need a secure address. You can set one up in three ways.
+Your devices need a secure address. You can set one up in four ways: an ssh tunnel for a quick test, Caddy with a domain name, Caddy on a home network with no domain name, or Tailscale.
 
 ### A quick test from one computer: an ssh tunnel
 
@@ -478,6 +550,57 @@ TRUST_PROXY=1
 Change the `ports:` line to `'127.0.0.1:3000:3000'`, and use `'127.0.0.1:3001:3000'` for sync. Apply the change with `docker compose -f <your file> up -d`. A reverse proxy does not unpublish container ports. If you leave it as `'3000:3000'`, the app continues serving plain HTTP on port 3000 across your local network alongside the HTTPS address.
 
 Podman recreates the service the same way with `podman compose -f compose.yml up -d`. Note one rootless detail before skipping the reverse proxy: a rootless Podman container cannot bind a host port below 1024 without extra configuration. Publishing directly to port 80 or 443 requires `sudo sysctl net.ipv4.ip_unprivileged_port_start=80` first. See [podman.md](podman.md).
+
+### No domain name, home network only: Caddy with a local certificate
+
+With no domain name, Caddy can still serve HTTPS on your home network. It makes its own certificate authority and uses it to sign a certificate for the server's address. Every phone and computer that opens openplate must trust that authority once. After that, the family's phones get a secure page. Signing in, sync and installing the app work over `https://`.
+
+**Give the server a fixed address.** In your router, reserve the server's current address, for example `192.168.1.20`, so that it never changes. The certificate and both public addresses name it.
+
+**Install Caddy and point it at the address.** On Ubuntu, `sudo apt install caddy` installs Caddy as a service. Replace `/etc/caddy/Caddyfile` with this, using your server's address. `tls internal` tells Caddy to sign the certificate itself:
+
+```
+# /etc/caddy/Caddyfile
+https://192.168.1.20 {
+    tls internal
+    reverse_proxy localhost:3000
+}
+https://192.168.1.20:8443 {
+    tls internal
+    reverse_proxy localhost:3001
+}
+```
+
+```bash
+sudo systemctl reload caddy
+```
+
+**Set the same addresses in `.env`**, then recreate the containers with `docker compose -f <your file> up -d`:
+
+```bash
+PUBLIC_APP_URL=https://192.168.1.20
+PUBLIC_SYNC_URL=https://192.168.1.20:8443
+TRUST_PROXY=1
+```
+
+For the app on its own, set `APP_URL=https://192.168.1.20` instead. Leave the second block out of the Caddyfile. As in the recipe above, change the `ports:` lines to `'127.0.0.1:3000:3000'` and `'127.0.0.1:3001:3000'`, so that only Caddy reaches the containers.
+
+**Copy Caddy's root certificate off the server.** Ubuntu's Caddy keeps it at `/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt`. The certificate is public. Its private key is in the same folder and must never leave the server, so copy only `root.crt`:
+
+```bash
+sudo cp /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt ~/openplate-root.crt
+sudo chown "$USER" ~/openplate-root.crt
+```
+
+On your computer, fetch it with `scp you@192.168.1.20:openplate-root.crt .`. Then send it to each phone, for example as a mail attachment to yourself, or with AirDrop.
+
+**Trust it on every device, once.** This is the step that makes the family's phones work over `https://`.
+
+- **iPhone and iPad:** open the file and allow the download. In **Settings**, tap **Profile Downloaded** near the top, or find it under **General > VPN & Device Management**, and install it. Then turn on full trust for it under **Settings > General > About > Certificate Trust Settings**. Without this last step, the browser still refuses the page.
+- **Android:** save the file on the phone. Open **Settings > Security > Encryption & credentials > Install a certificate > CA certificate**, accept the warning, and pick the file. On newer phones the path starts at **Security & privacy > More security settings**, and the names differ a little between phone makers. If the phone has no screen lock, Android asks you to set one.
+- **A computer:** add it to the system's certificates. Some browsers keep their own list and need it there as well.
+
+Open `https://192.168.1.20` on a phone. The page should load with no warning, and signing in should work. The address works only on your home network. Keep Caddy's data folder with your backups. A new Caddy install makes a new authority, and every device must then trust the new one.
 
 ### Any other reverse proxy
 
@@ -568,6 +691,13 @@ Use the same `-f` file you deployed with. If you brought up a topology from
 `docker compose -f compose.sync.yml pull`. A bare `docker compose pull` beside
 `compose.sync.yml` fails with `no configuration file provided: not found`.
 
+The compose files use the `latest` tag, which is the newest release, so `pull` takes you to
+it. To choose when you upgrade, pin a version in the `image:` line, for example
+`ghcr.io/lowcarbcheck/openplate:0.54.0`. Change the number when you want the next release. The
+sync service and the inference service have version numbers of their own, so pin each image to
+its own. The `main` tag follows every change on the main branch. It is for testing, not for a
+server your family uses.
+
 There is nothing to migrate: the app container holds no state, so a new image just replaces
 the old one. If you run the full stack, the sync service applies its own migrations on start.
 
@@ -581,7 +711,7 @@ It is a one-way change, so:
 1. **Back up first.** Take a `pg_dump` of the app's old database if you want the account rows
    recoverable, and have every person on every device take a JSON export from **Profile → Your
    data**. That export is the copy that holds their diary.
-2. **Upgrade.** First update the `image:` line to `ghcr.io/lowcarbcheck/openplate:latest`:
+2. **Upgrade.** First update the `image:` line to `ghcr.io/lowcarbcheck/openplate:latest`, the newest release:
    pre-0.1.x images were published under `ghcr.io/sprqvntrs/openplate`, and pulling without
    this change just re-fetches the old one. The migration then runs on container start. Afterwards there is no login page:
    every device that already has data keeps it and simply stops asking who you are.
