@@ -76,6 +76,16 @@ describe('the account strip on a scan trial', () => {
       kind: 'trial-scans',
       left: 3,
       granted: 10,
+      daysLeft: null,
+    });
+  });
+
+  it('carries the days left beside the scans left when the caller counted them', () => {
+    assert.deepEqual(resolveAllowanceLine({ ...base, trialScans: { granted: 10, left: 3 }, trialDaysLeft: 5 }), {
+      kind: 'trial-scans',
+      left: 3,
+      granted: 10,
+      daysLeft: 5,
     });
   });
 

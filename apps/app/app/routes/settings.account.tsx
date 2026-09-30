@@ -43,6 +43,7 @@ import { PasswordFields } from '#app/components/password-fields';
 import { SyncStatus, useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
+import { TrialDaysLeftLine } from '#app/components/plans/trial-days-left-line';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import {
@@ -61,7 +62,7 @@ import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
-import { bindingTrialScans, type TrialScans } from '#app/lib/plans/trial-scans';
+import { bindingTrialScans, trialDaysLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import type { Translate } from '#app/lib/sync/setup-flow';
 import { canSendMemberInvites } from '#app/lib/sync/member-invites';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -131,6 +132,9 @@ export default function SettingsAccount() {
     trialScans: account?.trialScans,
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
   });
+  // AND ITS DAYS (owner decision 2026-09-30): the free tier ends after its
+  // scans or its days, whichever comes first, so both are stated together.
+  const daysLeft = trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now: new Date() });
   // AND WHETHER THERE IS A PAGE THAT CHANGES IT (M213 spec 05). The same
   // handshake read, one line down: on an instance with a biller behind it the
   // allowance is a thing a person buys, so the card that explains the
@@ -168,6 +172,7 @@ export default function SettingsAccount() {
               : null
             }
             trialScans={trialScans}
+            trialDaysLeft={daysLeft}
           />
           {/* EVERYTHING BELOW WAITS FOR THE HANDSHAKE (M253/11 item 2). The
               handshake decides whether the invite card exists and what the
@@ -186,6 +191,7 @@ export default function SettingsAccount() {
                   door={allowanceDoor}
                   plansAvailable={plansAvailable}
                   trialScans={trialScans}
+                  trialDaysLeft={daysLeft}
                 />
               )}
               {/* TWO GATES, AND BOTH ARE THE SERVICE'S ANSWER (M212 spec 04). The
@@ -289,6 +295,7 @@ function IdentityCard({
   displayName,
   allowance,
   trialScans,
+  trialDaysLeft: daysLeft,
 }: {
   email: string;
   displayName: string | null;
@@ -296,6 +303,8 @@ function IdentityCard({
   allowance: { usedToday: number; dailyLimit: number } | null;
   /** The scan trial that binds this account, or `null`. Replaces the per-day line (M253/05). */
   trialScans: TrialScans | null;
+  /** That trial's days left (`trialDaysLeft`), or `null` for no day line. */
+  trialDaysLeft: number | null;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState(displayName ?? '');
@@ -331,6 +340,9 @@ function IdentityCard({
           {trialScans === null ?
             t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })
           : t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted })}
+          {/* THE DAYS, INSIDE THE SAME LINE'S BOX, reserved with the scans:
+              a date that arrives after the first paint moves nothing below. */}
+          {trialScans !== null && <TrialDaysLeftLine daysLeft={daysLeft} />}
         </p>
       )}
       <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
@@ -390,11 +402,14 @@ function AllowanceCard({
   door,
   plansAvailable,
   trialScans,
+  trialDaysLeft: daysLeft,
 }: {
   dailyLimit: number;
   usedToday: number;
   /** The scan trial that binds this account, or `null`. Its count replaces the per-day line (M253/05). */
   trialScans: TrialScans | null;
+  /** That trial's days left (`trialDaysLeft`), or `null` for no day line. */
+  trialDaysLeft: number | null;
   /**
    * When the allowance ends, or `null`.
    *
@@ -421,6 +436,15 @@ function AllowanceCard({
       label={t('account.allowance.title')}
       description={describeAllowance({ dailyLimit, usedToday, trialScans, t })}
     >
+      {/* THE DAYS, NEXT TO THE SCANS the description states (owner decision
+          2026-09-30). A child line and not a second description: a section
+          carries one. Its box is reserved with the scans the description
+          states, so a date that arrives later moves nothing. */}
+      {dailyLimit > 0 && trialScans !== null && (
+        <p className="text-sm text-muted-foreground">
+          <TrialDaysLeftLine daysLeft={daysLeft} />
+        </p>
+      )}
       {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
           3 days" is a sentence baked in one language and computed against
           the reader's clock, and this is the one fact somebody checks when a

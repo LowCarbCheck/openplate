@@ -3170,6 +3170,8 @@
       "askAdmin": "Bunu yöneticin belirler.",
       "today": "Bugünkü fotoğraf tahminleri: {{used}} / {{limit}}",
       "trialScans": "{{left}} / {{granted}} ücretsiz yapay zeka taraması kaldı.",
+      "trialDaysLeft_one": "Ücretsiz deneme sürende {{count}} gün kaldı",
+      "trialDaysLeft_other": "Ücretsiz deneme sürende {{count}} gün kaldı",
       "expires": "Bu hesap için fotoğraf tahminleri {{date}} tarihine kadar geçerlidir.",
       "expired": "Bu hesap için fotoğraf tahminleri {{date}} tarihinde sona erdi.",
       "planLink": "Planını gör"

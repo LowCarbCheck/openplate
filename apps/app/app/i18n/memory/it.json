@@ -13796,6 +13796,13 @@
     "at": "2026-09-14",
     "it": "Dimensioni della porzione (g)"
   },
+  "a8e99dc83b7a3d20": {
+    "en": "{{count}} day left in your free trial",
+    "path": "common:account.allowance.trialDaysLeft_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "it": "Resta {{count}} giorno della tua prova gratuita"
+  },
   "a8e9b88246dcf14f": {
     "en": "A server started from source with only its .env file serves pages again.",
     "path": "releases:v0_50_0.fixed.17",
@@ -19864,6 +19871,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Almeno {{goal}} g"
+  },
+  "f53d90ad52fac740": {
+    "en": "{{count}} days left in your free trial",
+    "path": "common:account.allowance.trialDaysLeft_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "it": "Restano {{count}} giorni della tua prova gratuita"
   },
   "f55abeb5370bff17": {
     "en": "Lunch",

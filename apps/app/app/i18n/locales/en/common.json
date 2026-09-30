@@ -3170,6 +3170,8 @@
       "askAdmin": "Your administrator sets this.",
       "today": "Photo estimates today: {{used}} of {{limit}}",
       "trialScans": "{{left}} of {{granted}} free AI scans left.",
+      "trialDaysLeft_one": "{{count}} day left in your free trial",
+      "trialDaysLeft_other": "{{count}} days left in your free trial",
       "expires": "Photo estimates for this account run until {{date}}.",
       "expired": "Photo estimates for this account ended on {{date}}.",
       "planLink": "See your plan"
