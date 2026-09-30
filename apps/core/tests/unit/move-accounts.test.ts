@@ -208,8 +208,9 @@ test('the command line defaults to a dry run with the owner-decided standing', (
 test('the command line refuses what would make a move ambiguous or unsafe', () => {
   const refusals: [readonly string[], NodeJS.ProcessEnv, RegExp][] = [
     [['--dry-run', '--apply'], ENVIRONMENT, /exclude each other/],
-    [['--label', ''], ENVIRONMENT, /--label must be 1 to 40/],
-    [['--label', 'x'.repeat(41)], ENVIRONMENT, /--label must be 1 to 40/],
+    [['--label', ''], ENVIRONMENT, /--label must be one line of 1 to 40/],
+    [['--label', 'x'.repeat(41)], ENVIRONMENT, /--label must be one line of 1 to 40/],
+    [['--label', 'Beta\nsupporter'], ENVIRONMENT, /--label must be one line of 1 to 40/],
     [['--daily-ai-limit', '-1'], ENVIRONMENT, /--daily-ai-limit/],
     [['--daily-ai-limit', '10001'], ENVIRONMENT, /--daily-ai-limit/],
     [['--skip-email', 'not-an-address'], ENVIRONMENT, /--skip-email/],

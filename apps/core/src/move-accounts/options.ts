@@ -13,7 +13,7 @@
 import { parseArgs } from 'node:util';
 import { MIN_SERVER_SECRET_LENGTH } from '../config.js';
 import { MAX_DAILY_AI_LIMIT } from '../admin/invite-store.js';
-import { MAX_ACCOUNT_LABEL_LENGTH } from '../admin/account-label.js';
+import { MAX_ACCOUNT_LABEL_LENGTH, parseAccountLabel } from '../admin/account-label.js';
 import { parseEmail } from '../accounts/auth-input.js';
 import type { MoveOptions } from './run.js';
 
@@ -57,10 +57,15 @@ function usageError(reason: string): MoveCommand {
   return { kind: 'usage-error', reason };
 }
 
+/**
+ * The label through the admin route's own parser (`admin/account-label.ts`),
+ * so the move and `PATCH /v1/admin/accounts/:id` accept exactly the same
+ * labels. A blank one parses as "clear", which a move refuses: every moved
+ * account carries the label.
+ */
 function parseLabel(raw: string | undefined): string | null {
-  const label = (raw ?? DEFAULT_MOVE_LABEL).trim();
-  const length = [...label].length;
-  return length >= 1 && length <= MAX_ACCOUNT_LABEL_LENGTH ? label : null;
+  const parsed = parseAccountLabel(raw ?? DEFAULT_MOVE_LABEL);
+  return parsed.ok ? parsed.value : null;
 }
 
 function parseDailyAiLimit(raw: string | undefined): number | null {
@@ -106,7 +111,7 @@ export function parseMoveCommand(input: { argv: readonly string[]; env: NodeJS.P
     return usageError('--dry-run and --apply exclude each other');
 
   const label = parseLabel(parsed.label);
-  if (label === null) return usageError(`--label must be 1 to ${MAX_ACCOUNT_LABEL_LENGTH} characters`);
+  if (label === null) return usageError(`--label must be one line of 1 to ${MAX_ACCOUNT_LABEL_LENGTH} characters`);
   const dailyAiLimit = parseDailyAiLimit(parsed['daily-ai-limit']);
   if (dailyAiLimit === null)
     return usageError(`--daily-ai-limit must be a whole number from 0 to ${MAX_DAILY_AI_LIMIT}`);
