@@ -119,6 +119,7 @@ function buildAdminRouters(): Router[] {
     createAdminRoutes({
       metadata: createFakeAdminStore(),
       serviceMaxDailyAiLimit: DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
+      accountEraseNotifier: null,
       invites: createFakeInviteStore(),
       accounts: fixture.store,
       blobs: createFakeBlobRollbackStore(),

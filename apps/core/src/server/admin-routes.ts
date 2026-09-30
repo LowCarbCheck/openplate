@@ -107,6 +107,7 @@ import {
   SERVICE_VALUE_REFUSAL,
   isServiceValueInScope,
 } from './service-principal-scope.js';
+import type { AccountEraseNotifier } from '../accounts/erase-notifier.js';
 import { healthConsentView } from '../accounts/health-consent.js';
 import { parseAccountLabel } from '../admin/account-label.js';
 
@@ -772,6 +773,13 @@ export interface AdminRoutesOptions {
    * by `MAX_DAILY_AI_LIMIT`. See `server/service-principal-scope.ts`.
    */
   serviceMaxDailyAiLimit: number;
+  /**
+   * Tells the biller an account is about to be erased, or `null` on an instance
+   * no biller stands behind. The SAME binding the self-service delete calls,
+   * read off the auth context by `create-app.ts`. See
+   * `accounts/erase-notifier.ts`.
+   */
+  accountEraseNotifier: AccountEraseNotifier | null;
   /** Invite minting, reissue and revocation, see `admin/invite-store.ts`. */
   invites: InviteStore;
   /** The SAME store the self-service delete path uses. `deleteAccount` and the reset-mail write. */
@@ -1253,15 +1261,15 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
 
       // THE SHARED ERASURE PATH. See the module header.
       //
-      // erasure is one cascade. This route does not call openplate-billing on
-      // the delete path (M213/04): the gateway must not know a ledger
-      // exists, and a synchronous call here would make erasure depend on a
-      // remote. openplate-billing's nightly reconciliation (M213/06) finds a
-      // subscription with no covering account and cancels it, bounding the
-      // exposure to one night. The billing principal calling
-      // `GET /v1/admin/accounts/:id` for an erased id gets the ordinary 404
-      // above (see the comment at the GET route), and that 404 is the
-      // signal, not a field on this response.
+      // THE BILLER HEARS FIRST (2026-09-30). Until then this route did not
+      // call openplate-billing, and only its nightly reconciliation (M213/06)
+      // cancelled the orphaned subscription, so a failed night could charge a
+      // person after their account was gone. The notice cannot block the
+      // erasure: it never throws, it waits five seconds at most, and a failure
+      // is logged with the account id. The nightly job stays as the backstop,
+      // and the billing principal calling `GET /v1/admin/accounts/:id` for an
+      // erased id still gets the ordinary 404 above.
+      await options.accountEraseNotifier?.({ accountId });
       await accounts.deleteAccount(accountId);
       // The account id is the correlation handle; the address is not logged,
       // here or anywhere (`logger.ts`).

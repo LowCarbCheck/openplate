@@ -768,6 +768,9 @@ export function createApp(options: CreateAppOptions): Express {
     createAdminRoutes({
       metadata: options.admin.metadata,
       serviceMaxDailyAiLimit: options.admin.billingMaxDailyAiLimit ?? DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
+      // The SAME notifier the self-service delete calls, read off the auth
+      // context, so both erasure paths tell the biller or neither does.
+      accountEraseNotifier: options.authContext.accountEraseNotifier ?? null,
       invites: options.admin.invites,
       accounts: options.authContext.store,
       blobs: options.admin.blobs,

@@ -819,7 +819,7 @@ The admin account endpoints return the same shape plus two operator fields, `blo
 
 That is the only field an account may change about itself. `email` is the identity and moves only through an operator; `role` and `dailyAiLimit` are standing an account must not be able to raise for itself; everything authentication-shaped moves through §5.14.
 
-**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly.
+**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly. On an instance with a biller (§5.22), the service first sends `POST <PLANS_UPSTREAM_URL>/erase` with `X-Plans-Secret` and `X-Account-Id` and no body, so the biller cancels the account's subscriptions before the account is gone. It waits five seconds at most and deletes whatever the biller answers; `DELETE /v1/admin/accounts/:id` does the same.
 
 Deletion removes the account and, by cascade, every blob, key record, reset token and usage row it owns. There is no soft delete and no grace period. This is the self-serve erasure path, and it is complete by construction rather than by a cleanup job someone has to remember to run.
 
@@ -1602,6 +1602,8 @@ Five properties a conforming implementation MUST hold:
 An upstream that is unreachable, times out, answers something that is not JSON, or answers a body over the relay cap is `502` in the §4 envelope with a machine code: `plans-upstream-unreachable`, `plans-upstream-timeout` or `plans-upstream-invalid`. A request body over the subtree's own small cap is `413 {"error":"plans-request-too-large"}`, which is a different statement: the biller is fine, and what you sent will never be accepted. **No body is logged in either direction**; a refusal is logged with the status and the path and nothing else.
 
 The outbound call carries an explicit timeout. It is short, because every route here is a button somebody just pressed, and it exists as much to bound undici's hidden 300 second cap as to bound a slow biller.
+
+**Erasure notice (service to biller).** Before either erasure path (§5.15, §5.20) deletes an account, the service sends `POST <PLANS_UPSTREAM_URL>/erase` with exactly `X-Plans-Secret` and `X-Account-Id`, and an empty body. The biller answers `204` once every live subscription of that account is cancelled, and `204` when there is none. The call has a five second timeout. A refusal, a timeout or a dead host is logged at `error` with the account id, and the account is deleted anyway; the biller's nightly reconciliation stays the backstop.
 
 The operator configures `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET`, **both or neither**. A URL with no secret is a refusal to boot rather than a silent downgrade: the secret is the only thing that tells the biller the account id it is reading came from a gateway that authenticated somebody.
 

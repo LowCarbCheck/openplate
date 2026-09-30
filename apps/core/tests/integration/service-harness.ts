@@ -52,6 +52,7 @@ import type {
   SendSignupRequestInput,
 } from '../../src/mail/mailer.js';
 import { createDrizzleLegalDeclarationsStore } from '../../src/legal/legal-declarations-store.js';
+import { createPlansEraseNotifier } from '../../src/accounts/erase-notifier.js';
 import type { SyncKeyRecordKind } from '../../src/protocol.js';
 import type { Database } from '../../src/db/client.js';
 import { SHARE_WRAPPED_DEK_BYTES } from '../../src/server/share-routes.js';
@@ -530,6 +531,16 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     openSignup: openSignupSurface,
     // `null` by default, see `StartServiceOptions.healthConsent`.
     healthConsent,
+    // As `main.ts` builds it: both erasure paths tell the biller first when
+    // the suite stands one up, and nothing is called otherwise.
+    accountEraseNotifier:
+      options.plans == null
+        ? null
+        : createPlansEraseNotifier({
+            upstream: options.plans,
+            logger: options.authLogger ?? createSilentLogger(),
+            timeoutMs: options.plans.timeoutMs,
+          }),
   };
 
   const aiSurface =

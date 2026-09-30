@@ -579,6 +579,8 @@ here for five minutes, so your plans service sees one call however many people
 open the screen, and one source address may read it 60 times a minute.
 [PROTOCOL.md §5.22](./PROTOCOL.md#522-v1plans-the-pass-through-to-a-biller) is the contract.
 
+**It tells the plans service when an account is erased.** Before a person's own delete or your admin delete removes an account, the service sends `POST <PLANS_UPSTREAM_URL>/erase` with the secret and the account id, so the plans service cancels that account's subscriptions first. It waits five seconds at most. If the call fails, the log gets an error with the account id and the account is deleted anyway; the plans service's nightly reconciliation then cancels the subscription.
+
 **It gives the plans service a narrow admin credential.** `BILLING_TOKEN`
 provides a third credential for `/v1/admin`, beside the two above. An allowlist
 limits everything it can do: `GET /v1/admin/accounts/expiring`,

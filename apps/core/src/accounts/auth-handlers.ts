@@ -67,6 +67,7 @@ import {
 } from './auth-input.js';
 import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
 import type { AccountView, InstanceHealthConsent } from '../protocol.js';
+import type { AccountEraseNotifier } from './erase-notifier.js';
 import { SIGNUP_REQUEST_REFUSALS, readSignupIntent, type OpenSignupSurface } from './open-signup.js';
 import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
@@ -153,6 +154,14 @@ export interface AuthContext {
    * it needs to agree, to leave and to read its own copy.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * Tells the biller an account is about to be erased, or `null`/absent on an
+   * instance no biller stands behind. Called by `handleDeleteAccount` before
+   * the delete, and read off this context by the admin delete route too, so
+   * both erasure paths share one binding. It never throws. See
+   * `accounts/erase-notifier.ts`.
+   */
+  accountEraseNotifier?: AccountEraseNotifier | null;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -1606,6 +1615,7 @@ export async function handleDeleteAccount(
     return { status: 'unauthorized', reason: 'passphrase is incorrect' };
   }
 
+  await ctx.accountEraseNotifier?.({ accountId: account.id });
   await ctx.store.deleteAccount(account.id);
   ctx.logger.info('Account deleted with all sync data', { accountId: account.id });
   return { status: 'no-content' };
