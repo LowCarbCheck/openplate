@@ -209,6 +209,44 @@ export function resolveFoodDbBackfill(options: {
 }
 
 /**
+ * The default for `FOOD_DB_DAILY_CALL_LIMIT`: LowCarbCheck's free key allows
+ * 100,000 credits a month (`docs/configuration.md`), one credit per search,
+ * and 100,000 over a 31-day month is 3,225 a day. Rounded down, so a month at
+ * the cap every day still ends inside the free allowance.
+ */
+export const DEFAULT_FOOD_DB_DAILY_CALL_LIMIT = 3200;
+
+/**
+ * Parses `FOOD_DB_DAILY_CALL_LIMIT`: how many LowCarbCheck calls this server
+ * makes in one UTC day before it answers `429` instead of asking.
+ *
+ * WHY A CAP AT ALL: every uncached food name is a call under the operator's
+ * key, and the key's allowance is shared by everyone on the instance. The
+ * per-address limiter bounds one network, not the instance, so without this a
+ * caller with enough addresses (or, on a managed instance, enough free
+ * accounts) could spend the month's allowance and stop food search for
+ * everybody until it renewed.
+ *
+ * Unset or blank is {@link DEFAULT_FOOD_DB_DAILY_CALL_LIMIT}. Anything but a
+ * positive whole number stops the boot, the house rule for a typo: a limit
+ * that silently fell back to the default would hide the operator's mistake
+ * until the day it mattered. To switch the lookup off, empty
+ * `FOOD_DB_API_URL`; a limit of `0` is not that switch.
+ *
+ * @param raw - `FOOD_DB_DAILY_CALL_LIMIT`, raw.
+ * @returns the daily limit.
+ */
+export function parseFoodDbDailyCallLimit(raw: string | undefined): number {
+  const trimmed = raw?.trim() ?? '';
+  if (trimmed === '') return DEFAULT_FOOD_DB_DAILY_CALL_LIMIT;
+  const limit = /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+  if (!Number.isSafeInteger(limit) || limit < 1) {
+    throw new Error(`FOOD_DB_DAILY_CALL_LIMIT must be a positive whole number, got "${raw}".`);
+  }
+  return limit;
+}
+
+/**
  * Parses `DEFAULT_UI_LANGUAGE`, the language a visitor who has NOT yet chosen
  * one is served.
  *
@@ -414,6 +452,13 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
       apiKey: env.FOOD_DB_API_KEY,
       backfill: env.FOOD_DB_BACKFILL,
     }),
+
+    /**
+     * The daily cap on LowCarbCheck calls from this server, counted in memory
+     * per UTC day (`FOOD_DB_DAILY_CALL_LIMIT`). See
+     * {@link parseFoodDbDailyCallLimit} for the default and why it exists.
+     */
+    foodDbDailyCallLimit: parseFoodDbDailyCallLimit(env.FOOD_DB_DAILY_CALL_LIMIT),
 
     /**
      * Micronutrient reference basis (M234 spec 05)

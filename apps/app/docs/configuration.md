@@ -59,6 +59,20 @@ An instance with no key keeps working. It is the anonymous tier, and for one per
 openplate out it is usually enough. A household, or anything that scans several plates a
 day, wants the free key.
 
+`FOOD_DB_DAILY_CALL_LIMIT` caps how many LowCarbCheck calls this server makes in one UTC
+day. The default, 3,200, keeps a month inside the free key's 100,000. A name someone searched
+in the last five minutes is answered from memory and costs nothing. Past the limit, food
+lookups pause until midnight UTC, the app says so, and scans still complete with the AI's own
+numbers. Raise it if your key allows more. The count lives in memory, so a restart starts it
+again.
+
+On a managed instance, a food lookup also needs a signed-in account. The app sends the
+account's session with each lookup, and the app server asks the sync service at
+`SYNC_SERVER_URL` whether the session is live before anything reaches LowCarbCheck. The app
+server must therefore reach that address as well. If it cannot, lookups are refused until it
+can, and scans still complete with the AI's own numbers. An open instance answers every
+lookup, as before.
+
 The lookup is fail-open either way: if the food database is unreachable, refused or out of
 allowance, a scan still completes and still shows numbers. Those numbers are then the AI's
 own estimate rather than a database figure, and the app says so on screen rather than

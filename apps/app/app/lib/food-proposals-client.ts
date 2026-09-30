@@ -16,6 +16,7 @@
  * it. Every failure is swallowed: a proposal is a contribution to the food
  * database, never a step of logging a meal.
  */
+import { fetchWithAccountBearer, sessionAccountBearer } from '#app/lib/account-bearer';
 import type { IntakeSource } from '#app/lib/intake-source';
 import type { LocalFoodLog } from '#app/lib/local-store/schema';
 import {
@@ -128,12 +129,18 @@ export function buildConfirmedProposals(options: {
  */
 export function sendFoodProposals(options: { proposals: readonly FoodProposal[]; isInstanceOn: boolean }): void {
   if (!options.isInstanceOn || options.proposals.length === 0 || !isFoodDbContributionOn()) return;
-  void fetch(FOOD_PROPOSALS_PATH, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ proposals: options.proposals }),
-    // The confirm redirects at once; `keepalive` lets the request finish
-    // after the page it started on has moved on.
-    keepalive: true,
+  // With the account bearer: on a managed instance the relay refuses a caller
+  // with no live account, as `/api/food-matches` does.
+  void fetchWithAccountBearer({
+    url: FOOD_PROPOSALS_PATH,
+    init: {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ proposals: options.proposals }),
+      // The confirm redirects at once; `keepalive` lets the request finish
+      // after the page it started on has moved on.
+      keepalive: true,
+    },
+    bearer: sessionAccountBearer(),
   }).catch(() => undefined);
 }

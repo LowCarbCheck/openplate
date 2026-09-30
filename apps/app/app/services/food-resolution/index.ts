@@ -213,13 +213,34 @@ export function clearFoodResolutionCache(): void {
  * so there is nothing to protect against.
  */
 export function allNamesCached(names: readonly string[], options: ResolveOptions = configuredOptions()): boolean {
-  if (!options.enabled || names.length === 0) return true;
+  return uncachedNameCount(names, options) === 0;
+}
+
+/**
+ * How many upstream LCC calls resolving `names` right now would make at most:
+ * the DISTINCT names (after the cache key's normalization) with no live cache
+ * entry. Side-effect-free, like {@link allNamesCached}, which is this count
+ * compared with zero.
+ *
+ * `/api/food-matches` reserves this many calls against the server's daily
+ * budget before it resolves anything (`food-db-daily-budget.ts`). It is an
+ * upper bound, not an exact count: a name already in flight for another caller
+ * shares that call, and this does not look at `inFlightSearches`, so it counts
+ * it again. That errs towards spending less of the allowance, never more.
+ *
+ * `enabled: false` is `0` for the reason it is "cached" above: nothing leaves.
+ */
+export function uncachedNameCount(names: readonly string[], options: ResolveOptions = configuredOptions()): number {
+  if (!options.enabled) return 0;
   const now = Date.now();
   const language = searchLanguage(options);
-  return names.every((name) => {
-    const cached = searchCache.get(searchCacheKey({ apiUrl: options.apiUrl, name, language }));
-    return cached !== undefined && cached.expiresAt > now;
-  });
+  const uncached = new Set<string>();
+  for (const name of names) {
+    const key = searchCacheKey({ apiUrl: options.apiUrl, name, language });
+    const cached = searchCache.get(key);
+    if (cached === undefined || cached.expiresAt <= now) uncached.add(key);
+  }
+  return uncached.size;
 }
 
 /** Injectable slice of `CONFIG.foodDb` — lets tests exercise the disabled path and a stub base URL. */

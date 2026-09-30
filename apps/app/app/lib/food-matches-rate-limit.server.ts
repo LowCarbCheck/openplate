@@ -11,14 +11,19 @@
  *
  * @see app/routes/api.food-matches.ts — the sole production caller.
  */
-import { getClientIp } from '#app/lib/client-ip.server';
+import { getClientRateLimitBucket } from '#app/lib/client-ip.server';
 
 /**
- * Buckets by client IP, and only by that (M128 spec 03): there are no accounts,
- * so there is no per-caller identifier left to key on. One named place for the
- * rule, rather than an inline template literal the tests would have to
- * re-derive by hand and then drift from.
+ * Buckets by client address, and an IPv6 address by its /64 network (see
+ * `rateLimitAddressBucket`). One named place for the rule, rather than an
+ * inline template literal the tests would have to re-derive by hand and then
+ * drift from.
+ *
+ * STILL BY ADDRESS ON A MANAGED INSTANCE, where every caller carries an
+ * account token: the account check in front of this limiter decides WHO may
+ * search, this bucket decides how fast one network may, and the daily cap
+ * (`food-db-daily-budget.server.ts`) is what bounds the instance as a whole.
  */
 export function foodMatchesRateLimitKey(request: Request): string {
-  return `food-matches:ip:${getClientIp(request)}`;
+  return `food-matches:ip:${getClientRateLimitBucket(request)}`;
 }

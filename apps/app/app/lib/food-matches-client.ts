@@ -19,8 +19,17 @@
  * manually below." `fetchFoodMatches` now returns the full
  * `FoodMatchesResult` (matches + throttled + retryAfterMs) so a caller can
  * render an honest "try again shortly" instead of a false no-match message.
+ *
+ * THE ACCOUNT BEARER (2026-09-30). On a managed instance the route refuses a
+ * caller with no live account token, so the request carries the session's
+ * bearer (`#app/lib/account-bearer`), with one refresh and retry after a
+ * `401`. A `401` or `503` that survives that is read like any other failure:
+ * no curated matches. The server's daily cap answers `429` with the throttled
+ * body, and it is read as throttled even if the body is lost, because a
+ * `429` is a pause and never a "nothing found".
  */
 import { z } from 'zod';
+import { fetchWithAccountBearer, sessionAccountBearer, type AccountBearer } from '#app/lib/account-bearer';
 import type { FoodMatch } from '#app/services/food-resolution';
 import { FOOD_DB_STATUS_UNKNOWN, foodDbStatusWireSchema, parseFoodDbStatus } from '#app/services/food-db/wire';
 import type { FoodDbStatus } from '#app/services/food-db/wire';
@@ -81,33 +90,46 @@ const foodMatchesBodySchema = z.object({
   foodDb: foodDbStatusWireSchema.optional(),
 });
 
+/** HTTP 429, the status of the server's daily cap on food database calls. */
+const TOO_MANY_REQUESTS = 429;
+
 /**
  * @param names - the food names to resolve, at most `MAX_NAMES_PER_REQUEST`
  *   (server-enforced) worth — an empty array short-circuits with no request.
+ * @param options.bearer - where the account token comes from; the tab's own
+ *   session unless a test hands in another.
  * @returns matches parallel to `names` by index, plus the caller's throttle
  *   status; fail-open (`throttled: false`, empty matches) on any
  *   network/parse failure — see the module doc comment.
  */
-export async function fetchFoodMatches(names: string[]): Promise<FoodMatchesResult> {
+export async function fetchFoodMatches(
+  names: string[],
+  { bearer = sessionAccountBearer() }: { bearer?: AccountBearer } = {},
+): Promise<FoodMatchesResult> {
   if (names.length === 0) return { matches: [], ...NOTHING_HEARD };
 
   try {
-    const response = await fetch('/api/food-matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ names }),
+    const response = await fetchWithAccountBearer({
+      url: '/api/food-matches',
+      init: {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names }),
+      },
+      bearer,
     });
-    if (!response.ok) return { matches: names.map(() => []), ...NOTHING_HEARD };
+    const isCapped = response.status === TOO_MANY_REQUESTS;
+    if (!response.ok && !isCapped) return { matches: names.map(() => []), ...NOTHING_HEARD };
 
-    const parsed = foodMatchesBodySchema.safeParse(await response.json());
+    const parsed = foodMatchesBodySchema.safeParse(await response.json().catch(() => null));
     const payload = parsed.success ? parsed.data : {};
-    const matches = payload.matches ?? names.map(() => []);
+    const matches = isCapped ? names.map(() => []) : (payload.matches ?? names.map(() => []));
     // The server answered, so whatever it says about the food database is the
     // best this client will ever know. Read on BOTH remaining branches: a
     // throttled caller never reached the upstream, but the last refusal the
     // server saw is still true and still worth reporting.
     const foodDb = parseFoodDbStatus(payload.foodDb);
-    if (payload.throttled !== true) return { matches, ...NOT_THROTTLED, foodDb };
+    if (payload.throttled !== true && !isCapped) return { matches, ...NOT_THROTTLED, foodDb };
 
     return { matches, throttled: true, retryAfterMs: payload.retryAfterMs ?? null, foodDb };
   } catch {

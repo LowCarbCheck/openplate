@@ -284,6 +284,9 @@ services:
       # "true" passes foods people save from an AI answer on to LowCarbCheck as
       # proposals. Needs FOOD_DB_API_KEY. Empty means off.
       FOOD_DB_BACKFILL: ${FOOD_DB_BACKFILL:-}
+      # The most LowCarbCheck calls this server makes in one UTC day. Empty means
+      # the default, 3200.
+      FOOD_DB_DAILY_CALL_LIMIT: ${FOOD_DB_DAILY_CALL_LIMIT:-}
       # The language a first-time visitor sees: en, de, fr, it, es or tr.
       # Empty means en.
       DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
