@@ -5,6 +5,7 @@ import { aesGcmDecrypt, aesGcmEncrypt } from '../../../app/lib/sync/engine/crypt
 import { deriveRecoveryAuthHash, deriveRecoveryKek } from '../../../app/lib/sync/engine/client/recovery-kek';
 import { base64ToBytes } from '../../../app/lib/sync/engine/crypto/base64';
 import { toBufferSource } from '../../../app/lib/sync/engine/crypto/buffer-source';
+import { encodeCrockfordBase32 } from '../../../app/lib/sync/engine/crypto/base32';
 
 const IKM = new TextEncoder().encode('input-key-material-32-bytes-long!!');
 const SALT = new Uint8Array(16).fill(7);
@@ -108,4 +109,21 @@ test('the recovery AUTH proof is not the recovery KEK — the value sent cannot 
   // the whole failure being ruled out.
   const proofAsKey = await crypto.subtle.importKey('raw', toBufferSource(authHash), 'AES-GCM', false, ['decrypt']);
   await assert.rejects(() => aesGcmDecrypt({ key: proofAsKey, iv, ciphertext }));
+});
+
+test('the recovery AUTH proof matches the known-answer vectors openplate-core pins its server-side port to', async () => {
+  // `openplate-core`'s `src/lib/recovery-auth.ts` re-derives this proof from an
+  // escrowed code when an instance's SERVER_SECRET changes (the account move),
+  // and `apps/core/tests/unit/recovery-auth.test.ts` pins the SAME pairs. If
+  // this derivation ever changes, this test fails here, before the port and
+  // the app disagree and every recovered account on a moved instance breaks.
+  const counting = Uint8Array.from({ length: 20 }, (_unused, index) => index);
+  const hashed = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode('openplate-core move-accounts vector')),
+  ).slice(0, 20);
+
+  assert.equal(encodeCrockfordBase32(counting), '000G40R40M30E209185GR38E1W8124GK');
+  assert.equal(await deriveRecoveryAuthHash(counting), 'Do7W9Mtj++2ihJA+cKjKESkFM5G9/Zs1Pw8t5r2KPJ8=');
+  assert.equal(encodeCrockfordBase32(hashed), 'MAB0KYA3C9HWD50P5BBG3V6R0QZY3MR5');
+  assert.equal(await deriveRecoveryAuthHash(hashed), 'nAu9m+qZmljLzDZ8tH2TqbJ3fMZ1didoXzwxu2+gfu8=');
 });
