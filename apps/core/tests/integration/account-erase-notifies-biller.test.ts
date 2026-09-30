@@ -217,3 +217,39 @@ test('a wrong password deletes nothing and tells the biller nothing', async () =
   assert.equal(biller.notices.length, 0);
   assert.equal(await accountExists(session.account.id), true);
 });
+
+test('a throttled delete with the right password deletes nothing and tells the biller nothing', async () => {
+  // TWO BRANCHES MEET HERE (2026-09-30). The auth pass put a per-account
+  // throttle on this route, the routes pass put the erasure notice inside
+  // `handleDeleteAccount`. The throttle must decide first: a locked request
+  // that still told the biller would cancel a subscription for an account
+  // that goes on existing.
+  await service.close();
+  service = await startService({
+    db: database.db,
+    adminToken: ADMIN_TOKEN,
+    plans: { baseUrl: biller.baseUrl, secret: SECRET, timeoutMs: 300 },
+    authLogger: createRecordingLogger(authLines),
+    throttleConfig: { freeAttempts: 2, baseLockoutMs: 60_000, maxLockoutMs: 60_000, attemptResetMs: 60_000 },
+  });
+  const session = await service.signupThroughInvite({ email: 'locked@example.org', authHash: sampleAuthHash(87) });
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const guess = await service.request({
+      method: 'POST',
+      path: '/v1/auth/delete',
+      accessToken: session.tokens.accessToken,
+      body: { authHash: sampleAuthHash(88) },
+    });
+    assert.equal(guess.status, 401, `guess ${attempt}`);
+  }
+
+  const locked = await service.request({
+    method: 'POST',
+    path: '/v1/auth/delete',
+    accessToken: session.tokens.accessToken,
+    body: { authHash: sampleAuthHash(87) },
+  });
+  assert.equal(locked.status, 429);
+  assert.equal(biller.notices.length, 0, 'a locked request reached the biller');
+  assert.equal(await accountExists(session.account.id), true);
+});
