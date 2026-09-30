@@ -1,4 +1,16 @@
 {
+  "v0_58_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Gli amministratori possono visualizzare il budget residuo dell'IA e l'uso dell'IA di oggi.",
+      "02": "Gli amministratori possono assegnare foto gratuite giornaliere senza scadenza."
+    },
+    "changed": {
+      "01": "Gli account con IA gratuita la mantengono anche al termine di un piano a pagamento.",
+      "02": "La ricerca degli alimenti sul servizio ospitato richiede ora l'accesso.",
+      "03": "La sostituzione della tua chiave dei dati richiede la password e disconnette gli altri dispositivi."
+    }
+  },
   "v0_57_1": {
     "date": "2026-09-30",
     "changed": {
@@ -9,13 +21,6 @@
     "date": "2026-09-30",
     "added": {
       "01": "La prova gratuita ora indica quanti giorni rimangono."
-    }
-  },
-  "v0_56_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Gli amministratori possono visualizzare e impostare un'etichetta per ogni persona.",
-      "02": "Un'istanza chiusa può reindirizzare le proprie persone a un nuovo indirizzo."
     }
   }
 }

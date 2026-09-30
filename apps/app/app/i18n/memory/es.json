@@ -2288,6 +2288,13 @@
     "at": "2026-09-14",
     "es": "Compilación {{label}}"
   },
+  "1a78bd76a657e234": {
+    "en": "Food search on the hosted service now requires signing in.",
+    "path": "releases:v0_58_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Para buscar alimentos en el servicio alojado, ahora es necesario iniciar sesión."
+  },
   "1ac00c651d4b784a": {
     "en": "Ask whoever invited you for a new link.",
     "path": "common:connectGateway.inviteInvalid.body",
@@ -3120,6 +3127,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "es": "Contiene sulfitos"
+  },
+  "239788694a8511ad": {
+    "en": "Administrators can view the remaining AI budget and today's AI use.",
+    "path": "releases:v0_58_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Los administradores pueden ver el presupuesto de IA restante y el uso de IA de hoy."
   },
   "23a49321e098305f": {
     "en": "Invitations and accounts",
@@ -13509,6 +13523,13 @@
     "at": "2026-09-30",
     "es": "Los administradores pueden ver y asignar una etiqueta a cada persona."
   },
+  "a4603a421c6c8ebf": {
+    "en": "Replacing your data key requires your password and signs out other devices.",
+    "path": "releases:v0_58_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Cambiar tu clave de datos requiere tu contraseña y cierra la sesión en los demás dispositivos."
+  },
   "a47a850b4a669b7b": {
     "en": "The server could not be reached. Check your connection and try again.",
     "path": "common:forgot.unreachable",
@@ -15420,6 +15441,13 @@
     "at": "2026-09-14",
     "es": "Unirse a una pasarela"
   },
+  "bd208776098c6a60": {
+    "en": "Accounts with free AI keep it after a paid plan ends.",
+    "path": "releases:v0_58_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Las cuentas con IA gratuita la conservan después de que termine un plan de pago."
+  },
   "bd314707be0b1417": {
     "en": "The account could not be deleted.",
     "path": "common:admin.delete.failed",
@@ -16175,6 +16203,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": ", parcialmente estimado"
+  },
+  "c76d3075cd996567": {
+    "en": "Administrators can assign daily free photos that do not expire.",
+    "path": "releases:v0_58_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "Los administradores pueden asignar fotos gratuitas diarias que no caducan."
   },
   "c76eea5cdecaec3b": {
     "en": "Preferences",

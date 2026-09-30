@@ -1,4 +1,16 @@
 {
+  "v0_58_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Los administradores pueden ver el presupuesto de IA restante y el uso de IA de hoy.",
+      "02": "Los administradores pueden asignar fotos gratuitas diarias que no caducan."
+    },
+    "changed": {
+      "01": "Las cuentas con IA gratuita la conservan después de que termine un plan de pago.",
+      "02": "Para buscar alimentos en el servicio alojado, ahora es necesario iniciar sesión.",
+      "03": "Cambiar tu clave de datos requiere tu contraseña y cierra la sesión en los demás dispositivos."
+    }
+  },
   "v0_57_1": {
     "date": "2026-09-30",
     "changed": {
@@ -9,13 +21,6 @@
     "date": "2026-09-30",
     "added": {
       "01": "El periodo de prueba gratuito ahora muestra cuántos días quedan."
-    }
-  },
-  "v0_56_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Los administradores pueden ver y asignar una etiqueta a cada persona.",
-      "02": "Una instancia cerrada puede remitir a sus usuarios a una nueva dirección."
     }
   }
 }

@@ -1,4 +1,16 @@
 {
+  "v0_58_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Yöneticiler kalan yapay zeka bütçesini ve bugünkü yapay zeka kullanımını görebilir.",
+      "02": "Yöneticiler süresi dolmayan günlük ücretsiz fotoğraflar atayabilir."
+    },
+    "changed": {
+      "01": "Ücretsiz yapay zekaya sahip hesaplar, ücretli bir plan bittikten sonra da bunu korur.",
+      "02": "Barındırılan serviste yiyecek araması yapmak artık giriş yapmayı gerektiriyor.",
+      "03": "Veri anahtarını değiştirmek parolanı gerektirir ve diğer cihazların oturumunu kapatır."
+    }
+  },
   "v0_57_1": {
     "date": "2026-09-30",
     "changed": {
@@ -9,13 +21,6 @@
     "date": "2026-09-30",
     "added": {
       "01": "Ücretsiz deneme artık kaç gün kaldığını gösteriyor."
-    }
-  },
-  "v0_56_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Yöneticiler her kullanıcıda bir etiket görebilir ve ayarlayabilir.",
-      "02": "Kapatılan bir örnek, kullanıcılarını yeni bir adrese yönlendirebilir."
     }
   }
 }

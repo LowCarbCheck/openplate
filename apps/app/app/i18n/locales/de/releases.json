@@ -1,4 +1,16 @@
 {
+  "v0_58_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Administratoren können das verbleibende KI-Budget und die heutige KI-Nutzung einsehen.",
+      "02": "Administratoren können tägliche kostenlose Fotos zuweisen, die nicht ablaufen."
+    },
+    "changed": {
+      "01": "Konten mit kostenloser KI behalten diese, nachdem ein kostenpflichtiger Tarif endet.",
+      "02": "Die Lebensmittelsuche auf dem gehosteten Dienst erfordert jetzt eine Anmeldung.",
+      "03": "Das Ersetzen deines Datenschlüssels erfordert dein Passwort und meldet andere Geräte ab."
+    }
+  },
   "v0_57_1": {
     "date": "2026-09-30",
     "changed": {
@@ -9,13 +21,6 @@
     "date": "2026-09-30",
     "added": {
       "01": "Der kostenlose Testzeitraum zeigt nun an, wie viele Tage verbleiben."
-    }
-  },
-  "v0_56_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Administratoren können bei jeder Person ein Label sehen und setzen.",
-      "02": "Eine geschlossene Instanz kann ihre Personen an eine neue Adresse verweisen."
     }
   }
 }

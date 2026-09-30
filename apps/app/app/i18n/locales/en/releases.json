@@ -1,4 +1,16 @@
 {
+  "v0_58_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Administrators can view the remaining AI budget and today's AI use.",
+      "02": "Administrators can assign daily free photos that do not expire."
+    },
+    "changed": {
+      "01": "Accounts with free AI keep it after a paid plan ends.",
+      "02": "Food search on the hosted service now requires signing in.",
+      "03": "Replacing your data key requires your password and signs out other devices."
+    }
+  },
   "v0_57_1": {
     "date": "2026-09-30",
     "changed": {
@@ -9,13 +21,6 @@
     "date": "2026-09-30",
     "added": {
       "01": "The free trial now says how many days are left."
-    }
-  },
-  "v0_56_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Administrators can see and set a label on each person.",
-      "02": "A closed instance can send its people to a new address."
     }
   }
 }
