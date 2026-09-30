@@ -178,8 +178,13 @@ The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two 
 | `AI_ADVERTISED_MODEL` | unset | The model every scan uses. `/health` names it, and the proxy writes it into every request. The app does not scan without it. | [Managed instances](configuration.md#managed-instances) |
 | `AI_MAX_OUTPUT_TOKENS` | `8192` | The maximum output tokens one request can ask for. | |
 | `AI_RATE_LIMIT_PER_MINUTE` | `20` | The maximum requests one account can make in any 60 seconds. | |
-| `AI_INSTANCE_DAILY_LIMIT` | unset, no limit | The limit for the whole instance, in AI requests per UTC day. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
+| `AI_INSTANCE_DAILY_LIMIT` | unset, no limit | The daily instance limit in AI units per UTC day. One plate scan costs one unit. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
 | `AI_MAX_REQUEST_BYTES` | `8000000` | The largest request the proxy accepts, in bytes. | |
+| `AI_MAX_IMAGE_PARTS` | `1` | Maximum images per request. Requests exceeding this limit return `400 ai-request-too-large` before counting starts. | |
+| `AI_MAX_TEXT_BYTES` | `49152` | Maximum text bytes per request, combining message text and `response_format`. Requests with more return the same `400`. | |
+| `AI_MAX_MESSAGES` | `4` | Maximum messages per request. Requests exceeding this limit return the same `400`. | |
+| `AI_UNIT_INPUT_TOKENS` | `8192` | Estimated input tokens per AI unit. Each request costs one unit, plus one per additional `AI_UNIT_INPUT_TOKENS`. Daily limits count these units. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
+| `AI_IMAGE_INPUT_TOKENS` | `1500` | Estimated input tokens for one image. Text counts as its total bytes divided by 4. | |
 
 ### Consent
 
@@ -194,6 +199,7 @@ The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two 
 | `VAPID_PUBLIC_KEY` | unset, no notifications | The public key for web push. Set all three or none. Make a pair with `pnpm sync-api push keygen`. | |
 | `VAPID_PRIVATE_KEY` | unset | The private key for web push. | |
 | `VAPID_SUBJECT` | unset | How a push service reaches you: a `mailto:` address or an `https://` address. | |
+| `PUSH_ENDPOINT_HOSTS` | unset | Additional comma-separated push hosts a device can register. `*.example.org` covers every host under `example.org`. Default browser push services are always permitted. Set this only for custom hosts. A malformed entry stops startup. | |
 
 ### Plans
 
@@ -202,6 +208,7 @@ The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two 
 | `PLANS_UPSTREAM_URL` | unset, no plans | The internal address of the billing service that receives `/v1/plans/*`. Set it together with `PLANS_UPSTREAM_SECRET`. | [Paid plans](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#paid-plans-and-what-the-plans-service-can-reach) |
 | `PLANS_UPSTREAM_SECRET` | unset | The shared secret the billing service checks. | [Paid plans](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#paid-plans-and-what-the-plans-service-can-reach) |
 | `BILLING_TOKEN` | unset | The billing service's own credential, at least 24 characters. It reaches three admin routes and nothing else. | [Paid plans](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#paid-plans-and-what-the-plans-service-can-reach) |
+| `BILLING_MAX_DAILY_AI_LIMIT` | `1000` | Maximum daily AI limit that `BILLING_TOKEN` can write to an account. Keep this at or above your highest plan. `ADMIN_TOKEN` is not bound by it. | [Paid plans](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#paid-plans-and-what-the-plans-service-can-reach) |
 
 ### Feedback, sharing and research
 
