@@ -238,6 +238,7 @@ async function main(): Promise<void> {
           // instance names is the model its proxy sends, so the two cannot
           // disagree.
           bodyPolicy: { model: config.aiAdvertisedModel, maxOutputTokens: config.aiMaxOutputTokens },
+          inputPolicy: config.aiInputPolicy,
         };
 
   // AN UPSTREAM KEY WITH NO NAMED MODEL. Non-fatal, like the two warnings

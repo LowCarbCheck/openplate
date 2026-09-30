@@ -40,6 +40,7 @@ import type { FeedbackReportDetail } from '../../src/feedback/feedback-admin-sto
 import { createFakeBlobRollbackStore, type FakeBlobRollbackStore } from './fake-blob-rollback-store.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import type { Mailer } from '../../src/mail/mailer.js';
 
 /** One emitted log line, kept whole so a test can assert on the message AND the fields. */
@@ -222,6 +223,7 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
             maxRequestBytes: 8_000_000,
             instanceDailyLimit: options.aiInstanceDailyLimit,
             bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+            inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
           },
   });
 

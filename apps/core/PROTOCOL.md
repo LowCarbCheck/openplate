@@ -1111,27 +1111,39 @@ not, and `instance.ai` is `null` on the handshake (§5.6). An implementation of
 this protocol MAY omit the route entirely; a client MUST read `instance.ai`
 before offering a scan rather than probing the path.
 
-Authenticated with the account's ordinary **access token** (§4.1). The body is
-an OpenAI-compatible chat-completion request and this specification does not
-constrain it further: the service checks only that it is a JSON object, because
-a stricter schema would reject every field the next provider adds. It then
-rewrites the few fields that set what one request costs (below) and forwards
-every other field as it came. The response is the provider's, relayed with its
-status.
+Authenticated with the account's ordinary **access token** (§4.1), checked
+**before the body is read**: a request without a valid token is `401` whatever
+its size or shape, and the service neither buffers nor parses it. The body is
+an OpenAI-compatible chat-completion request. The service checks that it is a
+JSON object, forwards only the fields on an allow list (below), rewrites the
+few that set what one request costs, bounds what one request may carry in, and
+refuses nothing for a field it does not know: it drops it. The response is the
+provider's, relayed with its status.
 
 **The instance decides what one request may cost.** One upstream key may serve
 every account on an instance, and a daily count of requests says nothing about
 what one request costs. So the service rewrites these fields before it
-forwards, for every account, and never refuses a request for them:
+forwards, for every account, and never refuses a request for them.
 
-| Field                                                                        | What the provider receives                                                                                                                                            |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`                                                                      | the instance's model, `AI_ADVERTISED_MODEL`, the same value `instance.ai.model` publishes (§5.6). When the operator set none, the caller's `model` is sent unchanged. |
-| `max_tokens`, `max_completion_tokens`                                        | at most `AI_MAX_OUTPUT_TOKENS` (default 8192). A value above it, or one that is not a number, becomes the ceiling. A body with neither gets `max_tokens` written in.  |
-| `reasoning.max_tokens`                                                       | at most the same ceiling. `reasoning.effort` is kept.                                                                                                                 |
-| `n`                                                                          | `1`, when present.                                                                                                                                                    |
-| `models`, `route`, `provider`, `plugins`, `web_search_options`, `prediction` | removed.                                                                                                                                                              |
-| `provider`, on an OpenRouter upstream                                        | written back as `{"data_collection":"deny"}`: only endpoints that do not store or train on the request. Any other upstream gets no `provider` field.                  |
+**Only these top-level fields are forwarded**: `model`, `messages`, `stream`,
+`stream_options`, `temperature`, `top_p`, `response_format`, `max_tokens`,
+`max_completion_tokens`, `reasoning` and `n`. Any other field is dropped, and
+its name (never its value) is logged, so a client that sends a field the
+service does not know keeps working. Inside `messages`, a message keeps `role`,
+`content` and `name`; a content part is `text` (with `text`) or `image_url`
+(with `url` alone, so `detail` is dropped), and an `image_url` whose `url` is
+not a `data:image/...;base64,` URI is dropped, because a remote URL or a
+document behind a data URI is input nobody measured. Every other part type is
+dropped.
+
+| Field                                 | What the provider receives                                                                                                                                            |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`                               | the instance's model, `AI_ADVERTISED_MODEL`, the same value `instance.ai.model` publishes (§5.6). When the operator set none, the caller's `model` is sent unchanged. |
+| `max_tokens`, `max_completion_tokens` | at most `AI_MAX_OUTPUT_TOKENS` (default 8192). A value above it, or one that is not a number, becomes the ceiling. A body with neither gets `max_tokens` written in.  |
+| `reasoning.max_tokens`                | at most the same ceiling. `reasoning.effort` is kept.                                                                                                                 |
+| `n`                                   | `1`, when present.                                                                                                                                                    |
+| any field not on the allow list above | removed, for example `models`, `route`, `plugins`, `web_search_options`, `prediction`, `tools`.                                                                       |
+| `provider`, on an OpenRouter upstream | written back as `{"data_collection":"deny"}`: only endpoints that do not store or train on the request. Any other upstream gets no `provider` field.                  |
 
 The ceiling applies with or without a model. A client that needs a longer
 answer than the ceiling allows gets a truncated one, and the operator raises
@@ -1161,6 +1173,32 @@ the request body is a photograph of somebody's food:
    reaches a log line **or a response**. A provider that rejects a request
    routinely echoes the request back inside its error body, image and all.
 
+#### What one request may carry in
+
+Output is capped above; input is bounded here. Measured on the body the
+provider receives (after the allow list), a request is refused with `400`
+before any scan claim, any reservation and any upstream call, so it spends
+nothing, when it carries:
+
+| Bound               | Default | `limit`       |
+| ------------------- | ------- | ------------- |
+| `image_url` parts   | 1       | `image-parts` |
+| UTF-8 bytes of text | 49152   | `text-bytes`  |
+| messages            | 4       | `messages`    |
+
+Text is the `content` strings, every `text` part, every message `name`, and
+the serialised `response_format`: a schema is input the model reads. The
+image's own bytes are not text. The operator sets the bounds with
+`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES` and `AI_MAX_MESSAGES`, and the
+refusal names the bound and its value:
+
+```json
+{ "error": "ai-request-too-large", "limit": "text-bytes", "max": 49152 }
+```
+
+The defaults are openplate's largest real request with room to spare: one
+photograph, two messages and about 12 KB of text.
+
 #### The body limit
 
 The request body carries a photograph, so the limit is sized for one:
@@ -1172,7 +1210,8 @@ It is deliberately **unrelated to `MAX_BLOB_BYTES`** (§8). That bounds a diary
 this service stores; this bounds an image it only forwards, and deriving one
 from the other refuses every real photograph.
 
-A body over the limit is `413`. **The error body on this route is
+A body over the limit is `413`, for a caller with a valid token; an
+unauthenticated body is `401` before it is read. **The error body on this route is
 OpenAI-shaped, not the `{"error": "<sentence>"}` of §4**, because the caller is
 an OpenAI-compatible client that reads `error.message` off an object:
 
@@ -1200,12 +1239,19 @@ avoid.
 
 #### The allowance
 
-Each account carries `dailyAiLimit`: requests per **UTC day**, defaulting to
-`0`. Every proxied response carries the account's position in it:
+Each account carries `dailyAiLimit`: **units** per **UTC day**, defaulting to
+`0`. A request reserves `max(1, ceil(estimated input tokens /
+AI_UNIT_INPUT_TOKENS))` units, where the estimate, made before the call, is
+the text bytes above divided by 4 plus `AI_IMAGE_INPUT_TOKENS` (default 1500)
+per image. With the default `AI_UNIT_INPUT_TOKENS` of 8192, openplate's plate
+scan weighs 1 unit and a request near the text bound weighs 2, so for the app a
+unit is a request. The same weight is taken from the instance ceilings below,
+and given back, where it is given back, in full. Every proxied response carries
+the account's position:
 
 | Header               | Meaning                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
-| `X-Quota-Used`       | Requests spent today, after this one                                                                 |
+| `X-Quota-Used`       | Units spent today, after this one                                                                    |
 | `X-Quota-Limit`      | The account's `dailyAiLimit`                                                                         |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
@@ -1219,8 +1265,10 @@ Each account carries `dailyAiLimit`: requests per **UTC day**, defaulting to
 | `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                                                 |
 | `403`  | `health-consent-required`              | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1). Refused before anything leaves the host, and before a usage row is written                                |
 | `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                                                                          |
+| `400`  | `ai-request-too-large`                 | The body carries more image parts, text bytes or messages than the instance allows (above). The body names `limit` and `max`. Refused before any row is written                                                    |
 | `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                                                                       |
-| `429`  | a sentence naming the reset instant    | The allowance is spent. `Retry-After` is seconds to the next UTC midnight                                                                                                                                          |
+| `409`  | `intake-in-flight`                     | An earlier request with the same `X-Intake-Id` is still in flight, on an account the scan gate applies to (below). Nothing is spent and no row is written                                                          |
+| `429`  | a sentence naming the reset instant    | The allowance cannot take this request's units. `Retry-After` is seconds to the next UTC midnight                                                                                                                  |
 | `429`  | a sentence naming the per-minute bound | More than `AI_RATE_LIMIT_PER_MINUTE` requests in any trailing 60 s                                                                                                                                                 |
 | `503`  | `ai-instance-ceiling`                  | The whole instance has spent its daily ceiling, or the scan-trial accounts have spent theirs. `Retry-After` is seconds to the next UTC midnight                                                                    |
 
@@ -1260,10 +1308,11 @@ the free tier from one field:
 **The order of the refusals**, which a conforming server MUST keep: identity
 and suspension; the health-data consent (`health-consent-required`, §5.15.1);
 `dailyAiLimit` of `0` (`ai-not-allowed`); an allowance date
-that has passed (`allowance-expired`); the body; `X-Intake-Id`'s shape; then,
-only for an account with free scans and **no** allowance date, the day limit
-(`trial-expired`, asked only when the scans are not used up, so spent scans
-keep their own code) and the scan claim (`trial-scans-spent`). A date in the
+that has passed (`allowance-expired`); the body and what it carries in
+(`ai-request-too-large`); `X-Intake-Id`'s shape; then, only for an account
+with free scans and **no** allowance date, the day limit (`trial-expired`,
+asked only when the scans are not used up, so spent scans keep their own code)
+and the scan claim (`intake-in-flight`, `trial-scans-spent`). A date in the
 future lifts both: it is a paid or granted window, and the trial's limits
 decide only where there is no date at all. Then the scan-trial accounts'
 ceiling, the instance ceiling and the daily allowance, as below.
@@ -1288,16 +1337,20 @@ configured themselves. The service:
 - claims one scan for an id it has not seen, before the upstream call, in one
   statement whose `WHERE` is the bound, so ten parallel requests on three scans
   claim three;
-- lets a later request with the same id ride on that scan while the id is
-  younger than 30 minutes, has carried fewer than 2 requests and has
-  **delivered no answer**; a request after a delivered answer, a third
-  request, or one after 30 minutes is a new action with a new scan, refused
-  with `403 trial-scans-spent` when none is left;
+- refuses a request with an id whose earlier request is **still in flight**
+  with `409 intake-in-flight`, spending nothing: overlapping requests on one id
+  would get two answers for one scan. An id is usable again once its request
+  settled. A failed one gave its scan back, so the retry claims it again at no
+  net cost; a request after a delivered answer is a new action with a new
+  scan, refused with `403 trial-scans-spent` when none is left;
+- treats a request that is still in flight after 30 minutes as one that died
+  without settling, and lets the next request on the id take its scan over
+  without a new one, so no id is locked for longer than that;
 - ties each give-back and each delivery to the claim it belongs to, so a
   request that fails late never returns a scan a newer request on the same id
   claimed;
-- serialises parallel requests with one new id, so they claim exactly one
-  scan between them;
+- serialises parallel requests with one new id, so exactly one of them claims
+  a scan and the others are `409 intake-in-flight`;
 - treats a request with **no** id as its own action, so a client that never
   sends one is counted correctly for every single-request action.
 
@@ -1321,7 +1374,7 @@ daily unit on purpose, row by row:
 #### The instance ceiling
 
 An operator MAY set a ceiling on the whole instance, in the same unit as the
-allowance above: requests per UTC day, across every account together
+allowance above: units per UTC day, across every account together
 (`AI_INSTANCE_DAILY_LIMIT`). Unset means there is none, which is what a
 self-hosted instance keeps and what every existing deployment keeps.
 
@@ -1338,20 +1391,23 @@ client MUST branch on it, because "the operator is out of capacity today" is a
 different screen from "you are out of requests today", and only the second one
 is about the person reading it.
 
-The instance's unit is taken **before** the account's, so a refused instance
-never bills anybody, and it is given back whenever the account's unit is (the
+The instance's units are taken **before** the account's, so a refused instance
+never bills anybody, and they are given back whenever the account's are (the
 table below applies to both, row for row).
 
 The ceiling is **not** published on `/health`: it is the operator's budget, and
 that handshake is unauthenticated. `GET /v1/admin/stats` reports it as
 `aiInstanceDailyLimit`, beside the `aiRequestsToday` it bounds.
 
-**The scan-trial accounts may have a ceiling of their own**, below the
-instance's (`AI_TRIAL_INSTANCE_DAILY_LIMIT`): requests per UTC day across every
-account the scan gate applies to, taken before the instance's unit. It refuses
-those accounts, and only those, with the same `503 ai-instance-ceiling`, so a
-burst of new trials runs out of its own budget before it reaches the capacity
-paying accounts need. It is not published either; `GET /v1/admin/stats`
+**The scan-trial accounts may have a ceiling of their own**
+(`AI_TRIAL_INSTANCE_DAILY_LIMIT`): units per UTC day across every account the
+scan gate applies to. It refuses those accounts, and only those, with the same
+`503 ai-instance-ceiling`. **Where it is set, a scan-trial request counts
+against it alone and never against `AI_INSTANCE_DAILY_LIMIT`**, which then
+bounds every other account, so trial traffic can never use up capacity the
+paying accounts need. The provider bill a day can reach is the sum of the two.
+Where it is not set, scan-trial requests count against the instance ceiling
+like everybody else's. It is not published either; `GET /v1/admin/stats`
 reports it as `aiTrialInstanceDailyLimit`, beside `signup.trialRequestsToday`.
 
 #### What is spent and what is given back

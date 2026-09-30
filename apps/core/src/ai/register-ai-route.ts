@@ -9,23 +9,26 @@
  * never configured an upstream must be indistinguishable from one where the
  * feature was never written.
  *
- * ORDER OF MIDDLEWARE IS LOAD-BEARING, and it is the reverse of the intuitive
- * one in one place:
+ * ORDER OF MIDDLEWARE IS LOAD-BEARING:
  *
- *  1. `express.json()` with a body limit sized for a PHOTOGRAPH
+ *  1. The BEARER GATE, first (2026-09-30). It reads a header and never the
+ *     body, so an anonymous caller is refused before this process buffers or
+ *     parses a byte of what it sent. Until then the parser ran first, and
+ *     anybody on the internet could make the server hold and parse 8 MB per
+ *     request without an account.
+ *  2. The MINUTE LIMITER, before the parser and the handler. It keys on the
+ *     resolved account (`ai/rate-limit.ts`), so it has to come after the gate,
+ *     and before the parser a burst is refused without parsing anything. It is
+ *     a burst guard in front of the daily quota: the quota decides how much of
+ *     the operator's key an account may burn in a day, and this decides how
+ *     fast. A client loop that retried on error would otherwise spend a whole
+ *     day's allowance in ten seconds.
+ *  3. `express.json()` with a body limit sized for a PHOTOGRAPH
  *     (`AI_MAX_REQUEST_BYTES`, default 8 MB). A plate scan is a base64 data
  *     URI, so this limit is the one that decides whether the feature works at
- *     all — the first version derived it from `MAX_BLOB_BYTES` and every real
- *     photograph got a 413.
- *  2. The BEARER GATE, before the limiter. The limiter keys on the resolved
- *     account (`ai/rate-limit.ts`), so mounting it first would leave it nothing
- *     to key on and it would fail closed on every request.
- *  3. The MINUTE LIMITER, before the handler. It is a burst guard in front of
- *     the daily quota: the quota decides how much of the operator's key an
- *     account may burn in a day, and this decides how fast. A client loop that
- *     retried on error would otherwise spend a whole day's allowance in ten
- *     seconds, and the first anybody would notice is somebody inexplicably out
- *     of requests at 09:00.
+ *     all: the first version derived it from `MAX_BLOB_BYTES` and every real
+ *     photograph got a 413. Its refusal still reaches the route's own error
+ *     handler below, for a signed-in caller.
  */
 import express from 'express';
 import type { ErrorRequestHandler, Express, NextFunction, Request, Response } from 'express';
@@ -123,9 +126,9 @@ export function registerAiRoute(app: Express, options: AiRouteOptions): void {
   const router = express.Router();
   router.post(
     CHAT_COMPLETIONS_PATH,
-    express.json({ limit: options.maxRequestBytes }),
     options.requireAuth,
     createAiRateLimit({ perMinute: options.perMinute }),
+    express.json({ limit: options.maxRequestBytes }),
     createChatCompletionsHandler(options),
   );
   // AFTER the route, on the same router: Express only routes to a

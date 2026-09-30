@@ -6,7 +6,11 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyChatBodyPolicy, DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import {
+  applyChatBodyPolicy,
+  DEFAULT_AI_MAX_OUTPUT_TOKENS,
+  listDroppedChatFields,
+} from '../../src/ai/chat-body-policy.js';
 import type { JsonObject } from '../../src/lib/json.js';
 
 const OPEN = { model: null, maxOutputTokens: 1_000 };
@@ -73,4 +77,121 @@ test('any other upstream gets no provider field, because it is an OpenRouter ext
     assert.equal('provider' in body, false, upstreamBaseUrl);
   }
   assert.equal('provider' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);
+});
+
+// ── the allow list (2026-09-30) ────────────────────────────────────────────
+
+/** A JPEG data URI, the only image the proxy forwards. */
+const JPEG = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+
+test('a top-level field nobody listed is dropped, and the fields the app sends all pass', () => {
+  const body = applyChatBodyPolicy({
+    body: {
+      model: 'm',
+      messages: [{ role: 'user', content: 'rice' }],
+      response_format: { type: 'json_schema', json_schema: { name: 'x', strict: true, schema: {} } },
+      reasoning: { effort: 'none' },
+      stream: true,
+      stream_options: { include_usage: true },
+      temperature: 0.2,
+      top_p: 0.9,
+      tools: [{ type: 'function', function: { name: 'f', description: 'A'.repeat(1000) } }],
+      functions: [{ name: 'f' }],
+      logit_bias: { 1: 100 },
+      some_new_extension: { prompt: 'a megabyte of text' },
+    },
+    policy: OPEN,
+  });
+  // The unknown ones: each of them carries input the provider bills, or a
+  // behaviour nobody measured.
+  for (const field of ['tools', 'functions', 'logit_bias', 'some_new_extension']) {
+    assert.equal(field in body, false, `${field} reached the provider`);
+  }
+  // THE CONTROL: every field the app sends, and the standard harmless ones,
+  // arrive as sent.
+  assert.deepEqual(Object.keys(body).toSorted(), [
+    'max_tokens',
+    'messages',
+    'model',
+    'reasoning',
+    'response_format',
+    'stream',
+    'stream_options',
+    'temperature',
+    'top_p',
+  ]);
+});
+
+test('a message keeps role, content and name; a part is text or an image data URI with its url alone', () => {
+  const body = applyChatBodyPolicy({
+    body: {
+      messages: [
+        { role: 'system', content: 'rules', name: 'app' },
+        {
+          role: 'user',
+          tool_calls: [{ id: 't' }],
+          content: [
+            { type: 'text', text: 'what is this?', cache_control: { type: 'ephemeral' } },
+            { type: 'image_url', image_url: { url: JPEG, detail: 'high' } },
+            { type: 'image_url', image_url: { url: 'data:application/pdf;base64,JVBERi0=' } },
+            { type: 'image_url', image_url: { url: 'https://example.org/plate.jpg' } },
+            { type: 'file', file: { file_data: 'data:application/pdf;base64,JVBERi0=' } },
+            { type: 'input_audio', input_audio: { data: 'AAAA', format: 'wav' } },
+          ],
+        },
+        'not a message',
+      ],
+    },
+    policy: OPEN,
+  });
+  assert.deepEqual(body.messages, [
+    { role: 'system', content: 'rules', name: 'app' },
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'what is this?' },
+        { type: 'image_url', image_url: { url: JPEG } },
+      ],
+    },
+  ]);
+});
+
+test('the dropped fields are listed by NAME, and a name made of a photograph is cut short', () => {
+  const photographKey = 'A'.repeat(500);
+  const dropped = listDroppedChatFields({
+    model: 'm',
+    provider: { order: ['x'] },
+    tools: [],
+    [photographKey]: 1,
+    messages: [
+      {
+        role: 'user',
+        tool_call_id: 'x',
+        content: [
+          { type: 'image_url', image_url: { url: JPEG, detail: 'low' } },
+          { type: 'file', file: {} },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(dropped, ['tools', 'A'.repeat(64), 'message.tool_call_id', 'image_url.detail', 'part.file']);
+  // THE CONTROL: the app's own body drops nothing, so nothing is logged for it.
+  assert.deepEqual(
+    listDroppedChatFields({
+      model: 'm',
+      messages: [
+        { role: 'system', content: 'rules' },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'what is this?' },
+            { type: 'image_url', image_url: { url: JPEG } },
+          ],
+        },
+      ],
+      response_format: { type: 'json_schema' },
+      reasoning: { effort: 'none' },
+    }),
+    [],
+  );
 });

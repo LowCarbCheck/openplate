@@ -3,10 +3,11 @@
  * service where a plate photograph exists.
  *
  * WHAT IT IS. A signed-in account posts an ordinary OpenAI-compatible request
- * with their OWN access token. This service spends one unit of their daily
- * allowance, swaps their token for the operator's real provider key, forwards
- * the body with the instance's model and a bounded answer (`ai/chat-body-policy.ts`,
- * M256), and relays the answer back. The account never learns the provider
+ * with their OWN access token. This service spends units of their daily
+ * allowance by what the request carries in (`ai/chat-input-bounds.ts`, one for
+ * a plate scan), swaps their token for the operator's real provider key,
+ * forwards the allowed fields of the body with the instance's model and a
+ * bounded answer (`ai/chat-body-policy.ts`, M256), and relays the answer back. The account never learns the provider
  * key; the provider never learns the access token.
  *
  * THE BODY IS A PLATE PHOTOGRAPH. It arrives here, it is serialised once, it is
@@ -35,7 +36,10 @@
  *                   and so is an allowance whose end date has passed
  *                   (403 allowance-expired). Both refuse BEFORE step 3,
  *                   because a reservation writes a row.
- *   3. RESERVE    : before the call, never after. Counting after the fact has a
+ *      the body   : after the allowance, only the allowed fields, and a body
+ *                   over an input bound is 400 ai-request-too-large before
+ *                   anything is claimed or reserved (2026-09-30).
+ *   3. RESERVE    : the request's weight, before the call, never after. Counting after the fact has a
  *                   window in which N parallel requests all read the old count.
  *                   The INSTANCE's ceiling is taken first and the account's
  *                   second, so a refusal of the whole instance never bills one
@@ -52,12 +56,17 @@
  * An account with free scans and NO allowance date is counted per AI action
  * as well as per request. After the two allowance refusals and the body check
  * comes THE SCAN CLAIM (`ai/quota-store.ts`): one scan per `X-Intake-Id`, a
- * retry on the same id riding on it until an answer was delivered (M256/02,
- * one scan buys one answer), a request with no id its own action. The
- * last scan used is `403 trial-scans-spent`, before any usage row and before
- * any upstream call. A future date lifts the gate: it is a paid or granted
- * window, and the count only decides where there is no date at all. Then the
- * trial accounts' own daily sub-ceiling, and the steps below as before.
+ * second request on the id while the first is in flight refused with `409
+ * intake-in-flight` at no cost (2026-09-30), a retry after a failed attempt
+ * claiming again at no net cost, a request after a delivered answer a new
+ * action (M256/02, one scan buys one answer), a request with no id its own
+ * action. The last scan used is `403 trial-scans-spent`, before any usage row
+ * and before any upstream call. A claim still open when the handler ends, a
+ * throw after it included, is given back in the handler's `finally`. A future
+ * date lifts the gate: it is a paid or granted window, and the count only
+ * decides where there is no date at all. Then the trial accounts' own daily
+ * sub-ceiling, which, where it is set, replaces the instance ceiling for them
+ * (2026-09-30, see `chargesInstance`), and the steps below as before.
  *
  * THE DAY LIMIT (M267) is asked just before the claim: a trial with an end
  * date that has passed is `403 trial-expired`, before any row is written,
@@ -168,10 +177,18 @@ import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-
 import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
 import { describeError, scrubPayloads } from './scrub.js';
-import { applyChatBodyPolicy, type ChatBodyPolicy } from './chat-body-policy.js';
+import { applyChatBodyPolicy, listDroppedChatFields, type ChatBodyPolicy } from './chat-body-policy.js';
+import {
+  AI_REQUEST_TOO_LARGE,
+  findExceededInputLimit,
+  measureChatInput,
+  requestWeight,
+  type ChatInputPolicy,
+} from './chat-input-bounds.js';
 import { randomUUID } from 'node:crypto';
 import {
   INTAKE_ID_INVALID,
+  INTAKE_IN_FLIGHT,
   INTAKE_ID_PATTERN,
   TRIAL_EXPIRED,
   TRIAL_SCANS_LEFT_HEADER,
@@ -218,6 +235,13 @@ export interface ChatCompletionsDeps {
    */
   bodyPolicy: ChatBodyPolicy;
   /**
+   * What one request may carry in, and what one unit of the daily counters
+   * covers (`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`,
+   * `AI_UNIT_INPUT_TOKENS`, `AI_IMAGE_INPUT_TOKENS`, 2026-09-30). Required for
+   * the reason `bodyPolicy` is: see `ai/chat-input-bounds.ts`.
+   */
+  inputPolicy: ChatInputPolicy;
+  /**
    * The health-data consent this instance requires of every account
    * (`HEALTH_CONSENT_VERSION`), or `null` for an instance that asks for none,
    * which is every self-hoster.
@@ -232,8 +256,19 @@ export interface ChatCompletionsDeps {
   now?: () => Date;
 }
 
-/** A scan claimed for this request, or `null` when the scan gate does not apply. */
-type ClaimedScan = Extract<TrialClaim, { ok: true }> | null;
+/**
+ * A scan claimed for this request, or `null` when the scan gate does not
+ * apply. `isSettled` turns true once the scan is given back or its answer is
+ * on its way; a scan still open when the request ends is given back by the
+ * handler's `finally` (2026-09-30), so a throw after the claim cannot leave the
+ * intake in flight.
+ */
+type ClaimedScan = (Extract<TrialClaim, { ok: true }> & { accountId: number; isSettled: boolean }) | null;
+
+/** What one request's handler run leaves behind for its `finally`: the scan it claimed, if any. */
+interface ScanLedger {
+  scan: ClaimedScan;
+}
 
 /**
  * The codes a relay fails with when the CALLER went away, rather than the
@@ -354,6 +389,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     accounts,
     bodyPolicy,
     healthConsent,
+    inputPolicy,
     instanceDailyLimit,
     logger,
     quota,
@@ -415,9 +451,14 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    * disciplines would eventually disagree, and the disagreement would look like
    * an instance that had spent more than the sum of its accounts.
    */
-  async function releaseQuietly(input: { accountId: number; day: string; isTrialDay: boolean }): Promise<void> {
+  async function releaseQuietly(input: {
+    accountId: number;
+    day: string;
+    isTrialDay: boolean;
+    weight: number;
+  }): Promise<void> {
     try {
-      await quota.release({ accountId: input.accountId, day: input.day });
+      await quota.release({ accountId: input.accountId, day: input.day, weight: input.weight });
     } catch (cause) {
       logger.warn('Could not release a quota reservation', {
         accountId: input.accountId,
@@ -425,7 +466,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         error: describeError(cause),
       });
     }
-    await releaseInstanceQuietly({ day: input.day, isTrialDay: input.isTrialDay });
+    await releaseInstanceQuietly({ day: input.day, isTrialDay: input.isTrialDay, weight: input.weight });
   }
 
   /**
@@ -443,6 +484,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     undeliver: boolean;
   }): Promise<void> {
     if (input.scan === null) return;
+    // SETTLED BEFORE THE WRITE, so a give-back that fails is not tried a
+    // second time by the handler's `finally`; its log line is the record.
+    input.scan.isSettled = true;
     try {
       const released = await quota.releaseTrialScan({
         accountId: input.accountId,
@@ -470,24 +514,45 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
   }
 
   /**
+   * Whether a request takes units of `AI_INSTANCE_DAILY_LIMIT` (2026-09-30).
+   *
+   * A SCAN-TRIAL REQUEST DOES NOT, WHERE THE TRIAL ACCOUNTS HAVE A CEILING OF
+   * THEIR OWN. Until then it took a unit of both, so the trial accounts could
+   * spend up to `AI_TRIAL_INSTANCE_DAILY_LIMIT` of the instance's ceiling and
+   * leave the paying accounts only the rest: with 1000 of 2000, a burst of
+   * trials halved what paying people could use that day. Now each counter
+   * bounds its own traffic, and trial traffic can never use up capacity paid
+   * accounts need.
+   *
+   * WITHOUT A TRIAL CEILING the trial requests still count against the
+   * instance's, as before: an operator who set only `AI_INSTANCE_DAILY_LIMIT`
+   * set a bound on everything, and taking the trials out of it would leave
+   * them bounded by nothing.
+   */
+  function chargesInstance(isTrialDay: boolean): boolean {
+    if (instanceDailyLimit === null) return false;
+    return !isTrialDay || trialInstanceDailyLimit === null;
+  }
+
+  /**
    * The instance's unit alone, for the one path where there is no account unit
    * to give back: the per-account reservation refused AFTER the instance's was
    * taken. Quiet for the same reason `releaseQuietly` is, because a failed refund
    * must not replace a correct 429 with a 500.
    */
-  async function releaseInstanceQuietly(input: { day: string; isTrialDay: boolean }): Promise<void> {
+  async function releaseInstanceQuietly(input: { day: string; isTrialDay: boolean; weight: number }): Promise<void> {
     // The scan-trial accounts' count follows the instance's unit row for row
     // (M253): it is taken for every scan-trial request, set or not.
     if (input.isTrialDay) {
       try {
-        await quota.releaseTrialInstance({ day: input.day });
+        await quota.releaseTrialInstance({ day: input.day, weight: input.weight });
       } catch (cause) {
         logger.warn('Could not release a trial day reservation', { day: input.day, error: describeError(cause) });
       }
     }
-    if (instanceDailyLimit === null) return;
+    if (!chargesInstance(input.isTrialDay)) return;
     try {
-      await quota.releaseInstance({ day: input.day });
+      await quota.releaseInstance({ day: input.day, weight: input.weight });
     } catch (cause) {
       logger.warn('Could not release an instance quota reservation', {
         day: input.day,
@@ -496,7 +561,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     }
   }
 
-  async function proxy(req: Request, res: Response): Promise<void> {
+  async function proxy(req: Request, res: Response, ledger: ScanLedger): Promise<void> {
     const startedAt = performance.now();
 
     // 1. Identity. `null` here means the bearer middleware did not run on this
@@ -592,14 +657,35 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       return;
     }
     // THE INSTANCE DECIDES WHAT ONE REQUEST MAY COST (M256): its model when
-    // one is set, a capped answer always, and none of the fields that multiply
-    // a request. Quietly, never a 400, see `ai/chat-body-policy.ts`.
-    const forwardedBody = Buffer.from(
-      JSON.stringify(
-        applyChatBodyPolicy({ body: bodyObject, policy: bodyPolicy, upstreamBaseUrl: upstreamConfig.baseUrl }),
-      ),
-      'utf8',
-    );
+    // one is set, a capped answer always, and only the fields on its allow
+    // list. Quietly, never a 400, see `ai/chat-body-policy.ts`. The dropped
+    // NAMES are logged, never a value, so an operator sees a client that
+    // sends something new.
+    const policedBody = applyChatBodyPolicy({
+      body: bodyObject,
+      policy: bodyPolicy,
+      upstreamBaseUrl: upstreamConfig.baseUrl,
+    });
+    const droppedFields = listDroppedChatFields(bodyObject);
+    if (droppedFields.length > 0) {
+      logger.info('Dropped chat body fields the proxy does not forward', {
+        accountId: account.id,
+        fields: droppedFields.join(','),
+      });
+    }
+    // WHAT THE REQUEST CARRIES IN (2026-09-30), measured on the body the
+    // provider receives and refused before any claim, reservation or upstream
+    // call, so a refused body spends nothing. See `ai/chat-input-bounds.ts`.
+    const inputSize = measureChatInput(policedBody);
+    const exceeded = findExceededInputLimit({ size: inputSize, policy: inputPolicy });
+    if (exceeded !== null) {
+      res.status(400).json({ error: AI_REQUEST_TOO_LARGE, limit: exceeded.limit, max: exceeded.max });
+      return;
+    }
+    // THE UNITS THIS REQUEST RESERVES, on the account's allowance and on the
+    // ceiling it counts against, and gives back wherever a unit is given back.
+    const weight = requestWeight({ size: inputSize, policy: inputPolicy });
+    const forwardedBody = Buffer.from(JSON.stringify(policedBody), 'utf8');
 
     // THE INTAKE ID (M253), checked for every account and before any row is
     // written, so a client that sends a malformed one learns it on its first
@@ -643,18 +729,26 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         intakeId: intakeHeader ?? `server-${randomUUID()}`,
         now: requestedAt,
       });
+      // AN EARLIER REQUEST ON THIS INTAKE IS STILL RUNNING (2026-09-30): a
+      // second one would get a second answer for one scan. Nothing was
+      // written, so nothing is given back.
+      if (!claim.ok && claim.reason === 'in-flight') {
+        res.status(409).json({ error: INTAKE_IN_FLIGHT });
+        return;
+      }
       if (!claim.ok) {
         res.setHeader(TRIAL_SCANS_LEFT_HEADER, '0');
         res.status(403).json({ error: TRIAL_SCANS_SPENT, endedBy: 'scans' });
         return;
       }
-      scan = claim;
+      scan = { ...claim, accountId: account.id, isSettled: false };
+      ledger.scan = scan;
       res.setHeader(TRIAL_SCANS_LEFT_HEADER, String(claim.left));
 
       // 2e. THE SCAN-TRIAL ACCOUNTS' SHARE OF THE DAY, counted always and
       // bounded when `AI_TRIAL_INSTANCE_DAILY_LIMIT` is set, so farming runs
       // out of its own budget before it reaches the paying accounts'.
-      const trialDay = await quota.reserveTrialInstance({ day, limit: trialInstanceDailyLimit });
+      const trialDay = await quota.reserveTrialInstance({ day, limit: trialInstanceDailyLimit, weight });
       if (!trialDay.ok) {
         await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
         sendCeilingRefusal(res, requestedAt);
@@ -687,16 +781,18 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     //
     // UNSET MEANS NOTHING HAPPENS AT ALL: no statement is issued, no row is
     // written, and this refusal is unreachable. That is what every deployment
-    // that has not set `AI_INSTANCE_DAILY_LIMIT` gets.
-    if (instanceDailyLimit !== null) {
-      const instanceReservation = await quota.reserveInstance({ day, limit: instanceDailyLimit });
+    // that has not set `AI_INSTANCE_DAILY_LIMIT` gets. A scan-trial request
+    // skips it too where the trial accounts have their own ceiling, see
+    // `chargesInstance`.
+    if (instanceDailyLimit !== null && chargesInstance(isTrialDay)) {
+      const instanceReservation = await quota.reserveInstance({ day, limit: instanceDailyLimit, weight });
       if (!instanceReservation.ok) {
         logCeilingRefusalOnce({ day, limit: instanceDailyLimit });
         // The trial day's unit and the scan go back: this request reaches
         // nobody. The instance's unit was never taken.
         if (isTrialDay) {
           try {
-            await quota.releaseTrialInstance({ day });
+            await quota.releaseTrialInstance({ day, weight });
           } catch (cause) {
             logger.warn('Could not release a trial day reservation', { day, error: describeError(cause) });
           }
@@ -713,13 +809,13 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
 
     // 3b. Reserve BEFORE the upstream call. A refusal is a 429 with the reset
     // instant named, never a 500: being out of allowance is the system working.
-    const reservation = await quota.reserve({ accountId: account.id, day, limit: account.dailyAiLimit });
+    const reservation = await quota.reserve({ accountId: account.id, day, limit: account.dailyAiLimit, weight });
     if (!reservation.ok) {
       // THE INSTANCE'S UNIT GOES BACK. It was taken a few lines above for a
       // request that is about to be refused and will never reach the provider,
       // so keeping it would let one account at its own limit eat the whole
       // instance's ceiling by retrying.
-      await releaseInstanceQuietly({ day, isTrialDay });
+      await releaseInstanceQuietly({ day, isTrialDay, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
       const resetAt = nextUtcMidnight(requestedAt);
       res.setHeader('Retry-After', String(secondsUntil({ target: resetAt, now: requestedAt })));
@@ -727,8 +823,8 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       res.setHeader('X-Quota-Limit', String(reservation.limit));
       res.status(429).json({
         error:
-          `daily quota spent: ${reservation.used} of ${reservation.limit} requests used. ` +
-          `It resets at ${resetAt.toISOString()}.`,
+          `daily quota spent: ${reservation.used} of ${reservation.limit} units used, ` +
+          `and this request needs ${weight}. It resets at ${resetAt.toISOString()}.`,
       });
       return;
     }
@@ -752,7 +848,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // TIMEOUT SITE 1 of 2 — `headersTimeout` lands HERE, together with every
       // connect-level failure. Nothing was served to us in either case, so the
       // reservation goes back, and so does the scan.
-      await releaseQuietly({ accountId: account.id, day, isTrialDay });
+      await releaseQuietly({ accountId: account.id, day, isTrialDay, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
       const timedOut = isTimeoutError(cause);
       logger.warn('Upstream call failed before any response', {
@@ -776,7 +872,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // the request and then failed — the money may already be gone, so it stays
     // spent. See the table in the module header.
     if (upstream.status >= 400 && upstream.status < 500) {
-      await releaseQuietly({ accountId: account.id, day, isTrialDay });
+      await releaseQuietly({ accountId: account.id, day, isTrialDay, weight });
     }
 
     if (!upstream.ok) {
@@ -798,6 +894,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // A 2xx's headers are here: from now on the answer is on its way, and a
     // caller who goes away keeps it, and so keeps the scan (M253).
     if (scan !== null) {
+      // SETTLED whether or not the stamp below is written: the answer is on
+      // its way, so the handler's `finally` must not give this scan back.
+      scan.isSettled = true;
       try {
         await quota.markTrialScanDelivered({ accountId: account.id, intakeId: scan.intakeId, claim: scan.claim });
       } catch (cause) {
@@ -854,7 +953,10 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // THE SCAN, BY WHO FAILED (M253). The provider stopping mid-body is no
       // answer, so the scan goes back and the delivery stamped above is
       // cleared; the caller going away after a 2xx keeps it.
-      if (!isClientGone(relayFailure.cause)) {
+      if (scan !== null && !isClientGone(relayFailure.cause)) {
+        // Settled once already, when the headers arrived; the give-back is
+        // what undoes it here, so it is let through.
+        scan.isSettled = false;
         await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: true });
       }
       // The status line and some bytes are already on the wire, so there is no
@@ -878,6 +980,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       responseBytes: counter.total(),
       quotaUsed: reservation.used,
       quotaLimit: reservation.limit,
+      weight,
       durationMs,
     });
   }
@@ -938,13 +1041,26 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    * handler that threw would hang the request until the client gave up, which
    * is a worse failure than any error it was trying to report. Every path out
    * of `proxy` therefore goes through this one wrapper.
+   *
+   * THE CLAIM IS SETTLED IN ITS `finally` (2026-09-30). A throw after the
+   * claim (a reservation statement that failed, a lost connection to
+   * Postgres) used to leave the intake in flight with its scan spent, and
+   * since a second request on an in-flight intake is refused, that would lock
+   * the person's retry out for the whole reuse window. Every path that
+   * settles the scan marks it, so this gives back only what nothing else did.
    */
   return function handleChatCompletions(req: Request, res: Response, next: NextFunction): void {
     void (async (): Promise<void> => {
+      const ledger: ScanLedger = { scan: null };
       try {
-        await proxy(req, res);
+        await proxy(req, res, ledger);
       } catch (cause) {
         next(cause);
+      } finally {
+        const open = ledger.scan;
+        if (open !== null && !open.isSettled) {
+          await giveScanBackQuietly({ res, accountId: open.accountId, scan: open, undeliver: false });
+        }
       }
     })();
   };
