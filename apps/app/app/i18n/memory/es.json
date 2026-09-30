@@ -9561,6 +9561,13 @@
     "at": "2026-09-14",
     "es": "Comprobando"
   },
+  "774b962792ca88dd": {
+    "en": "The avatar button in the header shows the account name.",
+    "path": "releases:v0_57_1.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "es": "El botón del avatar de la cabecera muestra el nombre de la cuenta."
+  },
   "7751990e75b44024": {
     "en": "You are signed in. Generate a key below to publish one for your consent document.",
     "path": "common:research.console.created.body",

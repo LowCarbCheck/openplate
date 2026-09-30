@@ -1,4 +1,10 @@
 {
+  "v0_57_1": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Üstbilgideki profil resmi düğmesi hesap adını gösterir."
+    }
+  },
   "v0_57_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,12 +16,6 @@
     "added": {
       "01": "Yöneticiler her kullanıcıda bir etiket görebilir ve ayarlayabilir.",
       "02": "Kapatılan bir örnek, kullanıcılarını yeni bir adrese yönlendirebilir."
-    }
-  },
-  "v0_55_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Bu altı dilin dışındaki diller, ödeme ve yasal formlarda artık İngilizceye geri döner."
     }
   }
 }

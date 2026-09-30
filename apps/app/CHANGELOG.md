@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.57.1] - 2026-09-30
+
 ### Changed
 
-- **The avatar button in the header shows the account name.** When a user signs in, the button at the top right and the top line of its menu show the display name entered at sign-up, instead of "This device". An email address used as a name shows only the part before the @, because the account strip at the bottom of the menu already prints the full address. Without an active session, or with an empty name, the button shows "This device". The name sits to the left of the circle in a box 160 px wide from the first paint. Header elements do not shift when the session loads after a refresh. Long names truncate with an ellipsis inside that box. Below 640 px, the button displays only the circle. The screen reader label also includes the name, such as "Maria, open menu". Tests: `tests/unit/avatar-name.test.ts`, `tests/e2e/avatar-shows-name.spec.ts`.
+- **The avatar button in the header shows the account name.** When a user signs in, the button at the top right and the top line of its menu show the display name entered at sign-up, instead of "This device". An email address used as a name shows only the part before the @, because the account strip at the bottom of the menu already prints the full address. Without an active session, or with an empty name, the button shows "This device". The name sits to the left of the circle in a box 160 px wide from the first paint. Header elements do not shift when the session loads after a refresh. Long names truncate with an ellipsis inside that box. Below 640 px, the button displays only the circle. The screen reader label also includes the name, such as "Maria, open menu". Tests: `tests/unit/avatar-name.test.ts`, `tests/e2e/avatar-shows-name.spec.ts`. ([ca30760](https://github.com/LowCarbCheck/openplate/commit/ca30760), [1f24306](https://github.com/LowCarbCheck/openplate/commit/1f24306))
 
 ## [0.57.0] - 2026-09-30
 
