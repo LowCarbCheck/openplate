@@ -1,0 +1,2 @@
+ALTER TABLE "accounts" ADD COLUMN "label" text;--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_label_length" CHECK ("accounts"."label" IS NULL OR char_length("accounts"."label") BETWEEN 1 AND 40);

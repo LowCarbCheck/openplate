@@ -451,6 +451,20 @@ test('patchAccount carries a suspension as a boolean, both ways', async () => {
   );
 });
 
+test('patchAccount sends a label, and an explicit null to take it away', async () => {
+  const { client, requests } = clientAnswering({ account: ACCOUNT });
+  await client.patchAccount({ id: 7, label: 'Beta supporter' });
+  await client.patchAccount({ id: 7, label: null });
+  // THE CONTROL: a patch that names no label sends no label key, so a core
+  // built before labels never meets one it does not know.
+  await client.patchAccount({ id: 7, dailyAiLimit: 5 });
+
+  assert.deepEqual(
+    requests.map((request) => request.body),
+    [{ label: 'Beta supporter' }, { label: null }, { dailyAiLimit: 5 }],
+  );
+});
+
 test('deleteAccount is a DELETE, and a 204 is a success rather than a parse failure', async () => {
   // The transport answers `null` for a body-less response, and every method
   // that can receive one has to survive it.

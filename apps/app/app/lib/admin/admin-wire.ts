@@ -82,6 +82,16 @@ export const accountViewSchema = z.object({
    * made it would make it once for every client.
    */
   lastSeenAt: z.string().nullable(),
+  /**
+   * The operator's own note on this account, such as "Beta supporter", or
+   * `null` for none. At most 40 characters (`PROTOCOL.md` §5.20).
+   *
+   * `.catch(null)` like the end date above: a core built before the field sends
+   * no key, and "no label" is exactly what that means. It is an operator fact
+   * and never reaches the person's own account page: the service leaves it off
+   * `GET /v1/auth/account`, and nothing here authorizes on it.
+   */
+  label: z.string().nullable().catch(null),
 });
 export type AdminAccountView = z.infer<typeof accountViewSchema>;
 

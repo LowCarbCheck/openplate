@@ -116,6 +116,8 @@ export interface AccountPatch {
    * scans already used stay used. `null` ends the scan trial.
    */
   trialScans?: number | null;
+  /** The operator's note on the account, at most 40 characters, or `null` to take it away. */
+  label?: string | null;
 }
 
 /** What an invitation is created with. Only the address is required; the service defaults the rest. */
@@ -583,6 +585,7 @@ function patchBody(patch: AccountPatch): JsonValue {
     suspended: patch.suspended,
     displayName: patch.displayName,
     trialScans: patch.trialScans,
+    label: patch.label,
   });
 }
 

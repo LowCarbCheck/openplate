@@ -39,6 +39,7 @@ import type { InviteSource } from '../admin/invite-store.js';
 import type { AccountTokenKind } from '../lib/tokens.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
 import type { JsonObject } from '../lib/json.js';
+import { MAX_ACCOUNT_LABEL_LENGTH } from '../admin/account-label.js';
 
 /**
  * Raw binary column (Postgres `bytea`). drizzle-orm's `pg-core` has no
@@ -264,6 +265,22 @@ export const accounts = pgTable(
      * it: the check below makes a half-set pair impossible.
      */
     healthConsentAt: timestamp('health_consent_at'),
+    /**
+     * A short note the operator pins on the account, such as "Beta supporter",
+     * or `NULL` for none. At most {@link MAX_ACCOUNT_LABEL_LENGTH} characters,
+     * counted as Unicode code points, the way Postgres `char_length` counts.
+     *
+     * AN OPERATOR FACT, NEVER AN AUTHORIZATION INPUT. Nothing on this service
+     * reads it to decide anything: it is written by an admin (the admin PATCH,
+     * `server/admin-routes.ts`) or by an operator tool that moves an account
+     * here, and it is read back only by the admin API. The account itself is
+     * not shown it; it is how the operator remembers why a row is special.
+     *
+     * The admin write path trims it and refuses one that is too long; the
+     * check below is the second wall, so a tool that writes the column
+     * directly cannot store an empty string or an overlong one either.
+     */
+    label: text('label'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -283,6 +300,13 @@ export const accounts = pgTable(
     check(
       'accounts_health_consent_pair',
       sql`(${table.healthConsentVersion} IS NULL) = (${table.healthConsentAt} IS NULL)`,
+    ),
+    // NULL, OR ONE TO FORTY CHARACTERS. An empty string is not a label, the
+    // absence of one is `NULL`, and the bound is the one the admin write path
+    // enforces first (`MAX_ACCOUNT_LABEL_LENGTH`).
+    check(
+      'accounts_label_length',
+      sql`${table.label} IS NULL OR char_length(${table.label}) BETWEEN 1 AND ${sql.raw(String(MAX_ACCOUNT_LABEL_LENGTH))}`,
     ),
   ],
 );

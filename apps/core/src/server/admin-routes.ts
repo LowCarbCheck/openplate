@@ -103,6 +103,7 @@ import { isUnpaidTrial, MAX_TRIAL_SCANS, trialScansView, type TrialPolicy } from
 import { getAdminPrincipal } from './admin-auth.js';
 import { SERVICE_FIELD_REFUSAL, SERVICE_PRINCIPAL_PATCH_FIELDS } from './service-principal-scope.js';
 import { healthConsentView } from '../accounts/health-consent.js';
+import { parseAccountLabel } from '../admin/account-label.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -147,6 +148,16 @@ interface AdminAccountView extends AccountView {
    * language, against the reader's clock rather than their own.
    */
   lastSeenAt: string | null;
+  /**
+   * The operator's own note on this account, such as "Beta supporter", or
+   * `null` for none. At most 40 characters (`admin/account-label.ts`).
+   *
+   * AN OPERATOR FACT, like `lastSeenAt`, so it is here and not on
+   * `AccountView`. The operator wrote it for the operator: the account's own
+   * `GET /v1/auth/account` does not carry it, the biller's projection does not
+   * either, and nothing on this service authorizes on it.
+   */
+  label: string | null;
 }
 
 /**
@@ -288,6 +299,7 @@ function toAccountView(input: {
     healthConsent: healthConsentView(summary.healthConsent),
     createdAt: summary.createdAt.toISOString(),
     lastSeenAt: summary.lastSeenAt?.toISOString() ?? null,
+    label: summary.label,
     blob:
       summary.blob === null
         ? null
@@ -585,7 +597,7 @@ interface MintInviteResponse {
 }
 
 /**
- * The five fields an operator may change on an account, each optional and each
+ * The fields an operator may change on an account, each optional and each
  * meaning "leave it alone" when absent.
  *
  * `email` IS DELIBERATELY NOT HERE. It is the account's identity and what every
@@ -604,6 +616,8 @@ interface AccountPatch {
   trialScans?: number | null;
   suspended?: boolean;
   displayName?: string | null;
+  /** The operator's label, trimmed and bounded (`admin/account-label.ts`), or `null` to clear it. */
+  label?: string | null;
 }
 
 type ParseAccountPatchResult = { ok: true; value: AccountPatch } | { ok: false; reason: string };
@@ -715,6 +729,11 @@ function parseAccountPatch(body: JsonValue): ParseAccountPatchResult {
     const displayName = parseDisplayName(fields.displayName);
     if (!displayName.ok) return { ok: false, reason: displayName.reason };
     patch.displayName = displayName.value;
+  }
+  if (fields.label !== undefined) {
+    const label = parseAccountLabel(fields.label);
+    if (!label.ok) return { ok: false, reason: label.reason };
+    patch.label = label.value;
   }
 
   return { ok: true, value: patch };
@@ -1124,12 +1143,12 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         // silence must never read as consent.
         res.status(400).json({
           error:
-            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, trialScans, suspended, displayName',
+            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, trialScans, suspended, displayName, label',
         });
         return;
       }
 
-      const { allowanceExpiresAt, displayName, role, dailyAiLimit, suspended, trialScans } = patch.value;
+      const { allowanceExpiresAt, displayName, label, role, dailyAiLimit, suspended, trialScans } = patch.value;
       // Demoting or suspending oneself is the lockout; a rename is not.
       if (isSelfLockout({ req, targetAccountId: accountId, lockingOut: suspended === true || role === 'member' })) {
         res.status(400).json({ error: 'self-change' });
@@ -1158,7 +1177,8 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         dailyAiLimit !== undefined ||
         allowanceExpiresAt !== undefined ||
         trialScans !== undefined ||
-        displayName !== undefined
+        displayName !== undefined ||
+        label !== undefined
       ) {
         const changed = await accounts.updateStanding({
           accountId,
@@ -1167,6 +1187,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
           allowanceExpiresAt,
           trialScans,
           displayName,
+          label,
         });
         if (changed === null) {
           sendNotFound(res);
@@ -1179,8 +1200,9 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         sendNotFound(res);
         return;
       }
-      // The account id, never the values: a display name is personal data and a
-      // role change is already legible from the row.
+      // The account id, never the values: a display name is personal data, a
+      // label is the operator's note about a person, and a role change is
+      // already legible from the row.
       logger.info('Account changed by admin', { accountId });
       res
         .status(200)

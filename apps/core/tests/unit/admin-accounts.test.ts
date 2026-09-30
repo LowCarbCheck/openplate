@@ -17,7 +17,7 @@
  */
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { asNumber, asObject, asString, type JsonValue } from '../../src/lib/json.js';
+import { asArray, asNumber, asObject, asString, type JsonValue } from '../../src/lib/json.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import { startAdminHarness, type AdminHarness } from './admin-harness.js';
 
@@ -141,6 +141,8 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     // M253/11: why `invitesLeft` is 0 for a scan trial nobody has paid for.
     'invitesNeedAPlan',
     'keyRecordKinds',
+    // The operator's own note on the account, such as "Beta supporter".
+    'label',
     'lastSeenAt',
     'role',
     'suspendedAt',
@@ -239,6 +241,115 @@ test('the empty-patch refusal names allowanceExpiresAt among the fields it accep
   const empty = await patchAccount({ id, body: {} });
   assert.equal(empty.status, 400);
   assert.match(asString(asObject(empty.body)?.error) ?? '', /allowanceExpiresAt/);
+});
+
+// ── the operator's label ───────────────────────────────────────────────────
+
+test('PATCH sets a label, trimmed, and clears it with null or with a blank string', async () => {
+  const id = await seedAccount();
+  // A new account has no label: the column's default.
+  assert.equal(harness.fakeAccounts.labelOf(id), null);
+
+  assert.equal((await patchAccount({ id, body: { label: '  Beta supporter  ' } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), 'Beta supporter', 'stored trimmed');
+
+  // A patch that does not name it leaves it alone.
+  assert.equal((await patchAccount({ id, body: { dailyAiLimit: 3 } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), 'Beta supporter');
+
+  // `null` CLEARS it, a value and not an omission, like `displayName: null`.
+  assert.equal((await patchAccount({ id, body: { label: null } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), null);
+
+  // A blank string is not a label either: it clears, it is never stored as ''.
+  await patchAccount({ id, body: { label: 'Beta supporter' } });
+  assert.equal((await patchAccount({ id, body: { label: '   ' } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), null);
+});
+
+test('an over-long, multi-line or non-string label is a 400 that names the field, and writes nothing', async () => {
+  const id = await seedAccount();
+  await patchAccount({ id, body: { label: 'Before' } });
+
+  for (const label of ['x'.repeat(41), 'Beta\nsupporter', 'Beta\tsupporter', 42, true, ['Beta'], { text: 'Beta' }]) {
+    const refused = await patchAccount({ id, body: { label } });
+    assert.equal(refused.status, 400, JSON.stringify(label));
+    assert.match(asString(asObject(refused.body)?.error) ?? '', /label/);
+    assert.equal(harness.fakeAccounts.labelOf(id), 'Before', `${JSON.stringify(label)} must not be written`);
+  }
+  // A refused label beside a valid field refuses the whole body: the allowance
+  // did not move either.
+  const mixed = await patchAccount({ id, body: { dailyAiLimit: 99, label: 'y'.repeat(41) } });
+  assert.equal(mixed.status, 400);
+  assert.equal((await harness.fakeAccounts.findAccountById(id))?.dailyAiLimit, 0);
+});
+
+test('the bound is 40 code points, so 40 characters pass and 40 emoji pass too', async () => {
+  // THE CONTROL for the refusal above: the bound is at 40, not somewhere below
+  // it, and it counts what Postgres `char_length` counts. Forty emoji are
+  // eighty UTF-16 units, which a `length` check would refuse.
+  const id = await seedAccount();
+  const forty = 'z'.repeat(40);
+  assert.equal((await patchAccount({ id, body: { label: forty } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), forty);
+
+  const fortyEmoji = '\u{1F331}'.repeat(40);
+  assert.equal(fortyEmoji.length, 80);
+  assert.equal((await patchAccount({ id, body: { label: fortyEmoji } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(id), fortyEmoji);
+
+  assert.equal((await patchAccount({ id, body: { label: '\u{1F331}'.repeat(41) } })).status, 400);
+  assert.equal(harness.fakeAccounts.labelOf(id), fortyEmoji);
+});
+
+test('a label alone is a whole patch, and the empty-patch sentence names it', async () => {
+  const id = await seedAccount();
+  assert.equal((await patchAccount({ id, body: { label: 'Beta supporter' } })).status, 200);
+
+  const empty = await patchAccount({ id, body: {} });
+  assert.equal(empty.status, 400);
+  assert.match(asString(asObject(empty.body)?.error) ?? '', /label/);
+});
+
+test('a MEMBER account cannot set a label on anybody, and the operator can', async () => {
+  const member = await seedAccount();
+  const subject = await seedAccount();
+  const token = await tokenFor(member, 'a-member-session-for-labels');
+
+  const asMember = await patchAccount({ id: subject, body: { label: 'Beta supporter' }, token });
+  assert.equal(asMember.status, 401);
+  assert.equal(harness.fakeAccounts.labelOf(subject), null);
+  // Nor on itself: a label is the operator's note, not the account's.
+  const onSelf = await patchAccount({ id: member, body: { label: 'Beta supporter' }, token });
+  assert.equal(onSelf.status, 401);
+  assert.equal(harness.fakeAccounts.labelOf(member), null);
+
+  // THE CONTROL: the same body from the operator is written.
+  assert.equal((await patchAccount({ id: subject, body: { label: 'Beta supporter' } })).status, 200);
+  assert.equal(harness.fakeAccounts.labelOf(subject), 'Beta supporter');
+});
+
+test('the list and the detail carry the label, and an account with none reads null, never an absent key', async () => {
+  const labelled = await seedAccount();
+  const plain = await seedAccount();
+  harness.admin.clear();
+  harness.admin.seed({ id: labelled, email: 'labelled@example.org', label: 'Beta supporter' });
+  harness.admin.seed({ id: plain, email: 'plain@example.org' });
+
+  const detail = await harness.request({ method: 'GET', path: `/v1/admin/accounts/${labelled}`, token: ADMIN_TOKEN });
+  assert.equal(detail.status, 200);
+  assert.equal(asString(asObject(asObject(await jsonBody(detail))?.account)?.label), 'Beta supporter');
+
+  const plainDetail = await harness.request({ method: 'GET', path: `/v1/admin/accounts/${plain}`, token: ADMIN_TOKEN });
+  const plainAccount = asObject(asObject(await jsonBody(plainDetail))?.account);
+  assert.ok(plainAccount !== null && 'label' in plainAccount, 'the key is present');
+  assert.equal(plainAccount?.label, null);
+
+  const list = await harness.request({ method: 'GET', path: '/v1/admin/accounts', token: ADMIN_TOKEN });
+  const rows = (asArray(asObject(await jsonBody(list))?.accounts) ?? []).map((row) => asObject(row));
+  const labels = new Map(rows.map((row) => [asNumber(row?.id), row?.label]));
+  assert.equal(labels.get(labelled), 'Beta supporter');
+  assert.equal(labels.get(plain), null);
 });
 
 test('suspending revokes every session, and reactivating does NOT restore one', async () => {

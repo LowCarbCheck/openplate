@@ -22,16 +22,25 @@ export interface CountingServer {
   baseUrl: string;
   /** `METHOD /path` for every request that arrived. Empty means the CLI sent nothing. */
   requests: string[];
+  /** The body of each request in `requests`, at the same index, `''` for none. */
+  bodies: string[];
   close(): Promise<void>;
 }
 
-/** A server that answers everything with an empty JSON object and remembers being asked. */
+/** A server that answers everything with an empty JSON object and remembers being asked, and with what. */
 export async function startCountingServer(): Promise<CountingServer> {
   const requests: string[] = [];
+  const bodies: string[] = [];
   const server: Server = createServer((req, res) => {
     requests.push(`${req.method ?? 'UNKNOWN'} ${req.url ?? ''}`);
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end('{}');
+    const index = bodies.push('') - 1;
+    req.on('data', (chunk: Buffer) => {
+      bodies[index] += chunk.toString('utf8');
+    });
+    req.on('end', () => {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end('{}');
+    });
   });
 
   server.listen(0);
@@ -45,6 +54,7 @@ export async function startCountingServer(): Promise<CountingServer> {
   return {
     baseUrl: `http://127.0.0.1:${port}`,
     requests,
+    bodies,
     async close(): Promise<void> {
       await new Promise<void>((closed, failed) => server.close((error) => (error ? failed(error) : closed())));
     },

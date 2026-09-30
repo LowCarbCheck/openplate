@@ -174,6 +174,10 @@ test('the account body carries exactly the documented metadata fields and nothin
     // M253/11: why `invitesLeft` is 0 for a scan trial nobody has paid for.
     'invitesNeedAPlan',
     'keyRecordKinds',
+    // Justified against ADR-0001: the operator's own note on the account, such
+    // as "Beta supporter", at most 40 characters. The operator wrote it; it
+    // says nothing about the diary and nothing authorizes on it.
+    'label',
     'lastSeenAt',
     'role',
     'suspendedAt',

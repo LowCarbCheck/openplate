@@ -420,7 +420,17 @@ export interface StartServiceOptions {
    * matching consent, as the app does from the ticked box.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * `SERVER_SECRET`, the root of the verifier pepper, the dummy-descriptor key
+   * and the escrow key. Absent is the one fixed test secret every other suite
+   * shares. `move-accounts.test.ts` boots two instances under two secrets, and
+   * then the target again under the source's, which is the whole switch.
+   */
+  serverSecret?: string;
 }
+
+/** The root secret every suite runs under unless it names another. */
+export const DEFAULT_TEST_SERVER_SECRET = 'integration-test-root-secret-long-enough';
 
 /** The application server key the harness advertises when a suite opts in. Public by definition, and not a real one. */
 export const TEST_VAPID_PUBLIC_KEY = 'BHarnessPublicKeyForIntegrationTestsOnly';
@@ -467,7 +477,7 @@ function trialPolicyOf(options: StartServiceOptions): TrialPolicy | null {
 export async function startService(options: StartServiceOptions): Promise<ServiceHarness> {
   let clock = options.clockStartsAt ?? Date.now();
   const trial = trialPolicyOf(options);
-  const secrets = deriveServerSecrets('integration-test-root-secret-long-enough');
+  const secrets = deriveServerSecrets(options.serverSecret ?? DEFAULT_TEST_SERVER_SECRET);
   const mailer = createRecordingMailer();
   // The keyed mailbox hash (M253), on when a suite names a pepper, as
   // `main.ts` builds it from `TRIAL_ADDRESS_PEPPER`.

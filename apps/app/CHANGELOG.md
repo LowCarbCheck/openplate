@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **Administrators can see and set a label on each person.** In /admin, a person's row and their page show the account label as a small chip, such as "Beta supporter". The Change form on a person's page sets the label. It takes at most 40 characters. An empty field removes the label. The person never sees their own label. The card that tells them what an administrator can see now names it. Against an openplate-core without labels, the console shows no chip and works as before. The chip never makes a row taller. `tests/unit/admin-route.test.ts` and `tests/e2e/admin-account-label.spec.ts` check this.
+
 ## [0.55.0] - 2026-09-30
 
 ### Changed

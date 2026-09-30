@@ -463,6 +463,10 @@ podman compose --project-directory . -f docker/compose.yml exec -T postgres \
 The database lives in the `postgres-data` volume declared by `docker/compose.yml`. Keep
 `SERVER_SECRET` with the dump, in whatever holds your other secrets, not in the dump itself.
 
+To move accounts to another instance with their passwords and diaries, read
+[`docs/operations/move-accounts.md`](./docs/operations/move-accounts.md). The target takes
+the source's `SERVER_SECRET`, so plan the move as a switch, not as a copy.
+
 ### What your users should understand
 
 They sign in with the **address their invitation arrived at**, and a passphrase they choose. That is the whole of what they need to remember, which is the point: they will forget a username and they will forget a password, and they know their email.

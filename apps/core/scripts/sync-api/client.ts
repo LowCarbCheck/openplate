@@ -69,6 +69,8 @@ export interface AccountPatchBody {
   trialScans?: number | null;
   suspended?: boolean;
   displayName?: string | null;
+  /** The operator's label, at most 40 characters, or `null` to clear it. Absent leaves it alone. */
+  label?: string | null;
 }
 
 /** The body of `POST /v1/admin/trials/grant-lapsed` (M253). */

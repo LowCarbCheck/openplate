@@ -169,6 +169,13 @@
       "when": 1790699588013,
       "tag": "0023_magical_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790769730459,
+      "tag": "0024_yummy_puma",
+      "breakpoints": true
     }
   ]
 }
