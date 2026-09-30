@@ -9,7 +9,7 @@
  * best-effort work that must never be allowed to make the persisted row
  * disappear if it throws.
  */
-import { eq, lt } from 'drizzle-orm';
+import { and, count, eq, gt, lt, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import { legalDeclarations, type SelectLegalDeclaration } from '../db/schema.js';
 import type { InstanceLanguage } from '../protocol.js';
@@ -35,6 +35,16 @@ export type ForwardOutcome = { ok: true; forwardedAt: Date } | { ok: false; forw
 export interface LegalDeclarationsStore {
   create(input: CreateLegalDeclarationInput): Promise<SelectLegalDeclaration>;
   recordForwardOutcome(input: { id: string; outcome: ForwardOutcome }): Promise<void>;
+  /**
+   * How many declarations were received after `since` whose typed address
+   * normalises to `normalizedEmail`. Each of them mailed a receipt to that
+   * mailbox, so this is the per-recipient count the receipt cap reads
+   * (`server/legal-declarations.ts`).
+   *
+   * COUNTED FROM THE ROWS, not from a counter in memory, so a restart or a
+   * second container cannot reset it.
+   */
+  countReceivedFor(input: { normalizedEmail: string; since: Date }): Promise<number>;
   /**
    * Deletes every declaration received before `before`, and answers how many
    * went. The retention half of this table (`legal/legal-declarations-retention.ts`),
@@ -62,6 +72,21 @@ export function createDrizzleLegalDeclarationsStore(db: Database): LegalDeclarat
             : { forwardedAt: null, forwardError: input.outcome.forwardError },
         )
         .where(eq(legalDeclarations.id, input.id));
+    },
+
+    async countReceivedFor(input: { normalizedEmail: string; since: Date }): Promise<number> {
+      // `normalize(..., NFKC)` then `lower(...)` is `normalizeEmail` in SQL.
+      // The column is stored trimmed, so the trim needs no counterpart here.
+      const [row] = await db
+        .select({ total: count() })
+        .from(legalDeclarations)
+        .where(
+          and(
+            gt(legalDeclarations.receivedAt, input.since),
+            eq(sql`lower(normalize(${legalDeclarations.email}, NFKC))`, input.normalizedEmail),
+          ),
+        );
+      return row?.total ?? 0;
     },
 
     async purgeReceivedBefore(input: { before: Date }): Promise<number> {

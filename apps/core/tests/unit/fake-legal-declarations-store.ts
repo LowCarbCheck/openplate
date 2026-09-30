@@ -12,6 +12,7 @@ import type {
   LegalDeclarationsStore,
 } from '../../src/legal/legal-declarations-store.js';
 import type { SelectLegalDeclaration } from '../../src/db/schema.js';
+import { normalizeEmail } from '../../src/lib/verifier.js';
 
 export type RecordedLegalDeclarationsCall =
   | { kind: 'create'; input: CreateLegalDeclarationInput }
@@ -49,6 +50,14 @@ export function createFakeLegalDeclarationsStore(): FakeLegalDeclarationsStore {
           ? { ...existing, forwardedAt: input.outcome.forwardedAt, forwardError: null }
           : { ...existing, forwardedAt: null, forwardError: input.outcome.forwardError },
       );
+    },
+    async countReceivedFor(input: { normalizedEmail: string; since: Date }): Promise<number> {
+      let total = 0;
+      for (const row of rows.values()) {
+        if (row.receivedAt.getTime() <= input.since.getTime()) continue;
+        if (normalizeEmail(row.email) === input.normalizedEmail) total += 1;
+      }
+      return total;
     },
     async purgeReceivedBefore(input: { before: Date }): Promise<number> {
       let deleted = 0;

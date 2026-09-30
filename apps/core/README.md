@@ -139,6 +139,8 @@ MAIL_OPERATOR_EMAIL=you@example.org
 
 **The declaration letters take their words from your files.** The receipt for a cancellation or a withdrawal, and the operator's copy, are read from `CONTENT_DIR` (a folder you mount read-only, the same one the app's legal pages can come from). This repo ships no letter text: unset, the letters state only the kind, the receipt number, the time of receipt and the fields the person gave. [`docs/operations/declaration-mail-text.md`](./docs/operations/declaration-mail-text.md) has the file format and the exact fallback.
 
+**One mailbox gets at most three receipts a day.** The declaration form needs no sign-in, so without a cap anybody could make your instance mail one stranger without limit. The count is read from the stored declarations, by normalised address, over the trailing 24 hours. A fourth declaration for the same mailbox is still stored, forwarded to the biller and sent to you as the operator's copy; only its receipt is skipped, and the log says so with the receipt number. One source address may file five declarations a minute, and an IPv6 caller counts as its /64.
+
 ### The password reset, and what it costs
 
 "Forgot password" works, and unlike the mailed reset this service used to have, it **restores the diary rather than only the login**.
