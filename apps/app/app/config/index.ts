@@ -67,12 +67,12 @@ function parseTrustProxy(raw: string | undefined, isProduction: boolean): boolea
 }
 
 /**
- * Parses `CSP_CONNECT_EXTRA` — a space-separated list of extra origins a
+ * Parses `CSP_CONNECT_EXTRA`, a space-separated list of extra origins a
  * self-hoster/operator wants their `connect-src` CSP directive to allow
  * (e.g. a remote openai-compatible endpoint that isn't `localhost`). Empty
  * when unset, which is the common case: the CSP's baked-in carve-out already
- * covers `localhost`/`127.0.0.1`/`[::1]` for local self-hosted endpoints —
- * see `server.ts`'s `CONTENT_SECURITY_POLICY`.
+ * covers `localhost`/`127.0.0.1`/`[::1]` for local self-hosted endpoints. See
+ * `server.ts`'s `CONTENT_SECURITY_POLICY`.
  */
 function parseCspConnectExtra(raw: string | undefined): string[] {
   if (raw === undefined) return [];
@@ -84,7 +84,7 @@ function parseCspConnectExtra(raw: string | undefined): string[] {
 
 /** Resolved LowCarbCheck food-database integration settings (see `CONFIG.foodDb`). */
 export interface FoodDbConfig {
-  /** When false, the food-resolution service short-circuits to empty matches — no HTTP calls at all. */
+  /** When false, the food-resolution service short-circuits to empty matches: no HTTP calls at all. */
   enabled: boolean;
   /** Base URL of the public LowCarbCheck food API (no trailing slash). Empty string when disabled. */
   apiUrl: string;
@@ -135,7 +135,7 @@ function parseFoodDbApiKey(raw: string | undefined): string | null {
 /**
  * Parses `FOOD_DB_API_URL` into the food-database integration config. This
  * cannot use `optionalEnv` because that helper treats an empty string the same
- * as "unset" — here the two must differ:
+ * as "unset". Here the two must differ:
  *
  * - unset -> the public default (integration ON)
  * - explicit empty string -> integration OFF (a self-hoster's opt-out switch,
@@ -208,7 +208,7 @@ export function resolveFoodDbBackfill(options: {
 }
 
 /**
- * Parses `DEFAULT_UI_LANGUAGE` — the language a visitor who has NOT yet chosen
+ * Parses `DEFAULT_UI_LANGUAGE`, the language a visitor who has NOT yet chosen
  * one is served.
  *
  * ── THIS IS ONE OF THREE THINGS SPELLED "DEFAULT LANGUAGE"; IT IS NOT THE OTHER TWO ──
@@ -220,7 +220,7 @@ export function resolveFoodDbBackfill(options: {
  *     fallback for a cookie or loader payload that did not parse. ~24 call
  *     sites. Stays `'en'`.
  *  3. `fallbackLng` in `app/i18n/i18n.ts`: i18next's MISSING-KEY fallback.
- *     Stays `'en'`, and must — `en` is the reference bundle. Point it at `de`
+ *     Stays `'en'`, and must: `en` is the reference bundle. Point it at `de`
  *     and a key missing from German falls back to German, which resolves to
  *     nothing and renders the raw key path to the user.
  *
@@ -317,7 +317,7 @@ export function parseUpdateCheck(raw: string | undefined): boolean {
  * The refusal comes FIRST. `GATEWAY_URL` is the variable that used to make an
  * instance managed, and an operator who upgrades without editing their
  * environment must not get an open instance out of a file that still reads as
- * a closed one — see `assertGatewayUrlUnset`.
+ * a closed one. See `assertGatewayUrlUnset`.
  */
 export function parseAppConfig(env: NodeJS.ProcessEnv) {
   assertGatewayUrlUnset(env.GATEWAY_URL);
@@ -340,7 +340,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * UI language (M167 spec 01).
      *
      * `defaultLanguage` answers exactly one question: what does a visitor see
-     * BEFORE they have chosen? The locale cookie always wins over it — see
+     * BEFORE they have chosen? The locale cookie always wins over it. See
      * `app/root.tsx`'s loader, the only consumer. It is emphatically not a lock,
      * and it does not translate food names, AI replies, or anything the user typed.
      */
@@ -355,7 +355,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
       port: optionalIntEnv({ env, name: 'PORT', fallback: 3000 }),
       /**
        * Express `trust proxy` setting. Required behind a reverse proxy (Traefik)
-       * so `request.url`'s host/proto reflect X-Forwarded-* headers — React
+       * so `request.url`'s host/proto reflect X-Forwarded-* headers. React
        * Router v8's CSRF check compares the browser's Origin against that host,
        * so without this, same-origin POST actions get aborted in production.
        * Configurable via TRUST_PROXY (see parseTrustProxy above for accepted formats).
@@ -369,7 +369,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * ZERO-SECRET BOOT (M128 spec 03): this app reads no secret from the
      * environment at all. The cookie-session signing key went with the sessions
      * themselves (there are no accounts), and the AES-256-GCM key went with the
-     * server-side BYOK-at-rest encryption — the AI provider key lives on the
+     * server-side BYOK-at-rest encryption: the AI provider key lives on the
      * device (`app/lib/local-store/ai-settings.ts`) and never reaches this
      * server. There is no database either (the data-migration ledger and the
      * whole Postgres dependency went with it), so an empty environment is a
@@ -380,7 +380,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
        * Extra `connect-src` origins for the strict CSP (`server.ts`), space-
        * separated (e.g. `"https://ai.example.com https://ai2.example.com"`).
        * A self-hoster running their own remote (non-localhost) openai-compatible
-       * endpoint sets this so their browser is allowed to call it directly —
+       * endpoint sets this so their browser is allowed to call it directly,
        * the CSP otherwise only permits `'self'`, OpenRouter, Anthropic, and
        * localhost/127.0.0.1/[::1] (see the self-host docs in README.md).
        */
@@ -399,7 +399,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      *
      * openplate resolves each identified plate food against the public
      * LowCarbCheck food API to attach curated per-100g nutrition + images.
-     * Only food NAMES are ever sent — never photos, never user data. The whole
+     * Only food NAMES are ever sent, never photos, never user data. The whole
      * integration is fail-open and can be turned off by setting
      * `FOOD_DB_API_URL` to an empty string.
      *
@@ -434,12 +434,12 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * E2EE Sync (M128 spec 04)
      *
      * `syncServerUrl` is the ONE value this server publishes to the browser
-     * (through the root loader's `publicConfig` — see
+     * (through the root loader's `publicConfig`, see
      * `app/config/public-config.ts` for why the channel is an allowlist rather
      * than an env dump). It is not a secret: the browser has to know the
      * address it is about to send encrypted blobs to.
      *
-     * `null` (unset) turns sync off completely — no UI renders, no request
+     * `null` (unset) turns sync off completely: no UI renders, no request
      * leaves. That is the self-host default; the hosted deployment sets it.
      * A malformed value throws at boot rather than degrading to `null`, so a
      * typo can't present as "sync is quietly disabled".
@@ -459,7 +459,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * people: an admin invites by email, there is no anonymous path because on
      * such an instance it leads nowhere, and the AI comes from the sync server
      * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
-     * stops the boot without it — see `isManagedInstance`.
+     * stops the boot without it. See `isManagedInstance`.
      *
      * It replaced `GATEWAY_URL`, which said the same thing by naming a second
      * service. There is no second service.
@@ -470,14 +470,14 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
     },
 
     /**
-     * Optional Matomo analytics (M165/05) — `null` unless BOTH `MATOMO_URL` and
+     * Optional Matomo analytics (M165/05): `null` unless BOTH `MATOMO_URL` and
      * `MATOMO_SITE_ID` are set.
      *
      * `null` is the self-host default and is what keeps two public claims true
      * at once: the landing page's tracking card and `content-security-policy.ts`'s
      * "no third-party script on an unconfigured instance". A half-configured pair
-     * throws at boot rather than degrading, exactly as the newsletter pair does —
-     * see `app/config/analytics.ts` for why silence would be worse here.
+     * throws at boot rather than degrading, exactly as the newsletter pair does. See
+     * `app/config/analytics.ts` for why silence would be worse here.
      *
      * `MATOMO_EVENT_LEVEL` decides how much the custom events may say once the
      * pair is set: `pageviews`, `product` (the default) or `research`. The
@@ -501,7 +501,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * option instead of having to bring its own provider key.
      *
      * NOT A SECRET, BY CONSTRUCTION: like `syncServerUrl`, this whole object
-     * travels to the browser through the root loader's `publicConfig` — including
+     * travels to the browser through the root loader's `publicConfig`, including
      * the API key, which every visitor to the instance can therefore read. That
      * is household/private-deployment trust, and it is spelled out in
      * `public-config.ts`'s `InstanceInferencePreset` doc and in `.env.example`.
@@ -509,7 +509,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      *
      * `DEFAULT_INFERENCE_MODEL` defaults to `openplate-plate-1` (the model id
      * openplate-inference serves) and `DEFAULT_INFERENCE_API_KEY` may be omitted
-     * entirely for an endpoint that needs no key — the common local case.
+     * entirely for an endpoint that needs no key, the common local case.
      *
      * `null` (unset base URL) is the default and means zero UI and zero payload
      * difference. A malformed base URL throws at boot rather than silently
@@ -530,7 +530,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * section renders, the landing action 404s, no Turnstile script loads and
      * the production CSP is byte-for-byte what it was before this existed. The
      * mailing list belongs to whoever runs the instance, so the software ships
-     * with none — the same contract `sync` above has.
+     * with none, the same contract `sync` above has.
      *
      * `subscribeUrl` is SERVER-ONLY (operator topology); only the Turnstile site
      * key reaches the browser. See `app/config/newsletter.ts`.

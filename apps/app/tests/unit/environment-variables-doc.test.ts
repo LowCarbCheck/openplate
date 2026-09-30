@@ -58,7 +58,13 @@ interface ScannedSources {
 
 const SOURCES = {
   app: {
-    typescript: [...listConfigModules(), 'app/lib/content/content.server.ts', 'app/lib/server-bind.ts', 'server.ts'],
+    typescript: [
+      ...listConfigModules(),
+      'app/lib/content/content.server.ts',
+      'app/lib/server-bind.ts',
+      'app/lib/logger.ts',
+      'server.ts',
+    ],
     shell: [],
   },
   core: {
@@ -229,38 +235,6 @@ const READ_BY_NODE: readonly Allowance[] = [
   },
 ];
 
-/**
- * TEMPORARY. Delete both lists, and the two tests that read them, when the branch
- * `feat/config-surface` is merged. That branch deletes `HMR_PORT` and `DEBUG_MODE` from
- * `app/config/index.ts` and adds `OFF_API_URL` to `apps/inference/src/config.ts`. Until then this
- * tree still parses the first two, which the page does not list, and does not yet read the third,
- * which the page already lists.
- *
- * THE LISTS EXPIRE BY THEMSELVES. The tests below require each entry to still be true, so the merge
- * that makes one false turns this file red with the entry named. An allowance that outlived its
- * reason would hide exactly the drift this file exists to catch.
- */
-const TEMPORARY_READ_BUT_NOT_LISTED: readonly Allowance[] = [
-  {
-    service: 'app',
-    name: 'HMR_PORT',
-    reason: 'Parsed in app/config/index.ts and used nowhere. feat/config-surface deletes it.',
-  },
-  {
-    service: 'app',
-    name: 'DEBUG_MODE',
-    reason: 'Parsed in app/config/index.ts and used nowhere. feat/config-surface deletes it.',
-  },
-];
-
-const TEMPORARY_LISTED_BUT_NOT_READ: readonly Allowance[] = [
-  {
-    service: 'inference',
-    name: 'OFF_API_URL',
-    reason: 'The Open Food Facts base URL for FOOD_SOURCE=off. feat/config-surface adds it to src/config.ts.',
-  },
-];
-
 function isAllowed(options: { list: readonly Allowance[]; service: ServiceName; name: string }): boolean {
   return options.list.some((entry) => entry.service === options.service && entry.name === options.name);
 }
@@ -275,7 +249,6 @@ function findMissingRows(options: {
   return [...read]
     .filter((name) => !listed.has(name))
     .filter((name) => !isAllowed({ list: NOT_SETTINGS, service, name }))
-    .filter((name) => !isAllowed({ list: TEMPORARY_READ_BUT_NOT_LISTED, service, name }))
     .toSorted();
 }
 
@@ -289,7 +262,6 @@ function findStaleRows(options: {
   return [...listed]
     .filter((name) => !read.has(name))
     .filter((name) => !isAllowed({ list: READ_BY_NODE, service, name }))
-    .filter((name) => !isAllowed({ list: TEMPORARY_LISTED_BUT_NOT_READ, service, name }))
     .toSorted();
 }
 
@@ -395,18 +367,6 @@ describe('the allowances are still true', () => {
     for (const entry of READ_BY_NODE) {
       assert.ok(!READS[entry.service].has(entry.name), `${entry.name} is read by the source now: delete its entry`);
       assert.ok(listedNames({ markdown: PAGE, service: entry.service }).has(entry.name), `${entry.name} is no row`);
-    }
-  });
-
-  it('TEMPORARY: HMR_PORT and DEBUG_MODE are still parsed in this tree (delete the entry once they are not)', () => {
-    for (const entry of TEMPORARY_READ_BUT_NOT_LISTED) {
-      assert.ok(READS[entry.service].has(entry.name), `${entry.name} is gone: delete its TEMPORARY entry`);
-    }
-  });
-
-  it('TEMPORARY: OFF_API_URL is not read yet in this tree (delete the entry once it is)', () => {
-    for (const entry of TEMPORARY_LISTED_BUT_NOT_READ) {
-      assert.ok(!READS[entry.service].has(entry.name), `${entry.name} is read now: delete its TEMPORARY entry`);
     }
   });
 });
