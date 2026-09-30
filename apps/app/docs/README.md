@@ -22,7 +22,8 @@ says what it sends.
 | --- | --- |
 | [topologies.md](topologies.md) | **Start here.** What should I actually run? Five rungs and one variant, from "nothing" to "everything", with the compose file for each. |
 | [self-hosting.md](self-hosting.md) | Running it: compose walkthroughs, first run, HTTPS, backups, upgrading. |
-| [configuration.md](configuration.md) | Every environment variable, the Content-Security-Policy, custom and instance-provided AI endpoints, the OpenRouter flow. |
+| [configuration.md](configuration.md) | The food database key, the Content-Security-Policy, analytics, managed instances, custom and instance-provided AI endpoints, the OpenRouter flow. |
+| [environment-variables.md](environment-variables.md) | Every variable the app, the sync service and the inference service read, with its default. The settings that stop the boot, and sign-up with a Turnstile captcha. |
 | [sync.md](sync.md) | Turning on sync across devices, and what the encryption does and does not hide. |
 | [family-setup.md](family-setup.md) | Sharing one AI bill across a household, with a per-person spend limit and per-person revocation. Provider sub-keys first; a managed instance when your provider has none. |
 | [architecture.md](architecture.md) | The layer picture: which component holds what, and which one is in the path of your diary, your photo and your food names. |

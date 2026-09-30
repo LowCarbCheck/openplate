@@ -78,6 +78,8 @@ That is the whole install. Postgres comes up alongside the service, the schema m
 
 Then point your openplate app at it by setting `SYNC_SERVER_URL` to this service's public URL, the one a **browser** can reach, since the sync client runs in the page. If you want both halves in one file, openplate ships a combined [`docker/topologies/compose.sync.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.sync.yml) that brings up the app, this service and a shared Postgres together.
 
+**Every setting is an environment variable.** The openplate [environment variables page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-sync-service-openplate-core) lists all variables for this service, their defaults, and boot rules. One is easy to misread: `INSTANCE_NAME`. It defaults to `openplate`. It names the instance on the `/health` handshake (`instance.name`) and in the start-up log only. The letters this service sends do not use it.
+
 ### Signup is by invitation, and mail is optional
 
 An account is an **email address plus a passphrase**, and it is created by redeeming an invite addressed to somebody. By default you mint every invite yourself, and the instance is invite-only.
@@ -88,7 +90,7 @@ pnpm sync-api invites create --email anna@example.org --display-name "Anna"
 
 That prints a link (or, if you configured no `CLIENT_BASE_URL`, the raw token) **once**. It is not stored, only its digest is. One invite creates one account, at the address it names, and a failed attempt does not spend it.
 
-**The first account, on a server with only Docker.** The `sync-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then, on the server, in the folder that holds `.env`:
+**The first account, on a server with only Docker.** The `sync-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then run this on the server, in the folder that holds `.env`. This repository's `docker/compose.yml` publishes the service on port 3000:
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -102,7 +104,7 @@ The answer holds `"emailed":false` and `"link":"<CLIENT_BASE_URL>/join#server=..
 
 **The invitation is the address verification.** `POST /v1/auth/signup` reads the address from the invite row, never from the request body, so the person who received the letter is the person who signs up. There is no confirmation link and nothing left to confirm afterwards.
 
-**You can let people ask for an invitation themselves.** With `OPEN_SIGNUP=true`, `POST /v1/auth/signup-request` takes an address, mints an ordinary invite for it and mails it there in a letter of its own, which says the person asked rather than that somebody invited them, so the letter is still the address check. It needs the mail block, and it refuses to boot without it. Every address gets the same `202`: an address that already has an account receives a short note with no link, and one that already holds a letter from you or a member receives nothing new. The request may name the plan the person picked (`"plan": "monthly"` or `"yearly"`) and the language they asked in (`"locale"`); the mailed link then carries `&plan=` and `&lang=`, the letter or the note is written in that language instead of `INSTANCE_LANGUAGE`, nothing is stored, and any other value is ignored. One source address may ask five times an hour, one mailbox receives one letter a day, and addresses at known throwaway mail services are refused (a vendored copy of the CC0 list at [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains), refreshed with `pnpm sync:disposable-domains`). Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_SITE_KEY` to require a Cloudflare Turnstile captcha as well; `/health` then publishes the site key for the app. `GET /v1/admin/stats` counts the invites this door minted today and in the last seven days, so a burst shows.
+**You can let people ask for an invitation themselves.** With `OPEN_SIGNUP=true`, `POST /v1/auth/signup-request` takes an address, mints an ordinary invite for it and mails it there in a letter of its own, which says the person asked rather than that somebody invited them, so the letter is still the address check. It needs the mail block, and it refuses to boot without it. Every address gets the same `202`: an address that already has an account receives a short note with no link, and one that already holds a letter from you or a member receives nothing new. The request may name the plan the person picked (`"plan": "monthly"` or `"yearly"`) and the language they asked in (`"locale"`); the mailed link then carries `&plan=` and `&lang=`, the letter or the note is written in that language instead of `INSTANCE_LANGUAGE`, nothing is stored, and any other value is ignored. One source address may ask five times an hour, one mailbox receives one letter a day, and addresses at known throwaway mail services are refused (a vendored copy of the CC0 list at [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains), refreshed with `pnpm sync:disposable-domains`). Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_SITE_KEY` to require a Cloudflare Turnstile captcha as well; `/health` then publishes the site key for the app. [Sign-up with Turnstile](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#sign-up-with-turnstile) explains how to get the two keys. It shows what is checked, and what happens when Cloudflare cannot be reached. `GET /v1/admin/stats` counts the invites this door minted today and in the last seven days, so a burst shows.
 
 **Mail is optional, and it goes out one of two ways.** Set one transport, and this service sends the invitation and the password reset itself. Leave both unset, and both come back to you as links to paste. Nothing is silently dropped either way. Setting both is a boot failure. `MAIL_OPERATOR_EMAIL` belongs to both. It receives your copy of a cancellation or a withdrawal.
 
@@ -520,26 +522,13 @@ everybody. An instance that never configured it is indistinguishable from one
 built before the feature existed. A `401` there would announce that a
 credential exists and is merely locked.
 
-Under Compose, put the value in `.env`: `docker/compose.yml` already forwards
-`ADMIN_TOKEN` into the container. Compose passes only the variables that file's
-`environment:` block names, so a variable you add to `.env` and nowhere else
-never reaches the service. `INSTANCE_NAME`, `INSTANCE_LANGUAGE`,
-`NUTRIENT_REFERENCE_BASIS`,
-`SERVER_PUBLIC_URL`, `CLIENT_BASE_URL`, `TRUST_PROXY`, `LOG_LEVEL`,
-`SYNC_SHARING`, `SYNC_RESEARCH`, `DATABASE_SSL`, `SYNC_NOTICE`,
-`SYNC_NOTICE_URL`, `MAIL_API_*`, `SMTP_*`, `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY`,
-`UPSTREAM_TIMEOUT_MS`, `AI_ADVERTISED_MODEL`, `AI_MAX_OUTPUT_TOKENS`, `AI_RATE_LIMIT_PER_MINUTE`,
-`AI_MAX_REQUEST_BYTES`, `SYNC_FEEDBACK`, `FEEDBACK_DAILY_LIMIT`,
-`FEEDBACK_MAX_REQUEST_BYTES`, `AI_INSTANCE_DAILY_LIMIT`,
-`MEMBER_INVITE_DAILY_AI_LIMIT`, `MEMBER_INVITE_ALLOWANCE_DAYS`,
-`MEMBER_INVITE_LIFETIME_CAP`, `OPEN_SIGNUP`, `TURNSTILE_SECRET_KEY`,
-`TURNSTILE_SITE_KEY`, `TRIAL_SCANS`, `TRIAL_DAILY_AI_LIMIT`, `TRIAL_DAYS`,
-`TRIAL_TIME_ZONE`, `TRIAL_ADDRESS_PEPPER`, `MEMBER_INVITE_TRIAL`,
-`AI_TRIAL_INSTANCE_DAILY_LIMIT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
-`VAPID_SUBJECT`, `PLANS_UPSTREAM_URL`, `PLANS_UPSTREAM_SECRET` and
-`BILLING_TOKEN` are forwarded there too. If you run your own Compose file
-rather than the one in `docker/`, name each variable you rely on in its
-`environment:` block.
+Under Compose, put the value in `.env`. The file `docker/compose.yml` forwards
+every variable this service reads, including `ADMIN_TOKEN`. A line in `.env`
+reaches the container directly. The
+[environment variables page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-sync-service-openplate-core)
+lists them all, with their defaults. If you run your own Compose file instead of
+the one in `docker/`, list each variable you rely on in its `environment:`
+block. Compose passes only the variables that block names.
 
 What it can never do, by design rather than by default:
 
@@ -704,8 +693,10 @@ The integration suite targets a local Postgres at `localhost:5433` (user `postgr
 ### Invariants
 
 - **No `@sprqvntrs/*` or private-registry dependencies.** This repo must be buildable by anyone.
-- **Four runtime dependencies**: `express`, `pg`, `dotenv` and `undici`. The last is the AI
-  proxy's, and it is not a preference: Node's global `fetch` applies a 300-second header
+- **Five runtime dependencies** outside the bundle: `express`, `pg`, `dotenv`, `undici` and
+  `web-push`. `drizzle-orm` and `nodemailer` are bundled into `dist/server.js`. The file
+  `scripts/build.ts` explains why each is where it is. `undici` belongs to the AI proxy, and it
+  is not a preference: Node's global `fetch` applies a 300-second header
   timeout that an `AbortSignal` can only tighten, so an operator who set
   `UPSTREAM_TIMEOUT_MS=600000` would still be cut off at 300 with an error naming no knob.
 - **Handler cores stay pure and dependency-injected.** The shell owns Express, the database and the environment; the cores take a store, a clock and a token minter. That is why the auth suite tests rotation, reuse detection and revocation without a database.

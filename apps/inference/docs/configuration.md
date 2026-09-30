@@ -2,7 +2,11 @@
 
 Everything is environment variables, validated at boot; a bad value stops the
 process rather than degrading silently. The annotated master list is
-[`.env.example`](../.env.example). The ones that matter most:
+[`.env.example`](../.env.example). The openplate docs list every variable for
+this container on
+[one page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-inference-service-openplate-inference).
+They appear next to those for the app and the sync service. The most important
+variables are:
 
 | variable | default | |
 |---|---|---|
@@ -15,13 +19,18 @@ process rather than degrading silently. The annotated master list is
 | `LATENCY_CEILING_MS` | `0` | 0 = disabled. Admission policy: refuse work you cannot finish in time. See [Hardware](hardware.md#no-latency-ceiling-by-default). |
 | `RUNTIME_COMPLETION_TIMEOUT_MS` | `600000` | Total bound on one completion call; `0` = disabled. Liveness, not latency policy: it releases a worker slot a wedged runtime will never return. Applies in bundled mode too. See [Runtimes](runtimes.md#external-mode-variables). |
 | `IMAGE_MAX_LONG_EDGE` | `896` | Downscale target. Latency rises with the square. |
+| `MAX_IMAGE_BYTES` | `8388608` | The largest photo size accepted after base64 decoding, in bytes (8 MiB). A larger file is rejected with a message to resize it. The request body limit is derived from this value. |
 | `FOOD_SOURCE` | `fdc` | See [Food data](#food-data-foodsource). |
 | `CONTEXT_SIZE` | `8192` | Context **per in-flight scan**. The container multiplies it by `CONCURRENCY` before handing it to llama.cpp, because llama.cpp's `-c` is the *total* it splits across slots. |
+| `LLAMA_EXTRA_ARGS` | *(empty)* | Extra flags added to the end of the llama-server command, split at spaces. Bundled mode only. |
 | `LLAMA_THREADS` | `nproc - 2` | CPU threads for llama.cpp (its `-t`). Two cores are left for the service, image decode, and the OS, so a 6-core box runs 4 threads and a 4-core box 2, whatever `CONCURRENCY` says. Giving llama.cpp every core makes the box contended, not faster. The startup log prints the value as `-t N`. Bundled mode only. |
 | `MODELS_DIR` | `/models` | The weights volume. |
+| `RUNTIME_PORT` | `8080` | The port of the bundled llama-server, on `127.0.0.1` inside the container. Bundled mode only. |
 | `WEIGHTS_MIRROR_BASE` | *(empty)* | Optional mirror; Hugging Face is the fallback. |
 | `GPU_LAYERS` | *(auto)* | Override the GPU auto-detect. `0` forces CPU. |
+| `NVIDIA_VISIBLE_DEVICES` | *(set by the runtime)* | The NVIDIA container runtime sets it when you pass `--gpus all`. Auto-detect reads it. Any value other than `void` or `none` offloads every layer. You do not set it yourself. |
 | `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
+| `PROFILE` | *(from `MODEL_PROFILE`)* | The profile name in the start-up log: `lite`, `quality` or `custom`. The container sets it from `MODEL_PROFILE`. Setting it yourself changes only that log line. |
 
 External-mode variables (`MODEL_RUNTIME_URL`, `MODEL_ID`,
 `MODEL_RUNTIME_API_KEY`) are documented in
@@ -40,13 +49,14 @@ The model identifies foods and estimates grams. **Macros are resolved from a foo
 | `FOOD_SOURCE` | what it does | network | notes |
 |---|---|---|---|
 | **`fdc`** *(default)* | Looks names up in a bundled extract of **USDA FoodData Central**, **8,041 generic foods**, shipped inside the image at `data/fdc-foods.json`. | **none** | Offline, no key, no account, no outbound request. Public domain. It is the default because it is the only option that needs nothing from anybody. |
-| `off` | Queries **Open Food Facts** live at your runtime. | outbound, per scan | Strong on branded and packaged products, weaker on generic cooked food. Read the licence note below before enabling. Nothing OFF-derived ships in this image. |
+| `off` | Queries **Open Food Facts** live at your runtime. | outbound, per scan | Strong on branded and packaged products, weaker on generic cooked food. The address is `OFF_API_URL`, `https://world.openfoodfacts.org` by default. Read the licence note below before enabling. Nothing OFF-derived ships in this image. |
 | `lcc` | Queries the public **lowcarbcheck** API. | outbound, per scan | The broadest data of the three (curated + BLS + USDA), and remote-only permanently, because BLS 4.0 forbids redistribution. Attribution is passed through to the response so it reaches the UI. Without `LCC_API_KEY`, every request runs on LowCarbCheck's free anonymous tier; see below. |
 | `none` | No resolution. Every item comes back with null macros. | none | For clients that do their own nutrition lookup. |
 
 ```bash
 -e FOOD_SOURCE=fdc                         # default
 -e FDC_DATASET_PATH=./data/fdc-foods.json  # relative to the working directory
+-e OFF_API_URL=https://world.openfoodfacts.org  # only read when FOOD_SOURCE=off
 -e LCC_API_URL=https://lowcarbcheck.org    # only read when FOOD_SOURCE=lcc
 -e LCC_API_KEY=lcc_live_…                   # optional; only read when FOOD_SOURCE=lcc
 -e EMBEDDING_RUNTIME_URL=http://…          # optional; enables hybrid re-ranking

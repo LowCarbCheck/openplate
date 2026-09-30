@@ -142,7 +142,8 @@ podman compose -f compose.sync.yml up -d
 ```
 
 > **Accounts need a secure page.** Signing in, signing up, and opening an invitation fail on
-> plain `http://<LAN address>`. Use HTTPS, or `localhost` through an ssh tunnel for a test.
+> plain `http://<LAN address>`. Use HTTPS, with a domain name or on a home network without one,
+> or `localhost` through an ssh tunnel for a test.
 > Nobody signs up on their own. You mint the first invitation on the server with
 > `ADMIN_TOKEN`. Both are in [self-hosting.md](self-hosting.md#create-the-first-account) and
 > [self-hosting.md](self-hosting.md#https).
@@ -249,7 +250,7 @@ They are easy to confuse and they compose.
   to spend, how much, and how do I take it away*. It carries no model and forwards everything.
 
 Point a managed instance's AI proxy at your inference box (openplate-core's
-`UPSTREAM_BASE_URL`, with `UPSTREAM_API_KEY` left empty) and you get both: scans on your own hardware, with per-account
+`UPSTREAM_BASE_URL`, with one of the inference service's `API_KEYS` as `UPSTREAM_API_KEY`) and you get both: scans on your own hardware, with per-account
 allowances in front of them. Point it at a cloud provider instead and you get shared spend
 with no hardware. Either way, the same sync server also carries the diary: sync and the AI
 proxy are one service now, not two ([architecture.md](architecture.md)).
