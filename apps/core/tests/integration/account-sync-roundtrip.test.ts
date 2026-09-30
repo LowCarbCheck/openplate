@@ -113,7 +113,12 @@ test('the full round trip: signup, login, key record, push, pull, conflict, dele
     method: 'PUT',
     path: '/v1/sync/key-records/passphrase',
     accessToken,
-    body: { kdfDescriptor: sampleKdfDescriptor(2), wrappedDek, expectedUpdatedAt: seeded.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: sampleKdfDescriptor(2),
+      wrappedDek,
+      expectedUpdatedAt: seeded.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(put.status, 200);
   assert.equal(put.body.kind, 'passphrase');
@@ -123,7 +128,12 @@ test('the full round trip: signup, login, key record, push, pull, conflict, dele
     method: 'PUT',
     path: '/v1/sync/key-records/passphrase',
     accessToken,
-    body: { kdfDescriptor: sampleKdfDescriptor(2), wrappedDek, expectedUpdatedAt: seeded.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: sampleKdfDescriptor(2),
+      wrappedDek,
+      expectedUpdatedAt: seeded.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(putAgain.status, 409);
 
@@ -584,7 +594,12 @@ async function seedRecoveryRecord(accessToken: string, seed: number): Promise<st
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(seed), expectedUpdatedAt: current },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(seed),
+      expectedUpdatedAt: current,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(created.status, 200);
   return created.body.updatedAt;
@@ -642,7 +657,7 @@ test('key-record rotation survives a wire round-trip of its CAS token', async ()
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: rotatedDek, expectedUpdatedAt: observedToken },
+    body: { kdfDescriptor: null, wrappedDek: rotatedDek, expectedUpdatedAt: observedToken, currentAuthHash: AUTH_HASH },
   });
   assert.equal(rotated.status, 200, 'a token read back over the wire must still win its CAS');
   assert.equal(rotated.body.wrappedDek, rotatedDek);
@@ -657,7 +672,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(52), expectedUpdatedAt: staleToken },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(52),
+      expectedUpdatedAt: staleToken,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(rotated.status, 200);
   const currentToken = rotated.body.updatedAt;
@@ -668,7 +688,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(53), expectedUpdatedAt: staleToken },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(53),
+      expectedUpdatedAt: staleToken,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(replayed.status, 409);
   assert.equal(replayed.body.currentUpdatedAt, currentToken, 'the 409 must name the REAL current token');
@@ -679,7 +704,12 @@ test('a stale token loses its key-record CAS, and the 409 reports a token that w
     method: 'PUT',
     path: '/v1/sync/key-records/recovery',
     accessToken,
-    body: { kdfDescriptor: null, wrappedDek: sampleWrappedDek(54), expectedUpdatedAt: replayed.body.currentUpdatedAt },
+    body: {
+      kdfDescriptor: null,
+      wrappedDek: sampleWrappedDek(54),
+      expectedUpdatedAt: replayed.body.currentUpdatedAt,
+      currentAuthHash: AUTH_HASH,
+    },
   });
   assert.equal(retried.status, 200, 'the token the 409 reported must be usable on the retry');
 });

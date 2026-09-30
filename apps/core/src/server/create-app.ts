@@ -104,6 +104,7 @@ import type {
 } from '../contract-types.js';
 import type { AuthContext } from '../accounts/auth-handlers.js';
 import { registerAuthRoutes } from '../accounts/register-auth-routes.js';
+import { createPassphraseGate } from '../accounts/passphrase-gate.js';
 import { ADMIN_API_PREFIX, createAdminRoutes, type AdminLinkBases } from './admin-routes.js';
 import { createAdminFeedbackRoutes } from './admin-feedback-routes.js';
 import { createAdminAuthMiddleware } from './admin-auth.js';
@@ -552,12 +553,21 @@ export function createApp(options: CreateAppOptions): Express {
   // rotation, sharing and research. Only the account's own blob and key
   // records may be READ without it, because signing in on a new device needs
   // both before the app can ask; see `exceptOwnCopyReads`.
+  // ONE GATE, ON THE AUTH ROUTES' THROTTLE STORE, so rotate-dek, a key-record
+  // overwrite, change-passphrase and delete spend one per-account allowance of
+  // passphrase guesses (`accounts/passphrase-gate.ts`).
+  const passphrase = createPassphraseGate({
+    store: options.authContext.store,
+    pepper: options.authContext.pepper,
+    throttle: options.throttle,
+  });
   app.use(SYNC_API_PREFIX, requireAuth, exceptOwnCopyReads(requireConsent));
   const resolveEntitledUser = createEntitledUserResolver();
   registerSyncRoutes(app, {
     storage: options.storage,
     resolveEntitledUser,
     logger: options.logger,
+    passphrase,
   });
 
   // `POST /v1/sync/rotate-dek`, on EVERY instance, it is not part of the
@@ -576,6 +586,7 @@ export function createApp(options: CreateAppOptions): Express {
       pepper: options.authContext.pepper,
       escrowKey: options.authContext.escrowKey,
     },
+    passphrase,
   });
 
   // The share family, when this instance has one. It is handed the same

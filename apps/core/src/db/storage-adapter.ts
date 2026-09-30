@@ -218,11 +218,5 @@ export function createDrizzleStorageAdapter(db: Database, clock: () => Date = ()
       }
       return { ok: true, record: mapKeyRecordRow(row) };
     },
-
-    async deleteKeyRecord(input): Promise<void> {
-      await db
-        .delete(syncKeyRecords)
-        .where(and(eq(syncKeyRecords.accountId, input.accountId), eq(syncKeyRecords.kind, input.kind)));
-    },
   };
 }

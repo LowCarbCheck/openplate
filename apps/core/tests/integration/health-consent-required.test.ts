@@ -155,7 +155,6 @@ function dataRequests(): DataRequest[] {
       path: '/v1/sync/key-records/passphrase',
       body: { kdfDescriptor: sampleKdfDescriptor(), wrappedDek: sampleWrappedDek(), expectedUpdatedAt: null },
     },
-    { name: 'a key-record delete', method: 'DELETE', path: '/v1/sync/key-records/recovery' },
     { name: 'a DEK rotation', method: 'POST', path: '/v1/sync/rotate-dek', body: {} },
     { name: 'the share list', method: 'GET', path: '/v1/sync/shares' },
     { name: 'the shared-with-me list', method: 'GET', path: '/v1/sync/shared' },

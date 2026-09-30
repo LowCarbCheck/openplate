@@ -26,7 +26,9 @@ import { MAX_BLOB_BYTES, SHRINK_REFUSED_ERROR, SYNC_API_PREFIX, isSyncKeyRecordK
 import { asBoolean, asNumber, asObject, asString, type JsonValue } from '../lib/json.js';
 import { handlePushBlob } from './push-handler.js';
 import { handlePullBlob } from './pull-handler.js';
-import { handleDeleteKeyRecord, handleListKeyRecords, handlePutKeyRecord } from './key-records-handler.js';
+import { handleListKeyRecords, handlePutKeyRecord } from './key-records-handler.js';
+import { parseAuthHashField } from '../accounts/auth-input.js';
+import { sendPassphraseRefusal } from '../accounts/passphrase-gate.js';
 import { blobCapacityPercent, shouldWarnBlobSize } from './blob-size-telemetry.js';
 
 const SYNC_ROUTE_PREFIX = SYNC_API_PREFIX;
@@ -253,6 +255,28 @@ export function registerSyncRoutes(app: Express, context: SyncHostContext): void
       }
       const kdfDescriptor = asObject(body.kdfDescriptor);
 
+      // AN OVERWRITE ASKS FOR THE PASSPHRASE; A CREATE DOES NOT. Replacing a
+      // wrap is replacing what opens the account, and a bearer token alone
+      // must not be able to do it: a stolen token could swap the `recovery`
+      // wrap for one under a key its holder chose. A create (`null`) only
+      // fills an empty slot during setup, where no passphrase record exists
+      // yet to prove anything against, and the CAS refuses it once one does.
+      if (expectedUpdatedAt.value !== null) {
+        const currentAuthHash = parseAuthHashField(body.currentAuthHash, 'currentAuthHash');
+        if (!currentAuthHash.ok) {
+          res.status(400).json({ error: `overwriting a key record requires ${currentAuthHash.reason}` });
+          return;
+        }
+        const passphrase = await context.passphrase.check({
+          accountId: user.userId,
+          authHash: currentAuthHash.value,
+        });
+        if (passphrase.status !== 'matched') {
+          sendPassphraseRefusal(res, passphrase);
+          return;
+        }
+      }
+
       const result = await handlePutKeyRecord(
         { accountId: user.userId, kind, kdfDescriptor, wrappedDek, expectedUpdatedAt: expectedUpdatedAt.value },
         context.storage,
@@ -278,22 +302,10 @@ export function registerSyncRoutes(app: Express, context: SyncHostContext): void
     }
   });
 
-  router.delete(`${SYNC_ROUTE_PREFIX}/key-records/:kind`, async (req, res, next) => {
-    try {
-      const user = await requireEntitledUser(req, res, context);
-      if (!user) return;
-
-      const kind = req.params.kind;
-      if (!isSyncKeyRecordKind(kind)) {
-        res.status(400).json({ error: 'invalid key record kind' });
-        return;
-      }
-      await handleDeleteKeyRecord({ accountId: user.userId, kind }, context.storage);
-      res.status(204).end();
-    } catch (error) {
-      next(error);
-    }
-  });
+  // THERE IS NO `DELETE /key-records/:kind`, and its absence is deliberate
+  // (removed 2026-09, PROTOCOL.md §5.5). No client called it, and deleting the
+  // last key record bricks the account on a bearer token alone. The path now
+  // answers as any unknown path under the prefix does.
 
   app.use(router);
 }

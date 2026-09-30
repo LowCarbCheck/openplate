@@ -27,6 +27,7 @@ import {
   shouldWarnBlobSize,
 } from '../../src/server/blob-size-telemetry.js';
 import { createSilentLogger, type LogFields } from '../../src/logger.js';
+import { createFakePassphraseGate } from './fake-passphrase-gate.js';
 import { createFakeStorageAdapter } from './fake-storage-adapter.js';
 import { asObject, asString, type JsonValue } from '../../src/lib/json.js';
 
@@ -46,6 +47,7 @@ before(async () => {
     storage: createFakeStorageAdapter(),
     resolveEntitledUser: async () => ({ userId: 1 }),
     logger,
+    passphrase: createFakePassphraseGate(),
   });
   app.use(createErrorMiddleware(createSilentLogger()));
 

@@ -25,6 +25,15 @@
  * and no longer unwrapped anything, which was latent until a mailed reset
  * began handing that code to people.
  *
+ * THE PASSPHRASE GUARD AND `account_tokens` JOINED IT IN 2026-09. A rotation
+ * used to be authorised by a bearer token alone, and it writes the recovery
+ * verifier `POST /v1/auth/recover` accepts, so a stolen token could plant a
+ * recovery code of its own and sign in with it for good. The route now
+ * matches `currentAuthHash` first; this transaction compares the account's
+ * verifier against the one matched and revokes every other session, so the
+ * write happens only for a caller who holds the passphrase NOW, and leaves no
+ * other session standing.
+ *
  * SILENCE IS REVOCATION HERE, INVERTING §5.14. In a credential rotation, a
  * key-record kind that was not submitted is left untouched, because those
  * records are the owner's own and an unmentioned one is still valid. A share
@@ -40,12 +49,13 @@
  * would throw away the owner's only defence against a bad client write during
  * the rotation itself.
  */
-import { and, desc, eq, inArray, notInArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, ne, notInArray, or } from 'drizzle-orm';
 import type { RotateDekInput, RotateDekResult, SyncRotationStore } from '../contract-types.js';
 import { BLOB_VERSION_RETENTION } from '../protocol.js';
+import { SESSION_TOKEN_KINDS } from '../lib/tokens.js';
 import { isUniqueViolation } from '../lib/storage-conflict.js';
 import type { Database } from './client.js';
-import { accounts, syncBlobs, syncKeyRecords, syncShares } from './schema.js';
+import { accountTokens, accounts, syncBlobs, syncKeyRecords, syncShares } from './schema.js';
 
 /**
  * How a rotation refuses: thrown inside the transaction so Postgres rolls
@@ -63,6 +73,32 @@ class RotationRefused extends Error {
     this.name = 'RotationRefused';
     this.result = result;
   }
+}
+
+/** The transaction handle `db.transaction` passes its callback. */
+type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+/** Revokes every live session token of the account except the kept session's family (or, with no family, its one token). */
+async function revokeOtherSessions(
+  tx: Transaction,
+  input: { accountId: number; keep: { tokenId: number; familyId: string | null }; revokedAt: Date },
+): Promise<void> {
+  const outsideKeptFamily =
+    input.keep.familyId === null
+      ? undefined
+      : or(isNull(accountTokens.familyId), ne(accountTokens.familyId, input.keep.familyId));
+  await tx
+    .update(accountTokens)
+    .set({ revokedAt: input.revokedAt })
+    .where(
+      and(
+        eq(accountTokens.accountId, input.accountId),
+        inArray(accountTokens.kind, [...SESSION_TOKEN_KINDS]),
+        isNull(accountTokens.revokedAt),
+        ne(accountTokens.id, input.keep.tokenId),
+        outsideKeptFamily,
+      ),
+    );
 }
 
 export function createDrizzleRotationStore(db: Database): SyncRotationStore {
@@ -89,6 +125,23 @@ export function createDrizzleRotationStore(db: Database): SyncRotationStore {
 
       try {
         return await db.transaction(async (tx) => {
+          // ---- The caller's passphrase, compare-and-swap on the verifier
+          //
+          // FIRST, so it also takes the account row lock before anything else
+          // is written. The route matched `currentAuthHash` against this value
+          // before the transaction opened; a passphrase change that committed
+          // since then means the caller no longer holds the credential this
+          // rotation was authorised by, and nothing below may run.
+          const [authorised] = await tx
+            .update(accounts)
+            .set({
+              recoveryVerifier: input.recoveryVerifier,
+              recoveryCodeEscrow: Buffer.from(input.recoveryCodeEscrow),
+            })
+            .where(and(eq(accounts.id, input.accountId), eq(accounts.verifier, input.expectedVerifier)))
+            .returning({ id: accounts.id });
+          if (!authorised) throw new RotationRefused({ ok: false, reason: 'credential-superseded' });
+
           // ---- The blob, compare-and-swap on baseVersion (PROTOCOL.md §5.1)
           const [latest] = await tx
             .select({ blobVersion: syncBlobs.blobVersion })
@@ -137,20 +190,20 @@ export function createDrizzleRotationStore(db: Database): SyncRotationStore {
               });
           }
 
-          // ---- The new recovery credential, in this same transaction
+          // The new recovery credential landed in the first statement of this
+          // transaction, beside the verifier guard. The `recovery` key record
+          // written just above is wrapped under a KEK derived from a code the
+          // client has just minted, and those two columns are what that code
+          // authenticates against and what a mailed reset hands back: all
+          // three commit together or none does.
+
+          // ---- Every other session, revoked in this same transaction
           //
-          // The `recovery` key record written just above is wrapped under a KEK
-          // derived from a code the client has just minted. These two columns
-          // are what that code authenticates against and what a mailed reset
-          // hands back, so all three move together or the account ends up with
-          // an escrowed code that logs in and opens nothing.
-          await tx
-            .update(accounts)
-            .set({
-              recoveryVerifier: input.recoveryVerifier,
-              recoveryCodeEscrow: Buffer.from(input.recoveryCodeEscrow),
-            })
-            .where(eq(accounts.id, input.accountId));
+          // A rotation is what an owner runs when they believe a key leaked,
+          // and it replaces the recovery code. A session that survived it would
+          // be exactly the stolen token the rotation was run against. The
+          // caller's own family stays, so the rotating device stays signed in.
+          await revokeOtherSessions(tx, { accountId: input.accountId, keep: input.keepSession, revokedAt: now });
 
           // ---- Shares not resubmitted are DELETED, in this same transaction
           //

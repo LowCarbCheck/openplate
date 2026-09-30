@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import {
   sampleAuthHash,
+  recoveryAuthHashFor,
   sampleRecoveryCode,
   sampleCiphertext,
   sampleKdfDescriptor,
@@ -156,9 +157,12 @@ test('sharing disabled: rotate-dek is NOT part of the dark surface, and refuses 
     body: {
       blob: { baseVersion: 0, envelopeVersion: 1, ciphertext: sampleCiphertext(29, 128) },
       keyRecords,
-      // Required since the M192 addendum: a rotation always mints a new code.
-      newRecoveryAuthHash: sampleAuthHash(71),
+      // Required since the M192 addendum: a rotation always mints a new code,
+      // and its proof must be the one that code derives.
+      newRecoveryAuthHash: recoveryAuthHashFor(sampleRecoveryCode(5)),
       recoveryCode: sampleRecoveryCode(5),
+      // The owner's passphrase, the seed this account signed up with.
+      currentAuthHash: sampleAuthHash(32),
       shares: [],
     },
   });
@@ -176,8 +180,9 @@ test('sharing disabled: rotate-dek is NOT part of the dark surface, and refuses 
     body: {
       blob: { baseVersion: 1, envelopeVersion: 1, ciphertext: sampleCiphertext(30, 128) },
       keyRecords,
-      newRecoveryAuthHash: sampleAuthHash(71),
+      newRecoveryAuthHash: recoveryAuthHashFor(sampleRecoveryCode(5)),
       recoveryCode: sampleRecoveryCode(5),
+      currentAuthHash: sampleAuthHash(32),
       shares: [{ granteeAccountId: 1, wrappedDek: sampleShareWrap(), recipientKeyFingerprint: 'ABCD' }],
     },
   });

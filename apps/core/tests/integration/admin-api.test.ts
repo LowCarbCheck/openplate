@@ -125,6 +125,8 @@ async function seedFurnishedAccount(): Promise<{ accountId: number; accessToken:
         kdfDescriptor: kind === 'passphrase' ? sampleKdfDescriptor(2) : null,
         wrappedDek: WRAPPED_DEK,
         expectedUpdatedAt: currentUpdatedAt.get(kind) ?? null,
+        // An overwrite proves the passphrase (§5.4).
+        currentAuthHash: AUTH_HASH,
       },
     });
     assert.equal(put.status, 200, `${kind} key record must be stored`);

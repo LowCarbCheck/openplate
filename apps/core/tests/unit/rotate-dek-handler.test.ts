@@ -34,6 +34,10 @@ function request(overrides: Partial<RotateDekRequest> = {}): RotateDekRequest {
     // the route and not here.
     recoveryVerifier: 'a'.repeat(64),
     recoveryCodeEscrow: new Uint8Array(60).fill(9),
+    // Decided by the route: the verifier `currentAuthHash` matched, and the
+    // caller's own session, the only one the rotation leaves standing.
+    expectedVerifier: 'b'.repeat(64),
+    keepSession: { tokenId: 1, familyId: 'family-1' },
     sharingEnabled: true,
     ...overrides,
   };
@@ -162,4 +166,13 @@ test('the store conflict and unknown-share answers are carried back unchanged', 
   store.result = { ok: false, reason: 'unknown-share', granteeAccountId: 4 };
   const unknown = await handleRotateDek(request(), store);
   assert.equal(unknown.status, 'unknown-share');
+});
+
+test('a store refusal on the passphrase guard comes back as credential-superseded, with the guard handed through', async () => {
+  const store = createFakeRotationStore();
+  store.result = { ok: false, reason: 'credential-superseded' };
+  const result = await handleRotateDek(request(), store);
+  assert.deepEqual(result, { status: 'credential-superseded' });
+  assert.equal(store.calls[0]?.expectedVerifier, 'b'.repeat(64));
+  assert.deepEqual(store.calls[0]?.keepSession, { tokenId: 1, familyId: 'family-1' });
 });

@@ -61,6 +61,8 @@ import { createDrizzleInstanceSettingsStore } from '../../src/db/settings-store.
 import { startInstanceSettings, type InstanceSettings } from '../../src/instance/instance-settings.js';
 import type { InstanceHealthConsent, InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { parseRecoveryCode } from '../../src/accounts/auth-input.js';
+import { deriveRecoveryAuthHash } from '../../src/lib/recovery-auth.js';
 
 export interface HttpResponse<T> {
   status: number;
@@ -817,6 +819,17 @@ export function sampleRecoveryCode(seed = 0): string {
   const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   const characters = Array.from({ length: 32 }, (_unused, index) => alphabet[(index * 7 + seed) % alphabet.length]);
   return (characters.join('').match(/.{1,5}/g) ?? []).join('-');
+}
+
+/**
+ * The recovery proof a client derives from `code`, grouped or not: the value
+ * `newRecoveryAuthHash` must carry, since rotate-dek derives the same proof
+ * itself and refuses one that disagrees (PROTOCOL.md §5.17).
+ */
+export function recoveryAuthHashFor(code: string): string {
+  const canonical = parseRecoveryCode(code);
+  if (!canonical.ok) throw new Error(canonical.reason);
+  return deriveRecoveryAuthHash(canonical.value);
 }
 
 export function sampleCiphertext(seed = 3, bytes = 256): string {

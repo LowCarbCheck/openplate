@@ -41,6 +41,26 @@
  * handing that code to people (PROTOCOL.md §5.12). A request missing either
  * field is a `400` that names it, rather than the generic body rejection: a
  * client upgrading needs to know which field it forgot.
+ *
+ * A ROTATION ALSO ASKS FOR THE CURRENT PASSPHRASE (`currentAuthHash`), AND
+ * THE SERVER DERIVES THE RECOVERY PROOF ITSELF (2026-09). The route used to
+ * write a new recovery verifier and escrow on a bearer token alone, and
+ * `POST /v1/auth/recover` turns that verifier into a session. A stolen token
+ * could therefore plant a code of its own and sign in with it after the owner
+ * had changed their passphrase, for as long as it liked. Now:
+ *
+ *  - `currentAuthHash` is matched as change-passphrase matches it, throttled
+ *    per account (`accounts/passphrase-gate.ts`), before anything is written;
+ *    a miss is `401` and writes nothing.
+ *  - The recovery verifier is computed from a proof the SERVER derives from
+ *    the canonical `recoveryCode` (`lib/recovery-auth.ts`), so the verifier
+ *    and the escrow cannot describe two different codes. A client whose
+ *    `newRecoveryAuthHash` disagrees is refused with a `400`.
+ *  - The transaction compares the account's verifier against the one matched,
+ *    and revokes every session but the caller's own family.
+ *
+ * The caller's family comes from the bearer middleware's request session
+ * (`getRequestSession`), not from `SyncEntitledUser`, which stays one field.
  */
 import express from 'express';
 import type { Express, Request, Response } from 'express';
@@ -55,7 +75,10 @@ import { asArray, asNumber, asObject, asPositiveInteger, asString, type JsonValu
 import { parseAuthHashField, parseRecoveryCode } from '../accounts/auth-input.js';
 import { computeVerifier } from '../lib/verifier.js';
 import { sealRecoveryCode } from '../lib/escrow.js';
+import { deriveRecoveryAuthHash } from '../lib/recovery-auth.js';
+import { PASSPHRASE_REJECTED, sendPassphraseRefusal, type PassphraseGate } from '../accounts/passphrase-gate.js';
 import { asyncHandler } from './async-handler.js';
+import { getRequestSession } from './bearer-auth.js';
 import { handleRotateDek } from './rotate-dek-handler.js';
 
 export const ROTATE_DEK_PATH = `${SYNC_API_PREFIX}/rotate-dek`;
@@ -83,6 +106,8 @@ export interface RotateDekHostContext {
    * Nothing on this path derives a KEK or unwraps a DEK.
    */
   recoveryCredentials: { pepper: string; escrowKey: Buffer };
+  /** Matches `currentAuthHash` against the account, throttled per account. See `accounts/passphrase-gate.ts`. */
+  passphrase: PassphraseGate;
 }
 
 function fromBase64(value: JsonValue | undefined): Uint8Array | null {
@@ -136,6 +161,13 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
         res.status(403).json({ error: 'sync not enabled for this account' });
         return;
       }
+      // The bearer middleware set this on every request that reached here; a
+      // missing one is an unauthenticated request, whatever the resolver said.
+      const session = getRequestSession(req);
+      if (session === null) {
+        res.status(401).json({ error: 'authentication required' });
+        return;
+      }
 
       const body = asObject(req.body) ?? {};
       const blob = asObject(body.blob);
@@ -146,6 +178,16 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
       const shareEntries = asArray(body.shares);
       if (blob === null || keyRecordEntries === null || shareEntries === null) {
         sendInvalidBody(res);
+        return;
+      }
+
+      // THE CURRENT PASSPHRASE, named when missing for the reason the recovery
+      // fields below are: a client that predates it must be told which field.
+      // Parsed here, matched only once the whole body is known to be
+      // well-formed, so a malformed request never spends a guess.
+      const currentAuthHash = parseAuthHashField(body.currentAuthHash, 'currentAuthHash');
+      if (!currentAuthHash.ok) {
+        res.status(400).json({ error: `rotate-dek requires ${currentAuthHash.reason}` });
         return;
       }
 
@@ -177,6 +219,16 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
         res.status(400).json({ error: `rotate-dek requires ${recoveryCode.reason}` });
         return;
       }
+      // THE PROOF IS THE SERVER'S, derived from the code it is about to seal,
+      // so the verifier and the escrow always describe the same code. The
+      // client's copy is still required and must agree: a disagreement is a
+      // client whose code and proof came apart, and sealing either one would
+      // leave the account with a recovery code that does not sign in.
+      const recoveryAuthHash = deriveRecoveryAuthHash(recoveryCode.value);
+      if (recoveryAuthHash !== newRecoveryAuthHash.value) {
+        res.status(400).json({ error: 'newRecoveryAuthHash does not match recoveryCode' });
+        return;
+      }
 
       const keyRecords: RotateDekKeyRecordInput[] = [];
       for (const entry of keyRecordEntries) {
@@ -198,6 +250,17 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
         shares.push(share);
       }
 
+      // LAST BEFORE THE WRITE: every refusal above is about the request, and
+      // costs no guess. A miss here is `401` and nothing was written.
+      const passphrase = await context.passphrase.check({
+        accountId: user.userId,
+        authHash: currentAuthHash.value,
+      });
+      if (passphrase.status !== 'matched') {
+        sendPassphraseRefusal(res, passphrase);
+        return;
+      }
+
       const result = await handleRotateDek(
         {
           accountId: user.userId,
@@ -207,7 +270,7 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
           // The raw code exists in this handler and inside `sealRecoveryCode`,
           // and nowhere else. It is never logged and never returned.
           recoveryVerifier: computeVerifier({
-            authHash: newRecoveryAuthHash.value,
+            authHash: recoveryAuthHash,
             pepper: context.recoveryCredentials.pepper,
           }),
           recoveryCodeEscrow: sealRecoveryCode({
@@ -215,6 +278,8 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
             escrowKey: context.recoveryCredentials.escrowKey,
           }),
           sharingEnabled: context.sharingEnabled,
+          expectedVerifier: passphrase.verifier,
+          keepSession: { tokenId: session.tokenId, familyId: session.familyId },
         },
         context.rotation,
       );
@@ -227,6 +292,13 @@ export function registerRotateDekRoute(app: Express, context: RotateDekHostConte
         // The blob CAS, answering exactly as §5.1 does. Nothing was written:
         // the transaction rolled back before the key records or the shares.
         res.status(409).json({ currentVersion: result.currentVersion });
+        return;
+      }
+      if (result.status === 'credential-superseded') {
+        // The passphrase changed between the match above and the transaction.
+        // The caller no longer holds the credential this rotation was
+        // authorised by; the same answer a wrong passphrase gets.
+        res.status(401).json({ error: PASSPHRASE_REJECTED });
         return;
       }
       if (result.status === 'unknown-share') {

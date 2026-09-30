@@ -319,6 +319,7 @@ Two token kinds, both opaque random strings, both stored **only as SHA-256 diges
 
 - `POST /v1/auth/change-passphrase`
 - `POST /v1/auth/recover-rotate`
+- `POST /v1/sync/rotate-dek`, except the caller's own family (§5.17)
 - suspension by an operator
 - account deletion (by row cascade)
 
@@ -422,12 +423,19 @@ Returns `{"records": []}` for an account that has not completed setup. At most o
 Request:
 
 ```json
-{ "kdfDescriptor": { "...": "..." } | null, "wrappedDek": "<base64>", "expectedUpdatedAt": "<iso>" | null }
+{
+  "kdfDescriptor": { "...": "..." } | null,
+  "wrappedDek": "<base64>",
+  "expectedUpdatedAt": "<iso>" | null,
+  "currentAuthHash": "<base64, 32 bytes>"
+}
 ```
 
 - `expectedUpdatedAt: null` asserts **"no record of this kind exists yet"** (first-time setup).
 - Any other value asserts **"the record I last read had exactly this `updatedAt`"** (rotation).
 - **The key must be present.** An absent `expectedUpdatedAt` is a `400`, deliberately: a caller must not be able to skip the concurrency check by forgetting a field.
+- **An overwrite proves the passphrase.** When `expectedUpdatedAt` is not `null`, `currentAuthHash` (the current passphrase's auth branch, §3.1) is REQUIRED: absent or malformed is a `400` that names it, and one that does not match the account is `401 {"error":"current passphrase is incorrect"}`, the body `change-passphrase` sends, with nothing written. A create (`null`) stays bearer-only and ignores the field: it fills an empty slot during setup, and the CAS refuses it once a record exists. Replacing a wrap replaces what opens the account, and a bearer token alone must not be able to do that.
+- **Guesses are throttled per account**, in one bucket with `change-passphrase`, `delete` and `rotate-dek`: a locked account gets `429` with `Retry-After` on all four, from any address. A match clears the bucket.
 
 Validation, all `400`:
 
@@ -437,18 +445,21 @@ Validation, all `400`:
 
 Responses:
 
-| Status | Body                                                                     |
-| ------ | ------------------------------------------------------------------------ |
-| `200`  | The stored record, same shape as a `GET /key-records` entry.             |
-| `409`  | `{"currentUpdatedAt": "<iso>" \| null}`: the CAS assertion did not hold. |
+| Status | Body                                                                                                |
+| ------ | --------------------------------------------------------------------------------------------------- |
+| `200`  | The stored record, same shape as a `GET /key-records` entry.                                        |
+| `400`  | `{"error": "..."}`: the validation above, or an overwrite without a well-formed `currentAuthHash`.  |
+| `401`  | `{"error": "current passphrase is incorrect"}`: an overwrite whose `currentAuthHash` did not match. |
+| `409`  | `{"currentUpdatedAt": "<iso>" \| null}`: the CAS assertion did not hold.                            |
+| `429`  | `{"error": "..."}` with `Retry-After`: this account's passphrase guesses are locked.                |
 
-### 5.5 `DELETE /key-records/:kind`
+### 5.5 `DELETE /key-records/:kind`: removed, and not restored
 
-`204`, no body. Idempotent: deleting a record that does not exist is still `204`.
+Removed in 2026-09. The path now answers as any unknown path under the prefix does: `401` without a token, `403` where the account lacks the instance's consent, and the ordinary `404` otherwise. No client called it, and deleting the only remaining key record made every stored blob permanently undecryptable on a bearer token alone.
 
-> Deleting the **only remaining** key record makes every stored blob permanently undecryptable. The server does not prevent this; a client must not offer it without an unmistakable warning.
->
-> **A share (§5.16) does not count as a key record here.** It is cryptographically a third wrap of the same DEK, but it is another person's capability, revocable by them, unverifiable by you, and dependent on their continued cooperation and honesty. Deleting both key records still bricks the account with live shares in existence, and no client may ever offer "recover your data through your dietician" as a recovery path.
+A key record is replaced through §5.4, which proves the passphrase, or through a rotation (§5.14, §5.17), and is removed only with the account (§5.15).
+
+> **A share (§5.16) does not count as a key record.** It is cryptographically a third wrap of the same DEK, but it is another person's capability, revocable by them, unverifiable by you, and dependent on their continued cooperation and honesty. No client may ever offer "recover your data through your dietician" as a recovery path.
 
 ### 5.6 `GET /health`: version handshake
 
@@ -764,6 +775,8 @@ Four rules apply to `recover-rotate` alone:
 - **The write is a compare-and-swap on the recovery verifier the proof matched**, re-asserted inside the transaction. It is not the authentication, which already happened; it is what stops two concurrent recoveries from overwriting a credential the user has already been told is theirs.
 - **One failure, four causes.** An unknown address, an account that never set a recovery code, a wrong code, and a rotation that lost that compare-and-swap race all answer `401` with identical text, after identical work. A race must not be distinguishable from a bad guess, and a missing second authenticator must not be distinguishable from a missing account. A SUSPENDED account is the one exception: it answers `403 {"error":"account-suspended"}`, and only after the proof succeeded.
 
+`change-passphrase` is throttled **per account**, from any address, in the bucket `delete`, `rotate-dek` and a key-record overwrite share (§5.4): its caller already holds a token, and `currentAuthHash` is a guess that token cannot prove. A locked account gets `429` with `Retry-After`; a success clears the bucket.
+
 Both recovery endpoints share **one** throttle bucket per (IP, email), and neither clears it on success. They authenticate the same secret, so a separate allowance for each would halve the cost of guessing it, and a legitimate recovery happens once, so no honest client needs its allowance back. `POST /v1/auth/reset/request` is throttled under the same rule.
 
 **What a rotation can and cannot do.** It restores **login**. It cannot restore **data**, because the server never held a key. A `change-passphrase` submitting `keyRecords: []` leaves a working account whose blob is permanently undecryptable, which is exactly why `recover-rotate` refuses that submission outright. A conforming client must say so, in those terms, before the user commits to the flow.
@@ -819,9 +832,11 @@ The admin account endpoints return the same shape plus two operator fields, `blo
 
 That is the only field an account may change about itself. `email` is the identity and moves only through an operator; `role` and `dailyAiLimit` are standing an account must not be able to raise for itself; everything authentication-shaped moves through §5.14.
 
-**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly.
+**`POST /v1/auth/delete`** takes `{"authHash": "..."}` and returns `204`. **Re-authentication is required even though the caller already holds a valid token**: a session left behind on a shared device must not be enough to destroy someone's data irreversibly. A wrong `authHash` is `401`; guesses are throttled per account in the bucket §5.4 describes, and a locked account gets `429` with `Retry-After`.
 
 Deletion removes the account and, by cascade, every blob, key record, reset token and usage row it owns. There is no soft delete and no grace period. This is the self-serve erasure path, and it is complete by construction rather than by a cleanup job someone has to remember to run.
+
+The same transaction also **withdraws every invitation the account sent that is still pending** (§5.21). An invitation a person sent carries the terms of that person's door; one left pending after they are gone could still be redeemed, and on a day-trial door its allowance only starts at redemption.
 
 On an instance that runs a scan trial, the same transaction also **removes the address and the name from every invitation row about that mailbox**, and, when the account held a trial, **keeps one keyed one-way hash of the mailbox** so the one trial per mailbox rule of §5.8.3 survives the deletion. Nothing else about the person is kept (§9.2).
 
@@ -929,6 +944,7 @@ Bearer, as the account **owner**. One submission, one transaction:
   "keyRecords": [{ "kind": "passphrase", "kdfDescriptor": { "...": "..." }, "wrappedDek": "<base64>" }],
   "newRecoveryAuthHash": "<base64, 32 bytes>",
   "recoveryCode": "ABCDE-FGHJK-MNPQR-STVWX-YZ012-3456",
+  "currentAuthHash": "<base64, 32 bytes>",
   "shares": [{ "granteeAccountId": 7, "wrappedDek": "<base64>", "recipientKeyFingerprint": "<string>" }]
 }
 ```
@@ -945,6 +961,23 @@ instance that has never shared anything. Gating the only mechanism that can
 retire a compromised DEK behind an unrelated flag would leave such an operator
 with no way to retire one.
 
+- **`currentAuthHash` is REQUIRED, and a bearer token alone never rotates.**
+  It is the current passphrase's auth branch (§3.1), matched as
+  `change-passphrase` matches it. Absent or malformed is a `400` that names it;
+  one that does not match is `401 {"error":"current passphrase is incorrect"}`
+  and nothing is written. A rotation writes the recovery verifier
+  `POST /v1/auth/recover` accepts, so before this field a stolen token could
+  plant a code of its own and sign in with it for good, whatever the owner did
+  to their passphrase afterwards. Guesses are throttled per account in the
+  bucket §5.4 describes (`429` with `Retry-After`). The transaction
+  re-checks that the account's passphrase verifier is still the one matched; a
+  passphrase change that committed in between makes the rotation a `401`, and
+  nothing is written.
+- **Every other session is revoked in the same transaction.** The caller's
+  own token family survives, so the rotating device stays signed in; every
+  other `access` and `refresh` token of the account stops working. A rotation
+  is run when a key is believed leaked, and a session that outlived it would
+  be the leak.
 - **All-or-nothing, in one database transaction.** ADR-0002 prohibition 8: a
   rotation is atomic or it does not exist, and no sequence of individually
   committing endpoints may be documented or used as one. A partial application
@@ -965,6 +998,11 @@ with no way to retire one.
   recovery code became the second authenticator, and fatal once a mailed reset
   (§5.12) began handing that code to people. The client does not show the new
   code to the person; it goes into the escrow and stays there.
+- **The server derives the recovery proof itself.** It runs §3.1's recovery
+  auth branch over the canonical `recoveryCode` and computes the new
+  verifier from THAT, so the verifier and the escrow always describe the same
+  code. `newRecoveryAuthHash` is still required and must equal the derived
+  proof; a mismatch is a `400` naming it, and nothing is written.
 - **`keyRecords` must carry BOTH kinds.** A missing kind is a `400`, never a
   silent partial rotation: submitting only the `passphrase` wrap would leave
   the `recovery` record wrapping a DEK that no longer opens anything, so the
@@ -989,12 +1027,14 @@ with no way to retire one.
   five further pushes, and dropping them during a rotation would throw away
   the owner's only defence against a bad client write in the same operation.
 
-| Status | Body                                                                                                                      |
-| ------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `200`  | `{"newVersion": 4, "keptShares": 1, "revokedShares": 2}`                                                                  |
-| `400`  | `{"error": "..."}`: a missing key-record kind, a malformed or absent field, a keep list naming a share that is not there. |
-| `409`  | `{"currentVersion": 5}`: the blob CAS did not hold. Nothing was written.                                                  |
-| `413`  | `{"error": "..."}`: the new blob exceeds `MAX_BLOB_BYTES`.                                                                |
+| Status | Body                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{"newVersion": 4, "keptShares": 1, "revokedShares": 2}`                                                                                                                        |
+| `400`  | `{"error": "..."}`: a missing key-record kind, a malformed or absent field, a `newRecoveryAuthHash` that is not the code's proof, a keep list naming a share that is not there. |
+| `401`  | `{"error": "current passphrase is incorrect"}`: `currentAuthHash` did not match, or the passphrase changed during the rotation. Nothing was written.                            |
+| `409`  | `{"currentVersion": 5}`: the blob CAS did not hold. Nothing was written.                                                                                                        |
+| `413`  | `{"error": "..."}`: the new blob exceeds `MAX_BLOB_BYTES`.                                                                                                                      |
+| `429`  | `{"error": "..."}` with `Retry-After`: this account's passphrase guesses are locked.                                                                                            |
 
 **Rotation is Tier 2 revocation, and the wording rules of §5.16 still bind.**
 Deleting a share row stops the server serving; rotating adds that future
@@ -1897,9 +1937,9 @@ Not knowable from the metadata above: what was eaten, when, how much, or anythin
 
 A conforming **sync** server needs, in full:
 
-1. The five endpoints of §5.1 to §5.5 plus the `/health` handshake of §5.6.
+1. The four endpoints of §5.1 to §5.4 plus the `/health` handshake of §5.6. §5.5 was removed; a server must not offer a bearer-only key-record delete.
 2. Per-account CAS on `blobVersion`: atomic. The reference implementation uses a `UNIQUE (accountId, blobVersion)` index and treats a unique-violation as a conflict, rather than row locking; that stays correct under `READ COMMITTED` and is simpler than `SELECT ... FOR UPDATE`. Any mechanism with the same guarantee is fine; a read-then-write without atomicity is **not**.
-3. Per-account-and-kind CAS on key records via `expectedUpdatedAt`, with the same "absent field is a `400`" rule.
+3. Per-account-and-kind CAS on key records via `expectedUpdatedAt`, with the same "absent field is a `400`" rule, and a passphrase check (`currentAuthHash`) on every overwrite.
 4. Retention pruning to the three tiers of §8, and the shrink guard of §5.1. A server that accepts an unacknowledged large shrink will destroy an account's diary the first time a client of the affected build loses its local store; a client written against a server that refuses it and pointed at one that does not is silently unprotected.
 5. Byte-exact storage of `ciphertext` and `wrappedDek`. Never re-encode, normalize, trim, or "fix" them. Any mutation destroys the GCM tag and with it the user's data.
 

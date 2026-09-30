@@ -22,6 +22,8 @@ export type * from './contract-types.js';
 export { createApp } from './server/create-app.js';
 export type { CreateAppOptions, AdminSurfaceOptions, FeedbackSurfaceOptions } from './server/create-app.js';
 export { registerSyncRoutes } from './server/register-routes.js';
+export { createPassphraseGate, PASSPHRASE_REJECTED } from './accounts/passphrase-gate.js';
+export type { PassphraseCheck, PassphraseGate, PassphraseGateOptions } from './accounts/passphrase-gate.js';
 export { registerAuthRoutes, AUTH_API_PREFIX } from './accounts/register-auth-routes.js';
 export { createAdminRoutes, ADMIN_API_PREFIX } from './server/admin-routes.js';
 export { createAdminFeedbackRoutes, ADMIN_FEEDBACK_PATH } from './server/admin-feedback-routes.js';

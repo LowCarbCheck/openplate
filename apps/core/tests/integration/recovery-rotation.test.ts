@@ -101,6 +101,8 @@ async function setUpAccount(): Promise<{ accountId: number; accessToken: string 
       kdfDescriptor: sampleKdfDescriptor(1),
       wrappedDek: OLD_PASSPHRASE_WRAP,
       expectedUpdatedAt: currentUpdatedAt.get('passphrase') ?? null,
+      // An overwrite proves the passphrase (§5.4).
+      currentAuthHash: OLD_AUTH_HASH,
     },
   });
   assert.equal(passphrase.status, 200);
@@ -113,6 +115,7 @@ async function setUpAccount(): Promise<{ accountId: number; accessToken: string 
       kdfDescriptor: null,
       wrappedDek: OLD_RECOVERY_WRAP,
       expectedUpdatedAt: currentUpdatedAt.get('recovery') ?? null,
+      currentAuthHash: OLD_AUTH_HASH,
     },
   });
   assert.equal(recovery.status, 200);

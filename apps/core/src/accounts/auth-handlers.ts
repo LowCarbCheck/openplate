@@ -73,6 +73,7 @@ import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
 import { isUnpaidTrial, trialScansView } from './scan-trial.js';
 import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
+import { PASSPHRASE_REJECTED } from './passphrase-gate.js';
 
 /** Everything the handlers need from the outside world. All of it injected — none of it imported. */
 export interface AuthContext {
@@ -880,7 +881,7 @@ export async function handleChangePassphrase(
 
   const candidate = computeVerifier({ authHash: currentAuthHash.value, pepper: ctx.pepper });
   if (!verifierMatches({ candidate, stored: account.verifier })) {
-    return { status: 'unauthorized', reason: 'current passphrase is incorrect' };
+    return { status: 'unauthorized', reason: PASSPHRASE_REJECTED };
   }
 
   const now = ctx.now();
