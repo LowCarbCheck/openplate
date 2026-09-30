@@ -863,6 +863,13 @@ test('a BILLING_TOKEN equal to ADMIN_TOKEN refuses to boot, and prints neither v
   assert.equal(both.adminToken, shared);
 });
 
+test('BILLING_MAX_DAILY_AI_LIMIT defaults to 1000 and may not exceed the operator ceiling', () => {
+  assert.equal(parseConfig(baseEnv()).billingMaxDailyAiLimit, 1000);
+  assert.equal(parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '250' })).billingMaxDailyAiLimit, 250);
+  assert.throws(() => parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '10001' })), /BILLING_MAX_DAILY_AI_LIMIT/);
+  assert.throws(() => parseConfig(baseEnv({ BILLING_MAX_DAILY_AI_LIMIT: '0' })), /BILLING_MAX_DAILY_AI_LIMIT/);
+});
+
 test('a plans URL with no secret refuses to boot, and names the missing variable', () => {
   assert.throws(
     () => parseConfig(baseEnv({ PLANS_UPSTREAM_URL: 'http://openplate-billing:3000/plans' })),

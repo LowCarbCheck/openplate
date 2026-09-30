@@ -186,6 +186,7 @@ async function main(): Promise<void> {
     // not set `BILLING_TOKEN`, which means the third principal does not exist
     // there and its three routes are the operator's alone.
     billingToken: config.billingToken,
+    billingMaxDailyAiLimit: config.billingMaxDailyAiLimit,
     metadata: createDrizzleAdminStore(database.db),
     invites,
     // The restore path of ADR-0009. Its own store, so nothing on the sync

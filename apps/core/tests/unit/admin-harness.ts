@@ -95,6 +95,8 @@ export interface StartAdminHarnessOptions {
    * that any value could produce.
    */
   billingToken?: string | null;
+  /** `BILLING_MAX_DAILY_AI_LIMIT`, or absent for the default. */
+  billingMaxDailyAiLimit?: number;
   /**
    * The operator's reported-estimate surface, on or off. `false` is what every
    * deployment boots as, and it leaves `/v1/admin/feedback*` answering the
@@ -195,6 +197,7 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
       blobs,
       token: options.adminToken,
       billingToken: options.billingToken ?? null,
+      billingMaxDailyAiLimit: options.billingMaxDailyAiLimit,
       metadata: adminStore,
       invites: inviteStore,
       links: options.links ?? null,

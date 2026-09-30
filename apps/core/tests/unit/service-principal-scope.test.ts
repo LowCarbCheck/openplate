@@ -45,6 +45,7 @@ import { createFakeFeedbackAdminStore, createFakeFeedbackImageStore } from './fe
 import { createAuthFixture } from './auth-context-fixture.js';
 import { createSilentLogger } from '../../src/logger.js';
 import {
+  DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
   SERVICE_PRINCIPAL_ROUTES,
   SERVICE_SCOPE_REFUSAL,
   type AdminRouteRef,
@@ -117,6 +118,7 @@ function buildAdminRouters(): Router[] {
     }),
     createAdminRoutes({
       metadata: createFakeAdminStore(),
+      serviceMaxDailyAiLimit: DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
       invites: createFakeInviteStore(),
       accounts: fixture.store,
       blobs: createFakeBlobRollbackStore(),

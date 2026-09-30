@@ -1511,8 +1511,12 @@ carries the same 24-character minimum the operator token does.
   `{"error": "service-scope-field"}`, and nothing is written**, not even the
   allowed fields beside it. A silent drop would let a defect in the billing
   service read as success.
-- `dailyAiLimit` is bounded exactly as it is for an operator. The credential
-  relaxes no validation.
+- **The values are scoped too.** `allowanceExpiresAt: null` (an allowance with
+  no end) and a `dailyAiLimit` above the instance's `BILLING_MAX_DAILY_AI_LIMIT`
+  (default 1000) are `403` with `{"error": "service-scope-value"}`, and nothing
+  is written. The operator's credentials may write both.
+- Beyond that, `dailyAiLimit` is validated exactly as it is for an operator. The
+  credential relaxes no validation.
 - **The two reads are projections and never an `AccountView`.** No address, no
   display name, no role, no suspension, no usage, no blob. `GET
 /v1/admin/accounts/expiring` selects two columns in the query rather than

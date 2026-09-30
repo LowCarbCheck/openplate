@@ -186,6 +186,7 @@ services:
       PLANS_UPSTREAM_URL: ${PLANS_UPSTREAM_URL:-}
       PLANS_UPSTREAM_SECRET: ${PLANS_UPSTREAM_SECRET:-}
       BILLING_TOKEN: ${BILLING_TOKEN:-}
+      BILLING_MAX_DAILY_AI_LIMIT: ${BILLING_MAX_DAILY_AI_LIMIT:-}
       # Only for an EXTERNAL database. The bundled Postgres above speaks plain
       # TCP on the compose network.
       DATABASE_SSL: ${DATABASE_SSL:-false}

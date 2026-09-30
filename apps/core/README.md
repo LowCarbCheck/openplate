@@ -585,7 +585,9 @@ limits everything it can do: `GET /v1/admin/accounts/expiring`,
 `GET /v1/admin/accounts/:id`, and `PATCH /v1/admin/accounts/:id` naming only
 `allowanceExpiresAt` and `dailyAiLimit`. Every other admin route answers it
 `403 service-scope`. A `PATCH` naming any other field is refused completely and
-writes nothing. It can change an allowance and its end date. It cannot suspend,
+writes nothing. So is a `PATCH` that sets `allowanceExpiresAt` to `null` or
+`dailyAiLimit` above `BILLING_MAX_DAILY_AI_LIMIT` (default 1000): that is
+`403 service-scope-value`. It can change an allowance and its end date. It cannot suspend,
 erase or promote accounts. Generate it as you would `ADMIN_TOKEN`. Values under
 24 characters cause a boot failure, and so does a value equal to `ADMIN_TOKEN`. Once set, an invalid credential on
 `/v1/admin` gets a `401` rather than the `404` described above.

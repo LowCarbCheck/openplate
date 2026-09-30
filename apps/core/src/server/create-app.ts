@@ -107,7 +107,7 @@ import { registerAuthRoutes } from '../accounts/register-auth-routes.js';
 import { ADMIN_API_PREFIX, createAdminRoutes, type AdminLinkBases } from './admin-routes.js';
 import { createAdminFeedbackRoutes } from './admin-feedback-routes.js';
 import { createAdminAuthMiddleware } from './admin-auth.js';
-import { enforceServicePrincipalScope } from './service-principal-scope.js';
+import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT, enforceServicePrincipalScope } from './service-principal-scope.js';
 import { registerSyncRoutes } from './register-routes.js';
 import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
 import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
@@ -163,6 +163,12 @@ export interface AdminSurfaceOptions {
    * third principal does not have to state one.
    */
   billingToken?: string | null;
+  /**
+   * The largest `dailyAiLimit` that credential may write
+   * (`BILLING_MAX_DAILY_AI_LIMIT`). Absent means
+   * `DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT`.
+   */
+  billingMaxDailyAiLimit?: number;
   /** Metadata reads. Erasure goes through `authContext.store`, the same method the self-service path calls. */
   metadata: AdminMetadataStore;
   /** Invite minting and revocation, the only door onto this service. */
@@ -761,6 +767,7 @@ export function createApp(options: CreateAppOptions): Express {
     }),
     createAdminRoutes({
       metadata: options.admin.metadata,
+      serviceMaxDailyAiLimit: options.admin.billingMaxDailyAiLimit ?? DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
       invites: options.admin.invites,
       accounts: options.authContext.store,
       blobs: options.admin.blobs,

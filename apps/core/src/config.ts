@@ -27,6 +27,7 @@ import type { AiUpstreamConfig } from './ai/proxy.js';
 import type { PlansUpstreamConfig } from './server/plans-proxy.js';
 import type { VapidCredentials } from './push/web-push-sender.js';
 import { MAX_DAILY_AI_LIMIT } from './admin/invite-store.js';
+import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } from './server/service-principal-scope.js';
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
@@ -351,6 +352,14 @@ export interface ServiceConfig {
    */
   billingToken: string | null;
   /**
+   * The largest `dailyAiLimit` the biller's credential may write
+   * (`BILLING_MAX_DAILY_AI_LIMIT`, default 1000, at most `MAX_DAILY_AI_LIMIT`).
+   * It may also never clear an allowance's end date. The operator's
+   * credentials are bounded by neither. See
+   * `server/service-principal-scope.ts`.
+   */
+  billingMaxDailyAiLimit: number;
+  /**
    * The biller this instance forwards `/v1/plans/*` to, or `null` when no
    * biller stands behind it, which is the default and what every self-hoster
    * has (M213).
@@ -526,6 +535,19 @@ function parseBillingToken(env: NodeJS.ProcessEnv): string | null {
 interface ServiceTokens {
   adminToken: string | null;
   billingToken: string | null;
+}
+
+/**
+ * `BILLING_MAX_DAILY_AI_LIMIT`: a positive integer no larger than the ceiling
+ * the operator's own PATCH has, because a biller ceiling above the operator's
+ * would be a number no write could ever reach.
+ */
+function parseBillingMaxDailyAiLimit(env: NodeJS.ProcessEnv): number {
+  const limit = parsePositiveInteger(env, 'BILLING_MAX_DAILY_AI_LIMIT', DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT);
+  if (limit > MAX_DAILY_AI_LIMIT) {
+    throw new Error(`BILLING_MAX_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT}, got ${limit}`);
+  }
+  return limit;
 }
 
 /**
@@ -1737,6 +1759,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     trustProxy: parseTrustProxy(env),
     adminToken: tokens.adminToken,
     billingToken: tokens.billingToken,
+    billingMaxDailyAiLimit: parseBillingMaxDailyAiLimit(env),
     plans: parsePlans(env),
     push: parsePush(env),
     sharingEnabled: parseBoolean(env, 'SYNC_SHARING', false),

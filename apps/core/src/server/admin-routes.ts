@@ -101,7 +101,12 @@ import { AI_USAGE_RETENTION_DAYS } from '../ai/usage-retention.js';
 import { asArray, asBoolean, asNumber, asObject, asString, type JsonObject, type JsonValue } from '../lib/json.js';
 import { isUnpaidTrial, MAX_TRIAL_SCANS, trialScansView, type TrialPolicy } from '../accounts/scan-trial.js';
 import { getAdminPrincipal } from './admin-auth.js';
-import { SERVICE_FIELD_REFUSAL, SERVICE_PRINCIPAL_PATCH_FIELDS } from './service-principal-scope.js';
+import {
+  SERVICE_FIELD_REFUSAL,
+  SERVICE_PRINCIPAL_PATCH_FIELDS,
+  SERVICE_VALUE_REFUSAL,
+  isServiceValueInScope,
+} from './service-principal-scope.js';
 import { healthConsentView } from '../accounts/health-consent.js';
 import { parseAccountLabel } from '../admin/account-label.js';
 
@@ -761,6 +766,12 @@ function isSelfLockout(input: { req: Request; targetAccountId: number; lockingOu
 export interface AdminRoutesOptions {
   /** Metadata reads. Deliberately not the account store, see `admin/admin-store.ts`. */
   metadata: AdminMetadataStore;
+  /**
+   * The largest `dailyAiLimit` the biller's credential may write
+   * (`BILLING_MAX_DAILY_AI_LIMIT`). The operator's credentials are bounded only
+   * by `MAX_DAILY_AI_LIMIT`. See `server/service-principal-scope.ts`.
+   */
+  serviceMaxDailyAiLimit: number;
   /** Invite minting, reissue and revocation, see `admin/invite-store.ts`. */
   invites: InviteStore;
   /** The SAME store the self-service delete path uses. `deleteAccount` and the reset-mail write. */
@@ -1128,6 +1139,12 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         const outOfScope = Object.keys(body).filter((key) => !SERVICE_PRINCIPAL_PATCH_FIELDS.includes(key));
         if (outOfScope.length > 0) {
           res.status(403).json({ error: SERVICE_FIELD_REFUSAL });
+          return;
+        }
+        // THE VALUES TOO: no endless allowance, no limit above the biller's
+        // ceiling. See `server/service-principal-scope.ts`.
+        if (!isServiceValueInScope({ body, maxDailyAiLimit: options.serviceMaxDailyAiLimit })) {
+          res.status(403).json({ error: SERVICE_VALUE_REFUSAL });
           return;
         }
       }
