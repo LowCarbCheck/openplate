@@ -26,8 +26,20 @@
  * no answer at all (widened in M206, matching `normalizeBodyMetrics`). The
  * earlier `=== 'female'` rule made a pregnant person choose between telling
  * this app their sex and recording a pregnancy at all.
+ *
+ * ── `reserveLayout`: the same height whatever is picked ───────────────────
+ *
+ * On the onboarding body step the sex is picked on the same screen, a few
+ * rows up, and the owner reported content jumping after each pick
+ * (2026-10-01). With `reserveLayout` the fieldset never unmounts: for "male"
+ * it stays in the layout `invisible`, `inert`, `aria-hidden` and `disabled`
+ * (a disabled fieldset submits nothing, exactly like the absent one did), and
+ * the two date blocks share ONE grid cell under the chips, each hidden and
+ * nameless unless its status is picked. The settings page shows a stored sex
+ * nobody changes there, so it keeps the plain behaviour.
  */
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldError } from '#app/components/field-error';
 import { Input } from '#app/components/ui/input';
@@ -69,6 +81,8 @@ export interface ReproductiveStatusFieldsProps {
   lactationStartDateField: ReproductiveDateFieldProps;
   /** The host page's chip styling, so this fieldset looks native on both screens. */
   chipClassName: (isSelected: boolean) => string;
+  /** Hold the fieldset's full height for every answer instead of unmounting parts of it. See the file header. */
+  reserveLayout?: boolean;
 }
 
 /** Full term, the week the "weeks along" helper counts back from. Copy only; the arithmetic is `dueDateFromWeeksAlong`. */
@@ -81,6 +95,22 @@ function trimesterNameKey(trimester: Trimester): string {
   return 'bodyMetrics.reproductive.trimester.third';
 }
 
+/** The wrapper attributes of one date block. */
+interface DateBlockAttributes {
+  className: string;
+  inert: boolean;
+  'aria-hidden': true | undefined;
+}
+
+/** A date block's wrapper: shown, or held in its cell hidden, inert and silent. */
+function dateBlockAttributes(isActive: boolean): DateBlockAttributes {
+  return {
+    className: cn('space-y-2 pt-2', !isActive && 'invisible [&_*]:transition-none'),
+    inert: !isActive,
+    'aria-hidden': isActive ? undefined : true,
+  };
+}
+
 export function ReproductiveStatusFields({
   biologicalSex,
   value,
@@ -90,16 +120,18 @@ export function ReproductiveStatusFields({
   dueDateField,
   lactationStartDateField,
   chipClassName,
+  reserveLayout = false,
 }: ReproductiveStatusFieldsProps) {
   const { t } = useTranslation();
   // The typed week count, not the stored one. It writes a due date and is then
   // forgotten: there is exactly one stored field, and it is the date.
   const [weeksAlong, setWeeksAlong] = useState('');
 
-  if (biologicalSex === 'male') return null;
+  const isAsked = biologicalSex !== 'male';
+  if (!isAsked && !reserveLayout) return null;
 
-  const isPregnant = value.reproductiveStatus === 'pregnant';
-  const isLactating = value.reproductiveStatus === 'lactating';
+  const isPregnant = isAsked && value.reproductiveStatus === 'pregnant';
+  const isLactating = isAsked && value.reproductiveStatus === 'lactating';
 
   function handleWeeksAlongChange(raw: string) {
     setWeeksAlong(raw);
@@ -122,8 +154,81 @@ export function ReproductiveStatusFields({
     : lactationMonths !== null ? t('bodyMetrics.reproductive.derivedMonths', { count: lactationMonths })
     : notSetLine;
 
+  function renderPregnancyDates(isActive: boolean): ReactNode {
+    return (
+      <div {...dateBlockAttributes(isActive)}>
+        <Label htmlFor={dueDateField.id}>{t('bodyMetrics.reproductive.dueDate.label')}</Label>
+        <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.dueDate.hint')}</p>
+        <Input
+          id={dueDateField.id}
+          name={isActive ? dueDateField.name : undefined}
+          disabled={!isActive}
+          type="date"
+          value={value.pregnancyDueDate}
+          onChange={(event) => onChange({ ...value, pregnancyDueDate: event.target.value })}
+          aria-invalid={dueDateField.errors && dueDateField.errors.length > 0 ? true : undefined}
+          aria-describedby={dueDateField.errors && dueDateField.errors.length > 0 ? dueDateField.errorId : undefined}
+          className="h-11 sm:h-9"
+        />
+        <FieldError id={dueDateField.errorId} errors={dueDateField.errors} />
+
+        <Label htmlFor={`${dueDateField.id}-weeks`}>{t('bodyMetrics.reproductive.weeksAlong.label')}</Label>
+        <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.weeksAlong.hint')}</p>
+        {/*
+          Deliberately nameless: it submits nothing. Typing a week count fills
+          the date field above and the date is what gets stored, so the record
+          keeps advancing on its own instead of freezing at the week somebody
+          typed once.
+        */}
+        <Input
+          id={`${dueDateField.id}-weeks`}
+          disabled={!isActive}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={FULL_TERM_WEEKS}
+          value={weeksAlong}
+          onChange={(event) => handleWeeksAlongChange(event.target.value)}
+          className="h-11 sm:h-9"
+        />
+      </div>
+    );
+  }
+
+  function renderLactationDates(isActive: boolean): ReactNode {
+    return (
+      <div {...dateBlockAttributes(isActive)}>
+        <Label htmlFor={lactationStartDateField.id}>{t('bodyMetrics.reproductive.startDate.label')}</Label>
+        <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.startDate.hint')}</p>
+        <Input
+          id={lactationStartDateField.id}
+          name={isActive ? lactationStartDateField.name : undefined}
+          disabled={!isActive}
+          type="date"
+          value={value.lactationStartDate}
+          onChange={(event) => onChange({ ...value, lactationStartDate: event.target.value })}
+          aria-invalid={lactationStartDateField.errors && lactationStartDateField.errors.length > 0 ? true : undefined}
+          aria-describedby={
+            lactationStartDateField.errors && lactationStartDateField.errors.length > 0 ?
+              lactationStartDateField.errorId
+            : undefined
+          }
+          className="h-11 sm:h-9"
+        />
+        <FieldError id={lactationStartDateField.errorId} errors={lactationStartDateField.errors} />
+      </div>
+    );
+  }
+
+  const hasDateLine = isPregnant || isLactating;
+
   return (
-    <fieldset className="space-y-2">
+    <fieldset
+      className={cn('space-y-2', !isAsked && 'invisible [&_*]:transition-none')}
+      disabled={!isAsked}
+      inert={!isAsked}
+      aria-hidden={isAsked ? undefined : true}
+    >
       <legend className="text-sm font-medium">{t('bodyMetrics.reproductive.legend')}</legend>
       <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.hint')}</p>
       <div className="flex flex-wrap gap-2 pt-1">
@@ -142,66 +247,19 @@ export function ReproductiveStatusFields({
         ))}
       </div>
 
-      {isPregnant && (
-        <div className="space-y-2 pt-2">
-          <Label htmlFor={dueDateField.id}>{t('bodyMetrics.reproductive.dueDate.label')}</Label>
-          <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.dueDate.hint')}</p>
-          <Input
-            id={dueDateField.id}
-            name={dueDateField.name}
-            type="date"
-            value={value.pregnancyDueDate}
-            onChange={(event) => onChange({ ...value, pregnancyDueDate: event.target.value })}
-            aria-invalid={dueDateField.errors && dueDateField.errors.length > 0 ? true : undefined}
-            aria-describedby={dueDateField.errors && dueDateField.errors.length > 0 ? dueDateField.errorId : undefined}
-            className="h-11 sm:h-9"
-          />
-          <FieldError id={dueDateField.errorId} errors={dueDateField.errors} />
-
-          <Label htmlFor={`${dueDateField.id}-weeks`}>{t('bodyMetrics.reproductive.weeksAlong.label')}</Label>
-          <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.weeksAlong.hint')}</p>
-          {/*
-            Deliberately nameless: it submits nothing. Typing a week count fills
-            the date field above and the date is what gets stored, so the record
-            keeps advancing on its own instead of freezing at the week somebody
-            typed once.
-          */}
-          <Input
-            id={`${dueDateField.id}-weeks`}
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={FULL_TERM_WEEKS}
-            value={weeksAlong}
-            onChange={(event) => handleWeeksAlongChange(event.target.value)}
-            className="h-11 sm:h-9"
-          />
+      {/* With `reserveLayout` both blocks sit in ONE grid cell, as tall as the
+          taller of the two from the first paint, so picking a status, or
+          switching between the two, moves nothing below (DESIGN.md section 7). */}
+      {reserveLayout ?
+        <div data-slot="reproductive-date-cell" className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+          {renderPregnancyDates(isPregnant)}
+          {renderLactationDates(isLactating)}
         </div>
-      )}
-
-      {isLactating && (
-        <div className="space-y-2 pt-2">
-          <Label htmlFor={lactationStartDateField.id}>{t('bodyMetrics.reproductive.startDate.label')}</Label>
-          <p className="text-xs text-muted-foreground">{t('bodyMetrics.reproductive.startDate.hint')}</p>
-          <Input
-            id={lactationStartDateField.id}
-            name={lactationStartDateField.name}
-            type="date"
-            value={value.lactationStartDate}
-            onChange={(event) => onChange({ ...value, lactationStartDate: event.target.value })}
-            aria-invalid={
-              lactationStartDateField.errors && lactationStartDateField.errors.length > 0 ? true : undefined
-            }
-            aria-describedby={
-              lactationStartDateField.errors && lactationStartDateField.errors.length > 0 ?
-                lactationStartDateField.errorId
-              : undefined
-            }
-            className="h-11 sm:h-9"
-          />
-          <FieldError id={lactationStartDateField.errorId} errors={lactationStartDateField.errors} />
-        </div>
-      )}
+      : <>
+          {isPregnant && renderPregnancyDates(true)}
+          {isLactating && renderLactationDates(true)}
+        </>
+      }
 
       {/* The "no date yet" sentence is always drawn, invisible once a date
           gives a shorter line, and the current line sits in the same grid
@@ -209,8 +267,12 @@ export function ReproductiveStatusFields({
           the two from the moment the fields appear, so typing a week that
           turns two lines into one moves nothing below (DESIGN.md section 7).
           Typing "1" used to lift the allergens and Continue by 16 px. */}
-      {(isPregnant || isLactating) && (
-        <p data-slot="reproductive-derived-line" className="grid text-xs text-muted-foreground">
+      {(hasDateLine || reserveLayout) && (
+        <p
+          data-slot="reproductive-derived-line"
+          className={cn('grid text-xs text-muted-foreground', !hasDateLine && 'invisible')}
+          aria-hidden={hasDateLine ? undefined : true}
+        >
           <span className={cn('col-start-1 row-start-1', derivedLine === notSetLine ? undefined : 'invisible')}>
             {notSetLine}
           </span>

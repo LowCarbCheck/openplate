@@ -89,7 +89,11 @@ function tagContaining(markup: string, needle: string): string {
   return markup.slice(start, markup.indexOf('>', hit) + 1);
 }
 
-function render(input: { biologicalSex: string | null; value: ReproductiveStatusValue }): string {
+function render(input: {
+  biologicalSex: string | null;
+  value: ReproductiveStatusValue;
+  reserveLayout?: boolean;
+}): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(ReproductiveStatusFields, {
@@ -101,6 +105,7 @@ function render(input: { biologicalSex: string | null; value: ReproductiveStatus
         dueDateField: { name: 'pregnancyDueDate', id: 'pregnancyDueDate' },
         lactationStartDateField: { name: 'lactationStartDate', id: 'lactationStartDate' },
         chipClassName: (isSelected) => (isSelected ? 'chip-selected' : 'chip'),
+        reserveLayout: input.reserveLayout,
       }),
     ),
   );
@@ -252,6 +257,69 @@ function rendersTheFieldset(source: string): boolean {
     source.includes('<ReproductiveStatusFields')
   );
 }
+
+/** Every `<input ...>` tag in the markup that carries a `name`, as `name` values. */
+function submittedNames(markup: string): string[] {
+  return (markup.match(/<input[^>]*>/g) ?? [])
+    .filter((tag) => !tag.includes(' disabled=""'))
+    .map((tag) => / name="([^"]+)"/.exec(tag)?.[1])
+    .filter((name): name is string => name !== undefined);
+}
+
+describe('ReproductiveStatusFields with reserveLayout, the onboarding body step', () => {
+  // The body step picks the sex a few rows up, so the fieldset keeps its
+  // height for every answer instead of unmounting (owner report, 2026-10-01).
+  it('stays in the layout for someone who answered male, hidden, inert and disabled', () => {
+    const markup = render({ biologicalSex: 'male', value: BLANK, reserveLayout: true });
+    const opening = tagContaining(markup, '<fieldset');
+    assert.ok(opening.includes('invisible'), opening);
+    assert.ok(opening.includes('aria-hidden="true"'), opening);
+    assert.ok(opening.includes('inert'), opening);
+    // A disabled fieldset submits none of its controls: the same nothing the
+    // absent fieldset submitted.
+    assert.ok(opening.includes(' disabled=""'), opening);
+    // CONTROL: for anyone else the same fieldset is shown and enabled.
+    const asked = tagContaining(render({ biologicalSex: '', value: BLANK, reserveLayout: true }), '<fieldset');
+    assert.equal(asked.includes('invisible'), false, asked);
+    assert.equal(asked.includes(' disabled=""'), false, asked);
+  });
+
+  it('draws both date blocks from the first paint, and submits neither date while the status is none', () => {
+    const markup = render({ biologicalSex: null, value: BLANK, reserveLayout: true });
+    assert.ok(markup.includes('data-slot="reproductive-date-cell"'));
+    assert.ok(markup.includes('id="pregnancyDueDate"'));
+    assert.ok(markup.includes('id="lactationStartDate"'));
+    assert.deepEqual(submittedNames(markup).toSorted(), [
+      'reproductiveStatus',
+      'reproductiveStatus',
+      'reproductiveStatus',
+    ]);
+  });
+
+  it('submits the date of the picked status only, as the unreserved fieldset does', () => {
+    for (const [value, date] of [
+      [PREGNANT, 'pregnancyDueDate'],
+      [LACTATING, 'lactationStartDate'],
+    ] as const) {
+      const reserved = submittedNames(render({ biologicalSex: null, value, reserveLayout: true }));
+      const plain = submittedNames(render({ biologicalSex: null, value }));
+      assert.deepEqual(reserved, plain, `${value.reproductiveStatus}: the same fields as without the reservation`);
+      assert.ok(reserved.includes(date), `${value.reproductiveStatus}: its own date is submitted`);
+    }
+  });
+
+  it('holds the derived line hidden while no status asks for a date', () => {
+    const markup = render({ biologicalSex: null, value: BLANK, reserveLayout: true });
+    const line = tagContaining(markup, 'data-slot="reproductive-derived-line"');
+    assert.ok(line.includes('invisible'), line);
+    // CONTROL: pregnant shows it.
+    const pregnant = tagContaining(
+      render({ biologicalSex: null, value: PREGNANT, reserveLayout: true }),
+      'data-slot="reproductive-derived-line"',
+    );
+    assert.equal(pregnant.includes('invisible'), false, pregnant);
+  });
+});
 
 describe('ReproductiveStatusFields, which screens render it', () => {
   it('is rendered by the life-phase settings page', () => {

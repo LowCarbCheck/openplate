@@ -510,7 +510,11 @@ keys at 44px, instead of cutting the version number off the end.
   `min-h-*`, or place it where nothing sits below it. A lazy chunk or an image reserves its size in
   its fallback, as `WayToLogCard` does. Only an expansion the person asked for (a disclosure, a
   picked style revealing its own fields) may push content down, and never content above the tap
-  point. Check it in `tests/e2e/`: read `getBoundingClientRect().top` of the elements below the
+  point. Onboarding is stricter (owner report, 2026-10-01): a pick there moves nothing at all. Every
+  answer a pick can reveal is drawn from the first paint as one layer of a single grid cell, only the
+  picked one shows, and a hidden layer is `invisible`, `inert`, `aria-hidden` and submits nothing
+  (`StyleFollowUpCell`, `reserveLayout` on `ReproductiveStatusFields`, `FirstFoodInstallReserve`).
+  Check it in `tests/e2e/`: read `getBoundingClientRect().top` of the elements below the
   change before and after, and require a `layout-shift` `PerformanceObserver` total of 0. A
   screenshot alone proves nothing here.
 - **Radix enter/exit**: `tw-animate-css` data-state animations as shipped (fade/zoom/slide).

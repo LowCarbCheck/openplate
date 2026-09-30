@@ -22,7 +22,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
-import { StyleCautionNote, StyleStep } from '../../app/routes/onboarding';
+import { isHiddenLayer, outerElements } from './markup-elements';
+import { StyleCautionNote, StyleStep, styleFollowUpLayers } from '../../app/routes/onboarding';
 import type { StyleStepData } from '../../app/routes/onboarding';
 import { EATING_STYLE_IDS, STYLE_CAUTION_SOURCE_URL } from '../../app/lib/eating-style';
 import type { EatingStyleId } from '../../app/lib/eating-style';
@@ -293,10 +294,14 @@ function checkedMainGoal(markup: string): string | null {
 }
 
 describe('the main goal list', () => {
-  it('is not asked before a style is picked', () => {
-    assert.deepEqual(mainGoalRadios(renderStyleStep(fixture())), []);
-    // CONTROL: the same reader finds all three once a style is on file.
-    assert.equal(mainGoalRadios(renderStyleStep(fixture({ eatingStyle: 'low-carb' }))).length, 3);
+  // On screen from the first paint (owner report, 2026-10-01): appearing on
+  // the first style pick pushed the actions down.
+  it('is on screen before a style is picked, with nothing ticked', () => {
+    const fresh = renderStyleStep(fixture());
+    assert.equal(mainGoalRadios(fresh).length, 3);
+    assert.equal(checkedMainGoal(fresh), null, 'nothing ticked, so nothing is submitted before a pick');
+    // CONTROL: the same reader finds a tick once a style is on file.
+    assert.equal(checkedMainGoal(renderStyleStep(fixture({ eatingStyle: 'low-carb' }))), 'net-carbs');
   });
 
   it("starts on the style's lens", () => {
@@ -333,5 +338,90 @@ describe('the carb limit detail line', () => {
     );
     assert.equal(visible.length, 1);
     assert.ok(visible[0]?.includes('Under 50 g'));
+  });
+});
+
+/** The attribute each layer of the follow-up cell carries. */
+const FOLLOW_UP_LAYER = 'data-follow-up-layer=';
+
+/** The follow-up layers in the markup, each as `key` plus whether a person can see it. */
+function followUpLayers(markup: string): { key: string | undefined; isShown: boolean; markup: string }[] {
+  return outerElements(markup, FOLLOW_UP_LAYER).map((layer) => ({
+    key: /data-follow-up-layer="([^"]+)"/.exec(layer)?.[1],
+    isShown: !isHiddenLayer(layer),
+    markup: layer,
+  }));
+}
+
+describe('the follow-up cell', () => {
+  it('names one layer per distinct follow-up, and a caution layer only when a status could need one', () => {
+    assert.deepEqual(
+      styleFollowUpLayers(null).map((layer) => layer.key),
+      ['carbs', 'carbs+kcal', 'kcal'],
+    );
+    assert.deepEqual(
+      styleFollowUpLayers('none').map((layer) => layer.key),
+      ['carbs', 'carbs+kcal', 'kcal'],
+    );
+    // CONTROL: a pregnancy on file puts the note into every layer it applies to.
+    assert.deepEqual(
+      styleFollowUpLayers('pregnant').map((layer) => layer.key),
+      ['caution+carbs', 'caution+carbs+kcal', 'caution+kcal'],
+    );
+  });
+
+  it('draws every layer from the first paint, all hidden, and none of them submits', () => {
+    const layers = followUpLayers(renderStyleStep(fixture()));
+    assert.deepEqual(
+      layers.map((layer) => layer.key),
+      ['carbs', 'carbs+kcal', 'kcal'],
+    );
+    assert.ok(
+      layers.every((layer) => !layer.isShown),
+      'before a pick every layer holds its space and shows nothing',
+    );
+    for (const layer of layers) {
+      const inputs = layer.markup.match(/<input[^>]*>/g) ?? [];
+      assert.ok(inputs.length > 0, `${layer.key}: the reader found the layer's inputs`);
+      assert.ok(
+        inputs.every((input) => !input.includes(' name=') && input.includes(' disabled=""')),
+        `${layer.key}: a hidden input is disabled and nameless`,
+      );
+      assert.ok(layer.markup.slice(0, layer.markup.indexOf('>')).includes('inert'), `${layer.key}: inert`);
+    }
+  });
+
+  it("shows exactly the picked style's layer, and nothing for a style that asks nothing", () => {
+    const expected = {
+      'low-carb': 'carbs',
+      'low-carb-low-kcal': 'carbs+kcal',
+      'low-kcal': 'kcal',
+      'high-protein': null,
+      'just-track': null,
+    } satisfies Record<EatingStyleId, string | null>;
+    for (const style of EATING_STYLE_IDS) {
+      const shown = followUpLayers(renderStyleStep(fixture({ eatingStyle: style }))).filter((layer) => layer.isShown);
+      assert.deepEqual(
+        shown.map((layer) => layer.key),
+        expected[style] === null ? [] : [expected[style]],
+        `${style}: the shown layer`,
+      );
+    }
+  });
+
+  it('holds the caution note hidden for a pregnant person on a style it does not apply to', () => {
+    const markup = renderStyleStep(fixture({ eatingStyle: 'high-protein', reproductiveStatus: 'pregnant' }));
+    // Drawn, which reserves its height...
+    assert.ok(markup.includes(STYLE_CAUTION_SOURCE_URL));
+    // ...and read by nobody.
+    const shown = followUpLayers(markup).filter((layer) => layer.isShown);
+    assert.deepEqual(shown, []);
+    // CONTROL: the same person on low-carb reads it.
+    const lowCarb = followUpLayers(
+      renderStyleStep(fixture({ eatingStyle: 'low-carb', reproductiveStatus: 'pregnant' })),
+    );
+    const lowCarbShown = lowCarb.filter((layer) => layer.isShown);
+    assert.equal(lowCarbShown.length, 1);
+    assert.ok(lowCarbShown[0]?.markup.includes(STYLE_CAUTION_SOURCE_URL));
   });
 });

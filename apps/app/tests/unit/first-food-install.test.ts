@@ -36,7 +36,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
-import { FirstFoodInstallFootnote, FirstFoodStep } from '../../app/routes/onboarding';
+import { outerElements, isHiddenLayer, withoutHiddenLayers } from './markup-elements';
+import { FirstFoodInstallFootnote, FirstFoodInstallReserve, FirstFoodStep } from '../../app/routes/onboarding';
 import { InstallAffordanceAction } from '../../app/components/install-card';
 import type { InstallAffordance } from '../../app/lib/pwa-install';
 import type { PublicConfig } from '../../app/config/public-config';
@@ -172,8 +173,53 @@ describe('FirstFoodInstallFootnote (the lesson footnote body) answers all four s
   });
 });
 
+/** The attribute each layer of the reserved footnote cell carries. */
+const INSTALL_LAYER = 'data-install-layer=';
+
+/** Renders the reserved cell directly, with an explicit affordance. */
+function renderReserve(affordance: InstallAffordance): string {
+  return renderToStaticMarkup(
+    withI18n(createElement(FirstFoodInstallReserve, { affordance, promptInstall: noopPromptInstall })),
+  );
+}
+
+describe('FirstFoodInstallReserve holds the footnote box for every answer from the first paint', () => {
+  it('draws all three answers that show something, in one cell, whatever the answer is', () => {
+    for (const affordance of ['cannot-install', 'prompt', 'ios-instructions', 'already-installed'] as const) {
+      const layers = outerElements(renderReserve(affordance), INSTALL_LAYER);
+      assert.deepEqual(
+        layers.map((layer) => /data-install-layer="([^"]+)"/.exec(layer)?.[1]),
+        ['cannot-install', 'prompt', 'ios-instructions'],
+        `${affordance}: every answer is drawn, so the cell is as tall as the tallest`,
+      );
+    }
+  });
+
+  it('shows exactly the current answer, and hides the others inert', () => {
+    for (const affordance of ['cannot-install', 'prompt', 'ios-instructions'] as const) {
+      const layers = outerElements(renderReserve(affordance), INSTALL_LAYER);
+      const shown = layers.filter((layer) => !isHiddenLayer(layer));
+      assert.equal(shown.length, 1, `${affordance}: one layer shows`);
+      assert.ok(shown[0]?.includes(`data-install-layer="${affordance}"`), `${affordance}: the shown layer is its own`);
+      // CONTROL: the other two are hidden, and a hidden install button is out
+      // of reach of a tap, a tab and a screen reader.
+      for (const hidden of layers.filter((layer) => isHiddenLayer(layer))) {
+        assert.ok(hidden.slice(0, hidden.indexOf('>')).includes('inert'), `${affordance}: a hidden layer is inert`);
+      }
+    }
+  });
+
+  it('keeps the box, empty, on a device that already has the app', () => {
+    const layers = outerElements(renderReserve('already-installed'), INSTALL_LAYER);
+    assert.equal(layers.filter((layer) => !isHiddenLayer(layer)).length, 0);
+    assert.equal(layers.length, 3, 'the box keeps its height after the first paint');
+  });
+});
+
 describe('the real first-food step on a browser that cannot install', () => {
-  const stepMarkup = renderFirstFoodStep();
+  // What a person can READ: the reserved cell also draws the answers this
+  // browser cannot use, hidden, and those are cut out before any check.
+  const stepMarkup = withoutHiddenLayers(renderFirstFoodStep(), INSTALL_LAYER);
 
   it('is a real render of the lesson: the three ways and the privacy note are present', () => {
     assert.ok(stepMarkup.includes(WAY_TITLE_PHOTO), stepMarkup.slice(0, 400));

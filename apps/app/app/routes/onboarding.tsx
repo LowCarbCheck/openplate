@@ -101,6 +101,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { InstallAffordanceAction } from '#app/components/install-card';
 import { useInstallAffordance } from '#app/hooks/use-install-affordance';
 import type { InstallAffordanceControls } from '#app/hooks/use-install-affordance';
+import type { InstallAffordance } from '#app/lib/pwa-install';
 import { APP_NAME } from '#app/lib/brand';
 import { Wordmark } from '#app/components/wordmark';
 import { Download, Key, ShieldCheck } from 'lucide-react';
@@ -802,9 +803,9 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
   const [pickedMainGoal, setPickedMainGoal] = useState<MainGoalId | null>(() =>
     isMainGoalId(loaderData.mainGoal) ? loaderData.mainGoal : null,
   );
-  // The two follow-up questions are read off the TABLE, never off a second
-  // list of style ids here, so a style that changes what it asks for changes
-  // it in one place (`app/lib/eating-style.ts`).
+  // The picked style's lens, which the main goal follows until the person
+  // picks one. The follow-up questions are read off the same TABLE, in
+  // `styleFollowUp`, never off a second list of style ids here.
   const definition = style === null ? null : eatingStyle(style);
   return (
     <StepShell title={t('onboarding.style.title')} description={t('onboarding.step.style.description')}>
@@ -821,19 +822,22 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
           ))}
         </div>
         <FieldError id="eatingStyle-error" errors={errors.style === undefined ? undefined : [t(errors.style)]} />
-        <StyleCautionNote style={style} reproductiveStatus={loaderData.bodyMetrics.reproductiveStatus} />
-        {definition?.carbSubPreset === true && (
-          <CarbPresetPicker selected={carbPreset} onSelect={setCarbPreset} errorKey={errors.carbPreset} />
-        )}
-        {definition?.kcalMode === 'asked' && (
-          <KcalTargetField defaultValue={loaderData.goalKcalTarget} errorKey={errors.kcalTarget} />
-        )}
-        {definition !== null && (
-          <MainGoalPicker
-            selected={pickedMainGoal ?? mainGoalForLens(definition.lens)}
-            onSelect={setPickedMainGoal}
-          />
-        )}
+        {/* NOTHING BELOW MOVES ON A PICK (owner report, 2026-10-01). The main
+            goal is on screen from the first paint, with nothing ticked until a
+            style or a tap decides, and every follow-up a style can ask sits in
+            ONE reserved cell under it: see `StyleFollowUpCell`. */}
+        <MainGoalPicker
+          selected={pickedMainGoal ?? (definition === null ? null : mainGoalForLens(definition.lens))}
+          onSelect={setPickedMainGoal}
+        />
+        <StyleFollowUpCell
+          style={style}
+          reproductiveStatus={loaderData.bodyMetrics.reproductiveStatus}
+          carbPreset={carbPreset}
+          onCarbPresetSelect={setCarbPreset}
+          kcalDefaultValue={loaderData.goalKcalTarget}
+          errors={errors}
+        />
         {/* No Skip here: `just-track` in the list above IS the "no goal"
             answer, so a second way to decline would only be a way to decline
             differently. */}
@@ -943,9 +947,14 @@ export function StyleCautionNote({
   style: EatingStyleId | null;
   reproductiveStatus: ReproductiveStatus | null;
 }) {
-  const { t } = useTranslation();
   if (style === null) return null;
   if (styleCaution(style, reproductiveStatus) === null) return null;
+  return <StyleCautionText />;
+}
+
+/** The caution sentence itself, with its source link. `StyleCautionNote` decides when it applies. */
+function StyleCautionText() {
+  const { t } = useTranslation();
   return (
     <p className="text-sm text-muted-foreground">
       {/* <Trans> rather than a plain t(): the source link sits mid-sentence,
@@ -966,6 +975,125 @@ export function StyleCautionNote({
         }}
       />
     </p>
+  );
+}
+
+/** What one style asks after it is picked, and whether the caution note applies to it. */
+export interface StyleFollowUp {
+  asksCarbLimit: boolean;
+  asksCalories: boolean;
+  hasCaution: boolean;
+}
+
+/** One distinct follow-up, drawn as one layer of `StyleFollowUpCell`. */
+export interface StyleFollowUpLayer {
+  key: string;
+  followUp: StyleFollowUp;
+}
+
+/**
+ * What `style` asks after it is picked, read off the style TABLE and
+ * `styleCaution`, never off a second list of style ids here.
+ */
+export function styleFollowUp(style: EatingStyleId, reproductiveStatus: ReproductiveStatus | null): StyleFollowUp {
+  const definition = eatingStyle(style);
+  return {
+    asksCarbLimit: definition.carbSubPreset,
+    asksCalories: definition.kcalMode === 'asked',
+    hasCaution: styleCaution(style, reproductiveStatus) !== null,
+  };
+}
+
+/** A stable name for one follow-up, so two styles that ask the same things share one layer. */
+function followUpKey(followUp: StyleFollowUp): string {
+  return [followUp.hasCaution && 'caution', followUp.asksCarbLimit && 'carbs', followUp.asksCalories && 'kcal']
+    .filter(Boolean)
+    .join('+');
+}
+
+/**
+ * Every distinct follow-up any style can ask for this person, in table order,
+ * leaving out the empty one (a style that asks nothing draws no layer).
+ *
+ * The status is loader data and never changes on this screen, so a person
+ * with no pregnancy or lactation on file gets no caution layer at all: the
+ * note cannot appear for them, and its height is not reserved for nothing.
+ */
+export function styleFollowUpLayers(reproductiveStatus: ReproductiveStatus | null): StyleFollowUpLayer[] {
+  const layers = new Map<string, StyleFollowUp>();
+  for (const candidate of EATING_STYLES) {
+    const followUp = styleFollowUp(candidate.id, reproductiveStatus);
+    const key = followUpKey(followUp);
+    if (key !== '' && !layers.has(key)) layers.set(key, followUp);
+  }
+  return Array.from(layers, ([key, followUp]) => ({ key, followUp }));
+}
+
+/**
+ * ONE CELL for every follow-up a style can ask: the caution note, the carb
+ * limit and the calorie target (owner report, 2026-10-01).
+ *
+ * Each distinct follow-up is one LAYER, and all layers sit in the same grid
+ * area, so the cell is as tall as the tallest of them from the first paint
+ * and a pick only swaps which layer shows. Layers rather than one slot per
+ * question, because "low-carb and calories" asks two things at once while
+ * "calories" asks one: one slot per question would leave a gap above the
+ * calorie field, and overlapping the questions would draw one over the other.
+ *
+ * A HIDDEN LAYER IS INERT AND SUBMITS NOTHING. It is `invisible`, `inert` and
+ * `aria-hidden`, and its controls carry no `name` and no `id` and are
+ * disabled, so the form sends exactly what it sent when only the picked
+ * style's questions were mounted. `[&_*]:transition-none` hides a layer in the
+ * same frame it stops applying, as in `forgot.tsx`: a child's own transition
+ * would otherwise animate the inherited `visibility` and draw it for 150 ms.
+ *
+ * Before any pick every layer is hidden, which leaves a blank reserved area
+ * above the actions. That is the accepted price of nothing moving.
+ */
+function StyleFollowUpCell({
+  style,
+  reproductiveStatus,
+  carbPreset,
+  onCarbPresetSelect,
+  kcalDefaultValue,
+  errors,
+}: {
+  style: EatingStyleId | null;
+  reproductiveStatus: ReproductiveStatus | null;
+  carbPreset: string | null;
+  onCarbPresetSelect: (id: string) => void;
+  kcalDefaultValue: number | null;
+  errors: StyleStepErrors;
+}) {
+  const activeKey = style === null ? null : followUpKey(styleFollowUp(style, reproductiveStatus));
+  return (
+    <div data-slot="style-follow-up" className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+      {styleFollowUpLayers(reproductiveStatus).map(({ key, followUp }) => {
+        const isActive = key === activeKey;
+        return (
+          <div
+            key={key}
+            data-follow-up-layer={key}
+            className={cn('space-y-6', !isActive && 'invisible [&_*]:transition-none')}
+            inert={!isActive}
+            aria-hidden={isActive ? undefined : true}
+          >
+            {followUp.hasCaution && <StyleCautionText />}
+            {followUp.asksCarbLimit && (
+              <CarbPresetPicker
+                selected={carbPreset}
+                onSelect={onCarbPresetSelect}
+                errorKey={errors.carbPreset}
+                isActive={isActive}
+              />
+            )}
+            {followUp.asksCalories && (
+              <KcalTargetField defaultValue={kcalDefaultValue} errorKey={errors.kcalTarget} isActive={isActive} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -997,10 +1125,13 @@ function CarbPresetPicker({
   selected,
   onSelect,
   errorKey,
+  isActive,
 }: {
   selected: string | null;
   onSelect: (id: string) => void;
   errorKey?: string;
+  /** False in a hidden layer of `StyleFollowUpCell`: no name, no slot, no ids, nothing submitted. */
+  isActive: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -1017,10 +1148,11 @@ function CarbPresetPicker({
           >
             <input
               type="radio"
-              name={CARB_PRESET_FIELD}
+              name={isActive ? CARB_PRESET_FIELD : undefined}
               value={preset.id}
               checked={selected === preset.id}
               onChange={() => onSelect(preset.id)}
+              disabled={!isActive}
               className="sr-only"
             />
             {carbPresetChipLabel(preset, t)}
@@ -1032,29 +1164,39 @@ function CarbPresetPicker({
           line from the first paint, so picking a chip, or switching between
           two, moves nothing below it (DESIGN.md section 7). It used to render
           only once a chip was picked, and the Continue button dropped 24 px. */}
-      <p data-slot="carb-preset-detail" className="grid text-xs text-muted-foreground">
+      <p data-slot={isActive ? 'carb-preset-detail' : undefined} className="grid text-xs text-muted-foreground">
         {STYLE_CARB_PRESETS.map((preset) => (
-          <span key={preset.id} className={cn('col-start-1 row-start-1', preset.id === selected ? undefined : 'invisible')}>
+          <span
+            key={preset.id}
+            className={cn('col-start-1 row-start-1', preset.id === selected ? undefined : 'invisible')}
+          >
             {t(preset.detailKey)}
           </span>
         ))}
       </p>
-      <FieldError id="carbPreset-error" errors={errorKey === undefined ? undefined : [t(errorKey)]} />
+      <FieldError
+        id={isActive ? 'carbPreset-error' : undefined}
+        errors={errorKey === undefined ? undefined : [t(errorKey)]}
+      />
     </fieldset>
   );
 }
 
 /**
- * "Which number matters most?", shown once a style is picked (2026-09-23).
+ * "Which number matters most?", on screen from the first paint (2026-10-01;
+ * it used to appear once a style was picked, and pushed the actions down).
  *
- * Pre-selected from the style's lens, so Continue never asks twice: carb
+ * Nothing is ticked before a style is picked, for the same reason nothing is
+ * preselected in the style list, and a radio group with nothing ticked
+ * submits nothing, exactly as the absent list did. Then it is pre-selected
+ * from the style's lens, so Continue never asks twice: carb
  * styles and "just track" start on net carbs, the calorie style on calories,
  * high protein on protein. The answer decides which figure the diary card
  * leads with, and nothing else. Chips rather than cards: three short words,
  * one tap, the same recipe as the carb limit above. Every chip keeps the same
  * padding picked or not, so a pick moves nothing beside it.
  */
-function MainGoalPicker({ selected, onSelect }: { selected: MainGoalId; onSelect: (goal: MainGoalId) => void }) {
+function MainGoalPicker({ selected, onSelect }: { selected: MainGoalId | null; onSelect: (goal: MainGoalId) => void }) {
   const { t } = useTranslation();
   return (
     <fieldset data-slot="onboarding-main-goal" className="space-y-2">
@@ -1110,14 +1252,25 @@ function chipClass(isSelected: boolean): string {
  * blank, both of which are false here, because a style that asks for a target
  * does not save without one.
  */
-function KcalTargetField({ defaultValue, errorKey }: { defaultValue: number | null; errorKey?: string }) {
+function KcalTargetField({
+  defaultValue,
+  errorKey,
+  isActive,
+}: {
+  defaultValue: number | null;
+  errorKey?: string;
+  /** False in a hidden layer of `StyleFollowUpCell`: no name, no ids, nothing submitted. */
+  isActive: boolean;
+}) {
   const { t } = useTranslation();
+  const hasError = errorKey !== undefined;
   return (
     <div className="space-y-2 border border-dashed p-4">
-      <Label htmlFor={KCAL_TARGET_FIELD}>{t('onboarding.kcal.requiredLabel')}</Label>
+      <Label htmlFor={isActive ? KCAL_TARGET_FIELD : undefined}>{t('onboarding.kcal.requiredLabel')}</Label>
       <Input
-        id={KCAL_TARGET_FIELD}
-        name={KCAL_TARGET_FIELD}
+        id={isActive ? KCAL_TARGET_FIELD : undefined}
+        name={isActive ? KCAL_TARGET_FIELD : undefined}
+        disabled={!isActive}
         type="number"
         inputMode="numeric"
         min={1}
@@ -1125,11 +1278,11 @@ function KcalTargetField({ defaultValue, errorKey }: { defaultValue: number | nu
         step={1}
         placeholder={t('onboarding.kcal.placeholder')}
         defaultValue={defaultValue ?? ''}
-        aria-invalid={errorKey === undefined ? undefined : true}
-        aria-describedby={errorKey === undefined ? undefined : 'kcalTarget-error'}
+        aria-invalid={hasError ? true : undefined}
+        aria-describedby={hasError && isActive ? 'kcalTarget-error' : undefined}
         className="h-11"
       />
-      <FieldError id="kcalTarget-error" errors={errorKey === undefined ? undefined : [t(errorKey)]} />
+      <FieldError id={isActive ? 'kcalTarget-error' : undefined} errors={hasError ? [t(errorKey)] : undefined} />
     </div>
   );
 }
@@ -1460,6 +1613,18 @@ function BodyStep({
           selected={biologicalSex}
           onSelect={setBiologicalSex}
         />
+        {/* The same fieldset `/settings/profile` shows, component and all
+            (M219/02 D4c): a person with a food allergy wants it set on day
+            one, and this is already the one screen that asks for health
+            data. The sentence about what a chip is not is part of the
+            component, so it is said here too. Still optional: Skip walks
+            past it and leaves the list empty, which means no chip. */}
+        <AllergenFields
+          value={allergens}
+          onChange={setAllergens}
+          name={ALLERGENS_FIELD}
+          chipClassName={bodyStepChipClass}
+        />
         {/* The same fieldset `/settings/life-phase` shows, component and all, so the
             wizard and the settings page cannot drift about what may be entered
             here. It asks anyone who did not answer "male", it reveals one date
@@ -1469,7 +1634,12 @@ function BodyStep({
 
             `normalizeBodyMetrics` drops a stored status, and its date with it,
             the moment the answer stops applying, so hiding the control never
-            leaves a stale answer behind in the store. */}
+            leaves a stale answer behind in the store.
+
+            LAST BEFORE THE ACTIONS, and `reserveLayout` (owner report,
+            2026-10-01): a sex pick above it and a status pick inside it swap
+            what shows inside a box that keeps its height, so the allergens no
+            longer sit below something that grows and shrinks. */}
         <ReproductiveStatusFields
           biologicalSex={biologicalSex}
           value={reproductive}
@@ -1495,18 +1665,7 @@ function BodyStep({
               : undefined,
           }}
           chipClassName={bodyStepChipClass}
-        />
-        {/* The same fieldset `/settings/profile` shows, component and all
-            (M219/02 D4c): a person with a food allergy wants it set on day
-            one, and this is already the one screen that asks for health
-            data. The sentence about what a chip is not is part of the
-            component, so it is said here too. Still optional: Skip walks
-            past it and leaves the list empty, which means no chip. */}
-        <AllergenFields
-          value={allergens}
-          onChange={setAllergens}
-          name={ALLERGENS_FIELD}
-          chipClassName={bodyStepChipClass}
+          reserveLayout
         />
         <StepActions primaryIntent={INTENT.SAVE_BODY} primaryPendingLabel={t('onboarding.actions.saving')} />
       </Form>
@@ -1682,11 +1841,16 @@ function FirstFoodKeyNote({ diaryHasServerCopy }: { diaryHasServerCopy: boolean 
  * returning person who already knows the three ways never sees this step,
  * so the settings hub's `InstallCard` is their only other chance to be told.
  *
- * Renders nothing at all only for a device that ALREADY has the app
- * installed, so there is no empty box and no leftover spacing when there is
- * nothing left to say. A browser that simply cannot install (desktop Firefox,
- * desktop Safari, Chrome before `beforeinstallprompt`) is a different state
- * and gets the plain sentence instead: see `FirstFoodInstallFootnote`.
+ * Shows nothing only for a device that ALREADY has the app installed. A
+ * browser that simply cannot install (desktop Firefox, desktop Safari, Chrome
+ * before `beforeinstallprompt`) is a different state and gets the plain
+ * sentence instead: see `FirstFoodInstallFootnote`.
+ *
+ * THE BOX IS RESERVED FROM THE FIRST PAINT (owner report, 2026-10-01). The
+ * first paint cannot know the answer: the platform checks run in an effect,
+ * and Chrome can offer the install while this step is on screen. So every
+ * answer is drawn into one cell and only the current one shows: see
+ * `FirstFoodInstallReserve`.
  *
  * Reuses `InstallAffordanceAction`, `InstallCard`'s own prompt-vs-iOS body,
  * and the same `install.*` copy already shipped for the settings hub, so the
@@ -1705,7 +1869,51 @@ function FirstFoodKeyNote({ diaryHasServerCopy }: { diaryHasServerCopy: boolean 
  */
 function FirstFoodInstallNote() {
   const { affordance, promptInstall } = useInstallAffordance();
-  return <FirstFoodInstallFootnote affordance={affordance} promptInstall={promptInstall} />;
+  return <FirstFoodInstallReserve affordance={affordance} promptInstall={promptInstall} />;
+}
+
+/** The three answers that draw something, each one layer of `FirstFoodInstallReserve`. */
+const INSTALL_NOTE_LAYERS = [
+  'cannot-install',
+  'prompt',
+  'ios-instructions',
+] as const satisfies readonly InstallAffordance[];
+
+/**
+ * ONE CELL, THREE LAYERS: the footnote for every answer that draws something,
+ * stacked in the same grid area, so the cell is as tall as the tallest answer
+ * at this width and in this language from the first paint. The current answer
+ * shows; the others are `invisible`, `inert` and `aria-hidden`, so no hidden
+ * install button can be reached. On an already-installed device every layer
+ * is hidden and the box stays, empty: taking it away would move the page
+ * after the first paint, which is the thing this cell exists to prevent.
+ *
+ * Each layer is itself a one-column grid, so the footnote's muted box
+ * stretches to the cell and every answer draws the same box. The same
+ * `[&_*]:transition-none` as `StyleFollowUpCell`: the install button's own
+ * transition would otherwise draw a hidden layer for 150 ms.
+ *
+ * Exported for `tests/unit/first-food-install.test.ts`.
+ */
+export function FirstFoodInstallReserve({ affordance, promptInstall }: InstallAffordanceControls) {
+  return (
+    <div data-slot="first-food-install-note" className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+      {INSTALL_NOTE_LAYERS.map((layer) => {
+        const isActive = layer === affordance;
+        return (
+          <div
+            key={layer}
+            data-install-layer={layer}
+            className={cn('grid', !isActive && 'invisible [&_*]:transition-none')}
+            inert={!isActive}
+            aria-hidden={isActive ? undefined : true}
+          >
+            <FirstFoodInstallFootnote affordance={layer} promptInstall={promptInstall} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /**
