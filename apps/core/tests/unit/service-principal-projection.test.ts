@@ -29,6 +29,8 @@ const ADMIN_TOKEN = 'admin-5e0c92a71bd4368fac71e0d2';
 /** Distinctive enough that finding it in a body cannot be a coincidence. */
 const SEEDED_EMAIL = 'quirinia.hallbjorn@example.invalid';
 const SEEDED_DISPLAY_NAME = 'Quirinia Hallbjorn';
+/** The operator's label on the same account: an operator fact the biller has no use for. */
+const SEEDED_LABEL = 'Hallbjorn beta cohort';
 
 /** In the future, so this account is in the reconciliation list. */
 const FUTURE_EXPIRY = '2099-03-01T12:00:00.000Z';
@@ -80,6 +82,7 @@ before(async () => {
     aiUsedToday: 7,
     allowanceExpiresAt: new Date(FUTURE_EXPIRY),
     lastSeenAt: new Date('2026-09-01T08:00:00.000Z'),
+    label: SEEDED_LABEL,
     blobSizeBytes: 4096,
     keyRecordKinds: ['passphrase'],
   });
@@ -108,6 +111,7 @@ test('the single read is exactly id, allowanceExpiresAt and dailyAiLimit', async
 
   assert.ok(!text.includes(SEEDED_EMAIL), 'the address must not appear anywhere in the body');
   assert.ok(!text.includes(SEEDED_DISPLAY_NAME), 'the display name must not appear anywhere in the body');
+  assert.ok(!text.includes(SEEDED_LABEL), "the operator's label must not appear anywhere in the body");
   assert.ok(!text.includes('admin'), 'the role must not appear anywhere in the body');
 
   // SAFETY: the route answers a JSON object with one `account` key, and the
@@ -128,6 +132,7 @@ test('the operator reading the same account DOES get the address, so the absence
 
   assert.ok(text.includes(SEEDED_EMAIL), 'the fixture must really hold the address');
   assert.ok(text.includes(SEEDED_DISPLAY_NAME), 'the fixture must really hold the display name');
+  assert.ok(text.includes(SEEDED_LABEL), 'the fixture must really hold the label');
 });
 
 test('an account with no end date reads allowanceExpiresAt as null, never as an absent key', async () => {

@@ -147,3 +147,60 @@ test('a valid set-trial and grant-lapsed ARE sent, so the refusals above are not
     'POST /v1/admin/trials/grant-lapsed',
   ]);
 });
+
+// ── the operator's label ───────────────────────────────────────────────────
+
+test('accounts set-label refuses an over-long, a blank and an unquoted label, and sends nothing', async () => {
+  const requestsBefore = server.requests.length;
+  const tooLong = await runCli({
+    args: ['accounts', 'set-label', '7', 'x'.repeat(41), '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+  assert.notEqual(tooLong.exitCode, 0);
+  assert.ok(tooLong.stderr.includes('40'), `stderr must name the bound, saw: ${tooLong.stderr}`);
+
+  const blank = await runCli({
+    args: ['accounts', 'set-label', '7', '  ', '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+  assert.notEqual(blank.exitCode, 0);
+  assert.ok(blank.stderr.includes('clear-label'), `stderr must point at clear-label, saw: ${blank.stderr}`);
+
+  const missing = await runCli({
+    args: ['accounts', 'set-label', '7', '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+  assert.notEqual(missing.exitCode, 0);
+
+  const unquoted = await runCli({
+    args: ['accounts', 'set-label', '7', 'Beta', 'supporter', '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+  assert.notEqual(unquoted.exitCode, 0);
+  assert.ok(unquoted.stderr.includes('"Beta supporter"'), `stderr must show the quoted form, saw: ${unquoted.stderr}`);
+
+  assert.equal(server.requests.length, requestsBefore, 'no refused label may reach the network');
+});
+
+test('a valid set-label and a clear-label ARE sent, with the label and with null', async () => {
+  const requestsBefore = server.requests.length;
+  const set = await runCli({
+    args: ['accounts', 'set-label', '7', '  Beta supporter ', '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+  const cleared = await runCli({
+    args: ['accounts', 'clear-label', '7', '--url', server.baseUrl],
+    adminToken: ADMIN_TOKEN,
+  });
+
+  assert.deepEqual(server.requests.slice(requestsBefore), ['PATCH /v1/admin/accounts/7', 'PATCH /v1/admin/accounts/7']);
+  // Trimmed before it is sent, and the clear is an explicit null, never an absent key.
+  assert.deepEqual(
+    server.bodies.slice(requestsBefore).map((body) => JSON.parse(body)),
+    [{ label: 'Beta supporter' }, { label: null }],
+  );
+  // The counting server answers `{}`, which is not an account, so both commands
+  // exit non-zero AFTER sending: the request is what this test is about.
+  assert.notEqual(set.exitCode, 0);
+  assert.notEqual(cleared.exitCode, 0);
+});

@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **An operator can label an account.** Each account can carry a short note that only administrators see, such as "Beta supporter". `PATCH /v1/admin/accounts/:id` takes `label`. A string of at most 40 characters sets it. Passing `null` or a blank string clears it. The account list and the account detail include `label`. This field is `null` when there is none. A longer label, a line break, or a control character returns a `400`. Nothing is written. The account cannot see or set its own label. The billing token can neither read nor write it. `pnpm sync-api accounts set-label <id> "Beta supporter"` sets the label. `pnpm sync-api accounts clear-label <id>` clears it. The migration adds one nullable column with a check constraint on its length. It changes no existing rows. `tests/unit/admin-accounts.test.ts`, `tests/unit/account-label.test.ts` and `tests/integration/admin-account-label.test.ts` check this.
+
 ## [0.26.1] - 2026-09-30
 
 ### Fixed

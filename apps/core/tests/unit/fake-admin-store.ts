@@ -53,6 +53,8 @@ export interface AdminSeedInput {
   /** The health-data consent on record. Absent is none, which is what every account created before the column has. */
   healthConsent?: HealthConsentRecord | null;
   lastSeenAt?: Date | null;
+  /** The operator's label. Absent is none, which is what every account has until an admin sets one. */
+  label?: string | null;
   blobSizeBytes?: number;
   keyRecordKinds?: SyncKeyRecordKind[];
   /** Usage rows for this account, `YYYY-MM-DD` to count. Only the days that HAVE a row, as the real store returns. */
@@ -99,6 +101,7 @@ export function createFakeAdminStore(): FakeAdminStore {
         healthConsent: input.healthConsent ?? null,
         createdAt: new Date('2026-08-01T09:00:00.000Z'),
         lastSeenAt: input.lastSeenAt ?? null,
+        label: input.label ?? null,
         blob:
           input.blobSizeBytes === undefined
             ? null

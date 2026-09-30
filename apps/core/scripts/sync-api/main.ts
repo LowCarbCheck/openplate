@@ -45,6 +45,7 @@ import {
   type MintInviteRequestBody,
 } from './client.js';
 import { generateVapidKeys } from '../../src/push/vapid-keys.js';
+import { MAX_ACCOUNT_LABEL_LENGTH, parseAccountLabel } from '../../src/admin/account-label.js';
 import {
   decodeAccountPage,
   decodeHandshake,
@@ -85,6 +86,9 @@ const USAGE = `sync-api, the openplate-core admin CLI
                                Set or clear the date its AI allowance ends
     accounts set-trial <id> <n|none>      Set its free AI scans (0-100), or
                                take the scan trial away
+    accounts set-label <id> "<text>"      Pin a note only admins see, such as
+                               "Beta supporter" (quote it, 40 characters at most)
+    accounts clear-label <id>  Take the note away
     accounts suspend <id>      Lock it out and revoke every session, reversibly
     accounts reactivate <id>   Let it back in
     invites list               Outstanding and spent signup invites
@@ -275,6 +279,37 @@ function expiryFrom(value: string | null): AccountPatchBody {
 }
 
 /**
+ * The label argument of `accounts set-label`, or a refusal.
+ *
+ * ONE POSITIONAL, QUOTED. `accounts set-label 7 Beta supporter` arrives as two
+ * words, and storing "Beta" would be a note the operator did not write, so a
+ * second word is refused with the fix rather than joined or dropped.
+ *
+ * CHECKED WITH THE SERVICE'S OWN PARSER (`src/admin/account-label.ts`), so an
+ * over-long or multi-line label costs no round trip. A blank one is refused
+ * too: clearing has its own command, and a typo must never read as a clear.
+ */
+function labelFrom(words: readonly string[]): AccountPatchBody {
+  if (words.length > 1) {
+    throw new CliError(
+      `accounts set-label takes the label as one argument. Quote it: \`accounts set-label <id> "${words.join(' ')}"\`.`,
+    );
+  }
+  const parsed = parseAccountLabel(words[0] ?? '');
+  if (!parsed.ok) {
+    throw new CliError(
+      `accounts set-label needs one line of at most ${MAX_ACCOUNT_LABEL_LENGTH} characters, e.g. \`accounts set-label 7 "Beta supporter"\`.`,
+    );
+  }
+  if (parsed.value === null) {
+    throw new CliError(
+      'accounts set-label needs a label, e.g. `accounts set-label 7 "Beta supporter"`. To take one away, run `accounts clear-label 7`.',
+    );
+  }
+  return { label: parsed.value };
+}
+
+/**
  * The `--to-version` value of `accounts rollback`, or a refusal.
  *
  * A FLAG RATHER THAN A POSITIONAL, for the reason `--allowance-expires` is one:
@@ -434,6 +469,17 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
     return;
   }
 
+  if (subcommand === 'set-label' || subcommand === 'clear-label') {
+    const id = accountIdArgument(invocation);
+    const patch: AccountPatchBody =
+      subcommand === 'set-label' ? labelFrom(invocation.command.slice(3)) : { label: null };
+    const account = decodeSingleAccount(
+      await client.request({ method: 'PATCH', path: `/v1/admin/accounts/${id}`, body: patch }),
+    );
+    print(invocation.json ? JSON.stringify(account, null, 2) : formatAccountDetail(account));
+    return;
+  }
+
   if (subcommand === 'set-expiry') {
     const id = accountIdArgument(invocation);
     const patch = expiryFrom(invocation.allowanceExpires);
@@ -465,7 +511,7 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
   }
 
   throw new CliError(
-    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-expiry, set-trial, suspend, reactivate, reset-mail, blob-versions, rollback.`,
+    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-expiry, set-trial, set-label, clear-label, suspend, reactivate, reset-mail, blob-versions, rollback.`,
   );
 }
 
