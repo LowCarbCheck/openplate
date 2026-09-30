@@ -129,7 +129,20 @@ export function receiptTemplateLanguages(language: DeclarationLanguage): readonl
   return order.filter((candidate, index) => order.indexOf(candidate) === index);
 }
 
-/** The field labels of the detail lines. Form chrome, not prose, so they stay in code (CONTRACT.md section 6). */
+/**
+ * The field labels of the detail lines. Form chrome, not prose, so they stay in code (CONTRACT.md section 6).
+ *
+ * TWO LABELS FOR ONE DATE FIELD (2026-09-30). Both forms post their date as
+ * `requestedDate`, but they ask for different dates, so the line is labelled
+ * by kind: `requestedDate` for a cancellation, which asks when it should take
+ * effect, and `contractDate` for a withdrawal, which asks when the contract
+ * was made. Each is the app's own form label, word for word, without its
+ * "(optional)" marker: `declarations.cancel.requestedDateLabel` and
+ * `declarations.withdraw.requestedDateLabel`.
+ * `tests/unit/declaration-message.test.ts` reads the app's catalog and holds
+ * them to it. Until 2026-09-30 a withdrawal receipt carried the
+ * cancellation's label.
+ */
 interface DetailLabels {
   name: string;
   email: string;
@@ -137,6 +150,7 @@ interface DetailLabels {
   terminationType: string;
   reason: string;
   requestedDate: string;
+  contractDate: string;
   timing: string;
   terminationTypeOrdentlich: string;
   terminationTypeAusserordentlich: string;
@@ -152,6 +166,7 @@ const DETAIL_LABELS = {
     terminationType: 'Type of cancellation',
     reason: 'Reason',
     requestedDate: 'Requested date',
+    contractDate: 'Date the contract was made',
     timing: 'Timing',
     terminationTypeOrdentlich: 'regular notice',
     terminationTypeAusserordentlich: 'extraordinary notice',
@@ -165,6 +180,7 @@ const DETAIL_LABELS = {
     terminationType: 'Art der Kündigung',
     reason: 'Grund',
     requestedDate: 'Gewünschtes Datum',
+    contractDate: 'Datum des Vertragsschlusses',
     timing: 'Zeitpunkt',
     terminationTypeOrdentlich: 'ordentliche Kündigung',
     terminationTypeAusserordentlich: 'außerordentliche Kündigung',
@@ -174,6 +190,8 @@ const DETAIL_LABELS = {
   // fr, it, es and tr from wordsmith translate (Gemini 3.8 Flash, 2026-09-30),
   // from the English with the German as the authority, in the formal register
   // and with the app's own words for a cancellation and a withdrawal.
+  // `contractDate` is copied from the app's withdrawal form in each language,
+  // not translated here.
   fr: {
     name: 'Nom',
     email: 'Adresse e-mail',
@@ -181,6 +199,7 @@ const DETAIL_LABELS = {
     terminationType: 'Type de résiliation',
     reason: 'Motif',
     requestedDate: 'Date souhaitée',
+    contractDate: 'Date de conclusion du contrat',
     timing: "Date d'effet",
     terminationTypeOrdentlich: 'résiliation ordinaire',
     terminationTypeAusserordentlich: 'résiliation extraordinaire',
@@ -194,6 +213,7 @@ const DETAIL_LABELS = {
     terminationType: 'Tipo di disdetta',
     reason: 'Motivo',
     requestedDate: 'Data richiesta',
+    contractDate: 'Data di stipula del contratto',
     timing: 'Decorrenza',
     terminationTypeOrdentlich: 'disdetta ordinaria',
     terminationTypeAusserordentlich: 'disdetta straordinaria',
@@ -207,6 +227,7 @@ const DETAIL_LABELS = {
     terminationType: 'Tipo de cancelación',
     reason: 'Motivo',
     requestedDate: 'Fecha solicitada',
+    contractDate: 'Fecha de celebración del contrato',
     timing: 'Momento',
     terminationTypeOrdentlich: 'cancelación ordinaria',
     terminationTypeAusserordentlich: 'cancelación extraordinaria',
@@ -220,6 +241,7 @@ const DETAIL_LABELS = {
     terminationType: 'Fesih türü',
     reason: 'Gerekçe',
     requestedDate: 'Talep edilen tarih',
+    contractDate: 'Sözleşmenin yapıldığı tarih',
     timing: 'Zamanlama',
     terminationTypeOrdentlich: 'olağan fesih',
     terminationTypeAusserordentlich: 'olağanüstü fesih',
@@ -339,6 +361,11 @@ function terminationTypeLabel(input: {
     : input.labels.terminationTypeAusserordentlich;
 }
 
+/** The label of the date line: what the form of this kind asked the date for. See {@link DetailLabels}. */
+function dateLabel(input: { labels: DetailLabels; kind: DeclarationKind }): string {
+  return input.kind === 'widerruf' ? input.labels.contractDate : input.labels.requestedDate;
+}
+
 function timingLabel(input: { labels: DetailLabels; value: DeclarationFields['timing'] }): string | null {
   if (input.value === null) return null;
   return input.value === 'earliest' ? input.labels.timingEarliest : input.labels.timingOnDate;
@@ -356,7 +383,7 @@ export function detailLines(input: { fields: DeclarationFields; language: Declar
     ...detailLine(labels.contractReference, fields.contractReference),
     ...detailLine(labels.terminationType, terminationType),
     ...detailLine(labels.reason, fields.reason),
-    ...detailLine(labels.requestedDate, fields.requestedDate),
+    ...detailLine(dateLabel({ labels, kind: fields.kind }), fields.requestedDate),
     ...detailLine(labels.timing, timing),
   ];
 }

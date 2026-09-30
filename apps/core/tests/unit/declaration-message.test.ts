@@ -8,12 +8,18 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   buildDeclarationOperatorAlertMessage,
   buildDeclarationReceiptMessage,
   DECLARATION_TEMPLATE_PLACEHOLDERS,
+  detailLines,
   receiptTemplateLanguages,
   type DeclarationFields,
+  type DeclarationKind,
+  type DeclarationLanguage,
   type DeclarationTemplateName,
   type FoundMailTemplate,
 } from '../../src/mail/declaration-message.js';
@@ -256,4 +262,99 @@ test('a template that needs a value this letter lacks sends the fallback, never 
     template: alertTemplate,
   });
   assert.equal(alert.origin, 'template');
+});
+
+// ── The date field's label, by kind (2026-09-30) ───────────────────────────
+//
+// Both forms post their date in `requestedDate`, but they ask for different
+// dates: the cancellation form for the date it should take effect, the
+// withdrawal form for the date the contract was made. Until 2026-09-30 the
+// receipt labelled both with the cancellation's label.
+
+/** A date only a date line can carry, so the line is found by its value. */
+const A_DATE = '2026-09-01';
+
+/** The label in front of the date line of one kind's receipt, in one language. */
+function dateLabelOf(input: { kind: DeclarationKind; language: DeclarationLanguage }): string {
+  const fields = baseFields({
+    kind: input.kind,
+    terminationType: input.kind === 'kuendigung' ? 'ordentlich' : null,
+    timing: input.kind === 'kuendigung' ? 'onDate' : null,
+    requestedDate: A_DATE,
+  });
+  const suffix = `: ${A_DATE}`;
+  const line = detailLines({ fields, language: input.language }).find((candidate) => candidate.endsWith(suffix));
+  if (line === undefined) throw new Error(`no date line on the ${input.kind} receipt in ${input.language}`);
+  return line.slice(0, -suffix.length);
+}
+
+test('the date line of a withdrawal receipt is labelled as the date the contract was made, in each of the six languages', () => {
+  const expected = {
+    en: 'Date the contract was made',
+    de: 'Datum des Vertragsschlusses',
+    fr: 'Date de conclusion du contrat',
+    it: 'Data di stipula del contratto',
+    es: 'Fecha de celebración del contrato',
+    tr: 'Sözleşmenin yapıldığı tarih',
+  } satisfies Record<DeclarationLanguage, string>;
+  for (const language of INSTANCE_LANGUAGES) {
+    assert.equal(dateLabelOf({ kind: 'widerruf', language }), expected[language], language);
+  }
+});
+
+test('CONTROL: the date line of a cancellation receipt keeps the label it had, in each of the six languages', () => {
+  const expected = {
+    en: 'Requested date',
+    de: 'Gewünschtes Datum',
+    fr: 'Date souhaitée',
+    it: 'Data richiesta',
+    es: 'Fecha solicitada',
+    tr: 'Talep edilen tarih',
+  } satisfies Record<DeclarationLanguage, string>;
+  for (const language of INSTANCE_LANGUAGES) {
+    assert.equal(dateLabelOf({ kind: 'kuendigung', language }), expected[language], language);
+  }
+});
+
+/** The two date labels the app's forms draw, as its catalog holds them. */
+interface FormDateLabels {
+  declarations: {
+    cancel: { requestedDateLabel: string };
+    withdraw: { requestedDateLabel: string };
+  };
+}
+
+const APP_LOCALES = join(resolve(dirname(fileURLToPath(import.meta.url)), '../../..'), 'app/app/i18n/locales');
+
+function formDateLabels(language: DeclarationLanguage): FormDateLabels['declarations'] {
+  // SAFETY: the app's own catalog, which its i18n key parity test holds to the
+  // English key set in every language. A missing key reads as undefined and
+  // fails the equality below; it is never trusted past that.
+  const catalog = JSON.parse(readFileSync(join(APP_LOCALES, language, 'common.json'), 'utf8')) as FormDateLabels;
+  return catalog.declarations;
+}
+
+/** A form label without its trailing marker, "(optional)" and its translations, which a receipt line never repeats. */
+function withoutOptionalMarker(label: string): string {
+  return label.replace(/\s\([^()]*\)$/u, '');
+}
+
+test("each receipt's date label is its own form's label in the app, word for word, in each of the six languages", () => {
+  for (const language of INSTANCE_LANGUAGES) {
+    const form = formDateLabels(language);
+    assert.equal(
+      dateLabelOf({ kind: 'widerruf', language }),
+      withoutOptionalMarker(form.withdraw.requestedDateLabel),
+      `${language}: the withdrawal receipt and the withdrawal form disagree`,
+    );
+    // CONTROL: the cancellation pair is held to the same rule, and the two
+    // forms really ask for different dates, so neither equality is a copy of
+    // the other.
+    assert.equal(
+      dateLabelOf({ kind: 'kuendigung', language }),
+      withoutOptionalMarker(form.cancel.requestedDateLabel),
+      `${language}: the cancellation receipt and the cancellation form disagree`,
+    );
+    assert.notEqual(form.withdraw.requestedDateLabel, form.cancel.requestedDateLabel, language);
+  }
 });
