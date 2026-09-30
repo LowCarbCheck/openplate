@@ -125,13 +125,20 @@ export const ACCOUNT_COPIED_COLUMNS = [
 ] as const;
 
 /**
- * The columns the move SETS rather than copies: the new standing (a daily
- * allowance, no expiry, no scan trial, the operator's label) and the row's own
- * `updated_at`. `label` is absent on a source older than migration 0024, and
- * that is allowed because it is never read from the source.
+ * The columns the move SETS rather than copies: the new standing (a standing
+ * free grant, no paid limit, no expiry, no scan trial, the operator's label)
+ * and the row's own `updated_at`. `label` is absent on a source older than
+ * migration 0024, and `free_daily_ai_limit` on one older than 0026; both are
+ * allowed because neither is read from the source.
+ *
+ * THE FREE GRANT, NOT A PAID LIMIT WITH NO DATE (2026-09-30). The first move
+ * wrote `daily_ai_limit` with no date, and a Beta supporter who then bought a
+ * plan and cancelled lost AI for good when the paid period ended. The free
+ * grant sits beneath any paid window and outlives it.
  */
 export const ACCOUNT_SET_COLUMNS = [
   'daily_ai_limit',
+  'free_daily_ai_limit',
   'allowance_expires_at',
   'trial_scans',
   'trial_scans_used',
@@ -140,8 +147,8 @@ export const ACCOUNT_SET_COLUMNS = [
   'updated_at',
 ] as const;
 
-/** The one account column a source may lack, because the move never reads it from there. */
-export const ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES = ['label'] as const;
+/** The account columns a source may lack, because the move never reads them from there. */
+export const ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES = ['label', 'free_daily_ai_limit'] as const;
 
 /** One source account row, by id, copied columns only. */
 export const SELECT_SOURCE_ACCOUNT = `SELECT ${ACCOUNT_COPIED_COLUMNS.map(quoted).join(', ')} FROM "accounts" WHERE "id" = $1`;
@@ -150,20 +157,23 @@ export const SELECT_SOURCE_ACCOUNT = `SELECT ${ACCOUNT_COPIED_COLUMNS.map(quoted
 export const SELECT_TARGET_ACCOUNT = SELECT_SOURCE_ACCOUNT;
 
 /**
- * The account insert. `$1..$13` are the copied cells, `$14` the daily limit
- * and `$15` the label. `trial_scans_used` is `0`, not `NULL`: the column is
+ * The account insert. `$1..$13` are the copied cells, `$14` the free daily
+ * limit and `$15` the label. `daily_ai_limit` is `0`: a moved account holds no
+ * paid window. `trial_scans_used` is `0`, not `NULL`: the column is
  * `NOT NULL DEFAULT 0`, and "no scan trial" is `trial_scans IS NULL`.
  */
 export const INSERT_ACCOUNT =
   `INSERT INTO "accounts" (${ACCOUNT_COPIED_COLUMNS.map(quoted).join(', ')}, ` +
-  `"daily_ai_limit", "allowance_expires_at", "trial_scans", "trial_scans_used", "trial_ends_at", "label", "updated_at") ` +
-  `VALUES (${placeholders(ACCOUNT_COPIED_COLUMNS.length)}, $${ACCOUNT_COPIED_COLUMNS.length + 1}, NULL, NULL, 0, NULL, ` +
-  `$${ACCOUNT_COPIED_COLUMNS.length + 2}, now())`;
+  `"daily_ai_limit", "free_daily_ai_limit", "allowance_expires_at", "trial_scans", "trial_scans_used", ` +
+  `"trial_ends_at", "label", "updated_at") ` +
+  `VALUES (${placeholders(ACCOUNT_COPIED_COLUMNS.length)}, 0, $${ACCOUNT_COPIED_COLUMNS.length + 1}, NULL, NULL, 0, ` +
+  `NULL, $${ACCOUNT_COPIED_COLUMNS.length + 2}, now())`;
 
 /** The set columns read back, as text, for the comparison against what the move meant to write. */
 export const SELECT_TARGET_STANDING =
-  'SELECT "daily_ai_limit"::text, ("allowance_expires_at" IS NULL)::text, ("trial_scans" IS NULL)::text, ' +
-  '"trial_scans_used"::text, ("trial_ends_at" IS NULL)::text, "label" FROM "accounts" WHERE "id" = $1';
+  'SELECT "daily_ai_limit"::text, "free_daily_ai_limit"::text, ("allowance_expires_at" IS NULL)::text, ' +
+  '("trial_scans" IS NULL)::text, "trial_scans_used"::text, ("trial_ends_at" IS NULL)::text, "label" ' +
+  'FROM "accounts" WHERE "id" = $1';
 
 // =============================================================================
 // Tables whose rows follow one account

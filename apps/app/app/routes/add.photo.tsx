@@ -1571,6 +1571,7 @@ function ScanFlow({
       bindingTrialScans({
         trialScans: sessionAccount?.trialScans,
         allowanceExpiresAt: sessionAccount?.allowanceExpiresAt ?? null,
+        freeDailyAiLimit: sessionAccount?.freeDailyAiLimit,
       })
     );
   // WHETHER THE REFUSAL HAS A DOOR (M213 spec 05). Read here for the same

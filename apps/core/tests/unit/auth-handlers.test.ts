@@ -209,7 +209,10 @@ test('the account takes its email, role and allowance from the invite, never fro
   if (outcome.status !== 'created') throw new Error('unreachable');
   assert.equal(outcome.body.account.email, 'invited@example.org');
   assert.equal(outcome.body.account.role, 'admin');
-  assert.equal(outcome.body.account.dailyAiLimit, 200);
+  // An operator's invite with no trial is a standing free grant (2026-09-30):
+  // its limit lands in `freeDailyAiLimit`, and the paid limit is 0.
+  assert.equal(outcome.body.account.freeDailyAiLimit, 200);
+  assert.equal(outcome.body.account.dailyAiLimit, 0);
 });
 
 test('an address is canonicalised, so casing and Unicode form cannot fork an account', async () => {
@@ -621,6 +624,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
     'dailyAiLimit',
     'displayName',
     'email',
+    // The standing free grant (2026-09-30), `0` here.
+    'freeDailyAiLimit',
     // The health-data consent, `null` here because this fixture's instance asks for none.
     'healthConsent',
     'id',

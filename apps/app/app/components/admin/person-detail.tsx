@@ -57,6 +57,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { activityTotal } from '#app/lib/admin/activity-strip';
 import type { AdminAccountActivity, AdminAccountView } from '#app/lib/admin/admin-wire';
 import { formatNumericDate } from '#app/i18n/date-locale';
+import { adminUsage } from '#app/lib/admin/admin-usage';
 
 /** Where the activity request is. One `kind`, so a spinner and a strip can never be on screen together. */
 export type PersonActivityState =
@@ -144,11 +145,7 @@ export function PersonDetail({ person, activity, isSelf, onRetryActivity, ...act
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">{t('admin.columns.usedToday')}</dt>
-              <dd>
-                {person.dailyAiLimit === 0 ?
-                  t('admin.usageNone')
-                : t('admin.usage', { used: person.aiUsedToday, limit: person.dailyAiLimit })}
-              </dd>
+              <dd>{adminUsage({ person, t })}</dd>
             </div>
             {/* THE FREE SCANS (M253/05), only for an account that has a scan
                 trial: used against given, both from the account row. */}

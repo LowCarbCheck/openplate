@@ -625,6 +625,8 @@ The server stores `HMAC-SHA-256(serverPepper, authHash)`, and the same construct
 
 An invite is a single-use, expiring capability **addressed to one person**. It carries the address the account will be created with, the operator's guess at a name, the role and the daily AI allowance. Unknown, malformed, missing, wrong-service, expired, revoked and already-redeemed tokens all produce the SAME `403` and the same body, `{"error":"invite-invalid"}`: telling them apart would let a caller probe which tokens exist, and would disclose that a token had once been real.
 
+**What redemption grants** (2026-09-30), decided by the invite row, in this order: a row with a scan trial gives that trial (below); a row a member caused gives the member door's grant (§5.21), the scan trial or the day pair, even when the inviter has since deleted their account, and **no AI at all** when the instance has switched member invitations off since the letter went out; every other row, an operator's mint without a trial or an open sign-up on an instance that runs none, gives its daily allowance as the account's **standing free grant** (`freeDailyAiLimit`, §5.15) with a paid `dailyAiLimit` of `0`. Before, that last case wrote a `dailyAiLimit` with no date, the shape §5.19 no longer grants anything for.
+
 **An invite token begins with `si_`, and the service refuses anything that does not.** The prefix binds the token to this service and to this endpoint. A person is handed an invite in a mail, beside a password-reset token that begins with `sr_`; without the prefixes the two are interchangeable strings and one can be posted to the wrong endpoint. The check is a **shape gate before the lookup**, refused with the same status and the same body as every other bad invite, so the gate adds no oracle. Session tokens carry no prefix and are unchanged.
 
 Minting is `POST /v1/admin/invites`. An older PENDING invite for the same address is revoked by a new one, so there is never more than one live capability per address; an address that already has an account cannot be invited at all (`409`). The one exception is the request door of §5.8.3, which leaves a pending invite from the operator or a member alone rather than withdraw it on a stranger's say.
@@ -801,6 +803,7 @@ All three bearer.
   "dailyAiLimit": 200,
   "aiUsedToday": 3,
   "allowanceExpiresAt": null,
+  "freeDailyAiLimit": 0,
   "trialScans": { "granted": 10, "left": 7 },
   "trialEndsAt": "2026-09-19T00:00:00.000Z",
   "suspendedAt": null,
@@ -818,6 +821,8 @@ Nothing secret is in it and nothing can be: no verifier, no KDF descriptor, no w
 `invitesNeedAPlan` is `true` when `invitesLeft` is `0` only because the account is a scan trial nobody has paid for yet (§5.21), and `false` in every other case, an administrator and an instance with `instance.memberInvites: false` included. An account is such a trial when it carries `trialScans` and its `allowanceExpiresAt` is `null` or already past; a future `allowanceExpiresAt`, which is what the biller writes on payment, opens invitations again and leaves `trialScans` in place. The field is additive: a client that ignores it reads `invitesLeft: 0`, which is still true, and a client that reads it can say that invitations open with a plan instead of saying they are all used.
 
 `allowanceExpiresAt` is an ISO instant or `null`, and `null` means the AI allowance has no end date, which is what a self-hosted instance keeps. From that instant on, the proxy of §5.19 answers `403 allowance-expired`. **It gates AI and nothing else**: sync keeps working past the date, because the diary belongs to the account and a new device must be able to pull it. A client may render the date and must not authorize on it; the proxy is where the rule lives.
+
+`freeDailyAiLimit` is the account's **standing free grant**: AI units per UTC day (§5.19) that apply whenever no paid window is live, with no end date and no scan gate. `0` is none. The proxy's order (§5.19) is a live paid window (`allowanceExpiresAt` in the future, at `dailyAiLimit`), then this grant, then the scan trial, so an account with a free grant falls back to it when a paid window ends instead of losing AI. A client that shows a daily limit shows this one whenever no paid window is live. Only an operator writes it (§5.20); the biller's credential cannot. A client may render it and **MUST NOT authorize on it**. The field is additive: a client that ignores it decodes the view unchanged.
 
 `trialScans` is `{"granted": n, "left": n}` for an account with a scan trial, and `null` for one without, which is every account on an instance that runs none. `left` is `granted` minus the scans used, never below `0`. A client may render it and **MUST NOT authorize on it**: the proxy counts (§5.19), `left` is a snapshot taken when this view was built, and every proxied response carries the fresh number in `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the scan gate, so a paying account may still carry this field.
 
@@ -1239,27 +1244,46 @@ avoid.
 
 #### The allowance
 
-Each account carries `dailyAiLimit`: **units** per **UTC day**, defaulting to
-`0`. A request reserves `max(1, ceil(estimated input tokens /
-AI_UNIT_INPUT_TOKENS))` units, where the estimate, made before the call, is
-the text bytes above divided by 4 plus `AI_IMAGE_INPUT_TOKENS` (default 1500)
-per image. With the default `AI_UNIT_INPUT_TOKENS` of 8192, openplate's plate
-scan weighs 1 unit and a request near the text bound weighs 2, so for the app a
-unit is a request. The same weight is taken from the instance ceilings below,
-and given back, where it is given back, in full. Every proxied response carries
-the account's position:
+Each account carries two daily limits, each in **units** per **UTC day** and
+each defaulting to `0`: `dailyAiLimit`, the paid window's, and
+`freeDailyAiLimit`, the standing free grant's (§5.15). **Which one applies**
+is decided per request, in this order:
+
+| The account holds                                                    | Grant       | Limit reserved against  |
+| -------------------------------------------------------------------- | ----------- | ----------------------- |
+| `allowanceExpiresAt` after the request's instant, `dailyAiLimit` > 0 | paid window | `dailyAiLimit`          |
+| otherwise `freeDailyAiLimit` > 0                                     | free grant  | `freeDailyAiLimit`      |
+| otherwise `dailyAiLimit` is `0`                                      | none        | `403 ai-not-allowed`    |
+| otherwise `allowanceExpiresAt` is set (so it has passed)             | none        | `403 allowance-expired` |
+| otherwise `trialScans` is set                                        | scan trial  | `dailyAiLimit`          |
+| otherwise (a limit, no date, no trial, no free grant)                | none        | `403 ai-not-allowed`    |
+
+The last row changed on 2026-09-30. That shape used to be a standing grant with
+no end; every account that held it was moved to `freeDailyAiLimit` by a
+migration, and nothing writes it any more. The free grant is never scan gated
+and never ends, so a scan trial with a free grant is not counted.
+
+A request reserves `max(1, ceil(estimated input tokens /
+AI_UNIT_INPUT_TOKENS))` units against the limit the order above picked, where
+the estimate, made before the call, is the text bytes above divided by 4 plus
+`AI_IMAGE_INPUT_TOKENS` (default 1500) per image. With the default
+`AI_UNIT_INPUT_TOKENS` of 8192, openplate's plate scan weighs 1 unit and a
+request near the text bound weighs 2, so for the app a unit is a request. The
+same weight is taken from the instance ceilings below, and given back, where it
+is given back, in full. Every proxied response carries the account's position
+in the limit that applied:
 
 | Header               | Meaning                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | `X-Quota-Used`       | Units spent today, after this one                                                                    |
-| `X-Quota-Limit`      | The account's `dailyAiLimit`                                                                         |
+| `X-Quota-Limit`      | The limit the order above picked, `dailyAiLimit` or `freeDailyAiLimit`                               |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
 | Status | `error`                                | When                                                                                                                                                                                                               |
 | ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `401`  | `authentication required`              | No access token, or one that is expired or revoked                                                                                                                                                                 |
-| `403`  | `ai-not-allowed`                       | `dailyAiLimit` is `0`. Refused before anything leaves the host                                                                                                                                                     |
-| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived. Refused before anything leaves the host, and before a usage row is written                                                              |
+| `403`  | `ai-not-allowed`                       | The account holds no grant (the order above). Refused before anything leaves the host                                                                                                                              |
+| `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived, and there is no free grant. Refused before anything leaves the host, and before a usage row is written                                  |
 | `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0`. The body carries `"endedBy": "scans"`      |
 | `403`  | `trial-expired`                        | The account's `trialEndsAt` is set and not after the instant the request arrived, its scans are not used up, and it has no allowance date. Refused before any row is written. The body carries `"endedBy": "days"` |
 | `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                                                 |
@@ -1307,14 +1331,14 @@ the free tier from one field:
 
 **The order of the refusals**, which a conforming server MUST keep: identity
 and suspension; the health-data consent (`health-consent-required`, §5.15.1);
-`dailyAiLimit` of `0` (`ai-not-allowed`); an allowance date
-that has passed (`allowance-expired`); the body and what it carries in
-(`ai-request-too-large`); `X-Intake-Id`'s shape; then, only for an account
-with free scans and **no** allowance date, the day limit (`trial-expired`,
-asked only when the scans are not used up, so spent scans keep their own code)
-and the scan claim (`intake-in-flight`, `trial-scans-spent`). A date in the
+the grant (the table above: `ai-not-allowed` or `allowance-expired`); the body
+and what it carries in (`ai-request-too-large`); `X-Intake-Id`'s shape; then,
+only for the scan trial grant (free scans, **no** allowance date and no free
+grant), the day limit (`trial-expired`, asked only when the scans are not used
+up, so spent scans keep their own code) and the scan claim
+(`intake-in-flight`, `trial-scans-spent`). A date in the
 future lifts both: it is a paid or granted window, and the trial's limits
-decide only where there is no date at all. Then the scan-trial accounts'
+decide only where there is no date at all. A free grant lifts both too. Then the scan-trial accounts'
 ceiling, the instance ceiling and the daily allowance, as below.
 
 #### The scan trial
@@ -1464,13 +1488,13 @@ either token turns that `404` into the `401` a wrong value gets.
 | `GET /v1/admin/accounts/:id`                | One `AccountView`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `GET /v1/admin/accounts/:id/activity`       | Last sign-in, and one entry per UTC day over a bounded window                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `GET /v1/admin/activity`                    | The same day-by-day strip for a whole PAGE of accounts, in the list's order                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`, `label` (the operator's note, see below, or `null` to clear it). At least one required                                                                                                                                           |
+| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `freeDailyAiLimit` (the standing free grant, an integer from 0 to 10000; not writable with `BILLING_TOKEN`), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`, `label` (the operator's note, see below, or `null` to clear it). At least one required                              |
 | `POST /v1/admin/accounts/:id/reset-mail`    | Starts the reset of §5.12 on the operator's initiative                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `DELETE /v1/admin/accounts/:id`             | Erases the account and everything attached to it                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `GET /v1/admin/accounts/:id/blob/versions`  | Every retained blob version: number, envelope version, byte count, time, and the pin if it has one. Never ciphertext                                                                                                                                                                                                                                                                                                                                                                           |
 | `POST /v1/admin/accounts/:id/blob/rollback` | `{"targetVersion": n}`. Makes that version current again by DELETING every version above it (§5.1's shrink guard, ADR-0009). Refuses an unknown version, the current version, an envelope version this build does not accept, and a zero-byte row. A rollback rather than a re-upload, because §3.2's AAD binds `blobVersion`: re-inserting old bytes as a new version yields something no client can decrypt                                                                                  |
 | `GET /v1/admin/invites`                     | A page of pending invitations, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `POST /v1/admin/invites`                    | Mints one (§5.8). The token is returned **once**. `"trial": true` writes the instance's scan trial instead of an allowance: `400` on an instance that runs none, and `400` beside a `dailyAiLimit`. Without the field the mint is a standing grant, as before                                                                                                                                                                                                                                  |
+| `POST /v1/admin/invites`                    | Mints one (§5.8). The token is returned **once**. `"trial": true` writes the instance's scan trial instead of an allowance: `400` on an instance that runs none, and `400` beside a `dailyAiLimit`. Without the field the mint's `dailyAiLimit` becomes the account's standing free grant (`freeDailyAiLimit`) at redemption                                                                                                                                                                   |
 | `POST /v1/admin/trials/grant-lapsed`        | `{"trialDays": n, "apply": false, "excludeAccountIds": []}`. Lists, or with `apply: true` grants the instance's scan trial to, every member whose day trial of `trialDays` ended and was never moved: its allowance date still equals its redemption plus `trialDays` to the millisecond, which only a payment or an operator changes. Clears the date and sets the trial's daily limit. Idempotent: a granted account is never listed again. Answers `{"accountIds": [...], "applied": bool}` |
 | `POST /v1/admin/invites/:id/resend`         | A NEW token on the SAME row, and a new expiry                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `DELETE /v1/admin/invites/:id`              | Withdraws a pending invitation                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |

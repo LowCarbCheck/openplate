@@ -99,6 +99,13 @@ export const OPERATOR_VISIBILITY = {
   // wants to know an administrator can move, and a count of invitations left
   // says how many addresses this account has already handed over.
   allowanceExpiresAt: { copyKey: 'account.operatorSees.allowanceExpiresAt' },
+  // THE STANDING FREE GRANT (2026-09-30) HAS NO LINE OF ITS OWN, because the
+  // `dailyAiLimit` line already says it: "how many photos may be read for you
+  // each day" is true of the paid limit and of the free one alike, and two
+  // lines saying the same sentence would read as two different facts.
+  freeDailyAiLimit: {
+    noLine: 'a second daily photo limit, which the dailyAiLimit line already discloses in the same words',
+  },
   invitesLeft: { copyKey: 'account.operatorSees.invitesLeft' },
   // M253/03: the free AI scans. A count the operator sees and can change.
   trialScans: { copyKey: 'account.operatorSees.trialScans' },

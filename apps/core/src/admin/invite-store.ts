@@ -34,12 +34,15 @@ import type { AccountRole } from '../protocol.js';
 export type InviteStatus = 'pending' | 'redeemed' | 'revoked' | 'expired';
 
 /**
- * Which door wrote an invite, when it is not one of the two older ones
- * (M253). `'open-signup'` is a person who asked for an account with their own
- * address. An operator mint and a member mint carry `null` here, because
- * `invitedByAccountId` already tells those two apart.
+ * Which door wrote an invite (M253). `'open-signup'` is a person who asked for
+ * an account with their own address. `'member'` (2026-09-30) is a member's
+ * invitation: `invitedByAccountId` says the same while the inviter exists,
+ * and goes `NULL` when they delete their account, after which only this
+ * value keeps the row from reading as an operator's mint at redemption
+ * (`db/account-store.ts`, `standingFor`). An operator mint carries `null`,
+ * and so does a member mint from before the value existed.
  */
-export type InviteSource = 'open-signup';
+export type InviteSource = 'open-signup' | 'member';
 
 /** One invite as an operator sees it. The digest is absent by construction, and the raw token never existed here. */
 export interface InviteSummary {

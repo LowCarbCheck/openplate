@@ -32,14 +32,17 @@
  *                   health-consent-required, 2026-09-29), are refused here,
  *                   before anything is counted: a plate photograph is health
  *                   data, and this route is where it passes through.
- *   2. allowance  : a `dailyAiLimit` of 0 is refused before an upstream call,
- *                   and so is an allowance whose end date has passed
- *                   (403 allowance-expired). Both refuse BEFORE step 3,
- *                   because a reservation writes a row.
+ *   2. allowance  : `accounts/ai-allowance.ts` picks the grant, a live paid
+ *                   window, the standing free grant or the scan trial, and
+ *                   the daily limit step 3 reserves against. No grant is
+ *                   403 ai-not-allowed, a paid window that ended with no
+ *                   free grant beneath it is 403 allowance-expired. Both
+ *                   refuse BEFORE step 3, because a reservation writes a row.
  *      the body   : after the allowance, only the allowed fields, and a body
  *                   over an input bound is 400 ai-request-too-large before
  *                   anything is claimed or reserved (2026-09-30).
- *   3. RESERVE    : the request's weight, before the call, never after. Counting after the fact has a
+ *   3. RESERVE    : the request's weight against the limit step 2 picked,
+ *                   before the call, never after. Counting after the fact has a
  *                   window in which N parallel requests all read the old count.
  *                   The INSTANCE's ceiling is taken first and the account's
  *                   second, so a refusal of the whole instance never bills one
@@ -64,7 +67,8 @@
  * and before any upstream call. A claim still open when the handler ends, a
  * throw after it included, is given back in the handler's `finally`. A future
  * date lifts the gate: it is a paid or granted window, and the count only
- * decides where there is no date at all. Then the trial accounts' own daily
+ * decides where there is no date at all. A standing free grant lifts it too
+ * (`accounts/ai-allowance.ts`). Then the trial accounts' own daily
  * sub-ceiling, which, where it is set, replaces the instance ceiling for them
  * (2026-09-30, see `chargesInstance`), and the steps below as before.
  *
@@ -193,9 +197,9 @@ import {
   TRIAL_EXPIRED,
   TRIAL_SCANS_LEFT_HEADER,
   TRIAL_SCANS_SPENT,
-  isScanGated,
   trialEndedBy,
 } from '../accounts/scan-trial.js';
+import { aiAllowanceFor } from '../accounts/ai-allowance.js';
 
 /** The upstream this proxy forwards to, already validated all-or-nothing by `config.ts`. */
 export interface AiUpstreamConfig {
@@ -605,17 +609,21 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // instant, one answer.
     const requestedAt = now();
 
-    // 2. NO ALLOWANCE IS NOT A QUOTA REFUSAL, and the distinction matters twice.
+    // 2. WHICH GRANT, AND AT WHAT LIMIT (2026-09-30). A live paid window
+    // first, then the standing free grant, then the scan trial; see
+    // `accounts/ai-allowance.ts` for the order, which is the whole rule. The
+    // limit it picks is the one step 3b reserves against, so an account
+    // whose paid period ended is held to its free number, never to the paid
+    // limit still on its row.
+    //
+    // NO ALLOWANCE IS NOT A QUOTA REFUSAL, and the distinction matters twice.
     // It answers 403 rather than 429 because there is nothing to wait for, and
     // it returns BEFORE the reservation, because `reserve`'s insert branch is
     // unguarded (see `quota-store.ts`) and a limit of zero reaching it would
     // write a row with `count = 1`.
-    if (account.dailyAiLimit <= 0) {
-      res.status(403).json({ error: 'ai-not-allowed' });
-      return;
-    }
-
-    // 2b. THE ALLOWANCE HAS AN END DATE, and this is the whole of the rule.
+    //
+    // THE ALLOWANCE HAS AN END DATE, and a paid window that ended with no
+    // free grant beneath it is `allowance-expired`.
     //
     // IT IS HERE, BEFORE THE RESERVATION IN STEP 3, FOR THE SAME REASON THE
     // TEST ABOVE IS. `reserve`'s insert branch is unguarded (see `quota-store.ts`): the
@@ -639,8 +647,15 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // able to sign in on a new device and pull what they wrote. An expired
     // allowance is a feature ending, not an account ending, and deletion is
     // the erasure path that already exists.
-    if (account.allowanceExpiresAt !== null && account.allowanceExpiresAt.getTime() <= requestedAt.getTime()) {
-      res.status(403).json({ error: 'allowance-expired' });
+    const allowance = aiAllowanceFor({
+      dailyAiLimit: account.dailyAiLimit,
+      freeDailyAiLimit: account.freeDailyAiLimit,
+      allowanceExpiresAt: account.allowanceExpiresAt,
+      trialScans: account.trialScans,
+      now: requestedAt,
+    });
+    if (allowance.kind === 'refused') {
+      res.status(403).json({ error: allowance.error });
       return;
     }
 
@@ -705,23 +720,27 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // already: `trialEndedBy` answers `scans` first, and the claim below
     // stays the authority on the last scan, so that refusal is unchanged.
     // The instant is the one read above the allowance tests.
-    const endedBy = trialEndedBy({
-      trialScans: account.trialScans,
-      trialScansUsed: account.trialScansUsed,
-      trialEndsAt: account.trialEndsAt,
-      allowanceExpiresAt: account.allowanceExpiresAt,
-      now: requestedAt,
-    });
+    const isTrialDay = allowance.kind === 'trial';
+    const endedBy = isTrialDay
+      ? trialEndedBy({
+          trialScans: account.trialScans,
+          trialScansUsed: account.trialScansUsed,
+          trialEndsAt: account.trialEndsAt,
+          allowanceExpiresAt: account.allowanceExpiresAt,
+          freeDailyAiLimit: account.freeDailyAiLimit,
+          now: requestedAt,
+        })
+      : null;
     if (endedBy === 'days') {
       res.status(403).json({ error: TRIAL_EXPIRED, endedBy: 'days' });
       return;
     }
 
-    // 2d. THE SCAN CLAIM (M253), only where the gate applies: free scans and
-    // no allowance date. See the module header for the claim and its
-    // give-back. A request with no id is its own action, under an id this
-    // process makes up and nobody can reuse.
-    const isTrialDay = isScanGated(account);
+    // 2d. THE SCAN CLAIM (M253), only where the gate applies: the `trial`
+    // grant, free scans with no allowance date and no standing free grant.
+    // See the module header for the claim and its give-back. A request with
+    // no id is its own action, under an id this process makes up and nobody
+    // can reuse.
     let scan: ClaimedScan = null;
     if (isTrialDay) {
       const claim = await quota.claimTrialScan({
@@ -809,7 +828,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
 
     // 3b. Reserve BEFORE the upstream call. A refusal is a 429 with the reset
     // instant named, never a 500: being out of allowance is the system working.
-    const reservation = await quota.reserve({ accountId: account.id, day, limit: account.dailyAiLimit, weight });
+    const reservation = await quota.reserve({ accountId: account.id, day, limit: allowance.dailyLimit, weight });
     if (!reservation.ok) {
       // THE INSTANCE'S UNIT GOES BACK. It was taken a few lines above for a
       // request that is about to be refused and will never reach the provider,

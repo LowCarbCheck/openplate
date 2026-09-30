@@ -216,6 +216,40 @@ describe('lapsed', () => {
   });
 });
 
+describe('a standing free grant (2026-09-30)', () => {
+  /** A Beta supporter after a cancelled plan: the biller's paid limit and its past end, above the free grant. */
+  const BETA_SUPPORTER: StandingAccount = {
+    dailyAiLimit: 200,
+    allowanceExpiresAt: fromNow(-DAY_MS),
+    freeDailyAiLimit: 10,
+  };
+  const OVER: PlanView = { ...YEARLY, plan: 'canceled', currentPeriodEnd: fromNow(-DAY_MS) };
+
+  it('reads a plan that ended above a free grant as free, never as lapsed', () => {
+    assert.deepEqual(standing({ planView: OVER, account: BETA_SUPPORTER }), { kind: 'free', dailyLimit: 10 });
+    // THE CONTROL: the same account with no free grant is lapsed.
+    assert.deepEqual(standing({ planView: OVER, account: { ...BETA_SUPPORTER, freeDailyAiLimit: 0 } }), {
+      kind: 'lapsed',
+    });
+  });
+
+  it('reads a free grant that never bought anything as free', () => {
+    const neverBought: StandingAccount = { dailyAiLimit: 0, allowanceExpiresAt: null, freeDailyAiLimit: 10 };
+    assert.deepEqual(standing({ account: neverBought }), { kind: 'free', dailyLimit: 10 });
+    // THE CONTROL: without it, the same account has no AI and its trial reads as ended.
+    assert.equal(standing({ account: { ...neverBought, freeDailyAiLimit: 0 } }).kind, 'trial-ended');
+  });
+
+  it('lets a live subscription win over the free grant', () => {
+    assert.equal(standing({ planView: YEARLY, account: BETA_SUPPORTER }).kind, 'subscribed');
+  });
+
+  it('reads an account from a core older than the field as it always did', () => {
+    const { freeDailyAiLimit: _dropped, ...older } = BETA_SUPPORTER;
+    assert.deepEqual(standing({ planView: OVER, account: older }), { kind: 'lapsed' });
+  });
+});
+
 describe('a scan trial (M253/05)', () => {
   /** A scan-trial account: a daily allowance, no end date, three of ten free scans left. */
   const SCAN_TRIAL: StandingAccount = {

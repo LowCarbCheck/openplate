@@ -51,6 +51,9 @@ async function seedAccount(): Promise<number> {
     role: 'member',
     dailyAiLimit: 20,
   });
+  // A paid limit, the column the biller writes, rather than the standing free
+  // grant an operator's invite turns it into since 2026-09-30.
+  await harness.fakeAccounts.updateStanding({ accountId: account.id, dailyAiLimit: 20, freeDailyAiLimit: 0 });
   harness.admin.seed({ id: account.id, email, displayName: 'Anna Schmidt', role: 'member', dailyAiLimit: 20 });
   return account.id;
 }
@@ -161,6 +164,20 @@ test('an allowed field beside a refused one is not written either', async () => 
   assert.equal(account?.dailyAiLimit, 20);
   assert.equal(account?.allowanceExpiresAt, null);
   assert.equal(account?.role, 'member');
+});
+
+test('the standing free grant is an operator field the biller cannot write', async () => {
+  // A payment buys a paid window. It must not be able to raise, or clear, the
+  // free grant a person keeps after the window ends (2026-09-30).
+  const refused = await patchAs({ token: BILLING_TOKEN, body: { freeDailyAiLimit: 10_000 } });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.error, SERVICE_FIELD_REFUSAL);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.freeDailyAiLimit, 0);
+
+  // THE CONTROL: the operator's own credential writes it.
+  const allowed = await patchAs({ token: ADMIN_TOKEN, body: { freeDailyAiLimit: 10 } });
+  assert.equal(allowed.status, 200);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.freeDailyAiLimit, 10);
 });
 
 test('an unknown field is refused, so a typo is never a silent no-op', async () => {

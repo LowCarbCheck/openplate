@@ -53,3 +53,10 @@ test('an older instance with no label key still decodes, and prints none', () =>
   assert.equal(account.label, null);
   assert.match(formatAccountDetail(account), /^label {11}none$/m);
 });
+
+test('the detail prints the standing free grant, and none for an older instance', () => {
+  const granted = decodeSingleAccount({ account: { ...olderAccount(10), freeDailyAiLimit: 10 } });
+  assert.match(formatAccountDetail(granted), /^free ai a day {3}10$/m);
+  // THE CONTROL: the body from before the field reads as no free grant.
+  assert.match(formatAccountDetail(decodeSingleAccount({ account: olderAccount(11) })), /^free ai a day {3}none$/m);
+});

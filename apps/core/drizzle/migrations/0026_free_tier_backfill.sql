@@ -1,0 +1,1 @@
+ALTER TABLE "accounts" ADD COLUMN "free_daily_ai_limit" integer GENERATED ALWAYS AS (CASE WHEN allowance_expires_at IS NULL AND trial_scans IS NULL AND daily_ai_limit > 0 THEN daily_ai_limit ELSE 0 END) STORED NOT NULL;

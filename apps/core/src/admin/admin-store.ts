@@ -59,6 +59,8 @@ export interface AdminAccountSummary {
    * thing that reads it.
    */
   allowanceExpiresAt: Date | null;
+  /** The standing free grant (2026-09-30): AI requests per UTC day when no paid window is live, `0` for none. */
+  freeDailyAiLimit: number;
   /** Free scans granted, or `null` for no scan trial (M253). */
   trialScans: number | null;
   /** How many of them are used. */

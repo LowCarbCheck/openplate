@@ -33,7 +33,8 @@ import { singleText, type CellRow, type VerbatimClient } from './verbatim-client
 
 /** The standing every moved account is given. */
 export interface MovedStanding {
-  readonly dailyAiLimit: number;
+  /** The standing free grant each moved account gets (2026-09-30); its paid limit is `0`. */
+  readonly freeDailyAiLimit: number;
   readonly label: string;
 }
 
@@ -118,7 +119,7 @@ async function insertRows(input: {
 }): Promise<void> {
   await input.target.execute({
     text: INSERT_ACCOUNT,
-    values: [...input.account.account, input.standing.dailyAiLimit, input.standing.label],
+    values: [...input.account.account, input.standing.freeDailyAiLimit, input.standing.label],
   });
   for (const { table, rows } of input.account.owned) {
     for (const row of rows) {
@@ -149,7 +150,15 @@ async function compareWithSource(input: {
   const accountBack = await target.rows({ text: SELECT_TARGET_ACCOUNT, values: [account.id] });
   if (digestRows(accountBack) !== digestRows([account.account])) differences.push('accounts: copied columns differ');
   const standing = await target.rows({ text: SELECT_TARGET_STANDING, values: [account.id] });
-  const expectedStanding = [String(input.standing.dailyAiLimit), 'true', 'true', '0', 'true', input.standing.label];
+  const expectedStanding = [
+    '0',
+    String(input.standing.freeDailyAiLimit),
+    'true',
+    'true',
+    '0',
+    'true',
+    input.standing.label,
+  ];
   if (digestRows(standing) !== digestRows([expectedStanding])) differences.push('accounts: set columns differ');
 
   for (const { table, rows } of account.owned) {

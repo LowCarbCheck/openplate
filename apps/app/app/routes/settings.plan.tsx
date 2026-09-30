@@ -188,6 +188,20 @@ const STATUS_KEY_BY_PLAN = {
   canceled: 'plan.status.canceled',
 } satisfies Record<PlanStatus, string>;
 
+/**
+ * The sentence under the plan page's title.
+ *
+ * A STANDING FREE GRANT SAYS SO, whatever the biller holds (2026-09-30). A
+ * Beta supporter who bought a plan and cancelled it is on the free part of
+ * openplate again, with the AI they had before; "Your plan has ended" beside
+ * a working diary would read as the lock it is not. The plans are still
+ * offered below it.
+ */
+export function planStatusKey({ standing, plan }: { standing: PlanStanding; plan: PlanStatus }): string {
+  if (standing.kind === 'free') return STATUS_KEY_BY_PLAN.none;
+  return STATUS_KEY_BY_PLAN[plan];
+}
+
 /** What the order block needs from the page, minus the handlers the page adds. */
 export type OrderView = Omit<PlanOrderProps, 'onSelectPlan' | 'onConsentChange' | 'onOrder'>;
 
@@ -460,7 +474,7 @@ function PlanBody(props: PlanScreenProps) {
       {showsAccountSection && (
         <SettingsSection
           label={t('plan.title')}
-          description={state.kind === 'ready' ? t(STATUS_KEY_BY_PLAN[state.plan.plan]) : t('plan.unknown')}
+          description={state.kind === 'ready' ? t(planStatusKey({ standing, plan: state.plan.plan })) : t('plan.unknown')}
           contentClassName="space-y-3"
         >
           {state.kind === 'signed-out' && <p className="text-sm text-muted-foreground">{t('plan.signedOut')}</p>}

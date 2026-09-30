@@ -148,6 +148,24 @@ test('a valid set-trial and grant-lapsed ARE sent, so the refusals above are not
   ]);
 });
 
+// ── the standing free grant (2026-09-30) ────────────────────────────────────
+
+test('accounts set-free-limit refuses a bad number and sends nothing, and sends a good one', async () => {
+  const requestsBefore = server.requests.length;
+  for (const bad of ['-1', '10001', '2.5', 'ten', '']) {
+    const refused = await runCli({
+      args: ['accounts', 'set-free-limit', '7', bad, '--url', server.baseUrl],
+      adminToken: ADMIN_TOKEN,
+    });
+    assert.notEqual(refused.exitCode, 0, `"${bad}" must be refused`);
+  }
+  assert.equal(server.requests.length, requestsBefore, 'no typo may reach the network');
+
+  // THE CONTROL: a valid value IS sent, so the refusals above are not vacuous.
+  await runCli({ args: ['accounts', 'set-free-limit', '7', '10', '--url', server.baseUrl], adminToken: ADMIN_TOKEN });
+  assert.deepEqual(server.requests.slice(requestsBefore), ['PATCH /v1/admin/accounts/7']);
+});
+
 // ── the operator's label ───────────────────────────────────────────────────
 
 test('accounts set-label refuses an over-long, a blank and an unquoted label, and sends nothing', async () => {

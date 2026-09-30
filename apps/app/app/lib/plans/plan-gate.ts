@@ -127,7 +127,8 @@ export function isPlanGateExempt(pathname: string): boolean {
  * Only two do: the free trial is over with no plan (`trial-ended`, on either
  * basis, including an account that never had an allowance), and a plan that
  * existed is over (`lapsed`). A subscription that will not renew, or whose
- * last payment is being retried, is still a subscription.
+ * last payment is being retried, is still a subscription, and a standing free
+ * grant (`free`, 2026-09-30) never locks: the proxy still answers it.
  */
 export function isLockingStanding(standing: PlanStanding): boolean {
   return standing.kind === 'trial-ended' || standing.kind === 'lapsed';

@@ -48,6 +48,7 @@ interface AccountBody {
     dailyAiLimit: number;
     aiUsedToday: number;
     allowanceExpiresAt: string | null;
+    freeDailyAiLimit: number;
     /** `null` on this instance: it boots with member invites off, so the cap is not about anybody. */
     invitesLeft: number | null;
     invitesNeedAPlan: boolean;
@@ -154,7 +155,9 @@ test('the metadata endpoints describe the real rows', async () => {
   assert.equal(single.status, 200);
   assert.equal(single.body.account.email, EMAIL);
   assert.equal(single.body.account.role, 'member');
-  assert.equal(single.body.account.dailyAiLimit, 200);
+  // An operator's invite with no trial is the standing free grant (2026-09-30).
+  assert.equal(single.body.account.dailyAiLimit, 0);
+  assert.equal(single.body.account.freeDailyAiLimit, 200);
   assert.equal(single.body.account.aiUsedToday, 0);
   assert.equal(single.body.account.suspendedAt, null);
   // NULL, and correctly so: signing up is not signing in. `last_seen_at` is

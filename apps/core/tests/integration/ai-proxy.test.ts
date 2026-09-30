@@ -308,7 +308,8 @@ test('an expired allowance is refused with its own code and writes NO ai_usage_d
     // The date is set through the real column, the way the admin PATCH sets it.
     await database.db
       .update(accounts)
-      .set({ allowanceExpiresAt: new Date(Date.now() - 60_000) })
+      // The biller's shape: a paid limit and its window, no free grant beneath it.
+      .set({ allowanceExpiresAt: new Date(Date.now() - 60_000), dailyAiLimit: 5, freeDailyAiLimit: 0 })
       .where(eq(accounts.id, expired.account.id));
 
     const refused = await service.request<{ error?: string }>({
@@ -338,7 +339,8 @@ test('an expired allowance is refused with its own code and writes NO ai_usage_d
     const live = await service.signupThroughInvite({ email: 'still-paid@example.org', dailyAiLimit: 5 });
     await database.db
       .update(accounts)
-      .set({ allowanceExpiresAt: new Date(Date.now() + 86_400_000) })
+      // The biller's shape: a paid limit and its window, no free grant beneath it.
+      .set({ allowanceExpiresAt: new Date(Date.now() + 86_400_000), dailyAiLimit: 5, freeDailyAiLimit: 0 })
       .where(eq(accounts.id, live.account.id));
 
     const answered = await service.request<{ choices: unknown[] }>({

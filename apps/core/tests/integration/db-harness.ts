@@ -72,6 +72,20 @@ export async function setupFreshDatabase(input: { suffix: string }): Promise<Dat
   return { ...handle, url: url.toString() };
 }
 
+/**
+ * A database that exists and holds nothing, not even the migrations, for a
+ * suite that has to migrate it in steps (the free-grant backfill, 0026 to
+ * 0028, is asserted on rows written by the schema before it). Dropped first,
+ * like {@link setupFreshDatabase}.
+ */
+export async function setupEmptyDatabase(input: { suffix: string }): Promise<DatabaseHandle & { url: string }> {
+  const url = new URL(testDatabaseUrl());
+  url.pathname = `${url.pathname}_${input.suffix}`;
+  await dropDatabase({ url: url.toString() });
+  await ensureTestDatabaseExists(url.toString());
+  return { ...createDatabase({ connectionString: url.toString(), ssl: false }), url: url.toString() };
+}
+
 /** Drops a database made by {@link setupFreshDatabase}, if it exists. */
 export async function dropDatabase(input: { url: string }): Promise<void> {
   const target = new URL(input.url);

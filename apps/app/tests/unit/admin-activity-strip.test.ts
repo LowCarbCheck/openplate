@@ -127,6 +127,7 @@ function quietPerson(overrides: { id: number; email: string; lastSeenAt: string 
     dailyAiLimit: 200,
     aiUsedToday: 0,
     allowanceExpiresAt: null,
+    freeDailyAiLimit: 0,
     suspendedAt: null,
     invitesLeft: null,
     trialScans: null,

@@ -207,9 +207,21 @@ interface Harness {
 /** Boots the REAL handler behind the REAL bearer middleware, with one seeded account. */
 async function startProxy(options: {
   upstreamBaseUrl: string;
+  /**
+   * The account's AI limit. With no `allowanceExpiresAt` it is the operator's
+   * standing free grant, which is what an operator's invite writes since
+   * 2026-09-30; with one it is the paid window's limit, as the biller writes it.
+   */
   dailyAiLimit?: number;
-  /** When the account's AI allowance ends. Absent means no end date, which is what a new account has. */
+  /** When the account's paid AI window ends. Absent means no paid window, which is what a new account has. */
   allowanceExpiresAt?: Date;
+  /** The standing free grant beside a paid window. Absent means none. Read only with `allowanceExpiresAt`. */
+  freeDailyAiLimit?: number;
+  /**
+   * The old standing-grant shape, written the way it was before 2026-09-30:
+   * `dailyAiLimit` with no date, no trial and no free grant.
+   */
+  legacyStandingGrant?: boolean;
   quota?: RecordingQuota;
   timeoutMs?: number;
   /** The whole instance's ceiling per UTC day. Absent means NONE, which is every deployment that has not opted in. */
@@ -233,8 +245,21 @@ async function startProxy(options: {
   if (options.allowanceExpiresAt !== undefined) {
     // Through `updateStanding`, the operator's own write, rather than a
     // fixture-only setter: an invite carries no expiry, so this is the only way
-    // the service itself can put a date on an account.
-    await fixture.store.updateStanding({ accountId: account.id, allowanceExpiresAt: options.allowanceExpiresAt });
+    // the service itself can put a date on an account. The biller's shape: a
+    // date and a paid limit, and the free grant the test names or none.
+    await fixture.store.updateStanding({
+      accountId: account.id,
+      allowanceExpiresAt: options.allowanceExpiresAt,
+      dailyAiLimit: options.dailyAiLimit ?? 200,
+      freeDailyAiLimit: options.freeDailyAiLimit ?? 0,
+    });
+  }
+  if (options.legacyStandingGrant === true) {
+    await fixture.store.updateStanding({
+      accountId: account.id,
+      dailyAiLimit: options.dailyAiLimit ?? 200,
+      freeDailyAiLimit: 0,
+    });
   }
   await fixture.store.insertTokens([
     {
@@ -496,6 +521,63 @@ test('an account with no end date is not expired, which is what every account st
   const response = await postCompletion(harness);
   assert.equal(response.status, 200);
   assert.equal(harness.quota.reserves, 1);
+
+  await harness.close();
+});
+
+test('a paid window that ended falls back to the free grant, held to the free limit', async () => {
+  // The Beta supporter who bought a plan and cancelled (2026-09-30): the biller
+  // left the paid limit and the period's end on the row. Before the free
+  // grant this was `403 allowance-expired` for good.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    freeDailyAiLimit: 10,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(upstream.received.length, 1);
+
+  await harness.close();
+});
+
+test('the reservation takes the free limit, never the paid limit left on the row', async () => {
+  // Ten spent today: the free grant's ten are gone, the paid window's 200 are
+  // not. A proxy that reserved against `dailyAiLimit` would let this through.
+  const upstream = await startFakeUpstream();
+  const quota = createRecordingQuota();
+  quota.count = 10;
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    freeDailyAiLimit: 10,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+    quota,
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get('x-quota-limit'), '10');
+  assert.equal(upstream.received.length, 0);
+
+  await harness.close();
+});
+
+test('the old standing grant shape, a limit with no date and no trial, is ai-not-allowed', async () => {
+  // Migrations 0026 to 0028 moved every such account to the free grant, so the
+  // shape is no longer a grant: a PATCH that clears a paid date must not
+  // leave the paid limit standing for ever.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 200, legacyStandingGrant: true });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: 'ai-not-allowed' });
+  assert.equal(harness.quota.reserves, 0);
+  assert.equal(upstream.received.length, 0);
 
   await harness.close();
 });

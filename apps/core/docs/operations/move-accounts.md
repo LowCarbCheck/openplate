@@ -37,9 +37,9 @@ The tool reads four values from the environment. It provides no command flag for
 | `SOURCE_SERVER_SECRET`     | the source's `SERVER_SECRET`. The target adopts it.    |
 | `TARGET_OLD_SERVER_SECRET` | the target's `SERVER_SECRET` today, before the switch. |
 
-Flags: `--dry-run` (the default), `--apply`, `--skip-email <address>` (repeat it for more addresses), `--label <text>` (default `Beta supporter`), `--daily-ai-limit <n>` (default `10`).
+Flags: `--dry-run` (the default), `--apply`, `--skip-email <address>` (repeat it for more addresses), `--label <text>` (default `Beta supporter`), `--free-daily-ai-limit <n>` (default `10`).
 
-Each moved account receives the daily AI limit, no allowance end date, no scan trial, and the label. The health-consent record remains unchanged.
+Each moved account receives the standing free grant (`free_daily_ai_limit`), no paid limit, no allowance end date, no scan trial, and the label. The free grant outlives any plan the person buys later: when a paid period ends, the account falls back to it. The first move (2026-09-30) used `--daily-ai-limit`, which wrote a paid limit with no date; migrations 0026 to 0028 turned those rows into free grants. The health-consent record remains unchanged.
 
 Exit status: `0` means the proofs hold (dry run) or all planned tasks succeeded (apply). `1` means the tool refused the whole run, or an account rolled back. An account that the plan refuses (id or address taken) does not change the exit status. `2` means a usage error.
 
@@ -98,7 +98,7 @@ The last command must print only the four variable names.
 docker run --rm --network services --env-file "$ENVF" \
   ghcr.io/lowcarbcheck/openplate-core:<version> \
   node dist/move-accounts.js --dry-run --skip-email '<owner address>' \
-  --label 'Beta supporter' --daily-ai-limit 10
+  --label 'Beta supporter' --free-daily-ai-limit 10
 ```
 
 Review the output line by line:
@@ -117,7 +117,7 @@ Do not continue if the exit status is not `0`.
 docker run --rm --network services --env-file "$ENVF" \
   ghcr.io/lowcarbcheck/openplate-core:<version> \
   node dist/move-accounts.js --apply --skip-email '<owner address>' \
-  --label 'Beta supporter' --daily-ai-limit 10
+  --label 'Beta supporter' --free-daily-ai-limit 10
 ```
 
 Each moved account displays `moved`, its counts, and `blob hashes match`. The final line displays `result: <n> accounts moved`. Run the same command a second time. It must display `result: 0 accounts moved`.

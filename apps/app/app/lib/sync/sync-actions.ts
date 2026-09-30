@@ -91,6 +91,7 @@ import {
   revokeCachedSession,
 } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
+import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
   decodeHealthConsent,
@@ -1129,6 +1130,7 @@ function publishAccountView(account: AccountViewWire): void {
       dailyAiLimit: account.dailyAiLimit,
       aiUsedToday: account.aiUsedToday,
       allowanceExpiresAt: account.allowanceExpiresAt ?? null,
+      freeDailyAiLimit: decodeFreeDailyAiLimit(account.freeDailyAiLimit),
       invitesLeft: account.invitesLeft ?? null,
       invitesNeedAPlan: account.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(account.trialScans),

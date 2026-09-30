@@ -20,6 +20,7 @@ function person(overrides: Partial<AdminAccountView> & { id: number; email: stri
     dailyAiLimit: 200,
     aiUsedToday: 0,
     allowanceExpiresAt: null,
+    freeDailyAiLimit: 0,
     suspendedAt: null,
     invitesLeft: null,
     trialScans: null,

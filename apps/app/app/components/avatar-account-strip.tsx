@@ -49,6 +49,7 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { shownDailyAiLimit } from '#app/lib/plans/free-grant';
 import { bindingTrialScans, trialDaysLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { formatRelativeTime } from '#app/lib/relative-time';
 import { deriveSyncMenuState, type SyncMenuState } from '#app/lib/sync/sync-menu-state';
@@ -270,14 +271,23 @@ export function AvatarAccountStrip() {
   const trialScans = bindingTrialScans({
     trialScans: account?.trialScans,
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    freeDailyAiLimit: account?.freeDailyAiLimit,
   });
+  const now = new Date();
   const allowance = resolveAllowanceLine({
     aiComesFromTheInstance,
-    dailyAiLimit: account?.dailyAiLimit ?? null,
+    // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO TODAY (2026-09-30): the paid
+    // window's while it runs, otherwise the standing free grant's.
+    dailyAiLimit: shownDailyAiLimit({
+      dailyAiLimit: account?.dailyAiLimit ?? null,
+      freeDailyAiLimit: account?.freeDailyAiLimit,
+      allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+      now,
+    }),
     aiUsedToday: account?.aiUsedToday ?? null,
     plansAvailable: hasPlansDoor(instance),
     trialScans,
-    trialDaysLeft: trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now: new Date() }),
+    trialDaysLeft: trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now }),
   });
 
   return <AccountStripView state={state} title={account?.displayName ?? account?.email ?? null} allowance={allowance} />;

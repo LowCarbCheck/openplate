@@ -54,6 +54,7 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
 import type { AdminAccountView, AdminActivityDay } from '#app/lib/admin/admin-wire';
+import { adminUsage } from '#app/lib/admin/admin-usage';
 import {
   emptyReasonFor,
   filterPeople,
@@ -299,11 +300,7 @@ function PersonRow({
 
         <div className={`${COLUMN_CLASS.usedToday} text-sm tabular-nums`}>
           <InlineLabel>{t('admin.columns.usedToday')}</InlineLabel>
-          <span>
-            {person.dailyAiLimit === 0 ?
-              t('admin.usageNone')
-            : t('admin.usage', { used: person.aiUsedToday, limit: person.dailyAiLimit })}
-          </span>
+          <span>{adminUsage({ person, t })}</span>
         </div>
 
         <div className={`${COLUMN_CLASS.lastSeen} text-sm tabular-nums`}>

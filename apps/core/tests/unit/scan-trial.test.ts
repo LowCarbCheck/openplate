@@ -5,26 +5,13 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  INTAKE_ID_PATTERN,
-  isScanGated,
-  trialEndedBy,
-  trialEndsAtFor,
-  trialScansView,
-} from '../../src/accounts/scan-trial.js';
+import { INTAKE_ID_PATTERN, trialEndedBy, trialEndsAtFor, trialScansView } from '../../src/accounts/scan-trial.js';
 import { createTrialAddressHasher } from '../../src/accounts/trial-address.js';
 
 test('the view is granted and left, never negative, and null without a trial', () => {
   assert.deepEqual(trialScansView({ granted: 10, used: 3 }), { granted: 10, left: 7 });
   assert.deepEqual(trialScansView({ granted: 2, used: 5 }), { granted: 2, left: 0 });
   assert.equal(trialScansView({ granted: null, used: 0 }), null);
-});
-
-test('the gate applies to a trial with no date, and a date of any kind lifts it', () => {
-  assert.equal(isScanGated({ trialScans: 10, allowanceExpiresAt: null }), true);
-  // THE CONTROLS: a paid window, and no trial at all.
-  assert.equal(isScanGated({ trialScans: 10, allowanceExpiresAt: new Date('2027-01-01T00:00:00Z') }), false);
-  assert.equal(isScanGated({ trialScans: null, allowanceExpiresAt: null }), false);
 });
 
 test('an intake id is 16 to 64 URL-safe characters, so a UUID fits with or without dashes', () => {
@@ -157,6 +144,7 @@ function trial(overrides: Partial<Parameters<typeof trialEndedBy>[0]> = {}): Par
     trialScansUsed: 3,
     trialEndsAt: new Date(CREATED.getTime() + 14 * MS_PER_DAY),
     allowanceExpiresAt: null,
+    freeDailyAiLimit: 0,
     now: new Date(CREATED.getTime() + 2 * MS_PER_DAY),
     ...overrides,
   };
@@ -164,6 +152,13 @@ function trial(overrides: Partial<Parameters<typeof trialEndedBy>[0]> = {}): Par
 
 test('a trial with scans and days left has not ended', () => {
   assert.equal(trialEndedBy(trial()), null);
+});
+
+test('a standing free grant lifts both trial limits, as a paid window does', () => {
+  const spentAndLate = { trialScansUsed: 10, now: new Date(CREATED.getTime() + 400 * MS_PER_DAY) };
+  assert.equal(trialEndedBy(trial({ ...spentAndLate, freeDailyAiLimit: 10 })), null);
+  // THE CONTROL: the same spent, late trial with no free grant has ended.
+  assert.equal(trialEndedBy(trial(spentAndLate)), 'scans');
 });
 
 test('the days end the trial at its end date, and the boundary instant counts as ended', () => {

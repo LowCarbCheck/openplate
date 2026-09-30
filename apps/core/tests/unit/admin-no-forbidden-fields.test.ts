@@ -164,6 +164,8 @@ test('the account body carries exactly the documented metadata fields and nothin
     'dailyAiLimit',
     'displayName',
     'email',
+    // The standing free grant (2026-09-30), a number the operator set.
+    'freeDailyAiLimit',
     // Justified against ADR-0001: the health-data consent, a version string
     // and an instant. Art. 7(1) GDPR puts the burden of showing consent on
     // the controller, who is the operator, so the operator must be able to

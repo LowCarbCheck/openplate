@@ -304,6 +304,7 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
     dailyAiLimit: account.dailyAiLimit,
     aiUsedToday,
     allowanceExpiresAt: account.allowanceExpiresAt?.toISOString() ?? null,
+    freeDailyAiLimit: account.freeDailyAiLimit,
     trialScans: trialScansView({ granted: account.trialScans, used: account.trialScansUsed }),
     trialEndsAt: account.trialEndsAt?.toISOString() ?? null,
     suspendedAt: account.suspendedAt?.toISOString() ?? null,
@@ -1463,7 +1464,9 @@ export async function handleMintMemberInvite(
     // What makes this invitation count against the caller's five, and what
     // the re-invite rule reads afterwards.
     invitedByAccountId: account.id,
-    source: null,
+    // What keeps it a member's invitation at redemption after the inviter
+    // deleted their account (`db/account-store.ts`, `standingFor`).
+    source: 'member',
   });
 
   if (!minted.ok) {

@@ -246,7 +246,8 @@ test('an expired AI allowance closes the proxy and leaves sync open', async () =
 
     await database.db
       .update(accounts)
-      .set({ allowanceExpiresAt: new Date(Date.now() - 60_000) })
+      // The biller's shape: a paid limit and its window, no free grant beneath it.
+      .set({ allowanceExpiresAt: new Date(Date.now() - 60_000), dailyAiLimit: 5, freeDailyAiLimit: 0 })
       .where(eq(accounts.id, session.account.id));
 
     // The AI is closed, with its own code.

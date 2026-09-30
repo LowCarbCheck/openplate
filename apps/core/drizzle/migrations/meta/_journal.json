@@ -183,6 +183,27 @@
       "when": 1790801270593,
       "tag": "0025_gifted_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790802958798,
+      "tag": "0026_free_tier_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790802966397,
+      "tag": "0027_free_tier_keep_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790802968138,
+      "tag": "0028_free_tier_default",
+      "breakpoints": true
     }
   ]
 }

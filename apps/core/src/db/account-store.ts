@@ -110,6 +110,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     role: row.role,
     dailyAiLimit: row.dailyAiLimit,
     allowanceExpiresAt: row.allowanceExpiresAt,
+    freeDailyAiLimit: row.freeDailyAiLimit,
     trialScans: row.trialScans,
     trialScansUsed: row.trialScansUsed,
     trialEndsAt: row.trialEndsAt,
@@ -222,6 +223,8 @@ type InviteRow = typeof signupInvites.$inferSelect;
 /** What redemption writes onto the new account, beside the identity. */
 interface RedeemedStanding {
   dailyAiLimit: number;
+  /** The standing free grant (2026-09-30), `0` for none. Only case 4 writes one. */
+  freeDailyAiLimit: number;
   allowanceExpiresAt: Date | null;
   trialScans: number | null;
   /** The trial's day limit, `null` for none (M267). What the row records and what `trialEndsAt` was made from. */
@@ -229,6 +232,30 @@ interface RedeemedStanding {
   /** When the trial ends by the calendar, `null` for no end date (M267). */
   trialEndsAt: Date | null;
 }
+
+/**
+ * Whether a MEMBER caused this invite row, whoever still exists.
+ *
+ * `invited_by_account_id` alone cannot say it: the key is `ON DELETE SET
+ * NULL`, so a member row whose inviter deleted their account reads exactly
+ * like an operator's mint. Since 2026-09-30 the member door also writes
+ * `source = 'member'`, which survives that deletion. A row minted before then
+ * with a deleted inviter still reads as the operator's; its letter lived at
+ * most the invite lifetime past the change.
+ */
+function isMemberCaused(claimed: InviteRow): boolean {
+  return claimed.invitedByAccountId !== null || claimed.source === 'member';
+}
+
+/** A redemption that grants no AI at all: `403 ai-not-allowed` until an operator gives some. */
+const NO_AI_STANDING: RedeemedStanding = {
+  dailyAiLimit: 0,
+  freeDailyAiLimit: 0,
+  allowanceExpiresAt: null,
+  trialScans: null,
+  trialDays: null,
+  trialEndsAt: null,
+};
 
 /**
  * THE ROW DECIDES, NOT THE CONFIG (M212, M253). Four cases, in this order:
@@ -252,11 +279,23 @@ interface RedeemedStanding {
  * ONE FUNCTION FOR BOTH TRIAL CASES, `trialEndsAtFor`, with the day count each
  * case reads (the row's, or the member door's) and the instance's zone, so
  * case 1 and case 2 cannot end a trial at two different midnights.
- *  4. Anything else is the operator's standing grant: no date, no trial.
  *
- * A CLAIM ON AN INSTANCE THAT TURNED MEMBER INVITES OFF redeems a member
- * invite as case 4, which is the honest reading of "this instance no longer
- * runs trials". The mailbox check for cases 1 and 2 is the caller's.
+ *  4. Anything else is the operator's standing grant, and since 2026-09-30 it
+ *     is written as one: the row's `daily_ai_limit` becomes the account's
+ *     `free_daily_ai_limit`, with no date, no trial, and a paid limit of `0`.
+ *     This is an operator's mint without a trial, and an open sign-up on an
+ *     instance that runs no trial. It used to be written as a `daily_ai_limit`
+ *     with no date, the shape the proxy no longer grants anything for, and
+ *     the shape a paid period ending could never fall back to.
+ *
+ * A MEMBER ROW NEVER REACHES CASE 4 ({@link isMemberCaused}). With the member
+ * door switched off since the letter went out, it is REDEEMED WITH NO AI: the
+ * account exists and syncs, and the proxy answers `ai-not-allowed`. That is
+ * the honest reading of "this instance no longer runs member invitations",
+ * and it closes the hole through which such a letter used to become a free
+ * grant for ever at the old member limit. A member row whose inviter deleted
+ * their account takes cases 2 and 3 exactly as if the inviter were there.
+ * The mailbox check for cases 1 and 2 is the caller's.
  */
 function standingFor(input: {
   claimed: InviteRow;
@@ -268,33 +307,40 @@ function standingFor(input: {
   if (claimed.trialScans !== null) {
     return {
       dailyAiLimit: claimed.dailyAiLimit,
+      freeDailyAiLimit: 0,
       allowanceExpiresAt: null,
       trialScans: claimed.trialScans,
       trialDays: claimed.trialDays,
       trialEndsAt: trialEndsAtFor({ startedAt: now, days: claimed.trialDays, timeZone }),
     };
   }
-  if (claimed.invitedByAccountId !== null && grant?.kind === 'trial') {
+  if (isMemberCaused(claimed)) return memberStandingFor({ claimed, grant, now, timeZone });
+  return { ...NO_AI_STANDING, freeDailyAiLimit: claimed.dailyAiLimit };
+}
+
+/** Cases 2 and 3 of {@link standingFor}, and the member row with no member door left. */
+function memberStandingFor(input: {
+  claimed: InviteRow;
+  grant: MemberInviteGrant | null;
+  now: Date;
+  timeZone: string;
+}): RedeemedStanding {
+  const { claimed, grant, now, timeZone } = input;
+  if (grant === null) return NO_AI_STANDING;
+  if (grant.kind === 'trial') {
     return {
       dailyAiLimit: grant.dailyAiLimit,
+      freeDailyAiLimit: 0,
       allowanceExpiresAt: null,
       trialScans: grant.scans,
       trialDays: grant.days,
       trialEndsAt: trialEndsAtFor({ startedAt: now, days: grant.days, timeZone }),
     };
   }
-  if (claimed.invitedByAccountId !== null && grant?.kind === 'days') {
-    return {
-      dailyAiLimit: claimed.dailyAiLimit,
-      allowanceExpiresAt: new Date(now.getTime() + grant.allowanceDays * MS_PER_DAY),
-      trialScans: null,
-      trialDays: null,
-      trialEndsAt: null,
-    };
-  }
   return {
     dailyAiLimit: claimed.dailyAiLimit,
-    allowanceExpiresAt: null,
+    freeDailyAiLimit: 0,
+    allowanceExpiresAt: new Date(now.getTime() + grant.allowanceDays * MS_PER_DAY),
     trialScans: null,
     trialDays: null,
     trialEndsAt: null,
@@ -447,6 +493,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       if (input.role !== undefined) changes.role = input.role;
       if (input.dailyAiLimit !== undefined) changes.dailyAiLimit = input.dailyAiLimit;
       if (input.allowanceExpiresAt !== undefined) changes.allowanceExpiresAt = input.allowanceExpiresAt;
+      if (input.freeDailyAiLimit !== undefined) changes.freeDailyAiLimit = input.freeDailyAiLimit;
       if (input.trialScans !== undefined) changes.trialScans = input.trialScans;
       if (input.displayName !== undefined) changes.displayName = input.displayName;
       if (input.label !== undefined) changes.label = input.label;
@@ -587,6 +634,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
                 displayName: input.account.displayName,
                 role: claimed.role,
                 dailyAiLimit: standing.dailyAiLimit,
+                freeDailyAiLimit: standing.freeDailyAiLimit,
                 allowanceExpiresAt: standing.allowanceExpiresAt,
                 trialScans: standing.trialScans,
                 trialEndsAt: standing.trialEndsAt,

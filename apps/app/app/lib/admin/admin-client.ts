@@ -109,6 +109,12 @@ const ADMIN_FEEDBACK_PATH = '/feedback';
 export interface AccountPatch {
   role?: AccountRole;
   dailyAiLimit?: number;
+  /**
+   * The standing free grant per UTC day (2026-09-30): photos that stay when no
+   * paid window runs, with no end date. `0` takes it away. Writable with an
+   * administrator's own credential; the biller's cannot name it.
+   */
+  freeDailyAiLimit?: number;
   suspended?: boolean;
   displayName?: string | null;
   /**
@@ -582,6 +588,7 @@ function patchBody(patch: AccountPatch): JsonValue {
   return definedFields({
     role: patch.role,
     dailyAiLimit: patch.dailyAiLimit,
+    freeDailyAiLimit: patch.freeDailyAiLimit,
     suspended: patch.suspended,
     displayName: patch.displayName,
     trialScans: patch.trialScans,
