@@ -150,6 +150,14 @@ services:
       AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
       # Sized for a camera photograph after base64, NOT for a stored blob.
       AI_MAX_REQUEST_BYTES: ${AI_MAX_REQUEST_BYTES:-8000000}
+      # What one request may carry in (image parts, text bytes, messages),
+      # the input tokens one unit of the daily counters covers, and the
+      # tokens one image is counted at.
+      AI_MAX_IMAGE_PARTS: ${AI_MAX_IMAGE_PARTS:-1}
+      AI_MAX_TEXT_BYTES: ${AI_MAX_TEXT_BYTES:-49152}
+      AI_MAX_MESSAGES: ${AI_MAX_MESSAGES:-4}
+      AI_UNIT_INPUT_TOKENS: ${AI_UNIT_INPUT_TOKENS:-8192}
+      AI_IMAGE_INPUT_TOKENS: ${AI_IMAGE_INPUT_TOKENS:-1500}
       # The whole instance's AI requests per UTC day. Empty means no ceiling.
       AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}
       # Members inviting people: the first two together or neither, and the

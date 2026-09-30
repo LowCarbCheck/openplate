@@ -6,19 +6,21 @@
  *
  *  - the ladder: two scans, then `403 trial-scans-spent`; a future date lifts
  *    the gate; a passed date is still `allowance-expired`;
- *  - one scan per intake id, an overlapping request riding on it, a request
- *    after a delivered answer, a third overlapping request or one after
- *    thirty minutes costing a new one, and no id meaning its own scan
- *    (M256/02: one scan buys one delivered answer);
+ *  - one scan per intake id, an overlapping request refused with `409
+ *    intake-in-flight` at no cost (2026-09-30), a request after a delivered
+ *    answer costing a new one, an intake abandoned in flight taken over after
+ *    thirty minutes, and no id meaning its own scan (M256/02: one scan buys
+ *    one delivered answer);
  *  - a give-back or a delivery for an older claim on an id changes nothing
- *    (M256/02);
+ *    (M256/02), and a throw after the claim gives the scan back;
  *  - the give-back: a 4xx, a 5xx, a connect error and a body cut mid-stream
  *    leave the count where it was, a 2xx moves it, and a 5xx still spends the
  *    daily unit;
  *  - concurrency: ten parallel requests on three scans claim three, and
- *    parallel requests on one new id claim one;
- *  - every refusal after the claim gives the scan back, and the trial
- *    accounts' sub-ceiling refuses them and nobody else;
+ *    parallel requests on one new id claim one and answer one;
+ *  - every refusal after the claim gives the scan back, the trial accounts'
+ *    sub-ceiling refuses them and nobody else, and with it set their traffic
+ *    takes nothing from the instance ceiling;
  *  - redemption, the member door's switch, the admin fields, the lapsed day
  *    trials, the one mailbox, one trial rule across a deletion, and the
  *    headers a browser needs.
@@ -47,7 +49,7 @@ import {
   signupInvites,
   trialAddressHashes,
 } from '../../src/db/schema.js';
-import { createDrizzleAiQuotaStore } from '../../src/ai/quota-store.js';
+import { createDrizzleAiQuotaStore, type AiQuotaStore } from '../../src/ai/quota-store.js';
 import { startAiUsageRetention } from '../../src/ai/usage-retention.js';
 import { createDrizzleInviteStore } from '../../src/db/invite-store.js';
 import { createTrialAddressHasher } from '../../src/accounts/trial-address.js';
@@ -321,27 +323,56 @@ test('a retry after an attempt that got no answer costs nothing more on the same
   });
 });
 
-test('a third overlapping request on one id, or one after thirty minutes, costs a new scan', async () => {
+test('a second request on an id while the first is in flight is 409 intake-in-flight and spends nothing', async () => {
+  // 2026-09-30: before, the second request rode on the first one's scan, and
+  // two overlapping requests got two answers for one scan.
   await withService({}, async (service) => {
     answerDelayMs = 200;
-    const token = await trialAccount(service, { email: 'third@example.org', granted: 5 });
-    // Two in flight ride on one scan; the third is past the bound.
-    const inFlight = [scan(service, { token, intakeId: intake('r') }), scan(service, { token, intakeId: intake('r') })];
-    await waitForIntakeRequests({ intakeId: intake('r'), requests: 2 });
-    assert.equal(await usedScans('third@example.org'), 1);
-    const third = scan(service, { token, intakeId: intake('r') });
-    await Promise.all([...inFlight, third]);
-    assert.equal(await usedScans('third@example.org'), 2, 'the third overlapping request is a new action');
+    const token = await trialAccount(service, { email: 'overlap@example.org', granted: 5 });
+    const first = scan(service, { token, intakeId: intake('r') });
+    await waitForIntakeRequests({ intakeId: intake('r'), requests: 1 });
 
-    // Thirty minutes on the service clock while the first request is still in
-    // flight: the id is a new action even though nothing was delivered.
-    const later = await trialAccount(service, { email: 'later@example.org', granted: 5 });
-    const slow = scan(service, { token: later, intakeId: intake('t') });
-    await waitForIntakeRequests({ intakeId: intake('t'), requests: 1 });
+    const second = await scan(service, { token, intakeId: intake('r') });
+    assert.equal(second.status, 409);
+    assert.deepEqual(second.body, { error: 'intake-in-flight' });
+    assert.equal((await first).status, 200);
+    assert.equal(upstreamCalls, 1, 'the refused request never reached the provider');
+    assert.equal(await usedScans('overlap@example.org'), 1);
+    assert.equal(await usageToday('overlap@example.org'), 1, 'the refused request reserved no daily unit');
+
+    // THE CONTROL: once the first one settled, the id is usable again, and
+    // after a delivered answer that is a new action with a new scan.
+    assert.equal((await scan(service, { token, intakeId: intake('r') })).status, 200);
+    assert.equal(await usedScans('overlap@example.org'), 2);
+  });
+});
+
+test('an intake abandoned in flight is taken over after thirty minutes, without a new scan', async () => {
+  // A request whose process died after the claim: the row says in flight, and
+  // nothing will ever settle it. It must not lock the id for longer than the
+  // reuse window, and the person must not pay a second scan for it.
+  await withService({}, async (service) => {
+    const token = await trialAccount(service, { email: 'abandoned@example.org', granted: 5 });
+    const [account] = await database.db.select().from(accounts).where(eq(accounts.email, 'abandoned@example.org'));
+    if (!account) throw new Error('no account');
+    const quota = createDrizzleAiQuotaStore(database.db);
+    const claimed = await quota.claimTrialScan({
+      accountId: account.id,
+      intakeId: intake('dead'),
+      now: new Date(service.now()),
+    });
+    assert.ok(claimed.ok);
+    assert.equal(await usedScans('abandoned@example.org'), 1);
+
+    // Inside the window the id is still in flight.
+    assert.equal((await scan(service, { token, intakeId: intake('dead') })).status, 409);
+
     service.advance(30 * MS_PER_MINUTE);
-    const renewed = await signInAgain(service, 'later@example.org');
-    await Promise.all([slow, scan(service, { token: renewed, intakeId: intake('t') })]);
-    assert.equal(await usedScans('later@example.org'), 2, 'thirty minutes later the id is a new action');
+    const renewed = await signInAgain(service, 'abandoned@example.org');
+    const taken = await scan(service, { token: renewed, intakeId: intake('dead') });
+    assert.equal(taken.status, 200);
+    assert.equal(taken.headers.get('x-trial-scans-left'), '4');
+    assert.equal(await usedScans('abandoned@example.org'), 1, 'the abandoned scan was reused, not charged twice');
   });
 });
 
@@ -447,26 +478,23 @@ test('ten parallel requests with ten ids on three scans claim exactly three', as
   });
 });
 
-test('parallel requests with one new id claim exactly one scan', async () => {
+test('parallel requests with one new id claim exactly one scan and get one answer', async () => {
   await withService({}, async (service) => {
     answerDelayMs = 50;
     const token = await trialAccount(service, { email: 'same-id@example.org', granted: 5 });
-    // Two, the most one id may carry: a third would be a new action by the
-    // rule the tests above pin.
     const responses = await Promise.all([1, 2].map(() => scan(service, { token, intakeId: intake('one') })));
-    assert.deepEqual(
-      responses.map((response) => response.status),
-      [200, 200],
-    );
+    assert.deepEqual(responses.map((response) => response.status).toSorted(), [200, 409]);
+    assert.equal(upstreamCalls, 1, 'one scan bought one answer');
     assert.equal(await usedScans('same-id@example.org'), 1);
   });
 });
 
 test('a late give-back or delivery for an older claim on an id changes nothing', async () => {
-  // M256/02: THE CLAIM NUMBER. Two requests ride on claim 1, a third claims a
-  // new scan (claim 2) on the same id, and then the first one fails late.
-  // Before the claim number, that give-back found claim 2's row, dropped it
-  // and returned claim 2's scan, and claim 2's answer was then free.
+  // M256/02: THE CLAIM NUMBER. Claim 1 is abandoned in flight, a request
+  // thirty minutes later takes the id over as claim 2, and then claim 1's
+  // request turns out to have been only slow and fails, or succeeds, late.
+  // Without the claim number, that give-back would find claim 2's row, drop
+  // it and return its scan, and claim 2's answer would then be free.
   await withService({}, async (service) => {
     await trialAccount(service, { email: 'late@example.org', granted: 5 });
     const [account] = await database.db.select().from(accounts).where(eq(accounts.email, 'late@example.org'));
@@ -476,12 +504,16 @@ test('a late give-back or delivery for an older claim on an id changes nothing',
     const id = intake('late');
 
     const first = await quota.claimTrialScan({ accountId: account.id, intakeId: id, now });
-    const second = await quota.claimTrialScan({ accountId: account.id, intakeId: id, now });
-    const third = await quota.claimTrialScan({ accountId: account.id, intakeId: id, now });
-    assert.ok(first.ok && second.ok && third.ok);
-    assert.equal(second.claim, first.claim, 'the second request rode on the first scan');
-    assert.equal(third.claim, first.claim + 1, 'the third request claimed a new scan');
-    assert.equal(await usedScans('late@example.org'), 2);
+    const overlapping = await quota.claimTrialScan({ accountId: account.id, intakeId: id, now });
+    const takenOver = await quota.claimTrialScan({
+      accountId: account.id,
+      intakeId: id,
+      now: new Date(now.getTime() + 30 * MS_PER_MINUTE),
+    });
+    assert.ok(first.ok && takenOver.ok);
+    assert.deepEqual(overlapping, { ok: false, reason: 'in-flight' });
+    assert.equal(takenOver.claim, first.claim + 1, 'the takeover is a new claim');
+    assert.equal(await usedScans('late@example.org'), 1, 'and no new scan');
 
     const late = await quota.releaseTrialScan({
       accountId: account.id,
@@ -490,7 +522,7 @@ test('a late give-back or delivery for an older claim on an id changes nothing',
       undeliver: false,
     });
     assert.equal(late.givenBack, false);
-    assert.equal(await usedScans('late@example.org'), 2, "the late failure returned the newer claim's scan");
+    assert.equal(await usedScans('late@example.org'), 1, "the late failure returned the newer claim's scan");
     await quota.markTrialScanDelivered({ accountId: account.id, intakeId: id, claim: first.claim });
     const [row] = await database.db.select().from(aiTrialIntakes).where(eq(aiTrialIntakes.intakeId, id));
     assert.equal(row?.delivered, false, "a late 2xx for claim 1 marked claim 2's scan delivered");
@@ -500,12 +532,47 @@ test('a late give-back or delivery for an older claim on an id changes nothing',
     const own = await quota.releaseTrialScan({
       accountId: account.id,
       intakeId: id,
-      claim: third.claim,
+      claim: takenOver.claim,
       undeliver: false,
     });
     assert.equal(own.givenBack, true);
-    assert.equal(await usedScans('late@example.org'), 1);
+    assert.equal(await usedScans('late@example.org'), 0);
   });
+});
+
+test('a throw after the claim gives the scan back, so the retry on the id is not locked out', async () => {
+  // 2026-09-30: a statement that failed after the claim (here the trial
+  // day's reservation) used to leave the intake in flight with its scan
+  // spent, and with in-flight refused, the person's retry got 409s for the
+  // whole reuse window.
+  let failures = 1;
+  const wrapQuota = (quota: AiQuotaStore): AiQuotaStore => ({
+    ...quota,
+    async reserveTrialInstance(input) {
+      if (failures > 0) {
+        failures -= 1;
+        throw new Error('the database went away');
+      }
+      return await quota.reserveTrialInstance(input);
+    },
+  });
+  await withService(
+    { ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, timeoutMs: 2_000, wrapQuota } },
+    async (service) => {
+      const token = await trialAccount(service, { email: 'thrown@example.org', granted: 5 });
+      const failed = await scan(service, { token, intakeId: intake('throw') });
+      assert.equal(failed.status, 500);
+      // The give-back runs in the handler's `finally`, after the 500 is sent.
+      for (let attempt = 0; attempt < 50 && (await usedScans('thrown@example.org')) !== 0; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      assert.equal(await usedScans('thrown@example.org'), 0, 'the thrown request kept its scan');
+
+      const retried = await scan(service, { token, intakeId: intake('throw') });
+      assert.equal(retried.status, 200, 'the retry on the same id was locked out');
+      assert.equal(await usedScans('thrown@example.org'), 1);
+    },
+  );
 });
 
 // ── refusals after the claim ───────────────────────────────────────────────
@@ -536,6 +603,36 @@ test('the instance ceiling and the daily quota give the scan back', async () => 
     assert.equal((await scan(service, { token, intakeId: intake('q2') })).status, 429);
     assert.equal(await usedScans('quota@example.org'), 1, 'the refused request gave its scan back');
   });
+});
+
+test('with a trial ceiling set, trial traffic takes nothing from the instance ceiling paying accounts use', async () => {
+  // 2026-09-30: before, a trial request took a unit of both ceilings, so the
+  // trials could spend the instance's capacity: here the first trial scan
+  // took the only instance unit and the second was refused with 503.
+  await withService(
+    {
+      ai: {
+        baseUrl: upstreamBaseUrl,
+        apiKey: UPSTREAM_KEY,
+        timeoutMs: 2_000,
+        instanceDailyLimit: 1,
+        trialInstanceDailyLimit: 5,
+      },
+    },
+    async (service) => {
+      const token = await trialAccount(service, { email: 'trial-traffic@example.org', granted: 5 });
+      assert.equal((await scan(service, { token, intakeId: intake('t1') })).status, 200);
+      assert.equal((await scan(service, { token, intakeId: intake('t2') })).status, 200);
+
+      // THE CONTROL: the instance's one unit is still there for a paying account.
+      const standing = await service.signupThroughInvite({ email: 'payer@example.org', dailyAiLimit: 50 });
+      assert.equal((await scan(service, { token: standing.tokens.accessToken })).status, 200);
+
+      const [day] = await database.db.select().from(aiInstanceDays);
+      assert.equal(day?.trialCount, 2);
+      assert.equal(day?.count, 1);
+    },
+  );
 });
 
 test('the trial sub-ceiling refuses trial accounts and not a standing account on the same day', async () => {

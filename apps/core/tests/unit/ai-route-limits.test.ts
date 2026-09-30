@@ -29,6 +29,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { registerAiRoute, CHAT_COMPLETIONS_PATH } from '../../src/ai/register-ai-route.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
 import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
@@ -136,6 +137,7 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
     instanceDailyLimit: null,
     trialInstanceDailyLimit: null,
     bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+    inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
     // An instance that asks for no consent, which this file is not about.
     healthConsent: null,
   });
@@ -277,4 +279,30 @@ test('the default limit is 8 MB, the figure the retired gateway used', async () 
   // And it is comfortably above the old blob-derived figure, which is the
   // whole reason the variable exists.
   assert.ok(DEFAULT_AI_MAX_REQUEST_BYTES > THE_OLD_BLOB_DERIVED_LIMIT * 2);
+});
+
+test('an anonymous caller is 401 before the parser, so it cannot make the server buffer a body', async () => {
+  // THE ORDER (2026-09-30): the bearer gate runs first. Before it, the parser
+  // ran first, and this same request came back 413 or 400: the server had
+  // buffered and parsed what a stranger sent before asking who they were.
+  const harness = await startRoute({ maxRequestBytes: 1_000_000 });
+  const anonymous = (body: string): Promise<Response> =>
+    fetch(`${harness.baseUrl}${CHAT_COMPLETIONS_PATH}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    });
+
+  assert.equal((await anonymous(photoRequest(2 * 1024 * 1024))).status, 401, 'an oversized anonymous body');
+  assert.equal((await anonymous('{"model": "m", "messages": [')).status, 401, 'a malformed anonymous body');
+  assert.equal(harness.upstreamSawBytes(), null);
+
+  // THE CONTROL: the same oversized body from a signed-in caller still gets
+  // the parser's own 413, in the OpenAI shape, from the route's error handler.
+  const signedIn = await post(harness, photoRequest(2 * 1024 * 1024));
+  assert.equal(signedIn.status, 413);
+  // SAFETY: this route answers `application/json` on every path, and a body
+  // that did not parse would throw here rather than reach the assertion.
+  const body = (await signedIn.json()) as { error?: { code?: string } };
+  assert.equal(body.error?.code, 'request_too_large');
 });

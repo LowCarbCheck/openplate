@@ -20,6 +20,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { createChatCompletionsHandler } from '../../src/ai/proxy.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
 import { scrubPayloads, describeError } from '../../src/ai/scrub.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
 import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
@@ -129,6 +130,8 @@ interface RecordingQuota extends AiQuotaStore {
    * either way round.
    */
   calls: string[];
+  /** The weight of every account reserve, in order (2026-09-30). */
+  weights: number[];
 }
 
 function createRecordingQuota(options: { failAt?: number; instanceFailAt?: number } = {}): RecordingQuota {
@@ -142,40 +145,42 @@ function createRecordingQuota(options: { failAt?: number; instanceFailAt?: numbe
     instanceCount: 0,
     instanceDays: [],
     calls: [],
-    async reserveInstance(input: { day: string; limit: number }): Promise<ReserveResult> {
+    weights: [],
+    async reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
       store.instanceReserves += 1;
       store.instanceDays.push(input.day);
       store.calls.push('instance-reserve');
       // The real store's rule, reproduced: the ceiling is the predicate, and a
       // refusal reports the ceiling as spent.
-      if (store.instanceCount >= (options.instanceFailAt ?? input.limit)) {
+      if (store.instanceCount + input.weight > (options.instanceFailAt ?? input.limit)) {
         return { ok: false, used: input.limit, limit: input.limit };
       }
-      store.instanceCount += 1;
+      store.instanceCount += input.weight;
       return { ok: true, used: store.instanceCount, limit: input.limit };
     },
-    async releaseInstance(): Promise<void> {
+    async releaseInstance(input: { day: string; weight: number }): Promise<void> {
       store.instanceReleases += 1;
       store.calls.push('instance-release');
-      // Floored at zero, as the real store's `WHERE count > 0` is.
-      store.instanceCount = Math.max(0, store.instanceCount - 1);
+      // Floored at zero, as the real store's `greatest(..., 0)` is.
+      store.instanceCount = Math.max(0, store.instanceCount - input.weight);
     },
-    async reserve(input: { accountId: number; day: string; limit: number }): Promise<ReserveResult> {
+    async reserve(input: { accountId: number; day: string; limit: number; weight: number }): Promise<ReserveResult> {
       store.reserves += 1;
       store.calls.push('reserve');
+      store.weights.push(input.weight);
       // The real store's rule, reproduced: the limit is the predicate, and a
       // refusal reports the limit as spent.
-      if (store.count >= (options.failAt ?? input.limit)) {
+      if (store.count + input.weight > (options.failAt ?? input.limit)) {
         return { ok: false, used: input.limit, limit: input.limit };
       }
-      store.count += 1;
+      store.count += input.weight;
       return { ok: true, used: store.count, limit: input.limit };
     },
-    async release(): Promise<void> {
+    async release(input: { accountId: number; day: string; weight: number }): Promise<void> {
       store.releases += 1;
       store.calls.push('release');
-      // Floored at zero, as the real store's `WHERE count > 0` is.
-      store.count = Math.max(0, store.count - 1);
+      // Floored at zero, as the real store's `greatest(..., 0)` is.
+      store.count = Math.max(0, store.count - input.weight);
     },
     async countRequestsOn(): Promise<number> {
       return store.count;
@@ -213,6 +218,8 @@ async function startProxy(options: {
   healthConsentVersion?: string;
   /** The consent version on the account. Absent means none on record. */
   accountConsentVersion?: string;
+  /** The input bounds and unit size, over the production defaults. */
+  inputPolicy?: Partial<ChatInputPolicy>;
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
@@ -260,6 +267,7 @@ async function startProxy(options: {
       // The production wiring's shape with no model: the caller's model
       // passes, and the output ceiling is still written in (M256).
       bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+      inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.inputPolicy },
       healthConsent: options.healthConsentVersion === undefined ? null : { version: options.healthConsentVersion },
       now: fixture.now,
     }),
@@ -912,5 +920,119 @@ test('a successful call stamps last_seen_at, and a failed one does not', async (
   const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
   await postCompletion(harness);
   assert.deepEqual(harness.fixture.store.lastSeenFor(harness.accountId), harness.fixture.now());
+  await harness.close();
+});
+
+// ── What one request carries in, and what it weighs (2026-09-30) ────────────
+
+/** One user message of `bytes` characters of text, as a body. */
+function textRequest(bytes: number): JsonValue {
+  return { model: 'm', messages: [{ role: 'user', content: 'x'.repeat(bytes) }] };
+}
+
+test('a body over an input bound is 400 ai-request-too-large, naming the bound, before the reserve and the provider', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, instanceDailyLimit: 100 });
+  const image = { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,AAAA' } };
+
+  const cases: { body: JsonValue; limit: string; max: number }[] = [
+    {
+      body: { model: 'm', messages: [{ role: 'user', content: [image, image] }] },
+      limit: 'image-parts',
+      max: 1,
+    },
+    { body: textRequest(48 * 1024 + 1), limit: 'text-bytes', max: 48 * 1024 },
+    {
+      // A schema is input the model reads: it counts as text.
+      body: { model: 'm', messages: [], response_format: { schema: { description: 'x'.repeat(50_000) } } },
+      limit: 'text-bytes',
+      max: 48 * 1024,
+    },
+    {
+      body: { model: 'm', messages: Array.from({ length: 5 }, () => ({ role: 'user', content: 'hi' })) },
+      limit: 'messages',
+      max: 4,
+    },
+  ];
+  for (const refusal of cases) {
+    const response = await postCompletion(harness, refusal.body);
+    assert.equal(response.status, 400, refusal.limit);
+    assert.deepEqual(await response.json(), { error: 'ai-request-too-large', limit: refusal.limit, max: refusal.max });
+  }
+  assert.equal(upstream.received.length, 0, 'a refused body never left this host');
+  assert.deepEqual(harness.quota.calls, [], 'a refused body reserved nothing, the instance included');
+
+  // THE CONTROL: the same shapes at the bound are proxied.
+  assert.equal((await postCompletion(harness, textRequest(48 * 1024))).status, 200);
+  assert.equal(
+    (await postCompletion(harness, { model: 'm', messages: [{ role: 'user', content: [image] }] })).status,
+    200,
+  );
+  assert.equal(upstream.received.length, 2);
+
+  await harness.close();
+});
+
+test('a heavy request reserves its weight on the account and the instance, and a 4xx gives the same weight back', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 10, instanceDailyLimit: 10 });
+
+  // About 10,000 estimated tokens: two units of 8,192.
+  const heavy = await postCompletion(harness, textRequest(40_000));
+  assert.equal(heavy.status, 200);
+  assert.equal(heavy.headers.get('x-quota-used'), '2');
+  assert.equal(harness.quota.count, 2);
+  assert.equal(harness.quota.instanceCount, 2);
+
+  // THE CONTROL: a plate-scan-sized request is one unit.
+  const light = await postCompletion(harness, textRequest(12_000));
+  assert.equal(light.headers.get('x-quota-used'), '3');
+  assert.deepEqual(harness.quota.weights, [2, 1]);
+
+  await harness.close();
+
+  const refusing = await startFakeUpstream(() => ({ status: 400, body: '{}' }));
+  const released = await startProxy({ upstreamBaseUrl: refusing.baseUrl, dailyAiLimit: 10, instanceDailyLimit: 10 });
+  assert.equal((await postCompletion(released, textRequest(40_000))).status, 400);
+  assert.equal(released.quota.count, 0, 'the release gave back both units, not one');
+  assert.equal(released.quota.instanceCount, 0);
+  await released.close();
+});
+
+test('a weight that does not fit what is left of the allowance is 429, and the instance units go back', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 2, instanceDailyLimit: 10 });
+
+  assert.equal((await postCompletion(harness, textRequest(100))).status, 200);
+  const refused = await postCompletion(harness, textRequest(40_000));
+  assert.equal(refused.status, 429);
+  // SAFETY: the handler answers every refusal as a JSON object, and a body
+  // that did not parse would throw here rather than reach the assertion.
+  const body = (await refused.json()) as { error?: string };
+  assert.match(body.error ?? '', /units used, and this request needs 2/);
+  assert.equal(harness.quota.instanceCount, 1, 'the heavy request took nothing from the instance in the end');
+  assert.equal(upstream.received.length, 1);
+
+  await harness.close();
+});
+
+test('dropped fields are logged by name, never by value, and never reach the provider', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  const secret = 'a-secret-prompt-inside-a-tool';
+  const response = await postCompletion(harness, {
+    model: 'm',
+    messages: [{ role: 'user', content: 'rice' }],
+    tools: [{ type: 'function', function: { name: 'f', description: secret } }],
+  });
+  assert.equal(response.status, 200);
+  const forwarded = upstream.received[0]?.body ?? '';
+  assert.ok(!forwarded.includes(secret), 'the dropped field reached the provider');
+
+  const line = harness.logger.lines.find((entry) => entry.message.startsWith('Dropped chat body fields'));
+  assert.equal(line?.fields?.fields, 'tools');
+  assert.ok(!JSON.stringify(harness.logger.lines).includes(secret), 'a dropped value reached the log');
+
   await harness.close();
 });

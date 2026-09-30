@@ -205,13 +205,21 @@ your provider does (`google/gemini-3.5-flash-lite` on OpenRouter,
 the caller's model through, which only helps a client that sends one. With
 or without it, `max_tokens` and `max_completion_tokens` are capped at
 `AI_MAX_OUTPUT_TOKENS` (written in when the body has neither), so is
-`reasoning.max_tokens`, `n` becomes 1, and `models`, `route`, `provider`,
-`plugins`, `web_search_options` and `prediction` are removed. On OpenRouter
-the service writes its own `provider` field instead,
-`{"data_collection":"deny"}`, so a photo only goes to endpoints that do not
-store it or train on it. Nothing is refused for these fields, so a client that
-sends them still gets an answer.
+`reasoning.max_tokens`, `n` becomes 1, and only the fields on an allow list
+are forwarded: every other one (`tools`, `plugins`, `models`, a field nobody
+has invented yet) is dropped and its name logged. On OpenRouter the service
+writes its own `provider` field, `{"data_collection":"deny"}`, so a photo only
+goes to endpoints that do not store it or train on it. Nothing is refused for
+these fields, so a client that sends them still gets an answer.
 PROTOCOL.md §5.19 has the table.
+
+**Input is bounded too.** A request with more than one image, more than 48 KB
+of text (the schema in `response_format` included) or more than four messages
+is `400 ai-request-too-large` before anything is counted
+(`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`). A request also
+weighs what it carries: one unit per 8192 estimated input tokens
+(`AI_UNIT_INPUT_TOKENS`, images at `AI_IMAGE_INPUT_TOKENS` each), never less
+than one, so a plate scan is one unit and a very long text is two.
 
 **The allowance is per account, per UTC day, and it defaults to zero.** A new
 invite hands out no AI at all unless you say otherwise, so an operator who

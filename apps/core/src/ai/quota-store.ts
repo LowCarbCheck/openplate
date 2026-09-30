@@ -11,27 +11,31 @@
  * decides, once, per request.
  *
  * ```sql
- * INSERT INTO ai_usage_days (account_id, day, count) VALUES ($1, $2, 1)
- * ON CONFLICT (account_id, day) DO UPDATE SET count = ai_usage_days.count + 1
- * WHERE ai_usage_days.count < $3
+ * INSERT INTO ai_usage_days (account_id, day, count) VALUES ($1, $2, $weight)
+ * ON CONFLICT (account_id, day) DO UPDATE SET count = ai_usage_days.count + $weight
+ * WHERE ai_usage_days.count + $weight <= $3
  * RETURNING count
  * ```
  *
- * Zero rows back means the limit was already reached. The `WHERE` on the
- * `DO UPDATE` is the whole guarantee: two concurrent requests at `count = limit
- * - 1` serialise on the row lock, and exactly one of them sees a count below
- * the limit.
+ * Zero rows back means the limit would be passed. The `WHERE` on the
+ * `DO UPDATE` is the whole guarantee: two concurrent requests near the limit
+ * serialise on the row lock, and only the ones that still fit get a row back.
  *
- * THE INSERT BRANCH IS NOT GUARDED, and it does not need to be: it only fires
- * when no row exists for the day, which means a count of zero, and a caller
+ * A REQUEST WEIGHS ONE UNIT OR MORE (2026-09-30), by the input it carries
+ * (`ai/chat-input-bounds.ts`): a plate scan is one, a body near the text bound
+ * is two. Every reserve and release here takes the weight, and a release gives
+ * back exactly what its reserve took.
+ *
+ * THE INSERT BRANCH IS NOT GUARDED BY THE STATEMENT, so it is guarded in code:
+ * it only fires when no row exists for the day, which means a count of zero,
+ * and a weight above the limit is refused before the statement runs. A caller
  * with `limit = 0` is refused by the route before it ever reaches here
- * (`403 ai-not-allowed`). A limit of zero reaching this method would insert a
- * row with `count = 1`, which is why the route's guard is load-bearing rather
- * than cosmetic.
+ * (`403 ai-not-allowed`), and the weight check refuses it here too.
  *
- * THE RELEASE IS FLOORED AT ZERO. `WHERE count > 0` stops a double release (a
- * retry, a future bug) from driving the counter negative, which would hand out
- * free requests rather than merely miscounting.
+ * THE RELEASE IS FLOORED AT ZERO. `GREATEST(count - weight, 0)` and
+ * `WHERE count > 0` stop a double release (a retry, a future bug) from driving
+ * the counter negative, which would hand out free requests rather than merely
+ * miscounting.
  *
  * THE SAME STORE OWNS THE INSTANCE-WIDE CEILING (M212 spec 02), in its own
  * section at the bottom of this file. It is the same one-statement upsert
@@ -44,7 +48,7 @@ import { and, eq, gt, isNotNull, lt, sql } from 'drizzle-orm';
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { Database } from '../db/client.js';
 import { accounts, aiInstanceDays, aiTrialIntakes, aiUsageDays } from '../db/schema.js';
-import { INTAKE_MAX_REQUESTS, INTAKE_REUSE_WINDOW_MS } from '../accounts/scan-trial.js';
+import { INTAKE_REUSE_WINDOW_MS } from '../accounts/scan-trial.js';
 
 /**
  * The outcome of a reservation.
@@ -55,16 +59,27 @@ import { INTAKE_MAX_REQUESTS, INTAKE_REUSE_WINDOW_MS } from '../accounts/scan-tr
  */
 export type ReserveResult = { ok: true; used: number; limit: number } | { ok: false; used: number; limit: number };
 
+/**
+ * Refuses a weight that is not a whole number of units. Every weight comes
+ * from `requestWeight`, which answers one or more; anything else is a wiring
+ * bug, and a zero or a fraction reaching an upsert would reserve nothing.
+ */
+function assertWeight(weight: number): void {
+  if (!Number.isInteger(weight) || weight < 1)
+    throw new Error(`a reservation weight must be a whole unit, got ${weight}`);
+}
+
 export interface AiQuotaStore extends AiInstanceCeilingStore, AiTrialScanStore {
   /**
-   * Takes one unit of the account's allowance for the given UTC day, atomically.
+   * Takes `weight` units of the account's allowance for the given UTC day,
+   * atomically, or none when they do not all fit under `limit`.
    *
-   * Callers MUST have refused a `limit` of 0 before reaching here — see the
-   * module header on why the insert branch is unguarded.
+   * Callers MUST have refused a `limit` of 0 before reaching here, see the
+   * module header on the insert branch.
    */
-  reserve(input: { accountId: number; day: string; limit: number }): Promise<ReserveResult>;
-  /** Gives one unit back. Floored at zero, and never throws out of the proxy's hands (see its `releaseQuietly`). */
-  release(input: { accountId: number; day: string }): Promise<void>;
+  reserve(input: { accountId: number; day: string; limit: number; weight: number }): Promise<ReserveResult>;
+  /** Gives `weight` units back. Floored at zero, and never throws out of the proxy's hands (see its `releaseQuietly`). */
+  release(input: { accountId: number; day: string; weight: number }): Promise<void>;
   /** How many requests every account together spent on the given day. An operator statistic, never a limit. */
   countRequestsOn(day: string): Promise<number>;
   /**
@@ -90,30 +105,35 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
     // reason: one implementation of each, one store handed to the proxy.
     ...createDrizzleAiTrialScans(db),
 
-    async reserve(input: { accountId: number; day: string; limit: number }): Promise<ReserveResult> {
+    async reserve(input: { accountId: number; day: string; limit: number; weight: number }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      // THE INSERT BRANCH'S GUARD, see the module header: a weight that can
+      // never fit is refused before a first row of the day could take it.
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
       const rows = await db
         .insert(aiUsageDays)
-        .values({ accountId: input.accountId, day: input.day, count: 1 })
+        .values({ accountId: input.accountId, day: input.day, count: input.weight })
         .onConflictDoUpdate({
           target: [aiUsageDays.accountId, aiUsageDays.day],
-          set: { count: sql`${aiUsageDays.count} + 1` },
+          set: { count: sql`${aiUsageDays.count} + ${input.weight}` },
           // THE LIMIT IS THE PREDICATE, which is what makes this one statement
           // rather than a read and a write with a race between them.
-          where: sql`${aiUsageDays.count} < ${input.limit}`,
+          where: sql`${aiUsageDays.count} + ${input.weight} <= ${input.limit}`,
         })
         .returning({ count: aiUsageDays.count });
 
       const row = rows[0];
-      // Zero rows means the `WHERE` was false: the account is at its limit, so
-      // it has spent exactly `limit`.
+      // Zero rows means the `WHERE` was false: the weight does not fit, and
+      // the refusal reports the limit as spent, as it always has.
       if (!row) return { ok: false, used: input.limit, limit: input.limit };
       return { ok: true, used: row.count, limit: input.limit };
     },
 
-    async release(input: { accountId: number; day: string }): Promise<void> {
+    async release(input: { accountId: number; day: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
       await db
         .update(aiUsageDays)
-        .set({ count: sql`${aiUsageDays.count} - 1` })
+        .set({ count: sql`greatest(${aiUsageDays.count} - ${input.weight}, 0)` })
         // Floored at zero: a double release must miscount upward, never
         // downward, because a negative counter is free requests.
         .where(
@@ -162,9 +182,9 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
  * five invitations per member and the operator's provider bill.
  *
  * ```sql
- * INSERT INTO ai_instance_days (day, count) VALUES ($1, 1)
- * ON CONFLICT (day) DO UPDATE SET count = ai_instance_days.count + 1
- * WHERE ai_instance_days.count < $2
+ * INSERT INTO ai_instance_days (day, count) VALUES ($1, $weight)
+ * ON CONFLICT (day) DO UPDATE SET count = ai_instance_days.count + $weight
+ * WHERE ai_instance_days.count + $weight <= $2
  * RETURNING count
  * ```
  *
@@ -183,11 +203,11 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
  * `ai_instance_days` references nothing, so no cascade can reach it and a
  * day's total only ever goes up.
  *
- * THE INSERT BRANCH IS UNGUARDED, exactly as `reserve`'s is, and for the same
- * reason: it fires only when the day has no row, which means a total of zero.
- * A `limit` of zero reaching here would insert `count = 1`, which is why
- * `config.ts` refuses `AI_INSTANCE_DAILY_LIMIT=0` at boot rather than reading
- * it as "off".
+ * THE INSERT BRANCH IS GUARDED IN CODE, exactly as `reserve`'s is, and for the
+ * same reason: it fires only when the day has no row, which means a total of
+ * zero, so a weight above the ceiling is refused before the statement runs.
+ * `config.ts` still refuses `AI_INSTANCE_DAILY_LIMIT=0` at boot rather than
+ * reading it as "off".
  *
  * THE RELEASE IS FLOORED AT ZERO for the reason the per-account one is: a
  * double release must miscount upward, because a negative counter would be
@@ -195,16 +215,18 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
  */
 export function createDrizzleAiInstanceCeiling(db: Database): AiInstanceCeilingStore {
   return {
-    async reserveInstance(input: { day: string; limit: number }): Promise<ReserveResult> {
+    async reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
       const rows = await db
         .insert(aiInstanceDays)
-        .values({ day: input.day, count: 1 })
+        .values({ day: input.day, count: input.weight })
         .onConflictDoUpdate({
           target: aiInstanceDays.day,
-          set: { count: sql`${aiInstanceDays.count} + 1` },
+          set: { count: sql`${aiInstanceDays.count} + ${input.weight}` },
           // THE CEILING IS THE PREDICATE, which is what makes this one
           // statement rather than a read and a write with a race between them.
-          where: sql`${aiInstanceDays.count} < ${input.limit}`,
+          where: sql`${aiInstanceDays.count} + ${input.weight} <= ${input.limit}`,
         })
         .returning({ count: aiInstanceDays.count });
 
@@ -215,10 +237,11 @@ export function createDrizzleAiInstanceCeiling(db: Database): AiInstanceCeilingS
       return { ok: true, used: row.count, limit: input.limit };
     },
 
-    async releaseInstance(input: { day: string }): Promise<void> {
+    async releaseInstance(input: { day: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
       await db
         .update(aiInstanceDays)
-        .set({ count: sql`${aiInstanceDays.count} - 1` })
+        .set({ count: sql`greatest(${aiInstanceDays.count} - ${input.weight}, 0)` })
         .where(and(eq(aiInstanceDays.day, input.day), gt(aiInstanceDays.count, 0)));
     },
   };
@@ -236,8 +259,8 @@ export function createDrizzleAiInstanceCeiling(db: Database): AiInstanceCeilingS
  */
 export interface AiInstanceCeilingStore {
   /**
-   * Takes one unit of THE WHOLE INSTANCE's daily ceiling for the given UTC
-   * day, atomically. Called only on an instance that configured one
+   * Takes `weight` units of THE WHOLE INSTANCE's daily ceiling for the given
+   * UTC day, atomically, or none. Called only on an instance that configured one
    * (`AI_INSTANCE_DAILY_LIMIT`); unset means no ceiling and no statement.
    *
    * A refusal is the ceiling being reached, never an error: it is the same
@@ -245,9 +268,9 @@ export interface AiInstanceCeilingStore {
    * `503` rather than a `429` because it is not the caller's fault and not the
    * caller's allowance.
    */
-  reserveInstance(input: { day: string; limit: number }): Promise<ReserveResult>;
+  reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult>;
   /**
-   * Gives one instance-wide unit back. Floored at zero, and never throws out of
+   * Gives `weight` instance-wide units back. Floored at zero, and never throws out of
    * the proxy's hands, see its `releaseQuietly`.
    *
    * IT IS NOT A REFUND MECHANISM FOR A DELETED ACCOUNT. The only callers are
@@ -255,7 +278,7 @@ export interface AiInstanceCeilingStore {
    * demonstrably cost the operator nothing (see the spend/release table in
    * `ai/proxy.ts`).
    */
-  releaseInstance(input: { day: string }): Promise<void>;
+  releaseInstance(input: { day: string; weight: number }): Promise<void>;
 }
 
 // =============================================================================
@@ -264,10 +287,12 @@ export interface AiInstanceCeilingStore {
 
 /**
  * A claimed or reused scan: the intake it rides on, which claim on that intake
- * it is (M256/02), and the scans left after this request. `ok: false` is the
- * last scan already used.
+ * it is (M256/02), and the scans left after this request. `ok: false` is
+ * either the last scan already used (`spent`) or an earlier request on the
+ * same intake still in flight (`in-flight`, 2026-09-30).
  */
-export type TrialClaim = { ok: true; intakeId: string; claim: number; left: number } | { ok: false };
+export type TrialClaim =
+  { ok: true; intakeId: string; claim: number; left: number } | { ok: false; reason: 'spent' | 'in-flight' };
 
 /**
  * Thrown inside the claim transaction to roll it back when no scan is left,
@@ -292,13 +317,23 @@ class TrialScansSpentSignal extends Error {
  *  1. The intake row is inserted with `requests = 0` if it is not there, and
  *     then locked (`FOR UPDATE`). Two parallel requests with one new id
  *     serialise here: the second one's insert waits for the first to commit,
- *     finds the row, and reuses the scan the first one claimed.
- *  2. A row that is younger than {@link INTAKE_REUSE_WINDOW_MS}, carries
- *     fewer than {@link INTAKE_MAX_REQUESTS} requests and has DELIVERED
- *     NOTHING is reused: `requests + 1` and no new scan. A delivered row is
- *     never reused (M256/02): one scan buys one answer, and the request after
- *     an answer is a new action even under the same id. Anything else claims
- *     one:
+ *     finds the row, and sees the first one in flight.
+ *  2. A row whose request is IN FLIGHT (`requests > 0`, nothing delivered)
+ *     and younger than {@link INTAKE_REUSE_WINDOW_MS} refuses the new request
+ *     (`in-flight`, the proxy's `409 intake-in-flight`) and writes nothing.
+ *     Until 2026-09-30 a second request rode on the first one's scan while it
+ *     was still running, so two parallel requests got two answers for one
+ *     scan. A request may use an intake again only once the earlier one
+ *     SETTLED: a failed one gave its scan back and deleted the row (see the
+ *     give-back below), so the next request claims afresh at no net cost; a
+ *     delivered one is a new action (M256/02).
+ *  3. An in-flight row OLDER than the window is a request that never settled:
+ *     the process died, or its give-back could not be written. It is taken
+ *     over WITHOUT a new scan, under a new claim number, so the dead
+ *     request's late writes (if it was only slow) change nothing. No intake is
+ *     stuck for longer than the window, and the hourly sweep deletes the row
+ *     after a day in any case.
+ *  4. Anything else claims one:
  *
  *     ```sql
  *     UPDATE accounts SET trial_scans_used = trial_scans_used + 1
@@ -310,9 +345,10 @@ class TrialScansSpentSignal extends Error {
  *     rolls back so no intake row is left behind. A claimed scan resets the
  *     row and moves its `claim` number up by one.
  *
- * THE GIVE-BACK undoes one request: `requests - 1`, and when that reaches zero
+ * THE GIVE-BACK undoes the request: `requests - 1`, and when that reaches zero
  * on an intake that never delivered an answer, the row goes and the scan is
- * returned, floored at zero like every release here.
+ * returned, floored at zero like every release here. With one request in
+ * flight per intake, that is every give-back of an undelivered request.
  *
  * THE CLAIM NUMBER TIES A GIVE-BACK AND A DELIVERY TO THEIR SCAN (M256/02).
  * Every request is handed the number its claim carried, and both writes match
@@ -342,22 +378,25 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
             .for('update');
           if (!intake) throw new Error('the intake row was not there after its insert');
 
-          const isReusable =
-            intake.requests > 0 &&
-            !intake.delivered &&
-            intake.requests < INTAKE_MAX_REQUESTS &&
-            input.now.getTime() - intake.createdAt.getTime() < INTAKE_REUSE_WINDOW_MS;
-          if (isReusable) {
+          const isInFlight = intake.requests > 0 && !intake.delivered;
+          const isWithinWindow = input.now.getTime() - intake.createdAt.getTime() < INTAKE_REUSE_WINDOW_MS;
+          // NOTHING IS WRITTEN: the row was there, so the insert above did
+          // nothing, and this refusal costs the caller nothing at all.
+          if (isInFlight && isWithinWindow) return { ok: false, reason: 'in-flight' };
+          if (isInFlight) {
+            // THE ABANDONED REQUEST'S SCAN, under a new claim number, see the
+            // section header.
+            const claim = intake.claim + 1;
             await tx
               .update(aiTrialIntakes)
-              .set({ requests: intake.requests + 1 })
+              .set({ requests: 1, delivered: false, createdAt: input.now, claim })
               .where(and(eq(aiTrialIntakes.accountId, input.accountId), eq(aiTrialIntakes.intakeId, input.intakeId)));
             const [account] = await tx
               .select({ granted: accounts.trialScans, used: accounts.trialScansUsed })
               .from(accounts)
               .where(eq(accounts.id, input.accountId));
             const left = Math.max(0, (account?.granted ?? 0) - (account?.used ?? 0));
-            return { ok: true, intakeId: input.intakeId, claim: intake.claim, left };
+            return { ok: true, intakeId: input.intakeId, claim, left };
           }
 
           const [claimed] = await tx
@@ -386,7 +425,7 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
           };
         });
       } catch (error) {
-        if (error instanceof TrialScansSpentSignal) return { ok: false };
+        if (error instanceof TrialScansSpentSignal) return { ok: false, reason: 'spent' };
         throw error;
       }
     },
@@ -448,18 +487,23 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
       return deleted.length;
     },
 
-    async reserveTrialInstance(input: { day: string; limit: number | null }): Promise<ReserveResult> {
+    async reserveTrialInstance(input: { day: string; limit: number | null; weight: number }): Promise<ReserveResult> {
       // Counted on EVERY scan-trial request, so the operator's stats have a
       // number whether or not a sub-ceiling is set; bounded only when it is.
-      // The insert branch is unguarded for the reason `reserveInstance`'s is:
-      // `config.ts` refuses a limit of zero at boot.
+      // The insert branch is guarded in code for the reason `reserveInstance`'s
+      // is, and `config.ts` refuses a limit of zero at boot.
+      assertWeight(input.weight);
+      if (input.limit !== null && input.weight > input.limit) {
+        return { ok: false, used: input.limit, limit: input.limit };
+      }
       const rows = await db
         .insert(aiInstanceDays)
-        .values({ day: input.day, count: 0, trialCount: 1 })
+        .values({ day: input.day, count: 0, trialCount: input.weight })
         .onConflictDoUpdate({
           target: aiInstanceDays.day,
-          set: { trialCount: sql`${aiInstanceDays.trialCount} + 1` },
-          where: input.limit === null ? undefined : sql`${aiInstanceDays.trialCount} < ${input.limit}`,
+          set: { trialCount: sql`${aiInstanceDays.trialCount} + ${input.weight}` },
+          where:
+            input.limit === null ? undefined : sql`${aiInstanceDays.trialCount} + ${input.weight} <= ${input.limit}`,
         })
         .returning({ count: aiInstanceDays.trialCount });
       const row = rows[0];
@@ -468,10 +512,11 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
       return { ok: true, used: row.count, limit };
     },
 
-    async releaseTrialInstance(input: { day: string }): Promise<void> {
+    async releaseTrialInstance(input: { day: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
       await db
         .update(aiInstanceDays)
-        .set({ trialCount: sql`${aiInstanceDays.trialCount} - 1` })
+        .set({ trialCount: sql`greatest(${aiInstanceDays.trialCount} - ${input.weight}, 0)` })
         .where(and(eq(aiInstanceDays.day, input.day), gt(aiInstanceDays.trialCount, 0)));
     },
   };
@@ -484,8 +529,9 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
  */
 export interface AiTrialScanStore {
   /**
-   * Claims a scan for this intake, or rides on the one it already claimed.
-   * Called only for an account the scan gate applies to
+   * Claims a scan for this intake, refuses while an earlier request on it is
+   * in flight, or takes over one abandoned past the reuse window. Called only
+   * for an account the scan gate applies to
    * (`accounts/scan-trial.ts`, `isScanGated`). `intakeId` is the client's
    * `X-Intake-Id`, or a server-made one for a request that sent none.
    */
@@ -513,11 +559,11 @@ export interface AiTrialScanStore {
   /** Deletes intake rows older than `before`. Driven hourly by `ai/usage-retention.ts`. */
   purgeTrialIntakesBefore(input: { before: Date }): Promise<number>;
   /**
-   * Counts one scan-trial request against the day, bounded by
+   * Counts one scan-trial request's `weight` against the day, bounded by
    * `AI_TRIAL_INSTANCE_DAILY_LIMIT` when it is set (`limit`), unbounded when it
    * is `null`. `ok: false` is the sub-ceiling reached.
    */
-  reserveTrialInstance(input: { day: string; limit: number | null }): Promise<ReserveResult>;
-  /** Gives one scan-trial request back to the day, floored at zero. */
-  releaseTrialInstance(input: { day: string }): Promise<void>;
+  reserveTrialInstance(input: { day: string; limit: number | null; weight: number }): Promise<ReserveResult>;
+  /** Gives one scan-trial request's `weight` back to the day, floored at zero. */
+  releaseTrialInstance(input: { day: string; weight: number }): Promise<void>;
 }

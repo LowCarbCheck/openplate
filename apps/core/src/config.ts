@@ -31,6 +31,14 @@ import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './a
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
+import {
+  DEFAULT_AI_IMAGE_INPUT_TOKENS,
+  DEFAULT_AI_MAX_IMAGE_PARTS,
+  DEFAULT_AI_MAX_MESSAGES,
+  DEFAULT_AI_MAX_TEXT_BYTES,
+  DEFAULT_AI_UNIT_INPUT_TOKENS,
+  type ChatInputPolicy,
+} from './ai/chat-input-bounds.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
 
 /**
@@ -172,6 +180,22 @@ export interface ServiceConfig {
    * `ai/chat-body-policy.ts` for how the default was measured.
    */
   aiMaxOutputTokens: number;
+  /**
+   * What one proxied request may carry IN, and what one unit of the daily
+   * counters covers (2026-09-30), each a positive integer with a default
+   * measured on the app's largest real request:
+   *
+   *  - `AI_MAX_IMAGE_PARTS`, default {@link DEFAULT_AI_MAX_IMAGE_PARTS};
+   *  - `AI_MAX_TEXT_BYTES`, default {@link DEFAULT_AI_MAX_TEXT_BYTES};
+   *  - `AI_MAX_MESSAGES`, default {@link DEFAULT_AI_MAX_MESSAGES};
+   *  - `AI_UNIT_INPUT_TOKENS`, default {@link DEFAULT_AI_UNIT_INPUT_TOKENS};
+   *  - `AI_IMAGE_INPUT_TOKENS`, default {@link DEFAULT_AI_IMAGE_INPUT_TOKENS}.
+   *
+   * A body over one of the first three is refused before anything is
+   * counted; the last two set how many units a request weighs. See
+   * `ai/chat-input-bounds.ts` for the measurement and the arithmetic.
+   */
+  aiInputPolicy: ChatInputPolicy;
   /** Requests per account in any trailing 60 seconds on the proxy route. `AI_RATE_LIMIT_PER_MINUTE`, default 20. */
   aiRateLimitPerMinute: number;
   /**
@@ -1693,6 +1717,13 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     ai: parseAi(env),
     aiAdvertisedModel: env.AI_ADVERTISED_MODEL?.trim() || null,
     aiMaxOutputTokens: parsePositiveInteger(env, 'AI_MAX_OUTPUT_TOKENS', DEFAULT_AI_MAX_OUTPUT_TOKENS),
+    aiInputPolicy: {
+      maxImageParts: parsePositiveInteger(env, 'AI_MAX_IMAGE_PARTS', DEFAULT_AI_MAX_IMAGE_PARTS),
+      maxTextBytes: parsePositiveInteger(env, 'AI_MAX_TEXT_BYTES', DEFAULT_AI_MAX_TEXT_BYTES),
+      maxMessages: parsePositiveInteger(env, 'AI_MAX_MESSAGES', DEFAULT_AI_MAX_MESSAGES),
+      unitInputTokens: parsePositiveInteger(env, 'AI_UNIT_INPUT_TOKENS', DEFAULT_AI_UNIT_INPUT_TOKENS),
+      imageInputTokens: parsePositiveInteger(env, 'AI_IMAGE_INPUT_TOKENS', DEFAULT_AI_IMAGE_INPUT_TOKENS),
+    },
     aiRateLimitPerMinute: parsePositiveInteger(env, 'AI_RATE_LIMIT_PER_MINUTE', 20),
     aiInstanceDailyLimit: parseAiInstanceDailyLimit(env),
     memberInvites: parseMemberInvites(env, trial),

@@ -52,23 +52,22 @@ export const DEFAULT_TRIAL_TIME_ZONE = 'UTC';
 /** One day in milliseconds, a window around a midnight and nothing more: days are counted on the calendar. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** How long one intake id may ride on the scan it claimed. See {@link INTAKE_MAX_REQUESTS}. */
+/**
+ * How long a request on one intake id counts as in flight (2026-09-30). While
+ * it does, a second request on the id is refused with `409 intake-in-flight`
+ * rather than riding on its scan: overlapping requests on one id were the one
+ * way to get two answers for one scan, and the app never sends them. Past
+ * the window an undelivered request is taken to have died without settling,
+ * and the next request on the id takes its scan over (`ai/quota-store.ts`).
+ *
+ * THIRTY MINUTES IS FAR ABOVE A LIVE REQUEST: the proxy stamps the intake
+ * delivered when the provider's headers arrive, and those are bounded by
+ * `UPSTREAM_TIMEOUT_MS`, two minutes by default.
+ */
 export const INTAKE_REUSE_WINDOW_MS = 30 * 60 * 1000;
 
-/**
- * How many upstream requests one intake id may make on one scan: the first
- * try plus the app's one retry without `response_format` (M256/02 measured it;
- * the app's retry after a stale bearer is refused by the bearer check and
- * never reaches the claim). A third request on the same id is a new person
- * action, or a client that reuses ids, and it costs a new scan. So does any
- * request after one on the id delivered an answer, whatever this count says.
- *
- * TWO, NOT THREE, because the count only matters for requests that overlap: a
- * failed request gives its scan back before it answers, so a sequential retry
- * claims afresh anyway. Overlapping requests on one id are the one way to get
- * more than one answer for one scan, and the app never sends them.
- */
-export const INTAKE_MAX_REQUESTS = 2;
+/** The refusal for a request whose intake id is still in flight on an earlier request. Nothing is spent. */
+export const INTAKE_IN_FLIGHT = 'intake-in-flight';
 
 /** How long an intake row is kept at all. The hourly usage sweep deletes older ones. */
 export const INTAKE_RETENTION_MS = 24 * 60 * 60 * 1000;

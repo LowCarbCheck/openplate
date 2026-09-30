@@ -127,6 +127,7 @@ import type { FeedbackStore } from '../feedback/feedback-store.js';
 import type { AiQuotaStore } from '../ai/quota-store.js';
 import type { AiUpstreamConfig } from '../ai/proxy.js';
 import type { ChatBodyPolicy } from '../ai/chat-body-policy.js';
+import type { ChatInputPolicy } from '../ai/chat-input-bounds.js';
 import {
   createBearerAuthMiddleware,
   createEntitledUserResolver,
@@ -231,6 +232,11 @@ export interface AiSurfaceOptions {
    * Required: see `ChatCompletionsDeps.bodyPolicy`.
    */
   bodyPolicy: ChatBodyPolicy;
+  /**
+   * What one request may carry in and what one daily unit covers
+   * (2026-09-30). Required: see `ChatCompletionsDeps.inputPolicy`.
+   */
+  inputPolicy: ChatInputPolicy;
 }
 
 /**
@@ -621,6 +627,7 @@ export function createApp(options: CreateAppOptions): Express {
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
       bodyPolicy: ai.bodyPolicy,
+      inputPolicy: ai.inputPolicy,
       // Refused in the proxy's own ladder, beside the suspension, rather than
       // by `requireConsent` in front of it. See `ChatCompletionsDeps`.
       healthConsent,

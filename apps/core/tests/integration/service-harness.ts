@@ -27,7 +27,7 @@ import { createDrizzleRotationStore } from '../../src/db/rotation-store.js';
 import { createDrizzlePulseStore } from '../../src/pulse/pulse-store.js';
 import { createDrizzlePushStore } from '../../src/push/push-store.js';
 import { createDrizzleResearchStore } from '../../src/db/research-store.js';
-import { createDrizzleAiQuotaStore } from '../../src/ai/quota-store.js';
+import { createDrizzleAiQuotaStore, type AiQuotaStore } from '../../src/ai/quota-store.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
 import { createDrizzleFeedbackAdminStore } from '../../src/feedback/feedback-admin-store.js';
 import { createDrizzleFeedbackImageStore } from '../../src/feedback/feedback-image-store.js';
@@ -61,6 +61,7 @@ import { createDrizzleInstanceSettingsStore } from '../../src/db/settings-store.
 import { startInstanceSettings, type InstanceSettings } from '../../src/instance/instance-settings.js';
 import type { InstanceHealthConsent, InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
 
 export interface HttpResponse<T> {
   status: number;
@@ -284,6 +285,13 @@ export interface StartServiceOptions {
     instanceDailyLimit?: number | null;
     /** `AI_TRIAL_INSTANCE_DAILY_LIMIT` (M253). Absent is no sub-ceiling. */
     trialInstanceDailyLimit?: number | null;
+    /** The input bounds and the unit size (2026-09-30), over the production defaults. */
+    inputPolicy?: Partial<ChatInputPolicy>;
+    /**
+     * Wraps the real quota store, so a suite can make one statement fail
+     * where only a broken database would. Absent is the real store alone.
+     */
+    wrapQuota?: (quota: AiQuotaStore) => AiQuotaStore;
   } | null;
   /**
    * Absent (the default) boots the service the way every deployment boots
@@ -541,7 +549,9 @@ export async function startService(options: StartServiceOptions): Promise<Servic
             apiKey: options.ai.apiKey,
             timeoutMs: options.ai.timeoutMs ?? 5_000,
           },
-          quota: createDrizzleAiQuotaStore(options.db),
+          quota: (options.ai.wrapQuota ?? ((quota: AiQuotaStore): AiQuotaStore => quota))(
+            createDrizzleAiQuotaStore(options.db),
+          ),
           // High by default: a suite that is not ABOUT the minute limiter must
           // not trip it, exactly as `PERMISSIVE_THROTTLE` does for the signup
           // lockout.
@@ -560,6 +570,9 @@ export async function startService(options: StartServiceOptions): Promise<Servic
             model: options.ai.advertisedModel ?? null,
             maxOutputTokens: options.ai.maxOutputTokens ?? DEFAULT_AI_MAX_OUTPUT_TOKENS,
           },
+          // THE PRODUCTION DEFAULTS, so every suite runs against the real
+          // bounds, and a suite about one of them overrides only that one.
+          inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.ai.inputPolicy },
         };
 
   const feedbackSurface =
