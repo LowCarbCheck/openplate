@@ -1627,7 +1627,7 @@ Four properties set this route apart from the rest of the subtree:
 
 1. **It goes out with `X-Plans-Secret` alone.** There is no account, so there is no `X-Account-Id` and no `X-Account-Email`, and nothing from the inbound request travels: not a header, not the query string.
 2. **A `200` is kept for five minutes** and served from memory, so a burst of readers is one call to the biller. A refusal from the biller and a failed call are relayed as above and not kept, so the next reader asks again.
-3. **One source address may read it 60 times in any trailing minute.** The next read is `429 {"error":"plans-prices-rate-limited"}` with `Retry-After` in seconds.
+3. **One source address may read it 60 times in any trailing minute.** An IPv6 caller counts as its /64, and an IPv4-mapped IPv6 address as the IPv4 address it carries. The next read is `429 {"error":"plans-prices-rate-limited"}` with `Retry-After` in seconds.
 4. **Without a biller it is the ordinary unknown-path `404`**, like the rest of the subtree, and `/health` publishes nothing new for it: a client that reads `instance.plans` already knows whether to ask.
 
 ### 5.23 `/v1/pulse/*`: the community pulse (ADR-0007)
