@@ -88,6 +88,43 @@ const SCANNED = scanFiles(SOURCES);
 const REQUIRED = requiredNames(SCANNED);
 const ENV_EXAMPLE = readFileSync(join(INFERENCE_ROOT, '.env.example'), 'utf8');
 
+/**
+ * The three copies of `compose-env.ts`, by path from the repository root. Each
+ * app's gate runs only its own tree, so the helper is copied, and this check,
+ * present in all three apps, stops a lone edit to one copy from passing. The
+ * comparison lives here and not in the helper, so an edit to one copy cannot
+ * switch off its own check.
+ */
+const HELPER_COPIES = [
+  'apps/app/tests/compose-env.ts',
+  'apps/core/tests/unit/compose-env.ts',
+  'apps/inference/tests/support/compose-env.ts',
+];
+
+/** One copy of the helper and its bytes. */
+interface HelperCopy {
+  path: string;
+  bytes: Buffer;
+}
+
+/** The copies whose bytes differ from the first one. */
+function differingCopies(copies: readonly HelperCopy[]): string[] {
+  const first = copies[0];
+  if (first === undefined) throw new Error('there is no copy of the helper to compare');
+  return copies.filter((copy) => !copy.bytes.equals(first.bytes)).map((copy) => copy.path);
+}
+
+/** The copies with the last byte of the last one flipped, in memory only. */
+function withOneByteChanged(copies: readonly HelperCopy[]): HelperCopy[] {
+  const last = copies.at(-1);
+  if (last === undefined) throw new Error('there is no copy of the helper to change');
+  const bytes = Buffer.from(last.bytes);
+  bytes[bytes.length - 1] = (bytes[bytes.length - 1] ?? 0) ^ 1;
+  return [...copies.slice(0, -1), { path: last.path, bytes }];
+}
+
+const COPIES: HelperCopy[] = HELPER_COPIES.map((path) => ({ path, bytes: readFileSync(join(REPO_ROOT, path)) }));
+
 function composeText(file: string): string {
   return readFileSync(join(REPO_ROOT, file), 'utf8');
 }
@@ -149,5 +186,15 @@ describe('the controls: each check above can fail', () => {
       expect(unforwarded({ composeText: composeText(file), service, required }), file).toEqual(['NOT_FORWARDED']);
     }
     expect(missingFromEnvExample({ envExample: ENV_EXAMPLE, required })).toEqual(['NOT_FORWARDED']);
+  });
+});
+
+describe('the compose-env helper is one file in three places', () => {
+  it('all three copies are byte-identical', () => {
+    expect(differingCopies(COPIES)).toEqual([]);
+  });
+
+  it('the control: one changed byte in one copy is caught', () => {
+    expect(differingCopies(withOneByteChanged(COPIES))).toEqual(['apps/inference/tests/support/compose-env.ts']);
   });
 });

@@ -369,10 +369,12 @@ services:
       # such as 2026-09-28. Empty asks for no consent.
       HEALTH_CONSENT_VERSION: ${HEALTH_CONSENT_VERSION:-}
       # The folder of letter texts, the same one the app above reads its legal
-      # pages from. Set it to the container path of the volume line below.
+      # pages from. Set it to the container path of the commented volume line
+      # above this environment block.
       CONTENT_DIR: ${CONTENT_DIR:-}
       # A PEM file of extra certificate authorities Node trusts, for an SMTP
-      # server with a private CA. The container path of the volume line below.
+      # server with a private CA. The container path of the commented volume
+      # line above this environment block.
       NODE_EXTRA_CA_CERTS: ${NODE_EXTRA_CA_CERTS:-}
       # The address the listener binds to inside the container. Leave it empty:
       # the published port reaches only a listener on every interface.
