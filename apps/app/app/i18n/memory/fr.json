@@ -9561,6 +9561,13 @@
     "at": "2026-09-14",
     "fr": "Vérification en cours"
   },
+  "774b962792ca88dd": {
+    "en": "The avatar button in the header shows the account name.",
+    "path": "releases:v0_57_1.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "Le bouton d'avatar dans l'en-tête affiche le nom du compte."
+  },
   "7751990e75b44024": {
     "en": "You are signed in. Generate a key below to publish one for your consent document.",
     "path": "common:research.console.created.body",
@@ -14355,6 +14362,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "fr": "L'opération a échoué"
+  },
+  "b02c56b8be90908d": {
+    "en": "{{name}}, open menu",
+    "path": "common:chrome.accountMenuLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-30",
+    "fr": "{{name}}, ouvrir le menu"
   },
   "b09b8b6047637931": {
     "en": "Reference values",

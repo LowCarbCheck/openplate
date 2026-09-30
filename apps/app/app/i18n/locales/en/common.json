@@ -381,6 +381,7 @@
     "source": "Source: NHS, BfR, ACOG"
   },
   "chrome": {
+    "accountMenuLabel": "{{name}}, open menu",
     "back": "Back",
     "bootFailed": "openplate couldn't load. Check your connection, then reload.",
     "buildStamp": "Build {{label}}",

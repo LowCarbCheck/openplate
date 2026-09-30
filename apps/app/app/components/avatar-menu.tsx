@@ -4,7 +4,9 @@
  * An OPEN instance has no account to put in a menu (AGENTS.md), so this is not
  * an account menu there: it is about the DEVICE. It answers "whose diary is this,
  * is it safe, and how does it look" without leaving the page. The label at the
- * top names the device, the theme row switches appearance in place, and the
+ * top names the device, or the signed-in account by its display name (the
+ * button says the same, `resolveAvatarLabel` in `app/lib/avatar-name.ts`),
+ * the theme row switches appearance in place, and the
  * foot carries the ACCOUNT STRIP (`avatar-account-strip.tsx`), which is where
  * the email, the sync state and the allowance all live now.
  *
@@ -86,6 +88,7 @@ import { AvatarAccountStrip } from './avatar-account-strip';
 import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '#app/lib/sync/sync-menu-state';
+import { resolveAvatarLabel } from '#app/lib/avatar-name';
 import { SignOutDialog } from './sign-out-dialog';
 import { adminNavigationItem, footerNavigationItems, planNavigationItem, type NavigationItem } from './app-sidebar';
 import { cn } from '#app/lib/utils';
@@ -291,6 +294,22 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
     requiresAccount,
   });
 
+  // THE ACCOUNT'S NAME, or "This device" (owner report, 2026-09-30). The
+  // rules, the email cut and the silent reopening window, are
+  // `resolveAvatarLabel`'s. The menu's own label says "This device" in that
+  // window, as the door under it already treats it as signed out.
+  const avatarLabel = resolveAvatarLabel({
+    displayName: session.account?.displayName ?? null,
+    isResuming: session.isResuming,
+    hasSyncServer: syncServerUrl !== null,
+  });
+  const menuLabel = avatarLabel.kind === 'name' ? avatarLabel.name : t('chrome.thisDevice');
+  const buttonWords = avatarLabel.kind === 'pending' ? '' : menuLabel;
+  const triggerLabel =
+    avatarLabel.kind === 'name' ?
+      t('chrome.accountMenuLabel', { name: avatarLabel.name })
+    : t('chrome.deviceMenuLabel');
+
   const onOpenChange = (isOpen: boolean): void => {
     if (isOpen) setRowsWhileOpen({ showsPlan: showsPlanEntry, isAdmin });
   };
@@ -305,21 +324,57 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
             the header's right edge as the brand mark sits from the left
             edge. Otherwise the default size's
             16px right padding stacks on top of the header's own `px-4`. */}
-        <Button variant="ghost" className="flex items-center gap-2 pr-2 -mr-2" aria-label={t('chrome.deviceMenuLabel')}>
-          <Avatar className="h-7 w-7">
+        <Button
+          variant="ghost"
+          data-slot="avatar-menu-trigger"
+          className="flex items-center gap-2 pr-2 -mr-2"
+          aria-label={triggerLabel}
+        >
+          {/* THE NAME'S BOX IS A FIXED `w-40` FROM THE FIRST PAINT, and it
+              sits LEFT of the circle with its text set to the right, so the
+              words end beside the circle whatever their length. The session
+              arrives after the header is drawn, so this box starts empty and
+              is filled with a name of any length; a box sized by its words
+              would push the fast chip beside it, and squeeze the page title,
+              each time. Fixed, only the words change. 160 px holds the
+              longest "This device" of the six languages (Italian, 18
+              characters of Victor Mono at 14 px, 151 px) with room to spare,
+              and `truncate` ends a longer name in an ellipsis. `shrink-0`
+              keeps the flex row from giving the width back, and `h-5` (the
+              one line `text-sm` draws) keeps the empty box a box, not a
+              zero-height line waiting for its words.
+
+              `key` BECAUSE THE WORDS ARE NEW, NOT MOVED. Right-aligned text
+              that is replaced in place starts at another x, and Chrome
+              records that as a layout shift of the old text node, although
+              nothing a person was reading moved: the old words are gone.
+              A new node for new words (a rename, a sign-out on this page)
+              is what the screen shows. `tests/e2e/avatar-shows-name.spec.ts`
+              reads the box, the circle and the shift total across the
+              session's arrival. */}
+          <span
+            key={buttonWords}
+            data-slot="avatar-menu-name"
+            className="hidden h-5 w-40 shrink-0 truncate text-right text-sm sm:block"
+          >
+            {buttonWords}
+          </span>
+          <Avatar data-slot="avatar-menu-circle" className="h-7 w-7">
             <AvatarFallback className="text-sm">
               <User className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm sm:inline">{t('chrome.thisDevice')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        {/* THE DEVICE, and only the device. The email used to sit under this
-            label as well; the footer strip carries it now, and printing the
-            same address twice in a 16rem menu is noise, not identity. */}
+        {/* WHO THIS IS: the account's name, or the device when there is no
+            name to show. The email used to sit under this label as well; the
+            footer strip carries it now, and printing the same address twice
+            in a 16rem menu is noise, not identity. */}
         <DropdownMenuLabel className="py-2">
-          <span className="block">{t('chrome.thisDevice')}</span>
+          <span data-slot="avatar-menu-label" className="block truncate">
+            {menuLabel}
+          </span>
         </DropdownMenuLabel>
 
         <AccountDoor door={door} />

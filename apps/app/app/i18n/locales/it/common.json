@@ -381,6 +381,7 @@
     "source": "Fonte: NHS, BfR, ACOG"
   },
   "chrome": {
+    "accountMenuLabel": "{{name}}, apri menu",
     "back": "Indietro",
     "bootFailed": "Impossibile caricare openplate. Controlla la tua connessione, poi ricarica.",
     "buildStamp": "Build {{label}}",

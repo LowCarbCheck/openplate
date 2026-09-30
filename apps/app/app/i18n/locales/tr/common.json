@@ -381,6 +381,7 @@
     "source": "Kaynak: NHS, BfR, ACOG"
   },
   "chrome": {
+    "accountMenuLabel": "{{name}}, menüyü aç",
     "back": "Geri",
     "bootFailed": "openplate yüklenemedi. Bağlantını kontrol et, ardından yeniden yükle.",
     "buildStamp": "Sürüm {{label}}",

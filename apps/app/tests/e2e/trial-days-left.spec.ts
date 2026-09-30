@@ -112,8 +112,10 @@ test('a scan-trial account reads its days left beside its scans left, and nothin
     report.detail,
   ).toBe(0);
 
-  // THE AVATAR MENU'S ACCOUNT STRIP says it too, under the scans.
-  await page.locator('header').getByRole('button', { name: EN.chrome.deviceMenuLabel, exact: true }).click();
+  // THE AVATAR MENU'S ACCOUNT STRIP says it too, under the scans. Found by
+  // its slot, not its accessible name: a signed-in account with a display
+  // name gets `chrome.accountMenuLabel` instead of `chrome.deviceMenuLabel`.
+  await page.locator('header [data-slot="avatar-menu-trigger"]').click();
   const menu = page.getByRole('menu');
   await expect(menu.getByText(scansLine)).toBeVisible();
   await expect(menu.getByText(daysLine)).toBeVisible();
@@ -137,7 +139,8 @@ test('control: an account with no scan trial reads no day line, even with an end
   await expect(main.locator('[data-slot="trial-days-left-reserved"]')).toHaveCount(0);
   await expect(main.getByText(fill(EN.account.allowance.trialDaysLeft_other, { count: EXPECTED_DAYS }))).toHaveCount(0);
 
-  await page.locator('header').getByRole('button', { name: EN.chrome.deviceMenuLabel, exact: true }).click();
+  // Found by its slot, not its accessible name: see the note above.
+  await page.locator('header [data-slot="avatar-menu-trigger"]').click();
   const menu = page.getByRole('menu');
   await expect(menu.getByText(todayLine)).toBeVisible();
   await expect(menu.locator('[data-slot="trial-days-left"]')).toHaveCount(0);

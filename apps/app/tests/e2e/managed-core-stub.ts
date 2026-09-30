@@ -59,6 +59,8 @@ export interface ManagedCoreStub {
   plans?: boolean;
   /** `AccountView.role`, or absent to keep the fake's own (a member). */
   role?: 'admin' | 'member';
+  /** `AccountView.displayName`, or absent to keep the fake's own (the fixture account has none). */
+  displayName?: string | null;
   /**
    * `instance.healthConsent` on the handshake (`PROTOCOL.md` §5.6): the
    * version of the wording a person agrees to, `null` for an instance that
@@ -108,8 +110,9 @@ function accountPatch(stub: ManagedCoreStub) {
   const withCreated = stub.createdAt === undefined ? base : { ...base, createdAt: stub.createdAt };
   const withEnd = stub.trialEndsAt === undefined ? withCreated : { ...withCreated, trialEndsAt: stub.trialEndsAt };
   const withRole = stub.role === undefined ? withEnd : { ...withEnd, role: stub.role };
+  const withName = stub.displayName === undefined ? withRole : { ...withRole, displayName: stub.displayName };
   const withInvites =
-    stub.invitesNeedAPlan === undefined ? withRole : { ...withRole, invitesNeedAPlan: stub.invitesNeedAPlan };
+    stub.invitesNeedAPlan === undefined ? withName : { ...withName, invitesNeedAPlan: stub.invitesNeedAPlan };
   return stub.accountHealthConsent === undefined ?
       withInvites
     : { ...withInvites, healthConsent: stub.accountHealthConsent };

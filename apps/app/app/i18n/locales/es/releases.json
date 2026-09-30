@@ -1,4 +1,10 @@
 {
+  "v0_57_1": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "El botón del avatar de la cabecera muestra el nombre de la cuenta."
+    }
+  },
   "v0_57_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,12 +16,6 @@
     "added": {
       "01": "Los administradores pueden ver y asignar una etiqueta a cada persona.",
       "02": "Una instancia cerrada puede remitir a sus usuarios a una nueva dirección."
-    }
-  },
-  "v0_55_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Los idiomas distintos de los seis ahora usan el inglés por defecto en el proceso de pago y en los formularios legales."
     }
   }
 }

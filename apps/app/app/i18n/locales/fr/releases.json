@@ -1,4 +1,10 @@
 {
+  "v0_57_1": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Le bouton d'avatar dans l'en-tête affiche le nom du compte."
+    }
+  },
   "v0_57_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,12 +16,6 @@
     "added": {
       "01": "Les administrateurs peuvent voir et définir une étiquette pour chaque personne.",
       "02": "Une instance fermée peut rediriger ses utilisateurs vers une nouvelle adresse."
-    }
-  },
-  "v0_55_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Les langues en dehors des six reviennent désormais à l'anglais dans le paiement et les formulaires légaux."
     }
   }
 }

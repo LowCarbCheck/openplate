@@ -39,11 +39,15 @@ const addCatalogSchema = z.object({
 
 const catalogSchema = z.object({
   chrome: z.object({
+    /** The avatar button's accessible name for an account with a display name. */
+    accountMenuLabel: z.string(),
     back: z.string(),
     /** The boot screen's line for scripts that never arrived. */
     bootFailed: z.string(),
     deviceMenuLabel: z.string(),
     terms: z.string(),
+    /** The avatar button's words with no name to show. */
+    thisDevice: z.string(),
     status: z.object({ dismiss: z.string() }),
   }),
   nav: z.object({

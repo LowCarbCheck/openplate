@@ -1,4 +1,10 @@
 {
+  "v0_57_1": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "The avatar button in the header shows the account name."
+    }
+  },
   "v0_57_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,12 +16,6 @@
     "added": {
       "01": "Administrators can see and set a label on each person.",
       "02": "A closed instance can send its people to a new address."
-    }
-  },
-  "v0_55_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Languages outside the six now fall back to English in checkout and legal forms."
     }
   }
 }

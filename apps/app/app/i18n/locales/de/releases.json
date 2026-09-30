@@ -1,4 +1,10 @@
 {
+  "v0_57_1": {
+    "date": "2026-09-30",
+    "changed": {
+      "01": "Die Avatar-Schaltfläche in der Kopfzeile zeigt den Kontonamen an."
+    }
+  },
   "v0_57_0": {
     "date": "2026-09-30",
     "added": {
@@ -10,12 +16,6 @@
     "added": {
       "01": "Administratoren können bei jeder Person ein Label sehen und setzen.",
       "02": "Eine geschlossene Instanz kann ihre Personen an eine neue Adresse verweisen."
-    }
-  },
-  "v0_55_0": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Bei anderen Sprachen als den sechs wird im Checkout und bei rechtlichen Formularen jetzt auf Englisch zurückgegriffen."
     }
   }
 }
