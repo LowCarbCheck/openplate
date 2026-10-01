@@ -48,7 +48,7 @@ To move a running shape 2 install across:
 
 ```sh
 cd ~/openplate
-docker compose -f compose.core.yml down --remove-orphans   # your old file, never add -v
+docker compose -f compose.sync.yml down --remove-orphans   # your old file, never add -v
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 docker compose -f compose.core.yml pull
 docker compose -f compose.core.yml up -d
@@ -63,12 +63,12 @@ docker compose -f compose.core.yml up -d
    there, and `docker compose -f compose.core.yml logs core` shows the service
    starting on your existing database.
 
-For one release `compose.core.yml` stays in this folder as a stub that includes
-`compose.core.yml`, so `docker compose -f compose.core.yml up -d` still starts
+For one release `compose.sync.yml` stays in this folder as a stub that includes
+`compose.core.yml`, so `docker compose -f compose.sync.yml up -d` still starts
 the same stack. Fetch both files if you want that to keep working. The stub goes
 away in a later release. If you start from the stub while the old `sync`
 container still runs, Compose warns about an orphan container. Run
-`docker compose -f compose.core.yml down --remove-orphans` once and start again.
+`docker compose -f compose.sync.yml down --remove-orphans` once and start again.
 
 If you wrote your own commands against the service name, such as
 `docker compose logs sync` or `exec sync`, change `sync` to `core`. If you run

@@ -92,7 +92,8 @@ export interface PublicConfig {
    *
    * It stays for one release so a copy of the app already cached on a phone,
    * which reads this name, keeps finding its server after the server is
-   * updated. Remove it in the release after the one that adds `coreUrl`.
+   * updated. Remove it in the first release after 2026-11-01, together with the
+   * SYNC_SERVER_URL fallback.
    */
   syncServerUrl: string | null;
   /**

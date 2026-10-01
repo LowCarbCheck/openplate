@@ -1,6 +1,6 @@
 /**
- * `pnpm core-api`, the operator's command line over `/v1/admin`. `pnpm core-api` is the old name
- * and runs the same file through `sync-api-alias.ts`, which prints one notice first.
+ * `pnpm core-api`, the operator's command line over `/v1/admin`. `pnpm sync-api` is the old name of
+ * `pnpm core-api` and runs the same file through `sync-api-alias.ts`, which prints one notice first.
  *
  * A THIN HTTP CLIENT AND NOTHING ELSE. It imports no store, no config module
  * and no database driver, so it runs from a laptop that has never seen
