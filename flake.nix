@@ -18,7 +18,7 @@
       # so only the major has to match: scripts/check-env-drift.sh checks it.
       # The Playwright browsers path is not wired to nixpkgs: its
       # playwright-driver differs from the @playwright/test pin, so the
-      # browser tier stays in the toolbox until the two versions match.
+      # browser tier runs on the host until the two versions match.
       default = pkgs.mkShell {
         packages = [
           pkgs.nodejs_24
