@@ -4,19 +4,29 @@ Thanks for looking at openplate. This is a small, opinionated project. Issues an
 
 ## Setup
 
-Run this once after cloning:
+You need Node 24 or newer, pnpm 11, git, and make. Nix and the toolbox are optional. The root [README](README.md#first-ten-minutes) explains both. Run this once after cloning:
 
 ```bash
-git config core.hooksPath .githooks
+make install
 ```
 
-`core.hooksPath` lives in `.git/config`, which a clone does not copy. Without it, the pre-push gate never runs. This repository has no cloud CI. Nothing else catches a failure, so a broken push simply lands.
+`make install` activates the pre-push hooks and installs every app. `make hooks` activates only the hooks. Both set `core.hooksPath` in `.git/config`. Git clones do not copy this setting. Without it, the pre-push gate never runs. This repository has no cloud CI. Nothing else catches failures, so broken pushes land.
 
-The gate finds which apps a push changes and runs the checks for each one. A change outside `apps/` runs all of them.
+The gate checks which apps change in a push and tests each one. Any change outside `apps/` tests all of them. To run every gate check without pushing:
+
+```bash
+make check
+```
 
 ## Working on one app
 
-Every app in `apps/` is its own project, with its own lockfile and scripts. Change into its folder and follow its README:
+Every app in `apps/` is an independent project with its own lockfile and scripts. The repository holds four independent apps and no root pnpm workspace. The root README explains [why](README.md#four-independent-apps). Start an app from the root:
+
+```bash
+make dev APP=app
+```
+
+Or switch to its directory and run its scripts:
 
 ```bash
 cd apps/app
@@ -24,7 +34,7 @@ pnpm install
 pnpm dev
 ```
 
-The app's [CONTRIBUTING.md](apps/app/CONTRIBUTING.md) lists the checks a pull request must pass. Where an app has an `AGENTS.md`, that file contains its coding guidelines.
+The app's [CONTRIBUTING.md](apps/app/CONTRIBUTING.md) lists the pull request checks. If an app has an `AGENTS.md`, that file contains its coding guidelines.
 
 ## Commits
 

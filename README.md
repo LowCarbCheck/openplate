@@ -51,19 +51,36 @@ make dev APP=app
 
 ## Before you push
 
-The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs this gate for all four apps without pushing. Some stages need tools beyond Node and pnpm. Each stage stops the push and names any missing tool:
+The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all four apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages.
+
+```bash
+make check
+```
+
+Some stages need extra tools. Each stage stops the push and names any missing tool:
 
 - **podlet** (app, core, inference): checks the Podman units under `docker/quadlet/`. Install it with `brew install podlet`, or run `apps/app/scripts/quadlet.sh --install <dir>` and add that directory to your `PATH`. The script also needs `python3`.
-- **Chromium** (app, website): runs the browser tests. Run `pnpm exec playwright install chromium` in the app directory. On Linux, `pnpm exec playwright install --with-deps chromium` also installs system libraries.
-- **Postgres** (core): runs the integration tests. In `apps/core`, run `docker compose -f docker/compose.dev.yml up -d`, or point `TEST_DATABASE_URL` to another Postgres instance. `SKIP_INTEGRATION=1 git push` skips these tests once.
+- **Chromium** (app, website): runs browser tests. Run `pnpm exec playwright install chromium` in the app directory. On Linux, `pnpm exec playwright install --with-deps chromium` also installs system libraries.
+- **Postgres** (core): runs integration tests. In `apps/core`, run `docker compose -f docker/compose.dev.yml up -d`, or point `TEST_DATABASE_URL` to another Postgres instance. `SKIP_INTEGRATION=1 git push` skips these tests once.
 - **The network** (website): checks documentation by cloning three repositories. `SKIP_SYNC=1 git push` skips this check once if you are offline.
 
 ## Optional environments
 
-These environments are optional. They provide alternative ways to run Node and pnpm.
+These environments are optional. They offer alternative ways to run Node and pnpm.
 
-- **toolbox**: if the `toolbox` command is present, every hook runs its Node stages inside a container named `ts-dev`. The maintainers use this setup because their host lacks build tools. Browser tests always run on the host.
-- **nix**: running `nix develop` at the repository root opens a shell with Node 24 and pnpm 11 from the root `flake.nix`.
+- **toolbox**: if the `toolbox` command exists, every hook runs its Node stages inside a container named `ts-dev`. Maintainers use this setup because their host lacks build tools. Browser tests always run on the host.
+- **nix**: running `nix develop` at the repository root opens a shell with Node 24 and pnpm 11 from the root `flake.nix`. It also provides git and make. It works on x86_64-linux, aarch64-linux, and aarch64-darwin.
+
+The browser tier does not run in the nix shell or in the toolbox. It runs on the host with the Chromium that Playwright downloads. The flake does not set `PLAYWRIGHT_BROWSERS_PATH`, because nixpkgs browsers belong to Playwright 1.63.0 while the apps pin 1.62.1. The flake can set it once the versions match.
+
+`make drift` checks that the flake, `.nvmrc` files, `engines` and `packageManager` fields, Dockerfiles, and the release workflow agree on Node and pnpm.
+
+## Four independent apps
+
+The repository holds four independent apps. It has no root pnpm workspace and no shared lockfile. Each app has its own lockfile, pnpm settings, and release. Each image builds from its own app folder, and corepack installs the pnpm version from that app's `packageManager` field. All four apps use Node 24 and pnpm 11.5.1. Two conditions would change this setup:
+
+- Trigger 1: two apps really import the same package.
+- Trigger 2: a dependency bump that must change in four places and really hurts.
 
 ## Contributing
 
