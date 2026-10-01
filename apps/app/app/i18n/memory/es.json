@@ -11094,6 +11094,13 @@
     "at": "2026-09-14",
     "es": "Este dispositivo ya ha guardado datos de openplate anteriormente, pero la copia de este navegador está vacía ahora mismo. openplate guarda todo en tu dispositivo y no envía nada a ningún servidor, por lo que no tenemos ninguna otra copia que recuperar."
   },
+  "87c9d1f7471e31ad": {
+    "en": "The confirm text for replacing your data key says that every other device is signed out.",
+    "path": "releases:v0_59_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "es": "El texto de confirmación para sustituir tu clave de datos indica que se cerrará la sesión en todos los demás dispositivos."
+  },
   "87d09d4bdd1faa72": {
     "en": "{{count}} apple",
     "path": "common:portions.unit.apple_one",

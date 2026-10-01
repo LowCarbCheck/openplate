@@ -11,6 +11,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.59.1] - 2026-10-01
+
+### Fixed
+
+- **The confirm text for replacing your data key says that every other device is signed out.** Replacing the key already signed out every other device you were signed in on, since core 0.28.0, but the dialog did not say so, so a person on a second device found themselves signed out with no warning. The text now adds one sentence: every other device where you are signed in is signed out, and you must sign in again on it. It is translated in all six languages. ([46317c7](https://github.com/LowCarbCheck/openplate/commit/46317c7))
+
 ## [0.59.0] - 2026-10-01
 
 ### Changed

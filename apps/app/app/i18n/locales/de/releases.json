@@ -1,4 +1,10 @@
 {
+  "v0_59_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Der Bestätigungstext für das Ersetzen deines Datenschlüssels weist darauf hin, dass jedes andere Gerät abgemeldet wird."
+    }
+  },
   "v0_59_0": {
     "date": "2026-10-01",
     "changed": {
@@ -10,18 +16,6 @@
     "fixed": {
       "01": "Im Onboarding-Formular verschiebt sich nichts, wenn du eine Antwort auswählst.",
       "02": "Der Quellenlink im Schwangerschaftshinweis zeigt seinen Text wieder an."
-    }
-  },
-  "v0_58_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Administratoren können das verbleibende KI-Budget und die heutige KI-Nutzung einsehen.",
-      "02": "Administratoren können tägliche kostenlose Fotos zuweisen, die nicht ablaufen."
-    },
-    "changed": {
-      "01": "Konten mit kostenloser KI behalten diese, nachdem ein kostenpflichtiger Tarif endet.",
-      "02": "Die Lebensmittelsuche auf dem gehosteten Dienst erfordert jetzt eine Anmeldung.",
-      "03": "Das Ersetzen deines Datenschlüssels erfordert dein Passwort und meldet andere Geräte ab."
     }
   }
 }

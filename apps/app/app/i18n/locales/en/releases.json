@@ -1,4 +1,10 @@
 {
+  "v0_59_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "The confirm text for replacing your data key says that every other device is signed out."
+    }
+  },
   "v0_59_0": {
     "date": "2026-10-01",
     "changed": {
@@ -10,18 +16,6 @@
     "fixed": {
       "01": "Nothing on the onboarding form moves when you pick an answer.",
       "02": "The source link in the pregnancy caution note shows its words again."
-    }
-  },
-  "v0_58_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Administrators can view the remaining AI budget and today's AI use.",
-      "02": "Administrators can assign daily free photos that do not expire."
-    },
-    "changed": {
-      "01": "Accounts with free AI keep it after a paid plan ends.",
-      "02": "Food search on the hosted service now requires signing in.",
-      "03": "Replacing your data key requires your password and signs out other devices."
     }
   }
 }

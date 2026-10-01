@@ -1,4 +1,10 @@
 {
+  "v0_59_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Il testo di conferma per la sostituzione della chiave dei dati indica che la sessione viene chiusa su tutti gli altri dispositivi."
+    }
+  },
   "v0_59_0": {
     "date": "2026-10-01",
     "changed": {
@@ -10,18 +16,6 @@
     "fixed": {
       "01": "Nessun elemento del modulo iniziale si sposta quando selezioni una risposta.",
       "02": "Il link alla fonte nella nota di avvertenza sulla gravidanza mostra di nuovo il proprio testo."
-    }
-  },
-  "v0_58_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Gli amministratori possono visualizzare il budget residuo dell'IA e l'uso dell'IA di oggi.",
-      "02": "Gli amministratori possono assegnare foto gratuite giornaliere senza scadenza."
-    },
-    "changed": {
-      "01": "Gli account con IA gratuita la mantengono anche al termine di un piano a pagamento.",
-      "02": "La ricerca degli alimenti sul servizio ospitato richiede ora l'accesso.",
-      "03": "La sostituzione della tua chiave dei dati richiede la password e disconnette gli altri dispositivi."
     }
   }
 }

@@ -1,4 +1,10 @@
 {
+  "v0_59_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Le texte de confirmation pour remplacer ta clé de données indique que tous les autres appareils sont déconnectés."
+    }
+  },
   "v0_59_0": {
     "date": "2026-10-01",
     "changed": {
@@ -10,18 +16,6 @@
     "fixed": {
       "01": "Rien ne bouge sur le formulaire d'intégration quand tu choisis une réponse.",
       "02": "Le lien source dans l'avertissement relatif à la grossesse réaffiche son texte."
-    }
-  },
-  "v0_58_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Les administrateurs peuvent consulter le budget IA restant et l'utilisation de l'IA aujourd'hui.",
-      "02": "Les administrateurs peuvent attribuer des photos gratuites quotidiennes qui n'expirent pas."
-    },
-    "changed": {
-      "01": "Les comptes avec IA gratuite la conservent après la fin d'un forfait payant.",
-      "02": "La recherche d'aliments sur le service hébergé nécessite désormais une connexion.",
-      "03": "Remplacer ta clé de données nécessite ton mot de passe et déconnecte les autres appareils."
     }
   }
 }

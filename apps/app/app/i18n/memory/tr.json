@@ -11094,6 +11094,13 @@
     "at": "2026-09-14",
     "tr": "Bu cihaz daha önce openplate verilerini depoladı, ancak bu tarayıcıdaki kopya şu anda boş. openplate her şeyi cihazında tutar ve bir sunucuya hiçbir şey göndermez, bu nedenle alabileceğimiz başka bir kopya yok."
   },
+  "87c9d1f7471e31ad": {
+    "en": "The confirm text for replacing your data key says that every other device is signed out.",
+    "path": "releases:v0_59_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Veri anahtarını değiştirmeye yönelik onay metninde, diğer tüm cihazların oturumunun kapatıldığı yazar."
+  },
   "87d09d4bdd1faa72": {
     "en": "{{count}} apple",
     "path": "common:portions.unit.apple_one",

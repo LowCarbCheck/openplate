@@ -1,4 +1,10 @@
 {
+  "v0_59_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Veri anahtarını değiştirmeye yönelik onay metninde, diğer tüm cihazların oturumunun kapatıldığı yazar."
+    }
+  },
   "v0_59_0": {
     "date": "2026-10-01",
     "changed": {
@@ -10,18 +16,6 @@
     "fixed": {
       "01": "Bir yanıt seçtiğinde ilk katılım formundaki hiçbir şey hareket etmez.",
       "02": "Hamilelik uyarı notundaki kaynak bağlantısı metnini yeniden gösterir."
-    }
-  },
-  "v0_58_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Yöneticiler kalan yapay zeka bütçesini ve bugünkü yapay zeka kullanımını görebilir.",
-      "02": "Yöneticiler süresi dolmayan günlük ücretsiz fotoğraflar atayabilir."
-    },
-    "changed": {
-      "01": "Ücretsiz yapay zekaya sahip hesaplar, ücretli bir plan bittikten sonra da bunu korur.",
-      "02": "Barındırılan serviste yiyecek araması yapmak artık giriş yapmayı gerektiriyor.",
-      "03": "Veri anahtarını değiştirmek parolanı gerektirir ve diğer cihazların oturumunu kapatır."
     }
   }
 }
