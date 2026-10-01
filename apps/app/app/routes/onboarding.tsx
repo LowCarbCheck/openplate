@@ -800,9 +800,9 @@ export function StyleStep({ loaderData, errors }: { loaderData: StyleStepData; e
   // The main goal the person PICKED on this screen, or the one stored before.
   // `null` means "follow the style": the list then shows the lens's own
   // answer, and it moves with the style until the person picks one.
-  // The calorie target as TYPED, held here rather than in the field: each
-  // follow-up layer draws its own copy of the field, and a number typed under
-  // "low-carb and calories" must still be there after a switch to "calories".
+  // The calorie target as TYPED, held here rather than in the field, so a
+  // number typed under "low-carb and calories" is still there after a switch
+  // to "calories", whatever the field's slot did in between.
   const [kcalTarget, setKcalTarget] = useState(() =>
     loaderData.goalKcalTarget === null ? '' : String(loaderData.goalKcalTarget),
   );
@@ -992,12 +992,6 @@ export interface StyleFollowUp {
   hasCaution: boolean;
 }
 
-/** One distinct follow-up, drawn as one layer of `StyleFollowUpCell`. */
-export interface StyleFollowUpLayer {
-  key: string;
-  followUp: StyleFollowUp;
-}
-
 /**
  * What `style` asks after it is picked, read off the style TABLE and
  * `styleCaution`, never off a second list of style ids here.
@@ -1011,51 +1005,50 @@ export function styleFollowUp(style: EatingStyleId, reproductiveStatus: Reproduc
   };
 }
 
-/** A stable name for one follow-up, so two styles that ask the same things share one layer. */
-function followUpKey(followUp: StyleFollowUp): string {
-  return [followUp.hasCaution && 'caution', followUp.asksCarbLimit && 'carbs', followUp.asksCalories && 'kcal']
-    .filter(Boolean)
-    .join('+');
-}
-
 /**
- * Every distinct follow-up any style can ask for this person, in table order,
- * leaving out the empty one (a style that asks nothing draws no layer).
- *
- * The status is loader data and never changes on this screen, so a person
- * with no pregnancy or lactation on file gets no caution layer at all: the
- * note cannot appear for them, and its height is not reserved for nothing.
+ * Whether ANY style could show the caution note for this person. The status
+ * is loader data and never changes on this screen, so a person with no
+ * pregnancy or lactation on file gets no caution slot at all: the note cannot
+ * appear for them, and its height is not reserved for nothing.
  */
-export function styleFollowUpLayers(reproductiveStatus: ReproductiveStatus | null): StyleFollowUpLayer[] {
-  const layers = new Map<string, StyleFollowUp>();
-  for (const candidate of EATING_STYLES) {
-    const followUp = styleFollowUp(candidate.id, reproductiveStatus);
-    const key = followUpKey(followUp);
-    if (key !== '' && !layers.has(key)) layers.set(key, followUp);
-  }
-  return Array.from(layers, ([key, followUp]) => ({ key, followUp }));
+export function canShowStyleCaution(reproductiveStatus: ReproductiveStatus | null): boolean {
+  return EATING_STYLES.some((candidate) => styleFollowUp(candidate.id, reproductiveStatus).hasCaution);
+}
+
+/** The attributes of one follow-up slot: shown, or holding its place hidden, inert and silent. */
+interface FollowUpSlotAttributes {
+  className: string;
+  inert: boolean;
+  'aria-hidden': true | undefined;
+}
+
+/** A slot's wrapper attributes. See `StyleFollowUpCell` for why a hidden slot stays in the layout. */
+function followUpSlotAttributes(isActive: boolean): FollowUpSlotAttributes {
+  return {
+    className: cn(!isActive && 'invisible [&_*]:transition-none'),
+    inert: !isActive,
+    'aria-hidden': isActive ? undefined : true,
+  };
 }
 
 /**
- * ONE CELL for every follow-up a style can ask: the caution note, the carb
- * limit and the calorie target (owner report, 2026-10-01).
+ * Every follow-up a style can ask, in FIXED SLOTS that never leave the layout
+ * (owner report, 2026-10-01): the caution note (only for a person it can
+ * apply to), then the carb limit, then the calorie target. Each control is
+ * drawn once, and a pick only shows or hides slots, so nothing on screen
+ * moves, neither below the cell nor inside it. Stacking the questions as
+ * layers of one grid cell was tried first and made the calorie field jump
+ * 257 px between "low-carb and calories" and "calories".
  *
- * Each distinct follow-up is one LAYER, and all layers sit in the same grid
- * area, so the cell is as tall as the tallest of them from the first paint
- * and a pick only swaps which layer shows. Layers rather than one slot per
- * question, because "low-carb and calories" asks two things at once while
- * "calories" asks one: one slot per question would leave a gap above the
- * calorie field, and overlapping the questions would draw one over the other.
+ * The price is a blank area: before any pick the whole cell is blank, and on
+ * "calories" the carb limit's slot is blank above the calorie field.
  *
- * A HIDDEN LAYER IS INERT AND SUBMITS NOTHING. It is `invisible`, `inert` and
- * `aria-hidden`, and its controls carry no `name` and no `id` and are
- * disabled, so the form sends exactly what it sent when only the picked
- * style's questions were mounted. `[&_*]:transition-none` hides a layer in the
- * same frame it stops applying, as in `forgot.tsx`: a child's own transition
- * would otherwise animate the inherited `visibility` and draw it for 150 ms.
- *
- * Before any pick every layer is hidden, which leaves a blank reserved area
- * above the actions. That is the accepted price of nothing moving.
+ * A HIDDEN SLOT IS INERT AND SUBMITS NOTHING. It is `invisible`, `inert` and
+ * `aria-hidden`, and its controls carry no `name` and are disabled, so the
+ * form sends exactly what it sent when only the picked style's questions were
+ * mounted. `[&_*]:transition-none` hides a slot in the same frame it stops
+ * applying, as in `forgot.tsx`: a child's own transition would otherwise
+ * animate the inherited `visibility` and draw it for 150 ms.
  */
 function StyleFollowUpCell({
   style,
@@ -1074,39 +1067,32 @@ function StyleFollowUpCell({
   onKcalTargetChange: (value: string) => void;
   errors: StyleStepErrors;
 }) {
-  const activeKey = style === null ? null : followUpKey(styleFollowUp(style, reproductiveStatus));
+  const active = style === null ? null : styleFollowUp(style, reproductiveStatus);
+  const showsCarbLimit = active?.asksCarbLimit === true;
+  const showsCalories = active?.asksCalories === true;
   return (
-    <div data-slot="style-follow-up" className="grid [&>*]:col-start-1 [&>*]:row-start-1">
-      {styleFollowUpLayers(reproductiveStatus).map(({ key, followUp }) => {
-        const isActive = key === activeKey;
-        return (
-          <div
-            key={key}
-            data-follow-up-layer={key}
-            className={cn('space-y-6', !isActive && 'invisible [&_*]:transition-none')}
-            inert={!isActive}
-            aria-hidden={isActive ? undefined : true}
-          >
-            {followUp.hasCaution && <StyleCautionText />}
-            {followUp.asksCarbLimit && (
-              <CarbPresetPicker
-                selected={carbPreset}
-                onSelect={onCarbPresetSelect}
-                errorKey={errors.carbPreset}
-                isActive={isActive}
-              />
-            )}
-            {followUp.asksCalories && (
-              <KcalTargetField
-                value={kcalTarget}
-                onValueChange={onKcalTargetChange}
-                errorKey={errors.kcalTarget}
-                isActive={isActive}
-              />
-            )}
-          </div>
-        );
-      })}
+    <div data-slot="style-follow-up" className="space-y-6">
+      {canShowStyleCaution(reproductiveStatus) && (
+        <div data-follow-up-slot="caution" {...followUpSlotAttributes(active?.hasCaution === true)}>
+          <StyleCautionText />
+        </div>
+      )}
+      <div data-follow-up-slot="carbs" {...followUpSlotAttributes(showsCarbLimit)}>
+        <CarbPresetPicker
+          selected={carbPreset}
+          onSelect={onCarbPresetSelect}
+          errorKey={errors.carbPreset}
+          isActive={showsCarbLimit}
+        />
+      </div>
+      <div data-follow-up-slot="kcal" {...followUpSlotAttributes(showsCalories)}>
+        <KcalTargetField
+          value={kcalTarget}
+          onValueChange={onKcalTargetChange}
+          errorKey={errors.kcalTarget}
+          isActive={showsCalories}
+        />
+      </div>
     </div>
   );
 }
@@ -1144,7 +1130,7 @@ function CarbPresetPicker({
   selected: string | null;
   onSelect: (id: string) => void;
   errorKey?: string;
-  /** False in a hidden layer of `StyleFollowUpCell`: no name, no slot, no ids, nothing submitted. */
+  /** False while its slot in `StyleFollowUpCell` is hidden: no name, disabled, nothing submitted. */
   isActive: boolean;
 }) {
   const { t } = useTranslation();
@@ -1178,7 +1164,7 @@ function CarbPresetPicker({
           line from the first paint, so picking a chip, or switching between
           two, moves nothing below it (DESIGN.md section 7). It used to render
           only once a chip was picked, and the Continue button dropped 24 px. */}
-      <p data-slot={isActive ? 'carb-preset-detail' : undefined} className="grid text-xs text-muted-foreground">
+      <p data-slot="carb-preset-detail" className="grid text-xs text-muted-foreground">
         {STYLE_CARB_PRESETS.map((preset) => (
           <span
             key={preset.id}
@@ -1189,7 +1175,7 @@ function CarbPresetPicker({
         ))}
       </p>
       <FieldError
-        id={isActive ? 'carbPreset-error' : undefined}
+        id="carbPreset-error"
         errors={errorKey === undefined ? undefined : [t(errorKey)]}
       />
     </fieldset>
@@ -1272,20 +1258,20 @@ function KcalTargetField({
   errorKey,
   isActive,
 }: {
-  /** The typed text, owned by `StyleStep` so it follows the person across layers. */
+  /** The typed text, owned by `StyleStep` so it follows the person across styles. */
   value: string;
   onValueChange: (value: string) => void;
   errorKey?: string;
-  /** False in a hidden layer of `StyleFollowUpCell`: no name, no ids, nothing submitted. */
+  /** False while its slot in `StyleFollowUpCell` is hidden: no name, disabled, nothing submitted. */
   isActive: boolean;
 }) {
   const { t } = useTranslation();
   const hasError = errorKey !== undefined;
   return (
     <div className="space-y-2 border border-dashed p-4">
-      <Label htmlFor={isActive ? KCAL_TARGET_FIELD : undefined}>{t('onboarding.kcal.requiredLabel')}</Label>
+      <Label htmlFor={KCAL_TARGET_FIELD}>{t('onboarding.kcal.requiredLabel')}</Label>
       <Input
-        id={isActive ? KCAL_TARGET_FIELD : undefined}
+        id={KCAL_TARGET_FIELD}
         name={isActive ? KCAL_TARGET_FIELD : undefined}
         disabled={!isActive}
         type="number"
@@ -1297,10 +1283,10 @@ function KcalTargetField({
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
         aria-invalid={hasError ? true : undefined}
-        aria-describedby={hasError && isActive ? 'kcalTarget-error' : undefined}
+        aria-describedby={hasError ? 'kcalTarget-error' : undefined}
         className="h-11"
       />
-      <FieldError id={isActive ? 'kcalTarget-error' : undefined} errors={hasError ? [t(errorKey)] : undefined} />
+      <FieldError id="kcalTarget-error" errors={hasError ? [t(errorKey)] : undefined} />
     </div>
   );
 }

@@ -17,13 +17,16 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { z } from 'zod';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
 import { isHiddenLayer, outerElements } from './markup-elements';
-import { StyleCautionNote, StyleStep, styleFollowUpLayers } from '../../app/routes/onboarding';
+import { StyleCautionNote, StyleStep, canShowStyleCaution } from '../../app/routes/onboarding';
 import type { StyleStepData } from '../../app/routes/onboarding';
 import { EATING_STYLE_IDS, STYLE_CAUTION_SOURCE_URL } from '../../app/lib/eating-style';
 import type { EatingStyleId } from '../../app/lib/eating-style';
@@ -238,6 +241,35 @@ describe('the caution note', () => {
   });
 });
 
+/**
+ * The words the English catalog puts INSIDE the caution note's source link.
+ * Read from the catalog, so a rewording does not redden this file, but a run
+ * that stops landing inside the link does: a `<source>` tag is a void element
+ * to the Trans parser, and with it the link was drawn empty while its words
+ * sat after it as plain text.
+ */
+function cautionLinkWords(): string {
+  const catalog = z
+    .object({ onboarding: z.object({ style: z.object({ caution: z.string() }) }) })
+    .parse(JSON.parse(readFileSync(fileURLToPath(new URL('../../app/i18n/locales/en/common.json', import.meta.url)), 'utf8')));
+  const words = /<sourceLink>(.+?)<\/sourceLink>/.exec(catalog.onboarding.style.caution)?.[1];
+  if (words === undefined) throw new Error('the caution sentence has no <sourceLink> run');
+  return words;
+}
+
+/** The text inside the first `<a ...>` of the markup, or `null` when there is no link. */
+function firstLinkText(markup: string): string | null {
+  return /<a [^>]*>([^<]*)<\/a>/.exec(markup)?.[1] ?? null;
+}
+
+describe('the caution note source link', () => {
+  it('carries the words the catalog puts inside it', () => {
+    assert.equal(firstLinkText(renderCaution('low-carb', 'pregnant')), cautionLinkWords());
+    // CONTROL: the empty link the void `<source>` tag produced fails the same check.
+    assert.notEqual(firstLinkText('<p>Read <a href="x"></a>what the DGE advises.</p>'), cautionLinkWords());
+  });
+});
+
 describe('the caution note on a first run', () => {
   // Not a wish, a consequence of the step order: the body step, where a
   // status is recorded, comes after this one. A first-run device therefore has
@@ -341,72 +373,75 @@ describe('the carb limit detail line', () => {
   });
 });
 
-/** The attribute each layer of the follow-up cell carries. */
-const FOLLOW_UP_LAYER = 'data-follow-up-layer=';
+/** The attribute each slot of the follow-up cell carries. */
+const FOLLOW_UP_SLOT = 'data-follow-up-slot=';
 
-/** The follow-up layers in the markup, each as `key` plus whether a person can see it. */
-function followUpLayers(markup: string): { key: string | undefined; isShown: boolean; markup: string }[] {
-  return outerElements(markup, FOLLOW_UP_LAYER).map((layer) => ({
-    key: /data-follow-up-layer="([^"]+)"/.exec(layer)?.[1],
-    isShown: !isHiddenLayer(layer),
-    markup: layer,
+/** The follow-up slots in the markup, each as `key` plus whether a person can see it. */
+function followUpSlots(markup: string): { key: string | undefined; isShown: boolean; markup: string }[] {
+  return outerElements(markup, FOLLOW_UP_SLOT).map((slot) => ({
+    key: /data-follow-up-slot="([^"]+)"/.exec(slot)?.[1],
+    isShown: !isHiddenLayer(slot),
+    markup: slot,
   }));
 }
 
 describe('the follow-up cell', () => {
-  it('names one layer per distinct follow-up, and a caution layer only when a status could need one', () => {
-    assert.deepEqual(
-      styleFollowUpLayers(null).map((layer) => layer.key),
-      ['carbs', 'carbs+kcal', 'kcal'],
-    );
-    assert.deepEqual(
-      styleFollowUpLayers('none').map((layer) => layer.key),
-      ['carbs', 'carbs+kcal', 'kcal'],
-    );
-    // CONTROL: a pregnancy on file puts the note into every layer it applies to.
-    assert.deepEqual(
-      styleFollowUpLayers('pregnant').map((layer) => layer.key),
-      ['caution+carbs', 'caution+carbs+kcal', 'caution+kcal'],
-    );
+  it('reserves a caution slot only for a status the note can apply to', () => {
+    assert.equal(canShowStyleCaution(null), false);
+    assert.equal(canShowStyleCaution('none'), false);
+    // CONTROL: a pregnancy or a lactation on file reserves it.
+    assert.equal(canShowStyleCaution('pregnant'), true);
+    assert.equal(canShowStyleCaution('lactating'), true);
   });
 
-  it('draws every layer from the first paint, all hidden, and none of them submits', () => {
-    const layers = followUpLayers(renderStyleStep(fixture()));
+  it('draws each slot once from the first paint, all hidden, and none of them submits', () => {
+    const slots = followUpSlots(renderStyleStep(fixture()));
     assert.deepEqual(
-      layers.map((layer) => layer.key),
-      ['carbs', 'carbs+kcal', 'kcal'],
+      slots.map((slot) => slot.key),
+      ['carbs', 'kcal'],
     );
-    assert.ok(
-      layers.every((layer) => !layer.isShown),
-      'before a pick every layer holds its space and shows nothing',
-    );
-    for (const layer of layers) {
-      const inputs = layer.markup.match(/<input[^>]*>/g) ?? [];
-      assert.ok(inputs.length > 0, `${layer.key}: the reader found the layer's inputs`);
+    assert.ok(slots.every((slot) => !slot.isShown), 'before a pick every slot holds its space and shows nothing');
+    for (const slot of slots) {
+      const inputs = slot.markup.match(/<input[^>]*>/g) ?? [];
+      assert.ok(inputs.length > 0, `${slot.key}: the reader found the slot's inputs`);
       assert.ok(
         inputs.every((input) => !input.includes(' name=') && input.includes(' disabled=""')),
-        `${layer.key}: a hidden input is disabled and nameless`,
+        `${slot.key}: a hidden input is disabled and nameless`,
       );
-      assert.ok(layer.markup.slice(0, layer.markup.indexOf('>')).includes('inert'), `${layer.key}: inert`);
+      assert.ok(slot.markup.slice(0, slot.markup.indexOf('>')).includes('inert'), `${slot.key}: inert`);
     }
   });
 
-  it("shows exactly the picked style's layer, and nothing for a style that asks nothing", () => {
-    const expected = {
-      'low-carb': 'carbs',
-      'low-carb-low-kcal': 'carbs+kcal',
-      'low-kcal': 'kcal',
-      'high-protein': null,
-      'just-track': null,
-    } satisfies Record<EatingStyleId, string | null>;
+  it('draws the calorie field exactly once, in its own place, for every style', () => {
     for (const style of EATING_STYLE_IDS) {
-      const shown = followUpLayers(renderStyleStep(fixture({ eatingStyle: style }))).filter((layer) => layer.isShown);
+      const fields = renderStyleStep(fixture({ eatingStyle: style })).match(/<input[^>]*type="number"[^>]*>/g) ?? [];
+      assert.equal(fields.length, 1, `${style}: one calorie field, so a switch cannot move it`);
+    }
+  });
+
+  it("shows exactly the slots the picked style asks for, in the order caution, carbs, calories", () => {
+    const expected = {
+      'low-carb': ['carbs'],
+      'low-carb-low-kcal': ['carbs', 'kcal'],
+      'low-kcal': ['kcal'],
+      'high-protein': [],
+      'just-track': [],
+    } satisfies Record<EatingStyleId, string[]>;
+    for (const style of EATING_STYLE_IDS) {
+      const shown = followUpSlots(renderStyleStep(fixture({ eatingStyle: style }))).filter((slot) => slot.isShown);
       assert.deepEqual(
-        shown.map((layer) => layer.key),
-        expected[style] === null ? [] : [expected[style]],
-        `${style}: the shown layer`,
+        shown.map((slot) => slot.key),
+        expected[style],
+        `${style}: the shown slots`,
       );
     }
+    const pregnant = followUpSlots(
+      renderStyleStep(fixture({ eatingStyle: 'low-carb-low-kcal', reproductiveStatus: 'pregnant' })),
+    );
+    assert.deepEqual(
+      pregnant.map((slot) => slot.key),
+      ['caution', 'carbs', 'kcal'],
+    );
   });
 
   it('holds the caution note hidden for a pregnant person on a style it does not apply to', () => {
@@ -414,27 +449,27 @@ describe('the follow-up cell', () => {
     // Drawn, which reserves its height...
     assert.ok(markup.includes(STYLE_CAUTION_SOURCE_URL));
     // ...and read by nobody.
-    const shown = followUpLayers(markup).filter((layer) => layer.isShown);
-    assert.deepEqual(shown, []);
-    // CONTROL: the same person on low-carb reads it.
-    const lowCarb = followUpLayers(
-      renderStyleStep(fixture({ eatingStyle: 'low-carb', reproductiveStatus: 'pregnant' })),
+    assert.deepEqual(
+      followUpSlots(markup).filter((slot) => slot.isShown),
+      [],
     );
-    const lowCarbShown = lowCarb.filter((layer) => layer.isShown);
-    assert.equal(lowCarbShown.length, 1);
-    assert.ok(lowCarbShown[0]?.markup.includes(STYLE_CAUTION_SOURCE_URL));
+    // CONTROL: the same person on low-carb reads it.
+    const lowCarb = followUpSlots(
+      renderStyleStep(fixture({ eatingStyle: 'low-carb', reproductiveStatus: 'pregnant' })),
+    ).filter((slot) => slot.isShown);
+    assert.deepEqual(
+      lowCarb.map((slot) => slot.key),
+      ['caution', 'carbs'],
+    );
+    assert.ok(lowCarb[0]?.markup.includes(STYLE_CAUTION_SOURCE_URL));
   });
 });
 
-describe('the calorie target across follow-up layers', () => {
-  it('draws the stored target into every copy of the field, so a switch between calorie styles keeps it', () => {
+describe('the calorie target', () => {
+  it('starts from the stored target, which the step holds so a style switch keeps a typed one', () => {
     const markup = renderStyleStep(fixture({ eatingStyle: 'low-kcal', goalKcalTarget: 1800 }));
-    const fields = followUpLayers(markup)
-      .map((layer) => /<input[^>]*type="number"[^>]*>/.exec(layer.markup)?.[0])
-      .filter((tag): tag is string => tag !== undefined);
-    assert.equal(fields.length, 2, 'the kcal layer and the carbs+kcal layer each draw the field');
-    assert.ok(fields.every((tag) => tag.includes('value="1800"')), fields.join('\n'));
-    // CONTROL: with nothing stored, no copy carries a number.
+    assert.ok(markup.includes('value="1800"'));
+    // CONTROL: with nothing stored, the field carries no number.
     const blank = renderStyleStep(fixture({ eatingStyle: 'low-kcal' }));
     assert.equal(blank.includes('value="1800"'), false);
   });

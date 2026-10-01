@@ -75,13 +75,13 @@ const KEY_DELAY_MS = 60;
  */
 async function typeAndWatch(page: Page, field: Locator, edits: readonly Edit[]): Promise<EditReading> {
   await settleAnimations(page);
-  const baseline = await readTops(page, { visibleOnly: true });
+  const baseline = await readTops(page);
   const entriesBefore = (await readShiftEntries(page)).length;
   const moves: EditReading['moves'] = [];
 
   const record = async (label: string): Promise<void> => {
     await settleFrames(page);
-    for (const move of movedBetween(baseline, await readTops(page, { visibleOnly: true }))) {
+    for (const move of movedBetween(baseline, await readTops(page))) {
       moves.push({ element: move.element, dy: move.dy, after: label });
     }
   };
@@ -126,13 +126,13 @@ async function typeAndWatch(page: Page, field: Locator, edits: readonly Edit[]):
  */
 async function watch(page: Page, label: string, act: () => Promise<void>): Promise<EditReading> {
   await settleAnimations(page);
-  const baseline = await readTops(page, { visibleOnly: true });
+  const baseline = await readTops(page);
   const entriesBefore = (await readShiftEntries(page)).length;
   await act();
   await settleAnimations(page);
   const entries = (await readShiftEntries(page)).slice(entriesBefore);
   return {
-    moves: movedBetween(baseline, await readTops(page, { visibleOnly: true })).map((move) => ({
+    moves: movedBetween(baseline, await readTops(page)).map((move) => ({
       element: move.element,
       dy: move.dy,
       after: label,
@@ -319,13 +319,13 @@ test('a keyboard-sized viewport change moves nothing already on screen', async (
   // `readTops` measures from the top of the page, so a keyboard that scrolls
   // the focused field into view is not read as a move; an element moving
   // relative to the page is.
-  const before = await readTops(page, { visibleOnly: true });
+  const before = await readTops(page);
   const viewport = page.viewportSize();
   if (viewport === null) throw new Error('the phone project always sets a viewport');
   // About the height a phone keyboard takes from an 844 px screen.
   await page.setViewportSize({ width: viewport.width, height: viewport.height - 336 });
   await settleFrames(page);
-  const after = await readTops(page, { visibleOnly: true });
+  const after = await readTops(page);
   expect(movedBetween(before, after), 'elements moved when the viewport lost a keyboard of height').toEqual([]);
 });
 
@@ -559,8 +559,12 @@ for (const screen of MEASURED_SCREENS) {
         const keys = (await submittedFields(page, STYLE_STEP_FIELDS)).map((line) => line.slice(0, line.indexOf('=')));
         expect(keys, `what the step submits on ${style}`).toEqual(styleStepKeys(style));
       }
-      // The follow-up the last pick asked for is really on screen: the
-      // reservation hides the others, never the one in force.
+      // CONTROL that the questions a style asks are really on screen: the
+      // reservation hides the others, never the ones in force.
+      expectNoShift(
+        await clickAndWatch(page, styleCard(page, 'low-carb-low-kcal'), 'picking low-carb-low-kcal'),
+        'style low-carb-low-kcal, again',
+      );
       await expect(page.locator('#kcalTarget')).toBeVisible();
       await expect(page.locator('label:has(input[name="carbPreset"][value="keto"])')).toBeVisible();
 
@@ -601,21 +605,26 @@ for (const screen of MEASURED_SCREENS) {
       // caution note is written for.
       await page.goto('/onboarding?step=focus');
       await expect(page.getByText(EN.onboarding.style.title)).toBeVisible();
-      // The sentence that carries the source link. Not the link itself: its
-      // `<source>` tag is a void element to the Trans parser, so the link is
-      // drawn EMPTY, zero wide, and reads as hidden in every state (a defect
-      // of its own, reported separately).
-      const cautionLink = page.locator('main p', {
-        has: page.getByRole('link', { name: EN.onboarding.style.sourceLabel }),
-      });
+      const cautionLink = page.getByRole('link', { name: EN.onboarding.style.sourceLabel });
+      // The words the catalog puts inside the link. They used to land OUTSIDE
+      // it, the link drawn empty and zero wide, because a `<source>` tag is a
+      // void element to the Trans parser.
+      const linkWords = /<sourceLink>(.+?)<\/sourceLink>/.exec(EN.onboarding.style.caution)?.[1];
+      if (linkWords === undefined) throw new Error('the caution sentence has no <sourceLink> run');
 
       for (const style of STYLE_CYCLE) {
         expectNoShift(await clickAndWatch(page, styleCard(page, style), `picking ${style}`), `style ${style}`);
         const isCautioned = style === 'low-carb' || style === 'low-carb-low-kcal' || style === 'low-kcal';
         // CONTROL that the note really is part of what swaps: shown for the
         // three restricting styles, gone for the other two.
-        if (isCautioned) await expect(cautionLink, `the caution note on ${style}`).toBeVisible();
-        else await expect(cautionLink, `no caution note on ${style}`).toBeHidden();
+        if (!isCautioned) {
+          await expect(cautionLink, `no caution note on ${style}`).toBeHidden();
+          continue;
+        }
+        await expect(cautionLink, `the caution note on ${style}`).toBeVisible();
+        await expect(cautionLink, 'the source link carries its words').toHaveText(linkWords);
+        const box = await cautionLink.boundingBox();
+        expect(box?.width ?? 0, 'the source link has a width a finger can hit').toBeGreaterThan(0);
       }
     });
 

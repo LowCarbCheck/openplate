@@ -511,9 +511,10 @@ keys at 44px, instead of cutting the version number off the end.
   its fallback, as `WayToLogCard` does. Only an expansion the person asked for (a disclosure, a
   picked style revealing its own fields) may push content down, and never content above the tap
   point. Onboarding is stricter (owner report, 2026-10-01): a pick there moves nothing at all. Every
-  answer a pick can reveal is drawn from the first paint as one layer of a single grid cell, only the
-  picked one shows, and a hidden layer is `invisible`, `inert`, `aria-hidden` and submits nothing
-  (`StyleFollowUpCell`, `reserveLayout` on `ReproductiveStatusFields`, `FirstFoodInstallReserve`).
+  answer a pick can reveal is drawn from the first paint and only shown or hidden: in fixed slots
+  when two can show at once (`StyleFollowUpCell`), as layers of one grid cell when only one can
+  (`reserveLayout` on `ReproductiveStatusFields`, `FirstFoodInstallReserve`). A hidden one is
+  `invisible`, `inert`, `aria-hidden` and submits nothing.
   Check it in `tests/e2e/`: read `getBoundingClientRect().top` of the elements below the
   change before and after, and require a `layout-shift` `PerformanceObserver` total of 0. A
   screenshot alone proves nothing here.

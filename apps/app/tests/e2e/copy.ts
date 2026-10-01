@@ -71,8 +71,11 @@ const catalogSchema = z.object({
   }),
   onboarding: z.object({
     actions: z.object({ continue: z.string(), skip: z.string() }),
-    /** `sourceLabel` names the caution note's source link, which only a stored pregnancy shows. */
-    style: z.object({ title: z.string(), sourceLabel: z.string() }),
+    /**
+     * `sourceLabel` names the caution note's source link, which only a stored
+     * pregnancy shows; `caution` is the sentence that carries it.
+     */
+    style: z.object({ title: z.string(), sourceLabel: z.string(), caution: z.string() }),
     step: z.object({
       weight: z.object({ title: z.string() }),
       body: z.object({ title: z.string() }),
