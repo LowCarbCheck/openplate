@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-10-01
+
+This release adds migration 0030, which creates the table `ai_trial_network_days` and runs on boot as usual. No env change is required. New optional variables are `AI_TRIAL_NETWORK_DAILY_LIMIT`, `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` and `LEGAL_DECLARATION_RECEIPTS_PER_DAY`.
+
 ### Added
 
 - **One network can spend only a share of the trial ceiling.** Roughly twenty farmed trial accounts could exhaust `AI_TRIAL_INSTANCE_DAILY_LIMIT`, blocking every genuine new user on their first scan. Trial requests from one caller network can now consume at most `AI_TRIAL_NETWORK_DAILY_LIMIT` units per UTC day. When unset, the limit defaults to one-tenth of the trial ceiling, rounded down, with a minimum of 1 (100 of the 1000 production units). It is inactive when no trial ceiling is configured. A network is an IPv6 /64 or a single IPv4 address, folded by `src/lib/client-address.ts` matching the sign-in throttles. Refused requests return `503 ai-instance-ceiling` with `Retry-After`, requiring no client changes. They deduct no scans or units, and trigger no upstream provider calls. Requests under paid windows or free grants are neither counted nor blocked. Multiple users behind one IPv4 carrier NAT share a bucket by design; IPv6 callers receive their own /64. Migration 0030 adds the `ai_trial_network_days` table, which stores one counter per network per day. Keys are an HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER` of the network and day, never raw addresses. An hourly sweep deletes rows older than today. Values of zero, values exceeding the trial ceiling, or values set without a trial ceiling halt startup. `tests/unit/trial-network.test.ts`, `tests/unit/config.test.ts`, and `tests/integration/trial-network-share.test.ts` verify this behavior.
