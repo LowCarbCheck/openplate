@@ -14,9 +14,16 @@
  * Using net carbs here would make this split disagree with the app's own
  * derived calorie totals.
  *
+ * THE SAME THREE SEGMENTS CAN BE READ BY GRAMS. The card carries a kcal/g
+ * control (`#app/lib/macro-share-basis`), and on `'grams'` the share is each
+ * macro's grams over the three macros' grams, with no Atwater factor: one
+ * gram weighs one gram. The maths, the pooling and the `null` rules are the
+ * same on both bases.
+ *
  * A day that is `hasUnknowns` gives `null`: some macro is missing, so any split
  * drawn from what is known would be a guess dressed as a proportion.
  */
+import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 import type { DaySummary } from '#app/models/food-log-summary';
 
 /** Atwater energy factor for protein, kcal per gram. */
@@ -26,14 +33,14 @@ const KCAL_PER_G_CARB = 4;
 /** Atwater energy factor for fat, kcal per gram. */
 const KCAL_PER_G_FAT = 9;
 
-/** Each macro's share of the worked-out energy, in percent. The three sum to 100. */
+/** Each macro's share of the worked-out energy (or of the grams), in percent. The three sum to 100. */
 export interface MacroEnergyShares {
   protein: number;
   carbs: number;
   fat: number;
 }
 
-/** Energy per macro, in kcal, before it is turned into shares. */
+/** Energy per macro in kcal (or grams, on the gram basis) before it is turned into shares. */
 interface MacroEnergy {
   protein: number;
   carbs: number;
@@ -44,12 +51,16 @@ interface MacroEnergy {
  * The energy split of one day (or one averaged week).
  *
  * @param summary - the day's macro summary, or `null` for a day with nothing logged.
+ * @param basis - `'kcal'` for the energy share (4/4/9, the default), `'grams'` for the gram share.
  * @returns the three shares in percent, or `null` when nothing was logged, the
- *   day has missing macros, or the macros add up to no energy at all.
+ *   day has missing macros, or the macros add up to nothing at all.
  */
-export function computeMacroEnergySplit(summary: DaySummary | null): MacroEnergyShares | null {
+export function computeMacroEnergySplit(
+  summary: DaySummary | null,
+  basis: MacroShareBasis = 'kcal',
+): MacroEnergyShares | null {
   if (summary === null || summary.hasUnknowns) return null;
-  return sharesOf(energyOf(summary));
+  return sharesOf(energyOf(summary, basis));
 }
 
 /**
@@ -59,29 +70,34 @@ export function computeMacroEnergySplit(summary: DaySummary | null): MacroEnergy
  * (unlogged or partial) are left out, never counted as zero.
  *
  * @param summaries - the range's day summaries, `null` for an unlogged day.
+ * @param basis - `'kcal'` for the energy share, `'grams'` for the gram share.
  * @returns the pooled shares, or `null` when no day in the range has a split.
  */
-export function computeRangeEnergySplit(summaries: readonly (DaySummary | null)[]): MacroEnergyShares | null {
+export function computeRangeEnergySplit(
+  summaries: readonly (DaySummary | null)[],
+  basis: MacroShareBasis = 'kcal',
+): MacroEnergyShares | null {
   // A day with no energy adds nothing to the pool, so only the two
   // "no split" cases that carry grams have to be left out by hand.
   const counted = summaries.filter((summary): summary is DaySummary => summary !== null && !summary.hasUnknowns);
-  const pooled = counted.map(energyOf).reduce(
+  const pooled = counted.map((summary) => energyOf(summary, basis)).reduce(
     (sum, energy) => ({ protein: sum.protein + energy.protein, carbs: sum.carbs + energy.carbs, fat: sum.fat + energy.fat }),
     { protein: 0, carbs: 0, fat: 0 },
   );
   return sharesOf(pooled);
 }
 
-/** Grams times the Atwater factors. Negative grams cannot happen upstream, but are clamped so a share can never go negative. */
-function energyOf(summary: DaySummary): MacroEnergy {
+/** Grams times the Atwater factors on the kcal basis, plain grams on the gram basis. Negative grams cannot happen upstream, but are clamped so a share can never go negative. */
+function energyOf(summary: DaySummary, basis: MacroShareBasis): MacroEnergy {
+  const isKcal = basis === 'kcal';
   return {
-    protein: Math.max(0, summary.protein) * KCAL_PER_G_PROTEIN,
-    carbs: Math.max(0, summary.carbs) * KCAL_PER_G_CARB,
-    fat: Math.max(0, summary.fat) * KCAL_PER_G_FAT,
+    protein: Math.max(0, summary.protein) * (isKcal ? KCAL_PER_G_PROTEIN : 1),
+    carbs: Math.max(0, summary.carbs) * (isKcal ? KCAL_PER_G_CARB : 1),
+    fat: Math.max(0, summary.fat) * (isKcal ? KCAL_PER_G_FAT : 1),
   };
 }
 
-/** Energy turned into percentages of its own total, or `null` for no energy. */
+/** The amounts turned into percentages of their own total, or `null` for nothing. */
 function sharesOf(energy: MacroEnergy): MacroEnergyShares | null {
   const total = energy.protein + energy.carbs + energy.fat;
   if (total <= 0) return null;

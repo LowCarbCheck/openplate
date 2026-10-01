@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Macro breakdowns show the calorie share by default.** A small kcal/g control next to each bar switches to the gram share, and the choice is kept on the device.
+
 ## [0.60.0] - 2026-10-01
 
 ### Added

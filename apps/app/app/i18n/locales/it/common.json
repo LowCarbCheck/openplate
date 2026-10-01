@@ -682,9 +682,15 @@
       "absolute": "{{value}} calorie"
     },
     "loading": "Caricamento del tuo diario…",
+    "macroBasis": {
+      "group": "Base di calcolo",
+      "grams": "g",
+      "kcal": "kcal"
+    },
     "macroRatio": {
       "empty": "Nessun macro ancora registrato",
-      "label": "Rapporto macro: {{ratio}}",
+      "labelGrams": "Rapporto tra macronutrienti in grammi: {{ratio}}",
+      "labelKcal": "Rapporto tra macronutrienti in calorie: {{ratio}}",
       "segment": "{{percent}}% {{macro}}",
       "share": "{{percent}}%"
     },
@@ -3058,6 +3064,8 @@
     "split": {
       "title": "Da dove provengono le tue calorie",
       "note": "Calcolato da proteine, carboidrati e grassi, quindi può differire leggermente dal tuo totale di calorie.",
+      "noteGrams": "Ogni quota rappresenta i grammi del macronutriente rispetto ai grammi di tutti e tre.",
+      "titleGrams": "Origine dei tuoi grammi",
       "average": "Media",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

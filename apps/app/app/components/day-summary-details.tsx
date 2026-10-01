@@ -46,9 +46,12 @@ import { describeSuggestion, rankFoodSuggestions } from '#app/lib/food-suggestio
 import type { FoodSuggestion } from '#app/lib/food-suggestions';
 import { SUGGESTION_FOODS } from '#app/data/suggestion-foods';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { MacroBasisToggle } from '#app/components/macro-basis-toggle';
 import { MacroRatioBar } from '#app/components/macro-ratio-bar';
-import { computeMacroRatioPercentages } from '#app/lib/macro-ratio';
+import { computeMacroShares, percentOfShare } from '#app/lib/macro-ratio';
 import type { MacroRatioGrams } from '#app/lib/macro-ratio';
+import { useMacroShareBasis } from '#app/lib/macro-share-basis';
+import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 import { SectionEyebrow } from '#app/components/typography';
 import {
   DATA_ROW_CLASS,
@@ -444,7 +447,7 @@ export function SuggestionsDisclosure({
 // What you ate
 ////////////////////////////////////////////////////////////////////////////////
 
-/** Order + label keys for the macro figures, mirroring `MacroRatioBar`'s own `MACRO_ORDER` (Carbs · Fiber · Protein · Fat). */
+/** Order + label keys for the macro figures, in the order the gram-basis `MacroRatioBar` draws its segments (Carbs · Fiber · Protein · Fat). */
 const MACRO_BREAKDOWN_FIGURES: { key: 'carbs' | 'fiber' | 'protein' | 'fat'; labelKey: string }[] = [
   { key: 'carbs', labelKey: 'diary.macros.carbs' },
   { key: 'fiber', labelKey: 'diary.macros.fiber' },
@@ -512,30 +515,51 @@ const MACRO_DOT_CLASS = {
  * are in a fixed order matching the ratio bar's segment order, and the colour
  * is the dot rather than the text colour of the figure itself.
  *
+ * THE SHARE IS BY CALORIES UNLESS THE PERSON CHOSE GRAMS. The calorie share
+ * (protein and carbs at 4 kcal per gram, fat at 9) has three segments: fibre
+ * is not an energy source here. The grid still has FOUR cells in both modes,
+ * so switching never moves the line below: in calorie mode the fibre cell is
+ * drawn `invisible`, which keeps its box and takes it out of the accessibility
+ * tree. It carries the very text the gram mode shows, so its height is the
+ * same in both modes whatever the language wraps to.
+ *
  * @param grams - the day's macro grams, the SAME object the bar above is given, so the legend and the segments can never be computed from different figures.
+ * @param basis - the share the bar above draws, so a cell reports the quantity its segment encodes.
  */
-function MacroBreakdown({ grams }: { grams: MacroRatioGrams }) {
+export function MacroBreakdown({ grams, basis }: { grams: MacroRatioGrams; basis: MacroShareBasis }) {
   const { t } = useTranslation();
   // Nothing logged means there is no ratio to state, and the bar above draws
   // its empty track for the same reason. "0 %" would be a claim about the day
   // rather than an admission about it, so the cells borrow the catalog's own
   // word for a macro figure it does not have.
-  const percentages = computeMacroRatioPercentages(grams);
+  const shares = computeMacroShares(grams, basis);
+  // What the invisible fibre cell holds: its gram share, the text it shows in gram mode.
+  const gramShares = basis === 'grams' ? shares : computeMacroShares(grams, 'grams');
   return (
-    <dl data-slot="macro-breakdown" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {MACRO_BREAKDOWN_FIGURES.map(({ key, labelKey }) => (
-        <div key={key} className={cn(DATA_ROW_CLASS, 'min-w-0 flex-wrap gap-x-1.5 gap-y-0 p-2')}>
-          <span className={cn(DATA_ROW_DOT_CLASS, 'size-2.5', MACRO_DOT_CLASS[key])} aria-hidden="true" />
-          <dt className={cn(DATA_ROW_LABEL_CLASS, 'min-w-0 break-words text-[11px] uppercase tracking-[0.08em]')}>
-            {t(labelKey)}
-          </dt>
-          <dd data-slot="macro-share" className={cn(DATA_ROW_VALUE_CLASS, 'text-foreground')}>
-            {percentages === null ?
-              t('diary.macros.unknown')
-            : t('diary.macroRatio.share', { percent: Math.round(percentages[key]) })}
-          </dd>
-        </div>
-      ))}
+    <dl data-slot="macro-breakdown" data-basis={basis} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {MACRO_BREAKDOWN_FIGURES.map(({ key, labelKey }) => {
+        const shown = shares === null ? null : percentOfShare({ shares, key });
+        const isReserved = shown === null && shares !== null;
+        const percent = isReserved && gramShares !== null ? percentOfShare({ shares: gramShares, key }) : shown;
+        return (
+          <div
+            key={key}
+            data-slot="macro-share-cell"
+            data-macro={key}
+            className={cn(DATA_ROW_CLASS, 'min-w-0 flex-wrap gap-x-1.5 gap-y-0 p-2', isReserved && 'invisible')}
+          >
+            <span className={cn(DATA_ROW_DOT_CLASS, 'size-2.5', MACRO_DOT_CLASS[key])} aria-hidden="true" />
+            <dt className={cn(DATA_ROW_LABEL_CLASS, 'min-w-0 break-words text-[11px] uppercase tracking-[0.08em]')}>
+              {t(labelKey)}
+            </dt>
+            <dd data-slot="macro-share" className={cn(DATA_ROW_VALUE_CLASS, 'text-foreground')}>
+              {percent === null ?
+                t('diary.macros.unknown')
+              : t('diary.macroRatio.share', { percent: Math.round(percent) })}
+            </dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }
@@ -567,6 +591,7 @@ export function WhatYouAte({
   kcalLine: ReactNode;
 }) {
   const { t } = useTranslation();
+  const [basis, setBasis] = useMacroShareBasis();
   // ONE object, read by the bar and by the cells under it. Built here rather
   // than twice, so a segment's width and the figure naming it cannot be
   // computed from different numbers.
@@ -578,9 +603,14 @@ export function WhatYouAte({
   };
   return (
     <div className="space-y-3">
-      <SectionEyebrow as="h4">{t('diary.drilldown.whatYouAte')}</SectionEyebrow>
-      <MacroRatioBar grams={grams} className="h-2.5" />
-      <MacroBreakdown grams={grams} />
+      {/* The title row reserves the toggle's 44 px from the first paint, so
+          the control's presence moves nothing. */}
+      <div className="flex items-center justify-between gap-2">
+        <SectionEyebrow as="h4">{t('diary.drilldown.whatYouAte')}</SectionEyebrow>
+        <MacroBasisToggle basis={basis} onChange={setBasis} idPrefix="what-you-ate-basis" />
+      </div>
+      <MacroRatioBar grams={grams} basis={basis} className="h-2.5" />
+      <MacroBreakdown grams={grams} basis={basis} />
       <div className="space-y-1">
         {kcalLine}
         <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsDefinition')}</p>

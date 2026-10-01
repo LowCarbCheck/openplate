@@ -123,3 +123,43 @@ describe('computeRangeEnergySplit', () => {
     assert.strictEqual(computeRangeEnergySplit([null, summary({ fat: 10, hasUnknowns: true })]), null);
   });
 });
+
+describe('the gram basis of the energy split', () => {
+  it('takes each macro as grams over the three macros grams, with no 4/4/9 weighting', () => {
+    const grams = summary({ protein: 100, carbs: 100, netCarbs: 100, fat: 100 });
+    const byGrams = computeMacroEnergySplit(grams, 'grams');
+    const byKcal = computeMacroEnergySplit(grams, 'kcal');
+
+    assert.ok(byGrams !== null && byKcal !== null);
+    assertShare(byGrams.fat, 100 / 3);
+    assertShare(byGrams.protein, 100 / 3);
+    // Control: the calorie basis of the same day puts fat at 900 / 1700, so the bases differ.
+    assertShare(byKcal.fat, (900 / 1700) * 100);
+  });
+
+  it('keeps the calorie basis as the default when no basis is given', () => {
+    const day = summary({ protein: 100, carbs: 100, netCarbs: 100, fat: 100 });
+    assert.deepStrictEqual(computeMacroEnergySplit(day), computeMacroEnergySplit(day, 'kcal'));
+  });
+
+  it('still gives null for a partial day, an unlogged one and an empty one', () => {
+    assert.strictEqual(computeMacroEnergySplit(summary({ protein: 10, hasUnknowns: true }), 'grams'), null);
+    assert.strictEqual(computeMacroEnergySplit(null, 'grams'), null);
+    assert.strictEqual(computeMacroEnergySplit(summary(), 'grams'), null);
+    // Control: the same grams without the unknowns flag DO split.
+    assert.notStrictEqual(computeMacroEnergySplit(summary({ protein: 10 }), 'grams'), null);
+  });
+
+  it('pools grams across the range, so a big day weighs more than a small one', () => {
+    // Day one: 100 g protein. Day two: 200 g fat. Pooled by grams, protein is 100 / 300.
+    const pooled = computeRangeEnergySplit([summary({ protein: 100 }), summary({ fat: 200 })], 'grams');
+
+    assert.ok(pooled !== null);
+    assertShare(pooled.protein, (100 / 300) * 100);
+    assertShare(totalOf(pooled), 100);
+    // Control: by calories the same range is 400 / 2200.
+    const kcal = computeRangeEnergySplit([summary({ protein: 100 }), summary({ fat: 200 })], 'kcal');
+    assert.ok(kcal !== null);
+    assertShare(kcal.protein, (400 / 2200) * 100);
+  });
+});

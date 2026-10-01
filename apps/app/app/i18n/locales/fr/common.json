@@ -682,9 +682,15 @@
       "absolute": "{{value}} calories"
     },
     "loading": "Chargement de ton journal…",
+    "macroBasis": {
+      "group": "Base de calcul des parts",
+      "grams": "g",
+      "kcal": "kcal"
+    },
     "macroRatio": {
       "empty": "Aucun macro enregistré pour le moment",
-      "label": "Ratio de macros : {{ratio}}",
+      "labelGrams": "Ratio des macros en grammes : {{ratio}}",
+      "labelKcal": "Ratio des macros en calories : {{ratio}}",
       "segment": "{{percent}}% {{macro}}",
       "share": "{{percent}}%"
     },
@@ -3058,6 +3064,8 @@
     "split": {
       "title": "D'où viennent tes calories",
       "note": "Calculé à partir des protéines, des glucides et des lipides, cela peut donc différer un peu de ton total de calories.",
+      "noteGrams": "Chaque part correspond aux grammes de ce macro par rapport au total des trois.",
+      "titleGrams": "Origine de tes grammes",
       "average": "Moyenne",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",
