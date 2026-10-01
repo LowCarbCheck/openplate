@@ -7,9 +7,13 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-10-01
+
+Bare-metal installs need Node 24 or newer.
+
 ### Changed
 
-- **The image runs on Node 24.** Both stages move from `node:22-alpine` to `node:24-alpine`. Corepack now provides pnpm 11.5.1 via the new `packageManager` field in `package.json`, replacing `npm i -g pnpm@11`. `engines.node` is `>=24`, up from `>=20`. Container execution remains unchanged. Check: `scripts/check-image-boots.sh core` at the repository root.
+- **The image runs on Node 24.** Both stages move from `node:22-alpine` to `node:24-alpine`. Corepack now provides pnpm 11.5.1 via the new `packageManager` field in `package.json`, replacing `npm i -g pnpm@11`. `engines.node` is `>=24`, up from `>=20`. Container execution remains unchanged. Check: `scripts/check-image-boots.sh core` at the repository root. ([0b10348](https://github.com/LowCarbCheck/openplate/commit/0b10348), [c59a4bf](https://github.com/LowCarbCheck/openplate/commit/c59a4bf), [90f5657](https://github.com/LowCarbCheck/openplate/commit/90f5657))
 
 ## [0.28.0] - 2026-10-01
 
