@@ -136,6 +136,7 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
     // handler, and `ai-proxy.test.ts` owns the ceiling's own properties.
     instanceDailyLimit: null,
     trialInstanceDailyLimit: null,
+    trialNetwork: null,
     bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
     inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
     // An instance that asks for no consent, which this file is not about.

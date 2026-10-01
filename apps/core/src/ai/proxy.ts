@@ -68,7 +68,9 @@
  * throw after it included, is given back in the handler's `finally`. A future
  * date lifts the gate: it is a paid or granted window, and the count only
  * decides where there is no date at all. A standing free grant lifts it too
- * (`accounts/ai-allowance.ts`). Then the trial accounts' own daily
+ * (`accounts/ai-allowance.ts`). Then, where it is set, the caller network's
+ * share of the trial ceiling (M270 spec 12, `ai/trial-network.ts`), refused
+ * with the ceiling's own 503. Then the trial accounts' own daily
  * sub-ceiling, which, where it is set, replaces the instance ceiling for them
  * (2026-09-30, see `chargesInstance`), and the steps below as before.
  *
@@ -200,6 +202,8 @@ import {
   trialEndedBy,
 } from '../accounts/scan-trial.js';
 import { aiAllowanceFor } from '../accounts/ai-allowance.js';
+import { clientAddressKey } from '../lib/client-address.js';
+import type { TrialNetworkShare } from './trial-network.js';
 
 /** The upstream this proxy forwards to, already validated all-or-nothing by `config.ts`. */
 export interface AiUpstreamConfig {
@@ -231,6 +235,14 @@ export interface ChatCompletionsDeps {
    * Required and nullable for the reason `instanceDailyLimit` is.
    */
   trialInstanceDailyLimit: number | null;
+  /**
+   * What one caller network's trial requests may spend of the trial ceiling
+   * per UTC day (`AI_TRIAL_NETWORK_DAILY_LIMIT`, M270 spec 12), and how a
+   * network is named in its counter, or `null` for no share, which is every
+   * instance without a trial ceiling. Required and nullable for the reason
+   * `instanceDailyLimit` is.
+   */
+  trialNetwork: TrialNetworkShare | null;
   /**
    * The model and the output ceiling every forwarded body gets
    * (`AI_ADVERTISED_MODEL`, `AI_MAX_OUTPUT_TOKENS`, M256). Required for the
@@ -398,6 +410,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     logger,
     quota,
     trialInstanceDailyLimit,
+    trialNetwork,
     upstream: upstreamConfig,
   } = deps;
   const now = deps.now ?? ((): Date => new Date());
@@ -427,6 +440,12 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
   let ceilingRefusalLoggedForDay: string | null = null;
 
   /**
+   * The UTC day whose first network share refusal has already been logged, or
+   * `null`. One line per day, per process, for the reason the ceiling's is.
+   */
+  let networkRefusalLoggedForDay: string | null = null;
+
+  /**
    * Says once, per UTC day, that the instance is out of capacity.
    *
    * NO ACCOUNT ID AND NO BODY (PROTOCOL.md §5.19 property 2): the fact is about
@@ -441,6 +460,23 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       day: input.day,
       instanceDailyLimit: input.limit,
     });
+  }
+
+  /**
+   * Says once, per UTC day, that a caller network reached its share of the
+   * trial ceiling (M270 spec 12). NO ACCOUNT, NO ADDRESS AND NO HASH: which
+   * network it was is exactly what this counter is built not to keep.
+   */
+  function logNetworkRefusalOnce(input: { day: string; limit: number }): void {
+    if (networkRefusalLoggedForDay === input.day) return;
+    networkRefusalLoggedForDay = input.day;
+    logger.warn(
+      'A caller network reached its share of the trial ceiling; its trial requests wait for the next UTC day',
+      {
+        day: input.day,
+        trialNetworkDailyLimit: input.limit,
+      },
+    );
   }
 
   /**
@@ -459,6 +495,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     accountId: number;
     day: string;
     isTrialDay: boolean;
+    networkHash: string | null;
     weight: number;
   }): Promise<void> {
     try {
@@ -470,7 +507,12 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         error: describeError(cause),
       });
     }
-    await releaseInstanceQuietly({ day: input.day, isTrialDay: input.isTrialDay, weight: input.weight });
+    await releaseInstanceQuietly({
+      day: input.day,
+      isTrialDay: input.isTrialDay,
+      networkHash: input.networkHash,
+      weight: input.weight,
+    });
   }
 
   /**
@@ -544,15 +586,18 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    * taken. Quiet for the same reason `releaseQuietly` is, because a failed refund
    * must not replace a correct 429 with a 500.
    */
-  async function releaseInstanceQuietly(input: { day: string; isTrialDay: boolean; weight: number }): Promise<void> {
+  async function releaseInstanceQuietly(input: {
+    day: string;
+    isTrialDay: boolean;
+    networkHash: string | null;
+    weight: number;
+  }): Promise<void> {
     // The scan-trial accounts' count follows the instance's unit row for row
-    // (M253): it is taken for every scan-trial request, set or not.
+    // (M253): it is taken for every scan-trial request, set or not. So does
+    // the network's share of it, where one is set (M270 spec 12).
     if (input.isTrialDay) {
-      try {
-        await quota.releaseTrialInstance({ day: input.day, weight: input.weight });
-      } catch (cause) {
-        logger.warn('Could not release a trial day reservation', { day: input.day, error: describeError(cause) });
-      }
+      await releaseTrialDayQuietly({ day: input.day, weight: input.weight });
+      await releaseTrialNetworkQuietly({ day: input.day, networkHash: input.networkHash, weight: input.weight });
     }
     if (!chargesInstance(input.isTrialDay)) return;
     try {
@@ -562,6 +607,33 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         day: input.day,
         error: describeError(cause),
       });
+    }
+  }
+
+  /** The trial accounts' unit of the day, alone, quietly for the reason `releaseQuietly` is. */
+  async function releaseTrialDayQuietly(input: { day: string; weight: number }): Promise<void> {
+    try {
+      await quota.releaseTrialInstance({ day: input.day, weight: input.weight });
+    } catch (cause) {
+      logger.warn('Could not release a trial day reservation', { day: input.day, error: describeError(cause) });
+    }
+  }
+
+  /**
+   * The network's unit of its share (M270 spec 12), alone and quietly. `null`
+   * is a request that took none: no share is set, or it is not a trial
+   * request. No hash in the log line, see `logNetworkRefusalOnce`.
+   */
+  async function releaseTrialNetworkQuietly(input: {
+    day: string;
+    networkHash: string | null;
+    weight: number;
+  }): Promise<void> {
+    if (input.networkHash === null) return;
+    try {
+      await quota.releaseTrialNetwork({ day: input.day, networkHash: input.networkHash, weight: input.weight });
+    } catch (cause) {
+      logger.warn('Could not release a trial network reservation', { day: input.day, error: describeError(cause) });
     }
   }
 
@@ -742,6 +814,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // no id is its own action, under an id this process makes up and nobody
     // can reuse.
     let scan: ClaimedScan = null;
+    // The keyed name of the caller's network once its share took a unit, and
+    // `null` for every request that took none; every give-back below reads it.
+    let networkHash: string | null = null;
     if (isTrialDay) {
       const claim = await quota.claimTrialScan({
         accountId: account.id,
@@ -764,11 +839,37 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       ledger.scan = scan;
       res.setHeader(TRIAL_SCANS_LEFT_HEADER, String(claim.left));
 
-      // 2e. THE SCAN-TRIAL ACCOUNTS' SHARE OF THE DAY, counted always and
+      // 2e. ONE CALLER NETWORK'S SHARE OF THE TRIAL CEILING (M270 spec 12),
+      // where one is set, so a few farmed accounts on one network cannot
+      // spend the whole trial ceiling and leave nothing for the real new
+      // people that day. A network is an IPv6 /64 or one IPv4 address, the
+      // fold every address throttle uses, and the counter keeps only a keyed
+      // hash of it. BEFORE the trial ceiling, so a refused farm never takes
+      // the lock on the day's shared row. The refusal is the trial ceiling's
+      // own 503, so a client needs no new branch, and it gives the scan back.
+      if (trialNetwork !== null) {
+        const hash = trialNetwork.hashNetwork({ networkKey: clientAddressKey(req), day });
+        const share = await quota.reserveTrialNetwork({
+          day,
+          networkHash: hash,
+          limit: trialNetwork.dailyLimit,
+          weight,
+        });
+        if (!share.ok) {
+          logNetworkRefusalOnce({ day, limit: trialNetwork.dailyLimit });
+          await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
+          sendCeilingRefusal(res, requestedAt);
+          return;
+        }
+        networkHash = hash;
+      }
+
+      // 2f. THE SCAN-TRIAL ACCOUNTS' SHARE OF THE DAY, counted always and
       // bounded when `AI_TRIAL_INSTANCE_DAILY_LIMIT` is set, so farming runs
       // out of its own budget before it reaches the paying accounts'.
       const trialDay = await quota.reserveTrialInstance({ day, limit: trialInstanceDailyLimit, weight });
       if (!trialDay.ok) {
+        await releaseTrialNetworkQuietly({ day, networkHash, weight });
         await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
         sendCeilingRefusal(res, requestedAt);
         return;
@@ -807,14 +908,11 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       const instanceReservation = await quota.reserveInstance({ day, limit: instanceDailyLimit, weight });
       if (!instanceReservation.ok) {
         logCeilingRefusalOnce({ day, limit: instanceDailyLimit });
-        // The trial day's unit and the scan go back: this request reaches
-        // nobody. The instance's unit was never taken.
+        // The trial day's unit, the network's and the scan go back: this
+        // request reaches nobody. The instance's unit was never taken.
         if (isTrialDay) {
-          try {
-            await quota.releaseTrialInstance({ day, weight });
-          } catch (cause) {
-            logger.warn('Could not release a trial day reservation', { day, error: describeError(cause) });
-          }
+          await releaseTrialDayQuietly({ day, weight });
+          await releaseTrialNetworkQuietly({ day, networkHash, weight });
         }
         await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
         // A CODE, not a sentence, because a client has to BRANCH on this one:
@@ -834,7 +932,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // request that is about to be refused and will never reach the provider,
       // so keeping it would let one account at its own limit eat the whole
       // instance's ceiling by retrying.
-      await releaseInstanceQuietly({ day, isTrialDay, weight });
+      await releaseInstanceQuietly({ day, isTrialDay, networkHash, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
       const resetAt = nextUtcMidnight(requestedAt);
       res.setHeader('Retry-After', String(secondsUntil({ target: resetAt, now: requestedAt })));
@@ -867,7 +965,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // TIMEOUT SITE 1 of 2 — `headersTimeout` lands HERE, together with every
       // connect-level failure. Nothing was served to us in either case, so the
       // reservation goes back, and so does the scan.
-      await releaseQuietly({ accountId: account.id, day, isTrialDay, weight });
+      await releaseQuietly({ accountId: account.id, day, isTrialDay, networkHash, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
       const timedOut = isTimeoutError(cause);
       logger.warn('Upstream call failed before any response', {
@@ -891,7 +989,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // the request and then failed — the money may already be gone, so it stays
     // spent. See the table in the module header.
     if (upstream.status >= 400 && upstream.status < 500) {
-      await releaseQuietly({ accountId: account.id, day, isTrialDay, weight });
+      await releaseQuietly({ accountId: account.id, day, isTrialDay, networkHash, weight });
     }
 
     if (!upstream.ok) {

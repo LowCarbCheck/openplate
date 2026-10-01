@@ -300,7 +300,10 @@ future allowance date, which a payment writes, lifts the count. One mailbox gets
 one trial, also after the account is deleted: deleting an account then keeps
 only a keyed hash of the mailbox and scrubs the address from its invite rows.
 `AI_TRIAL_INSTANCE_DAILY_LIMIT` caps what all trial accounts together spend per
-UTC day. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
+UTC day. Beside it, `AI_TRIAL_NETWORK_DAILY_LIMIT` caps what the trial requests
+from one network (an IPv6 /64, or one IPv4 address) may take of it, a tenth by
+default, so a few farmed accounts cannot use up the day for everybody else.
+People behind one IPv4 carrier NAT share that share. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
 day trials that ran out unpaid, as a dry run until you add `--apply`.
 
 **Members can hand out an AI trial, if you let them.** Set

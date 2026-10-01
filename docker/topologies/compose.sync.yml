@@ -362,6 +362,7 @@ services:
       TRIAL_ADDRESS_PEPPER: ${TRIAL_ADDRESS_PEPPER:-}
       MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
       AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
+      AI_TRIAL_NETWORK_DAILY_LIMIT: ${AI_TRIAL_NETWORK_DAILY_LIMIT:-}
 
       # ── Web push (optional) ──
       # All three or none. Empty means no notifications.

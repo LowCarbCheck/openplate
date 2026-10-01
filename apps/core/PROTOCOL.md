@@ -1440,6 +1440,20 @@ Where it is not set, scan-trial requests count against the instance ceiling
 like everybody else's. It is not published either; `GET /v1/admin/stats`
 reports it as `aiTrialInstanceDailyLimit`, beside `signup.trialRequestsToday`.
 
+**Where the trial ceiling is set, one caller network gets a share of it**
+(`AI_TRIAL_NETWORK_DAILY_LIMIT`, a tenth of the trial ceiling by default,
+rounded down, at least 1): units per UTC day that the scan-trial requests from
+one network may take. A network is an IPv6 /64, or one IPv4 address, as the
+sign-in throttles count it. A scan-trial request from a network that has spent
+its share gets the same `503 ai-instance-ceiling` with the same `Retry-After`,
+so a client needs no new branch; it takes no scan and no unit, and the provider
+is not called. Requests under a paid window or a standing free grant are never
+counted or refused by it. Its units are given back whenever the trial ceiling's
+are. Many people behind one IPv4 carrier NAT share one share; an IPv6 caller
+has a /64 of its own. The service keeps no address for it: one row per network
+per day holds a keyed hash (HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER`) of the
+network and the day, and the row is deleted the next day.
+
 #### What is spent and what is given back
 
 A unit is **reserved before** the upstream call, never counted after it.

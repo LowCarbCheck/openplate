@@ -114,6 +114,7 @@ import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
 import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
 import { registerRotateDekRoute } from './rotate-dek-route.js';
 import { CHAT_COMPLETIONS_PATH, registerAiRoute } from '../ai/register-ai-route.js';
+import type { TrialNetworkShare } from '../ai/trial-network.js';
 import { FEEDBACK_API_PREFIX, registerFeedbackRoute } from '../feedback/register-feedback-route.js';
 import { registerPulseRoutes } from './register-pulse-routes.js';
 import type { PulseStore } from '../pulse/pulse-store.js';
@@ -236,6 +237,12 @@ export interface AiSurfaceOptions {
    * from here.
    */
   trialInstanceDailyLimit?: number | null;
+  /**
+   * One caller network's share of the trial ceiling and the keyed name its
+   * counter uses (`AI_TRIAL_NETWORK_DAILY_LIMIT` under
+   * `TRIAL_ADDRESS_PEPPER`, M270 spec 12), or `null`/absent for no share.
+   */
+  trialNetwork?: TrialNetworkShare | null;
   /**
    * The model and output ceiling every forwarded chat body gets (M256).
    * Required: see `ChatCompletionsDeps.bodyPolicy`.
@@ -670,6 +677,7 @@ export function createApp(options: CreateAppOptions): Express {
       maxRequestBytes: ai.maxRequestBytes,
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
+      trialNetwork: ai.trialNetwork ?? null,
       bodyPolicy: ai.bodyPolicy,
       inputPolicy: ai.inputPolicy,
       // Refused in the proxy's own ladder, beside the suspension, rather than

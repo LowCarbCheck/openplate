@@ -47,7 +47,7 @@
 import { and, eq, gt, isNotNull, lt, sql } from 'drizzle-orm';
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { Database } from '../db/client.js';
-import { accounts, aiInstanceDays, aiTrialIntakes, aiUsageDays } from '../db/schema.js';
+import { accounts, aiInstanceDays, aiTrialIntakes, aiTrialNetworkDays, aiUsageDays } from '../db/schema.js';
 import { INTAKE_REUSE_WINDOW_MS } from '../accounts/scan-trial.js';
 
 /**
@@ -550,6 +550,55 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
         .set({ trialCount: sql`greatest(${aiInstanceDays.trialCount} - ${input.weight}, 0)` })
         .where(and(eq(aiInstanceDays.day, input.day), gt(aiInstanceDays.trialCount, 0)));
     },
+
+    // ONE NETWORK'S SHARE OF THE TRIAL CEILING (M270 spec 12), the same
+    // one-statement upsert as every counter above: the bound is the `WHERE`
+    // of the `DO UPDATE`, so parallel requests from one network serialise on
+    // the row lock and only those that still fit get a row back. The insert
+    // branch is guarded in code, for the reason `reserve`'s is.
+    async reserveTrialNetwork(input: {
+      day: string;
+      networkHash: string;
+      limit: number;
+      weight: number;
+    }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
+      const rows = await db
+        .insert(aiTrialNetworkDays)
+        .values({ day: input.day, networkHash: input.networkHash, count: input.weight })
+        .onConflictDoUpdate({
+          target: [aiTrialNetworkDays.day, aiTrialNetworkDays.networkHash],
+          set: { count: sql`${aiTrialNetworkDays.count} + ${input.weight}` },
+          where: sql`${aiTrialNetworkDays.count} + ${input.weight} <= ${input.limit}`,
+        })
+        .returning({ count: aiTrialNetworkDays.count });
+      const row = rows[0];
+      if (!row) return { ok: false, used: input.limit, limit: input.limit };
+      return { ok: true, used: row.count, limit: input.limit };
+    },
+
+    async releaseTrialNetwork(input: { day: string; networkHash: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
+      await db
+        .update(aiTrialNetworkDays)
+        .set({ count: sql`greatest(${aiTrialNetworkDays.count} - ${input.weight}, 0)` })
+        .where(
+          and(
+            eq(aiTrialNetworkDays.day, input.day),
+            eq(aiTrialNetworkDays.networkHash, input.networkHash),
+            gt(aiTrialNetworkDays.count, 0),
+          ),
+        );
+    },
+
+    async purgeTrialNetworkDaysBefore(input: { day: string }): Promise<number> {
+      const deleted = await db
+        .delete(aiTrialNetworkDays)
+        .where(lt(aiTrialNetworkDays.day, input.day))
+        .returning({ day: aiTrialNetworkDays.day });
+      return deleted.length;
+    },
   };
 }
 
@@ -597,4 +646,21 @@ export interface AiTrialScanStore {
   reserveTrialInstance(input: { day: string; limit: number | null; weight: number }): Promise<ReserveResult>;
   /** Gives one scan-trial request's `weight` back to the day, floored at zero. */
   releaseTrialInstance(input: { day: string; weight: number }): Promise<void>;
+  /**
+   * Counts one scan-trial request's `weight` against its caller network's
+   * share of the day (`AI_TRIAL_NETWORK_DAILY_LIMIT`, M270 spec 12), or none
+   * when it does not fit. `networkHash` is the keyed name
+   * `ai/trial-network.ts` makes, never an address. Called only where the
+   * share is set.
+   */
+  reserveTrialNetwork(input: {
+    day: string;
+    networkHash: string;
+    limit: number;
+    weight: number;
+  }): Promise<ReserveResult>;
+  /** Gives one scan-trial request's `weight` back to its network's day, floored at zero. */
+  releaseTrialNetwork(input: { day: string; networkHash: string; weight: number }): Promise<void>;
+  /** Deletes every network row before the given UTC day. Driven hourly by `ai/usage-retention.ts`. */
+  purgeTrialNetworkDaysBefore(input: { day: string }): Promise<number>;
 }

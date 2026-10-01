@@ -1148,6 +1148,45 @@ test('the trial sub-ceiling refuses zero and refuses an instance with no trial t
   );
 });
 
+// ── one network's share of the trial ceiling (M270 spec 12) ────────────────
+
+test('the network share defaults to a tenth of the trial ceiling, rounded down, at least one unit', () => {
+  const share = (ceiling: string): number | null =>
+    parseConfig(baseEnv({ ...TRIAL_ENV, AI_TRIAL_INSTANCE_DAILY_LIMIT: ceiling })).aiTrialNetworkDailyLimit;
+  assert.equal(share('1000'), 100, 'the production ceiling');
+  assert.equal(share('25'), 2, 'rounded down');
+  assert.equal(share('5'), 1, 'never below one unit');
+});
+
+test('the network share is off without a trial ceiling, and refused there when named', () => {
+  assert.equal(parseConfig(baseEnv()).aiTrialNetworkDailyLimit, null);
+  assert.equal(parseConfig(baseEnv(TRIAL_ENV)).aiTrialNetworkDailyLimit, null);
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, AI_TRIAL_NETWORK_DAILY_LIMIT: '50' })),
+    /AI_TRIAL_NETWORK_DAILY_LIMIT.*AI_TRIAL_INSTANCE_DAILY_LIMIT/,
+  );
+});
+
+test('a named network share takes a positive integer no larger than the trial ceiling', () => {
+  const withCeiling = { ...TRIAL_ENV, AI_TRIAL_INSTANCE_DAILY_LIMIT: '1000' };
+  // THE CONTROL for the refusals below.
+  assert.equal(
+    parseConfig(baseEnv({ ...withCeiling, AI_TRIAL_NETWORK_DAILY_LIMIT: '250' })).aiTrialNetworkDailyLimit,
+    250,
+  );
+  assert.equal(
+    parseConfig(baseEnv({ ...withCeiling, AI_TRIAL_NETWORK_DAILY_LIMIT: '1000' })).aiTrialNetworkDailyLimit,
+    1000,
+  );
+  for (const invalid of ['0', '-1', '2.5', 'lots', '1001']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ ...withCeiling, AI_TRIAL_NETWORK_DAILY_LIMIT: invalid })),
+      /AI_TRIAL_NETWORK_DAILY_LIMIT/,
+      invalid,
+    );
+  }
+});
+
 test('AI_MAX_OUTPUT_TOKENS defaults to 8192, takes a positive integer, and refuses anything else', () => {
   // ALWAYS SET, unlike the instance ceiling above: an unbounded answer is the
   // cost path M256 closes, so there is no "off" (M256/01).

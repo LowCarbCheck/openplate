@@ -34,6 +34,7 @@ import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
 import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
+import { defaultTrialNetworkDailyLimit } from './ai/trial-network.js';
 import {
   DEFAULT_AI_IMAGE_INPUT_TOKENS,
   DEFAULT_AI_MAX_IMAGE_PARTS,
@@ -289,6 +290,20 @@ export interface ServiceConfig {
    * instance with no trial: a dial with no door.
    */
   aiTrialInstanceDailyLimit: number | null;
+  /**
+   * What one caller network may spend of the trial ceiling per UTC day
+   * (`AI_TRIAL_NETWORK_DAILY_LIMIT`, M270 spec 12), or `null` where there is
+   * no trial ceiling to take a share of.
+   *
+   * IT EXISTS SO A FEW FARMED ACCOUNTS CANNOT USE UP THE TRIAL CEILING. A
+   * network is an IPv6 /64 or one IPv4 address (`lib/client-address.ts`).
+   * Unset is a tenth of `AI_TRIAL_INSTANCE_DAILY_LIMIT`, rounded down, at
+   * least 1 (owner, 2026-10-01). A refused request gets the trial ceiling's
+   * own `503 ai-instance-ceiling`. Zero, a value above the trial ceiling and
+   * a value with no trial ceiling are boot failures; a share equal to the
+   * ceiling is how an operator turns it off.
+   */
+  aiTrialNetworkDailyLimit: number | null;
   /**
    * The secret the one mailbox, one trial rule hashes addresses with
    * (`TRIAL_ADDRESS_PEPPER`, M253), or `null`.
@@ -1677,6 +1692,48 @@ function parseAiTrialInstanceDailyLimit(env: NodeJS.ProcessEnv, trial: TrialPoli
   return parsed;
 }
 
+const TRIAL_NETWORK_LIMIT_VARIABLE = 'AI_TRIAL_NETWORK_DAILY_LIMIT';
+
+/**
+ * `AI_TRIAL_NETWORK_DAILY_LIMIT` (M270 spec 12): one network's share of the
+ * trial ceiling, {@link defaultTrialNetworkDailyLimit} of it when unset.
+ *
+ * A BOOT FAILURE WITHOUT A TRIAL CEILING, a dial with no door: the share is a
+ * part of `AI_TRIAL_INSTANCE_DAILY_LIMIT`, and the operator who set it
+ * believes trial traffic is bounded. Above the ceiling it could never refuse
+ * anything the ceiling did not, so it is refused too; equal is how to turn
+ * the share off.
+ */
+function parseAiTrialNetworkDailyLimit(input: {
+  env: NodeJS.ProcessEnv;
+  trialInstanceDailyLimit: number | null;
+}): number | null {
+  const raw = input.env[TRIAL_NETWORK_LIMIT_VARIABLE]?.trim();
+  const isUnset = raw === undefined || raw === '';
+  if (input.trialInstanceDailyLimit === null) {
+    if (isUnset) return null;
+    throw new Error(
+      `${TRIAL_NETWORK_LIMIT_VARIABLE} is set, but AI_TRIAL_INSTANCE_DAILY_LIMIT is not, so there is no trial ` +
+        'ceiling for one network to take a share of. Set the trial ceiling, or unset the share.',
+    );
+  }
+  if (isUnset) return defaultTrialNetworkDailyLimit(input.trialInstanceDailyLimit);
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `Invalid ${TRIAL_NETWORK_LIMIT_VARIABLE}: expected a positive integer, got "${raw}". ` +
+        'Zero would refuse every trial scan; unset it for a tenth of the trial ceiling.',
+    );
+  }
+  if (parsed > input.trialInstanceDailyLimit) {
+    throw new Error(
+      `${TRIAL_NETWORK_LIMIT_VARIABLE} (${parsed}) is above AI_TRIAL_INSTANCE_DAILY_LIMIT ` +
+        `(${input.trialInstanceDailyLimit}). Set it to the ceiling at most; equal turns the share off.`,
+    );
+  }
+  return parsed;
+}
+
 /**
  * `TRIAL_ADDRESS_PEPPER` (M253): optional, at least
  * {@link MIN_SERVER_SECRET_LENGTH} characters, and REQUIRED when the instance
@@ -1812,6 +1869,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   const openSignup = parseOpenSignup(env, mail);
   // Read before the member door, which may grant it.
   const trial = parseTrial(env);
+  const aiTrialInstanceDailyLimit = parseAiTrialInstanceDailyLimit(env, trial);
   const tokens = parseTokens(env);
 
   return {
@@ -1841,7 +1899,11 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     aiBudgetAlertFraction: parseAiBudgetAlertFraction(env),
     memberInvites: parseMemberInvites(env, trial),
     trial,
-    aiTrialInstanceDailyLimit: parseAiTrialInstanceDailyLimit(env, trial),
+    aiTrialInstanceDailyLimit,
+    aiTrialNetworkDailyLimit: parseAiTrialNetworkDailyLimit({
+      env,
+      trialInstanceDailyLimit: aiTrialInstanceDailyLimit,
+    }),
     trialAddressPepper: parseTrialAddressPepper(env, trial),
     openSignup,
     turnstile: parseTurnstile(env, openSignup),

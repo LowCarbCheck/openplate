@@ -289,6 +289,7 @@ async function startProxy(options: {
       logger: logger.logger,
       instanceDailyLimit: options.instanceDailyLimit ?? null,
       trialInstanceDailyLimit: null,
+      trialNetwork: null,
       // The production wiring's shape with no model: the caller's model
       // passes, and the output ceiling is still written in (M256).
       bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },

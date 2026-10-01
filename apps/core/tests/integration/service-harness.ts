@@ -34,6 +34,7 @@ import {
   type AiQuotaStore,
 } from '../../src/ai/quota-store.js';
 import type { UpstreamBudgetSource } from '../../src/ai/upstream-budget.js';
+import { createTrialNetworkHasher, type TrialNetworkShare } from '../../src/ai/trial-network.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
 import { createDrizzleFeedbackAdminStore } from '../../src/feedback/feedback-admin-store.js';
 import { createDrizzleFeedbackImageStore } from '../../src/feedback/feedback-image-store.js';
@@ -308,6 +309,14 @@ export interface StartServiceOptions {
     instanceDailyLimit?: number | null;
     /** `AI_TRIAL_INSTANCE_DAILY_LIMIT` (M253). Absent is no sub-ceiling. */
     trialInstanceDailyLimit?: number | null;
+    /**
+     * `AI_TRIAL_NETWORK_DAILY_LIMIT` (M270 spec 12), keyed under the suite's
+     * `trialAddressPepper`, as `main.ts` keys it under `TRIAL_ADDRESS_PEPPER`.
+     * Absent is no per-network share, NOT the production default of a tenth
+     * of the trial ceiling: a suite that is not about the share must not trip
+     * it, and every request here arrives from one loopback address.
+     */
+    trialNetworkDailyLimit?: number | null;
     /** The input bounds and the unit size (2026-09-30), over the production defaults. */
     inputPolicy?: Partial<ChatInputPolicy>;
     /**
@@ -507,6 +516,17 @@ function trialPolicyOf(options: StartServiceOptions): TrialPolicy | null {
   };
 }
 
+/**
+ * The per-network trial share (M270 spec 12), or `null`. A share with no
+ * pepper is refused here, as `config.ts` refuses a trial without one.
+ */
+function trialNetworkOf(options: StartServiceOptions): TrialNetworkShare | null {
+  const dailyLimit = options.ai?.trialNetworkDailyLimit ?? null;
+  if (dailyLimit === null) return null;
+  if (options.trialAddressPepper == null) throw new Error('trialNetworkDailyLimit needs trialAddressPepper');
+  return { dailyLimit, hashNetwork: createTrialNetworkHasher(options.trialAddressPepper) };
+}
+
 export async function startService(options: StartServiceOptions): Promise<ServiceHarness> {
   let clock = options.clockStartsAt ?? Date.now();
   const trial = trialPolicyOf(options);
@@ -620,6 +640,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           instanceDailyLimit: options.ai.instanceDailyLimit ?? null,
           // `null` by default for the reason `instanceDailyLimit` is (M253).
           trialInstanceDailyLimit: options.ai.trialInstanceDailyLimit ?? null,
+          trialNetwork: trialNetworkOf(options),
           // The budget read (2026-09-30), as `main.ts` builds it: the real
           // counters always, and the key read only for an OpenRouter upstream,
           // which a fake upstream on a loopback port never is.
