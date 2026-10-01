@@ -31,6 +31,7 @@ import { generateSignupInviteToken } from '../lib/tokens.js';
 import type { TrialAddressHasher } from '../accounts/trial-address.js';
 import type { Database } from './client.js';
 import { accounts, signupInvites, trialAddressHashes } from './schema.js';
+import { isAliasAddress } from '../lib/alias-domains.js';
 import { mailboxHadTrial } from './trial-mailbox.js';
 
 /** The columns an operator may see. `tokenHash` is deliberately absent from this list. */
@@ -97,12 +98,18 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
         // THE ONE MAILBOX, ONE TRIAL RULE, AT MINT (M253). A trial for a
         // mailbox that already had one is written as `0`: the person still
         // gets an account, and the app shows the plan offer at the first scan.
+        //
+        // AN ALIAS OR FORWARDING DOMAIN GETS THE SAME `0` ON SELF SIGN-UP
+        // ONLY (M270, spec 04), whether or not the instance has a pepper: a
+        // fresh alias costs nothing, so a trial for each would be a trial for
+        // the asking. An invite an operator minted by hand keeps its scans,
+        // because the operator chose that person.
         const trialKey = hashAddress === null ? null : hashAddress(input.email);
+        const isSelfSignupAlias = input.source === 'open-signup' && isAliasAddress(input.email);
         const trialScans =
           input.trialScans !== null &&
           input.trialScans > 0 &&
-          trialKey !== null &&
-          (await mailboxHadTrial(tx, { hash: trialKey }))
+          (isSelfSignupAlias || (trialKey !== null && (await mailboxHadTrial(tx, { hash: trialKey }))))
             ? 0
             : input.trialScans;
 

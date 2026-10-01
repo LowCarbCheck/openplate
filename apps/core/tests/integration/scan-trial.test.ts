@@ -818,6 +818,105 @@ test('a live trial account blocks a second spelling of its mailbox', async () =>
   });
 });
 
+test('an alias or forwarding domain gets an account and no trial, and any other domain still gets ten scans', async () => {
+  // M270, spec 04. The door mints a ten-scan letter for each address, and the
+  // alias address's comes out as `0`: the account exists and can buy a plan.
+  await withService({ openSignup: {} }, async (service) => {
+    const alias = await openAccount(service, 'anna@simplelogin.co');
+    assert.equal(alias.status, 201);
+    assert.deepEqual(alias.body.account.trialScans, { granted: 0, left: 0 });
+
+    // A subdomain of a listed domain, in capitals the parser lowercases.
+    const nested = await openAccount(service, 'Bert@A.B.SimpleLogin.co');
+    assert.equal(nested.status, 201);
+    assert.deepEqual(nested.body.account.trialScans, { granted: 0, left: 0 });
+
+    // THE CONTROL: a real mailbox through the same door still gets ten.
+    const real = await openAccount(service, 'carla@example.org');
+    assert.deepEqual(real.body.account.trialScans, { granted: 10, left: 10 });
+  });
+});
+
+test('an alias address with a ten-scan letter from before the rule is redeemed into no trial', async () => {
+  // THE REDEMPTION SIDE. A letter minted before the rule carries scans on its
+  // row; the account must not get them. The row is set by hand because the
+  // mint now refuses to write them.
+  await withService({}, async (service) => {
+    const token = await mintTrialLetter(service, 'old@passmail.net');
+    await database.db
+      .update(signupInvites)
+      .set({ trialScans: TRIAL.scans })
+      .where(eq(signupInvites.email, 'old@passmail.net'));
+    const created = await redeem(service, token);
+    assert.equal(created.status, 201);
+    assert.deepEqual(created.body.account.trialScans, { granted: 0, left: 0 });
+
+    // THE CONTROL: the same hand-set row for a real address keeps its ten.
+    const controlToken = await mintTrialLetter(service, 'old@example.org');
+    const control = await redeem(service, controlToken);
+    assert.deepEqual(control.body.account.trialScans, { granted: TRIAL.scans, left: TRIAL.scans });
+  });
+});
+
+test('an invite an administrator minted by hand keeps its trial, even on an alias domain', async () => {
+  // The operator chose that person, so the alias rule is the open door's only.
+  await withService({ openSignup: {} }, async (service) => {
+    const minted = await service.request<{ invite: { trialScans: number | null } }>({
+      method: 'POST',
+      path: '/v1/admin/invites',
+      adminToken: ADMIN_TOKEN,
+      body: { email: 'friend@duck.com', trial: true },
+    });
+    assert.equal(minted.status, 201);
+    assert.equal(minted.body.invite.trialScans, 10);
+
+    // Redemption too: a hand-minted row (source null) for an alias address.
+    const token = await mintOperatorLetter(service, 'chosen@simplelogin.co');
+    const created = await redeem(service, token);
+    assert.equal(created.status, 201);
+    assert.deepEqual(created.body.account.trialScans, { granted: TRIAL.scans, left: TRIAL.scans });
+
+    // THE CONTROL: the same address through the open door gets none.
+    const selfSignup = await openAccount(service, 'chosen@passmail.com');
+    assert.deepEqual(selfSignup.body.account.trialScans, { granted: 0, left: 0 });
+  });
+});
+
+/** Mints a ten-scan letter the way the operator's route does: no door, no inviter. */
+async function mintOperatorLetter(service: ServiceHarness, email: string): Promise<string> {
+  const minted = await createDrizzleInviteStore(database.db, { hashAddress: createTrialAddressHasher(PEPPER) }).mint({
+    email,
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: TRIAL.dailyAiLimit,
+    trialScans: TRIAL.scans,
+    trialDays: null,
+    expiresAt: new Date(service.now() + 7 * MS_PER_DAY),
+    now: new Date(service.now()),
+    invitedByAccountId: null,
+    source: null,
+  });
+  if (!minted.ok) throw new Error(`could not mint for ${email}`);
+  return minted.minted.token;
+}
+
+test('the alias rule needs no pepper', async () => {
+  // The mailbox rule is the pepper's; this one is the domain's. An instance
+  // with no pepper must still withhold the trial from an alias address.
+  const service = await startService({ db: database.db, adminToken: ADMIN_TOKEN, trial: TRIAL, openSignup: {} });
+  try {
+    const alias = await openAccount(service, 'anna@mozmail.com');
+    assert.deepEqual(alias.body.account.trialScans, { granted: 0, left: 0 });
+    const real = await openAccount(service, 'bert@example.org');
+    assert.deepEqual(real.body.account.trialScans, { granted: 10, left: 10 });
+    // icloud.com is a real mailbox and is not on the list.
+    const icloud = await openAccount(service, 'dora@icloud.com');
+    assert.deepEqual(icloud.body.account.trialScans, { granted: 10, left: 10 });
+  } finally {
+    await service.close();
+  }
+});
+
 /** Mints a ten-scan trial letter for one spelling, with the mailbox hash the service computes. */
 async function mintTrialLetter(service: ServiceHarness, email: string): Promise<string> {
   const minted = await createDrizzleInviteStore(database.db, { hashAddress: createTrialAddressHasher(PEPPER) }).mint({

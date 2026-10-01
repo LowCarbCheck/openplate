@@ -56,6 +56,7 @@ import {
 } from './schema.js';
 import type { TrialAddressHasher } from '../accounts/trial-address.js';
 import { healthConsentFromColumns, type HealthConsentRecord } from '../accounts/health-consent.js';
+import { isAliasAddress } from '../lib/alias-domains.js';
 import { lockTrialMailbox, mailboxHadTrial } from './trial-mailbox.js';
 import { trialEndsAtFor } from '../accounts/scan-trial.js';
 
@@ -617,6 +618,20 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
             timeZone: trialTimeZone,
           });
           const trialKey = hashAddress === null ? null : hashAddress(claimed.email);
+          // AN ALIAS OR FORWARDING DOMAIN GETS NO TRIAL ON SELF SIGN-UP,
+          // WHATEVER THE ROW SAYS (M270, spec 04). The mint already wrote `0`
+          // for it, but a letter from before this rule still carries scans.
+          // The account is made as one whose trial is used up, and this does
+          // not need a pepper. Only the open sign-up door: an invite an
+          // operator minted by hand (`source` is `null`) keeps its scans.
+          if (
+            standing.trialScans !== null &&
+            standing.trialScans > 0 &&
+            claimed.source === 'open-signup' &&
+            isAliasAddress(claimed.email)
+          ) {
+            standing.trialScans = 0;
+          }
           if (standing.trialScans !== null && standing.trialScans > 0 && trialKey !== null) {
             await lockTrialMailbox(tx, { hash: trialKey });
             if (await mailboxHadTrial(tx, { hash: trialKey, exceptInviteId: claimed.id })) standing.trialScans = 0;
@@ -825,6 +840,8 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
         // THE MAILBOX RULE, per account: a lapsed day trial whose mailbox
         // already had a scan trial through another spelling gets no second.
         if (hashAddress !== null && (await mailboxHadTrial(db, { hash: hashAddress(row.email) }))) continue;
+        // AND AN ALIAS ADDRESS GETS NO MAKE-GOOD TRIAL EITHER (M270, spec 04).
+        if (isAliasAddress(row.email)) continue;
         found.push(row.id);
       }
       return found;
@@ -839,6 +856,8 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
           .where(and(eq(accounts.id, input.accountId), lapsedDayTrialPredicate(input)))
           .limit(1);
         if (!match) return false;
+        // The same refusal as `findLapsedDayTrials`, for a caller that names the id (M270, spec 04).
+        if (isAliasAddress(match.email)) return false;
         const trialKey = hashAddress === null ? null : hashAddress(match.email);
         // Under the mailbox lock, for the reason the redemption takes it
         // (M256/02): a redemption of another spelling must not grant a second
