@@ -299,6 +299,12 @@ after an answer claims a new scan, even under the same id. After the last scan t
 future allowance date, which a payment writes, lifts the count. One mailbox gets
 one trial, also after the account is deleted: deleting an account then keeps
 only a keyed hash of the mailbox and scrubs the address from its invite rows.
+An address on a known email alias or forwarding domain (SimpleLogin, addy.io,
+Firefox Relay, Hide My Email relay, disposable inboxes, and every subdomain of
+them) gets no trial. It can still sign up and buy a plan: the account starts with
+0 scans, as if the trial were used up. The list is `src/lib/alias-domains.ts`,
+and it applies with or without a pepper. `icloud.com` is a real mailbox and is
+not on it.
 `AI_TRIAL_INSTANCE_DAILY_LIMIT` caps what all trial accounts together spend per
 UTC day. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
 day trials that ran out unpaid, as a dry run until you add `--apply`.

@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **An address on an email alias or forwarding domain gets no scan trial.** Sign-up, an operator's invite and a member's invite still make the account, but its trial is 0 scans, the same state as a mailbox whose trial is used up, so the app shows the plan offer at the first scan and a payment lifts it. The list is in `src/lib/alias-domains.ts`: SimpleLogin, addy.io, Firefox Relay, Apple's relay, duck.com and common disposable inboxes. A listed domain matches its subdomains too. `icloud.com` is not listed. The rule needs no `TRIAL_ADDRESS_PEPPER`. The lapsed day trial grant skips these addresses as well. `tests/unit/alias-domains.test.ts` and `tests/integration/scan-trial.test.ts` check this.
+
 ## [0.28.0] - 2026-10-01
 
 Upgrade in this order: openplate 0.58.0 first, then this release. This release refuses a data key rotation without the current passphrase, and an app older than 0.58.0 does not send it. Migrations 0025 to 0029 run at boot.
