@@ -76,7 +76,7 @@ Podman takes the same flags Docker does here. See openplate's
 for the `podman compose` notes that apply to the compose file linked below.
 
 `latest` is the newest release. To control when you upgrade, pin a version instead, such as
-`ghcr.io/lowcarbcheck/openplate-inference:0.2.0`. Change the number when you want the next
+`ghcr.io/lowcarbcheck/openplate-inference:0.3.0`. Change the number when you want the next
 release.
 
 That is the whole CPU install. On a machine with an NVIDIA GPU, add `--gpus all` and use the CUDA image. The container detects the GPU and offloads every layer by itself, there is no flag to set:
