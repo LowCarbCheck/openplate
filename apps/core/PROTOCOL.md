@@ -1449,7 +1449,7 @@ its share gets the same `503 ai-instance-ceiling` with the same `Retry-After`,
 so a client needs no new branch; it takes no scan and no unit, and the provider
 is not called. Requests under a paid window or a standing free grant are never
 counted or refused by it. Its units are given back whenever the trial ceiling's
-are. Many people behind one IPv4 carrier NAT share one share; an IPv6 caller
+are. Many people behind one IPv4 carrier NAT share one bucket; an IPv6 caller
 has a /64 of its own. The service keeps no address for it: one row per network
 per day holds a keyed hash (HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER`) of the
 network and the day, and the row is deleted the next day.
