@@ -6,9 +6,10 @@
   };
 
   outputs = { self, nixpkgs, ... }: let
-    # The four systems this shell is expected to work on, so a contributor
-    # on a Mac gets the same toolchain as one on Linux.
-    systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    # The systems this shell is expected to work on, so a contributor on an
+    # Apple silicon Mac gets the same toolchain as one on Linux.
+    # No Intel Mac: nixpkgs 26.11 dropped x86_64-darwin.
+    systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f (import nixpkgs { inherit system; }));
   in {
     devShells = forAllSystems (pkgs: {
