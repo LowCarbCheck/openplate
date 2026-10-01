@@ -1,4 +1,10 @@
 {
+  "v0_62_0": {
+    "date": "2026-10-02",
+    "changed": {
+      "01": "La vérification des versions interroge désormais openplate.de au lieu de GitHub."
+    }
+  },
   "v0_61_0": {
     "date": "2026-10-01",
     "changed": {
@@ -19,12 +25,6 @@
     },
     "fixed": {
       "01": "Les scans non vérifiés pour les allergènes ne s'affichent plus comme sans danger."
-    }
-  },
-  "v0_59_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Le texte de confirmation pour remplacer ta clé de données indique que tous les autres appareils sont déconnectés."
     }
   }
 }

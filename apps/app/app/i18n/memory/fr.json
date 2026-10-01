@@ -6068,6 +6068,13 @@
     "at": "2026-09-14",
     "fr": "Chaque jour"
   },
+  "4ce6c361db46d037": {
+    "en": "The release check now asks openplate.de instead of GitHub.",
+    "path": "releases:v0_62_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "La vérification des versions interroge désormais openplate.de au lieu de GitHub."
+  },
   "4cf0c6c6c55a7c0b": {
     "en": "Breakfast",
     "path": "common:diary.meals.breakfast",

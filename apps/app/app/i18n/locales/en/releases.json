@@ -1,4 +1,10 @@
 {
+  "v0_62_0": {
+    "date": "2026-10-02",
+    "changed": {
+      "01": "The release check now asks openplate.de instead of GitHub."
+    }
+  },
   "v0_61_0": {
     "date": "2026-10-01",
     "changed": {
@@ -19,12 +25,6 @@
     },
     "fixed": {
       "01": "Scans unchecked for allergens no longer show as clear."
-    }
-  },
-  "v0_59_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "The confirm text for replacing your data key says that every other device is signed out."
     }
   }
 }

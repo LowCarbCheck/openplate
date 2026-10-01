@@ -1,4 +1,10 @@
 {
+  "v0_62_0": {
+    "date": "2026-10-02",
+    "changed": {
+      "01": "Il controllo delle nuove versioni ora interroga openplate.de invece di GitHub."
+    }
+  },
   "v0_61_0": {
     "date": "2026-10-01",
     "changed": {
@@ -19,12 +25,6 @@
     },
     "fixed": {
       "01": "Le scansioni per cui non sono stati verificati gli allergeni non risultano più prive di rischi."
-    }
-  },
-  "v0_59_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Il testo di conferma per la sostituzione della chiave dei dati indica che la sessione viene chiusa su tutti gli altri dispositivi."
     }
   }
 }
