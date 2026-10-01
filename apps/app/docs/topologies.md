@@ -7,7 +7,7 @@ the bottom and stop as soon as you have what you need: most people stop at rung 
 | --- | --- | --- | --- |
 | 0 | Plate tracking + AI scans | Nothing | none |
 | 1 | The same, on your own box | One stateless container | `docker/compose.yml` |
-| 2 | Your diary on two devices, and, on a managed instance, a shared AI bill for a household or org | + a database and one secret | `docker/topologies/compose.sync.yml` |
+| 2 | Your diary on two devices, and, on a managed instance, a shared AI bill for a household or org | + a database and one secret | `docker/topologies/compose.core.yml` |
 | 3 | Scans on your own hardware | + a model runtime | `docker/topologies/compose.inference.yml` |
 | 4 | All of it | All of it | `docker/topologies/compose.full.yml` |
 
@@ -119,28 +119,28 @@ account service has a database worth backing up, a `SERVER_SECRET` worth keeping
 who can lock themselves out. Read
 [openplate-core's README](https://github.com/LowCarbCheck/openplate/tree/main/apps/core#readme) before you
 put it on the public internet.
-**Compose file:** [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml).
+**Compose file:** [`docker/topologies/compose.core.yml`](../../../docker/topologies/compose.core.yml).
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 echo "TRUST_PROXY=1"                                 >> .env  # 1 behind one reverse proxy, 0 with none
-docker compose -f compose.sync.yml up -d
+docker compose -f compose.core.yml up -d
 ```
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "PUBLIC_APP_URL=https://openplate.example.com"  >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com"      >> .env
 echo "TRUST_PROXY=1"                                 >> .env  # 1 behind one reverse proxy, 0 with none
-podman compose -f compose.sync.yml up -d
+podman compose -f compose.core.yml up -d
 ```
 
 > **Accounts need a secure page.** Signing in, signing up, and opening an invitation fail on

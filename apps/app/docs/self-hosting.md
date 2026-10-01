@@ -101,11 +101,11 @@ Every other setup (sync, self-hosted inference, or both) is a separate file unde
 
 ## The app plus your own sync service
 
-[`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
+[`docker/topologies/compose.core.yml`](../../../docker/topologies/compose.core.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 
 # The sync service needs exactly one secret. Generate it and keep it with your backups.
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
@@ -121,12 +121,12 @@ echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 # 1 behind one reverse proxy, 0 with none.
 echo "TRUST_PROXY=1" >> .env
 
-docker compose -f compose.sync.yml up -d
+docker compose -f compose.core.yml up -d
 ```
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
@@ -135,7 +135,7 @@ echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
 echo "TRUST_PROXY=1" >> .env
 
-podman compose -f compose.sync.yml up -d
+podman compose -f compose.core.yml up -d
 ```
 
 > **Accounts need a secure page.** Signing in, signing up and opening an invitation link all
@@ -148,7 +148,7 @@ The file is annotated line by line, including the two settings that cause proble
 
 ### Create the first account
 
-Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address. Port 3001 is where `compose.sync.yml` and `compose.full.yml` publish the sync service. The sync service's own compose file in `apps/core` uses port 3000 instead:
+Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address. Port 3001 is where `compose.core.yml` and `compose.full.yml` publish the sync service. The sync service's own compose file in `apps/core` uses port 3000 instead:
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -262,7 +262,7 @@ Every letter carries a link, and that link must open on the reader's phone. When
 Mail is configured. Its messages would carry links that recipients cannot open.
 ```
 
-The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. Those are the internal names the sync service reads, and the compose files map them from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. View the message with `docker compose -f <your file> logs sync`.
+The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. Those are the internal names the sync service reads, and the compose files map them from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. View the message with `docker compose -f <your file> logs core`.
 
 #### Check that mail works
 
@@ -275,13 +275,13 @@ Send an invitation to a second address of your own in `/admin`. The page should 
 ```yaml
 # compose.mailpit.yml: a mail catcher for testing, next to your compose file
 services:
-  sync:
+  core:
     ports:
       - '127.0.0.1:8025:8025' # Mailpit's web page, on this machine only
   mailpit:
     image: docker.io/axllent/mailpit:latest
     restart: unless-stopped
-    network_mode: 'service:sync'
+    network_mode: 'service:core'
 ```
 
 Add these lines to `.env`. Mailpit takes letters on port 1025:
@@ -296,14 +296,14 @@ MAIL_OPERATOR_EMAIL=you@example.org
 Start both files together, then send an invitation and read it at `http://localhost:8025` on the server:
 
 ```bash
-docker compose -f compose.sync.yml -f compose.mailpit.yml up -d
+docker compose -f compose.core.yml -f compose.mailpit.yml up -d
 ```
 
 The rule in [Mail needs the public addresses](#mail-needs-the-public-addresses) still applies. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to `https://` addresses first, or the sync service does not start.
 
 A separate Mailpit container reached by service name, such as `SMTP_HOST=mailpit`, does not work. The sync service sends plain text only to this machine. A service name counts as another host. The service asks for STARTTLS, Mailpit offers none, and every letter fails with `Mail send failed` in the log. The shared network puts Mailpit on the same machine.
 
-When you finish testing, remove the four lines from `.env`. Then drop Mailpit with `docker compose -f compose.sync.yml up -d --remove-orphans`.
+When you finish testing, remove the four lines from `.env`. Then drop Mailpit with `docker compose -f compose.core.yml up -d --remove-orphans`.
 
 #### A relay with a private certificate authority
 
@@ -312,14 +312,14 @@ The sync service checks the certificate of every mail server. A relay inside a c
 ```yaml
 # compose.ca.yml: trust a private certificate authority for the mail relay
 services:
-  sync:
+  core:
     volumes:
       - ./relay-ca.pem:/etc/openplate/relay-ca.pem:ro
 ```
 
 ```bash
 echo "NODE_EXTRA_CA_CERTS=/etc/openplate/relay-ca.pem" >> .env
-docker compose -f compose.sync.yml -f compose.ca.yml up -d
+docker compose -f compose.core.yml -f compose.ca.yml up -d
 ```
 
 Node.js reads the file once, at start. The certificate is added to the ones Node.js already trusts, so public mail servers keep working.
@@ -665,12 +665,12 @@ If you also run the sync service, its Postgres is worth a scheduled dump, togeth
 `SERVER_SECRET`, which is useless without the database and vice versa:
 
 ```bash
-docker compose -f compose.sync.yml exec postgres \
+docker compose -f compose.core.yml exec postgres \
   pg_dump -U openplate openplate_sync > sync-backup.sql
 ```
 
 ```bash
-podman compose -f compose.sync.yml exec postgres \
+podman compose -f compose.core.yml exec postgres \
   pg_dump -U openplate openplate_sync > sync-backup.sql
 ```
 
@@ -688,8 +688,8 @@ podman compose -f compose.yml up -d
 
 Use the same `-f` file you deployed with. If you brought up a topology from
 [`docker/topologies/`](../../../docker/topologies/), name that file instead, for example
-`docker compose -f compose.sync.yml pull`. A bare `docker compose pull` beside
-`compose.sync.yml` fails with `no configuration file provided: not found`.
+`docker compose -f compose.core.yml pull`. A bare `docker compose pull` beside
+`compose.core.yml` fails with `no configuration file provided: not found`.
 
 The compose files use the `latest` tag, which is the newest release, so `pull` takes you to
 it. To choose when you upgrade, pin a version in the `image:` line, for example

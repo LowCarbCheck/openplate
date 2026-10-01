@@ -37,7 +37,7 @@ Three things never travel, whatever you switch on:
 - A running **openplate-core** instance: either the hosted one, your own, or any third-party
   server implementing [the protocol](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/PROTOCOL.md).
   To run your own, use
-  [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml): see
+  [`docker/topologies/compose.core.yml`](../../../docker/topologies/compose.core.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
 - `SYNC_SERVER_URL` set on the app, pointing at that service.
 - A secure page. Signing in derives your keys with the browser's Web Crypto API, which
@@ -63,7 +63,7 @@ email address and password you used on the first one. That is the whole procedur
 has to be copied off the first device.
 
 It must be an address a **browser** can reach. The sync client runs in the page, so a compose
-hostname like `http://sync:3000` does not work: use the public URL your users' devices
+hostname like `http://core:3000` does not work: use the public URL your users' devices
 resolve. A malformed value stops the boot on purpose, so a typo cannot look like "sync is
 quietly off".
 

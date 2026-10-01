@@ -7,14 +7,14 @@ Some settings stop the boot on purpose. A value the service cannot use, or one h
 ## How to set a variable
 
 - **Docker Compose.** Put the line in the `.env` file next to the compose file, for example `LOG_LEVEL=debug`. Then run `docker compose -f <your file> up -d` again. Every shipped compose file passes each variable its service reads on to the container. `docker compose restart` does not read `.env` again.
-- **Quadlet.** Put the line in the `<unit>.env` file next to the unit, for example `app.env`, `sync.env` or `inference.env`. Use the container's own names from this page. Then restart the unit, for example `systemctl --user restart sync.service`. [podman.md](podman.md#quadlet-units) explains the files.
+- **Quadlet.** Put the line in the `<unit>.env` file next to the unit, for example `app.env`, `core.env` or `inference.env`. Use the container's own names from this page. Then restart the unit, for example `systemctl --user restart core.service`. [podman.md](podman.md#quadlet-units) explains the files.
 - **Without a container.** The app and the sync service each read a `.env` file in the folder they run in. You can also set the variable in the shell or in the systemd unit. [Without Docker](self-hosting.md#without-docker) shows the app's setup.
 
 The Default column says what the service does when the variable is unset. A compose file can pass a value of its own, for example `MODEL_PROFILE: lite`. The compose file shows that value next to the name.
 
 ### Names the compose files fill for you
 
-The three topology files, `compose.sync.yml`, `compose.inference.yml` and `compose.full.yml`, fill some container variables from shared names in `.env`. Set the shared name there. The container variable on its own has no effect in these files.
+The three topology files, `compose.core.yml`, `compose.inference.yml` and `compose.full.yml`, fill some container variables from shared names in `.env`. Set the shared name there. The container variable on its own has no effect in these files.
 
 | In `.env` | Fills |
 | --- | --- |

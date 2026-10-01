@@ -72,19 +72,19 @@ This is the interface only. It does not translate food names or AI replies.
 ### Add sync
 
 If you also want encrypted sync across devices,
-[`docker/topologies/compose.sync.yml`](../../docker/topologies/compose.sync.yml) brings up the app, the
+[`docker/topologies/compose.core.yml`](../../docker/topologies/compose.core.yml) brings up the app, the
 [openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core) service, and the Postgres that
 sync (and only sync) needs:
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
-curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.sync.yml
+curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 echo "ADMIN_TOKEN=$(openssl rand -hex 32)" >> .env
 # The URLs a BROWSER will use. Skip these two only for a localhost trial.
 echo "PUBLIC_APP_URL=https://openplate.example.com" >> .env
 echo "PUBLIC_SYNC_URL=https://sync.example.com" >> .env
-docker compose -f compose.sync.yml up -d
+docker compose -f compose.core.yml up -d
 ```
 
 > **Accounts need HTTPS.** Signing in, signing up, and opening an invitation fail on plain

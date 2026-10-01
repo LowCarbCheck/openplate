@@ -338,7 +338,7 @@ pins both variants side by side.
 
 On a managed instance, an administrator is not the only person who can invite. Three
 openplate-core variables decide whether an ordinary member may invite someone, and on what terms.
-They are set on the sync server, not on the app. `compose.sync.yml` and `compose.full.yml`
+They are set on the sync server, not on the app. `compose.core.yml` and `compose.full.yml`
 pass all three from `.env` to the sync service.
 
 | Variable                       | Default                | Description                                                                                                                    |
