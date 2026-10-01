@@ -251,6 +251,12 @@ export interface StartServiceOptions {
   db: Database;
   throttleConfig?: ThrottleConfig;
   /**
+   * The login bucket per account. Absent is permissive, like
+   * {@link StartServiceOptions.throttleConfig}; `abuse-controls.test.ts`
+   * passes `LOGIN_ACCOUNT_THROTTLE` to assert the real ceiling.
+   */
+  loginAccountThrottleConfig?: ThrottleConfig;
+  /**
    * Absent (the default) boots the service the way every deployment boots
    * today: no static break-glass credential, and `/v1/admin/*` answering the
    * ordinary unknown-path 404 to everybody who is not an admin account.
@@ -700,6 +706,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     pulse: createDrizzlePulseStore(options.db),
     throttle: createThrottleStore(options.throttleConfig ?? PERMISSIVE_THROTTLE),
     signupRequestThrottle: createThrottleStore(options.openSignup?.ipThrottleConfig ?? PERMISSIVE_THROTTLE),
+    loginAccountThrottle: createThrottleStore(options.loginAccountThrottleConfig ?? PERMISSIVE_THROTTLE),
     logger: options.logger ?? createSilentLogger(),
     trustProxy: options.trustProxy ?? false,
     mailer,

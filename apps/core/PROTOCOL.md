@@ -275,6 +275,7 @@ A new field is a protocol revision, never a configuration. See ADR-0003.
 - Every non-2xx response body is `{"error": "<human-readable text>"}`. The text is diagnostic only; clients must branch on the **status code**, never on the message.
 - Requests exceeding the body limit are rejected with `413`. Each route family under `/v1/sync` has its own limit, and no family inherits another's: the blob and key records take the blob cap in base64 plus 4 KiB, `rotate-dek` the blob cap in base64 plus 64 KiB, the share family 8 KiB, and the research family 512 KiB.
 - An authenticated route checks the bearer token before it reads the body. A caller with no valid token gets `401`, never `413`, however large the body.
+- **A source address is an IPv4 address or an IPv6 /64.** Every throttle this document calls per IP or per source address counts an IPv6 caller by the first 64 bits of its address, because one home connection holds a whole /64. An IPv4-mapped IPv6 address (`::ffff:a.b.c.d`) counts as the IPv4 address it carries. An IPv4 address counts as itself. A request whose address the server cannot determine shares one bucket with every other such request.
 
 ### 4.1 Authentication
 
@@ -687,7 +688,12 @@ The `400`s describe the request, never the instance's accounts: a domain says no
 
 ### 5.9 `POST /v1/auth/login`
 
-Unauthenticated, throttled per IP **and** email. A `401` counts against that bucket and a success clears it, which slows a single-source brute force without letting anyone lock a victim out of their own account from another address.
+Unauthenticated, with two throttles. Both count a `401` and nothing else, and a success clears both.
+
+- **Per IP and email.** Five failures are free. This slows a single-source brute force without letting anyone lock a victim out of their own account from another address.
+- **Per email, from any address.** Twenty failures are answered; the twenty-first request is refused for one minute, and each further failure doubles the lock up to fifteen minutes. A bucket with no failure for fifteen minutes starts again. This bounds a guesser who rotates addresses. An address with no account is counted the same way, so the refusal does not say whether the account exists. The address is folded as the account lookup folds it (§2), so another spelling of it is the same bucket.
+
+Either lock is the same `429` with `Retry-After`, the longer of the two waits.
 
 Request `{"email": "...", "authHash": "..."}` → `200` `{"account": AccountView, "tokens": {...}}`.
 

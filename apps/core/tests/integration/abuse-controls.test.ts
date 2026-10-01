@@ -25,7 +25,7 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { eq, sql } from 'drizzle-orm';
-import { DEFAULT_THROTTLE_CONFIG } from '../../src/lib/throttle.js';
+import { DEFAULT_THROTTLE_CONFIG, LOGIN_ACCOUNT_THROTTLE } from '../../src/lib/throttle.js';
 import { createDrizzleInviteStore } from '../../src/db/invite-store.js';
 import { aiInstanceDays, aiUsageDays } from '../../src/db/schema.js';
 import { utcDayKey } from '../../src/lib/utc-day.js';
@@ -188,6 +188,103 @@ test('repeated failed logins lock the bucket, and a successful login clears it',
       body: { email: 'someone-else@example.org', authHash: sampleAuthHash(11) },
     });
     assert.equal(otherAccount.status, 401);
+  } finally {
+    await service.close();
+  }
+});
+
+test('login guesses spend one bucket per account from any address, cleared on success, unknown or known', async () => {
+  // THE DISTRIBUTED GUESSER. The per-address bucket above is keyed on the
+  // source AND the email, so a caller with many addresses got a fresh
+  // allowance against one account on each. The per-account bucket bounds the
+  // guesses at the account, whatever address they come from.
+  const service = await startService({
+    db: database.db,
+    throttleConfig: DEFAULT_THROTTLE_CONFIG,
+    loginAccountThrottleConfig: LOGIN_ACCOUNT_THROTTLE,
+    trustProxy: true,
+  });
+  const ceiling = LOGIN_ACCOUNT_THROTTLE.freeAttempts + 1;
+  const login = (input: { email: string; authHash: string; from: string }) =>
+    service.request<{ error: string }>({
+      method: 'POST',
+      path: '/v1/auth/login',
+      body: { email: input.email, authHash: input.authHash },
+      headers: { 'x-forwarded-for': input.from },
+    });
+  try {
+    const token = await mintInvite('owner@example.org');
+    assert.equal(
+      (await service.request({ method: 'POST', path: '/v1/auth/signup', body: signupBody(token) })).status,
+      201,
+    );
+
+    // One short of the ceiling, each from a new address, then the owner gets
+    // in. The success must hand back the whole allowance.
+    for (let attempt = 0; attempt < ceiling - 1; attempt += 1) {
+      const failed = await login({
+        email: 'owner@example.org',
+        authHash: sampleAuthHash(99),
+        from: `203.0.113.${attempt + 1}`,
+      });
+      assert.equal(failed.status, 401, `guess ${attempt + 1}`);
+    }
+    assert.equal(
+      (await login({ email: 'owner@example.org', authHash: sampleAuthHash(11), from: '198.51.100.1' })).status,
+      200,
+    );
+
+    for (let attempt = 0; attempt < ceiling; attempt += 1) {
+      const failed = await login({
+        email: 'owner@example.org',
+        authHash: sampleAuthHash(99),
+        from: `203.0.113.${attempt + 101}`,
+      });
+      assert.equal(failed.status, 401, `guess ${attempt + 1} after the success`);
+    }
+    // A new address and the right passphrase: refused, the bucket is the account's.
+    const locked = await login({ email: 'owner@example.org', authHash: sampleAuthHash(11), from: '198.51.100.2' });
+    assert.equal(locked.status, 429);
+    assert.ok(Number(locked.headers.get('retry-after')) >= 1);
+
+    // An address with no account locks after the same count with the same
+    // answer, so the refusal says nothing about which addresses exist.
+    for (let attempt = 0; attempt < ceiling; attempt += 1) {
+      const failed = await login({
+        email: 'nobody@example.org',
+        authHash: sampleAuthHash(99),
+        from: `192.0.2.${attempt + 1}`,
+      });
+      assert.equal(failed.status, 401, `unknown, guess ${attempt + 1}`);
+    }
+    const unknownLocked = await login({
+      email: 'nobody@example.org',
+      authHash: sampleAuthHash(99),
+      from: '198.51.100.3',
+    });
+    assert.equal(unknownLocked.status, 429);
+    assert.deepEqual(Object.keys(unknownLocked.body), Object.keys(locked.body));
+  } finally {
+    await service.close();
+  }
+});
+
+test('the KDF throttle counts an IPv6 /64 as one source, and an IPv4-mapped address as its IPv4', async () => {
+  const service = await startService({ db: database.db, throttleConfig: DEFAULT_THROTTLE_CONFIG, trustProxy: true });
+  const probe = (from: string, email: string) =>
+    service.request({ method: 'POST', path: '/v1/auth/kdf', body: { email }, headers: { 'x-forwarded-for': from } });
+  try {
+    for (let attempt = 0; attempt <= DEFAULT_THROTTLE_CONFIG.freeAttempts; attempt += 1) {
+      assert.equal((await probe(`2001:db8:5:6::${attempt + 1}`, `probe-${attempt}@example.org`)).status, 200);
+    }
+    assert.equal((await probe('2001:db8:5:6:ffff::1', 'probe-x@example.org')).status, 429);
+    assert.equal((await probe('2001:db8:5:7::1', 'probe-x@example.org')).status, 200);
+
+    for (let attempt = 0; attempt <= DEFAULT_THROTTLE_CONFIG.freeAttempts; attempt += 1) {
+      assert.equal((await probe('198.51.100.9', `probe-v4-${attempt}@example.org`)).status, 200);
+    }
+    assert.equal((await probe('::ffff:198.51.100.9', 'probe-x@example.org')).status, 429);
+    assert.equal((await probe('198.51.100.10', 'probe-x@example.org')).status, 200);
   } finally {
     await service.close();
   }

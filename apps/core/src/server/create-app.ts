@@ -290,6 +290,12 @@ export interface CreateAppOptions {
    * passes a permissive store, as it does for {@link CreateAppOptions.throttle}.
    */
   signupRequestThrottle?: ThrottleStore;
+  /**
+   * The login bucket per account (`lib/throttle.ts`, `LOGIN_ACCOUNT_THROTTLE`),
+   * or absent for a fresh one on the production bound. A suite that is not
+   * ABOUT that bound passes a permissive store.
+   */
+  loginAccountThrottle?: ThrottleStore;
   logger: Logger;
   /** Express `trust proxy`. Wrong here means `req.ip` is the proxy's and the whole throttle is one shared bucket. */
   trustProxy: boolean | number;
@@ -491,6 +497,7 @@ export function createApp(options: CreateAppOptions): Express {
     requireAuth,
     requireConsent,
     signupRequestThrottle: options.signupRequestThrottle,
+    loginAccountThrottle: options.loginAccountThrottle,
   });
 
   // THE SHARE TERMINATOR, AND WHY IT IS HERE AND NOT LOWER DOWN.

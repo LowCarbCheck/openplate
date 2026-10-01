@@ -7,6 +7,11 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **Every sign-in throttle counts an IPv6 caller by its /64.** The signup, login, recover, recover-rotate, reset request, reset open, KDF, invite lookup, member invite and sign-up request throttles keyed on the full address, so one home connection, which holds 2^64 IPv6 addresses, got a fresh allowance per address. An IPv4-mapped address now counts as the IPv4 address it carries. IPv4 callers count as before. One function in `src/lib/client-address.ts` folds the address for these throttles and for the price list and declaration form limits. `tests/unit/sign-in-throttle-address.test.ts`, `tests/unit/ip-rate-limit.test.ts` and `tests/integration/abuse-controls.test.ts` check this.
+- **Login also counts failures per account, from any address.** The login throttle was keyed on address and email, so a guesser rotating addresses got five guesses on each. A second bucket keyed on the email alone answers twenty failures, then locks for one minute, doubling up to fifteen. A success clears it, and a quiet quarter of an hour resets it. An email with no account is counted the same way, and the refusal is the same `429` with `Retry-After` the address bucket gives, so the app needs no change and the answer does not say whether the account exists. `tests/unit/sign-in-throttle-address.test.ts`, `tests/unit/throttle.test.ts` and `tests/integration/abuse-controls.test.ts` check this.
+
 ## [0.28.0] - 2026-10-01
 
 Upgrade in this order: openplate 0.58.0 first, then this release. This release refuses a data key rotation without the current passphrase, and an app older than 0.58.0 does not send it. Migrations 0025 to 0029 run at boot.

@@ -15,7 +15,9 @@ import {
   evaluateThrottle,
   findOverflowKeys,
   findStaleKeys,
+  identifierThrottleKey,
   isEntryStale,
+  LOGIN_ACCOUNT_THROTTLE,
   registerFailure,
   shouldSweep,
   throttleKey,
@@ -59,6 +61,35 @@ test('accountThrottleKey separates accounts and namespaces, and ignores the addr
     accountThrottleKey({ namespace: 'passphrase', accountId: 1 }),
     accountThrottleKey({ namespace: 'login', accountId: 1 }),
   );
+});
+
+test('identifierThrottleKey folds the identifier as the account lookup does, and names no address', () => {
+  // One account, however it is spelled, is one bucket: a weaker fold would
+  // hand a guesser a fresh allowance per spelling.
+  assert.equal(
+    identifierThrottleKey({ namespace: 'login', identifier: 'ＡＮＮＡ@Example.org ' }),
+    identifierThrottleKey({ namespace: 'login', identifier: 'anna@example.org' }),
+  );
+  assert.notEqual(
+    identifierThrottleKey({ namespace: 'login', identifier: 'anna@example.org' }),
+    identifierThrottleKey({ namespace: 'login', identifier: 'bert@example.org' }),
+  );
+  assert.notEqual(
+    identifierThrottleKey({ namespace: 'login', identifier: 'anna@example.org' }),
+    identifierThrottleKey({ namespace: 'recover', identifier: 'anna@example.org' }),
+  );
+});
+
+test('the login account bucket answers twenty failures and refuses the twenty-first request', () => {
+  const store = createThrottleStore(LOGIN_ACCOUNT_THROTTLE);
+  for (let failure = 1; failure <= 20; failure += 1) {
+    assert.equal(store.check('k', NOW).locked, false, `before failure ${failure}`);
+    store.recordFailure('k', NOW);
+  }
+  const decision = store.check('k', NOW);
+  assert.equal(decision.locked, true);
+  // The first lock is short, so an owner who trips it waits a minute, not fifteen.
+  assert.equal(decision.retryAfterMs, 60 * 1000);
 });
 
 test('the free allowance is exhausted before any lockout', () => {

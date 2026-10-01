@@ -2,7 +2,8 @@
  * Express glue for the `/v1/auth/*` endpoints — mapping only. Every decision
  * lives in `auth-handlers.ts`; this file turns a typed `AuthOutcome` into a
  * status code and wires the per-IP throttle, which is the one concern that
- * genuinely needs the request object (`req.ip`).
+ * genuinely needs the request object (`req.ip`, folded by
+ * `lib/client-address.ts`).
  *
  * The JSON body parser is applied to the `/v1/auth` PREFIX only, with a small
  * limit. Other routers mount their own, far larger ones
@@ -20,10 +21,20 @@
  * plate photograph posted to `/v1/chat/completions` did too. Nothing caught
  * it because no test in either tier ever sent a body larger than a sentence.
  *
+ * THE ADDRESS IN EVERY KEY BELOW IS FOLDED (`lib/client-address.ts`): an IPv6
+ * caller is its /64, an IPv4-mapped address is its IPv4 address, an IPv4
+ * address is itself. One home connection holds 2^64 IPv6 addresses, so a key
+ * on the raw `req.ip` gave anybody with IPv6 a fresh allowance per address.
+ *
  * THROTTLE POLICY, per route and deliberately different:
- *  - **login** — keyed by IP **and** email, cleared on success. Slows a
- *    single-source brute force without letting anyone lock a victim out of
- *    their own account from a different IP.
+ *  - **login**: two buckets, both counting failures only and both cleared on
+ *    success. One keyed by IP **and** email, which slows a single-source
+ *    brute force without letting anyone lock a victim out of their own account
+ *    from a different IP. One keyed by the email ALONE, in its own store on
+ *    {@link LOGIN_ACCOUNT_THROTTLE}, which bounds a guesser who rotates
+ *    addresses: twenty failures, then a lock of one to fifteen minutes. An
+ *    address with no account is counted the same way, and the refusal is the
+ *    same `429` either bucket gives, so it says nothing about who has one.
  *  - **recover** and **recover-rotate** — keyed by IP **and** email, exactly
  *    like login and for the same reason, but they matter more: both accept a
  *    guess at the ONE authenticator left to a user who has lost their
@@ -82,7 +93,14 @@ import {
 } from './auth-handlers.js';
 import { handleNotFound } from '../server/error-middleware.js';
 import { getRequestSession } from '../server/bearer-auth.js';
-import { createThrottleStore, throttleKey, type ThrottleStore } from '../lib/throttle.js';
+import {
+  createThrottleStore,
+  identifierThrottleKey,
+  LOGIN_ACCOUNT_THROTTLE,
+  throttleKey,
+  type ThrottleStore,
+} from '../lib/throttle.js';
+import { clientAddressKey } from '../lib/client-address.js';
 import { SIGNUP_REQUEST_IP_THROTTLE } from './open-signup.js';
 import { passphraseThrottleKey, sendThrottled } from './passphrase-gate.js';
 import { asFields } from './auth-input.js';
@@ -119,6 +137,16 @@ export interface AuthRoutesOptions {
    * bound needs a second store.
    */
   signupRequestThrottle?: ThrottleStore;
+  /**
+   * The login bucket per account, keyed on the submitted email alone, or
+   * absent for a fresh one on {@link LOGIN_ACCOUNT_THROTTLE}.
+   *
+   * ITS OWN STORE, for the reason {@link AuthRoutesOptions.signupRequestThrottle}
+   * gives: its ceiling is twenty failures, not the five of the shared store,
+   * and a bucket's config is fixed by its store. Absent is the production
+   * bound, so a wiring that forgets it still guards login.
+   */
+  loginAccountThrottle?: ThrottleStore;
 }
 
 /** Maps a handler outcome onto the wire. The only place status codes are chosen. */
@@ -171,16 +199,21 @@ function recordPassphraseOutcome(input: { throttle: ThrottleStore; key: string; 
 }
 
 /**
- * `req.ip` is `undefined` only when Express cannot determine it at all; the
- * literal fallback keeps every such request in ONE bucket rather than
- * silently exempting them from the throttle.
+ * Both recovery routes share ONE throttle bucket per (IP, email), on purpose:
+ * they authenticate the same secret, so letting an attacker spend a fresh
+ * allowance on each would halve the cost of guessing it.
  */
-function clientIp(req: Request): string {
-  return req.ip ?? 'unknown';
+function recoveryThrottleKey(req: Request): string {
+  return throttleKey({
+    namespace: 'recover',
+    ip: clientAddressKey(req),
+    identifier: asString(asFields(req.body).email) ?? undefined,
+  });
 }
 
 export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): void {
   const { ctx, throttle, requireAuth, requireConsent } = options;
+  const loginAccountThrottle = options.loginAccountThrottle ?? createThrottleStore(LOGIN_ACCOUNT_THROTTLE);
   const router = express.Router();
   // SCOPED TO THE PREFIX. See the module header: unscoped, this parser applies
   // to every path in the service and silently caps them all at 64 KB.
@@ -188,7 +221,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
 
   router.post(`${AUTH_API_PREFIX}/kdf`, async (req, res, next) => {
     try {
-      const key = throttleKey({ namespace: 'kdf', ip: clientIp(req) });
+      const key = throttleKey({ namespace: 'kdf', ip: clientAddressKey(req) });
       const decision = throttle.check(key);
       if (decision.locked) {
         sendThrottled(res, decision.retryAfterMs);
@@ -210,7 +243,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
       // By IP alone, and every attempt counts. Guessing invite tokens is the
       // attack, so a bucket keyed by the submitted token would hand out a fresh
       // allowance for every guess.
-      const key = throttleKey({ namespace: 'invite-lookup', ip: clientIp(req) });
+      const key = throttleKey({ namespace: 'invite-lookup', ip: clientAddressKey(req) });
       const decision = throttle.check(key);
       if (decision.locked) {
         sendThrottled(res, decision.retryAfterMs);
@@ -225,7 +258,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
 
   router.post(`${AUTH_API_PREFIX}/signup`, async (req, res, next) => {
     try {
-      const key = throttleKey({ namespace: 'signup', ip: clientIp(req) });
+      const key = throttleKey({ namespace: 'signup', ip: clientAddressKey(req) });
       const decision = throttle.check(key);
       if (decision.locked) {
         sendThrottled(res, decision.retryAfterMs);
@@ -242,38 +275,38 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
   router.post(`${AUTH_API_PREFIX}/login`, async (req, res, next) => {
     try {
       const submittedEmail = asString(asFields(req.body).email);
-      const key = throttleKey({
+      const addressKey = throttleKey({
         namespace: 'login',
-        ip: clientIp(req),
+        ip: clientAddressKey(req),
         identifier: submittedEmail ?? undefined,
       });
-      const decision = throttle.check(key);
-      if (decision.locked) {
-        sendThrottled(res, decision.retryAfterMs);
+      // An absent or non-string email gets the empty identifier. Such a body
+      // is a `400` before any credential check, so nothing is ever recorded
+      // against that bucket; it only has to exist for the check below.
+      const accountKey = identifierThrottleKey({ namespace: 'login', identifier: submittedEmail ?? '' });
+      const addressDecision = throttle.check(addressKey);
+      const accountDecision = loginAccountThrottle.check(accountKey);
+      // ONE ANSWER FOR EITHER LOCK, the longer wait of the two. A distinct
+      // body or status for the account bucket would tell a caller that the
+      // account it names is being guessed at from elsewhere.
+      if (addressDecision.locked || accountDecision.locked) {
+        sendThrottled(res, Math.max(addressDecision.retryAfterMs, accountDecision.retryAfterMs));
         return;
       }
 
       const outcome = await handleLogin(req.body, ctx);
       if (outcome.status === 'unauthorized') {
-        throttle.recordFailure(key);
+        throttle.recordFailure(addressKey);
+        loginAccountThrottle.recordFailure(accountKey);
       } else if (outcome.status === 'ok') {
-        throttle.clear(key);
+        throttle.clear(addressKey);
+        loginAccountThrottle.clear(accountKey);
       }
       sendOutcome(res, outcome);
     } catch (error) {
       next(error);
     }
   });
-
-  // Both recovery routes share ONE throttle bucket per (IP, email), on
-  // purpose: they authenticate the same secret, so letting an attacker spend a
-  // fresh allowance on each would halve the cost of guessing it.
-  const recoveryThrottleKey = (req: Request): string =>
-    throttleKey({
-      namespace: 'recover',
-      ip: clientIp(req),
-      identifier: asString(asFields(req.body).email) ?? undefined,
-    });
 
   router.post(`${AUTH_API_PREFIX}/recover`, async (req, res, next) => {
     try {
@@ -320,7 +353,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
       // address, or filling somebody's mailbox, does it thousands of times.
       const key = throttleKey({
         namespace: 'reset-request',
-        ip: clientIp(req),
+        ip: clientAddressKey(req),
         identifier: asString(asFields(req.body).email) ?? undefined,
       });
       const decision = throttle.check(key);
@@ -339,7 +372,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
     try {
       // By IP alone: the submitted value IS the secret being guessed, so a
       // bucket keyed by it would reset on every guess.
-      const key = throttleKey({ namespace: 'reset-open', ip: clientIp(req) });
+      const key = throttleKey({ namespace: 'reset-open', ip: clientAddressKey(req) });
       const decision = throttle.check(key);
       if (decision.locked) {
         sendThrottled(res, decision.retryAfterMs);
@@ -489,7 +522,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
         // By IP alone, and every attempt counts, see the module header. It is
         // checked BEFORE the handler, so a caller who is already locked out
         // costs no database read and, more importantly, causes no letter.
-        const key = throttleKey({ namespace: 'member-invite', ip: clientIp(req) });
+        const key = throttleKey({ namespace: 'member-invite', ip: clientAddressKey(req) });
         const decision = throttle.check(key);
         if (decision.locked) {
           sendThrottled(res, decision.retryAfterMs);
@@ -519,7 +552,7 @@ export function registerAuthRoutes(app: Express, options: AuthRoutesOptions): vo
         // who is locked out costs no captcha call, no database read and no
         // letter. Keying it by the submitted address would hand out a fresh
         // allowance per address, which is the attack.
-        const key = throttleKey({ namespace: 'signup-request', ip: clientIp(req) });
+        const key = throttleKey({ namespace: 'signup-request', ip: clientAddressKey(req) });
         const decision = signupRequestThrottle.check(key);
         if (decision.locked) {
           sendThrottled(res, decision.retryAfterMs);
