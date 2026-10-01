@@ -45,12 +45,14 @@ The app is reachable at `http://localhost:3000`.
 Upgrading is `docker compose -f compose.yml pull && docker compose -f compose.yml up -d`. There is no server-side state to
 migrate or lose.
 
-The app tells you when there is something to pull. Every six hours the server asks GitHub
-whether a newer openplate has been released and shows the answer under **Settings > About**,
-along with the exact version and commit you are running. The request goes from the server,
-not from anyone's browser, and carries nothing but your server's IP address. Set
-`UPDATE_CHECK=off` to stop it entirely; the About page then says checks are disabled and no
-request leaves the box. Details in
+The app notifies you when updates are available. Every six hours, the server
+fetches `https://openplate.de/latest.json`. It displays the newest release under
+**Settings > About**, along with your current version and commit. The server
+sends this request, not a browser. The request contains only your server's IP
+address and a User-Agent with the openplate version, platform, and arch. The
+project counts unique daily requesting addresses and retains only those totals.
+Set `UPDATE_CHECK=off` to disable the check and the counter. The About page will
+show that checks are disabled, and the server will send no requests. Details in
 [docs/configuration.md](docs/configuration.md#the-release-check).
 
 ### Pick a language

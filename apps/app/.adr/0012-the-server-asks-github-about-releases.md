@@ -1,6 +1,6 @@
 # 0012. The server asks GitHub about releases, and it asks by default
 
-- **Status:** Accepted
+- **Status:** Superseded by 0021
 - **Date:** 2026-09-08
 - **Deciders:** Altan, with architecture review
 

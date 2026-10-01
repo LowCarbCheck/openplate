@@ -43,6 +43,15 @@ export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
  */
 export const PROJECT_SITE_URL = 'https://openplate.de';
 
+/**
+ * The release feed the server's update check asks, `{ "app": { "version": "x.y.z" } }`
+ * (ADR-0021). Derived from {@link PROJECT_SITE_URL}, so a fork that keeps its own
+ * site changes that one line and gets its own feed. There is no environment
+ * override and no GitHub fallback. The banner's link to the release page still
+ * goes to {@link REPO_URL}.
+ */
+export const RELEASE_FEED_URL = `${PROJECT_SITE_URL}/latest.json`;
+
 /** The site's name as a reader sees it in a link, `openplate.de`. Derived, so the fork edit moves it too. */
 export const PROJECT_SITE_HOST = new URL(PROJECT_SITE_URL).host;
 

@@ -31,11 +31,9 @@ import {
   createUpdateChecker,
   isSameOriginRequest,
   releaseUrlFor,
-  repoSlug,
   startUpdateCheckSchedule,
   toUpdateStatus,
 } from '#app/lib/update-check.server';
-import { REPO_URL } from '#app/lib/brand';
 import { createMovedModeHandlers } from '#app/lib/moved/moved-mode.server';
 
 const logger = createComponentLogger('server');
@@ -118,7 +116,7 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
  * object the whole process shares: the boot timer, the six-hourly one and the
  * manual endpoint all drive the same cache and the same in-flight promise. A
  * per-request checker would turn one question into one request per caller,
- * against an endpoint that rate limits by IP.
+ * against the openplate.de release feed, which counts the addresses that ask.
  *
  * `enabled` is `UPDATE_CHECK` (see `app/config/index.ts`). When it is off nothing
  * is scheduled and nothing is fetched, by any path.
@@ -126,7 +124,6 @@ const CONTENT_SECURITY_POLICY = buildContentSecurityPolicy({
 const updateChecker = createUpdateChecker({
   enabled: CONFIG.updates.checkEnabled,
   currentVersion: SERVER_BUILD.version,
-  repo: repoSlug(REPO_URL),
   releaseUrlFor,
   fetchImpl: fetch,
   now: () => Date.now(),
@@ -153,7 +150,7 @@ function createBuildHeaderMiddleware() {
  *
  * Plain Express rather than React Router resource routes: the checker is process
  * state that must not be re-created per request, and mounting it here keeps the
- * GitHub call provably out of the client module graph.
+ * request to the openplate.de release feed provably out of the client module graph.
  *
  * `GET` never fetches; it reports the cache, which the timers keep warm, and is
  * open to anything. `POST` may fetch, at most once a minute across the whole

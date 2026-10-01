@@ -3,7 +3,7 @@
  *
  * ── Why this file exists ─────────────────────────────────────────────────
  *
- * The production server asks GitHub for the newest release tag at boot and
+ * The production server asks openplate.de for the newest version at boot and
  * every six hours (M203, `app/lib/update-check.server.ts`). In this tier that
  * made the specs depend on the release calendar: the day 0.43.0 was tagged,
  * every branch still on 0.42.0 drew an "update available" ribbon at the top of

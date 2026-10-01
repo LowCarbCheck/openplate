@@ -145,7 +145,8 @@ services:
       # The language a first-time visitor sees: en, de, fr, it, es or tr.
       # Empty means en.
       DEFAULT_UI_LANGUAGE: ${DEFAULT_UI_LANGUAGE:-}
-      # "off" stops the six-hourly question to GitHub about a newer release.
+      # "off" disables the six-hourly request to openplate.de for the newest version
+      # and the project's daily count of asks. Empty means on.
       UPDATE_CHECK: ${UPDATE_CHECK:-}
       # Closes this instance: an https:// address where its people went.
       # Every page then names it. Empty means open as usual.

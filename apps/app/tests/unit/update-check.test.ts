@@ -6,14 +6,13 @@
  * 1. **Ordering.** A version comparison that gets prereleases wrong tells an
  *    instance on `0.19.0` that `0.19.0-rc.1` is newer, and a whole instance is
  *    then nagged to move onto an unfinished build.
- * 2. **Tag selection.** Prereleases are invisible unless THIS instance runs one.
- *    Nothing else in the repository enforces that rule.
- * 3. **Fail soft.** GitHub is down, slow, or rate limiting this IP far more often
- *    than it is broken. Every one of those must keep the previous answer rather
+ * 2. **The feed's shape.** The file must be `{ app: { version: "x.y.z" } }` and
+ *    nothing else is believed. A prerelease or a malformed file is a failed check.
+ * 3. **Fail soft.** The site is down or slow far more often than it is broken. Every one of those must keep the previous answer rather
  *    than blanking the banner, and none of them may throw at a caller.
  * 4. **The throttle.** The manual button is unauthenticated. Without a cooldown
  *    a loop on that endpoint turns one visitor into a request generator pointed
- *    at api.github.com from the instance's own IP.
+ *    at the project site from the instance's own IP.
  * 5. **The same-origin rule.** The manual endpoint is a plain Express route, so
  *    React Router's CSRF check never sees it. A wrong answer here is invisible:
  *    the accepting cases are what an operator exercises by hand, and the
@@ -28,34 +27,30 @@ import assert from 'node:assert/strict';
 import {
   compareSemver,
   createUpdateChecker,
-  isPrereleaseVersion,
   isSameOriginRequest,
   MANUAL_CHECK_COOLDOWN_MS,
   parseVersion,
-  repoSlug,
-  selectLatestTag,
-  tagNamesOf,
+  releaseCheckUserAgent,
 } from '../../app/lib/update-check.server';
 
 /**
- * A `fetch` that answers with the given tag names, as the matching-refs endpoint
- * spells them, and counts its calls. It answers with EVERY tag it is given,
- * whatever the URL asked for, so a test can hand the checker a tag GitHub's
- * prefix filter would have kept out and see the checker refuse it too.
+ * A `fetch` that answers with the given release version, as the site's
+ * `latest.json` spells it, and records every call (url and init).
  */
-function stubFetch(tags: readonly string[]) {
+function stubFetch(version: string) {
   const calls: string[] = [];
-  const fetchImpl = (url: string) => {
+  const inits: RequestInit[] = [];
+  const fetchImpl = (url: string, init: RequestInit) => {
     calls.push(url);
-    const refs = tags.map((name) => ({ ref: `refs/tags/${name}`, object: { sha: 'ignored', type: 'commit' } }));
+    inits.push(init);
     return Promise.resolve(
-      new Response(JSON.stringify(refs), {
+      new Response(JSON.stringify({ app: { version } }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),
     );
   };
-  return { calls, fetchImpl };
+  return { calls, inits, fetchImpl };
 }
 
 /** A `fetch` that always fails, standing in for every remote problem there is. */
@@ -69,21 +64,20 @@ function failingFetch() {
 }
 
 function checkerOver({
-  tags,
+  latest,
   currentVersion,
   clock,
 }: {
-  tags: readonly string[];
+  latest: string;
   currentVersion: string;
   clock: () => number;
 }) {
-  const stub = stubFetch(tags);
+  const stub = stubFetch(latest);
   return {
     stub,
     checker: createUpdateChecker({
       enabled: true,
       currentVersion,
-      repo: 'LowCarbCheck/openplate',
       releaseUrlFor: (version) => `https://example.test/releases/tag/v${version}`,
       fetchImpl: stub.fetchImpl,
       now: clock,
@@ -130,65 +124,9 @@ describe('compareSemver', () => {
   });
 });
 
-describe('isPrereleaseVersion', () => {
-  it('is true only for a parseable version with a tail', () => {
-    assert.equal(isPrereleaseVersion('1.0.0-rc.1'), true);
-    assert.equal(isPrereleaseVersion('1.0.0'), false);
-    assert.equal(isPrereleaseVersion('nightly'), false);
-  });
-});
-
-describe('selectLatestTag', () => {
-  const tags = ['v0.18.3', 'v0.19.0', 'v0.20.0-rc.1', 'nightly', '0.21.0'];
-
-  it('picks the highest release and ignores prereleases for a release install', () => {
-    assert.equal(selectLatestTag({ tags, currentVersion: '0.18.3' }), '0.19.0');
-  });
-
-  it('follows the prerelease train only when the install is itself on one', () => {
-    assert.equal(selectLatestTag({ tags, currentVersion: '0.19.0-rc.1' }), '0.20.0-rc.1');
-  });
-
-  it('ignores a tag that is not `v` plus a version', () => {
-    // `nightly` has no version, and `0.21.0` has no `v`, so neither can win even
-    // though the second one is numerically the highest string on the page.
-    assert.equal(selectLatestTag({ tags: ['nightly', '0.21.0'], currentVersion: '0.18.3' }), null);
-  });
-
-  it('ignores a core or inference release however high it is', () => {
-    const merged = ['v0.18.3', 'v0.19.0', 'core-v9.9.9', 'inference-v9.9.9'];
-    assert.equal(selectLatestTag({ tags: merged, currentVersion: '0.18.3' }), '0.19.0');
-  });
-
-  it('control: the same version on an app tag is the latest', () => {
-    assert.equal(selectLatestTag({ tags: ['v0.19.0', 'v9.9.9'], currentVersion: '0.18.3' }), '9.9.9');
-  });
-
-  it('is null when the page is empty', () => {
-    assert.equal(selectLatestTag({ tags: [], currentVersion: '0.18.3' }), null);
-  });
-});
-
-describe('tagNamesOf', () => {
-  it('reads the tag name out of a tag ref', () => {
-    assert.deepEqual(tagNamesOf(['refs/tags/v0.19.0', 'refs/tags/v0.20.0-rc.1']), ['v0.19.0', 'v0.20.0-rc.1']);
-  });
-
-  it('drops a ref that is not a tag', () => {
-    assert.deepEqual(tagNamesOf(['refs/heads/v0.19.0', 'v0.19.0']), []);
-  });
-});
-
-describe('repoSlug', () => {
-  it('derives owner/name from the repository URL', () => {
-    assert.equal(repoSlug('https://github.com/LowCarbCheck/openplate'), 'LowCarbCheck/openplate');
-    assert.equal(repoSlug('https://github.com/someone/fork/'), 'someone/fork');
-  });
-});
-
 describe('the checker', () => {
   it('reports an available update, with a link', async () => {
-    const { checker } = checkerOver({ tags: ['v0.18.3', 'v0.19.0'], currentVersion: '0.18.3', clock: () => 1000 });
+    const { checker } = checkerOver({ latest: '0.19.0', currentVersion: '0.18.3', clock: () => 1000 });
     const state = await checker.refresh();
     assert.equal(state.latest, '0.19.0');
     assert.equal(state.updateAvailable, true);
@@ -197,37 +135,63 @@ describe('the checker', () => {
   });
 
   it('reports no update when the instance is already on the newest tag', async () => {
-    const { checker } = checkerOver({ tags: ['v0.18.3'], currentVersion: '0.18.3', clock: () => 1000 });
+    const { checker } = checkerOver({ latest: '0.18.3', currentVersion: '0.18.3', clock: () => 1000 });
     const state = await checker.refresh();
     assert.equal(state.updateAvailable, false);
   });
 
-  it("asks GitHub for the repository's v-prefixed tag refs only", async () => {
-    // The prefix is the server-side half of keeping core and inference releases out: the merged
-    // repository carries `core-v*` and `inference-v*` too, and a single page of every tag could
-    // push the newest app release off it.
-    const { checker, stub } = checkerOver({ tags: ['v0.19.0'], currentVersion: '0.18.3', clock: () => 0 });
+  it("asks the project site's release feed, and only that", async () => {
+    // The URL is pinned in full in `release-check-request.test.ts`; this case keeps the checker
+    // honest about asking exactly once, at the feed, with no GitHub address anywhere.
+    const { checker, stub } = checkerOver({ latest: '0.19.0', currentVersion: '0.18.3', clock: () => 0 });
     await checker.refresh();
-    assert.deepEqual(stub.calls, ['https://api.github.com/repos/LowCarbCheck/openplate/git/matching-refs/tags/v']);
+    assert.deepEqual(stub.calls, ['https://openplate.de/latest.json']);
   });
 
-  it('never offers a core or inference release as an app update', async () => {
-    const { checker } = checkerOver({
-      tags: ['v0.18.3', 'v0.19.0', 'core-v9.9.9', 'inference-v9.9.9'],
-      currentVersion: '0.18.3',
-      clock: () => 0,
-    });
-    const state = await checker.refresh();
-    assert.equal(state.latest, '0.19.0');
-    assert.equal(state.releaseUrl, 'https://example.test/releases/tag/v0.19.0');
+  it('sends the version, platform and arch in the User-Agent', async () => {
+    const { checker, stub } = checkerOver({ latest: '0.19.0', currentVersion: '0.18.3', clock: () => 0 });
+    await checker.refresh();
+    const headers = new Headers(stub.inits[0]?.headers);
+    assert.equal(headers.get('user-agent'), `openplate/0.18.3 (${process.platform}; ${process.arch})`);
+    assert.equal(headers.get('user-agent'), releaseCheckUserAgent('0.18.3'));
+    assert.equal(headers.get('accept'), 'application/json');
   });
 
-  it('control: the same 9.9.9 as an app tag IS offered, so the case above is not passing by accident', async () => {
-    const { checker } = checkerOver({
-      tags: ['v0.18.3', 'v0.19.0', 'v9.9.9', 'inference-v9.9.9'],
+  it('does not offer a prerelease, and keeps the previous answer', async () => {
+    const stable = stubFetch('0.19.0');
+    const prerelease = stubFetch('0.20.0-rc.1');
+    let call = 0;
+    const checker = createUpdateChecker({
+      enabled: true,
       currentVersion: '0.18.3',
-      clock: () => 0,
+      releaseUrlFor: (version) => `https://example.test/v${version}`,
+      fetchImpl: (url, init) => (call++ === 0 ? stable.fetchImpl(url, init) : prerelease.fetchImpl(url, init)),
+      now: () => 1000,
     });
+    const first = await checker.refresh();
+    assert.equal(first.latest, '0.19.0');
+    const second = await checker.refresh();
+    assert.equal(second.latest, '0.19.0', 'a prerelease string is a failed check, not a newer version');
+  });
+
+  it('treats an unreadable file as a failure, whatever it is', async () => {
+    const bodies = ['{}', '{"app":{}}', '{"app":{"version":42}}', '[]', '"0.19.0"'];
+    for (const body of bodies) {
+      const checker = createUpdateChecker({
+        enabled: true,
+        currentVersion: '0.18.3',
+        releaseUrlFor: (version) => `https://example.test/v${version}`,
+        fetchImpl: () => Promise.resolve(new Response(body, { status: 200 })),
+        now: () => 1000,
+      });
+      const state = await checker.refresh();
+      assert.equal(state.latest, null, body);
+      assert.equal(state.checkedAt, null, body);
+    }
+  });
+
+  it('control: the same shape with a stable version IS believed', async () => {
+    const { checker } = checkerOver({ latest: '9.9.9', currentVersion: '0.18.3', clock: () => 0 });
     const state = await checker.refresh();
     assert.equal(state.latest, '9.9.9');
   });
@@ -235,14 +199,13 @@ describe('the checker', () => {
   it('keeps the previous answer when the fetch fails, and does not throw', async () => {
     let answer = 0;
     const failing = failingFetch();
-    const good = stubFetch(['v0.19.0']);
+    const good = stubFetch('0.19.0');
     const checker = createUpdateChecker({
       enabled: true,
       currentVersion: '0.18.3',
-      repo: 'LowCarbCheck/openplate',
       releaseUrlFor: (version) => `https://example.test/v${version}`,
       // First call succeeds, every later one fails.
-      fetchImpl: (url) => (answer++ === 0 ? good.fetchImpl(url) : failing.fetchImpl(url)),
+      fetchImpl: (url, init) => (answer++ === 0 ? good.fetchImpl(url, init) : failing.fetchImpl(url)),
       now: () => 1000,
     });
 
@@ -254,13 +217,12 @@ describe('the checker', () => {
     assert.equal(second.checkedAt, first.checkedAt, 'and must not claim it looked just now');
   });
 
-  it('treats a non-2xx answer as a failure, not as an empty tag list', async () => {
+  it('treats a non-2xx answer as a failure', async () => {
     const checker = createUpdateChecker({
       enabled: true,
       currentVersion: '0.18.3',
-      repo: 'LowCarbCheck/openplate',
       releaseUrlFor: (version) => `https://example.test/v${version}`,
-      fetchImpl: () => Promise.resolve(new Response('rate limited', { status: 403 })),
+      fetchImpl: () => Promise.resolve(new Response('not found', { status: 404 })),
       now: () => 1000,
     });
     const state = await checker.refresh();
@@ -269,17 +231,16 @@ describe('the checker', () => {
   });
 
   it('makes one request for two overlapping calls', async () => {
-    const { checker, stub } = checkerOver({ tags: ['v0.19.0'], currentVersion: '0.18.3', clock: () => 0 });
+    const { checker, stub } = checkerOver({ latest: '0.19.0', currentVersion: '0.18.3', clock: () => 0 });
     await Promise.all([checker.refresh(), checker.refresh(), checker.refresh()]);
     assert.equal(stub.calls.length, 1);
   });
 
   it('never fetches at all when the operator turned checks off', async () => {
-    const stub = stubFetch(['v0.19.0']);
+    const stub = stubFetch('0.19.0');
     const checker = createUpdateChecker({
       enabled: false,
       currentVersion: '0.18.3',
-      repo: 'LowCarbCheck/openplate',
       releaseUrlFor: (version) => `https://example.test/v${version}`,
       fetchImpl: stub.fetchImpl,
       now: () => 0,
@@ -294,7 +255,7 @@ describe('the manual check throttle', () => {
   it('runs the first check and refuses a second one inside the cooldown', async () => {
     let now = 10_000;
     const { checker, stub } = checkerOver({
-      tags: ['v0.19.0'],
+      latest: '0.19.0',
       currentVersion: '0.18.3',
       clock: () => now,
     });
@@ -313,7 +274,7 @@ describe('the manual check throttle', () => {
 
   it('allows the next one once the cooldown has elapsed', async () => {
     let now = 10_000;
-    const { checker, stub } = checkerOver({ tags: ['v0.19.0'], currentVersion: '0.18.3', clock: () => now });
+    const { checker, stub } = checkerOver({ latest: '0.19.0', currentVersion: '0.18.3', clock: () => now });
 
     await checker.checkNow();
     now += MANUAL_CHECK_COOLDOWN_MS;
