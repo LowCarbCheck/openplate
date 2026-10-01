@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The release check now asks openplate.de instead of GitHub.** The request carries only the app version, the platform and the architecture, in its User-Agent, and nothing else. The project counts how many addresses asked per day and keeps only the daily totals. `UPDATE_CHECK=off` stops both the request and the count. The reasons are in `ADR-0021`.
+
 ## [0.61.0] - 2026-10-01
 
 ### Changed

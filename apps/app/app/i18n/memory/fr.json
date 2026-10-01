@@ -4115,6 +4115,13 @@
     "at": "2026-09-14",
     "fr": "Cette entrée n'a pas de photo, donc aucune photo n'est envoyée. Tu envoies les chiffres de cette entrée, et rien d'autre de ton journal. La personne qui administre ce serveur peut les lire."
   },
+  "3268321e6efa90e9": {
+    "en": "openplate contains no analytics, no advertising and no tracking pixel. Nothing you do in the app is counted or sent anywhere. The server only asks openplate.de for the newest version, and you can turn that off.",
+    "path": "common:landing.features.noTracking.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucun outil d'analyse, aucune publicité et aucun pixel de suivi. Rien de ce que tu fais dans l'application n'est comptabilisé ni envoyé nulle part. Le serveur interroge uniquement openplate.de pour vérifier la présence d'une version plus récente, et tu peux désactiver cette vérification."
+  },
   "32777e4d76dc89d7": {
     "en": "Speak",
     "path": "common:launcher.speak",
@@ -6375,6 +6382,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Grammes"
+  },
+  "503bdcfe9a1cdc41": {
+    "en": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary is encrypted on this device before a copy reaches the server. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyAnalyticsManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance compte les visites et l'utilisation des fonctionnalités avec sa propre instance Matomo sans cookie, jamais ce que tu manges, ton poids ou ce que tu saisis ; ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
   },
   "504e9b2cc6132032": {
     "en": "Ingredients",
@@ -8826,6 +8840,13 @@
     "at": "2026-09-14",
     "fr": "Potassium"
   },
+  "6cea082c62b29234": {
+    "en": "openplate contains no advertising. This instance counts page visits with its own cookie-free Matomo. It does not record which features you use. It is never told what you eat, weigh, or log. Your diary is encrypted on this device before a copy reaches the server. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyPageviewsManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance compte les visites de pages avec sa propre instance Matomo sans cookie. Elle n'enregistre pas les fonctionnalités que tu utilises. Elle ne sait jamais ce que tu manges, ton poids ou ce que tu saisis. Ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
+  },
   "6d19db99e474fed2": {
     "en": "Your diary is kept in step across every device you sign in on.",
     "path": "common:account.devices.body",
@@ -9329,6 +9350,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ce lien semble incorrect"
+  },
+  "72aa316d35368f9a": {
+    "en": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary stays on this device. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyResearch",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance utilise sa propre instance Matomo sans cookie au niveau recherche. En plus des visites et de l'utilisation des fonctionnalités, elle comptabilise les occurrences d'un jeûne, d'une saisie de poids, d'un partage avec un médecin ou d'une contribution à une étude. Elle ne sait jamais ce que tu manges, ton poids ou ce que tu saisis. Ton journal reste sur cet appareil. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
   },
   "72f5b12cd6be2cd7": {
     "en": "You have joined.",
@@ -10267,6 +10295,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Il te reste aujourd'hui {{value}} calories sur ton objectif de {{target}} calories."
+  },
+  "7d1458df4b60fdb3": {
+    "en": "openplate contains no advertising. This instance runs its own cookie-free Matomo at the research level. On top of visits and feature use, it counts that a fast, a weight entry, a clinician share, or a study contribution happened. It is never told what you eat, weigh, or log. Your diary is encrypted on this device before a copy reaches the server. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyResearchManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance utilise sa propre instance Matomo sans cookie au niveau recherche. En plus des visites et de l'utilisation des fonctionnalités, elle comptabilise les occurrences d'un jeûne, d'une saisie de poids, d'un partage avec un médecin ou d'une contribution à une étude. Elle ne sait jamais ce que tu manges, ton poids ou ce que tu saisis. Ton journal est chiffré sur cet appareil avant qu'une copie n'atteigne le serveur. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
   },
   "7d35bae3bb732fe3": {
     "en": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up.",
@@ -12318,6 +12353,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "{{value}} g de glucides nets"
+  },
+  "93fe4f40f8ecc957": {
+    "en": "openplate contains no advertising. This instance counts page visits with its own cookie-free Matomo. It does not record which features you use. It is never told what you eat, weigh, or log. Your diary stays on this device. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyPageviews",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance compte les visites de pages avec sa propre instance Matomo sans cookie. Elle n'enregistre pas les fonctionnalités que tu utilises. Elle ne sait jamais ce que tu manges, ton poids ou ce que tu saisis. Ton journal reste sur cet appareil. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
   },
   "94058c3d02468b10": {
     "en": "No fasts yet. Your first one shows up here.",
@@ -15867,6 +15909,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Statut"
+  },
+  "bf6c0cebdf91cb17": {
+    "en": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. When you run openplate yourself, the only thing counted is that your server asked for the newest version. You can turn that off.",
+    "path": "common:landing.features.noTracking.bodyAnalytics",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "openplate ne contient aucune publicité. Cette instance compte les visites et l'utilisation des fonctionnalités avec sa propre instance Matomo sans cookie, jamais ce que tu manges, ton poids ou ce que tu saisis ; ton journal reste sur cet appareil. Quand tu fais tourner openplate toi-même, la seule chose comptabilisée est la requête de ton serveur pour obtenir la dernière version. Tu peux désactiver cela."
   },
   "bf7cf9f374811c87": {
     "en": "Protein tracked",

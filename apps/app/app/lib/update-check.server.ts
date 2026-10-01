@@ -5,28 +5,32 @@
  *
  * The production `connect-src` (`app/config/content-security-policy.ts`) is a
  * closed allowlist, and it is load-bearing: it is what stops an injected script
- * exfiltrating a BYOK key that lives in the page. Adding `api.github.com` to it
+ * exfiltrating a BYOK key that lives in the page. Adding the project site to it
  * to satisfy a version banner would widen the one list the security promise
  * rests on, for a cosmetic feature. Asking from here keeps the header
  * byte-for-byte what it was, and means no visitor's browser ever contacts
- * GitHub. See ADR-0012.
+ * the release feed. See ADR-0012 (superseded) and ADR-0021.
  *
  * ── WHAT LEAVES THE BOX ─────────────────────────────────────────────────────
  *
- * One anonymous GET to the public tag refs of a public repository, at most
- * once every six hours, carrying nothing about anybody. No token, no instance
- * id, no version number in the query. GitHub sees the instance's IP and the
- * default user agent, and nothing else. `UPDATE_CHECK=off` stops even that.
+ * One anonymous GET to `RELEASE_FEED_URL` (`https://openplate.de/latest.json`),
+ * at most once every six hours, carrying nothing about anybody. No token, no
+ * instance id, no body, no query string. The only header beyond `Accept` is the
+ * User-Agent, `openplate/<version> (<platform>; <arch>)`. The site sees the
+ * instance's IP and that string, and counts distinct addresses per day. There is
+ * no environment override and no GitHub fallback. `UPDATE_CHECK=off` stops the
+ * request, and with it the count. `tests/unit/release-check-request.test.ts`
+ * pins the request, so an added header fails the local gate. See ADR-0021.
  *
  * ── WHY IT NEVER THROWS AT A CALLER ─────────────────────────────────────────
  *
- * A version banner is the least important thing this server does. GitHub being
- * slow, rate-limiting the instance's IP, or being down must cost the user
+ * A version banner is the least important thing this server does. The site being
+ * slow, down, or answering a file this check cannot read must cost the user
  * nothing, so every failure keeps the previous answer and logs at warn. That is
  * the one place in this repository where "log and continue" is right: there is
  * no invalid state to fail fast on, only an unanswered question.
  *
- * The pure pieces (version parsing, comparison, tag selection) are exported and
+ * The pure pieces (version parsing and comparison) are exported and
  * covered by `tests/unit/update-check.test.ts`; the checker itself takes its
  * `fetch` and its clock as parameters so the same test can drive the cache, the
  * fail-soft path and the throttle without a network.
@@ -34,13 +38,13 @@
 import { z } from 'zod';
 
 import { createComponentLogger } from '#app/lib/logger';
-import { REPO_URL } from '#app/lib/brand';
+import { REPO_URL, RELEASE_FEED_URL } from '#app/lib/brand';
 import { SERVER_BUILD } from '#app/lib/build-info.server';
 import type { UpdateStatus } from '#app/lib/update-status';
 
 const logger = createComponentLogger('update-check');
 
-/** How long a GitHub call may take before it is abandoned. */
+/** How long a call may take before it is abandoned. */
 const REQUEST_TIMEOUT_MS = 10_000;
 
 /** How long after boot the first check runs. Late enough to stay out of the startup path. */
@@ -51,30 +55,6 @@ export const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 /** The shortest gap between two MANUAL checks, server wide. */
 export const MANUAL_CHECK_COOLDOWN_MS = 60_000;
-
-/**
- * The app's tags, and only the app's, asked of GitHub by prefix.
- *
- * ── ONE REPOSITORY, THREE TAG SERIES, SINCE M262 ──
- * `LowCarbCheck/openplate` now also carries `core-vX.Y.Z` and `inference-vX.Y.Z`. The old
- * `/tags?per_page=30` answered with ONE page of every tag in the repository, in an order GitHub
- * chooses, so enough core and inference tags could push the newest app release off it and the
- * banner would go quiet with no error anywhere. `git/matching-refs/tags/v` lets GitHub filter by
- * prefix and answers with every match: `refs/tags/v0.50.0` is in it, `refs/tags/core-v1.0.0` is
- * not. `selectLatestTag` still refuses anything that is not `v` plus a version, so a stray
- * `vendor-x` tag the prefix lets through is ignored there.
- */
-const TAG_REFS_PATH = 'git/matching-refs/tags/v';
-const TAG_REF_PREFIX = 'refs/tags/';
-
-/**
- * `owner/name`, derived from the one repository literal in `app/`
- * (`brand.ts`). A fork that edits that line points this check at its own tags
- * too, which is the correct behaviour and costs the forker nothing.
- */
-export function repoSlug(repoUrl: string): string {
-  return new URL(repoUrl).pathname.replace(/^\/+|\/+$/g, '');
-}
 
 /** A version broken into the parts semver orders it by. */
 export interface VersionParts {
@@ -98,12 +78,6 @@ export function parseVersion(version: string): VersionParts | null {
     patch: Number(patch),
     prerelease: tail === undefined ? null : tail,
   };
-}
-
-/** Whether a version carries a `-prerelease` tail. An unparseable string is not one. */
-export function isPrereleaseVersion(version: string): boolean {
-  const parsed = parseVersion(version);
-  return parsed !== null && parsed.prerelease !== null;
 }
 
 /**
@@ -155,46 +129,28 @@ export function compareSemver(a: string, b: string): number {
 }
 
 /**
- * The highest `vX.Y.Z` tag worth reporting, as a dotted version with no `v`.
+ * The feed's answer, decoded at the boundary.
  *
- * Prereleases are invisible unless THIS instance is running one. Someone who
- * deployed `0.19.0-rc.1` has already opted into the release candidate train and
- * wants to hear about `0.19.0-rc.2`; someone on `0.18.3` has not, and telling
- * them a release candidate is "available" would push a whole instance onto an
- * unfinished build. A tag that is not `v` plus a version is ignored outright,
- * which is also what keeps `core-v9.9.9` and `inference-v9.9.9`, released from
- * the same repository since M262, from ever being offered as an app update.
+ * Only `app.version` is read, and only a plain `x.y.z`: the file lists stable
+ * releases, so a prerelease string is a broken file and not a version to offer.
+ * `.loose()` on both objects so a field the site adds later (a date, a core
+ * version) does not turn into a broken banner.
  */
-export function selectLatestTag({
-  tags,
-  currentVersion,
-}: {
-  tags: readonly string[];
-  currentVersion: string;
-}): string | null {
-  const followPrereleases = isPrereleaseVersion(currentVersion);
-  return tags.reduce<string | null>((best, tag) => {
-    if (!tag.startsWith('v')) return best;
-    const version = tag.slice(1);
-    const parsed = parseVersion(version);
-    if (parsed === null) return best;
-    if (parsed.prerelease !== null && !followPrereleases) return best;
-    return best === null || compareSemver(version, best) > 0 ? version : best;
-  }, null);
-}
+const releaseFeedSchema = z
+  .object({
+    app: z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/) }).loose(),
+  })
+  .loose();
 
 /**
- * The matching-refs answer, decoded at the boundary.
+ * The User-Agent every check sends, `openplate/0.61.0 (linux; arm64)`.
  *
- * `.loose()` because GitHub sends a node id, a URL and the object each ref
- * points at on every entry, none of which this file reads; refusing the answer
- * over an unread field would turn an API addition into a broken banner.
+ * The one deliberate header: it is what the site counts by. It carries the
+ * running version and the host's platform and arch, and nothing that names an
+ * instance, an account or a person.
  */
-const tagRefsSchema = z.array(z.object({ ref: z.string() }).loose());
-
-/** `refs/tags/v0.50.0` as `v0.50.0`. A ref outside `refs/tags/` is not a tag, and is dropped. */
-export function tagNamesOf(refs: readonly string[]): string[] {
-  return refs.flatMap((ref) => (ref.startsWith(TAG_REF_PREFIX) ? [ref.slice(TAG_REF_PREFIX.length)] : []));
+export function releaseCheckUserAgent(version: string): string {
+  return `openplate/${version} (${process.platform}; ${process.arch})`;
 }
 
 /** A `fetch`, narrowed to what this module uses so a test can supply one. */
@@ -229,8 +185,6 @@ export interface UpdateCheckerOptions {
   enabled: boolean;
   /** The version this instance runs. */
   currentVersion: string;
-  /** `owner/name` of the repository whose tags are read. */
-  repo: string;
   /** Where a reader is sent to read about a version. */
   releaseUrlFor: (version: string) => string;
   /** Injected so a test can answer without a network. */
@@ -264,33 +218,34 @@ export function createUpdateChecker(options: UpdateCheckerOptions): UpdateChecke
    */
   let inFlight: Promise<UpdateCheckState> | null = null;
 
-  async function fetchTags(): Promise<UpdateCheckState> {
-    const url = `https://api.github.com/repos/${options.repo}/${TAG_REFS_PATH}`;
-    const response = await options.fetchImpl(url, {
-      headers: { Accept: 'application/vnd.github+json' },
+  async function fetchLatest(): Promise<UpdateCheckState> {
+    const response = await options.fetchImpl(RELEASE_FEED_URL, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': releaseCheckUserAgent(options.currentVersion),
+      },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
+    if (!response.ok) throw new Error(`The release feed answered ${response.status}`);
     // Decoded here, at the boundary, so nothing downstream handles an unparsed
-    // payload. A page that does not fit the schema reads as "no tags", which
+    // payload. A file that does not fit the schema is a failed check, which
     // leaves the previous answer standing exactly as a network failure does.
-    const page = tagRefsSchema.safeParse(await response.json());
-    const latest = selectLatestTag({
-      tags: page.success ? tagNamesOf(page.data.map((entry) => entry.ref)) : [],
-      currentVersion: options.currentVersion,
-    });
+    const feed = releaseFeedSchema.safeParse(await response.json());
+    if (!feed.success) throw new Error('The release feed is not { app: { version: "x.y.z" } }');
+    const latest = feed.data.app.version;
     return {
       latest,
-      releaseUrl: latest === null ? null : options.releaseUrlFor(latest),
+      releaseUrl: options.releaseUrlFor(latest),
       checkedAt: new Date(options.now()).toISOString(),
-      updateAvailable: latest !== null && compareSemver(latest, options.currentVersion) > 0,
+      updateAvailable: compareSemver(latest, options.currentVersion) > 0,
     };
   }
 
   async function refresh(): Promise<UpdateCheckState> {
     if (!options.enabled) return state;
     if (inFlight !== null) return inFlight;
-    inFlight = fetchTags()
+    inFlight = fetchLatest()
       .then((next) => {
         state = next;
         return state;
@@ -397,7 +352,7 @@ export function startUpdateCheckSchedule(checker: UpdateChecker, enabled: boolea
  * `POST /api/update-status/check` is a plain Express route, so React Router's
  * CSRF check (which compares the browser `Origin` against the host it thinks it
  * is serving) never sees it. Without this, any page on the internet could make a
- * visitor's browser drive a GitHub request out of this instance's IP. The
+ * visitor's browser drive a request out of this instance's IP. The
  * one-a-minute cooldown bounds the damage; it does not remove the cross-site
  * path.
  *

@@ -128,7 +128,7 @@ export async function startAppServer(
   const child = spawn(process.execPath, ['--import', 'tsx', './server.ts'], {
     cwd: REPO_ROOT,
     // The hermetic set (`server-env.ts`) is laid over these, so this server
-    // never asks GitHub for a release either.
+    // never asks openplate.de for the newest version either.
     env: buildManagedServerEnv({
       inherited: process.env,
       values: {

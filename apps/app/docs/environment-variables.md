@@ -83,7 +83,7 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 | `MATOMO_EVENT_LEVEL` | `product` | How much the instance counts: `pageviews`, `product` or `research`. It needs the two above. | [What a level decides](configuration.md#what-a-level-decides) |
 | `NEWSLETTER_SUBSCRIBE_URL` | unset, no form | Where the server forwards the landing page's newsletter form. Set it together with `NEWSLETTER_TURNSTILE_SITE_KEY`. | [Newsletter sign-up](configuration.md#newsletter-sign-up) |
 | `NEWSLETTER_TURNSTILE_SITE_KEY` | unset | The Cloudflare Turnstile site key of that form. It is not the sign-up captcha, see [Sign-up with Turnstile](#sign-up-with-turnstile). | [Newsletter sign-up](configuration.md#newsletter-sign-up) |
-| `UPDATE_CHECK` | on | `off` or `false` stops the server asking GitHub for a newer release. | [The release check](configuration.md#the-release-check) |
+| `UPDATE_CHECK` | on | Setting this to `off` or `false` stops the server from fetching `openplate.de/latest.json` for new releases. It also stops the project's daily count of asks. | [The release check](configuration.md#the-release-check) |
 
 ### Logging
 

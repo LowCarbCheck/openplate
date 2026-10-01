@@ -25,6 +25,7 @@ import { join } from 'node:path';
 import {
   PROJECT_SITE_HOST,
   PROJECT_SITE_URL,
+  RELEASE_FEED_URL,
   REPO_LICENSE_URL,
   REPO_URL,
   SELF_HOSTING_DOCS_URL,
@@ -108,6 +109,13 @@ describe('projectSiteUrl', () => {
   it('derives the self-hosting guide from the site, so a fork is still one edit', () => {
     assert.equal(SELF_HOSTING_DOCS_URL, 'https://openplate.de/docs/app/self-hosting');
     assert.ok(SELF_HOSTING_DOCS_URL.startsWith(`${PROJECT_SITE_URL}/`));
+  });
+
+  it('derives the release feed from the site, so a fork is still one edit', () => {
+    assert.equal(RELEASE_FEED_URL, 'https://openplate.de/latest.json');
+    assert.equal(RELEASE_FEED_URL, `${PROJECT_SITE_URL}/latest.json`);
+    // The banner's link still goes to the repository's release page, not to the feed.
+    assert.ok(!RELEASE_FEED_URL.startsWith(REPO_URL));
   });
 
   it('leaves no hardcoded language prefix on a site link in brand.ts', () => {

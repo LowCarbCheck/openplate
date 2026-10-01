@@ -111,23 +111,29 @@ unset, the default, and there is no form, no extra script and no change to the C
 
 ## The release check
 
-Every six hours the server asks `api.github.com` for the tag list of the openplate
-repository, compares the newest `vX.Y.Z` with the version it is running, and reports the
-answer at **Settings > About**. There is also a "Check now" button, which is limited to one
-real request a minute across the whole instance.
+The server fetches `https://openplate.de/latest.json` every six hours, and once about 90
+seconds after boot. This small file names the newest release. The server compares that
+version with its running version and reports the result at **Settings > About**. A "Check
+now" button also triggers a check, rate-limited to one real request a minute across the
+whole instance.
 
-The request is made by the **server**, not by the browser, and that is the point: adding
-`api.github.com` to the production `connect-src` would widen the one allowlist that stops an
-injected script exfiltrating a BYOK key. It carries no token, no instance identifier and no
-version number, so GitHub sees an IP address and a default user agent and nothing else. See
-[ADR-0012](../.adr/0012-the-server-asks-github-about-releases.md).
+The **server** makes the request, not the browser. Adding `openplate.de` to the production
+`connect-src` would widen the allowlist that prevents an injected script from exfiltrating a
+BYOK key. The request is a plain GET with no body, query string, token, or instance
+identifier. Like any HTTPS request, it sends the server's IP address. It also sends a
+User-Agent formatted as `openplate/<version> (<platform>; <arch>)`, for example
+`openplate/1.2.3 (linux; arm64)`. It carries nothing else. The project counts unique
+querying addresses per day and stores only the daily totals. Proxy logs retain IP addresses
+for up to 15 days, just like standard website visits. See
+[ADR-0021](../.adr/0021-the-release-check-asks-openplate-de-and-the-site-counts-the-asks.md).
 
 ```bash
 UPDATE_CHECK=off
 ```
 
-turns it off completely: no timer is started, no request is ever made, and the About page
-says checks are disabled.
+This setting disables checks completely. The server starts no timer, sends no requests,
+excludes the instance from project counts, and notes on the About page that checks are
+disabled.
 
 The check only ever **reports**. openplate is a single stateless container and cannot replace
 its own image, so upgrading stays what it always was:
@@ -207,6 +213,9 @@ error.
 
 The tracker runs with cookies disabled. It stores nothing on the device, so there is no
 consent banner to build.
+
+The release check is separate. It uses no tracker and no Matomo. `UPDATE_CHECK=off` stops the
+check and the project's daily count of requests. See [The release check](#the-release-check).
 
 ### What a level decides
 
