@@ -11,6 +11,13 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.58.1] - 2026-10-01
+
+### Fixed
+
+- **Nothing on the onboarding form moves when you pick an answer.** The form previously shifted during entry. The main goal, carb limit, and calorie target appeared only after selecting a style. Pregnancy questions vanished on "male", and the install note loaded late on the final step. The main goal now renders on the first paint. The carb limit and calorie target occupy fixed slots below it, in that order. Each renders once and displays only when the selected style requires it. Styles without them leave empty slots. Pregnancy questions now sit after allergies. They retain their layout space on "male" but submit no data. The two date blocks share one reserved cell. The install note reserves the maximum height it needs. A calorie target entered under one style persists across style changes. Submitted form payloads remain identical. Tests: `tests/e2e/onboarding-no-shift.spec.ts` at 390 x 844 and 1280 x 800, `tests/unit/onboarding-style-step.test.ts`, `tests/unit/reproductive-status-fields.test.ts`, `tests/unit/first-food-install.test.ts`. ([9bc07ab](https://github.com/LowCarbCheck/openplate/commit/9bc07ab), [7322a89](https://github.com/LowCarbCheck/openplate/commit/7322a89), [e01e425](https://github.com/LowCarbCheck/openplate/commit/e01e425))
+- **The source link in the pregnancy caution note shows its words again.** The link wrapped text in a `<source>` tag. The translation parser treated this as a void HTML element, leaving the link untappable with zero width. The tag is now `<sourceLink>` across all six languages in both onboarding and settings. Copy remains unchanged. Tests: `tests/unit/onboarding-style-step.test.ts`, `tests/unit/settings-eating-style.test.ts`. ([2a4aca9](https://github.com/LowCarbCheck/openplate/commit/2a4aca9))
+
 ## [0.58.0] - 2026-10-01
 
 ### Added

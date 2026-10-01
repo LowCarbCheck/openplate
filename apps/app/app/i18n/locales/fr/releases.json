@@ -1,4 +1,11 @@
 {
+  "v0_58_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Rien ne bouge sur le formulaire d'intégration quand tu choisis une réponse.",
+      "02": "Le lien source dans l'avertissement relatif à la grossesse réaffiche son texte."
+    }
+  },
   "v0_58_0": {
     "date": "2026-10-01",
     "added": {
@@ -15,12 +22,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Le bouton d'avatar dans l'en-tête affiche le nom du compte."
-    }
-  },
-  "v0_57_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "L'essai gratuit indique désormais le nombre de jours restants."
     }
   }
 }

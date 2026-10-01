@@ -1,4 +1,11 @@
 {
+  "v0_58_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Bir yanıt seçtiğinde ilk katılım formundaki hiçbir şey hareket etmez.",
+      "02": "Hamilelik uyarı notundaki kaynak bağlantısı metnini yeniden gösterir."
+    }
+  },
   "v0_58_0": {
     "date": "2026-10-01",
     "added": {
@@ -15,12 +22,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Üstbilgideki profil resmi düğmesi hesap adını gösterir."
-    }
-  },
-  "v0_57_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Ücretsiz deneme artık kaç gün kaldığını gösteriyor."
     }
   }
 }

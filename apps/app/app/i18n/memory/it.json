@@ -783,6 +783,13 @@
     "at": "2026-09-14",
     "it": "Rimuovi il digiuno del {{when}}"
   },
+  "09e37508971facfd": {
+    "en": "The source link in the pregnancy caution note shows its words again.",
+    "path": "releases:v0_58_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Il link alla fonte nella nota di avvertenza sulla gravidanza mostra di nuovo il proprio testo."
+  },
   "09fd7b89d3c886c2": {
     "en": "Part of it is missing or was cut off. Ask the study to send it again.",
     "path": "common:research.join.invalidLink.body",
@@ -13452,6 +13459,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "it": "I file compose di sincronizzazione trasmettono il token di amministrazione e gli indirizzi dei link."
+  },
+  "a3ba828f20fed375": {
+    "en": "Nothing on the onboarding form moves when you pick an answer.",
+    "path": "releases:v0_58_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Nessun elemento del modulo iniziale si sposta quando selezioni una risposta."
   },
   "a3c8397a0c19c2a3": {
     "en": "This gateway says it can review what you send",

@@ -1,4 +1,11 @@
 {
+  "v0_58_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Nessun elemento del modulo iniziale si sposta quando selezioni una risposta.",
+      "02": "Il link alla fonte nella nota di avvertenza sulla gravidanza mostra di nuovo il proprio testo."
+    }
+  },
   "v0_58_0": {
     "date": "2026-10-01",
     "added": {
@@ -15,12 +22,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Il pulsante dell'avatar nell'intestazione mostra il nome dell'account."
-    }
-  },
-  "v0_57_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "La prova gratuita ora indica quanti giorni rimangono."
     }
   }
 }

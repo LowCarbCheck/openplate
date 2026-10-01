@@ -1,4 +1,11 @@
 {
+  "v0_58_1": {
+    "date": "2026-10-01",
+    "fixed": {
+      "01": "Im Onboarding-Formular verschiebt sich nichts, wenn du eine Antwort auswählst.",
+      "02": "Der Quellenlink im Schwangerschaftshinweis zeigt seinen Text wieder an."
+    }
+  },
   "v0_58_0": {
     "date": "2026-10-01",
     "added": {
@@ -15,12 +22,6 @@
     "date": "2026-09-30",
     "changed": {
       "01": "Die Avatar-Schaltfläche in der Kopfzeile zeigt den Kontonamen an."
-    }
-  },
-  "v0_57_0": {
-    "date": "2026-09-30",
-    "added": {
-      "01": "Der kostenlose Testzeitraum zeigt nun an, wie viele Tage verbleiben."
     }
   }
 }

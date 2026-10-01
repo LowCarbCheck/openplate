@@ -783,6 +783,13 @@
     "at": "2026-09-14",
     "tr": "{{when}} tarihindeki orucu sil"
   },
+  "09e37508971facfd": {
+    "en": "The source link in the pregnancy caution note shows its words again.",
+    "path": "releases:v0_58_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Hamilelik uyarı notundaki kaynak bağlantısı metnini yeniden gösterir."
+  },
   "09fd7b89d3c886c2": {
     "en": "Part of it is missing or was cut off. Ask the study to send it again.",
     "path": "common:research.join.invalidLink.body",
@@ -13452,6 +13459,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "tr": "Eşitleme compose dosyaları yönetici belirtecini ve bağlantı adreslerini iletir."
+  },
+  "a3ba828f20fed375": {
+    "en": "Nothing on the onboarding form moves when you pick an answer.",
+    "path": "releases:v0_58_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bir yanıt seçtiğinde ilk katılım formundaki hiçbir şey hareket etmez."
   },
   "a3c8397a0c19c2a3": {
     "en": "This gateway says it can review what you send",
