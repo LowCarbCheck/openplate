@@ -618,12 +618,18 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
             timeZone: trialTimeZone,
           });
           const trialKey = hashAddress === null ? null : hashAddress(claimed.email);
-          // AN ALIAS OR FORWARDING DOMAIN GETS NO TRIAL, WHATEVER THE ROW SAYS
-          // (M270, spec 04). The mint already wrote `0` for it, but a letter
-          // from before this rule still carries scans, and the member door's
-          // grant is only read here. The account is made as one whose trial
-          // is used up, and this does not need a pepper.
-          if (standing.trialScans !== null && standing.trialScans > 0 && isAliasAddress(claimed.email)) {
+          // AN ALIAS OR FORWARDING DOMAIN GETS NO TRIAL ON SELF SIGN-UP,
+          // WHATEVER THE ROW SAYS (M270, spec 04). The mint already wrote `0`
+          // for it, but a letter from before this rule still carries scans.
+          // The account is made as one whose trial is used up, and this does
+          // not need a pepper. Only the open sign-up door: an invite an
+          // operator minted by hand (`source` is `null`) keeps its scans.
+          if (
+            standing.trialScans !== null &&
+            standing.trialScans > 0 &&
+            claimed.source === 'open-signup' &&
+            isAliasAddress(claimed.email)
+          ) {
             standing.trialScans = 0;
           }
           if (standing.trialScans !== null && standing.trialScans > 0 && trialKey !== null) {

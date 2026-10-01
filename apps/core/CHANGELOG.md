@@ -9,7 +9,7 @@ change moves the minor.
 
 ### Changed
 
-- **An address on an email alias or forwarding domain gets no scan trial.** Sign-up, an operator's invite and a member's invite still make the account, but its trial is 0 scans, the same state as a mailbox whose trial is used up, so the app shows the plan offer at the first scan and a payment lifts it. The list is in `src/lib/alias-domains.ts`: SimpleLogin, addy.io, Firefox Relay, Apple's relay, duck.com and common disposable inboxes. A listed domain matches its subdomains too. `icloud.com` is not listed. The rule needs no `TRIAL_ADDRESS_PEPPER`. The lapsed day trial grant skips these addresses as well. `tests/unit/alias-domains.test.ts` and `tests/integration/scan-trial.test.ts` check this.
+- **An address on an email alias or forwarding domain gets no scan trial on self sign-up.** The open sign-up door still makes the account, but its trial is 0 scans, the same state as a mailbox whose trial is used up, so the app shows the plan offer at the first scan and a payment lifts it. An invite an administrator minted by hand keeps its trial, because the operator chose that person, and so do member invitations. The list is in `src/lib/alias-domains.ts`: SimpleLogin, addy.io, Firefox Relay, Apple's relay, duck.com and common disposable inboxes. A listed domain matches its subdomains too. `icloud.com` is not listed. The rule needs no `TRIAL_ADDRESS_PEPPER`. The lapsed day trial grant skips these addresses as well. `tests/unit/alias-domains.test.ts` and `tests/integration/scan-trial.test.ts` check this.
 
 ## [0.28.0] - 2026-10-01
 

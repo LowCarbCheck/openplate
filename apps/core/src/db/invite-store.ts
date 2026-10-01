@@ -99,14 +99,17 @@ export function createDrizzleInviteStore(db: Database, options: DrizzleInviteSto
         // mailbox that already had one is written as `0`: the person still
         // gets an account, and the app shows the plan offer at the first scan.
         //
-        // AN ALIAS OR FORWARDING DOMAIN GETS THE SAME `0` (M270, spec 04),
-        // whether or not the instance has a pepper: a fresh alias costs
-        // nothing, so a trial for each would be a trial for the asking.
+        // AN ALIAS OR FORWARDING DOMAIN GETS THE SAME `0` ON SELF SIGN-UP
+        // ONLY (M270, spec 04), whether or not the instance has a pepper: a
+        // fresh alias costs nothing, so a trial for each would be a trial for
+        // the asking. An invite an operator minted by hand keeps its scans,
+        // because the operator chose that person.
         const trialKey = hashAddress === null ? null : hashAddress(input.email);
+        const isSelfSignupAlias = input.source === 'open-signup' && isAliasAddress(input.email);
         const trialScans =
           input.trialScans !== null &&
           input.trialScans > 0 &&
-          (isAliasAddress(input.email) || (trialKey !== null && (await mailboxHadTrial(tx, { hash: trialKey }))))
+          (isSelfSignupAlias || (trialKey !== null && (await mailboxHadTrial(tx, { hash: trialKey }))))
             ? 0
             : input.trialScans;
 

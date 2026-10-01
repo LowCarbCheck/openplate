@@ -858,6 +858,48 @@ test('an alias address with a ten-scan letter from before the rule is redeemed i
   });
 });
 
+test('an invite an administrator minted by hand keeps its trial, even on an alias domain', async () => {
+  // The operator chose that person, so the alias rule is the open door's only.
+  await withService({ openSignup: {} }, async (service) => {
+    const minted = await service.request<{ invite: { trialScans: number | null } }>({
+      method: 'POST',
+      path: '/v1/admin/invites',
+      adminToken: ADMIN_TOKEN,
+      body: { email: 'friend@duck.com', trial: true },
+    });
+    assert.equal(minted.status, 201);
+    assert.equal(minted.body.invite.trialScans, 10);
+
+    // Redemption too: a hand-minted row (source null) for an alias address.
+    const token = await mintOperatorLetter(service, 'chosen@simplelogin.co');
+    const created = await redeem(service, token);
+    assert.equal(created.status, 201);
+    assert.deepEqual(created.body.account.trialScans, { granted: TRIAL.scans, left: TRIAL.scans });
+
+    // THE CONTROL: the same address through the open door gets none.
+    const selfSignup = await openAccount(service, 'chosen@passmail.com');
+    assert.deepEqual(selfSignup.body.account.trialScans, { granted: 0, left: 0 });
+  });
+});
+
+/** Mints a ten-scan letter the way the operator's route does: no door, no inviter. */
+async function mintOperatorLetter(service: ServiceHarness, email: string): Promise<string> {
+  const minted = await createDrizzleInviteStore(database.db, { hashAddress: createTrialAddressHasher(PEPPER) }).mint({
+    email,
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: TRIAL.dailyAiLimit,
+    trialScans: TRIAL.scans,
+    trialDays: null,
+    expiresAt: new Date(service.now() + 7 * MS_PER_DAY),
+    now: new Date(service.now()),
+    invitedByAccountId: null,
+    source: null,
+  });
+  if (!minted.ok) throw new Error(`could not mint for ${email}`);
+  return minted.minted.token;
+}
+
 test('the alias rule needs no pepper', async () => {
   // The mailbox rule is the pepper's; this one is the domain's. An instance
   // with no pepper must still withhold the trial from an alias address.
