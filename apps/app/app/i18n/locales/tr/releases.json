@@ -1,4 +1,13 @@
 {
+  "v0_61_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "Belgeler ve metinler sunucuyu sync olarak değil, çekirdek olarak adlandırır.",
+      "02": "Çekirdek sunucu adresi artık CORE_URL ile ayarlanır, eski ad ise sonraki bir sürüme kadar bir uyarıyla çalışmaya devam eder.",
+      "03": "Makro dağılımları varsayılan olarak kalori payını gösterir.",
+      "04": "Kendi sunucunda barındırma dosyaları hizmeti çekirdek olarak adlandırır ve Postgres 18 çalıştırır."
+    }
+  },
   "v0_60_0": {
     "date": "2026-10-01",
     "added": {
@@ -16,12 +25,6 @@
     "date": "2026-10-01",
     "fixed": {
       "01": "Veri anahtarını değiştirmeye yönelik onay metninde, diğer tüm cihazların oturumunun kapatıldığı yazar."
-    }
-  },
-  "v0_59_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "İmaj, Node 24 üzerinde çalışır."
     }
   }
 }

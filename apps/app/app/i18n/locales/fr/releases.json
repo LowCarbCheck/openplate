@@ -1,4 +1,13 @@
 {
+  "v0_61_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "La documentation et les textes appellent le serveur core, et non sync.",
+      "02": "Tu définis désormais l'adresse du serveur central avec CORE_URL ; l'ancien nom fonctionne encore avec un avertissement jusqu'à une version ultérieure.",
+      "03": "La répartition des macronutriments affiche la part de calories par défaut.",
+      "04": "Les fichiers d'Auto-hébergement nomment le service core et exécutent Postgres 18."
+    }
+  },
   "v0_60_0": {
     "date": "2026-10-01",
     "added": {
@@ -16,12 +25,6 @@
     "date": "2026-10-01",
     "fixed": {
       "01": "Le texte de confirmation pour remplacer ta clé de données indique que tous les autres appareils sont déconnectés."
-    }
-  },
-  "v0_59_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "L'image tourne sous Node 24."
     }
   }
 }

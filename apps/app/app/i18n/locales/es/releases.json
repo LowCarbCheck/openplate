@@ -1,4 +1,13 @@
 {
+  "v0_61_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "La documentación y el texto llaman al servidor core, no sync.",
+      "02": "La dirección del servidor central ahora se define con CORE_URL; el nombre antiguo sigue funcionando con una advertencia hasta una versión posterior.",
+      "03": "Los desgloses de macronutrientes muestran la proporción de calorías de forma predeterminada.",
+      "04": "Los archivos de Autoalojamiento llaman al servicio core y ejecutan Postgres 18."
+    }
+  },
   "v0_60_0": {
     "date": "2026-10-01",
     "added": {
@@ -16,12 +25,6 @@
     "date": "2026-10-01",
     "fixed": {
       "01": "El texto de confirmación para sustituir tu clave de datos indica que se cerrará la sesión en todos los demás dispositivos."
-    }
-  },
-  "v0_59_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "La imagen se ejecuta sobre Node 24."
     }
   }
 }

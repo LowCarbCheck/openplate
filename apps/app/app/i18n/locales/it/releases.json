@@ -1,4 +1,13 @@
 {
+  "v0_61_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "La documentazione e i testi chiamano il server core, non sync.",
+      "02": "L'indirizzo del server core ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva.",
+      "03": "Le ripartizioni dei macronutrienti mostrano la quota calorica come impostazione predefinita.",
+      "04": "I file per il Self-hosting chiamano il servizio core ed eseguono Postgres 18."
+    }
+  },
   "v0_60_0": {
     "date": "2026-10-01",
     "added": {
@@ -16,12 +25,6 @@
     "date": "2026-10-01",
     "fixed": {
       "01": "Il testo di conferma per la sostituzione della chiave dei dati indica che la sessione viene chiusa su tutti gli altri dispositivi."
-    }
-  },
-  "v0_59_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "L'immagine viene eseguita su Node 24."
     }
   }
 }

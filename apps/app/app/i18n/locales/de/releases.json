@@ -1,4 +1,13 @@
 {
+  "v0_61_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "Dokumentation und Fließtext nennen den Server Core, nicht Sync.",
+      "02": "Die Adresse des Core-Servers legst du jetzt mit CORE_URL fest, der alte Name funktioniert bis zu einem späteren Release weiterhin mit einer Warnung.",
+      "03": "Makronährstoff-Aufschlüsselungen zeigen standardmäßig den Kalorienanteil.",
+      "04": "Die Dateien für das Self-Hosting nennen den Dienst Core und führen Postgres 18 aus."
+    }
+  },
   "v0_60_0": {
     "date": "2026-10-01",
     "added": {
@@ -16,12 +25,6 @@
     "date": "2026-10-01",
     "fixed": {
       "01": "Der Bestätigungstext für das Ersetzen deines Datenschlüssels weist darauf hin, dass jedes andere Gerät abgemeldet wird."
-    }
-  },
-  "v0_59_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "Das Image läuft auf Node 24."
     }
   }
 }

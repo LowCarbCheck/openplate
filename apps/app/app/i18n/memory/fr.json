@@ -14846,6 +14846,13 @@
     "at": "2026-09-24",
     "fr": "Première et dernière pesée"
   },
+  "b1dd17971ddaa7cb": {
+    "en": "Macro breakdowns show the calorie share by default.",
+    "path": "releases:v0_61_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "La répartition des macronutriments affiche la part de calories par défaut."
+  },
   "b1e8abaf5ac5a5d8": {
     "en": "AI estimates are not switched on for your account. Ask your administrator.",
     "path": "common:scan.errors.provider.aiNotAllowed",
@@ -17471,6 +17478,13 @@
     "at": "2026-09-21",
     "fr": "Fais-le depuis le journal : regroupe les aliments saisis et donne-leur un nom."
   },
+  "d3ee8da2f54e525b": {
+    "en": "The self-host files call the service core and run Postgres 18.",
+    "path": "releases:v0_61_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Les fichiers d'Auto-hébergement nomment le service core et exécutent Postgres 18."
+  },
   "d3f1c8c081b1845d": {
     "en": "Save model",
     "path": "common:settingsAi.save.model",
@@ -18213,6 +18227,13 @@
     "at": "2026-09-14",
     "fr": "Trouvé dans LowCarbCheck"
   },
+  "dc56cfffc939482a": {
+    "en": "The core server address is now set with CORE_URL; the old name still works with a warning until a later release.",
+    "path": "releases:v0_61_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Tu définis désormais l'adresse du serveur central avec CORE_URL ; l'ancien nom fonctionne encore avec un avertissement jusqu'à une version ultérieure."
+  },
   "dc7bce3f3aa405aa": {
     "en": "Self-hosted / local endpoint",
     "path": "common:settingsAi.provider.openaiCompatible",
@@ -18415,6 +18436,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tes estimations par photo sont épuisées"
+  },
+  "df3b79d3f95faab8": {
+    "en": "Docs and prose call the server core, not sync.",
+    "path": "releases:v0_61_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "La documentation et les textes appellent le serveur core, et non sync."
   },
   "df7074a0ab9afba2": {
     "en": "Edit entry",
