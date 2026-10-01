@@ -1,4 +1,10 @@
 {
+  "v0_59_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "L'immagine viene eseguita su Node 24."
+    }
+  },
   "v0_58_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -16,12 +22,6 @@
       "01": "Gli account con IA gratuita la mantengono anche al termine di un piano a pagamento.",
       "02": "La ricerca degli alimenti sul servizio ospitato richiede ora l'accesso.",
       "03": "La sostituzione della tua chiave dei dati richiede la password e disconnette gli altri dispositivi."
-    }
-  },
-  "v0_57_1": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Il pulsante dell'avatar nell'intestazione mostra il nome dell'account."
     }
   }
 }

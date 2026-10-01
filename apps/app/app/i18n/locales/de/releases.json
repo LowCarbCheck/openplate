@@ -1,4 +1,10 @@
 {
+  "v0_59_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "Das Image läuft auf Node 24."
+    }
+  },
   "v0_58_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -16,12 +22,6 @@
       "01": "Konten mit kostenloser KI behalten diese, nachdem ein kostenpflichtiger Tarif endet.",
       "02": "Die Lebensmittelsuche auf dem gehosteten Dienst erfordert jetzt eine Anmeldung.",
       "03": "Das Ersetzen deines Datenschlüssels erfordert dein Passwort und meldet andere Geräte ab."
-    }
-  },
-  "v0_57_1": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Die Avatar-Schaltfläche in der Kopfzeile zeigt den Kontonamen an."
     }
   }
 }

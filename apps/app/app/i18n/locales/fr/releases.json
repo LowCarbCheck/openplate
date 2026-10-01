@@ -1,4 +1,10 @@
 {
+  "v0_59_0": {
+    "date": "2026-10-01",
+    "changed": {
+      "01": "L'image tourne sous Node 24."
+    }
+  },
   "v0_58_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -16,12 +22,6 @@
       "01": "Les comptes avec IA gratuite la conservent après la fin d'un forfait payant.",
       "02": "La recherche d'aliments sur le service hébergé nécessite désormais une connexion.",
       "03": "Remplacer ta clé de données nécessite ton mot de passe et déconnecte les autres appareils."
-    }
-  },
-  "v0_57_1": {
-    "date": "2026-09-30",
-    "changed": {
-      "01": "Le bouton d'avatar dans l'en-tête affiche le nom du compte."
     }
   }
 }

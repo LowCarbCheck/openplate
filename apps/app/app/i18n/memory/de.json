@@ -4745,6 +4745,13 @@
     "at": "2026-09-20",
     "de": "Die Bedienelemente im Formular zum Hinzufügen und unter „Deine Lebensmittel“ sind daumengroß."
   },
+  "3bf48b8eec7197c8": {
+    "en": "The image runs on Node 24.",
+    "path": "releases:v0_59_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Das Image läuft auf Node 24."
+  },
   "3c1618b01154f361": {
     "en": "Remove {{name}}",
     "path": "common:meals.removeAria",
