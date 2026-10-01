@@ -18,7 +18,7 @@
  */
 import 'dotenv/config';
 import { resolve } from 'node:path';
-import { parseConfig } from './config.js';
+import { parseConfig, type ServiceConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { createDatabase, runMigrations, waitForDatabase } from './db/client.js';
 import { createDrizzleAccountStore } from './db/account-store.js';
@@ -42,6 +42,7 @@ import { generateFamilyId, generatePasswordResetToken, generateToken } from './l
 import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
 import { createDrizzleAiCapacityReader, createDrizzleAiQuotaStore } from './ai/quota-store.js';
+import { createTrialNetworkHasher, type TrialNetworkShare } from './ai/trial-network.js';
 import { createUpstreamBudgetSource, upstreamBudgetKeyUrl } from './ai/upstream-budget.js';
 import { createBudgetAlerter, startBudgetWatch, type BudgetWatch } from './ai/budget-alert.js';
 import { createDrizzleBudgetAlertStore } from './db/budget-alert-store.js';
@@ -71,6 +72,23 @@ import { SERVICE_VERSION } from './version.js';
 const TOKEN_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 /** How often the sweeper runs. Hourly is far more often than necessary and costs one indexed DELETE. */
 const TOKEN_SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * One caller network's share of the trial ceiling (M270 spec 12), or `null`
+ * without one. `config.ts` only sets the share beside a trial ceiling, which
+ * needs the trial, which needs the pepper; a share with no pepper is
+ * therefore a wiring bug, and it fails the boot rather than storing addresses.
+ */
+function trialNetworkShareOf(config: ServiceConfig): TrialNetworkShare | null {
+  if (config.aiTrialNetworkDailyLimit === null) return null;
+  if (config.trialAddressPepper === null) {
+    throw new Error('AI_TRIAL_NETWORK_DAILY_LIMIT is set without TRIAL_ADDRESS_PEPPER to key the network counter');
+  }
+  return {
+    dailyLimit: config.aiTrialNetworkDailyLimit,
+    hashNetwork: createTrialNetworkHasher(config.trialAddressPepper),
+  };
+}
 
 async function main(): Promise<void> {
   const config = parseConfig(process.env);
@@ -268,6 +286,9 @@ async function main(): Promise<void> {
           maxRequestBytes: config.aiMaxRequestBytes,
           instanceDailyLimit: config.aiInstanceDailyLimit,
           trialInstanceDailyLimit: config.aiTrialInstanceDailyLimit,
+          // ONE NETWORK'S SHARE OF IT (M270 spec 12), named under the pepper
+          // the trial already requires, so the counter never holds an address.
+          trialNetwork: trialNetworkShareOf(config),
           // THE SAME BINDING `/health` publishes below (M256): the model an
           // instance names is the model its proxy sends, so the two cannot
           // disagree.
@@ -464,7 +485,11 @@ async function main(): Promise<void> {
     settings,
     // ALWAYS BUILT, no flag beside it, exactly as `pulse` is: the two
     // statutory buttons exist on every instance. See `server/create-app.ts`.
-    legal: { store: legalDeclarations },
+    legal: {
+      store: legalDeclarations,
+      receiptsPerNetworkPerDay: config.legalReceiptsPerNetworkPerDay,
+      receiptsPerDay: config.legalReceiptsPerDay,
+    },
     trial: config.trial,
   });
 
@@ -507,6 +532,8 @@ async function main(): Promise<void> {
       trialDays: (config.trial?.days ?? null) !== null,
       trialTimeZone: config.trial?.timeZone ?? DEFAULT_TRIAL_TIME_ZONE,
       trialAddressPepper: config.trialAddressPepper !== null,
+      // Whether one network's share of the trial ceiling is enforced (M270 spec 12).
+      trialNetworkShare: config.aiTrialNetworkDailyLimit !== null,
       openSignup: openSignup !== null,
       // Whether a captcha guards that door, never a key.
       signupCaptcha: openSignup?.captcha != null,

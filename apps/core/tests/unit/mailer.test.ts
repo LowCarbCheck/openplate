@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { createHttpMailer, createMailer, createNoopMailer } from '../../src/mail/mailer.js';
 import type { CreateHttpMailerOptions, Mailer } from '../../src/mail/mailer.js';
 import { createDeclarationTemplateSource } from '../../src/mail/declaration-templates.js';
-import { detailLines } from '../../src/mail/declaration-message.js';
+import { detailLines, RECEIPT_WITHHELD, toDeclarationReceipt } from '../../src/mail/declaration-message.js';
 import type { LogFields, Logger } from '../../src/logger.js';
 import { INSTANCE_LANGUAGES, type InstanceLanguage } from '../../src/protocol.js';
 
@@ -452,7 +452,7 @@ test('the no-op mailer accepts all five letters and sends none', async () => {
   await mailer.sendReset({ email: 'a@b.test', resetToken: 'sr_x', expiresAt: 'x' });
   await mailer.sendAccountNotice({ email: 'a@b.test' });
   await mailer.sendDeclarationReceipt({
-    ...sampleDeclarationFields(),
+    ...sampleReceipt(),
     receiptId: 'a-receipt-id',
     to: 'a@b.test',
     language: 'en',
@@ -495,12 +495,17 @@ function sampleDeclarationFields(): SampleDeclarationFields {
   };
 }
 
+/** What the route hands the receipt: the same declaration, without the text the sender wrote (M270/11). */
+function sampleReceipt(): ReturnType<typeof toDeclarationReceipt> {
+  return toDeclarationReceipt(sampleDeclarationFields());
+}
+
 test('a declaration receipt posts the content folder letter, in the requested language, to the given address', async () => {
   const api = await startFakeMailApi();
   const captured = createCapturingLogger();
 
   await mailerFor(api.url, captured.logger).sendDeclarationReceipt({
-    ...sampleDeclarationFields(),
+    ...sampleReceipt(),
     receiptId: 'a-receipt-id',
     to: 'anna@example.org',
     language: 'de',
@@ -512,7 +517,11 @@ test('a declaration receipt posts the content folder letter, in the requested la
   assert.deepEqual(payload.to, ['anna@example.org']);
   assert.equal(payload.subject, 'Fixture subject receipt kuendigung de');
   assert.ok(payload.text.includes('Fixture closing line kuendigung de.'), 'the body must come from the file');
-  assert.ok(payload.text.includes('Vertrags- oder Kundennummer: K-1234'), 'the receipt must name every field');
+  assert.ok(
+    payload.text.includes(`Vertrags- oder Kundennummer: ${RECEIPT_WITHHELD.de}`),
+    'the receipt must confirm every field the person gave',
+  );
+  assert.ok(!payload.text.includes('K-1234'), 'the receipt must not repeat text the person wrote');
   assert.ok(JSON.stringify(captured.lines).includes('"text":"template"'), 'the send must log where its text came from');
 });
 
@@ -528,7 +537,7 @@ test('with no content folder, a declaration receipt posts the neutral fallback, 
   });
 
   await mailer.sendDeclarationReceipt({
-    ...sampleDeclarationFields(),
+    ...sampleReceipt(),
     receiptId: 'a-receipt-id',
     to: 'anna@example.org',
     language: 'en',
@@ -538,7 +547,8 @@ test('with no content folder, a declaration receipt posts the neutral fallback, 
   const payload = JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
   assert.equal(payload.subject, 'Cancellation confirmed');
   assert.ok(payload.text.includes('Receipt no.: a-receipt-id'));
-  assert.ok(payload.text.includes('Contract or customer number: K-1234'));
+  assert.ok(payload.text.includes(`Contract or customer number: ${RECEIPT_WITHHELD.en}`));
+  assert.ok(!payload.text.includes('K-1234'), 'the receipt must not repeat text the person wrote');
   assert.ok(!payload.text.includes('Fixture'), 'a fallback must carry no folder text');
   assert.ok(JSON.stringify(captured.lines).includes('"text":"fallback"'));
 });
@@ -569,16 +579,25 @@ test('nothing a declaration send logs carries a name, a reason or a contract ref
   const api = await startFakeMailApi();
   const captured = createCapturingLogger();
 
-  await mailerFor(api.url, captured.logger).sendDeclarationReceipt({
-    ...sampleDeclarationFields(),
-    reason: 'a very personal reason nobody else should read',
+  const mailer = mailerFor(api.url, captured.logger);
+  await mailer.sendDeclarationReceipt({
+    ...sampleReceipt(),
     receiptId: 'a-receipt-id',
     to: 'anna@example.org',
     language: 'en',
   });
+  // The operator alert is the letter that carries those words since M270/11,
+  // so it is the send this test must watch most.
+  await mailer.sendDeclarationOperatorAlert({
+    ...sampleDeclarationFields(),
+    reason: 'a very personal reason nobody else should read',
+    receiptId: 'a-receipt-id',
+    matched: false,
+  });
 
   const serialized = JSON.stringify(captured.lines);
   assert.ok(serialized.includes('Declaration receipt mailed'), 'a send must be recorded');
+  assert.ok(serialized.includes('Declaration operator alert mailed'), 'a send must be recorded');
   for (const secret of ['anna@example.org', 'Anna Beispiel', 'K-1234', 'a very personal reason']) {
     assert.ok(!serialized.includes(secret), `the log carries "${secret}"`);
   }
@@ -633,7 +652,7 @@ async function postedReceipt(input: { contentDir: string | null; language: Insta
     logger: captured.logger,
   });
   await mailer.sendDeclarationReceipt({
-    ...sampleDeclarationFields(),
+    ...sampleReceipt(),
     receiptId: 'a-receipt-id',
     to: 'anna@example.org',
     language: input.language,
@@ -642,11 +661,16 @@ async function postedReceipt(input: { contentDir: string | null; language: Insta
   return JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
 }
 
-/** The contract reference line as the letter writes it in `language`: a label in that language. */
+/**
+ * The contract reference line as the receipt writes it in `language`: a label
+ * and the not-repeated value, both in that language (M270/11). The label is
+ * read off the operator's full line, so it is the app's own word.
+ */
 function contractLineIn(language: InstanceLanguage): string {
-  const line = detailLines({ fields: sampleDeclarationFields(), language }).find((one) => one.endsWith(': K-1234'));
+  const suffix = ': K-1234';
+  const line = detailLines({ fields: sampleDeclarationFields(), language }).find((one) => one.endsWith(suffix));
   if (line === undefined) throw new Error(`no contract reference line in ${language}`);
-  return line;
+  return `${line.slice(0, -suffix.length)}: ${RECEIPT_WITHHELD[language]}`;
 }
 
 test('the six contract reference lines are six different labels, so the checks below can tell the languages apart', () => {

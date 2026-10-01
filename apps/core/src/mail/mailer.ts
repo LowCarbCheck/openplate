@@ -430,10 +430,10 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
       });
       const message = buildDeclarationReceiptMessage({ declaration: input, template });
       await transport.send({ to: input.to, subject: message.subject, text: message.text, html: message.html });
-      // No address and no field the person typed, for the reason the module
-      // doc gives: this letter carries no link, but it carries their name,
-      // their reason and their contract reference, and none of that belongs
-      // in a log line either.
+      // No address, for the reason the module doc gives: the address is the
+      // one thing this letter still carries that a log line must not. Since
+      // M270/11 it carries no text the person wrote, see
+      // `declaration-message.ts`.
       logger.info('Declaration receipt mailed', { kind: input.kind, text: message.origin });
     },
 

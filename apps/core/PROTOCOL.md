@@ -275,6 +275,7 @@ A new field is a protocol revision, never a configuration. See ADR-0003.
 - Every non-2xx response body is `{"error": "<human-readable text>"}`. The text is diagnostic only; clients must branch on the **status code**, never on the message.
 - Requests exceeding the body limit are rejected with `413`. Each route family under `/v1/sync` has its own limit, and no family inherits another's: the blob and key records take the blob cap in base64 plus 4 KiB, `rotate-dek` the blob cap in base64 plus 64 KiB, the share family 8 KiB, and the research family 512 KiB.
 - An authenticated route checks the bearer token before it reads the body. A caller with no valid token gets `401`, never `413`, however large the body.
+- **A source address is an IPv4 address or an IPv6 /64.** Every throttle this document calls per IP or per source address counts an IPv6 caller by the first 64 bits of its address, because one home connection holds a whole /64. An IPv4-mapped IPv6 address (`::ffff:a.b.c.d`) counts as the IPv4 address it carries. An IPv4 address counts as itself. A request whose address the server cannot determine shares one bucket with every other such request.
 
 ### 4.1 Authentication
 
@@ -687,7 +688,12 @@ The `400`s describe the request, never the instance's accounts: a domain says no
 
 ### 5.9 `POST /v1/auth/login`
 
-Unauthenticated, throttled per IP **and** email. A `401` counts against that bucket and a success clears it, which slows a single-source brute force without letting anyone lock a victim out of their own account from another address.
+Unauthenticated, with two throttles. Both count a `401` and nothing else, and a success clears both.
+
+- **Per IP and email.** Five failures are free. This slows a single-source brute force without letting anyone lock a victim out of their own account from another address.
+- **Per email, from any address.** Twenty failures are answered; the twenty-first request is refused for one minute, and each further failure doubles the lock up to fifteen minutes. A bucket with no failure for fifteen minutes starts again. This bounds a guesser who rotates addresses. An address with no account is counted the same way, so the refusal does not say whether the account exists. The address is folded as the account lookup folds it (§2), so another spelling of it is the same bucket.
+
+Either lock is the same `429` with `Retry-After`, the longer of the two waits.
 
 Request `{"email": "...", "authHash": "..."}` → `200` `{"account": AccountView, "tokens": {...}}`.
 
@@ -1434,6 +1440,20 @@ Where it is not set, scan-trial requests count against the instance ceiling
 like everybody else's. It is not published either; `GET /v1/admin/stats`
 reports it as `aiTrialInstanceDailyLimit`, beside `signup.trialRequestsToday`.
 
+**Where the trial ceiling is set, one caller network gets a share of it**
+(`AI_TRIAL_NETWORK_DAILY_LIMIT`, a tenth of the trial ceiling by default,
+rounded down, at least 1): units per UTC day that the scan-trial requests from
+one network may take. A network is an IPv6 /64, or one IPv4 address, as the
+sign-in throttles count it. A scan-trial request from a network that has spent
+its share gets the same `503 ai-instance-ceiling` with the same `Retry-After`,
+so a client needs no new branch; it takes no scan and no unit, and the provider
+is not called. Requests under a paid window or a standing free grant are never
+counted or refused by it. Its units are given back whenever the trial ceiling's
+are. Many people behind one IPv4 carrier NAT share one bucket; an IPv6 caller
+has a /64 of its own. The service keeps no address for it: one row per network
+per day holds a keyed hash (HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER`) of the
+network and the day, and the row is deleted the next day.
+
 #### What is spent and what is given back
 
 A unit is **reserved before** the upstream call, never counted after it.
@@ -2057,7 +2077,7 @@ Being honest about the metadata, because "end-to-end encrypted" is often heard a
 - **A push subscription**, for a device whose owner turned notifications on (§5.24, ADR-0008): the push service endpoint, the two keys it encrypts to, a capped user agent string, an IANA time zone, a locale, the minute of the local day a catch-up is due, the local day one last went out, the local day the device was last seen, the instant it asked to be woken, and a count of what has been sent today. Together those say roughly when this person is awake, roughly where in the world they are, and, through `wake_at`, when a fast of theirs ends. **That last one lines up with the pulse's presence row**, which says the same fast is running; ADR-0008 names the correlation rather than leaving it to be discovered. What is NOT stored is a word of any notification's text: every push carries a kind. The row goes when the device unsubscribes, when the push service disowns it, or with the account.
 - **A health-data consent**, on an instance that asks for one (§5.15.1): the version of the wording the person agreed to and the instant this service recorded it, two columns on the account row. It says that the person uses a health app and agreed to have the operator process that data, which the operator must be able to show. It is visible to an operator (§5.20), no route clears it, and it goes with the account row on deletion.
 - **When a person last did something**: `accounts.last_seen_at`, written by a login and by a proxied completion, and deliberately not by a token refresh or a sync poll, so it means "somebody acted" rather than "a client was running". It is visible to an operator (§5.20) and goes with the account row on deletion.
-- **Statutory declarations** (`POST /v1/legal/declarations`, a cancellation or a withdrawal, on every instance): the name, the address, the contract reference, the reason and the dates the person typed, the time it arrived, and the account it matched, if any. It is **kept until the end of the third calendar year after the year it arrived**, counted in Europe/Berlin time, and then deleted by the hourly sweep: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. **Deleting the account does not delete it earlier**; the row loses its account id and stays, because it is the record of what the person declared. The receipt mail is capped at three per normalised address in any trailing 24 hours, counted from these rows; a declaration over the cap is still stored, forwarded and sent to the operator, and the `202` is the same.
+- **Statutory declarations** (`POST /v1/legal/declarations`, a cancellation or a withdrawal, on every instance): the name, the address, the contract reference, the reason and the dates the person typed, the time it arrived, and the account it matched, if any. It is **kept until the end of the third calendar year after the year it arrived**, counted in Europe/Berlin time, and then deleted by the hourly sweep: one received on 2026-09-21 is deleted from 2030-01-01 00:00 in Berlin. **Deleting the account does not delete it earlier**; the row loses its account id and stays, because it is the record of what the person declared. Receipt mail is capped at three per normalised address, at `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` (10 by default) per sender network, and at `LEGAL_DECLARATION_RECEIPTS_PER_DAY` (200 by default) per instance. Each cap applies over any trailing 24 hours. The totals are counted from these rows, except the network count, which stays in memory. A declaration over a cap is still stored, forwarded, and sent to the operator, and the `202` is the same. The receipt never repeats the name, the contract reference, or the reason; only the operator's copy carries them.
 - **Session metadata**: how many active sessions exist, when each was created, and when tokens were last rotated or revoked. Token values themselves are stored only as digests.
 - **The study graph**, on a deployment with `SYNC_RESEARCH` set (§5.18): which
   account contributes to which study, when, how often, and how large each

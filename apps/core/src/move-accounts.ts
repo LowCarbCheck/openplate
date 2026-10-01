@@ -69,6 +69,9 @@
  *    own `TRIAL_ADDRESS_PEPPER`, linked to no account.
  *  - `ai_instance_days`, `pulse_days`, `instance_settings`: the source
  *    instance's own totals and settings, not any account's.
+ *  - `ai_trial_network_days`: today's trial counters per caller network,
+ *    keyed under the source's own `TRIAL_ADDRESS_PEPPER`, linked to no
+ *    account, and deleted the next day.
  *  - `ai_budget_alerts`: one row per budget reset period for the low-budget
  *    operator mail, instance state about the operator's provider key, not any
  *    account's.

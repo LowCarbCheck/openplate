@@ -27,7 +27,7 @@
  */
 import type { AiQuotaStore } from './quota-store.js';
 import type { Logger } from '../logger.js';
-import { utcDayKeyDaysBefore } from '../lib/utc-day.js';
+import { utcDayKey, utcDayKeyDaysBefore } from '../lib/utc-day.js';
 import { INTAKE_RETENTION_MS } from '../accounts/scan-trial.js';
 import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
 import { LEGAL_DECLARATION_RETENTION_YEARS, legalDeclarationsCutoff } from '../legal/legal-declarations-retention.js';
@@ -129,6 +129,11 @@ export function startAiUsageRetention(options: AiUsageRetentionOptions): AiUsage
       before: new Date(now.getTime() - INTAKE_RETENTION_MS),
     });
     if (intakes > 0) logger.info('Deleted trial intake rows older than a day', { deleted: intakes });
+    // ONE NETWORK'S SHARE OF THE TRIAL CEILING (M270 spec 12): a keyed hash
+    // of a network per day, needed only on the day it counts. Every row
+    // before today goes; a count in the log line, never a hash.
+    const networks = await options.quota.purgeTrialNetworkDaysBefore({ day: utcDayKey(now) });
+    if (networks > 0) logger.info('Deleted trial network counters from past days', { deleted: networks });
     // THE DECLARATIONS, past the end of the third calendar year after the year
     // they arrived. The COUNT only: a row carries a name, an address and a
     // reason, and none of that belongs in a log line.

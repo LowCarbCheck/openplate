@@ -114,6 +114,7 @@ import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
 import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
 import { registerRotateDekRoute } from './rotate-dek-route.js';
 import { CHAT_COMPLETIONS_PATH, registerAiRoute } from '../ai/register-ai-route.js';
+import type { TrialNetworkShare } from '../ai/trial-network.js';
 import { FEEDBACK_API_PREFIX, registerFeedbackRoute } from '../feedback/register-feedback-route.js';
 import { registerPulseRoutes } from './register-pulse-routes.js';
 import type { PulseStore } from '../pulse/pulse-store.js';
@@ -237,6 +238,12 @@ export interface AiSurfaceOptions {
    */
   trialInstanceDailyLimit?: number | null;
   /**
+   * One caller network's share of the trial ceiling and the keyed name its
+   * counter uses (`AI_TRIAL_NETWORK_DAILY_LIMIT` under
+   * `TRIAL_ADDRESS_PEPPER`, M270 spec 12), or `null`/absent for no share.
+   */
+  trialNetwork?: TrialNetworkShare | null;
+  /**
    * The model and output ceiling every forwarded chat body gets (M256).
    * Required: see `ChatCompletionsDeps.bodyPolicy`.
    */
@@ -290,6 +297,12 @@ export interface CreateAppOptions {
    * passes a permissive store, as it does for {@link CreateAppOptions.throttle}.
    */
   signupRequestThrottle?: ThrottleStore;
+  /**
+   * The login bucket per account (`lib/throttle.ts`, `LOGIN_ACCOUNT_THROTTLE`),
+   * or absent for a fresh one on the production bound. A suite that is not
+   * ABOUT that bound passes a permissive store.
+   */
+  loginAccountThrottle?: ThrottleStore;
   logger: Logger;
   /** Express `trust proxy`. Wrong here means `req.ip` is the proxy's and the whole throttle is one shared bucket. */
   trustProxy: boolean | number;
@@ -428,6 +441,10 @@ export interface LegalDeclarationsSurfaceOptions {
    * exactly as `AiSurfaceOptions.perMinute` does.
    */
   rateLimitPerMinute?: number;
+  /** `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY`. Absent means the route's default, see `legal/receipt-ceilings.ts`. */
+  receiptsPerNetworkPerDay?: number;
+  /** `LEGAL_DECLARATION_RECEIPTS_PER_DAY`. Absent means the route's default, see `legal/receipt-ceilings.ts`. */
+  receiptsPerDay?: number;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -491,6 +508,7 @@ export function createApp(options: CreateAppOptions): Express {
     requireAuth,
     requireConsent,
     signupRequestThrottle: options.signupRequestThrottle,
+    loginAccountThrottle: options.loginAccountThrottle,
   });
 
   // THE SHARE TERMINATOR, AND WHY IT IS HERE AND NOT LOWER DOWN.
@@ -663,6 +681,7 @@ export function createApp(options: CreateAppOptions): Express {
       maxRequestBytes: ai.maxRequestBytes,
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
+      trialNetwork: ai.trialNetwork ?? null,
       bodyPolicy: ai.bodyPolicy,
       inputPolicy: ai.inputPolicy,
       // Refused in the proxy's own ladder, beside the suspension, rather than
@@ -769,6 +788,8 @@ export function createApp(options: CreateAppOptions): Express {
     logger: options.logger,
     now,
     rateLimitPerMinute: options.legal.rateLimitPerMinute,
+    receiptsPerNetworkPerDay: options.legal.receiptsPerNetworkPerDay,
+    receiptsPerDay: options.legal.receiptsPerDay,
   });
 
   // The admin API, ALWAYS mounted, and its middleware decides what to admit

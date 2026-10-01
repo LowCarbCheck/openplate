@@ -38,15 +38,20 @@
  *  5. Mail the receipt (once, or twice when the typed address and the matched
  *     account's differ) and the operator alert. Best-effort: a failed send is
  *     logged and swallowed, never surfaced to the caller. The receipt, and
- *     only the receipt, is skipped once its mailbox has had
+ *     only the receipt, is skipped past any of three daily ceilings
+ *     (`legal/receipt-ceilings.ts`, M270/11): its mailbox has had
  *     `LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY` declarations in the
- *     trailing 24 hours, so the form cannot be used to mail a stranger without
- *     limit. The declaration itself, its forward and the operator alert never
- *     depend on that count.
+ *     trailing 24 hours, so the form cannot mail one stranger without limit;
+ *     the sender's network has filed `receiptsPerNetworkPerDay`, so one sender
+ *     cannot mail many strangers; or the instance has had `receiptsPerDay`,
+ *     so many senders together cannot flood the sending domain. The receipt
+ *     repeats no text the sender wrote (`mail/declaration-message.ts`). The
+ *     declaration itself, its forward and the operator alert, which keeps
+ *     every word, never depend on any of it.
  *  6. Answer `202 {receiptId, receivedAt, kind}` — BYTE IDENTICAL whether the
  *     email matched an account or not, whether the forward succeeded or not,
- *     and whether either letter sent or not. None of that is the caller's to
- *     learn from the response.
+ *     whether either letter sent or not, and whether a ceiling skipped the
+ *     receipt. None of that is the caller's to learn from the response.
  */
 import { randomUUID } from 'node:crypto';
 import express from 'express';
@@ -56,6 +61,15 @@ import { parseEmail } from '../accounts/auth-input.js';
 import { normalizeEmail } from '../lib/verifier.js';
 import { asyncHandler } from './async-handler.js';
 import { createLegalDeclarationsRateLimit } from '../legal/legal-declarations-rate-limit.js';
+import { rateLimitKeyForIp } from '../lib/client-address.js';
+import {
+  createNetworkReceiptLedger,
+  decideReceipt,
+  LEGAL_DECLARATION_RECEIPTS_PER_DAY,
+  LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
+  RECEIPT_WINDOW_MS,
+} from '../legal/receipt-ceilings.js';
+import { toDeclarationReceipt } from '../mail/declaration-message.js';
 import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
 import { forwardDeclaration, type ForwardDeclarationUpstream } from '../legal/forward-declaration.js';
 import type { AccountStore } from '../accounts/account-store.js';
@@ -78,9 +92,6 @@ export const LEGAL_DECLARATIONS_MAX_REQUEST_BYTES = 16 * 1024;
  * sent to the operator; only its receipt is skipped, and that is logged.
  */
 export const LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY = 3;
-
-/** The trailing window {@link LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY} counts over. */
-const RECEIPT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /** Requests one IP may file in any trailing 60-second window, when nothing overrides it. Five is generous for a person retrying a flaky connection and stingy for a script. */
 export const LEGAL_DECLARATIONS_RATE_LIMIT_PER_MINUTE = 5;
@@ -105,6 +116,10 @@ export interface LegalDeclarationsRouteOptions {
   rateLimitNow?: () => number;
   /** Receipts one mailbox may receive per trailing 24 hours. Defaults to `LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY`. */
   receiptsPerAddressPerDay?: number;
+  /** Receipts one sender network may cause per trailing 24 hours, `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` in the environment. Defaults to the constant of that name. */
+  receiptsPerNetworkPerDay?: number;
+  /** Receipts the form may send per trailing 24 hours across all recipients, `LEGAL_DECLARATION_RECEIPTS_PER_DAY` in the environment. Defaults to the constant of that name. */
+  receiptsPerDay?: number;
 }
 
 /** Every field the wire contract accepts, already decoded to its domain type. */
@@ -252,23 +267,23 @@ function decodeDeclaration(req: Request, res: Response): DeclarationInput | null
 }
 
 /**
- * The receipts one mailbox had in the window, or `0` when the count fails.
+ * One count read from the rows, or `0` when the read fails.
  *
  * FAIL OPEN, and only here. The row is already stored, and §312k BGB asks the
  * business to confirm receipt without delay; a count that could not be read is
  * no reason to withhold that confirmation, and it must never turn the `202`
- * into a `500`. The failure is logged.
+ * into a `500`. The failure is logged, naming which count it was.
  */
-async function countReceiptsInWindow(input: {
-  store: LegalDeclarationsStore;
+async function countOrZero(input: {
   logger: Logger;
-  normalizedEmail: string;
-  since: Date;
+  count: 'address' | 'instance';
+  read: () => Promise<number>;
 }): Promise<number> {
   try {
-    return await input.store.countReceivedFor({ normalizedEmail: input.normalizedEmail, since: input.since });
+    return await input.read();
   } catch (cause) {
     input.logger.error('Could not count declaration receipts, sending the receipt', {
+      count: input.count,
       error: cause instanceof Error ? cause.name : 'unknown error',
     });
     return 0;
@@ -281,7 +296,10 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
     perMinute: options.rateLimitPerMinute ?? LEGAL_DECLARATIONS_RATE_LIMIT_PER_MINUTE,
     now: options.rateLimitNow,
   });
-  const receiptCap = options.receiptsPerAddressPerDay ?? LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY;
+  const addressCap = options.receiptsPerAddressPerDay ?? LEGAL_DECLARATION_RECEIPTS_PER_ADDRESS_PER_DAY;
+  const networkCap = options.receiptsPerNetworkPerDay ?? LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY;
+  const instanceCap = options.receiptsPerDay ?? LEGAL_DECLARATION_RECEIPTS_PER_DAY;
+  const networkLedger = createNetworkReceiptLedger({ cap: networkCap });
 
   router.post(
     LEGAL_DECLARATIONS_PATH,
@@ -298,6 +316,9 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
 
       const id = randomUUID();
       const receivedAt = options.now();
+      // The burst limiter's own bucket, an IPv4 address or an IPv6 /64, and
+      // the same `unknown` fallback, so the two count one sender alike.
+      const senderNetwork = rateLimitKeyForIp(req.ip ?? 'unknown');
 
       // STEP 3: PERSIST. Everything from here on is best-effort; this is not.
       let row;
@@ -340,6 +361,10 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
       // receipt must not take the operator alert down with it, which is the
       // one letter the design requires on every declaration. A failed send is
       // logged and swallowed, never surfaced to the caller.
+      //
+      // Counted once the row is stored, so a declaration that failed to persist
+      // (the `502` above) never spends a network's allowance.
+      const networkCount = networkLedger.record({ network: senderNetwork, atMs: receivedAt.getTime() });
       const declarationFields = {
         kind: row.kind,
         name: row.name,
@@ -354,46 +379,48 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
       const mailSends: Promise<void>[] = [
         options.mailer.sendDeclarationOperatorAlert({ ...declarationFields, receiptId: id, matched: account !== null }),
       ];
-      // THE RECEIPT CAP, counted from the rows, this one included. Both
+      // THE RECEIPT CEILINGS, each count including this declaration. Both
       // receipts below go to ONE mailbox (the account was found by this same
-      // normalised address), so one count covers them.
-      const receiptsInWindow = await countReceiptsInWindow({
-        store: options.store,
+      // normalised address), so one decision covers them.
+      const since = new Date(receivedAt.getTime() - RECEIPT_WINDOW_MS);
+      const addressCount = await countOrZero({
         logger: options.logger,
-        normalizedEmail: normalizeEmail(row.email),
-        since: new Date(receivedAt.getTime() - RECEIPT_WINDOW_MS),
+        count: 'address',
+        read: () => options.store.countReceivedFor({ normalizedEmail: normalizeEmail(row.email), since }),
       });
-      const isOverReceiptCap = receiptsInWindow > receiptCap;
-      if (isOverReceiptCap) {
-        // The receipt id and nothing else: the address is exactly what a log
-        // line must not carry, and the operator alert names the row.
-        options.logger.warn('Skipped a declaration receipt over the per-address cap', {
+      const instanceCount = await countOrZero({
+        logger: options.logger,
+        count: 'instance',
+        read: () => options.store.countReceivedSince({ since }),
+      });
+      const decision = decideReceipt({
+        address: { count: addressCount, cap: addressCap },
+        network: { count: networkCount, cap: networkCap },
+        instance: { count: instanceCount, cap: instanceCap },
+      });
+      if (decision.kind === 'skip') {
+        // The receipt id and the ceiling, nothing else: the address and the
+        // network are exactly what a log line must not carry, and the
+        // operator alert names the row.
+        options.logger.warn('Skipped a declaration receipt over a daily ceiling', {
           receiptId: id,
-          cap: receiptCap,
+          ceiling: decision.ceiling,
+          cap: decision.cap,
         });
-      } else {
-        mailSends.push(
-          options.mailer.sendDeclarationReceipt({
-            ...declarationFields,
-            receiptId: id,
-            to: row.email,
-            language: input.language,
-          }),
-        );
       }
+      // The receipt's own view of the row: no text the sender wrote, see
+      // `mail/declaration-message.ts`. The operator alert above keeps it all.
+      const receipt = { ...toDeclarationReceipt(declarationFields), receiptId: id, language: input.language };
       // TWICE ONLY WHEN THE STRINGS DIFFER. See `db/schema.ts` on why a
       // matched account's own address can differ from what was typed even
       // though both name the same mailbox: this compares the two as written,
       // not as folded.
-      if (!isOverReceiptCap && account !== null && account.email !== row.email) {
-        mailSends.push(
-          options.mailer.sendDeclarationReceipt({
-            ...declarationFields,
-            receiptId: id,
-            to: account.email,
-            language: input.language,
-          }),
-        );
+      const receiptRecipients =
+        account !== null && account.email !== row.email ? [row.email, account.email] : [row.email];
+      if (decision.kind === 'send') {
+        for (const to of receiptRecipients) {
+          mailSends.push(options.mailer.sendDeclarationReceipt({ ...receipt, to }));
+        }
       }
       const outcomes = await Promise.allSettled(mailSends);
       for (const settled of outcomes) {

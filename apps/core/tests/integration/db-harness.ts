@@ -128,7 +128,7 @@ export async function setupTestDatabase(): Promise<TestDatabase> {
       // there in the next one, and a ceiling, a floor or a handshake test would
       // fail as a fixture problem.
       await handle.pool.query(
-        'TRUNCATE TABLE account_tokens, password_resets, ai_usage_days, ai_instance_days, ai_budget_alerts, pulse_days, pulse_day_contributors, pulse_presence, pulse_idempotency, push_subscriptions, sync_blobs, sync_key_records, sync_shares, research_contributions, research_withdrawals, feedback_images, feedback_reports, signup_invites, instance_settings, legal_declarations, ai_trial_intakes, trial_address_hashes, accounts RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE account_tokens, password_resets, ai_usage_days, ai_instance_days, ai_trial_network_days, ai_budget_alerts, pulse_days, pulse_day_contributors, pulse_presence, pulse_idempotency, push_subscriptions, sync_blobs, sync_key_records, sync_shares, research_contributions, research_withdrawals, feedback_images, feedback_reports, signup_invites, instance_settings, legal_declarations, ai_trial_intakes, trial_address_hashes, accounts RESTART IDENTITY CASCADE',
       );
     },
   };

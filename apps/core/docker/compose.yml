@@ -103,6 +103,10 @@ services:
       # The folder of letter texts, mounted read-only, see .env.example. Set it
       # to the container path of the volume line under `volumes:` below.
       CONTENT_DIR: ${CONTENT_DIR:-}
+      # The daily ceilings on declaration receipts, for the instance and per
+      # sender network. See .env.example.
+      LEGAL_DECLARATION_RECEIPTS_PER_DAY: ${LEGAL_DECLARATION_RECEIPTS_PER_DAY:-200}
+      LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY: ${LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY:-10}
       # A PEM file of extra certificate authorities Node trusts, for an SMTP
       # server with a private CA. The container path of the volume line below.
       NODE_EXTRA_CA_CERTS: ${NODE_EXTRA_CA_CERTS:-}
@@ -187,6 +191,7 @@ services:
       TRIAL_ADDRESS_PEPPER: ${TRIAL_ADDRESS_PEPPER:-}
       MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
       AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
+      AI_TRIAL_NETWORK_DAILY_LIMIT: ${AI_TRIAL_NETWORK_DAILY_LIMIT:-}
       # Web push: all three or none. Empty means no notifications.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}

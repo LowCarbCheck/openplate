@@ -139,7 +139,7 @@ MAIL_OPERATOR_EMAIL=you@example.org
 
 **The declaration letters take their words from your files.** The receipt for a cancellation or a withdrawal, and the operator's copy, are read from `CONTENT_DIR` (a folder you mount read-only, the same one the app's legal pages can come from). This repo ships no letter text: unset, the letters state only the kind, the receipt number, the time of receipt and the fields the person gave. [`docs/operations/declaration-mail-text.md`](./docs/operations/declaration-mail-text.md) has the file format and the exact fallback.
 
-**One mailbox gets at most three receipts a day.** The declaration form needs no sign-in, so without a cap anybody could make your instance mail one stranger without limit. The count is read from the stored declarations, by normalised address, over the trailing 24 hours. A fourth declaration for the same mailbox is still stored, forwarded to the biller and sent to you as the operator's copy; only its receipt is skipped, and the log says so with the receipt number. One source address may file five declarations a minute, and an IPv6 caller counts as its /64.
+**A receipt goes out only under three daily ceilings, and it repeats nothing the sender wrote.** The declaration form requires no sign-in. Its receipt goes from your sending domain to the typed address. One mailbox gets at most three receipts in any 24 hours. One sender network (an IPv4 address or an IPv6 /64) gets at most `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` (10 by default). The whole instance gets at most `LEGAL_DECLARATION_RECEIPTS_PER_DAY` (200 by default). Past any ceiling, the system still stores the declaration, forwards it to the biller, and sends you the operator copy. It skips only the receipt, returns the same response, and logs the receipt number and the ceiling. Stored declarations provide the mailbox and instance counts. The network count lives in memory, so a restart resets it. The receipt confirms arrival of a name, a contract number, and a reason without repeating them. This prevents senders from placing their own words into mail to strangers. Your copy contains every word. One source address may file five declarations a minute. An IPv6 caller counts as its /64.
 
 ### The password reset, and what it costs
 
@@ -299,8 +299,19 @@ after an answer claims a new scan, even under the same id. After the last scan t
 future allowance date, which a payment writes, lifts the count. One mailbox gets
 one trial, also after the account is deleted: deleting an account then keeps
 only a keyed hash of the mailbox and scrubs the address from its invite rows.
+An address on a known email alias or forwarding domain (SimpleLogin, addy.io,
+Firefox Relay, Hide My Email relay, disposable inboxes, and every subdomain of
+them) gets no trial when it signs up on its own through the open sign-up door.
+It can still sign up and buy a plan: the account starts with 0 scans, as if the
+trial were used up. An invite you mint by hand keeps its trial, because you chose
+that person. The lapsed day trial grant skips these addresses too. The list is
+`src/lib/alias-domains.ts`, and it applies with or without a pepper. `icloud.com`
+is a real mailbox and is not on it.
 `AI_TRIAL_INSTANCE_DAILY_LIMIT` caps what all trial accounts together spend per
-UTC day. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
+UTC day. Beside it, `AI_TRIAL_NETWORK_DAILY_LIMIT` caps what the trial requests
+from one network (an IPv6 /64, or one IPv4 address) may take of it, a tenth by
+default, so a few farmed accounts cannot use up the day for everybody else.
+People behind one IPv4 carrier NAT share one bucket. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
 day trials that ran out unpaid, as a dry run until you add `--apply`.
 
 **Members can hand out an AI trial, if you let them.** Set
@@ -446,7 +457,7 @@ arrive, use your own contact list.
 ### Three settings that matter more than the rest
 
 - **`SERVER_SECRET`**: back it up _with your database_. Three subkeys are derived from it: the pepper mixed into every stored auth verifier, the key behind the anti-enumeration KDF responses, and the AES key that seals each account's escrowed recovery code. A restored database with a lost secret is a database nobody can log into, **no recovery code gets anybody back in** (the pepper keys both verifiers), and **no password reset works either** (the escrow cannot be opened). The same is true of a deliberate rotation. There is no path that repairs this from the server side, so treat the secret as part of the backup, not as a setting.
-- **`TRUST_PROXY`**: set it to the number of reverse proxies in front of the service (`1` behind a single nginx or Traefik). Left at `false` behind a proxy, every request appears to come from the proxy's address and the per-IP throttle becomes one global bucket a single attacker can lock for all your users. Set to `true` with nothing in front, anyone can spoof `X-Forwarded-For` and skip the throttle entirely.
+- **`TRUST_PROXY`**: set it to the number of reverse proxies in front of the service (`1` behind a single nginx or Traefik). Left at `false` behind a proxy, every request appears to come from the proxy's address and the per-IP throttle becomes one global bucket a single attacker can lock for all your users. Set to `true` with nothing in front, anyone can spoof `X-Forwarded-For` and skip the throttle entirely. The throttle counts an IPv6 client by its /64 and an IPv4-mapped address as its IPv4 address (PROTOCOL.md §4). Login also counts failures per account from any address, twenty before a short lock (§5.9).
 
 Your reverse proxy must also allow request bodies of about **2.75 MB**. Blobs are capped at 2 MB, base64 inflates them by a third, and nginx's default `client_max_body_size` is 1 MB: left at the default it rejects legitimate maximum-size syncs before this service ever sees or logs them. In nginx that is `client_max_body_size 3m;`.
 

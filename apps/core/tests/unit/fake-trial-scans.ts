@@ -28,5 +28,14 @@ export function createUnusedTrialScanStore(): AiTrialScanStore {
       return { ok: true, used: 1, limit: Number.MAX_SAFE_INTEGER };
     },
     async releaseTrialInstance(): Promise<void> {},
+    async reserveTrialNetwork(): Promise<ReserveResult> {
+      throw new Error('this suite has no scan-trial account, so nothing should take a network share');
+    },
+    async releaseTrialNetwork(): Promise<void> {
+      throw new Error('this suite has no scan-trial account, so nothing should give a network share back');
+    },
+    async purgeTrialNetworkDaysBefore(): Promise<number> {
+      return 0;
+    },
   };
 }

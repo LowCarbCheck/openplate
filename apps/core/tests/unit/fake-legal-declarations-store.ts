@@ -59,6 +59,13 @@ export function createFakeLegalDeclarationsStore(): FakeLegalDeclarationsStore {
       }
       return total;
     },
+    async countReceivedSince(input: { since: Date }): Promise<number> {
+      let total = 0;
+      for (const row of rows.values()) {
+        if (row.receivedAt.getTime() > input.since.getTime()) total += 1;
+      }
+      return total;
+    },
     async purgeReceivedBefore(input: { before: Date }): Promise<number> {
       let deleted = 0;
       for (const [id, row] of rows) {

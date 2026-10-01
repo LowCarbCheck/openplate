@@ -16,6 +16,15 @@
  * throttles by IP alone (keying it by the submitted handle would let an
  * attacker evade it by rotating addresses).
  *
+ * THE `ip` A CALLER PASSES IS ALREADY FOLDED by `lib/client-address.ts`: an
+ * IPv6 caller is its /64 and an IPv4-mapped address is its IPv4 address. A
+ * raw `req.ip` here would hand an IPv6 caller 2^64 buckets.
+ *
+ * Login also has a bucket per submitted identifier alone
+ * ({@link identifierThrottleKey}, {@link LOGIN_ACCOUNT_THROTTLE}), because the
+ * per-IP bucket by itself gives a caller with many addresses a fresh allowance
+ * against one account on each of them.
+ *
  * The DECISION functions are pure and unit-tested; the `Map`-backed wrappers
  * at the bottom are the imperative shell.
  */
@@ -46,6 +55,31 @@ export interface ThrottleDecision {
 /** Failures 1–5 are free; the 6th locks for 1 min, then 2, 4, 8, capped at 15. A bucket idle 15 min resets. */
 export const DEFAULT_THROTTLE_CONFIG: ThrottleConfig = {
   freeAttempts: 5,
+  baseLockoutMs: 60 * 1000,
+  maxLockoutMs: 15 * 60 * 1000,
+  attemptResetMs: 15 * 60 * 1000,
+};
+
+/**
+ * The login bucket PER ACCOUNT, beside the one per address and email.
+ *
+ * Twenty failures in a row are answered; the twentieth sets a lock, so the
+ * twenty-first request is refused. The lock starts at one minute and doubles
+ * to fifteen, and a bucket that sees no failure for fifteen minutes starts
+ * again. A guesser rotating addresses therefore gets about twenty guesses and
+ * then one per lock, which is a few dozen a day per account instead of one
+ * allowance per address.
+ *
+ * THE OWNER PAYS LITTLE, AND THAT BOUNDS THE CEILING FROM BELOW. Somebody
+ * who mistypes a passphrase does it a handful of times, nowhere near twenty,
+ * and a success clears the bucket. The cost is the one every per-account
+ * bucket carries: a stranger can hold an account locked by spending one
+ * failure per lock. That lock lasts fifteen minutes at most, it never touches
+ * recovery or a mailed reset, and a device already signed in keeps its
+ * session. See `accounts/register-auth-routes.ts` on the login route.
+ */
+export const LOGIN_ACCOUNT_THROTTLE: ThrottleConfig = {
+  freeAttempts: 19,
   baseLockoutMs: 60 * 1000,
   maxLockoutMs: 15 * 60 * 1000,
   attemptResetMs: 15 * 60 * 1000,
@@ -84,6 +118,20 @@ export function throttleKey({ namespace, ip, identifier }: ThrottleKeyInput): st
  */
 export function accountThrottleKey(input: { namespace: string; accountId: number }): string {
   return `${input.namespace}::account::${input.accountId}`;
+}
+
+/**
+ * A bucket for ONE SUBMITTED ACCOUNT IDENTIFIER, whatever address the request
+ * came from, folded as {@link throttleKey} folds it.
+ *
+ * FOR LOGIN, where no session exists yet, so the account is named only by the
+ * address the caller typed. Keyed on that identifier rather than on a
+ * resolved account id, on purpose: an address with no account behind it gets
+ * a bucket too and is counted the same way, so the refusal cannot say which
+ * addresses hold one. See {@link LOGIN_ACCOUNT_THROTTLE}.
+ */
+export function identifierThrottleKey(input: { namespace: string; identifier: string }): string {
+  return `${input.namespace}::identifier::${normalizeEmail(input.identifier)}`;
 }
 
 function lockoutDurationMs(overBy: number, config: ThrottleConfig): number {

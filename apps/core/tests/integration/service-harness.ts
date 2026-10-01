@@ -34,6 +34,7 @@ import {
   type AiQuotaStore,
 } from '../../src/ai/quota-store.js';
 import type { UpstreamBudgetSource } from '../../src/ai/upstream-budget.js';
+import { createTrialNetworkHasher, type TrialNetworkShare } from '../../src/ai/trial-network.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
 import { createDrizzleFeedbackAdminStore } from '../../src/feedback/feedback-admin-store.js';
 import { createDrizzleFeedbackImageStore } from '../../src/feedback/feedback-image-store.js';
@@ -251,6 +252,12 @@ export interface StartServiceOptions {
   db: Database;
   throttleConfig?: ThrottleConfig;
   /**
+   * The login bucket per account. Absent is permissive, like
+   * {@link StartServiceOptions.throttleConfig}; `abuse-controls.test.ts`
+   * passes `LOGIN_ACCOUNT_THROTTLE` to assert the real ceiling.
+   */
+  loginAccountThrottleConfig?: ThrottleConfig;
+  /**
    * Absent (the default) boots the service the way every deployment boots
    * today: no static break-glass credential, and `/v1/admin/*` answering the
    * ordinary unknown-path 404 to everybody who is not an admin account.
@@ -302,6 +309,14 @@ export interface StartServiceOptions {
     instanceDailyLimit?: number | null;
     /** `AI_TRIAL_INSTANCE_DAILY_LIMIT` (M253). Absent is no sub-ceiling. */
     trialInstanceDailyLimit?: number | null;
+    /**
+     * `AI_TRIAL_NETWORK_DAILY_LIMIT` (M270 spec 12), keyed under the suite's
+     * `trialAddressPepper`, as `main.ts` keys it under `TRIAL_ADDRESS_PEPPER`.
+     * Absent is no per-network share, NOT the production default of a tenth
+     * of the trial ceiling: a suite that is not about the share must not trip
+     * it, and every request here arrives from one loopback address.
+     */
+    trialNetworkDailyLimit?: number | null;
     /** The input bounds and the unit size (2026-09-30), over the production defaults. */
     inputPolicy?: Partial<ChatInputPolicy>;
     /**
@@ -401,8 +416,12 @@ export interface StartServiceOptions {
    * suite that is not ABOUT the limiter never trips it — exactly the
    * `PERMISSIVE_THROTTLE` argument, applied to this route's own limiter.
    * `legal-declarations.test.ts` opts in to a small number deliberately.
+   *
+   * The two receipt ceilings (M270/11) are absent by default, which is the
+   * production defaults: no other suite files declarations, and the ones here
+   * that are not about a ceiling stay well under it.
    */
-  legal?: { rateLimitPerMinute?: number };
+  legal?: { rateLimitPerMinute?: number; receiptsPerNetworkPerDay?: number; receiptsPerDay?: number };
   /**
    * `OPEN_SIGNUP=true` (M253). Absent (the default) is every invite-only
    * instance: `POST /v1/auth/signup-request` answers the ordinary
@@ -499,6 +518,17 @@ function trialPolicyOf(options: StartServiceOptions): TrialPolicy | null {
     days: options.trial.days ?? null,
     timeZone: options.trial.timeZone ?? 'UTC',
   };
+}
+
+/**
+ * The per-network trial share (M270 spec 12), or `null`. A share with no
+ * pepper is refused here, as `config.ts` refuses a trial without one.
+ */
+function trialNetworkOf(options: StartServiceOptions): TrialNetworkShare | null {
+  const dailyLimit = options.ai?.trialNetworkDailyLimit ?? null;
+  if (dailyLimit === null) return null;
+  if (options.trialAddressPepper == null) throw new Error('trialNetworkDailyLimit needs trialAddressPepper');
+  return { dailyLimit, hashNetwork: createTrialNetworkHasher(options.trialAddressPepper) };
 }
 
 export async function startService(options: StartServiceOptions): Promise<ServiceHarness> {
@@ -614,6 +644,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           instanceDailyLimit: options.ai.instanceDailyLimit ?? null,
           // `null` by default for the reason `instanceDailyLimit` is (M253).
           trialInstanceDailyLimit: options.ai.trialInstanceDailyLimit ?? null,
+          trialNetwork: trialNetworkOf(options),
           // The budget read (2026-09-30), as `main.ts` builds it: the real
           // counters always, and the key read only for an OpenRouter upstream,
           // which a fake upstream on a loopback port never is.
@@ -700,6 +731,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     pulse: createDrizzlePulseStore(options.db),
     throttle: createThrottleStore(options.throttleConfig ?? PERMISSIVE_THROTTLE),
     signupRequestThrottle: createThrottleStore(options.openSignup?.ipThrottleConfig ?? PERMISSIVE_THROTTLE),
+    loginAccountThrottle: createThrottleStore(options.loginAccountThrottleConfig ?? PERMISSIVE_THROTTLE),
     logger: options.logger ?? createSilentLogger(),
     trustProxy: options.trustProxy ?? false,
     mailer,
@@ -729,6 +761,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     legal: {
       store: createDrizzleLegalDeclarationsStore(options.db),
       rateLimitPerMinute: options.legal?.rateLimitPerMinute ?? 10_000,
+      receiptsPerNetworkPerDay: options.legal?.receiptsPerNetworkPerDay,
+      receiptsPerDay: options.legal?.receiptsPerDay,
     },
     // `main.ts` wires this the same way: one surface, read by `/health` and
     // written by `PATCH /v1/admin/settings`.

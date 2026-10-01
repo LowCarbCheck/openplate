@@ -704,6 +704,36 @@ export const aiInstanceDays = pgTable('ai_instance_days', {
 });
 
 /**
+ * ONE ROW PER CALLER NETWORK PER UTC DAY: the units that network's trial
+ * requests took of `ai_instance_days.trial_count` (M270 spec 12), bounded by
+ * `AI_TRIAL_NETWORK_DAILY_LIMIT` so a few farmed accounts on one network
+ * cannot spend the whole trial ceiling. See `ai/trial-network.ts`.
+ *
+ * NO ADDRESS. `network_hash` is an HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER`
+ * of the network key (an IPv6 /64 or one IPv4 address) AND the day, so the
+ * stored value cannot be reversed without the secret, and one network's rows
+ * on two days cannot be linked to each other. It references nothing, like
+ * `ai_instance_days`, so no cascade can lower a day's count. The hourly sweep
+ * (`ai/usage-retention.ts`) deletes every row before today.
+ */
+export const aiTrialNetworkDays = pgTable(
+  'ai_trial_network_days',
+  {
+    /** The UTC calendar day, `YYYY-MM-DD`, the same day key `ai_instance_days` counts on. */
+    day: date('day', { mode: 'string' }).notNull(),
+    networkHash: text('network_hash').notNull(),
+    count: integer('count').default(0).notNull(),
+  },
+  (table) => [
+    // The composite primary key IS the upsert target, as on `ai_usage_days`.
+    primaryKey({ columns: [table.day, table.networkHash] }),
+  ],
+);
+
+export type InsertAiTrialNetworkDay = InferInsertModel<typeof aiTrialNetworkDays>;
+export type SelectAiTrialNetworkDay = InferSelectModel<typeof aiTrialNetworkDays>;
+
+/**
  * ONE ROW PER PROVIDER BUDGET PERIOD IN WHICH THE OPERATOR WAS ALERTED
  * (2026-09-30): the low-budget mail of `ai/budget-alert.ts`.
  *

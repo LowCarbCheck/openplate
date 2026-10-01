@@ -16,7 +16,8 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
-import { createIpRateLimit, rateLimitKeyForIp } from '../../src/lib/ip-rate-limit.js';
+import { createIpRateLimit } from '../../src/lib/ip-rate-limit.js';
+import { rateLimitKeyForIp } from '../../src/lib/client-address.js';
 
 const servers: Server[] = [];
 after(async () => {
@@ -63,7 +64,7 @@ test('an IPv4-mapped address counts against the IPv4 address it carries', async 
 });
 
 test('the key for every address form a request can carry', () => {
-  const cases: readonly { address: string; key: string }[] = [
+  const cases: readonly { address: string | undefined; key: string }[] = [
     { address: '203.0.113.9', key: '203.0.113.9' },
     { address: '::ffff:203.0.113.9', key: '203.0.113.9' },
     { address: '::FFFF:cb00:7109', key: '203.0.113.9' },
@@ -74,8 +75,10 @@ test('the key for every address form a request can carry', () => {
     { address: '::1', key: '0:0:0:0::/64' },
     { address: '64:ff9b::198.51.100.7', key: '64:ff9b:0:0::/64' },
     { address: 'unknown', key: 'unknown' },
+    // No address at all is one shared bucket, never an exemption.
+    { address: undefined, key: 'unknown' },
   ];
   for (const { address, key } of cases) {
-    assert.equal(rateLimitKeyForIp(address), key, address);
+    assert.equal(rateLimitKeyForIp(address), key, String(address));
   }
 });
