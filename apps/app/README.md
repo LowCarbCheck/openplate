@@ -204,7 +204,7 @@ ADMIN_TOKEN=... SEED_PASSPHRASE=... pnpm seed:test-account --url http://localhos
 has a flag: a credential in argv is a credential in your shell history. The default target is
 localhost and any other host needs `--allow-remote`, because **the account this creates is a
 real account** on whatever instance you point it at, and nothing removes it for you. Delete it
-when you are done, with `pnpm sync-api accounts delete <id> --yes` in `openplate-core`.
+when you are done, with `pnpm core-api accounts delete <id> --yes` in `openplate-core`.
 
 `pnpm seed:test-account --help` lists the rest: `--weeks`, `--seed`, `--end-day`,
 `--timezone`, `--out`, `--email`, `--no-push`.

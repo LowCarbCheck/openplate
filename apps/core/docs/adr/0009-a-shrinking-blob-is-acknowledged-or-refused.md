@@ -158,7 +158,7 @@ signed into.
   three. `lib/blob-retention.ts` owns the combination, pure and clock-injected.
 - The admin surface gains `GET /accounts/:id/blob/versions` and
   `POST /accounts/:id/blob/rollback`, guarded like `accounts delete` and behind
-  `--yes` in `pnpm sync-api`. The version list reports byte counts and never
+  `--yes` in `pnpm core-api`. The version list reports byte counts and never
   bytes, under ADR-0001's projection.
 - The client repository has to mirror the protocol constants and set
   `shrinkAcknowledged` deliberately. Until it does, an openplate client that

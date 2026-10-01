@@ -26,6 +26,7 @@
 import { useEffect, useState } from 'react';
 
 import { usePublicConfig } from '#app/hooks/use-public-config';
+import { getCoreUrl } from '#app/config/public-config';
 import { readServerInstance } from '#app/lib/sync/sync-actions';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 
@@ -118,7 +119,7 @@ export interface ServerInstanceRead {
  */
 export function useServerInstanceRead(): ServerInstanceRead {
   const config = usePublicConfig();
-  const syncServerUrl = config?.syncServerUrl ?? null;
+  const syncServerUrl = getCoreUrl(config);
   const [read, setRead] = useState<{ url: string; instance: InstanceDescriptor | null } | null>(null);
 
   useEffect(() => {
@@ -162,7 +163,7 @@ export function useServerInstanceRead(): ServerInstanceRead {
  */
 export function useFreshServerInstance(): InstanceDescriptor | null {
   const config = usePublicConfig();
-  const syncServerUrl = config?.syncServerUrl ?? null;
+  const syncServerUrl = getCoreUrl(config);
   const [instance, setInstance] = useState<InstanceDescriptor | null>(null);
 
   useEffect(() => {

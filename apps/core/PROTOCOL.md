@@ -2,7 +2,7 @@
 
 **Protocol version: 2** · **Envelope version: 1** · Status: pre-1.0, nothing shipped
 
-This is the normative specification of the wire protocol between an openplate client and a sync service. It is written so a third party can implement **either side** without reading our code: an alternative client that syncs against our hosted service, or an alternative server that an openplate client can be pointed at with `SYNC_SERVER_URL`.
+This is the normative specification of the wire protocol between an openplate client and a core server. It is written so a third party can implement **either side** without reading our code: an alternative client that syncs against our hosted service, or an alternative server that an openplate client can be pointed at with `CORE_URL`.
 
 The machine-readable counterpart lives in two files that are hand-maintained duplicates of each other:
 
@@ -1601,8 +1601,8 @@ credential that exists for exactly that situation.
   decide anything. The account's own `GET /v1/auth/account` does not carry it,
   the account cannot set it (`PATCH /v1/auth/account` reads `displayName`
   only), and the billing principal can neither read nor write it.
-- `pnpm sync-api accounts set-label <id> "Beta supporter"` sets it and
-  `pnpm sync-api accounts clear-label <id>` clears it.
+- `pnpm core-api accounts set-label <id> "Beta supporter"` sets it and
+  `pnpm core-api accounts clear-label <id>` clears it.
 
 **`GET /v1/admin/accounts/:id/activity` answers the question an operator opens
 the console with**: is this person still using the instance. It reads what the

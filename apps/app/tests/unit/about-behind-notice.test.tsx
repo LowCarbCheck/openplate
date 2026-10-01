@@ -72,6 +72,7 @@ const DISABLED = {
 const DISABLED_WITH_STALE_ANSWER = { ...BEHIND, enabled: false } satisfies UpdateStatus;
 
 const OPEN_CONFIG = {
+  coreUrl: null,
   syncServerUrl: null,
   instancePreset: null,
   analytics: null,

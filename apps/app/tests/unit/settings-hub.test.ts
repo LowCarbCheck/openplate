@@ -188,6 +188,7 @@ describe('the plan row', () => {
 
 /** An instance with no core server, which is what empties the account group. */
 const NO_SYNC_CONFIG: PublicConfig = {
+  coreUrl: null,
   syncServerUrl: null,
   analytics: null,
   instancePreset: null,

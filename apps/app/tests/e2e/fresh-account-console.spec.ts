@@ -27,7 +27,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { routeManagedCore, trialAccountStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 
@@ -57,7 +57,7 @@ test.afterAll(async () => {
 
 /** Mints an invite on the fake service for a new address. */
 async function mintInvite(email: string): Promise<string> {
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -68,7 +68,7 @@ async function mintInvite(email: string): Promise<string> {
 
 /** Creates the account through `/join` and finishes onboarding. */
 async function joinInBrowser(page: Page, inviteToken: string): Promise<void> {
-  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=${inviteToken}`);
+  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=${inviteToken}`);
   const passwords = page.locator('main input[type="password"]');
   await expect(passwords.first()).toBeVisible({ timeout: 10_000 });
   await passwords.nth(0).fill(PASSWORD);
@@ -97,7 +97,7 @@ test('a document load of an account made in this browser reports no storage loss
   await routeManagedCore(page, trialAccountStub(10));
   // THE ANCHOR: every load below must have finished a sync cycle, or a zero
   // would only say that no cycle ran.
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/sync/blob`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/sync/blob`, async (route) => {
     if (route.request().method() === 'GET') loadsSeen += 1;
     await route.continue();
   });

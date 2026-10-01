@@ -6,7 +6,7 @@ Generated from `docker/topologies/compose.core.yml`, rung 2: Postgres, the openp
 
 - `postgres.container`: `docker.io/library/postgres:17-alpine` on the volume below, with the `pg_isready` healthcheck as `Notify=healthy`. Not published to the host.
 - `core.container`: openplate-core, `ghcr.io/lowcarbcheck/openplate-core:latest`, published on 3001, `Requires=` and `After=` Postgres, healthcheck against `/health` as `Notify=healthy`.
-- `app.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, with `SYNC_SERVER_URL=http://localhost:3001` in its defaults file. The browser talks to the sync service directly, so that address must be one your browser can reach.
+- `app.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, with `CORE_URL=http://localhost:3001` in its defaults file. The browser talks to the core server directly, so that address must be one your browser can reach.
 - `app.defaults.env`, `core.defaults.env`, `postgres.defaults.env`: the values the compose file sets, one file per unit.
 - `pg-data.volume`: the Postgres data volume; Podman names it `systemd-pg-data`.
 - `openplate-with-sync.network`: the private network all three join.
@@ -22,7 +22,8 @@ Every unit reads two env files. Quadlet looks for both in the directory where th
 Your files use the container's own variable names, not the names in the compose file's `.env`. What compose calls `PUBLIC_APP_URL` is `APP_URL` for the app and `CLIENT_BASE_URL` for sync.
 
 - `core.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up alongside the database. If you restore the database without the secret, no user can log in. The first account also requires `ADMIN_TOKEN` in this file. The install instructions below generate and write both.
-- Values people change: `APP_URL` and `SYNC_SERVER_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `core.env`, the same two addresses, which build every invitation link; `TRUST_PROXY` in `app.env` and `core.env` both. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `core.env`.
+- Values people change: `APP_URL` and `CORE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `core.env`, the same two addresses, which build every invitation link; `TRUST_PROXY` in `app.env` and `core.env` both. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `core.env`.
+- If your `app.env` still sets `SYNC_SERVER_URL`, rename that line to `CORE_URL`. The defaults file sets `CORE_URL`. While both are set, `SYNC_SERVER_URL` wins for this release and the boot logs one warning that names both. Remove the old line before the release that drops the old name.
 - `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `core.env`.
 - Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
 

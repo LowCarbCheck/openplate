@@ -33,7 +33,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-import { E2E_FOOD_DB_URL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_FOOD_DB_URL, E2E_CORE_URL } from './env';
 import { buildManagedServerEnv } from './server-env';
 
 /** The checkout root, where `server.ts` and the build live. */
@@ -136,7 +136,7 @@ export async function startAppServer(
         PORT: String(port),
         HOST: '127.0.0.1',
         APP_URL: url,
-        SYNC_SERVER_URL: E2E_SYNC_SERVER_URL,
+        CORE_URL: E2E_CORE_URL,
         CONTENT_DIR,
         FOOD_DB_API_URL: E2E_FOOD_DB_URL,
         ...options.env,

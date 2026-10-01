@@ -34,7 +34,7 @@ import { z } from 'zod';
 
 import { PAYMENT_POLL_DEADLINE_MS, PAYMENT_POLL_INTERVAL_MS } from '../../app/lib/plans/payment-return';
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import {
   installShiftObserver,
@@ -206,7 +206,7 @@ async function shiftClock(page: Page, ms: number): Promise<void> {
 async function holdTheOffer(page: Page) {
   const gate = createGate();
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/offer`),
     async (route) => {
       await gate.promise;
       await route.fulfill({ status: 200, contentType: 'application/json', body: FIXTURE_OFFER_BODY });
@@ -308,7 +308,7 @@ test('back from a payment, the page polls until the plan is active, and the diar
   // intervals after the return, and "active" from then on.
   let flipAt = Number.POSITIVE_INFINITY;
   const readsAt: number[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => {
     readsAt.push(Date.now());
     return route.fulfill({ json: Date.now() >= flipAt ? MONTHLY_SUBSCRIBER_VIEW : NO_SUBSCRIPTION_VIEW });
   });
@@ -375,7 +375,7 @@ test('a slow return asked again draws only the active state, in the one box, and
   // The biller answers "no plan" until the spec says the webhook landed.
   let isActive = false;
   const readsAt: number[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => {
     readsAt.push(Date.now());
     return route.fulfill({ json: isActive ? YEARLY_SUBSCRIBER_VIEW : NO_SUBSCRIPTION_VIEW });
   });
@@ -455,7 +455,7 @@ test('THE CONTROL for the poll: a return whose plan never turns active never say
   await routeManagedCore(page, spentCore());
   await signIn(page);
   const readsAt: number[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => {
     readsAt.push(Date.now());
     return route.fulfill({ json: NO_SUBSCRIPTION_VIEW });
   });

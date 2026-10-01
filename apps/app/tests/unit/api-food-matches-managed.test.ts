@@ -28,7 +28,7 @@ const DEAD_TOKEN = 'dead-token';
 const DAILY_LIMIT = 4;
 
 process.env.INSTANCE_MODE = 'managed';
-process.env.SYNC_SERVER_URL = CORE;
+process.env.CORE_URL = CORE;
 process.env.FOOD_DB_API_URL = LCC;
 process.env.FOOD_DB_API_KEY = 'lcc_live_test_key_000000000000000';
 process.env.FOOD_DB_BACKFILL = 'true';

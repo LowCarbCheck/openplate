@@ -23,6 +23,7 @@
 import { useEffect, useState } from 'react';
 
 import { useInstancePolicy, usePublicConfig } from '#app/hooks/use-public-config';
+import { getCoreUrl } from '#app/config/public-config';
 import { useSyncSession } from '#app/components/sync-status';
 import { readCachedServerInstance } from '#app/hooks/use-server-instance';
 import { resolveEffectiveAiSettings, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
@@ -42,7 +43,7 @@ export function useEffectiveAiSettings(storedSettings: LocalAiSettings | null): 
   // whether the AI comes from the instance; `ManagedInstanceFacts.managed`
   // keeps its name because that resolver is about the AI and nothing else.
   const { aiComesFromTheInstance: managed } = useInstancePolicy();
-  const syncServerUrl = config?.syncServerUrl ?? null;
+  const syncServerUrl = getCoreUrl(config);
   const [model, setModel] = useState<string | null>(null);
 
   useEffect(() => {

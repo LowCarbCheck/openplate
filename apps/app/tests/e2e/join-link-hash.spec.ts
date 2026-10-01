@@ -21,7 +21,7 @@ import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { z } from 'zod';
 
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -49,7 +49,7 @@ test('a second link in the same tab replaces the first one', async ({ page }) =>
 
   // A mark on this document. A reload would start a new one without it.
   await page.evaluate(() => Object.defineProperty(window, '__e2eFirstDocument', { value: true }));
-  await page.goto(`/join${joinFragment(E2E_SYNC_SERVER_URL)}`);
+  await page.goto(`/join${joinFragment(E2E_CORE_URL)}`);
   // Same document: no reload happened, so what follows is the page reacting.
   expect(await page.evaluate(() => '__e2eFirstDocument' in window), 'the fragment change reloaded the page').toBe(true);
 
@@ -58,7 +58,7 @@ test('a second link in the same tab replaces the first one', async ({ page }) =>
 });
 
 test('control: the right link on a fresh load lands on the same card', async ({ page }) => {
-  await page.goto(`/join${joinFragment(E2E_SYNC_SERVER_URL)}`);
+  await page.goto(`/join${joinFragment(E2E_CORE_URL)}`);
   await expect(page.getByText(COPY.join.inviteInvalid.title, { exact: true })).toBeVisible();
   await expect(page.getByText(COPY.join.foreignServer.title, { exact: true })).toHaveCount(0);
 });

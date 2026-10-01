@@ -27,9 +27,9 @@
  *
  * Every answer below is decided by the mode alone. It could not be otherwise:
  * `isManagedInstance` refuses to boot a managed instance without
- * `SYNC_SERVER_URL`, so "managed" already implies a server exists. The
+ * `CORE_URL`, so "managed" already implies a server exists. The
  * converse is NOT true and is the trap this module must not fall into: a
- * self-hoster may set `SYNC_SERVER_URL` on an OPEN instance, and that instance
+ * self-hoster may set `CORE_URL` on an OPEN instance, and that instance
  * has sync, no accounts, and the anonymous diary intact. "Is sync configured"
  * is a different question with a different answer, and it stays where it is,
  * in `isSyncConfigured`. A surface that only wants to know whether any sync UI

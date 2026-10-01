@@ -379,7 +379,7 @@ export default function PersonalLayout() {
       {/* Flushes queued offline writes on app start / reconnect / focus; renders nothing. */}
       <OutboxSyncController />
       {/* Drives E2EE sync on boot / reconnect / after local writes; renders
-          nothing, and attaches nothing at all unless `SYNC_SERVER_URL` is set.
+          nothing, and attaches nothing at all unless `CORE_URL` is set.
           MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
       {/* Asks the consent gate again once the account and the instance's

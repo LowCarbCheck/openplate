@@ -13,7 +13,7 @@
  *     before a single page opens; see `font-cache.ts` for why and how.
  *
  *  2. STAND UP THE TWO FAKE SERVICES on the ports `playwright.config.ts` has
- *     already handed the app as `SYNC_SERVER_URL` and `FOOD_DB_API_URL`.
+ *     already handed the app as `CORE_URL` and `FOOD_DB_API_URL`.
  *
  *  3. PUT ONE ACCOUNT ON IT. `push-activation` needs a device with a session,
  *     because `enablePush` asks the vault for an account before it asks the

@@ -24,7 +24,7 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   movedBetween,
@@ -41,7 +41,7 @@ const COPY = z
   .parse(JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')));
 
 /** The reset request the page sends to the core server. */
-const RESET_REQUEST_URL = `${E2E_SYNC_SERVER_URL}/v1/auth/reset/request`;
+const RESET_REQUEST_URL = `${E2E_CORE_URL}/v1/auth/reset/request`;
 
 /** Is this the page's reset request? */
 function isResetRequest(request: Request): boolean {
@@ -50,7 +50,7 @@ function isResetRequest(request: Request): boolean {
 
 /** Answers `/health` as an instance that CAN send mail. */
 async function routeHealthWithMail(page: Page): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) =>
+  await page.route(`${E2E_CORE_URL}/health`, (route) =>
     route.fulfill({
       json: {
         protocolVersion: PROTOCOL_VERSION,

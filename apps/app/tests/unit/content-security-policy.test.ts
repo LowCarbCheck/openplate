@@ -195,7 +195,7 @@ test("connect-src carries the instance preset's origin when one is configured", 
 // WHAT M192 DELETED HERE: two tests about `gatewayOrigin`, the CSP entry for
 // the second service a managed instance used to dial. There is one service
 // now, and `syncOrigin` above already carries it — an operator sets
-// `SYNC_SERVER_URL` and the AI proxy's origin is allowed by the same entry
+// `CORE_URL` and the AI proxy's origin is allowed by the same entry
 // that allows the sync traffic.
 
 test('connect-src gains nothing when no instance preset is configured', () => {

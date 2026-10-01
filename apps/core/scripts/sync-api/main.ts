@@ -1,5 +1,6 @@
 /**
- * `pnpm sync-api`, the operator's command line over `/v1/admin`.
+ * `pnpm core-api`, the operator's command line over `/v1/admin`. `pnpm core-api` is the old name
+ * and runs the same file through `sync-api-alias.ts`, which prints one notice first.
  *
  * A THIN HTTP CLIENT AND NOTHING ELSE. It imports no store, no config module
  * and no database driver, so it runs from a laptop that has never seen
@@ -16,7 +17,8 @@
  * is an error that names the variable, raised BEFORE any request is built.
  *
  * ── NO `--production` FLAG ──────────────────────────────────────────────────
- * `--url`, then `SYNC_SERVER_URL`, then `http://localhost:3000`. A named
+ * `--url`, then `CORE_URL` (its old name `SYNC_SERVER_URL` still works, with a warning), then
+ * `http://localhost:3000`. A named
  * shortcut for "the real one with the real accounts on it" is a shortcut for
  * typing it by accident; on a self-hostable service there is no single
  * production instance for such a flag to mean, either.
@@ -44,6 +46,7 @@ import {
   type LapsedGrantBody,
   type MintInviteRequestBody,
 } from './client.js';
+import { resolveCoreUrl } from './core-url.js';
 import { generateVapidKeys } from '../../src/push/vapid-keys.js';
 import { MAX_ACCOUNT_LABEL_LENGTH, parseAccountLabel } from '../../src/admin/account-label.js';
 import {
@@ -70,9 +73,9 @@ import {
 
 const DEFAULT_BASE_URL = 'http://localhost:3000';
 
-const USAGE = `sync-api, the openplate-core admin CLI
+const USAGE = `core-api, the openplate-core admin CLI
 
-  Usage: pnpm sync-api <command> [options]
+  Usage: pnpm core-api <command> [options]
 
   Commands:
     status                     Version handshake and admin-API reachability
@@ -114,7 +117,7 @@ const USAGE = `sync-api, the openplate-core admin CLI
                                Which body's reference values it shows
 
   Options:
-    --url <base>   Service base URL (default: SYNC_SERVER_URL, else ${DEFAULT_BASE_URL})
+    --url <base>   Service base URL (default: CORE_URL, else ${DEFAULT_BASE_URL})
     --limit <n>    Page size for "accounts list" (default 50, max 200)
     --offset <n>   Page offset for "accounts list" (default 0)
     --json         Print the decoded response as JSON (read commands only)
@@ -163,6 +166,11 @@ interface Invocation {
   help: boolean;
 }
 
+/** One line to standard error, where a notice cannot corrupt `--json` output. */
+function writeWarning(message: string): void {
+  process.stderr.write(`${message}\n`);
+}
+
 function parseInvocation(argv: string[]): Invocation {
   const parsed = parseArgs({
     args: argv,
@@ -191,7 +199,7 @@ function parseInvocation(argv: string[]): Invocation {
   return {
     command: parsed.positionals,
     // Flag beats environment beats default.
-    baseUrl: parsed.values.url ?? process.env.SYNC_SERVER_URL ?? DEFAULT_BASE_URL,
+    baseUrl: parsed.values.url ?? resolveCoreUrl({ env: process.env, warn: writeWarning }) ?? DEFAULT_BASE_URL,
     limit: parsed.values.limit ?? null,
     offset: parsed.values.offset ?? null,
     email: parsed.values.email ?? null,
@@ -353,7 +361,7 @@ function rollbackTargetFrom(value: string | null): number {
 function inviteIdArgument(invocation: Invocation): string {
   const raw = invocation.command[2];
   if (raw === undefined || raw === '') {
-    throw new CliError('That command needs an invite id, e.g. `pnpm sync-api invites revoke 3 --yes`.');
+    throw new CliError('That command needs an invite id, e.g. `pnpm core-api invites revoke 3 --yes`.');
   }
   return encodeURIComponent(raw);
 }
@@ -361,7 +369,7 @@ function inviteIdArgument(invocation: Invocation): string {
 function accountIdArgument(invocation: Invocation): string {
   const raw = invocation.command[2];
   if (raw === undefined || raw === '') {
-    throw new CliError('That command needs an account id, e.g. `pnpm sync-api accounts get 42`.');
+    throw new CliError('That command needs an account id, e.g. `pnpm core-api accounts get 42`.');
   }
   return encodeURIComponent(raw);
 }
@@ -824,7 +832,7 @@ async function run(argv: string[]): Promise<void> {
     return;
   }
 
-  throw new CliError(`Unknown command "${command}". Run \`pnpm sync-api --help\`.`);
+  throw new CliError(`Unknown command "${command}". Run \`pnpm core-api --help\`.`);
 }
 
 run(process.argv.slice(2)).catch((cause: unknown) => {
@@ -832,7 +840,7 @@ run(process.argv.slice(2)).catch((cause: unknown) => {
   // is a bug in this tool, and its message is scrubbed for the same reason the
   // service scrubs a startup failure: it can carry a URL, and a URL can carry
   // a query string somebody put a credential in.
-  const message = cause instanceof CliError ? cause.message : 'sync-api failed with an unexpected error';
+  const message = cause instanceof CliError ? cause.message : 'core-api failed with an unexpected error';
   process.stderr.write(`${message}\n`);
   process.exitCode = 1;
 });

@@ -13,7 +13,7 @@
  * gone; nothing here puts the old one back, and the old value is printed
  * before the write so a person can restore it by hand:
  *
- *   cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
+ *   cd ../core && ADMIN_TOKEN=... pnpm core-api accounts set-expiry <id> --allowance-expires <iso|none>
  *
  * ── THE TWO CREDENTIALS, BOTH FROM THE ENVIRONMENT AND ONLY FROM THERE ──────
  * `OPENPLATE_SYNC_ADMIN_TOKEN`, or `ADMIN_TOKEN` under the name
@@ -26,7 +26,7 @@
  *
  * ── THE EXACT COMMAND LINE ──────────────────────────────────────────────────
  *
- *   toolbox run -c ts-dev env CI=true SYNC_SERVER_URL=https://api.openplate.de \
+ *   toolbox run -c ts-dev env CI=true CORE_URL=https://api.openplate.de \
  *     ADMIN_TOKEN="$OPENPLATE_CONSUMER_ADMIN_TOKEN" WALK_SESSION_TOKEN="$WALK_SESSION_TOKEN" \
  *     pnpm -C openplate exec node --import tsx scripts/walk-trial-expiry.ts
  *
@@ -60,6 +60,7 @@ import { parseArgs as parseNodeArgs } from 'node:util';
 import { z } from 'zod';
 
 import { resolveAiIntakeDoor, type AiIntakeDoor } from '../app/components/add/use-ai-connection';
+import { resolveCoreUrl } from '../app/config/core-url';
 import { AUTH_API_PREFIX } from '../app/lib/sync/engine/client/auth-wire';
 import { readHandshakeInstance, type InstanceDescriptor, type JsonValue } from '../app/lib/sync/engine/protocol';
 
@@ -83,7 +84,7 @@ const USAGE = `walk-trial-expiry, move a trial's end date to yesterday and read 
   Usage: node --import tsx scripts/walk-trial-expiry.ts [options]
 
   Options:
-    --url <base>         Service base URL (default: SYNC_SERVER_URL, else ${DEFAULT_BASE_URL})
+    --url <base>         Service base URL (default: CORE_URL, else ${DEFAULT_BASE_URL})
     --account <id|handle> Confirms which account is walked. The session token
                          decides; a reference that names another account is refused
     --help
@@ -97,7 +98,7 @@ const USAGE = `walk-trial-expiry, move a trial's end date to yesterday and read 
   IT OVERWRITES A REAL DATE ON A REAL ACCOUNT. The old value is printed before
   the write, and putting it back is a person's job:
 
-    cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts set-expiry <id> --allowance-expires <iso|none>
+    cd ../core && ADMIN_TOKEN=... pnpm core-api accounts set-expiry <id> --allowance-expires <iso|none>
 `;
 
 /** A failure with a sentence for the operator and no stack trace worth printing. */
@@ -112,10 +113,16 @@ export interface WalkInvocation {
 }
 
 /**
- * The command line. PURE: it reads `SYNC_SERVER_URL` through no global of its
- * own, so the test drives it with an explicit environment.
+ * The command line. PURE: it reads `CORE_URL` (and the deprecated
+ * `SYNC_SERVER_URL`) through no global of its own, so the test drives it with an
+ * explicit environment. The one deprecation warning goes to `warn`, standard error
+ * by default.
  */
-export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env): WalkInvocation {
+export function parseArgs(
+  argv: string[],
+  env: NodeJS.ProcessEnv = process.env,
+  warn: (message: string) => void = (message) => process.stderr.write(`${message}\n`),
+): WalkInvocation {
   const { values } = parseNodeArgs({
     args: argv,
     options: {
@@ -131,7 +138,7 @@ export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env):
   }
 
   return {
-    baseUrl: values.url ?? env.SYNC_SERVER_URL ?? DEFAULT_BASE_URL,
+    baseUrl: values.url ?? resolveCoreUrl({ env, warn }).raw ?? DEFAULT_BASE_URL,
     account: account === undefined ? null : account.trim(),
     help: values.help === true,
   };
@@ -293,7 +300,7 @@ async function requestJson(request: JsonRequest): Promise<JsonValue> {
       body: request.body === undefined ? undefined : JSON.stringify(request.body),
     });
   } catch {
-    throw new WalkError(`Could not reach ${request.url}. Is the instance up, and is --url (or SYNC_SERVER_URL) right?`);
+    throw new WalkError(`Could not reach ${request.url}. Is the instance up, and is --url (or CORE_URL) right?`);
   }
 
   if (!response.ok) {

@@ -18,7 +18,7 @@
  *
  * ── This route does not exist when there is no server ────────────────────
  *
- * The loader 404s when `SYNC_SERVER_URL` is unset. Rendering an explanatory
+ * The loader 404s when `CORE_URL` is unset. Rendering an explanatory
  * page would still be account UI on an instance whose operator chose to have
  * no accounts, and the requirement is literal: unset means nothing renders and
  * nothing is requested. On that instance this address really is not a page.

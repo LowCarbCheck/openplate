@@ -68,7 +68,7 @@ again.
 
 On a managed instance, a food lookup also needs a signed-in account. The app sends the
 account's session with each lookup, and the app server asks the core server at
-`SYNC_SERVER_URL` whether the session is live before anything reaches LowCarbCheck. The app
+`CORE_URL` whether the session is live before anything reaches LowCarbCheck. The app
 server must therefore reach that address as well. If it cannot, lookups are refused until it
 can, and scans still complete with the AI's own numbers. An open instance answers every
 lookup, as before.
@@ -183,14 +183,14 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
   from the provider registry: see [ADR-0007](../.adr/0007-byok-provider-registry.md)
 - `localhost` and `127.0.0.1` on any port. `[::1]` is not on the list, because a CSP source
   cannot name an IPv6 address; point a client at `localhost` instead.
-- your `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL`, if set
+- your `CORE_URL` and `DEFAULT_INFERENCE_BASE_URL`, if set
 - anything in `CSP_CONNECT_EXTRA`
 
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
 page. Widen it deliberately.
 
 On a managed instance the AI proxy is the core server the client already talks to, so its
-origin is `SYNC_SERVER_URL`, already in the list above. There is no second remote endpoint to
+origin is `CORE_URL`, already in the list above. There is no second remote endpoint to
 allow and nothing extra to add to `CSP_CONNECT_EXTRA` for it.
 
 ## Analytics
@@ -292,7 +292,7 @@ person both the diary and the AI in one step. The hosted instances at beta.openp
 app.openplate.de use this mode. It is off by default: a self-hoster who sets nothing gets the
 open app.
 
-`INSTANCE_MODE=managed` requires `SYNC_SERVER_URL`. The account is what carries the diary and
+`INSTANCE_MODE=managed` requires `CORE_URL`. The account is what carries the diary and
 the allowance together; declaring `managed` without a core server stops the boot rather than
 half-enabling anything.
 
@@ -428,7 +428,7 @@ This instance preset (`connectedVia: 'preset'`) is set by this instance's own op
 every visitor. `connectedVia: 'invite'` is a related, now-legacy value: it marked an AI
 settings row handed out by the old openplate-gateway invite flow, retired in M192. A managed
 instance no longer writes that row at all: the account itself carries the allowance, and the
-AI proxy is reached through `SYNC_SERVER_URL`, not a separate settings entry.
+AI proxy is reached through `CORE_URL`, not a separate settings entry.
 
 ## Connecting with OpenRouter
 

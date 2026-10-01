@@ -205,7 +205,7 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     authMethods: [],
     // `null` for a DIFFERENT reason than `openai-compatible`'s. That one is
     // null because the endpoint is user-typed and unknowable at boot; this one
-    // is null because the endpoint is `${SYNC_SERVER_URL}/v1`, which the
+    // is null because the endpoint is `${CORE_URL}/v1`, which the
     // server already publishes to the browser and whose origin the CSP already
     // allows through `syncOrigin`. Repeating it here would be a second copy of
     // an address that has one home.

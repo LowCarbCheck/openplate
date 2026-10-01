@@ -21,7 +21,7 @@ import 'fake-indexeddb/auto';
 
 import { createSyncAccount } from '../../app/lib/sync/sync-actions';
 import { deriveArgon2idHash, type Argon2idParams } from '../../app/lib/sync/engine/crypto/argon2';
-import { E2E_ACCOUNT_PASSPHRASE, E2E_INVITE_TOKEN_VAR, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_PASSPHRASE, E2E_INVITE_TOKEN_VAR, E2E_CORE_URL } from './env';
 
 /**
  * Small enough to be instant, real enough to be the same algorithm.
@@ -36,7 +36,7 @@ const inviteToken = process.env[E2E_INVITE_TOKEN_VAR] ?? '';
 if (inviteToken === '') throw new Error(`${E2E_INVITE_TOKEN_VAR} is not set: nothing to redeem.`);
 
 await createSyncAccount({
-  serverUrl: E2E_SYNC_SERVER_URL,
+  serverUrl: E2E_CORE_URL,
   inviteToken,
   passphrase: E2E_ACCOUNT_PASSPHRASE,
   displayName: null,

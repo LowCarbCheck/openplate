@@ -19,7 +19,7 @@ The three topology files, `compose.core.yml`, `compose.inference.yml` and `compo
 | In `.env` | Fills |
 | --- | --- |
 | `PUBLIC_APP_URL` | the app's `APP_URL`, and the core server's `CLIENT_BASE_URL` |
-| `PUBLIC_SYNC_URL` | the app's `SYNC_SERVER_URL`, and the sync service's `SERVER_PUBLIC_URL` |
+| `PUBLIC_SYNC_URL` | the app's `CORE_URL`, and the core server's `SERVER_PUBLIC_URL` |
 | `PUBLIC_INFERENCE_URL` | the app's `DEFAULT_INFERENCE_BASE_URL` |
 | `INFERENCE_API_KEY` | the app's `DEFAULT_INFERENCE_API_KEY`, and the inference service's `API_KEYS` |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SYNC_DB_NAME` | the database, and the core server's `DATABASE_URL` |
@@ -53,8 +53,9 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 
 | Variable | Default | What it does | More |
 | --- | --- | --- | --- |
-| `SYNC_SERVER_URL` | unset, sync off | The address of your sync service, as a browser reaches it. Its origin goes into the Content-Security-Policy. On a managed instance the app server also reaches it, to check the account of each food lookup. A malformed value stops the boot. | [Sync](sync.md) |
-| `INSTANCE_MODE` | `open` | `open` or `managed`. On a managed instance an administrator invites people, and the sync service supplies the AI. `managed` needs `SYNC_SERVER_URL`. Any other value stops the boot. | [Managed instances](configuration.md#managed-instances) |
+| `CORE_URL` | unset, sync off | The address of your core server, as a browser reaches it. Its origin goes into the Content-Security-Policy. On a managed instance the app server also reaches it, to check the account of each food lookup. A malformed value stops the boot. | [Sync](sync.md) |
+| `SYNC_SERVER_URL` | unset | Deprecated. The old name of `CORE_URL`. It still works for one more release, and the boot logs one warning when it is the only one set. If both are set to different addresses, the old name wins for this release and the boot logs one warning that names both. Remove the old line before the release that drops the old name. | [Sync](sync.md) |
+| `INSTANCE_MODE` | `open` | `open` or `managed`. On a managed instance an administrator invites people, and the core server supplies the AI. `managed` needs `CORE_URL`. Any other value stops the boot. | [Managed instances](configuration.md#managed-instances) |
 
 ### Instance-provided AI
 
@@ -200,7 +201,7 @@ The core server container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two v
 
 | Variable | Default | What it does | More |
 | --- | --- | --- | --- |
-| `VAPID_PUBLIC_KEY` | unset, no notifications | The public key for web push. Set all three or none. Make a pair with `pnpm sync-api push keygen`. | |
+| `VAPID_PUBLIC_KEY` | unset, no notifications | The public key for web push. Set all three or none. Make a pair with `pnpm core-api push keygen`. | |
 | `VAPID_PRIVATE_KEY` | unset | The private key for web push. | |
 | `VAPID_SUBJECT` | unset | How a push service reaches you: a `mailto:` address or an `https://` address. | |
 | `PUSH_ENDPOINT_HOSTS` | unset | Additional comma-separated push hosts a device can register. `*.example.org` covers every host under `example.org`. Default browser push services are always permitted. Set this only for custom hosts. A malformed entry stops startup. | |
@@ -312,10 +313,11 @@ These names were settings once. Now the service refuses to start while one is se
 
 - `MATOMO_URL` and `MATOMO_SITE_ID`: set both or neither. `MATOMO_EVENT_LEVEL` needs both.
 - `NEWSLETTER_SUBSCRIBE_URL` and `NEWSLETTER_TURNSTILE_SITE_KEY`: set both or neither.
-- `INSTANCE_MODE=managed` needs `SYNC_SERVER_URL`.
+- `INSTANCE_MODE=managed` needs `CORE_URL`.
+- `CORE_URL` and the deprecated `SYNC_SERVER_URL`: set one. If both are set to different addresses, `SYNC_SERVER_URL` wins for this release and the boot logs one warning.
 - `APP_URL` is required when `NODE_ENV=production`.
 - `MOVED_TO_URL` must be an `https://` address on a host other than `APP_URL`, without a user name or password.
-- A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. So does a `FOOD_DB_DAILY_CALL_LIMIT` that is not a positive whole number. Malformed addresses in `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
+- A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. So does a `FOOD_DB_DAILY_CALL_LIMIT` that is not a positive whole number. Malformed addresses in `CORE_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
 
 **The core server.**
 

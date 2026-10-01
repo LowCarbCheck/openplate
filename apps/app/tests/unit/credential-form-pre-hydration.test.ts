@@ -60,7 +60,7 @@ import Reset from '../../app/routes/reset';
 import StudyConsole from '../../app/routes/study._index';
 import type { PublicConfig } from '../../app/config/public-config';
 
-const SYNC_SERVER_URL = 'https://sync.example.test';
+const CORE_URL = 'https://sync.example.test';
 
 /** The marker `CredentialSubmitButton` stamps on itself, and the only anchor these tests need. */
 const GUARD_MARKER = 'data-credential-submit=""';
@@ -101,7 +101,7 @@ function enabledSubmitTags(markup: string): string[] {
 
 /** A managed instance's public config: sync is configured, so every credential screen is offered. */
 function publicConfig(): PublicConfig {
-  return { syncServerUrl: SYNC_SERVER_URL, analytics: null, instancePreset: null, managed: true, foodDbBackfill: false };
+  return { coreUrl: CORE_URL, syncServerUrl: CORE_URL, analytics: null, instancePreset: null, managed: true, foodDbBackfill: false };
 }
 
 /**
@@ -129,7 +129,7 @@ function renderSignInPanel(): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(SignInPanel, {
-        serverUrl: SYNC_SERVER_URL,
+        serverUrl: CORE_URL,
         initialEmail: '',
         onForgot: () => undefined,
       }),

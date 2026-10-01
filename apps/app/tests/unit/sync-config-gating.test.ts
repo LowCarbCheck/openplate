@@ -1,5 +1,5 @@
 /**
- * The `SYNC_SERVER_URL` gate and the CSP origin derived from it.
+ * The `CORE_URL` gate and the CSP origin derived from it.
  *
  * The requirement is absolute: with sync unconfigured, no sync UI renders
  * anywhere and no sync request leaves the app. This file covers the parsing
@@ -14,31 +14,37 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  getCoreUrl,
   isSyncConfigured,
-  parseSyncServerUrl,
+  parseCoreUrl,
   syncConnectSrcOrigin,
   type PublicConfig,
 } from '../../app/config/public-config';
 import { ratePassphrase } from '../../app/lib/sync/passphrase-strength';
 
+/** `parseCoreUrl` as the config calls it for the current setting name. */
+function parseCoreUrlForTest(raw: string | undefined): string | null {
+  return parseCoreUrl({ raw, name: 'CORE_URL' });
+}
+
 test('an unset, empty, or whitespace value means sync is OFF', () => {
-  assert.equal(parseSyncServerUrl(undefined), null);
-  assert.equal(parseSyncServerUrl(''), null);
-  assert.equal(parseSyncServerUrl('   '), null);
+  assert.equal(parseCoreUrlForTest(undefined), null);
+  assert.equal(parseCoreUrlForTest(''), null);
+  assert.equal(parseCoreUrlForTest('   '), null);
 });
 
 test('a valid URL is kept, with any trailing slash trimmed', () => {
-  assert.equal(parseSyncServerUrl('https://sync.example.com'), 'https://sync.example.com');
+  assert.equal(parseCoreUrlForTest('https://sync.example.com'), 'https://sync.example.com');
   // A trailing slash would produce `https://host//v1/sync/blob` at every call site.
-  assert.equal(parseSyncServerUrl('https://sync.example.com/'), 'https://sync.example.com');
-  assert.equal(parseSyncServerUrl('https://sync.example.com///'), 'https://sync.example.com');
-  assert.equal(parseSyncServerUrl('  http://localhost:4000  '), 'http://localhost:4000');
+  assert.equal(parseCoreUrlForTest('https://sync.example.com/'), 'https://sync.example.com');
+  assert.equal(parseCoreUrlForTest('https://sync.example.com///'), 'https://sync.example.com');
+  assert.equal(parseCoreUrlForTest('  http://localhost:4000  '), 'http://localhost:4000');
 });
 
 test('a malformed value THROWS rather than silently disabling sync', () => {
-  assert.throws(() => parseSyncServerUrl('sync.example.com'), /not a valid absolute URL/);
-  assert.throws(() => parseSyncServerUrl('httpx://sync.example.com'), /must be an http\(s\) URL/);
-  assert.throws(() => parseSyncServerUrl('ftp://sync.example.com'), /must be an http\(s\) URL/);
+  assert.throws(() => parseCoreUrlForTest('sync.example.com'), /not a valid absolute URL/);
+  assert.throws(() => parseCoreUrlForTest('httpx://sync.example.com'), /must be an http\(s\) URL/);
+  assert.throws(() => parseCoreUrlForTest('ftp://sync.example.com'), /must be an http\(s\) URL/);
 });
 
 test('the CSP entry is the ORIGIN only — connect-src ignores paths', () => {
@@ -55,10 +61,11 @@ test('a non-default port survives into the CSP entry', () => {
 
 test('isSyncConfigured is false for every shape of "no config"', () => {
   assert.equal(isSyncConfigured(undefined), false, 'no root loader data — error boundaries take this path');
-  assert.equal(isSyncConfigured({ syncServerUrl: null, instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
-  assert.equal(isSyncConfigured({ syncServerUrl: '', instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
+  assert.equal(isSyncConfigured({ coreUrl: null, syncServerUrl: null, instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
+  assert.equal(isSyncConfigured({ coreUrl: '', syncServerUrl: '', instancePreset: null, analytics: null, managed: false, foodDbBackfill: false }), false);
   assert.equal(
     isSyncConfigured({
+      coreUrl: 'https://sync.example.com',
       syncServerUrl: 'https://sync.example.com',
       instancePreset: null,
       analytics: null,
@@ -69,10 +76,14 @@ test('isSyncConfigured is false for every shape of "no config"', () => {
   );
 });
 
-test('the public config carries exactly five members, and nothing else', () => {
+test('the public config carries exactly six members, and nothing else', () => {
   // A compile-time assertion made runtime-visible: if a FIFTH field is ever
   // added to `PublicConfig`, this fails and forces the addition to be a
   // decision rather than a side effect. The channel is an allowlist.
+  //
+  // `coreUrl` and `syncServerUrl` are ONE fact under two names: the second is
+  // the old name of the first, kept for one release so a copy of the app
+  // cached before the rename keeps finding its server.
   //
   // Three members passed the same test — each is an address the BROWSER dials
   // itself, which this server never proxies:
@@ -95,6 +106,7 @@ test('the public config carries exactly five members, and nothing else', () => {
   // whether a proposal request can leave the page at all, and the key and the
   // upstream address it depends on stay on the server.
   const config: PublicConfig = {
+    coreUrl: 'https://sync.example.com',
     syncServerUrl: 'https://sync.example.com',
     instancePreset: null,
     analytics: null,
@@ -103,6 +115,7 @@ test('the public config carries exactly five members, and nothing else', () => {
   };
   assert.deepEqual(Object.keys(config).toSorted(), [
     'analytics',
+    'coreUrl',
     'foodDbBackfill',
     'instancePreset',
     'managed',
@@ -119,4 +132,36 @@ test('the passphrase strength hint never blocks, and never flatters a short pass
   assert.equal(ratePassphrase('correcthorse'), 'fair', 'clearing the floor is never "weak"');
   assert.equal(ratePassphrase('Correct horse1!!'), 'strong', '16 characters with variety');
   assert.equal(ratePassphrase('seventeen purple lanterns drifting'), 'strong');
+});
+
+test('a malformed value names the setting it was read from', () => {
+  assert.throws(() => parseCoreUrl({ raw: 'nope', name: 'SYNC_SERVER_URL' }), /^Error: SYNC_SERVER_URL is not a valid/);
+  assert.throws(() => parseCoreUrl({ raw: 'nope', name: 'CORE_URL' }), /^Error: CORE_URL is not a valid/);
+});
+
+test('getCoreUrl takes coreUrl, falls back to the old syncServerUrl, and answers null with neither', () => {
+  assert.equal(getCoreUrl({ coreUrl: 'https://core.example.com', syncServerUrl: null }), 'https://core.example.com');
+  assert.equal(
+    getCoreUrl({ coreUrl: 'https://core.example.com', syncServerUrl: 'https://old.example.com' }),
+    'https://core.example.com',
+    'the new field wins when both are there',
+  );
+  assert.equal(getCoreUrl({ coreUrl: null, syncServerUrl: null }), null);
+  assert.equal(getCoreUrl(undefined), null, 'no root loader data');
+});
+
+test('a config from an older server, with no coreUrl at all, still has its server', () => {
+  // What an older server's loader JSON holds once it is parsed: the new field is simply not there.
+  const olderServerConfig = { syncServerUrl: 'https://old.example.com' };
+
+  assert.equal(getCoreUrl(olderServerConfig), 'https://old.example.com');
+});
+
+test('control: a reader of coreUrl alone would lose the older server, which the case above forbids', () => {
+  const olderServerConfig: Pick<PublicConfig, 'syncServerUrl'> & Partial<Pick<PublicConfig, 'coreUrl'>> = {
+    syncServerUrl: 'https://old.example.com',
+  };
+
+  assert.equal(olderServerConfig.coreUrl ?? null, null, 'the older config has no coreUrl');
+  assert.notEqual(getCoreUrl(olderServerConfig), olderServerConfig.coreUrl ?? null);
 });

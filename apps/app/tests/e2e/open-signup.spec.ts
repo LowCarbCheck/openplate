@@ -29,7 +29,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { installShiftObserver, readShiftEntries, settleFrames, shiftScoreAfter } from './layout-shift';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { createGate } from './plans-stub';
@@ -126,7 +126,7 @@ async function routeHealth(page: Page, stub: SignupStub, gate?: Promise<void>): 
   // THE TWO PROMISES are absent unless named, as a core without them sends them.
   if (stub.trialScans !== undefined) instance.set('trial', { scans: stub.trialScans });
   if (stub.captcha === true) instance.set('signupCaptcha', { provider: 'turnstile', siteKey: SITE_KEY });
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await gate;
     await route.fulfill({
       json: {
@@ -149,7 +149,7 @@ interface SignupAnswer {
 /** Every body the page posted to the sign-up route. */
 async function routeSignupRequest(page: Page, answers: readonly SignupAnswer[]): Promise<unknown[]> {
   const bodies: unknown[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/signup-request`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/signup-request`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     bodies.push(route.request().postDataJSON());
     const answer = answers[Math.min(bodies.length, answers.length) - 1];

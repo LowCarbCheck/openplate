@@ -40,7 +40,7 @@ import { z } from 'zod';
 
 import type { LanguageCode } from '../../app/i18n/language-prefs';
 import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { completeOnboarding, signInFixtureAccount, useLanguage } from './helpers';
 
 // A cross-origin read the service worker made would never reach `page.route`.
@@ -85,7 +85,7 @@ const AUTH_ANSWER_WITH_ACCOUNT = z.looseObject({ account: z.looseObject({}) });
 /** Passes an auth answer through with the account's role rewritten to `admin`. */
 async function actAsAdministrator(page: Page): Promise<void> {
   for (const path of ['login', 'account']) {
-    await page.route(`${E2E_SYNC_SERVER_URL}${AUTH_API_PREFIX}/${path}`, async (route) => {
+    await page.route(`${E2E_CORE_URL}${AUTH_API_PREFIX}/${path}`, async (route) => {
       const response = await route.fetch();
       if (!response.ok()) {
         await route.fulfill({ response });

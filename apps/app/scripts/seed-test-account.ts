@@ -21,11 +21,11 @@
  * and it stays there until somebody removes it. Delete it when you are done:
  *
  *   cd ../core
- *   ADMIN_TOKEN=… pnpm sync-api accounts list
- *   ADMIN_TOKEN=… pnpm sync-api accounts delete <id> --yes
+ *   ADMIN_TOKEN=… pnpm core-api accounts list
+ *   ADMIN_TOKEN=… pnpm core-api accounts delete <id> --yes
  *
  * ── LOCALHOST IS THE DEFAULT, AND ANYTHING ELSE IS A DELIBERATE ACT ─────────
- * `--url`, then `SYNC_SERVER_URL`, then `http://localhost:3000` — the same
+ * `--url`, then `CORE_URL` (or its deprecated name `SYNC_SERVER_URL`), then `http://localhost:3000`, the same
  * precedence `apps/core/scripts/sync-api/main.ts` documents, and no
  * `--production` shortcut for the same reason it has none. A non-loopback host
  * additionally needs `--allow-remote`, and the host being written to is
@@ -43,6 +43,7 @@ import { parseArgs } from 'node:util';
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import { resolveCoreUrl } from '../app/config/core-url';
 import { serializeBackup } from '../app/lib/local-store/backup';
 import { SCHEMA_VERSION } from '../app/lib/local-store/schema';
 import type { LocalStoreSnapshot } from '../app/lib/local-store/schema';
@@ -93,7 +94,7 @@ const USAGE = `seed-test-account — a test account and a diary worth looking at
     --end-day <YYYY-MM-DD> Last day of the diary (default: today in --timezone)
     --timezone <iana>      Zone every logged time is local to (default ${DEFAULT_TIMEZONE})
     --out <path>           Where the restorable backup JSON is written (default ${DEFAULT_OUT})
-    --url <base>           Service base URL (default: SYNC_SERVER_URL, else ${DEFAULT_BASE_URL})
+    --url <base>           Service base URL (default: CORE_URL, else ${DEFAULT_BASE_URL})
     --email <address>      Who the account is for (default ${DEFAULT_EMAIL})
     --display-name <text>  The name carried onto the account
     --daily-ai-limit <n>   AI requests a day for the account (default 0)
@@ -112,7 +113,7 @@ const USAGE = `seed-test-account — a test account and a diary worth looking at
   THE ACCOUNT THIS CREATES IS A REAL ACCOUNT. It is not a test double and
   nothing removes it for you. When you are done:
 
-    cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts delete <id> --yes
+    cd ../core && ADMIN_TOKEN=... pnpm core-api accounts delete <id> --yes
 
   Restoring the diary on a device: open /settings/data and upload the written
   file. A fresh browser must be walked past onboarding first, or /settings/data
@@ -192,7 +193,10 @@ function parseInvocation(argv: string[]): Invocation {
     endDay,
     timezone,
     outPath: resolve(process.cwd(), values.out ?? DEFAULT_OUT),
-    baseUrl: values.url ?? process.env.SYNC_SERVER_URL ?? DEFAULT_BASE_URL,
+    baseUrl:
+      values.url ??
+      resolveCoreUrl({ env: process.env, warn: (message) => process.stderr.write(`${message}\n`) }).raw ??
+      DEFAULT_BASE_URL,
     email: values.email ?? DEFAULT_EMAIL,
     displayName: values['display-name'] ?? null,
     dailyAiLimit:
@@ -522,7 +526,7 @@ async function main(): Promise<void> {
   }
 
   process.stdout.write(
-    `\nDelete it when you are done:\n  cd ../core && ADMIN_TOKEN=... pnpm sync-api accounts delete ${account.accountId} --yes\n`,
+    `\nDelete it when you are done:\n  cd ../core && ADMIN_TOKEN=... pnpm core-api accounts delete ${account.accountId} --yes\n`,
   );
 }
 

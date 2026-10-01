@@ -40,7 +40,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { EN } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { E2E_FOOD_NAME } from './fake-food-db';
 import { completeOnboarding, headerStatusText } from './helpers';
 
@@ -62,7 +62,7 @@ const SOURCE_MARK = { dge: 'DGE', efsa: 'EFSA' } as const;
 
 /** Sets what the instance publishes on `/health`. See this file's header for why it is not the form. */
 async function setInstanceBasis(page: Page, basis: 'dge' | 'efsa' | 'us'): Promise<void> {
-  const response = await page.request.post(`${E2E_SYNC_SERVER_URL}/__e2e__/instance-settings`, {
+  const response = await page.request.post(`${E2E_CORE_URL}/__e2e__/instance-settings`, {
     data: { nutrientReferenceBasis: basis },
   });
   expect(response.status(), 'the fake instance must accept the new basis').toBe(200);

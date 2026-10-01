@@ -4,7 +4,7 @@
  *
  * ── This route does not exist when sync is off ────────────────────────────
  *
- * The loader 404s when `SYNC_SERVER_URL` is unset, exactly as
+ * The loader 404s when `CORE_URL` is unset, exactly as
  * `settings.sync.tsx` does: a share is a third wrap of the sync DEK, so on an
  * instance with no sync there is nothing here to be a page about.
  *

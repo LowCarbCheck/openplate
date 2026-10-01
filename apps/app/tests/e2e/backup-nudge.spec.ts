@@ -47,7 +47,7 @@ import { BACKUP_NUDGE_THRESHOLD_DAYS } from '#app/lib/backup-nudge';
 import { HAD_DATA_MARKER_VALUE, LAST_EXPORT_VALUE } from '#app/lib/local-store/schema';
 import { SYNC_API_PREFIX } from '#app/lib/sync/engine/protocol';
 
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import { EN } from './copy';
 import { completeOnboarding, logFoodManually, signInFixtureAccount } from './helpers';
 
@@ -60,7 +60,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const FIRST_DATA_AT = Date.now() - (BACKUP_NUDGE_THRESHOLD_DAYS + 6) * DAY_MS;
 
 /** Where a sync cycle pulls from. Its answer is the proof that a session was reopened. */
-const BLOB_URL = `${E2E_SYNC_SERVER_URL}${SYNC_API_PREFIX}/blob`;
+const BLOB_URL = `${E2E_CORE_URL}${SYNC_API_PREFIX}/blob`;
 
 /** What the flash probe leaves on the page for this spec to read back. */
 interface BackupNudgeProbe {

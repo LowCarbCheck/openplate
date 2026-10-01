@@ -35,7 +35,7 @@ import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { EN } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 
 test.use({ serviceWorkers: 'block' });
@@ -75,7 +75,7 @@ test.afterAll(async () => {
 
 /** Routes the handshake with `model`, and gives the account an allowance on every auth answer. */
 async function routeManagedCore(page: Page, model: string | null): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) =>
+  await page.route(`${E2E_CORE_URL}/health`, (route) =>
     route.fulfill({
       json: {
         protocolVersion: PROTOCOL_VERSION,
@@ -95,7 +95,7 @@ async function routeManagedCore(page: Page, model: string | null): Promise<void>
     }),
   );
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     async (route) => {
       const response = await route.fetch();
       const text = await response.text();
@@ -114,7 +114,7 @@ async function routeManagedCore(page: Page, model: string | null): Promise<void>
 /** Answers every proxied chat completion the way openplate-core relays an upstream 401, and counts them. */
 async function routeProxyRefusingTheKey(page: Page): Promise<{ calls: number }> {
   const seen = { calls: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/chat/completions`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/chat/completions`, (route) => {
     const request = route.request();
     const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
     if (request.method() === 'OPTIONS') {

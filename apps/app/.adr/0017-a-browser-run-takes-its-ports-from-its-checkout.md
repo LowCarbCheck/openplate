@@ -33,7 +33,7 @@ is what this ADR decides.
 
 One constraint shapes every candidate. `playwright.config.ts` builds the
 `webServer` command line at MODULE LOAD, with `PORT`, `APP_URL`,
-`SYNC_SERVER_URL` and `FOOD_DB_API_URL` already baked into the string, before
+`CORE_URL` and `FOOD_DB_API_URL` already baked into the string, before
 `globalSetup` runs and before anything is listening. That module is also
 evaluated in the runner AND in every worker process, which is exactly why the
 `FONTCONFIG_FILE` assignment sits at module load in that file rather than in

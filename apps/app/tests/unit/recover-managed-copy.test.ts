@@ -38,6 +38,7 @@ import type { PublicConfig } from '../../app/config/public-config';
  */
 function publicConfig(managed: boolean): PublicConfig {
   return {
+    coreUrl: 'https://sync.openplate.test',
     syncServerUrl: 'https://sync.openplate.test',
     analytics: null,
     instancePreset: null,

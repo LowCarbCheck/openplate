@@ -23,7 +23,7 @@ import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { EN } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { FIXTURE_OFFER_BODY, NO_SUBSCRIPTION_VIEW } from './plans-stub';
 import { fetchRouteText, fulfilUnlessAbandoned } from './route-fetch';
 
@@ -141,7 +141,7 @@ function instanceBlock(stub: ManagedCoreStub) {
  * @param stub - what the core says, read per request.
  */
 export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await stub.healthGate;
     await route.fulfill({
       json: {
@@ -152,13 +152,13 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       },
     });
   });
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/offer`),
     (route) => route.fulfill({ status: 200, contentType: 'application/json', body: FIXTURE_OFFER_BODY }),
   );
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     async (route) => {
       // A spec that loads a new document mid-request drops this one: see `route-fetch.ts`.
       const fetched = await fetchRouteText(route);
@@ -178,7 +178,7 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
   // §5.15.1). The fake service has no such route; this is the core's rule:
   // 404 where the instance asks nothing, 400 for another version, and 200
   // with the account otherwise, keeping the first instant on a repeat.
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/account/health-consent`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/account/health-consent`, async (route) => {
     const request = route.request();
     // The preflight goes on to the fake service, which answers it for every path.
     if (request.method() !== 'POST') return route.fallback();
@@ -193,7 +193,7 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       stub.accountHealthConsent = { version: asked.version, at: new Date().toISOString() };
     }
     const authorization = request.headers().authorization ?? '';
-    const read = await fetch(`${E2E_SYNC_SERVER_URL}/v1/auth/account`, { headers: { authorization } });
+    const read = await fetch(`${E2E_CORE_URL}/v1/auth/account`, { headers: { authorization } });
     const envelope = accountEnvelopeSchema.parse(await read.json());
     return route.fulfill({
       status: read.status,
@@ -242,7 +242,7 @@ function isOwnCopyRead(request: Request): boolean {
 export async function routeConsentRequiredSync(page: Page, stub: ManagedCoreStub): Promise<SyncWriteLog> {
   const log: SyncWriteLog = { accepted: 0, refused: 0 };
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/sync/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/sync/`),
     (route) => {
       const request = route.request();
       // The preflight goes on to the fake service, which answers it for every path.
@@ -281,7 +281,7 @@ function isConsentGatedAccountWrite(request: Request): boolean {
 export async function routeConsentRequiredAccountWrites(page: Page, stub: ManagedCoreStub): Promise<{ refused: number }> {
   const log = { refused: 0 };
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     (route) => {
       const request = route.request();
       if (!isConsentGatedAccountWrite(request) || !refusesForConsent(stub)) return route.fallback();
@@ -337,7 +337,7 @@ function corsHeaders(request: Request) {
  * @param counter - the scans left, moved by each answer.
  */
 export async function routeManagedProxy(page: Page, counter: { left: number }): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/chat/completions`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/chat/completions`, (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') {
       return route.fulfill({
@@ -381,7 +381,7 @@ export interface ProxyCallLog {
  */
 export async function routeConsentRequiredProxy(page: Page, stub: ManagedCoreStub): Promise<ProxyCallLog> {
   const log: ProxyCallLog = { answered: 0, refused: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/chat/completions`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/chat/completions`, (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') {
       return route.fulfill({

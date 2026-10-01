@@ -26,7 +26,7 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import {
   HEALTH_CONSENT_REQUIRED,
@@ -115,7 +115,7 @@ async function routeUnfinishedAccount(page: Page, stub: ManagedCoreStub): Promis
     if (request.method() === 'PUT' && path.startsWith('/v1/sync/key-records/')) rows.writes.push('key-record');
   });
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/sync/key-records`) || url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/sync/blob`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/sync/key-records`) || url.href.startsWith(`${E2E_CORE_URL}/v1/sync/blob`),
     (route) => {
       const request = route.request();
       const path = new URL(request.url()).pathname;

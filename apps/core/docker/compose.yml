@@ -72,7 +72,7 @@ services:
       SERVER_SECRET: ${SERVER_SECRET:?set SERVER_SECRET in .env, see .env.example}
       # Signup is invite-only unless OPEN_SIGNUP is set below. SIGNUP_MODE and
       # the older SIGNUPS_OPEN are both boot failures, so neither is forwarded
-      # here. Mint an invite with `pnpm sync-api invites create --email …`.
+      # here. Mint an invite with `pnpm core-api invites create --email …`.
       #
       # What the instance calls itself on the /health handshake and in its
       # start-up log, and which language its letters are written in when a
@@ -81,7 +81,7 @@ services:
       INSTANCE_LANGUAGE: ${INSTANCE_LANGUAGE:-en}
       # Which body's micronutrient reference values it shows: dge | efsa | us.
       # Only the BOOT default: an administrator changes the live setting with
-      # `pnpm sync-api settings set nutrient-reference-basis efsa`, and the
+      # `pnpm core-api settings set nutrient-reference-basis efsa`, and the
       # stored row wins from then on.
       NUTRIENT_REFERENCE_BASIS: ${NUTRIENT_REFERENCE_BASIS:-dge}
       # The version of the health-data consent every account must agree to, a

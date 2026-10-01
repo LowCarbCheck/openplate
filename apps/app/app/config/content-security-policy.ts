@@ -146,7 +146,7 @@ export function buildContentSecurityPolicy({
     "'self'",
     ...providerOrigins,
     ...LOOPBACK_ORIGINS,
-    // The E2EE sync server (M128 spec 04), from SYNC_SERVER_URL. The browser
+    // The E2EE core server (M128 spec 04), from CORE_URL. The browser
     // talks to it DIRECTLY — key derivation, encryption and the blob push/pull
     // all happen client-side and never transit this server — so without this
     // entry a correctly configured instance fails every sync request on a CSP
@@ -197,7 +197,7 @@ export function buildContentSecurityPolicy({
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self'",
-    `connect-src ${connectSrc.join(' ')}`, // carries the sync-server origin when SYNC_SERVER_URL is set
+    `connect-src ${connectSrc.join(' ')}`, // carries the sync-server origin when CORE_URL is set
     // The Argon2id key-derivation Worker (`engine/crypto/argon2.worker.ts`) is
     // a same-origin bundled asset, so `'self'` covers loading it. What it may
     // then DO is governed by `script-src` — see `WASM_UNSAFE_EVAL`.

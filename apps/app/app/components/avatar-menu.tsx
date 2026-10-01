@@ -281,7 +281,7 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
     showsPlan: false,
     isAdmin: false,
   });
-  // `null` unless the operator set `SYNC_SERVER_URL` — on every other instance
+  // `null` unless the operator set `CORE_URL`; on every other instance
   // the sync row vanishes entirely (AGENTS.md).
   const syncServerUrl = useSyncServerUrl();
   // `requiresAccount`, not the mode name: the question is whether a person

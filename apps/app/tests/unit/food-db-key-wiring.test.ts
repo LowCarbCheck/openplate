@@ -206,16 +206,23 @@ function publicConfigKeys(source: string): string[] {
 }
 
 describe('the key never reaches a browser', () => {
-  it('PublicConfig carries exactly the five allowlisted values, and no key', () => {
+  it('PublicConfig carries exactly the six allowlisted values, and no key', () => {
     const keys = publicConfigKeys(ROOT_SOURCE);
 
-    assert.deepEqual(keys.toSorted(), ['analytics', 'foodDbBackfill', 'instancePreset', 'managed', 'syncServerUrl']);
+    assert.deepEqual(keys.toSorted(), [
+      'analytics',
+      'coreUrl',
+      'foodDbBackfill',
+      'instancePreset',
+      'managed',
+      'syncServerUrl',
+    ]);
     for (const key of keys) {
       assert.doesNotMatch(key, /key/i, `${key} reads like a credential and must not be in the public config`);
     }
   });
 
-  it('the reader can see a sixth key, so the assertion above can fail', () => {
+  it('the reader can see a seventh key, so the assertion above can fail', () => {
     // THE CONTROL. Two identical files pass every comparison, and a reader that
     // silently returned `[]` would make the assertion above pass against a
     // root module that published the key. This is that same literal with one
@@ -227,7 +234,14 @@ describe('the key never reaches a browser', () => {
 
     const keys = publicConfigKeys(tampered);
     assert.ok(keys.includes('foodDbApiKey'), 'the reader must see a key added to the literal');
-    assert.notDeepEqual(keys.toSorted(), ['analytics', 'foodDbBackfill', 'instancePreset', 'managed', 'syncServerUrl']);
+    assert.notDeepEqual(keys.toSorted(), [
+      'analytics',
+      'coreUrl',
+      'foodDbBackfill',
+      'instancePreset',
+      'managed',
+      'syncServerUrl',
+    ]);
   });
 
   it('CONFIG.foodDb.apiKey is read by the two services and by nothing else', () => {

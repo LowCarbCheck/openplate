@@ -11,6 +11,7 @@
 import { useRouteLoaderData } from 'react-router';
 import type { loader as rootLoader } from '#app/root';
 import {
+  getCoreUrl,
   getInstanceInferencePreset,
   isSyncConfigured,
   type InstanceInferencePreset,
@@ -34,7 +35,7 @@ export function usePublicConfig(): PublicConfig | undefined {
  */
 export function useSyncServerUrl(): string | null {
   const config = usePublicConfig();
-  return isSyncConfigured(config) ? (config?.syncServerUrl ?? null) : null;
+  return isSyncConfigured(config) ? getCoreUrl(config) : null;
 }
 
 /**

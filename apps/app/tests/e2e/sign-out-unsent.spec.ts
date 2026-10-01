@@ -29,14 +29,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { SYNC_API_PREFIX } from '../../app/lib/sync/engine/protocol';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import { completeOnboarding, logFoodManually, signInFixtureAccount } from './helpers';
 
 /** The entry the failed push leaves behind. */
 const FOOD_NAME = 'Unsent smoke tier soup';
 
 /** Where a push goes. A pull is a GET on the same path and is left alone. */
-const BLOB_URL = `${E2E_SYNC_SERVER_URL}${SYNC_API_PREFIX}/blob`;
+const BLOB_URL = `${E2E_CORE_URL}${SYNC_API_PREFIX}/blob`;
 
 /**
  * How long the dialog may take to settle on an answer after the pushes are let

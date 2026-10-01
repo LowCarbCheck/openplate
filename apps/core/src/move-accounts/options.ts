@@ -3,7 +3,7 @@
  * {@link MoveOptions} or refused with a reason. Pure: argv and an environment
  * in, a decision out, so every refusal is unit-tested without a database.
  *
- * CREDENTIALS COME FROM THE ENVIRONMENT ONLY, as `pnpm sync-api` takes its
+ * CREDENTIALS COME FROM THE ENVIRONMENT ONLY, as `pnpm core-api` takes its
  * token: a database URL or a secret on a command line lands in shell history
  * and in `ps`. There is no flag for any of the four, and no dotenv.
  *

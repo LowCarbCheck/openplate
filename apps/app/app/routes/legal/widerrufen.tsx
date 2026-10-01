@@ -33,7 +33,7 @@
  *
  * Same shape as `/kuendigung` beside it: no login, no gate on `plans`, a
  * loader for the prose only and no action. The declaration goes straight from this browser to
- * `openplate-core`'s own origin (`SYNC_SERVER_URL`). `CredentialSubmitButton`
+ * `openplate-core`'s own origin (`CORE_URL`). `CredentialSubmitButton`
  * is reused for the pre-hydration-GET guard its own doc states generically,
  * not for its name — see `kuendigung.tsx`'s header for the full argument.
  */

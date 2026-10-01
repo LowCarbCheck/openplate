@@ -24,7 +24,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   readShiftEntries,
@@ -76,14 +76,14 @@ test('the invite card does not move when the invitation is read', async ({ page 
   await installShiftObserver(page);
   await routeManagedCore(page, PAID_MEMBER);
   const lookup = createGate();
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/invite-lookup`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/invite-lookup`, async (route) => {
     await lookup.promise;
     await route.fulfill({
       json: { email: 'invited@example.invalid', displayName: null, expiresAt: '2030-01-01T00:00:00.000Z' },
     });
   });
 
-  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=si_noshiftnoshift0001`);
+  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=si_noshiftnoshift0001`);
   await expect(page.getByText(EN.join.working)).toBeVisible();
   await settleAnimations(page);
   lookup.open();

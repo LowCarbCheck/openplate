@@ -14,7 +14,7 @@
  * KEEP THIS MODULE'S IMPORTS TO `lib/json.ts`. `db/schema.ts` imports the bound
  * from here, and drizzle-kit loads the schema on its own to generate a
  * migration, so everything this file pulls in is loaded by that tool too. The
- * `sync-api` CLI checks a label with the same parser before it sends one, and
+ * `core-api` CLI checks a label with the same parser before it sends one, and
  * that CLI may not reach `src/accounts/` or `src/db/` at all
  * (`tests/unit/sync-api-no-db-imports.test.ts`).
  */

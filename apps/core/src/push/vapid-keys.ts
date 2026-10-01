@@ -1,5 +1,5 @@
 /**
- * A VAPID key pair, generated locally, for `pnpm sync-api push keygen`.
+ * A VAPID key pair, generated locally, for `pnpm core-api push keygen`.
  *
  * NOT `web-push`'s OWN GENERATOR, and the reason is the CLI rather than the
  * cryptography. `scripts/sync-api/main.ts` is a thin HTTP client that must run

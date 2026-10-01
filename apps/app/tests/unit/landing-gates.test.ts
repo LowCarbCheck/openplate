@@ -94,6 +94,7 @@ describe('landing loader — an empty environment renders neither optional rung'
   let route: LandingRouteModule;
 
   before(async () => {
+    delete process.env.CORE_URL;
     delete process.env.SYNC_SERVER_URL;
     delete process.env.NEWSLETTER_SUBSCRIBE_URL;
     delete process.env.NEWSLETTER_TURNSTILE_SITE_KEY;

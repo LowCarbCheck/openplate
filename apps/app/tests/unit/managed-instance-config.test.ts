@@ -10,7 +10,7 @@
  *   feature-missing app. It would present an OPEN one, on an instance an
  *   organization runs for its people: the welcome screen would offer to start
  *   an anonymous diary again. So an unrecognised value stops the boot.
- * - `INSTANCE_MODE=managed` without `SYNC_SERVER_URL` is the same failure
+ * - `INSTANCE_MODE=managed` without `CORE_URL` is the same failure
  *   wearing a different hat: every managed behaviour goes through that server,
  *   so answering `false` there would silently re-open the front door. It stops
  *   the boot too, naming both variables.
@@ -31,6 +31,7 @@ import {
 
 /** An open instance's public config — the self-host default, and the baseline every case below moves off. */
 const OPEN_CONFIG: PublicConfig = {
+  coreUrl: null,
   syncServerUrl: null,
   instancePreset: null,
   analytics: null,
@@ -90,7 +91,7 @@ test('managed plus a server address is what makes an instance managed', () => {
   assert.equal(isManagedInstance({ instanceMode: 'managed', syncServerUrl: 'https://sync.example.com' }), true);
 });
 
-test('INSTANCE_MODE=managed without SYNC_SERVER_URL stops the boot, naming both variables', () => {
+test('INSTANCE_MODE=managed without CORE_URL stops the boot, naming both variables', () => {
   let message: string | null = null;
   try {
     isManagedInstance({ instanceMode: 'managed', syncServerUrl: null });
@@ -99,7 +100,7 @@ test('INSTANCE_MODE=managed without SYNC_SERVER_URL stops the boot, naming both 
   }
   assert.notEqual(message, null, 'a managed instance without a server must not resolve quietly to "open"');
   assert.match(message ?? '', /INSTANCE_MODE/);
-  assert.match(message ?? '', /SYNC_SERVER_URL/, 'the operator has to be told which OTHER variable is missing');
+  assert.match(message ?? '', /CORE_URL/, 'the operator has to be told which OTHER variable is missing');
 });
 
 test('the UI gate reads false for every shape of "not managed"', () => {

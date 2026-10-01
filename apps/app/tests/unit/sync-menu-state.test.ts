@@ -41,7 +41,7 @@ const DAY_MS = 24 * HOUR_MS;
 
 describe('deriveSyncMenuState', () => {
   it('hides sync entirely on an instance with no core server, even with a live session', () => {
-    // The AGENTS.md rule: unset SYNC_SERVER_URL means no sync UI anywhere. A
+    // The AGENTS.md rule: unset CORE_URL means no sync UI anywhere. A
     // session can't exist in that case, but the gate must not depend on that.
     assert.deepEqual(deriveSyncMenuState({ hasSyncServer: false, session: session() }), { status: 'hidden' });
   });

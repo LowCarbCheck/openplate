@@ -27,14 +27,14 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { parseUpdateCheck } from '../../app/config';
+import { parseAppConfig, parseUpdateCheck } from '../../app/config';
 import { buildManagedServerEnv, buildTierServerCommand } from '../e2e/server-env';
 
 /** The values the tier passes; none of them matters to the release check. */
 const TIER_OPTIONS = {
   port: 20_000,
   appUrl: 'http://127.0.0.1:20000',
-  syncServerUrl: 'http://127.0.0.1:20001',
+  coreUrl: 'http://127.0.0.1:20001',
   contentDir: '/tmp/content',
   foodDbUrl: 'http://127.0.0.1:20002',
   foodDbApiKey: 'e2e-key',
@@ -53,6 +53,14 @@ function readUpdateCheckFromCommand(options: { command: string; inherited: strin
   const assignments = tokens.slice(1, tokens.indexOf('tsx'));
   const written = assignments.findLast((token) => token.startsWith('UPDATE_CHECK='));
   return written === undefined ? options.inherited : written.slice('UPDATE_CHECK='.length);
+}
+
+/** The value a `cross-env ... tsx ./server.ts` command writes for `name`, or `undefined` when it writes none. */
+function readAssignmentFromCommand(options: { command: string; name: string }): string | undefined {
+  const tokens = options.command.split(' ');
+  const assignments = tokens.slice(1, tokens.indexOf('tsx'));
+  const written = assignments.findLast((token) => token.startsWith(`${options.name}=`));
+  return written?.slice(options.name.length + 1);
 }
 
 /** Reads a file of this checkout. */
@@ -87,5 +95,31 @@ describe('the browser tier servers keep the release check off', () => {
     assert.match(readSource('playwright.config.ts'), /command: buildTierServerCommand\(/);
     assert.match(readSource('tests/e2e/managed-app-server.ts'), /env: buildManagedServerEnv\(/);
     assert.match(readSource('tests/e2e/node-env-from-dotenv.spec.ts'), /env = buildManagedServerEnv\(/);
+  });
+});
+
+describe('a shell that still exports SYNC_SERVER_URL cannot move a tier server off its own address', () => {
+  const OLD_NAME_IN_THE_SHELL = 'https://somewhere-else.example.test';
+
+  it('blanks the old name in the tier server command and hands the server CORE_URL', () => {
+    const command = buildTierServerCommand(TIER_OPTIONS);
+
+    assert.equal(readAssignmentFromCommand({ command, name: 'CORE_URL' }), TIER_OPTIONS.coreUrl);
+    assert.equal(readAssignmentFromCommand({ command, name: 'SYNC_SERVER_URL' }), '');
+  });
+
+  it('points the managed server at its own address, whatever the shell exports under the old name', () => {
+    const env = buildManagedServerEnv({
+      inherited: { SYNC_SERVER_URL: OLD_NAME_IN_THE_SHELL },
+      values: { CORE_URL: TIER_OPTIONS.coreUrl },
+    });
+
+    assert.equal(parseAppConfig(env).sync.syncServerUrl, TIER_OPTIONS.coreUrl);
+  });
+
+  it('control: without the blanking, the old name would win and the server would dial the shell\'s address', () => {
+    const unblanked = { SYNC_SERVER_URL: OLD_NAME_IN_THE_SHELL, CORE_URL: TIER_OPTIONS.coreUrl };
+
+    assert.equal(parseAppConfig(unblanked).sync.syncServerUrl, OLD_NAME_IN_THE_SHELL);
   });
 });

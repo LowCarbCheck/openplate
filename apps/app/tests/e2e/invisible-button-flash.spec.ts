@@ -39,7 +39,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { installShiftObserver, readShiftEntries, settleAnimations, shiftScoreAfter } from './layout-shift';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { createGate } from './plans-stub';
@@ -240,7 +240,7 @@ async function expectNoFlash(page: Page): Promise<void> {
 
 /** Answers `/health` for the managed server's sync origin, with mail, and with or without open sign-up. */
 async function routeHealth(page: Page, stub: { openSignup: boolean }, gate?: Promise<void>): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await gate;
     await route.fulfill({
       json: {
@@ -265,7 +265,7 @@ async function routeHealth(page: Page, stub: { openSignup: boolean }, gate?: Pro
 
 /** Answers one POST to the core server with `202`, the answer both forms turn into their sentence on. */
 async function routeAccepted(page: Page, path: string): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}${path}`, (route) => {
+  await page.route(`${E2E_CORE_URL}${path}`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     return route.fulfill({ status: 202, json: {} });
   });

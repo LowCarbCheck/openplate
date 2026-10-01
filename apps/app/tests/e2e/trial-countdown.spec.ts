@@ -22,7 +22,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../app/i18n/language-prefs';
 import { EN, catalogFor, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import {
   FIT_WIDTHS,
   HEADER_HEIGHT,
@@ -95,7 +95,7 @@ async function signIn(page: Page): Promise<void> {
  * have been shown yet.
  */
 async function waitForPlanRead(page: Page): Promise<void> {
-  await page.waitForResponse((response) => response.url() === `${E2E_SYNC_SERVER_URL}/v1/plans/me`);
+  await page.waitForResponse((response) => response.url() === `${E2E_CORE_URL}/v1/plans/me`);
   await settleFrames(page);
   await settleFrames(page);
 }
@@ -200,7 +200,7 @@ test('no countdown after the trial ended', async ({ page }) => {
 test('no countdown on an instance without plans, which is never asked for one', async ({ page }) => {
   // No `routePlansCore`: the fake's own handshake, which sells nothing.
   let planReads = 0;
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => {
     planReads += 1;
     return route.fulfill({ json: NO_SUBSCRIPTION_VIEW });
   });

@@ -75,12 +75,24 @@ export const DEFAULT_INSTANCE_INFERENCE_MODEL = 'openplate-plate-1';
 export interface PublicConfig {
   /**
    * Base URL of the core server this instance points its clients at
-   * (`SYNC_SERVER_URL`), or `null` when sync is off.
+   * (`CORE_URL`), or `null` when sync is off.
    *
    * `null` is the DEFAULT and the self-host default: with it, no sync UI
    * renders anywhere in the app and no sync request ever leaves the browser.
    * openplate is a local-first tracker first; sync is an opt-in an operator
    * turns on, not a feature that quietly phones somewhere when unconfigured.
+   *
+   * Read it through {@link getCoreUrl}, never off the object: that one
+   * function owns the fallback to {@link PublicConfig.syncServerUrl}.
+   */
+  coreUrl: string | null;
+  /**
+   * DEPRECATED. The same value as {@link PublicConfig.coreUrl}, under the name
+   * this field had before `coreUrl` existed.
+   *
+   * It stays for one release so a copy of the app already cached on a phone,
+   * which reads this name, keeps finding its server after the server is
+   * updated. Remove it in the release after the one that adds `coreUrl`.
    */
   syncServerUrl: string | null;
   /**
@@ -144,8 +156,9 @@ export interface PublicConfig {
 }
 
 /**
- * Parses `SYNC_SERVER_URL` into the value {@link PublicConfig.syncServerUrl}
- * carries.
+ * Parses the address of openplate-core into the value {@link PublicConfig.coreUrl}
+ * carries. The raw value comes from `resolveCoreUrl` (`core-url.ts`), which
+ * decides between `CORE_URL` and its deprecated name `SYNC_SERVER_URL`.
  *
  * Deliberately strict, and deliberately silent-on-absence:
  * - unset, empty, or whitespace → `null` (sync off — the default)
@@ -159,17 +172,17 @@ export interface PublicConfig {
  * enabled sync, and the failure would surface as "my second device never sees
  * anything" weeks later. Failing at boot is the cheaper of the two.
  */
-export function parseSyncServerUrl(raw: string | undefined): string | null {
+export function parseCoreUrl({ raw, name }: { raw: string | undefined; name: string }): string | null {
   if (raw === undefined || raw.trim() === '') return null;
   const trimmed = raw.trim();
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    throw new Error(`SYNC_SERVER_URL is not a valid absolute URL: ${trimmed}`);
+    throw new Error(`${name} is not a valid absolute URL: ${trimmed}`);
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error(`SYNC_SERVER_URL must be an http(s) URL, got ${parsed.protocol}`);
+    throw new Error(`${name} must be an http(s) URL, got ${parsed.protocol}`);
   }
   return trimmed.replace(/\/+$/, '');
 }
@@ -252,7 +265,7 @@ export function assertGatewayUrlUnset(raw: string | undefined): void {
 /**
  * Whether this instance is managed — {@link PublicConfig.managed}.
  *
- * A managed instance NEEDS `SYNC_SERVER_URL`, and this throws without it
+ * A managed instance NEEDS `CORE_URL`, and this throws without it
  * rather than quietly answering `false`. Every managed behaviour goes through
  * that server: the invite is redeemed there, the account lives there, the
  * diary syncs there and the AI is proxied there. An instance declaring
@@ -272,9 +285,9 @@ export function isManagedInstance({
   if (instanceMode === 'open') return false;
   if (syncServerUrl === null) {
     throw new Error(
-      'INSTANCE_MODE is "managed" but SYNC_SERVER_URL is not set: a managed instance keeps its accounts, ' +
+      'INSTANCE_MODE is "managed" but CORE_URL is not set: a managed instance keeps its accounts, ' +
         'its diaries and its AI on that one server, so without the address every screen is a dead end. ' +
-        'Set SYNC_SERVER_URL, or leave INSTANCE_MODE unset for an open instance.',
+        'Set CORE_URL, or leave INSTANCE_MODE unset for an open instance.',
     );
   }
   return true;
@@ -288,14 +301,30 @@ export function isManagedInstance({
  * never be true on one screen and false on another.
  */
 export function isSyncConfigured(config: PublicConfig | undefined): boolean {
-  return (config?.syncServerUrl ?? '').length > 0;
+  return (getCoreUrl(config) ?? '').length > 0;
+}
+
+/**
+ * The address of openplate-core the root loader published, or `null` when sync
+ * is off.
+ *
+ * THE ONE READER of the two fields. It takes `coreUrl` and falls back to the
+ * deprecated `syncServerUrl`, so a page still holding the shape an older
+ * server sent (which has no `coreUrl` at all) keeps its server. Every client
+ * read of the address goes through here and no screen reads either field off
+ * the object itself.
+ */
+export function getCoreUrl(
+  config: (Pick<PublicConfig, 'syncServerUrl'> & Partial<Pick<PublicConfig, 'coreUrl'>>) | undefined,
+): string | null {
+  return config?.coreUrl ?? config?.syncServerUrl ?? null;
 }
 
 /**
  * Parses the three `DEFAULT_INFERENCE_*` env vars into the preset the browser
  * receives, or `null` when the operator set none.
  *
- * Same shape of contract as {@link parseSyncServerUrl}, for the same reasons:
+ * Same shape of contract as {@link parseCoreUrl}, for the same reasons:
  * - `baseUrl` unset/blank → `null`, i.e. the feature is simply off (the
  *   default). Nothing else is read in that case, so a stray
  *   `DEFAULT_INFERENCE_API_KEY` with no base URL can never reach a browser.

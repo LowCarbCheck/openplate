@@ -2,7 +2,7 @@
  * The instance-provided AI preset (M138 spec 06) — the `DEFAULT_INFERENCE_*`
  * gate, and what a one-click connect actually writes to the device.
  *
- * The requirement these tests hold the line on is the same one `SYNC_SERVER_URL`
+ * The requirement these tests hold the line on is the same one `CORE_URL`
  * has: with no preset configured the app is byte-for-byte its old self — nothing
  * renders, nothing ships to the browser, nothing widens in the CSP. And with one
  * configured, the connect writes an ORDINARY `openai-compatible` BYOK row, so a
@@ -102,6 +102,7 @@ describe('getInstanceInferencePreset', () => {
     assert.equal(getInstanceInferencePreset(undefined), null, 'error boundaries take this path');
     assert.equal(
       getInstanceInferencePreset({
+        coreUrl: null,
         syncServerUrl: null,
         instancePreset: null,
         analytics: null,
@@ -115,6 +116,7 @@ describe('getInstanceInferencePreset', () => {
   it('hands the configured preset through untouched', () => {
     assert.deepEqual(
       getInstanceInferencePreset({
+        coreUrl: null,
         syncServerUrl: null,
         instancePreset: PRESET,
         analytics: null,

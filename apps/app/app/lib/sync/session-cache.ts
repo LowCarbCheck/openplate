@@ -80,7 +80,7 @@ const SESSION_DB_VERSION = 1;
  * `serverUrl` is not decoration and is not in the milestone's field list by
  * accident of drafting: a cache written while this instance pointed at one
  * service must never be replayed against another. An operator who moves
- * `SYNC_SERVER_URL` would otherwise have every device silently present a
+ * `CORE_URL` would otherwise have every device silently present a
  * stranger's tokens to the new address.
  */
 export interface SessionCacheRecord {

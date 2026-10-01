@@ -26,7 +26,7 @@ import { z } from 'zod';
 import { LANGUAGE_COOKIE } from '../../app/i18n/language-prefs';
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { EN } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   readShiftEntries,
@@ -125,7 +125,7 @@ async function routeHandshake(page: Page, stub: HandshakeStub): Promise<void> {
     ['ai', { model: 'e2e-model' }],
   ]);
   if (stub.trialScans !== null) instance.set('trial', { scans: stub.trialScans });
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await stub.gate;
     await route.fulfill({
       json: {
@@ -141,7 +141,7 @@ async function routeHandshake(page: Page, stub: HandshakeStub): Promise<void> {
 /** Every read of the prices route, and what it answers. */
 async function routePrices(page: Page, answer: 'prices' | 'failure', gate?: Gate): Promise<{ reads: number }> {
   const seen = { reads: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/prices`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/prices`, async (route) => {
     seen.reads += 1;
     await gate?.promise;
     const headers = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' };
@@ -166,7 +166,7 @@ async function routePrices(page: Page, answer: 'prices' | 'failure', gate?: Gate
 /** Every body the page posted to the sign-up route, each answered `202 {}`. */
 async function routeSignupRequest(page: Page): Promise<unknown[]> {
   const bodies: unknown[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/signup-request`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/signup-request`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     bodies.push(route.request().postDataJSON());
     return route.fulfill({ status: 202, json: {} });
@@ -341,7 +341,7 @@ const inviteAnswerSchema = z.object({ inviteToken: z.string().min(1) });
 /** Mints an invite on the fake service for a new address. */
 async function mintInvite(): Promise<string> {
   const email = `funnel-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.invalid`;
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -352,7 +352,7 @@ async function mintInvite(): Promise<string> {
 
 /** The join link the core mails, with extra fields appended to its fragment. */
 function joinLink(inviteToken: string, extra: string): string {
-  return `${server.url}/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=${inviteToken}${extra}`;
+  return `${server.url}/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=${inviteToken}${extra}`;
 }
 
 /** Chooses a password and creates the account. */

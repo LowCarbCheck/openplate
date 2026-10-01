@@ -23,7 +23,7 @@ import { z } from 'zod';
 
 import { BOTTOM_BAR } from './clip-baseline';
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import { settleFrames } from './layout-shift';
 import { routeManagedCore, type ManagedCoreStub } from './managed-core-stub';
@@ -94,7 +94,7 @@ async function signIn(page: Page): Promise<string> {
 
 /** Resolves when the plan read of THIS page has been answered. Registered before the navigation it anchors. */
 async function planRead(page: Page): Promise<void> {
-  await page.waitForResponse((response) => response.url() === `${E2E_SYNC_SERVER_URL}/v1/plans/me`);
+  await page.waitForResponse((response) => response.url() === `${E2E_CORE_URL}/v1/plans/me`);
 }
 
 /** Asserts the plan page is on screen with this paywall heading. */

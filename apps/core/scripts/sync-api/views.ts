@@ -1,5 +1,5 @@
 /**
- * Decoding and rendering for `sync-api` — the boundary between "JSON that
+ * Decoding and rendering for `core-api`: the boundary between "JSON that
  * arrived from somewhere" and the lines an operator reads.
  *
  * The decoders below use `src/lib/json.ts`, the same pure module the service

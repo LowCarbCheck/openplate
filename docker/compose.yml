@@ -101,8 +101,10 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       # The address of openplate-core, one a BROWSER can reach.
       # Empty means no sync. docker/topologies/compose.core.yml runs one.
+      CORE_URL: ${CORE_URL:-}
+      # The old name of CORE_URL, read for one more release. Set CORE_URL.
       SYNC_SERVER_URL: ${SYNC_SERVER_URL:-}
-      # open (the default) or managed, which needs SYNC_SERVER_URL. See
+      # open (the default) or managed, which needs CORE_URL. See
       # apps/app/docs/configuration.md, Managed instances.
       INSTANCE_MODE: ${INSTANCE_MODE:-open}
       # An OpenAI-compatible vision endpoint every browser here may use with

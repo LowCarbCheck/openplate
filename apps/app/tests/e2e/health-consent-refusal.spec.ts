@@ -28,7 +28,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import { settleFrames } from './layout-shift';
 import { routeConsentRequiredSync, routeManagedCore, type ManagedCoreStub } from './managed-core-stub';
@@ -110,7 +110,7 @@ async function signIn(page: Page): Promise<void> {
  */
 async function openManualForm(page: Page): Promise<ReturnType<Page['locator']>> {
   const pulled = page.waitForResponse(
-    (response) => response.url() === `${E2E_SYNC_SERVER_URL}/v1/sync/blob` && response.request().method() === 'GET',
+    (response) => response.url() === `${E2E_CORE_URL}/v1/sync/blob` && response.request().method() === 'GET',
   );
   await page.goto('/add/search');
   await page.getByRole('button', { name: EN.add.search.addManually }).click();

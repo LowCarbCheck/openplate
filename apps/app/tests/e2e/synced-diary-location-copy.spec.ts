@@ -38,7 +38,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_MATOMO_URL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_MATOMO_URL, E2E_CORE_URL } from './env';
 import { installShiftObserver, readShiftEntries, settleFrames, shiftScoreAfter } from './layout-shift';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { routeManagedCore, type ManagedCoreStub } from './managed-core-stub';
@@ -162,7 +162,7 @@ const pushBodySchema = z.looseObject({
  */
 async function holdTheBlobInThePage(page: Page): Promise<void> {
   let held: HeldBlob | null = null;
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/sync/blob`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/sync/blob`, async (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') return route.fallback();
     const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };

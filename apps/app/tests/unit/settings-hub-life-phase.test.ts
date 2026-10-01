@@ -40,6 +40,7 @@ import type { PublicConfig } from '../../app/config/public-config';
 
 /** An instance with sync configured, which is the richest hub (most rows render). */
 const PUBLIC_CONFIG: PublicConfig = {
+  coreUrl: 'https://sync.openplate.test',
   syncServerUrl: 'https://sync.openplate.test',
   analytics: null,
   instancePreset: null,

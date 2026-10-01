@@ -5,7 +5,7 @@
  * ── This route does not exist unless a biller stands behind the instance ──
  *
  * Two gates, and they answer the same 404 for two different reasons. The
- * server loader 404s with no `SYNC_SERVER_URL`, exactly as `settings.account`
+ * server loader 404s with no `CORE_URL`, exactly as `settings.account`
  * does: with no server there is no account, so there is nothing to sell one.
  * The client loader then 404s unless the handshake says `plans: true`, because
  * `/v1/plans/*` answers the ordinary unknown-path 404 on an instance with no

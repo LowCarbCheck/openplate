@@ -132,7 +132,7 @@ export async function loader({ request }: Route.LoaderArgs) {
  *
  * ── Gated HERE, in the loader, not in the component ──────────────────────
  *
- * Both flags are decided on the server from `SYNC_SERVER_URL` and
+ * Both flags are decided on the server from `CORE_URL` and
  * `NEWSLETTER_SUBSCRIBE_URL`, so an instance that configured neither renders
  * no markup for either section — not a hidden element, not an empty wrapper.
  * A component-side check would still ship the section's strings and its
@@ -154,7 +154,7 @@ function landingSections() {
      * the address the visitor typed.
      */
     siteOrigin: CONFIG.app.url.replace(/\/+$/, ''),
-    /** `SYNC_SERVER_URL` — off by default, including on every self-host. */
+    /** `CORE_URL`: off by default, including on every self-host. */
     syncEnabled: CONFIG.sync.syncServerUrl !== null,
     /** `NEWSLETTER_SUBSCRIBE_URL` + `NEWSLETTER_TURNSTILE_SITE_KEY` — off by default. */
     newsletter: toNewsletterPublicConfig(CONFIG.newsletter),

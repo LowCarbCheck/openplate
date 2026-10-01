@@ -40,7 +40,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { installShiftObserver, readShiftEntries, settleAnimations, settleFrames } from './layout-shift';
 import { routeManagedCore, signInManaged, trialAccountStub, type ManagedCoreStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
@@ -155,14 +155,14 @@ test('the invite card on /join does not move when Victor Mono arrives late', asy
   await routeManagedCore(page, PAID_MEMBER);
   await holdVictorMonoLatin(page);
   const lookup = createGate();
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/invite-lookup`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/invite-lookup`, async (route) => {
     await lookup.promise;
     await route.fulfill({
       json: { email: 'invited@example.invalid', displayName: null, expiresAt: '2030-01-01T00:00:00.000Z' },
     });
   });
 
-  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=si_fontswapnoshift001`);
+  await page.goto(`${server.url}/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=si_fontswapnoshift001`);
   await expect(page.getByText(EN.join.working)).toBeVisible();
   // The swap lands HERE, while the card still shows its loading block, which is where the runner
   // saw the block pushed down.

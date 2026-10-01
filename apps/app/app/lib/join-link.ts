@@ -207,7 +207,7 @@ export function isJoinLinkEmpty(link: JoinLink): boolean {
  *
  * The address in the link is a check, never an instruction. This client posts a
  * passphrase-derived verifier to the server its own operator configured
- * (`SYNC_SERVER_URL`); letting a link redirect that would let anyone who can
+ * (`CORE_URL`); letting a link redirect that would let anyone who can
  * send a link choose where those credentials go. So a mismatch is reported to
  * the person, and nothing is dialled.
  *

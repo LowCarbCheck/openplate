@@ -31,7 +31,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import {
   HEADER_HEIGHT,
   PHONE_WIDTH,
@@ -93,7 +93,7 @@ const HEALTH_WITH_PUSH = {
 
 /** Routes the handshake so the instance advertises push on every page of the run. */
 async function routePushyHealth(page: Page): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) => route.fulfill({ json: HEALTH_WITH_PUSH }));
+  await page.route(`${E2E_CORE_URL}/health`, (route) => route.fulfill({ json: HEALTH_WITH_PUSH }));
 }
 
 /**
@@ -103,7 +103,7 @@ async function routePushyHealth(page: Page): Promise<void> {
  * @param status - 200 to answer with the key, 401 to say the session ended.
  */
 async function routePushConfig(page: Page, status: number): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/push/config`, (route) =>
+  await page.route(`${E2E_CORE_URL}/v1/push/config`, (route) =>
     status === 200 ?
       route.fulfill({ json: { publicKey: VAPID_PUBLIC_KEY } })
     : route.fulfill({ status, json: { error: 'unauthorized' } }),
@@ -112,7 +112,7 @@ async function routePushConfig(page: Page, status: number): Promise<void> {
 
 /** Routes `PUT /v1/push/subscriptions` to accept the registration. */
 async function routeSubscriptionAccepted(page: Page): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/push/subscriptions`, (route) => route.fulfill({ json: {} }));
+  await page.route(`${E2E_CORE_URL}/v1/push/subscriptions`, (route) => route.fulfill({ json: {} }));
 }
 
 /**

@@ -20,7 +20,7 @@
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
 
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { useLanguage } from './helpers';
 import {
   installShiftObserver,
@@ -51,7 +51,7 @@ const RECEIVED_AT = '2026-09-21T14:30:00+02:00';
 
 /** Answers the preflight and the POST of a cancellation on the fake core's origin. */
 async function stubCancellation(page: Page): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}${DECLARATIONS_PATH}`, async (route: Route) => {
+  await page.route(`${E2E_CORE_URL}${DECLARATIONS_PATH}`, async (route: Route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({
         status: 204,
@@ -221,7 +221,7 @@ test.describe('/kuendigung around the file', () => {
   });
 
   test('shows the file’s unavailable text when the service cannot be reached', async ({ page }) => {
-    await page.route(`${E2E_SYNC_SERVER_URL}${DECLARATIONS_PATH}`, (route) => route.abort('connectionrefused'));
+    await page.route(`${E2E_CORE_URL}${DECLARATIONS_PATH}`, (route) => route.abort('connectionrefused'));
     await page.goto('/kuendigung');
     await page.locator('input[name="name"]').fill('Erika Musterfrau');
     await page.locator('input[name="email"]').fill('erika@example.invalid');

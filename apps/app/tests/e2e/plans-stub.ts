@@ -24,7 +24,7 @@ import { expect, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import { completeOnboarding, signInFixtureAccount } from './helpers';
 
 /**
@@ -122,20 +122,20 @@ export interface OfferRequests {
  */
 export async function routePlansCore(page: Page, stub: PlansStub): Promise<OfferRequests> {
   const requests: OfferRequests = { locales: [], healthReads: 0, planViews: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     requests.healthReads += 1;
     await stub.healthGate;
     // `plans` is read AFTER the gate, so what a held read answers is what the
     // spec says when it lets the read through.
     await route.fulfill({ json: healthBody(stub.plans ?? true) });
   });
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, async (route) => {
     requests.planViews += 1;
     await stub.planViewGate;
     await route.fulfill({ json: stub.planView });
   });
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/offer`),
     async (route) => {
       requests.locales.push(new URL(route.request().url()).searchParams.get('locale') ?? '');
       await stub.offerGate;
@@ -209,13 +209,13 @@ export interface OrderRequests {
  */
 export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): Promise<OrderRequests> {
   const requests: OrderRequests = { bodies: [], checkoutCalls: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/order`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/order`, (route) => {
     requests.bodies.push(route.request().postDataJSON());
     const answer = answers[Math.min(requests.bodies.length, answers.length) - 1];
     if (answer === undefined) throw new Error('routeOrder was given no answer');
     return route.fulfill({ status: answer.status, json: answer.json });
   });
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/checkout`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/checkout`, (route) => {
     requests.checkoutCalls += 1;
     return route.fulfill({ status: 410, json: { error: 'checkout-gone' } });
   });
@@ -238,7 +238,7 @@ export interface PortalRequests {
  */
 export async function routePortal(page: Page, returnTo: string): Promise<PortalRequests> {
   const requests: PortalRequests = { bodies: [] };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/portal`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/portal`, (route) => {
     requests.bodies.push(route.request().postDataJSON());
     return route.fulfill({ status: 200, json: { url: returnTo } });
   });
@@ -289,7 +289,7 @@ export interface AccountAllowance {
  */
 export async function routeAccountAllowance(page: Page, allowance: AccountAllowance): Promise<void> {
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     async (route) => {
       const response = await route.fetch();
       const text = await response.text();

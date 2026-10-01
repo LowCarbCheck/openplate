@@ -40,7 +40,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   readShiftEntries,
@@ -112,7 +112,7 @@ const inviteAnswerSchema = z.object({ inviteToken: z.string().min(1) });
 /** Mints an invite on the fake service for a new address. */
 async function mintInvite(): Promise<string> {
   const email = `after-payment-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.invalid`;
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -123,7 +123,7 @@ async function mintInvite(): Promise<string> {
 
 /** The join link the core mails, with extra fields appended to its fragment the way the core appends `&plan=`. */
 function joinLink(inviteToken: string, extra: string): string {
-  return `${server.url}/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=${inviteToken}${extra}`;
+  return `${server.url}/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=${inviteToken}${extra}`;
 }
 
 /**
@@ -150,7 +150,7 @@ interface Payment {
  */
 async function routePayment(page: Page): Promise<Payment> {
   const payment: Payment = { paidAt: Number.POSITIVE_INFINITY };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) =>
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) =>
     route.fulfill({ json: Date.now() >= payment.paidAt ? YEARLY_SUBSCRIBER_VIEW : NO_SUBSCRIPTION_VIEW }),
   );
   return payment;
@@ -158,7 +158,7 @@ async function routePayment(page: Page): Promise<Payment> {
 
 /** Answers the sign-up request `202 {}`, the one answer the core gives whatever the address. */
 async function routeSignupRequest(page: Page): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/signup-request`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/signup-request`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     return route.fulfill({ status: 202, json: {} });
   });

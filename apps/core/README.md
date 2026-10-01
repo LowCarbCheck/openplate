@@ -16,9 +16,9 @@ The fourth is push scheduling. With `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and 
 
 The fifth is the plans pass-through. With `PLANS_UPSTREAM_URL` and `PLANS_UPSTREAM_SECRET` both set, a signed-in request to `/v1/plans/*` goes on to the one plans service the operator configured. This service tells that plans service who is asking. Every forwarded request carries `X-Account-Id`, `X-Account-Email` read from the account row, and `X-Plans-Secret`. All three are built here, and none are copied from the request. The caller's own token is never forwarded. An address stored here is sent, on every call, to a second service. One read needs no sign-in: `GET /v1/plans/prices`, the price list a sign-up screen shows, which goes out with the secret alone. Leave both variables unset, and the whole `/v1/plans` subtree answers the ordinary unknown-path 404. [Paid plans](#paid-plans-and-what-the-plans-service-can-reach) has the details.
 
-**One opinion about a blob, and it is not a sixth hole.** This service used to accept any correctly versioned blob without looking at it at all. Since M224 it refuses one shape: a push whose ciphertext is under half the size of the stored one, unless the request explicitly says the deletion is intended. A person lost her whole diary to a client that found its local store evicted, concluded she had deleted everything, and pushed a tombstone per entry, and a second device then pulled that blob and deleted its own rows. The guard compares two byte counts this service already stored for the storage figure it already reports, so it learns nothing new about anybody; what it gives up is the claim to be a store with no opinion. An operator can put an account back with `pnpm sync-api accounts rollback`, and [`docs/operations/restoring-a-wiped-diary.md`](./docs/operations/restoring-a-wiped-diary.md) is the procedure, including the step on the person's own devices that the rollback cannot do. [ADR-0009](./docs/adr/0009-a-shrinking-blob-is-acknowledged-or-refused.md) states what it costs when it is wrong.
+**One opinion about a blob, and it is not a sixth hole.** This service used to accept any correctly versioned blob without looking at it at all. Since M224 it refuses one shape: a push whose ciphertext is under half the size of the stored one, unless the request explicitly says the deletion is intended. A person lost her whole diary to a client that found its local store evicted, concluded she had deleted everything, and pushed a tombstone per entry, and a second device then pulled that blob and deleted its own rows. The guard compares two byte counts this service already stored for the storage figure it already reports, so it learns nothing new about anybody; what it gives up is the claim to be a store with no opinion. An operator can put an account back with `pnpm core-api accounts rollback`, and [`docs/operations/restoring-a-wiped-diary.md`](./docs/operations/restoring-a-wiped-diary.md) is the procedure, including the step on the person's own devices that the rollback cannot do. [ADR-0009](./docs/adr/0009-a-shrinking-blob-is-acknowledged-or-refused.md) states what it costs when it is wrong.
 
-**Start with [`PROTOCOL.md`](./PROTOCOL.md).** It is the normative specification of the wire protocol, written so a third party can implement either side of it without reading this code: an alternative client against this service, or an alternative server that an openplate client can be pointed at with `SYNC_SERVER_URL`.
+**Start with [`PROTOCOL.md`](./PROTOCOL.md).** It is the normative specification of the wire protocol, written so a third party can implement either side of it without reading this code: an alternative client against this service, or an alternative server that an openplate client can be pointed at with `CORE_URL`.
 
 **This service is optional.** openplate is a complete, fully functional tracker without it: your diary lives in the browser, exports to JSON, and imports again on another device. Sync removes the manual step; it does not unlock anything.
 
@@ -76,7 +76,7 @@ That is the whole install. Postgres comes up alongside the service, the schema m
 
 `--project-directory .` is what keeps the repository root as the project root, so `.env` is read from where you created it and the image builds from the checkout rather than from `docker/`. If you would rather run the published image than build from source, copy `docker/compose.yml` out on its own, uncomment the `image:` line, and plain `docker compose up -d` beside it works.
 
-Then point your openplate app at it by setting `SYNC_SERVER_URL` to this service's public URL, the one a **browser** can reach, since the sync client runs in the page. If you want both halves in one file, openplate ships a combined [`docker/topologies/compose.core.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.core.yml) that brings up the app, this service and a shared Postgres together.
+Then point your openplate app at it by setting `CORE_URL` to this service's public URL, the one a **browser** can reach, since the sync client runs in the page. If you want both halves in one file, openplate ships a combined [`docker/topologies/compose.core.yml`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/compose.core.yml) that brings up the app, this service and a shared Postgres together.
 
 **Every setting is an environment variable.** The openplate [environment variables page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-sync-service-openplate-core) lists all variables for this service, their defaults, and boot rules. One is easy to misread: `INSTANCE_NAME`. It defaults to `openplate`. It names the instance on the `/health` handshake (`instance.name`) and in the start-up log only. The letters this service sends do not use it.
 
@@ -85,12 +85,12 @@ Then point your openplate app at it by setting `SYNC_SERVER_URL` to this service
 An account is an **email address plus a passphrase**, and it is created by redeeming an invite addressed to somebody. By default you mint every invite yourself, and the instance is invite-only.
 
 ```bash
-pnpm sync-api invites create --email anna@example.org --display-name "Anna"
+pnpm core-api invites create --email anna@example.org --display-name "Anna"
 ```
 
 That prints a link (or, if you configured no `CLIENT_BASE_URL`, the raw token) **once**. It is not stored, only its digest is. One invite creates one account, at the address it names, and a failed attempt does not spend it.
 
-**The first account, on a server with only Docker.** The `sync-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then run this on the server, in the folder that holds `.env`. This repository's `docker/compose.yml` publishes the service on port 3000:
+**The first account, on a server with only Docker.** The `core-api` CLI needs a checkout with Node and pnpm, and it is not in the Docker image. The admin API it wraps is one `curl` away. Set `ADMIN_TOKEN` in `.env` (`openssl rand -hex 32`), and set `SERVER_PUBLIC_URL` (this service's address) and `CLIENT_BASE_URL` (the openplate app's address) so the answer carries a link rather than a bare token. Then run this on the server, in the folder that holds `.env`. This repository's `docker/compose.yml` publishes the service on port 3000:
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -229,9 +229,9 @@ invite hands out no AI at all unless you say otherwise, so an operator who
 mints an ordinary invitation has not given away their provider key by accident:
 
 ```bash
-pnpm sync-api invites create --email anna@example.org --display-name Anna --daily-ai-limit 200
-pnpm sync-api accounts set-free-limit 42 200 # or change it later
-pnpm sync-api accounts set-free-limit 42 0   # or turn it off
+pnpm core-api invites create --email anna@example.org --display-name Anna --daily-ai-limit 200
+pnpm core-api accounts set-free-limit 42 200 # or change it later
+pnpm core-api accounts set-free-limit 42 0   # or turn it off
 ```
 
 **An account has two daily limits.** The invite above writes a standing free
@@ -283,7 +283,7 @@ only.
 **New accounts can get free AI scans.** Set `TRIAL_SCANS` and
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
 them. An account from open sign-up, from an invite minted with
-`pnpm sync-api invites create --trial`, or (with `MEMBER_INVITE_TRIAL=true`)
+`pnpm core-api invites create --trial`, or (with `MEMBER_INVITE_TRIAL=true`)
 from a member's invitation gets that many scans. With `TRIAL_DAYS` beside them
 the trial also ends at midnight after that many days, whichever comes first: the
 day the account is created does not count, so fourteen days from a sign-up on
@@ -311,7 +311,7 @@ is a real mailbox and is not on it.
 UTC day. Beside it, `AI_TRIAL_NETWORK_DAILY_LIMIT` caps what the trial requests
 from one network (an IPv6 /64, or one IPv4 address) may take of it, a tenth by
 default, so a few farmed accounts cannot use up the day for everybody else.
-People behind one IPv4 carrier NAT share one bucket. `pnpm sync-api trials grant-lapsed --trial-days 3` gives the scans to
+People behind one IPv4 carrier NAT share one bucket. `pnpm core-api trials grant-lapsed --trial-days 3` gives the scans to
 day trials that ran out unpaid, as a dry run until you add `--apply`.
 
 **Members can hand out an AI trial, if you let them.** Set
@@ -660,26 +660,26 @@ pnpm run build              # esbuild → dist/server.js
 pnpm run dev                # tsx watch
 ```
 
-`pnpm sync-api` is a thin HTTP client over the admin API: it imports no
+`pnpm core-api` is a thin HTTP client over the admin API: it imports no
 database code, so it runs from a machine with no Postgres:
 
 ```bash
-ADMIN_TOKEN=... pnpm sync-api status
-ADMIN_TOKEN=... pnpm sync-api accounts list --limit 20
-ADMIN_TOKEN=... pnpm sync-api accounts get 42 --json
-ADMIN_TOKEN=... pnpm sync-api accounts set-role 42 admin
-ADMIN_TOKEN=... pnpm sync-api accounts set-free-limit 42 10
-ADMIN_TOKEN=... pnpm sync-api accounts set-limit 42 200
-ADMIN_TOKEN=... pnpm sync-api accounts suspend 42
-ADMIN_TOKEN=... pnpm sync-api accounts reset-mail 42
-ADMIN_TOKEN=... pnpm sync-api accounts delete 42 --yes
-ADMIN_TOKEN=... pnpm sync-api accounts blob-versions 42
-ADMIN_TOKEN=... pnpm sync-api accounts rollback 42 --to-version 5 --yes
-ADMIN_TOKEN=... pnpm sync-api invites create --email anna@example.org --daily-ai-limit 200
-ADMIN_TOKEN=... pnpm sync-api invites resend 7
-ADMIN_TOKEN=... pnpm sync-api settings get
-ADMIN_TOKEN=... pnpm sync-api settings set nutrient-reference-basis efsa
-pnpm sync-api push keygen
+ADMIN_TOKEN=... pnpm core-api status
+ADMIN_TOKEN=... pnpm core-api accounts list --limit 20
+ADMIN_TOKEN=... pnpm core-api accounts get 42 --json
+ADMIN_TOKEN=... pnpm core-api accounts set-role 42 admin
+ADMIN_TOKEN=... pnpm core-api accounts set-free-limit 42 10
+ADMIN_TOKEN=... pnpm core-api accounts set-limit 42 200
+ADMIN_TOKEN=... pnpm core-api accounts suspend 42
+ADMIN_TOKEN=... pnpm core-api accounts reset-mail 42
+ADMIN_TOKEN=... pnpm core-api accounts delete 42 --yes
+ADMIN_TOKEN=... pnpm core-api accounts blob-versions 42
+ADMIN_TOKEN=... pnpm core-api accounts rollback 42 --to-version 5 --yes
+ADMIN_TOKEN=... pnpm core-api invites create --email anna@example.org --daily-ai-limit 200
+ADMIN_TOKEN=... pnpm core-api invites resend 7
+ADMIN_TOKEN=... pnpm core-api settings get
+ADMIN_TOKEN=... pnpm core-api settings set nutrient-reference-basis efsa
+pnpm core-api push keygen
 ```
 
 `settings` is the one thing here that changes what the instance IS rather than
@@ -702,9 +702,15 @@ no `ADMIN_TOKEN`.
 
 The token comes from `ADMIN_TOKEN` and nowhere else: there is no `--token`
 flag, because a credential in argv lands in shell history and is visible in
-`ps`. The target is `--url`, then `SYNC_SERVER_URL`, then
+`ps`. The target is `--url`, then `CORE_URL`, then
 `http://localhost:3000`. `accounts delete`, `accounts rollback` and
 `invites revoke` require `--yes`. The CLI is not part of the Docker image.
+
+The CLI used to be `pnpm sync-api`, and it read `SYNC_SERVER_URL`. Both old
+names still work for one more release. `pnpm sync-api` prints a notice to
+standard error and runs the same CLI. `SYNC_SERVER_URL` prints a warning when it
+is the only one set. If the two names hold different addresses, the old name
+wins for this release, with one warning that names both.
 
 Two optional conveniences:
 
@@ -735,7 +741,7 @@ The integration suite targets a local Postgres at `localhost:5433` (user `postgr
 | `src/pulse/`          | The community pulse: its store, the rounding, the per account limits, the cache and the retention sweep.                                                                                                                                                                                |
 | `src/mail/`           | The letters in six languages, their strings, and the two transports that send them: the HTTP mail API in `mailer.ts`, SMTP in `smtp-transport.ts`. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
 | `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                                                                                           |
-| `scripts/sync-api/`   | The `pnpm sync-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                                                                                  |
+| `scripts/sync-api/`   | The `pnpm core-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                                                                                  |
 | `scripts/lib/`        | The translator, a vendored copy of `openplate-website`'s written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                                                                                 |
 | `drizzle/migrations/` | Generated migrations. Never hand-written: see `src/db/schema.ts`.                                                                                                                                                                                                                       |
 

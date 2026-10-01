@@ -23,7 +23,7 @@ import { resolve } from 'node:path';
 import { expect, test, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
 
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   movedBetween,
@@ -71,7 +71,7 @@ type SignupBody = z.infer<typeof signupBodySchema>;
 /** Mints an invite on the fake service for a new address. */
 async function mintInvite(): Promise<string> {
   const email = `consent-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.invalid`;
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -89,7 +89,7 @@ function consentCore(healthConsent: ManagedCoreStub['healthConsent']): ManagedCo
 
 /** Is this the signup POST, rather than its preflight or another auth call? */
 function isSignup(request: Request): boolean {
-  return request.method() === 'POST' && request.url() === `${E2E_SYNC_SERVER_URL}/v1/auth/signup`;
+  return request.method() === 'POST' && request.url() === `${E2E_CORE_URL}/v1/auth/signup`;
 }
 
 /** Every signup body the page sends, in order. Registered before the first navigation. */
@@ -103,7 +103,7 @@ function recordSignups(page: Page): SignupBody[] {
 
 /** Opens a fresh join link and types the password twice. The box, when there is one, is left alone. */
 async function openJoinForm(page: Page): Promise<void> {
-  await page.goto(`/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=${await mintInvite()}`);
+  await page.goto(`/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=${await mintInvite()}`);
   const passwords = page.locator('main input[type="password"]');
   await expect(passwords.first()).toBeVisible({ timeout: 15_000 });
   await passwords.nth(0).fill(PASSWORD);
@@ -199,7 +199,7 @@ test('a refused consent (the wording changed while the page was open) asks again
   // REGISTERED AFTER the stub, so it answers first. The first signup is
   // refused the way the core refuses it after the operator changed
   // `HEALTH_CONSENT_VERSION`; the handshake says so from then on.
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/auth/signup`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/auth/signup`, async (route) => {
     const request = route.request();
     if (request.method() !== 'POST' || isRefused) return route.fallback();
     isRefused = true;
@@ -214,7 +214,7 @@ test('a refused consent (the wording changed while the page was open) asks again
 
   await consentBox(page).check();
   const reread = page.waitForRequest(
-    (request) => isRefused && request.url() === `${E2E_SYNC_SERVER_URL}/health` && request.method() === 'GET',
+    (request) => isRefused && request.url() === `${E2E_CORE_URL}/health` && request.method() === 'GET',
   );
   await createButton(page).click();
   await reread;
