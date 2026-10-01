@@ -675,6 +675,31 @@ test('the two feedback bounds are operator knobs with sane defaults', () => {
   assert.throws(() => parseConfig(baseEnv({ FEEDBACK_MAX_REQUEST_BYTES: '-1' })), /FEEDBACK_MAX_REQUEST_BYTES/);
 });
 
+test('the two legal receipt ceilings are operator knobs with sane defaults (M270/11)', () => {
+  const defaults = parseConfig(baseEnv());
+  assert.equal(defaults.legalReceiptsPerDay, 200);
+  assert.equal(defaults.legalReceiptsPerNetworkPerDay, 10);
+
+  // CONTROL: a set value is carried whole, so the defaults above are not
+  // what the parser answers for everything.
+  const tuned = parseConfig(
+    baseEnv({ LEGAL_DECLARATION_RECEIPTS_PER_DAY: '1000', LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY: '25' }),
+  );
+  assert.equal(tuned.legalReceiptsPerDay, 1000);
+  assert.equal(tuned.legalReceiptsPerNetworkPerDay, 25);
+
+  // Zero is not "no receipts" and not "unlimited": both are a misconfiguration
+  // that would read as a working form whose receipts never arrive.
+  assert.throws(
+    () => parseConfig(baseEnv({ LEGAL_DECLARATION_RECEIPTS_PER_DAY: '0' })),
+    /LEGAL_DECLARATION_RECEIPTS_PER_DAY/,
+  );
+  assert.throws(
+    () => parseConfig(baseEnv({ LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY: 'ten' })),
+    /LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY/,
+  );
+});
+
 test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says why', () => {
   // THE CONTROL FIRST: a real value parses and is carried whole, so the
   // assertions below cannot pass by the parser refusing everything.

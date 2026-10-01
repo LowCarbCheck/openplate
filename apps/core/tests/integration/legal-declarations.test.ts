@@ -18,12 +18,23 @@
  *  - the `202` body is the same shape whether the email matched an account or
  *    not;
  *  - a malformed field is a `400` that names it.
+ *
+ * AND THE RECEIPT CEILINGS (M270/11), each with a count the old route could
+ * not meet: receipts to many different recipients stop at the per-network and
+ * the per-instance ceilings while every declaration is still stored,
+ * forwarded and alerted; the receipt carries no text the sender wrote while
+ * the operator's copy keeps all of it; and the `202` is the same either side
+ * of a ceiling.
  */
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo, Socket } from 'node:net';
 import { legalDeclarations } from '../../src/db/schema.js';
+import {
+  buildDeclarationOperatorAlertMessage,
+  buildDeclarationReceiptMessage,
+} from '../../src/mail/declaration-message.js';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import { startService, type ServiceHarness } from './service-harness.js';
 
@@ -427,4 +438,157 @@ test('a fourth declaration for one mailbox in 24 hours is stored, forwarded and 
   harness.advance(24 * 60 * 60 * 1000 + 1);
   await harness.request({ method: 'POST', path: '/v1/legal/declarations', body: sampleDeclaration() });
   assert.equal(harness.mailer.declarationReceipts.length, 5);
+});
+
+// ── The receipt ceilings (M270/11) ─────────────────────────────────────────
+//
+// The per-address cap above stops one stranger being mailed without limit. It
+// never stopped one sender reaching MANY strangers: at five a minute, one IPv6
+// /64 could make this instance mail thousands of different addresses a day.
+
+/** Starts the service with `trust proxy` on, so a test can file from a named network through `X-Forwarded-For`. */
+async function restartWithCeilings(legal: {
+  receiptsPerNetworkPerDay?: number;
+  receiptsPerDay?: number;
+}): Promise<void> {
+  await harness.close();
+  harness = await startService({
+    db: database.db,
+    plans: { baseUrl: biller.baseUrl, secret: 'a-shared-secret', timeoutMs: 300 },
+    trustProxy: true,
+    legal,
+  });
+}
+
+async function fileFrom(input: {
+  ip: string;
+  email: string;
+  overrides?: Partial<DeclarationRequestBody>;
+}): Promise<{ status: number; body: DeclarationResponse; headers: Headers }> {
+  return harness.request<DeclarationResponse>({
+    method: 'POST',
+    path: '/v1/legal/declarations',
+    body: sampleDeclaration({ email: input.email, ...input.overrides }),
+    headers: { 'x-forwarded-for': input.ip },
+  });
+}
+
+test('receipts to many different recipients from one sender network stop at the per-network ceiling, and every declaration is still stored, forwarded and alerted', async () => {
+  await restartWithCeilings({ receiptsPerNetworkPerDay: 3 });
+
+  // Six addresses inside ONE /64: a home router hands its subscriber the whole
+  // prefix, so changing the last 64 bits must not buy a fresh allowance.
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    const response = await fileFrom({
+      ip: `2001:db8:1:2::${attempt.toString(16)}`,
+      email: `stranger-${attempt}@example.org`,
+    });
+    assert.equal(response.status, 202, `declaration ${attempt} must be accepted`);
+  }
+
+  const rows = await database.db.select().from(legalDeclarations);
+  assert.equal(rows.length, 6, 'every declaration is the statutory record, past the ceiling or not');
+  assert.equal(biller.received.length, 6, 'every declaration is forwarded');
+  assert.equal(harness.mailer.declarationOperatorAlerts.length, 6, 'the operator hears about every one');
+  assert.equal(harness.mailer.declarationReceipts.length, 3, 'six different recipients, three receipts');
+  assert.deepEqual(
+    harness.mailer.declarationReceipts.map((receipt) => receipt.to),
+    ['stranger-1@example.org', 'stranger-2@example.org', 'stranger-3@example.org'],
+  );
+
+  // CONTROL: another network is not affected, so the count is per network and
+  // not a ceiling on the route.
+  await fileFrom({ ip: '198.51.100.7', email: 'someone-else@example.org' });
+  assert.equal(harness.mailer.declarationReceipts.length, 4);
+
+  // The window trails: a day later the first network gets a receipt again.
+  harness.advance(24 * 60 * 60 * 1000 + 1);
+  await fileFrom({ ip: '2001:db8:1:2::99', email: 'stranger-7@example.org' });
+  assert.equal(harness.mailer.declarationReceipts.length, 5);
+});
+
+test('receipts to different recipients from many networks stop at the instance-wide ceiling, and every declaration is still stored, forwarded and alerted', async () => {
+  await restartWithCeilings({ receiptsPerDay: 4 });
+
+  // One declaration per network, one address each: no per-address or
+  // per-network ceiling is anywhere near, so only the instance one can stop a
+  // receipt here.
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    const response = await fileFrom({ ip: `203.0.113.${attempt}`, email: `reader-${attempt}@example.org` });
+    assert.equal(response.status, 202, `declaration ${attempt} must be accepted`);
+  }
+
+  const rows = await database.db.select().from(legalDeclarations);
+  assert.equal(rows.length, 6);
+  assert.equal(biller.received.length, 6);
+  assert.equal(harness.mailer.declarationOperatorAlerts.length, 6);
+  assert.equal(harness.mailer.declarationReceipts.length, 4, 'six recipients, four receipts across the instance');
+
+  // The count is read from the rows over a trailing day, so it lifts a day on.
+  harness.advance(24 * 60 * 60 * 1000 + 1);
+  await fileFrom({ ip: '203.0.113.50', email: 'reader-7@example.org' });
+  assert.equal(harness.mailer.declarationReceipts.length, 5);
+});
+
+test('the receipt to the typed address carries no reason and no URL from the name, and the operator copy carries both', async () => {
+  const name = 'Anna https://evil.example/win www.evil.example';
+  const reason = 'Claim your prize today at the link in my name';
+  const contractReference = 'see evil.example/terms';
+  const response = await harness.request<DeclarationResponse>({
+    method: 'POST',
+    path: '/v1/legal/declarations',
+    body: sampleDeclaration({
+      kind: 'kuendigung',
+      terminationType: 'ausserordentlich',
+      name,
+      reason,
+      contractReference,
+      language: 'en',
+    }),
+  });
+  assert.equal(response.status, 202);
+
+  const [receipt] = harness.mailer.declarationReceipts;
+  const [alert] = harness.mailer.declarationOperatorAlerts;
+  assert.ok(receipt !== undefined && alert !== undefined, 'one receipt and one alert');
+
+  // What the route handed the mailer, and the letter the mailer builds from it.
+  const receiptLetter = buildDeclarationReceiptMessage({ declaration: receipt, template: null });
+  for (const carried of [JSON.stringify(receipt), receiptLetter.subject, receiptLetter.text, receiptLetter.html]) {
+    assert.equal(carried.includes('evil'), false, `the receipt carries a URL the sender typed: ${carried}`);
+    assert.equal(carried.includes('prize'), false, `the receipt carries the reason: ${carried}`);
+  }
+  // The receipt still says what arrived, and for which address.
+  assert.ok(receiptLetter.text.includes(`Receipt no.: ${response.body.receiptId}`));
+  assert.ok(receiptLetter.text.includes('Email: anna@example.org'));
+  assert.ok(receiptLetter.text.includes('Type of cancellation: extraordinary notice'));
+
+  // CONTROL: the operator's copy, and the stored row, keep every word.
+  const alertLetter = buildDeclarationOperatorAlertMessage({ declaration: alert, template: null });
+  assert.ok(alertLetter.text.includes(`Name: ${name}`), alertLetter.text);
+  assert.ok(alertLetter.text.includes(`Reason: ${reason}`), alertLetter.text);
+  assert.ok(alertLetter.text.includes(`Contract or customer number: ${contractReference}`), alertLetter.text);
+  const [row] = await database.db.select().from(legalDeclarations);
+  assert.equal(row?.name, name);
+  assert.equal(row?.reason, reason);
+  assert.equal(row?.contractReference, contractReference);
+});
+
+test('the 202 is the same below and above every receipt ceiling', async () => {
+  await restartWithCeilings({ receiptsPerNetworkPerDay: 1 });
+
+  const below = await fileFrom({ ip: '192.0.2.10', email: 'first@example.org' });
+  const above = await fileFrom({ ip: '192.0.2.10', email: 'second@example.org' });
+
+  // CONTROL: the second really was past the ceiling.
+  assert.equal(harness.mailer.declarationReceipts.length, 1, 'the second receipt must have been skipped');
+
+  assert.equal(below.status, 202);
+  assert.equal(above.status, below.status);
+  assert.deepEqual(Object.keys(above.body), Object.keys(below.body));
+  assert.equal(above.body.kind, below.body.kind);
+  // A UUID and an ISO instant are fixed width, so equal lengths mean the two
+  // bodies differ only in their values.
+  assert.equal(above.headers.get('content-length'), below.headers.get('content-length'));
+  assert.deepEqual([...above.headers.keys()].toSorted(), [...below.headers.keys()].toSorted());
 });

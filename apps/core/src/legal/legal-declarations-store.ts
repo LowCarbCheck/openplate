@@ -46,6 +46,14 @@ export interface LegalDeclarationsStore {
    */
   countReceivedFor(input: { normalizedEmail: string; since: Date }): Promise<number>;
   /**
+   * How many declarations were received after `since`, from anybody to
+   * anybody: the instance-wide receipt ceiling's count (M270/11). Every
+   * declaration COULD have mailed a receipt, so this is an upper bound on the
+   * receipts sent, and a skipped receipt still counts. That errs towards
+   * fewer letters, which is the side the ceiling exists to err on.
+   */
+  countReceivedSince(input: { since: Date }): Promise<number>;
+  /**
    * Deletes every declaration received before `before`, and answers how many
    * went. The retention half of this table (`legal/legal-declarations-retention.ts`),
    * driven by the hourly usage sweep. Idempotent: the predicate is an instant.
@@ -86,6 +94,14 @@ export function createDrizzleLegalDeclarationsStore(db: Database): LegalDeclarat
             eq(sql`lower(normalize(${legalDeclarations.email}, NFKC))`, input.normalizedEmail),
           ),
         );
+      return row?.total ?? 0;
+    },
+
+    async countReceivedSince(input: { since: Date }): Promise<number> {
+      const [row] = await db
+        .select({ total: count() })
+        .from(legalDeclarations)
+        .where(gt(legalDeclarations.receivedAt, input.since));
       return row?.total ?? 0;
     },
 

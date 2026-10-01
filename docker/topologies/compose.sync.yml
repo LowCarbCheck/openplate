@@ -391,6 +391,10 @@ services:
       # pages from. Set it to the container path of the commented volume line
       # above this environment block.
       CONTENT_DIR: ${CONTENT_DIR:-}
+      # The daily ceilings on declaration receipts, for the instance and per
+      # sender network. Read openplate-core's .env.example first.
+      LEGAL_DECLARATION_RECEIPTS_PER_DAY: ${LEGAL_DECLARATION_RECEIPTS_PER_DAY:-200}
+      LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY: ${LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY:-10}
       # A PEM file of extra certificate authorities Node trusts, for an SMTP
       # server with a private CA. The container path of the commented volume
       # line above this environment block.

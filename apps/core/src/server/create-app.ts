@@ -428,6 +428,10 @@ export interface LegalDeclarationsSurfaceOptions {
    * exactly as `AiSurfaceOptions.perMinute` does.
    */
   rateLimitPerMinute?: number;
+  /** `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY`. Absent means the route's default, see `legal/receipt-ceilings.ts`. */
+  receiptsPerNetworkPerDay?: number;
+  /** `LEGAL_DECLARATION_RECEIPTS_PER_DAY`. Absent means the route's default, see `legal/receipt-ceilings.ts`. */
+  receiptsPerDay?: number;
 }
 
 export function createApp(options: CreateAppOptions): Express {
@@ -769,6 +773,8 @@ export function createApp(options: CreateAppOptions): Express {
     logger: options.logger,
     now,
     rateLimitPerMinute: options.legal.rateLimitPerMinute,
+    receiptsPerNetworkPerDay: options.legal.receiptsPerNetworkPerDay,
+    receiptsPerDay: options.legal.receiptsPerDay,
   });
 
   // The admin API, ALWAYS mounted, and its middleware decides what to admit

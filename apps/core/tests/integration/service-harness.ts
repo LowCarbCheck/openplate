@@ -401,8 +401,12 @@ export interface StartServiceOptions {
    * suite that is not ABOUT the limiter never trips it — exactly the
    * `PERMISSIVE_THROTTLE` argument, applied to this route's own limiter.
    * `legal-declarations.test.ts` opts in to a small number deliberately.
+   *
+   * The two receipt ceilings (M270/11) are absent by default, which is the
+   * production defaults: no other suite files declarations, and the ones here
+   * that are not about a ceiling stay well under it.
    */
-  legal?: { rateLimitPerMinute?: number };
+  legal?: { rateLimitPerMinute?: number; receiptsPerNetworkPerDay?: number; receiptsPerDay?: number };
   /**
    * `OPEN_SIGNUP=true` (M253). Absent (the default) is every invite-only
    * instance: `POST /v1/auth/signup-request` answers the ordinary
@@ -729,6 +733,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     legal: {
       store: createDrizzleLegalDeclarationsStore(options.db),
       rateLimitPerMinute: options.legal?.rateLimitPerMinute ?? 10_000,
+      receiptsPerNetworkPerDay: options.legal?.receiptsPerNetworkPerDay,
+      receiptsPerDay: options.legal?.receiptsPerDay,
     },
     // `main.ts` wires this the same way: one surface, read by `/health` and
     // written by `PATCH /v1/admin/settings`.

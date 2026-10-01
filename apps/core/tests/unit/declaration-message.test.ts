@@ -5,6 +5,10 @@
  * The templates here are neutral markers built inline; the real text lives in
  * a private repo. The fallback's exact lines ARE pinned: they are code-owned
  * labels copied from the app's confirmation page, not wordsmith-owned prose.
+ * The two receipt sentences M270/11 added (the value of a field the receipt
+ * does not repeat, and the closing line for a person who did not send the
+ * form) are wordsmith-owned, so they are read from `RECEIPT_WITHHELD` and
+ * `RECEIPT_NOT_YOU` rather than typed here.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,10 +20,13 @@ import {
   buildDeclarationReceiptMessage,
   DECLARATION_TEMPLATE_PLACEHOLDERS,
   detailLines,
+  RECEIPT_NOT_YOU,
+  RECEIPT_WITHHELD,
   receiptTemplateLanguages,
   type DeclarationFields,
   type DeclarationKind,
   type DeclarationLanguage,
+  type DeclarationReceiptInput,
   type DeclarationTemplateName,
   type FoundMailTemplate,
 } from '../../src/mail/declaration-message.js';
@@ -39,6 +46,28 @@ function baseFields(overrides: Partial<DeclarationFields> = {}): DeclarationFiel
     requestedDate: null,
     timing: 'earliest',
     receivedAt: RECEIVED_AT,
+    ...overrides,
+  };
+}
+
+/**
+ * What the route hands the receipt builder for {@link baseFields}: the same
+ * declaration with every field the sender wrote reduced to whether it was
+ * given (M270/11). Written out rather than derived, so a test of the builder
+ * does not lean on the function that derives it.
+ */
+function baseReceipt(overrides: Partial<DeclarationReceiptInput> = {}): DeclarationReceiptInput {
+  return {
+    kind: 'kuendigung',
+    email: 'anna@example.org',
+    hasContractReference: true,
+    terminationType: 'ordentlich',
+    hasReason: false,
+    requestedDate: null,
+    timing: 'earliest',
+    receivedAt: RECEIVED_AT,
+    receiptId: 'r',
+    language: 'en',
     ...overrides,
   };
 }
@@ -68,30 +97,31 @@ function foundTemplate(input: {
 const BANNED_WORDS = ['Sync', 'sync', 'Gateway', 'gateway', 'AI connection', 'account link'];
 const BANNED_DASHES = ['\u2014', '\u2013'];
 
-test('with no template, the receipt is the neutral fallback: kind, receipt number, time, every field, nothing else', () => {
-  const en = buildDeclarationReceiptMessage({
-    declaration: { ...baseFields(), receiptId: 'r-1', language: 'en' },
-    template: null,
-  });
+test('with no template, the receipt is the neutral fallback: kind, receipt number, time, the fields it may repeat, and the line for a person who did not send it', () => {
+  const withheldEn = RECEIPT_WITHHELD.en;
+  const en = buildDeclarationReceiptMessage({ declaration: baseReceipt({ receiptId: 'r-1' }), template: null });
   assert.equal(en.origin, 'fallback');
   assert.equal(en.subject, 'Cancellation confirmed');
   assert.deepEqual(en.text.split('\n\n'), [
     'Type: Cancellation',
     'Receipt no.: r-1',
     'Received at: 21 September 2026 at 12:15 CEST',
-    'Name: Anna Beispiel',
+    `Name: ${withheldEn}`,
     'Email: anna@example.org',
-    'Contract or customer number: K-1234',
+    `Contract or customer number: ${withheldEn}`,
     'Type of cancellation: regular notice',
     'Timing: as soon as legally possible',
+    RECEIPT_NOT_YOU.en,
   ]);
 
   const de = buildDeclarationReceiptMessage({
-    declaration: {
-      ...baseFields({ kind: 'widerruf', terminationType: null, timing: null }),
+    declaration: baseReceipt({
+      kind: 'widerruf',
+      terminationType: null,
+      timing: null,
       receiptId: 'r-2',
       language: 'de',
-    },
+    }),
     template: null,
   });
   assert.equal(de.subject, 'Widerruf bestätigt');
@@ -99,9 +129,10 @@ test('with no template, the receipt is the neutral fallback: kind, receipt numbe
     'Art: Widerruf',
     'Beleg-Nr.: r-2',
     'Eingegangen am: 21. September 2026 um 12:15 MESZ',
-    'Name: Anna Beispiel',
+    `Name: ${RECEIPT_WITHHELD.de}`,
     'E-Mail: anna@example.org',
-    'Vertrags- oder Kundennummer: K-1234',
+    `Vertrags- oder Kundennummer: ${RECEIPT_WITHHELD.de}`,
+    RECEIPT_NOT_YOU.de,
   ]);
 });
 
@@ -119,7 +150,7 @@ test('the neutral receipt in fr, it, es and tr uses the confirmation page labels
     lines: [subject, kind, receipt, received],
   } of cases) {
     const message = buildDeclarationReceiptMessage({
-      declaration: { ...baseFields(), receiptId: 'r-3', language },
+      declaration: baseReceipt({ receiptId: 'r-3', language }),
       template: null,
     });
     const [kindLine, receiptLine, receivedLine] = message.text.split('\n\n');
@@ -141,22 +172,48 @@ test('the receipt is looked up in the reader language, then German, then English
   assert.deepEqual(receiptTemplateLanguages('en'), ['en', 'de']);
 });
 
-test('an optional field the person left out produces no line at all', () => {
-  const withReason = buildDeclarationReceiptMessage({
-    declaration: { ...baseFields({ reason: 'a stated reason' }), receiptId: 'r', language: 'en' },
-    template: null,
-  });
+test('an optional field the person left out produces no line at all, and one they gave is confirmed but not repeated', () => {
+  const withReason = buildDeclarationReceiptMessage({ declaration: baseReceipt({ hasReason: true }), template: null });
   const withoutReason = buildDeclarationReceiptMessage({
-    declaration: { ...baseFields({ reason: null }), receiptId: 'r', language: 'en' },
+    declaration: baseReceipt({ hasReason: false, hasContractReference: false }),
     template: null,
   });
-  assert.ok(withReason.text.includes('Reason: a stated reason'));
+  assert.ok(withReason.text.includes(`Reason: ${RECEIPT_WITHHELD.en}`), withReason.text);
   assert.ok(!withoutReason.text.includes('Reason:'));
+  assert.ok(!withoutReason.text.includes('Contract or customer number:'));
+  // CONTROL: the name is required on the form, so its line is always there.
+  assert.ok(withoutReason.text.includes(`Name: ${RECEIPT_WITHHELD.en}`));
+});
+
+test('the receipt sentences M270/11 added exist in each of the six languages, distinct from the English except in English', () => {
+  for (const language of INSTANCE_LANGUAGES) {
+    assert.ok(RECEIPT_WITHHELD[language].length > 0, language);
+    assert.ok(RECEIPT_NOT_YOU[language].length > 0, language);
+    if (language === 'en') continue;
+    assert.notEqual(RECEIPT_WITHHELD[language], RECEIPT_WITHHELD.en, `${language} is still English`);
+    assert.notEqual(RECEIPT_NOT_YOU[language], RECEIPT_NOT_YOU.en, `${language} is still English`);
+  }
+});
+
+test('the operator alert keeps every field word for word, the reason and the name included', () => {
+  const alert = buildDeclarationOperatorAlertMessage({
+    declaration: {
+      ...baseFields({ name: 'Anna www.example.org', reason: 'a stated reason' }),
+      receiptId: 'r',
+      matched: false,
+    },
+    template: null,
+  });
+  assert.ok(alert.text.includes('Name: Anna www.example.org'));
+  assert.ok(alert.text.includes('Reason: a stated reason'));
+  assert.ok(alert.text.includes('Contract or customer number: K-1234'));
+  // CONTROL: the not-you line is the receipt's, never the operator's.
+  assert.ok(!alert.text.includes(RECEIPT_NOT_YOU.en));
 });
 
 test('no fallback carries a link, names a service, or carries a dash, in any of the six languages', () => {
   const receipts = INSTANCE_LANGUAGES.map((language) =>
-    buildDeclarationReceiptMessage({ declaration: { ...baseFields(), receiptId: 'r', language }, template: null }),
+    buildDeclarationReceiptMessage({ declaration: baseReceipt({ hasReason: true, language }), template: null }),
   );
   const alert = buildDeclarationOperatorAlertMessage({
     declaration: { ...baseFields(), receiptId: 'r', matched: true },
@@ -205,17 +262,21 @@ test('a found template is filled, in the TEMPLATE language, with the details as 
   // lookup. The labels and the date follow the file, so the letter is in one
   // language throughout.
   const message = buildDeclarationReceiptMessage({
-    declaration: { ...baseFields(), receiptId: 'r', language: 'de' },
+    declaration: baseReceipt({ language: 'de', hasReason: true }),
     template,
   });
   assert.equal(message.origin, 'template');
   assert.equal(message.subject, 'Fixture subject');
+  // The template's {{details}} get the same withheld lines as the fallback,
+  // and the not-you line is the fallback's alone: the template's closing is
+  // the operator's to write.
   assert.deepEqual(message.text.split('\n\n'), [
     'Fixture received on 21 September 2026 at 12:15 CEST.',
-    'Name: Anna Beispiel',
+    `Name: ${RECEIPT_WITHHELD.en}`,
     'Email: anna@example.org',
-    'Contract or customer number: K-1234',
+    `Contract or customer number: ${RECEIPT_WITHHELD.en}`,
     'Type of cancellation: regular notice',
+    `Reason: ${RECEIPT_WITHHELD.en}`,
     'Timing: as soon as legally possible',
     'Fixture closing.',
   ]);
@@ -249,7 +310,7 @@ test('a template that needs a value this letter lacks sends the fallback, never 
     body: 'Fixture matched: {{matched}}.\n\n{{details}}',
   });
   const message = buildDeclarationReceiptMessage({
-    declaration: { ...baseFields(), receiptId: 'r', language: 'en' },
+    declaration: baseReceipt(),
     template: alertTemplate,
   });
   assert.equal(message.origin, 'fallback');

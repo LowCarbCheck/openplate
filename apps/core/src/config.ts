@@ -43,6 +43,10 @@ import {
   type ChatInputPolicy,
 } from './ai/chat-input-bounds.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
+import {
+  LEGAL_DECLARATION_RECEIPTS_PER_DAY,
+  LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
+} from './legal/receipt-ceilings.js';
 
 /**
  * Minimum accepted `SERVER_SECRET` length. 32 characters is the shortest
@@ -486,6 +490,29 @@ export interface ServiceConfig {
    * different things: one forwards a photograph, this one keeps it.
    */
   feedbackMaxRequestBytes: number;
+  /**
+   * Receipts the legal declarations form may mail in any trailing 24 hours,
+   * across every recipient. `LEGAL_DECLARATION_RECEIPTS_PER_DAY`, default 200.
+   *
+   * The form needs no sign-in (§312k BGB) and mails a receipt to whatever
+   * address was typed, from this instance's sending domain. This is the
+   * ceiling that keeps many senders together from spending that domain's
+   * reputation, which the password resets and invitations depend on. Past it
+   * a declaration is still stored, forwarded and sent to the operator; only
+   * its receipt is skipped, and the response does not change. See
+   * `legal/receipt-ceilings.ts`. The per-address ceiling (three a day) and
+   * the burst limit (five a minute per IPv4 address or IPv6 /64) stay fixed
+   * in `server/legal-declarations.ts`.
+   */
+  legalReceiptsPerDay: number;
+  /**
+   * Receipts one sender network, an IPv4 address or an IPv6 /64, may cause in
+   * any trailing 24 hours. `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY`,
+   * default 10. The same past-the-ceiling rule as
+   * {@link ServiceConfig.legalReceiptsPerDay}; the count lives in memory and
+   * resets on a restart.
+   */
+  legalReceiptsPerNetworkPerDay: number;
   /**
    * The operator's message to every client, or `null`, the default, and what
    * an instance with nothing to say has.
@@ -1861,6 +1888,16 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       env,
       'FEEDBACK_MAX_REQUEST_BYTES',
       DEFAULT_FEEDBACK_MAX_REQUEST_BYTES,
+    ),
+    legalReceiptsPerDay: parsePositiveInteger(
+      env,
+      'LEGAL_DECLARATION_RECEIPTS_PER_DAY',
+      LEGAL_DECLARATION_RECEIPTS_PER_DAY,
+    ),
+    legalReceiptsPerNetworkPerDay: parsePositiveInteger(
+      env,
+      'LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY',
+      LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
     ),
     notice: parseNotice(env),
     nutrientReferenceBasis: parseNutrientReferenceBasis(env),

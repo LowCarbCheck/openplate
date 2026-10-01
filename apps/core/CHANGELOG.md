@@ -7,6 +7,14 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **Declaration receipts have a daily ceiling per sender network and per instance.** The per-address cap stopped mail floods to one stranger. But at five a minute, one IPv6 /64 could trigger thousands of emails a day to different addresses from your domain. Now one sender network (an IPv4 address or an IPv6 /64 counted by the burst limiter) causes at most `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` (default 10) receipts in 24 hours. The whole instance sends at most `LEGAL_DECLARATION_RECEIPTS_PER_DAY` (default 200). Beyond either limit, the service still stores the declaration, forwards it, and alerts the operator. The `202` response remains byte-identical. One `warn` log records the receipt number and the ceiling, but never the address. The service reads the instance count from stored declarations. It tracks the network count in memory, so no sender network is stored alongside a statutory record, and a restart resets it. A value of zero or a non-number in either variable stops the boot. `tests/integration/legal-declarations.test.ts`, `tests/unit/receipt-ceilings.test.ts` and `tests/unit/config.test.ts` check this.
+
+### Changed
+
+- **A declaration receipt no longer repeats what the sender wrote.** The receipt goes to the typed address, which might not belong to the sender. It previously repeated their name (200 characters), contract reference (200), and reason (4000) verbatim. In templates using `{{details}}` and in the fallback, each populated field now reads "received, not repeated in this email" in the recipient's language. The system drops the name entirely rather than shortening it, because even sanitized names can contain phone numbers. The fallback receipt adds a closing line telling recipients who did not submit the form to contact the business to reverse the declaration. The operator alert and the stored row retain the original text. `tests/unit/declaration-message.test.ts`, `tests/unit/declaration-receipt.test.ts`, `tests/unit/mailer.test.ts` and `tests/integration/legal-declarations.test.ts` check this.
+
 ## [0.28.0] - 2026-10-01
 
 Upgrade in this order: openplate 0.58.0 first, then this release. This release refuses a data key rotation without the current passphrase, and an app older than 0.58.0 does not send it. Migrations 0025 to 0029 run at boot.
