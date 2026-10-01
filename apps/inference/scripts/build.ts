@@ -67,7 +67,7 @@ async function main(): Promise<void> {
     bundle: true,
     platform: 'node',
     format: 'esm',
-    target: 'node22',
+    target: 'node24',
     external: ['express', 'sharp', 'undici'],
     sourcemap: true,
     logLevel: 'info',
