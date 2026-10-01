@@ -110,13 +110,25 @@ export function findComposeFiles(repoRoot: string): string[] {
     .toSorted();
 }
 
+/**
+ * A deprecated file that only `include:`s another one, such as `compose.sync.yml`. It declares no
+ * service of its own, so the file it includes is the one that is read.
+ */
+export function isIncludeStub(composeText: string): boolean {
+  const lines = composeText.split('\n');
+  const includes = lines.some((line) => /^include:\s*$/.test(line));
+  return includes && !lines.some((line) => /^services:\s*$/.test(line));
+}
+
 /** Every service in every shipped compose file that runs `image`, such as `openplate-core`. */
 export function findServicesRunning(input: { repoRoot: string; image: string }): ServiceLocation[] {
-  return findComposeFiles(input.repoRoot).flatMap((file) =>
-    readComposeServices(readFileSync(join(input.repoRoot, file), 'utf8'))
+  return findComposeFiles(input.repoRoot).flatMap((file) => {
+    const text = readFileSync(join(input.repoRoot, file), 'utf8');
+    if (isIncludeStub(text)) return [];
+    return readComposeServices(text)
       .filter((service) => readServiceImage(service) === input.image)
-      .map((service) => ({ file, service: service.name })),
-  );
+      .map((service) => ({ file, service: service.name }));
+  });
 }
 
 function unquote(raw: string): string {

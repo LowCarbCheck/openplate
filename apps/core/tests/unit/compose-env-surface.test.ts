@@ -27,7 +27,9 @@ import {
   findComposeService,
   findServicesRunning,
   hasEnvExampleEntry,
+  isIncludeStub,
   isSettable,
+  readComposeServices,
   readEnvironment,
   scanEnvironmentReads,
   scanFiles,
@@ -98,9 +100,9 @@ const EXTRA: readonly { name: string; reason: string }[] = [
 
 /** The compose services that run openplate-core. Discovery must find exactly these. */
 const SERVICES_RUNNING_CORE = [
-  { file: 'apps/core/docker/compose.yml', service: 'sync' },
-  { file: 'docker/topologies/compose.full.yml', service: 'sync' },
-  { file: 'docker/topologies/compose.sync.yml', service: 'sync' },
+  { file: 'apps/core/docker/compose.yml', service: 'core' },
+  { file: 'docker/topologies/compose.core.yml', service: 'core' },
+  { file: 'docker/topologies/compose.full.yml', service: 'core' },
 ];
 
 const EXCLUDED_NAMES = new Set(EXCLUDED.map((entry) => entry.name));
@@ -216,10 +218,10 @@ describe('every compose file that runs openplate-core forwards everything it rea
 
 describe('the controls: each check above can fail', () => {
   it('a compose file with one forwarded line removed is caught', () => {
-    const text = composeText('docker/topologies/compose.sync.yml');
+    const text = composeText('docker/topologies/compose.core.yml');
     const withoutLine = text.replace(/^ {6}SMTP_HOST:.*\n/m, '');
     assert.notEqual(withoutLine, text, 'the control found no SMTP_HOST line to remove');
-    assert.deepEqual(unforwarded({ composeText: withoutLine, service: 'sync', required: REQUIRED }), ['SMTP_HOST']);
+    assert.deepEqual(unforwarded({ composeText: withoutLine, service: 'core', required: REQUIRED }), ['SMTP_HOST']);
   });
 
   it('a new read that no compose file forwards is caught everywhere', () => {
@@ -230,6 +232,25 @@ describe('the controls: each check above can fail', () => {
       assert.deepEqual(unforwarded({ composeText: composeText(file), service, required }), ['NOT_FORWARDED'], file);
     }
     assert.deepEqual(missingFromEnvExample({ envExample: ENV_EXAMPLE, required }), ['NOT_FORWARDED']);
+  });
+});
+
+describe('a deprecated include stub declares no service of its own', () => {
+  it('reads compose.sync.yml as a stub and compose.core.yml as a file with services', () => {
+    assert.equal(isIncludeStub(composeText('docker/topologies/compose.sync.yml')), true);
+    assert.equal(isIncludeStub(composeText('docker/topologies/compose.core.yml')), false);
+  });
+
+  it('does not list the stub among the files that run a service', () => {
+    assert.deepEqual(
+      SERVICES_RUNNING_CORE.filter(({ file }) => file.endsWith('compose.sync.yml')),
+      [],
+    );
+  });
+
+  it('the control: a file with neither services nor include is still refused', () => {
+    assert.equal(isIncludeStub('name: x\n'), false);
+    assert.throws(() => readComposeServices('name: x\n'), /no top-level services/);
   });
 });
 

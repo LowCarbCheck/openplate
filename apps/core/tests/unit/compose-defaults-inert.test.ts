@@ -59,9 +59,9 @@ const TOPOLOGY: readonly { name: string; reason: string }[] = [
 const IMAGE_ENV = readImageEnvironment(readFileSync(join(CORE_ROOT, 'Dockerfile'), 'utf8'));
 
 const SERVICES_RUNNING_CORE = [
-  { file: 'apps/core/docker/compose.yml', service: 'sync' },
-  { file: 'docker/topologies/compose.full.yml', service: 'sync' },
-  { file: 'docker/topologies/compose.sync.yml', service: 'sync' },
+  { file: 'apps/core/docker/compose.yml', service: 'core' },
+  { file: 'docker/topologies/compose.core.yml', service: 'core' },
+  { file: 'docker/topologies/compose.full.yml', service: 'core' },
 ];
 
 /** The environment with an empty `.env`, and the minimal one, for one service. */
@@ -116,16 +116,16 @@ describe('compose defaults change nothing openplate-core parses', () => {
 
 describe('the controls: a default that is not inert is caught', () => {
   it('a default that turns a feature on fails', () => {
-    const text = composeText('docker/topologies/compose.sync.yml');
+    const text = composeText('docker/topologies/compose.core.yml');
     const changed = text.replace('${SYNC_SHARING:-false}', '${SYNC_SHARING:-true}');
     assert.notEqual(changed, text, 'the control found no SYNC_SHARING default to change');
-    assert.throws(() => assertInert({ composeText: changed, service: 'sync' }), assert.AssertionError);
+    assert.throws(() => assertInert({ composeText: changed, service: 'core' }), assert.AssertionError);
   });
 
   it('an empty default where this parser refuses empty fails', () => {
     const text = composeText('apps/core/docker/compose.yml');
     const changed = text.replace('${LOG_LEVEL:-info}', '${LOG_LEVEL:-}');
     assert.notEqual(changed, text, 'the control found no LOG_LEVEL default to change');
-    assert.throws(() => assertInert({ composeText: changed, service: 'sync' }), /Invalid LOG_LEVEL/);
+    assert.throws(() => assertInert({ composeText: changed, service: 'core' }), /Invalid LOG_LEVEL/);
   });
 });

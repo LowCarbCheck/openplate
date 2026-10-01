@@ -68,9 +68,9 @@ const IMAGE_ENV = readImageEnvironment(readFileSync(join(APP_ROOT, 'Dockerfile.p
 
 const SERVICES_RUNNING_APP = [
   { file: 'docker/compose.yml', service: 'app' },
+  { file: 'docker/topologies/compose.core.yml', service: 'app' },
   { file: 'docker/topologies/compose.full.yml', service: 'app' },
   { file: 'docker/topologies/compose.inference.yml', service: 'openplate' },
-  { file: 'docker/topologies/compose.sync.yml', service: 'app' },
 ];
 
 /** The environment with an empty `.env`, and the minimal one. */
