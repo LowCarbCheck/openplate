@@ -71,16 +71,23 @@ echo "▶ pre-push: the README Documentation table against docs/"
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 
-# TS commands need the ts-dev toolbox (the host lacks native build tools), but
-# must run bare when the hook itself is already executing inside a container.
+# Where the TS commands run. Inside a container they run bare. Where a toolbox
+# exists they run in the ts-dev toolbox, as they always have: the maintainer's
+# host lacks native build tools. Anywhere else they run with the node and pnpm
+# on PATH, so a contributor needs only Node, pnpm and make to push (M269 spec
+# 08). .githooks/test-no-toolbox.sh at the repository root proves that path.
 if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
   run() { CI=true "$@"; }
 elif command -v toolbox >/dev/null 2>&1; then
   run() { toolbox run -c ts-dev env CI=true "$@"; }
 else
-  echo "✖ pre-push: no ts-dev toolbox and not inside a container — cannot run the gate."
-  echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
-  exit 1
+  for tool in node pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
+      exit 1
+    fi
+  done
+  run() { CI=true "$@"; }
 fi
 
 # ── SECOND TIER: the changelog the release page is built from ───────────────
@@ -125,7 +132,10 @@ echo "▶ pre-push: browser smoke tier (host only, the toolbox has no Chromium)"
 # shared cache and still cannot start them, which is the case this has to
 # catch.
 if ! pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))" >/dev/null 2>&1; then
-  echo "✖ pre-push: Chromium will not start here. Push from the host shell, the toolbox has no Chromium."
+  echo "✖ pre-push: Chromium will not start here, and the browser tier is a REQUIRED gate."
+  echo "  Install it in apps/app with: pnpm exec playwright install chromium"
+  echo "  On Linux, 'pnpm exec playwright install --with-deps chromium' also installs its system libraries."
+  echo "  Inside the ts-dev toolbox it never starts: push from the host shell instead."
   exit 1
 fi
 CI=true pnpm test:e2e
