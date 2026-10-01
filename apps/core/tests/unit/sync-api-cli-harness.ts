@@ -16,7 +16,11 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const entrypoint = resolve(repoRoot, 'scripts/sync-api/main.ts');
+/** The two files a package script can start: `pnpm core-api` runs `main.ts`, `pnpm sync-api` runs the alias. */
+const entrypoints = {
+  'core-api': resolve(repoRoot, 'scripts/sync-api/main.ts'),
+  'sync-api': resolve(repoRoot, 'scripts/sync-api/sync-api-alias.ts'),
+} as const;
 
 export interface CountingServer {
   baseUrl: string;
@@ -71,6 +75,10 @@ export interface RunCliInput {
   args: string[];
   /** The admin token to export, or `null` for "the operator has not set it". */
   adminToken: string | null;
+  /** Which package script to run: `core-api` (the default) or the old `sync-api`. */
+  entry?: keyof typeof entrypoints;
+  /** Extra environment for the child, on top of the minimal one. */
+  env?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -81,8 +89,9 @@ export interface RunCliInput {
 export async function runCli(input: RunCliInput): Promise<CliRun> {
   const env: NodeJS.ProcessEnv = { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '' };
   if (input.adminToken !== null) env.ADMIN_TOKEN = input.adminToken;
+  Object.assign(env, input.env);
 
-  const child = spawn(process.execPath, ['--import', 'tsx', entrypoint, ...input.args], {
+  const child = spawn(process.execPath, ['--import', 'tsx', entrypoints[input.entry ?? 'core-api'], ...input.args], {
     cwd: repoRoot,
     env,
     stdio: ['ignore', 'pipe', 'pipe'],

@@ -32,10 +32,10 @@ push happened before the fix, or a client confirmed it and was wrong.
 
 ```
 export ADMIN_TOKEN=...            # OPENPLATE_SYNC_ADMIN_TOKEN
-export SYNC_SERVER_URL=https://sync.openplate.de
+export CORE_URL=https://sync.openplate.de
 
-pnpm sync-api accounts list                      # find the account id
-pnpm sync-api accounts blob-versions <id>
+pnpm core-api accounts list                      # find the account id
+pnpm core-api accounts blob-versions <id>
 ```
 
 You get one row per retained version, newest first:
@@ -67,7 +67,7 @@ about their own day.
 ## 3. Roll the server back
 
 ```
-pnpm sync-api accounts rollback <id> --to-version 5 --yes
+pnpm core-api accounts rollback <id> --to-version 5 --yes
 ```
 
 This **deletes** every version above the target. There is no undo, which is why
@@ -108,7 +108,7 @@ before you do the second.
 ## 5. Check the repair
 
 ```
-pnpm sync-api accounts blob-versions <id>
+pnpm core-api accounts blob-versions <id>
 ```
 
 The current version should be the one you restored, or one above it if the

@@ -145,7 +145,7 @@ The two hashes must match. A full deployment might start the stopped source core
 1. Confirm that `curl -s https://<target api>/health` reports the new release.
 2. Sign in to the target app with the canary address and passphrase. Confirm your food entry appears.
 3. For each existing target account, select "forgot password". Open the email and set a new password. Confirm that the diary data appears.
-4. Run `pnpm sync-api accounts list` against the target. Confirm it displays the moved accounts with their ids and the new daily limit.
+4. Run `pnpm core-api accounts list` against the target. Confirm it displays the moved accounts with their ids and the new daily limit.
 
 ### 8. Clean up
 
@@ -153,7 +153,7 @@ The two hashes must match. A full deployment might start the stopped source core
 shred -u /dev/shm/move-accounts.env
 ```
 
-Delete the canary account on the target with `pnpm sync-api accounts delete <id> --yes`. Retain the database backups until you verify stability, then remove them.
+Delete the canary account on the target with `pnpm core-api accounts delete <id> --yes`. Retain the database backups until you verify stability, then remove them.
 
 ## If something goes wrong
 

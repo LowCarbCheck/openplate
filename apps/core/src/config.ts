@@ -736,7 +736,7 @@ function parsePush(env: NodeJS.ProcessEnv): VapidCredentials | null {
     throw new Error(
       `Incomplete push configuration: ${missing.join(', ')} is not set. ` +
         `${VAPID_VARIABLES.join(', ')} are all-or-nothing, set all three, or none and this instance sends no notifications. ` +
-        'Generate a pair with `pnpm sync-api push keygen`.',
+        'Generate a pair with `pnpm core-api push keygen`.',
     );
   }
 

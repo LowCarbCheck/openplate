@@ -1,11 +1,11 @@
 /**
- * The `sync-api` transport: one `fetch` per command, and a deliberately deaf
+ * The `core-api` transport: one `fetch` per command, and a deliberately deaf
  * ear for what comes back on a failure.
  *
  * ── IT READS NOTHING FROM DISK, AND THAT IS ENFORCED ────────────────────────
  * No config module, no store, no `pg`, no `drizzle-orm`, no `node:fs`. The
  * whole client is a base URL and a bearer token handed in by the caller, so
- * `sync-api` runs from a laptop that has never seen the database — which is
+ * `core-api` runs from a laptop that has never seen the database, which is
  * the property `shw-api`, `np-api` and `lcc-api` have and the reason an
  * operator can act on production without production credentials.
  * `tests/unit/sync-api-no-db-imports.test.ts` walks the static import graph
@@ -32,7 +32,7 @@
  */
 import type { JsonValue } from '../../src/lib/json.js';
 
-/** Everything `sync-api` reports to the operator is one of these. */
+/** Everything `core-api` reports to the operator is one of these. */
 export class CliError extends Error {
   constructor(message: string) {
     super(message);
@@ -207,9 +207,7 @@ export class AdminClient {
       // is "fetch failed" plus a cause chain that has, on occasion, carried
       // the request headers — which here would be the admin token. The
       // address is ours and is worth naming; nothing else from that error is.
-      throw new CliError(
-        `Could not reach the service at ${url}. Is it running, and is --url (or SYNC_SERVER_URL) right?`,
-      );
+      throw new CliError(`Could not reach the service at ${url}. Is it running, and is --url (or CORE_URL) right?`);
     }
   }
 

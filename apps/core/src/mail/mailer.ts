@@ -168,7 +168,7 @@ export interface Mailer {
  *
  * SILENCE HERE IS NOT A DROPPED MESSAGE. An instance without mail hands the
  * operator the link instead — `POST /v1/admin/invites` returns it, and the
- * `sync-api` CLI prints it — so the capability always reaches somebody. What
+ * `core-api` CLI prints it, so the capability always reaches somebody. What
  * this implementation removes is the alternative: a hard failure that would
  * make a self-hosted instance unusable until its owner stood up a relay, which
  * is the instruction ADR-0004 refused to give and ADR-0005 still refuses.
