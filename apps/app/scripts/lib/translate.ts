@@ -129,14 +129,21 @@ export const GLOSSARY: readonly GlossaryTerm[] = [
   },
   { en: 'diary', say: { de: 'Tagebuch', fr: 'journal', it: 'diario', es: 'diario', tr: 'günlük' } },
   { en: 'allowance', say: { de: 'Kontingent', fr: 'quota', it: 'quota', es: 'cuota', tr: 'kota' } },
+  // The account server was "the sync server" until 56e14f40 renamed the prose (it signs people in,
+  // proxies the AI scan, mails and syncs, so "sync" named a fifth of its job). All five answers are
+  // wordsmith's, asked on 2026-10-01 with a one-line note. Italian was not stable over six runs:
+  // "server core" twice, "server centrale" twice, "server principale" once, and once the English
+  // came back unchanged. The loanword order was kept because German keeps "Core" as a name too and
+  // the product is `openplate-core`. A person may still prefer "server centrale", as French and
+  // Spanish say "central".
   {
-    en: 'sync server',
+    en: 'core server',
     say: {
-      de: 'Sync-Server',
-      fr: 'serveur de synchronisation',
-      it: 'server di sincronizzazione',
-      es: 'servidor de sincronización',
-      tr: 'eşitleme sunucusu',
+      de: 'Core-Server',
+      fr: 'serveur central',
+      it: 'server core',
+      es: 'servidor central',
+      tr: 'çekirdek sunucu',
     },
   },
   {
@@ -161,6 +168,25 @@ export const GLOSSARY: readonly GlossaryTerm[] = [
       it: 'runtime di inferenza',
       es: 'runtime de inferencia',
       tr: 'çıkarım çalışma zamanı',
+    },
+  },
+  // German and Italian: wordsmith's answer on 2026-09-27, asked to settle a split between
+  // "Self-Hosting" and "Selbst-Hosten" in German (the docs corpus and most of the UI already agreed
+  // on "Self-Hosting"; wordsmith confirmed the loanword, not a calque, fits this site's du register).
+  // Italian's split was narrower ("Self-hosting" against a stray "Auto-hosting"/"auto-hosting" in two
+  // UI strings); wordsmith confirmed the established loanword. French and Turkish: the term the site
+  // already shipped everywhere, self-consistent before this entry existed. Spanish: wordsmith's answer
+  // the same day, asked to settle a three-way split in the UI corpus ("Autohospedaje", "autoalojamiento",
+  // "Alojamiento propio"); it agrees with what the docs corpus already used throughout, so this entry
+  // brings the UI back in line with the docs rather than inventing a fourth word.
+  {
+    en: 'self-hosting',
+    say: {
+      de: 'Self-Hosting',
+      fr: 'Auto-hébergement',
+      it: 'Self-hosting',
+      es: 'Autoalojamiento',
+      tr: 'Kendi sunucunda barındırma',
     },
   },
 ];
