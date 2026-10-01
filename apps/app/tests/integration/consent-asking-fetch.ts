@@ -1,5 +1,5 @@
 /**
- * The fake sync service, seen through openplate-core's consent rule (M266,
+ * The fake core server, seen through openplate-core's consent rule (M266,
  * `PROTOCOL.md` §5.15.1): a `fetch` to hand a client, which makes the service
  * an instance that asks every account for the consent to health data.
  *

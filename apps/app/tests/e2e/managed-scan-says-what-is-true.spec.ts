@@ -3,7 +3,7 @@
  *
  * THE REPORT, install rehearsal, 2026-09-27: a managed instance
  * (`INSTANCE_MODE=managed`, `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY` set on
- * the sync service, no `AI_ADVERTISED_MODEL`), a signed-in member with an
+ * the core server, no `AI_ADVERTISED_MODEL`), a signed-in member with an
  * allowance, a photo, "Analyze": "No luck with that photo. Connect your AI
  * provider in settings". A managed instance has no AI settings page, and
  * nothing reached either server.
@@ -24,7 +24,7 @@
  *     "check your key in AI settings" either.
  *
  * WHAT IS REAL: the production build booted as a managed instance, the sign-in
- * against the tier's fake sync service, the scan screen and its action. WHAT
+ * against the tier's fake core server, the scan screen and its action. WHAT
  * IS STUBBED: `/health`, the account's allowance on every auth answer, and the
  * proxy's chat completions.
  */

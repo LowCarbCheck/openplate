@@ -58,7 +58,7 @@ export interface AvatarLabelInput {
   displayName: string | null;
   /** `SyncSessionSnapshot.isResuming`. */
   isResuming: boolean;
-  /** Whether this instance has a sync server. Without one there is no session to reopen. */
+  /** Whether this instance has a core server. Without one there is no session to reopen. */
   hasSyncServer: boolean;
 }
 
@@ -72,7 +72,7 @@ export interface AvatarLabelInput {
 export function resolveAvatarLabel({ displayName, isResuming, hasSyncServer }: AvatarLabelInput): AvatarLabel {
   const name = resolveAvatarName(displayName);
   if (name !== null) return { kind: 'name', name };
-  // No sync server, no resume: `SyncController` settles the flag at once
+  // No core server, no resume: `SyncController` settles the flag at once
   // there, and waiting for it would blank "This device" for a frame.
   if (hasSyncServer && isResuming) return { kind: 'pending' };
   return { kind: 'device' };

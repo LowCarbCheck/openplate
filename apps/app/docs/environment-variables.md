@@ -1,6 +1,6 @@
 # Environment variables
 
-Every setting of the three openplate containers is an environment variable. This page lists all of them, for the app, the sync service (openplate-core) and the inference service. Most are optional. When you leave one unset, the default in its row applies.
+Every setting of the three openplate containers is an environment variable. This page lists all of them, for the app, the core server (openplate-core) and the inference service. Most are optional. When you leave one unset, the default in its row applies.
 
 Some settings stop the boot on purpose. A value the service cannot use, or one half of a pair, makes the container exit. The exit message names the variable. The container does not start with a guess. [Settings that stop the boot](#settings-that-stop-the-boot) lists every such rule.
 
@@ -8,7 +8,7 @@ Some settings stop the boot on purpose. A value the service cannot use, or one h
 
 - **Docker Compose.** Put the line in the `.env` file next to the compose file, for example `LOG_LEVEL=debug`. Then run `docker compose -f <your file> up -d` again. Every shipped compose file passes each variable its service reads on to the container. `docker compose restart` does not read `.env` again.
 - **Quadlet.** Put the line in the `<unit>.env` file next to the unit, for example `app.env`, `sync.env` or `inference.env`. Use the container's own names from this page. Then restart the unit, for example `systemctl --user restart sync.service`. [podman.md](podman.md#quadlet-units) explains the files.
-- **Without a container.** The app and the sync service each read a `.env` file in the folder they run in. You can also set the variable in the shell or in the systemd unit. [Without Docker](self-hosting.md#without-docker) shows the app's setup.
+- **Without a container.** The app and the core server each read a `.env` file in the folder they run in. You can also set the variable in the shell or in the systemd unit. [Without Docker](self-hosting.md#without-docker) shows the app's setup.
 
 The Default column says what the service does when the variable is unset. A compose file can pass a value of its own, for example `MODEL_PROFILE: lite`. The compose file shows that value next to the name.
 
@@ -18,13 +18,13 @@ The three topology files, `compose.sync.yml`, `compose.inference.yml` and `compo
 
 | In `.env` | Fills |
 | --- | --- |
-| `PUBLIC_APP_URL` | the app's `APP_URL`, and the sync service's `CLIENT_BASE_URL` |
+| `PUBLIC_APP_URL` | the app's `APP_URL`, and the core server's `CLIENT_BASE_URL` |
 | `PUBLIC_SYNC_URL` | the app's `SYNC_SERVER_URL`, and the sync service's `SERVER_PUBLIC_URL` |
 | `PUBLIC_INFERENCE_URL` | the app's `DEFAULT_INFERENCE_BASE_URL` |
 | `INFERENCE_API_KEY` | the app's `DEFAULT_INFERENCE_API_KEY`, and the inference service's `API_KEYS` |
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SYNC_DB_NAME` | the database, and the sync service's `DATABASE_URL` |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SYNC_DB_NAME` | the database, and the core server's `DATABASE_URL` |
 
-`docker/compose.yml`, the app on its own, takes `APP_URL` under its own name. The sync service's own quickstart file is `apps/core/docker/compose.yml`. It takes `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` under their own names. It builds `DATABASE_URL` from `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`.
+`docker/compose.yml`, the app on its own, takes `APP_URL` under its own name. The core server's own quickstart file is `apps/core/docker/compose.yml`. It takes `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` under their own names. It builds `DATABASE_URL` from `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`.
 
 ## The app
 
@@ -96,9 +96,9 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 | --- | --- | --- | --- |
 | `MOVED_TO_URL` | unset | Closes this instance and directs users to another one, for example `https://app.openplate.de`. Every page request serves a page that names the new address, the service worker installed on phones clears its caches and unregisters itself, and the API returns 410. The value must be an `https://` address on a host other than `APP_URL`; anything else stops the boot. | [Moving people to another instance](configuration.md#moving-people-to-another-instance) |
 
-## The sync service (openplate-core)
+## The core server (openplate-core)
 
-The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two values: `DATABASE_URL`, which the compose files fill for you, and `SERVER_SECRET`. Everything else is optional and off until you set it. [openplate-core's README](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md) explains the features.
+The core server container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two values: `DATABASE_URL`, which the compose files fill for you, and `SERVER_SECRET`. Everything else is optional and off until you set it. [openplate-core's README](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md) explains the features.
 
 ### Server and addresses
 
@@ -293,18 +293,18 @@ A container that does not start is easy to notice, and it costs one restart. A s
 
 ### Refused names
 
-These names were settings once. Now the service refuses to start while one is set, and says what to use instead. The sync service refuses them even with an empty value, so delete the line. The app refuses `GATEWAY_URL` only when it has a value.
+These names were settings once. Now the service refuses to start while one is set, and says what to use instead. The core server refuses them even with an empty value, so delete the line. The app refuses `GATEWAY_URL` only when it has a value.
 
 | Variable | Refused by | Use instead |
 | --- | --- | --- |
-| `GATEWAY_URL` | the app | `INSTANCE_MODE=managed`. The sync service took over the AI proxy. |
-| `SIGNUP_MODE` | the sync service | Nothing. Accounts come from invitations, and `OPEN_SIGNUP=true` lets people ask for one. |
-| `SIGNUPS_OPEN` | the sync service | Nothing, for the same reason. |
-| `REQUIRE_EMAIL_VERIFICATION` | the sync service | Nothing. The invitation is the address check. |
-| `EMAIL_FROM` | the sync service | `MAIL_API_FROM`, or `SMTP_FROM`. |
-| `SMTP_SECURE` | the sync service | Nothing. `SMTP_PORT` decides the encryption. |
-| `PIGEON_API_KEY` | the sync service | `MAIL_API_KEY`, or `SMTP_USER` and `SMTP_PASSWORD`. |
-| `PIGEON_BASE_URL` | the sync service | `MAIL_API_URL`, or `SMTP_HOST`. |
+| `GATEWAY_URL` | the app | `INSTANCE_MODE=managed`. The core server took over the AI proxy. |
+| `SIGNUP_MODE` | the core server | Nothing. Accounts come from invitations, and `OPEN_SIGNUP=true` lets people ask for one. |
+| `SIGNUPS_OPEN` | the core server | Nothing, for the same reason. |
+| `REQUIRE_EMAIL_VERIFICATION` | the core server | Nothing. The invitation is the address check. |
+| `EMAIL_FROM` | the core server | `MAIL_API_FROM`, or `SMTP_FROM`. |
+| `SMTP_SECURE` | the core server | Nothing. `SMTP_PORT` decides the encryption. |
+| `PIGEON_API_KEY` | the core server | `MAIL_API_KEY`, or `SMTP_USER` and `SMTP_PASSWORD`. |
+| `PIGEON_BASE_URL` | the core server | `MAIL_API_URL`, or `SMTP_HOST`. |
 
 ### Rules between variables
 
@@ -317,7 +317,7 @@ These names were settings once. Now the service refuses to start while one is se
 - `MOVED_TO_URL` must be an `https://` address on a host other than `APP_URL`, without a user name or password.
 - A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. So does a `FOOD_DB_DAILY_CALL_LIMIT` that is not a positive whole number. Malformed addresses in `SYNC_SERVER_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.
 
-**The sync service.**
+**The core server.**
 
 - `DATABASE_URL` and `SERVER_SECRET` are required.
 - Minimum lengths: 32 characters for `SERVER_SECRET` and `TRIAL_ADDRESS_PEPPER`, 24 for `ADMIN_TOKEN` and `BILLING_TOKEN`.
@@ -339,16 +339,16 @@ These names were settings once. Now the service refuses to start while one is se
 
 ## Sign-up with Turnstile
 
-By default an account comes only from an invitation. Set `OPEN_SIGNUP=true` on the sync service, and anybody can ask for an account with their own address. The service then mails that address an invitation, and the letter proves the address works. So open sign-up needs mail, and the service does not start without it. The app shows the sign-up form only when the sync service says its door is open.
+By default an account comes only from an invitation. Set `OPEN_SIGNUP=true` on the core server, and anybody can ask for an account with their own address. The service then mails that address an invitation, and the letter proves the address works. So open sign-up needs mail, and the service does not start without it. The app shows the sign-up form only when the core server says its door is open.
 
-A captcha stops scripts from flooding the service with requests. The sync service checks a Cloudflare Turnstile captcha when you configure two keys:
+A captcha stops scripts from flooding the service with requests. The core server checks a Cloudflare Turnstile captcha when you configure two keys:
 
 1. Sign in to the Cloudflare dashboard, open **Turnstile**, and choose **Add widget**. A free account is sufficient. Your domain does not have to use Cloudflare.
 2. Give the widget a name, add the host name of your app, such as `openplate.example.com`, and keep the mode **Managed**. Choose **Create**.
-3. Set the site key in `TURNSTILE_SITE_KEY` and the secret key in `TURNSTILE_SECRET_KEY` on the sync service. Set both keys or neither.
-4. Recreate the sync service, for example with `docker compose -f <your file> up -d`.
+3. Set the site key in `TURNSTILE_SITE_KEY` and the secret key in `TURNSTILE_SECRET_KEY` on the core server. Set both keys or neither.
+4. Recreate the core server, for example with `docker compose -f <your file> up -d`.
 
-`/health` then publishes the site key. The app's sign-up page shows the captcha. Its submit button stays inactive until the user solves it. The secret key never leaves the sync service. The service sends Cloudflare the captcha response and the secret key, not the visitor's address.
+`/health` then publishes the site key. The app's sign-up page shows the captcha. Its submit button stays inactive until the user solves it. The secret key never leaves the core server. The service sends Cloudflare the captcha response and the secret key, not the visitor's address.
 
 The service checks only the sign-up request, `POST /v1/auth/signup-request`. Signing in, opening an invitation, and all other routes carry no captcha. When the service cannot reach Cloudflare, it returns `503`, and the person can try again later. The check fails closed, so an unanswered request never passes.
 

@@ -1,6 +1,6 @@
 /**
  * Builds/parses the data envelope (M117 design spec D2) — the encrypted blob
- * a client pushes to (and pulls from) the sync service.
+ * a client pushes to (and pulls from) the core server.
  *
  * The `ENVELOPE_VERSION` 1 pipeline, in order:
  *   build:  payload -> JSON -> UTF-8 bytes -> gzip -> AES-256-GCM(+AAD) -> pack(iv || ciphertext)

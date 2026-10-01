@@ -18,7 +18,7 @@
  *     when there is no goal at all. A static subtitle here would have quietly
  *     dropped a number the hub used to show.
  *  4. AN EMPTY GROUP DRAWS NOTHING. "Account and plan" is built entirely from
- *     conditional rows, so on an instance with no sync server, no biller and
+ *     conditional rows, so on an instance with no core server, no biller and
  *     an ordinary account every one of them is hidden. Without the filter in
  *     `buildSettingsHubGroups` the page would draw that heading over nothing.
  *
@@ -186,7 +186,7 @@ describe('the plan row', () => {
   });
 });
 
-/** An instance with no sync server, which is what empties the account group. */
+/** An instance with no core server, which is what empties the account group. */
 const NO_SYNC_CONFIG: PublicConfig = {
   syncServerUrl: null,
   analytics: null,

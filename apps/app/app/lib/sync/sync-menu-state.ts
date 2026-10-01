@@ -12,7 +12,7 @@
 import type { SyncErrorReason, SyncSessionSnapshot } from './sync-session';
 
 export type SyncMenuState =
-  /** No sync server configured on this instance — render nothing at all. */
+  /** No core server configured on this instance, render nothing at all. */
   | { status: 'hidden' }
   /** Sync exists but this device has no account yet. */
   | { status: 'not-set-up' }
@@ -36,7 +36,7 @@ export type SyncMenuState =
  * `/settings/account` looking for one.
  *
  * The fourth was the same fault one level down. Signing in and creating an
- * account are not alternatives: on an OPEN instance with a sync server ANYBODY
+ * account are not alternatives: on an OPEN instance with a core server ANYBODY
  * may make an account, AND somebody who already has one and was signed out
  * needs the way back in. Offering only creation there left a returning person
  * with no route to sign in from this menu at all, while the screen behind it
@@ -80,7 +80,7 @@ export function resolveAvatarMenuDoor({
   hasSession: boolean;
   requiresAccount: boolean;
 }): AvatarMenuDoor {
-  // FIRST, and unconditionally: an instance with no sync server mentions no
+  // FIRST, and unconditionally: an instance with no core server mentions no
   // account anywhere. A managed instance always has one (`isManagedInstance`
   // refuses to boot without it), so this branch can never hide a needed door.
   if (!hasSyncServer) return 'none';

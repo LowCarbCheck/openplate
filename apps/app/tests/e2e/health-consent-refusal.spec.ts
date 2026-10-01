@@ -11,7 +11,7 @@
  * this change the app read it as a plain "forbidden", showed "Sync failed" and
  * kept the person on the diary with nothing they could do about it.
  *
- * WHAT IS REAL: the production build, the fake sync service's account, session
+ * WHAT IS REAL: the production build, the fake core server's account, session
  * and diary, the local write, the sync cycle it schedules, the `_personal`
  * layout and its revalidation, and the consent screen. WHAT IS STUBBED
  * (`managed-core-stub.ts`): the handshake, the account facts, the consent

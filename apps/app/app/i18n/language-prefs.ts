@@ -165,7 +165,7 @@ export function writeStoredLanguage(code: LanguageCode): void {
  * i18next detects from it alone, so this is the language on screen. The
  * storage mirror second, for a cookie that was evicted. `DEFAULT_LANGUAGE`
  * last. NEVER `navigator.language`: that is a region tag (`en-US`, `de-AT`),
- * and the sync server's push registration accepts only the six bare codes
+ * and the core server's push registration accepts only the six bare codes
  * and answers 400 to anything else, which is how a push subscription from
  * this app once died on `en-US` (M230). Anything that sends the app's
  * language over the wire reads it here.

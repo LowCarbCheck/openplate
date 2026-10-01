@@ -29,7 +29,7 @@ client must recover from.
 %% alt: One session, in order: the version handshake, which refuses to sync on any mismatch, then the sign-in, then one compare-and-swap push.
 sequenceDiagram
     participant C as Client
-    participant S as Sync service
+    participant S as Core server
     C->>S: GET /health
     S-->>C: protocolVersion, envelopeVersion
     alt versions differ, or unreachable

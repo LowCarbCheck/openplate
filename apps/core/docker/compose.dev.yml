@@ -6,7 +6,7 @@
 # instance, so this file is redundant there — bring it up only if nothing
 # answers on 5433.
 #
-# SELF-HOSTERS NEVER NEED THIS FILE. It runs no sync service, stores nothing
+# SELF-HOSTERS NEVER NEED THIS FILE. It runs no core server, stores nothing
 # you would want to keep, and its data lives in a throwaway volume. The
 # self-hosting stack is `docker/compose.yml`.
 #

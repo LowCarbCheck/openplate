@@ -8,7 +8,7 @@
  *
  * WHAT IS REAL: the production build booted as a managed instance
  * (`managed-app-server.ts`), the landing, `/welcome`, `/sign-up`, `/join`, the
- * account ceremony against the fake sync service, the plan page, the language
+ * account ceremony against the fake core server, the plan page, the language
  * switch and the storage the plan is kept in. WHAT IS STUBBED: `/health` (the
  * fake service has no open sign-up and sells no plans), the anonymous
  * `GET /v1/plans/prices`, the sign-up request, and the plan reads. The prices

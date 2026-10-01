@@ -10,7 +10,7 @@
  * WHAT IS REAL: the production build booted as a managed instance
  * (`managed-app-server.ts`), its CSP, the header, `/welcome`,
  * `/sign-up`, the handshake decoder and the sign-up request. WHAT IS STUBBED:
- * `/health` (the fake sync service has no open sign-up), the
+ * `/health` (the fake core server has no open sign-up), the
  * `POST /v1/auth/signup-request` answer, and Cloudflare's Turnstile script and
  * frame. The real Cloudflare script is never loaded: its URL is answered here.
  *

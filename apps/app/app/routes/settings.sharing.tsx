@@ -19,7 +19,7 @@
  * ── Everything below is client-side ──────────────────────────────────────
  *
  * The loader returns one string. The ceremony, the wrap, the rotation and
- * every request to the sync service happen in the browser and never touch this
+ * every request to the core server happen in the browser and never touch this
  * server, the property the whole design rests on.
  */
 import { useCallback, useEffect, useState } from 'react';
@@ -73,7 +73,7 @@ export const handle = {
   backTo: '/settings',
 };
 
-/** @throws a 404 Response on an instance with no sync server configured. */
+/** @throws a 404 Response on an instance with no core server configured. */
 export function loader() {
   if (CONFIG.sync.syncServerUrl === null) throw new Response('Not Found', { status: 404 });
   return { sharingRouteEnabled: true };
@@ -117,7 +117,7 @@ export default function SettingsSharing() {
           leave this device, and it is offered only to a device that HAS an
           account: the counts are posted with the account's own token, so there
           is nothing to switch on without one. The route already 404s on an
-          instance with no sync server, so that half of the condition is the
+          instance with no core server, so that half of the condition is the
           loader's. */}
       {session.account !== null && <PulseCard />}
 

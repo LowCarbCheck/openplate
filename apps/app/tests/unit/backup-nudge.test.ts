@@ -235,7 +235,7 @@ describe('hasServerCopyOfTheDiary', () => {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * A managed instance always has a sync server (`isManagedInstance` refuses to
+ * A managed instance always has a core server (`isManagedInstance` refuses to
  * boot without one), so the two move together here, as they do in
  * `device-only-managed-copy.test.ts`.
  */

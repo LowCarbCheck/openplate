@@ -46,7 +46,7 @@ const LOOPBACK_ORIGINS = ['http://localhost:*', 'http://127.0.0.1:*'];
 const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
 
 export interface ContentSecurityPolicyInput {
-  /** The sync service's ORIGIN (`syncConnectSrcOrigin`), or `null` when sync is off. */
+  /** The core server's ORIGIN (`syncConnectSrcOrigin`), or `null` when sync is off. */
   syncOrigin: string | null;
   /** Extra operator-supplied `connect-src` origins (`CSP_CONNECT_EXTRA`). */
   connectExtra: readonly string[];
@@ -220,7 +220,7 @@ export function buildContentSecurityPolicy({
  * allowed source of script`. `hash-wasm` compiles Argon2id from bytes inlined
  * in its own bundle, so without this directive the sync passphrase derivation
  * cannot initialize at all — account creation dies immediately after the
- * passphrase step, before any request reaches the sync service.
+ * passphrase step, before any request reaches the core server.
  *
  * It was invisible until a real browser hit the real production server: the
  * CSP is production-only (see this module's header), `pnpm dev` sends no

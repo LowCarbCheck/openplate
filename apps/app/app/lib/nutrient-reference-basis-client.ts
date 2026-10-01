@@ -10,7 +10,7 @@
  *
  * ── The same resolution as the vitamin and mineral rows ─────────────────
  *
- * `/nutrients` asks `/api/nutrients` with the basis the sync server's `/health`
+ * `/nutrients` asks `/api/nutrients` with the basis the core server's `/health`
  * handshake publishes (`InstanceDescriptor.nutrientReferenceBasis`), and with no
  * basis at all when there is none, which makes this app's server answer with
  * its own `NUTRIENT_REFERENCE_BASIS` (`CONFIG.nutrients.referenceBasis`, `dge`
@@ -49,7 +49,7 @@ import { DEFAULT_NUTRIENT_REFERENCE_BASIS, type NutrientReferenceBasis } from '#
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 
 /**
- * What a route's server loader returns for this to work: the sync server to
+ * What a route's server loader returns for this to work: the core server to
  * ask, and the app server's own configured basis.
  */
 export interface NutrientReferenceBasisLoaderData {
@@ -70,7 +70,7 @@ let rememberedBasis: NutrientReferenceBasis | null = null;
 let provisionalBasis: NutrientReferenceBasis | null = null;
 
 /**
- * The basis the instance shows: the sync server's, else the app server's.
+ * The basis the instance shows: the core server's, else the app server's.
  *
  * @param input - the handshake's basis (`null` when none was published or read) and the app server's.
  * @returns the basis to compute with.

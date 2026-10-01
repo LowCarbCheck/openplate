@@ -35,7 +35,7 @@ const CONSENT_MODULE = fileURLToPath(new URL('../../app/lib/feedback/feedback-co
  * A window no constant in this repository has ever held.
  *
  * DELIBERATELY NOT 30. The number in the consent step is the
- * one the SYNC SERVER advertised on its `/health` handshake, and this app is
+ * one the CORE SERVER advertised on its `/health` handshake, and this app is
  * not entitled to one of its own. A test that fed 30 in would keep passing on
  * the day somebody restored a local default, because the copy would read the
  * same either way; 47 fails loudly.

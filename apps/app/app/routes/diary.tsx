@@ -250,7 +250,7 @@ const POPOVER_COLLISION_PADDING_PX = 16;
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * The two facts the protein reference needs from this server: the sync server
+ * The two facts the protein reference needs from this server: the core server
  * to ask for the instance's basis, and this server's own basis (M263/04). Every
  * figure the day shows still comes from the on-device store via `clientLoader`,
  * which asks for these once per tab at most, through `readNutrientReferenceBasis`.

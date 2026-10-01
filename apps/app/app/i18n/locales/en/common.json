@@ -473,7 +473,7 @@
     },
     "reading": "Reading the link…",
     "sharingOff": {
-      "body": "Your sync server does not have sharing switched on. The key you checked is kept on this device, so when it is switched on you can share without doing the check again.",
+      "body": "Your core server does not have sharing switched on. The key you checked is kept on this device, so when it is switched on you can share without doing the check again.",
       "title": "Verified, but nothing was shared yet"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Research studies",
     "intro": "Studies you contribute to, what each one receives, and how to leave.",
-    "unavailable": "This sync server has no research lane. Nothing can be sent or withdrawn here.",
+    "unavailable": "This core server has no research lane. Nothing can be sent or withdrawn here.",
     "needsSession": "Research contributions need your account password. Sign in on this device first.",
     "needsSessionCta": "Go to account",
     "loadFailed": "Your studies could not be loaded.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Sharing",
     "intro": "Let a dietician or doctor read your diary. It stays encrypted on the way: they get a copy of your key sealed to theirs, and sharing gives the server nothing new to read.",
-    "unavailable": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",
+    "unavailable": "This core server does not offer sharing. Nothing here is switched on, and nothing was sent.",
     "needsSession": "Sharing needs your account password. Sign in on this device first.",
     "needsSessionCta": "Go to account",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "Sync didn’t finish. Your diary on this device is unaffected.",
-        "incompatible": "This app and the sync server don’t speak the same version yet, so syncing is paused on purpose.",
-        "offline": "Couldn’t reach the sync server. Your diary is safe on this device and will catch up later.",
+        "incompatible": "This app and the core server don’t speak the same version yet, so syncing is paused on purpose.",
+        "offline": "Couldn’t reach the core server. Your diary is safe on this device and will catch up later.",
         "reauth-required": "Your session ended. Sign in again to keep syncing. Nothing has been lost."
       },
       "lastSynced": "Last synced {{when}}",

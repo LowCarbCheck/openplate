@@ -3,13 +3,13 @@
  *
  * THE REPORT, install rehearsal, 2026-09-27: `/forgot`, the account's address
  * typed, "Send the link", and nothing changed on screen, and no request
- * reached the sync server. The cause was the form's schema: it was the sign-in
+ * reached the core server. The cause was the form's schema: it was the sign-in
  * schema, which also requires a password, and this form has no password
  * field. Every submission failed validation on a field nobody could see, so
  * the error had nowhere to show and the request was never sent. That held on
  * every instance, with mail or without.
  *
- * WHAT IS REAL: the production build, the tier's fake sync service, which
+ * WHAT IS REAL: the production build, the tier's fake core server, which
  * says `mail: false` in its `/health` like an instance with no mail
  * configured, and the page's own request. WHAT IS STUBBED: `/health`, in the
  * tests that need an instance that can send mail.
@@ -40,7 +40,7 @@ const COPY = z
   .object({ forgot: z.object({ submit: z.string(), sent: z.string() }) })
   .parse(JSON.parse(readFileSync(resolve(process.cwd(), 'app/i18n/locales/en/common.json'), 'utf8')));
 
-/** The reset request the page sends to the sync service. */
+/** The reset request the page sends to the core server. */
 const RESET_REQUEST_URL = `${E2E_SYNC_SERVER_URL}/v1/auth/reset/request`;
 
 /** Is this the page's reset request? */
@@ -100,7 +100,7 @@ test('an instance with no mail sends nothing and tells the person who can help',
   expect(resetRequests, 'a reset request went to an instance that cannot mail it').toEqual([]);
 });
 
-test('an unreachable sync service is said, not swallowed', async ({ page }) => {
+test('an unreachable core server is said, not swallowed', async ({ page }) => {
   await routeHealthWithMail(page);
   await page.route(RESET_REQUEST_URL, (route) => route.abort('connectionrefused'));
   await page.goto('/forgot');

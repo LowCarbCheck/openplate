@@ -263,7 +263,7 @@ async function routeHealth(page: Page, stub: { openSignup: boolean }, gate?: Pro
   });
 }
 
-/** Answers one POST to the sync service with `202`, the answer both forms turn into their sentence on. */
+/** Answers one POST to the core server with `202`, the answer both forms turn into their sentence on. */
 async function routeAccepted(page: Page, path: string): Promise<void> {
   await page.route(`${E2E_SYNC_SERVER_URL}${path}`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback();

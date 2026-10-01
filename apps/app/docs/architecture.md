@@ -20,7 +20,7 @@ flowchart LR
 ```
 
 Three things fit behind "your AI endpoint": a cloud provider you hold a key with, an
-openplate-inference box on your own hardware, or, on a managed instance, the sync server
+openplate-inference box on your own hardware, or, on a managed instance, the core server
 itself, which forwards the photo and counts it against your allowance.
 [topologies.md](topologies.md) draws all four ways to run openplate, one small picture each.
 
@@ -116,7 +116,7 @@ operator's setting decide whether names leave at all. The key is `FOOD_DB_API_KE
 the instance uses LowCarbCheck's anonymous tier;
 [configuration.md](configuration.md#the-food-database-key) lists the tiers.
 
-## The sync server is tenancy, and it sits in front of the compute on a managed instance
+## The core server is tenancy, and it sits in front of the compute on a managed instance
 
 An instance can set `INSTANCE_MODE=managed` (see
 [configuration.md](configuration.md#managed-instances)). That declares one thing: **an
@@ -128,7 +128,7 @@ To the browser it is unchanged: a signed-in account with an allowance scans thro
 proxy openplate-core exposes, the same service the client already talks to for sync. To the
 thing behind it, openplate-core is a client: it points at either a cloud provider or your own
 openplate-inference container. **Inference is the compute layer, openplate-core is the
-tenancy layer on a managed instance, and they compose**: the sync server carries no model and
+tenancy layer on a managed instance, and they compose**: the core server carries no model and
 answers no scan itself.
 
 It is on the photo path, which is the honest cost of it, and the mitigation is a property of

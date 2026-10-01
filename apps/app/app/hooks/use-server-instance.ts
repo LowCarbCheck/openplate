@@ -1,5 +1,5 @@
 /**
- * WHAT THE SYNC SERVER SAYS ABOUT ITSELF, as a hook.
+ * WHAT THE CORE SERVER SAYS ABOUT ITSELF, as a hook.
  *
  * `/health` is one small, unauthenticated document that answers several
  * questions a screen has: which model this instance proxies, and how long it
@@ -90,8 +90,8 @@ export function readFreshServerInstance(serverUrl: string): Promise<InstanceDesc
 }
 
 /**
- * What this app's sync server says about itself, or `null` while the answer is
- * unknown: no sync server configured, the read still in flight, or a service
+ * What this app's core server says about itself, or `null` while the answer is
+ * unknown: no core server configured, the read still in flight, or a service
  * that could not be reached.
  */
 export function useServerInstance(): InstanceDescriptor | null {
@@ -113,7 +113,7 @@ export interface ServerInstanceRead {
  * is right for a hint and wrong for a door: a header that drew the invite-only
  * wording while the read ran would show it for a moment on an instance whose
  * sign-up is open. So a door draws nothing until `isSettled`, and then draws
- * the one that is true. With no sync server there is nothing to wait for, and
+ * the one that is true. With no core server there is nothing to wait for, and
  * the read is settled at once.
  */
 export function useServerInstanceRead(): ServerInstanceRead {
@@ -122,7 +122,7 @@ export function useServerInstanceRead(): ServerInstanceRead {
   const [read, setRead] = useState<{ url: string; instance: InstanceDescriptor | null } | null>(null);
 
   useEffect(() => {
-    // No sync server on this instance means nothing to ask and nothing that
+    // No core server on this instance means nothing to ask and nothing that
     // could act on the answer.
     if (syncServerUrl === null) return;
     let isMounted = true;
@@ -145,7 +145,7 @@ export function useServerInstanceRead(): ServerInstanceRead {
 }
 
 /**
- * What this app's sync server says about itself as of THIS mount, and as of
+ * What this app's core server says about itself as of THIS mount, and as of
  * every read after it, or `null` while the answer is unknown.
  *
  * For a DOOR that stays on screen, the navigation entry to the plan page

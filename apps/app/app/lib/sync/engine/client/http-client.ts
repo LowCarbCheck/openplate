@@ -686,7 +686,7 @@ export class SyncHttpClient {
       } catch (error) {
         throw new SyncRequestError({
           kind: 'transport',
-          message: error instanceof Error ? error.message : 'The sync server could not be reached.',
+          message: error instanceof Error ? error.message : 'The core server could not be reached.',
         });
       }
     };

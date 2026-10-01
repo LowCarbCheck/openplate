@@ -80,7 +80,7 @@ function snapshot(logs: LocalStoreSnapshot['foodLogs']): SyncedSnapshot {
 }
 
 /**
- * An in-memory sync service that honours the ONE rule the cycle depends on:
+ * An in-memory core server that honours the ONE rule the cycle depends on:
  * compare-and-swap on `blobVersion`. Everything else about the protocol is
  * covered by the integration suite; this is just enough server to test the
  * loop.

@@ -9,7 +9,7 @@
  * (`packIvAndCiphertext`/`splitIvAndCiphertext`, `crypto/aes-gcm.ts` — this
  * is the other of the two canonical packing sites, alongside
  * `envelope/build-envelope.ts`). This is exactly the shape
- * the sync service's `sync_key_records.wrapped_dek` bytea column
+ * the core server's `sync_key_records.wrapped_dek` bytea column
  * stores — there is no separate `iv` field anywhere downstream of `wrapDek`.
  */
 import { aesGcmDecrypt, aesGcmEncrypt, packIvAndCiphertext, splitIvAndCiphertext } from './aes-gcm';

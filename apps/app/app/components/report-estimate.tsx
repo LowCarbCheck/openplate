@@ -21,7 +21,7 @@
  * arrives later, not a spinner and a lost report.
  *
  * VISIBLE ONLY TO A SIGNED-IN ACCOUNT, because the endpoint is bearer-gated
- * and an instance with no sync server has nowhere to send one.
+ * and an instance with no core server has nowhere to send one.
  *
  * AND ONLY WHEN THE SERVER HAS SAID HOW LONG IT KEEPS A PHOTOGRAPH. The step
  * below states a number of days, and that number is the server's promise, read

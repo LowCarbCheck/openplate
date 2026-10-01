@@ -2,7 +2,7 @@
  * A managed core, stubbed for the M253/11 specs: the handshake, the plan
  * reads, the account facts, and the AI proxy.
  *
- * The fake sync service (`global-setup.ts`) stays the source of the session,
+ * The fake core server (`global-setup.ts`) stays the source of the session,
  * the sign-in and the diary. Only the facts a consumer instance adds on top
  * of the sync protocol are written onto the wire here, the way `plans-stub.ts`
  * writes `plans: true`: the trial, the allowance, the invite cap and whether
@@ -16,7 +16,7 @@
  * `403 health-consent-required` while the stub's account does not hold the
  * instance's version, so a spec can change the wording while a page is open
  * and watch the app meet the refusal. Specs that do not call them keep the
- * fake sync service's answers, which ask nothing.
+ * fake core server's answers, which ask nothing.
  */
 import { expect, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
@@ -232,7 +232,7 @@ function isOwnCopyRead(request: Request): boolean {
 /**
  * Routes every sync write through the core's consent rule: `403
  * health-consent-required` while the stub's account does not hold the
- * instance's version, the fake sync service otherwise. Read per request, so a
+ * instance's version, the fake core server otherwise. Read per request, so a
  * spec can change the wording while a page is open and the next push meets it.
  *
  * @param page - the page, before its first navigation.
@@ -271,7 +271,7 @@ function isConsentGatedAccountWrite(request: Request): boolean {
  * Routes the account page's three writes through the core's consent rule:
  * renaming the account, inviting somebody and changing the passphrase answer
  * `403 health-consent-required` while the stub's account does not hold the
- * instance's version, and reach the fake sync service otherwise. Registered
+ * instance's version, and reach the fake core server otherwise. Registered
  * AFTER `routeManagedCore`, so it answers first.
  *
  * @param page - the page, before its first navigation.

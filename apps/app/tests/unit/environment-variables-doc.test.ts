@@ -1,7 +1,7 @@
 /**
  * `docs/environment-variables.md` lists every variable the three containers read, and no other.
  *
- * The page is a self-hoster's one list of settings for the app, the sync service (openplate-core)
+ * The page is a self-hoster's one list of settings for the app, the core server (openplate-core)
  * and the inference service. Without a check it rots two ways. A variable added to a config parser
  * never reaches the page, so nobody learns it exists. A variable deleted from a parser stays on the
  * page, and somebody sets a name that nothing reads. This test reads each service's config SOURCE
@@ -145,7 +145,7 @@ function collectReads(service: ServiceName): Set<string> {
 
 const SECTION_HEADINGS = {
   app: '## The app',
-  core: '## The sync service (openplate-core)',
+  core: '## The core server (openplate-core)',
   inference: '## The inference service (openplate-inference)',
 } as const satisfies Readonly<Record<ServiceName, string>>;
 
@@ -194,7 +194,7 @@ function codeNames(cell: string): string[] {
 
 function refusingService(label: string): ServiceName {
   if (label === 'the app') return 'app';
-  if (label === 'the sync service') return 'core';
+  if (label === 'the core server') return 'core';
   if (label === 'the inference service') return 'inference';
   throw new Error(`the refused-names table names "${label}", which is none of the three services`);
 }
@@ -370,7 +370,7 @@ describe(`${PAGE_PATH} lists every variable, under the service that reads it`, (
 
   it('files the refused names under the service that refuses them', () => {
     const refusedByCore = listedNames({ markdown: PAGE, service: 'core' });
-    assert.ok(refusedByCore.has('SMTP_SECURE'), 'SMTP_SECURE is refused by the sync service');
+    assert.ok(refusedByCore.has('SMTP_SECURE'), 'SMTP_SECURE is refused by the core server');
     assert.ok(listedNames({ markdown: PAGE, service: 'app' }).has('GATEWAY_URL'), 'GATEWAY_URL is refused by the app');
   });
 });
@@ -392,7 +392,7 @@ describe('the allowances are still true', () => {
 });
 
 describe('the checks fire on a broken page', () => {
-  it('reports a row deleted from the sync service section as missing', () => {
+  it('reports a row deleted from the core server section as missing', () => {
     const removal = withoutFirstRow({ markdown: PAGE, heading: SECTION_HEADINGS.core });
     assert.notEqual(removal.name, '', 'the core section has no row to delete');
     const listed = listedNames({ markdown: removal.markdown, service: 'core' });
@@ -405,7 +405,7 @@ describe('the checks fire on a broken page', () => {
     assert.deepEqual(findStaleRows({ read: READS.app, listed, service: 'app' }), ['OPENPLATE_NOT_A_SETTING']);
   });
 
-  it('reports a sync service variable filed under the inference service as stale there', () => {
+  it('reports a core server variable filed under the inference service as stale there', () => {
     const markdown = withExtraRow({ markdown: PAGE, heading: SECTION_HEADINGS.inference, name: 'SERVER_SECRET' });
     const listed = listedNames({ markdown, service: 'inference' });
     assert.deepEqual(findStaleRows({ read: READS.inference, listed, service: 'inference' }), ['SERVER_SECRET']);

@@ -6,7 +6,7 @@ metadata:
 ---
 
 The workspace CLAUDE.md bans en dashes and em dashes "everywhere, including
-wire copy," but in `openplate-sync` the only automated check is
+wire copy," but in `openplate-core` the only automated check is
 `tests/unit/mail-messages.test.ts` (`BANNED_DASHES = ['—', '–']`), which scans
 `src/mail/strings.ts` only. There is no oxlint rule and no repo-wide test for
 either character.

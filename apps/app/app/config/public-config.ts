@@ -25,7 +25,7 @@ import type { AnalyticsConfig } from '#app/config/analytics';
  * one it needs, and `managed` is now declared by `INSTANCE_MODE` rather than
  * inferred from a URL being present.
  *
- * The first is the sync server's base URL. It has to reach the
+ * The first is the core server's base URL. It has to reach the
  * browser because the sync client runs entirely in the browser: it derives
  * keys there, encrypts there, and talks to the service directly from there,
  * never through this server (see `apps/core/PROTOCOL.md` §4.1: bearer
@@ -74,7 +74,7 @@ export const DEFAULT_INSTANCE_INFERENCE_MODEL = 'openplate-plate-1';
 /** The exact object the root loader serializes into the HTML. Nothing else crosses. */
 export interface PublicConfig {
   /**
-   * Base URL of the sync service this instance points its clients at
+   * Base URL of the core server this instance points its clients at
    * (`SYNC_SERVER_URL`), or `null` when sync is off.
    *
    * `null` is the DEFAULT and the self-host default: with it, no sync UI
@@ -175,7 +175,7 @@ export function parseSyncServerUrl(raw: string | undefined): string | null {
 }
 
 /**
- * The CSP `connect-src` entry the sync server needs, or `null` when sync is
+ * The CSP `connect-src` entry the core server needs, or `null` when sync is
  * off.
  *
  * Only the ORIGIN is returned, never the full URL: `connect-src` matches on
@@ -243,7 +243,7 @@ export function parseInstanceMode(raw: string | undefined): InstanceMode {
 export function assertGatewayUrlUnset(raw: string | undefined): void {
   if (raw === undefined || raw.trim() === '') return;
   throw new Error(
-    'GATEWAY_URL is set, and this build has no gateway: the sync server took over the AI proxy in M192. ' +
+    'GATEWAY_URL is set, and this build has no gateway: the core server took over the AI proxy in M192. ' +
       'Remove GATEWAY_URL and set INSTANCE_MODE=managed instead. It is refused rather than ignored because ' +
       'ignoring it would run a closed organization\u2019s instance as an open one.',
   );

@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs and prose call the server core, not sync.** READMEs, docs, code comments and screen text name openplate-core as the core server. Names you type, such as `SYNC_SERVER_URL`, stay as they are.
+
 ## [0.29.1] - 2026-10-01
 
 This release adds migration 0030, which creates the table `ai_trial_network_days` and runs on boot as usual. No env change is required. New optional variables are `AI_TRIAL_NETWORK_DAILY_LIMIT`, `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` and `LEGAL_DECLARATION_RECEIPTS_PER_DAY`.

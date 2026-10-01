@@ -152,7 +152,7 @@ const GLANCE_CONTENT_CLASS = 'p-4 pt-0 sm:p-6 sm:pt-0';
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * The two facts the protein reference needs from this server: the sync server
+ * The two facts the protein reference needs from this server: the core server
  * to ask for the instance's basis, and this server's own basis
  * (M263/04). The client loader asks for them once per tab at most, through
  * `readNutrientReferenceBasis`; after that an offline client-side navigation

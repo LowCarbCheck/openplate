@@ -223,7 +223,7 @@ test('the settings hub and the plan page keep their horizontal layout at 360px',
 
   for (const screen of ['/settings', '/settings/plan']) {
     await page.goto(screen);
-    // `/settings/plan` 404s on a build with no sync server configured, exactly as it does here;
+    // `/settings/plan` 404s on a build with no core server configured, exactly as it does here;
     // the layout claim holds for that page too, an app-wide 404 is still an app page.
     await expect(page.locator('main').first(), `${screen} must render a <main>`).toBeVisible();
     const health = await layoutHealth(page);

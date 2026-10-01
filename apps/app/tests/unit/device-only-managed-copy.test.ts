@@ -44,7 +44,7 @@ import deCommon from '../../app/i18n/locales/de/common.json';
 import type { PublicConfig } from '../../app/config/public-config';
 
 /**
- * A managed instance always has a sync server (`isManagedInstance` refuses to
+ * A managed instance always has a core server (`isManagedInstance` refuses to
  * boot without one), so the two flags move together here, as they do in
  * `recover-managed-copy.test.ts`.
  */

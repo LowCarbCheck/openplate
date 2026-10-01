@@ -15,7 +15,7 @@
  * one screenshot, which is the same reasoning `admin.feedback.tsx` writes down.
  *
  * The handshake read happens in the CLIENT loader and not the server one,
- * for the reason that route gives: the fact belongs to the sync server, and
+ * for the reason that route gives: the fact belongs to the core server, and
  * this app's server must not start making a request per page load to answer
  * it. The gate reads it FRESH rather than from the tab's cache (M245/05,
  * `plans-door.ts`): a tab that once saw the door open must not keep opening

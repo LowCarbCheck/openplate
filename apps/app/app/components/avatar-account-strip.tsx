@@ -34,7 +34,7 @@
  * or the plan line, or nothing at all. An instance whose accounts arrive by
  * invitation has no administrator to name here.
  *
- * ── No sync server means no strip ────────────────────────────────────────
+ * ── No core server means no strip ────────────────────────────────────────
  *
  * `useSyncServerUrl() === null` is the AGENTS.md rule, not a layout choice:
  * that instance has no account and no sync, so the menu is "Einstellungen"
@@ -255,7 +255,7 @@ export function AccountStripView({ state, title, allowance }: AccountStripViewPr
 /**
  * The strip, wired to the cached state the app already holds.
  *
- * Returns `null` on an instance with no sync server, before anything else is
+ * Returns `null` on an instance with no core server, before anything else is
  * read: that instance has no account to describe (AGENTS.md).
  */
 export function AvatarAccountStrip() {

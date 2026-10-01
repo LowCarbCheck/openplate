@@ -284,7 +284,7 @@
  *  1. the `gatewayConnection` singleton in `openplate-primary`, and
  *  2. an AI settings row in `openplate-ai` whose `connectedVia` is `'invite'`.
  *
- * Both held a GATEWAY MEMBER TOKEN, and the gateway is gone: the sync server
+ * Both held a GATEWAY MEMBER TOKEN, and the gateway is gone: the core server
  * took over the AI proxy, and a signed-in account authenticates to it with its
  * own access token. The row is not merely unused, it is a dead credential for
  * a service that no longer answers, and an AI settings row pointing at it makes

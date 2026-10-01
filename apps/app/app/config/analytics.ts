@@ -9,7 +9,7 @@
  * instance must therefore render byte-for-byte the same HTML and the same CSP
  * header it did before analytics existed. Same shape as
  * `parseNewsletterConfig` and `parseSyncServerUrl`, for the same reason: the
- * mailing list, the sync server and the analytics account all belong to
+ * mailing list, the core server and the analytics account all belong to
  * whoever RUNS an instance, never to the software.
  *
  * ── Both variables, or neither ───────────────────────────────────────────

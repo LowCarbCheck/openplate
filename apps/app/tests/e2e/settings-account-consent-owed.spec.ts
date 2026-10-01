@@ -11,7 +11,7 @@
  * that token as the sentence, and the invite form said "try again in a
  * moment" about a refusal that waiting cannot lift.
  *
- * WHAT IS REAL: the production build, the fake sync service's account and
+ * WHAT IS REAL: the production build, the fake core server's account and
  * session, the account page and its three forms, and the password derivation.
  * WHAT IS STUBBED (`managed-core-stub.ts`): the handshake, the account facts,
  * and the core's refusal of the three writes by its own rule.

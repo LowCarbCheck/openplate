@@ -4,7 +4,7 @@ openplate is an **open source**, self-hosted food tracker with BYOK (bring-your-
 
 **Licensing:** this repo is under the [MIT License](LICENSE), a permissive OSI-approved open-source license. Write **"open source"** in code comments, docs and UI copy. The README's License section is the reference; do not restate or reinterpret it elsewhere.
 
-**There are no accounts** (M128 spec 03). No login, no session, no superadmin, no `users` table. Whoever opens the app on a device is that device's user; the tracker lives in the browser's IndexedDB and the server holds zero personal data, and the only secret it can read from the environment is the optional LowCarbCheck key `FOOD_DB_API_KEY` (see "The food database key" below). There is also no multi-tenancy, no CMS, no public HTTP API, and no database: the server is a single stateless container that persists nothing. The one account in the whole system belongs to the optional, separately deployed sync service, see "Sync Architecture" below.
+**There are no accounts** (M128 spec 03). No login, no session, no superadmin, no `users` table. Whoever opens the app on a device is that device's user; the tracker lives in the browser's IndexedDB and the server holds zero personal data, and the only secret it can read from the environment is the optional LowCarbCheck key `FOOD_DB_API_KEY` (see "The food database key" below). There is also no multi-tenancy, no CMS, no public HTTP API, and no database: the server is a single stateless container that persists nothing. The one account in the whole system belongs to the optional, separately deployed core server, see "Sync Architecture" below.
 
 ## Stack
 
@@ -33,7 +33,7 @@ app/
 types/                 # Cross-cutting types shared outside app/ (route handles, domain enums)
 tests/
 ├── unit/              # node:test against pure functions (vision schema, macros, local store, ...)
-├── integration/       # node:test over real HTTP against the in-repo fake sync service
+├── integration/       # node:test over real HTTP against the in-repo fake core server
 ├── e2e/               # Playwright smoke tier: one phone, the production build, five specs
 .claude/               # AI assistant rules, skills, and commands
 .adr/                  # Architecture decision records
@@ -48,7 +48,7 @@ pnpm start            # Production server (tsx ./server.ts, NODE_ENV=production)
 pnpm typecheck        # react-router typegen && tsc — never run bare `tsc` (emits .js files)
 pnpm lint             # eslint --max-warnings 0
 pnpm test:unit        # node --test against tests/unit/**
-pnpm test:integration # node --test against tests/integration/** (real HTTP, fake sync service)
+pnpm test:integration # node --test against tests/integration/** (real HTTP, fake core server)
 pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in the toolbox), needs `pnpm build` first
 ```
 

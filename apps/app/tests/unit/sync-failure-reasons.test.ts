@@ -3,7 +3,7 @@
  *
  *  - an HTTP `400`, which is the service refusing a payload. Today that is the
  *    shrink guard turning back a device that lost its local copy. Telling that
- *    person "this app and the sync server don't speak the same version yet"
+ *    person "this app and the core server don't speak the same version yet"
  *    sends them to look for an update that will not help, and the cycle has
  *    already healed the device by then;
  *  - `decryptWithSchemaProbe`, thrown on THIS device with no HTTP status at

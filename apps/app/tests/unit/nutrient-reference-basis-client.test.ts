@@ -2,7 +2,7 @@
  * Which basis the protein reference follows on the device (M263/04).
  *
  * `readNutrientReferenceBasis` answers the way the vitamin and mineral rows are
- * answered: the sync server's handshake basis when it publishes one, else the
+ * answered: the core server's handshake basis when it publishes one, else the
  * app server's own `NUTRIENT_REFERENCE_BASIS`. What is pinned here is that
  * order, the once-per-tab memory, the bounded wait on the handshake, and the
  * offline answer. The handshake and the wait are injected, so nothing here
@@ -132,7 +132,7 @@ afterEach(() => {
 });
 
 describe('resolveNutrientReferenceBasis', () => {
-  it('takes the sync server basis over the app server basis', () => {
+  it('takes the core server basis over the app server basis', () => {
     assert.equal(resolveNutrientReferenceBasis({ instanceBasis: 'efsa', serverBasis: 'dge' }), 'efsa');
     // CONTROL: with none published, the app server's stands.
     assert.equal(resolveNutrientReferenceBasis({ instanceBasis: null, serverBasis: 'us' }), 'us');
@@ -143,7 +143,7 @@ describe('resolveNutrientReferenceBasis', () => {
 const SUITE_TIMEOUT_MS = 10_000;
 
 describe('readNutrientReferenceBasis', { timeout: SUITE_TIMEOUT_MS }, () => {
-  it('uses the handshake basis when the sync server publishes one', async () => {
+  it('uses the handshake basis when the core server publishes one', async () => {
     const loader = countingLoader({ syncServerUrl: SYNC_URL, nutrientReferenceBasis: 'dge' });
     assert.equal(await readNutrientReferenceBasis(loader.load, answering(instanceWith('efsa'))), 'efsa');
   });
@@ -153,7 +153,7 @@ describe('readNutrientReferenceBasis', { timeout: SUITE_TIMEOUT_MS }, () => {
     assert.equal(await readNutrientReferenceBasis(loader.load, answering(instanceWith(null))), 'us');
   });
 
-  it('uses the app server basis when there is no sync server, without asking for a handshake', async () => {
+  it('uses the app server basis when there is no core server, without asking for a handshake', async () => {
     const loader = countingLoader({ syncServerUrl: null, nutrientReferenceBasis: 'efsa' });
     let handshakes = 0;
     const deps: NutrientReferenceBasisDeps = {

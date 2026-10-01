@@ -15,7 +15,7 @@ where that code may live.
 1. **The app server is the one trusted code origin for key handling.** Every
    key ceremony in this product — the diary's passphrase derivation, the
    clinician share wrap (ADR-0002), the study enrolment fingerprint — runs in a
-   browser on JavaScript served by the openplate app server. The sync service is
+   browser on JavaScript served by the openplate app server. The core server is
    deliberately outside that boundary: it is zero-knowledge, and both sync ADRs
    are written so that a hostile or compromised sync operator learns nothing.
 2. **The owner-private compartment rides inside the synced snapshot**
@@ -70,7 +70,7 @@ Concretely:
   contributions live there. Rejected: it would let a sync operator serve the
   JavaScript that handles a study's private key, which defeats the reason
   ADR-0003's prohibition 10 exists — not merely its letter. The whole research
-  design assumes the sync service never touches key material.
+  design assumes the core server never touches key material.
 - **A second deployable (a standalone study client).** Rejected: it would be a
   second implementation of the compartment wrap and the contribution AAD, and
   both ADR-0002 and ADR-0003 forbid a second wrap implementation precisely

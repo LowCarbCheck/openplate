@@ -5,7 +5,7 @@ process rather than degrading silently. The annotated master list is
 [`.env.example`](../.env.example). The openplate docs list every variable for
 this container on
 [one page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-inference-service-openplate-inference).
-They appear next to those for the app and the sync service. The most important
+They appear next to those for the app and the core server. The most important
 variables are:
 
 | variable | default | |

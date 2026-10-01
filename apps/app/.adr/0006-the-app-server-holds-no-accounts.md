@@ -31,7 +31,7 @@ Device-local state that was keyed by account id is re-keyed onto a single sentin
 ## Alternatives Considered
 
 - **Keep accounts as an optional feature, gated off by default.** Rejected: "optional" still means the `users` table exists, the secrets are still required to boot, and the auth code still has to be maintained and reviewed. It would have preserved every cost of the system while none of its users had a reason to turn it on.
-- **Keep accounts purely so the future sync client has an identity to bind to.** Rejected: sync's identity belongs to the sync service, which already has its own account store. Two account systems that must agree with each other is strictly worse than one that lives where the feature does.
+- **Keep accounts purely so the future sync client has an identity to bind to.** Rejected: sync's identity belongs to the core server, which already has its own account store. Two account systems that must agree with each other is strictly worse than one that lives where the feature does.
 - **Keep the `users` table but stop using it (soft removal).** Rejected as the worst of both: a dormant table of email addresses and password hashes is exactly the liability this decision exists to remove, and dead schema invites re-use.
 - **Keep a superadmin account for operational access.** Rejected: there is nothing to administer. There is no CLI and no database; the app is a single stateless container with no state of its own to operate on.
 
@@ -48,7 +48,7 @@ Device-local state that was keyed by account id is re-keyed onto a single sentin
 
 - **This is a one-way migration.** Migration `0008` drops the `users` table and everything referencing it. Existing account rows are not recoverable after it runs; self-hosters are told to `pg_dump` first, and — more importantly — to take the per-device JSON export, which is where their actual diary lives.
 - **A device is the unit of identity.** Two people sharing one browser profile share one diary. Separate browser profiles are the only isolation boundary, and now the only one there could be.
-- **Moving a diary between devices is the optional sync service, or a manual JSON export/import.** The profile page says so plainly rather than implying an account would help.
+- **Moving a diary between devices is the optional core server, or a manual JSON export/import.** The profile page says so plainly rather than implying an account would help.
 - **The food-lookup rate limiter buckets by IP only**, since there is no per-caller identifier left. Behind a shared NAT the budget is shared; the cache-miss-only accounting (M123/07) is what keeps that tolerable, and it is now load-bearing rather than an optimisation.
 
 ## References

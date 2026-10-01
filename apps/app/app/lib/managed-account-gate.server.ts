@@ -66,7 +66,7 @@ function accountRequired(): Response {
 export async function refuseWithoutAccount(request: Request): Promise<Response | null> {
   const { syncServerUrl } = CONFIG.sync;
   if (!CONFIG.instance.managed) return null;
-  // A managed instance cannot boot without a sync server (`isManagedInstance`),
+  // A managed instance cannot boot without a core server (`isManagedInstance`),
   // so this is the belt to that braces, and it fails closed like the rest.
   if (syncServerUrl === null) return accountRequired();
 

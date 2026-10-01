@@ -10,7 +10,7 @@
  * so every account creation on such an instance failed.
  *
  * WHAT IS REAL: the production build, the join page, the invite lookup and the
- * account ceremony against the fake sync service, and the account it creates.
+ * account ceremony against the fake core server, and the account it creates.
  * WHAT IS STUBBED (`managed-core-stub.ts`): the handshake, which is where the
  * instance names the consent version, and in one test the signup answer.
  *

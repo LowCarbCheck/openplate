@@ -1,5 +1,5 @@
 /**
- * The one running fake sync service, held for the lifetime of a Playwright run.
+ * The one running fake core server, held for the lifetime of a Playwright run.
  *
  * `globalSetup` starts it and `globalTeardown` closes it, and those are two
  * modules in ONE process, so a module-scoped variable is the whole mechanism.

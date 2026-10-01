@@ -43,7 +43,7 @@
  * the read is in flight.
  *
  * CLIENT-ONLY and TOP-LEVEL, like `/sign-in` and `/forgot`: the address goes
- * to the sync service's own origin and none of it is this server's business.
+ * to the core server's own origin and none of it is this server's business.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MetaFunction } from 'react-router';
@@ -201,7 +201,7 @@ function SignUpForm({
     },
     shouldRevalidate: 'onInput',
     onSubmit(event, { submission }) {
-      // Client-side only: the request goes to the sync service's own origin.
+      // Client-side only: the request goes to the core server's own origin.
       event.preventDefault();
       if (submission?.status !== 'success') return;
       void send(canonicalizeEmail(submission.value.email));

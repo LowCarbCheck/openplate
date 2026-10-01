@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-In `openplate-sync`, `feedback_images.report_id` cascades from
+In `openplate-core`, `feedback_images.report_id` cascades from
 `feedback_reports`, which cascades from `accounts`. Deleting the row therefore
 deletes the bytes today, so an integration test that reads the image store back
 after a delete CANNOT tell a correct implementation from one that never calls

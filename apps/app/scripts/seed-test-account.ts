@@ -8,7 +8,7 @@
  * holds nothing and every review of a screen starts on an empty app. Two
  * halves, two places, one script:
  *
- *  1. THE ACCOUNT, on the sync service. An invite is minted over `/v1/admin`
+ *  1. THE ACCOUNT, on the core server. An invite is minted over `/v1/admin`
  *     and redeemed here, with the real client crypto, into a real account with
  *     a passphrase you chose.
  *  2. THE DIARY, on the device. A deterministic multi-week backup envelope

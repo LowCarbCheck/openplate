@@ -100,7 +100,7 @@ const SERVER_BOOT_TIMEOUT_MS = 60_000;
 export default defineConfig({
   testDir: './tests/e2e',
   // SERIAL, and it has to be: every spec drives one origin's IndexedDB and
-  // localStorage, and the fixture account on the fake sync service is a single
+  // localStorage, and the fixture account on the fake core server is a single
   // shared row.
   fullyParallel: false,
   workers: 1,

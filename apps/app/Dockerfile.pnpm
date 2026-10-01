@@ -6,7 +6,7 @@
 # M117/06 briefly complicated that: the E2EE sync engine lived in a separate
 # private repo and had to be copied into a gitignored `app/lib/sync/engine/`
 # by a manual step before `docker build` ran. M128 spec 01 deleted that seam,
-# the engine is ordinary tracked source now, and the sync SERVER is a
+# the engine is ordinary tracked source now, and the core SERVER is a
 # separate deployable with its own image. There is deliberately nothing
 # sync-specific left in this file.
 FROM node:24-alpine AS dependencies-env

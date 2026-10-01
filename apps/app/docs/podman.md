@@ -40,7 +40,7 @@ Every compose file above also ships as rootless systemd units. They are generate
 - [sync](../../../docker/quadlet/sync/README.md): rung 2, Postgres, the app and openplate-core
 - [inference](../../../docker/quadlet/inference/README.md): rung 3, openplate-inference and the app
 - [full](../../../docker/quadlet/full/README.md): rung 4, all four
-- [openplate-core](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docker/quadlet/core/README.md): the sync service on its own
+- [openplate-core](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docker/quadlet/core/README.md): the core server on its own
 - [openplate-inference](https://github.com/LowCarbCheck/openplate/blob/main/apps/inference/docker/quadlet/inference/README.md): the inference endpoint on its own
 
 **Pick one path: compose or Quadlet, never both.** A custom systemd unit running `podman compose up` and a Quadlet unit set perform the same task. If you install both, they conflict at boot over port 3000. Remove the existing service before switching to Quadlet. To remove Quadlet, follow the uninstall steps in the scenario README.

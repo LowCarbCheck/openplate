@@ -103,7 +103,7 @@ Rung 2 adds a second server and a database behind it. Each device pushes the sam
 blob and pulls the other device's, and the photo still leaves each device for the provider.
 
 ```mermaid
-%% alt: On rung two both devices push one encrypted blob to the sync server, and the photo still goes straight to the provider.
+%% alt: On rung two both devices push one encrypted blob to the core server, and the photo still goes straight to the provider.
 flowchart LR
   app["openplate app"] -->|"HTML and JS"| phone["Phone"]
   app -->|"HTML and JS"| laptop["Laptop"]
@@ -161,7 +161,7 @@ so does the app before you finish setting sync up.
 **The server can also cover a shared AI bill, if you turn it on.** Set
 `INSTANCE_MODE=managed` and the instance becomes one an administrator runs for a household or
 an organization: administrators invite people from `/admin` (or with the admin API), set a daily
-allowance for each account, and every signed-in scan runs through the sync server's own AI
+allowance for each account, and every signed-in scan runs through the core server's own AI
 proxy: no separate service, no separate invite link. Mail is optional: `/admin` always shows the
 invitation as a link an administrator can copy and send, mailed or not. See
 [configuration.md#managed-instances](configuration.md#managed-instances) and
@@ -173,7 +173,7 @@ photo to the AI proxy, the server counts it against that account's daily allowan
 forwards the request to whatever the operator pointed it at.
 
 ```mermaid
-%% alt: On a managed instance the signed-in member scans through the sync server's AI proxy, which counts the request against a daily allowance.
+%% alt: On a managed instance the signed-in member scans through the core server's AI proxy, which counts the request against a daily allowance.
 flowchart LR
   browser["Member's browser"] -->|"ciphertext"| sync["openplate-core, managed"]
   browser -->|"photo"| sync
@@ -182,7 +182,7 @@ flowchart LR
 ```
 
 **Let members invite each other, but keep the number small.** On a managed instance, set
-`MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS` on the sync server. This lets
+`MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS` on the core server. This lets
 an ordinary member invite somebody without asking you first. If you pay for the provider key, set
 `MEMBER_INVITE_LIFETIME_CAP=2` as well. The default is 5, which suits an instance where the AI
 bill is shared. Setting it to 2 is enough for a partner and a friend, and it keeps growth slow
@@ -255,7 +255,7 @@ one-tap connect, with the caveat that `DEFAULT_INFERENCE_API_KEY` is embedded in
 and readable by anyone who can open the app. See
 [configuration.md](configuration.md#instance-provided-ai).
 
-### The sync server and inference are different layers
+### The core server and inference are different layers
 
 They are easy to confuse and they compose.
 
@@ -267,7 +267,7 @@ They are easy to confuse and they compose.
 Point a managed instance's AI proxy at your inference box (openplate-core's
 `UPSTREAM_BASE_URL`, with one of the inference service's `API_KEYS` as `UPSTREAM_API_KEY`) and you get both: scans on your own hardware, with per-account
 allowances in front of them. Point it at a cloud provider instead and you get shared spend
-with no hardware. Either way, the same sync server also carries the diary: sync and the AI
+with no hardware. Either way, the same core server also carries the diary: sync and the AI
 proxy are one service now, not two ([architecture.md](architecture.md)).
 
 ## Rung 4: everything
@@ -288,7 +288,7 @@ flowchart LR
 
 **You gain:** rung 2 and rung 3 together (your diary on every device, scanned on your own
 hardware, with nothing going to any third party).
-**You operate:** all of it. App, sync service, Postgres, model runtime, and browser-reachable
+**You operate:** all of it. App, core server, Postgres, model runtime, and browser-reachable
 addresses for two of them.
 **Compose file:** [`docker/topologies/compose.full.yml`](../../../docker/topologies/compose.full.yml).
 Its header lists the `.env` lines: those of rung 2 and rung 3 together.
@@ -306,4 +306,4 @@ If your reason for climbing this ladder was "my household needs more than one AI
 first answer is not a rung at all. It is solved at the provider, with per-person keys and
 per-person spend limits, and it needs no extra software.
 [family-setup.md](family-setup.md) has the steps, and, when your provider will not issue
-capped sub-keys, a managed sync server as the fallback (rung 2, with `INSTANCE_MODE=managed`).
+capped sub-keys, a managed core server as the fallback (rung 2, with `INSTANCE_MODE=managed`).

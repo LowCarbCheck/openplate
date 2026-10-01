@@ -24,7 +24,7 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
  *
  * `'managed'` (M192) is the odd one and is worth its own sentence: it is the
  * only member that is never STORED. On a managed instance the settings are
- * derived from the open session — the sync server's `/v1`, the model it
+ * derived from the open session, the core server's `/v1`, the model it
  * advertises, and the account's own access token as the bearer — so nothing is
  * written into `openplate-ai` for it and no row ever carries this value. It is
  * in the enum because `createVisionProvider` dispatches on it, and putting it

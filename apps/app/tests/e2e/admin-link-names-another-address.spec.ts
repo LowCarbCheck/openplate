@@ -40,7 +40,7 @@
  * The role and every admin request, through `admin-console-stub.ts`, which
  * says why. The link is the stub's `handedLink`, so the page gets exactly the
  * body a core with no mail sends. The session, the sign-in and the handshake
- * are the fake sync service's own.
+ * are the fake core server's own.
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

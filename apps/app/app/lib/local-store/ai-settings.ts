@@ -27,7 +27,7 @@ import { getAiStore, peekAiStore } from './persist';
  *
  * `'invite'` WAS A FOURTH MEMBER and is deleted (M192). It marked a row holding
  * a gateway member token, and there is no gateway: a managed instance's AI now
- * comes from the sync server on the account's access token, and those settings
+ * comes from the core server on the account's access token, and those settings
  * are DERIVED from the session rather than stored here at all
  * (`app/lib/ai/managed-ai-settings.ts`). A row left over from that era names a
  * service that no longer answers, so it is deleted when the AI store loads —

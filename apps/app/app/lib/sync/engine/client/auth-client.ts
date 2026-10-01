@@ -351,14 +351,14 @@ export class SyncAuthClient implements SyncTokenProvider {
     try {
       const response = await this.fetchImpl(`${this.baseUrl}/health`, { method: 'GET' });
       if (!response.ok) {
-        return { status: 'incompatible', reason: `The sync server answered ${response.status} to a health check.` };
+        return { status: 'incompatible', reason: `The core server answered ${response.status} to a health check.` };
       }
       body = await response.json();
     } catch {
-      return { status: 'incompatible', reason: 'The sync server could not be reached.' };
+      return { status: 'incompatible', reason: 'The core server could not be reached.' };
     }
     if (!isProtocolHandshake(body)) {
-      return { status: 'incompatible', reason: 'The sync server did not report a recognizable protocol version.' };
+      return { status: 'incompatible', reason: 'The core server did not report a recognizable protocol version.' };
     }
     return checkProtocolCompatibility(body);
   }
@@ -1046,7 +1046,7 @@ export class SyncAuthClient implements SyncTokenProvider {
       } catch (error) {
         throw new SyncRequestError({
           kind: 'transport',
-          message: error instanceof Error ? error.message : 'The sync server could not be reached.',
+          message: error instanceof Error ? error.message : 'The core server could not be reached.',
         });
       }
     };
@@ -1140,7 +1140,7 @@ export class SyncAuthClient implements SyncTokenProvider {
     } catch (error) {
       throw new SyncRequestError({
         kind: 'transport',
-        message: error instanceof Error ? error.message : 'The sync server returned a body this app could not read.',
+        message: error instanceof Error ? error.message : 'The core server returned a body this app could not read.',
         status: response.status,
       });
     }
@@ -1197,7 +1197,7 @@ async function readJson(response: Response): Promise<JsonValue> {
   } catch {
     throw new SyncRequestError({
       kind: 'transport',
-      message: 'The sync server returned a response this app could not read.',
+      message: 'The core server returned a response this app could not read.',
       status: response.status,
     });
   }

@@ -7,7 +7,7 @@
  * implementation of the thing under test: a gate that stopped reading
  * `onboardingCompletedAt` would still pass a suite that stamped it directly.
  * The one exception is the fixture ACCOUNT, which `global-setup.ts` creates on
- * the fake sync service in node, and even then the browser still signs in
+ * the fake core server in node, and even then the browser still signs in
  * through `/sign-in` with an address and a password.
  */
 import { expect, type Locator, type Page } from '@playwright/test';

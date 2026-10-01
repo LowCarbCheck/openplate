@@ -14,7 +14,7 @@
  * `this.fetchImpl(url, init)` — a METHOD call, so the receiver is the client
  * object. With `fetchImpl = fetch` as the default, that is the forbidden case,
  * and in Chrome every single request threw before it left the page. The error
- * mapping turned it into "The sync server could not be reached", which sent
+ * mapping turned it into "The core server could not be reached", which sent
  * two rounds of debugging at the network instead of at the receiver.
  *
  * Node's `fetch` has no such brand check, so every unit and integration test

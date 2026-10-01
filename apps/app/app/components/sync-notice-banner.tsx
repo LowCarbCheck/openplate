@@ -3,7 +3,7 @@
  *
  * ── What this channel is, and what it is not ──────────────────────────────
  *
- * The sync service holds no email addresses, so it has no way to write to
+ * The core server holds no email addresses, so it has no way to write to
  * anybody: no breach notice, no "this instance is moving", no "your account
  * will be deleted". That cost is deliberate and is not undone here. This is a
  * PULL channel and nothing more: the operator sets `SYNC_NOTICE`, the service

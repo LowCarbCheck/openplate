@@ -237,10 +237,10 @@ services:
 
       # -- Everything else the app reads. Empty means the default.
       #
-      # The address of an openplate-core sync service, one a BROWSER can reach
+      # The address of openplate-core, one a BROWSER can reach
       # (the same name compose.sync.yml uses). Empty means no sync.
       SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-}
-      # open (the default) or managed, which needs a sync service. See
+      # open (the default) or managed, which needs a core server. See
       # apps/app/docs/configuration.md, Managed instances.
       INSTANCE_MODE: ${INSTANCE_MODE:-open}
       # The language a first-time visitor sees: en, de, fr, it, es or tr.

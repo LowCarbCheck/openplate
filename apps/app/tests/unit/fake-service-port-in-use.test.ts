@@ -104,7 +104,7 @@ describe('a fake service whose port another process holds', () => {
         (cause: unknown) => {
           assert.ok(cause instanceof Error, 'a taken port must reject with an Error, not resolve and not hang');
           assert.match(cause.message, new RegExp(`127\\.0\\.0\\.1:${held.port}\\b`), 'it must name the port');
-          assert.match(cause.message, /fake sync service/, 'it must name the service');
+          assert.match(cause.message, /fake core server/, 'it must name the service');
           assert.match(cause.message, /already holds that port/, 'it must say another process holds it');
           assert.match(cause.message, /ss -ltnp/, 'it must say how to name the process that holds it');
           assert.match(cause.message, /OPENPLATE_E2E_PORT_BASE/, 'it must name the escape hatch');

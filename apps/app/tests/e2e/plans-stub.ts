@@ -1,7 +1,7 @@
 /**
  * A core that sells plans, stubbed for the browser tier (M250).
  *
- * The fake sync service (`tests/integration/fake-sync-service.ts`) is a reading
+ * The fake core server (`tests/integration/fake-sync-service.ts`) is a reading
  * of the SYNC protocol and has no biller behind it, which is exactly right:
  * `PROTOCOL.md` §5.22 says `/v1/plans/*` is not part of the protocol. So a
  * spec about plans routes three things on top of the real fake:

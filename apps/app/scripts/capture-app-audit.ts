@@ -39,7 +39,7 @@
  *    week generator with a spread of states, not the single frozen marketing
  *    day `buildLandingSeed` produces.
  *  - `SYNC_SERVER_URL` is never set. Every route in `ROUTES` is reachable on a
- *    self-hosted instance with no sync server, and that is the configuration
+ *    self-hosted instance with no core server, and that is the configuration
  *    this audit means to cover.
  *  - One locale (German), one theme (dark), one viewport (390x844 at 2x). No
  *    light pass, no other locale, no desktop width, this is an internal check

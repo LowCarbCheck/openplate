@@ -70,7 +70,7 @@ quietly off".
 ## The research console (`/study`)
 
 The app always carries a `/study` route, and it is inert on an ordinary instance. It comes to
-life only when the sync service it talks to has `SYNC_RESEARCH=true`, which is **off by
+life only when the core server it talks to has `SYNC_RESEARCH=true`, which is **off by
 default**: an instance you stand up without touching that flag runs no study, holds no study
 graph, and offers nothing to enrol in. Read `openplate-core`'s `.env.example` before turning it
 on: it makes the server hold health-adjacent personal data, which is a different undertaking
@@ -108,7 +108,7 @@ is read once and not stored.
 
 ## Sharing a diary with a clinician
 
-On an instance whose sync service sets `SYNC_SHARING=true`, a person can let a clinician, such
+On an instance whose core server sets `SYNC_SHARING=true`, a person can let a clinician, such
 as a dietitian, read their diary. The clinician sends the person a connect link. The person opens
 it and types the twelve characters the clinician reads aloud, so a wrong key is caught before
 anything is shared. The person then grants the share under **Settings → Sharing**: the app wraps the data key once more,
@@ -127,7 +127,7 @@ sends.
 
 Until M192 a person could join a separate AI gateway from the same invite link, and that
 connection travelled with the account inside the sealed compartment. There is no gateway any
-more: the sync service took over the AI proxy, so on an instance an organization runs, a
+more: the core server took over the AI proxy, so on an instance an organization runs, a
 signed-in account with an allowance scans through the one server it already talks to, and no
 connection step exists to carry anywhere. An instance you host yourself is unchanged: a key
 you set up stays on the device you set it up on.
