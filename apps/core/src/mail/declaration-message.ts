@@ -13,8 +13,10 @@
  * what goes out when no content folder is configured, or the template file is
  * missing or refused. It states the statutory facts and nothing else: the
  * kind, the receipt number, the time of receipt in Europe/Berlin, and every
- * field the person gave. No greeting, no outcome, no promise, because those
- * are the operator's to make. Its labels are the ones the app's confirmation
+ * field the person gave (the receipt confirms the free-text ones without
+ * repeating them, see below). No greeting, no outcome, no promise, because
+ * those are the operator's to make; the receipt's one closing line tells a
+ * reader who did not send the form what to do. Its labels are the ones the app's confirmation
  * page already shows (`legal:declarations.confirmed.*`), so a reader sees the
  * same words on the page and in the mail.
  *
@@ -33,6 +35,22 @@
  *
  * THE RECEIPT IS THE ONLY ONE THAT IS TRANSLATED. The operator alert is
  * English only, template and fallback alike.
+ *
+ * THE RECEIPT REPEATS NOTHING THE SENDER WROTE (M270/11). It goes to the
+ * address typed on a form that needs no sign-in, so the sender need not own
+ * it. Until 2026-10-01 it echoed the name (200 characters), the contract
+ * reference (200) and the reason (4000) back, which let a stranger send their
+ * own words from this instance's domain to any address. Now each of those
+ * fields, when given, reads `Label: received, not repeated in this email`
+ * ({@link RECEIPT_WITHHELD}), in the template's `{{details}}` and the
+ * fallback alike, and {@link DeclarationReceiptInput} has no field to carry
+ * the text at all. The name is DROPPED rather than cut to a short, cleaned
+ * form: any 80 characters, scheme and `www.` stripped, still carry a phone
+ * number or a "visit evil dot example", and the typed address already says
+ * whom the receipt is for. What stays is what the statutes ask the receipt to
+ * confirm: the kind, the time of receipt, the address, the fixed choices
+ * (type of cancellation, timing) and the date. The operator alert keeps every
+ * word, and so does the stored row.
  *
  * NEITHER LETTER NAMES A SERVICE, A GATEWAY OR AN ACCOUNT LINK, and neither
  * carries an em dash or an en dash. `tests/unit/declaration-message.test.ts`
@@ -67,11 +85,44 @@ export interface DeclarationFields {
   receivedAt: Date;
 }
 
-export interface DeclarationReceiptInput extends DeclarationFields {
+/**
+ * What a receipt may say about a declaration: every fixed-form field, and for
+ * each field the sender wrote freely only whether it was given. The name is
+ * required on the form, so it is always given and has no flag. See the module
+ * header on why the text itself never reaches this type.
+ */
+export interface DeclarationReceiptFacts {
+  kind: DeclarationKind;
+  /** The typed address. The receipt goes to this mailbox, so it repeats only what its reader owns. */
+  email: string;
+  hasContractReference: boolean;
+  terminationType: DeclarationFields['terminationType'];
+  hasReason: boolean;
+  /** A real calendar date, already checked by the route, so never free text. */
+  requestedDate: string | null;
+  timing: DeclarationFields['timing'];
+  receivedAt: Date;
+}
+
+export interface DeclarationReceiptInput extends DeclarationReceiptFacts {
   /** The id the `202` answered with and the confirmation page shows. */
   receiptId: string;
   /** The language the person chose on the form. */
   language: DeclarationLanguage;
+}
+
+/** The receipt's view of a declaration: the stored fields, with the sender's own text reduced to whether it was given. */
+export function toDeclarationReceipt(fields: DeclarationFields): DeclarationReceiptFacts {
+  return {
+    kind: fields.kind,
+    email: fields.email,
+    hasContractReference: fields.contractReference !== null,
+    terminationType: fields.terminationType,
+    hasReason: fields.reason !== null,
+    requestedDate: fields.requestedDate,
+    timing: fields.timing,
+    receivedAt: fields.receivedAt,
+  };
 }
 
 export interface DeclarationOperatorAlertInput extends DeclarationFields {
@@ -315,6 +366,37 @@ const FALLBACK_LABELS = {
   },
 } satisfies Record<DeclarationLanguage, FallbackLabels>;
 
+/**
+ * The value of a receipt line for a field the sender filled in and the
+ * receipt does not repeat (M270/11), as in `Reason: received, not repeated in
+ * this email`. The English from wordsmith (Gemini 3.8 Flash, 2026-10-01), the
+ * other five from wordsmith translate in the formal register.
+ */
+export const RECEIPT_WITHHELD = {
+  en: 'received, not repeated in this email',
+  de: 'erhalten, in dieser E-Mail nicht wiederholt',
+  fr: 'reçu, non repris dans cet e-mail',
+  it: 'ricevuto, non ripetuto in questa email',
+  es: 'recibido, no repetido en este correo',
+  tr: 'alındı, bu e-postada tekrarlanmadı',
+} as const satisfies Record<DeclarationLanguage, string>;
+
+/**
+ * The neutral receipt's last line, for a reader who did not send the form
+ * (M270/11): the receipt reaches whatever address was typed. It names no
+ * channel, because the sending address may be one nobody reads, and it says
+ * "declaration" because one line serves both kinds. Same provenance as
+ * {@link RECEIPT_WITHHELD}. A template's closing is the operator's to write.
+ */
+export const RECEIPT_NOT_YOU = {
+  en: 'If you did not send this, contact the business you have the contract with to reverse the declaration.',
+  de: 'Wenn Sie dies nicht gesendet haben, kontaktieren Sie das Unternehmen, mit dem Sie den Vertrag haben, um die Erklärung rückgängig zu machen.',
+  fr: "Si vous n'êtes pas à l'origine de cet envoi, contactez l'entreprise avec laquelle vous avez conclu le contrat pour annuler la déclaration.",
+  it: "Se non ha inviato Lei questa richiesta, contatti l'azienda con cui ha stipulato il contratto per revocare la dichiarazione.",
+  es: 'Si no envió esto, comuníquese con la empresa con la que tiene el contrato para revocar la declaración.',
+  tr: 'Bunu siz göndermediyseniz, beyanı geri almak için sözleşmenizin bulunduğu işletmeyle iletişime geçin.',
+} as const satisfies Record<DeclarationLanguage, string>;
+
 /** The `Intl` locale each language's date is rendered in, the same as `strings.ts`'s `DATE_LOCALES`. */
 const RECEIPT_DATE_LOCALES = {
   en: 'en-GB',
@@ -371,7 +453,35 @@ function timingLabel(input: { labels: DetailLabels; value: DeclarationFields['ti
   return input.value === 'earliest' ? input.labels.timingEarliest : input.labels.timingOnDate;
 }
 
-/** Every field line the person's own submission earns, in the fixed order the form asked for them. */
+/** A line for a field the sender wrote, given but not repeated, or nothing when it was not given. */
+function withheldLine(input: { label: string; isGiven: boolean; language: DeclarationLanguage }): string[] {
+  return input.isGiven ? [`${input.label}: ${RECEIPT_WITHHELD[input.language]}`] : [];
+}
+
+/**
+ * The receipt's field lines, in the same order as {@link detailLines}: the
+ * fixed-form fields as given, the sender's own text as given but not repeated.
+ */
+export function receiptDetailLines(input: {
+  receipt: DeclarationReceiptFacts;
+  language: DeclarationLanguage;
+}): string[] {
+  const { receipt, language } = input;
+  const labels = DETAIL_LABELS[language];
+  const terminationType = terminationTypeLabel({ labels, value: receipt.terminationType });
+  const timing = timingLabel({ labels, value: receipt.timing });
+  return [
+    ...withheldLine({ label: labels.name, isGiven: true, language }),
+    ...detailLine(labels.email, receipt.email),
+    ...withheldLine({ label: labels.contractReference, isGiven: receipt.hasContractReference, language }),
+    ...detailLine(labels.terminationType, terminationType),
+    ...withheldLine({ label: labels.reason, isGiven: receipt.hasReason, language }),
+    ...detailLine(dateLabel({ labels, kind: receipt.kind }), receipt.requestedDate),
+    ...detailLine(labels.timing, timing),
+  ];
+}
+
+/** Every field line the person's own submission earns, word for word, in the fixed order the form asked for them. The operator alert's, never the receipt's. */
 export function detailLines(input: { fields: DeclarationFields; language: DeclarationLanguage }): string[] {
   const labels = DETAIL_LABELS[input.language];
   const { fields } = input;
@@ -389,23 +499,27 @@ export function detailLines(input: { fields: DeclarationFields; language: Declar
 }
 
 /**
- * The neutral letter: kind, receipt number, time of receipt, every field.
- * `trailing` is the alert's one extra fact, whether the address matched.
+ * The neutral letter: kind, receipt number, time of receipt, the field lines.
+ * `details` are the alert's full lines or the receipt's withheld ones;
+ * `trailing` is each letter's last line: whether the address matched, for the
+ * alert, and what to do if you did not send it, for the receipt.
  */
 function buildFallback(input: {
-  fields: DeclarationFields;
+  kind: DeclarationKind;
+  receivedAt: Date;
+  details: string[];
   receiptId: string;
   language: DeclarationLanguage;
   subject: string;
   trailing: string[];
 }): BuiltDeclarationMessage {
   const labels = FALLBACK_LABELS[input.language];
-  const date = formatReceivedAt({ receivedAt: input.fields.receivedAt, language: input.language });
+  const date = formatReceivedAt({ receivedAt: input.receivedAt, language: input.language });
   const paragraphs = [
-    input.fields.kind === 'kuendigung' ? labels.kindKuendigung : labels.kindWiderruf,
+    input.kind === 'kuendigung' ? labels.kindKuendigung : labels.kindWiderruf,
     labels.receiptId.replace('{receiptId}', input.receiptId),
     labels.receivedAt.replace('{date}', date),
-    ...detailLines({ fields: input.fields, language: input.language }),
+    ...input.details,
     ...input.trailing,
   ];
   return {
@@ -422,16 +536,18 @@ function buildFallback(input: {
  */
 function fillTemplate(input: {
   found: FoundMailTemplate;
-  fields: DeclarationFields;
+  receivedAt: Date;
+  /** The field lines in a given language: the template's, which may be the fallback language rather than the reader's. */
+  details: (language: DeclarationLanguage) => string[];
   receiptId: string;
   matched: boolean | null;
 }): BuiltDeclarationMessage | null {
   const { found } = input;
   const inline = new Map<InlinePlaceholder, string>();
-  inline.set('date', formatReceivedAt({ receivedAt: input.fields.receivedAt, language: found.language }));
+  inline.set('date', formatReceivedAt({ receivedAt: input.receivedAt, language: found.language }));
   inline.set('receiptId', input.receiptId);
   if (input.matched !== null) inline.set('matched', input.matched ? 'yes' : 'no');
-  const values = { inline, details: detailLines({ fields: input.fields, language: found.language }) };
+  const values = { inline, details: input.details(found.language) };
   try {
     return {
       ...renderMailTemplate({ template: found.template, values, language: found.language }),
@@ -444,19 +560,22 @@ function fillTemplate(input: {
 }
 
 /**
- * The receipt to the person who filed the declaration. From the template when
- * one was found, in the template's language; otherwise the neutral fallback
- * in the language the person chose.
+ * The receipt to the address typed on the form. From the template when one
+ * was found, in the template's language; otherwise the neutral fallback in
+ * the language the person chose, ending with {@link RECEIPT_NOT_YOU}. Either
+ * way it repeats no text the sender wrote, see the module header.
  */
 export function buildDeclarationReceiptMessage(input: {
   declaration: DeclarationReceiptInput;
   template: FoundMailTemplate | null;
 }): BuiltDeclarationMessage {
   const { declaration } = input;
+  const details = (language: DeclarationLanguage): string[] => receiptDetailLines({ receipt: declaration, language });
   if (input.template !== null) {
     const filled = fillTemplate({
       found: input.template,
-      fields: declaration,
+      receivedAt: declaration.receivedAt,
+      details,
       receiptId: declaration.receiptId,
       matched: null,
     });
@@ -464,11 +583,13 @@ export function buildDeclarationReceiptMessage(input: {
   }
   const labels = FALLBACK_LABELS[declaration.language];
   return buildFallback({
-    fields: declaration,
+    kind: declaration.kind,
+    receivedAt: declaration.receivedAt,
+    details: details(declaration.language),
     receiptId: declaration.receiptId,
     language: declaration.language,
     subject: declaration.kind === 'kuendigung' ? labels.subjectKuendigung : labels.subjectWiderruf,
-    trailing: [],
+    trailing: [RECEIPT_NOT_YOU[declaration.language]],
   });
 }
 
@@ -482,10 +603,12 @@ export function buildDeclarationOperatorAlertMessage(input: {
   template: FoundMailTemplate | null;
 }): BuiltDeclarationMessage {
   const { declaration } = input;
+  const details = (language: DeclarationLanguage): string[] => detailLines({ fields: declaration, language });
   if (input.template !== null) {
     const filled = fillTemplate({
       found: input.template,
-      fields: declaration,
+      receivedAt: declaration.receivedAt,
+      details,
       receiptId: declaration.receiptId,
       matched: declaration.matched,
     });
@@ -493,7 +616,9 @@ export function buildDeclarationOperatorAlertMessage(input: {
   }
   const kindWord = declaration.kind === 'kuendigung' ? 'cancellation' : 'withdrawal';
   return buildFallback({
-    fields: declaration,
+    kind: declaration.kind,
+    receivedAt: declaration.receivedAt,
+    details: details('en'),
     receiptId: declaration.receiptId,
     language: 'en',
     subject: `New declaration: ${kindWord} (${declaration.receiptId})`,

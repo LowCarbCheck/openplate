@@ -61,6 +61,12 @@ The placeholders:
 What a person typed is always inserted as plain text. A `**` or a link in a
 form field stays literal in the mail, and the HTML part escapes it.
 
+Receipts omit the submitted name, contract or customer number, and reason.
+For each completed field, the receipt shows
+`Label: received, not repeated in this email` in the file's language. Because
+anyone can enter an arbitrary email address, the receipt must not echo user
+input. The operator alert includes every field word for word.
+
 ## When a file is refused
 
 Anything outside the subset refuses the whole file: raw HTML, an HTML
@@ -97,7 +103,10 @@ Receipt no.: <receipt id>
 
 Received at: <date>
 
-<one "Label: value" paragraph per field the person gave>
+<one "Label: value" paragraph per field the person gave, the name, the
+contract number and the reason as "received, not repeated in this email">
+
+If you did not send this, contact the business you have the contract with to reverse the declaration.
 ```
 
 The receipt, in German:
@@ -111,8 +120,13 @@ Beleg-Nr.: <receipt id>
 
 Eingegangen am: <date>
 
-<one "Label: value" paragraph per field the person gave>
+<one "Label: value" paragraph per field the person gave, the name, the
+contract number and the reason as "erhalten, in dieser E-Mail nicht wiederholt">
+
+Wenn Sie dies nicht gesendet haben, kontaktieren Sie das Unternehmen, mit dem Sie den Vertrag haben, um die Erklärung rückgängig zu machen.
 ```
+
+Only the fallback uses the last line. You write the template's closing. Consider instructing readers who did not submit the form, because the receipt goes to whatever address was typed.
 
 The French, Italian, Spanish and Turkish receipts use the same text lines, with labels matching the app confirmation page in that language.
 
@@ -127,10 +141,34 @@ Receipt no.: <receipt id>
 
 Received at: <date>
 
-<one "Label: value" paragraph per field the person gave>
+<one "Label: value" paragraph per field the person gave, word for word>
 
 Matched to an existing account: yes.     (or: no.)
 ```
+
+## When a receipt is not sent
+
+The form requires no login. To limit abuse, receipts follow three daily
+ceilings calculated over the trailing 24 hours:
+
+- one mailbox receives at most 3 receipts;
+- one sender network (an IPv4 address or an IPv6 /64) triggers at most
+  `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` receipts, which defaults to 10;
+- the entire instance sends at most `LEGAL_DECLARATION_RECEIPTS_PER_DAY`
+  receipts, which defaults to 200.
+
+If a submission exceeds any ceiling, the system still stores the declaration,
+forwards it, and sends the operator alert. Only the user receipt is skipped.
+The user sees the same response from the form. The service logs a single `warn`
+line containing the receipt number and the ceiling type, but never the email
+address:
+
+```
+Skipped a declaration receipt over a daily ceiling  receiptId=<receipt id> ceiling=network cap=10
+```
+
+The service calculates mailbox and instance totals from stored declarations.
+It stores the network count in memory, which resets on a restart.
 
 ## Editing a mounted file
 

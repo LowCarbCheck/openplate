@@ -114,6 +114,8 @@ The sync service container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two 
 | `INSTANCE_LANGUAGE` | `en` | Sets the letter language when a request specifies none. Accepted values are `en`, `de`, `fr`, `it`, `es` or `tr`. Any other value stops the boot. | |
 | `NUTRIENT_REFERENCE_BASIS` | `dge` | A new instance starts with one of these reference values: `dge`, `efsa` or `us`. An administrator can change the live setting later through the admin API. Any other value stops the boot. | |
 | `CONTENT_DIR` | unset | A folder, mounted read-only, with the text of the declaration letters. The app can read its legal pages from this folder. The service never checks it at boot. | [Declaration letters](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docs/operations/declaration-mail-text.md) |
+| `LEGAL_DECLARATION_RECEIPTS_PER_DAY` | `200` | The most declaration receipts the instance mails in any 24 hours, to all addresses together. After that, a declaration is still recorded and sent to you, but its receipt is skipped. | [Declaration letters](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docs/operations/declaration-mail-text.md) |
+| `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` | `10` | The same limit for one sender network, an IPv4 address or an IPv6 /64. A restart resets this count. | [Declaration letters](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/docs/operations/declaration-mail-text.md) |
 
 ### Database
 

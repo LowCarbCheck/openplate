@@ -485,7 +485,11 @@ async function main(): Promise<void> {
     settings,
     // ALWAYS BUILT, no flag beside it, exactly as `pulse` is: the two
     // statutory buttons exist on every instance. See `server/create-app.ts`.
-    legal: { store: legalDeclarations },
+    legal: {
+      store: legalDeclarations,
+      receiptsPerNetworkPerDay: config.legalReceiptsPerNetworkPerDay,
+      receiptsPerDay: config.legalReceiptsPerDay,
+    },
     trial: config.trial,
   });
 
