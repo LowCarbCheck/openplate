@@ -38,7 +38,7 @@ Start with [Architecture](apps/app/docs/architecture.md) and [Self-hosting](apps
 
 ## First ten minutes
 
-Prerequisites: Node 24 or newer, pnpm 11, git and make. Make is required, as Node and pnpm are.
+Prerequisites: Node 24 or newer, pnpm 11, git, and make. Make, Node, and pnpm are all required.
 
 ```bash
 git clone https://github.com/LowCarbCheck/openplate.git && cd openplate
@@ -47,23 +47,23 @@ make test
 make dev APP=app
 ```
 
-`make install` turns on the pre-push hook and installs each app. `make test` runs the unit tests of all four apps. `make dev APP=app` serves the app at `http://localhost:3000`. The table above shows how to run the other apps. Each app keeps its own lockfile and scripts; the root `Makefile` only runs them for you.
+`make install` sets up the pre-push hook and installs each app. `make test` runs the unit tests for all four apps. `make dev APP=app` serves the app at `http://localhost:3000`. The table above shows how to run the other apps. Each app keeps its own lockfile and scripts. The root `Makefile` only runs them.
 
 ## Before you push
 
-The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the same gate for all four apps without a push. Some stages need a tool besides Node and pnpm. Each stage stops the push and names the tool when it is missing:
+The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs this gate for all four apps without pushing. Some stages need tools beyond Node and pnpm. Each stage stops the push and names any missing tool:
 
-- **podlet** (app, core, inference): checks the Podman units under `docker/quadlet/`. Install it with `brew install podlet`, or with `apps/app/scripts/quadlet.sh --install <dir>` and put that directory on your `PATH`. The script also needs `python3`.
-- **Chromium** (app, website): the browser tests. Run `pnpm exec playwright install chromium` in the app folder. On Linux, `pnpm exec playwright install --with-deps chromium` also installs its system libraries.
-- **Postgres** (core): the integration tests. In `apps/core`, run `docker compose -f docker/compose.dev.yml up -d`, or set `TEST_DATABASE_URL` to another Postgres. `SKIP_INTEGRATION=1 git push` skips them once.
-- **The network** (website): the docs check clones three repositories. `SKIP_SYNC=1 git push` skips it once when you are offline.
+- **podlet** (app, core, inference): checks the Podman units under `docker/quadlet/`. Install it with `brew install podlet`, or run `apps/app/scripts/quadlet.sh --install <dir>` and add that directory to your `PATH`. The script also needs `python3`.
+- **Chromium** (app, website): runs the browser tests. Run `pnpm exec playwright install chromium` in the app directory. On Linux, `pnpm exec playwright install --with-deps chromium` also installs system libraries.
+- **Postgres** (core): runs the integration tests. In `apps/core`, run `docker compose -f docker/compose.dev.yml up -d`, or point `TEST_DATABASE_URL` to another Postgres instance. `SKIP_INTEGRATION=1 git push` skips these tests once.
+- **The network** (website): checks documentation by cloning three repositories. `SKIP_SYNC=1 git push` skips this check once if you are offline.
 
 ## Optional environments
 
-You do not need any of these. They are other ways to get the same Node and pnpm.
+These environments are optional. They provide alternative ways to run Node and pnpm.
 
-- **toolbox**: when a `toolbox` command exists, every hook runs its Node stages in a toolbox container named `ts-dev`. The maintainers work this way, because their host has no build tools. The browser tests always run on the host.
-- **nix**: `nix develop` at the repository root opens a shell with Node 24 and pnpm 11 from the root `flake.nix`.
+- **toolbox**: if the `toolbox` command is present, every hook runs its Node stages inside a container named `ts-dev`. The maintainers use this setup because their host lacks build tools. Browser tests always run on the host.
+- **nix**: running `nix develop` at the repository root opens a shell with Node 24 and pnpm 11 from the root `flake.nix`.
 
 ## Contributing
 
