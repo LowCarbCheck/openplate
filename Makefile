@@ -12,7 +12,7 @@
 #   make install          turn the hooks on, then pnpm install in every app
 #   make test             every app's unit tier
 #   make dev APP=<app>    one app's dev server
-#   make check            every app's full pre-push gate, through its own hook
+#   make check            the drift check, then every app's full pre-push gate
 #   make hooks            point core.hooksPath at .githooks (needs no node)
 #   make drift            the node and pnpm drift check, scripts/check-env-drift.sh
 
@@ -75,7 +75,7 @@ help:
 	@echo "make install          turn the pre-push hooks on, then pnpm install in every app"
 	@echo "make test             run every app's unit tests"
 	@echo "make dev APP=<app>    start one app's dev server ($(APPS))"
-	@echo "make check            run every app's full pre-push gate"
+	@echo "make check            run the drift check, then every app's full pre-push gate"
 	@echo "make hooks            turn the pre-push hooks on"
 	@echo "make drift            check that node and pnpm agree across the repository"
 
@@ -95,7 +95,9 @@ $(APPS:%=test-%): test-%:
 dev:
 	pnpm -C apps/$(APP) dev
 
-check: $(APPS:%=check-%)
+# The drift check runs first: four gates on a node or pnpm that disagrees
+# with the flake prove less than they seem to.
+check: drift $(APPS:%=check-%)
 
 # Each app's own hook, from inside the app, fed one push line: a real ref line
 # whose local sha is HEAD, read here at run time (never at parse time, so the
@@ -106,7 +108,7 @@ $(APPS:%=check-%): check-%:
 	@tmp=$$(mktemp -d); in='$(HOOK_STDIN)'; \
 	if [ -z "$$in" ]; then \
 	  in=$$tmp/push-line; \
-	  echo "refs/heads/m269-check $$(git rev-parse HEAD) refs/heads/m269-check $(ZERO_SHA)" >"$$in"; \
+	  echo "refs/heads/make-check $$(git rev-parse HEAD) refs/heads/make-check $(ZERO_SHA)" >"$$in"; \
 	fi; \
 	{ (cd apps/$* && ./.githooks/pre-push origin make-check <"$$in"; echo $$? >"$$tmp/rc") 2>&1; } | tee "$$tmp/log"; \
 	rc=$$(cat "$$tmp/rc"); staged=0; grep -q '▶ pre-push: lint' "$$tmp/log" && staged=1; rm -rf "$$tmp"; \

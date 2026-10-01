@@ -20,7 +20,8 @@
 #     with CI=true and the pnpm on PATH;
 #   * fed a synthetic push line, it runs every stage it has;
 #   * the control: fed empty stdin, it runs no stage, and the same check FAILS;
-#   * with a `toolbox` on PATH, it still runs its stages in ts-dev.
+#   * with a `toolbox` that lists a ts-dev container, it still runs its stages
+#     in ts-dev, and with a toolbox that has no ts-dev it runs them bare.
 # Then one case per row of the `## Stage needs` table in spec 08: a missing
 # outside tool is named, with the way to get it, and the hook exits 1.
 #
@@ -107,8 +108,16 @@ STUB
 mkdir -p "$scratch/with-toolbox"
 cat >"$scratch/with-toolbox/toolbox" <<'STUB'
 #!/bin/sh
-# Stub toolbox: records the call, then runs what follows `run -c ts-dev`.
+# Stub toolbox: records the call, lists the containers named in
+# STUB_TOOLBOX_CONTAINERS, and runs what follows `run -c ts-dev`.
 printf 'toolbox|%s\n' "$*" >>"$STUB_LOG"
+if [ "$1 $2" = "list -c" ]; then
+  echo "CONTAINER ID  CONTAINER NAME     CREATED       STATUS   IMAGE NAME"
+  for c in ${STUB_TOOLBOX_CONTAINERS:-}; do
+    echo "fbae04df892b  $c  2 days ago  running  quay.io/toolbx/ubuntu-toolbox:24.04"
+  done
+  exit 0
+fi
 [ "$1 $2 $3" = "run -c ts-dev" ] || exit 99
 shift 3
 exec "$@"
@@ -124,7 +133,7 @@ done
 
 # ── push lines ──────────────────────────────────────────────────────────────
 push_line=$scratch/push-line
-echo "refs/heads/m269-check $(git -C "$root" rev-parse HEAD) refs/heads/m269-check $ZERO" >"$push_line"
+echo "refs/heads/make-check $(git -C "$root" rev-parse HEAD) refs/heads/make-check $ZERO" >"$push_line"
 
 # ── a Postgres stand-in: any listening socket satisfies the core probe ──────
 "$real_node" -e '
@@ -226,11 +235,22 @@ for app in $APPS; do
     not_ok "control $app: empty stdin still passed the stage check, so the check cannot fail"
   fi
 
-  run_hook "$app" "$dir" "$push_line" "$scratch/with-toolbox"
+  run_hook "$app" "$dir" "$push_line" "$scratch/with-toolbox" STUB_TOOLBOX_CONTAINERS='fedora-toolbox-42 ts-dev'
   if [ "$rc" = 0 ] && printf '%s\n' "$calls" | grep -qxF 'toolbox|run -c ts-dev env CI=true pnpm lint'; then
     ok "$app: with a toolbox, the stages still run in ts-dev"
   else
     not_ok "$app: with a toolbox, lint did not run through 'toolbox run -c ts-dev' (exit $rc)"
+  fi
+
+  # A toolbox with no ts-dev container (a stock Silverblue host) is a
+  # contributor's host: the stages run bare. The case above is its control,
+  # the same stub with ts-dev listed takes the toolbox path.
+  run_hook "$app" "$dir" "$push_line" "$scratch/with-toolbox" STUB_TOOLBOX_CONTAINERS='fedora-toolbox-42 ts-dev-old'
+  if [ "$rc" = 0 ] && printf '%s\n' "$calls" | grep -qxF 'true|lint' \
+    && ! printf '%s\n' "$calls" | grep -q '^toolbox|run '; then
+    ok "$app: a toolbox without ts-dev, the stages run with the node and pnpm on PATH"
+  else
+    not_ok "$app: a toolbox without ts-dev still sent the stages to toolbox run, or stopped (exit $rc)"
   fi
 done
 
@@ -328,6 +348,8 @@ mutate chromium-hint website 's#pnpm exec playwright install chromium"#install a
 mutate postgres-probe core 's#socket.on("error", () => process.exit(1));#socket.on("error", () => process.exit(0));#'
 # A docs sync failure that no longer names the network.
 mutate network-hint website 's#so it needs the network#so it stopped#'
+# A hook that takes any toolbox as ts-dev, as the hooks did before M269.
+mutate any-toolbox core 's#^  \&\& toolbox list -c .*; then$#  ; then#'
 # A missing pnpm that is no longer caught before the stages.
 mutate pnpm-check app 's#^  for tool in node pnpm; do#  for tool in node; do#'
 echo "PASS: the self-test caught every broken copy"
