@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Étape {{current}} sur {{total}}",
     "style": {
-      "caution": "La grossesse et l'allaitement augmentent tes besoins en énergie et en glucides. Parle à ta sage-femme ou à ton médecin avant de limiter l'un ou l'autre. Riche en protéines ou Suivi simple te conviendront peut-être mieux. Lis <source>les conseils de la DGE</source>.",
+      "caution": "La grossesse et l'allaitement augmentent tes besoins en énergie et en glucides. Parle à ta sage-femme ou à ton médecin avant de limiter l'un ou l'autre. Riche en protéines ou Suivi simple te conviendront peut-être mieux. Lis <sourceLink>les conseils de la DGE</sourceLink>.",
       "highProtein": {
         "detail": "1,6 g de protéines par kg de poids corporel",
         "label": "Riche en protéines"

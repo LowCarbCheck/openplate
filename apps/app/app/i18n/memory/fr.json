@@ -12606,6 +12606,13 @@
     "at": "2026-09-14",
     "fr": "Lipides {{value}} g"
   },
+  "99468f7a06776fdc": {
+    "en": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
+    "path": "common:onboarding.style.caution",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "fr": "La grossesse et l'allaitement augmentent tes besoins en énergie et en glucides. Parle à ta sage-femme ou à ton médecin avant de limiter l'un ou l'autre. Riche en protéines ou Suivi simple te conviendront peut-être mieux. Lis <sourceLink>les conseils de la DGE</sourceLink>."
+  },
   "994a132abde9ac74": {
     "en": "Fasting for {{duration}}, open the timer",
     "path": "common:fasting.chip.activeLabel",

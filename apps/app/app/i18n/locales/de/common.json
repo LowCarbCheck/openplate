@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Schritt {{current}} von {{total}}",
     "style": {
-      "caution": "In der Schwangerschaft und in der Stillzeit brauchst du mehr Energie und mehr Kohlenhydrate. Sprich mit deiner Hebamme oder deiner Ärztin, bevor du eines von beiden begrenzt. Viel Eiweiß oder Nur mitschreiben passen vielleicht besser zu dir. Lies, <source>was die DGE dazu rät</source>.",
+      "caution": "In der Schwangerschaft und in der Stillzeit brauchst du mehr Energie und mehr Kohlenhydrate. Sprich mit deiner Hebamme oder deiner Ärztin, bevor du eines von beiden begrenzt. Viel Eiweiß oder Nur mitschreiben passen vielleicht besser zu dir. Lies, <sourceLink>was die DGE dazu rät</sourceLink>.",
       "highProtein": {
         "detail": "1,6 g Eiweiß pro kg Körpergewicht",
         "label": "Viel Eiweiß"

@@ -12606,6 +12606,13 @@
     "at": "2026-09-14",
     "it": "Grassi {{value}} g"
   },
+  "99468f7a06776fdc": {
+    "en": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
+    "path": "common:onboarding.style.caution",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-09-14",
+    "it": "Gravidanza e allattamento aumentano il fabbisogno di energia e carboidrati. Parlane con l'ostetrica o con il medico prima di limitare l'uno o gli altri. Alto apporto proteico o Solo monitoraggio potrebbero essere più adatti a te. Leggi <sourceLink>le raccomandazioni della DGE</sourceLink>."
+  },
   "994a132abde9ac74": {
     "en": "Fasting for {{duration}}, open the timer",
     "path": "common:fasting.chip.activeLabel",

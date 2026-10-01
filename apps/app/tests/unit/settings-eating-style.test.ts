@@ -30,6 +30,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
 import {
@@ -275,6 +276,34 @@ test('a style that restricts nothing never raises the note, whatever the status'
     assert.equal(styleCaution('just-track', status), null);
     assert.equal(styleCaution('high-protein', status), null);
   }
+});
+
+/**
+ * The words the English catalog puts INSIDE the caution note's source link.
+ * Read from the catalog, so a rewording does not redden this file, but a run
+ * that stops landing inside the link does: a `<source>` tag is a void element
+ * to the Trans parser, and with it the link was drawn empty while its words
+ * sat after it as plain text.
+ */
+function cautionLinkWords(): string {
+  const catalog = z
+    .object({ onboarding: z.object({ style: z.object({ caution: z.string() }) }) })
+    .parse(JSON.parse(readFileSync(fileURLToPath(new URL('../../app/i18n/locales/en/common.json', import.meta.url)), 'utf8')));
+  const words = /<sourceLink>(.+?)<\/sourceLink>/.exec(catalog.onboarding.style.caution)?.[1];
+  if (words === undefined) throw new Error('the caution sentence has no <sourceLink> run');
+  return words;
+}
+
+/** The text inside the first `<a ...>` of the markup, or `null` when there is no link. */
+function firstLinkText(markup: string): string | null {
+  return /<a [^>]*>([^<]*)<\/a>/.exec(markup)?.[1] ?? null;
+}
+
+test('the source link carries the words the catalog puts inside it', () => {
+  const markup = renderToStaticMarkup(withI18n(createElement(EatingStyleCautionNote)));
+  assert.equal(firstLinkText(markup), cautionLinkWords());
+  // CONTROL: the empty link the void `<source>` tag produced fails the same check.
+  assert.notEqual(firstLinkText('<p>Read <a href="x"></a>what the DGE advises.</p>'), cautionLinkWords());
 });
 
 test('the note is one muted paragraph with one working source link, and no number', () => {

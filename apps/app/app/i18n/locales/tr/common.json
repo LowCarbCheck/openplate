@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Adım {{current}} / {{total}}",
     "style": {
-      "caution": "Hamilelik ve emzirme dönemleri enerji ve karbonhidrat ihtiyacını artırır. Bunlardan birini kısıtlamadan önce ebenle veya doktorunla görüş. Yüksek protein ya da Sadece takip et sana daha uygun olabilir. <source>DGE'nin önerilerini</source> oku.",
+      "caution": "Hamilelik ve emzirme dönemleri enerji ve karbonhidrat ihtiyacını artırır. Bunlardan birini kısıtlamadan önce ebenle veya doktorunla görüş. Yüksek protein ya da Sadece takip et sana daha uygun olabilir. <sourceLink>DGE'nin önerilerini</sourceLink> oku.",
       "highProtein": {
         "detail": "Vücut ağırlığının her bir kg'ı için 1,6 g protein",
         "label": "Yüksek protein"

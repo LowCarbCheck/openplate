@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Passo {{current}} di {{total}}",
     "style": {
-      "caution": "Gravidanza e allattamento aumentano il fabbisogno di energia e carboidrati. Parlane con l'ostetrica o con il medico prima di limitare l'uno o gli altri. Alto apporto proteico o Solo monitoraggio potrebbero essere più adatti a te. Leggi <source>le raccomandazioni della DGE</source>.",
+      "caution": "Gravidanza e allattamento aumentano il fabbisogno di energia e carboidrati. Parlane con l'ostetrica o con il medico prima di limitare l'uno o gli altri. Alto apporto proteico o Solo monitoraggio potrebbero essere più adatti a te. Leggi <sourceLink>le raccomandazioni della DGE</sourceLink>.",
       "highProtein": {
         "detail": "1,6 g di proteine per kg di peso corporeo",
         "label": "Alto apporto proteico"

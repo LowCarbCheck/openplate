@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Step {{current}} of {{total}}",
     "style": {
-      "caution": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <source>what the DGE advises</source>.",
+      "caution": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
       "highProtein": {
         "detail": "1.6 g of protein per kg of body weight",
         "label": "High protein"

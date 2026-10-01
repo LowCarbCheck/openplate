@@ -1663,7 +1663,7 @@
     },
     "stepOf": "Paso {{current}} de {{total}}",
     "style": {
-      "caution": "El embarazo y la lactancia aumentan tus necesidades de energía y carbohidratos. Consulta a tu matrona o médico antes de limitar cualquiera de los dos. Alto en proteínas o Solo registrar pueden adaptarse mejor a ti. Lee <source>lo que recomienda la DGE</source>.",
+      "caution": "El embarazo y la lactancia aumentan tus necesidades de energía y carbohidratos. Consulta a tu matrona o médico antes de limitar cualquiera de los dos. Alto en proteínas o Solo registrar pueden adaptarse mejor a ti. Lee <sourceLink>lo que recomienda la DGE</sourceLink>.",
       "highProtein": {
         "detail": "1,6 g de proteína por kg de peso corporal",
         "label": "Alto en proteínas"

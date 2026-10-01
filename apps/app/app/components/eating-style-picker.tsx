@@ -180,7 +180,7 @@ export function EatingStyleCautionNote() {
       <Trans
         i18nKey="onboarding.style.caution"
         components={{
-          source: (
+          sourceLink: (
             <a
               href={STYLE_CAUTION_SOURCE_URL}
               target="_blank"
