@@ -9,7 +9,7 @@
 # the engine is ordinary tracked source now, and the sync SERVER is a
 # separate deployable with its own image. There is deliberately nothing
 # sync-specific left in this file.
-FROM node:22-alpine AS dependencies-env
+FROM node:24-alpine AS dependencies-env
 # pnpm comes from corepack, which reads the `packageManager` field of
 # package.json and installs exactly that version. So this file carries no
 # pnpm version of its own. A global pnpm from npm that is newer than

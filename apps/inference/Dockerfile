@@ -20,7 +20,7 @@
 # the /models VOLUME on first boot, checksum-verified and resumable.
 
 ARG BASE_IMAGE=ghcr.io/ggml-org/llama.cpp:server
-ARG NODE_IMAGE=node:22-bookworm-slim
+ARG NODE_IMAGE=node:24-bookworm-slim
 
 # ---------------------------------------------------------------------------
 # Stage 1 — build the service bundle

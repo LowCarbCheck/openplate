@@ -11,7 +11,7 @@
 # which the service applies itself at boot. A self-hoster pulling a newer tag
 # never runs a second command.
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 WORKDIR /app
 # pnpm comes from corepack, which reads `packageManager` in package.json and
 # installs exactly that version, so this file carries no pnpm version. A global
@@ -36,7 +36,7 @@ COPY src ./src
 COPY scripts ./scripts
 RUN pnpm build
 
-FROM node:22-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 

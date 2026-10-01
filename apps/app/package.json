@@ -89,7 +89,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=24"
   },
   "packageManager": "pnpm@11.5.1",
   "description": "Open-source food tracker with BYOK AI plate identity"
