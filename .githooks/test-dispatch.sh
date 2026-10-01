@@ -157,6 +157,15 @@ expect_out "  and logs apps/core as skipped" "apps/core skipped"
 dispatch "$push_line" GIT_DIFF_OVERRIDE='.github/workflows/x.yml'
 expect_ran "a root-only path runs all four" "app core inference website"
 
+# The flake sets the node and pnpm every app runs under in a nix shell, so a
+# change to it can break any app. Pinned here, so a dispatcher tidy-up that
+# counted only the apps/ prefixes cannot drop the rule quietly.
+dispatch "$push_line" GIT_DIFF_OVERRIDE='flake.nix'
+expect_ran "a root flake.nix change runs all four" "app core inference website"
+
+dispatch "$push_line" GIT_DIFF_OVERRIDE='flake.lock'
+expect_ran "a root flake.lock change runs all four" "app core inference website"
+
 dispatch "$push_line" GIT_DIFF_OVERRIDE='docker/compose.yml'
 expect_ran "a root docker/ path runs all four, the app among them" "app core inference website"
 
@@ -281,4 +290,5 @@ mutate() {
 mutate mapping hooks/pre-push 's#apps/core/\*) touched\[core\]#apps/core/*) touched[inference]#'
 mutate relative website-pre-commit 's# --relative##'
 mutate worktree-env hooks/pre-push 's#^  export GIT_DIR GIT_WORK_TREE#  :#'
+mutate flake-root hooks/pre-push 's#^      \*) outside=#      flake.nix|flake.lock) : ;;\n&#'
 echo "PASS: the self-test caught every broken copy"
