@@ -2640,7 +2640,7 @@
       "willDrop": "{{shares}} deiner Freigaben lassen sich von diesem Gerät nicht neu versiegeln und enden.",
       "open": "Datenschlüssel ersetzen",
       "confirmTitle": "Datenschlüssel ersetzen?",
-      "confirmBody": "Alles, was du eingetragen hast, wird mit einem neuen Schlüssel neu versiegelt, und alle, mit denen du weiter teilst, bekommen eine frische versiegelte Kopie. Du bekommst einen neuen Wiederherstellungscode, der alte gilt dann nicht mehr.",
+      "confirmBody": "Alles, was du erfasst hast, wird mit einem neuen Schlüssel erneut versiegelt, und jede Person, mit der du noch teilst, erhält eine neue versiegelte Kopie. Du erhältst einen neuen Wiederherstellungscode, und der alte funktioniert nicht mehr. Jedes andere Gerät, auf dem du angemeldet bist, wird abgemeldet, und du musst dich dort erneut anmelden.",
       "passphraseLabel": "Mit deinem Passwort bestätigen",
       "passphraseHint": "Wir fragen danach, weil der neue Schlüssel mit deinem Passwort geschützt werden muss. Mit einem falschen Passwort würdest du dich aus deinem eigenen Tagebuch aussperren.",
       "confirmCta": "Schlüssel ersetzen",

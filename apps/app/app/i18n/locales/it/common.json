@@ -2640,7 +2640,7 @@
       "willDrop": "{{shares}} delle tue condivisioni non possono essere sigillate nuovamente da questo dispositivo e cesseranno.",
       "open": "Sostituisci la chiave dei dati",
       "confirmTitle": "Vuoi sostituire la chiave dei dati?",
-      "confirmBody": "Tutto ciò che hai registrato viene cifrato di nuovo con una nuova chiave, e chiunque riceva ancora le tue condivisioni riceve una nuova copia cifrata. Riceverai un nuovo codice di recupero, e quello vecchio smetterà di funzionare.",
+      "confirmBody": "Tutto ciò che hai registrato viene sigillato di nuovo con una nuova chiave, e ogni persona con cui condividi ancora riceve una nuova copia sigillata. Riceverai un nuovo codice di recupero, e quello vecchio smette di funzionare. La sessione viene chiusa su ogni altro dispositivo in cui hai effettuato l'accesso, e dovrai accedervi di nuovo.",
       "passphraseLabel": "Conferma con la tua password",
       "passphraseHint": "La chiediamo perché la nuova chiave deve essere sigillata con la tua password, e una password errata ti impedirebbe di accedere al tuo stesso diario.",
       "confirmCta": "Sostituisci la chiave",

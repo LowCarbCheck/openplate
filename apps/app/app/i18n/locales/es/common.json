@@ -2640,7 +2640,7 @@
       "willDrop": "No es posible volver a sellar {{shares}} de tus elementos compartidos desde este dispositivo, por lo que finalizarán.",
       "open": "Reemplazar mi clave de datos",
       "confirmTitle": "¿Reemplazar tu clave de datos?",
-      "confirmBody": "Todo lo que has registrado se sella de nuevo con una clave nueva, y cada persona con la que aún compartes recibe una copia sellada actualizada. Recibirás un código de recuperación nuevo y el anterior dejará de funcionar.",
+      "confirmBody": "Todo lo que has registrado se vuelve a sellar con una clave nueva, y todas las personas con las que aún compartes reciben una copia sellada nueva. Recibirás un nuevo código de recuperación, y el antiguo dejará de funcionar. Se cerrará la sesión en todos los demás dispositivos donde la tengas iniciada, y tendrás que iniciar sesión en ellos de nuevo.",
       "passphraseLabel": "Confirma con tu contraseña",
       "passphraseHint": "Te la pedimos porque la clave nueva debe quedar sellada con tu contraseña, y si introduces una incorrecta perderás el acceso a tu propio diario.",
       "confirmCta": "Reemplazar la clave",
