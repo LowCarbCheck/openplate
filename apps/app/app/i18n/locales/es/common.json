@@ -3064,8 +3064,8 @@
     "split": {
       "title": "De dónde proceden tus calorías",
       "note": "Calculado a partir de proteínas, carbohidratos y grasas, por lo que puede diferir un poco de tu total de calorías.",
-      "noteGrams": "Cada parte representa los gramos de ese macronutriente respecto al total de los tres.",
-      "titleGrams": "De dónde proceden tus gramos",
+      "noteGrams": "Cada proporción es el peso en gramos de ese macronutriente respecto al total de los tres.",
+      "titleGrams": "Tus macronutrientes por peso",
       "average": "Media",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

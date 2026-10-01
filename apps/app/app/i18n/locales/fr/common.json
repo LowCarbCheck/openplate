@@ -3064,8 +3064,8 @@
     "split": {
       "title": "D'où viennent tes calories",
       "note": "Calculé à partir des protéines, des glucides et des lipides, cela peut donc différer un peu de ton total de calories.",
-      "noteGrams": "Chaque part correspond aux grammes de ce macro par rapport au total des trois.",
-      "titleGrams": "Origine de tes grammes",
+      "noteGrams": "Chaque part correspond au poids en grammes de ce macro par rapport au total des trois réunis.",
+      "titleGrams": "Tes macros en poids",
       "average": "Moyenne",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

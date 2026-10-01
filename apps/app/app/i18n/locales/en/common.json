@@ -3064,8 +3064,8 @@
     "split": {
       "title": "Where your calories come from",
       "note": "Worked out from protein, carbs and fat, so it can differ a little from your calorie total.",
-      "noteGrams": "Each share is the grams of that macro out of the grams of all three.",
-      "titleGrams": "Where your grams come from",
+      "noteGrams": "Each share is that macro's weight in grams out of the three together.",
+      "titleGrams": "Your macros by weight",
       "average": "Average",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

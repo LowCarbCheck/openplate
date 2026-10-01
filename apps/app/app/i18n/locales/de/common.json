@@ -3064,8 +3064,8 @@
     "split": {
       "title": "Woher deine Kalorien stammen",
       "note": "Aus Protein, Kohlenhydraten und Fett berechnet, kann daher leicht von deiner Gesamtkalorienzahl abweichen.",
-      "noteGrams": "Jeder Anteil entspricht dem Gewicht dieses Makronährstoffs in Gramm bezogen auf das Gesamtgewicht aller drei.",
-      "titleGrams": "Herkunft deiner Gramm",
+      "noteGrams": "Jeder Anteil entspricht dem Gewicht dieses Makronährstoffs in Gramm bezogen auf alle drei zusammen.",
+      "titleGrams": "Deine Makronährstoffe nach Gewicht",
       "average": "Durchschnitt",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

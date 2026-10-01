@@ -134,8 +134,8 @@ describe('MacroEnergySplitCard, the kcal/g control', () => {
     const grams = renderOn('grams', [evenGrams]);
 
     assert.equal(layerOf(kcal, 'Where your calories come from'), 'false|col-start-1 row-start-1');
-    assert.equal(layerOf(kcal, 'Where your grams come from'), 'true|col-start-1 row-start-1 invisible');
-    assert.equal(layerOf(grams, 'Where your grams come from'), 'false|col-start-1 row-start-1');
+    assert.equal(layerOf(kcal, 'Your macros by weight'), 'true|col-start-1 row-start-1 invisible');
+    assert.equal(layerOf(grams, 'Your macros by weight'), 'false|col-start-1 row-start-1');
     assert.equal(layerOf(grams, 'Where your calories come from'), 'true|col-start-1 row-start-1 invisible');
   });
 

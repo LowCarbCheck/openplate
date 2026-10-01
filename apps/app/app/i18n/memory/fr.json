@@ -2218,6 +2218,13 @@
     "at": "2026-09-18",
     "fr": "Tu as consigné ton premier aliment."
   },
+  "1914b6dbd13d29f2": {
+    "en": "Your macros by weight",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Tes macros en poids"
+  },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
     "path": "common:research.console.cohort.empty",
@@ -8608,6 +8615,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Période"
+  },
+  "6a47c8226f4f8d95": {
+    "en": "Each share is that macro's weight in grams out of the three together.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Chaque part correspond au poids en grammes de ce macro par rapport au total des trois réunis."
   },
   "6a507095c056a592": {
     "en": "Choose an AI provider",

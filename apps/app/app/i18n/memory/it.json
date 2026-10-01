@@ -2218,6 +2218,13 @@
     "at": "2026-09-18",
     "it": "Hai registrato il tuo primo alimento."
   },
+  "1914b6dbd13d29f2": {
+    "en": "Your macros by weight",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "I tuoi macro per peso"
+  },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
     "path": "common:research.console.cohort.empty",
@@ -8608,6 +8615,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Intervallo di tempo"
+  },
+  "6a47c8226f4f8d95": {
+    "en": "Each share is that macro's weight in grams out of the three together.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Ogni quota corrisponde al peso in grammi di quel macro rispetto alla somma dei tre."
   },
   "6a507095c056a592": {
     "en": "Choose an AI provider",
