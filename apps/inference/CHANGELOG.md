@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **The image runs on Node 24.** The build stages move from `node:22-bookworm-slim` to `node:24-bookworm-slim`, and the shipped image copies that Node binary. pnpm 11.5.1 comes from corepack, which reads the new `packageManager` field of `package.json`, so the Dockerfile no longer names a pnpm version. `engines.node` is `>=24`. Nothing changes in how you run the container. Check: `scripts/check-image-boots.sh inference` at the repository root.
+
 ## [0.2.0] - 2026-09-30
 
 ### Changed

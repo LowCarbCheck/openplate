@@ -5,8 +5,9 @@
   "type": "module",
   "description": "Self-hostable, OpenAI-compatible plate-identification endpoint for openplate. Takes one plate photo, returns a PlateIdentification payload. Photos are processed in memory and never written to disk or logged.",
   "license": "MIT",
+  "packageManager": "pnpm@11.5.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsx scripts/build.ts",

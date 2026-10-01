@@ -373,14 +373,16 @@ jobs:
       # On the v0.22.1 run this leg failed after 27 seconds at
       # `RUN pnpm i --frozen-lockfile` with exit code 1 and NOT ONE line of
       # pnpm output, so the log said nothing about why. This runs the same
-      # base image the Dockerfile uses, `node:22-alpine`, and installs pnpm
-      # the same way it does, so the next run's log shows whether pnpm itself
-      # works on this runner. It is a few seconds of pulls, it builds nothing,
-      # and `continue-on-error` keeps it from ever deciding the leg.
+      # base image the Dockerfile uses, `node:24-alpine`, and installs pnpm
+      # the same way it does: corepack, reading `packageManager` from the
+      # app's package.json mounted at /app, so the version comes from that
+      # file and never from this line. The next run's log shows whether pnpm
+      # itself works on this runner. It is a few seconds of pulls, it builds
+      # nothing, and `continue-on-error` keeps it from ever deciding the leg.
       - name: Probe pnpm on the arm64 runner
         if: ${{ matrix.probe }}
         continue-on-error: true
-        run: docker run --rm --platform linux/arm64 node:22-alpine sh -c 'node -v && npm i -g pnpm && pnpm -v'
+        run: docker run --rm --platform linux/arm64 -v "$GITHUB_WORKSPACE/apps/app/package.json:/app/package.json:ro" -w /app node:24-alpine sh -c 'node -v && corepack enable && corepack prepare --activate && pnpm -v'
 
       - name: Build and push by digest
         id: build
@@ -658,7 +660,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           cache-dependency-path: apps/app/pnpm-lock.yaml
 
