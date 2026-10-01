@@ -7,16 +7,18 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-01
+
 ### Added
 
-- **The service reports what it can and cannot do.** `GET /v1/models` now returns a `capabilities` object on the model entry. It lists supported tasks, caution flag coverage, translation languages, and whether it reads labels. Clients that ignore the key work unchanged.
-- **Allergen and pregnancy flags from the food name.** A fixed word table with exceptions like almond milk and peanut butter populates `flags` for recognised foods, setting `flagsCoverage: "partial"`. Unrecognised foods omit both fields. The model, prompt, and grammar remain unchanged.
-- **Food names in the app's language.** When `Accept-Language` is set to de, fr, it, es or tr, the service adds a `translations` object per food. It uses one text-only model call with a 20-second timeout that leaves names untouched on failure. `name` stays English for food database searches.
+- **The service reports what it can and cannot do.** `GET /v1/models` now returns a `capabilities` object on the model entry. It lists supported tasks, caution flag coverage, translation languages, and whether it reads labels. Clients that ignore the key work unchanged. ([c29c99b](https://github.com/LowCarbCheck/openplate/commit/c29c99b))
+- **Allergen and pregnancy flags from the food name.** A fixed word table with exceptions like almond milk and peanut butter populates `flags` for recognised foods, setting `flagsCoverage: "partial"`. Unrecognised foods omit both fields. The model, prompt, and grammar remain unchanged. ([c29c99b](https://github.com/LowCarbCheck/openplate/commit/c29c99b))
+- **Food names in the app's language.** When `Accept-Language` is set to de, fr, it, es or tr, the service adds a `translations` object per food. It uses one text-only model call with a 20-second timeout that leaves names untouched on failure. `name` stays English for food database searches. ([c29c99b](https://github.com/LowCarbCheck/openplate/commit/c29c99b))
 
 ### Changed
 
-- **The image runs on Node 24.** The build stages move from `node:22-bookworm-slim` to `node:24-bookworm-slim`. The shipped image copies that Node binary. pnpm 11.5.1 comes from corepack, which reads the new `packageManager` field in `package.json`. The Dockerfile no longer names a pnpm version. `engines.node` is `>=24`. Running the container does not change. Check: `scripts/check-image-boots.sh inference` at the repository root.
-- **A frozen-contract test guards the identification prompt and grammar.** Altering the prompt or response format fails a unit test. Developers must update the hashes intentionally after re-running the baseline in `eval/`.
+- **The image runs on Node 24.** The build stages move from `node:22-bookworm-slim` to `node:24-bookworm-slim`. The shipped image copies that Node binary. pnpm 11.5.1 comes from corepack, which reads the new `packageManager` field in `package.json`. The Dockerfile no longer names a pnpm version. `engines.node` is `>=24`. Running the container does not change. Check: `scripts/check-image-boots.sh inference` at the repository root. ([0b10348](https://github.com/LowCarbCheck/openplate/commit/0b10348), [c59a4bf](https://github.com/LowCarbCheck/openplate/commit/c59a4bf))
+- **A frozen-contract test guards the identification prompt and grammar.** Altering the prompt or response format fails a unit test. Developers must update the hashes intentionally after re-running the baseline in `eval/`. ([c29c99b](https://github.com/LowCarbCheck/openplate/commit/c29c99b))
 
 ## [0.2.0] - 2026-09-30
 
