@@ -12,8 +12,14 @@
 # never runs a second command.
 
 FROM node:22-alpine AS base
-RUN npm i -g pnpm@11
 WORKDIR /app
+# pnpm comes from corepack, which reads `packageManager` in package.json and
+# installs exactly that version, so this file carries no pnpm version. A global
+# pnpm newer than `packageManager` would self-manage and fetch a second binary
+# that has no musl build for arm64 (the app's 2026-08 arm64 segfault). The
+# package.json copy comes first, or corepack falls back to its own default.
+COPY package.json ./
+RUN corepack enable && corepack prepare --activate
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

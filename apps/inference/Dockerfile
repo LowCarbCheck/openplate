@@ -31,10 +31,12 @@ ARG NODE_IMAGE=node:22-bookworm-slim
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 ENV CI=true PNPM_HOME=/pnpm PATH=/pnpm:$PATH
-RUN corepack enable && corepack prepare pnpm@11.5.1 --activate
 
 # Dependency manifests first so a source-only change reuses the install layer.
+# package.json comes before corepack: corepack reads its `packageManager` field
+# and installs exactly that pnpm, so this file carries no pnpm version.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable && corepack prepare --activate
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json ./
@@ -52,8 +54,8 @@ RUN pnpm build
 FROM ${NODE_IMAGE} AS prod-deps
 WORKDIR /app
 ENV CI=true PNPM_HOME=/pnpm PATH=/pnpm:$PATH
-RUN corepack enable && corepack prepare pnpm@11.5.1 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable && corepack prepare --activate
 RUN pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 # ---------------------------------------------------------------------------
