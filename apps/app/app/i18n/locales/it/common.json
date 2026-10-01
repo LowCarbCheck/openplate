@@ -473,7 +473,7 @@
     },
     "reading": "Lettura del link in corso…",
     "sharingOff": {
-      "body": "La condivisione non è attiva sul tuo server di sincronizzazione. La chiave che hai verificato rimane su questo dispositivo, quindi quando la funzione verrà attivata potrai condividere senza ripetere la verifica.",
+      "body": "La condivisione non è attiva sul tuo server core. La chiave che hai verificato resta salvata su questo dispositivo, quindi quando verrà attivata potrai condividere senza ripetere la verifica.",
       "title": "Verificato, ma non è stato ancora condiviso nulla"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Studi scientifici",
     "intro": "Studi a cui contribuisci, cosa riceve ciascuno e come abbandonarli.",
-    "unavailable": "Questo server di sincronizzazione non ha una corsia di ricerca. Qui non è possibile inviare o revocare nulla.",
+    "unavailable": "Questo server core non ha una corsia di ricerca. Qui non è possibile inviare né revocare nulla.",
     "needsSession": "I contributi alla ricerca richiedono la password del tuo account. Prima accedi su questo dispositivo.",
     "needsSessionCta": "Vai all'account",
     "loadFailed": "Impossibile caricare i tuoi studi.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Condivisione",
     "intro": "Consenti a un dietista o a un medico di leggere il tuo diario. Resta cifrato durante il trasferimento: ricevono una copia della tua chiave sigillata con la loro, e la condivisione non fornisce al server nulla di nuovo da leggere.",
-    "unavailable": "Questo server di sincronizzazione non offre la condivisione. Qui non è attivo nulla e non è stato inviato nulla.",
+    "unavailable": "Questo server core non offre la condivisione. Qui non è attivo nulla e non è stato inviato niente.",
     "needsSession": "La condivisione richiede la password del tuo account. Accedi prima su questo dispositivo.",
     "needsSessionCta": "Vai all'account",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "La sincronizzazione non è terminata. Il tuo diario su questo dispositivo non ha subito modifiche.",
-        "incompatible": "Questa app e il server di sincronizzazione non usano ancora la stessa versione, quindi la sincronizzazione è sospesa intenzionalmente.",
-        "offline": "Impossibile raggiungere il server di sincronizzazione. Il tuo diario è al sicuro su questo dispositivo e si aggiornerà più tardi.",
+        "incompatible": "Questa app e il server core non usano ancora la stessa versione, quindi la sincronizzazione è volutamente in pausa.",
+        "offline": "Impossibile raggiungere il server core. Il tuo diario è al sicuro su questo dispositivo e si aggiornerà più tardi.",
         "reauth-required": "La sessione è terminata. Accedi di nuovo per continuare a sincronizzare. Nessun dato è andato perso."
       },
       "lastSynced": "Ultima sincronizzazione: {{when}}",

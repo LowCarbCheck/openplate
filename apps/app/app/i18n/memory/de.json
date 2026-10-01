@@ -2883,6 +2883,13 @@
     "at": "2026-09-28",
     "de": "Tagebuch öffnen"
   },
+  "20fb59a138936f52": {
+    "en": "Couldn’t reach the core server. Your diary is safe on this device and will catch up later.",
+    "path": "common:sync.status.error.offline",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Der Core-Server konnte nicht erreicht werden. Dein Tagebuch ist auf diesem Gerät sicher und wird später synchronisiert."
+  },
   "210c31833757ece7": {
     "en": "German legal headings fit a phone.",
     "path": "releases:v0_36_0.fixed.15",
@@ -10408,6 +10415,13 @@
     "at": "2026-09-14",
     "de": ", über deinem Ziel"
   },
+  "7f048f14876a51a1": {
+    "en": "Your core server does not have sharing switched on. The key you checked is kept on this device, so when it is switched on you can share without doing the check again.",
+    "path": "common:connectClinician.sharingOff.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Auf deinem Core-Server ist das Teilen nicht aktiviert. Der geprüfte Schlüssel bleibt auf diesem Gerät gespeichert. Sobald das Teilen aktiviert wird, kannst du Daten freigeben, ohne die Prüfung erneut durchzuführen."
+  },
   "7f0b191c1f0e9d66": {
     "en": "About you",
     "path": "common:profile.title",
@@ -12388,6 +12402,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "pro 100 g: {{summary}}"
+  },
+  "96088eb24f835a2f": {
+    "en": "This core server does not offer sharing. Nothing here is switched on, and nothing was sent.",
+    "path": "common:sharing.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Dieser Core-Server bietet kein Teilen an. Hier ist nichts aktiviert, und es wurde nichts gesendet."
   },
   "960ca58d2ae88982": {
     "en": "Daily calorie target",
@@ -15217,6 +15238,13 @@
     "at": "2026-09-19",
     "de": "{{count}} Berichte über falsche Schätzungen wurden noch nicht gesendet. Wenn du löschst, verlierst du sie."
   },
+  "b77db6d8a97fe199": {
+    "en": "This core server has no research lane. Nothing can be sent or withdrawn here.",
+    "path": "common:research.unavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Dieser Core-Server hat keinen Forschungszweig. Hier kann nichts gesendet oder zurückgezogen werden."
+  },
   "b78e849c3e6b314a": {
     "en": "Not yet",
     "path": "common:awards.notYet",
@@ -16595,6 +16623,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "du@beispiel.de"
+  },
+  "c9db97de4e3c5d03": {
+    "en": "This app and the core server don’t speak the same version yet, so syncing is paused on purpose.",
+    "path": "common:sync.status.error.incompatible",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Diese App und der Core-Server verwenden noch nicht dieselbe Version, daher ist die Synchronisierung absichtlich pausiert."
   },
   "c9e7ca6251839afc": {
     "en": "Your fasts",

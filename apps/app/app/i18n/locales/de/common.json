@@ -473,7 +473,7 @@
     },
     "reading": "Link wird gelesen…",
     "sharingOff": {
-      "body": "Auf deinem Sync-Server ist das Teilen nicht aktiviert. Der geprüfte Schlüssel wird auf diesem Gerät gespeichert, sodass du nach der Aktivierung teilen kannst, ohne die Prüfung erneut durchzuführen.",
+      "body": "Auf deinem Core-Server ist das Teilen nicht aktiviert. Der geprüfte Schlüssel bleibt auf diesem Gerät gespeichert. Sobald das Teilen aktiviert wird, kannst du Daten freigeben, ohne die Prüfung erneut durchzuführen.",
       "title": "Geprüft, aber noch nichts geteilt"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Studien",
     "intro": "Studien, zu denen du beiträgst, was jede davon bekommt, und wie du wieder aussteigst.",
-    "unavailable": "Dieser Sync-Server bietet keine Forschungsbeiträge an. Hier lässt sich nichts senden und nichts widerrufen.",
+    "unavailable": "Dieser Core-Server hat keinen Forschungszweig. Hier kann nichts gesendet oder zurückgezogen werden.",
     "needsSession": "Für Forschungsbeiträge brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
     "needsSessionCta": "Zum Konto",
     "loadFailed": "Deine Studien konnten nicht geladen werden.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Teilen",
     "intro": "Gib Ernährungsberatern oder Ärzten Lesezugriff auf dein Tagebuch. Bei der Übertragung bleibt es verschlüsselt: Sie erhalten eine Kopie deines Schlüssels, versiegelt mit ihrem eigenen, und durch das Teilen erfährt der Server nichts Neues.",
-    "unavailable": "Dieser Sync-Server bietet kein Teilen an. Hier ist nichts eingeschaltet, und es wurde nichts gesendet.",
+    "unavailable": "Dieser Core-Server bietet kein Teilen an. Hier ist nichts aktiviert, und es wurde nichts gesendet.",
     "needsSession": "Fürs Teilen brauchst du dein Passwort. Melde dich zuerst auf diesem Gerät an.",
     "needsSessionCta": "Zum Konto",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "Der Sync ist nicht durchgelaufen. An deinem Tagebuch auf diesem Gerät ändert das nichts.",
-        "incompatible": "Diese App und der Sync-Server nutzen noch nicht dieselbe Version, daher ist die Synchronisierung vorübergehend pausiert.",
-        "offline": "Der Sync-Server war nicht erreichbar. Dein Tagebuch liegt sicher auf diesem Gerät und holt später auf.",
+        "incompatible": "Diese App und der Core-Server verwenden noch nicht dieselbe Version, daher ist die Synchronisierung absichtlich pausiert.",
+        "offline": "Der Core-Server konnte nicht erreicht werden. Dein Tagebuch ist auf diesem Gerät sicher und wird später synchronisiert.",
         "reauth-required": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um weiter zu synchronisieren. Es ist nichts verloren gegangen."
       },
       "lastSynced": "Zuletzt synchronisiert: {{when}}",

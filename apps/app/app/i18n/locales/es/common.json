@@ -473,7 +473,7 @@
     },
     "reading": "Leyendo el enlace…",
     "sharingOff": {
-      "body": "Tu servidor de sincronización no tiene la opción de compartir activada. La clave que has verificado se guarda en este dispositivo, así que podrás compartir sin repetir la comprobación en cuanto se active.",
+      "body": "Tu servidor central no tiene activada la función de compartir. La clave que comprobaste se conserva en este dispositivo, por lo que, cuando se active, podrás compartir sin volver a comprobarla.",
       "title": "Verificado, pero todavía no se ha compartido nada"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Investigación",
     "intro": "Estudios con los que colaboras, qué recibe cada uno y cómo darte de baja.",
-    "unavailable": "Este servidor de sincronización no tiene habilitada la vía de investigación. Aquí no se puede enviar ni retirar nada.",
+    "unavailable": "Este servidor central no tiene un canal de investigación. No se puede enviar ni retirar nada aquí.",
     "needsSession": "Las aportaciones a investigaciones necesitan la contraseña de tu cuenta. Inicia sesión en este dispositivo primero.",
     "needsSessionCta": "Ir a la cuenta",
     "loadFailed": "No se han podido cargar tus estudios.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Compartir",
     "intro": "Permite que un dietista o médico lea tu diario. La información viaja siempre cifrada: recibe una copia de tu clave sellada con la suya, y compartir no da al servidor acceso a nada nuevo.",
-    "unavailable": "Este servidor de sincronización no ofrece la función de compartir. Aquí no hay nada activado y no se envió nada.",
+    "unavailable": "Este servidor central no ofrece la opción de compartir. No hay nada activado aquí y no se ha enviado nada.",
     "needsSession": "Para compartir necesitas la contraseña de tu cuenta. Inicia sesión en este dispositivo primero.",
     "needsSessionCta": "Ir a la cuenta",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "La sincronización no terminó. Tu diario en este dispositivo no se ha visto afectado.",
-        "incompatible": "Esta aplicación y el servidor de sincronización todavía no usan la misma versión, por lo que la sincronización se pausó a propósito.",
-        "offline": "No se pudo conectar con el servidor de sincronización. Tu diario está a salvo en este dispositivo y se pondrá al día más tarde.",
+        "incompatible": "Esta aplicación y el servidor central todavía no usan la misma versión, por lo que la sincronización se ha pausado a propósito.",
+        "offline": "No se ha podido conectar con el servidor central. Tu diario está a salvo en este dispositivo y se pondrá al día más tarde.",
         "reauth-required": "Tu sesión terminó. Inicia sesión de nuevo para seguir sincronizando. No se ha perdido nada."
       },
       "lastSynced": "Última sincronización: {{when}}",

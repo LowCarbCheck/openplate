@@ -473,7 +473,7 @@
     },
     "reading": "Lecture du lien…",
     "sharingOff": {
-      "body": "Le partage n'est pas activé sur ton serveur de synchronisation. La clé que tu as vérifiée est conservée sur cet appareil, tu pourras donc partager sans refaire la vérification dès qu'il sera activé.",
+      "body": "Le partage n'est pas activé sur ton serveur central. La clé que tu as vérifiée reste sur cet appareil, tu pourras donc partager dès son activation sans refaire la vérification.",
       "title": "Vérifié, mais rien n'a encore été partagé"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Études",
     "intro": "Les études auxquelles tu participes, les données transmises à chacune et la marche à suivre pour te retirer.",
-    "unavailable": "Ce serveur de synchronisation ne dispose d'aucun canal de recherche. Rien ne peut y être envoyé ni retiré.",
+    "unavailable": "Ce serveur central ne propose pas de canal de recherche. Rien ne peut y être envoyé ni retiré.",
     "needsSession": "Les contributions à la recherche nécessitent le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",
     "needsSessionCta": "Aller au compte",
     "loadFailed": "Tes études n'ont pas pu être chargées.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Partage",
     "intro": "Permets à un diététicien ou à un médecin de lire ton journal. Il reste chiffré pendant le transit : la personne reçoit une copie de ta clé scellée avec la sienne, et ce partage ne donne rien de nouveau à lire au serveur.",
-    "unavailable": "Ce serveur de synchronisation ne propose pas le partage. Rien n'est activé ici, et rien n'a été envoyé.",
+    "unavailable": "Ce serveur central ne propose pas le partage. Rien n'est activé ici, et rien n'a été envoyé.",
     "needsSession": "Le partage nécessite le mot de passe de ton compte. Connecte-toi d'abord sur cet appareil.",
     "needsSessionCta": "Aller au compte",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "La synchronisation n'a pas abouti. Ton journal sur cet appareil reste intact.",
-        "incompatible": "Cette application et le serveur de synchronisation n'utilisent pas encore la même version, la synchronisation est donc volontairement suspendue.",
-        "offline": "Impossible de joindre le serveur de synchronisation. Ton journal est en sécurité sur cet appareil et sera mis à jour plus tard.",
+        "incompatible": "Cette application et le serveur central n'utilisent pas encore la même version, la synchronisation est donc volontairement suspendue.",
+        "offline": "Impossible de joindre le serveur central. Ton journal reste en sécurité sur cet appareil et se mettra à jour plus tard.",
         "reauth-required": "Ta session a expiré. Reconnecte-toi pour continuer la synchronisation. Rien n'a été perdu."
       },
       "lastSynced": "Dernière synchronisation {{when}}",

@@ -473,7 +473,7 @@
     },
     "reading": "Bağlantı okunuyor…",
     "sharingOff": {
-      "body": "Eşitleme sunucunda paylaşım açık değil. Kontrol ettiğin anahtar bu cihazda tutulur, bu sayede özellik açıldığında kontrolü tekrar yapmadan paylaşabilirsin.",
+      "body": "Çekirdek sunucunda paylaşım etkin değil. Kontrol ettiğin anahtar bu cihazda tutulur, böylece paylaşım açıldığında kontrolü tekrarlamadan paylaşabilirsin.",
       "title": "Doğrulandı, ancak henüz hiçbir şey paylaşılmadı"
     },
     "signedOut": {
@@ -1799,7 +1799,7 @@
   "research": {
     "title": "Araştırmalar",
     "intro": "Katkıda bulunduğun çalışmalar, her birinin ne aldığı ve nasıl ayrılacağın.",
-    "unavailable": "Bu eşitleme sunucusunun araştırma kanalı yok. Burada hiçbir şey gönderilemez veya geri çekilemez.",
+    "unavailable": "Bu çekirdek sunucuda araştırma hattı yok. Buradan hiçbir şey gönderilemez veya geri çekilemez.",
     "needsSession": "Araştırma katkıları için hesap şifren gerekir. Önce bu cihazda giriş yap.",
     "needsSessionCta": "Hesaba git",
     "loadFailed": "Çalışmaların yüklenemedi.",
@@ -2603,7 +2603,7 @@
     },
     "title": "Paylaşım",
     "intro": "Bir diyetisyenin veya doktorun günlüğünü okumasına izin ver. Veriler aktarılırken şifreli kalır: anahtarının onların anahtarıyla mühürlenmiş bir kopyasını alırlar ve bu paylaşım sunucuya okuyabileceği yeni hiçbir şey vermez.",
-    "unavailable": "Bu eşitleme sunucusu paylaşım sunmuyor. Burada hiçbir şey açılmadı ve hiçbir şey gönderilmedi.",
+    "unavailable": "Bu çekirdek sunucu paylaşım sunmuyor. Burada hiçbir şey açılmadı ve hiçbir şey gönderilmedi.",
     "needsSession": "Paylaşım için hesap şifren gerekir. Önce bu cihazda oturum aç.",
     "needsSessionCta": "Hesaba git",
     "identity": {
@@ -2846,8 +2846,8 @@
     "status": {
       "error": {
         "failed": "Eşitleme tamamlanmadı. Bu cihazdaki günlüğün bundan etkilenmedi.",
-        "incompatible": "Bu uygulama ve eşitleme sunucusu henüz aynı sürümü konuşmuyor, bu nedenle eşitleme bilerek duraklatıldı.",
-        "offline": "Eşitleme sunucusuna ulaşılamadı. Günlüğün bu cihazda güvende ve daha sonra eşitlenecek.",
+        "incompatible": "Bu uygulama ve çekirdek sunucu henüz aynı sürümü konuşmuyor, bu nedenle eşitleme kasıtlı olarak duraklatıldı.",
+        "offline": "Çekirdek sunucuya ulaşılamadı. Günlüğün bu cihazda güvende ve daha sonra eşitlenecek.",
         "reauth-required": "Oturumun sona erdi. Eşitlemeyi sürdürmek için tekrar giriş yap. Hiçbir şey kaybolmadı."
       },
       "lastSynced": "Son eşitleme: {{when}}",
