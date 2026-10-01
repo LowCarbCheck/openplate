@@ -21,7 +21,7 @@
 # link for you to paste instead of an email. SMTP_SECURE and the old
 # PIGEON_* names cause a BOOT FAILURE, not a no-op. See .env.example.
 #
-#   docker compose --project-directory . -f docker/compose.yml logs -f sync
+#   docker compose --project-directory . -f docker/compose.yml logs -f core
 #
 # NOTE FOR CONTRIBUTORS: this file is for SELF-HOSTERS. Local development and
 # the integration suite use the shared workspace Postgres (see
@@ -55,7 +55,7 @@ services:
     expose:
       - '5432'
 
-  sync:
+  core:
     build: .
     # Or pull the published image instead of building:
     # image: ghcr.io/lowcarbcheck/openplate-core:latest

@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **The self-host files call the service `core`.** `docker/topologies/compose.sync.yml` is now `docker/topologies/compose.core.yml`, and the compose service `sync` is now `core` in `compose.core.yml`, `compose.full.yml` and the quickstart `apps/core/docker/compose.yml`. The Quadlet folder `docker/quadlet/sync/` is `docker/quadlet/core/`, the unit `sync.container` is `core.container`, and `sync.defaults.env` is `core.defaults.env` in `docker/quadlet/core/`, `docker/quadlet/full/` and `apps/core/docker/quadlet/core/`. An existing install keeps its data, because the volume names and the project name `openplate-with-sync` did not change. The old `compose.sync.yml` still works for one release as a stub that includes `compose.core.yml`, and `docker/quadlet/sync/` keeps only a README that points to the new folder. Stop a running stack with the old file name and `down --remove-orphans`, then start it with the new one. A Quadlet install stops `sync.service`, renames `sync.env` to `core.env` and copies the new units over. Both sets of steps are in `docker/topologies/README.md` and `docker/quadlet/core/README.md`. A command that names the service, such as `docker compose logs sync`, now says `core`. The variable `SYNC_SERVER_URL` and the script `pnpm sync-api` keep their names in this change.
+
 ## [0.29.1] - 2026-10-01
 
 This release adds migration 0030, which creates the table `ai_trial_network_days` and runs on boot as usual. No env change is required. New optional variables are `AI_TRIAL_NETWORK_DAILY_LIMIT`, `LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY` and `LEGAL_DECLARATION_RECEIPTS_PER_DAY`.

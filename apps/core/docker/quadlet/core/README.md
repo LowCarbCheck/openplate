@@ -5,8 +5,8 @@ The files here come from `docker/compose.yml`. They run Postgres and openplate-c
 ## What is in this directory
 
 - `postgres.container`: `docker.io/library/postgres:17-alpine` on the volume below, `pg_isready` healthcheck as `Notify=healthy`. Not published to the host.
-- `sync.container`: openplate-core, `ghcr.io/lowcarbcheck/openplate-core:latest`, published on 3000, `Requires=` and `After=` Postgres, healthcheck against `/health` as `Notify=healthy`.
-- `sync.defaults.env` and `postgres.defaults.env`: the values the compose file sets, one file per unit. Every optional setting from the compose file (mail, upstream AI, admin token, instance name, reported estimates, push, plans and member invites) is listed in `sync.defaults.env` with its default, most of them empty.
+- `core.container`: openplate-core, `ghcr.io/lowcarbcheck/openplate-core:latest`, published on 3000, `Requires=` and `After=` Postgres, healthcheck against `/health` as `Notify=healthy`.
+- `core.defaults.env` and `postgres.defaults.env`: the values the compose file sets, one file per unit. Every optional setting from the compose file (mail, upstream AI, admin token, instance name, reported estimates, push, plans and member invites) is listed in `core.defaults.env` with its default, most of them empty.
 - `postgres-data.volume`: the data volume; Podman names it `systemd-postgres-data`.
 - `openplate-core.network`: the private network both join.
 - `README.md`: this file.
@@ -16,14 +16,14 @@ The files here come from `docker/compose.yml`. They run Postgres and openplate-c
 Every unit reads two env files. Quadlet looks for both in the directory where the unit sits.
 
 1. `<unit>.defaults.env` ships in this directory and holds every value set by the compose file. An update replaces it, so do not edit it.
-2. `<unit>.env` is yours: `sync.env` and `postgres.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
+2. `<unit>.env` is yours: `core.env` and `postgres.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
 
-- `sync.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up with the database. If you restore the database without the secret, no one can log in.
-- Put any other setting in `sync.env`, using the variable name defined in `sync.defaults.env`. This includes `ADMIN_TOKEN` to mint the first invitation, `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` for links, `TRUST_PROXY`, and the mail block. Keep file permissions set to mode 600, because the file stores the secret.
-- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
-- Do not set `SIGNUP_MODE` or `SMTP_SECURE`. They make the service refuse to start. Configure SMTP mail with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM` in `sync.env`. The `.env.example` file explains them.
+- `core.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up with the database. If you restore the database without the secret, no one can log in.
+- Put any other setting in `core.env`, using the variable name defined in `core.defaults.env`. This includes `ADMIN_TOKEN` to mint the first invitation, `SERVER_PUBLIC_URL` and `CLIENT_BASE_URL` for links, `TRUST_PROXY`, and the mail block. Keep file permissions set to mode 600, because the file stores the secret.
+- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `core.env`.
+- Do not set `SIGNUP_MODE` or `SMTP_SECURE`. They make the service refuse to start. Configure SMTP mail with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM` in `core.env`. The `.env.example` file explains them.
 
-After you change a file, restart its unit, for example `systemctl --user restart sync.service`.
+After you change a file, restart its unit, for example `systemctl --user restart core.service`.
 
 ## Install
 
@@ -36,23 +36,23 @@ loginctl enable-linger "$USER"
 D=~/.config/containers/systemd/openplate-core
 mkdir -p "$D"
 cp docker/quadlet/core/* "$D"/
-printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/sync.env"
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/core.env"
 touch "$D/postgres.env"
-chmod 600 "$D/sync.env" "$D/postgres.env"
+chmod 600 "$D/core.env" "$D/postgres.env"
 systemctl --user daemon-reload
-systemctl --user start sync.service
+systemctl --user start core.service
 ```
 
 **On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the service answers. Wait for the healthcheck yourself:
 
 ```sh
-until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-core)" = healthy ]; do sleep 5; done
 ```
 
-**The first account.** Mint an invitation to yourself with the token from `sync.env`. The answer carries a link only when `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` are set in `sync.env`. Without them it says `"link":null` and gives the bare invite token:
+**The first account.** Mint an invitation to yourself with the token from `core.env`. The answer carries a link only when `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` are set in `core.env`. Without them it says `"link":null` and gives the bare invite token:
 
 ```sh
-ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-core/sync.env | cut -d= -f2)
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-core/core.env | cut -d= -f2)
 curl -s -X POST http://127.0.0.1:3000/v1/admin/invites \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H 'Content-Type: application/json' \
@@ -62,7 +62,7 @@ curl -s -X POST http://127.0.0.1:3000/v1/admin/invites \
 Check it:
 
 ```sh
-systemctl --user is-active postgres.service sync.service
+systemctl --user is-active postgres.service core.service
 podman ps --filter name=systemd-
 curl -s http://127.0.0.1:3000/health
 ```
@@ -71,17 +71,29 @@ curl -s http://127.0.0.1:3000/health
 
 ```sh
 podman pull ghcr.io/lowcarbcheck/openplate-core:latest
-systemctl --user restart sync.service
+systemctl --user restart core.service
 ```
 
-To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your `sync.env` and `postgres.env` alone, because neither ships here.
+To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your `core.env` and `postgres.env` alone, because neither ships here.
 
-**Coming from an earlier install?** Units generated before 2026-09-27 read `openplate-core.env` and set every value with an `Environment=` line, which took precedence over that file. Rename `openplate-core.env` to `sync.env`, move any setting from drop-ins into that file, and create an empty `postgres.env` next to it.
+**Coming from an earlier install?** Units generated before 2026-09-27 read `openplate-core.env` and set every value with an `Environment=` line, which took precedence over that file. Rename `openplate-core.env` to `core.env`, move any setting from drop-ins into that file, and create an empty `postgres.env` next to it.
 
-**Stop and remove.** This is the whole undo. Stopping `sync.service` does not stop Postgres, so name both. The last line deletes every account on the instance. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.
+**Renamed units (2026-10-01).** The unit that runs openplate-core was `sync.container` and is `core.container` now, with `core.defaults.env` and your own `core.env` in place of `sync.env`. Your data is untouched: the volume and network units kept their names. Stop the old unit and move its files before you copy the new units over the old ones. Otherwise `sync.service` and `core.service` both start and fight over the same port. Run it from the root of the repository checkout, with `D` set to your install directory (`openplate-core` if you followed the old install steps):
 
 ```sh
-systemctl --user stop sync.service postgres.service openplate-core-network.service postgres-data-volume.service
+D=~/.config/containers/systemd/openplate-core
+systemctl --user stop sync.service
+rm "$D/sync.container" "$D/sync.defaults.env"
+mv "$D/sync.env" "$D/core.env"
+cp docker/quadlet/core/* "$D"/
+systemctl --user daemon-reload
+systemctl --user start core.service
+```
+
+**Stop and remove.** This is the whole undo. Stopping `core.service` does not stop Postgres, so name both. The last line deletes every account on the instance. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.
+
+```sh
+systemctl --user stop core.service postgres.service openplate-core-network.service postgres-data-volume.service
 rm -rf ~/.config/containers/systemd/openplate-core
 systemctl --user daemon-reload
 podman network rm systemd-openplate-core
@@ -96,9 +108,11 @@ podman volume rm systemd-postgres-data
 
 **Rootless ports.** The units publish port 3000. That sits above 1024, so it requires no extra privileges. A rootless container cannot bind host ports below 1024 unless configured on the host, such as through `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. If another process uses port 3000 on your host, change `PublishPort=` in your installed unit under `~/.config/containers/systemd/`. That local file is yours to edit. The unit file in this repository is generated. A drop-in file cannot replace a port mapping. Adding `PublishPort=` to `<unit>.container.d/*.conf` creates a second mapping alongside the first.
 
-**Container and volume names.** Quadlet names containers using the pattern `systemd-<unit>`. For example, `podman ps` shows `systemd-postgres`. A named volume from a `.volume` unit becomes `systemd-<name>`. Within the network, each container also resolves by its compose service name (`postgres, sync`). The generator assigns that name as a network alias. Environment variables like `DATABASE_URL` use this alias.
+**Container and volume names.** Quadlet names containers using the pattern `systemd-<unit>`. For example, `podman ps` shows `systemd-postgres`. A named volume from a `.volume` unit becomes `systemd-<name>`. Within the network, each container also resolves by its compose service name (`postgres, core`). The generator assigns that name as a network alias. Environment variables like `DATABASE_URL` use this alias.
 
 ## Tested on
+
+The record below was run before the unit was renamed from `sync` to `core` (2026-10-01). Its commands and output keep the old names: `sync.service`, `sync.env`, `systemd-sync`. The same steps now use `core.service`, `core.env` and `systemd-core`.
 
 ### Fedora, Podman 5.8.4
 

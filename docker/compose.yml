@@ -20,7 +20,7 @@
 # in-app JSON export, not with a database dump.
 #
 # If you also want the optional end-to-end-encrypted sync service, use
-# docker/topologies/compose.sync.yml instead. THAT one needs a database,
+# docker/topologies/compose.core.yml instead. THAT one needs a database,
 # because the sync service keeps accounts and ciphertext. The other shapes
 # (self-hosted AI, or everything at once) sit beside it; docker/topologies/
 # README.md is the one-page map.
@@ -100,7 +100,7 @@ services:
       # debug, info, warn or error.
       LOG_LEVEL: ${LOG_LEVEL:-info}
       # The address of an openplate-core sync service, one a BROWSER can reach.
-      # Empty means no sync. docker/topologies/compose.sync.yml runs one.
+      # Empty means no sync. docker/topologies/compose.core.yml runs one.
       SYNC_SERVER_URL: ${SYNC_SERVER_URL:-}
       # open (the default) or managed, which needs SYNC_SERVER_URL. See
       # apps/app/docs/configuration.md, Managed instances.

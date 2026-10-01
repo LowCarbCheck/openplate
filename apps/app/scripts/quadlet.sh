@@ -44,7 +44,7 @@
 #   * every service joins one named network, called after the compose
 #     `name:`, with its service name as a network alias. Compose does both
 #     implicitly (the `<project>_default` network, and the service name as a
-#     DNS alias) and that is what lets `sync` reach `postgres` by hostname.
+#     DNS alias) and that is what lets `core` reach `postgres` by hostname.
 #     A bare quadlet unit with no Network= lands on the default bridge, which
 #     has no DNS, and one without the alias is only reachable as
 #     `systemd-postgres`, the container name Quadlet picks (M231 spec 03).
@@ -95,7 +95,7 @@ OUT_ROOT=docker/quadlet
 # (openplate, openplate-core, openplate-inference).
 SCENARIOS="
 app=docker/compose.yml
-sync=docker/topologies/compose.sync.yml
+core=docker/topologies/compose.core.yml
 inference=docker/topologies/compose.inference.yml
 full=docker/topologies/compose.full.yml
 "

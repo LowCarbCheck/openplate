@@ -7,8 +7,8 @@ Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate
 - `postgres.container`: `docker.io/library/postgres:17-alpine` on `pg-data.volume`, `pg_isready` healthcheck as `Notify=healthy`. Not published.
 - `inference.container`: `ghcr.io/lowcarbcheck/openplate-inference:latest`, published on 8300, weights on `inference-models.volume`.
 - `app.container`: the app, published on 3000, `Requires=` the inference unit, compose healthcheck as `Notify=healthy`.
-- `sync.container`: openplate-core, published on 3001, `Requires=` Postgres, healthcheck against `/health` as `Notify=healthy`.
-- `app.defaults.env`, `sync.defaults.env`, `postgres.defaults.env`, `inference.defaults.env`: the values the compose file sets, one file per unit, `MODEL_PROFILE=lite` among them.
+- `core.container`: openplate-core, published on 3001, `Requires=` Postgres, healthcheck against `/health` as `Notify=healthy`.
+- `app.defaults.env`, `core.defaults.env`, `postgres.defaults.env`, `inference.defaults.env`: the values the compose file sets, one file per unit, `MODEL_PROFILE=lite` among them.
 - `pg-data.volume` and `inference-models.volume`: named volumes, `systemd-pg-data` and `systemd-inference-models` on the host.
 - `openplate-full.network`: the private network all four join.
 - `README.md`: this file.
@@ -18,17 +18,17 @@ Generated from `docker/topologies/compose.full.yml`, rung 4: Postgres, openplate
 Every unit reads two env files. Quadlet looks for both in the directory where the unit sits.
 
 1. `<unit>.defaults.env` ships in this directory and holds every value set by the compose file. An update replaces it, so do not edit it.
-2. `<unit>.env` is yours: `app.env`, `sync.env`, `postgres.env` and `inference.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
+2. `<unit>.env` is yours: `app.env`, `core.env`, `postgres.env` and `inference.env`. Podman reads it second, so a line in it overrides the defaults file. It must exist, even when empty. Podman refuses to start a container whose env file is missing.
 
 Your files use the container's own variable names, not the names in the compose file's `.env`. What compose calls `PUBLIC_APP_URL` is `APP_URL` for the app and `CLIENT_BASE_URL` for sync.
 
-- `sync.env` needs `SERVER_SECRET` (`openssl rand -hex 32`). Back it up with the database. The first account also needs `ADMIN_TOKEN` there. The install below writes both.
+- `core.env` needs `SERVER_SECRET` (`openssl rand -hex 32`). Back it up with the database. The first account also needs `ADMIN_TOKEN` there. The install below writes both.
 - `API_KEYS` in `inference.env` and `DEFAULT_INFERENCE_API_KEY` in `app.env` must match. The install below writes one new key into both.
-- Values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the two halves of every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both; `MODEL_PROFILE` in `inference.env`. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
-- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
+- Values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `core.env`, the two halves of every invitation link; `TRUST_PROXY` in `app.env` and `core.env` both; `MODEL_PROFILE` in `inference.env`. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `core.env`.
+- `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `core.env`.
 - Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
 
-After you change a file, restart its unit, for example `systemctl --user restart sync.service`.
+After you change a file, restart its unit, for example `systemctl --user restart core.service`.
 
 ## Install
 
@@ -44,16 +44,16 @@ D=~/.config/containers/systemd/openplate-full
 mkdir -p "$D"
 cp docker/quadlet/full/* "$D"/
 KEY="opk_$(openssl rand -hex 24)"
-printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/sync.env"
+printf 'SERVER_SECRET=%s\nADMIN_TOKEN=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$D/core.env"
 printf 'API_KEYS=%s\n' "$KEY" > "$D/inference.env"
 printf 'DEFAULT_INFERENCE_API_KEY=%s\n' "$KEY" > "$D/app.env"
 touch "$D/postgres.env"
-chmod 600 "$D/app.env" "$D/sync.env" "$D/postgres.env" "$D/inference.env"
+chmod 600 "$D/app.env" "$D/core.env" "$D/postgres.env" "$D/inference.env"
 systemctl --user daemon-reload
-systemctl --user start app.service sync.service
+systemctl --user start app.service core.service
 ```
 
-**No reverse proxy in front?** `app.defaults.env` sets `TRUST_PROXY=1`, which is correct behind a proxy. Without a proxy, any visitor can fake their address. Set `TRUST_PROXY=0` in your own `app.env` and restart. `sync.env` does not need this line, because `sync.defaults.env` already sets `TRUST_PROXY=0`:
+**No reverse proxy in front?** `app.defaults.env` sets `TRUST_PROXY=1`, which is correct behind a proxy. Without a proxy, any visitor can fake their address. Set `TRUST_PROXY=0` in your own `app.env` and restart. `core.env` does not need this line, because `core.defaults.env` already sets `TRUST_PROXY=0`:
 
 ```sh
 echo TRUST_PROXY=0 >> ~/.config/containers/systemd/openplate-full/app.env
@@ -63,19 +63,19 @@ systemctl --user restart app.service
 **On Podman 4.9 (Ubuntu 24.04)** `Notify=healthy` needs Podman 5.0 or newer, and 4.9 ignores it. `systemctl --user start` then returns about a second after the container starts, before the app answers. Wait for the healthcheck yourself:
 
 ```sh
-until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-sync)" = healthy ]; do sleep 5; done
+until [ "$(podman inspect --format '{{.State.Health.Status}}' systemd-core)" = healthy ]; do sleep 5; done
 ```
 
-**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../apps/app/docs/self-hosting.md#create-the-first-account) shows, reading the token from `sync.env`:
+**The first account.** Mint an invitation to yourself as [self-hosting.md](../../../apps/app/docs/self-hosting.md#create-the-first-account) shows, reading the token from `core.env`:
 
 ```sh
-ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-full/sync.env | cut -d= -f2)
+ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' ~/.config/containers/systemd/openplate-full/core.env | cut -d= -f2)
 ```
 
 Check it:
 
 ```sh
-systemctl --user is-active postgres.service inference.service app.service sync.service
+systemctl --user is-active postgres.service inference.service app.service core.service
 podman ps --filter name=systemd-
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
 curl -s http://127.0.0.1:3001/health
@@ -86,17 +86,29 @@ curl -s http://127.0.0.1:8300/readyz
 
 ```sh
 podman pull ghcr.io/lowcarbcheck/openplate:latest ghcr.io/lowcarbcheck/openplate-core:latest ghcr.io/lowcarbcheck/openplate-inference:latest
-systemctl --user restart app.service sync.service inference.service
+systemctl --user restart app.service core.service inference.service
 ```
 
 To take the units of a newer release, copy this directory over your installed one again and run `systemctl --user daemon-reload`. The copy replaces the units and the `*.defaults.env` files. It leaves your four `<unit>.env` files alone, because none ships here.
 
-**Coming from an earlier install?** Units generated before 2026-09-27 read one file, `openplate-full.env`, and only on `sync.container`, and the install wrote the inference key into the units themselves. Rename `openplate-full.env` to `sync.env`, put your key in `inference.env` as `API_KEYS=` and in `app.env` as `DEFAULT_INFERENCE_API_KEY=`, and create an empty `postgres.env`.
+**Coming from an earlier install?** Units generated before 2026-09-27 read one file, `openplate-full.env`, and only on `sync.container`, and the install wrote the inference key into the units themselves. Rename `openplate-full.env` to `core.env`, put your key in `inference.env` as `API_KEYS=` and in `app.env` as `DEFAULT_INFERENCE_API_KEY=`, and create an empty `postgres.env`.
 
-**Stop and remove.** This is the whole undo. Stopping `app` and `sync` leaves Postgres and inference running, so name all four. The last line deletes every account and diary, and the downloaded weights. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
+**Renamed units (2026-10-01).** The unit that runs openplate-core was `sync.container` and is `core.container` now, with `core.defaults.env` and your own `core.env` in place of `sync.env`. Your data is untouched: the volume and network units kept their names. Stop the old unit and move its files before you copy the new units over the old ones. Otherwise `sync.service` and `core.service` both start and fight over the same port. Run it from the root of the repository checkout, with `D` set to your install directory (`openplate-full` if you followed the old install steps):
 
 ```sh
-systemctl --user stop app.service sync.service postgres.service inference.service openplate-full-network.service pg-data-volume.service inference-models-volume.service
+D=~/.config/containers/systemd/openplate-full
+systemctl --user stop app.service sync.service
+rm "$D/sync.container" "$D/sync.defaults.env"
+mv "$D/sync.env" "$D/core.env"
+cp docker/quadlet/full/* "$D"/
+systemctl --user daemon-reload
+systemctl --user start app.service core.service
+```
+
+**Stop and remove.** This is the whole undo. Stopping `app` and `core` leaves Postgres and inference running, so name all four. The last line deletes every account and diary, and the downloaded weights. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
+
+```sh
+systemctl --user stop app.service core.service postgres.service inference.service openplate-full-network.service pg-data-volume.service inference-models-volume.service
 rm -rf ~/.config/containers/systemd/openplate-full
 systemctl --user daemon-reload
 podman network rm systemd-openplate-full
@@ -119,9 +131,11 @@ The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights). It runs on 
 
 **Rootless ports.** The units publish ports 3000, 3001, and 8300. All three sit above 1024, so they require no elevated privileges. Rootless containers cannot bind host ports below 1024 by default. Lowering that limit requires `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. If a port conflicts on your host, edit `PublishPort=` in your copy under `~/.config/containers/systemd/`. Drop-in files cannot override ports. Adding `PublishPort=` in `<unit>.container.d/*.conf` adds a second port mapping next to the first.
 
-**Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` lists `systemd-postgres`. Named volumes from `.volume` units become `systemd-<name>`. Containers also resolve each other across the network by their compose names (`postgres, inference, app, sync`) through network aliases added by the generator. Connection strings such as `DATABASE_URL` rely on these aliases.
+**Container and volume names.** Quadlet names each container `systemd-<unit>`, so `podman ps` lists `systemd-postgres`. Named volumes from `.volume` units become `systemd-<name>`. Containers also resolve each other across the network by their compose names (`postgres, inference, app, core`) through network aliases added by the generator. Connection strings such as `DATABASE_URL` rely on these aliases.
 
 ## Tested on
+
+The record below was run before the unit was renamed from `sync` to `core` (2026-10-01). Its commands and output keep the old names: `sync.service`, `sync.env`, `systemd-sync`. The same steps now use `core.service`, `core.env` and `systemd-core`.
 
 ### Fedora, Podman 5.8.4
 
