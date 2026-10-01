@@ -60,7 +60,7 @@ const LOCALES = ['en', 'de', 'tr'] as const;
  * The settings pages this worker owns.
  *
  * `/settings/about` is not here: it is another worker's file in the same pass.
- * `/settings/account` and its siblings 404 without a sync server, which this
+ * `/settings/account` and its siblings 404 without a core server, which this
  * tier does not run.
  */
 const PAGES = [

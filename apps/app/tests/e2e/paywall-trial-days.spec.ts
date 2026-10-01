@@ -6,7 +6,7 @@
  * count as `instance.trial.days`. Once that date has passed, the same standing check locks the app
  * with scans still left, and the plan page names the days, not the scans.
  *
- * WHAT IS REAL: the production build, the fake sync service's account and session, the
+ * WHAT IS REAL: the production build, the fake core server's account and session, the
  * `_personal` layout's gate, the plan page and its heading. WHAT IS STUBBED
  * (`managed-core-stub.ts`): the handshake (`plans`, the free scans and days), `GET /plans/me`,
  * the offer, and the account facts on every auth answer, the end date and the creation instant

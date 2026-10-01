@@ -166,7 +166,7 @@ export default [
     route('/onboarding', 'routes/onboarding.tsx'),
 
     // WHAT USED TO BE HERE: `/reset-passphrase` and `/verify-email`, the two
-    // landing pages for the sync service's emails (M128 spec 04). M181 deleted
+    // landing pages for the core server's emails (M128 spec 04). M181 deleted
     // the mailer, both endpoints and both routes, an account is a handle plus
     // a passphrase, and a lost passphrase is recovered on `/settings/sync`
     // with the recovery code the user already holds.
@@ -297,7 +297,7 @@ export default [
     route('/settings/account', 'routes/settings.account.tsx'),
     // The plan (M213 spec 05). TWO gates, both answering 404: no
     // `SYNC_SERVER_URL` means no account to sell a plan to, and a handshake
-    // without `plans` means the sync server's own `/v1/plans` subtree answers
+    // without `plans` means the core server's own `/v1/plans` subtree answers
     // 404, so this page says exactly what that service says. The biller sends
     // a browser back here after a checkout and after the portal, so the
     // address is also a return target and is spelled once, in
@@ -316,7 +316,7 @@ export default [
     route('/settings/sharing', 'routes/settings.sharing.tsx'),
     // Research contributions, the contributor's side (M161/05). Same sync
     // gate as the two rows above, for the same reason, a contribution is
-    // pushed to the sync service, so with no sync there is nothing here to be
+    // pushed to the core server, so with no sync there is nothing here to be
     // a page about. When the SERVER has no research lane it renders one
     // honest sentence instead (ADR-0003 prohibition 9).
     route('/settings/research', 'routes/settings.research.tsx'),

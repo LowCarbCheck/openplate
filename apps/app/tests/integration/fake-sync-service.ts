@@ -1,5 +1,5 @@
 /**
- * A protocol-faithful sync service, built from openplate's OWN
+ * A protocol-faithful core server, built from openplate's OWN
  * `app/lib/sync/engine/protocol.ts` types and `apps/core/PROTOCOL.md`.
  *
  * ── Why an in-repo fake and not the real service ─────────────────────────
@@ -1486,7 +1486,7 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
       server.removeListener('listening', onListening);
       reject(
         new Error(
-          `the fake sync service could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
+          `the fake core server could not take 127.0.0.1:${port}, because another process on this host already holds that port (${error.message}). ` +
             'A NAMED port comes from the browser tier (`tests/e2e/env.ts`), which derives one triple per checkout, while the integration tier asks for a free one and cannot collide. ' +
             'Name the process that holds it with `ss -ltnp`; if it is another checkout of this repository whose path hashed to the same triple, set `OPENPLATE_E2E_PORT_BASE` in one of the two trees.',
           { cause: error },
@@ -1501,7 +1501,7 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
   // returns `AddressInfo` for every TCP bind — the `string` form is reachable
   // only from a pipe/UDS bind, which this server never performs.
   const address = server.address() as AddressInfo | null;
-  if (address === null) throw new Error('fake sync service failed to bind a port');
+  if (address === null) throw new Error('fake core server failed to bind a port');
 
   return {
     url: `http://127.0.0.1:${address.port}`,

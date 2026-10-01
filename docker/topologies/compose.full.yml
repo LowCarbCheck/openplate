@@ -1,7 +1,7 @@
 # openplate, everything at once: app + sync + Postgres + your own AI.
 #
-# Four containers: the stateless app, the optional account + E2EE sync service
-# (openplate-core), the Postgres that sync, and only sync, needs, and a
+# Four containers: the stateless app, the optional core server (openplate-core,
+# accounts and diary sync), the Postgres that sync, and only sync, needs, and a
 # self-hosted plate-identification endpoint (openplate-inference). The app
 # itself still keeps no database at all. Every image is open source under the
 # MIT License and is published to GHCR; nothing here builds from source.
@@ -13,7 +13,7 @@
 #   mkdir -p ~/openplate && cd ~/openplate
 #   curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.full.yml
 #
-#   # The sync service needs exactly one secret. Generate it once and keep it
+#   # The core server needs exactly one secret. Generate it once and keep it
 #   # with your database backups, see the SERVER_SECRET note below.
 #   echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 #
@@ -68,7 +68,7 @@ name: openplate-full
 
 services:
   # ── Postgres ──────────────────────────────────────────────────────────────
-  # Belongs to the sync service alone: it holds sync's accounts and the
+  # Belongs to the core server alone: it holds sync's accounts and the
   # opaque ciphertext blobs. Neither the app nor the inference service connects
   # to it, and the app has no database of its own
   # (apps/app/.adr/0006-the-app-server-holds-no-accounts.md).
@@ -86,7 +86,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # Deliberately not published to the host: the sync service reaches Postgres
+    # Deliberately not published to the host: the core server reaches Postgres
     # over the compose network. Add a `ports:` mapping only if you need psql
     # from outside, and bind it to 127.0.0.1 if you do.
     expose:
@@ -238,7 +238,7 @@ services:
       # container port.
       APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
 
-      # The URL a BROWSER uses to reach the sync service, not `http://core:3000`.
+      # The URL a BROWSER uses to reach the core server, not `http://core:3000`.
       # The sync client runs in the page, so this address has to resolve from
       # your users' devices. Setting it is what makes the sync interface exist
       # at all; remove this line and the app is a pure local tracker again.
@@ -262,10 +262,10 @@ services:
       DEFAULT_INFERENCE_MODEL: ${DEFAULT_INFERENCE_MODEL:-openplate-plate-1}
 
       # `open` (the default) or `managed`. See apps/app/docs/configuration.md, Managed
-      # instances, and the AI proxy block on the sync service below.
+      # instances, and the AI proxy block on the core server below.
       INSTANCE_MODE: ${INSTANCE_MODE:-open}
 
-      # How many reverse proxies stand in front of the app AND the sync service.
+      # How many reverse proxies stand in front of the app AND the core server.
       # One value for both. With one proxy set TRUST_PROXY=1: the app's CSRF
       # check needs the proxy's X-Forwarded-* headers or form posts fail. With
       # NO proxy set TRUST_PROXY=0: 1 would let any visitor fake their address
@@ -328,7 +328,7 @@ services:
       start_period: 30s
       retries: 3
 
-  # ── The sync service ──────────────────────────────────────────────────────
+  # ── The core server ──────────────────────────────────────────────────────
   # An account service that stores an email address and opaque ciphertext,
   # plus each account's recovery code, sealed under SERVER_SECRET, so that a
   # password reset brings the diary back. apps/app/docs/sync.md states what that means

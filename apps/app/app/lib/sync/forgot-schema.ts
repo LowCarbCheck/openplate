@@ -11,7 +11,7 @@
  *
  * ── No mail, no request ──────────────────────────────────────────────────
  *
- * The sync service says in its `/health` whether it can send mail at all
+ * The core server says in its `/health` whether it can send mail at all
  * (`instance.mail`). Where it cannot, a reset request would mint a token that
  * no letter ever carries, and "the link is on its way" would be a false
  * promise. What does work there: the administrator makes the link on the

@@ -1,6 +1,6 @@
 /**
  * The E2EE sync WIRE CONTRACT, the entire shared surface between an openplate
- * client and a sync service (M128 spec 01).
+ * client and a core server (M128 spec 01).
  *
  * THIS FILE IS MAINTAINED IN TWO REPOS AND MUST STAY IDENTICAL IN SUBSTANCE:
  *  - `apps/app/app/lib/sync/engine/protocol.ts`   (the client half)
@@ -692,13 +692,13 @@ export function checkProtocolCompatibility(remote: ProtocolHandshake): ProtocolC
   if (remote.protocolVersion !== PROTOCOL_VERSION) {
     return {
       status: 'incompatible',
-      reason: `This sync server speaks protocol version ${remote.protocolVersion}; this app speaks version ${PROTOCOL_VERSION}. Update whichever side is older before syncing.`,
+      reason: `This core server speaks protocol version ${remote.protocolVersion}; this app speaks version ${PROTOCOL_VERSION}. Update whichever side is older before syncing.`,
     };
   }
   if (remote.envelopeVersion !== ENVELOPE_VERSION) {
     return {
       status: 'incompatible',
-      reason: `This sync server expects envelope version ${remote.envelopeVersion}; this app produces version ${ENVELOPE_VERSION}. Update whichever side is older before syncing.`,
+      reason: `This core server expects envelope version ${remote.envelopeVersion}; this app produces version ${ENVELOPE_VERSION}. Update whichever side is older before syncing.`,
     };
   }
   return { status: 'compatible' };

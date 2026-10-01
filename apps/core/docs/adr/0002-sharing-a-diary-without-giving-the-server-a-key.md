@@ -282,7 +282,7 @@ and correctly so — voids the share until a new ceremony.
 **The honest outer bound.** If the operator serves the client JavaScript, a
 malicious operator ships malicious JavaScript and no in-protocol ceremony
 survives it. That bound predates this feature and bounds the whole E2EE promise.
-The fingerprint defends against a compromised or coerced _sync server_; it does
+The fingerprint defends against a compromised or coerced _core server_; it does
 not defend against a compromised _client distribution_. This ADR does not imply
 otherwise.
 

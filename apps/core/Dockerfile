@@ -1,4 +1,4 @@
-# openplate-core, self-hostable account + E2EE blob-sync service.
+# openplate-core, self-hostable account server with encrypted diary sync.
 #
 # Builds from tracked source and public npm only. There is no build secret,
 # no private `.npmrc` and no `@sprqvntrs/*` dependency anywhere in the tree ,

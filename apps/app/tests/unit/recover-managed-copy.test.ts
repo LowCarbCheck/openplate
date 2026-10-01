@@ -33,7 +33,7 @@ import enCommon from '../../app/i18n/locales/en/common.json';
 import type { PublicConfig } from '../../app/config/public-config';
 
 /**
- * A managed instance always has a sync server (`isManagedInstance` refuses to
+ * A managed instance always has a core server (`isManagedInstance` refuses to
  * boot without one), so the two flags move together here on purpose.
  */
 function publicConfig(managed: boolean): PublicConfig {

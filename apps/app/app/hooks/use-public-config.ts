@@ -24,7 +24,7 @@ export function usePublicConfig(): PublicConfig | undefined {
 }
 
 /**
- * The configured sync server's base URL, or `null` when sync is off.
+ * The configured core server's base URL, or `null` when sync is off.
  *
  * THE GATE: every sync surface in the app funnels through this one hook, so
  * "does sync exist here" has exactly one answer per render. A component that

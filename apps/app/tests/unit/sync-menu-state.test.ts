@@ -3,7 +3,7 @@
  *
  * - `deriveSyncMenuState` — which of several simultaneously-true sync facts
  *   the one-line menu row reports, and the AGENTS.md rule that an instance
- *   without a sync server must show NO sync UI at all.
+ *   without a core server must show NO sync UI at all.
  * - `relativeTimeParts` — which unit a gap gets told in, before any wording.
  */
 import { describe, it } from 'node:test';
@@ -40,7 +40,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 describe('deriveSyncMenuState', () => {
-  it('hides sync entirely on an instance with no sync server — even with a live session', () => {
+  it('hides sync entirely on an instance with no core server, even with a live session', () => {
     // The AGENTS.md rule: unset SYNC_SERVER_URL means no sync UI anywhere. A
     // session can't exist in that case, but the gate must not depend on that.
     assert.deepEqual(deriveSyncMenuState({ hasSyncServer: false, session: session() }), { status: 'hidden' });

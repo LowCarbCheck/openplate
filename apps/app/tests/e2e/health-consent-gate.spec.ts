@@ -7,7 +7,7 @@
  * before openplate-core asked carry `healthConsent: null`, so the app asks
  * them once, on a screen of its own, and records the answer with the core.
  *
- * WHAT IS REAL: the production build, the fake sync service's account and
+ * WHAT IS REAL: the production build, the fake core server's account and
  * session, the `_personal` layout's loader and its revalidation, the consent
  * screen, and every page visited. WHAT IS STUBBED (`managed-core-stub.ts`):
  * the handshake (the consent version, the plans), the consent route, the plan

@@ -27,7 +27,7 @@
  *
  * The same line covers the link's other half: a link on the right address whose
  * `server=` names this machine or plain http opens the right page and then
- * cannot reach the sync server, so the line names that server and
+ * cannot reach the core server, so the line names that server and
  * `PUBLIC_SYNC_URL` instead. See `lib/admin/link-delivery.ts`.
  */
 import { useState } from 'react';

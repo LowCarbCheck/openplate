@@ -19,7 +19,7 @@
  *
  * STUBBED: the permission prompt (a browser dialog cannot be answered from a
  * test), `PushManager.prototype.subscribe` (a headless Chromium has no push
- * service), and the three `/v1/push/*` responses (the fake sync service is a
+ * service), and the three `/v1/push/*` responses (the fake core server is a
  * reading of the SYNC protocol and does not implement M223's push family).
  *
  * The stub still earns its keep: it RECORDS the `applicationServerKey` it was

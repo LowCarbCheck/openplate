@@ -16,7 +16,7 @@ import {
  * TONE (DESIGN.md §10): amber, never alarmist. Every failure state here is
  * recoverable and none of them lose data — the diary is on the device either
  * way, and sync being behind is an inconvenience, not an emergency. Red is
- * reserved for things that actually are one. "Couldn't reach the sync server"
+ * reserved for things that actually are one. "Couldn't reach the core server"
  * with a retry button is the right register; a red banner shouting about a
  * failure is not, and it teaches people to ignore the next one.
  *

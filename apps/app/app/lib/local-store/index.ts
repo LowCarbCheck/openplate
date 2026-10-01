@@ -28,7 +28,7 @@
  * separate browser profiles per person; that is the isolation boundary, and
  * the only one. Don't add per-userId filtering back here piecemeal, there is
  * no identity left for it to filter on. Per-account isolation, if it is ever
- * wanted, arrives with the standalone sync service's own encrypted per-account
+ * wanted, arrives with the standalone core server's own encrypted per-account
  * blob identity (M128 spec 04), not as scoping bolted onto this local store.
  *
  * IndexedDB-backed stores (see `store.ts` / `persist.ts`):

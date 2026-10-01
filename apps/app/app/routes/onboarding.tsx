@@ -193,7 +193,7 @@ const NEEDS_WEIGHT_PARAM = 'needsWeight';
 export async function loader() {
   return {
     managed: CONFIG.instance.managed,
-    // The two facts the reference protein needs (M263/04): the sync server to
+    // The two facts the reference protein needs (M263/04): the core server to
     // ask for the instance's basis, and this server's own basis.
     syncServerUrl: CONFIG.sync.syncServerUrl,
     nutrientReferenceBasis: CONFIG.nutrients.referenceBasis,
@@ -648,7 +648,7 @@ function LocalFirstExplainer({ diaryHasServerCopy }: { diaryHasServerCopy: boole
  *
  * THREE, because two questions decide it. A managed instance keeps a copy and
  * runs the AI, and its note says both. An open instance whose person signed in
- * to its sync server keeps a copy too, but the AI there is still their own, so
+ * to its core server keeps a copy too, but the AI there is still their own, so
  * the managed note would be wrong about the photo: the synced note names the
  * copy and the operator's backup key and nothing else. With no account the
  * diary really does stay here, and the first note says so.

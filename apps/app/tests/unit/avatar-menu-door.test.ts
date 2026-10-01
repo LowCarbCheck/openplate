@@ -95,7 +95,7 @@ describe('resolveAvatarMenuDoor', () => {
   it('pins every input combination there is', () => {
     // Eight rows for three booleans, so a new branch cannot be added without
     // an answer here changing. `hasSyncServer: false` swallows the other two
-    // by design (AGENTS.md: no sync server, no account UI anywhere).
+    // by design (AGENTS.md: no core server, no account UI anywhere).
     const table: Array<{ input: Parameters<typeof resolveAvatarMenuDoor>[0]; door: AvatarMenuDoor }> = [
       { input: { hasSyncServer: false, hasSession: false, requiresAccount: false }, door: 'none' },
       { input: { hasSyncServer: false, hasSession: false, requiresAccount: true }, door: 'none' },
@@ -112,7 +112,7 @@ describe('resolveAvatarMenuDoor', () => {
     }
   });
 
-  it('says nothing at all on an instance with no sync server', () => {
+  it('says nothing at all on an instance with no core server', () => {
     for (const hasSession of [false, true]) {
       assert.equal(resolveAvatarMenuDoor({ hasSyncServer: false, hasSession, requiresAccount: false }), 'none');
     }
@@ -236,7 +236,7 @@ describe('the rows the door renders', () => {
       assert.ok(!markup.includes(SIGN_IN_HREF));
     });
 
-    it('renders no row at all on an instance with no sync server', () => {
+    it('renders no row at all on an instance with no core server', () => {
       // AGENTS.md: unset SYNC_SERVER_URL means no sync UI renders anywhere,
       // and an account is sync UI.
       const markup = renderDoor('none');

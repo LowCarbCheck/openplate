@@ -55,7 +55,7 @@ test("script-src carries 'wasm-unsafe-eval' — without it, sync passphrase deri
   // hash-wasm compiles Argon2id from WASM bytes inlined in its own bundle.
   // Chrome refuses all WebAssembly compilation under a script-src that lacks
   // this, so account creation dies right after the passphrase step and no
-  // request ever reaches the sync service. Do not "tighten" this away.
+  // request ever reaches the core server. Do not "tighten" this away.
   assert.match(directive(DEFAULT_POLICY, 'script-src'), /'wasm-unsafe-eval'/);
 });
 

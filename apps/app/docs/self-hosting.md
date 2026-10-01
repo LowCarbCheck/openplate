@@ -14,7 +14,7 @@ service for you, and that is also open source, for you to run yourself.
 ## What you can run
 
 - **The app on its own.** Adds one container. You gain a fast setup with no database or secrets to manage. You risk losing your diary if you clear the browser, there is no sync across devices, and scans require a cloud AI key.
-- **The app plus the sync service.** Adds `openplate-core` and Postgres. You gain encrypted sync across devices and an optional shared AI bill. You risk data loss if you do not back up the database, the secret, and your recovery key.
+- **The app plus the core server.** Adds `openplate-core` and Postgres. You gain encrypted sync across devices and an optional shared AI bill. You risk data loss if you do not back up the database, the secret, and your recovery key.
 - **The app plus self-hosted inference.** Adds `openplate-inference`. You gain local plate scans with no cloud account and no photos leaving your network. You risk hardware strain, and every browser must reach the inference container directly.
 - **[Everything](#the-app-plus-sync-and-self-hosted-inference).** Sync and inference together, four containers in all. You gain complete data privacy with multi-device sync. You risk the highest operational maintenance and resource load.
 
@@ -42,7 +42,7 @@ Podman works as well. Read [podman.md](podman.md) for what differs.
 >   ```bash
 >   sudo ufw allow OpenSSH
 >   sudo ufw allow 443/tcp
->   sudo ufw allow 8443/tcp   # the sync service's HTTPS port, in the recipes below
+>   sudo ufw allow 8443/tcp   # the core server's HTTPS port, in the recipes below
 >   sudo ufw enable
 >   ```
 >
@@ -99,15 +99,15 @@ To run with no container at all, see [Without Docker](#without-docker).
 
 Every other setup (sync, self-hosted inference, or both) is a separate file under [`docker/topologies/`](../../../docker/topologies/). See [topologies.md](topologies.md) to choose one.
 
-## The app plus your own sync service
+## The app plus your own core server
 
-[`docker/topologies/compose.core.yml`](../../../docker/topologies/compose.core.yml) is the reference deployment for the app, the sync service, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
+[`docker/topologies/compose.core.yml`](../../../docker/topologies/compose.core.yml) is the reference deployment for the app, the core server, and the Postgres database that **sync** needs. The app still connects to no database of its own. (If you also want self-hosted inference, see [The app plus sync and self-hosted inference](#the-app-plus-sync-and-self-hosted-inference) below. That setup uses the same sync configuration, plus the model runtime.)
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.core.yml
 
-# The sync service needs exactly one secret. Generate it and keep it with your backups.
+# The core server needs exactly one secret. Generate it and keep it with your backups.
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 
 # Your key to the admin API. You need it to create the first account.
@@ -148,7 +148,7 @@ The file is annotated line by line, including the two settings that cause proble
 
 ### Create the first account
 
-Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address. Port 3001 is where `compose.core.yml` and `compose.full.yml` publish the sync service. The sync service's own compose file in `apps/core` uses port 3000 instead:
+Nobody can sign up on their own. An account is created by opening an invitation addressed to one email address. You mint the first invitation for yourself on the server using `ADMIN_TOKEN`. Run this in `~/openplate` with your own address. Port 3001 is where `compose.core.yml` and `compose.full.yml` publish the core server. The core server's own compose file in `apps/core` uses port 3000 instead:
 
 ```bash
 ADMIN_TOKEN=$(grep '^ADMIN_TOKEN=' .env | cut -d= -f2)
@@ -167,9 +167,9 @@ The answer is one line of JSON. The part that matters looks like this:
 - **No mail configured** (the default): `"emailed": false`. Nobody was written to. Copy the `link` and open it yourself.
 - **Mail configured** (see [Mail](#mail)): `"emailed": true`. The same link is on its way to that address as a letter.
 
-Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member. [Mail](#mail) explains both ways: passing each link on by hand, or letting the sync service mail it.
+Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member. [Mail](#mail) explains both ways: passing each link on by hand, or letting the core server mail it.
 
-On a managed instance, where the sync service pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without `AI_ADVERTISED_MODEL`, because the app will not choose a model on your bill:
+On a managed instance, where the core server pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without `AI_ADVERTISED_MODEL`, because the app will not choose a model on your bill:
 
 ```bash
 echo "INSTANCE_MODE=managed" >> .env
@@ -198,19 +198,19 @@ The second call answers `{"emailed":false,"link":"https://openplate.example.com/
 
 ### Mail
 
-The sync service can send invitation and password reset letters. It does not have to. A family instance works with no mail setup at all, and that is the simplest path.
+The core server can send invitation and password reset letters. It does not have to. A family instance works with no mail setup at all, and that is the simplest path.
 
 #### No mail
 
-Leave every mail setting unset. The sync service sends no letters. It shows each link to you instead, and you pass it on the way you would share a password.
+Leave every mail setting unset. The core server sends no letters. It shows each link to you instead, and you pass it on the way you would share a password.
 
 - **An invitation:** open **Administration** at `/admin` and choose **Invite someone**. Enter the address and choose **Send the invitation**. The page says **Invitation ready for** that address and shows the link. Choose **Copy the link** and send it to the person, for example in a private message. Whoever holds the link can open the account.
 - **A forgotten password:** under **People**, open the person and choose **Send a reset link**. The page shows the link. Pass it on the same way. It works once, within one hour.
 - **A lost invitation:** under **Invitations**, choose **Send again** next to the address. This creates a new link and invalidates the old one. The page shows the new link to copy. Choose **Back to the list** to return to your open invitations.
 
-If the link uses an address different from your browser, a warning appears below it. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the addresses your family uses, then generate the link again. The page also warns you if the link opens the page but directs the app to a sync server at `localhost` or a plain `http://` address that other devices cannot reach. Set `PUBLIC_SYNC_URL` to the `https://` address your family uses, then generate the link again.
+If the link uses an address different from your browser, a warning appears below it. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the addresses your family uses, then generate the link again. The page also warns you if the link opens the page but directs the app to a core server at `localhost` or a plain `http://` address that other devices cannot reach. Set `PUBLIC_SYNC_URL` to the `https://` address your family uses, then generate the link again.
 
-`OPEN_SIGNUP=true` lets strangers ask for an account. The sync service refuses to start with that setting when there is no mail configured. A family instance leaves it off, and it stays off until you set it. [Sign-up with Turnstile](environment-variables.md#sign-up-with-turnstile) explains the setting and its captcha.
+`OPEN_SIGNUP=true` lets strangers ask for an account. The core server refuses to start with that setting when there is no mail configured. A family instance leaves it off, and it stays off until you set it. [Sign-up with Turnstile](environment-variables.md#sign-up-with-turnstile) explains the setting and its captcha.
 
 #### SMTP
 
@@ -246,31 +246,31 @@ SMTP_FROM="openplate <noreply@example.org>"
 MAIL_OPERATOR_EMAIL=you@example.org
 ```
 
-Recreate the sync service with `docker compose -f <your file> up -d` after any edit to `.env`.
+Recreate the core server with `docker compose -f <your file> up -d` after any edit to `.env`.
 
 #### An HTTP mail API
 
-A mail service with an HTTP API works as well. Set `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`, all three, plus `MAIL_OPERATOR_EMAIL`. The sync service sends each letter as a JSON `POST` request to `MAIL_API_URL`, with `MAIL_API_KEY` as a Bearer token, using the format expected by the Resend API. [Resend](https://resend.com/docs/api-reference/emails/send-email) is one compatible service. On Resend, `MAIL_API_URL` is `https://api.resend.com/emails`.
+A mail service with an HTTP API works as well. Set `MAIL_API_URL`, `MAIL_API_KEY`, and `MAIL_API_FROM`, all three, plus `MAIL_OPERATOR_EMAIL`. The core server sends each letter as a JSON `POST` request to `MAIL_API_URL`, with `MAIL_API_KEY` as a Bearer token, using the format expected by the Resend API. [Resend](https://resend.com/docs/api-reference/emails/send-email) is one compatible service. On Resend, `MAIL_API_URL` is `https://api.resend.com/emails`.
 
-Configure one transport only. If you set both SMTP and the mail API, the sync service refuses to start.
+Configure one transport only. If you set both SMTP and the mail API, the core server refuses to start.
 
 #### Mail needs the public addresses
 
-Every letter carries a link, and that link must open on the reader's phone. When you configure SMTP or a mail API, set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the `https://` addresses your family uses. If either setting uses plain `http://` or a loopback address such as `localhost`, the sync service refuses to start. Its log names each value to fix, in a message that starts like this:
+Every letter carries a link, and that link must open on the reader's phone. When you configure SMTP or a mail API, set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to the `https://` addresses your family uses. If either setting uses plain `http://` or a loopback address such as `localhost`, the core server refuses to start. Its log names each value to fix, in a message that starts like this:
 
 ```
 Mail is configured. Its messages would carry links that recipients cannot open.
 ```
 
-The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. Those are the internal names the sync service reads, and the compose files map them from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. View the message with `docker compose -f <your file> logs core`.
+The log message refers to these values as `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL`. Those are the internal names the core server reads, and the compose files map them from `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL`. View the message with `docker compose -f <your file> logs core`.
 
 #### Check that mail works
 
-Send an invitation to a second address of your own in `/admin`. The page should display **Invitation sent to** that address, and the letter should arrive in your inbox. If the page displays **Invitation ready for** and prints a link, the delivery failed. The link remains valid. Check the sync service log for a `Mail send failed` line to see the reason. When you finish testing, choose **Withdraw** for the test invitation under **Invitations**.
+Send an invitation to a second address of your own in `/admin`. The page should display **Invitation sent to** that address, and the letter should arrive in your inbox. If the page displays **Invitation ready for** and prints a link, the delivery failed. The link remains valid. Check the core server log for a `Mail send failed` line to see the reason. When you finish testing, choose **Withdraw** for the test invitation under **Invitations**.
 
 #### Test with Mailpit
 
-[Mailpit](https://mailpit.axllent.org) catches every letter and shows it on a web page, so you can test mail with no mail account. Run it as a sidecar that shares the network of the sync container. The sync service then reaches it as `localhost`, where plain text is allowed. Save this file next to your compose file as `compose.mailpit.yml`:
+[Mailpit](https://mailpit.axllent.org) catches every letter and shows it on a web page, so you can test mail with no mail account. Run it as a sidecar that shares the network of the core container. The core server then reaches it as `localhost`, where plain text is allowed. Save this file next to your compose file as `compose.mailpit.yml`:
 
 ```yaml
 # compose.mailpit.yml: a mail catcher for testing, next to your compose file
@@ -299,15 +299,15 @@ Start both files together, then send an invitation and read it at `http://localh
 docker compose -f compose.core.yml -f compose.mailpit.yml up -d
 ```
 
-The rule in [Mail needs the public addresses](#mail-needs-the-public-addresses) still applies. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to `https://` addresses first, or the sync service does not start.
+The rule in [Mail needs the public addresses](#mail-needs-the-public-addresses) still applies. Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to `https://` addresses first, or the core server does not start.
 
-A separate Mailpit container reached by service name, such as `SMTP_HOST=mailpit`, does not work. The sync service sends plain text only to this machine. A service name counts as another host. The service asks for STARTTLS, Mailpit offers none, and every letter fails with `Mail send failed` in the log. The shared network puts Mailpit on the same machine.
+A separate Mailpit container reached by service name, such as `SMTP_HOST=mailpit`, does not work. The core server sends plain text only to this machine. A service name counts as another host. The service asks for STARTTLS, Mailpit offers none, and every letter fails with `Mail send failed` in the log. The shared network puts Mailpit on the same machine.
 
 When you finish testing, remove the four lines from `.env`. Then drop Mailpit with `docker compose -f compose.core.yml up -d --remove-orphans`.
 
 #### A relay with a private certificate authority
 
-The sync service checks the certificate of every mail server. A relay inside a company network may use a certificate signed by a private certificate authority. Node.js does not trust that authority by default. Give the sync service that authority's certificate as a PEM file. Mount the file into the container and set `NODE_EXTRA_CA_CERTS` to its path. For example, in a `compose.ca.yml` next to your compose file:
+The core server checks the certificate of every mail server. A relay inside a company network may use a certificate signed by a private certificate authority. Node.js does not trust that authority by default. Give the core server that authority's certificate as a PEM file. Mount the file into the container and set `NODE_EXTRA_CA_CERTS` to its path. For example, in a `compose.ca.yml` next to your compose file:
 
 ```yaml
 # compose.ca.yml: trust a private certificate authority for the mail relay
@@ -365,13 +365,13 @@ The key sits in the page every browser loads, so anyone who can open the app can
 
 ## The app plus sync and self-hosted inference
 
-[`docker/topologies/compose.full.yml`](../../../docker/topologies/compose.full.yml) runs four containers: the app, the sync service, Postgres, and self-hosted inference. Read [The app plus your own sync service](#the-app-plus-your-own-sync-service) and [The app plus self-hosted inference](#the-app-plus-self-hosted-inference) first. This section only covers what changes when every piece runs together.
+[`docker/topologies/compose.full.yml`](../../../docker/topologies/compose.full.yml) runs four containers: the app, the core server, Postgres, and self-hosted inference. Read [The app plus your own core server](#the-app-plus-your-own-sync-service) and [The app plus self-hosted inference](#the-app-plus-self-hosted-inference) first. This section only covers what changes when every piece runs together.
 
 ```bash
 mkdir -p ~/openplate && cd ~/openplate
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/topologies/compose.full.yml
 
-# The sync service needs exactly one secret. Generate it and keep it with your backups.
+# The core server needs exactly one secret. Generate it and keep it with your backups.
 echo "SERVER_SECRET=$(openssl rand -hex 32)" >> .env
 
 # Your key to the admin API. You need it to create the first account.
@@ -508,7 +508,7 @@ Your devices need a secure address. You can set one up in four ways: an ssh tunn
 > runs it, and only while the command runs. A phone or a second device cannot sign in through
 > it. For those, set up HTTPS with [Caddy](#a-domain-name-caddy) below.
 
-To test accounts and sync before configuring a certificate, forward the two ports to your computer. Leave `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` unset so both keep their `localhost` defaults. Leave mail unset here as well. With mail set, the sync service refuses to start while its link addresses name `localhost`. Without mail, it starts, and you copy each link yourself. Run this command on your computer, not on the server:
+To test accounts and sync before configuring a certificate, forward the two ports to your computer. Leave `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` unset so both keep their `localhost` defaults. Leave mail unset here as well. With mail set, the core server refuses to start while its link addresses name `localhost`. Without mail, it starts, and you copy each link yourself. Run this command on your computer, not on the server:
 
 ```bash
 ssh -N -L 3000:localhost:3000 -L 3001:localhost:3001 you@192.168.1.20
@@ -529,7 +529,7 @@ openplate.example.com {
 
 Next, set `APP_URL=https://openplate.example.com` in `.env`. Set `TRUST_PROXY=1`, which is the production default. Recreate the `app` service with `docker compose -f compose.yml up -d`. A plain `docker compose restart` does **not** re-read `.env`. It only restarts the existing container, so new values never load.
 
-For sync, give the sync service its own domain name. Set both public URLs instead of `APP_URL`:
+For sync, give the core server its own domain name. Set both public URLs instead of `APP_URL`:
 
 ```
 # Caddyfile
@@ -606,7 +606,7 @@ Open `https://192.168.1.20` on a phone. The page should load with no warning, an
 
 nginx, Traefik, or another proxy can take Caddy's place. We have tested none of them, so this is a checklist, not a recipe. The proxy must do all of this:
 
-- **Two `https://` addresses.** The app and the sync service each get their own.
+- **Two `https://` addresses.** The app and the core server each get their own.
 - **The same addresses in `.env`.** Set `PUBLIC_APP_URL` and `PUBLIC_SYNC_URL` to those exact addresses. For the app on its own, that is `APP_URL`.
 - **`TRUST_PROXY=1`**, or the number of proxies in the chain.
 - **`Host` and `X-Forwarded-Proto` reach the app.** Pass the browser's `Host` header through unchanged, or set `X-Forwarded-Host` to it. Set `X-Forwarded-Proto` to `https`. The app's CSRF check builds the page's own address from these and compares it with the browser's `Origin`. If they are wrong, form posts fail.
@@ -615,7 +615,7 @@ nginx, Traefik, or another proxy can take Caddy's place. We have tested none of 
 
 ### No domain name: Tailscale Serve
 
-Tailscale gives every machine on your tailnet an HTTPS address under `ts.net`. You need no domain name, no open ports, and no manual certificate management. Tailscale Serve puts that address in front of a port on this machine. openplate with sync needs two addresses. You serve two ports under the same machine name: the app on 443 and the sync service on 8443.
+Tailscale gives every machine on your tailnet an HTTPS address under `ts.net`. You need no domain name, no open ports, and no manual certificate management. Tailscale Serve puts that address in front of a port on this machine. openplate with sync needs two addresses. You serve two ports under the same machine name: the app on 443 and the core server on 8443.
 
 Before you start:
 
@@ -661,7 +661,7 @@ derived from. Whoever holds the file can open a diary that was shared with this 
 link their study contributions back to them. Two things stay out of it: the AI provider key,
 and the plate photographs, which never leave the device.
 
-If you also run the sync service, its Postgres is worth a scheduled dump, together with the
+If you also run the core server, its Postgres is worth a scheduled dump, together with the
 `SERVER_SECRET`, which is useless without the database and vice versa:
 
 ```bash
@@ -694,12 +694,12 @@ Use the same `-f` file you deployed with. If you brought up a topology from
 The compose files use the `latest` tag, which is the newest release, so `pull` takes you to
 it. To choose when you upgrade, pin a version in the `image:` line, for example
 `ghcr.io/lowcarbcheck/openplate:0.54.0`. Change the number when you want the next release. The
-sync service and the inference service have version numbers of their own, so pin each image to
+core server and the inference service have version numbers of their own, so pin each image to
 its own. The `main` tag follows every change on the main branch. It is for testing, not for a
 server your family uses.
 
 There is nothing to migrate: the app container holds no state, so a new image just replaces
-the old one. If you run the full stack, the sync service applies its own migrations on start.
+the old one. If you run the full stack, the core server applies its own migrations on start.
 
 ### Upgrading from a pre-0.1.x image (one time)
 

@@ -28,8 +28,8 @@
  * So the menu now carries an ACCOUNT DOOR, and there are four states of it,
  * decided in `resolveAvatarMenuDoor` rather than by `&&`s in the JSX below:
  * signed in (the way out), signed out on an instance that requires an account
- * (the way in), signed out on an open instance with a sync server (also the
- * way in), and no sync server at all (nothing). The "make one" row was the
+ * (the way in), signed out on an open instance with a core server (also the
+ * way in), and no core server at all (nothing). The "make one" row was the
  * only one that ever existed, and it was shown in every case: a managed
  * instance offered "Create account" to somebody who cannot create one,
  * because accounts there come from an invitation an administrator sends. That
@@ -391,7 +391,7 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
         {/* THE ACCOUNT, AT THE FOOT. Not a row among rows: one strip that
             names who is signed in, how sync is doing and what the allowance
             is, and opens `/settings/account` when tapped. It renders nothing
-            at all on an instance with no sync server. */}
+            at all on an instance with no core server. */}
         <AvatarAccountStrip />
       </DropdownMenuContent>
     </DropdownMenu>

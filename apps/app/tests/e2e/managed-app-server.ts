@@ -25,7 +25,7 @@
  * know its address beforehand. So the kernel picks a free port, the spec reads
  * it back, and the triple ADR-0017 guards stays exactly three ports.
  *
- * It talks to the tier's fake sync service, which `global-setup.ts` has
+ * It talks to the tier's fake core server, which `global-setup.ts` has
  * already started, so its `/health` answers like a real one.
  */
 import { spawn, type ChildProcess } from 'node:child_process';

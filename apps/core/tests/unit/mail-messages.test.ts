@@ -35,7 +35,7 @@ const EXPIRES_AT = '2026-09-11T10:00:00.000Z';
  * Words no letter may contain, in any language.
  *
  * EVERY ONE OF THESE NAMES A PIECE OF ARCHITECTURE. The 2026-09-04 invite
- * mail talked about a sync service and a gateway, and the person reading it
+ * mail talked about a core server and a gateway, and the person reading it
  * had to work out which of the two they were being invited to. There is one
  * service now, and the letters do not mention it either.
  *

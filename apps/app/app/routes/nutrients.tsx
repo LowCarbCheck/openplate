@@ -127,7 +127,7 @@ function parseRange(raw: string | null): NutrientRange {
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * ONE ANSWER: does this instance have a sync server, and where.
+ * ONE ANSWER: does this instance have a core server, and where.
  *
  * That is the address the browser asks whose reference values to show
  * (`/health`, M234 spec 07). It is read here rather than in the client loader

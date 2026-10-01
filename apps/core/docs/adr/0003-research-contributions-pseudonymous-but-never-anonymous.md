@@ -166,7 +166,7 @@ unchanged, and it survives the move only in that form, because one substituted
 study key harvests N people rather than one.
 
 What matters is preserved: the fingerprint reaches the contributor over a
-channel the sync server does not control.
+channel the core server does not control.
 
 **Key loss is attrition, not a brick, and that is the design working.** There is
 no shared DEK and no rotation analogue. If a study loses its passphrase and

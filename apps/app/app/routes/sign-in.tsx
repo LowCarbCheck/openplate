@@ -29,7 +29,7 @@
  * `app/routes.ts`. It exports no `loader`, `action` or `clientLoader`: the
  * remembered name is in `localStorage`, the diary is in IndexedDB, the
  * password is turned into a key in this browser, and every request goes to the
- * sync service's own origin — none of it is this server's business. It is
+ * core server's own origin, none of it is this server's business. It is
  * registered outside `_personal` because that layout's gate redirects here,
  * and a route nested inside it would be redirected away from itself in a loop.
  */

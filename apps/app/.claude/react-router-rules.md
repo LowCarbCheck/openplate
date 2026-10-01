@@ -11,7 +11,7 @@ Remix was merged into React Router 7 (framework mode) in late 2024.
 
 openplate has **no authentication of any kind** (M128 spec 03, [ADR-0006](../.adr/0006-the-app-server-holds-no-accounts.md)): no login, no session cookie, no `users` table, no `app/middleware/` directory, and the `v8_middleware` future flag is not enabled in `react-router.config.ts`.
 
-This section used to document an `authMiddleware`/`userContext`/`getUser` pattern and an `_auth.tsx` protected-layout tree. All of it is gone. **Do not reintroduce it**, and do not copy that pattern in from another React Router project — the "server holds no personal data" promise is the product, not an implementation detail. Identity for the optional E2EE-sync feature belongs to the standalone `openplate-sync` service, which the browser talks to directly.
+This section used to document an `authMiddleware`/`userContext`/`getUser` pattern and an `_auth.tsx` protected-layout tree. All of it is gone. **Do not reintroduce it**, and do not copy that pattern in from another React Router project, the "server holds no personal data" promise is the product, not an implementation detail. Identity for the optional E2EE-sync feature belongs to the standalone `openplate-core` server, which the browser talks to directly.
 
 Practical consequences for route code here:
 

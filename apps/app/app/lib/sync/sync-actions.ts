@@ -868,7 +868,7 @@ export function describeSyncFailure(cause: unknown): SyncFailure {
     // one came back from the service, the other never left this device.
     //
     // AN HTTP `400` IS NOT A VERSION MISMATCH. It used to map to
-    // `incompatible`, whose copy tells the person "this app and the sync server
+    // `incompatible`, whose copy tells the person "this app and the core server
     // don't speak the same version yet". That sentence is false on a current
     // build: the protocol version is checked at the handshake, long before a
     // blob moves. What a 400 means on this path is a payload the service

@@ -114,7 +114,7 @@ ours to extend.
 
 **There is no administrative state to administer.** A gateway has members,
 invites and quotas, all of which outlive a request and need listing, revoking
-and auditing. A sync server has accounts. This service has a model, a queue and
+and auditing. A core server has accounts. This service has a model, a queue and
 a rate limiter, and every one of those is either configuration read at boot or
 state that dies with the process. `/readyz` already answers the only operational question anyone asks (can it serve a scan right now) and it answers it without a credential, which is what a monitoring probe needs.
 

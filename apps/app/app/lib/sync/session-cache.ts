@@ -605,7 +605,7 @@ async function endStaleAttempt(startedWithRefreshToken: string): Promise<void> {
 }
 
 /** The developer-facing half of a refusal, under the translated headline the status surface shows. */
-const REFUSED_SESSION_MESSAGE = 'The sync service refused this device\u2019s session, so it has to be opened again.';
+const REFUSED_SESSION_MESSAGE = 'The core server refused this device\u2019s session, so it has to be opened again.';
 
 /**
  * Ends a session the SERVER ended, VISIBLY.

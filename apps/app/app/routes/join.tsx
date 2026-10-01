@@ -327,7 +327,7 @@ export default function Join() {
  * only then does it matter whether this instance sells plans.
  *
  * @param input.navigate - the router's navigate, passed in so this stays testable.
- * @param input.serverUrl - the sync server the account was created on.
+ * @param input.serverUrl - the core server the account was created on.
  */
 async function landAfterJoin({
   navigate,
@@ -426,7 +426,7 @@ function LoadingCard() {
  * invitations. The same link opened on the right instance works.
  *
  * BOTH ADDRESSES ARE NAMED. This card used to name only the link's server and
- * say "open it there", which is a sync server and not a page anybody can
+ * say "open it there", which is a core server and not a page anybody can
  * open, and it never said which server this app uses. With both on screen the
  * person can tell which side is wrong, and so can whoever runs the server.
  */

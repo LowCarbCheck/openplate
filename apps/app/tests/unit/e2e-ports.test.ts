@@ -234,7 +234,7 @@ describe(`the ${E2E_PORT_BASE_VAR} override`, () => {
 describe("this checkout's three ports", () => {
   it('are the base and the next two numbers up, in the order the tier expects', () => {
     assert.equal(E2E_FOOD_DB_PORT, E2E_PORT_BASE, 'the food database takes the base');
-    assert.equal(E2E_SYNC_PORT, E2E_PORT_BASE + 1, 'the sync service takes the next one');
+    assert.equal(E2E_SYNC_PORT, E2E_PORT_BASE + 1, 'the core server takes the next one');
     assert.equal(E2E_APP_PORT, E2E_PORT_BASE + 2, 'the app server takes the one after that');
 
     // THE CONTROL. Three equalities to one base are also true of three equal

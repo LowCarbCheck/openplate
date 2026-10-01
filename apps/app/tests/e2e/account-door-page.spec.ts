@@ -11,7 +11,7 @@
  * WHAT IS REAL: the production build booted as a managed instance (`managed-app-server.ts`),
  * with a newsletter configured, so the old landing WOULD draw its form and the absence below is
  * a reading of the new page rather than of an instance that never had one. WHAT IS STUBBED:
- * `/health` (the fake sync service has no open sign-up and sells nothing) and the anonymous
+ * `/health` (the fake core server has no open sign-up and sells nothing) and the anonymous
  * `GET /v1/plans/prices`, whose figures nobody charges.
  *
  * THE CONTROLS. An invite-only handshake draws no "Sign up" anywhere in the document and shows

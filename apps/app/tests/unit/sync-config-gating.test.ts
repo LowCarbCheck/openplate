@@ -83,7 +83,7 @@ test('the public config carries exactly five members, and nothing else', () => {
   //     the site id ride in every tracker request the browser makes.
   //
   // `gatewayUrl` (M187 spec 03) was a fourth address and is GONE (M192): the
-  // sync server took over the AI proxy, so the browser dials one host.
+  // core server took over the AI proxy, so the browser dials one host.
   //
   // `managed` is the ONE member that is not an address, and it is admitted on
   // a different ground: it decides the SHAPE of the app (one door or two).

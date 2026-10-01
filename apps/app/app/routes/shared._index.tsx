@@ -7,7 +7,7 @@
  * `app/routes/settings.data.tsx` states the house rule: the diary lives on the
  * device. This is the first screen in the app that renders SOMEBODY ELSE's
  * diary, and the rule does not bend for that. The share list, the wrap and the
- * blob are all fetched by the browser directly from the sync service, and
+ * blob are all fetched by the browser directly from the core server, and
  * decrypted here — no loader on this route fetches or holds a patient blob,
  * and none may be added.
  *

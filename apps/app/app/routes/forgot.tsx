@@ -28,7 +28,7 @@
  *
  * CLIENT-ONLY and TOP-LEVEL, like `/sign-in` and `/welcome`. It exports no
  * loader and no action: the address is typed here, the request goes to the
- * sync service's own origin, and none of it is this server's business. It sits
+ * core server's own origin, and none of it is this server's business. It sits
  * outside `_personal` because that layout's gate redirects to screens like
  * this one, and a route nested inside it would be redirected away from itself.
  */
@@ -113,7 +113,7 @@ function ForgotForm({ serverUrl }: { serverUrl: string }) {
     shouldRevalidate: 'onInput',
     defaultValue: { email: initialEmail },
     onSubmit(event, { submission }) {
-      // No action to post to: the request goes to the sync service's own
+      // No action to post to: the request goes to the core server's own
       // origin, from this browser.
       event.preventDefault();
       if (submission?.status !== 'success') return;

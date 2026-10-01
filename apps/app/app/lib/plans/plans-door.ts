@@ -86,7 +86,7 @@ export type InstanceReader = (serverUrl: string) => Promise<InstanceDescriptor |
 /**
  * The same signal, as the route gate, read FRESH for the server named.
  *
- * @param input.serverUrl - the sync server this instance talks to.
+ * @param input.serverUrl - the core server this instance talks to.
  * @param input.readInstance - how the descriptor is read. Defaults to
  *   {@link readFreshServerInstance}; a unit test passes its own.
  * @returns the descriptor the gate passed, so the page reads the same answer.

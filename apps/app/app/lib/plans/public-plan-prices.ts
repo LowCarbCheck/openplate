@@ -64,7 +64,7 @@ export function publicPlanPricesOf(body: PlanPrices): PublicPlanPrices | null {
 /**
  * Asks one core for its prices. Never rejects.
  *
- * @param input.serverUrl - the sync server this app talks to.
+ * @param input.serverUrl - the core server this app talks to.
  * @param input.fetchImpl - the fetch to use; a unit test passes its own.
  */
 export async function readPublicPlanPrices({

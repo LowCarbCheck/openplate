@@ -8,7 +8,7 @@
  * that sells nothing is never locked, and a fact the app cannot read never
  * locks anybody.
  *
- * WHAT IS REAL: the production build, the fake sync service's account and
+ * WHAT IS REAL: the production build, the fake core server's account and
  * session, the `_personal` layout's loader, its `shouldRevalidate`, the plan
  * page, and every screen visited. WHAT IS STUBBED (`managed-core-stub.ts`):
  * the handshake (`plans`, the free scan count), `GET /plans/me`, the offer,

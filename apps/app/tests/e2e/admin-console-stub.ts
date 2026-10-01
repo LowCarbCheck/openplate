@@ -3,7 +3,7 @@
  *
  * ── Why routed and not served ────────────────────────────────────────────
  *
- * The fake sync service implements no admin API, and its one account is a
+ * The fake core server implements no admin API, and its one account is a
  * member (`tests/integration/fake-sync-service.ts`). So, as in
  * `date-language.spec.ts`, the two auth answers that carry the account are
  * passed through with `role` rewritten to `admin`, and every `/v1/admin/*` read

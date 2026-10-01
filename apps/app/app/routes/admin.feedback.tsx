@@ -14,7 +14,7 @@
  * THE SIGNAL IS `/health`, and it is the only one a client gets:
  * `instance.feedback.retentionDays` is absent on an instance with reports off.
  * That is read in the `clientLoader` rather than in the server `loader`
- * because it belongs to the SYNC server, not to this app's server, and this
+ * because it belongs to the CORE server, not to this app's server, and this
  * app's server must not start making a request per page load to answer a
  * question the browser already has cached (`use-server-instance`).
  *
@@ -29,7 +29,7 @@
  * ── Client-only past the loader ──────────────────────────────────────────
  *
  * Like every other admin screen: the reads happen in the browser against the
- * sync server, over the signed-in administrator's own credential. This app's
+ * core server, over the signed-in administrator's own credential. This app's
  * server never sees it.
  */
 import { useCallback, useEffect, useState } from 'react';

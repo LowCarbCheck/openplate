@@ -70,7 +70,7 @@ const LOADER_DATA = {
 };
 
 /**
- * A managed instance always has a sync server (`isManagedInstance` refuses to
+ * A managed instance always has a core server (`isManagedInstance` refuses to
  * boot without one), so the two flags move together here on purpose.
  */
 function publicConfig(managed: boolean): PublicConfig {

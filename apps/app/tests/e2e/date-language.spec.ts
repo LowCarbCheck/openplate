@@ -23,7 +23,7 @@
  *
  * ── THE ADMIN PAGE IS ROUTED, NOT SERVED ─────────────────────────────────
  *
- * The fake sync service implements no admin API and its one account is a
+ * The fake core server implements no admin API and its one account is a
  * member (`tests/integration/fake-sync-service.ts`). So the two auth answers
  * that carry the role are passed through with `role` rewritten to `admin`, and
  * the two admin reads the person page makes are answered here. Nothing on the

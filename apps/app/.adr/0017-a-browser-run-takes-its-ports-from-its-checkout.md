@@ -8,7 +8,7 @@
 ## Context
 
 The browser smoke tier binds three TCP ports: the fake LowCarbCheck, the fake
-sync service and the production app server. Until now `tests/e2e/env.ts`
+core server and the production app server. Until now `tests/e2e/env.ts`
 exported them as three literals, 5297, 5298 and 5299, and those were the same
 three numbers in every clone and every worktree of this repository on a host.
 
@@ -52,7 +52,7 @@ The three ports are derived from the real path of the checkout they belong to.
   unsigned big-endian integer, are the hash.
 - **Slot.** `hash mod 7000`.
 - **Base.** `10000 + 3 * slot`. The triple is `base`, `base + 1`, `base + 2`,
-  keeping the previous relative order: food database at the base, sync service
+  keeping the previous relative order: food database at the base, core server
   at `base + 1`, app server at `base + 2`.
 - **Override.** `OPENPLATE_E2E_PORT_BASE` wins over the hash when it is set to
   a non-empty value. It must be a whole decimal number between 1024 and 65533,

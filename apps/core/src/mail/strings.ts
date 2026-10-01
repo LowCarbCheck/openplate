@@ -24,7 +24,7 @@
  * THREE RULES THE TEXT OBEYS, AND `tests/unit/mail-messages.test.ts` HOLDS IT
  * TO THEM:
  *
- *  - **No service is ever named.** Not "the sync server", not "the gateway",
+ *  - **No service is ever named.** Not "the core server", not "the gateway",
  *    not "an AI connection", not "your account link". The reader is a person
  *    who was invited to a food diary, and the architecture behind it is not
  *    their business. The banned-word list in that test is the enforcement.

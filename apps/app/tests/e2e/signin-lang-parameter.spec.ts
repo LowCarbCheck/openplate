@@ -7,7 +7,7 @@
  * sign-in page never called the hook, so a visitor who read the site in
  * English on a device that last spoke German got a German sign-in form.
  *
- * WHAT IS REAL: the tier's production server, its fake sync service, the
+ * WHAT IS REAL: the tier's production server, its fake core server, the
  * language cookie the server renders from, and the reload the switch makes.
  * Nothing is stubbed.
  *

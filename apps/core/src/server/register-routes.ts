@@ -171,7 +171,7 @@ export function registerSyncRoutes(app: Express, context: SyncHostContext): void
         // very push this refusal exists to stop.
         //
         // 400 is what the deployed client already renders as `incompatible`,
-        // whose words are "this app and the sync server don't speak the same
+        // whose words are "this app and the core server don't speak the same
         // version yet, so syncing is paused on purpose", with the sentence
         // below underneath it. That is true: this app IS too old, and the
         // remedy IS an update. It also throws out of the sync cycle before

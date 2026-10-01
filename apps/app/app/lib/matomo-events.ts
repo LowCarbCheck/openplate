@@ -430,7 +430,7 @@ export function trackPhotoCacheCleared(): void {
 
 // ─── Account ─────────────────────────────────────────────────────────────────
 // The sync account, which is the one account in the system. Never an email,
-// an account id or a device id: the sync server is designed not to learn what
+// an account id or a device id: the core server is designed not to learn what
 // it stores, and this must not be the leak.
 
 export function trackAccountCreated(): void {

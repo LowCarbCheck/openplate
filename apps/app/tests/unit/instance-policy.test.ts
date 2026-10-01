@@ -254,7 +254,7 @@ describe('reading the instance policy', () => {
     assert.deepEqual(getInstancePolicy({ ...OPEN_CONFIG, managed: true }), INSTANCE_POLICIES.managed);
   });
 
-  it('does not confuse a configured sync server with a managed instance', () => {
+  it('does not confuse a configured core server with a managed instance', () => {
     // A self-hoster may set `SYNC_SERVER_URL` on an OPEN instance. That
     // instance has sync AND the anonymous diary, so every answer stays open.
     // "Is sync configured" is a different question, and `isSyncConfigured` is

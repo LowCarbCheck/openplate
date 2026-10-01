@@ -274,7 +274,7 @@ export function nutritionRowStatus({
  * "Account and plan" is built entirely from conditional rows: the account row
  * and sharing and research ride `SYNC_SERVER_URL`, the plan row rides the
  * biller, and the admin row rides one account's role. On an instance with no
- * sync server every one of them is hidden, and without the filter below the
+ * core server every one of them is hidden, and without the filter below the
  * page would draw that heading over nothing. So the guard lives here, in the
  * model, rather than inside the rendering component: an empty group is a fact
  * about the data, and a test can read it without a DOM.
@@ -354,7 +354,7 @@ export function buildSettingsHubGroups(facts: SettingsHubFacts): SettingsHubGrou
           status: facts.preferencesStatus,
           isVisible: true,
         },
-        // GATED ON THE SYNC SERVER, like every account row: a push
+        // GATED ON THE CORE SERVER, like every account row: a push
         // subscription hangs on an account, and an instance with no server has
         // nobody to register with and nothing to send.
         {
@@ -400,7 +400,7 @@ export function buildSettingsHubGroups(facts: SettingsHubFacts): SettingsHubGrou
           isVisible: facts.hasSyncServer,
         },
         // Research contributions ride the same sync gate as sharing: a
-        // contribution is pushed to the sync service. Whether that service
+        // contribution is pushed to the core server. Whether that service
         // has a research lane at all is a question only the page can answer.
         {
           to: '/settings/research',

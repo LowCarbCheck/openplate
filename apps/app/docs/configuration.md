@@ -19,7 +19,7 @@ const appUrl = CONFIG.app.url;
 ## Environment variables
 
 [environment-variables.md](environment-variables.md#the-app) lists every variable the app
-reads, with its default. It also lists the variables for the sync service and the inference
+reads, with its default. It also lists the variables for the core server and the inference
 service. The sections below explain the larger features in depth.
 
 One variable has no section of its own. `DEFAULT_UI_LANGUAGE` sets the language a visitor
@@ -67,7 +67,7 @@ numbers. Raise it if your key allows more. The count lives in memory, so a resta
 again.
 
 On a managed instance, a food lookup also needs a signed-in account. The app sends the
-account's session with each lookup, and the app server asks the sync service at
+account's session with each lookup, and the app server asks the core server at
 `SYNC_SERVER_URL` whether the session is live before anything reaches LowCarbCheck. The app
 server must therefore reach that address as well. If it cannot, lookups are refused until it
 can, and scans still complete with the AI's own numbers. An open instance answers every
@@ -156,7 +156,7 @@ in this order: the user's saved choice, the languages requested by the browser, 
 `DEFAULT_UI_LANGUAGE`.
 
 The page tells users that their account and diary moved with them. Enable this mode only when
-that is true: the new instance uses the same sync service, or you migrated the accounts
+that is true: the new instance uses the same core server, or you migrated the accounts
 there. A diary stored only in one browser stays in that browser under the old address; the
 new address cannot read it.
 
@@ -189,7 +189,7 @@ ships a strict Content-Security-Policy. Its `connect-src` allows:
 That allowlist is what stops an injected script from exfiltrating a key that lives in the
 page. Widen it deliberately.
 
-On a managed instance the AI proxy is the sync server the client already talks to, so its
+On a managed instance the AI proxy is the core server the client already talks to, so its
 origin is `SYNC_SERVER_URL`, already in the list above. There is no second remote endpoint to
 allow and nothing extra to add to `CSP_CONNECT_EXTRA` for it.
 
@@ -293,22 +293,22 @@ app.openplate.de use this mode. It is off by default: a self-hoster who sets not
 open app.
 
 `INSTANCE_MODE=managed` requires `SYNC_SERVER_URL`. The account is what carries the diary and
-the allowance together; declaring `managed` without a sync server stops the boot rather than
+the allowance together; declaring `managed` without a core server stops the boot rather than
 half-enabling anything.
 
 An administrator invites people from the app itself, at `/admin`, or with openplate-core's
 admin API and `ADMIN_TOKEN`. The very first account, before any administrator exists, comes
 from that API. [self-hosting.md](self-hosting.md#create-the-first-account) has the command.
-With mail configured on the sync service, the invitation is mailed. With no mail configured, the answer
+With mail configured on the core server, the invitation is mailed. With no mail configured, the answer
 carries the link and you pass it on. A forgotten password is reset by a link. That link is mailed or, with
 no mail, made by an administrator (see
 [self-hosting.md](self-hosting.md#when-someone-forgets-their-password)). The server holds an
 escrowed recovery code that unwraps the data key after the reset (see
 [sync.md](sync.md#encryption-and-what-the-operator-holds)).
 
-A managed instance with AI needs three values on the sync service as well: `UPSTREAM_BASE_URL`
+A managed instance with AI needs three values on the core server as well: `UPSTREAM_BASE_URL`
 and `UPSTREAM_API_KEY` (the provider and its key) and `AI_ADVERTISED_MODEL`, the model every
-scan uses. **`AI_ADVERTISED_MODEL` is required for scans.** Without it, the sync service
+scan uses. **`AI_ADVERTISED_MODEL` is required for scans.** Without it, the core server
 reports no model, and the app refuses to scan rather than pick a model on your bill. Name the
 model the way your provider does, for example `google/gemini-3.5-flash-lite` with
 `UPSTREAM_BASE_URL=https://openrouter.ai/api/v1`, or `openplate-plate-1` in front of
@@ -338,8 +338,8 @@ pins both variants side by side.
 
 On a managed instance, an administrator is not the only person who can invite. Three
 openplate-core variables decide whether an ordinary member may invite someone, and on what terms.
-They are set on the sync server, not on the app. `compose.core.yml` and `compose.full.yml`
-pass all three from `.env` to the sync service.
+They are set on the core server, not on the app. `compose.core.yml` and `compose.full.yml`
+pass all three from `.env` to the core server.
 
 | Variable                       | Default                | Description                                                                                                                    |
 | ------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |

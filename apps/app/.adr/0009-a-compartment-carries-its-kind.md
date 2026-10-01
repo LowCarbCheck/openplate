@@ -44,7 +44,7 @@ seal `{studyKeyring:[…]}` over her clinician share private key, her pseudonym
 root and every study she has joined.
 
 **We cannot check whether an untagged study compartment already exists.** The
-sync service is zero-knowledge by construction: nobody, including us, can look
+core server is zero-knowledge by construction: nobody, including us, can look
 inside a compartment on the server. "No study compartment predates the tag" is
 an assumption, not a fact, and the code must not rest on it.
 

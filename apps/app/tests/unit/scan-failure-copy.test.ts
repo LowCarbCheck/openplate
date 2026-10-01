@@ -76,7 +76,7 @@ function translatorFor(flat: Map<string, string>): Translate {
 const t = translatorFor(EN);
 const tDe = translatorFor(DE);
 
-/** A response as the sync service sends it, headers and all. */
+/** A response as the core server sends it, headers and all. */
 function refusal({ status, body, retryAfter }: { status: number; body?: unknown; retryAfter?: string }): Response {
   const headers = new Headers({ 'Content-Type': 'application/json' });
   if (retryAfter !== undefined) headers.set('Retry-After', retryAfter);

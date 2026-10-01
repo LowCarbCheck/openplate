@@ -19,9 +19,9 @@
 # from (see apps/app/.adr/0006-the-app-server-holds-no-accounts.md). Back up with the
 # in-app JSON export, not with a database dump.
 #
-# If you also want the optional end-to-end-encrypted sync service, use
+# If you also want the optional core server (accounts and diary sync), use
 # docker/topologies/compose.core.yml instead. THAT one needs a database,
-# because the sync service keeps accounts and ciphertext. The other shapes
+# because the core server keeps accounts and ciphertext. The other shapes
 # (self-hosted AI, or everything at once) sit beside it; docker/topologies/
 # README.md is the one-page map.
 # Fixes the project name. Without it Compose names the stack after the
@@ -99,7 +99,7 @@ services:
       CSP_CONNECT_EXTRA: ${CSP_CONNECT_EXTRA:-}
       # debug, info, warn or error.
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      # The address of an openplate-core sync service, one a BROWSER can reach.
+      # The address of openplate-core, one a BROWSER can reach.
       # Empty means no sync. docker/topologies/compose.core.yml runs one.
       SYNC_SERVER_URL: ${SYNC_SERVER_URL:-}
       # open (the default) or managed, which needs SYNC_SERVER_URL. See

@@ -20,7 +20,7 @@ import {
 } from '../../app/lib/plans/plans-door';
 import type { InstanceDescriptor } from '../../app/lib/sync/engine/protocol';
 
-/** The sync server the gate is asked about. */
+/** The core server the gate is asked about. */
 const SERVER = 'https://sync.example.test';
 
 const INSTANCE: InstanceDescriptor = {

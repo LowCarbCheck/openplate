@@ -1,6 +1,6 @@
 # openplate with sync as rootless Quadlet units
 
-Generated from `docker/topologies/compose.core.yml`, rung 2: Postgres, the openplate app, and openplate-core (the sync service). Do not edit the unit files. Change the compose file and run `apps/app/scripts/quadlet.sh generate`. This README is the one hand-written file here.
+Generated from `docker/topologies/compose.core.yml`, rung 2: Postgres, the openplate app, and openplate-core. Do not edit the unit files. Change the compose file and run `apps/app/scripts/quadlet.sh generate`. This README is the one hand-written file here.
 
 ## What is in this directory
 
@@ -151,7 +151,7 @@ Outcome: started clean with the units as committed now. It took four attempts to
 1. **Short image name.** `postgres:17-alpine` is a short name, and rootless Podman refuses to pick a registry for one without a terminal to ask on, so the unit could not pull. Fix: the compose file now says `docker.io/library/postgres:17-alpine`.
 2. **First boot beat the start timeout.** Postgres's first boot runs `initdb`, which took 40 seconds on this laptop (two rounds of fsync). The user manager's `TimeoutStartSec` default here is 45 seconds, and the `pg_isready` probe runs every 5 seconds, so `Notify=healthy` had not fired when systemd killed the container. `Restart=always` brought Postgres back, but `sync.service` has `Requires=postgres.service` and its start job had already failed for good. Fix: the generator writes `TimeoutStartSec=300` under `[Service]` in every unit it gives `Notify=healthy`.
 3. **`SIGNUP_MODE` is a boot failure.** The compose file still forwarded `SIGNUP_MODE=open`; openplate-core 0.15.0 rejects it and exits, and the container restarted in a loop. Fix: the variable is gone from `compose.core.yml` and `compose.full.yml`. This one also broke the compose path.
-4. **`postgres` did not resolve.** Quadlet names the container `systemd-postgres`, and that is the only name Podman's DNS knew, so `DATABASE_URL=postgres://...@postgres:5432/...` failed with `ENOTFOUND` ten times and the sync service gave up. Compose sets the service name as a DNS alias; the generator now does the same (`Network=openplate-with-sync.network:alias=postgres`).
+4. **`postgres` did not resolve.** Quadlet names the container `systemd-postgres`, and that is the only name Podman's DNS knew, so `DATABASE_URL=postgres://...@postgres:5432/...` failed with `ENOTFOUND` ten times and the core server gave up. Compose sets the service name as a DNS alias; the generator now does the same (`Network=openplate-with-sync.network:alias=postgres`).
 
 One more thing came out of the run: the openplate-core image bakes in a `HEALTHCHECK`. Podman drops it on pull because GHCR serves an OCI manifest, which has no health field. `podman ps` showed `systemd-sync` with no health at all. The compose file now declares the same check. The unit gets `Notify=healthy`, and `podman ps` reports `(healthy)`.
 

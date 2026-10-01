@@ -505,7 +505,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      *
      * `INSTANCE_MODE=managed` says an organization runs this instance for its
      * people: an admin invites by email, there is no anonymous path because on
-     * such an instance it leads nowhere, and the AI comes from the sync server
+     * such an instance it leads nowhere, and the AI comes from the core server
      * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
      * stops the boot without it. See `isManagedInstance`.
      *

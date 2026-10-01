@@ -8,7 +8,7 @@
  * presentational view that takes props, and both halves are exercised here.
  *
  * THE CONTROL THIS FILE EXISTS FOR is the last suite: on an instance with no
- * sync server the strip must render nothing at all (AGENTS.md). It is paired
+ * core server the strip must render nothing at all (AGENTS.md). It is paired
  * with a positive render of the same markup, so "no strip" is read against a
  * case that does produce one rather than against an empty string that a broken
  * harness would also produce.
@@ -182,7 +182,7 @@ describe('the strip a signed-out person sees', () => {
   });
 });
 
-describe('no sync server means no strip at all', () => {
+describe('no core server means no strip at all', () => {
   // `AvatarAccountStrip` reads `useSyncServerUrl()`, which reads the root
   // loader's public config. This router has no `root` route, so the hook gets
   // `undefined` and answers `null`, which is exactly the runtime state of an

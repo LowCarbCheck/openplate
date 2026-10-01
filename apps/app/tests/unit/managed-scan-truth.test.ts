@@ -6,7 +6,7 @@
  *  - The form carries "this is a managed instance" even when the handshake
  *    named no model. It used to drop everything, and the action then told a
  *    managed member to connect a provider of their own.
- *  - The base URL gives back the sync server it was built from, which the
+ *  - The base URL gives back the core server it was built from, which the
  *    action uses to ask the handshake once more.
  *  - A provider refusal on a managed instance is the operator's, and is worded
  *    that way; the same refusal on an open instance keeps the "your key" copy.
@@ -57,7 +57,7 @@ describe('the managed form fields', () => {
 });
 
 describe('syncServerUrlOfManagedBase', () => {
-  it('reads back the sync server a managed base was built from', () => {
+  it('reads back the core server a managed base was built from', () => {
     assert.equal(syncServerUrlOfManagedBase(BASE), SYNC);
   });
 

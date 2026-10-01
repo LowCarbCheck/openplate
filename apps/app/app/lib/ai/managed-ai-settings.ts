@@ -39,7 +39,7 @@ import type { OpenAiCompatibleCredential } from '#app/services/vision/openai-com
 export const MANAGED_AI_API_PREFIX = '/v1';
 
 /**
- * The sync server a managed base URL was built from, or `null` for a URL this
+ * The core server a managed base URL was built from, or `null` for a URL this
  * module did not build.
  *
  * `resolveEffectiveAiSettings` writes the base as `${syncServerUrl}${MANAGED_AI_API_PREFIX}`,

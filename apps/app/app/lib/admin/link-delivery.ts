@@ -15,9 +15,9 @@
  * ── A link that opens the right page and then the wrong server ──────────
  *
  * The other half of a link is its `server=`, which tells the app where the
- * sync server is. A link on the right app address can still name
+ * core server is. A link on the right app address can still name
  * `http://localhost:3001` there: it opens the right page, and the app then
- * looks for the sync server on the reader's own device. The family's page is
+ * looks for the core server on the reader's own device. The family's page is
  * https on a real host (the app signs nobody in anywhere else), so a loopback
  * or plain-http server beside it is the defect. On this machine, where page,
  * app and server are all loopback, the link is consistent and says nothing.
@@ -64,7 +64,7 @@ function linkServerOrigin(link: URL): string | null {
 }
 
 /**
- * Whether the app at `app` can reach a sync server at `server`: never one on
+ * Whether the app at `app` can reach a core server at `server`: never one on
  * the reader's own device when the app is not on it too, and never plain http
  * beside an https app, which the browser blocks as mixed content.
  */

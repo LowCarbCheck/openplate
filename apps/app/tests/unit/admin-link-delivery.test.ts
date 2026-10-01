@@ -81,7 +81,7 @@ test('a link that does not parse names nothing rather than throwing on the admin
 
 // ── The server= half of the link ──────────────────────────────────────────
 //
-// A link whose app address is right can still name a sync server the reader's
+// A link whose app address is right can still name a core server the reader's
 // device cannot reach: `server=http%3A%2F%2Flocalhost%3A3001` opens the right
 // page and then points the app at the reader's own phone. The page the family
 // uses is https on a real host (the app signs nobody in anywhere else), so a
@@ -95,7 +95,7 @@ function familyLink(server: string): string {
   return `${FAMILY_APP}/join#server=${encodeURIComponent(server)}&invite=si_abc`;
 }
 
-test('a link on the right app address whose server= names this machine or plain http warns about the sync server', () => {
+test('a link on the right app address whose server= names this machine or plain http warns about the core server', () => {
   for (const server of [
     'http://localhost:3001',
     'https://localhost:3001',
@@ -122,14 +122,14 @@ test('a link on the right app address whose server= names this machine or plain 
   );
 });
 
-test('CONTROL: a link on the right app address with an https sync server on a real host warns about nothing', () => {
+test('CONTROL: a link on the right app address with an https core server on a real host warns about nothing', () => {
   for (const server of ['https://sync.family.example', 'https://openplate.family.example', 'https://100.64.0.3:8443']) {
     assert.equal(linkWarning({ link: familyLink(server), pageOrigin: FAMILY_APP }), null, server);
   }
 });
 
 test('CONTROL: on this machine, a link to this machine is consistent and warns about nothing', () => {
-  // The dev setup and the ssh-tunnel test: the page, the app and the sync server
+  // The dev setup and the ssh-tunnel test: the page, the app and the core server
   // are all on this machine, where plain http is a secure page. The link works
   // exactly where the administrator is, and the app address check already
   // covers the case where the page is somewhere else.
@@ -184,7 +184,7 @@ test('every sentence the form can pick is a different sentence in the English ca
   assert.match(catalog.admin.link.otherAddress, /\{\{origin\}\}/);
   assert.match(catalog.admin.link.otherAddress, /PUBLIC_APP_URL/);
   assert.match(catalog.admin.link.otherAddress, /PUBLIC_SYNC_URL/);
-  // The sync server line names the address it found and the one setting that fixes it.
+  // The core server line names the address it found and the one setting that fixes it.
   assert.match(catalog.admin.link.syncAddress, /\{\{server\}\}/);
   assert.match(catalog.admin.link.syncAddress, /PUBLIC_SYNC_URL/);
 });

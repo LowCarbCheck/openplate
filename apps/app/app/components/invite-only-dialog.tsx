@@ -28,7 +28,7 @@ import { Button } from '#app/components/ui/button';
  *
  * A field here would start a data collection with no notice covering it: the
  * privacy copy this instance renders says nothing about addresses left by
- * people who are not accounts, and the sync server has nowhere to put one. So
+ * people who are not accounts, and the core server has nowhere to put one. So
  * the dialog states the rule and names who can act on it, and the person
  * carries the request over a channel they already have with that operator.
  * `tests/unit/public-header-doors.test.ts` reads this file and fails if a

@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs and prose call the server core, not sync.** READMEs, docs, code comments and screen text name openplate-core as the core server. Names you type, such as `SYNC_SERVER_URL`, stay as they are.
+
 ## [0.60.0] - 2026-10-01
 
 ### Added

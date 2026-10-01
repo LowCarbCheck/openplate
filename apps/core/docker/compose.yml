@@ -1,4 +1,4 @@
-# Self-hoster quickstart: Postgres + the sync service, nothing else.
+# Self-hoster quickstart: Postgres + the core server, nothing else.
 #
 # If you pulled the published image you can copy this one file anywhere and
 # run `docker compose up -d` beside it. From a checkout, the file lives in

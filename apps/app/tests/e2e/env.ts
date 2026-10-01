@@ -124,7 +124,7 @@ export const E2E_PORT_BASE = deriveE2ePortBase({
 /** Where the fake LowCarbCheck listens for this tier (M234 spec 07). */
 export const E2E_FOOD_DB_PORT = E2E_PORT_BASE;
 
-/** Where the fake sync service listens for this tier. */
+/** Where the fake core server listens for this tier. */
 export const E2E_SYNC_PORT = E2E_PORT_BASE + 1;
 
 /** Where the production app server listens for this tier. */

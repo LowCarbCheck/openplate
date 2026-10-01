@@ -155,7 +155,7 @@ function delay(ms: number): Promise<void> {
 
 /**
  * `SYNC_SERVER_URL` is not decoration. The account and sync surfaces do not
- * render at all on an instance that has no sync server, so a run without it
+ * render at all on an instance that has no core server, so a run without it
  * would produce a perfectly sharp screenshot of a different product, and the
  * `sync` view above would capture an empty settings page. Set here rather than
  * left to `.env` so the capture cannot depend on a developer's local file.

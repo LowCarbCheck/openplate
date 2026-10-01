@@ -52,7 +52,7 @@ Three supporting pieces come with it, and none of them is optional:
    and the deployed client acts on it by pulling, merging and pushing the same
    bytes again, which is the loop this exists to stop. A `400` arrives in the
    deployed client as `SyncErrorKind.invalid`, which its status surface renders
-   as "this app and the sync server don't speak the same version yet, so
+   as "this app and the core server don't speak the same version yet, so
    syncing is paused on purpose", with the service's own sentence underneath.
    That is true, and the remedy it implies, update the app, is the right one.
 2. **The compare-and-swap is checked first.** A push off a stale `baseVersion`

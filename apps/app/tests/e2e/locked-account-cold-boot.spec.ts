@@ -13,7 +13,7 @@
  * consent screen), or something else. It keeps every change of label with the
  * instant it was first seen, measured from the start of the navigation.
  *
- * WHAT IS REAL: the production build, the fake sync service's session, the
+ * WHAT IS REAL: the production build, the fake core server's session, the
  * saved session a reload reopens, the `_personal` layout, the plan page and
  * the consent screen. WHAT IS STUBBED (`managed-core-stub.ts`): the handshake,
  * `GET /plans/me` and the account facts on every auth answer.

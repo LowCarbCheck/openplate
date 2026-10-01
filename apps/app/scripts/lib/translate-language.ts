@@ -9,6 +9,13 @@
  * button all agree on which document they are looking at, and every copy is
  * cacheable forever.
  *
+ * A stored preference and the browser's languages do still count, but only for
+ * WHICH document a reader ends up on, never for what a document says. A German
+ * page carries a head script that replaces it with its twin in the reader's
+ * language before it paints (`app/lib/language-choice.ts`, ADR-0010). That is a
+ * navigation from one document to another, so everything above stays true of
+ * each document.
+ *
  * ── THE DEFAULT LANGUAGE AND THE SOURCE LANGUAGE ARE NOT THE SAME THING ──
  * They were the same value while both were `en`, and reading one where the
  * other was meant cost nothing. German now owns the root, so the two have come
@@ -73,6 +80,81 @@ export const LANGUAGE_PREFIXES = {
   es: '/es',
   tr: '/tr',
 } satisfies Record<LanguageCode, string>;
+
+/**
+ * The pages whose path is a WORD in each language, not the German path under a prefix.
+ *
+ * Almost every page keeps one path in every language (`/docs`, `/en/docs`), because a component
+ * name or a product word reads the same everywhere. The calculators are the exception (M263): a
+ * person searches for "Kalorienbedarf" in German and "besoins caloriques" in French, so each language
+ * gets its own slug, and a crawler sees a URL in the language of the page.
+ *
+ * ONE ROW PER PAGE, ONE PATH PER LANGUAGE, and `satisfies` makes a missing language a compile
+ * error. The German path is the CANONICAL one, the path the route table, the sitemap and every
+ * `SiteLink` are written in, because German owns the unprefixed URLs (see DEFAULT_LANGUAGE). The
+ * other paths come without their language prefix; `localizePath` adds it.
+ *
+ * NOTHING ELSE KEEPS A SLUG. `localizePath` and `canonicalizePath` below read this table, and the
+ * route table, the sitemap, the hreflang tags, the language switcher and every link on the site go
+ * through those two, so a slug written here reaches all of them and a slug written anywhere else
+ * reaches none. `tests/unit/calculator-pages.test.ts` holds the URLs to literals.
+ */
+export const LOCALIZED_PATHS = {
+  calculators: {
+    de: '/rechner',
+    en: '/calculators',
+    fr: '/calculateurs',
+    it: '/calcolatori',
+    es: '/calculadoras',
+    tr: '/hesaplayicilar',
+  },
+  bmiCalculator: {
+    de: '/rechner/bmi',
+    en: '/calculators/bmi',
+    fr: '/calculateurs/imc',
+    it: '/calcolatori/imc',
+    es: '/calculadoras/imc',
+    tr: '/hesaplayicilar/vki',
+  },
+  kcalCalculator: {
+    de: '/rechner/kalorienbedarf',
+    en: '/calculators/calorie-needs',
+    fr: '/calculateurs/besoins-caloriques',
+    it: '/calcolatori/fabbisogno-calorico',
+    es: '/calculadoras/necesidades-caloricas',
+    tr: '/hesaplayicilar/kalori-ihtiyaci',
+  },
+  proteinCalculator: {
+    de: '/rechner/proteinbedarf',
+    en: '/calculators/protein-needs',
+    fr: '/calculateurs/besoins-en-proteines',
+    it: '/calcolatori/fabbisogno-proteico',
+    es: '/calculadoras/necesidades-de-proteinas',
+    tr: '/hesaplayicilar/protein-ihtiyaci',
+  },
+  waterCalculator: {
+    de: '/rechner/wasserbedarf',
+    en: '/calculators/water-needs',
+    fr: '/calculateurs/besoins-en-eau',
+    it: '/calcolatori/fabbisogno-idrico',
+    es: '/calculadoras/necesidades-de-agua',
+    tr: '/hesaplayicilar/su-ihtiyaci',
+  },
+} as const satisfies Record<string, Record<LanguageCode, string>>;
+
+/** The rows of LOCALIZED_PATHS, for the two lookups below. */
+const LOCALIZED_PATH_ROWS: readonly Record<LanguageCode, string>[] = Object.values(LOCALIZED_PATHS);
+
+/**
+ * `path` without a trailing slash, except the root.
+ *
+ * nginx serves a page at its address without the slash and 301s the slash form to it, so the
+ * switcher reads a slashless pathname. A slash can still arrive, from a tab opened before that rule
+ * or a static host without it, and the table is written without the slash, so it is dropped here.
+ */
+function withoutTrailingSlash(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+}
 
 /**
  * A language whose words are made from another language's, i.e. every one except the source.
@@ -147,11 +229,16 @@ export function languageFromRequest(url: string): LanguageCode {
  * is what the route table is written in. Passing an already-prefixed path
  * would double the prefix, so callers hold the canonical form and localise at
  * the point of use.
+ *
+ * A page in LOCALIZED_PATHS changes its words as well as its prefix:
+ * `/rechner/bmi` in French is `/fr/calculateurs/imc`.
  */
 export function localizePath(path: string, language: LanguageCode): string {
+  const row = LOCALIZED_PATH_ROWS.find((candidate) => candidate[DEFAULT_LANGUAGE] === path);
+  const localized = row === undefined ? path : row[language];
   const prefix = LANGUAGE_PREFIXES[language];
-  if (!prefix) return path;
-  return path === '/' ? prefix : `${prefix}${path}`;
+  if (!prefix) return localized;
+  return localized === '/' ? prefix : `${prefix}${localized}`;
 }
 
 /**
@@ -163,9 +250,12 @@ export function localizePath(path: string, language: LanguageCode): string {
  * unprefixed path is already canonical.
  */
 export function canonicalizePath(pathname: string): string {
-  const prefix = LANGUAGE_PREFIXES[languageFromPathname(pathname)];
-  if (!prefix) return pathname;
-
+  const language = languageFromPathname(pathname);
+  const prefix = LANGUAGE_PREFIXES[language];
   const rest = pathname.slice(prefix.length);
-  return rest === '' ? '/' : rest;
+  const unprefixed = rest === '' ? '/' : rest;
+
+  const bare = withoutTrailingSlash(unprefixed);
+  const row = LOCALIZED_PATH_ROWS.find((candidate) => candidate[language] === bare);
+  return row === undefined ? unprefixed : row[DEFAULT_LANGUAGE];
 }

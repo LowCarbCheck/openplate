@@ -687,14 +687,14 @@ test('a link on the page origin whose server= names this machine warns in the sa
   assert.ok(html.includes(ORIGIN_WARNING), 'the same one-line box');
   const warningAt = html.indexOf(ORIGIN_WARNING);
   const line = html.slice(warningAt, html.indexOf('</p>', warningAt));
-  assert.ok(line.includes('http://localhost:3001'), `it names the sync server the link points at: ${line}`);
+  assert.ok(line.includes('http://localhost:3001'), `it names the core server the link points at: ${line}`);
   assert.match(line, /PUBLIC_SYNC_URL/);
   assert.doesNotMatch(line, /PUBLIC_APP_URL/, 'the app address is right, so it is not the setting to change');
   // Still one line: the two warnings never stack.
   assert.equal(html.split(ORIGIN_WARNING).length - 1, 1);
 });
 
-test('CONTROL: a link on the page origin with an https sync server on a real host draws no line', () => {
+test('CONTROL: a link on the page origin with an https core server on a real host draws no line', () => {
   const page = 'https://openplate.family.example';
   const link = `${page}/join#server=https%3A%2F%2Fsync.family.example&invite=si_abc`;
   const html = render(createElement(CopyableLinkView, { link, pageOrigin: page }));

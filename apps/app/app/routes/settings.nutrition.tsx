@@ -165,7 +165,7 @@ function makeGoalsSchema(t: Translate) {
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * The two facts the reference protein needs from this server: the sync server
+ * The two facts the reference protein needs from this server: the core server
  * to ask for the instance's basis, and this server's own basis (M263/04). Every
  * goal on the page still comes from the on-device store via `clientLoader`.
  */

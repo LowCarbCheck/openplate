@@ -85,11 +85,11 @@ describe('resolveAvatarLabel', () => {
     });
   });
 
-  it('never waits on an instance with no sync server, where nothing reopens', () => {
+  it('never waits on an instance with no core server, where nothing reopens', () => {
     assert.deepEqual(resolveAvatarLabel({ displayName: null, isResuming: true, hasSyncServer: false }), {
       kind: 'device',
     });
-    // CONTROL: the same flag with a sync server waits.
+    // CONTROL: the same flag with a core server waits.
     assert.equal(resolveAvatarLabel({ displayName: null, isResuming: true, hasSyncServer: true }).kind, 'pending');
   });
 

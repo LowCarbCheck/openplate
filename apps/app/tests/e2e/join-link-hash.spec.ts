@@ -11,7 +11,7 @@
  * browser treats it as a same-document fragment change, exactly like editing
  * the fragment in the address bar, and fires `hashchange` without a load.
  *
- * WHAT IS REAL: the production build and the tier's fake sync service, which
+ * WHAT IS REAL: the production build and the tier's fake core server, which
  * does not know the invite below and answers 404, so the page lands on "this
  * invitation is no longer valid". That card, and not a form, is the proof the
  * second link was read and dialled.

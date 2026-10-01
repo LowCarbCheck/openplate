@@ -4,7 +4,7 @@
  * THE DEFECT. Several sentences told a person that their profile, or the
  * diary itself, "stays on this device" (or "stays local, always").
  * That is true for a person with no account on an open instance. It is false
- * for anyone signed in to a sync server: the account keeps an encrypted copy
+ * for anyone signed in to a core server: the account keeps an encrypted copy
  * there, and the operator holds a backup key that can open it (the privacy
  * notice of app.openplate.de, section 3). On a managed instance every person
  * has an account, so the onboarding profile step said the false thing to
@@ -16,14 +16,14 @@
  *     card is chosen by the INSTANCE and never says the diary stays here.
  *  2. The managed onboarding (its first screen, the profile step and the
  *     first-food step) and the managed profile settings, signed in.
- *  3. The same screens on an open instance, signed in to its sync server: the
+ *  3. The same screens on an open instance, signed in to its core server: the
  *     only place the AI connection note is drawn at all.
  *  4. THE CONTROL: the same screens on the open instance with no account, where
  *     the device sentence is true and must still be shown. It is what proves
  *     each absence above is an absence of a sentence the query can see.
  *
  * WHAT IS REAL: both production servers, the sign-in against the tier's fake
- * sync service, every screen and its loader. WHAT IS STUBBED: the managed
+ * core server, every screen and its loader. WHAT IS STUBBED: the managed
  * `/health` and account facts (`managed-core-stub.ts`), and the account's
  * encrypted diary blob. The blob is kept in this page instead of on the fake
  * service, so a sign-in lands on the questionnaire whatever other specs pushed

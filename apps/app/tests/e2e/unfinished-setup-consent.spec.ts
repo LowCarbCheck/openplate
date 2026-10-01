@@ -10,7 +10,7 @@
  * does not hold the instance's current consent, and the sign-in page sits
  * outside the layout that asks for it.
  *
- * WHAT IS REAL: the production build, the fake sync service's login and
+ * WHAT IS REAL: the production build, the fake core server's login and
  * account, the sign-in page, the setup ceremony and its key derivation, the
  * first pull, and the consent gate on the diary. WHAT IS STUBBED: the
  * handshake and the account facts (`managed-core-stub.ts`), and the account's

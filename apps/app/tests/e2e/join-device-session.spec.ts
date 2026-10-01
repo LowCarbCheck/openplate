@@ -20,7 +20,7 @@
  *   the app could reach it, and its sign-out button needed a session that a
  *   document load never opens.
  * - The foreign-server card named one address, the link's server, and told
- *   the person to "open it there". That address is a sync server, not an app,
+ *   the person to "open it there". That address is a core server, not an app,
  *   and nothing told them which server this app uses.
  *
  * The stale session for another server and the tunnel origin both worked on
@@ -28,7 +28,7 @@
  * control for the signed-in check above, which must never mistake a stale
  * session for a live one.
  *
- * WHAT IS REAL: the production build and the tier's fake sync service, which
+ * WHAT IS REAL: the production build and the tier's fake core server, which
  * mints real invitations through its `__e2e__` seam, so every account here is
  * new and the shared fixture account is untouched.
  */

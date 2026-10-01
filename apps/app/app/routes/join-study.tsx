@@ -170,7 +170,7 @@ function BackToResearchLink() {
 /**
  * The ceremony, once the link parsed.
  *
- * Two gates come first, both client-side: an instance with no sync server has
+ * Two gates come first, both client-side: an instance with no core server has
  * no research lane to contribute to, and enrolment needs the owner-private
  * compartment, which needs an unlocked session. Neither is a server check —
  * this route has no loader.
@@ -257,7 +257,7 @@ function EnrolledCard({ pseudonym }: { pseudonym: string }) {
   );
 }
 
-/** An instance with no sync server has no research lane at all — there is nothing here to switch on. */
+/** An instance with no core server has no research lane at all, there is nothing here to switch on. */
 function NoSyncCard() {
   const { t } = useTranslation();
   return (

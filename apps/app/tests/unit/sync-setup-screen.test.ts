@@ -134,7 +134,7 @@ test('a failed provision releases the screen instead of trapping the user', () =
   let state: SyncSetupState = syncSetupReducer(INITIAL_SYNC_SETUP_STATE, { type: 'detailsSubmitted' });
   state = syncSetupReducer(state, {
     type: 'setupFailed',
-    message: 'the sync server could not be reached',
+    message: 'the core server could not be reached',
     field: null,
   });
 

@@ -176,7 +176,7 @@ function BackToSharingLink() {
 /**
  * The ceremony, once the link parsed.
  *
- * Two gates come first, both client-side: an instance with no sync server has
+ * Two gates come first, both client-side: an instance with no core server has
  * no share surface to grant on, and sharing needs the data key, which needs an
  * unlocked session. Neither is a server check — this route has no loader, and
  * `useSyncServerUrl` is the same hook every other sync surface funnels through.
@@ -262,7 +262,7 @@ function refusalMessage(
  *
  * Anybody who can write the link can write this string, so it is introduced as
  * something the link SAYS. The account number is shown beside it because that
- * is the only part of the link the sync server will check.
+ * is the only part of the link the core server will check.
  */
 function ClaimedIdentityNotice({ invite }: { invite: ClinicianInvite }) {
   const { t } = useTranslation();
@@ -299,7 +299,7 @@ function GrantedCard({ fingerprintDisplay }: { fingerprintDisplay: string }) {
 
 /**
  * The honest degradation: the ceremony passed and the key is pinned on this
- * device, but this sync server has sharing switched off, so no grant exists.
+ * device, but this core server has sharing switched off, so no grant exists.
  *
  * The verification is NOT thrown away — `runShareCeremony` pins before it
  * asks the server anything — so if the operator enables sharing, the grant is
@@ -316,7 +316,7 @@ function SharingOffCard() {
   );
 }
 
-/** An instance with no sync server has no share surface at all — there is nothing here to switch on. */
+/** An instance with no core server has no share surface at all, there is nothing here to switch on. */
 function NoSyncCard() {
   const { t } = useTranslation();
   return (
