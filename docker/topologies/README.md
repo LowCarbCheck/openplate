@@ -34,7 +34,7 @@ distinction, and for rootless notes on SELinux volume labels, ports below
 
 ## Self-host upgrade note
 
-The shape 2 file was `compose.core.yml`. It is `compose.core.yml` now, and the
+The shape 2 file was `compose.sync.yml`. It is `compose.core.yml` now, and the
 compose service that runs openplate-core is called `core`, not `sync`. Your data
 does not move. The project name (`openplate-with-sync`) and the volume (`pg-data`)
 are unchanged, so Compose finds the volume your database already lives in. Shape 4
