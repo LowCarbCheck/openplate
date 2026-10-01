@@ -15,6 +15,7 @@
 #   make check            the drift check, then every app's full pre-push gate
 #   make hooks            point core.hooksPath at .githooks (needs no node)
 #   make drift            the node and pnpm drift check, scripts/check-env-drift.sh
+#   make check-pg18       release check: the self-host stack starts on Postgres 18, scripts/check-postgres-18.sh
 
 APPS := app core inference website
 NODE_MAJOR := 24
@@ -68,7 +69,7 @@ ifneq ($(app_goals),)
   endif
 endif
 
-.PHONY: help hooks install test dev check drift
+.PHONY: help hooks install test dev check drift check-pg18
 .PHONY: $(APPS:%=install-%) $(APPS:%=test-%) $(APPS:%=check-%)
 
 help:
@@ -78,6 +79,7 @@ help:
 	@echo "make check            run the drift check, then every app's full pre-push gate"
 	@echo "make hooks            turn the pre-push hooks on"
 	@echo "make drift            check that node and pnpm agree across the repository"
+	@echo "make check-pg18       release check: boot core on a throwaway Postgres 18 (builds the image, needs docker)"
 
 hooks:
 	git config core.hooksPath .githooks
@@ -121,3 +123,9 @@ drift:
 	else \
 	  echo "✖ make drift: scripts/check-env-drift.sh is not in this tree"; exit 1; \
 	fi
+
+# A release check, not part of `make check` and not in any pre-push hook: it
+# builds the core image and takes a few minutes. The gates test on Postgres 17,
+# the version production runs; this proves the self-host files start on 18.
+check-pg18:
+	scripts/check-postgres-18.sh
