@@ -2221,9 +2221,9 @@
   "1914b6dbd13d29f2": {
     "en": "Your macros by weight",
     "path": "common:trends.split.titleGrams",
-    "model": "google/gemini-3.8-flash",
+    "model": "hand-written",
     "at": "2026-10-01",
-    "tr": "Ağırlıklarına göre makroların"
+    "tr": "Gram cinsinden makroların"
   },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",

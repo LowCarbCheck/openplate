@@ -3065,7 +3065,7 @@
       "title": "Kalorilerinin kaynağı",
       "note": "Protein, karbonhidrat ve yağdan hesaplanır, bu yüzden toplam kalori miktarından biraz farklı olabilir.",
       "noteGrams": "Her bir pay, ilgili makronun üçü arasındaki gram cinsinden ağırlığıdır.",
-      "titleGrams": "Ağırlıklarına göre makroların",
+      "titleGrams": "Gram cinsinden makroların",
       "average": "Ortalama",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

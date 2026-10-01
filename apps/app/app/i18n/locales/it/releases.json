@@ -2,8 +2,8 @@
   "v0_61_0": {
     "date": "2026-10-01",
     "changed": {
-      "01": "La documentazione e i testi chiamano il server core, non sync.",
-      "02": "L'indirizzo del server core ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva.",
+      "01": "La documentazione e i testi chiamano il server centrale, non sync.",
+      "02": "L'indirizzo del server centrale ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva.",
       "03": "Le ripartizioni dei macronutrienti mostrano la quota calorica come impostazione predefinita.",
       "04": "I file per il Self-hosting chiamano il servizio core ed eseguono Postgres 18."
     }

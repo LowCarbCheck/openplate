@@ -133,15 +133,15 @@ export const GLOSSARY: readonly GlossaryTerm[] = [
   // proxies the AI scan, mails and syncs, so "sync" named a fifth of its job). All five answers are
   // wordsmith's, asked on 2026-10-01 with a one-line note. Italian was not stable over six runs:
   // "server core" twice, "server centrale" twice, "server principale" once, and once the English
-  // came back unchanged. The loanword order was kept because German keeps "Core" as a name too and
-  // the product is `openplate-core`. A person may still prefer "server centrale", as French and
-  // Spanish say "central".
+  // came back unchanged. A person chose "server centrale" on 2026-10-01: it matches French
+  // "serveur central" and Spanish "servidor central", and the Italian docs reserve "Core" for
+  // product editions. German keeps "Core-Server" because it keeps "Core" as a name.
   {
     en: 'core server',
     say: {
       de: 'Core-Server',
       fr: 'serveur central',
-      it: 'server core',
+      it: 'server centrale',
       es: 'servidor central',
       tr: 'çekirdek sunucu',
     },

@@ -2902,7 +2902,7 @@
     "path": "common:sync.status.error.offline",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "Impossibile raggiungere il server core. Il tuo diario è al sicuro su questo dispositivo e si aggiornerà più tardi."
+    "it": "Impossibile raggiungere il server centrale. Il tuo diario è al sicuro su questo dispositivo e si aggiornerà più tardi."
   },
   "210c31833757ece7": {
     "en": "German legal headings fit a phone.",
@@ -10455,7 +10455,7 @@
     "path": "common:connectClinician.sharingOff.body",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "La condivisione non è attiva sul tuo server core. La chiave che hai verificato resta salvata su questo dispositivo, quindi quando verrà attivata potrai condividere senza ripetere la verifica."
+    "it": "La condivisione non è attiva sul tuo server centrale. La chiave che hai verificato resta salvata su questo dispositivo, quindi quando verrà attivata potrai condividere senza ripetere la verifica."
   },
   "7f0b191c1f0e9d66": {
     "en": "About you",
@@ -12450,7 +12450,7 @@
     "path": "common:sharing.unavailable",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "Questo server core non offre la condivisione. Qui non è attivo nulla e non è stato inviato niente."
+    "it": "Questo server centrale non offre la condivisione. Qui non è attivo nulla e non è stato inviato niente."
   },
   "960ca58d2ae88982": {
     "en": "Daily calorie target",
@@ -15292,7 +15292,7 @@
     "path": "common:research.unavailable",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "Questo server core non ha una corsia di ricerca. Qui non è possibile inviare né revocare nulla."
+    "it": "Questo server centrale non ha una corsia di ricerca. Qui non è possibile inviare né revocare nulla."
   },
   "b78e849c3e6b314a": {
     "en": "Not yet",
@@ -16678,7 +16678,7 @@
     "path": "common:sync.status.error.incompatible",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "Questa app e il server core non usano ancora la stessa versione, quindi la sincronizzazione è volutamente in pausa."
+    "it": "Questa app e il server centrale non usano ancora la stessa versione, quindi la sincronizzazione è volutamente in pausa."
   },
   "c9e7ca6251839afc": {
     "en": "Your fasts",
@@ -18232,7 +18232,7 @@
     "path": "releases:v0_61_0.changed.02",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "L'indirizzo del server core ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva."
+    "it": "L'indirizzo del server centrale ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva."
   },
   "dc7bce3f3aa405aa": {
     "en": "Self-hosted / local endpoint",
@@ -18442,7 +18442,7 @@
     "path": "releases:v0_61_0.changed.01",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
-    "it": "La documentazione e i testi chiamano il server core, non sync."
+    "it": "La documentazione e i testi chiamano il server centrale, non sync."
   },
   "df7074a0ab9afba2": {
     "en": "Edit entry",

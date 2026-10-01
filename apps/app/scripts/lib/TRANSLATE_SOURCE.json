@@ -1,7 +1,7 @@
 {
   "repo": "LowCarbCheck/openplate",
   "path": "apps/website",
-  "commit": "4a8de8ecf256b5aae82d73e2796f5035ae035897",
+  "commit": "89238d16d831d92d02fc5e1f73e5e367aaa4d19d",
   "producedBy": "openplate, scripts/sync-translate-lib.ts",
   "rewrites": [
     {
@@ -24,8 +24,8 @@
   "files": {
     "scripts/lib/translate.ts": {
       "from": "scripts/lib/translate.ts",
-      "upstream": "b44cfd226947c43f10f1dbbd0cbf549224f9d9fbeb0bd1b9155e1aed36e1859c",
-      "vendored": "8d06b53b7422f4579cb6855b7317a87b04514be9c717cb7675dbca6026703960"
+      "upstream": "a68e6079eeb63ea3c8fac73451442971682660b17c4c4458d7bc4785a78314f3",
+      "vendored": "cb9ce320f68790835f9c50e7a6815ad26ec41303fc2e15fba2790a93b8b7134d"
     },
     "scripts/lib/translate-ui.ts": {
       "from": "scripts/lib/translate-ui.ts",
