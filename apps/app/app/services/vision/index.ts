@@ -107,6 +107,7 @@ export function createVisionProvider(options: CreateVisionProviderOptions): Visi
         // already knows a specific `(provider, modelId)`. A custom model id
         // has no entry, so nothing extra is sent to a self-hosted endpoint.
         disableReasoning: findCatalogModel(options.provider, options.model)?.disableReasoning === true,
+        sendAppLanguage: definition.sendsAppLanguage,
       });
   }
 }

@@ -96,7 +96,22 @@ export interface OpenAiCompatibleProviderOptions {
    * `buildOpenAiCompatibleRequestBody`.
    */
   disableReasoning?: boolean;
+  /**
+   * Sends the task's app language as `Accept-Language`, set from the
+   * registry entry's `sendsAppLanguage` flag by `./index`, never guessed here.
+   * See {@link APP_LANGUAGE_HEADER}.
+   */
+  sendAppLanguage?: boolean;
 }
+
+/**
+ * The request header that names the app language to a self-hosted
+ * openplate-inference service, which translates food names into it, one
+ * language per request. A plain language code is a CORS-safelisted value, so
+ * it adds no preflight. Only the provider whose registry entry sets
+ * `sendsAppLanguage` sends it; the Anthropic adapter never does.
+ */
+export const APP_LANGUAGE_HEADER = 'Accept-Language';
 
 /** One part of a multimodal user message — text, or the plate photo as a data URL. */
 type ChatMessageContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
@@ -288,6 +303,12 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       // THE SAME ID ON EVERY SEND of this intake, the retries below included:
       // `sendRequest` is the one place a request is built.
       if (isBearerProvider(credential)) headers.set(INTAKE_ID_HEADER, credential.intakeId);
+      // The browser sends its OWN language list by default; this replaces it
+      // with the one language the app is shown in, the language the service
+      // must answer in. A task with no language keeps the browser's.
+      if (options.sendAppLanguage === true && task.language !== undefined) {
+        headers.set(APP_LANGUAGE_HEADER, task.language);
+      }
       try {
         return await fetch(url, {
           method: 'POST',

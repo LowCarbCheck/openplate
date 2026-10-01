@@ -72,6 +72,8 @@ const describeCopySchema = z.object({
     dictateHint: z.string(),
     needsProvider: z.string(),
     connect: z.string(),
+    /** What the composer says when the connected server cannot read these words. */
+    unsupported: z.object({ meal: z.string(), pantry: z.string(), choose: z.string() }),
   }),
   /** The sentence a managed instance shows instead, shared with `/add`. */
   aiIntake: z.object({
@@ -105,6 +107,7 @@ const noop = () => undefined;
 function renderComposer({
   text = '',
   aiConnection = 'connected',
+  isTaskSupported = true,
   door = { kind: 'byok' },
   speakArmed = false,
   consumer = '/add/photo',
@@ -112,6 +115,7 @@ function renderComposer({
 }: {
   text?: string;
   aiConnection?: AiConnection;
+  isTaskSupported?: boolean;
   door?: AiIntakeDoor;
   speakArmed?: boolean;
   consumer?: IntakeConsumer;
@@ -122,6 +126,7 @@ function renderComposer({
     onTextChange: noop,
     onSend: noop,
     aiConnection,
+    isTaskSupported,
     door,
     speakArmed,
     consumer,
@@ -554,5 +559,59 @@ describe('the composer the pantry sends people to', () => {
 
     assert.notEqual(doorFormIndex(markup), -1);
     assert.ok(markup.includes(DOOR_COPY.door));
+  });
+});
+
+/** The classes of the reserved notice slot, or `''` when it is not in the markup. */
+const slotOf = (markup: string): string => /<div data-slot="describe-notice" class="([^"]*)"/u.exec(markup)?.[1] ?? '';
+
+describe("a connected server that cannot run this screen's task", () => {
+  const WORDS = '2 fried eggs';
+
+  it('says so in the slot above the box, and turns Send off even with words in it', () => {
+    const markup = renderComposer({ text: WORDS, isTaskSupported: false });
+    assert.ok(markup.includes(COPY.unsupported.meal), 'the sentence that names the limit is not drawn');
+    assert.ok(markup.includes(COPY.unsupported.choose), 'the way to another provider is not drawn');
+    assert.ok(isSendDisabled(markup), 'Send is live on a server that cannot read the words');
+    // The way out is a link to the one page that can fix it.
+    assert.match(markup, /<a[^>]*href="\/settings\/ai\?next=describe"[^>]*>/u);
+  });
+
+  it('CONTROL: the same words on a server that runs the task show no notice and a live Send', () => {
+    const markup = renderComposer({ text: WORDS, isTaskSupported: true });
+    assert.ok(!markup.includes(COPY.unsupported.meal), 'the notice is drawn for a server that can do it');
+    assert.ok(!markup.includes(COPY.unsupported.choose));
+    assert.ok(!isSendDisabled(markup), 'Send is off for a server that can do it');
+  });
+
+  it('draws the notice INSIDE one reserved box, and that box is there without it', () => {
+    const withNotice = slotOf(renderComposer({ text: WORDS, isTaskSupported: false }));
+    const without = slotOf(renderComposer({ text: WORDS, isTaskSupported: true }));
+    assert.match(withNotice, /\bmin-h-12\b/, 'the slot holds no height for the notice');
+    // Same classes, so the box is the same height whether or not a notice is in it.
+    assert.equal(withNotice, without, 'the slot differs between the two states');
+    // The control that makes the reading mean something: the slot is found at all.
+    assert.notEqual(without, '', 'the slot is not in the markup');
+  });
+
+  it('names the pantry sentence, not the meal one, for the pantry composer', () => {
+    const markup = renderComposer({ text: WORDS, isTaskSupported: false, consumer: '/pantry' });
+    assert.ok(markup.includes(COPY.unsupported.pantry));
+    assert.ok(!markup.includes(COPY.unsupported.meal), 'the pantry composer names the meal sentence');
+  });
+
+  it('says nothing while the connection is not there, where the no-AI notice already speaks', () => {
+    for (const aiConnection of ['unknown', 'absent'] as const) {
+      const markup = renderComposer({ text: WORDS, aiConnection, isTaskSupported: false });
+      assert.ok(!markup.includes(COPY.unsupported.meal), `a limit is named with the connection ${aiConnection}`);
+    }
+  });
+
+  it('gates the Enter key as well, in the route', () => {
+    assert.match(
+      SOURCE,
+      /if \(!isTaskSupported\) return;/u,
+      'Enter can still send to a server that cannot read the words',
+    );
   });
 });

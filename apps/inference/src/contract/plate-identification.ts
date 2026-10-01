@@ -106,12 +106,18 @@ export const FoodFlagsSchema = z.object({
   mayContain: z.array(z.enum(ALLERGENS)),
 });
 
+export type FoodFlags = z.infer<typeof FoodFlagsSchema>;
+export type Allergen = (typeof ALLERGENS)[number];
+export type PregnancyCategory = (typeof PREGNANCY_CATEGORIES)[number];
+
 /**
  * openplate's app languages (`SUPPORTED_LANGUAGES` in
  * `app/i18n/language-prefs.ts`), transcribed. The parity test compares the two
  * lists, so a seventh language there fails here until it is added.
  */
 export const APP_LANGUAGES = ['en', 'de', 'fr', 'it', 'es', 'tr'] as const;
+
+export type AppLanguage = (typeof APP_LANGUAGES)[number];
 
 /**
  * openplate's `RawFoodTranslationsSchema` (M251 spec 02): the same food named
@@ -158,9 +164,13 @@ export const BaseIdentifiedFoodSchema = z.object({
    * `flags` (openplate M219) and `translations` (openplate M251) are REQUIRED
    * in the client's wire schema, which is what a cloud provider is asked for.
    * They are `.optional()` HERE, the one departure from the shape rules above,
-   * because this service's pipeline does not produce either yet, and the
-   * client parses both leniently: an answer without them still opens the
-   * review screen, with no flags and the name as the only translation. The
+   * because this service produces `translations` only when a request names a
+   * language other than English (`pipeline/translate-names.ts`, and then with
+   * two keys, not six, see `IdentifiedFoodSchema`) and produces `flags` only
+   * for a food its name lookup recognises (`pipeline/food-flags.ts`). The
+   * client parses both leniently: an answer
+   * without them still opens the review screen, with no flags and the name as
+   * the only translation. The
    * derived JSON Schema still lists them as required (`applyStrictModeRules`
    * makes every property required), so a model this service constrains with
    * it is asked for both.
@@ -186,6 +196,28 @@ export const BaseIdentifiedFoodSchema = z.object({
 export const IdentifiedFoodSchema = BaseIdentifiedFoodSchema.extend({
   provenance: z.enum(['corpus', 'model']).optional(),
   attribution: z.string().nullable().optional(),
+  /**
+   * How far to trust this item's `flags`. Present, always `'partial'`, exactly
+   * when `flags` is present: the service ran a lookup on the food name that
+   * can list what a food CONTAINS but can never rule an allergen out. So a
+   * client must show "not fully checked", never "clear", even when a list is
+   * empty. Absent together with `flags` when the lookup recognised nothing,
+   * which means "not assessed", never "safe". Service-side only, like
+   * `provenance`: it is not in the Base shape, so the parity test and the
+   * derived wire JSON Schema never see it.
+   */
+  flagsCoverage: z.enum(['partial']).optional(),
+  /**
+   * The food's name in English and in the ONE language the request asked for
+   * (`Accept-Language`), so two keys, never six. Partial on purpose: the Base
+   * shape demands every app language, which is what a cloud provider is asked
+   * for, and the client reads this field leniently (openplate's
+   * `LenientFoodTranslationsSchema`). Absent when the request asked for
+   * English or for nothing, and absent on every food when the translation call
+   * failed, see `pipeline/translate-names.ts`. Overridden here, not in the Base
+   * shape, so the parity test and the derived wire JSON Schema never see it.
+   */
+  translations: FoodTranslationsSchema.partial().optional(),
 });
 
 /** The base plate shape — exactly what openplate validates. Used by the parity test. */

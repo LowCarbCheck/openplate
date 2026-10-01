@@ -365,6 +365,10 @@
       "soybeans": "Kann Sojabohnen enthalten",
       "sulphites": "Kann Sulfite enthalten"
     },
+    "notChecked": {
+      "all": "Dieser Scan hat weder Allergien noch Schwangerschaft geprüft. Lies die Etiketten selbst.",
+      "partial": "Die Prüfung auf Allergien und Schwangerschaft ist bei diesem Scan unvollständig. Lies die Etiketten selbst."
+    },
     "pregnancy": {
       "alcohol": "Enthält Alkohol, am besten meiden",
       "caffeine": "Koffein, zählt zu den 200 mg pro Tag",
@@ -536,6 +540,11 @@
     "pantry": {
       "title": "Was hast du zu Hause?",
       "placeholder": "ein halber Kohl, sechs Eier, eine Packung Feta, 500 g Reis"
+    },
+    "unsupported": {
+      "meal": "Dieser KI-Server verarbeitet keine getippten Mahlzeiten. Nutze stattdessen oben die Suche, die ohne KI auskommt.",
+      "pantry": "Dieser KI-Server verarbeitet keine getippten Listen für die Vorratskammer.",
+      "choose": "Anderen Anbieter wählen"
     }
   },
   "diary": {
@@ -2425,6 +2434,22 @@
     "baseUrl": {
       "help": "Auf der gehosteten Instanz ist nur ein Endpunkt unter localhost/127.0.0.1 erreichbar: Die Content Security Policy blockiert absichtlich andere Hosts, um deinen Schlüssel zu schützen, falls diese Seite jemals kompromittiert werden sollte. Selbst gehostet? Setze CSP_CONNECT_EXTRA, um deinen eigenen Remote-Endpunkt zuzulassen (siehe README). Ein direkter Zugriff auf api.openai.com ist so oder so nicht möglich. Verwende OpenRouter für OpenAI-Modelle."
     },
+    "capabilities": {
+      "lead": "Dieser Server hat Einschränkungen.",
+      "tasks": "Dieser Server unterstützt {{tasks, list}} nicht.",
+      "task": {
+        "plateImage": "Tellerfotos",
+        "describe": "getippte Mahlzeiten",
+        "pantryImage": "Fotos der Vorratskammer",
+        "pantryText": "getippte Listen der Vorratskammer",
+        "recipes": "Rezepte"
+      },
+      "flagsPartial": "Die Prüfung auf Allergien und Schwangerschaft ist unvollständig.",
+      "flagsNone": "Er führt keine Prüfungen auf Allergien oder Schwangerschaft durch.",
+      "translationsRequestLanguage": "Er übersetzt Lebensmittelbezeichnungen pro Scan in eine Sprache.",
+      "translationsNone": "Er übersetzt Lebensmittelbezeichnungen nicht.",
+      "labelsNone": "Er liest keine Nährwerttabellen."
+    },
     "connectCard": {
       "description": "Teller-Fotos gehen zum Auslesen direkt an deinen gewählten Anbieter. openplate speichert eine Kopie nur auf diesem Gerät, damit du sie später ansehen kannst, niemals auf unserem Server. Verwalte oder lösche Kopien jederzeit unter Daten & Backup in den Einstellungen. Dein Schlüssel verlässt dieses Gerät nie, außer an den unten gewählten Anbieter.",
       "title": "Verbinde deinen KI-Anbieter"
@@ -3505,6 +3530,12 @@
     "plansNotSwitchedOn": "KI-Einträge sind für dieses Konto noch nicht aktiviert. Wähle einen Tarif, um sie freizuschalten. Die Suche in der Lebensmittel-Datenbank funktioniert auch ohne sie.",
     "plansLink": "Tarife ansehen"
   },
+  "intakeUnsupported": {
+    "title": "Dieser KI-Server kann das nicht",
+    "pantry": "Der verbundene KI-Server liest die Vorratskammer weder aus Fotos noch aus Text aus.",
+    "recipes": "Der verbundene KI-Server schlägt keine Rezepte vor.",
+    "choose": "Anderen Anbieter wählen"
+  },
   "plan": {
     "title": "Dein Tarif",
     "loading": "Dein Tarif wird geladen.",
@@ -3611,7 +3642,11 @@
   "pantry": {
     "title": "Vorratskammer",
     "lead": "Was du zu Hause hast. Fotografiere ein Regal oder schreibe die Liste.",
+    "leadPhoto": "Was du zu Hause hast. Fotografiere ein Regal.",
+    "leadWords": "Was du zu Hause hast. Schreibe die Liste.",
     "empty": "Hier ist noch nichts. Fotografiere deinen Kühlschrank oder schreibe auf, was du hast.",
+    "emptyPhoto": "Noch nichts vorhanden. Fotografiere deinen Kühlschrank.",
+    "emptyWords": "Noch nichts vorhanden. Schreibe auf, was du da hast.",
     "composerLabel": "Was hast du da?",
     "reading": "Einträge werden gelesen...",
     "door": {

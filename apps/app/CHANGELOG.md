@@ -11,6 +11,19 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The app shows when a self-hosted AI server cannot perform a task.** An openplate-inference server now reports its capabilities. If it cannot parse typed meals, pantry lists, or recipes, the Describe, Pantry, and Recipes screens state this before you tap. Settings, AI shows a summary of these limits. Cloud providers and older servers do not change: a missing report means full support.
+- **Scan reviews warn when allergy and pregnancy checks are incomplete.** If your profile lists an allergy or a pregnancy, and a scan returns no flags or partial flags from a self-hosted server, a message tells you to read the labels. A fully checked scan shows no warning. The layout reserves space for this box on the first paint to prevent shifting.
+
+### Changed
+
+- **Self-hosted AI servers receive your app language.** The OpenAI-compatible provider now sends an `Accept-Language` header. Servers that translate food names can then reply in your language. No other provider receives this header.
+
+### Fixed
+
+- **Scans unchecked for allergens no longer show as clear.** When a provider sent no flags for a food, the app read that as three empty lists, which meant "checked, nothing found". It now marks the food as not assessed. A self-hosted server that skips checks, or a model that ignores the field, will not show a false all-clear.
+
 ## [0.58.1] - 2026-10-01
 
 ### Fixed

@@ -127,3 +127,32 @@ export function NoAiIntakeNotice({ door, byokMessage, byokLinkLabel, byokHref }:
     </p>
   );
 }
+
+/**
+ * WHAT A SCREEN SAYS WHEN THE CONNECTED SERVER CANNOT RUN THIS SCREEN'S TASK.
+ *
+ * A different fact from `NoAiIntakeNotice`: there IS an AI, and it has said, in
+ * its own `/models`, that it does not do this. Same size and the same link
+ * look as the notice above, so the two can share one reserved slot, and the
+ * same shape: the sentence is the screen's own, the link goes to the one page
+ * that can fix it.
+ */
+export function TaskUnsupportedNotice({
+  message,
+  linkLabel,
+  href,
+}: {
+  /** The screen's own sentence, already translated. */
+  message: string;
+  linkLabel: string;
+  href: string;
+}) {
+  return (
+    <p className={NOTICE_CLASS}>
+      {message}{' '}
+      <Link to={href} className={LINK_CLASS}>
+        {linkLabel}
+      </Link>
+    </p>
+  );
+}

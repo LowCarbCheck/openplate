@@ -351,6 +351,11 @@ const englishCatalogSchema = catalogSchema
       /** The add screens' method switcher (M255/01). */
       methods: z.object({ label: z.string(), search: z.string(), describe: z.string(), photo: z.string() }),
     }),
+    /** The allergen chip, and the line a scan owes when its foods were not fully checked (M219/03 follow-up). */
+    cautions: z.object({
+      contains: z.object({ milk: z.string() }),
+      notChecked: z.object({ all: z.string(), partial: z.string() }),
+    }),
   })
   // An intersection rather than an `extend`, because the keys sit three levels
   // inside `settings`, and zod merges the two parses key by key.

@@ -40,14 +40,25 @@
 import { Agent, fetch as undiciFetch, type Response as UndiciResponse } from 'undici';
 import { DEFAULT_RUNTIME_COMPLETION_TIMEOUT_MS } from '../config.js';
 import { upstreamFailure } from '../errors.js';
+import { z } from 'zod';
+import type { AppLanguage } from '../contract/plate-identification.js';
 import {
   TERSE_MAX_TOKENS,
   TERSE_RESPONSE_FORMAT,
   TERSE_TEMPERATURE,
   TerseCandidateSchema,
   buildTerseMessages,
+  type ChatMessage,
   type TerseCandidate,
 } from './terse-contract.js';
+import {
+  TRANSLATE_TEMPERATURE,
+  buildTranslateMessages,
+  translateMaxTokens,
+  translateResponseFormat,
+  type JsonSchemaResponseFormat,
+  type NameTranslator,
+} from './translate-names.js';
 
 const HEALTH_TIMEOUT_MS = 2000;
 
@@ -168,9 +179,16 @@ export interface RuntimeCompletion {
   latencyMs: number;
 }
 
-export interface ModelRuntime {
+export interface ModelRuntime extends NameTranslator {
   /** One grammar-constrained vision call. Throws `ApiError` (502) on any runtime failure. */
   identify(imageDataUri: string): Promise<RuntimeCompletion>;
+  /**
+   * One grammar-constrained, text-only call to the same runtime and model: the
+   * names in `language`, same order, same count. Throws `ApiError` (502) on any
+   * runtime failure, and rejects when `options.signal` aborts. The caller,
+   * `pipeline/translate-names.ts`, checks the count and fails open.
+   */
+  translateNames(names: string[], language: AppLanguage, options?: { signal?: AbortSignal }): Promise<string[]>;
   /** True when the runtime reports itself ready to serve. Never throws. */
   isReady(): Promise<boolean>;
 }
@@ -202,6 +220,42 @@ export function parseTerseContent(content: string): TerseCandidate {
     );
   }
   return result.data;
+}
+
+/** What a translation call must answer with. Its length is checked by the caller. */
+const TranslatedNamesSchema = z.array(z.string());
+
+export function parseTranslatedNames(content: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripCodeFence(content));
+  } catch (error) {
+    throw upstreamFailure('The model runtime returned a translation that was not valid JSON.', error);
+  }
+  const result = TranslatedNamesSchema.safeParse(parsed);
+  if (!result.success) {
+    // The Zod error is NOT attached as the cause: it can quote the values it
+    // rejected, and those are food names.
+    throw upstreamFailure('The model runtime returned a translation that was not a JSON array of strings.');
+  }
+  return result.data;
+}
+
+/** The request body of one chat completion, as this client sends it. */
+interface CompletionRequestBody {
+  model: string;
+  messages: ChatMessage[];
+  temperature: number;
+  max_tokens: number;
+  response_format: JsonSchemaResponseFormat;
+}
+
+/** The non-empty `content` of one completion, with its usage and its time. */
+interface CompletionContent {
+  content: string;
+  usage: RuntimeUsage;
+  /** Time spent inside the runtime call, milliseconds. */
+  latencyMs: number;
 }
 
 export interface CreateModelRuntimeOptions {
@@ -310,102 +364,146 @@ export function createModelRuntime(options: CreateModelRuntimeOptions): ModelRun
     }
   }
 
+  /**
+   * POSTs one completion and returns its non-empty `content`. Both calls go
+   * through here, so the timeout attribution, the `finish_reason: length` trap
+   * and the empty-completion check below cannot drift between them.
+   *
+   * Only `content` is read. A runtime that thinks puts its reasoning in a
+   * separate field (llama.cpp's `reasoning_content`), which is ignored; a
+   * reasoning budget that swallows the answer leaves `content` empty and lands
+   * on the empty-completion failure.
+   *
+   * `signal` is optional and only ever ADDS a bound on top of the dispatcher's.
+   */
+  async function postCompletion(body: CompletionRequestBody, signal?: AbortSignal): Promise<CompletionContent> {
+    const startedAt = performance.now();
+    let response: UndiciResponse;
+    try {
+      response = await undiciFetch(completionsUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader },
+        body: JSON.stringify(body),
+        dispatcher: completionDispatcher,
+        signal: signal ?? null,
+      });
+    } catch (error) {
+      // Network-level failure. The error is not echoed to the client: it can
+      // name internal addresses, and the caller can do nothing with it.
+      //
+      // A timeout gets its OWN message. Folding it into "could not be reached"
+      // makes a ten-minute mute upstream indistinguishable from an instant
+      // connection refusal, same words, opposite remedies.
+      if (isCompletionTimeout(error)) {
+        throw upstreamFailure(
+          completionTimeoutMessage({
+            lead: MUTE_UPSTREAM_LEAD,
+            timeoutMs: completionTimeoutMs,
+          }),
+          error,
+        );
+      }
+      throw upstreamFailure('The model runtime could not be reached.', error);
+    }
+
+    if (!response.ok) {
+      // The runtime's own error body is NOT forwarded: on some runtimes it
+      // echoes the request back, image and all.
+      throw upstreamFailure(`The model runtime answered ${response.status}.`);
+    }
+
+    let envelope: ChatCompletionEnvelope;
+    try {
+      // SAFETY: nothing below trusts this shape, every field of
+      // `ChatCompletionEnvelope` is optional and every read is optional-chained
+      // and guarded, so a runtime that answers with a different body lands on
+      // the empty-completion failure rather than on a property of `undefined`.
+      envelope = (await response.json()) as ChatCompletionEnvelope;
+    } catch (error) {
+      // `bodyTimeout` LANDS HERE, not in the catch above: `fetch()` already
+      // resolved 200 by the time the body stalls, and undici surfaces the
+      // stall as `TypeError: terminated`. Without this check that reads as
+      // "the runtime sent a malformed body": a confident, wrong diagnosis
+      // that names no knob, which is the exact failure this bound exists to
+      // stop being unattributable.
+      if (isCompletionTimeout(error)) {
+        throw upstreamFailure(
+          completionTimeoutMessage({
+            lead: STALLED_MID_BODY_LEAD,
+            timeoutMs: completionTimeoutMs,
+          }),
+          error,
+        );
+      }
+      throw upstreamFailure('The model runtime returned a body that was not JSON.', error);
+    }
+
+    const latencyMs = performance.now() - startedAt;
+    const choice = envelope.choices?.[0];
+
+    // The benchmarked trap: llama.cpp answers HTTP 200 with a body cut
+    // mid-JSON when `max_tokens` bites. Named explicitly so the failure reads
+    // as "raise the cap", not "the model is broken".
+    if (choice?.finish_reason === 'length') {
+      throw upstreamFailure(
+        `The model runtime truncated its answer at the ${body.max_tokens}-token cap (finish_reason: length).`,
+      );
+    }
+
+    const content = choice?.message?.content;
+    // oxlint-disable-next-line anti-slop/no-runtime-typeof -- the envelope is asserted, not parsed: a non-string `content` must land on the empty-completion failure below, not on a TypeError from `.trim()`
+    if (typeof content !== 'string' || content.trim().length === 0) {
+      throw upstreamFailure('The model runtime returned an empty completion.');
+    }
+
+    return {
+      content,
+      usage: {
+        promptTokens: envelope.usage?.prompt_tokens ?? 0,
+        completionTokens: envelope.usage?.completion_tokens ?? 0,
+      },
+      latencyMs,
+    };
+  }
+
   return {
     async identify(imageDataUri: string): Promise<RuntimeCompletion> {
-      const body = {
+      const completion = await postCompletion({
         model: options.modelId,
         messages: buildTerseMessages(imageDataUri),
         temperature: TERSE_TEMPERATURE,
         max_tokens: TERSE_MAX_TOKENS,
         response_format: TERSE_RESPONSE_FORMAT,
-      };
-
-      const startedAt = performance.now();
-      let response: UndiciResponse;
-      try {
-        response = await undiciFetch(completionsUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeader },
-          body: JSON.stringify(body),
-          dispatcher: completionDispatcher,
-        });
-      } catch (error) {
-        // Network-level failure. The error is not echoed to the client: it can
-        // name internal addresses, and the caller can do nothing with it.
-        //
-        // A timeout gets its OWN message. Folding it into "could not be reached"
-        // makes a ten-minute mute upstream indistinguishable from an instant
-        // connection refusal — same words, opposite remedies.
-        if (isCompletionTimeout(error)) {
-          throw upstreamFailure(
-            completionTimeoutMessage({
-              lead: MUTE_UPSTREAM_LEAD,
-              timeoutMs: completionTimeoutMs,
-            }),
-            error,
-          );
-        }
-        throw upstreamFailure('The model runtime could not be reached.', error);
-      }
-
-      if (!response.ok) {
-        // The runtime's own error body is NOT forwarded — on some runtimes it
-        // echoes the request back, image and all.
-        throw upstreamFailure(`The model runtime answered ${response.status}.`);
-      }
-
-      let envelope: ChatCompletionEnvelope;
-      try {
-        // SAFETY: nothing below trusts this shape — every field of
-        // `ChatCompletionEnvelope` is optional and every read is optional-chained
-        // and guarded, so a runtime that answers with a different body lands on
-        // the empty-completion failure rather than on a property of `undefined`.
-        envelope = (await response.json()) as ChatCompletionEnvelope;
-      } catch (error) {
-        // `bodyTimeout` LANDS HERE, not in the catch above — `fetch()` already
-        // resolved 200 by the time the body stalls, and undici surfaces the
-        // stall as `TypeError: terminated`. Without this check that reads as
-        // "the runtime sent a malformed body": a confident, wrong diagnosis
-        // that names no knob, which is the exact failure this bound exists to
-        // stop being unattributable.
-        if (isCompletionTimeout(error)) {
-          throw upstreamFailure(
-            completionTimeoutMessage({
-              lead: STALLED_MID_BODY_LEAD,
-              timeoutMs: completionTimeoutMs,
-            }),
-            error,
-          );
-        }
-        throw upstreamFailure('The model runtime returned a body that was not JSON.', error);
-      }
-
-      const latencyMs = performance.now() - startedAt;
-      const choice = envelope.choices?.[0];
-
-      // The benchmarked trap: llama.cpp answers HTTP 200 with a body cut
-      // mid-JSON when `max_tokens` bites. Named explicitly so the failure reads
-      // as "raise the cap", not "the model is broken".
-      if (choice?.finish_reason === 'length') {
-        throw upstreamFailure(
-          `The model runtime truncated its answer at the ${TERSE_MAX_TOKENS}-token cap (finish_reason: length).`,
-        );
-      }
-
-      const content = choice?.message?.content;
-      // oxlint-disable-next-line anti-slop/no-runtime-typeof -- the envelope is asserted, not parsed: a non-string `content` must land on the empty-completion failure below, not on a TypeError from `.trim()`
-      if (typeof content !== 'string' || content.trim().length === 0) {
-        throw upstreamFailure('The model runtime returned an empty completion.');
-      }
-
+      });
       return {
-        candidate: parseTerseContent(content),
-        usage: {
-          promptTokens: envelope.usage?.prompt_tokens ?? 0,
-          completionTokens: envelope.usage?.completion_tokens ?? 0,
-        },
-        latencyMs,
+        candidate: parseTerseContent(completion.content),
+        usage: completion.usage,
+        latencyMs: completion.latencyMs,
       };
+    },
+
+    /**
+     * Text only, no image: the same runtime and model id as `identify`, so a
+     * self-hoster runs nothing new. The grammar fixes the array length; the
+     * caller still checks it, because a runtime that silently drops
+     * `response_format` would not.
+     */
+    async translateNames(
+      names: string[],
+      language: AppLanguage,
+      callOptions?: { signal?: AbortSignal },
+    ): Promise<string[]> {
+      const completion = await postCompletion(
+        {
+          model: options.modelId,
+          messages: buildTranslateMessages({ names, language }),
+          temperature: TRANSLATE_TEMPERATURE,
+          max_tokens: translateMaxTokens(names.length),
+          response_format: translateResponseFormat(names.length),
+        },
+        callOptions?.signal,
+      );
+      return parseTranslatedNames(completion.content);
     },
 
     /**

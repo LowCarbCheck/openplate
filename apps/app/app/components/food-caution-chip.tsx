@@ -82,3 +82,38 @@ export function FoodCautionChips({ cautions, className }: { cautions: readonly F
     </div>
   );
 }
+
+/** The `data-slot` of the not-checked line's box, so a test can find the box whether or not the line is in it. */
+export const CAUTIONS_NOT_CHECKED_SLOT = 'cautions-not-checked';
+
+/** The catalog key each answer of `notCheckedNote` reads its sentence from. */
+const NOT_CHECKED_TEXT_KEY = {
+  all: 'cautions.notChecked.all',
+  partial: 'cautions.notChecked.partial',
+} as const;
+
+/**
+ * The one line a scan owes a person who listed an allergy or a pregnancy when
+ * some of its foods were not fully checked for them (`notCheckedNote`). It
+ * says what the chips cannot: that the ABSENCE of a chip is not an all-clear.
+ *
+ * THE BOX IS ALWAYS THERE. Render this only on a screen whose person has
+ * something listed (`profileWantsCautions`), and then render it whether or not
+ * there is a line to show: the two-line `min-h-8` is the room the line takes,
+ * so a line that arrives, or a locale that wraps it, never moves what sits
+ * below. The line itself is a `role="note"`, a statement and not an alert.
+ *
+ * @param props.note - which sentence to show, or `null` for the empty box.
+ */
+export function CautionsNotCheckedNote({ note }: { note: 'all' | 'partial' | null }) {
+  const { t } = useTranslation();
+  return (
+    <div data-slot={CAUTIONS_NOT_CHECKED_SLOT} className="min-h-8">
+      {note !== null && (
+        <p role="note" className="text-xs text-muted-foreground">
+          {t(NOT_CHECKED_TEXT_KEY[note])}
+        </p>
+      )}
+    </div>
+  );
+}

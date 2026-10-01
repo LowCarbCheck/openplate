@@ -37,6 +37,7 @@ import {
   PROVIDER_REGISTRY,
   getProviderDefinition,
   getProvidersByPlacement,
+  publishesCapabilities,
   supportsOauthPkce,
 } from '#app/services/vision/registry';
 import { providersForDisplay, recommendedProviderFor } from '#app/models/ai-provider-recommendation';
@@ -56,6 +57,8 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { Badge } from '#app/components/ui/badge';
 import { SettingsDisclosure, SettingsSection } from '#app/components/settings/settings-section';
+import { ProviderCapabilitySummary } from '#app/components/settings/provider-capability-summary';
+import { useProviderCapabilities } from '#app/components/add/use-provider-capabilities';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '#app/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -831,6 +834,11 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
   // TOKEN, resolved through the allowlist below, never a raw path.
   const nextToken = searchParams.get('next');
   const [settings, setSettings] = useState<LocalAiSettings | null>(loaderData.settings);
+  // WHAT THE CONNECTED SERVER SAYS IT CAN DO. Asked only for a provider whose
+  // registry entry publishes capabilities, and only for a connected one: the
+  // settings row is the whole input, so nothing is asked of a provider the
+  // person has not saved yet.
+  const providerCapabilities = useProviderCapabilities(settings === null ? null : { source: 'stored', settings });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastResult, setLastResult] = useState<SubmissionResult<string[]> | undefined>(undefined);
   const settingsUsageLine = formatSettingsUsageLine({ usage: monthlyUsage, t });
@@ -1085,6 +1093,16 @@ export default function SettingsAi({ loaderData }: Route.ComponentProps) {
               {isConnected ? t('settingsAi.providerRow.connectedHint') : t('settingsAi.providerRow.switchHint')}
             </span>
           </div>
+
+          {/* WHAT THE CONNECTED SERVER DOES NOT DO, in a box that is drawn
+              before the line is: a self-hosted server says so in its own
+              `/models`, a moment after this page paints, and the form below
+              must not move for it. Only for a provider whose registry entry
+              says it publishes capabilities, so every other connection leaves
+              the page exactly as it was. */}
+          {settings !== null && publishesCapabilities(settings.provider) && (
+            <ProviderCapabilitySummary capabilities={providerCapabilities.capabilities} />
+          )}
 
           {/* Primary provider tabs — recommended-first for the UI language
               (M130/04). Only offered before anything is connected: switching

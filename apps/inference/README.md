@@ -25,6 +25,9 @@ connects to it as a normal "OpenAI-compatible" provider. One container, one port
   [Hardware & measured latency](docs/hardware.md).
 - **OpenAI-protocol compatible**, so anything that can talk to an
   OpenAI-compatible endpoint can talk to this, not just openplate.
+- **Honest about its limits.** `GET /v1/models` reports what this service can do. openplate reads that report. Before a user taps, the app shows when a screen requires tasks this service does not support, such as typed meals, pantry lists or recipes.
+- **Allergen and pregnancy hints from the food name.** For recognised foods, the service sets `flags` with `flagsCoverage: "partial"`. A fixed word table in code provides the list, not the model. Unrecognised foods carry no flags. openplate shows these as unchecked, never as safe.
+- **Food names in the app's language.** When a request includes an `Accept-Language` header for one of the six app languages, the service makes one short text call to translate the names. A failed or slow call preserves the English names.
 
 **It is not:**
 
@@ -41,6 +44,8 @@ connects to it as a normal "OpenAI-compatible" provider. One container, one port
 - **Not a medical device, and not dietary advice.** Portion estimation from a
   single 2D photo is hard; treat the grams as a starting point you correct, which
   is how openplate's UI presents them.
+- **Not an allergy check.** A food name shows ingredients, never their absence. Treat flags as hints and check the label.
+- **Not a typed-meal, pantry or recipe service.** It parses plate photos. A client that needs other tasks must route them elsewhere.
 - **Not a general vision model.** It accepts one image and answers one question.
   Your prompt is read for the image and otherwise discarded.
 

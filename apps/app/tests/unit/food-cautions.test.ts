@@ -42,14 +42,17 @@ import {
   cautionKey,
   cautionProfileOf,
   cautionTier,
+  checkCautions,
   decideCautions,
   decodeFoodFlags,
   encodeFoodFlags,
+  flagsAssessed,
   foodFlagsField,
 } from '../../app/lib/food-cautions';
-import type { FoodCaution } from '../../app/lib/food-cautions';
-import { ALLERGENS, PREGNANCY_CATEGORIES } from '../../app/services/vision/schema';
+import type { CautionProfile, FoodCaution } from '../../app/lib/food-cautions';
+import { ALLERGENS, PREGNANCY_CATEGORIES, parsePlateIdentificationJson } from '../../app/services/vision/schema';
 import type { FoodFlags } from '../../app/services/vision/schema';
+import type { IdentifiedFood } from '../../app/services/vision/types';
 import { createPrimaryStore } from '../../app/lib/local-store/store';
 import { getLocalFoodLog, putLocalFoodLog } from '../../app/lib/local-store/primary-store';
 import { exportBackup, shareableSnapshotSchema } from '../../app/lib/local-store/backup';
@@ -201,6 +204,96 @@ describe('decideCautions, the two allergen certainties (may-contain against cont
       'allergen:nuts:contains',
       'allergen:gluten:may-contain',
     ]);
+  });
+});
+
+/** A person with a milk allergy who is pregnant: the profile a false all-clear would hurt most. */
+const ALLERGIC_PREGNANT = { reproductiveStatus: 'pregnant', allergens: ['milk'] } as const satisfies CautionProfile;
+
+/** One food exactly as a provider sends it, with no `flags` key at all. */
+const BRIE_WITHOUT_FLAGS = {
+  name: 'brie',
+  estimatedGrams: 40,
+  confidence: 'high',
+  portionHint: null,
+  macroSource: 'estimated',
+  brand: null,
+  servingSize: null,
+  carbBasis: null,
+  macrosPer100g: null,
+};
+
+/** The first food of a one-food plate, parsed through the real wire path. */
+function parsedFood(flags: FoodFlags | 'absent'): IdentifiedFood {
+  const food = flags === 'absent' ? BRIE_WITHOUT_FLAGS : { ...BRIE_WITHOUT_FLAGS, flags };
+  const plate = parsePlateIdentificationJson(
+    JSON.stringify({ unreadable: false, unreadableReason: null, foods: [food], notes: null }),
+    'en',
+  );
+  const [first] = plate.foods;
+  assert.ok(first, 'expected one parsed food');
+  return first;
+}
+
+/**
+ * What the confirm step stores for one parsed food: the photo review encodes
+ * `food.flags` into one hidden input and the action decodes it back into
+ * `LocalFoodLog.flags`, through `foodFlagsField`.
+ */
+function posted(food: IdentifiedFood): FoodFlags | undefined {
+  return foodFlagsField.parse(encodeFoodFlags(food.flags));
+}
+
+describe('a food nobody checked is never reported as clear', () => {
+  // Every case below fails against the old parser, which turned an absent
+  // `flags` into three empty arrays: the absent brie then read as assessed and
+  // `checkCautions` answered `clear` for a milk-allergic, pregnant person.
+
+  it('flagsAssessed is false for absent flags and true for empty ones, the control', () => {
+    assert.equal(flagsAssessed({ flags: undefined }), false);
+    assert.equal(flagsAssessed({}), false);
+    assert.equal(flagsAssessed({ flags: NO_FLAGS }), true);
+    assert.equal(flagsAssessed({ flags: RAW_DAIRY_MILK }), true);
+  });
+
+  it('a parsed food whose provider sent no flags is not assessed for an allergic profile; empty flags stay clear', () => {
+    const unchecked = parsedFood('absent');
+    const checked = parsedFood(NO_FLAGS);
+
+    assert.equal(flagsAssessed(unchecked), false);
+    assert.deepEqual(checkCautions({ flags: unchecked.flags, ...ALLERGIC_PREGNANT }), { kind: 'not-assessed' });
+
+    // CONTROL: the same food with three empty lists keeps today's behaviour,
+    // assessed, nothing found, no chip.
+    assert.equal(flagsAssessed(checked), true);
+    assert.deepEqual(checkCautions({ flags: checked.flags, ...ALLERGIC_PREGNANT }), { kind: 'clear' });
+    assert.deepEqual(decideCautions({ flags: checked.flags, ...ALLERGIC_PREGNANT }), []);
+  });
+
+  it('a food that earns a caution answers cautions, the control that the three answers are three', () => {
+    const flagged = parsedFood({ pregnancy: [], allergens: ['milk'], mayContain: [] });
+    const check = checkCautions({ flags: flagged.flags, ...ALLERGIC_PREGNANT });
+    assert.equal(check.kind, 'cautions');
+    assert.deepEqual(check.kind === 'cautions' ? check.cautions.map(cautionKey) : [], ['allergen:milk:contains']);
+
+    // And `clear` depends on the profile, not on the flags alone: the same
+    // milk flag for a person who listed nothing is clear.
+    assert.deepEqual(checkCautions({ flags: flagged.flags, ...NO_CAUTION_PROFILE }), { kind: 'clear' });
+  });
+
+  it('the confirm form hidden field carries "not assessed" through to the stored row', () => {
+    assert.equal(encodeFoodFlags(parsedFood('absent').flags), '');
+    assert.equal(posted(parsedFood('absent')), undefined);
+    assert.deepEqual(checkCautions({ flags: posted(parsedFood('absent')), ...ALLERGIC_PREGNANT }), { kind: 'not-assessed' });
+
+    // Control: empty lists travel as an object and land as assessed.
+    assert.deepEqual(posted(parsedFood(NO_FLAGS)), NO_FLAGS);
+    assert.deepEqual(checkCautions({ flags: posted(parsedFood(NO_FLAGS)), ...ALLERGIC_PREGNANT }), { kind: 'clear' });
+  });
+
+  it('a stored row without flags reads as not assessed, a stored row with empty flags as clear', () => {
+    assert.deepEqual(checkCautions({ flags: loggedRow(undefined).flags, ...ALLERGIC_PREGNANT }), { kind: 'not-assessed' });
+    assert.deepEqual(checkCautions({ flags: loggedRow(NO_FLAGS).flags, ...ALLERGIC_PREGNANT }), { kind: 'clear' });
   });
 });
 

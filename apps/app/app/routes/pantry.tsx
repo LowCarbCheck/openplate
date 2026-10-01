@@ -55,7 +55,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '#
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { ConnectCard, ScanLoading } from '#app/components/intake/intake-connect-card';
 import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert';
+import { IntakeUnsupportedCard } from '#app/components/intake/intake-unsupported-card';
+import { useProviderCapabilities } from '#app/components/add/use-provider-capabilities';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
+import { taskSupported, type ProviderCapabilities } from '#app/lib/ai/provider-capabilities';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { newIntakeId } from '#app/lib/plans/trial-scans';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
@@ -369,6 +372,75 @@ function PantryRows({
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Which of the pantry's two ways in the connected AI server reads.
+ *
+ * A UNION, not two booleans: "reads neither" has no strip to draw, the card
+ * replaces the whole screen (`IntakeUnsupportedCard`), and a pair of booleans
+ * would carry a fourth state the list can do nothing with.
+ *
+ * `photo` and `words` are two different tasks on the wire (`pantryImage`,
+ * `pantryText`), and a server can run one and not the other. Only the way it
+ * does not run is taken away: a person on a photo-only server still has the
+ * camera, and one on a words-only server still has the keyboard.
+ */
+export type PantryIntakeWays = 'both' | 'photo' | 'words';
+
+/**
+ * Which ways in a server reads, or `null` when it reads neither.
+ *
+ * PURE, so the decision is a unit test and not a branch in the route.
+ */
+export function pantryIntakeWays(capabilities: ProviderCapabilities): PantryIntakeWays | null {
+  const canReadPhoto = taskSupported(capabilities, 'pantryImage');
+  const canReadWords = taskSupported(capabilities, 'pantryText');
+  if (canReadPhoto && canReadWords) return 'both';
+  if (canReadPhoto) return 'photo';
+  if (canReadWords) return 'words';
+  return null;
+}
+
+/**
+ * The key of the line under the pantry's heading. One key per way in, because
+ * "Photograph a shelf" is false on a server with no photo reading and "write
+ * the list" is false on one with no word reading, and a sentence built from
+ * parts could not be reordered by a translator.
+ */
+export function pantryLeadKey({
+  intakeWays,
+  hasStoredItems,
+}: {
+  intakeWays: PantryIntakeWays;
+  hasStoredItems: boolean;
+}): string {
+  const base = hasStoredItems ? 'pantry.lead' : 'pantry.empty';
+  if (intakeWays === 'both') return base;
+  return intakeWays === 'photo' ? `${base}Photo` : `${base}Words`;
+}
+
+/**
+ * The strip a person hands the pantry an intake with: both ways in, or the one
+ * the server reads. "Photo", not the diary's "Plate photo": this camera reads a
+ * shelf.
+ */
+function PantryComposer({ intakeWays }: { intakeWays: PantryIntakeWays }): ReactElement {
+  const { t } = useTranslation();
+  if (intakeWays === 'photo') {
+    return <IntakeComposer variant="photoOnly" scanTo="/pantry" photoLabel={t('launcher.photo')} />;
+  }
+  if (intakeWays === 'words') {
+    return <IntakeComposer variant="wordsOnly" describeTo={PANTRY_DESCRIBE_HREF} label={t('pantry.composerLabel')} />;
+  }
+  return (
+    <IntakeComposer
+      describeTo={PANTRY_DESCRIBE_HREF}
+      scanTo="/pantry"
+      label={t('pantry.composerLabel')}
+      photoLabel={t('launcher.photo')}
+    />
+  );
+}
+
+/**
  * The stored list, its composer and the recipes door.
  *
  * PRESENTATIONAL AND PROP-DRIVEN, exported so a test can render every state
@@ -382,6 +454,7 @@ export function PantryList({
   onSave,
   isSaving,
   hasStoredItems,
+  intakeWays,
   alert = null,
 }: {
   rows: readonly PantryDraftRow[];
@@ -398,19 +471,21 @@ export function PantryList({
    * built from a pantry the recipe screen cannot see.
    */
   hasStoredItems: boolean;
+  /**
+   * Which ways in the connected AI server reads (`pantryIntakeWays`).
+   *
+   * REQUIRED, with no default. A default of `'both'` would compile at every
+   * call site and keep offering a way in the server has said it cannot run,
+   * which is the confusing failure this prop exists to end.
+   */
+  intakeWays: PantryIntakeWays;
 }): ReactElement {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-xl space-y-4">
       {alert}
-      <p className="text-sm text-muted-foreground">{hasStoredItems ? t('pantry.lead') : t('pantry.empty')}</p>
-      {/* "Photo", not the diary's "Plate photo": this camera reads a shelf. */}
-      <IntakeComposer
-        describeTo={PANTRY_DESCRIBE_HREF}
-        scanTo="/pantry"
-        label={t('pantry.composerLabel')}
-        photoLabel={t('launcher.photo')}
-      />
+      <p className="text-sm text-muted-foreground">{t(pantryLeadKey({ intakeWays, hasStoredItems }))}</p>
+      <PantryComposer intakeWays={intakeWays} />
       {hasStoredItems && (
         <>
           <PantryRows rows={rows} onChange={onChange} />
@@ -511,6 +586,9 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const effective = useEffectiveAiSettings(loaderData.settings);
+  // WHAT THE CONNECTED SERVER SAYS IT RUNS. Full for every provider that is
+  // not a self-hosted server, and settled at once for all of them.
+  const providerCapabilities = useProviderCapabilities(effective);
   const [stored, setStored] = useState<LocalPantryItem[]>(loaderData.items);
   const [rows, setRows] = useState<PantryDraftRow[]>(() => loaderData.items.map((item) => draftFromStored(item, i18n.language)));
   const [phase, setPhase] = useState<PantryPhase>({ kind: 'list' });
@@ -621,24 +699,6 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
     );
   }
 
-  if (phase.kind === 'failed') {
-    return (
-      <div className="mx-auto max-w-xl space-y-4">
-        <IntakeFailureAlert subject={phase.subject} title={t('pantry.errors.title')}>
-          {phase.message}
-        </IntakeFailureAlert>
-        <PantryList
-          rows={rows}
-          onChange={setRows}
-          onSave={() => void save('manual')}
-          isSaving={isSaving}
-          hasStoredItems={stored.length > 0}
-          alert={saveAlert}
-        />
-      </div>
-    );
-  }
-
   if (phase.kind === 'review') {
     return (
       <PantryReview
@@ -656,6 +716,40 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
     );
   }
 
+  // A READING IN FLIGHT OR UNDER REVIEW is the person's own work and is never
+  // taken away by what a server says afterwards, so both are answered above.
+  // Only the two screens that OFFER a way in (the list, and the list under a
+  // failure) are gated.
+  //
+  // NOT YET ANSWERED: the loading screen the route arrived on, so the card or
+  // the list is drawn once and nothing moves when the answer lands. Settled at
+  // once for every provider that is not asked, and bounded by the probe's
+  // timeout for one that is.
+  if (!providerCapabilities.settled) return <ScanLoading />;
+  const intakeWays = pantryIntakeWays(providerCapabilities.capabilities);
+  // THE SERVER READS NEITHER A PHOTO NOR WORDS, so there is nothing to offer
+  // and the screen says so in place of the list, as it does for no connection.
+  if (intakeWays === null) return <IntakeUnsupportedCard subject="pantry" />;
+
+  if (phase.kind === 'failed') {
+    return (
+      <div className="mx-auto max-w-xl space-y-4">
+        <IntakeFailureAlert subject={phase.subject} title={t('pantry.errors.title')}>
+          {phase.message}
+        </IntakeFailureAlert>
+        <PantryList
+          rows={rows}
+          onChange={setRows}
+          onSave={() => void save('manual')}
+          isSaving={isSaving}
+          hasStoredItems={stored.length > 0}
+          intakeWays={intakeWays}
+          alert={saveAlert}
+        />
+      </div>
+    );
+  }
+
   return (
     <PantryList
       rows={rows}
@@ -663,6 +757,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
       onSave={() => void save('manual')}
       isSaving={isSaving}
       hasStoredItems={stored.length > 0}
+      intakeWays={intakeWays}
       alert={saveAlert}
     />
   );

@@ -365,6 +365,10 @@
       "soybeans": "Può contenere soia",
       "sulphites": "Può contenere solfiti"
     },
+    "notChecked": {
+      "all": "Questa scansione non ha verificato le tue allergie o la gravidanza. Leggi tu le etichette.",
+      "partial": "I controlli per allergie e gravidanza sono parziali per questa scansione. Leggi tu le etichette."
+    },
     "pregnancy": {
       "alcohol": "Contiene alcol, da evitare",
       "caffeine": "Caffeina, conta per il limite di 200 mg al giorno",
@@ -536,6 +540,11 @@
     "pantry": {
       "title": "Cosa hai a casa?",
       "placeholder": "mezzo cavolo, sei uova, una vaschetta di feta, 500 g di riso"
+    },
+    "unsupported": {
+      "meal": "Questo server IA non legge i pasti digitati. Usa Cerca qui sopra, che non richiede IA.",
+      "pantry": "Questo server IA non legge un elenco digitato della dispensa.",
+      "choose": "Scegli un altro fornitore"
     }
   },
   "diary": {
@@ -2425,6 +2434,22 @@
     "baseUrl": {
       "help": "Sull'istanza hosted è raggiungibile solo un endpoint localhost/127.0.0.1: la content-security policy blocca gli altri host per impostazione predefinita, per proteggere la tua chiave se questa pagina dovesse essere compromessa. Fai self-hosting? Imposta CSP_CONNECT_EXTRA per consentire il tuo endpoint remoto (vedi il README). L'endpoint diretto api.openai.com non è comunque mai raggiungibile. Usa OpenRouter per i modelli OpenAI."
     },
+    "capabilities": {
+      "lead": "Questo server ha dei limiti.",
+      "tasks": "Questo server non gestisce {{tasks, list}}.",
+      "task": {
+        "plateImage": "foto del piatto",
+        "describe": "pasti digitati",
+        "pantryImage": "foto della dispensa",
+        "pantryText": "elenchi digitati della dispensa",
+        "recipes": "ricette"
+      },
+      "flagsPartial": "I suoi controlli per allergie e gravidanza sono parziali.",
+      "flagsNone": "Non esegue controlli per allergie o gravidanza.",
+      "translationsRequestLanguage": "Traduce i nomi degli alimenti in una lingua per scansione.",
+      "translationsNone": "Non traduce i nomi degli alimenti.",
+      "labelsNone": "Non legge le etichette nutrizionali."
+    },
     "connectCard": {
       "description": "Le foto del piatto vanno direttamente al provider che hai scelto per l'analisi. openplate ne conserva una copia solo su questo dispositivo per permetterti di visualizzarla in seguito, mai sul nostro server. Puoi gestire o eliminare le copie in qualsiasi momento da Dati e backup nelle impostazioni. La tua chiave non lascia mai questo dispositivo, tranne che per raggiungere il provider scelto qui sotto.",
       "title": "Connetti il tuo provider AI"
@@ -3505,6 +3530,12 @@
     "plansNotSwitchedOn": "I valori stimati con l'IA non sono ancora abilitati per questo account. Scegli un piano per abilitarli. La ricerca nel database degli alimenti funziona anche senza.",
     "plansLink": "Vedi i piani"
   },
+  "intakeUnsupported": {
+    "title": "Questo server IA non può farlo",
+    "pantry": "Il server IA che hai connesso non legge la dispensa, né da foto né da testo.",
+    "recipes": "Il server IA che hai connesso non suggerisce ricette.",
+    "choose": "Scegli un altro fornitore"
+  },
   "plan": {
     "title": "Il tuo piano",
     "loading": "Lettura del tuo piano in corso.",
@@ -3611,7 +3642,11 @@
   "pantry": {
     "title": "Dispensa",
     "lead": "Quello che hai a casa. Fotografa uno scaffale o scrivi la lista.",
+    "leadPhoto": "Cosa hai a casa. Fotografa uno scaffale.",
+    "leadWords": "Cosa hai a casa. Scrivi l'elenco.",
     "empty": "Non c'è ancora nulla qui. Fotografa il frigo o scrivi quello che hai.",
+    "emptyPhoto": "Ancora nulla qui. Fotografa il tuo frigorifero.",
+    "emptyWords": "Ancora nulla qui. Scrivi cosa hai.",
     "composerLabel": "Cosa hai?",
     "reading": "Lettura degli alimenti in corso...",
     "door": {

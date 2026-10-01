@@ -34,6 +34,13 @@
     "at": "2026-09-14",
     "tr": "{{date}}: hiçbir şey kaydedilmedi"
   },
+  "0092b8e176567ab5": {
+    "en": "It does not read nutrition labels.",
+    "path": "common:settingsAi.capabilities.labelsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Besin değerleri etiketlerini okumaz."
+  },
   "00ad36a47e8e6fd6": {
     "en": "Each day’s calories, split by meal.",
     "path": "common:trends.meals.share.descriptionCalories",
@@ -250,6 +257,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "tr": "Bu dosyalarda içe aktarılabilecek hiçbir şey yok."
+  },
+  "0314acdf76591b64": {
+    "en": "This scan did not check for your allergies or pregnancy. Read the labels yourself.",
+    "path": "common:cautions.notChecked.all",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu tarama alerjilerini veya hamilelik durumunu kontrol etmedi. Etiketleri kendin oku."
   },
   "033f80a81596ccf9": {
     "en": "Add your details",
@@ -1028,6 +1042,13 @@
     "at": "2026-09-30",
     "tr": "iPhone (Safari): Paylaş'a, ardından Ana Ekrana Ekle'ye dokun."
   },
+  "0baae17f2155e8fc": {
+    "en": "recipes",
+    "path": "common:settingsAi.capabilities.task.recipes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "tarifler"
+  },
   "0be36769d1701f27": {
     "en": "Create an API key in the <providerLink>{{provider}} console</providerLink>.",
     "path": "common:settingsAi.quickstart.step2",
@@ -1454,6 +1475,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "tr": "Açıkla"
+  },
+  "112366af51611141": {
+    "en": "This server has limits.",
+    "path": "common:settingsAi.capabilities.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu sunucunun sınırları var."
   },
   "112824a73cf4e589": {
     "en": "You picked two files of the same kind. Pick one days.json and one products.json.",
@@ -2953,6 +2981,13 @@
     "at": "2026-09-14",
     "tr": "Bu cihazdaki her şey sunucuya ulaştı."
   },
+  "21c0690189655477": {
+    "en": "This AI server does not read a typed pantry list.",
+    "path": "common:describe.unsupported.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu yapay zeka sunucusu yazılan kiler listesini okumaz."
+  },
   "21d559836f8882bb": {
     "en": "Published by",
     "path": "common:admin.settings.basisLegend",
@@ -3575,6 +3610,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Künye"
+  },
+  "29ff0c32f0c29bb2": {
+    "en": "The AI server you connected does not read a pantry, from photos or from words.",
+    "path": "common:intakeUnsupported.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bağladığın yapay zeka sunucusu fotoğraflardan veya metinlerden kileri okumaz."
   },
   "2a2d189ef64f22ef": {
     "en": "Remove {{name}}?",
@@ -6348,12 +6390,26 @@
     "at": "2026-09-14",
     "tr": "<strong>Bu sayfadaki hiçbir şey zorunlu değildir.</strong> Günlüğün, hedeflerin ve eğilimlerin hepsi bu olmadan da çalışır. Ücretli bir yapay zeka hizmetine kaydolup bir anahtar yapıştırmak sana göre değilse, bu sayfayı kapat ve elle kaydetmeye devam et, başka hiçbir şey kaybetmezsin."
   },
+  "50dcc55113985251": {
+    "en": "Its allergy and pregnancy checks are partial.",
+    "path": "common:settingsAi.capabilities.flagsPartial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Alerji ve hamilelik kontrolleri kısmidir."
+  },
   "50e63d5e912131c6": {
     "en": "Welcome to openplate",
     "path": "common:meta.onboarding",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate uygulamasına hoş geldin"
+  },
+  "511cc1192560b6a8": {
+    "en": "Choose another provider",
+    "path": "common:intakeUnsupported.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Başka bir sağlayıcı seç"
   },
   "51252da19bc06b63": {
     "en": "openplate couldn't load. Check your connection, then reload.",
@@ -7048,6 +7104,13 @@
     "at": "2026-09-30",
     "tr": "Sağlayıcı anahtarında kalanı ve bugünkü yapay zeka kapasitesinin ne kadarının kullanıldığını gösterir."
   },
+  "5881b933edcc8c91": {
+    "en": "This AI server does not read typed meals. Use Search above, which needs no AI.",
+    "path": "common:describe.unsupported.meal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu yapay zeka sunucusu yazılan öğünleri okumaz. Yapay zeka gerektirmeyen yukarıdaki Arama özelliğini kullan."
+  },
   "588a39328793856b": {
     "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
     "path": "common:signOut.unsent.unchecked",
@@ -7334,6 +7397,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bildirimler yüklenemedi."
+  },
+  "5c0a39471b9c9e2a": {
+    "en": "Nothing here yet. Write what you have.",
+    "path": "common:pantry.emptyWords",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Henüz burada bir şey yok. Elindekileri yaz."
   },
   "5c2d6bcd4bb93d6f": {
     "en": "Vitamin D",
@@ -8392,6 +8462,13 @@
     "at": "2026-09-24",
     "tr": "YAZIO girdileri kaldırılıyor…"
   },
+  "6934759ff60075ba": {
+    "en": "The AI server you connected does not suggest recipes.",
+    "path": "common:intakeUnsupported.recipes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bağladığın yapay zeka sunucusu tarif önermez."
+  },
   "694486f3ea9254ed": {
     "en": "Last sent {{at}} · version {{version}}",
     "path": "common:research.enrolments.lastSent",
@@ -8937,6 +9014,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{id}} numaralı hesap"
+  },
+  "6fb7f5555f810a97": {
+    "en": "This AI server cannot do that",
+    "path": "common:intakeUnsupported.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu yapay zeka sunucusu bunu yapamaz"
   },
   "6fdebc0671b3997a": {
     "en": "Anything to note?",
@@ -10219,6 +10303,13 @@
     "at": "2026-09-14",
     "tr": "Güncelle"
   },
+  "7df6050bc34a809d": {
+    "en": "It does no allergy or pregnancy checks.",
+    "path": "common:settingsAi.capabilities.flagsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Alerji veya hamilelik kontrolü yapmaz."
+  },
   "7df94e6088a0a205": {
     "en": "Export now",
     "path": "common:banners.backupExportNow",
@@ -10260,6 +10351,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{trimester}}, {{week}}. hafta."
+  },
+  "7e3dbbaa87a73c9b": {
+    "en": "Allergy and pregnancy checks are partial for this scan. Read the labels yourself.",
+    "path": "common:cautions.notChecked.partial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Alerji ve hamilelik kontrolleri bu tarama için kısmi yapıldı. Etiketleri kendin oku."
   },
   "7e3dce8cb81ea3a4": {
     "en": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Tap the tile for your progress.",
@@ -10498,6 +10596,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "İlk yiyeceğini kaydettin. Başka bir şey ayarlamana gerek yok, kaydetmeye devam et."
+  },
+  "81718e527415e38a": {
+    "en": "typed meals",
+    "path": "common:settingsAi.capabilities.task.describe",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "yazılan öğünler"
   },
   "818ff225c003004e": {
     "en": "e.g. 160",
@@ -12690,6 +12795,13 @@
     "at": "2026-09-14",
     "tr": "Bu haftaki kalorilerin ~%{{percent}} kadarı yapay zeka tarafından tahmin edildi"
   },
+  "9a4a1ab197b2100d": {
+    "en": "It translates food names into one language per scan.",
+    "path": "common:settingsAi.capabilities.translationsRequestLanguage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Yiyecek adlarını tarama başına tek bir dile çevirir."
+  },
   "9a5b47c4639d10b4": {
     "en": "Macros unknown, logged as name only.",
     "path": "common:add.portion.macrosUnknown",
@@ -14306,6 +14418,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "tr": "Rızan kaydedilemedi. Bağlantını kontrol edip tekrar dene."
+  },
+  "ae75d57958e2e98e": {
+    "en": "What you have at home. Photograph a shelf.",
+    "path": "common:pantry.leadPhoto",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Evde neyin var. Bir rafın fotoğrafını çek."
   },
   "aea73a7009f31ca5": {
     "en": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
@@ -16463,6 +16582,13 @@
     "at": "2026-09-24",
     "tr": "YAZIO girdilerini tut"
   },
+  "ca8b25027c9bb1c3": {
+    "en": "What you have at home. Write the list.",
+    "path": "common:pantry.leadWords",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Evde neyin var. Listeyi yaz."
+  },
   "ca9725b1aae72d07": {
     "en": "Your provider reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
     "path": "common:landing.setup.steps.scan.body",
@@ -17674,6 +17800,13 @@
     "at": "2026-09-14",
     "tr": "{{count}} tarama"
   },
+  "d8e258c79614fd88": {
+    "en": "typed pantry lists",
+    "path": "common:settingsAi.capabilities.task.pantryText",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "yazılan kiler listeleri"
+  },
   "d91c2d1970bb7d38": {
     "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
     "path": "common:connectGateway.confirm.body",
@@ -18402,6 +18535,13 @@
     "at": "2026-09-28",
     "tr": "Planın aktif."
   },
+  "e1a8d5c296902023": {
+    "en": "Nothing here yet. Photograph your fridge.",
+    "path": "common:pantry.emptyPhoto",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Henüz burada bir şey yok. Buzdolabının fotoğrafını çek."
+  },
   "e1f5a81929d5fd2e": {
     "en": "Today",
     "path": "common:diary.nav.today",
@@ -18703,6 +18843,13 @@
     "at": "2026-09-14",
     "tr": "Günlük bu cihazda tutulur ve sunucudaki kopya kilitlidir"
   },
+  "e59d05a33376344b": {
+    "en": "plate photos",
+    "path": "common:settingsAi.capabilities.task.plateImage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "tabak fotoğrafları"
+  },
   "e5a9c8a4a8ae8bf2": {
     "en": "A closed More menu stays closed.",
     "path": "releases:v0_48_0.fixed.01",
@@ -18751,6 +18898,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "ör. {{value}}"
+  },
+  "e64631f089a936de": {
+    "en": "This server does not do {{tasks, list}}.",
+    "path": "common:settingsAi.capabilities.tasks",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Bu sunucu {{tasks, list}} işlemlerini yapmaz."
   },
   "e64c52055454022c": {
     "en": "7 days",
@@ -20229,6 +20383,13 @@
     "at": "2026-09-28",
     "tr": "Açık rızan · openplate"
   },
+  "f7199eb4369f55d3": {
+    "en": "Choose another provider",
+    "path": "common:describe.unsupported.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Başka bir sağlayıcı seç"
+  },
   "f72072404aac80cb": {
     "en": "Paste the key from their invitation. It is public: it can seal data to them, and nothing else.",
     "path": "common:sharing.grant.keyHint",
@@ -20480,6 +20641,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "Üst üste on dört gün."
+  },
+  "fa1c47efcd1a7df6": {
+    "en": "pantry photos",
+    "path": "common:settingsAi.capabilities.task.pantryImage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "kiler fotoğrafları"
   },
   "fa31392c71abe0d6": {
     "en": "May contain crustaceans",
@@ -20858,6 +21026,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "kalori"
+  },
+  "fdd34334a68dacc2": {
+    "en": "It does not translate food names.",
+    "path": "common:settingsAi.capabilities.translationsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Yiyecek adlarını çevirmez."
   },
   "fdd42fb336f9e41c": {
     "en": "Today's capacity",
