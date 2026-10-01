@@ -178,13 +178,21 @@ export function headerShiftAfter(entries: readonly ShiftEntry[], since: number):
  * the same element gets the same key in the next reading. A typed VALUE is
  * never part of a key, or typing would rename the element it moved.
  *
+ * `visibleOnly` leaves out every element whose computed `visibility` is
+ * `hidden`. A screen that reserves its answers as stacked, invisible layers
+ * (onboarding, 2026-10-01) holds nameless copies of the same input in each
+ * layer, and the copy that gains a name and an id on a pick changes the key
+ * of the next anonymous one: the reading then compares two different boxes
+ * under one key. An invisible box is nothing a person reads or aims at.
+ *
  * @param page - the page to read.
+ * @param options - `visibleOnly`, off by default so every other spec reads as before.
  * @returns top edges in CSS px, keyed by element.
  */
-export async function readTops(page: Page): Promise<Record<string, number>> {
+export async function readTops(page: Page, options: { visibleOnly?: boolean } = {}): Promise<Record<string, number>> {
   // Serialised into the page, as above: its helper cannot live outside it.
   // oxlint-disable unicorn/consistent-function-scoping
-  return page.evaluate(() => {
+  return page.evaluate((visibleOnly) => {
     const main = document.querySelector('main');
     if (main === null) throw new Error('the page has no main');
     const tops: Record<string, number> = {};
@@ -201,6 +209,7 @@ export async function readTops(page: Page): Promise<Record<string, number>> {
     };
     for (const element of main.querySelectorAll('input:not([type="hidden"]), button, label, legend, a')) {
       if (isPinned(element)) continue;
+      if (visibleOnly && getComputedStyle(element).visibility === 'hidden') continue;
       const rect = element.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) continue;
       const name = element.getAttribute('name') ?? '';
@@ -217,7 +226,7 @@ export async function readTops(page: Page): Promise<Record<string, number>> {
       tops[index === 0 ? base : `${base} (${index + 1})`] = Math.round((rect.top + window.scrollY) * 10) / 10;
     }
     return tops;
-  });
+  }, options.visibleOnly === true);
   // oxlint-enable unicorn/consistent-function-scoping
 }
 

@@ -75,13 +75,13 @@ const KEY_DELAY_MS = 60;
  */
 async function typeAndWatch(page: Page, field: Locator, edits: readonly Edit[]): Promise<EditReading> {
   await settleAnimations(page);
-  const baseline = await readTops(page);
+  const baseline = await readTops(page, { visibleOnly: true });
   const entriesBefore = (await readShiftEntries(page)).length;
   const moves: EditReading['moves'] = [];
 
   const record = async (label: string): Promise<void> => {
     await settleFrames(page);
-    for (const move of movedBetween(baseline, await readTops(page))) {
+    for (const move of movedBetween(baseline, await readTops(page, { visibleOnly: true }))) {
       moves.push({ element: move.element, dy: move.dy, after: label });
     }
   };
@@ -126,13 +126,13 @@ async function typeAndWatch(page: Page, field: Locator, edits: readonly Edit[]):
  */
 async function watch(page: Page, label: string, act: () => Promise<void>): Promise<EditReading> {
   await settleAnimations(page);
-  const baseline = await readTops(page);
+  const baseline = await readTops(page, { visibleOnly: true });
   const entriesBefore = (await readShiftEntries(page)).length;
   await act();
   await settleAnimations(page);
   const entries = (await readShiftEntries(page)).slice(entriesBefore);
   return {
-    moves: movedBetween(baseline, await readTops(page)).map((move) => ({
+    moves: movedBetween(baseline, await readTops(page, { visibleOnly: true })).map((move) => ({
       element: move.element,
       dy: move.dy,
       after: label,
@@ -319,13 +319,13 @@ test('a keyboard-sized viewport change moves nothing already on screen', async (
   // `readTops` measures from the top of the page, so a keyboard that scrolls
   // the focused field into view is not read as a move; an element moving
   // relative to the page is.
-  const before = await readTops(page);
+  const before = await readTops(page, { visibleOnly: true });
   const viewport = page.viewportSize();
   if (viewport === null) throw new Error('the phone project always sets a viewport');
   // About the height a phone keyboard takes from an 844 px screen.
   await page.setViewportSize({ width: viewport.width, height: viewport.height - 336 });
   await settleFrames(page);
-  const after = await readTops(page);
+  const after = await readTops(page, { visibleOnly: true });
   expect(movedBetween(before, after), 'elements moved when the viewport lost a keyboard of height').toEqual([]);
 });
 
@@ -523,6 +523,10 @@ test('CONTROL: the reading reports a line that appears above the step actions', 
   // that sees nothing. A 24 px line is put in front of the actions the way a
   // late hint would arrive, and both readings must name it.
   await openFirstStep(page);
+  // The browser records a layout shift only for a box INSIDE the viewport,
+  // and on a phone the actions start below the fold, so they are scrolled in.
+  const continueButton = page.getByRole('button', { name: EN.onboarding.actions.continue });
+  await continueButton.scrollIntoViewIfNeeded();
   const reading = await watch(page, 'inserting a 24 px line', () =>
     page.evaluate((continueLabel) => {
       const button = Array.from(document.querySelectorAll('main button')).find(
@@ -597,7 +601,13 @@ for (const screen of MEASURED_SCREENS) {
       // caution note is written for.
       await page.goto('/onboarding?step=focus');
       await expect(page.getByText(EN.onboarding.style.title)).toBeVisible();
-      const cautionLink = page.getByRole('link', { name: EN.onboarding.style.sourceLabel });
+      // The sentence that carries the source link. Not the link itself: its
+      // `<source>` tag is a void element to the Trans parser, so the link is
+      // drawn EMPTY, zero wide, and reads as hidden in every state (a defect
+      // of its own, reported separately).
+      const cautionLink = page.locator('main p', {
+        has: page.getByRole('link', { name: EN.onboarding.style.sourceLabel }),
+      });
 
       for (const style of STYLE_CYCLE) {
         expectNoShift(await clickAndWatch(page, styleCard(page, style), `picking ${style}`), `style ${style}`);
@@ -673,7 +683,9 @@ for (const screen of MEASURED_SCREENS) {
       // CONTROL that the recorder sees a change of height at all.
       await page.evaluate((selector) => {
         const line = document.createElement('div');
-        line.style.height = '30px';
+        // Taller than any answer: the footnote's layers share one grid cell,
+        // so a shorter line would sit inside the cell without growing it.
+        line.style.height = '400px';
         document.querySelector(selector)?.append(line);
       }, INSTALL_NOTE_SELECTOR);
       await settleFrames(page);
