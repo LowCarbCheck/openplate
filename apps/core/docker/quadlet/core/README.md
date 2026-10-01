@@ -102,11 +102,11 @@ podman volume rm systemd-postgres-data-18
 
 ## Postgres 18 upgrade
 
-These units run Postgres 18 now. They ran 17 before. A new install needs nothing from this section. Read it if you already run these units and have a database in the old volume.
+These units run Postgres 18 now. They ran 17 before. Skip this section for a new install. Read it if you run an existing deployment with data in the old volume.
 
-**What changed.** A Postgres 18 container cannot open a Postgres 17 data directory, and it keeps its data one folder level deeper. The volume unit has a new name, `postgres-data-18.volume`, so Podman makes a new volume, `systemd-postgres-data-18`. Your old volume, `systemd-postgres-data`, stays as it is. If you copy the new units over the old ones and start them, Postgres 18 sets up an empty database in the new volume. Your data is not lost, because it is still in the old volume. Do not do that. Move the data across as below. The old volume is your rollback until you remove it yourself.
+**What changed.** A Postgres 18 container cannot open a Postgres 17 data directory. It also nests its data one directory level deeper. The new volume unit `postgres-data-18.volume` makes Podman create volume `systemd-postgres-data-18`. Your old volume `systemd-postgres-data` remains intact. Do not copy the new units over the old ones and start them. If you do, Postgres 18 initializes an empty database in the new volume. Your data remains safe in the old volume. Migrate it as shown below. The old volume remains your rollback target until you remove it.
 
-The steps use the same commands as the compose upgrade in [`docker/topologies/README.md`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/README.md#postgres-18-upgrade), with `podman` for `docker` and systemd for the stack. Run them from the root of the repository checkout. `D` is your install directory. If you set `POSTGRES_USER` or `POSTGRES_DB` in `postgres.env`, use those values where the commands say `openplate` and `openplate_sync`.
+The steps mirror the compose upgrade in [`docker/topologies/README.md`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/README.md#postgres-18-upgrade), using `podman` instead of `docker` and systemd instead of compose. Run them from the repository root. `D` is your install directory. If you set custom `POSTGRES_USER` or `POSTGRES_DB` values in `postgres.env`, use them in place of `openplate` and `openplate_sync`.
 
 ```sh
 D=~/.config/containers/systemd/openplate-core
@@ -144,9 +144,9 @@ systemctl --user start core.service
 until curl -sf http://127.0.0.1:3000/health; do sleep 2; done
 ```
 
-The dump comes from a Postgres 17 container, the server version that wrote the data. The last line of the dump file tells you the dump ran to the end. Do not go on if it does not. `pg_dumpall` also dumps the roles, so the database password comes across and `SERVER_SECRET` needs no change. The two count files must match. If they do not, stop, keep both volumes, and remove nothing. The wait loops ask over TCP (`-h 127.0.0.1`) on purpose. While Postgres sets up an empty cluster it runs a short first server that answers only on a socket, and a command sent then fails with "the database system is shutting down".
+A Postgres 17 container must dump the data, matching the server version that wrote it. Check the dump file's last line to verify completion. Stop here if it is incomplete. `pg_dumpall` exports roles as well, preserving the database password and leaving `SERVER_SECRET` valid. The two count files must match. If they do not, halt the upgrade and keep both volumes. The wait loops check TCP (`-h 127.0.0.1`) intentionally. During initial cluster setup, Postgres starts an ephemeral server that listens only on a domain socket. Queries sent during this phase fail with "the database system is shutting down".
 
-**Go back.** Stop the units, put the old unit files back (the old `postgres-data.volume` and the old `postgres.container`), run `systemctl --user daemon-reload`, and start them. They mount `systemd-postgres-data`, which you did not change.
+**Go back.** Stop the units. Restore the original unit files: `postgres-data.volume` and `postgres.container`. Run `systemctl --user daemon-reload` and start them. They attach to the untouched `systemd-postgres-data` volume.
 
 **Clean up** when the new units have run for a few days and a backup of them exists:
 
@@ -155,7 +155,7 @@ podman volume rm systemd-postgres-data
 rm -f openplate-17.sql counts-17.txt counts-18.txt
 ```
 
-The dump holds every account and its encrypted diary. Treat it like a database backup, and delete it when you are done.
+The dump contains every account and encrypted diary. Secure it like a database backup, and delete it once verification finishes.
 
 ## SELinux and rootless notes
 

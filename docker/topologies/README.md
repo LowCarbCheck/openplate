@@ -77,25 +77,23 @@ the shapes as Quadlet units, the commands that move an install across are in
 
 ## Postgres 18 upgrade
 
-`compose.core.yml` and `compose.full.yml` run Postgres 18 (`postgres:18-alpine`)
-now. They ran 17 before. A new install needs nothing from this section. Read it
-if you already run shape 2 or 4 and have a diary database in the old volume.
+`compose.core.yml` and `compose.full.yml` now run Postgres 18 (`postgres:18-alpine`),
+up from 17. Skip this section for a new install. Read it if you run shape 2 or 4
+and have diary data in the old volume.
 
-**What changed.** A Postgres 18 container cannot open a Postgres 17 data
-directory. It also keeps its data one folder level deeper, so the mount moved
-from `/var/lib/postgresql/data` to `/var/lib/postgresql`. The files name a new
-volume, `pg-data-18`, for that reason. Your old volume `pg-data` stays as it is.
-If you only swap the new file in and start it, Compose makes an empty
-`pg-data-18` and the core server starts on an empty database. Your data is not
-lost, because it is still in `pg-data`. Do not do that. Move the data across as
-below. The old volume is your rollback until you remove it yourself.
+**What changed.** A Postgres 18 container cannot read a Postgres 17 data
+directory. It also stores data one level deeper, moving the mount point from
+`/var/lib/postgresql/data` to `/var/lib/postgresql`. The files define a new volume,
+`pg-data-18`, for this reason. Your old volume `pg-data` remains intact. If you
+only swap the file and start it, Compose makes an empty `pg-data-18` and the core
+server starts without your data. The data remains safe in `pg-data`. Follow the
+steps below to migrate it. Keep the old volume for rollback until you remove it.
 
-**The steps.** The example is shape 2. For shape 4, use `compose.full.yml`, and
-replace the volume name `openplate-with-sync_pg-data` with
-`openplate-full_pg-data`. Run the commands from the folder that holds your
-compose file and your `.env`. If you set `POSTGRES_USER` or `SYNC_DB_NAME` in
-`.env`, use those values where the commands say `openplate` and
-`openplate_sync`.
+**The steps.** The example uses shape 2. For shape 4, use `compose.full.yml`
+and replace `openplate-with-sync_pg-data` with `openplate-full_pg-data`. Run the
+commands from the directory with your compose file and `.env`. If you set
+`POSTGRES_USER` or `SYNC_DB_NAME` in `.env`, use those values instead of
+`openplate` and `openplate_sync`.
 
 ```sh
 cd ~/openplate
@@ -134,43 +132,39 @@ docker compose -f compose.core.yml up -d
 until curl -sf http://127.0.0.1:3001/health; do sleep 2; done
 ```
 
-1. Stop the stack with the file you used before. `down` removes the containers
-   and keeps the volumes.
-2. The throwaway 17 container opens the old volume, so the dump comes from the
-   server version that wrote the data. The last line of the dump file tells you
-   the dump ran to the end. Do not go on if it does not.
-3. `compose.core.17.yml` is your way back. Compose creates `pg-data-18` on the
-   first start, and Postgres 18 sets up an empty cluster in it. The wait loop
-   asks over TCP (`-h 127.0.0.1`) on purpose. While it sets up, Postgres runs a
-   short first server that answers only on a socket, and the `healthy` state
-   can show up during that time. A command sent then fails with "the database
+1. Stop the stack with your old file. `down` removes containers but keeps volumes.
+2. The throwaway 17 container reads the old volume, so the matching server
+   version dumps the data. Check the final line of the dump to confirm it
+   finished cleanly. Stop here if it failed.
+3. `compose.core.17.yml` lets you roll back. Compose creates `pg-data-18` on the
+   first start, and Postgres 18 sets up an empty cluster. The wait loop checks
+   TCP (`-h 127.0.0.1`) intentionally. During setup, Postgres runs a
+   brief bootstrap server that listens only on a socket. The container can report
+   `healthy` during that phase, causing commands to fail with "the database
    system is shutting down".
-4. `pg_dumpall` also dumps the roles, so the password of the database user comes
-   across. The restore needs no `SERVER_SECRET` change.
-5. The two count files must match. If they do not, stop, keep both volumes, and
-   do not remove anything.
-6. The core server finds its tables and starts. The loop waits until `/health`
-   answers. Sign in once from a device that had synced before you trust the
-   result.
+4. `pg_dumpall` includes roles, so it exports the user password. The restore
+   needs no changes to `SERVER_SECRET`.
+5. The row count files must match. If they differ, stop and keep both volumes.
+6. The core server connects to its tables and starts. The loop polls `/health`
+   until it responds. Sign in from a previously synced device to confirm it works.
 
-**Go back.** If anything fails, run `docker compose -f compose.core.yml down`
-(no `-v`), then `docker compose -f compose.core.17.yml up -d`. That starts
-Postgres 17 on the old volume, which you did not change.
+**Go back.** If migration fails, run `docker compose -f compose.core.yml down`
+without `-v`. Then run `docker compose -f compose.core.17.yml up -d` to restart
+Postgres 17 on the untouched volume.
 
-**Clean up** when the new stack has run for a few days and a backup of it
-exists:
+**Clean up** once the new stack runs smoothly for a few days and you have a
+working backup:
 
 ```sh
 docker volume rm openplate-with-sync_pg-data
 rm -f openplate-17.sql counts-17.txt counts-18.txt compose.core.17.yml
 ```
 
-The dump holds every account and its encrypted diary. Treat it like a database
-backup, and delete it when you are done.
+The dump contains every account and encrypted diary. Guard it like a database
+backup, and remove it when you finish.
 
-**Quadlet.** The unit files changed the same way: `pg-data.volume` is
-`pg-data-18.volume`, and Podman names the new volume `systemd-pg-data-18`. The
-commands are the same, with `podman` for `docker`, and the old volume is
-`systemd-pg-data`. The Quadlet steps are in
-[`../quadlet/core/README.md`](../quadlet/core/README.md#postgres-18-upgrade).
+**Quadlet.** The unit files use the same naming: `pg-data.volume` is now
+`pg-data-18.volume`, and Podman creates `systemd-pg-data-18`. Run the same
+commands with `podman` instead of `docker`. The old volume is `systemd-pg-data`.
+See [`../quadlet/core/README.md`](../quadlet/core/README.md#postgres-18-upgrade).
 
