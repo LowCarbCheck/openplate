@@ -151,7 +151,7 @@ pull request. [`SECURITY.md`](SECURITY.md): reporting a vulnerability.
 
 ## Development
 
-Requires Node.js ≥ 22 and pnpm, on **Linux x64 or arm64**. There is no database to install
+Requires Node.js 24 or newer and pnpm, on **Linux x64 or arm64**. There is no database to install
 and no service to start alongside it.
 
 The repo pins an exact pnpm in `package.json`'s `packageManager` field, so run `corepack

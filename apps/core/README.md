@@ -697,7 +697,7 @@ flag, because a credential in argv lands in shell history and is visible in
 
 Two optional conveniences:
 
-- `nix develop` gives you a shell with the expected Node 22 and pnpm, if you have Nix with flakes enabled.
+- Run `nix develop` at the repository root for a shell with Node 24 and pnpm 11, if Nix has flakes enabled. The root `flake.nix` serves all four apps.
 - `docker compose -f docker/compose.dev.yml up -d` starts the contributor test database on port 5433, for the integration suite. Skip it if something already answers on that port. `podman compose -f docker/compose.dev.yml up -d` works the same way.
 
 Linting is [oxlint](https://oxc.rs) plus a vendored `anti-slop` plugin under

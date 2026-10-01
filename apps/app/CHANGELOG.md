@@ -13,7 +13,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ### Changed
 
-- **The image runs on Node 24.** The base image moves from `node:22-alpine` to `node:24-alpine`. pnpm 11.5.1 now comes from corepack, which reads the `packageManager` field of `package.json`, instead of a global `npm i -g pnpm@11.1.1`. `engines.node` is `>=24`. Nothing changes in how you run the container. Check: `scripts/check-image-boots.sh app` at the repository root.
+- **The image runs on Node 24.** The base image moves from `node:22-alpine` to `node:24-alpine`. Corepack now provides pnpm 11.5.1 by reading the `packageManager` field of `package.json`, instead of a global `npm i -g pnpm@11.1.1`. `engines.node` is `>=24`. How you run the container does not change. Check: `scripts/check-image-boots.sh app` at the repository root.
 
 ## [0.58.1] - 2026-10-01
 

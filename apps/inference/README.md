@@ -225,7 +225,7 @@ Benchmark harness, gold set, and every number quoted in these docs:
 
 ## Development
 
-Requires Node 22 and pnpm.
+Requires Node 24 or newer and pnpm 11.
 
 ```bash
 pnpm install
@@ -250,9 +250,10 @@ The full CPU integration check (builds the image, boots it with no GPU, scans a 
 ./scripts/smoke-lite.sh          # first run downloads ~2.0 GiB
 ```
 
-A Nix flake provides the toolchain if you would rather not install Node yourself:
+The root Nix flake provides the toolchain if you do not want to install Node yourself:
 
 ```bash
+cd ../..
 nix develop
 ```
 

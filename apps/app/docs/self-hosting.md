@@ -398,25 +398,25 @@ Create the first account the same way as [above](#create-the-first-account). The
 
 ## Without Docker
 
-The app is one Node.js program, so it also runs straight from a checkout. Here is how to run it on Ubuntu 24.04 with systemd keeping it alive across logouts and reboots.
+The app is a single Node.js program. It runs directly from a checkout. Here is how to run it on Ubuntu 24.04 with systemd keeping it alive across logouts and reboots.
 
-**Node.js 22 or newer.** Ubuntu 24.04's own `nodejs` package is version 18, which is too old. Install 22 from [NodeSource](https://github.com/nodesource/distributions):
+**Node.js 24 or newer.** Ubuntu 24.04 provides `nodejs` version 18, which is too old. Install 24 from [NodeSource](https://github.com/nodesource/distributions):
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh
+curl -fsSL https://deb.nodesource.com/setup_24.x -o nodesource_setup.sh
 sudo -E bash nodesource_setup.sh
 sudo apt install -y nodejs git
-node --version      # v22.x
+node --version      # v24.x
 ```
 
-[nvm](https://github.com/nvm-sh/nvm) works too, but it installs Node under your home folder, so the systemd unit below must name that path (`command -v node` prints it).
+[nvm](https://github.com/nvm-sh/nvm) also works, but it puts Node in your home folder. The systemd unit below must then use that path (`command -v node` prints it).
 
-**pnpm, the version the repository asks for.** `corepack` comes with Node and fetches the exact pnpm named in the repository's `package.json`, but only inside the cloned folder. Outside it, `pnpm` is whatever version corepack picks, so run every `pnpm` command from inside the folder. The first run asks to download pnpm; answer yes.
+**pnpm, the version the repository asks for.** `corepack` comes with Node 24. It fetches the exact pnpm set in the `packageManager` field of the app's `package.json`, but only inside `apps/app`. Outside that folder, `pnpm` defaults to whatever corepack chooses. Run every `pnpm` command inside `apps/app`. On the first run, confirm the download prompt.
 
 ```bash
 sudo corepack enable
 git clone https://github.com/LowCarbCheck/openplate.git ~/openplate-src
-cd ~/openplate-src
+cd ~/openplate-src/apps/app
 pnpm install --frozen-lockfile
 pnpm build
 ```
@@ -445,7 +445,7 @@ Wants=network-online.target
 
 [Service]
 User=$USER
-WorkingDirectory=$HOME/openplate-src
+WorkingDirectory=$HOME/openplate-src/apps/app
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/node --import tsx ./server.ts
 Restart=on-failure
@@ -461,7 +461,7 @@ curl -s http://127.0.0.1:3000/healthcheck
 `sudo journalctl -u openplate -f` shows the log. To upgrade, pull and build again, then restart:
 
 ```bash
-cd ~/openplate-src
+cd ~/openplate-src/apps/app
 git pull
 pnpm install --frozen-lockfile
 pnpm build

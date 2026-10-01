@@ -9,7 +9,7 @@ change moves the minor.
 
 ### Changed
 
-- **The image runs on Node 24.** Both stages move from `node:22-alpine` to `node:24-alpine`. pnpm 11.5.1 now comes from corepack, which reads the new `packageManager` field of `package.json`, instead of a floating `npm i -g pnpm@11`. `engines.node` is `>=24`, up from `>=20`. Nothing changes in how you run the container. Check: `scripts/check-image-boots.sh core` at the repository root.
+- **The image runs on Node 24.** Both stages move from `node:22-alpine` to `node:24-alpine`. Corepack now provides pnpm 11.5.1 via the new `packageManager` field in `package.json`, replacing `npm i -g pnpm@11`. `engines.node` is `>=24`, up from `>=20`. Container execution remains unchanged. Check: `scripts/check-image-boots.sh core` at the repository root.
 
 ## [0.28.0] - 2026-10-01
 

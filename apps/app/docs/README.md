@@ -54,8 +54,8 @@ merged into openplate-core in September 2026 (M192). Its repository is archived.
 
 ## Working on openplate itself
 
-Every repo in the family ships a dev-shell flake, so `nix develop` in any of them opens
-a shell with Node 22 and pnpm already on the path ([`flake.nix`](../flake.nix)). If you would
-rather not use Nix, install Node ≥ 22 and pnpm yourself; there is no database to provision and
-no service to start alongside the app. The commands are in the
+The repository root has one dev-shell flake for all four apps. Run `nix develop` there to get
+Node 24 and pnpm 11 ([`flake.nix`](../../../flake.nix)). If you do not use Nix, install Node 24
+or newer and pnpm yourself. You do not need to provision a database or start an external
+service. The commands are in the
 [README](../README.md#development).
