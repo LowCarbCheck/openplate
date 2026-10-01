@@ -72,15 +72,21 @@ services:
   # opaque ciphertext blobs. Neither the app nor the inference service connects
   # to it, and the app has no database of its own
   # (apps/app/.adr/0006-the-app-server-holds-no-accounts.md).
+  # Postgres 18. The volume is `pg-data-18` on purpose. The 18 image keeps its
+  # cluster in /var/lib/postgresql/18/docker and the volume mounts one level up,
+  # at /var/lib/postgresql. It refuses a volume that holds a 17 cluster, so the
+  # old `pg-data` volume cannot be reused. It stays untouched as your rollback.
+  # An install that ran Postgres 17 follows "Postgres 18 upgrade" in
+  # docker/topologies/README.md: dump, start, restore.
   postgres:
-    image: docker.io/library/postgres:17-alpine
+    image: docker.io/library/postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-openplate}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openplate}
       POSTGRES_DB: ${SYNC_DB_NAME:-openplate_sync}
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - pg-data-18:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openplate} -d ${SYNC_DB_NAME:-openplate_sync}']
       interval: 5s
@@ -562,7 +568,7 @@ services:
       # you get a BOOT FAILURE, so none of them is forwarded.
 
 volumes:
-  pg-data:
+  pg-data-18:
     driver: local
   inference-models:
     driver: local

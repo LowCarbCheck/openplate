@@ -33,6 +33,9 @@ name: openplate-core-dev
 
 services:
   postgres:
+    # Stays on 17 on purpose: production runs 17, and the gates must fail on a
+    # feature that only 18 has. The self-host files run 18; `make check-pg18`
+    # in the repository root boots the core server against 18 once per release.
     image: postgres:17-alpine
     # No `restart:` — this is a test database, and it should stop when you
     # stop it rather than reappear on the next boot.

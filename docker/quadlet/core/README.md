@@ -4,11 +4,11 @@ Generated from `docker/topologies/compose.core.yml`, rung 2: Postgres, the openp
 
 ## What is in this directory
 
-- `postgres.container`: `docker.io/library/postgres:17-alpine` on the volume below, with the `pg_isready` healthcheck as `Notify=healthy`. Not published to the host.
+- `postgres.container`: `docker.io/library/postgres:18-alpine` on the volume below, with the `pg_isready` healthcheck as `Notify=healthy`. Not published to the host.
 - `core.container`: openplate-core, `ghcr.io/lowcarbcheck/openplate-core:latest`, published on 3001, `Requires=` and `After=` Postgres, healthcheck against `/health` as `Notify=healthy`.
 - `app.container`: the app, `ghcr.io/lowcarbcheck/openplate:latest`, published on 3000, with `CORE_URL=http://localhost:3001` in its defaults file. The browser talks to the core server directly, so that address must be one your browser can reach.
 - `app.defaults.env`, `core.defaults.env`, `postgres.defaults.env`: the values the compose file sets, one file per unit.
-- `pg-data.volume`: the Postgres data volume; Podman names it `systemd-pg-data`.
+- `pg-data-18.volume`: the Postgres 18 data volume; Podman names it `systemd-pg-data-18`. Units from before Postgres 18 used `pg-data.volume` (`systemd-pg-data`), which Postgres 18 cannot open, see [Postgres 18 upgrade](#postgres-18-upgrade).
 - `openplate-with-sync.network`: the private network all three join.
 - `README.md`: this file.
 
@@ -103,16 +103,73 @@ systemctl --user start app.service core.service
 **Stop and remove.** This is the whole undo. Stopping `core.service` does not stop Postgres, so name all three. The last line deletes every account and diary on the instance. The first line also stops the network and volume units. Without that step, systemd still counts the network as created, and the next install in the same boot fails with `unable to find network`.:
 
 ```sh
-systemctl --user stop app.service core.service postgres.service openplate-with-sync-network.service pg-data-volume.service
+systemctl --user stop app.service core.service postgres.service openplate-with-sync-network.service pg-data-18-volume.service
 rm -rf ~/.config/containers/systemd/openplate-core
 systemctl --user daemon-reload
 podman network rm systemd-openplate-with-sync
-podman volume rm systemd-pg-data
+podman volume rm systemd-pg-data-18
 ```
+
+## Postgres 18 upgrade
+
+These units run Postgres 18 now. They ran 17 before. A new install needs nothing from this section. Read it if you already run these units and have a database in the old volume.
+
+**What changed.** A Postgres 18 container cannot open a Postgres 17 data directory, and it keeps its data one folder level deeper. The volume unit has a new name, `pg-data-18.volume`, so Podman makes a new volume, `systemd-pg-data-18`. Your old volume, `systemd-pg-data`, stays as it is. If you copy the new units over the old ones and start them, Postgres 18 sets up an empty database in the new volume. Your data is not lost, because it is still in the old volume. Do not do that. Move the data across as below. The old volume is your rollback until you remove it yourself.
+
+The steps use the same commands as the compose upgrade in [`docker/topologies/README.md`](../../topologies/README.md#postgres-18-upgrade), with `podman` for `docker` and systemd for the stack. Run them from the root of the repository checkout. `D` is your install directory. If you set `POSTGRES_USER` or `POSTGRES_DB` in `postgres.env`, use those values where the commands say `openplate` and `openplate_sync`.
+
+```sh
+D=~/.config/containers/systemd/openplate-core
+COUNTS="SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I', table_name), false, true, '')))[1]::text AS n FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1"
+
+# 1. Stop the units. Do not remove the volume.
+systemctl --user stop app.service core.service postgres.service
+
+# 2. Start a throwaway Postgres 17 on the old volume. Count the rows. Dump everything.
+podman run -d --name openplate-pg17-dump -v systemd-pg-data:/var/lib/postgresql/data docker.io/library/postgres:17-alpine
+until podman exec openplate-pg17-dump pg_isready -q -h 127.0.0.1; do sleep 1; done
+podman exec openplate-pg17-dump psql -U openplate -d openplate_sync -tA -c "$COUNTS" > counts-17.txt
+podman exec openplate-pg17-dump pg_dumpall -U openplate > openplate-17.sql
+podman stop openplate-pg17-dump && podman rm openplate-pg17-dump
+tail -n 3 openplate-17.sql    # must show: -- PostgreSQL database cluster dump complete
+
+# 3. Replace the units, then start only Postgres 18 on the new volume.
+rm "$D/pg-data.volume"
+cp docker/quadlet/core/* "$D"/
+systemctl --user daemon-reload
+systemctl --user start postgres.service
+until podman exec systemd-postgres pg_isready -q -h 127.0.0.1; do sleep 1; done
+
+# 4. Restore. Postgres 18 made an empty openplate_sync, so drop it first.
+#    One error line is normal: role "openplate" already exists.
+podman exec -i systemd-postgres psql -U openplate -d postgres -c 'DROP DATABASE openplate_sync'
+podman exec -i systemd-postgres psql -U openplate -d postgres < openplate-17.sql
+
+# 5. Compare the rows. diff prints nothing when they match.
+podman exec systemd-postgres psql -U openplate -d openplate_sync -tA -c "$COUNTS" > counts-18.txt
+diff counts-17.txt counts-18.txt && echo "row counts match"
+
+# 6. Start the rest and check the core server.
+systemctl --user start app.service core.service
+until curl -sf http://127.0.0.1:3001/health; do sleep 2; done
+```
+
+The dump comes from a Postgres 17 container, the server version that wrote the data. The last line of the dump file tells you the dump ran to the end. Do not go on if it does not. `pg_dumpall` also dumps the roles, so the database password comes across and `SERVER_SECRET` needs no change. The two count files must match. If they do not, stop, keep both volumes, and remove nothing. The wait loops ask over TCP (`-h 127.0.0.1`) on purpose. While Postgres sets up an empty cluster it runs a short first server that answers only on a socket, and a command sent then fails with "the database system is shutting down".
+
+**Go back.** Stop the units, put the old unit files back (the old `pg-data.volume` and the old `postgres.container`), run `systemctl --user daemon-reload`, and start them. They mount `systemd-pg-data`, which you did not change.
+
+**Clean up** when the new units have run for a few days and a backup of them exists:
+
+```sh
+podman volume rm systemd-pg-data
+rm -f openplate-17.sql counts-17.txt counts-18.txt
+```
+
+The dump holds every account and its encrypted diary. Treat it like a database backup, and delete it when you are done.
 
 ## SELinux and rootless notes
 
-**SELinux labels.** This host runs SELinux enforcing. Every mount here is a named volume (`pg-data.volume`). Podman labels a named volume for container access when it creates it, so nothing needed a `:Z`. That changes the moment you point a mount at a host directory instead. A bind mount on an enforcing host needs `:Z` (one container uses it) or `:z` (several do), for example `Volume=/srv/pg-data:/var/lib/postgresql/data:Z`. Otherwise, the container gets `Permission denied` on its own data directory.
+**SELinux labels.** This host runs SELinux enforcing. Every mount here is a named volume (`pg-data-18.volume`). Podman labels a named volume for container access when it creates it, so nothing needed a `:Z`. That changes the moment you point a mount at a host directory instead. A bind mount on an enforcing host needs `:Z` (one container uses it) or `:z` (several do), for example `Volume=/srv/pg-data:/var/lib/postgresql:Z`. Otherwise, the container gets `Permission denied` on its own data directory.
 
 **Rootless Postgres.** The Postgres image runs as its own non-root user inside the container and `chown`s its data directory at first boot. On a named volume that just works. Podman maps the container user into your subordinate UID range, and the volume is created to match. That is what the test run below saw. With a bind mount you must fix ownership from the host first. Run `podman unshare chown -R 70:70 ./pg-data` for the alpine image (70 is `postgres` there; the Debian image uses 999). Otherwise, the container stops at start with a permissions error.
 
@@ -130,7 +187,7 @@ The record below was run before the unit was renamed from `sync` to `core` (2026
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
 - Podman 5.8.4, rootless, as an ordinary user; podlet 0.3.2 generated the units
 - Linger was already on for the user (`loginctl show-user $USER -p Linger` printed `Linger=yes`)
-- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), `docker.io/library/postgres:17-alpine` (300 MB)
+- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), the Postgres 17 Alpine image (300 MB; the files ran 17 on that date)
 
 What was run, from a throwaway copy of the unit files under `~/.config/containers/systemd/`, with a fresh `SERVER_SECRET` in `openplate-with-sync.env` beside them:
 
@@ -149,7 +206,7 @@ curl -s http://127.0.0.1:3001/health
 
 Outcome: started clean with the units as committed now. It took four attempts to get there. Each failure changed the generator or the compose file, never a unit:
 
-1. **Short image name.** `postgres:17-alpine` is a short name, and rootless Podman refuses to pick a registry for one without a terminal to ask on, so the unit could not pull. Fix: the compose file now says `docker.io/library/postgres:17-alpine`.
+1. **Short image name.** `postgres` with only a tag is a short name, and rootless Podman refuses to pick a registry for one without a terminal to ask on, so the unit could not pull. Fix: the compose file now names the registry, `docker.io/library/postgres`.
 2. **First boot beat the start timeout.** Postgres's first boot runs `initdb`, which took 40 seconds on this laptop (two rounds of fsync). The user manager's `TimeoutStartSec` default here is 45 seconds, and the `pg_isready` probe runs every 5 seconds, so `Notify=healthy` had not fired when systemd killed the container. `Restart=always` brought Postgres back, but `sync.service` has `Requires=postgres.service` and its start job had already failed for good. Fix: the generator writes `TimeoutStartSec=300` under `[Service]` in every unit it gives `Notify=healthy`.
 3. **`SIGNUP_MODE` is a boot failure.** The compose file still forwarded `SIGNUP_MODE=open`; openplate-core 0.15.0 rejects it and exits, and the container restarted in a loop. Fix: the variable is gone from `compose.core.yml` and `compose.full.yml`. This one also broke the compose path.
 4. **`postgres` did not resolve.** Quadlet names the container `systemd-postgres`, and that is the only name Podman's DNS knew, so `DATABASE_URL=postgres://...@postgres:5432/...` failed with `ENOTFOUND` ten times and the core server gave up. Compose sets the service name as a DNS alias; the generator now does the same (`Network=openplate-with-sync.network:alias=postgres`).

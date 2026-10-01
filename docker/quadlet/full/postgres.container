@@ -11,9 +11,9 @@ HealthInterval=5s
 HealthRetries=10
 HealthTimeout=5s
 Notify=healthy
-Image=docker.io/library/postgres:17-alpine
+Image=docker.io/library/postgres:18-alpine
 Network=openplate-full.network:alias=postgres
-Volume=pg-data.volume:/var/lib/postgresql/data
+Volume=pg-data-18.volume:/var/lib/postgresql
 
 [Service]
 TimeoutStartSec=300

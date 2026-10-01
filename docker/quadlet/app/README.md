@@ -92,7 +92,7 @@ This scenario has no volume. Turn linger off with `loginctl disable-linger "$USE
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
 - Podman 5.8.4, rootless, as an ordinary user; podlet 0.3.2 generated the units
 - Linger was already on for the user (`loginctl show-user $USER -p Linger` printed `Linger=yes`)
-- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), `docker.io/library/postgres:17-alpine` (300 MB)
+- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), the Postgres 17 Alpine image (300 MB; the files ran 17 on that date)
 
 What was run, from a throwaway copy of the unit files under `~/.config/containers/systemd/`:
 

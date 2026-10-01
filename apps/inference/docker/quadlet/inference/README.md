@@ -74,7 +74,7 @@ The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights), and it runs
 
 ## SELinux and rootless notes
 
-**SELinux labels.** This host runs SELinux enforcing. Every mount here is a named volume (`inference-models.volume`), and Podman labels a named volume for container access when it creates it, so nothing needed a `:Z`. That changes the moment you point a mount at a host directory instead: a bind mount on an enforcing host needs `:Z` (one container uses it) or `:z` (several do), for example `Volume=/srv/pg-data:/var/lib/postgresql/data:Z`, or the container gets `Permission denied` on its own data directory.
+**SELinux labels.** This host runs SELinux enforcing. Every mount here is a named volume (`inference-models.volume`), and Podman labels a named volume for container access when it creates it, so nothing needed a `:Z`. That changes the moment you point a mount at a host directory instead: a bind mount on an enforcing host needs `:Z` (one container uses it) or `:z` (several do), for example `Volume=/srv/pg-data:/var/lib/postgresql:Z`, or the container gets `Permission denied` on its own data directory.
 
 **Rootless ports.** The units publish 8300, all above 1024, so no extra privilege is needed. A rootless container cannot bind a host port below 1024 unless you allow it, for example `sudo sysctl net.ipv4.ip_unprivileged_port_start=80`. If a port is taken on your host, change `PublishPort=` in your installed copy of the unit. The copy under `~/.config/containers/systemd/` is yours to edit; the copy in this repository is generated. A drop-in file cannot replace a port: `PublishPort=` in a `<unit>.container.d/*.conf` adds a second mapping next to the first.
 
@@ -88,7 +88,7 @@ The default profile is `lite` (LFM2.5-VL-1.6B, 1.96 GiB of weights), and it runs
 - Host: Fedora (Bluefin), kernel `7.0.11-200.fc44.x86_64`, SELinux `Enforcing`, no GPU, 16 cores, 60 GiB RAM
 - Podman 5.8.4, rootless, as an ordinary user; podlet 0.3.2 generated the units
 - Linger was already on for the user (`loginctl show-user $USER -p Linger` printed `Linger=yes`)
-- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), `docker.io/library/postgres:17-alpine` (300 MB)
+- Images: `ghcr.io/lowcarbcheck/openplate:latest` (400 MB), `ghcr.io/lowcarbcheck/openplate-core:latest` (189 MB, serviceVersion 0.15.0), `ghcr.io/lowcarbcheck/openplate-inference:latest` (1.01 GB), the Postgres 17 Alpine image (300 MB; the files ran 17 on that date)
 
 What was run, from a throwaway copy of the unit files under `~/.config/containers/systemd/`, with an empty weights volume:
 

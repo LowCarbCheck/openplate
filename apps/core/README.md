@@ -80,6 +80,48 @@ Then point your openplate app at it by setting `CORE_URL` to this service's publ
 
 **Every setting is an environment variable.** The openplate [environment variables page](https://github.com/LowCarbCheck/openplate/blob/main/apps/app/docs/environment-variables.md#the-sync-service-openplate-core) lists all variables for this service, their defaults, and boot rules. One is easy to misread: `INSTANCE_NAME`. It defaults to `openplate`. It names the instance on the `/health` handshake (`instance.name`) and in the start-up log only. The letters this service sends do not use it.
 
+### Postgres 18, and what an older install must do
+
+`docker/compose.yml` runs Postgres 18 (`postgres:18-alpine`). It ran 17 before. A new install needs nothing here. If you already run this file with a database in it, read on.
+
+A Postgres 18 container cannot open a Postgres 17 data directory, and it keeps its data one folder level deeper. The file therefore names a new volume, `postgres-data-18`. Your old volume, `postgres-data`, stays as it is. If you only start the new file, you get an empty database in the new volume. Your data is not lost, because it is still in the old volume. Do not do that. Move the data across with a dump and a restore. The old volume is your rollback until you remove it yourself. Run the commands from the folder you ran `docker compose` in. If you set `POSTGRES_USER` or `POSTGRES_DB` in `.env`, use those values where the commands say `openplate` and `openplate_sync`.
+
+```bash
+COUNTS="SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('SELECT count(*) AS c FROM %I', table_name), false, true, '')))[1]::text AS n FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1"
+F="--project-directory . -f docker/compose.yml"
+
+# 1. Stop the stack. Never add -v, it deletes the volume.
+docker compose $F down
+
+# 2. Start a throwaway Postgres 17 on the old volume. Count the rows. Dump everything.
+docker run -d --name openplate-pg17-dump -v openplate-core_postgres-data:/var/lib/postgresql/data docker.io/library/postgres:17-alpine
+until docker exec openplate-pg17-dump pg_isready -q -h 127.0.0.1; do sleep 1; done
+docker exec openplate-pg17-dump psql -U openplate -d openplate_sync -tA -c "$COUNTS" > counts-17.txt
+docker exec openplate-pg17-dump pg_dumpall -U openplate > openplate-17.sql
+docker stop openplate-pg17-dump && docker rm openplate-pg17-dump
+tail -n 3 openplate-17.sql    # must show: -- PostgreSQL database cluster dump complete
+
+# 3. Take the new files (git pull), then start only Postgres 18 on the new volume.
+git pull
+docker compose $F up -d postgres
+until docker compose $F exec -T postgres pg_isready -q -h 127.0.0.1; do sleep 1; done
+
+# 4. Restore. Postgres 18 made an empty openplate_sync, so drop it first.
+#    One error line is normal: role "openplate" already exists.
+docker compose $F exec -T postgres psql -U openplate -d postgres -c 'DROP DATABASE openplate_sync'
+docker compose $F exec -T postgres psql -U openplate -d postgres < openplate-17.sql
+
+# 5. Compare the rows. diff prints nothing when they match.
+docker compose $F exec -T postgres psql -U openplate -d openplate_sync -tA -c "$COUNTS" > counts-18.txt
+diff counts-17.txt counts-18.txt && echo "row counts match"
+
+# 6. Start the rest and check the service.
+docker compose $F up -d
+until curl -sf http://127.0.0.1:3000/health; do sleep 2; done
+```
+
+The last line of the dump file tells you the dump ran to the end. Do not go on if it does not. `pg_dumpall` also dumps the roles, so the database password comes across and `SERVER_SECRET` needs no change. If the two count files differ, stop, keep both volumes, and remove nothing. To go back, run `docker compose $F down`, check out the older release of this file, and start it again: it mounts `postgres-data`. When the new stack has run for a few days and a backup of it exists, run `docker volume rm openplate-core_postgres-data` and delete the dump, which holds every account. The same steps, with the volume `openplate-with-sync_pg-data`, are in [`docker/topologies/README.md`](https://github.com/LowCarbCheck/openplate/blob/main/docker/topologies/README.md#postgres-18-upgrade) for the combined file, and for Quadlet units in [`docker/quadlet/core/README.md`](./docker/quadlet/core/README.md#postgres-18-upgrade).
+
 ### Signup is by invitation, and mail is optional
 
 An account is an **email address plus a passphrase**, and it is created by redeeming an invite addressed to somebody. By default you mint every invite yourself, and the instance is invite-only.
@@ -500,7 +542,7 @@ podman compose --project-directory . -f docker/compose.yml exec -T postgres \
   psql -U openplate openplate_sync < sync-backup.sql
 ```
 
-The database lives in the `postgres-data` volume declared by `docker/compose.yml`. Keep
+The database lives in the `postgres-data-18` volume declared by `docker/compose.yml`. Keep
 `SERVER_SECRET` with the dump, in whatever holds your other secrets, not in the dump itself.
 
 To move accounts to another instance with their passwords and diaries, read
@@ -726,6 +768,8 @@ input: request bodies enter as `JsonValue` and are decoded through
 runtime.
 
 The integration suite targets a local Postgres at `localhost:5433` (user `postgres`, password `postgres`) and creates `openplate_sync_test` on first run. Override with `TEST_DATABASE_URL`. It deliberately does **not** use the self-hosting database in `docker/compose.yml`: that one is for self-hosters. If you have no Postgres on 5433, `docker/compose.dev.yml` is a one-service file that provides exactly that and nothing else.
+
+The suite and `docker/compose.dev.yml` stay on Postgres 17, the version production runs, so a feature that only 18 has fails here before it ships. The self-host files run 18. Before you cut a core tag, run `make check-pg18` from the repository root. It starts a throwaway `postgres:18-alpine` from `docker/topologies/compose.core.yml`, builds this image, starts it against that database, and requires `/health` to answer 200 with the version in `package.json` and every committed migration applied. It removes what it created. It builds an image, so it is a release check and not part of the pre-push gate. Set `CORE_IMAGE` to test an image you already built.
 
 ### Layout
 
