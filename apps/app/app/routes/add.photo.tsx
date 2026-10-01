@@ -52,9 +52,16 @@ import { scaleMacrosPer100gToServing, type Macros } from '#app/lib/macros';
 import { authoritativeNetCarbsField, encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
 import { cloneMicronutrients, encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrients';
 import { toStoredAttribution } from '#app/lib/attribution';
-import { cautionProfileOf, decideCautions, encodeFoodFlags, foodFlagsField } from '#app/lib/food-cautions';
+import {
+  cautionProfileOf,
+  decideCautions,
+  encodeFoodFlags,
+  foodFlagsField,
+  notCheckedNote,
+  profileWantsCautions,
+} from '#app/lib/food-cautions';
 import type { CautionProfile } from '#app/lib/food-cautions';
-import { FoodCautionChips } from '#app/components/food-caution-chip';
+import { CautionsNotCheckedNote, FoodCautionChips } from '#app/components/food-caution-chip';
 import {
   PORTION_SCALE_OPTIONS,
   SCAN_GRAMS_STEP,
@@ -3222,6 +3229,16 @@ export function ConfirmDraftForm({
     };
   });
 
+  // THE NOT-CHECKED LINE (M219/03 follow-up). Decided here, from the parsed
+  // foods and the profile, both known on the first render of this screen, so
+  // it never arrives late. The box is kept for any person with something
+  // listed, line or no line, and for nobody else: someone with no allergy and
+  // no pregnancy sees no new box at all. It reads EVERY food on the screen,
+  // dropped ones included, so ticking Include never makes the line come or go.
+  const identifiedFoods = identification?.foods ?? [];
+  const hasNotCheckedBox = identifiedFoods.length > 0 && profileWantsCautions(cautionProfile);
+  const notCheckedLine = notCheckedNote(cautionProfile, identifiedFoods);
+
   const summary = summarizeIncludedPortions(
     itemViews.map((view) => ({
       included: !excludedIndexes.has(view.index),
@@ -3303,6 +3320,10 @@ export function ConfirmDraftForm({
           <AlertDescription>{form.errors.join(', ')}</AlertDescription>
         </Alert>
       )}
+
+      {/* Above the food cards and not inside one: the line is about the whole
+          scan, and a person reads it before the first chip. */}
+      {hasNotCheckedBox && <CautionsNotCheckedNote note={notCheckedLine} />}
 
       {itemViews.map((view) => {
         const { itemFieldset, macrosFieldset, preview, foodMatches, index } = view;

@@ -1,0 +1,2 @@
+- [Inference gate and lint traps](project_inference_gate_and_lint_traps.md), gate order, anti-slop in tests, doc-claims "carries", Base vs service schema
+- [App lint traps and seams](project_app_lint_traps_and_seams.md), apps/app anti-slop test traps, host gate, capabilities and language seams

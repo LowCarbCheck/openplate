@@ -28,6 +28,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 const ALLOWED_METHODS = 'GET, POST, OPTIONS';
+/**
+ * `Accept-Language` (read by `request-language.ts`) is NOT listed: it is a
+ * CORS-safelisted request header, so a browser sends it without asking. Listing
+ * it would change nothing.
+ */
 const ALLOWED_HEADERS = 'Authorization, Content-Type';
 const EXPOSED_HEADERS = 'Retry-After';
 /** 24h — the policy is static, so re-asking is pure latency. */

@@ -365,6 +365,10 @@
       "soybeans": "Peut contenir du soja",
       "sulphites": "Peut contenir des sulfites"
     },
+    "notChecked": {
+      "all": "Ce scan n'a pas vérifié tes allergies ni ta grossesse. Lis toi-même les étiquettes.",
+      "partial": "Les vérifications d'allergies et de grossesse sont partielles pour ce scan. Lis toi-même les étiquettes."
+    },
     "pregnancy": {
       "alcohol": "Contient de l'alcool, à éviter de préférence",
       "caffeine": "Caféine, compte dans le quota de 200 mg par jour",
@@ -536,6 +540,11 @@
     "pantry": {
       "title": "Qu'est-ce que tu as chez toi ?",
       "placeholder": "un demi-chou, six œufs, un pot de feta, 500 g de riz"
+    },
+    "unsupported": {
+      "meal": "Ce serveur d'IA ne lit pas les repas saisis. Utilise la recherche ci-dessus, qui ne nécessite aucune IA.",
+      "pantry": "Ce serveur d'IA ne lit pas de liste de garde-manger saisie.",
+      "choose": "Choisir un autre fournisseur"
     }
   },
   "diary": {
@@ -2425,6 +2434,22 @@
     "baseUrl": {
       "help": "Sur l'instance hébergée, seul un point de terminaison localhost/127.0.0.1 est joignable : la politique de sécurité du contenu bloque les autres hôtes par conception, pour protéger ta clé si cette page venait à être compromise. Tu auto-héberges ? Définis CSP_CONNECT_EXTRA pour autoriser ton propre point de terminaison distant (voir le README). L'adresse directe api.openai.com n'est jamais joignable non plus. Utilise OpenRouter pour les modèles OpenAI."
     },
+    "capabilities": {
+      "lead": "Ce serveur a des limites.",
+      "tasks": "Ce serveur ne gère pas {{tasks, list}}.",
+      "task": {
+        "plateImage": "photos d'assiette",
+        "describe": "repas saisis",
+        "pantryImage": "photos du garde-manger",
+        "pantryText": "listes de garde-manger saisies",
+        "recipes": "recettes"
+      },
+      "flagsPartial": "Ses vérifications d'allergies et de grossesse sont partielles.",
+      "flagsNone": "Il n'effectue aucune vérification d'allergies ni de grossesse.",
+      "translationsRequestLanguage": "Il traduit les noms d'aliments dans une seule langue par scan.",
+      "translationsNone": "Il ne traduit pas les noms d'aliments.",
+      "labelsNone": "Il ne lit pas les étiquettes nutritionnelles."
+    },
     "connectCard": {
       "description": "Les photos d'assiette sont envoyées directement au fournisseur de ton choix pour être analysées. openplate en conserve une copie uniquement sur cet appareil pour que tu puisses la consulter plus tard, jamais sur notre serveur. Gère ou supprime ces copies à tout moment dans Données et sauvegarde, dans les paramètres. Ta clé ne quitte jamais cet appareil, sauf pour contacter le fournisseur sélectionné ci-dessous.",
       "title": "Connecter ton fournisseur d'IA"
@@ -3505,6 +3530,12 @@
     "plansNotSwitchedOn": "Les entrées par IA ne sont pas encore activées pour ce compte. Choisis un forfait pour les activer. La recherche dans la base de données alimentaire fonctionne sans elles.",
     "plansLink": "Consulter les forfaits"
   },
+  "intakeUnsupported": {
+    "title": "Ce serveur d'IA ne peut pas faire cela",
+    "pantry": "Le serveur d'IA auquel tu t'es connecté ne lit pas le garde-manger, que ce soit à partir de photos ou de texte.",
+    "recipes": "Le serveur d'IA auquel tu t'es connecté ne suggère pas de recettes.",
+    "choose": "Choisir un autre fournisseur"
+  },
   "plan": {
     "title": "Ton forfait",
     "loading": "Lecture de ton forfait en cours.",
@@ -3611,7 +3642,11 @@
   "pantry": {
     "title": "Garde-manger",
     "lead": "Ce que tu as chez toi. Prends une étagère en photo, ou écris la liste.",
+    "leadPhoto": "Ce que tu as chez toi. Prends une étagère en photo.",
+    "leadWords": "Ce que tu as chez toi. Écris la liste.",
     "empty": "Rien ici pour le moment. Prends ton frigo en photo, ou écris ce que tu as.",
+    "emptyPhoto": "Rien ici pour le moment. Prends ton réfrigérateur en photo.",
+    "emptyWords": "Rien ici pour le moment. Écris ce que tu as.",
     "composerLabel": "Qu'est-ce que tu as ?",
     "reading": "Lecture de tes éléments...",
     "door": {

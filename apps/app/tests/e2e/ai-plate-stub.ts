@@ -22,37 +22,62 @@ const PIXEL_PNG = Buffer.from(
   'base64',
 );
 
-/** Two items on one plate, so the count has to fold one intake's rows into one meal. */
-const IDENTIFICATION = JSON.stringify({
-  foods: ['Recap tier rye bread', 'Recap tier butter'].map((name) => ({
-    name,
-    estimatedGrams: 30,
-    confidence: 'high',
-    portionHint: null,
-    macrosPer100g: { carbs: 40, fiber: 6, sugars: null, polyols: null, protein: 8, fat: 10, kcal: 300 },
-    macroSource: 'estimated',
-    carbBasis: null,
-    brand: null,
-    servingSize: null,
-  })),
-  unreadable: false,
-  unreadableReason: null,
-  notes: null,
-});
+/**
+ * What a spec may add to every item of the plate: the model's `flags`, and the
+ * service's `flagsCoverage`. Left out, an item carries neither, which is how a
+ * provider that never looked answers.
+ */
+export interface PlateFoodExtra {
+  flags?: { pregnancy: string[]; allergens: string[]; mayContain: string[] };
+  flagsCoverage?: 'partial';
+}
+
+/**
+ * Two items on one plate, so the count has to fold one intake's rows into one
+ * meal. `extra` is merged onto every item, which is how a spec gives the whole
+ * plate the same `flags` or `flagsCoverage`, or none.
+ */
+function identificationOf(extra: PlateFoodExtra): string {
+  return JSON.stringify({
+    foods: ['Recap tier rye bread', 'Recap tier butter'].map((name) =>
+      Object.assign(
+        {
+          name,
+          estimatedGrams: 30,
+          confidence: 'high',
+          portionHint: null,
+          macrosPer100g: { carbs: 40, fiber: 6, sugars: null, polyols: null, protein: 8, fat: 10, kcal: 300 },
+          macroSource: 'estimated',
+          carbBasis: null,
+          brand: null,
+          servingSize: null,
+        },
+        extra,
+      ),
+    ),
+    unreadable: false,
+    unreadableReason: null,
+    notes: null,
+  });
+}
 
 /**
  * Answers every chat completion the stub provider receives with the two-item
  * plate above. Call before the scan.
  *
  * @param page - the page whose context routes the provider.
+ * @param extra - fields merged onto every item of the answer, such as `flags`
+ *   and `flagsCoverage`. Left out, the items carry neither, which is how a
+ *   provider that never looked answers.
  */
-export async function routeStubPlateAnswer(page: Page): Promise<void> {
+export async function routeStubPlateAnswer(page: Page, extra: PlateFoodExtra = {}): Promise<void> {
+  const content = identificationOf(extra);
   await page.route(`${STUB_PROVIDER_URL}/chat/completions`, (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        choices: [{ index: 0, message: { role: 'assistant', content: IDENTIFICATION } }],
+        choices: [{ index: 0, message: { role: 'assistant', content } }],
         usage: { prompt_tokens: 1000, completion_tokens: 200 },
       }),
     }),

@@ -61,7 +61,7 @@ export interface TestApp {
   post(
     path: string,
     body: ChatCompletionRequestBody,
-    options?: { apiKey?: string | null },
+    options?: { apiKey?: string | null; acceptLanguage?: string },
   ): Promise<TestResponse>;
   get(path: string, options?: { apiKey?: string | null }): Promise<TestResponse>;
   close(): Promise<void>;
@@ -86,6 +86,8 @@ export interface StartTestAppOptions {
   /** Reporting-only stub for the `/readyz` degraded-embedding field. */
   embedder?: Pick<Embedder, 'status'> | null;
   logger?: Logger;
+  /** The bound on the name translation call, small so a hang test does not wait 20 s. */
+  translateTimeoutMs?: number;
 }
 
 export async function startTestApp(options: StartTestAppOptions = {}): Promise<TestApp> {
@@ -118,6 +120,7 @@ export async function startTestApp(options: StartTestAppOptions = {}): Promise<T
     rateLimiter: options.rateLimiter ?? createRateLimiter({ requestsPerMinute: config.rateLimitRpm }),
     resolver: options.resolver ?? null,
     logger: options.logger ?? captured.logger,
+    translateTimeoutMs: options.translateTimeoutMs,
   });
 
   const server: Server = await new Promise((resolve) => {
@@ -129,14 +132,19 @@ export async function startTestApp(options: StartTestAppOptions = {}): Promise<T
   const { port } = server.address() as AddressInfo;
   const baseUrl = `http://127.0.0.1:${port}`;
 
-  async function send(
-    method: 'GET' | 'POST',
-    path: string,
-    body: ChatCompletionRequestBody | null,
-    apiKey: string | null | undefined,
-  ): Promise<TestResponse> {
+  async function send(request: {
+    method: 'GET' | 'POST';
+    path: string;
+    body: ChatCompletionRequestBody | null;
+    apiKey: string | null | undefined;
+    acceptLanguage?: string;
+  }): Promise<TestResponse> {
+    const { method, path, body, apiKey } = request;
     const headers: Record<string, string> = {};
     if (apiKey !== null) headers.Authorization = `Bearer ${apiKey ?? TEST_API_KEY}`;
+    // Unset unless a test sets it, and then Node's `fetch` sends `Accept-Language: *`
+    // (measured, Node 24), which `request-language.ts` reads as no language.
+    if (request.acceptLanguage !== undefined) headers['Accept-Language'] = request.acceptLanguage;
     const init: RequestInit = { method, headers };
     if (body !== null) {
       headers['Content-Type'] = 'application/json';
@@ -158,8 +166,9 @@ export async function startTestApp(options: StartTestAppOptions = {}): Promise<T
     config,
     admission,
     logLines: captured.lines,
-    post: (path, body, opts) => send('POST', path, body, opts?.apiKey),
-    get: (path, opts) => send('GET', path, null, opts?.apiKey),
+    post: (path, body, opts) =>
+      send({ method: 'POST', path, body, apiKey: opts?.apiKey, acceptLanguage: opts?.acceptLanguage }),
+    get: (path, opts) => send({ method: 'GET', path, body: null, apiKey: opts?.apiKey }),
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }

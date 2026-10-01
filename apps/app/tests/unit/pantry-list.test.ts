@@ -22,7 +22,15 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import { PantryList, PANTRY_RECIPES_HREF, type PantryDraftRow } from '#app/routes/pantry';
+import {
+  PantryList,
+  PANTRY_RECIPES_HREF,
+  pantryIntakeWays,
+  pantryLeadKey,
+  type PantryDraftRow,
+  type PantryIntakeWays,
+} from '#app/routes/pantry';
+import { FULL_PROVIDER_CAPABILITIES, type ProviderCapabilities } from '#app/lib/ai/provider-capabilities';
 
 /**
  * A hermetic catalog: this file asserts WHICH keys the screen asks for and
@@ -37,7 +45,11 @@ void i18next.use(initReactI18next).init({
         launcher: { sheetTitle: 'Add food', speak: 'Speak', photo: 'Photo' },
         pantry: {
           lead: 'What you have at home.',
+          leadPhoto: 'Home, photo only.',
+          leadWords: 'Home, words only.',
           empty: 'Nothing here yet.',
+          emptyPhoto: 'Empty, photo only.',
+          emptyWords: 'Empty, words only.',
           composerLabel: 'What do you have?',
           units: { g: 'g', ml: 'ml', piece: 'pieces', pack: 'packs' },
           review: {
@@ -71,7 +83,13 @@ function render(element: ReactElement): string {
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
-function renderList({ hasStoredItems }: { hasStoredItems: boolean }): string {
+function renderList({
+  hasStoredItems,
+  intakeWays = 'both',
+}: {
+  hasStoredItems: boolean;
+  intakeWays?: PantryIntakeWays;
+}): string {
   return render(
     createElement(PantryList, {
       rows: hasStoredItems ? [EGGS] : [],
@@ -79,6 +97,7 @@ function renderList({ hasStoredItems }: { hasStoredItems: boolean }): string {
       onSave: () => undefined,
       isSaving: false,
       hasStoredItems,
+      intakeWays,
     }),
   );
 }
@@ -134,5 +153,61 @@ describe('the empty pantry', () => {
     assert.ok(html.includes('What you have at home.'));
     assert.ok(html.includes('Add a line'));
     assert.ok(html.includes('Remove Eggs'));
+  });
+});
+
+/** The full capabilities with the named tasks switched off. */
+function without(...tasks: ('pantryImage' | 'pantryText')[]): ProviderCapabilities {
+  const off = Object.fromEntries(tasks.map((task) => [task, false]));
+  return { ...FULL_PROVIDER_CAPABILITIES, tasks: { ...FULL_PROVIDER_CAPABILITIES.tasks, ...off } };
+}
+
+describe('which ways in the connected server reads', () => {
+  it('maps the two pantry tasks to the ways in, and neither to null', () => {
+    assert.equal(pantryIntakeWays(FULL_PROVIDER_CAPABILITIES), 'both');
+    assert.equal(pantryIntakeWays(without('pantryText')), 'photo');
+    assert.equal(pantryIntakeWays(without('pantryImage')), 'words');
+    assert.equal(pantryIntakeWays(without('pantryImage', 'pantryText')), null);
+  });
+
+  it('is not moved by the tasks the pantry does not run', () => {
+    // The control: a server that refuses the diary's typed meals still reads the shelf.
+    const noDescribe = {
+      ...FULL_PROVIDER_CAPABILITIES,
+      tasks: { ...FULL_PROVIDER_CAPABILITIES.tasks, describe: false, recipes: false },
+    };
+    assert.equal(pantryIntakeWays(noDescribe), 'both');
+  });
+
+  it('picks a lead sentence that is true of the way in that is left', () => {
+    assert.equal(pantryLeadKey({ intakeWays: 'both', hasStoredItems: true }), 'pantry.lead');
+    assert.equal(pantryLeadKey({ intakeWays: 'photo', hasStoredItems: true }), 'pantry.leadPhoto');
+    assert.equal(pantryLeadKey({ intakeWays: 'words', hasStoredItems: false }), 'pantry.emptyWords');
+  });
+});
+
+describe('the strip on a server that reads one way in', () => {
+  it('draws the photo button and no typing row for a photo-only server', () => {
+    const html = renderList({ hasStoredItems: true, intakeWays: 'photo' });
+    assert.ok(html.includes('data-slot="intake-composer-photo"'), 'the camera is gone');
+    assert.ok(!html.includes('What do you have?'), 'the typing row is still offered');
+    assert.ok(!html.includes('aria-label="Speak"'), 'the microphone is still offered');
+    assert.ok(html.includes('Home, photo only.'));
+  });
+
+  it('draws the typing row and no photo button for a words-only server', () => {
+    const html = renderList({ hasStoredItems: true, intakeWays: 'words' });
+    assert.ok(!html.includes('data-slot="intake-composer-photo"'), 'the camera is still offered');
+    assert.ok(html.includes('What do you have?'), 'the typing row is gone');
+    assert.ok(html.includes('aria-label="Speak"'));
+    assert.ok(html.includes('Home, words only.'));
+  });
+
+  it('CONTROL: a server that reads both draws both, and the plain lead', () => {
+    const html = renderList({ hasStoredItems: true, intakeWays: 'both' });
+    assert.ok(html.includes('data-slot="intake-composer-photo"'));
+    assert.ok(html.includes('What do you have?'));
+    assert.ok(html.includes('aria-label="Speak"'));
+    assert.ok(html.includes('What you have at home.'));
   });
 });

@@ -61,6 +61,20 @@ export const MACRO_SOURCE_VALUES = ['estimated', 'label'] as const;
 export type MacroSource = (typeof MACRO_SOURCE_VALUES)[number];
 
 /**
+ * HOW FAR ONE FOOD'S FLAGS REACH, when the provider says they fall short.
+ *
+ * One value today, `'partial'`: the provider can list what a food CONTAINS
+ * but cannot rule an allergen OUT, so a food with no matching flag is "not
+ * fully checked", never "clear". A self-hosted openplate-inference server
+ * sends it on a food whose name lookup recognised something; every cloud
+ * provider omits it, which is why it is absent from the provider-facing JSON
+ * Schema (see `schema.ts`) the same way `provenance` is. An absent coverage
+ * on a food WITH flags means the flags are the model's full answer.
+ */
+export const FLAGS_COVERAGE_VALUES = ['partial'] as const;
+export type FlagsCoverage = (typeof FLAGS_COVERAGE_VALUES)[number];
+
+/**
  * The serving a nutrition panel prints, kept as text plus grams where the
  * panel states them. `asPrinted` is the authority ("1 bar (35 g)",
  * "2 pieces"); `grams` is present only when the panel actually gives a weight,
@@ -103,11 +117,27 @@ export interface IdentifiedFood {
   /**
    * The pregnancy categories this food falls into and the EU 14 allergens it
    * contains or may contain, as the MODEL reports them for every food (M219
-   * D1). Never optional: a provider that sent none parses to three empty
-   * arrays, so no consumer handles `undefined`. What becomes a visible chip is
-   * decided on the device from the local profile, never here.
+   * D1). What becomes a visible chip is decided on the device from the local
+   * profile, never here.
+   *
+   * ABSENT MEANS NOT ASSESSED. Present only when the provider sent a flags
+   * object; a provider that sent none, or `null`, leaves this `undefined`
+   * (a self-hosted inference service that predates the field, a BYOK model
+   * that ignored it). Three empty arrays are a different answer: the model
+   * looked and found nothing. The two must never collapse into one, because
+   * reading "never checked" as "checked, nothing found" is a false all-clear
+   * for a person who listed an allergy or a pregnancy. Same convention as
+   * `LocalFoodLog.flags`; `flagsAssessed` in `#app/lib/food-cautions` is the
+   * one reader of the difference.
    */
-  flags: FoodFlags;
+  flags?: FoodFlags;
+  /**
+   * See {@link FlagsCoverage}. Present only together with `flags`: a coverage
+   * on a food nobody flagged says nothing, so `normalizeFood` drops it there.
+   * Not persisted yet, so a logged row loses it; `checkCautions` in
+   * `#app/lib/food-cautions` is its one reader.
+   */
+  flagsCoverage?: FlagsCoverage;
   /**
    * The same food named in every app language the model gave, trimmed, blanks
    * dropped, and ALWAYS carrying the language the call was made in (filled

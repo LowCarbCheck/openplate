@@ -365,6 +365,10 @@
       "soybeans": "Soya fasulyesi içerebilir",
       "sulphites": "Sülfit içerebilir"
     },
+    "notChecked": {
+      "all": "Bu tarama alerjilerini veya hamilelik durumunu kontrol etmedi. Etiketleri kendin oku.",
+      "partial": "Alerji ve hamilelik kontrolleri bu tarama için kısmi yapıldı. Etiketleri kendin oku."
+    },
     "pregnancy": {
       "alcohol": "Alkol içerir, kaçınmak en iyisidir",
       "caffeine": "Kafein, günlük 200 mg sınırına dahildir",
@@ -536,6 +540,11 @@
     "pantry": {
       "title": "Evinde ne var?",
       "placeholder": "yarım lahana, altı yumurta, bir kutu beyaz peynir, 500 g pirinç"
+    },
+    "unsupported": {
+      "meal": "Bu yapay zeka sunucusu yazılan öğünleri okumaz. Yapay zeka gerektirmeyen yukarıdaki Arama özelliğini kullan.",
+      "pantry": "Bu yapay zeka sunucusu yazılan kiler listesini okumaz.",
+      "choose": "Başka bir sağlayıcı seç"
     }
   },
   "diary": {
@@ -2425,6 +2434,22 @@
     "baseUrl": {
       "help": "Barındırılan kurulumda yalnızca bir localhost/127.0.0.1 uç noktasına erişilebilir: bu sayfa ele geçirilirse anahtarını korumak için içerik güvenlik ilkesi tasarım gereği diğer ana makineleri engeller. Kendi sunucunda mı barındırıyorsun? Kendi uzak uç noktana izin vermek için CSP_CONNECT_EXTRA ayarla (README dosyasına bak). Doğrudan api.openai.com adresine her iki durumda da asla erişilemez. OpenAI modelleri için OpenRouter kullan."
     },
+    "capabilities": {
+      "lead": "Bu sunucunun sınırları var.",
+      "tasks": "Bu sunucu {{tasks, list}} işlemlerini yapmaz.",
+      "task": {
+        "plateImage": "tabak fotoğrafları",
+        "describe": "yazılan öğünler",
+        "pantryImage": "kiler fotoğrafları",
+        "pantryText": "yazılan kiler listeleri",
+        "recipes": "tarifler"
+      },
+      "flagsPartial": "Alerji ve hamilelik kontrolleri kısmidir.",
+      "flagsNone": "Alerji veya hamilelik kontrolü yapmaz.",
+      "translationsRequestLanguage": "Yiyecek adlarını tarama başına tek bir dile çevirir.",
+      "translationsNone": "Yiyecek adlarını çevirmez.",
+      "labelsNone": "Besin değerleri etiketlerini okumaz."
+    },
     "connectCard": {
       "description": "Tabak fotoğrafları okunmak üzere doğrudan seçtiğin sağlayıcıya gider. openplate, sonradan görüntüleyebilmen için bir kopyayı yalnızca bu cihazda tutar, asla sunucumuzda tutmaz. Kopyaları dilediğin zaman ayarlardaki Veri ve yedekleme altından yönet veya temizle. Anahtarın, aşağıda seçilen sağlayıcı haricinde bu cihazdan asla çıkmaz.",
       "title": "Yapay zeka sağlayıcını bağla"
@@ -3505,6 +3530,12 @@
     "plansNotSwitchedOn": "Bu hesap için yapay zeka girdileri henüz açık değil. Bunları açmak için bir plan seç. Besin veri tabanında arama yapmak bunlar olmadan da çalışır.",
     "plansLink": "Planları gör"
   },
+  "intakeUnsupported": {
+    "title": "Bu yapay zeka sunucusu bunu yapamaz",
+    "pantry": "Bağladığın yapay zeka sunucusu fotoğraflardan veya metinlerden kileri okumaz.",
+    "recipes": "Bağladığın yapay zeka sunucusu tarif önermez.",
+    "choose": "Başka bir sağlayıcı seç"
+  },
   "plan": {
     "title": "Planın",
     "loading": "Planın okunuyor.",
@@ -3611,7 +3642,11 @@
   "pantry": {
     "title": "Kiler",
     "lead": "Evde neyin var. Bir rafın fotoğrafını çek veya listeyi yaz.",
+    "leadPhoto": "Evde neyin var. Bir rafın fotoğrafını çek.",
+    "leadWords": "Evde neyin var. Listeyi yaz.",
     "empty": "Burada henüz bir şey yok. Buzdolabının fotoğrafını çek veya elindekileri yaz.",
+    "emptyPhoto": "Henüz burada bir şey yok. Buzdolabının fotoğrafını çek.",
+    "emptyWords": "Henüz burada bir şey yok. Elindekileri yaz.",
     "composerLabel": "Neyin var?",
     "reading": "Öğelerin okunuyor...",
     "door": {

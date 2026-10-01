@@ -91,6 +91,14 @@ export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
   readonly parse: (rawText: string) => TResult;
   /** Enforced-structured-output path: an already-parsed JSON value → result. */
   readonly validate: (value: UnvalidatedProviderJson) => TResult;
+  /**
+   * The app language this task was built for, when it was built for one.
+   * An adapter whose provider reads it sends it as `Accept-Language` (see
+   * `ProviderDefinition.sendsAppLanguage`); the prompt already names it either
+   * way. Absent on `RECIPE_PROPOSAL_TASK`, whose language travels inside the
+   * text block it is handed.
+   */
+  readonly language?: LanguageCode;
 }
 
 /**
@@ -105,6 +113,7 @@ export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
  */
 export function photoIntakeTask(language: LanguageCode): IntakeTaskDescriptor<PlateIdentification> {
   return {
+    language,
     mode: 'photo',
     systemPrompt: buildPlateIdentificationSystemPrompt(language),
     userPrompt: buildPlateIdentificationUserPrompt(),
@@ -127,6 +136,7 @@ export function photoIntakeTask(language: LanguageCode): IntakeTaskDescriptor<Pl
  */
 export function textIntakeTask(language: LanguageCode): IntakeTaskDescriptor<PlateIdentification> {
   return {
+    language,
     mode: 'text',
     systemPrompt: buildTextIntakeSystemPrompt(language),
     userPrompt: buildTextIntakeUserPrompt(),
@@ -154,6 +164,7 @@ export function textIntakeTask(language: LanguageCode): IntakeTaskDescriptor<Pla
  */
 export function pantryPhotoTask(language: LanguageCode): IntakeTaskDescriptor<PantryIdentification> {
   return {
+    language,
     mode: 'photo',
     systemPrompt: buildPantryPhotoSystemPrompt(language),
     userPrompt: buildPantryPhotoUserPrompt(),
@@ -177,6 +188,7 @@ export function pantryPhotoTask(language: LanguageCode): IntakeTaskDescriptor<Pa
  */
 export function pantryTextTask(language: LanguageCode): IntakeTaskDescriptor<PantryIdentification> {
   return {
+    language,
     mode: 'text',
     systemPrompt: buildPantryTextSystemPrompt(language),
     userPrompt: buildPantryTextUserPrompt(),

@@ -13,6 +13,7 @@
   networked `FOOD_SOURCE`) a *text* food-name lookup, and (only if you set
   `EMBEDDING_RUNTIME_URL`) a *text* embedding call. No image ever leaves the
   container, under any configuration.
+- **Names for translation stay with the model runtime.** The translation call sends food names as text to the model runtime. In the bundled container, the runtime uses the loopback interface, so traffic stays local. With `MODEL_PROFILE=external`, names go to your configured runtime URL. That call never includes photos. The service reads `Accept-Language` to select the target language. It does not store or log the header.
 - **No accounts, no cookies, no history.** The service stores nothing between
   requests. There is nothing to export, breach, or subpoena.
 - **In openplate's flow, the photo goes device → your endpoint directly.** It

@@ -71,7 +71,10 @@ import { Send } from 'lucide-react';
 import { Label } from '#app/components/ui/label';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { useAiIntake, type AiConnection, type AiIntakeDoor } from '#app/components/add/use-ai-connection';
-import { NoAiIntakeNotice } from '#app/components/add/no-ai-intake-notice';
+import { NoAiIntakeNotice, TaskUnsupportedNotice } from '#app/components/add/no-ai-intake-notice';
+import { useProviderCapabilities } from '#app/components/add/use-provider-capabilities';
+import { taskSupported } from '#app/lib/ai/provider-capabilities';
+import { typedTaskFor } from '#app/lib/intake-tasks';
 import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { readAddDraft, updateAddDraft } from '#app/lib/add-drafts';
 import { offerTypedText } from '#app/lib/intake-handoff';
@@ -165,6 +168,15 @@ interface DescribeComposerProps {
   /** Whether this device has an AI to send the words to. `unknown` counts as no. */
   aiConnection: AiConnection;
   /**
+   * Whether the connected server runs the task these words become (a meal for
+   * the diary, a shelf for the pantry), from `taskSupported`.
+   *
+   * REQUIRED, with no default. A default of `true` would compile at every call
+   * site and keep Send live on the one server that has said it cannot read the
+   * words, which is the bug this prop exists to end.
+   */
+  isTaskSupported: boolean;
+  /**
    * Where a person with no AI is sent. A prop, like everything else here, so
    * the managed sentences can be rendered in a test at all.
    */
@@ -214,6 +226,7 @@ export function DescribeComposer({
   onTextChange,
   onSend,
   aiConnection,
+  isTaskSupported,
   door,
   speakArmed,
   consumer,
@@ -227,7 +240,7 @@ export function DescribeComposer({
   const isForPantry = consumer === '/pantry';
   const title = isForPantry ? t('describe.pantry.title') : t('describe.title');
   const placeholder = isForPantry ? t('describe.pantry.placeholder') : t('describe.placeholder');
-  const canSend = hasAiProvider && text.trim() !== '';
+  const canSend = hasAiProvider && isTaskSupported && text.trim() !== '';
   const fieldRef = useRef<HTMLTextAreaElement>(null);
 
   // Writing is the whole point of this screen, and reaching it is the
@@ -279,19 +292,39 @@ export function DescribeComposer({
       {/* The composer sits at the BOTTOM of the content area, where a message
           box belongs and where a thumb already is. */}
       <div className="mt-auto grid gap-2">
-        {/* NO AI, so nothing here can work. Said before the box rather than
-            after the tap, and the way out depends on WHY: an own provider to
-            connect, a session to reopen, or an allowance only an administrator
-            can raise. Search in the switcher above is the second way out either
-            way, and it needs no AI at all. */}
-        {aiConnection === 'absent' && (
-          <NoAiIntakeNotice
-            door={door}
-            byokMessage={t('describe.needsProvider')}
-            byokLinkLabel={t('describe.connect')}
-            byokHref="/settings/ai?next=describe"
-          />
-        )}
+        {/* ONE SLOT FOR WHAT IS WRONG WITH THE AI, reserved from the first
+            paint. Two different facts share it, and they cannot both be true:
+            there is NO AI, or there is one and it says it does not run THIS
+            task. The second is learned from the server's `/models` a moment
+            after the screen has drawn, and a notice that arrived into no box
+            would push the field under the thumb that is about to type in it,
+            so the box is a fixed `min-h-12`, three lines of the 12 px text, and
+            the notice fills it (DESIGN.md section 7).
+
+            NO AI: said before the box rather than after the tap, and the way
+            out depends on WHY: an own provider to connect, a session to
+            reopen, or an allowance only an administrator can raise. Search in
+            the switcher above is the second way out either way, and it needs
+            no AI at all. A SERVER THAT CANNOT DO THIS: Send is off (`canSend`)
+            and the sentence names Search, which is the same way out. The
+            pantry's composer has no switcher, so its sentence names none. */}
+        <div data-slot="describe-notice" className="min-h-12">
+          {aiConnection === 'absent' && (
+            <NoAiIntakeNotice
+              door={door}
+              byokMessage={t('describe.needsProvider')}
+              byokLinkLabel={t('describe.connect')}
+              byokHref="/settings/ai?next=describe"
+            />
+          )}
+          {aiConnection === 'connected' && !isTaskSupported && (
+            <TaskUnsupportedNotice
+              message={isForPantry ? t('describe.unsupported.pantry') : t('describe.unsupported.meal')}
+              linkLabel={t('describe.unsupported.choose')}
+              href="/settings/ai?next=describe"
+            />
+          )}
+        </div>
 
         {/* The label is kept for the field, and hidden from sight: the
             placeholder already asks the question, and a visible label above a
@@ -396,8 +429,13 @@ export default function DescribeRoute() {
     updateAddDraft('describe', { text });
   }, [keepsDraft, text]);
 
-  const { connection: aiConnection, door } = useAiIntake();
+  const { connection: aiConnection, door, effective } = useAiIntake();
   const hasAiProvider = aiConnection === 'connected';
+  // WHAT THE CONNECTED SERVER SAYS IT RUNS, about THIS screen's task: a meal
+  // for the diary, a shelf for the pantry. Full until a self-hosted server
+  // answers, and full for every other provider, which is asked nothing.
+  const { capabilities } = useProviderCapabilities(effective);
+  const isTaskSupported = taskSupported(capabilities, typedTaskFor(intakeConsumer));
 
   // NO LOADER, deliberately (see this file's header): a client loader on a
   // client-only route forces a HydrateFallback, which would blank the message
@@ -427,8 +465,10 @@ export default function DescribeRoute() {
 
   const handleSend = useCallback((): void => {
     if (!hasAiProvider) return;
+    // ENTER SENDS TOO, so the disabled button is not the only gate.
+    if (!isTaskSupported) return;
     handOffDescription({ text, source: 'text', intakeHref, go: (href) => void navigate(href) });
-  }, [hasAiProvider, intakeHref, navigate, text]);
+  }, [hasAiProvider, isTaskSupported, intakeHref, navigate, text]);
 
   return (
     <DescribeComposer
@@ -436,6 +476,7 @@ export default function DescribeRoute() {
       onTextChange={setText}
       onSend={handleSend}
       aiConnection={aiConnection}
+      isTaskSupported={isTaskSupported}
       door={door}
       speakArmed={speakArmed}
       consumer={intakeConsumer}

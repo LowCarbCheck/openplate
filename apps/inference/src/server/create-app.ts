@@ -24,6 +24,7 @@
  */
 import express from 'express';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
+import { PLATE_MODEL_CAPABILITIES } from '../capabilities.js';
 import { PUBLIC_MODEL_ID, type ServiceConfig } from '../config.js';
 import type { Embedder } from '../food-source/embedding.js';
 import type { Logger } from '../logger.js';
@@ -55,6 +56,12 @@ export interface CreateAppOptions {
   admission: AdmissionController;
   rateLimiter: RateLimiter;
   logger: Logger;
+  /**
+   * Test seam for the bound on the name translation call, see
+   * `pipeline/translate-names.ts`. Absent means `TRANSLATE_TIMEOUT_MS`.
+   * `main.ts` never sets it, and it is not an environment variable.
+   */
+  translateTimeoutMs?: number;
 }
 
 /**
@@ -141,6 +148,7 @@ export function createApp(options: CreateAppOptions): Express {
           object: 'model',
           created: 0,
           owned_by: 'openplate',
+          capabilities: PLATE_MODEL_CAPABILITIES,
         },
       ],
     });

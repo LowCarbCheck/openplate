@@ -105,6 +105,28 @@ export interface ProviderDefinition {
   readonly placement: ProviderPlacement;
   /** Where a user goes to mint a key — `null` for a self-hosted endpoint, which has no vendor dashboard. */
   readonly keyConsoleUrl: string | null;
+  /**
+   * Whether a scan request carries the app language as `Accept-Language`.
+   *
+   * True only for `openai-compatible`: a self-hosted openplate-inference
+   * service reads the header to name foods in the person's language, one
+   * language per request. Every other provider gets the bytes it got before,
+   * because none of them reads it and the prompt already names the language.
+   * The header is CORS-safelisted for a plain language code, so it costs no
+   * preflight.
+   */
+  readonly sendsAppLanguage: boolean;
+  /**
+   * Whether the endpoint can say which intake tasks it runs, in its own
+   * `GET {baseUrl}/models` (`#app/lib/ai/provider-capabilities`).
+   *
+   * True only for `openai-compatible`: a self-hosted openplate-inference
+   * service runs one task and says so. A cloud vendor runs them all and has no
+   * such key, and the managed proxy runs what its instance runs, so asking
+   * either would be a request for nothing. A screen reads this field, never a
+   * provider literal, to decide whether to probe.
+   */
+  readonly publishesCapabilities: boolean;
 }
 
 /** One definition per provider — the registry is total over `AiProviderType`. */
@@ -131,6 +153,8 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     adapter: 'openai-compatible',
     placement: 'primary',
     keyConsoleUrl: OPENROUTER_KEYS_URL,
+    sendsAppLanguage: false,
+    publishesCapabilities: false,
   },
   mistral: {
     id: 'mistral',
@@ -153,6 +177,8 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     adapter: 'openai-compatible',
     placement: 'primary',
     keyConsoleUrl: MISTRAL_KEYS_URL,
+    sendsAppLanguage: false,
+    publishesCapabilities: false,
   },
   'openai-compatible': {
     id: 'openai-compatible',
@@ -167,6 +193,8 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     adapter: 'openai-compatible',
     placement: 'advanced',
     keyConsoleUrl: null,
+    sendsAppLanguage: true,
+    publishesCapabilities: true,
   },
   managed: {
     id: 'managed',
@@ -191,6 +219,8 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     adapter: 'openai-compatible',
     placement: 'derived',
     keyConsoleUrl: null,
+    sendsAppLanguage: false,
+    publishesCapabilities: false,
   },
   anthropic: {
     id: 'anthropic',
@@ -204,6 +234,8 @@ export const PROVIDER_REGISTRY: ProviderRegistry = {
     adapter: 'anthropic',
     placement: 'advanced',
     keyConsoleUrl: ANTHROPIC_KEYS_URL,
+    sendsAppLanguage: false,
+    publishesCapabilities: false,
   },
 };
 
@@ -257,6 +289,18 @@ export function getProviderDefinition(provider: string): ProviderDefinition | un
 /** Provider definitions in UI order, filtered to one placement group. */
 export function getProvidersByPlacement(placement: ProviderPlacement): readonly ProviderDefinition[] {
   return PROVIDER_IDS.map((id) => PROVIDER_REGISTRY[id]).filter((definition) => definition.placement === placement);
+}
+
+/**
+ * Whether a screen should ask `provider`'s endpoint what it can do.
+ *
+ * Reads the registry field, so a second self-hosted kind that publishes
+ * capabilities is one entry and no edit here. An unknown provider (a row a
+ * newer build wrote) answers `false`: nothing is asked of an endpoint this
+ * build cannot describe.
+ */
+export function publishesCapabilities(provider: string): boolean {
+  return getProviderDefinition(provider)?.publishesCapabilities ?? false;
 }
 
 /**

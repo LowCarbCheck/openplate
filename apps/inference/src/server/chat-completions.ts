@@ -20,11 +20,28 @@
  *   1. model id       — a wrong model is a 404 before any work happens
  *   2. rate limit     — cheapest gate that can reject; per key, not per IP
  *   3. request shape  — a malformed request gets a 400 even while saturated
+ *                       (and `Accept-Language` is read here, by
+ *                       `request-language.ts`: a cheap parse, no work)
  *   4. admission      — shed load BEFORE spending CPU/GPU on it
  *   5. prepare + call — inside the pool, so its cost is what the pool measures
+ *   5b. translate,    inside the pool too, after `mapTerseToPlate`: a second,
+ *                       text-only model call that holds a KV slot like the
+ *                       first. Made ONLY when the request asked for a language
+ *                       other than English; otherwise no second call at all.
+ *                       Bounded (`TRANSLATE_TIMEOUT_MS`), and it fails open:
+ *                       any failure leaves every food without `translations`.
+ *                       It writes only `translations`, never `name`, see
+ *                       `pipeline/translate-names.ts`
  *   6. resolve macros — OUTSIDE the pool: it is I/O against a local dataset or a
  *                       remote API, not model work, and holding a KV slot during
- *                       it would shrink effective concurrency for no reason
+ *                       it would shrink effective concurrency for no reason.
+ *                       It searches with the English `name`, because the food
+ *                       database is English; translation never touches `name`
+ *   7. name flags,     allergens and pregnancy categories from each food's
+ *                       English name, by a curated table (`pipeline/food-flags.ts`).
+ *                       No model call: the prompt and grammar are frozen. A hit
+ *                       sets `flags` and `flagsCoverage: 'partial'`; a miss sets
+ *                       neither, because a miss means "not assessed", not "safe"
  *
  * WHERE THE MACROS COME FROM. The model never emits them (Locked decision 13), so
  * step 6 is the only source of a nutrition number in the whole service. It is
@@ -43,13 +60,16 @@ import { badRequest, modelNotFound } from '../errors.js';
 import { JsonValueSchema } from '../json.js';
 import type { Logger } from '../logger.js';
 import { extractImageDataUri, prepareImage } from '../pipeline/image.js';
+import { addNameFlags } from '../pipeline/food-flags.js';
 import { mapTerseToPlate } from '../pipeline/map-terse.js';
 import type { ModelRuntime } from '../pipeline/runtime-client.js';
 import type { NutritionResolver, ResolutionStats } from '../pipeline/resolve-nutrition.js';
+import { translatePlateNames, type TranslationOutcome } from '../pipeline/translate-names.js';
 import { validatePlateIdentification } from '../contract/plate-identification.js';
 import type { AdmissionController } from './admission.js';
 import { getApiKeyIdentity } from './api-key-auth.js';
 import type { RateLimiter } from './rate-limit.js';
+import { requestLanguage } from './request-language.js';
 
 export interface ChatCompletionsDeps {
   config: ServiceConfig;
@@ -59,6 +79,16 @@ export interface ChatCompletionsDeps {
   admission: AdmissionController;
   rateLimiter: RateLimiter;
   logger: Logger;
+  /**
+   * Test seam for the bound on the name translation call. Absent means
+   * `TRANSLATE_TIMEOUT_MS`. Deliberately not an environment variable.
+   */
+  translateTimeoutMs?: number;
+}
+
+/** How many foods got `translations`. A count, safe to log. */
+function translatedCount(outcome: TranslationOutcome): number {
+  return outcome.kind === 'translated' ? outcome.items : 0;
 }
 
 interface ChatCompletionEnvelope {
@@ -130,6 +160,8 @@ export function createChatCompletionsHandler(
 
     // 3. Request shape. Cheap: reads the URI out of the JSON, decodes nothing.
     const imageDataUri = extractImageDataUri(parsedBody.data.messages);
+    // `null` for English or no usable header: then step 5b makes no call.
+    const language = requestLanguage(req.get('accept-language'));
 
     // 4 + 5. Admission, then the actual work.
     const result = await deps.admission.run(async () => {
@@ -138,10 +170,28 @@ export function createChatCompletionsHandler(
         maxLongEdge: deps.config.imageMaxLongEdge,
       });
       const completion = await deps.runtime.identify(prepared.dataUri);
-      return { prepared, completion };
+      const mapped = mapTerseToPlate(completion.candidate);
+      // 5b. Translation. Never throws; see the module header.
+      const translation = await translatePlateNames({
+        runtime: deps.runtime,
+        plate: mapped.plate,
+        language,
+        timeoutMs: deps.translateTimeoutMs,
+      });
+      return { prepared, completion, duplicatesDropped: mapped.duplicatesDropped, translation };
     });
 
-    const { plate, duplicatesDropped } = mapTerseToPlate(result.completion.candidate);
+    const plate = result.translation.plate;
+    const duplicatesDropped = result.duplicatesDropped;
+    const translationOutcome = result.translation.outcome;
+    if (translationOutcome.kind === 'failed') {
+      // A reason code and a count, never a name: a food log is personal data.
+      deps.logger.warn('Name translation dropped', {
+        keyId,
+        reason: translationOutcome.reason,
+        items: translationOutcome.items,
+      });
+    }
 
     // 6. Nutrition resolution. Never throws: a corpus outage leaves macros null.
     let resolutionStats: ResolutionStats | null = null;
@@ -152,10 +202,14 @@ export function createChatCompletionsHandler(
       resolutionStats = outcome.stats;
     }
 
+    // 7. Name flags. Pure and synchronous; reads `name` and touches nothing but
+    // `flags` and `flagsCoverage`.
+    const flaggedPlate = addNameFlags(resolvedPlate);
+
     // Self-check on our OWN payload: the response is built in code, so a mapping
     // bug is the only way an invalid shape could ship. Better a 500 here than a
     // `VisionProviderError` in the client.
-    const validated = validatePlateIdentification(resolvedPlate);
+    const validated = validatePlateIdentification(flaggedPlate);
     const latencyMs = performance.now() - startedAt;
 
     const envelope: ChatCompletionEnvelope = {
@@ -195,6 +249,11 @@ export function createChatCompletionsHandler(
       resolutionFailures: resolutionStats?.failed ?? 0,
       corpusQueries: resolutionStats?.queries ?? 0,
       resolutionMs: resolutionStats ? Math.round(resolutionStats.durationMs) : 0,
+      // A count only, never which flags: a flag names a food, and a food log is personal data.
+      itemsFlagged: validated.foods.filter((food) => food.flags !== undefined).length,
+      // A count and an outcome code, never a name or a translation.
+      itemsTranslated: translatedCount(translationOutcome),
+      translation: translationOutcome.kind,
       sourceBytes: result.prepared.originalBytes,
       sentBytes: result.prepared.preparedBytes,
       longEdge: Math.max(result.prepared.width, result.prepared.height),

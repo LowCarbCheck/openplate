@@ -93,6 +93,9 @@ describe('image bytes never reach an error path', () => {
       async isReady() {
         return true;
       },
+      async translateNames(names: string[]) {
+        return names;
+      },
     };
     const app = await startTestApp({ runtime: leakyRuntime });
     const dataUri = toDataUri(await makeJpeg(600, 450));
@@ -120,6 +123,9 @@ describe('image bytes never reach an error path', () => {
       },
       async isReady() {
         return true;
+      },
+      async translateNames(names: string[]) {
+        return names;
       },
     };
     const app = await startTestApp({ runtime: leakyRuntime });

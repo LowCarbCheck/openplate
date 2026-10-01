@@ -102,6 +102,12 @@ export interface AiIntake {
   connection: AiConnection;
   /** Only read when `connection` is `absent`; the other two states show no notice at all. */
   door: AiIntakeDoor;
+  /**
+   * The settings rule's own answer, so a screen that also asks what the
+   * endpoint can do (`useProviderCapabilities`) hands it this one value instead
+   * of reading the device's AI row a second time.
+   */
+  effective: EffectiveAiSettings | null;
 }
 
 /**
@@ -221,6 +227,7 @@ export function useAiIntake(): AiIntake {
   const effectiveSettings = useEffectiveAiSettings(deviceRow);
 
   return {
+    effective: effectiveSettings,
     connection: resolveAiConnection({
       aiComesFromTheInstance,
       isSessionResuming: session.isResuming,

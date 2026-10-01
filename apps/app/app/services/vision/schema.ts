@@ -20,7 +20,7 @@
  */
 import { z } from 'zod';
 import type { IdentifiedFood, IdentifiedFoodMacros, PlateIdentification, PrintedServingSize } from './types';
-import { MACRO_PROVENANCE_VALUES, MACRO_SOURCE_VALUES, VisionProviderError } from './types';
+import { FLAGS_COVERAGE_VALUES, MACRO_PROVENANCE_VALUES, MACRO_SOURCE_VALUES, VisionProviderError } from './types';
 import { CARB_BASES } from '#app/lib/net-carbs';
 import type { LanguageCode } from '#app/i18n/language-prefs';
 import { LenientFoodTranslationsSchema, RawFoodTranslationsSchema, normalizeFoodTranslations } from './translations';
@@ -260,6 +260,10 @@ const RawIdentifiedFoodParseSchema = RawIdentifiedFoodSchema.extend({
   // THE JSON SCHEMA IS STRICT, THE ZOD SCHEMA IS LENIENT (D1d): the field is
   // demanded on the way out and tolerated on the way in.
   flags: LenientFoodFlagsSchema.nullish(),
+  // A SERVICE-ONLY FIELD, like the provenance pair above: tolerated, never
+  // demanded. `.catch(undefined)` because a value this build does not know
+  // (a newer service's second level) costs the coverage, never the plate.
+  flagsCoverage: z.enum(FLAGS_COVERAGE_VALUES).optional().catch(undefined),
   translations: LenientFoodTranslationsSchema,
 });
 
@@ -322,11 +326,13 @@ function keepKnownFlags<TFlag extends string>(options: {
 }
 
 /**
- * The arriving flags, or their absence, to the three arrays every consumer
- * relies on. Exported with `isDev` as an option, rather than read inside, so
+ * One arriving flags object to the three arrays, a missing list read as
+ * empty. Exported with `isDev` as an option, rather than read inside, so
  * the unit tier can prove the warning fires in development and stays silent
- * otherwise without owning a Vite build. `normalizeFood` passes the real
- * answer.
+ * otherwise without owning a Vite build. `normalizeFood` calls it ONLY for an
+ * answer that carried a flags object: an absent one stays absent there, never
+ * three empty arrays (see `IdentifiedFood.flags`). The stored-copy readers
+ * (`decodeFoodFlags`, the backup schema) also call it only on an object.
  */
 export function normalizeFoodFlags(
   arrived: RawFoodFlags | null | undefined,
@@ -381,9 +387,17 @@ function normalizeFood(food: RawIdentifiedFood, language: LanguageCode): Identif
     portionHint: food.portionHint ?? undefined,
     macrosPer100g: food.macrosPer100g ? stripNullMacros(food.macrosPer100g) : undefined,
     macroSource: food.macroSource,
-    flags: normalizeFoodFlags(food.flags),
     translations: normalizeFoodTranslations({ arrived: food.translations, name: food.name, language }),
   };
+  // NO FLAGS SENT IS NOT "NOTHING FOUND". Only an answer that carried a flags
+  // object was assessed; an absent or null one stays absent, so no consumer
+  // can read a provider that never looked as a food that is clear. An object
+  // with three empty lists still normalizes to three empty arrays.
+  if (food.flags !== undefined && food.flags !== null) normalized.flags = normalizeFoodFlags(food.flags);
+  // A COVERAGE TRAVELS ONLY WITH FLAGS. "These flags fall short" about flags
+  // that were never sent is about nothing, and keeping it would let a reader
+  // treat a food nobody checked as one somebody partly checked.
+  if (normalized.flags !== undefined && food.flagsCoverage !== undefined) normalized.flagsCoverage = food.flagsCoverage;
   // NULL BECOMES ABSENT, the same convention every other field here uses. A
   // brand of `''` or a `carbBasis` of `'total'` invented for an estimated item
   // would each be a claim about a package that was never photographed.

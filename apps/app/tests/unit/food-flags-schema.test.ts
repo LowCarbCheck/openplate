@@ -72,21 +72,36 @@ describe('the flags on a parsed food', () => {
     assert.deepStrictEqual(result.foods[0]?.flags, { pregnancy: ['raw-dairy'], allergens: ['milk'], mayContain: [] });
   });
 
-  it('parses a plate with no flags at all to three empty arrays', () => {
-    const result = parsePlateIdentificationJson(plateWith(BRIE), 'en');
-    assert.deepStrictEqual(result.foods[0]?.flags, EMPTY_FLAGS);
+  it('leaves flags absent for a plate that sent none, and keeps three empty arrays for one that sent empty lists', () => {
+    // A provider that never sent the field (a self-hosted inference service,
+    // a BYOK model that ignored it) never looked. Its food is NOT ASSESSED,
+    // and reading it as three empty arrays would be a false all-clear.
+    const absent = parsePlateIdentificationJson(plateWith(BRIE), 'en');
+    assert.strictEqual(absent.foods.length, 1);
+    assert.strictEqual(absent.foods[0]?.flags, undefined);
+    assert.ok(!Object.hasOwn(absent.foods[0] ?? {}, 'flags'), 'an absent answer must not even carry the key');
 
-    // Control: the same plate WITH a flag does not parse to empty arrays, so
-    // the assertion above depends on the absence and not on a parser that
+    // CONTROL, the same plate with the three lists sent empty: the model
+    // looked and found nothing. This is a different answer and must stay one,
+    // so the absent case above depends on the absence and not on a parser
+    // that drops the field for everybody.
+    const empty = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: EMPTY_FLAGS }), 'en');
+    assert.deepStrictEqual(empty.foods[0]?.flags, EMPTY_FLAGS);
+    assert.notDeepStrictEqual(absent.foods[0]?.flags, empty.foods[0]?.flags);
+
+    // And a flag that arrived is kept, so neither case above is a parser that
     // empties everything.
     const flagged = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: ['soft-cheese'], allergens: [], mayContain: [] } }), 'en');
-    assert.notDeepStrictEqual(flagged.foods[0]?.flags, EMPTY_FLAGS);
-    assert.deepStrictEqual(flagged.foods[0]?.flags.pregnancy, ['soft-cheese']);
+    assert.deepStrictEqual(flagged.foods[0]?.flags?.pregnancy, ['soft-cheese']);
   });
 
-  it('parses a null flags object the same way, for a fallback-prompt model that answers null', () => {
+  it('leaves flags absent for a null flags object too, a fallback-prompt model that answered null never looked', () => {
     const result = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: null }), 'en');
-    assert.deepStrictEqual(result.foods[0]?.flags, EMPTY_FLAGS);
+    assert.strictEqual(result.foods[0]?.flags, undefined);
+
+    // Control: an object, even an empty one, is an answer.
+    const empty = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: {} }), 'en');
+    assert.deepStrictEqual(empty.foods[0]?.flags, EMPTY_FLAGS);
   });
 
   it('parses a flags object with no mayContain key to an empty mayContain', () => {
@@ -98,13 +113,13 @@ describe('the flags on a parsed food', () => {
     const result = parsePlateIdentificationJson(
       plateWith({ ...BRIE, flags: { pregnancy: [], allergens: ['milk'], mayContain: ['milk', 'eggs'] } }), 'en',
     );
-    assert.deepStrictEqual(result.foods[0]?.flags.allergens, ['milk']);
-    assert.deepStrictEqual(result.foods[0]?.flags.mayContain, ['eggs']);
+    assert.deepStrictEqual(result.foods[0]?.flags?.allergens, ['milk']);
+    assert.deepStrictEqual(result.foods[0]?.flags?.mayContain, ['eggs']);
 
     // Control: with milk absent from `allergens`, mayContain keeps it, so the
     // drop above is the overlap rule and not a filter that removes milk.
     const doubtful = parsePlateIdentificationJson(plateWith({ ...BRIE, flags: { pregnancy: [], allergens: [], mayContain: ['milk', 'eggs'] } }), 'en');
-    assert.deepStrictEqual(doubtful.foods[0]?.flags.mayContain, ['milk', 'eggs']);
+    assert.deepStrictEqual(doubtful.foods[0]?.flags?.mayContain, ['milk', 'eggs']);
   });
 
   it('keeps a repeated flag once, in arrival order', () => {

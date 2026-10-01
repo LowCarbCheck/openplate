@@ -43,11 +43,14 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { ConnectCard, ScanLoading } from '#app/components/intake/intake-connect-card';
 import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert';
+import { IntakeUnsupportedCard } from '#app/components/intake/intake-unsupported-card';
+import { useProviderCapabilities } from '#app/components/add/use-provider-capabilities';
 import { MealSelectField } from '#app/components/meal-select-field';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
+import { taskSupported } from '#app/lib/ai/provider-capabilities';
 import { newIntakeId } from '#app/lib/plans/trial-scans';
 import { resolveProviderTriple } from '#app/lib/ai/provider-triple';
 import { MEAL_TYPES } from '#app/lib/meal-choice';
@@ -478,6 +481,14 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const effective = useEffectiveAiSettings(loaderData.settings);
+  // WHAT THE CONNECTED SERVER SAYS IT RUNS. This screen buys its answer on
+  // ARRIVAL, with no tap in between, so it is the one place that has to wait
+  // for the answer: asking a server that cannot suggest recipes would fail
+  // after the arrival with nothing said first. Settled at once for every
+  // provider that is not asked, and bounded by the probe's timeout for one
+  // that is, so a dead `/models` delays the screen and never blocks it.
+  const { capabilities, settled: haveCapabilities } = useProviderCapabilities(effective);
+  const isRecipesSupported = taskSupported(capabilities, 'recipes');
   // WHETHER THE HANDSHAKE HAS ANSWERED, and with which model. A managed
   // instance whose handshake names no model has nothing to buy a round with,
   // and that must be said rather than waited for (M253/05, below).
@@ -519,6 +530,10 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
     // back to the connect card below, and the ref stays empty so the answer is
     // bought the moment a connection resolves.
     if (effective === null) return;
+    // NOTHING IS BOUGHT until the server has said what it runs, and nothing at
+    // all from one that does not suggest recipes: the card below says so, and
+    // the ref stays empty.
+    if (!haveCapabilities || !isRecipesSupported) return;
     // AN INSTANCE WITH NO MODEL AT ALL is a failure to show, not a wait: the
     // handshake has answered and named none, so no round can be bought.
     if (hasNoManagedModel) {
@@ -561,7 +576,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
       }
       setPhase({ kind: 'ready', recipes: servable });
     })();
-  }, [effective, hasNoManagedModel, slot, i18n.language, t]);
+  }, [effective, haveCapabilities, isRecipesSupported, hasNoManagedModel, slot, i18n.language, t]);
 
   const logRecipe = useCallback(
     async (recipe: RecipeProposal, servingsEaten: number): Promise<void> => {
@@ -599,6 +614,13 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   if (effective === null) {
     return <ConnectCard logDate={null} />;
   }
+
+  // NOT YET ANSWERED: the loading screen the route arrived on, so the page or
+  // the card is drawn once and nothing moves when the answer lands.
+  if (!haveCapabilities) return <ScanLoading />;
+  // THE SERVER DOES NOT SUGGEST RECIPES, said in place of the page and not
+  // after a failed call.
+  if (!isRecipesSupported) return <IntakeUnsupportedCard subject="recipes" />;
 
   return (
     <div className="mx-auto max-w-xl space-y-4">

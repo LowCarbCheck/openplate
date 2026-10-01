@@ -365,6 +365,10 @@
       "soybeans": "May contain soybeans",
       "sulphites": "May contain sulphites"
     },
+    "notChecked": {
+      "all": "This scan did not check for your allergies or pregnancy. Read the labels yourself.",
+      "partial": "Allergy and pregnancy checks are partial for this scan. Read the labels yourself."
+    },
     "pregnancy": {
       "alcohol": "Contains alcohol, best avoided",
       "caffeine": "Caffeine, counts toward 200 mg a day",
@@ -536,6 +540,11 @@
     "pantry": {
       "title": "What do you have at home?",
       "placeholder": "half a cabbage, six eggs, a tub of feta, 500 g of rice"
+    },
+    "unsupported": {
+      "meal": "This AI server does not read typed meals. Use Search above, which needs no AI.",
+      "pantry": "This AI server does not read a typed pantry list.",
+      "choose": "Choose another provider"
     }
   },
   "diary": {
@@ -2425,6 +2434,22 @@
     "baseUrl": {
       "help": "On the hosted instance, only a localhost/127.0.0.1 endpoint is reachable: the content-security policy blocks other hosts by design, to protect your key if this page is ever compromised. Self-hosting? Set CSP_CONNECT_EXTRA to allow your own remote endpoint (see the README). Direct api.openai.com is never reachable either way. Use OpenRouter for OpenAI models."
     },
+    "capabilities": {
+      "lead": "This server has limits.",
+      "tasks": "This server does not do {{tasks, list}}.",
+      "task": {
+        "plateImage": "plate photos",
+        "describe": "typed meals",
+        "pantryImage": "pantry photos",
+        "pantryText": "typed pantry lists",
+        "recipes": "recipes"
+      },
+      "flagsPartial": "Its allergy and pregnancy checks are partial.",
+      "flagsNone": "It does no allergy or pregnancy checks.",
+      "translationsRequestLanguage": "It translates food names into one language per scan.",
+      "translationsNone": "It does not translate food names.",
+      "labelsNone": "It does not read nutrition labels."
+    },
     "connectCard": {
       "description": "Plate photos go straight to your chosen provider to be read. openplate keeps a copy only on this device so you can view it later, never on our server. Manage or clear copies anytime under Data & backup in settings. Your key never leaves this device, except to the provider chosen below.",
       "title": "Connect your AI provider"
@@ -3505,6 +3530,12 @@
     "plansNotSwitchedOn": "AI entries are not switched on for this account yet. Pick a plan to switch them on. Searching the food database works without them.",
     "plansLink": "See the plans"
   },
+  "intakeUnsupported": {
+    "title": "This AI server cannot do that",
+    "pantry": "The AI server you connected does not read a pantry, from photos or from words.",
+    "recipes": "The AI server you connected does not suggest recipes.",
+    "choose": "Choose another provider"
+  },
   "plan": {
     "title": "Your plan",
     "loading": "Reading your plan.",
@@ -3611,7 +3642,11 @@
   "pantry": {
     "title": "Pantry",
     "lead": "What you have at home. Photograph a shelf, or write the list.",
+    "leadPhoto": "What you have at home. Photograph a shelf.",
+    "leadWords": "What you have at home. Write the list.",
     "empty": "Nothing here yet. Photograph your fridge, or write what you have.",
+    "emptyPhoto": "Nothing here yet. Photograph your fridge.",
+    "emptyWords": "Nothing here yet. Write what you have.",
     "composerLabel": "What do you have?",
     "reading": "Reading your items...",
     "door": {

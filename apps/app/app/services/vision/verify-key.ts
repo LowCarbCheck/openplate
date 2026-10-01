@@ -105,8 +105,97 @@ function buildVerificationRequest(input: VerifyProviderKeyInput): VerificationRe
 }
 
 /**
+ * What one GET against a provider's own endpoint came to, before anyone reads
+ * the body: the request could not be built (a missing base URL, an unknown
+ * provider), it never got an answer (network, CORS, timeout), or it got one.
+ */
+export type ProviderProbeOutcome =
+  | { kind: 'misconfigured' }
+  | { kind: 'unreachable' }
+  | { kind: 'answered'; response: Response };
+
+export interface ProbeProviderEndpointInput extends VerifyProviderKeyInput {
+  /** The `fetch` to call. Defaults to the global one, read at call time so a test stub is seen. */
+  fetchImpl?: typeof fetch;
+  /** A caller's own abort, combined with the timeout. */
+  signal?: AbortSignal;
+  /** How long to wait for an answer. Defaults to five seconds. */
+  timeoutMs?: number;
+}
+
+/**
+ * Settles with the fetch, or rejects once `timeoutMs` passes or `signal`
+ * aborts, whichever comes first. A RACE as well as an abort, so a `fetch` that
+ * ignores its signal (a stub, a broken polyfill) still cannot hold the caller.
+ */
+async function fetchWithDeadline({
+  url,
+  headers,
+  fetchImpl,
+  signal,
+  timeoutMs,
+}: {
+  url: string;
+  headers: HeadersInit;
+  fetchImpl: typeof fetch;
+  signal: AbortSignal | undefined;
+  timeoutMs: number;
+}): Promise<Response> {
+  const controller = new AbortController();
+  const abortFromCaller = (): void => controller.abort(signal?.reason);
+  if (signal?.aborted === true) abortFromCaller();
+  signal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timer = setTimeout(() => controller.abort(new Error('The provider did not answer in time.')), timeoutMs);
+  const abandoned = new Promise<never>((_resolve, reject) => {
+    if (controller.signal.aborted) reject(controller.signal.reason);
+    controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
+  });
+  try {
+    return await Promise.race([fetchImpl(url, { headers, signal: controller.signal }), abandoned]);
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', abortFromCaller);
+  }
+}
+
+/**
+ * One authenticated GET against a provider's own endpoint, the SAME request
+ * the key check sends: the URL from the registry's `VerificationStrategy`, the
+ * auth headers the scan call sends. Never throws, and never reads the body.
+ *
+ * Shared by the key check below and by the capability probe
+ * (`#app/lib/ai/provider-capabilities`), so the two cannot drift on where a
+ * self-hosted `/models` lives or on what a failure is.
+ */
+export async function probeProviderEndpoint(input: ProbeProviderEndpointInput): Promise<ProviderProbeOutcome> {
+  let request: VerificationRequest;
+  try {
+    request = buildVerificationRequest(input);
+  } catch {
+    return { kind: 'misconfigured' };
+  }
+  // A local binding, never `input.fetchImpl(...)`: a browser's `fetch` called
+  // as a method of another object throws "Illegal invocation".
+  const fetchImpl = input.fetchImpl ?? fetch;
+  try {
+    const response = await fetchWithDeadline({
+      url: request.url,
+      headers: request.headers,
+      fetchImpl,
+      signal: input.signal,
+      timeoutMs: input.timeoutMs ?? VERIFY_TIMEOUT_MS,
+    });
+    return { kind: 'answered', response };
+  } catch {
+    // Network error/timeout, never logged (no browser-safe logger here, see
+    // the module doc comment).
+    return { kind: 'unreachable' };
+  }
+}
+
+/**
  * Checks a BYOK key against a provider endpoint that actually authenticates
- * it — Anthropic's and a caller's own `/models` already enforce auth (a
+ * it, Anthropic's and a caller's own `/models` already enforce auth (a
  * missing/bad key 401s); OpenRouter's `/models` doesn't, so its registry entry
  * points the check at `/auth/key` instead (see `./registry`). Resolves to
  * `rejected` on 401/403 (the key itself is bad), `ok` on any other response
@@ -114,29 +203,13 @@ function buildVerificationRequest(input: VerifyProviderKeyInput): VerificationRe
  * if the provider couldn't be reached at all (network error/timeout).
  */
 export async function verifyProviderKey(input: VerifyProviderKeyInput): Promise<KeyVerificationResult> {
-  let url: string;
-  let headers: HeadersInit;
-  try {
-    ({ url, headers } = buildVerificationRequest(input));
-  } catch {
-    // Missing base URL for openai-compatible — a configuration problem, not
-    // a transient network issue, so this is closer to `rejected` (don't save
-    // as-is) than `unverified` (save anyway with a warning).
-    return { status: 'rejected' };
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(url, { headers, signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
-  } catch {
-    // Network error/timeout — never logged (no browser-safe logger here, see
-    // the module doc comment); the caller surfaces `unverified` to the user.
-    return { status: 'unverified' };
-  }
-
-  if (response.status === 401 || response.status === 403) {
-    return { status: 'rejected' };
-  }
-
+  const outcome = await probeProviderEndpoint(input);
+  // Missing base URL for openai-compatible: a configuration problem, not a
+  // transient network issue, so this is closer to `rejected` (don't save
+  // as-is) than `unverified` (save anyway with a warning).
+  if (outcome.kind === 'misconfigured') return { status: 'rejected' };
+  // The caller surfaces `unverified` to the user.
+  if (outcome.kind === 'unreachable') return { status: 'unverified' };
+  if (outcome.response.status === 401 || outcome.response.status === 403) return { status: 'rejected' };
   return { status: 'ok' };
 }

@@ -34,6 +34,13 @@
     "at": "2026-09-14",
     "it": "{{date}}: nessun dato registrato"
   },
+  "0092b8e176567ab5": {
+    "en": "It does not read nutrition labels.",
+    "path": "common:settingsAi.capabilities.labelsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Non legge le etichette nutrizionali."
+  },
   "00ad36a47e8e6fd6": {
     "en": "Each day’s calories, split by meal.",
     "path": "common:trends.meals.share.descriptionCalories",
@@ -250,6 +257,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "it": "Nessun elemento in questi file può essere importato."
+  },
+  "0314acdf76591b64": {
+    "en": "This scan did not check for your allergies or pregnancy. Read the labels yourself.",
+    "path": "common:cautions.notChecked.all",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questa scansione non ha verificato le tue allergie o la gravidanza. Leggi tu le etichette."
   },
   "033f80a81596ccf9": {
     "en": "Add your details",
@@ -1028,6 +1042,13 @@
     "at": "2026-09-30",
     "it": "iPhone (Safari): tocca Condividi, poi Aggiungi alla schermata Home."
   },
+  "0baae17f2155e8fc": {
+    "en": "recipes",
+    "path": "common:settingsAi.capabilities.task.recipes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "ricette"
+  },
   "0be36769d1701f27": {
     "en": "Create an API key in the <providerLink>{{provider}} console</providerLink>.",
     "path": "common:settingsAi.quickstart.step2",
@@ -1454,6 +1475,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "it": "Descrivi"
+  },
+  "112366af51611141": {
+    "en": "This server has limits.",
+    "path": "common:settingsAi.capabilities.lead",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questo server ha dei limiti."
   },
   "112824a73cf4e589": {
     "en": "You picked two files of the same kind. Pick one days.json and one products.json.",
@@ -2953,6 +2981,13 @@
     "at": "2026-09-14",
     "it": "Tutti i dati su questo dispositivo hanno raggiunto il server."
   },
+  "21c0690189655477": {
+    "en": "This AI server does not read a typed pantry list.",
+    "path": "common:describe.unsupported.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questo server IA non legge un elenco digitato della dispensa."
+  },
   "21d559836f8882bb": {
     "en": "Published by",
     "path": "common:admin.settings.basisLegend",
@@ -3575,6 +3610,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Note legali"
+  },
+  "29ff0c32f0c29bb2": {
+    "en": "The AI server you connected does not read a pantry, from photos or from words.",
+    "path": "common:intakeUnsupported.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Il server IA che hai connesso non legge la dispensa, né da foto né da testo."
   },
   "2a2d189ef64f22ef": {
     "en": "Remove {{name}}?",
@@ -6355,12 +6397,26 @@
     "at": "2026-09-14",
     "it": "<strong>Niente in questa pagina è obbligatorio.</strong> Il diario, gli obiettivi e i trend funzionano tutti anche senza. Se registrarti a un servizio di IA a pagamento e incollare una chiave non fa per te, chiudi questa pagina e continua a inserire i dati a mano, non perdi nient'altro."
   },
+  "50dcc55113985251": {
+    "en": "Its allergy and pregnancy checks are partial.",
+    "path": "common:settingsAi.capabilities.flagsPartial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "I suoi controlli per allergie e gravidanza sono parziali."
+  },
   "50e63d5e912131c6": {
     "en": "Welcome to openplate",
     "path": "common:meta.onboarding",
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ti diamo il benvenuto su openplate"
+  },
+  "511cc1192560b6a8": {
+    "en": "Choose another provider",
+    "path": "common:intakeUnsupported.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Scegli un altro fornitore"
   },
   "51252da19bc06b63": {
     "en": "openplate couldn't load. Check your connection, then reload.",
@@ -7055,6 +7111,13 @@
     "at": "2026-09-30",
     "it": "Credito residuo della chiave del provider e quota di IA utilizzata oggi."
   },
+  "5881b933edcc8c91": {
+    "en": "This AI server does not read typed meals. Use Search above, which needs no AI.",
+    "path": "common:describe.unsupported.meal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questo server IA non legge i pasti digitati. Usa Cerca qui sopra, che non richiede IA."
+  },
   "588a39328793856b": {
     "en": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
     "path": "common:signOut.unsent.unchecked",
@@ -7341,6 +7404,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Impossibile caricare le segnalazioni."
+  },
+  "5c0a39471b9c9e2a": {
+    "en": "Nothing here yet. Write what you have.",
+    "path": "common:pantry.emptyWords",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Ancora nulla qui. Scrivi cosa hai."
   },
   "5c2d6bcd4bb93d6f": {
     "en": "Vitamin D",
@@ -8399,6 +8469,13 @@
     "at": "2026-09-24",
     "it": "Rimozione delle voci di YAZIO in corso…"
   },
+  "6934759ff60075ba": {
+    "en": "The AI server you connected does not suggest recipes.",
+    "path": "common:intakeUnsupported.recipes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Il server IA che hai connesso non suggerisce ricette."
+  },
   "694486f3ea9254ed": {
     "en": "Last sent {{at}} · version {{version}}",
     "path": "common:research.enrolments.lastSent",
@@ -8944,6 +9021,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Account {{id}}"
+  },
+  "6fb7f5555f810a97": {
+    "en": "This AI server cannot do that",
+    "path": "common:intakeUnsupported.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questo server IA non può farlo"
   },
   "6fdebc0671b3997a": {
     "en": "Anything to note?",
@@ -10226,6 +10310,13 @@
     "at": "2026-09-14",
     "it": "Aggiorna"
   },
+  "7df6050bc34a809d": {
+    "en": "It does no allergy or pregnancy checks.",
+    "path": "common:settingsAi.capabilities.flagsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Non esegue controlli per allergie o gravidanza."
+  },
   "7df94e6088a0a205": {
     "en": "Export now",
     "path": "common:banners.backupExportNow",
@@ -10267,6 +10358,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{trimester}}, settimana {{week}}."
+  },
+  "7e3dbbaa87a73c9b": {
+    "en": "Allergy and pregnancy checks are partial for this scan. Read the labels yourself.",
+    "path": "common:cautions.notChecked.partial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "I controlli per allergie e gravidanza sono parziali per questa scansione. Leggi tu le etichette."
   },
   "7e3dce8cb81ea3a4": {
     "en": "Your last {{total}} days, one bar per day. You logged on {{logged}} of them. Tap the tile for your progress.",
@@ -10505,6 +10603,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Hai registrato il tuo primo alimento. Non c'è altro da configurare, continua così."
+  },
+  "81718e527415e38a": {
+    "en": "typed meals",
+    "path": "common:settingsAi.capabilities.task.describe",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "pasti digitati"
   },
   "818ff225c003004e": {
     "en": "e.g. 160",
@@ -12711,6 +12816,13 @@
     "at": "2026-09-14",
     "it": "Circa il {{percent}}% delle calorie di questa settimana è stimato dall'IA"
   },
+  "9a4a1ab197b2100d": {
+    "en": "It translates food names into one language per scan.",
+    "path": "common:settingsAi.capabilities.translationsRequestLanguage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Traduce i nomi degli alimenti in una lingua per scansione."
+  },
   "9a5b47c4639d10b4": {
     "en": "Macros unknown, logged as name only.",
     "path": "common:add.portion.macrosUnknown",
@@ -14327,6 +14439,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "it": "Il tuo consenso non è stato salvato. Controlla la connessione e riprova."
+  },
+  "ae75d57958e2e98e": {
+    "en": "What you have at home. Photograph a shelf.",
+    "path": "common:pantry.leadPhoto",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Cosa hai a casa. Fotografa uno scaffale."
   },
   "aea73a7009f31ca5": {
     "en": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
@@ -16484,6 +16603,13 @@
     "at": "2026-09-24",
     "it": "Mantieni le voci di YAZIO"
   },
+  "ca8b25027c9bb1c3": {
+    "en": "What you have at home. Write the list.",
+    "path": "common:pantry.leadWords",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Cosa hai a casa. Scrivi l'elenco."
+  },
   "ca9725b1aae72d07": {
     "en": "Your provider reads the photo and proposes the foods. You check the numbers, save, and the day’s total moves.",
     "path": "common:landing.setup.steps.scan.body",
@@ -17695,6 +17821,13 @@
     "at": "2026-09-14",
     "it": "{{count}} scansione"
   },
+  "d8e258c79614fd88": {
+    "en": "typed pantry lists",
+    "path": "common:settingsAi.capabilities.task.pantryText",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "elenchi digitati della dispensa"
+  },
   "d91c2d1970bb7d38": {
     "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",
     "path": "common:connectGateway.confirm.body",
@@ -18423,6 +18556,13 @@
     "at": "2026-09-28",
     "it": "Il tuo piano è attivo."
   },
+  "e1a8d5c296902023": {
+    "en": "Nothing here yet. Photograph your fridge.",
+    "path": "common:pantry.emptyPhoto",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Ancora nulla qui. Fotografa il tuo frigorifero."
+  },
   "e1f5a81929d5fd2e": {
     "en": "Today",
     "path": "common:diary.nav.today",
@@ -18724,6 +18864,13 @@
     "at": "2026-09-14",
     "it": "Il diario risiede su questo dispositivo, e la copia sul server è bloccata"
   },
+  "e59d05a33376344b": {
+    "en": "plate photos",
+    "path": "common:settingsAi.capabilities.task.plateImage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "foto del piatto"
+  },
   "e5a9c8a4a8ae8bf2": {
     "en": "A closed More menu stays closed.",
     "path": "releases:v0_48_0.fixed.01",
@@ -18772,6 +18919,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "es. {{value}}"
+  },
+  "e64631f089a936de": {
+    "en": "This server does not do {{tasks, list}}.",
+    "path": "common:settingsAi.capabilities.tasks",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Questo server non gestisce {{tasks, list}}."
   },
   "e64c52055454022c": {
     "en": "7 days",
@@ -20250,6 +20404,13 @@
     "at": "2026-09-28",
     "it": "Il tuo consenso · openplate"
   },
+  "f7199eb4369f55d3": {
+    "en": "Choose another provider",
+    "path": "common:describe.unsupported.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Scegli un altro fornitore"
+  },
   "f72072404aac80cb": {
     "en": "Paste the key from their invitation. It is public: it can seal data to them, and nothing else.",
     "path": "common:sharing.grant.keyHint",
@@ -20501,6 +20662,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Quattordici giorni consecutivi."
+  },
+  "fa1c47efcd1a7df6": {
+    "en": "pantry photos",
+    "path": "common:settingsAi.capabilities.task.pantryImage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "foto della dispensa"
   },
   "fa31392c71abe0d6": {
     "en": "May contain crustaceans",
@@ -20879,6 +21047,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "calorie"
+  },
+  "fdd34334a68dacc2": {
+    "en": "It does not translate food names.",
+    "path": "common:settingsAi.capabilities.translationsNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Non traduce i nomi degli alimenti."
   },
   "fdd42fb336f9e41c": {
     "en": "Today's capacity",
