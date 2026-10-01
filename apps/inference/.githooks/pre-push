@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Pre-push quality gate — this repo's ONLY test gate.
+# Pre-push quality gate, this repo's ONLY test gate.
 #
 # There is no cloud CI: pushes from the workstation are what trigger the
 # build/deploy, so the tests belong in front of the push rather than after it.
@@ -9,7 +9,7 @@
 # The build is a REQUIRED gate, not a formality: `pnpm build` bundles with
 # esbuild and asserts the bundle contains no dynamic-require shim (see
 # scripts/build.ts). Typecheck and the unit suite both run TypeScript sources
-# and cannot see that failure — it produces a green test run and an artifact
+# and cannot see that failure, it produces a green test run and an artifact
 # that throws on its first line.
 #
 # NOT run here: `pnpm test:integration` (a live model runtime is optional but
@@ -25,7 +25,7 @@ if [ "${SKIP_TESTS:-0}" = "1" ]; then
   exit 0
 fi
 
-# Branch/tag deletions push no content — nothing to test. stdin gives one line
+# Branch/tag deletions push no content, nothing to test. stdin gives one line
 # per ref: "<local_ref> <local_sha> <remote_ref> <remote_sha>"; an all-zero
 # local_sha means "delete this remote ref".
 has_content=0
@@ -42,7 +42,7 @@ fi
 # ── FIRST TIER: the documentation manifest ──────────────────────────────────
 # No network, no node, no install: POSIX shell over the README's `##
 # Documentation` table and the `docs/` directory. It is first because it is the
-# cheapest, and because openplate.de reads that table as its manifest — a broken
+# cheapest, and because openplate.de reads that table as its manifest, a broken
 # row here fails a workflow in another repository, hours later, with nobody
 # watching. M193 spec 05.
 echo "▶ pre-push: the README Documentation table against docs/"
@@ -58,16 +58,26 @@ echo "▶ pre-push: the README Documentation table against docs/"
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 
-# TS commands need the ts-dev toolbox (the host lacks native build tools), but
-# must run bare when the hook itself is already executing inside a container.
+# Where the TS commands run. Inside a container they run bare. Where a toolbox
+# with a container named ts-dev exists they run in it, as they always have: the
+# maintainer's host lacks native build tools. A host with toolbox but no ts-dev
+# (a stock Fedora Silverblue, say) is a contributor's host like any other.
+# Anywhere else they run with the node and pnpm on PATH, so a contributor needs
+# only Node, pnpm and make to push (M269 spec 08). .githooks/test-no-toolbox.sh
+# at the repository root proves that path.
 if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
   run() { CI=true "$@"; }
-elif command -v toolbox >/dev/null 2>&1; then
+elif command -v toolbox >/dev/null 2>&1 \
+  && toolbox list -c 2>/dev/null | awk 'NR > 1 && $2 == "ts-dev" { found = 1 } END { exit !found }'; then
   run() { toolbox run -c ts-dev env CI=true "$@"; }
 else
-  echo "✖ pre-push: no ts-dev toolbox and not inside a container — cannot run the gate."
-  echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
-  exit 1
+  for tool in node pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
+      exit 1
+    fi
+  done
+  run() { CI=true "$@"; }
 fi
 
 echo "▶ pre-push: lint"

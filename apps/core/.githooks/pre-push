@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Pre-push quality gate — this repo's ONLY test gate.
+# Pre-push quality gate, this repo's ONLY test gate.
 #
 # There is no cloud CI: pushes from the workstation are what trigger Argo's
 # build/deploy, so the tests belong in front of the push rather than after it.
@@ -16,7 +16,7 @@ if [ "${SKIP_TESTS:-0}" = "1" ]; then
   exit 0
 fi
 
-# Branch/tag deletions push no content — nothing to test. stdin gives one line
+# Branch/tag deletions push no content, nothing to test. stdin gives one line
 # per ref: "<local_ref> <local_sha> <remote_ref> <remote_sha>"; an all-zero
 # local_sha means "delete this remote ref".
 has_content=0
@@ -33,7 +33,7 @@ fi
 # ── FIRST TIER: the documentation manifest ──────────────────────────────────
 # No network, no node, no install: POSIX shell over the README's `##
 # Documentation` table and the `docs/` directory. It is first because it is the
-# cheapest, and because openplate.de reads that table as its manifest — a broken
+# cheapest, and because openplate.de reads that table as its manifest, a broken
 # row here fails a workflow in another repository, hours later, with nobody
 # watching. M193 spec 05.
 echo "▶ pre-push: the README Documentation table against docs/"
@@ -49,16 +49,26 @@ echo "▶ pre-push: the README Documentation table against docs/"
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 
-# TS commands need the ts-dev toolbox (the host lacks native build tools), but
-# must run bare when the hook itself is already executing inside a container.
+# Where the TS commands run. Inside a container they run bare. Where a toolbox
+# with a container named ts-dev exists they run in it, as they always have: the
+# maintainer's host lacks native build tools. A host with toolbox but no ts-dev
+# (a stock Fedora Silverblue, say) is a contributor's host like any other.
+# Anywhere else they run with the node and pnpm on PATH, so a contributor needs
+# only Node, pnpm and make to push (M269 spec 08). .githooks/test-no-toolbox.sh
+# at the repository root proves that path.
 if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
   run() { CI=true "$@"; }
-elif command -v toolbox >/dev/null 2>&1; then
+elif command -v toolbox >/dev/null 2>&1 \
+  && toolbox list -c 2>/dev/null | awk 'NR > 1 && $2 == "ts-dev" { found = 1 } END { exit !found }'; then
   run() { toolbox run -c ts-dev env CI=true "$@"; }
 else
-  echo "✖ pre-push: no ts-dev toolbox and not inside a container — cannot run the gate."
-  echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
-  exit 1
+  for tool in node pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
+      exit 1
+    fi
+  done
+  run() { CI=true "$@"; }
 fi
 
 echo "▶ pre-push: lint"
@@ -76,18 +86,36 @@ echo "▶ pre-push: unit tests"
 run pnpm test:unit
 
 # tests/integration/db-harness.ts defaults to the shared local Postgres on
-# :5433 (override with TEST_DATABASE_URL). Unreachable Postgres fails the push
-# rather than silently downgrading the gate to unit-only.
-DB_PORT=5433
+# localhost:5433 (override with TEST_DATABASE_URL). Unreachable Postgres fails
+# the push rather than silently downgrading the gate to unit-only.
+#
+# The probe is node, not nc: node is on every machine that can run this gate,
+# nc is not, and a probe that is skipped when nc is missing let the suite fail
+# later with a connection error that names no fix. It runs through `run`, so it
+# reads the same TEST_DATABASE_URL the suite reads, and inside the toolbox (which
+# passes no variable through) it falls back to the same default. The default
+# below is a copy of the harness's DEFAULT_TEST_DATABASE_URL; keep the two equal.
+db_probe='
+  const url = new URL(process.env.TEST_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5433/openplate_sync_test");
+  const port = Number(url.port || 5432);
+  process.stdout.write(`${url.hostname}:${port}`);
+  const socket = require("node:net").connect(port, url.hostname);
+  socket.setTimeout(3000);
+  socket.on("connect", () => process.exit(0));
+  socket.on("error", () => process.exit(1));
+  socket.on("timeout", () => process.exit(1));
+'
 
 if [ "${SKIP_INTEGRATION:-0}" = "1" ]; then
   echo "⚠ pre-push: integration tests SKIPPED explicitly (SKIP_INTEGRATION=1)"
-elif command -v nc >/dev/null 2>&1 && ! nc -z localhost "$DB_PORT" >/dev/null 2>&1; then
-  echo "✖ pre-push: no Postgres on :$DB_PORT — integration is a REQUIRED gate."
-  echo "  Start the shared local Postgres, or bypass once with: SKIP_INTEGRATION=1 git push"
+elif ! db_at=$(run node -e "$db_probe"); then
+  echo "✖ pre-push: no Postgres on ${db_at:-localhost:5433}, and integration is a REQUIRED gate."
+  echo "  Start one in apps/core with: docker compose -f docker/compose.dev.yml up -d"
+  echo "  (it serves the default TEST_DATABASE_URL), or set TEST_DATABASE_URL to another Postgres."
+  echo "  Bypass once with: SKIP_INTEGRATION=1 git push"
   exit 1
 else
-  echo "▶ pre-push: integration tests (postgres on :$DB_PORT)"
+  echo "▶ pre-push: integration tests (postgres on $db_at)"
   run pnpm test:integration
 fi
 

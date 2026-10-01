@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Pre-push quality gate — this repo's ONLY test gate (no cloud CI).
+# Pre-push quality gate, this repo's ONLY test gate (no cloud CI).
 #
 # Pushes to main auto-trigger the Argo build/deploy, so the gate belongs in
 # front of the push. Added 2026-08-04 after a prod build failure (RR8
@@ -20,8 +20,8 @@
 # stage that is always missing.
 #
 # The integration project joined the gate 2026-08-28 (M163/04). It is the only
-# place a COMPOSITION ROOT is exercised — the real actions, over real HTTP,
-# against a protocol-faithful fake — and until it ran here, deleting the sync
+# place a COMPOSITION ROOT is exercised, the real actions, over real HTTP,
+# against a protocol-faithful fake, and until it ran here, deleting the sync
 # that carries a research pin to an account's other devices left every gate
 # green. It costs about 4.5 s of a ~33 s gate (measured, 2026-08-28).
 #
@@ -34,7 +34,7 @@ if [ "${SKIP_TESTS:-0}" = "1" ]; then
   exit 0
 fi
 
-# Branch/tag deletions push no content — nothing to test. stdin gives one line
+# Branch/tag deletions push no content, nothing to test. stdin gives one line
 # per ref: "<local_ref> <local_sha> <remote_ref> <remote_sha>"; an all-zero
 # local_sha means "delete this remote ref".
 has_content=0
@@ -51,7 +51,7 @@ fi
 # ── FIRST TIER: the documentation manifest ──────────────────────────────────
 # No network, no node, no install: POSIX shell over the README's `##
 # Documentation` table and the `docs/` directory. It is first because it is the
-# cheapest, and because openplate.de reads that table as its manifest — a broken
+# cheapest, and because openplate.de reads that table as its manifest, a broken
 # row here fails a workflow in another repository, hours later, with nobody
 # watching. M193 spec 05.
 echo "▶ pre-push: the README Documentation table against docs/"
@@ -71,16 +71,26 @@ echo "▶ pre-push: the README Documentation table against docs/"
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 
-# TS commands need the ts-dev toolbox (the host lacks native build tools), but
-# must run bare when the hook itself is already executing inside a container.
+# Where the TS commands run. Inside a container they run bare. Where a toolbox
+# with a container named ts-dev exists they run in it, as they always have: the
+# maintainer's host lacks native build tools. A host with toolbox but no ts-dev
+# (a stock Fedora Silverblue, say) is a contributor's host like any other.
+# Anywhere else they run with the node and pnpm on PATH, so a contributor needs
+# only Node, pnpm and make to push (M269 spec 08). .githooks/test-no-toolbox.sh
+# at the repository root proves that path.
 if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
   run() { CI=true "$@"; }
-elif command -v toolbox >/dev/null 2>&1; then
+elif command -v toolbox >/dev/null 2>&1 \
+  && toolbox list -c 2>/dev/null | awk 'NR > 1 && $2 == "ts-dev" { found = 1 } END { exit !found }'; then
   run() { toolbox run -c ts-dev env CI=true "$@"; }
 else
-  echo "✖ pre-push: no ts-dev toolbox and not inside a container — cannot run the gate."
-  echo "  Install the toolbox, or bypass once with: SKIP_TESTS=1 git push"
-  exit 1
+  for tool in node pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
+      exit 1
+    fi
+  done
+  run() { CI=true "$@"; }
 fi
 
 # ── SECOND TIER: the changelog the release page is built from ───────────────
@@ -106,7 +116,7 @@ run pnpm test:unit
 echo "▶ pre-push: integration tests"
 run pnpm test:integration
 
-echo "▶ pre-push: production build (react-router build — the Argo image runs this)"
+echo "▶ pre-push: production build (react-router build, the Argo image runs this)"
 run pnpm build
 
 # ── LAST TIER: five specs in a real browser, against the build above ────────
@@ -125,7 +135,10 @@ echo "▶ pre-push: browser smoke tier (host only, the toolbox has no Chromium)"
 # shared cache and still cannot start them, which is the case this has to
 # catch.
 if ! pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))" >/dev/null 2>&1; then
-  echo "✖ pre-push: Chromium will not start here. Push from the host shell, the toolbox has no Chromium."
+  echo "✖ pre-push: Chromium will not start here, and the browser tier is a REQUIRED gate."
+  echo "  Install it in apps/app with: pnpm exec playwright install chromium"
+  echo "  On Linux, 'pnpm exec playwright install --with-deps chromium' also installs its system libraries."
+  echo "  Inside the ts-dev toolbox it never starts: push from the host shell instead."
   exit 1
 fi
 CI=true pnpm test:e2e
