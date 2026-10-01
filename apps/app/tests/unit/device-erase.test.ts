@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import { eraseDeviceData, ERASED_DATABASES, type DeviceEraseDeps } from '../../app/lib/local-store/device-erase';
 import { createMemoryStorage, syncBaselineStorageKey } from '../../app/lib/sync/sync-state';
 import { OUTBOX_DB_NAME, PHOTOS_DB_NAME, PRIMARY_DB_NAME } from '../../app/lib/local-store/store';
+import { MACRO_SHARE_BASIS_STORAGE_KEY } from '../../app/lib/macro-share-basis';
 import { PULSE_ENABLED_STORAGE_KEY } from '../../app/lib/pulse';
 import { PUSH_DISABLED_STORAGE_KEY, PUSH_ENDPOINT_STORAGE_KEY, PUSH_PREFS_STORAGE_KEY, resetPush } from '../../app/lib/push';
 
@@ -137,6 +138,7 @@ describe('eraseDeviceData forgets this device’s preferences', () => {
       [PUSH_DISABLED_STORAGE_KEY]: '1',
       [PUSH_PREFS_STORAGE_KEY]: JSON.stringify({ catchUpMinute: 480, fastTargetEnabled: true }),
       'openplate:weight-unit': 'kg',
+      [MACRO_SHARE_BASIS_STORAGE_KEY]: 'grams',
     });
     const restoreWindow = withFakeWindow(localStorage);
 
@@ -150,6 +152,8 @@ describe('eraseDeviceData forgets this device’s preferences', () => {
       // The control: a key this erase never touches must survive, or the
       // assertions above would pass just as well against a wiped-out storage.
       assert.equal(localStorage.getItem('openplate:weight-unit'), 'kg', 'an unrelated preference must survive');
+      // The macro share basis is the same kind of key: a rendering choice of this device.
+      assert.equal(localStorage.getItem(MACRO_SHARE_BASIS_STORAGE_KEY), 'grams', 'the macro share basis must survive');
     } finally {
       restoreWindow();
     }

@@ -9,11 +9,16 @@ import { Trans, useTranslation } from 'react-i18next';
 import type { WeeklyRecap } from '#app/lib/trend-recap';
 import type { WeeklyWeightChange } from '#app/lib/trend-weight';
 import type { EatingWindow } from '#app/lib/trend-eating-window';
-import type { MacroRatioGrams } from '#app/lib/macro-ratio';
+import { computeMacroShares, percentOfShare } from '#app/lib/macro-ratio';
+import type { MacroRatioGrams, MacroShareKey } from '#app/lib/macro-ratio';
+import { useMacroShareBasis } from '#app/lib/macro-share-basis';
+import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
+import { MacroBasisToggle } from '#app/components/macro-basis-toggle';
 import { MacroRatioBar, MACRO_SWATCH_CLASS } from '#app/components/macro-ratio-bar';
 import { SectionEyebrow } from '#app/components/typography';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
+import { cn } from '#app/lib/utils';
 
 /** Minutes in an hour, for the eating-window duration split. */
 const MINUTES_PER_HOUR = 60;
@@ -94,7 +99,7 @@ function AverageLine({ current, previous }: { current: WeeklyRecap; previous: We
 }
 
 /** Render order + label keys for the average-day figures — the same order `MacroRatioBar` draws its segments in. */
-const AVERAGE_DAY_MACROS: { key: keyof MacroRatioGrams; labelKey: string }[] = [
+const AVERAGE_DAY_MACROS: { key: MacroShareKey; labelKey: string }[] = [
   { key: 'carbs', labelKey: 'trends.recap.macro.carbs' },
   { key: 'fiber', labelKey: 'trends.recap.macro.fiber' },
   { key: 'protein', labelKey: 'trends.recap.macro.protein' },
@@ -106,26 +111,65 @@ const AVERAGE_DAY_MACROS: { key: keyof MacroRatioGrams; labelKey: string }[] = [
  * (M129/04). This card was text-only, which meant the one thing a week of
  * logging is actually good for — the SHAPE of a typical day — had to be
  * reconstructed in the reader's head from a list of sentences. The bar shows it
- * at a glance; the labelled figures under it keep the meaning off hue alone and
- * give the honest grams the bar's widths can only imply.
+ * at a glance; the labelled figures under it keep the meaning off hue alone.
+ *
+ * The figures follow the bar's basis: a percent of the day's calories by
+ * default ("Carbs 42%"), the honest grams the bar's widths can only imply when
+ * the person switched to grams ("Carbs ~30 g"). There are FOUR slots in both
+ * modes, laid out on a grid so a slot's width never depends on its text: in
+ * calorie mode the fibre slot is `invisible` (box kept, out of the
+ * accessibility tree) and holds its gram text, so the switch moves nothing.
+ *
+ * Presentational: the basis and its setter come from the caller.
  */
-function AverageDayComposition({ grams }: { grams: MacroRatioGrams }) {
+export function AverageDayComposition({
+  grams,
+  basis,
+  onBasisChange,
+}: {
+  grams: MacroRatioGrams;
+  basis: MacroShareBasis;
+  onBasisChange: (basis: MacroShareBasis) => void;
+}) {
   const { t } = useTranslation();
+  const shares = computeMacroShares(grams, basis);
 
   return (
-    <div className="space-y-2 pt-1">
-      <SectionEyebrow>{t('trends.recap.averageDay')}</SectionEyebrow>
-      <MacroRatioBar grams={grams} className="h-2.5" />
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {AVERAGE_DAY_MACROS.map((macro) => (
-          <span key={macro.key} className="inline-flex items-center gap-1.5 tabular-nums">
-            <span className={`h-2 w-2 rounded-full ${MACRO_SWATCH_CLASS[macro.key]}`} aria-hidden="true" />
-            {t(macro.labelKey)} {formatGrams(grams[macro.key])}
-          </span>
-        ))}
+    <div data-slot="average-day" data-basis={basis} className="space-y-2 pt-1">
+      <div className="flex items-center justify-between gap-2">
+        <SectionEyebrow>{t('trends.recap.averageDay')}</SectionEyebrow>
+        <MacroBasisToggle basis={basis} onChange={onBasisChange} idPrefix="average-day-basis" />
+      </div>
+      <MacroRatioBar grams={grams} basis={basis} className="h-2.5" />
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground sm:grid-cols-4">
+        {AVERAGE_DAY_MACROS.map((macro) => {
+          const percent = shares === null ? null : percentOfShare({ shares, key: macro.key });
+          const isReserved = basis === 'kcal' && macro.key === 'fiber';
+          const figure =
+            basis === 'kcal' && !isReserved && percent !== null ?
+              t('trends.split.share', { macro: t(macro.labelKey), percent: Math.round(percent) })
+            : `${t(macro.labelKey)} ${formatGrams(grams[macro.key])}`;
+          return (
+            <span
+              key={macro.key}
+              data-slot="average-day-figure"
+              data-macro={macro.key}
+              className={cn('inline-flex items-center gap-1.5 tabular-nums', isReserved && 'invisible')}
+            >
+              <span className={`h-2 w-2 rounded-full ${MACRO_SWATCH_CLASS[macro.key]}`} aria-hidden="true" />
+              {figure}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+/** The recap's average-day block with the person's chosen basis. */
+function AverageDay({ grams }: { grams: MacroRatioGrams }) {
+  const [basis, setBasis] = useMacroShareBasis();
+  return <AverageDayComposition grams={grams} basis={basis} onBasisChange={setBasis} />;
 }
 
 /**
@@ -168,7 +212,7 @@ export function WeeklyRecapCard({
       <CardContent className="space-y-2">
         <AverageLine current={current} previous={previous} />
 
-        {current.avgMacroGrams !== null && <AverageDayComposition grams={current.avgMacroGrams} />}
+        {current.avgMacroGrams !== null && <AverageDay grams={current.avgMacroGrams} />}
 
         {ceiling !== null && current.daysUnderCeiling !== null && current.loggedDays > 0 && (
           <p className="text-sm text-muted-foreground tabular-nums">

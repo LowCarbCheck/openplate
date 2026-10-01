@@ -4,6 +4,12 @@
  * week at 30 and 90 days), under a pooled range average. The arithmetic lives
  * in `#app/lib/macro-energy-split`; this file only lays it out.
  *
+ * A kcal/g control on the title row switches the same three segments to the
+ * GRAM share (`#app/lib/macro-share-basis`, kcal is the default). The title and
+ * the note have a line for each basis, stacked in one grid cell with the other
+ * `invisible`, so the card keeps one size whichever is chosen and nothing moves
+ * when the person switches.
+ *
  * The note under the title is load-bearing: the split is 4/4/9 times the
  * grams, which is not the calorie total a label reports, so the card says so
  * rather than letting the two figures disagree silently.
@@ -18,8 +24,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import { Tooltip, TooltipContent, TooltipTrigger } from '#app/components/ui/tooltip';
 import { MACRO_SWATCH_CLASS } from '#app/components/macro-ratio-bar';
 import { dateLabelLocale } from '#app/i18n/date-locale';
+import { MacroBasisToggle } from '#app/components/macro-basis-toggle';
 import { computeMacroEnergySplit, computeRangeEnergySplit } from '#app/lib/macro-energy-split';
 import type { MacroEnergyShares } from '#app/lib/macro-energy-split';
+import { useMacroShareBasis } from '#app/lib/macro-share-basis';
+import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 import { bucketByWeek } from '#app/lib/trend-buckets';
 import type { TrendDay } from '#app/lib/trend-chart';
 import { cn } from '#app/lib/utils';
@@ -125,10 +134,49 @@ function AverageSplit({ shares, t }: { shares: MacroEnergyShares; t: Translate }
 }
 
 /**
+ * One line of copy per basis in a single grid cell: the cell is as tall as the
+ * taller line, the line not chosen is `invisible` (box kept) and `aria-hidden`
+ * (not read), so switching the basis cannot change the card's height.
+ */
+function BasisText({ basis, kcal, grams }: { basis: MacroShareBasis; kcal: string; grams: string }) {
+  return (
+    <span data-slot="basis-text" data-basis={basis} className="grid">
+      <span aria-hidden={basis !== 'kcal'} className={cn('col-start-1 row-start-1', basis !== 'kcal' && 'invisible')}>
+        {kcal}
+      </span>
+      <span
+        aria-hidden={basis !== 'grams'}
+        className={cn('col-start-1 row-start-1', basis !== 'grams' && 'invisible')}
+      >
+        {grams}
+      </span>
+    </span>
+  );
+}
+
+/** The card with the person's chosen basis. */
+export function MacroEnergySplitCard({ days, isWeekly }: { days: readonly TrendDay[]; isWeekly: boolean }) {
+  const [basis, setBasis] = useMacroShareBasis();
+  return <MacroEnergySplitView days={days} isWeekly={isWeekly} basis={basis} onBasisChange={setBasis} />;
+}
+
+/**
  * @param days - the chart's per-day rows for the active range and slot, oldest first.
  * @param isWeekly - true at 30 and 90 days, where each row is a week averaged over its logged days.
+ * @param basis - which share the bars show: calories (default) or grams.
+ * @param onBasisChange - called when the person taps the other option.
  */
-export function MacroEnergySplitCard({ days, isWeekly }: { days: readonly TrendDay[]; isWeekly: boolean }) {
+export function MacroEnergySplitView({
+  days,
+  isWeekly,
+  basis,
+  onBasisChange,
+}: {
+  days: readonly TrendDay[];
+  isWeekly: boolean;
+  basis: MacroShareBasis;
+  onBasisChange: (basis: MacroShareBasis) => void;
+}) {
   const { t, i18n } = useTranslation();
   const formatDate = new Intl.DateTimeFormat(dateLabelLocale(i18n.language), {
     month: 'short',
@@ -138,18 +186,30 @@ export function MacroEnergySplitCard({ days, isWeekly }: { days: readonly TrendD
   const labelOf = (date: string): string => formatDate.format(new Date(`${date}T00:00:00Z`));
   // The average is pooled over the DAYS, whatever the rows are: averaging the
   // weekly rows would weigh a week with one logged day like a full one.
-  const average = computeRangeEnergySplit(days.map((day) => day.summary));
+  const average = computeRangeEnergySplit(
+    days.map((day) => day.summary),
+    basis,
+  );
   const rows: SplitRow[] = (isWeekly ? bucketByWeek(days) : days).map((day) => ({
     date: day.date,
     hasLogs: day.hasLogs,
-    shares: computeMacroEnergySplit(day.summary),
+    shares: computeMacroEnergySplit(day.summary, basis),
   }));
 
   return (
-    <Card data-slot="macro-split-card">
+    <Card data-slot="macro-split-card" data-basis={basis}>
       <CardHeader className="space-y-1">
-        <CardTitle>{t('trends.split.title')}</CardTitle>
-        <CardDescription>{t('trends.split.note')}</CardDescription>
+        {/* The toggle shares the title's row and the row is as tall as the
+            toggle from the first paint, so the control moves nothing. */}
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="min-w-0">
+            <BasisText basis={basis} kcal={t('trends.split.title')} grams={t('trends.split.titleGrams')} />
+          </CardTitle>
+          <MacroBasisToggle basis={basis} onChange={onBasisChange} idPrefix="macro-split-basis" />
+        </div>
+        <CardDescription>
+          <BasisText basis={basis} kcal={t('trends.split.note')} grams={t('trends.split.noteGrams')} />
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {average !== null && <AverageSplit shares={average} t={t} />}

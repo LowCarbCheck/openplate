@@ -15,6 +15,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **Docs and prose call the server core, not sync.** READMEs, docs, code comments and screen text name openplate-core as the core server. This prose change renames no variable; the next entry covers `SYNC_SERVER_URL`.
 - **`CORE_URL` replaces `SYNC_SERVER_URL`; the old name still works with a warning until a later release.** The app reads the address of openplate-core from `CORE_URL`. When only `SYNC_SERVER_URL` is set, the app logs one warning at boot and uses it. When both are set to different addresses, the old name wins for this release, and the app logs one warning that names both values and says to remove the old line before the release that drops the old name. The public config field `coreUrl` replaces `syncServerUrl`, and `syncServerUrl` carries the same value for one release, so a copy of the app cached on a phone keeps finding its server. Every compose file, quadlet unit, `.env.example` and the environment variables page now name `CORE_URL`. On the quadlet core and full units, whose defaults file sets `CORE_URL`, a `SYNC_SERVER_URL` line in `app.env` keeps working and wins; rename it to `CORE_URL`.
+- **Macro breakdowns show the calorie share by default.** A small kcal/g control next to each bar switches to the gram share, and the choice is kept on the device.
 
 ## [0.60.0] - 2026-10-01
 

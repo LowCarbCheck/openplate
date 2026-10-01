@@ -19,7 +19,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { withI18n } from './trends-i18n-harness';
-import { WeeklyRecapCard } from '../../app/components/trends/weekly-recap-card';
+import { AverageDayComposition, WeeklyRecapCard } from '../../app/components/trends/weekly-recap-card';
 import type { WeeklyRecap } from '../../app/lib/trend-recap';
 
 const NO_GOALS = { netCarbsCeiling: null, proteinFloor: null };
@@ -139,19 +139,69 @@ describe('WeeklyRecapCard — average-day composition', () => {
     const html = render(makeRecap());
 
     assert.ok(html.includes('An average day'));
-    assert.ok(html.includes('Macro ratio:'), "the bar's accessible name states the ratio in words");
+    assert.ok(html.includes('Macro ratio by calories:'), "the bar's accessible name states the ratio in words");
     for (const label of ['Carbs', 'Fiber', 'Protein', 'Fat']) {
       assert.ok(html.includes(label), `${label} must be named next to its swatch`);
     }
   });
 
-  it('hedges the average figures with "~" — a mean of logged days is not a precise number', () => {
-    assert.ok(render(makeRecap()).includes('~30 g'));
+  it('hedges the gram figures with "~", a mean of logged days is not a precise number', () => {
+    assert.ok(renderDay('grams').includes('~30 g'));
   });
 
   it('omits the whole block when nothing was logged this week', () => {
     const html = render(makeRecap({ avgMacroGrams: null, avgNetCarbs: null }));
 
     assert.ok(!html.includes('An average day'));
+  });
+});
+
+/** The average-day block alone, on a chosen basis (the card itself reads the stored choice). */
+function renderDay(basis: 'kcal' | 'grams'): string {
+  return renderToStaticMarkup(
+    withI18n(
+      createElement(AverageDayComposition, {
+        grams: { carbs: 30, protein: 90, fat: 50, fiber: 8 },
+        basis,
+        onBasisChange: () => undefined,
+      }),
+    ),
+  );
+}
+
+/** Each figure as `[macro, isInvisible, text]`. */
+function figuresOf(html: string): [string, boolean, string][] {
+  return [
+    ...html.matchAll(/data-slot="average-day-figure" data-macro="(\w+)" class="([^"]*)"><span[^>]*><\/span>([^<]*)</g),
+  ].map((match) => [match[1] ?? '', /\binvisible\b/.test(match[2] ?? ''), match[3] ?? '']);
+}
+
+describe('WeeklyRecapCard, the average day follows the share basis', () => {
+  it('shows the calorie share as a percent by default, three figures and the fibre slot kept invisible', () => {
+    const html = render(makeRecap());
+    assert.ok(html.includes('data-basis="kcal"'));
+    // 30 g carbs, 90 g protein, 50 g fat: 120 + 360 + 450 = 930 kcal.
+    assert.deepEqual(figuresOf(renderDay('kcal')), [
+      ['carbs', false, 'Carbs 13%'],
+      ['fiber', true, 'Fiber ~8 g'],
+      ['protein', false, 'Protein 39%'],
+      ['fat', false, 'Fat 48%'],
+    ]);
+  });
+
+  it('shows the gram figures with all four slots in view by grams (control: nothing is invisible)', () => {
+    assert.deepEqual(figuresOf(renderDay('grams')), [
+      ['carbs', false, 'Carbs ~30 g'],
+      ['fiber', false, 'Fiber ~8 g'],
+      ['protein', false, 'Protein ~90 g'],
+      ['fat', false, 'Fat ~50 g'],
+    ]);
+  });
+
+  it('carries the toggle on the title row with the active basis pressed', () => {
+    const kcal = renderDay('kcal');
+    assert.match(kcal, /id="average-day-basis-kcal"[^>]*aria-pressed="true"/);
+    assert.match(kcal, /id="average-day-basis-grams"[^>]*aria-pressed="false"/);
+    assert.match(renderDay('grams'), /id="average-day-basis-grams"[^>]*aria-pressed="true"/);
   });
 });

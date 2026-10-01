@@ -682,9 +682,15 @@
       "absolute": "{{value}} kalori"
     },
     "loading": "Günlüğün yükleniyor…",
+    "macroBasis": {
+      "group": "Pay temeli",
+      "grams": "g",
+      "kcal": "kcal"
+    },
     "macroRatio": {
       "empty": "Henüz bir makro kaydedilmedi",
-      "label": "Makro oranı: {{ratio}}",
+      "labelGrams": "Gram cinsinden makro oranı: {{ratio}}",
+      "labelKcal": "Kalori cinsinden makro oranı: {{ratio}}",
       "segment": "{{percent}}% {{macro}}",
       "share": "{{percent}}%"
     },
@@ -3058,6 +3064,8 @@
     "split": {
       "title": "Kalorilerinin kaynağı",
       "note": "Protein, karbonhidrat ve yağdan hesaplanır, bu yüzden toplam kalori miktarından biraz farklı olabilir.",
+      "noteGrams": "Her bir pay, ilgili makronun üçü arasındaki gram cinsinden ağırlığıdır.",
+      "titleGrams": "Ağırlıklarına göre makroların",
       "average": "Ortalama",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

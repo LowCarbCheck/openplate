@@ -682,9 +682,15 @@
       "absolute": "{{value}} Kalorien"
     },
     "loading": "Dein Tagebuch wird geladen…",
+    "macroBasis": {
+      "group": "Berechnungsgrundlage der Anteile",
+      "grams": "g",
+      "kcal": "kcal"
+    },
     "macroRatio": {
       "empty": "Noch keine Makros eingetragen",
-      "label": "Makro-Verhältnis: {{ratio}}",
+      "labelGrams": "Makronährstoffverhältnis nach Gramm: {{ratio}}",
+      "labelKcal": "Makronährstoffverhältnis nach Kalorien: {{ratio}}",
       "segment": "{{percent}} % {{macro}}",
       "share": "{{percent}} %"
     },
@@ -3058,6 +3064,8 @@
     "split": {
       "title": "Woher deine Kalorien stammen",
       "note": "Aus Protein, Kohlenhydraten und Fett berechnet, kann daher leicht von deiner Gesamtkalorienzahl abweichen.",
+      "noteGrams": "Jeder Anteil entspricht dem Gewicht dieses Makronährstoffs in Gramm bezogen auf alle drei zusammen.",
+      "titleGrams": "Deine Makronährstoffe nach Gewicht",
       "average": "Durchschnitt",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

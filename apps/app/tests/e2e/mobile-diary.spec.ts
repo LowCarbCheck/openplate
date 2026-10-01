@@ -629,11 +629,19 @@ test('the entry receipt gives its star the tap floor', async ({ page }) => {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * The four cells the composition block draws under its ratio bar, one per
- * macro. A count, so a "no gram figures here" claim cannot be satisfied by
+ * The four cells the composition block keeps under its ratio bar, one per
+ * macro, in BOTH share modes (the grid never changes size when the person
+ * switches). A count, so a "no gram figures here" claim cannot be satisfied by
  * deleting the block.
  */
 const MACRO_CELL_COUNT = 4;
+
+/**
+ * The cells a person SEES by default. The share is by calories until the
+ * person taps "g", and fibre is not an energy source, so its cell is kept as
+ * an invisible box and three are drawn.
+ */
+const VISIBLE_KCAL_CELL_COUNT = 3;
 
 /**
  * One run of card text as a reader sees it, with every run of whitespace
@@ -702,7 +710,7 @@ test('the composition block restates no gram figure the budget rows already stat
   // slots: the list has no sub-line any more, so the old
   // `li:has([data-slot="budget-subline"])` reader would find nothing.
   const rows = page.locator('[data-slot="budget-lead"], [data-slot="budget-row"]');
-  const cells = page.locator('[data-slot="macro-share"]');
+  const cells = page.locator('[data-slot="macro-share"]:visible');
   let rowText = '';
 
   // English and German: German is the one language that spaces its percent
@@ -731,7 +739,15 @@ test('the composition block restates no gram figure the budget rows already stat
     // cells would satisfy the claim below and lose the ratio bar's legend,
     // so the cells are counted and each is required to carry a digit.
     //////////////////////////////////////////////////////////////////////////
-    await expect(cells, `${locale}: the composition block must keep one cell per macro`).toHaveCount(MACRO_CELL_COUNT);
+    await expect(
+      page.locator('[data-slot="macro-share-cell"]'),
+      `${locale}: the composition block must keep the grid's four boxes`,
+    ).toHaveCount(MACRO_CELL_COUNT);
+    // By calories, the default: three are drawn and the fibre box is held empty.
+    await expect(cells, `${locale}: the default share draws one cell per energy macro`).toHaveCount(
+      VISIBLE_KCAL_CELL_COUNT,
+    );
+    await expect(page.locator('[data-slot="macro-share-cell"][data-macro="fiber"]')).toBeHidden();
     const cellTexts = (await cells.allTextContents()).map(flattenCardText);
     for (const text of cellTexts) {
       expect(text, `${locale}: every macro cell must state a figure, read "${text}"`).toMatch(/\d/u);
@@ -753,8 +769,8 @@ test('the composition block restates no gram figure the budget rows already stat
     // different numbers from the ones the bar reads out.
     //////////////////////////////////////////////////////////////////////////
     const barText = (await page.locator('[data-slot="macro-ratio-bar"] .sr-only').textContent()) ?? '';
-    expect(percentFigures(barText).length, `${locale}: the bar must read out one share per macro`).toBe(
-      MACRO_CELL_COUNT,
+    expect(percentFigures(barText).length, `${locale}: the bar must read out one share per drawn cell`).toBe(
+      VISIBLE_KCAL_CELL_COUNT,
     );
     expect(
       cellTexts.flatMap(percentFigures),

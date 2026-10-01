@@ -682,9 +682,15 @@
       "absolute": "{{value}} calories"
     },
     "loading": "Loading your diary…",
+    "macroBasis": {
+      "group": "Share basis",
+      "grams": "g",
+      "kcal": "kcal"
+    },
     "macroRatio": {
       "empty": "No macros logged yet",
-      "label": "Macro ratio: {{ratio}}",
+      "labelGrams": "Macro ratio by grams: {{ratio}}",
+      "labelKcal": "Macro ratio by calories: {{ratio}}",
       "segment": "{{percent}}% {{macro}}",
       "share": "{{percent}}%"
     },
@@ -3058,6 +3064,8 @@
     "split": {
       "title": "Where your calories come from",
       "note": "Worked out from protein, carbs and fat, so it can differ a little from your calorie total.",
+      "noteGrams": "Each share is that macro's weight in grams out of the three together.",
+      "titleGrams": "Your macros by weight",
       "average": "Average",
       "share": "{{macro}} {{percent}}%",
       "row": "{{date}}: {{ratio}}",

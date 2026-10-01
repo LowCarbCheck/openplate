@@ -2078,6 +2078,13 @@
     "at": "2026-09-14",
     "it": "Calcoliamo i mesi di allattamento a partire da questo giorno, e i valori di riferimento cambiano dopo sei mesi."
   },
+  "17c21f54b89090e9": {
+    "en": "Macro ratio by calories: {{ratio}}",
+    "path": "common:diary.macroRatio.labelKcal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Rapporto tra macronutrienti in calorie: {{ratio}}"
+  },
   "17f1b3642448fb89": {
     "en": "Backup imported. Your diary now includes the imported data.",
     "path": "common:settings.data.importSuccess",
@@ -2210,6 +2217,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "it": "Hai registrato il tuo primo alimento."
+  },
+  "1914b6dbd13d29f2": {
+    "en": "Your macros by weight",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "I tuoi macro per peso"
   },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
@@ -6649,6 +6663,13 @@
     "at": "2026-09-14",
     "it": "Qualcosa è andato storto"
   },
+  "533f4c11f1fd8e5b": {
+    "en": "Each share is the grams of that macro out of the grams of all three.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Ogni quota rappresenta i grammi del macronutriente rispetto ai grammi di tutti e tre."
+  },
   "537cbd20fa63c46b": {
     "en": "Sending",
     "path": "common:admin.invite.sending",
@@ -8602,6 +8623,13 @@
     "at": "2026-09-14",
     "it": "Intervallo di tempo"
   },
+  "6a47c8226f4f8d95": {
+    "en": "Each share is that macro's weight in grams out of the three together.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Ogni quota corrisponde al peso in grammi di quel macro rispetto alla somma dei tre."
+  },
   "6a507095c056a592": {
     "en": "Choose an AI provider",
     "path": "common:settingsAi.providerTabs.legend",
@@ -9777,6 +9805,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{count}} banane"
+  },
+  "77bbd5c377afc3e9": {
+    "en": "Where your grams come from",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Origine dei tuoi grammi"
   },
   "77c8124a06926ff0": {
     "en": "Check the list",
@@ -12073,6 +12108,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Caricamento delle tue impostazioni di IA…"
+  },
+  "9130d3e9dd77abf7": {
+    "en": "kcal",
+    "path": "common:diary.macroBasis.kcal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "kcal"
   },
   "914fd8807f2ebb90": {
     "en": "{{count}} meals",
@@ -16848,6 +16890,13 @@
     "at": "2026-09-14",
     "it": "Vai al tuo diario"
   },
+  "cdcc08d7781b4bb6": {
+    "en": "Share basis",
+    "path": "common:diary.macroBasis.group",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Base di calcolo"
+  },
   "cdcdd365085837fe": {
     "en": "The food notes in the diary follow NHS, BfR and ACOG guidance, blended into one list. They do not replace advice from your midwife or doctor.",
     "path": "common:cautions.guidance",
@@ -18395,6 +18444,13 @@
     "at": "2026-09-14",
     "it": "Finora oggi"
   },
+  "dfd1c8f7780d5f29": {
+    "en": "g",
+    "path": "common:diary.macroBasis.grams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "g"
+  },
   "dfd324db5af43fb6": {
     "en": "They can set a password and start straight away.",
     "path": "common:admin.invite.sentBody",
@@ -19542,6 +19598,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Registrato, ma i dettagli non bastano per verificare i tuoi obiettivi."
+  },
+  "ebf8fe10599b7267": {
+    "en": "Macro ratio by grams: {{ratio}}",
+    "path": "common:diary.macroRatio.labelGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "it": "Rapporto tra macronutrienti in grammi: {{ratio}}"
   },
   "ec46d398afc5a324": {
     "en": "Nothing has been read in this window.",

@@ -474,6 +474,14 @@ draws `Ellipsis`, the More tab's glyph, in muted ink on the page background with
 in the brand colour. It is absolutely placed inside the mark's 44 px button and hidden from
 assistive tech, so the header does not move. `tests/e2e/mark-opens-more.spec.ts` checks it.
 
+**Macro shares.** A macro share is by calories by default (protein and carbs at 4 kcal per gram, fat
+at 9, fibre not a segment), in the diary's "What you ate", the Insights "An average day" and "Where
+your calories come from". A two-option control (`MacroBasisToggle`, "kcal" and "g", both one fixed
+width, the active one in a 2 px foreground border and never teal, which would break `/trends`'
+ceiling) sits on the same row as the block title and switches the share to grams; the choice is a
+device preference (`openplate:macro-share-basis`) that an erase keeps. The grid keeps its four cells
+in both modes, and in calorie mode the fibre cell is `invisible`, so switching moves nothing.
+
 **Tap targets.** 44px is the floor on a phone for anything a thumb touches: buttons, icon
 buttons, switches, date-picker cells, filter chips, settings rows, footer links, a sheet's close
 key. `tests/e2e/lcc-lineage-tap-targets.spec.ts` measures it per screen and carries exactly four

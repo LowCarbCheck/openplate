@@ -2078,6 +2078,13 @@
     "at": "2026-09-14",
     "tr": "Emzirme aylarını bu günden itibaren sayarız ve referans miktarları altı aydan sonra değişir."
   },
+  "17c21f54b89090e9": {
+    "en": "Macro ratio by calories: {{ratio}}",
+    "path": "common:diary.macroRatio.labelKcal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Kalori cinsinden makro oranı: {{ratio}}"
+  },
   "17f1b3642448fb89": {
     "en": "Backup imported. Your diary now includes the imported data.",
     "path": "common:settings.data.importSuccess",
@@ -2210,6 +2217,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "tr": "İlk yiyeceğini günlüğe kaydettin."
+  },
+  "1914b6dbd13d29f2": {
+    "en": "Your macros by weight",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Ağırlıklarına göre makroların"
   },
   "191aa03f895b42ef": {
     "en": "Nothing has been contributed to this study yet.",
@@ -6649,6 +6663,13 @@
     "at": "2026-09-14",
     "tr": "Bir şeyler ters gitti"
   },
+  "533f4c11f1fd8e5b": {
+    "en": "Each share is the grams of that macro out of the grams of all three.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Her pay, o makronun üç makronun toplam gramajı içindeki gram miktarını belirtir."
+  },
   "537cbd20fa63c46b": {
     "en": "Sending",
     "path": "common:admin.invite.sending",
@@ -8602,6 +8623,13 @@
     "at": "2026-09-14",
     "tr": "Zaman aralığı"
   },
+  "6a47c8226f4f8d95": {
+    "en": "Each share is that macro's weight in grams out of the three together.",
+    "path": "common:trends.split.noteGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Her bir pay, ilgili makronun üçü arasındaki gram cinsinden ağırlığıdır."
+  },
   "6a507095c056a592": {
     "en": "Choose an AI provider",
     "path": "common:settingsAi.providerTabs.legend",
@@ -9777,6 +9805,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "{{count}} muz"
+  },
+  "77bbd5c377afc3e9": {
+    "en": "Where your grams come from",
+    "path": "common:trends.split.titleGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Gramlarının nereden geldiği"
   },
   "77c8124a06926ff0": {
     "en": "Check the list",
@@ -12073,6 +12108,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yapay zeka ayarların yükleniyor…"
+  },
+  "9130d3e9dd77abf7": {
+    "en": "kcal",
+    "path": "common:diary.macroBasis.kcal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "kcal"
   },
   "914fd8807f2ebb90": {
     "en": "{{count}} meals",
@@ -16848,6 +16890,13 @@
     "at": "2026-09-14",
     "tr": "Günlüğüne git"
   },
+  "cdcc08d7781b4bb6": {
+    "en": "Share basis",
+    "path": "common:diary.macroBasis.group",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Pay temeli"
+  },
   "cdcdd365085837fe": {
     "en": "The food notes in the diary follow NHS, BfR and ACOG guidance, blended into one list. They do not replace advice from your midwife or doctor.",
     "path": "common:cautions.guidance",
@@ -18395,6 +18444,13 @@
     "at": "2026-09-14",
     "tr": "Bugün şu ana kadar"
   },
+  "dfd1c8f7780d5f29": {
+    "en": "g",
+    "path": "common:diary.macroBasis.grams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "g"
+  },
   "dfd324db5af43fb6": {
     "en": "They can set a password and start straight away.",
     "path": "common:admin.invite.sentBody",
@@ -19542,6 +19598,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kaydedildi, ancak hedeflerini kontrol etmek için yeterli ayrıntı yoktu."
+  },
+  "ebf8fe10599b7267": {
+    "en": "Macro ratio by grams: {{ratio}}",
+    "path": "common:diary.macroRatio.labelGrams",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Gram cinsinden makro oranı: {{ratio}}"
   },
   "ec46d398afc5a324": {
     "en": "Nothing has been read in this window.",
