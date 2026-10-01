@@ -709,8 +709,8 @@ flag, because a credential in argv lands in shell history and is visible in
 The CLI used to be `pnpm sync-api`, and it read `SYNC_SERVER_URL`. Both old
 names still work for one more release. `pnpm sync-api` prints a notice to
 standard error and runs the same CLI. `SYNC_SERVER_URL` prints a warning when it
-is the only one set, and two different addresses under the two names stop the
-command.
+is the only one set. If the two names hold different addresses, the old name
+wins for this release, with one warning that names both.
 
 Two optional conveniences:
 

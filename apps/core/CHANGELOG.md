@@ -9,7 +9,7 @@ change moves the minor.
 
 ### Changed
 
-- **`pnpm core-api` is the admin CLI; `pnpm sync-api` still works with a notice.** `pnpm sync-api` prints one line to standard error, naming the new command, and then runs the same CLI. The CLI reads the service address from `CORE_URL`, with `SYNC_SERVER_URL` as the deprecated fallback: the old name prints one warning to standard error, and two different addresses under the two names stop the command before it sends a request. `--url` still beats both. The old command and the old name stop working in a later release. Every command in the README, the operations guides and the `.env.example` comments now uses `pnpm core-api`.
+- **`pnpm core-api` is the admin CLI; `pnpm sync-api` still works with a notice.** `pnpm sync-api` prints one line to standard error, naming the new command, and then runs the same CLI. The CLI reads the service address from `CORE_URL`, with `SYNC_SERVER_URL` as the deprecated fallback: the old name prints one warning to standard error, and when the two names hold different addresses, the old name wins for this release, with one warning on standard error that names both values. `--url` still beats both. The old command and the old name stop working in a later release. Every command in the README, the operations guides and the `.env.example` comments now uses `pnpm core-api`.
 
 ## [0.29.1] - 2026-10-01
 

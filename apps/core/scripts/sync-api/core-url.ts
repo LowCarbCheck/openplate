@@ -7,19 +7,33 @@
  *
  * - `CORE_URL` wins when it is set.
  * - `SYNC_SERVER_URL` is read when `CORE_URL` is not, and one warning goes to standard error.
- * - both set to the same address is quiet, and both set to different addresses is a refusal.
- *   Picking one would aim an admin command that can erase accounts at a server the operator may
- *   not mean.
+ * - both set to the same address is quiet. Both set to different addresses: the OLD name wins for
+ *   this release, and one warning to standard error names both values and says the old line must
+ *   go before the release that drops the old name. It is not a refusal, on purpose: a quadlet
+ *   install keeps `SYNC_SERVER_URL` in its own `app.env` while the new defaults file sets
+ *   `CORE_URL`, so the two differ on installs nobody watches, and the address the operator wrote
+ *   themselves is the one they meant. The app server applies the same rule.
  * - an empty or blank value counts as unset.
  *
  * `--url` beats all of this, and `main.ts` does not call this function when it is given, so a flag
- * is never refused because of a stale environment variable.
+ * is never affected by a stale environment variable.
  */
-import { CliError } from './client.js';
 
 /** The one line printed when only the old name is set. Plain words, exact text, tested. */
 export const DEPRECATED_CORE_URL_WARNING =
   'SYNC_SERVER_URL is deprecated, set CORE_URL instead; the old name stops working in a later release.';
+
+/**
+ * The one line printed when both names are set to different addresses. It names both values, says
+ * which one is used, and says what to do. Plain words, exact text, tested.
+ */
+export function coreUrlConflictWarning(input: { current: string; deprecated: string }): string {
+  return (
+    `CORE_URL (${input.current}) and SYNC_SERVER_URL (${input.deprecated}) are both set and differ. ` +
+    `For this release SYNC_SERVER_URL wins, so the CLI uses ${input.deprecated}. ` +
+    'Remove the SYNC_SERVER_URL line before the release that drops the old name.'
+  );
+}
 
 /** The value of one setting, or `undefined` when it is unset, empty or blank. */
 function readSetting(value: string | undefined): string | undefined {
@@ -37,8 +51,8 @@ function isSameAddress(input: { first: string; second: string }): boolean {
  * The service address from the environment, or `undefined` when neither name is set.
  *
  * @param input.env - the environment to read, `process.env` in the CLI.
- * @param input.warn - called once with {@link DEPRECATED_CORE_URL_WARNING} when only the old name is set.
- * @throws {CliError} when both names are set to different addresses.
+ * @param input.warn - called once with {@link DEPRECATED_CORE_URL_WARNING} when only the old name is
+ *   set, and once with {@link coreUrlConflictWarning} when both are set to different addresses.
  */
 export function resolveCoreUrl(input: {
   env: Readonly<Record<string, string | undefined>>;
@@ -47,11 +61,10 @@ export function resolveCoreUrl(input: {
   const current = readSetting(input.env.CORE_URL);
   const deprecated = readSetting(input.env.SYNC_SERVER_URL);
 
-  if (current !== undefined && deprecated !== undefined && !isSameAddress({ first: current, second: deprecated })) {
-    throw new CliError(
-      `CORE_URL and SYNC_SERVER_URL are both set, and they name different addresses (${current} and ${deprecated}). ` +
-        'SYNC_SERVER_URL is the old name of CORE_URL. Unset SYNC_SERVER_URL, or pass --url.',
-    );
+  if (current !== undefined && deprecated !== undefined) {
+    if (isSameAddress({ first: current, second: deprecated })) return current;
+    input.warn(coreUrlConflictWarning({ current, deprecated }));
+    return deprecated;
   }
   if (current !== undefined) return current;
   if (deprecated !== undefined) input.warn(DEPRECATED_CORE_URL_WARNING);

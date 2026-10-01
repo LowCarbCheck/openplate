@@ -28,7 +28,8 @@
 export const HERMETIC_SERVER_ENV = {
   UPDATE_CHECK: 'off',
   // The old name of `CORE_URL`, blanked. An operator's shell that still exports it with another
-  // address would stop the boot ("both are set and differ"); an empty value reads as unset.
+  // address would win over `CORE_URL` (the old name wins in the release that renamed it) and aim the
+  // server at somewhere else; an empty value reads as unset.
   SYNC_SERVER_URL: '',
 } as const satisfies Readonly<Record<string, string>>;
 

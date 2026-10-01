@@ -9,7 +9,8 @@
  * - `sync-api` does the same work and prints ONE notice to standard error first, with the exact
  *   words, and leaves standard output alone.
  * - the old `SYNC_SERVER_URL` still names the server, with one warning on standard error.
- * - two different addresses under the two names stop the command before any request is sent.
+ * - two different addresses under the two names: the OLD name wins for this release, with one
+ *   warning on standard error that names both values, and the request goes to the old address.
  * - `--url` beats both, even when the two names disagree.
  * - `package.json` points `core-api` at `main.ts` and `sync-api` at the alias, and the alias file
  *   holds no CLI code of its own, so the two cannot drift.
@@ -22,7 +23,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveCoreUrl, DEPRECATED_CORE_URL_WARNING } from '../../scripts/sync-api/core-url.js';
+import {
+  coreUrlConflictWarning,
+  resolveCoreUrl,
+  DEPRECATED_CORE_URL_WARNING,
+} from '../../scripts/sync-api/core-url.js';
 import { runCli, startCountingServer, type CountingServer } from './sync-api-cli-harness.js';
 
 const ADMIN_TOKEN = 'core-api-test-admin-token-0123456789';
@@ -108,7 +113,7 @@ test('the old SYNC_SERVER_URL still names the server, with one warning', async (
   assert.equal(countLines({ text: run.stderr, line: WARNING }), 1, `expected one warning, saw: ${run.stderr}`);
 });
 
-test('two different addresses under the two names stop the command before any request', async () => {
+test('two different addresses under the two names: the old name wins, with one warning that names both', async () => {
   const requestsBefore = server.requests.length;
   const otherRequestsBefore = otherServer.requests.length;
 
@@ -118,10 +123,30 @@ test('two different addresses under the two names stop the command before any re
     env: { CORE_URL: server.baseUrl, SYNC_SERVER_URL: otherServer.baseUrl },
   });
 
-  assert.notEqual(run.exitCode, 0, 'a conflict must be a failure exit');
-  assert.ok(run.stderr.includes('CORE_URL') && run.stderr.includes('SYNC_SERVER_URL'), `saw: ${run.stderr}`);
-  assert.equal(server.requests.length, requestsBefore, 'no request to the CORE_URL server');
-  assert.equal(otherServer.requests.length, otherRequestsBefore, 'no request to the SYNC_SERVER_URL server');
+  const warning = coreUrlConflictWarning({ current: server.baseUrl, deprecated: otherServer.baseUrl });
+  assert.equal(run.exitCode, 0, `a conflict must not stop the command, stderr: ${run.stderr}`);
+  assert.equal(countLines({ text: run.stderr, line: warning }), 1, `expected one conflict warning, saw: ${run.stderr}`);
+  assert.ok(warning.includes('SYNC_SERVER_URL wins'), 'the warning says which name is used');
+  assert.equal(server.requests.length, requestsBefore, 'nothing goes to the CORE_URL server');
+  assert.deepEqual(
+    otherServer.requests.slice(otherRequestsBefore),
+    [EXPECTED_REQUEST],
+    'the SYNC_SERVER_URL server is used',
+  );
+});
+
+test('control: an equal pair under the two names gives no conflict warning', async () => {
+  const requestsBefore = server.requests.length;
+
+  const run = await runCli({
+    args: DELETE_CANARY,
+    adminToken: ADMIN_TOKEN,
+    env: { CORE_URL: server.baseUrl, SYNC_SERVER_URL: server.baseUrl },
+  });
+
+  assert.equal(run.exitCode, 0, run.stderr);
+  assert.deepEqual(server.requests.slice(requestsBefore), [EXPECTED_REQUEST]);
+  assert.ok(!run.stderr.includes('are both set and differ'), `an equal pair must not warn, saw: ${run.stderr}`);
 });
 
 test('--url beats both names, even when they disagree', async () => {
@@ -169,10 +194,18 @@ test('resolveCoreUrl: new name, old name, equal pair, conflict, and neither', ()
   );
   assert.equal(warnings.length, 1, 'an equal pair adds no warning');
 
-  assert.throws(
-    () => resolveCoreUrl({ env: { CORE_URL: 'https://a.test', SYNC_SERVER_URL: 'https://b.test' }, warn }),
-    /CORE_URL and SYNC_SERVER_URL are both set/,
+  const conflictWarnings: string[] = [];
+  assert.equal(
+    resolveCoreUrl({
+      env: { CORE_URL: 'https://a.test', SYNC_SERVER_URL: 'https://b.test' },
+      warn: (message) => conflictWarnings.push(message),
+    }),
+    'https://b.test',
+    'the old name wins on a conflict',
   );
+  assert.deepEqual(conflictWarnings, [
+    coreUrlConflictWarning({ current: 'https://a.test', deprecated: 'https://b.test' }),
+  ]);
 
   assert.equal(resolveCoreUrl({ env: {}, warn }), undefined);
   assert.equal(resolveCoreUrl({ env: { CORE_URL: '', SYNC_SERVER_URL: '  ' }, warn }), undefined);

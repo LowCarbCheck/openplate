@@ -35,7 +35,9 @@ describe('parseArgs', () => {
 
   it('still reads the deprecated SYNC_SERVER_URL, and says so once on the warning channel', () => {
     const warnings: string[] = [];
-    const invocation = parseArgs([], { SYNC_SERVER_URL: 'https://api.example.test' }, (message) => warnings.push(message));
+    const invocation = parseArgs([], { SYNC_SERVER_URL: 'https://api.example.test' }, (message) =>
+      warnings.push(message),
+    );
 
     assert.equal(invocation.baseUrl, 'https://api.example.test');
     assert.equal(warnings.length, 1);
@@ -49,11 +51,17 @@ describe('parseArgs', () => {
     assert.deepEqual(warnings, []);
   });
 
-  it('refuses two different addresses under the two names', () => {
-    assert.throws(
-      () => parseArgs([], { CORE_URL: 'https://a.example.test', SYNC_SERVER_URL: 'https://b.example.test' }, () => {}),
-      /both set/,
+  it('lets the old name win when the two names differ, with one warning that names both', () => {
+    const warnings: string[] = [];
+    const invocation = parseArgs(
+      [],
+      { CORE_URL: 'https://a.example.test', SYNC_SERVER_URL: 'https://b.example.test' },
+      (message) => warnings.push(message),
     );
+
+    assert.equal(invocation.baseUrl, 'https://b.example.test');
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0] ?? '', /https:\/\/a\.example\.test.*https:\/\/b\.example\.test.*SYNC_SERVER_URL wins/);
   });
 
   it('lets --url win over the environment', () => {

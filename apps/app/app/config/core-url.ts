@@ -13,9 +13,12 @@
  *   new setting.
  * - Both set to the same address is quiet: the operator already has the new name and has not
  *   cleaned up the old one yet.
- * - Both set to different addresses stops the boot. There is no correct silent reading: either
- *   name could be the one the operator means, and picking one would point the app at a server the
- *   operator may not expect, with their people's diaries on it.
+ * - Both set to different addresses: the OLD name wins for this release, and the boot logs ONE
+ *   warning that names both values and says the old line must go before the release that drops
+ *   the old name. The boot does not stop, on purpose. A quadlet install that auto-updates keeps
+ *   `SYNC_SERVER_URL` in its own `app.env`, while the new defaults file sets `CORE_URL` to the
+ *   example address, so the two differ on exactly the installs nobody is watching. The address the
+ *   operator wrote themselves is the one they meant, and the old name is the one they wrote.
  * - An empty or whitespace-only value counts as unset, like every other setting here. Compose
  *   forwards both names with an empty default, so an install that sets one of them has the other
  *   one empty, and that must not read as a conflict.
@@ -40,6 +43,18 @@ export const DEPRECATED_CORE_URL_NAME = 'SYNC_SERVER_URL';
 /** The one line the boot logs when only the old name is set. Plain words, exact text, tested. */
 export const DEPRECATED_CORE_URL_WARNING =
   'SYNC_SERVER_URL is deprecated, set CORE_URL instead; the old name stops working in a later release.';
+
+/**
+ * The one line the boot logs when both names are set to different addresses. It names both values,
+ * says which one is used, and says what to do. Plain words, exact text, tested.
+ */
+export function coreUrlConflictWarning(input: { current: string; deprecated: string }): string {
+  return (
+    `CORE_URL (${input.current}) and SYNC_SERVER_URL (${input.deprecated}) are both set and differ. ` +
+    `For this release SYNC_SERVER_URL wins, so the app uses ${input.deprecated}. ` +
+    'Remove the SYNC_SERVER_URL line before the release that drops the old name.'
+  );
+}
 
 /** The address as the operator wrote it, and the name it came from, so an error can name that setting. */
 export interface CoreUrlSetting {
@@ -69,10 +84,10 @@ function isSameAddress(input: { first: string; second: string }): boolean {
  *
  * @param input.env - the environment bag to read.
  * @param input.warn - called once with {@link DEPRECATED_CORE_URL_WARNING} when only the old name
- *   is set. Not called in any other case.
+ *   is set, and once with {@link coreUrlConflictWarning} when both are set to different
+ *   addresses. Not called in any other case.
  * @returns the winning raw value and the name it came from. The value is NOT validated here:
  *   `parseCoreUrl` in `public-config.ts` does that, and names this setting in its error.
- * @throws when both names are set to different addresses.
  */
 export function resolveCoreUrl(input: { env: EnvironmentBag; warn: (message: string) => void }): CoreUrlSetting {
   // Literal `env.NAME` reads, not the constants above: the compose and docs checks find a setting
@@ -81,14 +96,9 @@ export function resolveCoreUrl(input: { env: EnvironmentBag; warn: (message: str
   const deprecated = readSetting(input.env.SYNC_SERVER_URL);
 
   if (current !== undefined && deprecated !== undefined) {
-    if (!isSameAddress({ first: current, second: deprecated })) {
-      throw new Error(
-        `${CORE_URL_NAME} and ${DEPRECATED_CORE_URL_NAME} are both set, and they name different addresses ` +
-          `(${current} and ${deprecated}). ${DEPRECATED_CORE_URL_NAME} is the old name of ${CORE_URL_NAME}. ` +
-          `Remove ${DEPRECATED_CORE_URL_NAME}, or make the two the same.`,
-      );
-    }
-    return { raw: current, name: CORE_URL_NAME };
+    if (isSameAddress({ first: current, second: deprecated })) return { raw: current, name: CORE_URL_NAME };
+    input.warn(coreUrlConflictWarning({ current, deprecated }));
+    return { raw: deprecated, name: DEPRECATED_CORE_URL_NAME };
   }
   if (current !== undefined) return { raw: current, name: CORE_URL_NAME };
   if (deprecated !== undefined) {

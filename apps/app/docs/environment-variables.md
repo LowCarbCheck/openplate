@@ -54,7 +54,7 @@ The app container, `ghcr.io/lowcarbcheck/openplate`. It starts with nothing set.
 | Variable | Default | What it does | More |
 | --- | --- | --- | --- |
 | `CORE_URL` | unset, sync off | The address of your sync service, as a browser reaches it. Its origin goes into the Content-Security-Policy. On a managed instance the app server also reaches it, to check the account of each food lookup. A malformed value stops the boot. | [Sync](sync.md) |
-| `SYNC_SERVER_URL` | unset | Deprecated. The old name of `CORE_URL`. It still works for one more release, and the boot logs one warning when it is the only one set. If both are set to different addresses, the boot stops. | [Sync](sync.md) |
+| `SYNC_SERVER_URL` | unset | Deprecated. The old name of `CORE_URL`. It still works for one more release, and the boot logs one warning when it is the only one set. If both are set to different addresses, the old name wins for this release and the boot logs one warning that names both. Remove the old line before the release that drops the old name. | [Sync](sync.md) |
 | `INSTANCE_MODE` | `open` | `open` or `managed`. On a managed instance an administrator invites people, and the sync service supplies the AI. `managed` needs `CORE_URL`. Any other value stops the boot. | [Managed instances](configuration.md#managed-instances) |
 
 ### Instance-provided AI
@@ -314,7 +314,7 @@ These names were settings once. Now the service refuses to start while one is se
 - `MATOMO_URL` and `MATOMO_SITE_ID`: set both or neither. `MATOMO_EVENT_LEVEL` needs both.
 - `NEWSLETTER_SUBSCRIBE_URL` and `NEWSLETTER_TURNSTILE_SITE_KEY`: set both or neither.
 - `INSTANCE_MODE=managed` needs `CORE_URL`.
-- `CORE_URL` and the deprecated `SYNC_SERVER_URL`: set one. If both are set to different addresses, the boot stops.
+- `CORE_URL` and the deprecated `SYNC_SERVER_URL`: set one. If both are set to different addresses, `SYNC_SERVER_URL` wins for this release and the boot logs one warning.
 - `APP_URL` is required when `NODE_ENV=production`.
 - `MOVED_TO_URL` must be an `https://` address on a host other than `APP_URL`, without a user name or password.
 - A value outside its list stops the boot: `DEFAULT_UI_LANGUAGE`, `NUTRIENT_REFERENCE_BASIS`, `INSTANCE_MODE`, `MATOMO_EVENT_LEVEL` and `FOOD_DB_BACKFILL`. So does a `FOOD_DB_DAILY_CALL_LIMIT` that is not a positive whole number. Malformed addresses in `CORE_URL`, `DEFAULT_INFERENCE_BASE_URL`, `MATOMO_URL` or `NEWSLETTER_SUBSCRIBE_URL` also stop the boot. Boot also stops if `MATOMO_SITE_ID` is not a positive whole number, or if `CONTENT_DIR` is not a folder.

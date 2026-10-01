@@ -363,7 +363,7 @@ export function parseUpdateCheck(raw: string | undefined): boolean {
 export function parseAppConfig(env: NodeJS.ProcessEnv, options: { warn?: (message: string) => void } = {}) {
   assertGatewayUrlUnset(env.GATEWAY_URL);
   // `CORE_URL`, else the deprecated `SYNC_SERVER_URL` with one warning, else a
-  // boot failure when both are set and differ. See `./core-url.ts`.
+  // the old name wins, with one warning, when both are set and differ. See `./core-url.ts`.
   const coreUrlSetting = resolveCoreUrl({ env, warn: options.warn ?? (() => {}) });
   const syncServerUrl = parseCoreUrl(coreUrlSetting);
   const instanceMode = parseInstanceMode(env.INSTANCE_MODE);

@@ -23,7 +23,7 @@ Your files use the container's own variable names, not the names in the compose 
 
 - `sync.env` requires `SERVER_SECRET` (`openssl rand -hex 32`). Back this value up alongside the database. If you restore the database without the secret, no user can log in. The first account also requires `ADMIN_TOKEN` in this file. The install instructions below generate and write both.
 - Values people change: `APP_URL` and `CORE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the same two addresses, which build every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
-- If your `app.env` still sets `SYNC_SERVER_URL`, rename that line to `CORE_URL`. The defaults file sets `CORE_URL`, and two different addresses stop the boot.
+- If your `app.env` still sets `SYNC_SERVER_URL`, rename that line to `CORE_URL`. The defaults file sets `CORE_URL`. While both are set, `SYNC_SERVER_URL` wins for this release and the boot logs one warning that names both. Remove the old line before the release that drops the old name.
 - `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
 - Do not set `SIGNUP_MODE`. openplate-core rejects it at boot. Signup is invite-only.
 

@@ -6,13 +6,14 @@
  * - `CORE_URL` only: the address, no warning.
  * - `SYNC_SERVER_URL` only: the same address, and ONE warning that names the new setting.
  * - both, the same address: the address, no warning (the operator has already moved over).
- * - both, different addresses: the boot stops, and the message names both settings.
+ * - both, different addresses: the OLD name wins for this release, with ONE warning that names both
+ *   values. The boot does not stop, so an auto-updated install nobody watches keeps running.
  * - neither: off, exactly as before (`parseAppConfig` publishes `null`).
  *
  * The cases run through `resolveCoreUrl` (the decision) and through `parseAppConfig` (the real
  * consumer), so a decision that nothing reads cannot pass. The controls at the bottom each change
- * one thing and watch a check fail: a warning that fires on the new name, a conflict that is not
- * noticed, and a "once" that says the line twice.
+ * one thing and watch a check fail: a warning that fires on the new name, a warning that fires on
+ * an equal pair, a conflict resolved the other way, and a "once" that says the line twice.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,6 +21,7 @@ import assert from 'node:assert/strict';
 import { parseAppConfig } from '../../app/config';
 import {
   DEPRECATED_CORE_URL_WARNING,
+  coreUrlConflictWarning,
   resolveCoreUrl,
   warnOncePerProcess,
   type CoreUrlSetting,
@@ -51,17 +53,6 @@ function parseWithWarnings(env: Record<string, string | undefined>): ParsedCoreU
   const warnings: string[] = [];
   const config = parseAppConfig(env, { warn: (message) => warnings.push(message) });
   return { coreUrl: config.sync.syncServerUrl, warnings };
-}
-
-/** The error a call throws. Fails the case when the call does not throw. */
-function failureOf(run: () => void): Error {
-  try {
-    run();
-  } catch (error) {
-    if (error instanceof Error) return error;
-    throw error;
-  }
-  throw new Error('expected the call to throw, and it returned');
 }
 
 /** What a second copy of the module exports that this file uses. */
@@ -111,13 +102,26 @@ describe('resolveCoreUrl', () => {
     assert.deepEqual(result.warnings, []);
   });
 
-  it('stops the boot when both names are set to different addresses, naming both settings and both values', () => {
-    const error = failureOf(() => resolveWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS }));
+  it('lets the old name win when both names are set to different addresses, with one warning that names both values', () => {
+    const result = resolveWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS });
 
-    assert.match(error.message, /CORE_URL/);
-    assert.match(error.message, /SYNC_SERVER_URL/);
-    assert.ok(error.message.includes(NEW_ADDRESS), 'the message names the CORE_URL value');
-    assert.ok(error.message.includes(OLD_ADDRESS), 'the message names the SYNC_SERVER_URL value');
+    assert.equal(result.raw, OLD_ADDRESS);
+    assert.equal(result.name, 'SYNC_SERVER_URL');
+    assert.deepEqual(result.warnings, [
+      'CORE_URL (https://core.example.test) and SYNC_SERVER_URL (https://sync.example.test) are both set and differ. ' +
+        'For this release SYNC_SERVER_URL wins, so the app uses https://sync.example.test. ' +
+        'Remove the SYNC_SERVER_URL line before the release that drops the old name.',
+    ]);
+    assert.equal(result.warnings[0], coreUrlConflictWarning({ current: NEW_ADDRESS, deprecated: OLD_ADDRESS }));
+  });
+
+  it('does not log the conflict warning when the two addresses are equal', () => {
+    const result = resolveWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: NEW_ADDRESS });
+
+    assert.ok(
+      !result.warnings.some((warning) => warning.includes('are both set and differ')),
+      `an equal pair must not warn, saw: ${result.warnings.join(' | ')}`,
+    );
   });
 
   it('answers undefined with no warning when neither name is set', () => {
@@ -154,10 +158,19 @@ describe('parseAppConfig reads the address through resolveCoreUrl', () => {
     assert.deepEqual(parseWithWarnings({}), { coreUrl: null, warnings: [] });
   });
 
-  it('fails the parse when the two names differ', () => {
+  it('publishes the SYNC_SERVER_URL address, and warns once, when the two names differ', () => {
+    const result = parseWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: `${OLD_ADDRESS}/` });
+
+    assert.equal(result.coreUrl, OLD_ADDRESS);
+    assert.deepEqual(result.warnings, [
+      coreUrlConflictWarning({ current: NEW_ADDRESS, deprecated: `${OLD_ADDRESS}/` }),
+    ]);
+  });
+
+  it('names SYNC_SERVER_URL when the winning old value is malformed', () => {
     assert.throws(
-      () => parseWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS }),
-      /CORE_URL and SYNC_SERVER_URL are both set/,
+      () => parseWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: 'not a url' }),
+      /^Error: SYNC_SERVER_URL is not a valid absolute URL/,
     );
   });
 
@@ -225,9 +238,14 @@ function warnsOnTheNewName(env: Record<string, string | undefined>): string[] {
   return env.CORE_URL === undefined ? [] : [DEPRECATED_CORE_URL_WARNING];
 }
 
-/** A reader that lets the old name win on a conflict, which the conflict case forbids. */
-function letsTheOldNameWin(env: Record<string, string | undefined>): string | undefined {
-  return env.SYNC_SERVER_URL ?? env.CORE_URL;
+/** A reader that lets the new name win on a conflict, which the conflict case forbids. */
+function letsTheNewNameWin(env: Record<string, string | undefined>): string | undefined {
+  return env.CORE_URL ?? env.SYNC_SERVER_URL;
+}
+
+/** A reader that warns whenever both names are set, equal or not, which the equal pair forbids. */
+function warnsWheneverBothAreSet(env: Record<string, string | undefined>): string[] {
+  return env.CORE_URL !== undefined && env.SYNC_SERVER_URL !== undefined ? ['both are set'] : [];
 }
 
 describe('controls: the checks above can fail', () => {
@@ -238,8 +256,17 @@ describe('controls: the checks above can fail', () => {
     );
   });
 
-  it('a reader that let the old name win on a conflict would not throw, which the conflict case forbids', () => {
-    assert.equal(letsTheOldNameWin({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS }), OLD_ADDRESS);
-    assert.throws(() => resolveWithWarnings({ CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS }));
+  it('a reader that let the new name win on a conflict would be caught by the conflict case', () => {
+    const conflict = { CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: OLD_ADDRESS };
+
+    assert.equal(letsTheNewNameWin(conflict), NEW_ADDRESS);
+    assert.notEqual(letsTheNewNameWin(conflict), resolveWithWarnings(conflict).raw);
+  });
+
+  it('a reader that warned on every pair would be caught by the equal pair', () => {
+    const pair = { CORE_URL: NEW_ADDRESS, SYNC_SERVER_URL: NEW_ADDRESS };
+
+    assert.equal(warnsWheneverBothAreSet(pair).length, 1);
+    assert.deepEqual(resolveWithWarnings(pair).warnings, []);
   });
 });

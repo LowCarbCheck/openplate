@@ -98,7 +98,7 @@ describe('the browser tier servers keep the release check off', () => {
   });
 });
 
-describe('a shell that still exports SYNC_SERVER_URL cannot stop a tier server from booting', () => {
+describe('a shell that still exports SYNC_SERVER_URL cannot move a tier server off its own address', () => {
   const OLD_NAME_IN_THE_SHELL = 'https://somewhere-else.example.test';
 
   it('blanks the old name in the tier server command and hands the server CORE_URL', () => {
@@ -108,7 +108,7 @@ describe('a shell that still exports SYNC_SERVER_URL cannot stop a tier server f
     assert.equal(readAssignmentFromCommand({ command, name: 'SYNC_SERVER_URL' }), '');
   });
 
-  it('boots the managed server on its own address, whatever the shell exports under the old name', () => {
+  it('points the managed server at its own address, whatever the shell exports under the old name', () => {
     const env = buildManagedServerEnv({
       inherited: { SYNC_SERVER_URL: OLD_NAME_IN_THE_SHELL },
       values: { CORE_URL: TIER_OPTIONS.coreUrl },
@@ -117,9 +117,9 @@ describe('a shell that still exports SYNC_SERVER_URL cannot stop a tier server f
     assert.equal(parseAppConfig(env).sync.syncServerUrl, TIER_OPTIONS.coreUrl);
   });
 
-  it('control: without the blanking, the same shell would stop the boot', () => {
+  it('control: without the blanking, the old name would win and the server would dial the shell\'s address', () => {
     const unblanked = { SYNC_SERVER_URL: OLD_NAME_IN_THE_SHELL, CORE_URL: TIER_OPTIONS.coreUrl };
 
-    assert.throws(() => parseAppConfig(unblanked), /both set/);
+    assert.equal(parseAppConfig(unblanked).sync.syncServerUrl, OLD_NAME_IN_THE_SHELL);
   });
 });
