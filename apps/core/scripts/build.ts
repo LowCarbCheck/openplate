@@ -130,7 +130,7 @@ async function bundleEntry(input: { entry: string; outfile: string }): Promise<v
     bundle: true,
     platform: 'node',
     format: 'esm',
-    target: 'node20',
+    target: 'node24',
     external: ['express', 'pg', 'dotenv', 'undici', 'web-push'],
     sourcemap: true,
     logLevel: 'info',
