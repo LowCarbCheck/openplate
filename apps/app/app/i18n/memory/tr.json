@@ -11269,6 +11269,13 @@
     "at": "2026-09-14",
     "tr": "72 sa"
   },
+  "8a5160327948caa2": {
+    "en": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working. Every other device where you are signed in is signed out, and you must sign in again on it.",
+    "path": "common:sharing.rotate.confirmBody",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "tr": "Kaydettiğin her şey yeni bir anahtarla yeniden mühürlenir ve paylaşmaya devam ettiğin herkes yeni mühürlenmiş bir kopya alır. Yeni bir kurtarma kodu alırsın ve eskisi çalışmayı durdurur. Oturum açtığın diğer tüm cihazlarda oturum kapatılır ve bu cihazlarda yeniden oturum açman gerekir."
+  },
   "8a637043f4d6a72b": {
     "en": "Fine-tune portion & nutrition",
     "path": "common:scan.review.fineTune",

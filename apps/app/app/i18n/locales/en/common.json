@@ -2640,7 +2640,7 @@
       "willDrop": "{{shares}} of your shares cannot be re-sealed from this device and will end.",
       "open": "Replace my data key",
       "confirmTitle": "Replace your data key?",
-      "confirmBody": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working.",
+      "confirmBody": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working. Every other device where you are signed in is signed out, and you must sign in again on it.",
       "passphraseLabel": "Confirm with your password",
       "passphraseHint": "We ask because the new key has to be sealed to your password, and a wrong one would lock you out of your own diary.",
       "confirmCta": "Replace the key",

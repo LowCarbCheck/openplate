@@ -2640,7 +2640,7 @@
       "willDrop": "Paylaşımlarından {{shares}} tanesi bu cihazdan yeniden mühürlenemez ve sonlandırılır.",
       "open": "Veri anahtarımı değiştir",
       "confirmTitle": "Veri anahtarını değiştirmek istiyor musun?",
-      "confirmBody": "Kaydettiğin her şey yeni bir anahtarla yeniden mühürlenir ve paylaşmaya devam ettiğin herkes mühürlenmiş yeni bir kopya alır. Yeni bir kurtarma kodu alırsın, eskisi ise çalışmayı durdurur.",
+      "confirmBody": "Kaydettiğin her şey yeni bir anahtarla yeniden mühürlenir ve paylaşmaya devam ettiğin herkes yeni mühürlenmiş bir kopya alır. Yeni bir kurtarma kodu alırsın ve eskisi çalışmayı durdurur. Oturum açtığın diğer tüm cihazlarda oturum kapatılır ve bu cihazlarda yeniden oturum açman gerekir.",
       "passphraseLabel": "Parolanla onayla",
       "passphraseHint": "Bunu soruyoruz çünkü yeni anahtarın parolana mühürlenmesi gerekir, yanlış bir parola ise seni kendi günlüğünün dışında bırakır.",
       "confirmCta": "Anahtarı değiştir",

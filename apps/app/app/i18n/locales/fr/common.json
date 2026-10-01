@@ -2640,7 +2640,7 @@
       "willDrop": "{{shares}} de tes partages ne peuvent pas être scellés à nouveau depuis cet appareil et vont prendre fin.",
       "open": "Remplacer ma clé de données",
       "confirmTitle": "Remplacer ta clé de données ?",
-      "confirmBody": "Tout ce que tu as consigné est chiffré à nouveau avec une nouvelle clé, et chaque personne avec qui tu partages encore reçoit une copie fraîchement chiffrée. Tu recevras un nouveau code de récupération, et l'ancien cessera de fonctionner.",
+      "confirmBody": "Tout ce que tu as enregistré est scellé à nouveau avec une nouvelle clé, et chaque personne avec qui tu partages encore reçoit une copie fraîchement scellée. Tu recevras un nouveau code de récupération, et l'ancien cesse de fonctionner. Tous les autres appareils sur lesquels tu es connecté sont déconnectés, et tu devras t'y reconnecter.",
       "passphraseLabel": "Confirme avec ton mot de passe",
       "passphraseHint": "Cette étape est nécessaire, car la nouvelle clé doit être scellée avec ton mot de passe, et une erreur te bloquerait l'accès à ton propre journal.",
       "confirmCta": "Remplacer la clé",

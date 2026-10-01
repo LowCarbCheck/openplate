@@ -11269,6 +11269,13 @@
     "at": "2026-09-14",
     "de": "72 h"
   },
+  "8a5160327948caa2": {
+    "en": "Everything you have logged is sealed again with a new key, and everyone you still share with gets a fresh sealed copy. You will get a new recovery code, and the old one stops working. Every other device where you are signed in is signed out, and you must sign in again on it.",
+    "path": "common:sharing.rotate.confirmBody",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "de": "Alles, was du erfasst hast, wird mit einem neuen Schlüssel erneut versiegelt, und jede Person, mit der du noch teilst, erhält eine neue versiegelte Kopie. Du erhältst einen neuen Wiederherstellungscode, und der alte funktioniert nicht mehr. Jedes andere Gerät, auf dem du angemeldet bist, wird abgemeldet, und du musst dich dort erneut anmelden."
+  },
   "8a637043f4d6a72b": {
     "en": "Fine-tune portion & nutrition",
     "path": "common:scan.review.fineTune",
