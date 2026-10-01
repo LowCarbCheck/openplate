@@ -26,7 +26,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN, fill } from './copy';
-import { E2E_APP_URL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_APP_URL, E2E_CORE_URL } from './env';
 import { completeOnboarding, signInFixtureAccount } from './helpers';
 import {
   installShiftObserver,
@@ -168,7 +168,7 @@ test('an instance that sells nothing keeps the refusal as it was, and never asks
   // No `routePlansCore`: the fake's own handshake, which sells nothing.
   let offerReads = 0;
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/`),
     (route) => {
       offerReads += 1;
       return route.fulfill({ status: 404, json: { error: 'not found' } });

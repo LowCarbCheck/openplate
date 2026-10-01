@@ -123,7 +123,7 @@ const FROZEN: FrozenAnswer[] = [
     managed: true,
     governs:
       'Whether a copy of the diary reaches a server the operator runs. `false` on an open instance EVEN ' +
-      'WITH `SYNC_SERVER_URL` set, because sync there is an opt-in somebody may never touch. It selects ' +
+      'WITH `CORE_URL` set, because sync there is an opt-in somebody may never touch. It selects ' +
       'the managed terms and privacy documents, the promise on the first onboarding screen, and the ' +
       'landing sync card. It also owns every remaining sentence that names the device as the diary\u2019s ' +
       'only address: the landing page title, the footer tagline on every public page, the trust card body ' +
@@ -235,6 +235,7 @@ describe('the instance policy', () => {
 
 /** An open instance's public config: the self-host default, and the baseline each case moves off. */
 const OPEN_CONFIG: PublicConfig = {
+  coreUrl: null,
   syncServerUrl: null,
   instancePreset: null,
   analytics: null,
@@ -255,11 +256,11 @@ describe('reading the instance policy', () => {
   });
 
   it('does not confuse a configured sync server with a managed instance', () => {
-    // A self-hoster may set `SYNC_SERVER_URL` on an OPEN instance. That
+    // A self-hoster may set `CORE_URL` on an OPEN instance. That
     // instance has sync AND the anonymous diary, so every answer stays open.
     // "Is sync configured" is a different question, and `isSyncConfigured` is
     // where it is asked.
-    const openWithSync = { ...OPEN_CONFIG, syncServerUrl: 'https://sync.example.org' };
+    const openWithSync = { ...OPEN_CONFIG, coreUrl: 'https://sync.example.org', syncServerUrl: 'https://sync.example.org' };
     assert.deepEqual(getInstancePolicy(openWithSync), INSTANCE_POLICIES.open);
     assert.equal(getInstancePolicy(openWithSync).serverHoldsTheDiary, false);
     assert.equal(getInstancePolicy(openWithSync).requiresAccount, false);

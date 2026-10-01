@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **`CORE_URL` replaces `SYNC_SERVER_URL`; the old name still works with a warning until a later release.** The app reads the address of openplate-core from `CORE_URL`. When only `SYNC_SERVER_URL` is set, the app logs one warning at boot and uses it. When both are set to different addresses, the boot stops and the message names both. The public config field `coreUrl` replaces `syncServerUrl`, and `syncServerUrl` carries the same value for one release, so a copy of the app cached on a phone keeps finding its server. Every compose file, quadlet unit, `.env.example` and the environment variables page now name `CORE_URL`. On the quadlet sync and full units, whose defaults file sets `CORE_URL`, rename a `SYNC_SERVER_URL` line in `app.env` to `CORE_URL`.
+
 ## [0.60.0] - 2026-10-01
 
 ### Added

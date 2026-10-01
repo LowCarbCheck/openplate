@@ -38,7 +38,7 @@
  *  - Diary data comes from `buildSeedDiary` (`lib/seed-diary.ts`), a three
  *    week generator with a spread of states, not the single frozen marketing
  *    day `buildLandingSeed` produces.
- *  - `SYNC_SERVER_URL` is never set. Every route in `ROUTES` is reachable on a
+ *  - `CORE_URL` is never set. Every route in `ROUTES` is reachable on a
  *    self-hosted instance with no sync server, and that is the configuration
  *    this audit means to cover.
  *  - One locale (German), one theme (dark), one viewport (390x844 at 2x). No
@@ -199,7 +199,7 @@ function filterRoutes(routes: readonly AuditRoute[]): AuditRoute[] {
 // ---------------------------------------------------------------------------
 
 /**
- * `SYNC_SERVER_URL` is deliberately absent: this audit covers the
+ * `CORE_URL` is deliberately absent: this audit covers the
  * self-hosted-with-no-sync default, and every route above renders fully
  * without it. `delete` rather than an omitted spread, so a `.env` picked up by
  * `server.ts`'s own `dotenv/config` cannot reintroduce it through
@@ -207,6 +207,7 @@ function filterRoutes(routes: readonly AuditRoute[]): AuditRoute[] {
  */
 function startApp(port: number): ChildProcess {
   const env: NodeJS.ProcessEnv = { ...process.env, PORT: String(port), NODE_ENV: 'development' };
+  delete env.CORE_URL;
   delete env.SYNC_SERVER_URL;
   return spawn('node_modules/.bin/tsx', ['server.ts'], { cwd: REPO_ROOT, env, stdio: 'inherit' });
 }

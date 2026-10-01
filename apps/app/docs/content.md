@@ -113,7 +113,7 @@ Each of these pages must carry exactly the sections below, once each. A missing 
 | Slug | Section | Where the app draws it |
 | --- | --- | --- |
 | `kuendigung` | (body) | The lead, above the cancellation form. |
-| `kuendigung` | `unavailable` | In place of the form when `SYNC_SERVER_URL` is unset, and under the submit button when a submission cannot reach the declaration service. |
+| `kuendigung` | `unavailable` | In place of the form when `CORE_URL` is unset, and under the submit button when a submission cannot reach the declaration service. |
 | `kuendigung-bestaetigt` | (body) | Usually empty. |
 | `kuendigung-bestaetigt` | `mail-notice` | After the receipt lines, before the print button. |
 | `widerrufen` | (body) | The lead, above the withdrawal form. |

@@ -59,7 +59,7 @@ handful of people. For a family, the dashboard is faster than writing the script
 
 If your provider will not issue capped sub-keys (Mistral, most direct provider APIs), the
 sub-key recipe above has nothing to work with. That is what a **managed** openplate-core
-instance is for: set `INSTANCE_MODE=managed` (requires `SYNC_SERVER_URL`), and the account
+instance is for: set `INSTANCE_MODE=managed` (requires `CORE_URL`), and the account
 service your household already uses for sync also becomes the AI proxy, with a daily request
 allowance per account.
 

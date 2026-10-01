@@ -4,7 +4,7 @@
  * ── The rule ─────────────────────────────────────────────────────────────
  *
  * On a MANAGED instance, a signed-in account with an allowance scans through
- * its own server: `${SYNC_SERVER_URL}/v1`, the model the instance advertises
+ * its own server: `${CORE_URL}/v1`, the model the instance advertises
  * in `/health`, and the account's access token as the bearer. On an OPEN
  * instance, the device's own BYOK row. Anything else is `null`, which every
  * caller renders as "AI is not set up".
@@ -35,7 +35,7 @@ import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import { applyTrialScansLeft, getSyncVault } from '#app/lib/sync/sync-session';
 import type { OpenAiCompatibleCredential } from '#app/services/vision/openai-compatible';
 
-/** The API namespace the instance's AI proxy is mounted under, appended to `SYNC_SERVER_URL`. */
+/** The API namespace the instance's AI proxy is mounted under, appended to `CORE_URL`. */
 export const MANAGED_AI_API_PREFIX = '/v1';
 
 /**
@@ -73,7 +73,7 @@ export interface ManagedAiSettings {
   source: 'managed';
   /** Always `'managed'` — the registry entry whose endpoint and bearer both come from elsewhere. */
   provider: 'managed';
-  /** `${SYNC_SERVER_URL}/v1`. The adapter appends `/chat/completions` itself. */
+  /** `${CORE_URL}/v1`. The adapter appends `/chat/completions` itself. */
   baseUrl: string;
   /**
    * The model the instance advertises, or `null` when it advertises none.

@@ -32,7 +32,7 @@
  * ── NOT THROUGH THIS APP'S SERVER ─────────────────────────────────────────
  *
  * The request goes from the browser straight to openplate-core's own origin
- * (`SYNC_SERVER_URL`), for the reasons both pages' headers give.
+ * (`CORE_URL`), for the reasons both pages' headers give.
  */
 import { z } from 'zod';
 

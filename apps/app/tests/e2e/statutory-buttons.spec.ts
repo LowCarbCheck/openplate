@@ -24,7 +24,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { z } from 'zod';
 
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { useLanguage } from './helpers';
 
 /** The statutory labels, byte for byte — § 312k BGB and § 356a BGB. Never sourced from a catalog: they must not drift with a wordsmith pass. */
@@ -74,7 +74,7 @@ async function mockDeclarationsEndpoint(
   options: { acceptedLanguages?: readonly string[] } = {},
 ): Promise<string[]> {
   const languages: string[] = [];
-  await page.route(`${E2E_SYNC_SERVER_URL}${DECLARATIONS_PATH}`, async (route: Route) => {
+  await page.route(`${E2E_CORE_URL}${DECLARATIONS_PATH}`, async (route: Route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({
         status: 204,

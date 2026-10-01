@@ -24,7 +24,8 @@ Your files use the container's own variable names, not the names in the compose 
 
 - `sync.env` needs `SERVER_SECRET` (`openssl rand -hex 32`). Back it up with the database. The first account also needs `ADMIN_TOKEN` there. The install below writes both.
 - `API_KEYS` in `inference.env` and `DEFAULT_INFERENCE_API_KEY` in `app.env` must match. The install below writes one new key into both.
-- Values people change: `APP_URL`, `SYNC_SERVER_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the two halves of every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both; `MODEL_PROFILE` in `inference.env`. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
+- Values people change: `APP_URL`, `CORE_URL` and `DEFAULT_INFERENCE_BASE_URL` in `app.env`; `CLIENT_BASE_URL` and `SERVER_PUBLIC_URL` in `sync.env`, the two halves of every invitation link; `TRUST_PROXY` in `app.env` and `sync.env` both; `MODEL_PROFILE` in `inference.env`. Variables with an empty compose default (`ADMIN_TOKEN`, the mail block, the AI proxy, the member-invite limits) are in the defaults file with no value. Set them in `sync.env`.
+- If your `app.env` still sets `SYNC_SERVER_URL`, rename that line to `CORE_URL`. The defaults file sets `CORE_URL`, and two different addresses stop the boot.
 - `POSTGRES_PASSWORD` in `postgres.env` takes effect only on an empty volume, when Postgres creates its database. Put the same password into `DATABASE_URL` in `sync.env`.
 - Do not set `SIGNUP_MODE`. openplate-core rejects it at boot.
 

@@ -232,7 +232,7 @@ export interface SettingsHubFacts {
   accountStatus: string;
   /** A managed instance brings its own AI, so there is no provider to pick and no key to bring. */
   aiComesFromTheInstance: boolean;
-  /** `SYNC_SERVER_URL` is set on this instance. Unset means no sync UI anywhere. */
+  /** `CORE_URL` is set on this instance. Unset means no sync UI anywhere. */
   hasSyncServer: boolean;
   isAdmin: boolean;
   /** This instance sells a plan (`hasPlansDoor`), so the plan page exists. */
@@ -272,7 +272,7 @@ export function nutritionRowStatus({
  * ── WHY A GROUP CAN COME OUT EMPTY ───────────────────────────────────────
  *
  * "Account and plan" is built entirely from conditional rows: the account row
- * and sharing and research ride `SYNC_SERVER_URL`, the plan row rides the
+ * and sharing and research ride `CORE_URL`, the plan row rides the
  * biller, and the admin row rides one account's role. On an instance with no
  * sync server every one of them is hidden, and without the filter below the
  * page would draw that heading over nothing. So the guard lives here, in the
@@ -473,7 +473,7 @@ export default function SettingsIndex() {
   const fastingSettings = useLocalFastingSettings();
   const preferencesStatus = usePreferencesStatus();
   const notificationsStatus = useNotificationsStatus();
-  // `null` unless the operator set `SYNC_SERVER_URL`. On that instance the
+  // `null` unless the operator set `CORE_URL`. On that instance the
   // account row renders NOTHING, no row, no mention (AGENTS.md: unset means no
   // sync UI anywhere), and the whole group it sits in goes with it.
   const syncServerUrl = useSyncServerUrl();

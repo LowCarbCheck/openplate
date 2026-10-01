@@ -39,7 +39,7 @@ Three things never travel, whatever you switch on:
   To run your own, use
   [`docker/topologies/compose.sync.yml`](../../../docker/topologies/compose.sync.yml): see
   [self-hosting.md](self-hosting.md) and [topologies.md](topologies.md).
-- `SYNC_SERVER_URL` set on the app, pointing at that service.
+- `CORE_URL` set on the app, pointing at that service.
 - A secure page. Signing in derives your keys with the browser's Web Crypto API, which
   browsers only offer over `https://` or on `localhost`. See
   [self-hosting.md](self-hosting.md#https).
@@ -48,7 +48,7 @@ Three things never travel, whatever you switch on:
 
 ## Turning it on
 
-`SYNC_SERVER_URL` is the entire switch.
+`CORE_URL` is the entire switch.
 
 - **Unset** (the default): no sync interface renders anywhere, and no sync request ever
   leaves the app.
@@ -58,7 +58,7 @@ Three things never travel, whatever you switch on:
 Restart the app after changing it. Unset it again and the sync screens disappear and the app
 stops reaching out. Your local diary is untouched either way.
 
-**Adding a second device:** point it at the same `SYNC_SERVER_URL` and sign in with the same
+**Adding a second device:** point it at the same `CORE_URL` and sign in with the same
 email address and password you used on the first one. That is the whole procedure, and nothing
 has to be copied off the first device.
 

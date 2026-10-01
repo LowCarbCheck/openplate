@@ -75,6 +75,7 @@ const LOADER_DATA = {
  */
 function publicConfig(managed: boolean): PublicConfig {
   return {
+    coreUrl: 'https://sync.openplate.test',
     syncServerUrl: 'https://sync.openplate.test',
     analytics: null,
     instancePreset: null,

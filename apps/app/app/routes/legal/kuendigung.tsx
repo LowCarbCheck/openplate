@@ -32,7 +32,7 @@
  *
  * The loader reads the page's prose and nothing else. There is no action:
  * the declaration goes straight from this browser to
- * `openplate-core`'s own origin (`SYNC_SERVER_URL`), never through this
+ * `openplate-core`'s own origin (`CORE_URL`), never through this
  * server, the same shape `/forgot` and `/join-study` already use.
  * `CredentialSubmitButton` is reused here for the reason its own doc states
  * generically, not for its name: this form has no `method`/`action` either,

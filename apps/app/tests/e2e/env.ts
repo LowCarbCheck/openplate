@@ -12,7 +12,7 @@
  * ── The decision has to be made here, synchronously ──────────────────────
  *
  * `playwright.config.ts` is evaluated before anything is listening: the app
- * server is started by Playwright's own `webServer` with `SYNC_SERVER_URL`
+ * server is started by Playwright's own `webServer` with `CORE_URL`
  * already baked into its command line, so the sync address has to be decided
  * first and the fake service has to be told to take it.
  * `tests/integration/fake-sync-service.ts` grew its `port` option for exactly
@@ -133,8 +133,8 @@ export const E2E_APP_PORT = E2E_PORT_BASE + 2;
 /** The app's base URL, also `use.baseURL` and the `webServer` readiness probe. */
 export const E2E_APP_URL = `http://127.0.0.1:${E2E_APP_PORT}`;
 
-/** The sync service's base URL, handed to the app as `SYNC_SERVER_URL`. */
-export const E2E_SYNC_SERVER_URL = `http://127.0.0.1:${E2E_SYNC_PORT}`;
+/** The sync service's base URL, handed to the app as `CORE_URL`. */
+export const E2E_CORE_URL = `http://127.0.0.1:${E2E_SYNC_PORT}`;
 
 /**
  * The food database's base URL, handed to the app as `FOOD_DB_API_URL`.

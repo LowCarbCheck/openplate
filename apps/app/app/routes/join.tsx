@@ -422,7 +422,7 @@ function LoadingCard() {
  * to the server its own operator configured, and a link cannot redirect that.
  * The likeliest cause is an ordinary mistake rather than an attack: an invite
  * for a different instance, an app opened at the wrong address, or an app
- * whose `SYNC_SERVER_URL` does not match the address its server writes into
+ * whose `CORE_URL` does not match the address its server writes into
  * invitations. The same link opened on the right instance works.
  *
  * BOTH ADDRESSES ARE NAMED. This card used to name only the link's server and

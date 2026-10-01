@@ -46,7 +46,7 @@
  * on it, so a spent token is not resurrected on a later visit to this page.
  */
 
-/** The fragment key the operator CLI writes (`sync-api invites create`). */
+/** The fragment key the operator CLI writes (`core-api invites create`). */
 const INVITE_FRAGMENT_KEY = 'invite';
 
 /**

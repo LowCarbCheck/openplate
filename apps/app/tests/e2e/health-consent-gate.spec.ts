@@ -23,7 +23,7 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { z } from 'zod';
 
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import {
   installShiftObserver,
@@ -94,7 +94,7 @@ function core(overrides: Partial<ManagedCoreStub> = {}): ManagedCoreStub {
 
 /** Is this the consent POST, rather than its preflight? */
 function isConsentPost(request: Request): boolean {
-  return request.method() === 'POST' && request.url() === `${E2E_SYNC_SERVER_URL}/v1/auth/account/health-consent`;
+  return request.method() === 'POST' && request.url() === `${E2E_CORE_URL}/v1/auth/account/health-consent`;
 }
 
 /** Every consent body the page sends, in order. Registered before the first navigation. */
@@ -125,7 +125,7 @@ async function signIn(page: Page): Promise<string> {
 
 /** Resolves when the handshake of THIS page has been answered. The wait is registered on the call. */
 async function handshake(page: Page): Promise<void> {
-  await page.waitForResponse((response) => response.url() === `${E2E_SYNC_SERVER_URL}/health`);
+  await page.waitForResponse((response) => response.url() === `${E2E_CORE_URL}/health`);
 }
 
 /** Asserts the consent screen is up, asking for the given page next. */

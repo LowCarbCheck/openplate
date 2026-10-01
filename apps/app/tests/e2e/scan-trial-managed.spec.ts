@@ -4,7 +4,7 @@
  *
  * WHAT IS REAL: the production build booted as a MANAGED instance
  * (`managed-app-server.ts`), so AI goes through the managed credential to
- * `${SYNC_SERVER_URL}/v1/chat/completions`, the only path that sends
+ * `${CORE_URL}/v1/chat/completions`, the only path that sends
  * `X-Intake-Id` and reads `X-Trial-Scans-Left`. The sign-in, the session, the
  * header's status slot, the countdown, the scan screen, the describe screen,
  * the pantry and the recipes are the app's own.
@@ -25,7 +25,7 @@ import { z } from 'zod';
 
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { pantryRowsOnDisk } from './helpers';
 import { settleFrames } from './layout-shift';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
@@ -150,7 +150,7 @@ async function routeManagedCore(page: Page, { scansLeft: startingScans = ACCOUNT
   const recorded: Recorded = { calls: [], accountReads: 0, model: 'e2e-model' };
   let scansLeft = startingScans;
 
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, (route) =>
+  await page.route(`${E2E_CORE_URL}/health`, (route) =>
     route.fulfill({
       json: {
         protocolVersion: PROTOCOL_VERSION,
@@ -169,16 +169,16 @@ async function routeManagedCore(page: Page, { scansLeft: startingScans = ACCOUNT
       },
     }),
   );
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) => route.fulfill({ json: NO_SUBSCRIPTION_VIEW }));
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => route.fulfill({ json: NO_SUBSCRIPTION_VIEW }));
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/plans/offer`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/offer`),
     (route) => route.fulfill({ status: 200, contentType: 'application/json', body: FIXTURE_OFFER_BODY }),
   );
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}/v1/auth/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     async (route) => {
       const request = route.request();
-      if (request.method() === 'GET' && request.url() === `${E2E_SYNC_SERVER_URL}/v1/auth/account`) {
+      if (request.method() === 'GET' && request.url() === `${E2E_CORE_URL}/v1/auth/account`) {
         recorded.accountReads += 1;
       }
       const response = await route.fetch();
@@ -199,7 +199,7 @@ async function routeManagedCore(page: Page, { scansLeft: startingScans = ACCOUNT
       });
     },
   );
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/chat/completions`, (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/chat/completions`, (route) => {
     const request = route.request();
     if (request.method() === 'OPTIONS') {
       return route.fulfill({

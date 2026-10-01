@@ -99,7 +99,8 @@ services:
       # your users' devices. Setting it is what makes the sync interface exist
       # at all; remove this line and the app is a pure local tracker again.
       # The origin is added to the app's Content-Security-Policy automatically.
-      SYNC_SERVER_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
+      CORE_URL: ${PUBLIC_SYNC_URL:-http://localhost:3001}
+      SYNC_SERVER_URL: ${SYNC_SERVER_URL:-}
 
       # `open` (the default): anyone can keep a diary on their own device, and
       # sync is an extra. `managed`: an administrator invites every person,

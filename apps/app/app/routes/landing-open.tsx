@@ -52,7 +52,7 @@ import { cn } from '#app/lib/utils';
 
 /** The landing loader's three section gates, which are all this page reads. */
 export interface LandingOpenProps {
-  /** `SYNC_SERVER_URL` is set: the sync card renders. */
+  /** `CORE_URL` is set: the sync card renders. */
   syncEnabled: boolean;
   /** The newsletter's public half, or `null` for no newsletter card at all. */
   newsletter: NewsletterPublicConfig | null;

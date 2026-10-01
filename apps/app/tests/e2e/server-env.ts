@@ -27,13 +27,16 @@
 /** The variables that keep a tier server off the network. `UPDATE_CHECK` is parsed by `parseUpdateCheck`. */
 export const HERMETIC_SERVER_ENV = {
   UPDATE_CHECK: 'off',
+  // The old name of `CORE_URL`, blanked. An operator's shell that still exports it with another
+  // address would stop the boot ("both are set and differ"); an empty value reads as unset.
+  SYNC_SERVER_URL: '',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** What the tier's own server needs to know, apart from the hermetic set. */
 export interface TierServerCommandOptions {
   readonly port: number;
   readonly appUrl: string;
-  readonly syncServerUrl: string;
+  readonly coreUrl: string;
   readonly contentDir: string;
   readonly foodDbUrl: string;
   readonly foodDbApiKey: string;
@@ -59,7 +62,7 @@ export function buildTierServerCommand(options: TierServerCommandOptions): strin
     PORT: String(options.port),
     HOST: '127.0.0.1',
     APP_URL: options.appUrl,
-    SYNC_SERVER_URL: options.syncServerUrl,
+    CORE_URL: options.coreUrl,
     // THE LEGAL PAGES COME FROM A FIXTURE FOLDER. Unset, every content route
     // would 404 and the footer would lose its five legal links, which several
     // specs here count.

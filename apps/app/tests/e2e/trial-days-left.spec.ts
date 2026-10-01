@@ -27,7 +27,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import {
   installShiftObserver,
   readShiftEntries,
@@ -160,7 +160,7 @@ test('a date that arrives after the first paint fills the reserved line and move
   const accountRead = createGate();
   let accountReads = 0;
   await page.route(
-    (url) => url.href === `${E2E_SYNC_SERVER_URL}/v1/auth/account`,
+    (url) => url.href === `${E2E_CORE_URL}/v1/auth/account`,
     async (route) => {
       if (route.request().method() === 'GET') {
         accountReads += 1;

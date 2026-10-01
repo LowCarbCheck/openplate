@@ -33,7 +33,7 @@
  *    core, and a token that was refused for a moment (a clock skew, a
  *    rotation) recovers quickly.
  *  - `unavailable`: anything else, a network failure, a timeout, a `5xx`, or a
- *    `200` that carries no account (a `SYNC_SERVER_URL` that points at the
+ *    `200` that carries no account (a `CORE_URL` that points at the
  *    wrong thing). Never cached: it says nothing about the token, and the
  *    caller fails CLOSED on it.
  *
@@ -53,7 +53,7 @@ export type AccountTokenVerdict = 'valid' | 'invalid' | 'unavailable';
 /** The subset of `fetch` this module uses, so a test can hand in a fake. */
 export type AccountFetch = (url: string, init: RequestInit) => Promise<Response>;
 
-/** Core's account read, appended to `SYNC_SERVER_URL`. */
+/** Core's account read, appended to `CORE_URL`. */
 export const ACCOUNT_READ_PATH = '/v1/auth/account';
 
 /** How long a live token is believed without asking again. */

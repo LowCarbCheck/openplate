@@ -80,8 +80,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   // The app's ONE server → browser config channel (M128 spec 04). A minimal
   // allowlist, deliberately spelled out field by field rather than spread from
   // `CONFIG`, so nothing new reaches the page by accident when `CONFIG` grows.
-  // `syncServerUrl` is `null` unless an operator set `SYNC_SERVER_URL`, and
-  // `null` means every sync surface in the app renders nothing.
+  // `coreUrl` is `null` unless an operator set `CORE_URL`, and `null` means
+  // every sync surface in the app renders nothing. `syncServerUrl` carries the
+  // same value under its old name for one release, so a copy of the app cached
+  // on a phone keeps finding its server.
   //
   // `instancePreset` (M138 spec 06) is the same deal one level louder: it is
   // `null` unless an operator set `DEFAULT_INFERENCE_BASE_URL`, and when it is
@@ -90,6 +92,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   // box), documented at `InstanceInferencePreset` and in `.env.example`, and
   // never to be used for a metered cloud provider key.
   const publicConfig: PublicConfig = {
+    coreUrl: CONFIG.sync.syncServerUrl,
     syncServerUrl: CONFIG.sync.syncServerUrl,
     instancePreset: CONFIG.inference.instancePreset,
     // `INSTANCE_MODE`, and the one fact derived from it (M192, replacing

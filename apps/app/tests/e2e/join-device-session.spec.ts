@@ -9,7 +9,7 @@
  *
  * WHAT `/join` COMPARES, read in the code and measured here: the link's
  * `server=` origin against the root loader's `publicConfig.syncServerUrl`
- * (the app's `SYNC_SERVER_URL`, which compose fills from `PUBLIC_SYNC_URL`).
+ * (the app's `CORE_URL`, which compose fills from `PUBLIC_SYNC_URL`).
  * No value stored on the device takes part in that check. The stored half
  * that DID misbehave is the device's own session:
  *
@@ -37,7 +37,7 @@ import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';
 
-import { E2E_APP_PORT, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_APP_PORT, E2E_CORE_URL } from './env';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -71,7 +71,7 @@ function newAddress(label: string): string {
 
 /** Mints an invitation on the fake service, the way an admin would. */
 async function mintInvite(email: string): Promise<string> {
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -81,7 +81,7 @@ async function mintInvite(email: string): Promise<string> {
 }
 
 /** The join link an admin hands out, for this tier's own server unless told otherwise. */
-function joinPath({ inviteToken, serverUrl = E2E_SYNC_SERVER_URL }: { inviteToken: string; serverUrl?: string }): string {
+function joinPath({ inviteToken, serverUrl = E2E_CORE_URL }: { inviteToken: string; serverUrl?: string }): string {
   return `/join#server=${encodeURIComponent(serverUrl)}&invite=${inviteToken}`;
 }
 
@@ -179,7 +179,7 @@ test('a device signed in as somebody else says so on a document load, and signin
   await createAccountOnScreen(page);
   await expect
     .poll(() => readCachedSession(page), { message: 'the second account did not replace the first' })
-    .toMatchObject({ email: second, serverUrl: E2E_SYNC_SERVER_URL });
+    .toMatchObject({ email: second, serverUrl: E2E_CORE_URL });
 });
 
 test('a session saved for another server never blocks an invitation, and is replaced', async ({ page }) => {
@@ -200,7 +200,7 @@ test('a session saved for another server never blocks an invitation, and is repl
   await createAccountOnScreen(page);
   await expect
     .poll(() => readCachedSession(page), { message: 'the stale session was not replaced' })
-    .toMatchObject({ email: second, serverUrl: E2E_SYNC_SERVER_URL });
+    .toMatchObject({ email: second, serverUrl: E2E_CORE_URL });
 });
 
 test('a link for another server names that server and the one this app uses', async ({ page }) => {
@@ -208,7 +208,7 @@ test('a link for another server names that server and the one this app uses', as
   await expect(page.getByText(COPY.join.foreignServer.title, { exact: true })).toBeVisible();
   const main = page.locator('main');
   await expect(main).toContainText(OTHER_SERVER);
-  await expect(main).toContainText(new URL(E2E_SYNC_SERVER_URL).origin);
+  await expect(main).toContainText(new URL(E2E_CORE_URL).origin);
 });
 
 test('an app opened at another address than its own still takes a link for its server', async ({ page }) => {
@@ -220,5 +220,5 @@ test('an app opened at another address than its own still takes a link for its s
   await page.goto(`${tunnelOrigin}${joinPath({ inviteToken: await mintInvite(email) })}`);
   expect(new URL(page.url()).origin).toBe(tunnelOrigin);
   await createAccountOnScreen(page);
-  expect(await readCachedSession(page)).toMatchObject({ email, serverUrl: E2E_SYNC_SERVER_URL });
+  expect(await readCachedSession(page)).toMatchObject({ email, serverUrl: E2E_CORE_URL });
 });

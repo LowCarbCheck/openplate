@@ -49,7 +49,7 @@ import { z } from 'zod';
 
 import { ADMIN_API_PREFIX } from '../../app/lib/admin/admin-wire';
 import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
-import { E2E_ACCOUNT_EMAIL, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 
 /** What the routed console says, and what it saw. Mutate the gates between loads. */
 export interface AdminConsoleStub {
@@ -424,7 +424,7 @@ const HEALTH_ANSWER = z.looseObject({ instance: z.looseObject({}) });
  */
 export async function routeAdminConsole(page: Page, stub: AdminConsoleStub): Promise<void> {
   for (const path of ['login', 'account']) {
-    await page.route(`${E2E_SYNC_SERVER_URL}${AUTH_API_PREFIX}/${path}`, async (route) => {
+    await page.route(`${E2E_CORE_URL}${AUTH_API_PREFIX}/${path}`, async (route) => {
       const response = await route.fetch();
       const body = response.ok() ? AUTH_ANSWER_WITH_ACCOUNT.safeParse(await response.json()) : null;
       if (body === null || !body.success) return route.fulfill({ response });
@@ -433,7 +433,7 @@ export async function routeAdminConsole(page: Page, stub: AdminConsoleStub): Pro
     });
   }
 
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await stub.healthGate;
     const response = await route.fetch();
     const body = response.ok() ? HEALTH_ANSWER.safeParse(await response.json()) : null;
@@ -445,7 +445,7 @@ export async function routeAdminConsole(page: Page, stub: AdminConsoleStub): Pro
   });
 
   await page.route(
-    (url) => url.href.startsWith(`${E2E_SYNC_SERVER_URL}${ADMIN_API_PREFIX}/`),
+    (url) => url.href.startsWith(`${E2E_CORE_URL}${ADMIN_API_PREFIX}/`),
     (route) => answerAdmin(route, stub),
   );
 }

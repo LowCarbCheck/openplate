@@ -31,7 +31,7 @@ import { z } from 'zod';
 
 import { BOTTOM_BAR } from './clip-baseline';
 import { EN, fill } from './copy';
-import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_SYNC_SERVER_URL } from './env';
+import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import { settleFrames } from './layout-shift';
 import { routeManagedCore, type ManagedCoreStub } from './managed-core-stub';
@@ -149,17 +149,17 @@ const OPEN = [
  * anchors, because an async function runs up to its first `await` at once.
  */
 async function planRead(page: Page): Promise<void> {
-  await page.waitForResponse((response) => response.url() === `${E2E_SYNC_SERVER_URL}/v1/plans/me`);
+  await page.waitForResponse((response) => response.url() === `${E2E_CORE_URL}/v1/plans/me`);
 }
 
 /** Resolves when the handshake of THIS page has been answered. For an instance that is never asked for a plan. */
 async function handshake(page: Page): Promise<void> {
-  await page.waitForResponse((response) => response.url() === `${E2E_SYNC_SERVER_URL}/health`);
+  await page.waitForResponse((response) => response.url() === `${E2E_CORE_URL}/health`);
 }
 
 /** Resolves when THIS page has asked for the plan, answered or not. For a read that never answers. */
 async function planAsked(page: Page): Promise<void> {
-  await page.waitForRequest(`${E2E_SYNC_SERVER_URL}/v1/plans/me`);
+  await page.waitForRequest(`${E2E_CORE_URL}/v1/plans/me`);
 }
 
 /**
@@ -270,7 +270,7 @@ test('a plan read that fails opens the app, because unknown never locks', async 
   test.setTimeout(WALK_BUDGET_MS);
   await routeManagedCore(page, core());
   // Registered after the stub, so it answers first.
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, (route) =>
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) =>
     route.fulfill({ status: 500, json: { error: 'boom' } }),
   );
 
@@ -283,7 +283,7 @@ test('a plan read that never answers opens the app after a short wait', async ({
   test.setTimeout(WALK_BUDGET_MS);
   await routeManagedCore(page, core());
   // Never fulfilled: the request hangs for the rest of the test.
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/me`, () => undefined);
+  await page.route(`${E2E_CORE_URL}/v1/plans/me`, () => undefined);
 
   expect(await signIn(page)).toBe('/diary');
   const asked = planAsked(page);
@@ -341,7 +341,7 @@ test('while locked, the export, the account page and the visit switch stay open 
 
 /** Mints an invite on the fake service for a new address. */
 async function mintInvite(email: string): Promise<string> {
-  const response = await fetch(`${E2E_SYNC_SERVER_URL}/__e2e__/invites`, {
+  const response = await fetch(`${E2E_CORE_URL}/__e2e__/invites`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -354,7 +354,7 @@ test('a new account that has not onboarded can open the plan page, and nothing e
   test.setTimeout(WALK_BUDGET_MS);
   await routeManagedCore(page, core({ trialScans: { granted: 10, left: 10 } }));
   const token = await mintInvite(`paywall-${Date.now()}@example.invalid`);
-  await page.goto(`/join#server=${encodeURIComponent(E2E_SYNC_SERVER_URL)}&invite=${token}`);
+  await page.goto(`/join#server=${encodeURIComponent(E2E_CORE_URL)}&invite=${token}`);
   const passwords = page.locator('main input[type="password"]');
   await expect(passwords.first()).toBeVisible({ timeout: 10_000 });
   await passwords.nth(0).fill('seventeen orange lanterns drifting home');

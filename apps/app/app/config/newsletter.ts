@@ -9,7 +9,7 @@
  * runs an instance, not to the software, so an unconfigured instance — the
  * self-host default — renders no newsletter section, exposes no action, loads
  * no third-party script and makes no request. Same contract as
- * `SYNC_SERVER_URL` (`parseSyncServerUrl` in `public-config.ts`), for the same
+ * `CORE_URL` (`parseSyncServerUrl` in `public-config.ts`), for the same
  * reason.
  *
  * ── Both variables, or neither ───────────────────────────────────────────

@@ -154,7 +154,7 @@ function delay(ms: number): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * `SYNC_SERVER_URL` is not decoration. The account and sync surfaces do not
+ * `CORE_URL` is not decoration. The account and sync surfaces do not
  * render at all on an instance that has no sync server, so a run without it
  * would produce a perfectly sharp screenshot of a different product, and the
  * `sync` view above would capture an empty settings page. Set here rather than
@@ -167,7 +167,7 @@ function startApp(port: number): ChildProcess {
       ...process.env,
       PORT: String(port),
       NODE_ENV: 'development',
-      SYNC_SERVER_URL: 'https://sync.openplate.de',
+      CORE_URL: 'https://sync.openplate.de',
     },
     stdio: 'inherit',
   });

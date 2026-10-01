@@ -22,7 +22,7 @@ import { withI18n } from './trends-i18n-harness';
 import { SignInPanel } from '../../app/components/sign-in-panel';
 import enCommon from '../../app/i18n/locales/en/common.json';
 
-const SYNC_SERVER_URL = 'https://sync.example.test';
+const CORE_URL = 'https://sync.example.test';
 
 const EMAIL_HINT_TEXT = enCommon.sync.signIn.emailHint;
 
@@ -31,7 +31,7 @@ function renderSignInPanel(): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(SignInPanel, {
-        serverUrl: SYNC_SERVER_URL,
+        serverUrl: CORE_URL,
         initialEmail: '',
         onForgot: () => undefined,
       }),

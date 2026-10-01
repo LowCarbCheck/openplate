@@ -24,17 +24,40 @@ import type { AiIntakeDoor } from '../../app/components/add/use-ai-connection';
 
 const ENDED_AT = '2026-09-09T12:00:00.000Z';
 
-/** No `SYNC_SERVER_URL`, so a case that does not name one gets the loopback default. */
+/** No `CORE_URL`, so a case that does not name one gets the loopback default. */
 const EMPTY_ENV: NodeJS.ProcessEnv = {};
 
 describe('parseArgs', () => {
-  it('falls back to SYNC_SERVER_URL, then to loopback', () => {
+  it('falls back to CORE_URL, then to loopback', () => {
     assert.equal(parseArgs([], EMPTY_ENV).baseUrl, 'http://localhost:3000');
-    assert.equal(parseArgs([], { SYNC_SERVER_URL: 'https://api.example.test' }).baseUrl, 'https://api.example.test');
+    assert.equal(parseArgs([], { CORE_URL: 'https://api.example.test' }).baseUrl, 'https://api.example.test');
+  });
+
+  it('still reads the deprecated SYNC_SERVER_URL, and says so once on the warning channel', () => {
+    const warnings: string[] = [];
+    const invocation = parseArgs([], { SYNC_SERVER_URL: 'https://api.example.test' }, (message) => warnings.push(message));
+
+    assert.equal(invocation.baseUrl, 'https://api.example.test');
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0] ?? '', /SYNC_SERVER_URL is deprecated, set CORE_URL instead/);
+  });
+
+  it('says nothing when only CORE_URL is set', () => {
+    const warnings: string[] = [];
+    parseArgs([], { CORE_URL: 'https://api.example.test' }, (message) => warnings.push(message));
+
+    assert.deepEqual(warnings, []);
+  });
+
+  it('refuses two different addresses under the two names', () => {
+    assert.throws(
+      () => parseArgs([], { CORE_URL: 'https://a.example.test', SYNC_SERVER_URL: 'https://b.example.test' }, () => {}),
+      /both set/,
+    );
   });
 
   it('lets --url win over the environment', () => {
-    const invocation = parseArgs(['--url', 'https://other.example.test'], { SYNC_SERVER_URL: 'https://api.example.test' });
+    const invocation = parseArgs(['--url', 'https://other.example.test'], { CORE_URL: 'https://api.example.test' });
     assert.equal(invocation.baseUrl, 'https://other.example.test');
   });
 

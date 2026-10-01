@@ -58,7 +58,7 @@ import {
   E2E_FOOD_DB_API_KEY,
   E2E_FOOD_DB_URL,
   E2E_MATOMO_URL,
-  E2E_SYNC_SERVER_URL,
+  E2E_CORE_URL,
 } from './tests/e2e/env';
 import { buildTierServerCommand } from './tests/e2e/server-env';
 
@@ -145,7 +145,7 @@ export default defineConfig({
     command: buildTierServerCommand({
       port: E2E_APP_PORT,
       appUrl: E2E_APP_URL,
-      syncServerUrl: E2E_SYNC_SERVER_URL,
+      coreUrl: E2E_CORE_URL,
       contentDir: CONTENT_DIR,
       foodDbUrl: E2E_FOOD_DB_URL,
       foodDbApiKey: E2E_FOOD_DB_API_KEY,

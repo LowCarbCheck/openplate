@@ -186,7 +186,7 @@ describe('no sync server means no strip at all', () => {
   // `AvatarAccountStrip` reads `useSyncServerUrl()`, which reads the root
   // loader's public config. This router has no `root` route, so the hook gets
   // `undefined` and answers `null`, which is exactly the runtime state of an
-  // instance with `SYNC_SERVER_URL` unset.
+  // instance with `CORE_URL` unset.
   const markup = renderInMenu(createElement(AvatarAccountStrip));
 
   it('renders nothing (AGENTS.md: unset means no sync UI anywhere)', () => {

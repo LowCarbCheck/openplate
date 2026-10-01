@@ -51,7 +51,7 @@ const TOPOLOGY: readonly { name: string; reason: string }[] = [
     reason: 'the inference topology fills it from PUBLIC_APP_URL with a LAN example address',
   },
   {
-    name: 'SYNC_SERVER_URL',
+    name: 'CORE_URL',
     reason: 'the sync topologies fill it from PUBLIC_SYNC_URL: it is what turns sync on',
   },
   {

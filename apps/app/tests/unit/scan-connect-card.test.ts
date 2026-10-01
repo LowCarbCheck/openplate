@@ -61,6 +61,7 @@ const ADD_WITHOUT_PHOTO = 'Add food without a photo';
 /** A self-hosted instance's public config: no gateway, no preset. */
 function publicConfig(overrides: Partial<PublicConfig> = {}): PublicConfig {
   return {
+    coreUrl: null,
     syncServerUrl: null,
     analytics: null,
     instancePreset: null,

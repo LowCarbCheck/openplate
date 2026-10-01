@@ -6,7 +6,7 @@
  * than a chain of `&&`s buried in JSX.
  *
  * The `hidden` case is the AGENTS.md rule, not a UI preference: on an instance
- * with no `SYNC_SERVER_URL` there is no sync feature, so nothing may mention
+ * with no `CORE_URL` there is no sync feature, so nothing may mention
  * one — no row, no "set it up", no explanation of what's missing.
  */
 import type { SyncErrorReason, SyncSessionSnapshot } from './sync-session';
@@ -62,7 +62,7 @@ export type AvatarMenuDoor =
  * `hasSyncServer` is "may any sync UI render here" and `requiresAccount` is
  * "does a person need an account to use this instance at all". They are
  * genuinely different, and the difference is a real deployment: a self-hoster
- * who sets `SYNC_SERVER_URL` on an OPEN instance has sync, no accounts, and an
+ * who sets `CORE_URL` on an OPEN instance has sync, no accounts, and an
  * anonymous diary that works. On that instance "Create account" is honest, and
  * so is "Sign in", so this returns the state that carries both.
  * `app/config/instance-policy.ts` documents the trap.

@@ -292,11 +292,11 @@ export default [
     // "Your data" and "Photos on this device" cards, given their own page.
     route('/settings/data', 'routes/settings.data.tsx'),
     // The account: who am I, what am I called, change my password, sign out,
-    // delete me (M192/05). 404s unless `SYNC_SERVER_URL` is set, on an
+    // delete me (M192/05). 404s unless `CORE_URL` is set, on an
     // instance with no server there are no accounts, so this is not a page.
     route('/settings/account', 'routes/settings.account.tsx'),
     // The plan (M213 spec 05). TWO gates, both answering 404: no
-    // `SYNC_SERVER_URL` means no account to sell a plan to, and a handshake
+    // `CORE_URL` means no account to sell a plan to, and a handshake
     // without `plans` means the sync server's own `/v1/plans` subtree answers
     // 404, so this page says exactly what that service says. The biller sends
     // a browser back here after a checkout and after the portal, so the
@@ -308,7 +308,7 @@ export default [
     // would read as "the feature was removed".
     route('/settings/sync', 'routes/settings.sync.tsx'),
     // Clinician sharing, the patient's side (M160/05). 404s unless
-    // `SYNC_SERVER_URL` is set, for the same reason `/settings/sync` does, a
+    // `CORE_URL` is set, for the same reason `/settings/sync` does, a
     // share is a third wrap of the sync DEK, so with no sync there is nothing
     // here to be a page about. When the SERVER has `SYNC_SHARING` off it
     // renders one honest sentence instead: that tree answers the ordinary 404
@@ -333,7 +333,7 @@ export default [
     // No loader and no network: the notes are an i18n namespace in the bundle
     // (ADR-0018), so this page works offline like every other settings page.
     route('/settings/whats-new', 'routes/settings.whats-new.tsx'),
-    // The administration console (M192/06). 404s unless `SYNC_SERVER_URL` is
+    // The administration console (M192/06). 404s unless `CORE_URL` is
     // set, like every account screen: an instance with no server has nobody to
     // administer. The layout renders the not-an-administrator card for
     // everybody else, so being ROUTABLE here is not being allowed here.

@@ -237,7 +237,7 @@ describe('the rows the door renders', () => {
     });
 
     it('renders no row at all on an instance with no sync server', () => {
-      // AGENTS.md: unset SYNC_SERVER_URL means no sync UI renders anywhere,
+      // AGENTS.md: unset CORE_URL means no sync UI renders anywhere,
       // and an account is sync UI.
       const markup = renderDoor('none');
       assert.equal(countRows(markup), 0, markup.slice(0, 800));

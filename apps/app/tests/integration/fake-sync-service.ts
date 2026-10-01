@@ -482,7 +482,7 @@ export interface FakeSyncService {
  * Starts the service on an ephemeral port, or on the one the caller names.
  *
  * A NAMED PORT EXISTS FOR ONE CALLER: the Playwright tier, whose app server is
- * handed `SYNC_SERVER_URL` from a statically evaluated config, so the address
+ * handed `CORE_URL` from a statically evaluated config, so the address
  * has to be decided before anything is listening. Every node test leaves the
  * argument off and keeps the ephemeral bind, which is what lets several test
  * files hold a service at once.

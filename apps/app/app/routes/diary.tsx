@@ -2783,7 +2783,7 @@ function FirstEverEmpty({ describeTo, scanTo }: { describeTo: string; scanTo: st
           freely.
 
           TWO KEYS, not one with a hidden slot: on an instance without
-          `SYNC_SERVER_URL` there is no sync to enable, and offering it here
+          `CORE_URL` there is no sync to enable, and offering it here
           would send someone to a 404. Blanking the slot inside the shared
           sentence would leave a dangling "or" in both languages, so the
           sync-free instance gets its own, complete sentence.

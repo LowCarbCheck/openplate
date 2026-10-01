@@ -355,7 +355,7 @@ app.use(express.static('build/client', { maxAge: '1h' }));
 // (and the never-built browser bundle behind it) is gone. Sync is now a
 // standalone service — `openplate-core`, spoken to over the wire contract in
 // `app/lib/sync/engine/protocol.ts` — and the client reaches it directly at
-// its own origin (`SYNC_SERVER_URL`, M128 spec 04). Nothing sync-related
+// its own origin (`CORE_URL`, M128 spec 04). Nothing sync-related
 // belongs in this file again.
 
 // In place of React Router for every page: a closed instance serves one page, the moved page,

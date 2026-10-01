@@ -36,7 +36,7 @@ const PUSH_DEBOUNCE_MS = 3_000;
  *
  * ── The gate ─────────────────────────────────────────────────────────────
  *
- * With `SYNC_SERVER_URL` unset this effect returns immediately: no listeners
+ * With `CORE_URL` unset this effect returns immediately: no listeners
  * are attached, no store subscription is opened, and no request is made. That
  * is the requirement stated literally — an instance without sync configured
  * must be indistinguishable, on the wire, from one built without the feature.

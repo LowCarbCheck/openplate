@@ -44,7 +44,7 @@ import {
   E2E_PORT_BASE,
   E2E_PORT_BASE_VAR,
   E2E_SYNC_PORT,
-  E2E_SYNC_SERVER_URL,
+  E2E_CORE_URL,
 } from '../e2e/env';
 
 /** The lowest base the derivation may produce. */
@@ -244,7 +244,7 @@ describe("this checkout's three ports", () => {
 
   it('are the ports the three URLs name', () => {
     assert.equal(E2E_FOOD_DB_URL, `http://127.0.0.1:${E2E_FOOD_DB_PORT}`, 'the food database URL follows its port');
-    assert.equal(E2E_SYNC_SERVER_URL, `http://127.0.0.1:${E2E_SYNC_PORT}`, 'the sync URL follows its port');
+    assert.equal(E2E_CORE_URL, `http://127.0.0.1:${E2E_SYNC_PORT}`, 'the sync URL follows its port');
     assert.equal(E2E_APP_URL, `http://127.0.0.1:${E2E_APP_PORT}`, 'the app URL follows its port');
 
     // THE CONTROL. A URL built from the wrong constant would still be a URL, so

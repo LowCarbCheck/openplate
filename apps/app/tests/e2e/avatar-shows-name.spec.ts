@@ -44,7 +44,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { EN, fill } from './copy';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { completeOnboarding } from './helpers';
 import {
   installShiftObserver,
@@ -171,7 +171,7 @@ async function addStyle(page: Page, css: string): Promise<() => Promise<void>> {
 async function reloadWithTheAccountHeld(page: Page): Promise<() => void> {
   const accountRead = createGate();
   await page.route(
-    (url) => url.href === `${E2E_SYNC_SERVER_URL}/v1/auth/account`,
+    (url) => url.href === `${E2E_CORE_URL}/v1/auth/account`,
     async (route) => {
       if (route.request().method() === 'GET') await accountRead.promise;
       await route.fallback();

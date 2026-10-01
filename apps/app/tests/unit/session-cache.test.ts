@@ -294,7 +294,7 @@ test('nothing cached means nothing dialled', async () => {
 });
 
 test('a cache for ANOTHER service is dropped unread', async () => {
-  // An operator who moves `SYNC_SERVER_URL` would otherwise have every device
+  // An operator who moves `CORE_URL` would otherwise have every device
   // silently present a stranger's tokens to the new address.
   await writeSessionCache(await cachedRecord({ serverUrl: 'https://old.example.test' }));
   let calls = 0;

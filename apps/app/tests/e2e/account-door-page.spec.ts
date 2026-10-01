@@ -26,7 +26,7 @@ import { z } from 'zod';
 
 import { LANGUAGE_COOKIE } from '../../app/i18n/language-prefs';
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
-import { E2E_SYNC_SERVER_URL } from './env';
+import { E2E_CORE_URL } from './env';
 import { useLanguage } from './helpers';
 import {
   installShiftObserver,
@@ -147,7 +147,7 @@ test.afterAll(async () => {
 
 /** Answers `/health` for the managed server's sync origin. */
 async function routeHandshake(page: Page, stub: HandshakeStub): Promise<void> {
-  await page.route(`${E2E_SYNC_SERVER_URL}/health`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/health`, async (route) => {
     await stub.gate;
     await route.fulfill({
       json: {
@@ -172,7 +172,7 @@ async function routeHandshake(page: Page, stub: HandshakeStub): Promise<void> {
 /** Answers the anonymous price read, held by `gate` when one is given, and counts the reads. */
 async function routePrices(page: Page, gate?: Gate): Promise<{ reads: number }> {
   const seen = { reads: 0 };
-  await page.route(`${E2E_SYNC_SERVER_URL}/v1/plans/prices`, async (route) => {
+  await page.route(`${E2E_CORE_URL}/v1/plans/prices`, async (route) => {
     seen.reads += 1;
     await gate?.promise;
     await route.fulfill({

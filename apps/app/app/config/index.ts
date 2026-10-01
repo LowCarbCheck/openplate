@@ -25,13 +25,15 @@
  */
 
 import { optionalEnv, optionalIntEnv } from '#app/lib/env';
+import { logger } from '#app/lib/logger';
 import {
   assertGatewayUrlUnset,
   isManagedInstance,
   parseInstanceInferencePreset,
   parseInstanceMode,
-  parseSyncServerUrl,
+  parseCoreUrl,
 } from './public-config';
+import { resolveCoreUrl, warnOncePerProcess } from './core-url';
 import { SUPPORTED_LANGUAGES, isLanguageCode, type LanguageCode } from '#app/i18n/language-prefs';
 import {
   DEFAULT_NUTRIENT_REFERENCE_BASIS,
@@ -358,9 +360,12 @@ export function parseUpdateCheck(raw: string | undefined): boolean {
  * environment must not get an open instance out of a file that still reads as
  * a closed one. See `assertGatewayUrlUnset`.
  */
-export function parseAppConfig(env: NodeJS.ProcessEnv) {
+export function parseAppConfig(env: NodeJS.ProcessEnv, options: { warn?: (message: string) => void } = {}) {
   assertGatewayUrlUnset(env.GATEWAY_URL);
-  const syncServerUrl = parseSyncServerUrl(env.SYNC_SERVER_URL);
+  // `CORE_URL`, else the deprecated `SYNC_SERVER_URL` with one warning, else a
+  // boot failure when both are set and differ. See `./core-url.ts`.
+  const coreUrlSetting = resolveCoreUrl({ env, warn: options.warn ?? (() => {}) });
+  const syncServerUrl = parseCoreUrl(coreUrlSetting);
   const instanceMode = parseInstanceMode(env.INSTANCE_MODE);
   // Read once, because `moved` below compares its own address against it.
   const appUrl = optionalEnv({ env, name: 'APP_URL', fallback: 'http://localhost:3000' });
@@ -481,7 +486,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
     /**
      * E2EE Sync (M128 spec 04)
      *
-     * `syncServerUrl` is the ONE value this server publishes to the browser
+     * `syncServerUrl` (read from `CORE_URL`) is the ONE value this server publishes to the browser
      * (through the root loader's `publicConfig`, see
      * `app/config/public-config.ts` for why the channel is an allowlist rather
      * than an env dump). It is not a secret: the browser has to know the
@@ -506,7 +511,7 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
      * `INSTANCE_MODE=managed` says an organization runs this instance for its
      * people: an admin invites by email, there is no anonymous path because on
      * such an instance it leads nowhere, and the AI comes from the sync server
-     * on the account's own daily allowance. It requires `SYNC_SERVER_URL` and
+     * on the account's own daily allowance. It requires `CORE_URL` and
      * stops the boot without it. See `isManagedInstance`.
      *
      * It replaced `GATEWAY_URL`, which said the same thing by naming a second
@@ -633,6 +638,12 @@ export function parseAppConfig(env: NodeJS.ProcessEnv) {
   } as const;
 }
 
-export const CONFIG = parseAppConfig(process.env);
+/**
+ * The one place a parse is allowed to speak: the real process environment, once at import. Tests
+ * call `parseAppConfig` themselves and pass no `warn`, so they stay quiet.
+ */
+export const CONFIG = parseAppConfig(process.env, {
+  warn: (message) => warnOncePerProcess({ message, sink: (line) => logger.warn(line) }),
+});
 
 export type Config = typeof CONFIG;
