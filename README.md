@@ -6,7 +6,7 @@ An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI pla
 
 ## Try it
 
-**<https://openplate.lowcarbcheck.org>** runs this code. This demo instance comes with no uptime guarantee, no support, and no backups. Your diary stays in that browser. Clearing the browser clears your diary.
+**<https://app.openplate.de>** runs this code. This demo instance comes with no uptime guarantee, no support, and no backups. Your diary stays in that browser. Clearing the browser clears your diary.
 
 ## Quickstart
 
