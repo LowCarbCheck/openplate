@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "The app shows when a self-hosted AI server cannot perform a task.",
+      "02": "Scan reviews warn when allergy and pregnancy checks are incomplete."
+    },
+    "changed": {
+      "01": "Self-hosted AI servers receive your app language."
+    },
+    "fixed": {
+      "01": "Scans unchecked for allergens no longer show as clear."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "The image runs on Node 24."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Nothing on the onboarding form moves when you pick an answer.",
-      "02": "The source link in the pregnancy caution note shows its words again."
     }
   }
 }

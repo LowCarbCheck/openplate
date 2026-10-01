@@ -2463,6 +2463,13 @@
     "at": "2026-09-14",
     "es": "Consulta el balance del día"
   },
+  "1c1351a3cd4a722b": {
+    "en": "The app shows when a self-hosted AI server cannot perform a task.",
+    "path": "releases:v0_60_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "es": "La aplicación muestra cuándo un servidor de IA autoalojado no puede realizar una tarea."
+  },
   "1c1cf96f02fc1619": {
     "en": "{{used}} of {{limit}} used today.",
     "path": "common:account.allowance.body",
@@ -12326,6 +12333,13 @@
     "at": "2026-09-23",
     "es": "Nada se mueve en las preguntas iniciales cuando eliges o escribes."
   },
+  "94bf701008af0606": {
+    "en": "Scan reviews warn when allergy and pregnancy checks are incomplete.",
+    "path": "releases:v0_60_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "es": "Las revisiones de los escaneos avisan si las comprobaciones de alergias y embarazo están incompletas."
+  },
   "94c2ccd179585656": {
     "en": "Save details",
     "path": "common:bodyMetrics.save",
@@ -14636,6 +14650,13 @@
     "at": "2026-09-17",
     "es": "Valores de referencia"
   },
+  "b0b10c068199b79e": {
+    "en": "Scans unchecked for allergens no longer show as clear.",
+    "path": "releases:v0_60_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "es": "Los escaneos sin comprobación de alérgenos ya no aparecen como aptos."
+  },
   "b0b201218a18f83b": {
     "en": "Your email address and your password.",
     "path": "common:signIn.body",
@@ -15293,6 +15314,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "La comprobación de bots no ha podido cargar, por lo que el registro no está disponible ahora mismo."
+  },
+  "b8610d3b01276b6c": {
+    "en": "Self-hosted AI servers receive your app language.",
+    "path": "releases:v0_60_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "es": "Los servidores de IA autoalojados reciben el idioma de tu aplicación."
   },
   "b8b3313370c51cc3": {
     "en": "2 weeks",

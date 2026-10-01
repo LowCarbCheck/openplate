@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "L'application indique quand un serveur d'IA auto-hébergé ne peut pas exécuter une tâche.",
+      "02": "La vérification des scans signale quand les contrôles d'allergies et de grossesse sont incomplets."
+    },
+    "changed": {
+      "01": "Les serveurs d'IA auto-hébergés reçoivent la langue de ton application."
+    },
+    "fixed": {
+      "01": "Les scans non vérifiés pour les allergènes ne s'affichent plus comme sans danger."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "L'image tourne sous Node 24."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Rien ne bouge sur le formulaire d'intégration quand tu choisis une réponse.",
-      "02": "Le lien source dans l'avertissement relatif à la grossesse réaffiche son texte."
     }
   }
 }

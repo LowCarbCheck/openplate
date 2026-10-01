@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Die App zeigt an, wenn ein selbst gehosteter KI-Server eine Aufgabe nicht ausführen kann.",
+      "02": "Scan-Prüfungen warnen, wenn Abgleiche zu Allergien und Schwangerschaft unvollständig sind."
+    },
+    "changed": {
+      "01": "Selbst gehostete KI-Server empfangen deine App-Sprache."
+    },
+    "fixed": {
+      "01": "Scans, die nicht auf Allergene geprüft wurden, werden nicht mehr als unbedenklich angezeigt."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "Das Image läuft auf Node 24."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Im Onboarding-Formular verschiebt sich nichts, wenn du eine Antwort auswählst.",
-      "02": "Der Quellenlink im Schwangerschaftshinweis zeigt seinen Text wieder an."
     }
   }
 }

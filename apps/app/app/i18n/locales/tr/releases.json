@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "Kendi barındırdığın bir yapay zeka sunucusu bir görevi yerine getiremediğinde uygulama bunu gösterir.",
+      "02": "Tarama incelemeleri, alerji ve hamilelik kontrolleri tamamlanmadığında uyarır."
+    },
+    "changed": {
+      "01": "Kendi barındırdığın yapay zeka sunucuları uygulama dilini alır."
+    },
+    "fixed": {
+      "01": "Alerjenler açısından kontrol edilmemiş taramalar artık temiz olarak gösterilmez."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "İmaj, Node 24 üzerinde çalışır."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Bir yanıt seçtiğinde ilk katılım formundaki hiçbir şey hareket etmez.",
-      "02": "Hamilelik uyarı notundaki kaynak bağlantısı metnini yeniden gösterir."
     }
   }
 }

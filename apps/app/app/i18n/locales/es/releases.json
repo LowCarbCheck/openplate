@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "La aplicación muestra cuándo un servidor de IA autoalojado no puede realizar una tarea.",
+      "02": "Las revisiones de los escaneos avisan si las comprobaciones de alergias y embarazo están incompletas."
+    },
+    "changed": {
+      "01": "Los servidores de IA autoalojados reciben el idioma de tu aplicación."
+    },
+    "fixed": {
+      "01": "Los escaneos sin comprobación de alérgenos ya no aparecen como aptos."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "La imagen se ejecuta sobre Node 24."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Nada se mueve en el formulario de incorporación cuando eliges una respuesta.",
-      "02": "El enlace a la fuente en la nota de advertencia sobre el embarazo vuelve a mostrar su texto."
     }
   }
 }

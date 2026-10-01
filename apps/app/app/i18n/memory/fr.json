@@ -2463,6 +2463,13 @@
     "at": "2026-09-14",
     "fr": "Regarde où en est la journée"
   },
+  "1c1351a3cd4a722b": {
+    "en": "The app shows when a self-hosted AI server cannot perform a task.",
+    "path": "releases:v0_60_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "L'application indique quand un serveur d'IA auto-hébergé ne peut pas exécuter une tâche."
+  },
   "1c1cf96f02fc1619": {
     "en": "{{used}} of {{limit}} used today.",
     "path": "common:account.allowance.body",
@@ -12326,6 +12333,13 @@
     "at": "2026-09-23",
     "fr": "Rien ne bouge sur les questions de première utilisation quand tu choisis ou saisis."
   },
+  "94bf701008af0606": {
+    "en": "Scan reviews warn when allergy and pregnancy checks are incomplete.",
+    "path": "releases:v0_60_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "La vérification des scans signale quand les contrôles d'allergies et de grossesse sont incomplets."
+  },
   "94c2ccd179585656": {
     "en": "Save details",
     "path": "common:bodyMetrics.save",
@@ -14636,6 +14650,13 @@
     "at": "2026-09-17",
     "fr": "Valeurs de référence"
   },
+  "b0b10c068199b79e": {
+    "en": "Scans unchecked for allergens no longer show as clear.",
+    "path": "releases:v0_60_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Les scans non vérifiés pour les allergènes ne s'affichent plus comme sans danger."
+  },
   "b0b201218a18f83b": {
     "en": "Your email address and your password.",
     "path": "common:signIn.body",
@@ -15293,6 +15314,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "La vérification anti-robot n'a pas pu se charger, l'inscription est donc indisponible pour le moment."
+  },
+  "b8610d3b01276b6c": {
+    "en": "Self-hosted AI servers receive your app language.",
+    "path": "releases:v0_60_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-01",
+    "fr": "Les serveurs d'IA auto-hébergés reçoivent la langue de ton application."
   },
   "b8b3313370c51cc3": {
     "en": "2 weeks",

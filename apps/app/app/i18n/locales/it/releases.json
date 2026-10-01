@@ -1,4 +1,17 @@
 {
+  "v0_60_0": {
+    "date": "2026-10-01",
+    "added": {
+      "01": "L'app segnala quando un server IA self-hosted non può eseguire un'attività.",
+      "02": "Le revisioni delle scansioni avvisano quando i controlli su allergie e gravidanza sono incompleti."
+    },
+    "changed": {
+      "01": "I server IA self-hosted ricevono la lingua della tua app."
+    },
+    "fixed": {
+      "01": "Le scansioni per cui non sono stati verificati gli allergeni non risultano più prive di rischi."
+    }
+  },
   "v0_59_1": {
     "date": "2026-10-01",
     "fixed": {
@@ -9,13 +22,6 @@
     "date": "2026-10-01",
     "changed": {
       "01": "L'immagine viene eseguita su Node 24."
-    }
-  },
-  "v0_58_1": {
-    "date": "2026-10-01",
-    "fixed": {
-      "01": "Nessun elemento del modulo iniziale si sposta quando selezioni una risposta.",
-      "02": "Il link alla fonte nella nota di avvertenza sulla gravidanza mostra di nuovo il proprio testo."
     }
   }
 }
