@@ -6,9 +6,11 @@ An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI pla
 
 **By default, there are no accounts.** There is no sign-up, no login, and no password. Open the app and start logging. Your diary lives in IndexedDB in your browser on your device. The app server has no database. An operator can run a managed instance instead, with `INSTANCE_MODE=managed`. There, an administrator invites people, each person gets an account and signs in, and accounts carry a shared AI allowance. Device sync is optional on either setup. A separate service handles it. The diary is encrypted on the device before upload. Whoever runs the core server keeps a backup key to reset forgotten passwords, and that key lets them read the diary.
 
+Find guides, screenshots, and full documentation on [openplate.de](https://openplate.de), or see the repository [Documentation](#documentation) section.
+
 ## Try it
 
-**<https://app.openplate.de>** runs this code. This demo instance comes with no uptime guarantee, no support, and no backups. Your diary stays in that browser. Clearing the browser clears your diary.
+The maintainers run a hosted version from this code at **<https://app.openplate.de>**. Sign up to receive either 10 free AI scans or 14 days, whichever finishes first. No credit card is required. Continuing after the trial requires a paid plan. See [Pricing](https://openplate.de/pricing) for details. Your diary is encrypted on your device before syncing. Like any managed instance, the operator holds a backup key that can read your data. To self-host openplate for free, follow the Quickstart below.
 
 ## Quickstart
 
@@ -40,7 +42,7 @@ Start with [Architecture](apps/app/docs/architecture.md) and [Self-hosting](apps
 
 ## Development
 
-The sections from here to [License](#license) are for people who change the code. To run openplate, you need only [Quickstart](#quickstart).
+The sections through [License](#license) cover contributing to the codebase; to only run the app, jump to [Quickstart](#quickstart).
 
 ### First ten minutes
 
