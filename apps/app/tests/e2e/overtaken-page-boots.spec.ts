@@ -46,6 +46,8 @@
  *   app could not load when a preload fails. The module import does not ask again: the failed
  *   file is requested once and the app never starts. THE CONTROL: the same page with nothing
  *   refused starts and keeps the line hidden.
+ *
+ * @area offline-and-updates
  */
 import { expect, test, type Page } from '@playwright/test';
 

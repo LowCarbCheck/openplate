@@ -23,6 +23,8 @@
  *   with scripts off the same line is hidden, so "visible" is not a reader that sees the line on
  *   every page; and a page where the hidden line takes no room reads as moved, so "nothing moved"
  *   is not a reader that never sees a move.
+ *
+ * @area offline-and-updates
  */
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 

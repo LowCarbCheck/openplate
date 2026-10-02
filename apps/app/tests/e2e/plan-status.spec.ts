@@ -5,6 +5,8 @@
  * The same page, the same stubbed core (`plans-stub.ts`), and only the plan
  * view differs between the cases, so each is the other's control: a page that
  * drew the card for everybody, or the order for everybody, fails one of them.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

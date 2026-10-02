@@ -23,6 +23,8 @@
  * EVERY PAYWALL CHECK HAS AN OPEN TWIN on the same pages, differing only in
  * the stubbed standing, so a gate that locked everybody fails the twins and a
  * gate that locked nobody fails this file's first half.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

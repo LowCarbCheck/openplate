@@ -47,6 +47,8 @@
  * single teal element must break it. The control does that on `/settings` and requires the reader
  * to report one more and the ceiling to be exceeded, which is the only thing that separates this
  * spec from one whose reader silently returns zero.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

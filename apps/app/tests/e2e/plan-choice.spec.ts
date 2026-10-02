@@ -10,6 +10,8 @@
  * this file's own `Intl` call, and never imported from `plan-prices.ts`: the
  * app's arithmetic is the thing under test, and a spec that borrowed it would
  * agree with any mistake it made.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';

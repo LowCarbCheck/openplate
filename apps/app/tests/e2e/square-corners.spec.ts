@@ -45,6 +45,8 @@
  * card clipped past the right edge, which this file diagnosed as a stale Vite dependency-optimiser
  * cache on a remote preview host, not a corner regression, but the shape of the damage (a
  * pushed-right, overflowing `main`) is worth a permanent guard regardless of its cause that day.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

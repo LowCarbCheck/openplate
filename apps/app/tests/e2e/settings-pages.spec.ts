@@ -29,6 +29,9 @@
  * (M257): the picker left the menu for `/settings/preferences` alone, which
  * this walk already visits as one of the hub's destinations, and
  * `tests/e2e/menu-has-no-language.spec.ts` is its control now.
+ *
+ * @area settings
+ * @smoke
  */
 import { expect, test } from '@playwright/test';
 

@@ -32,6 +32,8 @@
  * THE COPY IS NEVER ASSERTED. `meals.howTo` and the cap line are read by their
  * `data-slot` and by having a non-empty box, never by their words, which are
  * wordsmith's and change without this spec's permission.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -21,6 +21,8 @@
  * holds the new version, and the refusal follows from it by the core's rule.
  * An app that sent everybody to the consent screen after a push fails the
  * twin; one that ignored the refusal fails the prompt.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

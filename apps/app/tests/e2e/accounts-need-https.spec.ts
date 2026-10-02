@@ -21,6 +21,8 @@
  *
  * EVERY ABSENCE HAS A CONTROL. The same doors on the tier's own loopback
  * origin show the form and no notice, through the same queries.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Page } from '@playwright/test';
 

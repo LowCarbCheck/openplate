@@ -19,6 +19,8 @@
  * person's own setting off and confirms the same photo: the page starts no
  * request to `/api/food-proposals` and the fake receives nothing. Its anchor is
  * the first case, where the request starts before the diary renders.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -41,6 +41,8 @@
  * background image off the hero and requires the reader to report no paper. The contrast helper
  * is checked against two colours whose ratio is known (black on white is 21, white on white is 1),
  * so a helper that returned a constant cannot pass.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -33,6 +33,8 @@
  *
  * NO SENTENCE IS PINNED. Everything is found by its `data-slot`, its
  * attribute or its place in the cell.
+ *
+ * @area shell
  */
 import { writeFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';

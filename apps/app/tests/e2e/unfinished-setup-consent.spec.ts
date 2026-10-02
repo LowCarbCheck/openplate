@@ -19,6 +19,8 @@
  *
  * THE PROMPT AND ITS TWIN differ in one stubbed fact, whether the account
  * holds the consent, so a sign-in that asked everybody fails the twin.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

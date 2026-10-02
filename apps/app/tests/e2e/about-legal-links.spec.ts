@@ -20,6 +20,8 @@
  * The order check is read both ways, so a page that drew the group above the
  * provenance rows fails it. The no-shift reading is handed a block injected
  * above the group and must see it move.
+ *
+ * @area settings
  */
 import { expect, test, type Page } from '@playwright/test';
 

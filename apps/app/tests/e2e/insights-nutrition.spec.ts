@@ -28,6 +28,8 @@
  * no way to leave carbs unknown on purpose, and an unknown macro is the claim.
  * The rows are written in the shape the primary store persists, the same
  * layout `insights-range.spec.ts` writes, and the page is then loaded fresh.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

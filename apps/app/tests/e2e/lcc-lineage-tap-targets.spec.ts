@@ -49,6 +49,8 @@
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
  * The reader is pointed at a real 30 px button and a real 44 px button it is handed. It must list
  * the first and not the second, or a reader that returned nothing would pass every screen.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

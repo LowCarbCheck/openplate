@@ -25,6 +25,8 @@
  * session. The dialog marks each sentence it says with `data-erase-line`, so
  * this file asserts WHICH sentence was said. The controls are found by their
  * icons for the same reason.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

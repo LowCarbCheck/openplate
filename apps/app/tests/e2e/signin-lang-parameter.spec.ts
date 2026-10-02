@@ -13,6 +13,8 @@
  *
  * NO SENTENCE IS PINNED. The title is compared with whatever each bundle says
  * today, read off disk, and the language is read from `<html lang>`.
+ *
+ * @area accounts-and-sign-in
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

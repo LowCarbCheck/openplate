@@ -10,6 +10,8 @@
  *
  * STUBBED: the vision endpoint's answer, the handshake's `plans: true`, the
  * plan reads and the account's allowance (`plans-stub.ts`).
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

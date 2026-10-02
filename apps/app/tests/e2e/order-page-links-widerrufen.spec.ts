@@ -18,6 +18,8 @@
  * is "any https address of that page", not one host. THE CONTROL is the
  * neutral fixture offer, whose notice holds no address: it keeps exactly the
  * one link it had.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';

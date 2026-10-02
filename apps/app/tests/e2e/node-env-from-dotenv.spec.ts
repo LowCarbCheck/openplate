@@ -42,6 +42,8 @@
  * With `import 'dotenv/config'` moved back below `@react-router/express` in
  * `server.ts`, the first test fails: `/` answers 500 and the server output it
  * prints carries `dispatcher.getOwner is not a function`.
+ *
+ * @area shell
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';

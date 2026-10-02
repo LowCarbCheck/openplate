@@ -27,6 +27,8 @@
  * No assertion pins a translated sentence: the subtitle is read from the
  * English catalog, and the headings are the fixture's own titles, copied from
  * `tests/fixtures/content/en`, which are the statutory labels.
+ *
+ * @area content-and-legal
  */
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 

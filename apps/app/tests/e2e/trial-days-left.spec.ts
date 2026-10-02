@@ -23,6 +23,8 @@
  * The line's box is reserved from the first paint, so the date fills it and
  * nothing below moves. The control for that reading was the unreserved line
  * (drawn only once the date was known): against it this check failed.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

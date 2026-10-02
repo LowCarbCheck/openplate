@@ -18,6 +18,8 @@
  * one of them in German at 360; the Insights tab strip cut three of the four
  * German labels in a strip 32px tall; the weight chart's axis labels rendered
  * 4.3px tall because a 10-unit SVG label scales with the viewBox.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -13,6 +13,8 @@
  * WHAT IS REAL: the production build as a MANAGED instance, so AI goes through
  * the managed credential and the app reads `X-Trial-Scans-Left`. WHAT IS
  * STUBBED: the core and its AI proxy (`managed-core-stub.ts`).
+ *
+ * @area plans-and-paywall
  */
 import { expect, test } from '@playwright/test';
 

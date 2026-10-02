@@ -15,6 +15,8 @@
  * THE PROMPT AND ITS TWIN differ in one stubbed fact, whether the account
  * holds the wording the operator changed to while the scan screen was open,
  * and the proxy's answer follows from it by the core's rule.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

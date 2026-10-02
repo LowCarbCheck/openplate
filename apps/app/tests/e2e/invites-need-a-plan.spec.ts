@@ -13,6 +13,8 @@
  * with a plan, links to the plans, and has no address field; a paid member
  * sees the count and the field; an older core, which sends no
  * `invitesNeedAPlan`, keeps today's "all used" sentence for a zero.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

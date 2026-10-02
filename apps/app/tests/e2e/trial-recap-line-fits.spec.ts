@@ -25,6 +25,8 @@
  * nothing out of the side (`scrollWidth` past `clientWidth`, an unbreakable
  * run, or a one-line `truncate` that ends in an ellipsis). Neither shows
  * reliably in a screenshot.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

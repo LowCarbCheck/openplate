@@ -15,6 +15,8 @@
  * The weight file (M254/06) is built in the test, around the day onboarding
  * wrote the person's own weigh-in on, because that day is today and a static
  * fixture cannot know it.
+ *
+ * @area settings
  */
 import { readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';

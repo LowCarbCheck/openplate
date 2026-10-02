@@ -34,6 +34,8 @@
  * reads that page at 320, 390 and 412 px). Every other public page keeps the
  * header's two controls, which is the row this spec is about, so it reads the
  * header of `/imprint`.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Page } from '@playwright/test';
 

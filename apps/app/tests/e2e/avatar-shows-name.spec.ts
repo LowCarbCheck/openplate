@@ -40,6 +40,8 @@
  * below `sm` the button is the circle alone, and the phone project's
  * `isMobile` zooms an overflowing page out, which would hide the overflow the
  * 320 px reading exists to catch. Widths are read from `clientWidth`.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

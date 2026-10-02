@@ -21,6 +21,8 @@
  * ON THE OLD MENU this spec's first test failed: the theme row's three
  * `menuitemradio` cells shared the count with the language strip's six, so
  * `toHaveCount(3)` read nine.
+ *
+ * @area shell
  */
 import { expect, test } from '@playwright/test';
 

@@ -12,6 +12,8 @@
  *   the same press on a paid card, which picks that plan;
  * - a subscriber moving to the yearly plan is not shown it. The control there
  *   is the order itself, drawn on the same page.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

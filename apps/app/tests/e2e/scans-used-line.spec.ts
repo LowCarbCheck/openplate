@@ -24,6 +24,8 @@
  * control are read on the preferences page, which a locked person can still
  * open. The subscriber and the standing grant are not locked and keep the
  * diary.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

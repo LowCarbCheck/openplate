@@ -30,6 +30,8 @@
  * add form cannot produce the second one in one pass. The GOALS still go
  * through the real settings form, because the meters under test only exist
  * when a goal does.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

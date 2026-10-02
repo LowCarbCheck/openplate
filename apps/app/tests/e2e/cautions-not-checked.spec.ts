@@ -35,6 +35,8 @@
  * real settings form (`connectStubAiProvider`), so everything downstream of
  * the provider's answer is the shipped code. The sentences are read out of the
  * catalog, never typed here.
+ *
+ * @area scan
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

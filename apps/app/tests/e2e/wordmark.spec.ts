@@ -17,6 +17,8 @@
  * The same reader, run with the lift switched off inline, must report the word hanging low by a
  * pixel or more. A reader that returned zero for every input would pass the claim above and prove
  * nothing, so the spec fails if the uncorrected word does not read as off-centre.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

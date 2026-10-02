@@ -35,6 +35,8 @@
  * `imprint`, `terms` and `widerrufen`. No sentence is pinned: every title is
  * the fixture's own front matter, and the English subtitle is read from the
  * shipped catalog (`./copy`), as `legal-page-english-subtitle.spec.ts` does.
+ *
+ * @area content-and-legal
  */
 import { expect, test, type Browser, type Page } from '@playwright/test';
 

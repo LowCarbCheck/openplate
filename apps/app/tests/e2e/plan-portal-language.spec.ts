@@ -7,6 +7,8 @@
  *
  * Each case is the other's control: a page that sent one fixed language, or
  * none, fails one of them.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

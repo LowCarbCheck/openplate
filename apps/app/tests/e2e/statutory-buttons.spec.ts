@@ -20,6 +20,8 @@
  * header note records the same preflight requirement for a cross-origin
  * fetch. No real `openplate-core` is reached; this spec asserts what the PWA
  * does with the receipt, not the transport.
+ *
+ * @area content-and-legal
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { z } from 'zod';

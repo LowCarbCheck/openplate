@@ -19,6 +19,8 @@
  * The insecure origin is made the way `accounts-need-https.spec.ts` makes it,
  * and each test reads `isSecureContext` back first. Every absence has a
  * control on the loopback origin through the same query.
+ *
+ * @area settings
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

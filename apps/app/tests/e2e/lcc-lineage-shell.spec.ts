@@ -24,6 +24,8 @@
  * page background colour, and it is geometry: it is what keeps the circle legible where it
  * overlaps the bar. A layer with no offset and no blur is that ring, and it is judged separately,
  * which is why this reader splits layers instead of grepping the string for a colour.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

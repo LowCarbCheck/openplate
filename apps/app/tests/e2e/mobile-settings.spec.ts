@@ -33,6 +33,8 @@
  * page's three disclosure triggers were 20px and its key field and Save button
  * 36px; the fasting page's "Usual start time" label sat ON the same line as
  * its input, 31px of overlap; nine other fields sat 3px from their label.
+ *
+ * @area settings
  */
 import { expect, test, type Page } from '@playwright/test';
 

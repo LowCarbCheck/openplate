@@ -49,6 +49,8 @@
  * is the layout width, and does not move with the zoom. The sidebar's own
  * visibility is read BEFORE the probe is injected, so that reading is never
  * taken while the page might already be zoomed out from an earlier width.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 

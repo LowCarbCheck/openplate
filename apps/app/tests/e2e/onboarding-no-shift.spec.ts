@@ -31,6 +31,9 @@
  * and never resizes the viewport for one, so a shift that only a phone's
  * keyboard causes cannot appear here. The last test resizes the viewport the
  * way a keyboard does, to say whether this layout moves under that alone.
+ *
+ * @area onboarding
+ * @smoke
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

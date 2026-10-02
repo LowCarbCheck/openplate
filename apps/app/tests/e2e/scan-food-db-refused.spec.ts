@@ -41,6 +41,8 @@
  * The status lives in the app server's process, which is shared by every spec
  * in the run. Lifting the refusal is therefore not only the control, it is the
  * cleanup, and the fake is reset again at the end regardless.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -41,6 +41,8 @@
  * `page.route` ever sees the request. And a same-origin address needs no CORS
  * preflight, which `page.route` does not answer. Nothing listens on the path;
  * the interception is the whole implementation.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

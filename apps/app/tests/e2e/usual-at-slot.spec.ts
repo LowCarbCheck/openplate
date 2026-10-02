@@ -19,6 +19,8 @@
  * entry is a coincidence and two days are a habit. Both foods are logged on
  * the two days before today, through the real `/add` manual form with its real
  * meal picker.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

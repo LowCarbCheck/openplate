@@ -28,6 +28,8 @@
  *   Forward and widening past `md` are `mark-opens-more.spec.ts`'s. The controls were run by hand:
  *   with the sheet's link and `popstate` closes taken out, the tile line and the Back line failed;
  *   with Radix's close ignored, the close key and overlay lines failed.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

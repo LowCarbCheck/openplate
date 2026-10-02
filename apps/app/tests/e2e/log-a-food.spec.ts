@@ -11,6 +11,9 @@
  * React state renders a perfect diary and loses it on the next navigation,
  * which is exactly the class of defect this repo has shipped before. Reading
  * the entry back after a full document load is what tells the two apart.
+ *
+ * @area diary-and-add
+ * @smoke
  */
 import { expect, test } from '@playwright/test';
 

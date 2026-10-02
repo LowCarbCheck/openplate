@@ -40,6 +40,8 @@
  *
  * Headless Chrome hides scrollbars, so every claim is a number read from the
  * layout.
+ *
+ * @area admin
  */
 import { expect, test, type Page } from '@playwright/test';
 

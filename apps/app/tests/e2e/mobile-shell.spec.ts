@@ -33,6 +33,9 @@
  * both halves of SET-14 are still asserted, the panel draws a used radius
  * that is not an accident and the two rows still agree with each other, but
  * the number both now read is `SQUARE_CORNER_PX`, zero.
+ *
+ * @area shell
+ * @smoke
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

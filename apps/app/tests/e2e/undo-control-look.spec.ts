@@ -29,6 +29,8 @@
  * queries and draws its words, no icon, and keeps its close control with its
  * X icon; the fit reading is shown a button made to draw words it cannot hold
  * and must call it cut off.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

@@ -39,6 +39,8 @@
  * diary entry sits in that meal group, so the assertion is about the slot the
  * screen actually used rather than about a slot recomputed here at a different
  * instant.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

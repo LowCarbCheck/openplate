@@ -38,6 +38,8 @@
  * The copy here is wordsmith-owned and gets rephrased. Every string comes out
  * of the shipped bundle through `copy.ts`, so a better sentence changes this
  * spec's expectations with it and only a missing or wrong RENDER goes red.
+ *
+ * @area diary-and-add
  */
 import { expect, test } from '@playwright/test';
 

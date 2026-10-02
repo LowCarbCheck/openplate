@@ -58,6 +58,8 @@
  *
  * Headless Chrome hides scrollbars and a fontless one reads every text as
  * hidden, so every assertion here is a number read from the layout.
+ *
+ * @area admin
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

@@ -8,6 +8,9 @@
  * happily, and the person sees a page where nothing responds. `pageerror` is
  * the read that sees it, so it is collected for the whole walk and asserted at
  * the end rather than per step.
+ *
+ * @area onboarding
+ * @smoke
  */
 import { expect, test } from '@playwright/test';
 

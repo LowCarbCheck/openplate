@@ -20,6 +20,8 @@
  * split, Meals' per-slot averages and share bars), plus both daily goals set
  * through the real settings form (Goals' stat cards), the same IndexedDB
  * layout `insights-range.spec.ts` and its siblings already write.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

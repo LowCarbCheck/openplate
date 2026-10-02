@@ -26,6 +26,8 @@
  *    the paint claim on the real hero.
  * 3. A `shadow-md` probe beside the `shadow-sm` probe, so "the hero rests at shadow-sm" is a
  *    comparison between two different values rather than a string that happens to match.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

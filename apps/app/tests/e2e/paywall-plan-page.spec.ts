@@ -26,6 +26,8 @@
  * 2. "Open your diary" (a client navigation) showed the pre-payment free-scans
  *    line in the header, with its "See plans", until a reload. The header's
  *    standing must follow the confirmed plan.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

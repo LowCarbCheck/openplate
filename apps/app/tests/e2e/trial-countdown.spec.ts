@@ -17,6 +17,8 @@
  * longest action labels (German, French, Turkish) at 390 x 844 and measure the
  * sentence box, the document and the header, and that the line arrives
  * without moving the page.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

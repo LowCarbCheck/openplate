@@ -74,6 +74,8 @@
  * clipped. Neither claim can be satisfied by a reader that simply reads the field.
  *
  * NO SERVICE WORKER IS BLOCKED here: the sweep walks the app the way a person meets it.
+ *
+ * @area brand-and-lineage
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

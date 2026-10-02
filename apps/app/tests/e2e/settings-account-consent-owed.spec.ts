@@ -20,6 +20,8 @@
  * holds the consent. The control proves the reading this file relies on can
  * see the token when it is on screen, so its absence below is a finding and
  * not a blind spot.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

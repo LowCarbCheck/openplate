@@ -31,6 +31,8 @@
  * WHAT IS REAL: the production build and the tier's fake core server, which
  * mints real invitations through its `__e2e__` seam, so every account here is
  * new and the shared fixture account is untouched.
+ *
+ * @area accounts-and-sign-in
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

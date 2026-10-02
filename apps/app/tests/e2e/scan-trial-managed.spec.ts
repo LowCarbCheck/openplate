@@ -17,6 +17,8 @@
  * THE ACCOUNT STUB NEVER MOVES ITS COUNT. It says 3 on every read. So a header
  * that says 2 after a scan can only have read the response header, and the
  * spec counts account reads to show no refetch happened.
+ *
+ * @area scan
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

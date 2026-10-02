@@ -13,6 +13,8 @@
  * itself is replaced by the sparse notice, so a chart with only one logged
  * day would already show no bars on the Meals tab, and the "gone after
  * switching to Goals" assertion would prove nothing.
+ *
+ * @area insights
  */
 import { expect, test } from '@playwright/test';
 

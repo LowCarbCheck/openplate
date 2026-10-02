@@ -36,6 +36,8 @@
  *    Mono: 0.0002, 0.026 and 0.017. The same width is not enough; the line metrics matter too.
  *  - a preload without `crossOrigin`: the file was fetched twice.
  * With the fix, all three read 0, on Liberation Mono and on the proportional stand-in alike.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

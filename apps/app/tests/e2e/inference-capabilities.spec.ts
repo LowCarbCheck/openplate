@@ -38,6 +38,8 @@
  *
  * No sentence is pinned: every string is read from the shipped catalog at test
  * time, so a rephrase passes and a missing key fails here.
+ *
+ * @area scan
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

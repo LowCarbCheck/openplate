@@ -32,6 +32,8 @@
  * The reader is pointed at the OLD ribbon, rebuilt in place from the markup it had (one `truncate`d
  * line, a 28 px key), and must report that the version is clipped and the key too small. A reader
  * that said "fine" to that would say "fine" to everything.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

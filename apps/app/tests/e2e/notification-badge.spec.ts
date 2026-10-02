@@ -33,6 +33,8 @@
  * push on this device is one long sentence that a longer language can push
  * off the phone. The last spec walks every language and measures that
  * sentence's box against the viewport and its own `clientWidth`.
+ *
+ * @area settings
  */
 import { expect, test } from '@playwright/test';
 

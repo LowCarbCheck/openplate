@@ -33,6 +33,8 @@
  * THE AI IS FAKED where a test needs one, exactly as `scan-review.spec.ts`
  * does and for its reasons: a self-hosted endpoint on this app's own origin,
  * connected through the real settings form and answered by `page.route`.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 

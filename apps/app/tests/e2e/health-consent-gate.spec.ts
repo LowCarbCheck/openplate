@@ -16,6 +16,8 @@
  * EVERY PROMPT HAS AN OPEN TWIN that differs in one stubbed fact only, so a
  * gate that asked everybody fails the twins, and a gate that asked nobody
  * fails the prompts.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

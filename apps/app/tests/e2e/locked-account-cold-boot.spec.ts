@@ -35,6 +35,8 @@
  *   from the diary to the plan page moved the plan page 45 px (a layout-shift
  *   score of 0.049 on each of the three paths). With the splash held until
  *   the plan page, nothing moves.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

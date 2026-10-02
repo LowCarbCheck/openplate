@@ -27,6 +27,9 @@
  * key the routed config answered with. A client that subscribed with the wrong
  * key would register an endpoint that silently receives nothing, which is
  * precisely the failure `isSubscriptionForKey` exists to prevent.
+ *
+ * @area settings
+ * @smoke
  */
 import { expect, test, type Page } from '@playwright/test';
 
