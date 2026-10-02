@@ -67,7 +67,7 @@ type Language = (typeof LANGUAGES)[number];
 /**
  * THE PROJECT SITE IN EACH LANGUAGE, written out rather than computed. German owns the
  * unprefixed paths on openplate.de; every other language lives under its prefix, with the
- * trailing slash the static site needs (`apps/website/app/i18n/language.ts`). A spec that
+ * trailing slash the static site needs (`app/i18n/language.ts` in LowCarbCheck/openplate-website). A spec that
  * computed these with the app's own function would agree with any bug in it.
  */
 const SITE_BY_LANGUAGE = {

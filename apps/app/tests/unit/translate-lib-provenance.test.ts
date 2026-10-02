@@ -2,15 +2,18 @@
  * The vendored translator, against the provenance the sync left behind, M229 spec 02.
  *
  * `scripts/lib/translate.ts`, `translate-ui.ts`, `translate-language.ts` and `merge-memory.ts` are
- * copies of `apps/website`'s, written by `pnpm sync:translate-lib` and by nothing else. The
+ * copies of the ones in `LowCarbCheck/openplate-website`, written by `pnpm sync:translate-lib` and
+ * by nothing else. The
  * spec's worry is that a copy edited in place becomes a second client in substance, one convenient
  * fix at a time, and no diff ever says so. This is the check that says so: it re-hashes every vendored
  * file against `scripts/lib/TRANSLATE_SOURCE.json` and fails when a byte differs. Fix the library
  * in the website, then sync.
  *
  * It is the same shape as `brand-assets.test.ts`, and for the same reason: the committed
- * provenance is the fact under test, and refreshing it needs a checkout this test must not depend
- * on.
+ * provenance is the fact under test, and refreshing it needs a PRIVATE repository this test must
+ * not depend on. It runs no git command and reads nothing outside this app. The `upstream` hashes
+ * in the provenance are a record of what the sync read, checked here only for their shape: proving
+ * them needs the website repository, and that is what a re-sync at the recorded `commit` is for.
  *
  * ── THE REWRITES ARE ASSERTED, NOT ONLY RECORDED ──
  * A rewrite is the one way a vendored file may differ from its upstream, so the test also proves
@@ -20,7 +23,6 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -35,8 +37,7 @@ const Sha256 = z.string().regex(/^[0-9a-f]{64}$/);
 
 /** `TRANSLATE_SOURCE.json` as the sync writes it, decoded so a moved shape fails here and not as an empty loop. */
 const ProvenanceSchema = z.object({
-  repo: z.literal('LowCarbCheck/openplate'),
-  path: z.literal('apps/website'),
+  repo: z.literal('LowCarbCheck/openplate-website'),
   commit: z.string().regex(/^[0-9a-f]{40}$/),
   producedBy: z.literal('openplate, scripts/sync-translate-lib.ts'),
   rewrites: z.array(z.object({ from: z.string().min(1), to: z.string().min(1) })).min(1),
@@ -56,6 +57,29 @@ function importsOf(text: string): string[] {
     .split('\n')
     .map((line) => /^(?:\s*(?:import\b[^']*|\}|export\s*\{[^}]*\}))\s+from\s+'([^']+)';?$/.exec(line)?.[1])
     .filter((specifier) => specifier !== undefined);
+}
+
+type Files = typeof provenance.files;
+
+/** The working-tree bytes of a vendored file, or `null` when the file is not there. */
+function readFromTree(path: string): string | null {
+  const file = resolve(ROOT, path);
+  return existsSync(file) ? readFileSync(file, 'utf8') : null;
+}
+
+/**
+ * What is wrong with the vendored files, one sentence each, empty when every file is present and
+ * hashes to the `vendored` value the sync recorded. `read` is a parameter so the controls below can
+ * feed this same function a damaged copy and watch it fail.
+ */
+function driftOf(options: { files: Files; read: (path: string) => string | null }): string[] {
+  return Object.entries(options.files).flatMap(([path, expected]) => {
+    const text = options.read(path);
+    if (text === null) return [`${path} is listed in TRANSLATE_SOURCE.json and is missing`];
+    const actual = sha256Of(text);
+    if (actual === expected.vendored) return [];
+    return [`${path} hashes to ${actual}, TRANSLATE_SOURCE.json records ${expected.vendored}`];
+  });
 }
 
 describe('TRANSLATE_SOURCE.json', () => {
@@ -82,18 +106,17 @@ describe('TRANSLATE_SOURCE.json', () => {
 
 describe('the vendored translator', () => {
   for (const [path, expected] of Object.entries(provenance.files)) {
-    const text = readFileSync(resolve(ROOT, path), 'utf8');
-
-    it(`${path} still hashes to what the sync wrote`, () => {
-      assert.equal(
-        sha256Of(text),
-        expected.vendored,
-        `${path} is not the file TRANSLATE_SOURCE.json records. The translator is not edited here: fix it in ` +
-          `apps/website (${expected.from}), then run \`pnpm sync:translate-lib\`.`,
+    it(`${path} is there and still hashes to what the sync wrote`, () => {
+      assert.deepEqual(
+        driftOf({ files: { [path]: expected }, read: readFromTree }),
+        [],
+        `The translator is not edited here: fix it in LowCarbCheck/openplate-website (${expected.from}), ` +
+          'then run `pnpm sync:translate-lib`.',
       );
     });
 
     it(`${path} differs from its upstream only where the rewrite table says`, () => {
+      const text = readFromTree(path) ?? '';
       const rewritten = provenance.rewrites.some((rewrite) => text.includes(`'${rewrite.to}'`));
       if (expected.upstream === expected.vendored) {
         assert.equal(rewritten, false, `${path} is byte-identical to upstream yet carries a rewritten import`);
@@ -103,7 +126,7 @@ describe('the vendored translator', () => {
     });
 
     it(`${path} imports nothing the provenance cannot account for`, () => {
-      const unexplained = unexplainedImports(path, text);
+      const unexplained = unexplainedImports(path, readFromTree(path) ?? '');
       assert.deepEqual(unexplained, [], `${path} imports from outside the vendored set: ${unexplained.join(', ')}`);
     });
   }
@@ -120,44 +143,25 @@ function unexplainedImports(path: string, text: string): string[] {
   });
 }
 
-/**
- * The bytes the provenance names, read from this repository's own history.
- *
- * SINCE M262 THE UPSTREAM IS IN THE SAME REPOSITORY. `repo`, `path` and `commit` together name a
- * file: `<commit>:apps/website/<from>`. Reading it back and hashing it is what makes the record a
- * fact rather than a claim, and it needs no network. `null` when git cannot produce the file.
- */
-function upstreamAt(options: { commit: string; path: string }): string | null {
-  try {
-    return execFileSync('git', ['show', `${options.commit}:${options.path}`], { cwd: ROOT, encoding: 'utf8' });
-  } catch {
-    return null;
-  }
-}
-
-describe('the upstream the provenance names', () => {
-  for (const [path, expected] of Object.entries(provenance.files)) {
-    it(`${path} hashes to its recorded upstream at ${provenance.path}/${expected.from} in the recorded commit`, () => {
-      const upstream = upstreamAt({ commit: provenance.commit, path: `${provenance.path}/${expected.from}` });
-      assert.notEqual(upstream, null, `${provenance.commit} has no ${provenance.path}/${expected.from} in this clone`);
-      assert.equal(sha256Of(upstream ?? ''), expected.upstream);
-    });
-  }
-
-  it('control: the same file at the repository root, the pre-merge layout, is not there', () => {
-    const [, first] = Object.entries(provenance.files)[0] ?? [];
-    assert.ok(first !== undefined, 'the provenance names at least one file');
-    assert.equal(upstreamAt({ commit: provenance.commit, path: first.from }), null);
-  });
-});
-
 describe('the checks themselves', () => {
   const [path, expected] = Object.entries(provenance.files)[0] ?? [];
   assert.ok(path !== undefined && expected !== undefined, 'the provenance names at least one file');
-  const text = readFileSync(resolve(ROOT, path), 'utf8');
+  const text = readFromTree(path) ?? '';
 
-  it('would fail on a one-character hand edit', () => {
-    assert.notEqual(sha256Of(`${text} `), expected.vendored);
+  it('passes on the committed tree, so the controls below are not failing for another reason', () => {
+    assert.deepEqual(driftOf({ files: provenance.files, read: readFromTree }), []);
+  });
+
+  it('fails on a one-byte change in a vendored copy', () => {
+    const flipped = `${text.slice(0, -1)}${text.endsWith('x') ? 'y' : 'x'}`;
+    const drift = driftOf({ files: provenance.files, read: (file) => (file === path ? flipped : readFromTree(file)) });
+    assert.equal(drift.length, 1);
+    assert.ok(drift[0]?.startsWith(`${path} hashes to `), `drift names the file: ${drift[0]}`);
+  });
+
+  it('fails on a listed file that is missing', () => {
+    const drift = driftOf({ files: provenance.files, read: (file) => (file === path ? null : readFromTree(file)) });
+    assert.deepEqual(drift, [`${path} is listed in TRANSLATE_SOURCE.json and is missing`]);
   });
 
   it('would fail on an import the rewrite table does not know', () => {

@@ -73,7 +73,7 @@ make dev APP=app
 
 ### Before you push
 
-The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all three apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages.
+The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all three apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages. Only one full gate runs at a time on a host: a push takes an exclusive `flock` on `/tmp/openplate-gate.lock`. A second push waits up to an hour and says who holds the lock. Without `flock`, the gate runs unguarded and says so.
 
 ```bash
 make check

@@ -176,7 +176,7 @@ run_hook() {
 # The stages each hook must reach, as the stub sees them (arguments only).
 stages_of() {
   case "$1" in
-    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e ;;
+    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e:sharded ;;
     core) printf '%s\n' lint format:check typecheck test:unit test:integration build ;;
     inference) printf '%s\n' lint typecheck check:doc-claims 'test --run' build ;;
   esac
@@ -258,10 +258,15 @@ else
   not_ok "app integration: with no pnpm the hook gave exit $rc: $(printf '%s\n' "$out" | tail -2 | tr '\n' ' ')"
 fi
 
+# The app hook checks Chromium FIRST and runs its browser tier through the
+# sharded runner. So the row also requires that no earlier stage ran: lint, the
+# build and the unit tests never start on a host with no browser. (The old hook
+# ran lint first, so that part of the row fails against it.)
 dir=$(sandbox app)
 run_hook app "$dir" "$push_line" '' STUB_NO_CHROMIUM=1
+early_stage_ran() { called lint || called test:unit || called build; }
 if [ "$rc" = 1 ] && said 'Chromium will not start here' && said 'pnpm exec playwright install chromium' \
-  && ! called test:e2e; then
+  && ! called test:e2e:sharded && ! early_stage_ran; then
   ok "app browser: missing Chromium is named and the hook exits 1"
 else
   not_ok "app browser: with no Chromium the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"

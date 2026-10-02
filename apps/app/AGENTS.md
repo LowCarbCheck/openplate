@@ -50,6 +50,7 @@ pnpm lint             # eslint --max-warnings 0
 pnpm test:unit        # node --test against tests/unit/**
 pnpm test:integration # node --test against tests/integration/** (real HTTP, fake core server)
 pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in the toolbox), needs `pnpm build` first
+pnpm test:e2e:sharded # The same tier as N Playwright processes at once (scripts/e2e-sharded.sh). The pre-push gate runs this
 ```
 
 The browser tier takes three consecutive ports derived from this checkout's
@@ -58,6 +59,12 @@ so two worktrees on one host can run it at the same time. Every run prints the
 three it took. `OPENPLATE_E2E_PORT_BASE` overrides them for the rare pair of
 checkouts whose paths land on the same triple, and
 `scripts/repro-e2e-port-collision.sh` proves two concurrent runs both pass.
+
+`pnpm test:e2e:sharded` runs the tier as N Playwright processes with
+`--shard=i/N`. N is `OPENPLATE_E2E_SHARDS`, else the smaller of 4 and `nproc / 4`,
+and at least 1. Shard `i` takes the derived base plus `3 * (i - 1)`, its own
+fontconfig cache directory, and its own output folder `test-results/shard-<i>`
+(ADR-0017, amendment of 2026-10-02). `pnpm test:e2e` stays the plain serial run.
 
 ## Key Documentation
 
@@ -102,7 +109,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0014](.adr/0014-fasts-are-a-merged-entity.md) | Fasts are a merged entity, and the merge adjudicates nothing | Accepted   |
 | [0015](.adr/0015-the-pantry-is-a-merged-entity.md) | The pantry is a merged entity, reversing M233/02 | Accepted   |
 | [0016](.adr/0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove | Accepted   |
-| [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted   |
+| [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Amended   |
 | [0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted   |
 | [0019](.adr/0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted   |
 | [0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted   |

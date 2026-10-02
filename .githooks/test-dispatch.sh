@@ -27,11 +27,15 @@ self_test=1
 [ "${1:-}" = "--no-self-test" ] && self_test=0
 
 # A run started from inside a hook must not aim git at the outer repository.
-unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX SKIP_TESTS GIT_DIFF_OVERRIDE
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX SKIP_TESTS GIT_DIFF_OVERRIDE \
+  OPENPLATE_GATE_LOCK OPENPLATE_GATE_LOCK_WAIT_SECONDS
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/test-dispatch.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
 export DISPATCH_TEST_LOG="$scratch/ran.log"
+# Every run below takes THIS lock, never the real /tmp/openplate-gate.lock, so
+# the suite neither waits behind a real gate nor makes one wait.
+export OPENPLATE_GATE_LOCK="$scratch/gate.lock"
 ZERO=0000000000000000000000000000000000000000
 failures=0
 
@@ -63,6 +67,10 @@ app=$(basename "$PWD")
 input=$(cat)
 printf '%s\n' "$input" >"$DISPATCH_TEST_LOG.stdin.$app"
 printf '%s prefix=%s\n' "$app" "$(git rev-parse --show-prefix)" >>"$DISPATCH_TEST_LOG"
+# Whether the dispatcher's lock descriptor reached this hook: writing to fd 9
+# works only while it is open.
+if { : >&9; } 2>/dev/null; then fd9=open; else fd9=closed; fi
+printf '%s\n' "$fd9" >"$DISPATCH_TEST_LOG.fd9.$app"
 if [ "${STUB_FAIL_APP:-}" = "$app" ]; then exit 3; fi
 exit 0
 STUB
@@ -174,6 +182,126 @@ dispatch "refs/heads/main $base_sha refs/heads/main 1111111111111111111111111111
 expect_ran "a remote sha this clone lacks runs all three" "app core inference"
 expect_out "  and says why" "is not in this clone"
 
+
+# ── ONE FULL GATE AT A TIME: the lock ───────────────────────────────────────
+# Another gate is a background process that holds the lock file's flock for a
+# few seconds and has left its note in the file, as a real gate does.
+hold_lock() {
+  local seconds=$1 note=$2
+  printf '%s\n' "$note" >"$OPENPLATE_GATE_LOCK"
+  (
+    exec 8>>"$OPENPLATE_GATE_LOCK"
+    flock 8
+    exec sleep "$seconds"
+  ) &
+  holder_pid=$!
+  local _
+  for _ in $(seq 1 100); do
+    flock -n "$OPENPLATE_GATE_LOCK" true 2>/dev/null || return 0
+    sleep 0.1
+  done
+  not_ok "lock setup: the background holder never took the lock"
+}
+
+release_lock() {
+  kill "$holder_pid" 2>/dev/null || true
+  wait "$holder_pid" 2>/dev/null || true
+}
+
+# Takes the lock freely and leaves its note.
+rm -f "$OPENPLATE_GATE_LOCK"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+expect_ran "a free lock is taken without a word and the gate runs" "core"
+if ! grep -q 'another gate holds' <<<"$out" && grep -q '^branch .* at .*, pid [0-9]*$' "$OPENPLATE_GATE_LOCK"; then
+  ok "  and the lock file names the branch, the path and the pid of the gate that took it"
+else
+  not_ok "free lock: said it was held, or left no note: $(cat "$OPENPLATE_GATE_LOCK" 2>/dev/null)"
+fi
+fd9_states=$(cat "$DISPATCH_TEST_LOG".fd9.* 2>/dev/null | sort -u | tr '\n' ' ')
+if [ "$fd9_states" = "closed " ]; then
+  ok "  and the app hook runs with the lock's file descriptor closed"
+else
+  not_ok "the app hook saw the lock descriptor: '$fd9_states'"
+fi
+
+# A second holder waits, says who holds it, and gets the lock when it is freed.
+hold_lock 3 "branch other-feature at /tmp/other-tree, pid 4242"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+release_lock
+expect_ran "a held lock makes the second gate wait, then run" "core"
+expect_out "  and says another gate holds it, naming the holder" "another gate holds .*gate.lock \(branch other-feature at /tmp/other-tree, pid 4242\)"
+expect_out "  and says how long it waited" "got the gate lock after waiting [1-9][0-9]*s"
+
+# A wait that runs out goes on, unguarded, and says so.
+hold_lock 4 "branch other-feature at /tmp/other-tree, pid 4242"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md' OPENPLATE_GATE_LOCK_WAIT_SECONDS=1
+release_lock
+expect_ran "a lock still held after the wait runs the gate unguarded" "core"
+expect_out "  and says so" "still held after 1s, running this gate without it"
+
+# A push that tests nothing never waits for one that does.
+hold_lock 5 "branch other-feature at /tmp/other-tree, pid 4242"
+started=$SECONDS
+dispatch "refs/heads/gone $ZERO refs/heads/gone $base_sha" GIT_DIFF_OVERRIDE='apps/core/README.md'
+deletion_seconds=$((SECONDS - started))
+expect_ran "a deletion-only push takes no lock and runs none" ""
+if [ "$deletion_seconds" -lt 3 ] && ! grep -q 'another gate holds' <<<"$out"; then
+  ok "  and does not wait for the gate that holds it (${deletion_seconds}s)"
+else
+  not_ok "deletion-only push waited ${deletion_seconds}s: $out"
+fi
+started=$SECONDS
+dispatch "$push_line" SKIP_TESTS=1 GIT_DIFF_OVERRIDE='apps/core/README.md'
+skip_seconds=$((SECONDS - started))
+if [ "$skip_seconds" -lt 3 ] && ! grep -q 'another gate holds' <<<"$out"; then
+  ok "SKIP_TESTS=1 takes no lock and does not wait (${skip_seconds}s)"
+else
+  not_ok "SKIP_TESTS=1 waited ${skip_seconds}s: $out"
+fi
+# THE CONTROL for the two cases above: the same held lock DOES stop a push that
+# tests something, so "did not wait" is a statement about those pushes and not
+# about a lock that nothing can hold.
+started=$SECONDS
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md' OPENPLATE_GATE_LOCK_WAIT_SECONDS=1
+control_seconds=$((SECONDS - started))
+release_lock
+if [ "$control_seconds" -ge 1 ] && grep -q 'another gate holds' <<<"$out"; then
+  ok "  control: the same held lock makes a push that tests something wait (${control_seconds}s)"
+else
+  not_ok "lock control: a content push did not wait for the held lock: $out"
+fi
+
+# A host without flock goes on, with one line. The PATH has the tools the hooks
+# use and nothing else, so `command -v flock` finds nothing.
+bare=$scratch/bare-bin
+mkdir -p "$bare"
+for tool in bash env git cat basename dirname head tail sed awk grep tr sort mktemp rm uname sleep; do
+  tool_path=$(command -v "$tool" 2>/dev/null) || continue
+  case "$tool_path" in /*) ln -sf "$tool_path" "$bare/$tool" ;; esac
+done
+if PATH=$bare command -v flock >/dev/null 2>&1; then
+  not_ok "lock setup: the flock-less PATH still finds flock"
+fi
+hold_lock 4 "branch other-feature at /tmp/other-tree, pid 4242"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md' PATH="$bare"
+release_lock
+expect_ran "without flock the gate runs, even with the lock file held" "core"
+expect_out "  and says the lock is skipped" "flock is not installed, the one-gate-at-a-time lock is skipped"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+if ! grep -q 'flock is not installed' <<<"$out"; then
+  ok "  control: with flock on PATH the same push does not say that"
+else
+  not_ok "flock control: the skip line printed although flock is on PATH"
+fi
+
+# The stdin still reaches the app hook after the lock was taken first.
+dispatch "$two_lines" GIT_DIFF_OVERRIDE='apps/inference/README.md'
+if [ "$(cat "$DISPATCH_TEST_LOG.stdin.inference")" = "$two_lines" ]; then
+  ok "the app hook still gets the stdin lines with the lock in front of it"
+else
+  not_ok "stdin replay after the lock: '$(cat "$DISPATCH_TEST_LOG.stdin.inference" 2>/dev/null)'"
+fi
+
 # ── real pushes: git writes the stdin, git diff computes the range ──────────
 real_push() {
   local dir=$1 ref=$2
@@ -237,4 +365,12 @@ mutate() {
 mutate mapping hooks/pre-push 's#apps/core/\*) touched\[core\]#apps/core/*) touched[inference]#'
 mutate worktree-env hooks/pre-push 's#^  export GIT_DIR GIT_WORK_TREE#  :#'
 mutate flake-root hooks/pre-push 's#^      \*) outside=#      flake.nix|flake.lock) : ;;\n&#'
+# The lock, broken one part at a time. Nothing takes it:
+mutate lock-never-taken hooks/pre-push 's#^  if ! flock -n 9; then#  if false; then#'
+# a second gate that does not wait for the first:
+mutate lock-no-wait hooks/pre-push 's#^    if ! flock -w "\$GATE_LOCK_WAIT_SECONDS" 9; then#    if false; then#'
+# a host without flock that fails instead of going on:
+mutate lock-needs-flock hooks/pre-push 's#^  if ! command -v flock >/dev/null 2>&1; then#  if false; then#'
+# the lock descriptor left open in the app hooks:
+mutate lock-fd-leaks hooks/pre-push 's# 9>&- <<<"\$stdin_lines"# <<<"$stdin_lines"#'
 echo "PASS: the self-test caught every broken copy"
