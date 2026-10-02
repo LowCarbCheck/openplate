@@ -804,22 +804,21 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         knows nothing about it: the figures are fetched client-side after first
         paint, so a slow or unreachable pulse cannot hold this page up, and a
         device with no account never asks.
+
+        What changed in this build, said once (ADR-0018), is the LAST thing on
+        the page, handed to the pulse slot instead of drawn beside it. Both are
+        drawn late, the tile after the session and a request, the card after a
+        role read and a profile read, and the tile usually comes second. With
+        the card placed first, the tile arriving under it pushed it down by the
+        tile's height (209 px on a phone). The slot draws the card only once the
+        tile is in or known to be absent, so nothing can arrive under it.
+        Keep it the last child: anything put after it brings the shift back,
+        and `tests/e2e/whats-new.spec.ts` fails if so. The gate is unchanged: the
+        card renders nothing on a device that has been told, nothing while it is
+        switched off, and a hidden card runs no effect and stamps nothing.
+        `tests/e2e/dashboard-pulse-then-card.spec.ts` walks every arrival order.
       */}
-      <PulseTileSlot />
-      {/*
-        What changed in this build, said once (ADR-0018), as the LAST thing on
-        the page. It is drawn after an effect (a role read and a profile read),
-        so it always arrives after first paint, and at the top that pushed the
-        hero and everything under it down by the card's height (a 0.2226 layout
-        shift on the diary, the same card). Here nothing sits under it in the
-        page flow, so it displaces nothing, and Dismiss lifts nothing. Keep it
-        the last child: anything put after it brings the shift back, and
-        `tests/e2e/whats-new.spec.ts` fails if so. The pulse tile above it is
-        drawn late too, and pushes the card down if it arrives after the card
-        does. It renders nothing on a device that has been told, and nothing
-        while the card is switched off.
-      */}
-      <WhatsNewCard />
+      <PulseTileSlot after={<WhatsNewCard />} />
     </div>
   );
 }

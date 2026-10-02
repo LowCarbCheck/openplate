@@ -387,6 +387,54 @@ export function pulseReadKey({ enabled, accountId }: { enabled: boolean; account
   return `account:${accountId}`;
 }
 
+/**
+ * How long a surface that waits for the pulse waits at most, in ms.
+ *
+ * The read has no timeout of its own, and a request to a core that does not
+ * answer can hang for as long as the network lets it. A surface that waits so
+ * that nothing moves under it must not wait on that for good, so after this
+ * long it stops waiting. If the figures come after that, they arrive late as
+ * they always did; the wait buys a still page in the normal case, not a promise
+ * about a broken one.
+ */
+export const PULSE_SETTLE_DEADLINE_MS = 3000;
+
+/**
+ * Whether the tile's fate is known: drawn, or certain to stay absent.
+ *
+ * It is what the page's last block, the What's new card, waits for before it
+ * mounts. That block sits UNDER the tile, and a tile that arrives after it
+ * pushes it down by the tile's height. So the block comes after this answers
+ * `true`, and the tile can no longer arrive under it.
+ *
+ * Three ways to be settled, and one way not to be:
+ *  - the session is still reopening: NOT settled. `readKey` is `null` then too,
+ *    and `null` there means "not yet", not "never" (see {@link pulseReadKey}).
+ *  - nothing will be read (signed out, or a caller that did not ask): settled.
+ *  - the first read has finished for THIS key: settled, with or without figures.
+ *  - the wait has run past {@link PULSE_SETTLE_DEADLINE_MS}: settled.
+ *
+ * PURE, so the whole rule is pinned without a browser.
+ *
+ * @param input - the session, the read key, the key whose first read finished, and whether the wait ran out.
+ * @returns true once the tile can no longer change the page's height under a block waiting for it.
+ */
+export function isPulseSettled({
+  isResuming,
+  readKey,
+  settledKey,
+  isOverdue,
+}: {
+  isResuming: boolean;
+  readKey: string | null;
+  settledKey: string | null;
+  isOverdue: boolean;
+}): boolean {
+  if (isResuming) return false;
+  if (readKey === null) return true;
+  return settledKey === readKey || isOverdue;
+}
+
 /** The tab, as the reader needs it. Injected so a node test can drive a tab that comes back. */
 export interface PulseReadHost {
   /** Registers a "this tab just became visible" listener and returns its remover. */
@@ -424,20 +472,30 @@ const BROWSER_READ_HOST: PulseReadHost = {
  */
 export function startPulseRead({
   onValue,
+  onFirstRead,
   host = BROWSER_READ_HOST,
 }: {
   onValue: (value: PulseToday) => void;
+  /**
+   * Called once, when the FIRST read has finished, whatever it found: figures,
+   * a refusal, a failure or a closed door. It is what lets a caller tell "the
+   * tile is absent" from "the tile has not arrived yet". A later read on the
+   * tab coming back never calls it again.
+   */
+  onFirstRead?: () => void;
   host?: PulseReadHost;
 }): () => void {
   let isCancelled = false;
-  const read = (): void => {
+  const read = (onDone?: () => void): void => {
     void (async () => {
       const value = await fetchPulseToday();
-      if (!isCancelled && value !== null) onValue(value);
+      if (isCancelled) return;
+      if (value !== null) onValue(value);
+      onDone?.();
     })();
   };
-  read();
-  const stopListening = host.onVisible(read);
+  read(onFirstRead);
+  const stopListening = host.onVisible(() => read());
   return () => {
     isCancelled = true;
     stopListening();

@@ -25,6 +25,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   PULSE_CACHE_MS,
+  isPulseSettled,
   pulseReadKey,
   resetPulse,
   setPulseDependencies,
@@ -262,6 +263,111 @@ describe('startPulseRead', () => {
   });
 });
 
+/** Dependencies that answer every read with `answer`. */
+function answering(answer: () => Response | Promise<Response>): void {
+  setPulseDependencies({
+    readEnabled: () => true,
+    readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
+    fetchImpl: async () => answer(),
+  });
+}
+
+describe('isPulseSettled', () => {
+  const KEY = 'account:7';
+  const SETTLED = { isResuming: false, readKey: KEY, settledKey: KEY, isOverdue: false };
+
+  it('is settled once the first read for this key has finished', () => {
+    assert.equal(isPulseSettled(SETTLED), true);
+  });
+
+  it('is NOT settled while the first read is in flight', () => {
+    assert.equal(isPulseSettled({ ...SETTLED, settledKey: null }), false);
+  });
+
+  it('is NOT settled while the session is still reopening, even though no key exists yet', () => {
+    // `readKey` is null in that window too, and there it means "not yet". Reading it as "never"
+    // would let the card mount before the tile's request has even been made.
+    assert.equal(isPulseSettled({ isResuming: true, readKey: null, settledKey: null, isOverdue: false }), false);
+  });
+
+  it('is settled when nothing will be read at all', () => {
+    assert.equal(isPulseSettled({ isResuming: false, readKey: null, settledKey: null, isOverdue: false }), true);
+  });
+
+  it('does not take a finished read of ANOTHER account for this one', () => {
+    assert.equal(isPulseSettled({ ...SETTLED, settledKey: 'account:8' }), false);
+  });
+
+  it('stops waiting once the wait has run out', () => {
+    assert.equal(isPulseSettled({ ...SETTLED, settledKey: null, isOverdue: true }), true);
+  });
+});
+
+describe('startPulseRead and its first read', () => {
+  it('reports the first read after the figures, so the tile is in before anything waits on it', async () => {
+    answering(() => new Response(JSON.stringify(TODAY), { status: 200 }));
+    const order: string[] = [];
+    const stop = startPulseRead({
+      onValue: () => order.push('figures'),
+      onFirstRead: () => order.push('first read'),
+      host: tab().host,
+    });
+    await settle();
+    stop();
+    assert.deepEqual(order, ['figures', 'first read']);
+  });
+
+  it('reports the first read when it FAILED, which is what makes "absent" known', async () => {
+    answering(() => new Response('nope', { status: 503 }));
+    const order: string[] = [];
+    const stop = startPulseRead({
+      onValue: () => order.push('figures'),
+      onFirstRead: () => order.push('first read'),
+      host: tab().host,
+    });
+    await settle();
+    stop();
+    assert.deepEqual(order, ['first read']);
+  });
+
+  it('reports the first read when the door is closed and no request is made', async () => {
+    setPulseDependencies({ readEnabled: () => false });
+    let isDone = false;
+    const stop = startPulseRead({ onValue: () => undefined, onFirstRead: () => (isDone = true), host: tab().host });
+    await settle();
+    stop();
+    assert.equal(isDone, true);
+  });
+
+  it('reports the first read once, not again when the tab comes back', async () => {
+    const time = clock(1_000_000);
+    const page = tab();
+    setPulseDependencies({
+      nowMs: time.nowMs,
+      readEnabled: () => true,
+      readAccount: () => ({ serverUrl: 'https://sync.example', accessToken: 'token' }),
+      fetchImpl: async () => new Response(JSON.stringify(TODAY), { status: 200 }),
+    });
+    let firstReads = 0;
+    const stop = startPulseRead({ onValue: () => undefined, onFirstRead: () => (firstReads += 1), host: page.host });
+    await settle();
+    time.advance(PULSE_CACHE_MS);
+    page.becomeVisible();
+    await settle();
+    stop();
+    assert.equal(firstReads, 1);
+  });
+
+  it('says nothing for a read that was stopped before it finished', async () => {
+    answering(() => new Response(JSON.stringify(TODAY), { status: 200 }));
+    let isDone = false;
+    const stop = startPulseRead({ onValue: () => undefined, onFirstRead: () => (isDone = true), host: tab().host });
+    stop();
+    await settle();
+    assert.equal(isDone, false);
+  });
+});
+
 describe('the hook that mounts on both surfaces', () => {
   const source = readFileSync(new URL('../../app/hooks/use-pulse-today.ts', import.meta.url), 'utf8');
 
@@ -273,5 +379,12 @@ describe('the hook that mounts on both surfaces', () => {
 
   it('reads the account from the sync session snapshot', () => {
     assert.match(source, /useSyncSession\(\)/);
+  });
+
+  it('settles on the session AND the read, and gives up waiting after a deadline', () => {
+    assert.match(source, /isPulseSettled\(/, 'the hook must ask the pure rule');
+    assert.match(source, /isResuming: session\.isResuming/, 'an unsettled session is not an absent tile');
+    assert.match(source, /onFirstRead:/, 'the first read, whatever it found, is what settles');
+    assert.match(source, /PULSE_SETTLE_DEADLINE_MS/, 'a hung request must not hold a waiting surface for good');
   });
 });

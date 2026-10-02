@@ -16,9 +16,10 @@
  * came from, so the floor can be rendered against a fixture. {@link PulseTileSlot}
  * is the one line the dashboard mounts.
  */
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePulseToday } from '#app/hooks/use-pulse-today';
+import { usePulseRead } from '#app/hooks/use-pulse-today';
 import { Card, CardContent, CardHeader, CardTitle } from '#app/components/ui/card';
 import { formatMeasureIn } from '#app/lib/format-macro-number';
 import { showPulseTile, type PulseToday } from '#app/lib/pulse';
@@ -55,8 +56,27 @@ function Figure({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** The dashboard's one line. Fetches after first paint and renders nothing until there is something to render. */
-export function PulseTileSlot() {
-  const today = usePulseToday();
-  return <PulseTile today={today} />;
+/**
+ * The dashboard's one line. Fetches after first paint and renders nothing until there is something to render.
+ *
+ * `after` is drawn UNDER the tile, and only once the tile's fate is known (its
+ * figures are in, or it will not come). It exists for the page's last block, the
+ * What's new card, which is drawn late too: placed first, it was pushed down by
+ * the tile whenever the tile came second, and over a real instance it does come
+ * second, because the read waits for the session and then for the core. Waiting
+ * costs the card the time the read takes, usually well under a second, and gives
+ * it a place that never changes. A pulse that does not answer holds it back for
+ * `PULSE_SETTLE_DEADLINE_MS` (`#app/lib/pulse`) at most.
+ *
+ * It is one slot rather than a flag the page reads, so the page is not
+ * re-rendered when the figures arrive, and so the two cannot be separated again.
+ */
+export function PulseTileSlot({ after }: { after?: ReactNode }) {
+  const { today, isSettled } = usePulseRead();
+  return (
+    <>
+      <PulseTile today={today} />
+      {isSettled && after}
+    </>
+  );
 }

@@ -37,6 +37,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 - **An erase now leaves no empty photo database behind.** An erase in one tab could leave an empty photo database behind, because the store's background poll reopened it after the delete. The erase now stops every store first. A second tab that leaves because another tab signed out stops its stores before it navigates, for the same reason.
 - **The way-to-log cards on desktop onboarding hold their text.** On the last onboarding step, the three cards "Photograph it", "Write it" and "Say it" were 36 px tall from a 768 px wide window up, so the title and the description of one card ran over the next. They now grow to fit their text. The three wrapping calls to action on the open landing page had the same cap and now grow with a label that wraps.
 - **The desktop sidebar no longer jumps when an administrator's role loads.** The Administration row moved from the foot of the sidebar to just under the main list, into space that was already empty, so the Plan and Settings rows stay where they were when the row appears.
+- **The What's new card no longer jumps when the pulse tile loads.** On the Overview of an instance that shares a community pulse, the tile arrived after the card and pushed it down. The card now waits until the tile is in or known to be absent, for three seconds at most, and then stays where it is.
 
 ## [0.62.0] - 2026-10-02
 
