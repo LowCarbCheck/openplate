@@ -27,9 +27,19 @@
  *
  * After the tick, the same dialog shows a `data-erase-line`. Without it a
  * dialog that never showed an erase line at all would pass the absence checks.
+ *
+ * ── The note on /settings/account (the sign-out copy, 2026-10-02) ─────────
+ *
+ * The note under the sign-out button said "Your diary stays on this one", which
+ * is wrong on a managed instance: the diary stays on the device but is locked
+ * and hidden until the next sign-in. The note now carries `data-diary`, and the
+ * managed tier must say `account`. The open tier's twin is in
+ * `sign-out-unsent.spec.ts`, which must say `device` for the same element, so a
+ * note that carried `account` everywhere would fail there.
  */
 import { expect, test, type Page } from '@playwright/test';
 
+import { E2E_ACCOUNT_EMAIL } from './env';
 import { routeManagedCore, signInManaged, type ManagedCoreStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { NO_SUBSCRIPTION_VIEW } from './plans-stub';
@@ -105,4 +115,18 @@ test('a plain managed sign-out names no erase cost until the erase box is ticked
   await checkbox.uncheck();
   await expect(dialog.locator('[data-erase-line]')).toHaveCount(0);
   await expect(dialog.locator('[data-slot="erase-region"]')).toHaveCount(0);
+});
+
+test('the sign-out note on the account page says the diary stays in the account', async ({ page }) => {
+  test.setTimeout(TEST_BUDGET_MS);
+  await routeManagedCore(page, ACCOUNT_STUB);
+  await signInManaged(page, server.url);
+  await page.goto(`${server.url}/settings/account`);
+  await expect(page.getByText(E2E_ACCOUNT_EMAIL).first()).toBeVisible();
+
+  // ONE note, and it names where the diary stays. The lower page waits for the
+  // handshake, so the auto-wait is what carries this past the first paint.
+  const note = page.locator('p[data-diary]');
+  await expect(note).toHaveCount(1, { timeout: 10_000 });
+  await expect(note).toHaveAttribute('data-diary', 'account');
 });

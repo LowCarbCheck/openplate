@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Se déconnecter et supprimer",
-      "body": "Ces deux actions ferment ce compte sur tous les appareils."
+      "body": "Se déconnecter ferme la session sur cet appareil uniquement. Supprimer le compte la ferme sur tous les appareils."
     },
     "signOut": {
-      "cta": "Se déconnecter partout",
-      "note": "Déconnecte ce compte de tous les appareils. Ton journal reste sur celui-ci."
+      "cta": "Se déconnecter",
+      "note": "Déconnecte cet appareil de ton compte. Ton journal reste sur cet appareil.",
+      "noteManaged": "Déconnecte cet appareil de ton compte. Ton journal reste dans ton compte, et cet appareil l'affiche à nouveau dès que tu te reconnectes."
     },
     "delete": {
       "cta": "Supprimer le compte",

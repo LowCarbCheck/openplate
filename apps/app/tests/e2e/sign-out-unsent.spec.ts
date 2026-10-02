@@ -131,3 +131,16 @@ test('a change the push did not carry is named once the erase box is ticked, and
   }).toPass({ timeout: SETTLE_TIMEOUT_MS });
   await expect(noticeLine(page, 'unsent-changes')).toHaveCount(0);
 });
+
+test('the sign-out note on the account page says the diary stays on this device', async ({ page }) => {
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+  await openAccountSettings(page);
+
+  // THE OPEN TIER'S CONTROL for the managed spec's `account`: the same element,
+  // and here it must name the device. A note that said `account` on every
+  // instance would pass the managed check and fail this one.
+  const note = page.locator('p[data-diary]');
+  await expect(note).toHaveCount(1, { timeout: 10_000 });
+  await expect(note).toHaveAttribute('data-diary', 'device');
+});

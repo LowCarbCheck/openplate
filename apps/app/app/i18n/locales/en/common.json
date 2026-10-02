@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Sign out and delete",
-      "body": "Both of these end this account on every device."
+      "body": "Signing out ends the session on this device only. Deleting the account ends it on every device."
     },
     "signOut": {
-      "cta": "Sign out everywhere",
-      "note": "Signs this account out on every device. Your diary stays on this one."
+      "cta": "Sign out",
+      "note": "Signs this device out of your account. Your diary stays on this device.",
+      "noteManaged": "Signs this device out of your account. Your diary stays in your account, and this device shows it again after you sign in."
     },
     "delete": {
       "cta": "Delete account",

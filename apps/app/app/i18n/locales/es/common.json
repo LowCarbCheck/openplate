@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Cerrar sesión y eliminar",
-      "body": "Ambas opciones cierran esta cuenta en todos los dispositivos."
+      "body": "Cerrar sesión finaliza la sesión solo en este dispositivo. Eliminar la cuenta la finaliza en todos los dispositivos."
     },
     "signOut": {
-      "cta": "Cerrar sesión en todas partes",
-      "note": "Cierra la sesión de esta cuenta en todos los dispositivos. Tu diario se mantiene en este."
+      "cta": "Cerrar sesión",
+      "note": "Cierra la sesión de tu cuenta en este dispositivo. Tu diario se mantiene en este dispositivo.",
+      "noteManaged": "Cierra la sesión de tu cuenta en este dispositivo. Tu diario se mantiene en tu cuenta, y este dispositivo lo vuelve a mostrar cuando inicias sesión."
     },
     "delete": {
       "cta": "Eliminar cuenta",

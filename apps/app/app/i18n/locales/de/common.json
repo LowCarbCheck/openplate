@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Abmelden und löschen",
-      "body": "Beides beendet dieses Konto auf allen Geräten."
+      "body": "Das Abmelden beendet die Sitzung nur auf diesem Gerät. Das Löschen des Kontos beendet sie auf jedem Gerät."
     },
     "signOut": {
-      "cta": "Überall abmelden",
-      "note": "Meldet dieses Konto auf allen Geräten ab. Dein Tagebuch bleibt auf diesem Gerät erhalten."
+      "cta": "Abmelden",
+      "note": "Meldet dieses Gerät von deinem Konto ab. Dein Tagebuch bleibt auf diesem Gerät erhalten.",
+      "noteManaged": "Meldet dieses Gerät von deinem Konto ab. Dein Tagebuch bleibt in deinem Konto erhalten, und dieses Gerät zeigt es wieder an, sobald du dich anmeldest."
     },
     "delete": {
       "cta": "Konto löschen",

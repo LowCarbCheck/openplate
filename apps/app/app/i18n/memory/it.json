@@ -2295,6 +2295,13 @@
     "at": "2026-09-14",
     "it": "Impossibile leggere quella foto ({{reason}}). Riprova con più luce, da più vicino e senza muoverti."
   },
+  "1a3625ddcc6775f3": {
+    "en": "Signs this device out of your account. Your diary stays on this device.",
+    "path": "common:account.signOut.note",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "it": "Disconnette questo dispositivo dal tuo account. Il tuo diario rimane su questo dispositivo."
+  },
   "1a37b0134ef2e78b": {
     "en": "Continue",
     "path": "common:confirm.continue",
@@ -6893,6 +6900,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "it": "Ricette"
+  },
+  "55ccee399b24b3f8": {
+    "en": "Signing out ends the session on this device only. Deleting the account ends it on every device.",
+    "path": "common:account.danger.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "it": "La disconnessione termina la sessione solo su questo dispositivo. L'eliminazione dell'account la termina su tutti i dispositivi."
   },
   "55d530af7b00a411": {
     "en": "Log lunch on your phone, then look at the week on your laptop. Sync is optional. Your device encrypts your diary before sending it to an openplate-core server, whether you use ours or host your own. Your password stays on your device. The server also holds a sealed recovery key. This allows password resets, and it means the server operator can open your diary.",
@@ -15329,6 +15343,13 @@
     "at": "2026-09-30",
     "it": "Qualsiasi etichetta assegnata al tuo account da un amministratore, come Sostenitore beta."
   },
+  "b6f27d6a5b78134b": {
+    "en": "Signs this device out of your account. Your diary stays in your account, and this device shows it again after you sign in.",
+    "path": "common:account.signOut.noteManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "it": "Disconnette questo dispositivo dal tuo account. Il tuo diario rimane nel tuo account e questo dispositivo lo mostrerà di nuovo dopo l'accesso."
+  },
   "b705b3f7c5bf5973": {
     "en": "Let a dietician or doctor read your diary. It stays encrypted the whole way: they get a copy of your key sealed to theirs, and the server still cannot read a thing.",
     "path": "common:sharing.intro",
@@ -18653,6 +18674,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "it": "Ricevono un link, via email se questa istanza invia email, oppure da te se non lo fa. Chiede una password e porta direttamente nell'app."
+  },
+  "e0756f410dbf3b72": {
+    "en": "Sign out",
+    "path": "common:account.signOut.cta",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "it": "Disconnettiti"
   },
   "e088e81413f1b76f": {
     "en": "Only set this if you're working toward a specific number.",

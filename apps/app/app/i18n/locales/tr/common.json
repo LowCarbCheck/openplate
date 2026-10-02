@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Oturumu kapat ve sil",
-      "body": "Bunların ikisi de bu hesabı her cihazda sonlandırır."
+      "body": "Oturumu kapatmak yalnızca bu cihazdaki oturumu sonlandırır. Hesabı silmek ise her cihazda sonlandırır."
     },
     "signOut": {
-      "cta": "Tüm cihazlarda oturumu kapat",
-      "note": "Bu hesabın oturumunu her cihazda kapatır. Günlüğün bu cihazda kalır."
+      "cta": "Çıkış yap",
+      "note": "Bu cihazın hesabınla olan oturumunu kapatır. Günlüğün bu cihazda kalır.",
+      "noteManaged": "Bu cihazın hesabınla olan oturumunu kapatır. Günlüğün hesabında kalır ve tekrar giriş yaptığında bu cihaz günlüğü yeniden gösterir."
     },
     "delete": {
       "cta": "Hesabı sil",

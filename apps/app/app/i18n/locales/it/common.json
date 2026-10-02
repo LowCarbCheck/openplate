@@ -3249,11 +3249,12 @@
     },
     "danger": {
       "title": "Disconnetti ed elimina",
-      "body": "Entrambe le opzioni chiudono questo account su ogni dispositivo."
+      "body": "La disconnessione termina la sessione solo su questo dispositivo. L'eliminazione dell'account la termina su tutti i dispositivi."
     },
     "signOut": {
-      "cta": "Disconnetti ovunque",
-      "note": "Disconnette questo account su ogni dispositivo. Il tuo diario resta su questo."
+      "cta": "Disconnettiti",
+      "note": "Disconnette questo dispositivo dal tuo account. Il tuo diario rimane su questo dispositivo.",
+      "noteManaged": "Disconnette questo dispositivo dal tuo account. Il tuo diario rimane nel tuo account e questo dispositivo lo mostrerà di nuovo dopo l'accesso."
     },
     "delete": {
       "cta": "Elimina account",

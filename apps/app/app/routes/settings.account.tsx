@@ -714,6 +714,7 @@ function ChangePasswordCard() {
  */
 function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
   const { t } = useTranslation();
+  const { signOutClosesTheDiary } = useInstancePolicy();
   const [passphrase, setPassphrase] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -743,12 +744,22 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
           look here must not find the control gone. What changed is that both
           open the SAME dialog, so the erase choice and the confirmation
           cannot mean one thing in the chrome and another on this page.
-          Signing out still revokes the token family server-side, which is
-          what ends a session left open on a lost phone. */}
+          Signing out still revokes this device's token family server-side,
+          which is what ends a session left open on a lost phone. It is THIS
+          device's session only: other devices keep theirs, and only deleting
+          the account ends them all, which is what the section's sentence and
+          the button's label say.
+          THE NOTE UNDER IT IS CHOSEN BY THE POLICY QUESTION, not by the mode:
+          where signing out closes the diary the diary is locked and hidden
+          until the next sign-in, so "stays on this device" would read as
+          visible. `data-diary` names which of the two sentences is on screen,
+          so a browser check can tell them apart without pinning wording. */}
       <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => openSignOutDialog()}>
         <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
       </Button>
-      <p className="text-xs text-muted-foreground">{t('account.signOut.note')}</p>
+      <p className="text-xs text-muted-foreground" data-diary={signOutClosesTheDiary ? 'account' : 'device'}>
+        {signOutClosesTheDiary ? t('account.signOut.noteManaged') : t('account.signOut.note')}
+      </p>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
