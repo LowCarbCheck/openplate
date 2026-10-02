@@ -7,7 +7,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 brand="${1:-$root/../openplate-brand}"
-src="$brand/social/XHeaderEn.png"
+src="$brand/social/ShareCardEn.png"
 dest="$root/.github/brand/readme-banner.png"
 
 [ -f "$src" ] || { echo "missing $src, pass the openplate-brand path as the first argument" >&2; exit 1; }
@@ -15,5 +15,5 @@ dest="$root/.github/brand/readme-banner.png"
 cp "$src" "$dest"
 sha="$(sha256sum "$dest" | cut -d' ' -f1)"
 commit="$(git -C "$brand" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-printf '{\n  "file": "readme-banner.png",\n  "from": "openplate-brand/social/XHeaderEn.png",\n  "brandCommit": "%s",\n  "sha256": "%s"\n}\n' "$commit" "$sha" > "$root/.github/brand/SOURCE.json"
+printf '{\n  "file": "readme-banner.png",\n  "from": "openplate-brand/social/ShareCardEn.png",\n  "brandCommit": "%s",\n  "sha256": "%s"\n}\n' "$commit" "$sha" > "$root/.github/brand/SOURCE.json"
 echo "synced $dest ($sha)"
