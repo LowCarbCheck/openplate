@@ -28,7 +28,8 @@ self_test=1
 
 # A run started from inside a hook must not aim git at the outer repository.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX SKIP_TESTS GIT_DIFF_OVERRIDE \
-  OPENPLATE_GATE_LOCK OPENPLATE_GATE_LOCK_WAIT_SECONDS
+  OPENPLATE_GATE_LOCK OPENPLATE_GATE_LOCK_WAIT_SECONDS OPENPLATE_PUSH_TAG OPENPLATE_PUSH_RANGE \
+  OPENPLATE_NIGHTLY_STATUS
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/test-dispatch.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
@@ -36,6 +37,8 @@ export DISPATCH_TEST_LOG="$scratch/ran.log"
 # Every run below takes THIS lock, never the real /tmp/openplate-gate.lock, so
 # the suite neither waits behind a real gate nor makes one wait.
 export OPENPLATE_GATE_LOCK="$scratch/gate.lock"
+# The nightly status line is read from here, never from the real state dir.
+export OPENPLATE_NIGHTLY_STATUS="$scratch/nightly-latest.txt"
 ZERO=0000000000000000000000000000000000000000
 failures=0
 
@@ -67,6 +70,8 @@ app=$(basename "$PWD")
 input=$(cat)
 printf '%s\n' "$input" >"$DISPATCH_TEST_LOG.stdin.$app"
 printf '%s prefix=%s\n' "$app" "$(git rev-parse --show-prefix)" >>"$DISPATCH_TEST_LOG"
+# The browser tier variables the dispatcher exports, "unset" when it did not.
+printf 'tag=%s range=%s\n' "${OPENPLATE_PUSH_TAG-unset}" "${OPENPLATE_PUSH_RANGE-unset}" >"$DISPATCH_TEST_LOG.env.$app"
 # Whether the dispatcher's lock descriptor reached this hook: writing to fd 9
 # works only while it is open.
 if { : >&9; } 2>/dev/null; then fd9=open; else fd9=closed; fi
@@ -181,6 +186,82 @@ fi
 dispatch "refs/heads/main $base_sha refs/heads/main 1111111111111111111111111111111111111111"
 expect_ran "a remote sha this clone lacks runs all three" "app core inference"
 expect_out "  and says why" "is not in this clone"
+
+
+# ── the browser tier variables and the nightly line ─────────────────────────
+head_sha=$base_sha
+env_of() { cat "$DISPATCH_TEST_LOG.env.${1:-app}" 2>/dev/null || echo "no env file"; }
+expect_env() {
+  local name=$1 want=$2 got
+  got=$(env_of "${3:-app}")
+  if [ "$got" = "$want" ]; then
+    ok "$name ($got)"
+  else
+    not_ok "$name: want '$want', got '$got'"
+  fi
+}
+
+# A new branch: the range runs from the merge-base with origin/main.
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "a one-ref new-branch push exports the merge-base range" "tag=unset range=$base_sha..$head_sha"
+
+# An update: the range runs from the remote sha. Control for the case above:
+# a different base gives a different range, so the value is read from the line.
+parent_sha=$(git -C "$repo" commit-tree "HEAD^{tree}" -m "an older remote tip")
+dispatch "refs/heads/main $head_sha refs/heads/main $parent_sha" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "a one-ref update push exports remote..local" "tag=unset range=$parent_sha..$head_sha"
+
+# Two content refs: no single range describes the push.
+dispatch "$push_line"$'\n'"refs/heads/other $head_sha refs/heads/other $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "a two-ref push exports no range" "tag=unset range=unset"
+# Control: a deletion beside ONE content ref is still a one-ref push.
+dispatch "$push_line"$'\n'"refs/heads/gone $ZERO refs/heads/gone $base_sha" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "  control: a deletion beside one content ref still exports the range" "tag=unset range=$base_sha..$head_sha"
+
+# A remote sha this clone lacks: the base cannot be computed.
+dispatch "refs/heads/main $head_sha refs/heads/main 1111111111111111111111111111111111111111" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "an unknown remote sha exports no range" "tag=unset range=unset"
+
+# A caller's own value never steers the hook.
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/app/README.md' OPENPLATE_PUSH_TAG=1 OPENPLATE_PUSH_RANGE=x..y
+expect_env "a range and a tag set in the caller's shell are replaced, not passed on" "tag=unset range=$base_sha..$head_sha"
+
+for tag_ref in refs/tags/v1.2.3 refs/tags/core-v0.1.0 refs/tags/inference-v0.2.0; do
+  dispatch "$tag_ref $head_sha $tag_ref $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+  expect_env "a push of $tag_ref exports OPENPLATE_PUSH_TAG=1" "tag=1 range=$base_sha..$head_sha"
+done
+# Controls: a branch whose name looks like a tag, and a tag that is no release.
+dispatch "refs/heads/v1 $head_sha refs/heads/v1 $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "  control: a branch named v1 is no release tag" "tag=unset range=$base_sha..$head_sha"
+dispatch "refs/tags/backup-1 $head_sha refs/tags/backup-1 $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "  control: a tag that is not v*, core-v* or inference-v* is no release tag" "tag=unset range=$base_sha..$head_sha"
+dispatch "$push_line"$'\n'"refs/tags/v9 $head_sha refs/tags/v9 $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_env "a tag among two refs sets the tag and still no range" "tag=1 range=unset"
+
+# The nightly status line: printed from the file, or the hint without it. It
+# never blocks the push, even when the line says red.
+rm -f "$OPENPLATE_NIGHTLY_STATUS"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+expect_out "with no nightly file the gate says no run is recorded" "pre-push: nightly browser tier: no run recorded yet \(make nightly\)"
+echo "green 2026-10-02T03:41:10+02:00 abc1234 4 shards, 690 passed" >"$OPENPLATE_NIGHTLY_STATUS"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+expect_out "with a nightly file the gate prints its line" "pre-push: nightly browser tier: green 2026-10-02T03:41:10\+02:00 abc1234 4 shards, 690 passed"
+if ! grep -q 'no run recorded yet' <<<"$out"; then
+  ok "  control: with the file present the hint is not printed"
+else
+  not_ok "nightly control: the hint printed although the file exists"
+fi
+echo "red 2026-10-03T03:40:00+02:00 def5678 2 failed: a.spec.ts" >"$OPENPLATE_NIGHTLY_STATUS"
+dispatch "$push_line" GIT_DIFF_OVERRIDE='apps/core/README.md'
+expect_ran "a red nightly does not block the push" "core"
+expect_out "  and its line is printed" "nightly browser tier: red 2026-10-03T03:40:00\+02:00 def5678 2 failed: a.spec.ts"
+dispatch "refs/heads/gone $ZERO refs/heads/gone $base_sha"
+if ! grep -q 'nightly browser tier' <<<"$out"; then
+  ok "a deletion-only push prints no nightly line"
+else
+  not_ok "deletion-only push printed the nightly line"
+fi
+rm -f "$OPENPLATE_NIGHTLY_STATUS"
 
 
 # ── ONE FULL GATE AT A TIME: the lock ───────────────────────────────────────
@@ -373,4 +454,11 @@ mutate lock-no-wait hooks/pre-push 's#^    if ! flock -w "\$GATE_LOCK_WAIT_SECON
 mutate lock-needs-flock hooks/pre-push 's#^  if ! command -v flock >/dev/null 2>&1; then#  if false; then#'
 # the lock descriptor left open in the app hooks:
 mutate lock-fd-leaks hooks/pre-push 's# 9>&- <<<"\$stdin_lines"# <<<"$stdin_lines"#'
+# The browser tier variables and the nightly line, one break at a time:
+mutate tag-never-exported hooks/pre-push 's#^  export OPENPLATE_PUSH_TAG=1#  :#'
+mutate tag-matches-branches hooks/pre-push 's#refs/tags/v\* | refs/tags/core-v\*#refs/heads/v* | refs/tags/v* | refs/tags/core-v*#'
+mutate range-always hooks/pre-push 's#^if \[ "$content_refs" = "1" \] \&\& \[ -n "$range_base" \]; then#if [ -n "$range_base" ]; then#'
+mutate range-from-merge-base hooks/pre-push 's#^    range_base=$remote_sha#    range_base=$(git merge-base refs/remotes/origin/main "$local_sha")#'
+mutate nightly-line-gone hooks/pre-push 's#^  echo "pre-push: nightly browser tier: $nightly_line"#  :#'
+mutate nightly-blocks hooks/pre-push 's#^  echo "pre-push: nightly browser tier: $nightly_line"#  echo "pre-push: nightly browser tier: $nightly_line"; case "$nightly_line" in red*) exit 1 ;; esac#'
 echo "PASS: the self-test caught every broken copy"

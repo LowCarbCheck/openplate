@@ -1,0 +1,9 @@
+[Unit]
+Description=openplate nightly run of the full browser tier on origin/main
+
+[Service]
+Type=oneshot
+# Absolute path from the home directory, so the unit needs no edit per host.
+ExecStart=%h/projects/openplate-workspace/openplate/scripts/nightly-e2e.sh
+# A browser tier and a build on a host a person works on: yield to them.
+Nice=10

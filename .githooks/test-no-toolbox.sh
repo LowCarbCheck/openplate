@@ -176,7 +176,7 @@ run_hook() {
 # The stages each hook must reach, as the stub sees them (arguments only).
 stages_of() {
   case "$1" in
-    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e:sharded ;;
+    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e:scoped ;;
     core) printf '%s\n' lint format:check typecheck test:unit test:integration build ;;
     inference) printf '%s\n' lint typecheck check:doc-claims 'test --run' build ;;
   esac
@@ -266,10 +266,41 @@ dir=$(sandbox app)
 run_hook app "$dir" "$push_line" '' STUB_NO_CHROMIUM=1
 early_stage_ran() { called lint || called test:unit || called build; }
 if [ "$rc" = 1 ] && said 'Chromium will not start here' && said 'pnpm exec playwright install chromium' \
-  && ! called test:e2e:sharded && ! early_stage_ran; then
+  && ! called test:e2e:sharded && ! called test:e2e:scoped && ! early_stage_ran; then
   ok "app browser: missing Chromium is named and the hook exits 1"
 else
   not_ok "app browser: with no Chromium the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
+fi
+
+# The two browser tiers. The push gate runs the scoped tier; a release tag push
+# (OPENPLATE_PUSH_TAG=1) and OPENPLATE_E2E_FULL=1 run the full one. Each case
+# requires the label and the script, and that the OTHER script was not called,
+# so a hook that always ran one of them fails two of the four cases.
+dir=$(sandbox app)
+run_hook app "$dir" "$push_line" ''
+if [ "$rc" = 0 ] && said 'browser tier, scoped to the push' && called test:e2e:scoped && ! called test:e2e:sharded; then
+  ok "app browser tier: a plain push runs test:e2e:scoped"
+else
+  not_ok "app browser tier: a plain push gave exit $rc, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
+run_hook app "$dir" "$push_line" '' OPENPLATE_PUSH_TAG=1
+if [ "$rc" = 0 ] && said 'browser tier, FULL (release gate)' && called test:e2e:sharded && ! called test:e2e:scoped; then
+  ok "app browser tier: a tag push (OPENPLATE_PUSH_TAG=1) runs test:e2e:sharded"
+else
+  not_ok "app browser tier: a tag push gave exit $rc, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
+run_hook app "$dir" "$push_line" '' OPENPLATE_E2E_FULL=1
+if [ "$rc" = 0 ] && said 'browser tier, FULL (release gate)' && called test:e2e:sharded && ! called test:e2e:scoped; then
+  ok "app browser tier: OPENPLATE_E2E_FULL=1 runs test:e2e:sharded"
+else
+  not_ok "app browser tier: OPENPLATE_E2E_FULL=1 gave exit $rc, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
+# Controls: a value other than 1 asks for nothing.
+run_hook app "$dir" "$push_line" '' OPENPLATE_PUSH_TAG=0 OPENPLATE_E2E_FULL=0
+if [ "$rc" = 0 ] && called test:e2e:scoped && ! called test:e2e:sharded; then
+  ok "  control: OPENPLATE_PUSH_TAG=0 and OPENPLATE_E2E_FULL=0 stay scoped"
+else
+  not_ok "app browser tier control: tag=0 full=0 gave exit $rc, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
 fi
 
 dir=$(sandbox core)
@@ -328,4 +359,9 @@ mutate postgres-probe core 's#socket.on("error", () => process.exit(1));#socket.
 mutate any-toolbox core 's#^  \&\& toolbox list -c .*; then$#  ; then#'
 # A missing pnpm that is no longer caught before the stages.
 mutate pnpm-check app 's#^  for tool in node pnpm; do#  for tool in node; do#'
+# A hook that always runs the full tier, and one that never does.
+mutate always-full app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#if true; then#'
+mutate never-full app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#if false; then#'
+mutate tag-ignored app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || #if #'
+mutate full-flag-ignored app 's# || \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#; then#'
 echo "PASS: the self-test caught every broken copy"

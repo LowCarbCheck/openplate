@@ -49,6 +49,20 @@
 #     outlives a hook cannot keep the lock after the dispatcher exits.
 #   * `make check` runs an app hook directly and takes no lock.
 #
+# TWO BROWSER TIERS. The push gate runs the browser tier SCOPED to what the
+# push changed; a release tag push (v*, core-v*, inference-v*) and the nightly
+# run the FULL tier. This hook only reports the facts to the app hook, as
+# environment variables:
+#   OPENPLATE_PUSH_TAG=1       exported when any pushed ref is a release tag;
+#   OPENPLATE_PUSH_RANGE=a..b  exported when the push has exactly one content
+#                              ref and its base is known (the remote sha, or
+#                              the merge-base with origin/main for a new ref).
+# Otherwise the range is not exported and the scoped runner runs everything.
+# OPENPLATE_E2E_FULL=1 git push forces the full tier on any push.
+# The gate starts with one status line from the last nightly run, read from
+# ${XDG_STATE_HOME:-~/.local/state}/openplate/nightly-e2e/latest.txt. Red does
+# not block the push. OPENPLATE_NIGHTLY_STATUS names another file (test seam).
+#
 # Test seams: GIT_DIFF_OVERRIDE, a newline-separated path list used instead of
 # git diff; the stdin lines still decide whether the push is deletion-only.
 # OPENPLATE_GATE_LOCK and OPENPLATE_GATE_LOCK_WAIT_SECONDS name another lock
@@ -87,12 +101,28 @@ stdin_lines=$(cat)
 has_content=0
 run_all_reason=""
 changed=""
-while read -r _local_ref local_sha _remote_ref remote_sha; do
+content_refs=0
+push_tag=0
+range_base=""
+range_head=""
+while read -r local_ref local_sha _remote_ref remote_sha; do
   [ -n "${local_sha:-}" ] || continue
   if [[ $local_sha =~ $ZERO_SHA_PATTERN ]]; then
     continue
   fi
   has_content=1
+  # What the app hook needs to choose a browser tier, see the header.
+  case "$local_ref" in
+    refs/tags/v* | refs/tags/core-v* | refs/tags/inference-v*) push_tag=1 ;;
+  esac
+  content_refs=$((content_refs + 1))
+  range_head=$local_sha
+  range_base=""
+  if [[ ${remote_sha:-0} =~ $ZERO_SHA_PATTERN ]]; then
+    range_base=$(git merge-base refs/remotes/origin/main "$local_sha" 2>/dev/null) || range_base=""
+  elif git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    range_base=$remote_sha
+  fi
   [ -z "${GIT_DIFF_OVERRIDE:-}" ] || continue
   [ -z "$run_all_reason" ] || continue
 
@@ -113,6 +143,16 @@ done <<<"$stdin_lines"
 if [ "$has_content" = "0" ]; then
   echo "▶ pre-push: deletion-only push, no tests to run"
   exit 0
+fi
+
+# The last nightly run of the full browser tier, as information only. A red
+# nightly never blocks a push: the push gate has its own verdict.
+nightly_file=${OPENPLATE_NIGHTLY_STATUS:-${XDG_STATE_HOME:-$HOME/.local/state}/openplate/nightly-e2e/latest.txt}
+if [ -s "$nightly_file" ]; then
+  read -r nightly_line <"$nightly_file" || true
+  echo "pre-push: nightly browser tier: $nightly_line"
+else
+  echo "pre-push: nightly browser tier: no run recorded yet (make nightly)"
 fi
 
 # ── ONE FULL GATE AT A TIME ─────────────────────────────────────────────────
@@ -154,6 +194,20 @@ take_gate_lock() {
 }
 
 take_gate_lock
+
+# ── what the browser tier will be told ──────────────────────────────────────
+# Exported for the app hook. A release tag asks for the full tier. A range is
+# exported only for ONE content ref with a computable base: with two refs a
+# single range would describe the wrong code, so the scoped runner gets no
+# range and falls back to the full tier. Unset here, so a value from the
+# caller's shell never steers the hook.
+unset OPENPLATE_PUSH_TAG OPENPLATE_PUSH_RANGE
+if [ "$push_tag" = "1" ]; then
+  export OPENPLATE_PUSH_TAG=1
+fi
+if [ "$content_refs" = "1" ] && [ -n "$range_base" ]; then
+  export OPENPLATE_PUSH_RANGE="$range_base..$range_head"
+fi
 
 if [ -n "${GIT_DIFF_OVERRIDE:-}" ]; then
   echo "⚠ pre-push: GIT_DIFF_OVERRIDE is set, using its path list instead of git diff"

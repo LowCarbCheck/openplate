@@ -15,6 +15,9 @@
 #   make check            the drift check, then every app's full pre-push gate
 #   make hooks            point core.hooksPath at .githooks (needs no node)
 #   make drift            the node and pnpm drift check, scripts/check-env-drift.sh
+#   make nightly          install and start the nightly full browser tier (systemd user timer)
+#   make nightly-now      run the nightly tier once, now, in the background
+#   make nightly-status   print the last nightly result
 #   make check-pg18       release check: the self-host stack starts on Postgres 18, scripts/check-postgres-18.sh
 
 APPS := app core inference
@@ -68,7 +71,7 @@ ifneq ($(app_goals),)
   endif
 endif
 
-.PHONY: help hooks install test dev check drift check-pg18
+.PHONY: help hooks install test dev check drift check-pg18 nightly nightly-now nightly-status
 .PHONY: $(APPS:%=install-%) $(APPS:%=test-%) $(APPS:%=check-%)
 
 help:
@@ -78,6 +81,9 @@ help:
 	@echo "make check            run the drift check, then every app's full pre-push gate"
 	@echo "make hooks            turn the pre-push hooks on"
 	@echo "make drift            check that node and pnpm agree across the repository"
+	@echo "make nightly          install the systemd user timer for the nightly full browser tier"
+	@echo "make nightly-now      run the nightly tier once now (systemd user service)"
+	@echo "make nightly-status   print the last nightly result"
 	@echo "make check-pg18       release check: boot core on a throwaway Postgres 18 (builds the image, needs docker)"
 
 hooks:
@@ -128,3 +134,25 @@ drift:
 # the version production runs; this proves the self-host files start on 18.
 check-pg18:
 	scripts/check-postgres-18.sh
+
+# The nightly run of the FULL browser tier (scripts/nightly-e2e.sh). The units
+# are installed by a person, never by a push: `make hooks` does not touch them.
+# Symlinks, so a pull updates the units; daemon-reload makes systemd see them.
+NIGHTLY_STATE := $${XDG_STATE_HOME:-$$HOME/.local/state}/openplate/nightly-e2e
+UNIT_DIR := $$HOME/.config/systemd/user
+
+nightly:
+	mkdir -p $(UNIT_DIR)
+	ln -sf "$(CURDIR)/systemd/openplate-nightly-e2e.service" $(UNIT_DIR)/openplate-nightly-e2e.service
+	ln -sf "$(CURDIR)/systemd/openplate-nightly-e2e.timer" $(UNIT_DIR)/openplate-nightly-e2e.timer
+	systemctl --user daemon-reload
+	systemctl --user enable --now openplate-nightly-e2e.timer
+	systemctl --user list-timers openplate-nightly-e2e.timer
+
+nightly-now:
+	systemctl --user start --no-block openplate-nightly-e2e.service
+	@echo "started. The log is $(NIGHTLY_STATE)/$$(date +%F).log, the result lands in $(NIGHTLY_STATE)/latest.txt"
+	@echo "watch it with: journalctl --user -u openplate-nightly-e2e.service -f"
+
+nightly-status:
+	@if [ -s "$(NIGHTLY_STATE)/latest.txt" ]; then cat "$(NIGHTLY_STATE)/latest.txt"; else echo "no run yet (make nightly, then make nightly-now)"; fi
