@@ -24,6 +24,17 @@
  *   after an erase they would cheerfully write the rows back into a database
  *   that was just deleted. A document load is the one thing that ends them.
  *
+ * ── Where the person lands ───────────────────────────────────────────────
+ *
+ * On the page that matches what the sign-out did (`signOutDestination`), so
+ * that the navigation is one document load and not a load plus a redirect.
+ * Always `/` used to be the answer, and on an open instance `/` showed the
+ * marketing page for a frame before its client loader found the local diary
+ * and sent the person straight back: a sign-out that looked like a flash and
+ * then nothing. On a managed instance the same `/` was a second "you are
+ * signed out" screen, next to the `/welcome` a session the SERVER ended lands
+ * on.
+ *
  * The steps are injected so all four orderings above are asserted in
  * `tests/unit/sign-out-flow.test.ts` without a browser, a session or a router.
  */
@@ -48,6 +59,30 @@ export interface SignOutRequest {
    * anything away and locking the device would be a wipe with extra steps.
    */
   locksDevice: boolean;
+}
+
+/** The two pages a sign-out can end on. Never `/`, whose marketing page a person with a diary only flashes through. */
+export type SignOutDestination = '/welcome' | '/dashboard';
+
+/**
+ * Which page a sign-out ends on.
+ *
+ * `/welcome` when this device no longer shows a diary: it was locked
+ * (`locksDevice`, a managed instance) or it was erased (`eraseDevice`). That is
+ * the same screen the onboarding gate sends an emptied or locked device to, and
+ * the same one a session the server ended reaches, so there is one "you are
+ * signed out" screen. `/welcome` is a top-level, client-only question screen,
+ * so it is also correct on an open instance after an erase, where the gate
+ * would have sent the empty device there anyway.
+ *
+ * `/dashboard` when the diary stays readable (an open instance, nothing
+ * erased): the person is still in the app, so they land in it. The gate has
+ * already seen this device through, and nothing flashes in between.
+ *
+ * Pure, so every combination is a row in `sign-out-flow.test.ts`.
+ */
+export function signOutDestination({ locksDevice, eraseDevice }: SignOutRequest): SignOutDestination {
+  return locksDevice || eraseDevice ? '/welcome' : '/dashboard';
 }
 
 /** The four things a sign-out does, each replaceable in a test. */
@@ -93,17 +128,25 @@ export async function runSignOut(
 /**
  * The real steps.
  *
+ * `destination` is where the last step leaves for (`signOutDestination`). It is
+ * optional so a caller that overrides `leaveTheApp` anyway (`/join`) need not
+ * name one, and its default is `/dashboard` because that is the one answer
+ * that is never wrong: a gate that finds the device locked or empty sends it on
+ * to `/welcome` by itself, and one that finds a diary leaves it where it is.
+ *
  * The account id is read HERE, while the session is still open, and closed
  * over. Reading it inside `eraseDevice` would read it after
  * `revokeAndCloseSession` has published a signed-out snapshot, and the
  * baseline key would then be the one thing an erase quietly left behind.
  */
-export function defaultSignOutSteps(): SignOutSteps {
+export function defaultSignOutSteps({
+  destination = '/dashboard',
+}: { destination?: SignOutDestination } = {}): SignOutSteps {
   const accountId = getSyncSessionSnapshot().account?.id ?? null;
   return {
     revokeAndCloseSession: signOutOfSync,
     lockDevice: () => lockDevice(),
     eraseDevice: () => eraseDeviceData({ accountId }),
-    leaveTheApp: () => window.location.assign('/'),
+    leaveTheApp: () => window.location.assign(destination),
   };
 }

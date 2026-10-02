@@ -938,10 +938,12 @@ export async function signOutOfSync(): Promise<void> {
   // the stale value that would otherwise be read first. Clearing it here means
   // every sign-out path clears it, including `/join`'s and the settings page's.
   //
-  // On an OPEN instance this costs one frame of the marketing page on the next
-  // hard load and repairs itself immediately: `/`'s client loader finds local
-  // rows, rewrites the hint and redirects, exactly as it does for a cookie
-  // WebKit evicted. Nothing is lost, because the hint was only ever a shortcut.
+  // On an OPEN instance a person who loads `/` next would see one frame of the
+  // marketing page, and `/`'s client loader would then find local rows, rewrite
+  // the hint and redirect, exactly as it does for a cookie WebKit evicted.
+  // Nothing is lost, because the hint was only ever a shortcut. A sign-out no
+  // longer takes that path: it leaves for `/dashboard` (`signOutDestination`),
+  // whose gate rewrites the hint itself.
   clearHomeHint();
 }
 

@@ -25,12 +25,21 @@
  * session. The dialog marks each sentence it says with `data-erase-line`, so
  * this file asserts WHICH sentence was said. The controls are found by their
  * icons for the same reason.
+ *
+ * ── Where a plain sign-out lands (2026-10-02) ────────────────────────────
+ *
+ * On an OPEN instance a sign-out takes nothing away, so the diary is still
+ * here and the person lands on `/dashboard`. It used to be `/`, which showed
+ * the marketing page for a frame and then redirected back, so a sign-out
+ * looked like a flash and then nothing. The managed twin is in
+ * `sign-out-managed.spec.ts`, which must end on `/welcome`.
  */
 import { expect, test, type Page } from '@playwright/test';
 
 import { SYNC_API_PREFIX } from '../../app/lib/sync/engine/protocol';
 import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
-import { completeOnboarding, logFoodManually, signInFixtureAccount } from './helpers';
+import { EN } from './copy';
+import { completeOnboarding, logFoodManually, recordDocumentPaths, signInFixtureAccount } from './helpers';
 
 /** The entry the failed push leaves behind. */
 const FOOD_NAME = 'Unsent smoke tier soup';
@@ -143,4 +152,25 @@ test('the sign-out note on the account page says the diary stays on this device'
   const note = page.locator('p[data-diary]');
   await expect(note).toHaveCount(1, { timeout: 10_000 });
   await expect(note).toHaveAttribute('data-diary', 'device');
+});
+
+test('a plain sign-out on an open instance lands on the dashboard and never asks for the front page', async ({
+  page,
+}) => {
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+  await openAccountSettings(page);
+  await openSignOutDialog(page);
+
+  // Recording starts at the confirm, so only the sign-out's own navigations count.
+  const documents = recordDocumentPaths(page);
+  await page.getByRole('alertdialog').getByRole('button', { name: EN.signOut.confirm, exact: true }).click();
+
+  await page.waitForURL((url) => url.pathname === '/dashboard');
+  // CONTROL: the recorder saw the document the sign-out asked for. Without it,
+  // a recorder that never fired would pass the absence below.
+  expect(documents, 'the document the sign-out asked for').toContain('/dashboard');
+  // THE DEFECT, stated as state: `/` is never requested, so its marketing
+  // page is never on screen, not even for the frame before it redirects back.
+  expect(documents, 'the front page is never a stop on the way out').not.toContain('/');
 });

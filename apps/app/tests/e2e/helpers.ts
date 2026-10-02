@@ -466,3 +466,31 @@ export async function awardStateOnDisk(page: Page, key: string): Promise<'absent
     key,
   );
 }
+
+/**
+ * Records the path of every DOCUMENT request this page's main frame makes from
+ * now on, in order, so a spec can say which pages a person was actually sent
+ * through and not only which one they ended on.
+ *
+ * WHY THE REQUESTS AND NOT THE URL. A page that is requested and immediately
+ * redirected away from has already been on screen for a frame, and the final
+ * URL cannot tell that apart from a straight line. `framenavigated` is no
+ * better, it fires after the document has committed. The request is the
+ * earliest and the least ambiguous signal that a document was asked for.
+ *
+ * THE CONTROL IS THE CALLER'S: a spec that asserts a path is ABSENT from this
+ * list must also assert that the path it ended on is PRESENT, or a recorder
+ * that never fired would pass every absence.
+ *
+ * @param page - the page to watch.
+ * @returns the live list, appended to as navigations happen.
+ */
+export function recordDocumentPaths(page: Page): string[] {
+  const paths: string[] = [];
+  page.on('request', (request) => {
+    if (!request.isNavigationRequest()) return;
+    if (request.frame() !== page.mainFrame()) return;
+    paths.push(new URL(request.url()).pathname);
+  });
+  return paths;
+}

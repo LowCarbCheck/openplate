@@ -36,10 +36,21 @@
  * managed tier must say `account`. The open tier's twin is in
  * `sign-out-unsent.spec.ts`, which must say `device` for the same element, so a
  * note that carried `account` everywhere would fail there.
+ *
+ * ── Where a sign-out the person chose lands (2026-10-02) ─────────────────
+ *
+ * It used to land on `/`, the account front door, while a session the SERVER
+ * ended lands on `/welcome`: two different "you are signed out" screens for
+ * one state. Both now end on `/welcome`, and the document is never asked for
+ * `/` on the way. The open tier's twin is in `sign-out-unsent.spec.ts`, which
+ * must end on `/dashboard`, so a destination that was `/welcome` everywhere
+ * would fail there.
  */
 import { expect, test, type Page } from '@playwright/test';
 
 import { E2E_ACCOUNT_EMAIL } from './env';
+import { EN } from './copy';
+import { recordDocumentPaths } from './helpers';
 import { routeManagedCore, signInManaged, type ManagedCoreStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { NO_SUBSCRIPTION_VIEW } from './plans-stub';
@@ -129,4 +140,28 @@ test('the sign-out note on the account page says the diary stays in the account'
   const note = page.locator('p[data-diary]');
   await expect(note).toHaveCount(1, { timeout: 10_000 });
   await expect(note).toHaveAttribute('data-diary', 'account');
+});
+
+test('a plain managed sign-out lands on the welcome screen and is never sent through the front page', async ({
+  page,
+}) => {
+  test.setTimeout(TEST_BUDGET_MS);
+  await routeManagedCore(page, ACCOUNT_STUB);
+  await signInManaged(page, server.url);
+  await page.goto(`${server.url}/diary`);
+  await expect(page.locator('header [data-slot="avatar-menu-trigger"]')).toBeVisible({ timeout: 10_000 });
+
+  await openSignOutDialogFromTheMenu(page);
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog.getByRole('checkbox')).toBeEnabled();
+
+  // Recording starts at the confirm, so only the sign-out's own navigations count.
+  const documents = recordDocumentPaths(page);
+  await dialog.getByRole('button', { name: EN.signOut.confirm, exact: true }).click();
+
+  await page.waitForURL((url) => url.pathname === '/welcome');
+  // THE SAME SCREEN a session the server ended reaches, and the way there was
+  // one document load: `/` was never asked for.
+  expect(documents, 'the document the sign-out asked for').toContain('/welcome');
+  expect(documents, 'the front page is never a stop on the way out').not.toContain('/');
 });

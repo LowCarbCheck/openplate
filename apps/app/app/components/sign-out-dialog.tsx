@@ -97,7 +97,7 @@ import {
   type EraseNoticeLine,
   type UnsentRead,
 } from '#app/lib/sync/erase-notice';
-import { runSignOut } from '#app/lib/sync/sign-out-flow';
+import { defaultSignOutSteps, runSignOut, signOutDestination } from '#app/lib/sync/sign-out-flow';
 import {
   closeSignOutDialog,
   isSignOutRunning,
@@ -233,7 +233,10 @@ export function SignOutDialogHost() {
     setHasEraseFailed(false);
     setSignOutPhase('running');
     try {
-      await runSignOut({ eraseDevice, locksDevice: signOutClosesTheDiary });
+      // THE SAME TWO FACTS decide what happens and where the person lands, so
+      // the request is built once and both read it.
+      const request = { eraseDevice, locksDevice: signOutClosesTheDiary };
+      await runSignOut(request, defaultSignOutSteps({ destination: signOutDestination(request) }));
     } catch (caught) {
       // Reached only when an opted-in erase failed, which in practice means a
       // second tab is holding the database. The session is already closed and
