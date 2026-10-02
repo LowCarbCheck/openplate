@@ -7,11 +7,28 @@
 # typecheck + unit tests: neither runs `react-router build`, so the
 # PRODUCTION BUILD is part of this gate.
 #
-# Runs: docs manifest -> quadlet units -> changelog -> lint -> typecheck -> unit tests
-#       -> integration tests -> production build -> browser smoke tier.
+# Runs: Chromium launch check -> docs manifest -> quadlet units -> changelog
+#       -> lint -> typecheck -> unit tests + integration tests, with the
+#       production build running beside them -> browser smoke tier (sharded).
 #
-# The browser smoke tier (added 2026-09-13) is LAST because it needs the build the stage
-# before it makes, and it is the one stage that does not run in the toolbox:
+# Stage order, in plain words:
+#   * The Chromium launch check runs FIRST of all the stages. A host with no
+#     working browser fails in seconds, not after the build and the tests.
+#   * Lint and typecheck stay serial and run before everything slow.
+#   * The production build starts in the BACKGROUND right after typecheck, and
+#     the unit and integration tests run in front while it builds. Nothing in
+#     tests/unit or tests/integration reads build/, so the two do not meet.
+#     When the tests are done, the hook waits for the build. A failed build
+#     prints its whole log and the hook exits with the build's exit code. A
+#     good build prints the last lines of its log, so the output still shows
+#     that it happened. A SIGINT, SIGTERM or SIGHUP to the hook, or a failing
+#     test stage, stops the build's process group before the hook exits, so no
+#     build is left running.
+#   * The browser smoke tier runs LAST, sharded: `pnpm test:e2e:sharded` runs N
+#     Playwright processes at once (scripts/e2e-sharded.sh, ADR-0017).
+#
+# The browser smoke tier (added 2026-09-13) comes after the build because it needs
+# the build, and it is the one stage that does not run in the toolbox:
 # the ts-dev container has no Chromium and cannot be given one (eleven shared
 # libraries missing, no sudo). It therefore runs on the HOST, straight out of
 # node_modules, against `~/.cache/ms-playwright`. A push from inside the
@@ -48,6 +65,48 @@ if [ "$has_content" = "0" ]; then
   exit 0
 fi
 
+# Where the TS commands run. Inside a container they run bare. Where a toolbox
+# with a container named ts-dev exists they run in it, as they always have: the
+# maintainer's host lacks native build tools. A host with toolbox but no ts-dev
+# (a stock Fedora Silverblue, say) is a contributor's host like any other.
+# Anywhere else they run with the node and pnpm on PATH, so a contributor needs
+# only Node, pnpm and make to push (M269 spec 08). .githooks/test-no-toolbox.sh
+# at the repository root proves that path.
+# RUN_PREFIX is the command words in front of a TS command. `run` uses it, and
+# so does the background build, which must be started as an external command
+# (a shell function cannot be put in its own process group).
+if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
+  RUN_PREFIX="env CI=true"
+elif command -v toolbox >/dev/null 2>&1 \
+  && toolbox list -c 2>/dev/null | awk 'NR > 1 && $2 == "ts-dev" { found = 1 } END { exit !found }'; then
+  RUN_PREFIX="toolbox run -c ts-dev env CI=true"
+else
+  for tool in node pnpm; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
+      exit 1
+    fi
+  done
+  RUN_PREFIX="env CI=true"
+fi
+run() { $RUN_PREFIX "$@"; }
+
+# ── FIRST STAGE: can Chromium start at all? ────────────────────────────────
+# The browser smoke tier is the last stage and is REQUIRED, so a host that
+# cannot start a browser is known to fail before anything slow runs. Checking
+# here makes it fail in seconds. This is a REAL LAUNCH, not a path check: the
+# toolbox has the browser bytes on a shared cache and still cannot start them,
+# which is the case this has to catch. Deliberately NOT wrapped in `run`:
+# Chromium cannot start inside the ts-dev toolbox, so the check, like the tier,
+# executes on the host with `pnpm` and `node` from the host PATH.
+if ! pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))" >/dev/null 2>&1; then
+  echo "✖ pre-push: Chromium will not start here, and the browser tier is a REQUIRED gate."
+  echo "  Install it in apps/app with: pnpm exec playwright install chromium"
+  echo "  On Linux, 'pnpm exec playwright install --with-deps chromium' also installs its system libraries."
+  echo "  Inside the ts-dev toolbox it never starts: push from the host shell instead."
+  exit 1
+fi
+
 # ── FIRST TIER: the documentation manifest ──────────────────────────────────
 # No network, no node, no install: POSIX shell over the README's `##
 # Documentation` table and the `docs/` directory. It is first because it is the
@@ -71,28 +130,6 @@ echo "▶ pre-push: the README Documentation table against docs/"
 echo "▶ pre-push: the quadlet units against a fresh podlet run"
 ./scripts/quadlet.sh check
 
-# Where the TS commands run. Inside a container they run bare. Where a toolbox
-# with a container named ts-dev exists they run in it, as they always have: the
-# maintainer's host lacks native build tools. A host with toolbox but no ts-dev
-# (a stock Fedora Silverblue, say) is a contributor's host like any other.
-# Anywhere else they run with the node and pnpm on PATH, so a contributor needs
-# only Node, pnpm and make to push (M269 spec 08). .githooks/test-no-toolbox.sh
-# at the repository root proves that path.
-if [ -f /run/.containerenv ] || [ -f /.dockerenv ]; then
-  run() { CI=true "$@"; }
-elif command -v toolbox >/dev/null 2>&1 \
-  && toolbox list -c 2>/dev/null | awk 'NR > 1 && $2 == "ts-dev" { found = 1 } END { exit !found }'; then
-  run() { toolbox run -c ts-dev env CI=true "$@"; }
-else
-  for tool in node pnpm; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-      echo "✖ pre-push: $tool is not on PATH. The gate needs Node 24 or newer and pnpm 11."
-      exit 1
-    fi
-  done
-  run() { CI=true "$@"; }
-fi
-
 # ── SECOND TIER: the changelog the release page is built from ───────────────
 # One test file, about a third of a second. The GitHub Release page's body is
 # generated from CHANGELOG.md by `scripts/release-notes.ts`, which refuses a
@@ -110,37 +147,94 @@ run pnpm lint
 echo "▶ pre-push: typecheck"
 run pnpm typecheck
 
+# The production build runs in the background while the unit and integration
+# tests run. It is started as an external command in a process group of its own
+# (setsid), so a signal can stop the build and everything it started, and never
+# anything else. Without setsid (macOS, say) the trap stops the build's process
+# and its children one by one instead. Its output goes to a temp log, read
+# again below. Its stdin is /dev/null: a build never asks a question.
+build_pid=
+build_log=
+build_grouped=0
+
+stop_build_tree() {
+  if [ "$build_grouped" = "1" ]; then
+    kill -TERM -- "-$1" 2>/dev/null || true
+    sleep 1
+    kill -KILL -- "-$1" 2>/dev/null || true
+  else
+    stop_descendants "$1"
+  fi
+}
+
+stop_descendants() {
+  for child in $(pgrep -P "$1" 2>/dev/null); do
+    stop_descendants "$child"
+  done
+  kill -TERM "$1" 2>/dev/null || true
+}
+
+# Runs on EVERY exit of the hook: a signal (the INT, TERM and HUP traps below
+# turn into an exit), a failing stage under `set -e`, or the normal end. While
+# build_pid is set the build was never waited for, so it is stopped here.
+stop_build() {
+  if [ -n "$build_pid" ]; then
+    echo "pre-push: stopping the background build"
+    stop_build_tree "$build_pid"
+    wait "$build_pid" 2>/dev/null || true
+    build_pid=
+  fi
+  if [ -n "$build_log" ]; then
+    rm -f "$build_log"
+    build_log=
+  fi
+}
+trap stop_build EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+echo "▶ pre-push: production build started in the background (react-router build, the Argo image runs this)"
+build_log=$(mktemp "${TMPDIR:-/tmp}/pre-push-build.XXXXXX")
+if command -v setsid >/dev/null 2>&1; then
+  build_grouped=1
+  setsid $RUN_PREFIX pnpm build </dev/null >"$build_log" 2>&1 &
+else
+  $RUN_PREFIX pnpm build </dev/null >"$build_log" 2>&1 &
+fi
+build_pid=$!
+
 echo "▶ pre-push: unit tests"
 run pnpm test:unit
 
 echo "▶ pre-push: integration tests"
 run pnpm test:integration
 
-echo "▶ pre-push: production build (react-router build, the Argo image runs this)"
-run pnpm build
+echo "▶ pre-push: waiting for the production build"
+build_rc=0
+wait "$build_pid" || build_rc=$?
+build_pid=
+if [ "$build_rc" != "0" ]; then
+  echo "✖ pre-push: the production build failed (exit $build_rc). Its full log:"
+  cat "$build_log"
+  exit "$build_rc"
+fi
+echo "pre-push: the production build passed. The last lines of its log:"
+tail -n 15 "$build_log"
 
-# ── LAST TIER: five specs in a real browser, against the build above ────────
-# Deliberately NOT wrapped in `run`: Chromium cannot start inside the ts-dev
-# toolbox, so this stage is the one that must execute on the host. `pnpm` and
-# `node` are on the host PATH; if the browser is not there, say which shell to
-# push from rather than waving the stage through.
+# ── LAST TIER: the specs in a real browser, against the build above ─────────
+# Not wrapped in `run`: Chromium cannot start inside the ts-dev toolbox, so this
+# stage must execute on the host (the launch check at the top says so before
+# anything slow runs). It is sharded: `pnpm test:e2e:sharded` runs N Playwright
+# processes at once, N = OPENPLATE_E2E_SHARDS, else min(4, cores / 4).
 #
 # TWO PEOPLE CAN PUSH AT ONCE. This stage used to bind three literal ports that
 # every checkout on a host shared, so a second push collided here, on the last
 # and most expensive stage, and hung. The three ports are now derived from the
 # checkout's own path (`tests/e2e/env.ts`, ADR-0017) and printed by every run;
-# `scripts/repro-e2e-port-collision.sh` proves two trees pass concurrently.
-echo "▶ pre-push: browser smoke tier (host only, the toolbox has no Chromium)"
-# A REAL LAUNCH, not a path check: the toolbox has the browser bytes on a
-# shared cache and still cannot start them, which is the case this has to
-# catch.
-if ! pnpm exec node -e "const {chromium}=require('@playwright/test');chromium.launch().then((b)=>b.close()).then(()=>process.exit(0),()=>process.exit(1))" >/dev/null 2>&1; then
-  echo "✖ pre-push: Chromium will not start here, and the browser tier is a REQUIRED gate."
-  echo "  Install it in apps/app with: pnpm exec playwright install chromium"
-  echo "  On Linux, 'pnpm exec playwright install --with-deps chromium' also installs its system libraries."
-  echo "  Inside the ts-dev toolbox it never starts: push from the host shell instead."
-  exit 1
-fi
-CI=true pnpm test:e2e
+# `scripts/repro-e2e-port-collision.sh` proves two trees pass concurrently. Each
+# shard takes three ports of its own from that base.
+echo "▶ pre-push: browser smoke tier (host only, sharded, the toolbox has no Chromium)"
+CI=true pnpm test:e2e:sharded
 
 echo "✅ pre-push: all gates passed"

@@ -39,6 +39,19 @@
  * hash beats a free-port scan here: this module is evaluated in the runner AND
  * in every worker, and a scan would answer differently in each one.
  *
+ * ── Several processes of one checkout can run this at the same time ──────
+ *
+ * `workers: 1` below stays: every spec drives one origin and one fixture
+ * account, so a spec's worker is a single process. What the pre-push gate
+ * parallelises is whole PROCESSES, `scripts/e2e-sharded.sh` starting N of this
+ * config with `--shard=i/N`, and each of them is a complete tier of its own:
+ * its own three ports (`OPENPLATE_E2E_PORT_BASE`, `shardPortBase` in
+ * `tests/e2e/env.ts`), its own fake core server and fixture account (both are
+ * started by that process's `globalSetup` and live in its memory), its own
+ * fontconfig cache and its own output folder. `OPENPLATE_E2E_SHARD` carries the
+ * shard's number to the three places that need it; unset, nothing below
+ * changes.
+ *
  * ── The font configuration is stated, not inherited ──────────────────────
  *
  * Every budget above is a measurement in CSS pixels, and a measurement of
@@ -60,6 +73,8 @@ import {
   E2E_MATOMO_URL,
   E2E_CORE_URL,
 } from './tests/e2e/env';
+import { writeFontsConfFor } from './tests/e2e/font-cache';
+import { E2E_SHARD_VAR, parseShardNumber } from './tests/e2e/shard';
 import { buildTierServerCommand } from './tests/e2e/server-env';
 
 /** The build artefact the production server serves. */
@@ -72,8 +87,14 @@ const SERVER_BUNDLE = 'build/server/index.js';
  */
 const CONTENT_DIR = fileURLToPath(new URL('./tests/fixtures/content', import.meta.url));
 
-/** The font configuration this tier renders in. See that file for why it exists. */
-const FONTS_CONF = fileURLToPath(new URL('./tests/e2e/fonts.conf', import.meta.url));
+/**
+ * Which shard of a sharded run this process is, or `null` when the run is not sharded.
+ *
+ * `scripts/e2e-sharded.sh` sets it, along with a port base of its own, for every shard it starts.
+ * It is read here, at module load, for the reason everything else in this file is: the runner and
+ * every worker evaluate this module and must reach the same answer from the environment alone.
+ */
+const SHARD = parseShardNumber(process.env[E2E_SHARD_VAR]);
 
 // SET HERE, at module load, because this file is evaluated in the runner AND
 // in every worker process, and a worker is what launches the browser. A
@@ -81,7 +102,12 @@ const FONTS_CONF = fileURLToPath(new URL('./tests/e2e/fonts.conf', import.meta.u
 //
 // It is skipped when the shell already names one, so a host with a working
 // system configuration, or a person debugging one, keeps the last word.
-process.env.FONTCONFIG_FILE ??= FONTS_CONF;
+//
+// A SHARD READS ITS OWN COPY of `tests/e2e/fonts.conf`, one that names a fontconfig cache
+// directory of its own, because every shard wipes that directory in its global setup and one
+// shared directory would be deleted under a sibling mid-write (`font-cache.ts`). Not sharded, it
+// is the committed file itself.
+process.env.FONTCONFIG_FILE ??= writeFontsConfFor(SHARD);
 
 // REFUSED HERE, not in `globalSetup`. Playwright starts the `webServer` BEFORE
 // the global setup runs, so a check down there arrives after the server has
@@ -109,6 +135,13 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   timeout: SPEC_TIMEOUT_MS,
+  // PLAYWRIGHT EMPTIES ITS OUTPUT FOLDER AT THE START OF A RUN. Several shards of one checkout
+  // would each empty the one `test-results/` and delete the traces of a sibling that is still
+  // writing, so a shard gets a folder of its own inside it. A run that is not sharded keeps
+  // `./test-results`, which is Playwright's own default spelled out. The reports two specs write
+  // straight into `test-results/` are not Playwright output; `scripts/e2e-sharded.sh` clears
+  // them once, before it starts the shards.
+  outputDir: SHARD === null ? './test-results' : `./test-results/shard-${SHARD}`,
   globalSetup: './tests/e2e/global-setup.ts',
   globalTeardown: './tests/e2e/global-teardown.ts',
   use: {

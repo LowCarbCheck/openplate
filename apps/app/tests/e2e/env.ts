@@ -112,6 +112,65 @@ export function deriveE2ePortBase(options: { repoRoot: string; override?: string
   return PORT_BASE_FLOOR + PORTS_PER_TREE * slot;
 }
 
+/**
+ * The first port of shard `shard` (counted from 1, as Playwright's `--shard=i/N` counts) of a
+ * sharded run whose first shard takes the triple that starts at `base`.
+ *
+ * ── Why a fixed stride of three and not a hash per shard ─────────────────
+ *
+ * `scripts/e2e-sharded.sh` starts N Playwright processes of ONE checkout, and each needs a triple
+ * of its own: two shards on one triple is the collision ADR-0017 removed between two trees.
+ * Shard `i` takes `base + 3 * (i - 1)`, so the triples of one run are adjacent and disjoint by
+ * construction, and no probability is involved between them. The runner hands each shard its
+ * number through `OPENPLATE_E2E_PORT_BASE`, the override this module already has, so every process
+ * of a shard recomputes the same answer from the environment alone.
+ *
+ * What the stride costs is the margin against ANOTHER checkout: a sharded run holds N slots of
+ * the 7000, so a second checkout whose own slot falls inside them collides, about N in 7000
+ * against a plain run and (2N - 1) in 7000 against another sharded one (4 and 7 in 7000 at four
+ * shards, against 1 in 7000 for two plain runs). It still fails loudly, and the runner checks
+ * every shard's three ports before it starts anything; see ADR-0017.
+ *
+ * The top of the stretch stays below the kernel's ephemeral range: the highest derived base is
+ * 30997, and four shards starting there end at 31008, still under 32768.
+ *
+ * @param options.base - the first shard's base: the derived one, or `OPENPLATE_E2E_PORT_BASE`.
+ * @param options.shard - the shard's number, 1 or more.
+ * @throws when the shard's last port would leave the range the override accepts.
+ */
+export function shardPortBase(options: { base: number; shard: number }): number {
+  if (!Number.isInteger(options.shard) || options.shard < 1) {
+    throw new Error(`shard ${options.shard} is not a shard number: shards are counted from 1.`);
+  }
+  const base = options.base + PORTS_PER_TREE * (options.shard - 1);
+  if (base > OVERRIDE_CEILING) {
+    throw new Error(
+      `shard ${options.shard} would take ports from ${base}, past the highest base this tier can bind ` +
+        `(${OVERRIDE_CEILING}). Lower ${E2E_PORT_BASE_VAR} or run fewer shards.`,
+    );
+  }
+  return base;
+}
+
+/**
+ * The first port of every shard of a run of `count` shards, in shard order.
+ *
+ * What `scripts/e2e-sharded.sh` asks for before it starts anything: the whole plan is checked
+ * here, in one place, so a count that would run past the top of the range fails before the first
+ * Playwright process exists rather than in the last shard.
+ *
+ * @param options.base - the first shard's base.
+ * @param options.count - how many shards, 1 or more.
+ */
+export function planShardPortBases(options: { base: number; count: number }): number[] {
+  if (!Number.isInteger(options.count) || options.count < 1) {
+    throw new Error(`${options.count} shards is not a shard count: it has to be a whole number of 1 or more.`);
+  }
+  return Array.from({ length: options.count }, (_unused, index) =>
+    shardPortBase({ base: options.base, shard: index + 1 }),
+  );
+}
+
 /** This checkout's root: `tests/e2e/` sits two directories below it. */
 const REPO_ROOT = canonicalRepoRoot(fileURLToPath(new URL('../../', import.meta.url)));
 

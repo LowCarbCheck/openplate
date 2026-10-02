@@ -42,7 +42,7 @@ A changed decision gets a new ADR that supersedes the old one and sets the old o
 | [0014](0014-fasts-are-a-merged-entity.md)             | Fasts are a merged entity, and the merge adjudicates nothing              | Accepted   |
 | [0015](0015-the-pantry-is-a-merged-entity.md)         | The pantry is a merged entity, reversing M233/02                         | Accepted   |
 | [0016](0016-the-sign-out-dialog-says-only-what-is-true.md) | The sign-out dialog says only what it can prove                       | Accepted   |
-| [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Accepted |
+| [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Amended |
 | [0018](0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted |
 | [0019](0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted |
 | [0020](0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted |
