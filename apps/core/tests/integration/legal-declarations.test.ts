@@ -135,6 +135,13 @@ async function startFakeBiller(): Promise<FakeBiller> {
   };
 }
 
+/** The forward timeout the service under test is started with. */
+const HANG_FORWARD_TIMEOUT_MS = 300;
+/** How often the hanging-biller test reads the table while the forward is in flight. */
+const POLL_INTERVAL_MS = 10;
+/** The poll ends this long before the forward timeout, so it only ever sees the in-flight window. */
+const POLL_MARGIN_MS = 50;
+
 let database: TestDatabase;
 let biller: FakeBiller;
 let harness: ServiceHarness;
@@ -161,7 +168,7 @@ beforeEach(async () => {
   await harness?.close();
   harness = await startService({
     db: database.db,
-    plans: { baseUrl: biller.baseUrl, secret: 'a-shared-secret', timeoutMs: 300 },
+    plans: { baseUrl: biller.baseUrl, secret: 'a-shared-secret', timeoutMs: HANG_FORWARD_TIMEOUT_MS },
   });
 });
 
@@ -206,10 +213,17 @@ test('persisted BEFORE the forward: the row exists while the biller is still han
     body: sampleDeclaration(),
   });
 
-  // Well under the 300ms forward timeout configured above, and well over the
-  // time a local INSERT takes.
-  await new Promise((resolve) => setTimeout(resolve, 60));
-  const midFlightRows = await database.db.select().from(legalDeclarations);
+  // Poll for the row instead of sleeping a fixed time, so a loaded host that
+  // makes the INSERT slow cannot fail the test. The poll stops 50ms short of
+  // the forward timeout (HANG_FORWARD_TIMEOUT_MS), so a row that only appears
+  // once the forward has given up is never seen: persisting AFTER the forward
+  // leaves the poll empty and the assertion below fails.
+  const pollDeadline = Date.now() + HANG_FORWARD_TIMEOUT_MS - POLL_MARGIN_MS;
+  let midFlightRows = await database.db.select().from(legalDeclarations);
+  while (midFlightRows.length === 0 && Date.now() < pollDeadline) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    midFlightRows = await database.db.select().from(legalDeclarations);
+  }
   assert.equal(midFlightRows.length, 1, 'the row must exist while the forward is still in flight');
   assert.equal(midFlightRows[0]?.forwardedAt, null, 'the forward has not resolved yet');
 
