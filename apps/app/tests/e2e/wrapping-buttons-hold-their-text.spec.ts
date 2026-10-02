@@ -26,6 +26,8 @@
  *
  * EVERY READING IS SHOWN ABLE TO FAIL. The control forces the cards back to the 36 px the
  * report named, with an inline style, and the same reader must report all three failures.
+ *
+ * @area onboarding
  */
 import { expect, test, type Page } from '@playwright/test';
 

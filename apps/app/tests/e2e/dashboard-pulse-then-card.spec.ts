@@ -38,6 +38,8 @@
  * THE CONTROL. A box pushed in above the card must be read as a move by both.
  * Without it the zeros above would pass against a sampler that could not see
  * one.
+ *
+ * @area diary-and-add
  */
 import { readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';

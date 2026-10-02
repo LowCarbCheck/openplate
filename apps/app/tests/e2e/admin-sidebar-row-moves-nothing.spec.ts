@@ -25,6 +25,8 @@
  * Settings must be reported as a move and as a shift. And the rule that a role
  * landing is a real change is a plain count: no Administration link before, one
  * after, and a member never gets one.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

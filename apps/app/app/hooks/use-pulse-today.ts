@@ -25,7 +25,13 @@
 import { useEffect, useState } from 'react';
 
 import { useSyncSession } from '#app/components/sync-status';
-import { isPulseSettled, pulseReadKey, startPulseRead, PULSE_SETTLE_DEADLINE_MS, type PulseToday } from '#app/lib/pulse';
+import {
+  isPulseSettled,
+  pulseReadKey,
+  startPulseRead,
+  PULSE_SETTLE_DEADLINE_MS,
+  type PulseToday,
+} from '#app/lib/pulse';
 
 /** What {@link usePulseRead} reports. */
 export interface PulseRead {
