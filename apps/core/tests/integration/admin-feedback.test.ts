@@ -101,15 +101,34 @@ function sampleReport(overrides: Partial<FeedbackRequestBody> = {}): FeedbackReq
   };
 }
 
-/** Parses one written chunk into log lines this service produced, and ignores everything else on stdout. */
+/**
+ * Parses one line as JSON, or answers undefined. Only the parse is guarded, so
+ * a line that is not JSON is skipped and nothing else is swallowed. The node
+ * test runner (24.21) writes its own lines to the same stdout, and some start
+ * with `{` without being JSON.
+ */
+function tryParseLine(line: string): CapturedLine | undefined {
+  try {
+    // SAFETY: the shape is re-established by the caller, which keeps only a
+    // line whose `component` is the one this file's logger writes. Any other
+    // JSON is dropped rather than asserted against.
+    return JSON.parse(line) as CapturedLine;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Parses one written chunk into log lines this service produced, and ignores
+ * everything else on stdout. `logger.ts` writes each line, with its newline, in
+ * one `write` call, so a log line never spans two chunks and no carry-over
+ * buffer is needed. A fragment of someone else's output simply fails to parse.
+ */
 function collectLines(chunk: string): void {
   for (const line of chunk.split('\n')) {
     if (!line.startsWith('{')) continue;
-    // SAFETY: the guard above admits only JSON objects, and the shape is
-    // re-established below by checking the one field this file keys on. A line
-    // from anywhere else is dropped rather than asserted against.
-    const parsed = JSON.parse(line) as CapturedLine;
-    if (parsed.component === LOG_COMPONENT) captured.push(parsed);
+    const parsed = tryParseLine(line);
+    if (parsed?.component === LOG_COMPONENT) captured.push(parsed);
   }
 }
 
