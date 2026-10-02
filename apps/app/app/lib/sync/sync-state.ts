@@ -295,7 +295,7 @@ const DEVICE_LOCK_VALUE = 'locked';
  * unsynced week is not recoverable and a diary left on a device is. So
  * sign-out has to close the diary without destroying it, and this marker is
  * how, on the instances where the diary belongs to an account rather than to
- * the device (`InstancePolicy.signOutErasesDevice`).
+ * the device (`InstancePolicy.signOutClosesTheDiary`).
  *
  * ── Why a marker and not the policy ──────────────────────────────────────
  *
@@ -330,7 +330,7 @@ export function unlockDevice(storage: KeyValueStorage = deviceStorage()): void {
  *
  * ── Why a setting and not a read ─────────────────────────────────────────
  *
- * The question is `InstancePolicy.signOutErasesDevice`, and the policy arrives
+ * The question is `InstancePolicy.signOutClosesTheDiary`, and the policy arrives
  * through the root loader's public config, which is React and is asynchronous.
  * `session-cache.ts` is neither: it runs on boot, from a controller effect,
  * and it has to decide the moment a refresh comes back refused. So the policy

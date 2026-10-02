@@ -60,7 +60,7 @@ export type AiConnection = 'unknown' | 'connected' | 'absent';
  * A third member used to name a managed instance with no session, and sent
  * the person to the screen that reopens one. It cannot happen on the screens
  * that read this. Signing out of a managed instance LOCKS the device:
- * `signOutErasesDevice` makes `sign-out-flow.ts` call `lockDevice()`, and a
+ * `signOutClosesTheDiary` makes `sign-out-flow.ts` call `lockDevice()`, and a
  * server-refused session does the same through `session-cache.ts`. Then
  * `_personal.tsx`'s gate reads that marker synchronously and sends every
  * personal route, `/describe` and `/add` included, to `/welcome`, through

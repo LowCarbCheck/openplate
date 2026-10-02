@@ -90,12 +90,13 @@ const FROZEN: FrozenAnswer[] = [
       'instance whose only button is a silent redirect to `/welcome`.',
   },
   {
-    question: 'signOutErasesDevice',
+    question: 'signOutClosesTheDiary',
     open: false,
     managed: true,
     governs:
-      'Whether signing out must take the diary off the device. `sync-actions.ts` keeps it on purpose where ' +
-      'the diary belongs to the DEVICE and a wipe would be a terrifying button. Where it belongs to an ' +
+      'Whether signing out must close the diary on the device until the account signs in again. It never ' +
+      'deletes rows. `sync-actions.ts` leaves it open on purpose where the diary belongs to the DEVICE and a ' +
+      'lock would be a terrifying button. Where it belongs to an ' +
       'ACCOUNT, leaving it readable hands the diary of one person to whoever opens the app next.',
   },
   {

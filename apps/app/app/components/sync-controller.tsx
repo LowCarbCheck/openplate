@@ -65,13 +65,13 @@ export function SyncController() {
   // WHAT A REFUSED SESSION COSTS, pushed down before anything can produce one.
   // `session-cache.ts` decides it on a boot path that cannot read React, and
   // the policy is only knowable here, see `setLockDeviceWhenSessionEnds`.
-  const { signOutErasesDevice } = useInstancePolicy();
+  const { signOutClosesTheDiary } = useInstancePolicy();
 
   useEffect(() => {
     // FIRST, and before the resume below: the refusal it can produce is the
     // thing this answers, and a policy that arrived afterwards would leave the
     // first refused boot of every session unlocked.
-    setLockDeviceWhenSessionEnds(signOutErasesDevice);
+    setLockDeviceWhenSessionEnds(signOutClosesTheDiary);
 
     // Sync is off on this instance. Attach nothing, request nothing. The
     // resume flag is still settled: no session will ever be reopened here, and
@@ -161,7 +161,7 @@ export function SyncController() {
       window.removeEventListener('online', runCycle);
       unlisten?.();
     };
-  }, [serverUrl, signOutErasesDevice]);
+  }, [serverUrl, signOutClosesTheDiary]);
 
   return null;
 }

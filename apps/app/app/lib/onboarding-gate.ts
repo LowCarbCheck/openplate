@@ -103,7 +103,7 @@ export interface OnboardingGateInput {
    * showing? `isDeviceLocked()` in `sync/sync-state.ts` (M201 spec 02).
    *
    * Only ever `true` on an instance whose policy says
-   * `signOutErasesDevice`, because that is the only place the marker is
+   * `signOutClosesTheDiary`, because that is the only place the marker is
    * written. On an open instance signing out of sync takes nothing away, so
    * this is `false` there by construction and the gate below is unchanged.
    */

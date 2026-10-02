@@ -14,7 +14,7 @@
  * and a person found all three by hitting them.
  *
  * So the flag is asked ONCE, here, and every screen asks a QUESTION instead.
- * `policy.signOutErasesDevice` carries its own reason; `managed === true` does
+ * `policy.signOutClosesTheDiary` carries its own reason; `managed === true` does
  * not. Two things follow that a boolean cannot give:
  *
  * 1. A call site reads as the rule it depends on. A reviewer can tell whether
@@ -92,16 +92,17 @@ export interface InstancePolicy {
    */
   readonly headerOffersSignIn: boolean;
   /**
-   * Must signing out remove the diary from this device?
+   * Must signing out close the diary on this device until the account signs in
+   * again? It never deletes rows; erasing is the person's own separate choice.
    *
-   * `false` on an open instance, where signing out of sync is not a wipe on
-   * purpose (`sync-actions.ts`): the diary was the device's before sync
-   * existed and treating sign-out as a delete would make it a terrifying
-   * button. `true` on a managed instance, where the diary is the account's. On
-   * a device shared inside a household or a study group, a sign-out that
-   * leaves the diary readable is the whole point of an account defeated.
+   * `false` on an open instance, where signing out of sync leaves the diary
+   * open on purpose (`sync-actions.ts`): the diary was the device's before sync
+   * existed and treating sign-out as a lock would make it a terrifying button.
+   * `true` on a managed instance, where the diary is the account's. On a device
+   * shared inside a household or a study group, a sign-out that leaves the
+   * diary readable is the whole point of an account defeated.
    */
-  readonly signOutErasesDevice: boolean;
+  readonly signOutClosesTheDiary: boolean;
   /**
    * Can the operator of this instance see per-person activity, last sign-in
    * and usage over time?
@@ -198,7 +199,7 @@ const OPEN_INSTANCE_POLICY = {
   requiresAccount: false,
   homeCookieProvesSession: true,
   headerOffersSignIn: false,
-  signOutErasesDevice: false,
+  signOutClosesTheDiary: false,
   operatorSeesActivity: false,
   aiComesFromTheInstance: false,
   serverHoldsTheDiary: false,
@@ -212,7 +213,7 @@ const MANAGED_INSTANCE_POLICY = {
   requiresAccount: true,
   homeCookieProvesSession: false,
   headerOffersSignIn: true,
-  signOutErasesDevice: true,
+  signOutClosesTheDiary: true,
   operatorSeesActivity: true,
   aiComesFromTheInstance: true,
   serverHoldsTheDiary: true,

@@ -40,7 +40,7 @@ export interface SignOutRequest {
   /** The dialog's opt-in checkbox. Unchecked by default, and nothing here defaults it. */
   eraseDevice: boolean;
   /**
-   * `InstancePolicy.signOutErasesDevice`: must signing out close the diary on
+   * `InstancePolicy.signOutClosesTheDiary`: must signing out close the diary on
    * this device?
    *
    * `true` on a managed instance, where the diary belongs to the account.

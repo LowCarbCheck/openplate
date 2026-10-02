@@ -110,10 +110,10 @@ interface KeyedRead {
  */
 export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
   const { t } = useTranslation();
-  // `signOutErasesDevice` is the question, never the mode name: it is the one
+  // `signOutClosesTheDiary` is the question, never the mode name: it is the one
   // that says whether the diary belongs to the account or to the device, and
   // therefore whether this sign-out has to close it.
-  const { signOutErasesDevice } = useInstancePolicy();
+  const { signOutClosesTheDiary } = useInstancePolicy();
   const session = useSyncSession();
   const accountId = session.account?.id ?? null;
   const isSyncing = session.phase === 'syncing';
@@ -162,7 +162,7 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
     setIsBusy(true);
     setError(null);
     try {
-      await runSignOut({ eraseDevice, locksDevice: signOutErasesDevice });
+      await runSignOut({ eraseDevice, locksDevice: signOutClosesTheDiary });
     } catch (caught) {
       // Reached only when an opted-in erase failed, which in practice means a
       // second tab is holding the database. The session is already closed and
@@ -195,7 +195,7 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
         <AlertDialogHeader>
           <AlertDialogTitle>{t('signOut.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {signOutErasesDevice ? t('signOut.bodyManaged') : t('signOut.body')}
+            {signOutClosesTheDiary ? t('signOut.bodyManaged') : t('signOut.body')}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

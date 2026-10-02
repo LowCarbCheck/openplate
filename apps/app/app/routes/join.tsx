@@ -135,7 +135,7 @@ export default function Join() {
   const shownLanguage = i18n.resolvedLanguage ?? i18n.language;
   const navigate = useAppNavigate();
   const configuredSyncUrl = useSyncServerUrl();
-  const { signOutErasesDevice } = useInstancePolicy();
+  const { signOutClosesTheDiary } = useInstancePolicy();
   const [phase, setPhase] = useState<Phase>({ status: 'reading' });
   // Creating an account is a key ceremony in `crypto.subtle`, which a
   // plain-http page off this computer does not have. The link is still read
@@ -282,7 +282,7 @@ export default function Join() {
           <SignedInElsewhereCard
             signedInAs={shown.signedInAs}
             invitedEmail={shown.invitedEmail}
-            onSignOut={() => signOutAndContinue({ serverUrl: configuredSyncUrl, locksDevice: signOutErasesDevice })}
+            onSignOut={() => signOutAndContinue({ serverUrl: configuredSyncUrl, locksDevice: signOutClosesTheDiary })}
           />
         )}
         {shown.status === 'already-registered' && (

@@ -915,7 +915,7 @@ export function markSyncPending(): void {
  * ACCOUNT (`INSTANCE_MODE=managed`), a sign-out that leaves the whole diary
  * readable in `openplate-primary` defeats the point of the account, and on a
  * device shared inside a household or a study group it hands one person's
- * record to the next. The question is `signOutErasesDevice` in
+ * record to the next. The question is `signOutClosesTheDiary` in
  * `app/config/instance-policy.ts`, asked by the caller: this function performs
  * one step and has no opinion about the instance.
  * The baseline is kept too, so signing back in does not re-upload everything.
