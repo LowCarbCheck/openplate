@@ -2,8 +2,8 @@
 # The README's `## Documentation` table and the `docs/` directory must agree.
 #
 # openplate.de publishes these guides, and it publishes exactly the rows of that
-# table: `apps/website/scripts/sync-docs.ts` reads the table as the
-# manifest and names no page itself. So the table is the contract, and a broken
+# table: `scripts/sync-docs.ts` in LowCarbCheck/openplate-website reads the
+# table as the manifest and names no page itself. So the table is the contract, and a broken
 # one is only visible after a release, in another repository, in a workflow no
 # one is watching. This check moves that failure left, to the push that breaks
 # it. M193 spec 05, decision 8.

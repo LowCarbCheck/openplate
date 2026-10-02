@@ -756,7 +756,7 @@ wins for this release, with one warning that names both.
 
 Two optional conveniences:
 
-- Run `nix develop` at the repository root for a shell with Node 24 and pnpm 11, if Nix has flakes enabled. The root `flake.nix` serves all four apps.
+- Run `nix develop` at the repository root for a shell with Node 24 and pnpm 11, if Nix has flakes enabled. The root `flake.nix` serves all three apps.
 - `docker compose -f docker/compose.dev.yml up -d` starts the contributor test database on port 5433, for the integration suite. Skip it if something already answers on that port. `podman compose -f docker/compose.dev.yml up -d` works the same way.
 
 Linting is [oxlint](https://oxc.rs) plus a vendored `anti-slop` plugin under
@@ -786,7 +786,7 @@ The test suite and `docker/compose.dev.yml` use Postgres 17 to match production.
 | `src/mail/`           | The letters in six languages, their strings, and the two transports that send them: the HTTP mail API in `mailer.ts`, SMTP in `smtp-transport.ts`. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
 | `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                                                                                           |
 | `scripts/sync-api/`   | The `pnpm core-api` admin CLI. HTTP only: it imports no database code.                                                                                                                                                                                                                  |
-| `scripts/lib/`        | The translator, a vendored copy of `openplate-website`'s written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                                                                                 |
+| `scripts/lib/`        | The translator, a vendored copy of the one in the private repo `LowCarbCheck/openplate-website`, written by `pnpm sync:translate-lib` and pinned by `TRANSLATE_SOURCE.json`; never edited here.                                                                                         |
 | `drizzle/migrations/` | Generated migrations. Never hand-written: see `src/db/schema.ts`.                                                                                                                                                                                                                       |
 
 ### Invariants

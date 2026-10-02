@@ -3,22 +3,22 @@
 # this repository; there is no cloud CI. M262 spec 05.
 #
 # Git runs hooks only from the root core.hooksPath (`.githooks`, set by
-# `make hooks`), so the gates the four apps carry in apps/<x>/.githooks/pre-push
+# `make hooks`), so the gates the three apps carry in apps/<x>/.githooks/pre-push
 # never run on their own. This file runs them. It decides nothing about HOW an
 # app is tested: each app's own hook stays the unit of truth, with its own
 # stages in its own order, run from inside apps/<x> so that it reads its own
 # lockfile, pnpm-workspace.yaml and tsconfig.json.
 #
 # What it decides is WHICH apps run:
-#   * a path under apps/app/, apps/core/, apps/inference/ or apps/website/
+#   * a path under apps/app/, apps/core/ or apps/inference/
 #     runs that app's gate;
 #   * any other path (root files, .github/, .githooks/, packages/, docker/, a
-#     new folder under apps/) runs ALL four gates, because it can affect any
+#     new folder under apps/) runs ALL three gates, because it can affect any
 #     of them. docker/ holds the app's compose files and quadlet units since
-#     M262, so the app gate is always among the four it runs.
+#     M262, so the app gate is always among the three it runs.
 #   * an app with no changed path is skipped, and the skip is logged by name.
 #   * when the range cannot be computed (no origin/main, a remote sha this
-#     clone does not have), it runs all four and says why. Guessing "nothing
+#     clone does not have), it runs all three and says why. Guessing "nothing
 #     changed" would push untested code with a green hook.
 #
 # The pushed range, per stdin line "<local_ref> <local_sha> <remote_ref>
@@ -43,7 +43,7 @@ if [ "${SKIP_TESTS:-0}" = "1" ]; then
   exit 0
 fi
 
-APPS=(app core inference website)
+APPS=(app core inference)
 ZERO_SHA_PATTERN='^0+$'
 
 toplevel=$(git rev-parse --show-toplevel)
@@ -52,7 +52,7 @@ apps_root=$toplevel/apps
 # In a linked worktree git exports GIT_DIR, and a git command run with GIT_DIR
 # but no GIT_WORK_TREE takes its CURRENT DIRECTORY as the top of the working
 # tree. Every app hook runs from apps/<x>, so without this its `git status`
-# (the website's staleness check) saw the whole tree as deleted and untracked.
+# saw the whole tree as deleted and untracked.
 # Pin both to absolute values before the first cd.
 if [ -n "${GIT_DIR:-}" ]; then
   GIT_DIR=$(git rev-parse --absolute-git-dir)
@@ -115,12 +115,11 @@ else
       apps/app/*) touched[app]=1 ;;
       apps/core/*) touched[core]=1 ;;
       apps/inference/*) touched[inference]=1 ;;
-      apps/website/*) touched[website]=1 ;;
       *) outside=${outside:-$path} ;;
     esac
   done <<<"$changed"
   if [ -n "$outside" ]; then
-    echo "▶ pre-push: $outside is outside the four apps, running every app gate"
+    echo "▶ pre-push: $outside is outside the three apps, running every app gate"
     mark_all
   fi
 fi

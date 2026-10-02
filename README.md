@@ -43,11 +43,12 @@ Each app has its own folder, README, releases, and container image. Only the app
 | [app](apps/app) | The app. Accountless, local-first, stateless, boots with no required secrets. Image `ghcr.io/lowcarbcheck/openplate`, release tags `v*`. | `make dev APP=app`, port 3000 | [README](apps/app/README.md) |
 | [core](apps/core) | The account service. Includes encrypted sync with an operator-held backup key, and the AI allowance of a managed instance. Image `ghcr.io/lowcarbcheck/openplate-core`, release tags `core-v*`. | `make dev APP=core`, port 3000. Needs Postgres and an `apps/core/.env` first. | [README](apps/core/README.md) |
 | [inference](apps/inference) | A self-hosted, OpenAI-compatible plate-photo endpoint: open-weight models, your own hardware. Image `ghcr.io/lowcarbcheck/openplate-inference`, release tags `inference-v*`. | `make dev APP=inference`, port 8300. Needs a model runtime. | [README](apps/inference/README.md) |
-| [website](apps/website) | [openplate.de](https://openplate.de), the project site and the rendered documentation. No image, no release tags. | `make dev APP=website`, port 3000 | [README](apps/website/README.md) |
 
 [`docker/`](docker) holds the compose files and Podman units that run the apps together.
 
-Until 2026-09-28, the three services lived in separate repositories: `openplate-core`, `openplate-inference`, and `openplate-website`. Those repositories are now archived, and their full history is here.
+The project site, [openplate.de](https://openplate.de), lives in the private repository `LowCarbCheck/openplate-website` and is built by Bay from its `main`.
+
+Until 2026-09-28, the three services lived in separate repositories: `openplate-core`, `openplate-inference`, and `openplate-website`. Those repositories are now archived, and the history of core and inference is here. The website was split out again on 2026-10-02 and now lives in the private repository `LowCarbCheck/openplate-website`.
 
 ## Documentation
 
@@ -68,11 +69,11 @@ make test
 make dev APP=app
 ```
 
-`make install` sets up the pre-push hook and installs each app. `make test` runs the unit tests for all four apps. `make dev APP=app` serves the app at `http://localhost:3000`. The table above shows how to run the other apps. Each app keeps its own lockfile and scripts. The root `Makefile` only runs them.
+`make install` sets up the pre-push hook and installs each app. `make test` runs the unit tests for all three apps. `make dev APP=app` serves the app at `http://localhost:3000`. The table above shows how to run the other apps. Each app keeps its own lockfile and scripts. The root `Makefile` only runs them.
 
 ### Before you push
 
-The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all four apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages.
+The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all three apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages.
 
 ```bash
 make check
@@ -81,9 +82,8 @@ make check
 Some stages need extra tools. Each stage stops the push and names any missing tool:
 
 - **podlet** (app, core, inference): checks the Podman units under `docker/quadlet/`. Install it with `brew install podlet`, or run `apps/app/scripts/quadlet.sh --install <dir>` and add that directory to your `PATH`. The script also needs `python3`.
-- **Chromium** (app, website): runs browser tests. Run `pnpm exec playwright install chromium` in the app directory. On Linux, `pnpm exec playwright install --with-deps chromium` also installs system libraries.
+- **Chromium** (app): runs browser tests. Run `pnpm exec playwright install chromium` in the app directory. On Linux, `pnpm exec playwright install --with-deps chromium` also installs system libraries.
 - **Postgres** (core): runs integration tests. In `apps/core`, run `docker compose -f docker/compose.dev.yml up -d`, or point `TEST_DATABASE_URL` to another Postgres instance. `SKIP_INTEGRATION=1 git push` skips these tests once.
-- **The network** (website): checks documentation by cloning three repositories. `SKIP_SYNC=1 git push` skips this check once if you are offline.
 
 ### Optional environments
 
@@ -96,12 +96,12 @@ The browser tier does not run in the nix shell or in the toolbox. It runs on the
 
 `make drift` checks that the flake, `.nvmrc` files, `engines` and `packageManager` fields, Dockerfiles, and the release workflow agree on Node and pnpm.
 
-### Four independent apps
+### Three independent apps
 
-The repository holds four independent apps. It has no root pnpm workspace and no shared lockfile. Each app has its own lockfile, pnpm settings, and release. Each image builds from its own app folder, and corepack installs the pnpm version from that app's `packageManager` field. All four apps use Node 24 and pnpm 11.5.1. Two conditions would change this setup:
+The repository holds three independent apps. It has no root pnpm workspace and no shared lockfile. Each app has its own lockfile, pnpm settings, and release. Each image builds from its own app folder, and corepack installs the pnpm version from that app's `packageManager` field. All three apps use Node 24 and pnpm 11.5.1. Two conditions would change this setup:
 
 - Trigger 1: two apps really import the same package.
-- Trigger 2: a dependency bump that must change in four places and really hurts.
+- Trigger 2: a dependency bump that must change in three places and really hurts.
 
 ### Contributing
 

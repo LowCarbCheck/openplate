@@ -2,7 +2,7 @@
 #
 # There is no workspace at this root: no package.json, no pnpm-workspace.yaml,
 # no shared lockfile. Each app under apps/ installs, tests and releases on its
-# own. Every target here loops over the four apps and runs that app's own
+# own. Every target here loops over the three apps and runs that app's own
 # commands, so this file holds no third copy of a gate.
 #
 # Every per-app command is written out by make itself (static pattern rules,
@@ -17,7 +17,7 @@
 #   make drift            the node and pnpm drift check, scripts/check-env-drift.sh
 #   make check-pg18       release check: the self-host stack starts on Postgres 18, scripts/check-postgres-18.sh
 
-APPS := app core inference website
+APPS := app core inference
 NODE_MAJOR := 24
 
 # The unit tier per app. Inference's `test` is bare vitest, which WATCHES and
@@ -25,7 +25,6 @@ NODE_MAJOR := 24
 unit_test_app := test:unit
 unit_test_core := test:unit
 unit_test_inference := test --run
-unit_test_website := test:unit
 
 # `make check HOOK_STDIN=<file>` feeds that file to every hook instead of the
 # synthetic push line. The control `make check HOOK_STDIN=/dev/null` must FAIL
@@ -97,7 +96,7 @@ $(APPS:%=test-%): test-%:
 dev:
 	pnpm -C apps/$(APP) dev
 
-# The drift check runs first: four gates on a node or pnpm that disagrees
+# The drift check runs first: three gates on a node or pnpm that disagrees
 # with the flake prove less than they seem to.
 check: drift $(APPS:%=check-%)
 

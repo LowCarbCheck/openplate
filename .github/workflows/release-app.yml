@@ -571,35 +571,38 @@ jobs:
   #
   # IT CARRIES THE TAG FOR THE RECORD AND NOTHING ELSE READS IT. Which release
   # the site documents is decided in one place, `highestTag` in the site's
-  # sync-docs.ts, which takes the highest tag under each app's own prefix. A tag
-  # passed as an instruction would be a second answer to that question.
+  # `scripts/sync-docs.ts`, which takes the highest tag under each app's own
+  # prefix. A tag passed as an instruction would be a second answer to that
+  # question.
   #
-  # ── IN-REPO SINCE M262 ──
-  # The site lives in this repository now, so this starts `sync-docs.yml` with
-  # `gh workflow run` instead of a `repository_dispatch` to another repository.
-  # `GITHUB_TOKEN` is enough: GitHub's loop guard stops a `GITHUB_TOKEN` event
-  # from starting a run, EXCEPT `workflow_dispatch` and `repository_dispatch`,
-  # which always do ("Triggering a workflow", GitHub docs). No PAT, so nothing
-  # here expires. `--ref main` runs the sync from `main`, where it commits.
-  # A separate run, not a `workflow_call`, so the sync keeps its own
-  # `sync-docs` concurrency group, and two releases cut minutes apart queue
-  # there, as they did when three repositories dispatched.
-  # Nothing depends on this job, so a marketing site not hearing about a
-  # release can never fail one.
+  # ── ACROSS REPOSITORIES SINCE 2026-10-02 ──
+  # The site lives in the private repository LowCarbCheck/openplate-website, so
+  # this starts its `sync-docs.yml` with `gh workflow run --repo`. The built-in
+  # `GITHUB_TOKEN` cannot reach another repository, so the step reads
+  # `OPENPLATE_WEBSITE_DISPATCH_TOKEN`, a token that may run workflows there.
+  # While that secret is unset the step prints a notice and exits 0, and the
+  # site's daily cron re-quotes within a day. `continue-on-error` keeps a
+  # failed dispatch from failing the release. Nothing depends on this job, so
+  # a marketing site not hearing about a release can never fail one.
   dispatch-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Tags only, and no prerelease: the site only ever quotes a released line.
     if: ${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+    # The built-in token reaches no other repository, so it needs no scope.
     permissions:
-      # `gh workflow run` creates a workflow_dispatch event.
-      actions: write
+      contents: read
     steps:
       - name: Ask openplate.de to re-quote the docs
+        continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.OPENPLATE_WEBSITE_DISPATCH_TOKEN }}
         run: |
-          gh workflow run sync-docs.yml --repo "$GITHUB_REPOSITORY" --ref main \
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::notice::OPENPLATE_WEBSITE_DISPATCH_TOKEN is unset, so this run did not tell the site. The site's daily cron will re-quote the docs within a day."
+            exit 0
+          fi
+          gh workflow run sync-docs.yml --repo LowCarbCheck/openplate-website --ref main \
             -f repo=openplate \
             -f "tag=$GITHUB_REF_NAME"
 

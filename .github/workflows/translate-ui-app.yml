@@ -1,9 +1,9 @@
 # Translate the app's own UI catalogs after an English string changes.
 #
 # ── A COPY OF THE WEBSITE'S WORKFLOW, BEHIND A GATE ──
-# `translate-ui-website.yml` (until M262 `openplate-website/.github/workflows/
-# translate-ui.yml`) is the specification
-# for this file (M229 spec 03). The translate step, the per-language loop, the
+# `translate-ui.yml` in the private repository LowCarbCheck/openplate-website
+# (the site left this repository on 2026-10-02) is the specification for this
+# file (M229 spec 03). The translate step, the per-language loop, the
 # exit-code handling, the bot identity and the fetch-rebase-regenerate recovery
 # are that workflow's, deliberately. What differs is written down below: this
 # repository has no cloud CI, its pre-push hook is its only gate, and a bot
@@ -24,13 +24,12 @@
 # never writes under `app/i18n/locales/en/`.
 #
 # ── ONE REPOSITORY SINCE M262 ──
-# The app is `apps/app` in one repository with core, inference and the site.
-# Every shell step here runs in `apps/app` (the `defaults` block), and every
+# The app is `apps/app` in one repository with core and inference. Every
+# shell step here runs in `apps/app` (the `defaults` block), and every
 # path an action reads names that folder. The loop guard above still holds:
-# a `GITHUB_TOKEN` push starts no workflow in this repository, not this one,
-# not the release workflows, not the site's. The concurrency group carries the
-# app's name, so this run and translate-ui-website.yml never queue behind each
-# other.
+# a `GITHUB_TOKEN` push starts no workflow in this repository, not this one
+# and not the release workflows. The concurrency group carries the app's name,
+# so a sibling workflow never queues behind this run.
 #
 # ── WHY THE GATE RUNS THE BROWSER TIER ──
 # The hook's last stage is five Playwright specs against the production build.
@@ -69,9 +68,8 @@ on:
 
 # Never two at once, and never cancel one mid-flight: a cancelled run has already
 # paid for the strings it bought, and they are only saved at the end of each
-# chunk. Its own group, separate from translate-ui-website.yml, because GitHub
-# keeps only ONE run waiting per group and a shared group could evict one app's
-# waiting run.
+# chunk. Its own group, because GitHub keeps only ONE run waiting per group and
+# a shared group could evict another workflow's waiting run.
 concurrency:
   group: translate-ui-app
   cancel-in-progress: false
@@ -96,8 +94,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         # FULL HISTORY. `tests/unit/translate-lib-provenance.test.ts` hashes
-        # the vendored translator against `apps/website/...` at the commit
-        # its TRANSLATE_SOURCE.json records. A depth-1 checkout has no such
+        # the vendored translator against its source in the private repository
+        # LowCarbCheck/openplate-website at the commit its TRANSLATE_SOURCE.json
+        # records. A depth-1 checkout has no such
         # commit, and the unit tier failed on the first monorepo push. The
         # test stays strict; the checkout brings the history it reads.
         with:
@@ -306,9 +305,10 @@ jobs:
           # this tree rather than merging into it, so the name is worth having.
           run_commit="$(git rev-parse HEAD)"
 
-          # The same two seams the website's workflow carries, and for the same
-          # test: they are never set by this workflow. `merge-memory.ts` is the
-          # website's, vendored under `scripts/lib/` by `pnpm sync:translate-lib`
+          # The same two seams the website's workflow carries (it now lives in
+          # LowCarbCheck/openplate-website), and for the same test: they are
+          # never set by this workflow. `merge-memory.ts` is the website's,
+          # vendored under `scripts/lib/` by `pnpm sync:translate-lib`
           # and hashed by `tests/unit/translate-lib-provenance.test.ts`.
           merge_memory="${MERGE_MEMORY:-node --import tsx scripts/lib/merge-memory.ts}"
           pause="${RETRY_PAUSE:-5}"
@@ -333,9 +333,10 @@ jobs:
           }
 
           # ── WHY THIS IS NOT `git pull --rebase` IN A LOOP ──
-          # The website's sync-docs.yml records the day it was: one conflict
-          # left the tree mid rebase with no abort, and attempts 2 and 3 both
-          # died on "Pulling is not possible because you have unmerged files".
+          # The website's sync-docs.yml (LowCarbCheck/openplate-website) records
+          # the day it was: one conflict left the tree mid rebase with no abort,
+          # and attempts 2 and 3 both died on "Pulling is not possible because
+          # you have unmerged files".
           # `fetch` plus `rebase` rather than `pull` so the recovery can name
           # `origin/main` as a commit, and so an unmerged tree does not refuse
           # outright.

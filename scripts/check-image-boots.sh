@@ -2,12 +2,12 @@
 # Builds one app's production image, boots it, and asks it the request that
 # proves it is alive. One app per run:
 #
-#   scripts/check-image-boots.sh app|core|inference|website
+#   scripts/check-image-boots.sh app|core|inference
 #
-# Each image is built from the context and file its release workflow (or, for
-# the website, Bay) names. The script prints one `ok - ...` line per proof, a
-# `FAIL: ...` line per failed proof, and ends with `PASS: <app>` when every
-# proof held. Every proof has a control that makes it fail:
+# Each image is built from the context and file its release workflow names.
+# The script prints one `ok - ...` line per proof, a `FAIL: ...` line per
+# failed proof, and ends with `PASS: <app>` when every proof held. Every proof
+# has a control that makes it fail:
 #
 #   - build:   the same Dockerfile with its node base tag replaced by a tag
 #              that does not exist must fail to build;
@@ -19,7 +19,6 @@
 #   app        GET /healthcheck on :3000, with APP_URL=http://localhost:3000
 #   core       GET /health on :3000, against a throwaway database (below)
 #   inference  GET /healthz on :8300, MODEL_PROFILE=external, no weights
-#   website    GET / on :80 (Host: openplate.de), built with PRICING_CORE_URL unset
 #
 # core needs ONE variable: M269_PG_ADMIN_URL, the admin connection URL of the
 # shared local Postgres (projects-postgres-1 on port 5433). The script creates
@@ -38,11 +37,10 @@ set -u
 root=$(cd "$(dirname "$0")/.." && pwd)
 app=${1:-}
 case "$app" in
-  app) ctx=apps/app; df=apps/app/Dockerfile.pnpm; pnpm_stage=dependencies-env; node_in_final=1 ;;
-  core) ctx=apps/core; df=apps/core/Dockerfile; pnpm_stage=base; node_in_final=1 ;;
-  inference) ctx=apps/inference; df=apps/inference/Dockerfile; pnpm_stage=build; node_in_final=1 ;;
-  website) ctx=apps/website; df=apps/website/Dockerfile; pnpm_stage=build; node_in_final=0 ;;
-  *) echo "usage: $0 app|core|inference|website" >&2; exit 64 ;;
+  app) ctx=apps/app; df=apps/app/Dockerfile.pnpm; pnpm_stage=dependencies-env ;;
+  core) ctx=apps/core; df=apps/core/Dockerfile; pnpm_stage=base ;;
+  inference) ctx=apps/inference; df=apps/inference/Dockerfile; pnpm_stage=build ;;
+  *) echo "usage: $0 app|core|inference" >&2; exit 64 ;;
 esac
 
 rt=${CONTAINER_RUNTIME:-$(command -v docker || command -v podman)}
@@ -117,17 +115,6 @@ wait_for_200() {
   return 1
 }
 
-# The website build would read the production core if PRICING_CORE_URL were
-# passed through. This check refuses any value, and names the production one.
-pricing_guard() {
-  [ -z "$1" ] && return 0
-  case "$1" in
-    *api.openplate.de*) echo "refused: PRICING_CORE_URL is the production core ($1), the boot test builds with it unset" ;;
-    *) echo "refused: PRICING_CORE_URL is set ($1), the boot test builds with it unset" ;;
-  esac
-  return 1
-}
-
 # ── Control: a missing base tag fails the build ──────────────────────────────
 missing='node:0-m269-no-such-tag'
 sed -E "s#node:24-(alpine|bookworm-slim)#$missing#g" "$root/$df" > "$work/Dockerfile.missing"
@@ -144,21 +131,6 @@ else
 fi
 
 # ── The build ────────────────────────────────────────────────────────────────
-if [ "$app" = website ]; then
-  if g=$(pricing_guard "${PRICING_CORE_URL:-}"); then
-    ok "website builds with PRICING_CORE_URL unset"
-  else
-    echo "FAIL: $g"
-    exit 1
-  fi
-  if g=$(pricing_guard 'https://api.openplate.de'); then
-    fail "control website: a production PRICING_CORE_URL was not refused"
-  else
-    echo "$g" | grep -q 'production core' && ok "control website: a production PRICING_CORE_URL is refused" \
-      || fail "control website: the refusal did not name the production core: $g"
-  fi
-fi
-
 start=$(date +%s)
 if (cd "$root" && "$rt" build -f "$df" -t "$tag" "$ctx") >"$work/build.log" 2>&1; then
   ok "$app image builds ($(( $(date +%s) - start ))s, $df, context $ctx)"
@@ -181,7 +153,6 @@ fi
 
 # ── node 24 and pnpm, inside the image ───────────────────────────────────────
 node_img=$tag
-[ "$node_in_final" = 1 ] || node_img="$tag-$pnpm_stage"
 got_node=$("$rt" run --rm --network none --entrypoint node "$node_img" -v 2>&1 | tail -1)
 if m=$(is_node24 "$got_node"); then
   ok "$app image node -v is $got_node ($node_img)"
@@ -243,13 +214,6 @@ case "$app" in
       "$tag" >/dev/null || { fail "inference container did not start"; exit 1; }
     port=$("$rt" port "$cname" 8300/tcp | head -1 | sed 's/.*://')
     url="http://127.0.0.1:$port/healthz"; hdr=(); label='inference boots with MODEL_PROFILE=external and answers GET /healthz with 200'
-    ;;
-  website)
-    "$rt" run -d --name "$cname" -p 127.0.0.1::80 "$tag" >/dev/null || { fail "website container did not start"; exit 1; }
-    port=$("$rt" port "$cname" 80/tcp | head -1 | sed 's/.*://')
-    # The default server answers every unnamed host with a redirect to
-    # openplate.de, so the request names the host the site is served under.
-    url="http://127.0.0.1:$port/"; hdr=(-H 'Host: openplate.de'); label='website boots and answers GET / with 200'
     ;;
 esac
 

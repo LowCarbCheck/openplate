@@ -2,8 +2,8 @@
 # test-check-env-drift.sh: prove scripts/check-env-drift.sh catches every
 # source it claims to check.
 #
-# It copies the real files (flake.nix, the four package.json and .nvmrc
-# files, the four Dockerfiles, the workflows) into a scratch tree, requires
+# It copies the real files (flake.nix, the three package.json and .nvmrc
+# files, the three Dockerfiles, the workflows) into a scratch tree, requires
 # the unbroken copy to pass, then breaks one source per control in a fresh
 # copy and requires exit 1 plus the DRIFT line that names that source. A
 # mutation that changes nothing fails the suite, so no control can pass
@@ -28,7 +28,7 @@ failures=0
 ok() { echo "ok - $*"; }
 not_ok() { echo "not ok - $*"; failures=$((failures + 1)); }
 
-APPS=(app core inference website)
+APPS=(app core inference)
 dockerfile_of() { if [ "$1" = app ]; then echo "apps/app/Dockerfile.pnpm"; else echo "apps/$1/Dockerfile"; fi; }
 
 # fresh <name>: a new scratch copy of the real files, its path on stdout.
@@ -133,10 +133,10 @@ rc=$?
 if [ "$rc" = 0 ]; then ok "a comment naming node:$O in a Dockerfile is not drift"; else not_ok "a comment naming node:$O was read as a pin, exit $rc"; printf '%s\n' "$out" | sed 's/^/    /'; fi
 
 # ── pnpm ────────────────────────────────────────────────────────────────────
-control packagemanager apps/website/package.json "s/\"pnpm@$PM\"/\"pnpm@$PM_MAJOR.0.0\"/" "apps/website/package\\.json packageManager says pnpm@$PM_MAJOR\\.0\\.0, apps/app says pnpm@$PM\$"
+control packagemanager apps/inference/package.json "s/\"pnpm@$PM\"/\"pnpm@$PM_MAJOR.0.0\"/" "apps/inference/package\\.json packageManager says pnpm@$PM_MAJOR\\.0\\.0, apps/app says pnpm@$PM\$"
 control flake-pnpm flake.nix "s/pnpm_$PM_MAJOR/pnpm_$((PM_MAJOR - 1))/g" "flake\\.nix says pnpm_$((PM_MAJOR - 1)), packageManager says $PM\$"
 control dockerfile-pnpm apps/core/Dockerfile "append:RUN corepack prepare pnpm@$PM --activate" "apps/core/Dockerfile says pnpm@$PM, packageManager says"
-control dockerfile-npm apps/website/Dockerfile "append:RUN npm i -g pnpm" "apps/website/Dockerfile says npm install of pnpm"
+control dockerfile-npm apps/inference/Dockerfile "append:RUN npm i -g pnpm" "apps/inference/Dockerfile says npm install of pnpm"
 control workflow-pnpm .github/workflows/release-app.yml "append:      - run: npm install --global pnpm" "\\.github/workflows/release-app\\.yml says npm install of pnpm"
 
 # ── result ──────────────────────────────────────────────────────────────────

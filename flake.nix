@@ -1,5 +1,5 @@
 {
-  description = "openplate development shell: node 24 and pnpm_11 for all four apps";
+  description = "openplate development shell: node 24 and pnpm_11 for all three apps";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";

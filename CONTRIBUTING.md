@@ -20,7 +20,7 @@ make check
 
 ## Working on one app
 
-Every app in `apps/` is an independent project with its own lockfile and scripts. The repository holds four independent apps and no root pnpm workspace. The root README explains [why](README.md#four-independent-apps). Start an app from the root:
+Every app in `apps/` is an independent project with its own lockfile and scripts. The repository holds three independent apps and no root pnpm workspace. The root README explains [why](README.md#four-independent-apps). Start an app from the root:
 
 ```bash
 make dev APP=app

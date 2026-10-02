@@ -54,7 +54,7 @@ merged into openplate-core in September 2026 (M192). Its repository is archived.
 
 ## Working on openplate itself
 
-The repository root has one dev-shell flake for all four apps. Run `nix develop` there to get
+The repository root has one dev-shell flake for all three apps. Run `nix develop` there to get
 Node 24 and pnpm 11 ([`flake.nix`](../../../flake.nix)). If you do not use Nix, install Node 24
 or newer and pnpm yourself. You do not need to provision a database or start an external
 service. The commands are in the
