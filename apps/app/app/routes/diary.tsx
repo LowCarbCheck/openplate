@@ -2954,14 +2954,6 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6" {...swipeHandlers}>
-      {/*
-        What changed in this build, said once (ADR-0018). FIRST on the page, and on
-        the dashboard too, because `/diary` is the installed app's `start_url`
-        and is therefore the screen most people land on after an update. It
-        decides for itself and renders nothing at all on a device that has
-        already been told, which is every device on every day but one.
-      */}
-      <WhatsNewCard />
       <BackupNudgeBanner
         daysSinceExport={daysSinceExportBackup}
         daysSinceFirstData={daysSinceFirstDataLocal}
@@ -3026,6 +3018,20 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
       {!hasLogs && emptyState === 'ordinary' && <OrdinaryEmpty describeTo={describeTo} scanTo={scanTo} />}
 
       {hasLogs && <IntakeComposer describeTo={describeTo} scanTo={scanTo} />}
+
+      {/*
+        What changed in this build, said once (ADR-0018), as the LAST thing on the
+        page, and on the dashboard too. It is drawn after an effect (a role read
+        and a profile read), so it always arrives after first paint. At the top
+        that arrival pushed the whole day down by the card's height (a 0.2226
+        layout shift, 234 px on a phone). Here nothing sits under it in the page
+        flow, only the padding above the tab bar, so it displaces nothing, and
+        tapping Dismiss lifts nothing. Keep it the last child: anything put after
+        it brings the shift back, and `tests/e2e/whats-new.spec.ts` fails if so.
+        It renders nothing at all on a device that has been told, which is every
+        device on every day but one, and nothing while the card is switched off.
+      */}
+      <WhatsNewCard />
     </div>
   );
 }

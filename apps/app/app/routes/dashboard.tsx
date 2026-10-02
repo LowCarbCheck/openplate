@@ -718,14 +718,6 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      {/*
-        What changed in this build, said once (ADR-0018), ABOVE the hero and above
-        the Insights hint further down. Two one-time cards on one screen is one
-        too many, and this one is the older claim: the Insights hint is about a
-        feature that has been there for a while, this is about the update that
-        just landed. It renders nothing on a device that has been told.
-      */}
-      <WhatsNewCard />
       <TodayHeroCard
         summary={summary}
         goals={goals}
@@ -814,6 +806,20 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         device with no account never asks.
       */}
       <PulseTileSlot />
+      {/*
+        What changed in this build, said once (ADR-0018), as the LAST thing on
+        the page. It is drawn after an effect (a role read and a profile read),
+        so it always arrives after first paint, and at the top that pushed the
+        hero and everything under it down by the card's height (a 0.2226 layout
+        shift on the diary, the same card). Here nothing sits under it in the
+        page flow, so it displaces nothing, and Dismiss lifts nothing. Keep it
+        the last child: anything put after it brings the shift back, and
+        `tests/e2e/whats-new.spec.ts` fails if so. The pulse tile above it is
+        drawn late too, and pushes the card down if it arrives after the card
+        does. It renders nothing on a device that has been told, and nothing
+        while the card is switched off.
+      */}
+      <WhatsNewCard />
     </div>
   );
 }

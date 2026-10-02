@@ -2,9 +2,21 @@
  * "Here is what changed", said once after an update.
  *
  * The rules live in `#app/lib/whats-new`; this is the one place that performs
- * them. It renders at the top of `/diary` (the installed app's `start_url`) and
+ * them. It renders at the END of `/diary` (the installed app's `start_url`) and
  * of `/dashboard`, so a person who updated meets it on whichever of the two
  * they open, until they dismiss it or open the notes.
+ *
+ * ── WHY AT THE END OF THE PAGE ───────────────────────────────────────────
+ *
+ * The card always arrives after first paint (see the next section), and a box
+ * that arrives late moves whatever sits under it. At the top it moved the whole
+ * page: a 0.2226 layout shift and 234 px of content pushed down on a phone. At
+ * the end of the page flow nothing sits under it, so its arrival, and its
+ * Dismiss, displace nothing. A blank 234 px reservation at the top was the other
+ * way out and the worse one: on almost every visit there is no card, and a
+ * permanent gap costs every one of those. The price of this placement is that
+ * the card is a scroll away on a long day. Callers must keep it the LAST child
+ * of the page; `tests/e2e/whats-new.spec.ts` fails if something follows it.
  *
  * ── WHY IT DECIDES IN AN EFFECT AND NOT IN A LOADER ──────────────────────
  *
@@ -51,8 +63,9 @@
  *   names the newest release they have not seen and not a stale answer made
  *   while it was hidden;
  * - the card then appears after a role read and a profile read instead of after
- *   the profile read alone. It is the same one-time insertion at the top of the
- *   page it always was, reached later.
+ *   the profile read alone. It is the same one-time late insertion it always
+ *   was, reached later, and it lands at the end of the page where it moves
+ *   nothing.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';

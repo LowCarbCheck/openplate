@@ -25,9 +25,20 @@
  *   reserves nothing and moves nothing, the switch row is one fixed box in
  *   every state, and an administrator whose role arrives late flips a thumb on
  *   Preferences and inserts a row in About without the browser recording a
- *   shift. NOT CLAIMED: that the card itself is shift-free when it shows. It is
- *   inserted at the top of the page after an effect, and that has always moved
- *   the page below it; this file does not pin it either way.
+ *   shift.
+ * - THE CARD ITSELF IS SHIFT-FREE WHEN IT SHOWS. It decides in an effect, so it
+ *   always arrives after first paint, and it used to arrive at the TOP of the
+ *   page (a 0.2226 shift, 234 px of content pushed down). It now sits at the
+ *   END of `/diary` and `/dashboard`, where nothing in the page flow sits below
+ *   it, so its late arrival displaces nothing and tapping Dismiss lifts nothing
+ *   either. At the phone width and at 1280 x 800, on both pages, for a device
+ *   that switched it on and for an administrator whose role lands late: the
+ *   `layout-shift` total is 0 across the load, across the card arriving and
+ *   across Dismiss; every other element in `main` keeps its top; nothing but
+ *   padding and the fixed chrome sits under the card; and the card neither
+ *   overflows the document nor clips its own keys. NOT CLAIMED: that the card
+ *   is easy to find. At the end of a long day on `/diary` it is a scroll away,
+ *   which is the price of moving nothing.
  * - THE CARD IS BEHIND A SWITCH (Preferences). Every case above runs with the
  *   switch turned ON before the first load, because a signed-out device has the
  *   card off by default. The default itself is claimed separately: a signed-out
@@ -59,7 +70,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { WHATS_NEW_STORAGE_KEY } from '#app/lib/whats-new';
-import { WHATS_NEW_VISIBLE_KEY } from '#app/lib/whats-new-visibility';
+import { WHATS_NEW_VISIBLE_EVENT, WHATS_NEW_VISIBLE_KEY } from '#app/lib/whats-new-visibility';
 
 import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
 import { adminConsoleStub, routeAdminConsole } from './admin-console-stub';
@@ -74,6 +85,7 @@ import {
   settleFrames,
   shiftScoreAfter,
   turnOffScrollAnchoring,
+  type ShiftEntry,
 } from './layout-shift';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1037,4 +1049,326 @@ test.describe('an administrator whose role arrives after the page', () => {
       expect(score, `${path}: the role landing moved ${moved.join('; ')}`).toBe(0);
     });
   }
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The card arriving moves nothing: it sits at the END of the page
+////////////////////////////////////////////////////////////////////////////////
+
+/** The two pages that carry the card, and an element that proves each one has drawn. */
+const CARD_PAGES = [
+  { path: '/diary', anchor: '[data-slot="date-nav"]' },
+  { path: '/dashboard', anchor: '[data-slot="week-glance-card"]' },
+] as const;
+
+/** Where the card sits and whether it fits, read in one evaluate so every number belongs to one frame. */
+interface CardGeometry {
+  /**
+   * Elements in `main` whose top is at or under the card's top and that are not
+   * the card, one of its ancestors, or fixed or sticky chrome. Empty means the
+   * card is the last thing in the page flow.
+   */
+  below: string[];
+  left: number;
+  right: number;
+  cardScrollWidth: number;
+  cardClientWidth: number;
+  cardScrollHeight: number;
+  cardClientHeight: number;
+  /** Descendants of the card that draw past the card's own edges. */
+  spilling: string[];
+  documentScrollWidth: number;
+  documentClientWidth: number;
+}
+
+/** Reads {@link CardGeometry} off the page. The card must be on it. */
+async function readCardGeometry(page: Page): Promise<CardGeometry> {
+  // Serialised into the page, so its helpers cannot live outside it.
+  // oxlint-disable unicorn/consistent-function-scoping
+  return page.evaluate(() => {
+    const card = document.querySelector('[data-slot="whats-new"]');
+    const main = document.querySelector('main');
+    if (card === null || main === null) throw new Error('the card or main is not on the page');
+    // Fixed and sticky chrome keeps its place in the viewport and is never pushed by content.
+    const isPinned = (element: Element): boolean => {
+      for (let node: Element | null = element; node !== null; node = node.parentElement) {
+        const position = getComputedStyle(node).position;
+        if (position === 'fixed' || position === 'sticky') return true;
+      }
+      return false;
+    };
+    const describe = (element: Element): string =>
+      `${element.tagName.toLowerCase()}[${element.getAttribute('data-slot') ?? ''}] "${(element.textContent ?? '').trim().slice(0, 30)}"`;
+    const cardRect = card.getBoundingClientRect();
+    const cardTop = cardRect.top + window.scrollY;
+    const below: string[] = [];
+    for (const element of main.querySelectorAll('*')) {
+      if (card.contains(element) || element.contains(card) || isPinned(element)) continue;
+      const rect = element.getBoundingClientRect();
+      // A box of nothing takes no room and is not under the card in any sense a person meets.
+      if (rect.width === 0 || rect.height === 0) continue;
+      const top = rect.top + window.scrollY;
+      if (top + 0.5 >= cardTop)
+        below.push(`${describe(element)} top ${Math.round(top)} px, card top ${Math.round(cardTop)} px`);
+    }
+    const spilling: string[] = [];
+    for (const element of card.querySelectorAll('*')) {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) continue;
+      if (rect.right > cardRect.right + 0.5 || rect.left < cardRect.left - 0.5 || rect.bottom > cardRect.bottom + 0.5) {
+        spilling.push(describe(element));
+      }
+    }
+    return {
+      below,
+      left: cardRect.left,
+      right: cardRect.right,
+      cardScrollWidth: card.scrollWidth,
+      cardClientWidth: card.clientWidth,
+      cardScrollHeight: card.scrollHeight,
+      cardClientHeight: card.clientHeight,
+      spilling,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      documentClientWidth: document.documentElement.clientWidth,
+    };
+  });
+  // oxlint-enable unicorn/consistent-function-scoping
+}
+
+/** The card neither overflows the document nor clips or spills its own contents. */
+function expectCardFits(geometry: CardGeometry, where: string): void {
+  // NON-VACUITY: a card that measured as a point would fit anywhere.
+  expect(geometry.right - geometry.left, `${where}: the card must have been drawn to be measured`).toBeGreaterThan(150);
+  expect(
+    geometry.documentScrollWidth,
+    `${where}: the document needs ${geometry.documentScrollWidth} px of ${geometry.documentClientWidth}`,
+  ).toBeLessThanOrEqual(geometry.documentClientWidth);
+  expect(geometry.left, `${where}: the card starts left of the screen`).toBeGreaterThanOrEqual(0);
+  expect(geometry.right, `${where}: the card ends right of the screen`).toBeLessThanOrEqual(
+    geometry.documentClientWidth,
+  );
+  expect(geometry.cardScrollWidth, `${where}: the card clips sideways`).toBeLessThanOrEqual(geometry.cardClientWidth);
+  expect(geometry.cardScrollHeight, `${where}: the card clips its height`).toBeLessThanOrEqual(
+    geometry.cardClientHeight + 1,
+  );
+  expect(geometry.spilling, `${where}: something draws outside the card`).toEqual([]);
+}
+
+/**
+ * The keys of the card that a thumb could NOT land on once the page is scrolled
+ * as far down as it goes: each key's centre is hit-tested, and a key under the
+ * fixed tab bar, or off screen, answers with something that is not the key.
+ */
+async function unreachableKeys(page: Page): Promise<string[]> {
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await settleFrames(page);
+  return whatsNewCard(page)
+    .locator('a, button')
+    .evaluateAll((keys) =>
+      keys
+        .filter((key) => {
+          const box = key.getBoundingClientRect();
+          const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+          return hit === null || !key.contains(hit);
+        })
+        .map((key) => (key.textContent ?? '').trim()),
+    );
+}
+
+/** Switches the card on the way the Preferences switch does, in the page that is already open. */
+async function switchCardOnLive(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ key, event }) => {
+      window.localStorage.setItem(key, 'on');
+      window.dispatchEvent(new CustomEvent(event, { detail: { isVisible: true } }));
+    },
+    { key: WHATS_NEW_VISIBLE_KEY, event: WHATS_NEW_VISIBLE_EVENT },
+  );
+}
+
+/**
+ * A shift whose every source is the desktop sidebar's own.
+ *
+ * An administrator's role lands after the page and the sidebar's footer grows
+ * an Administration row, which moves the footer up by one row (49 px, a score of
+ * about 0.0014). That belongs to the ROLE, not to the card, and it happens with
+ * the card switched off too. It is excused only in the administrator walks, so
+ * the card's own arrival is still read in full everywhere else, and only for an
+ * entry that moved nothing outside the sidebar.
+ */
+function isSidebarShift(entry: ShiftEntry): boolean {
+  return entry.sources.length > 0 && entry.sources.every((source) => /^[a-z0-9]+\[sidebar/.test(source));
+}
+
+/**
+ * Everything the card's arrival and its Dismiss must leave alone, asserted on a
+ * page where the card has JUST appeared and `before` is the reading taken the
+ * moment before it did.
+ *
+ * @param page - the page the card appeared on.
+ * @param reading - the tops and the shift count taken before the card showed.
+ * @param where - what to call this reading in a failure message.
+ */
+async function expectArrivalAndDismissMoveNothing(
+  page: Page,
+  reading: { tops: Record<string, number>; since: number; excusesSidebar: boolean },
+  where: string,
+): Promise<void> {
+  const card = whatsNewCard(page);
+  await expect(card, `${where}: the card must have arrived for this to be a reading of it`).toBeVisible();
+  await settleFrames(page);
+
+  const afterArrival = await readTops(page);
+  expect(movedBetween(reading.tops, afterArrival), `${where}: elements that moved when the card arrived`).toEqual([]);
+  // `shiftScoreAfter` skips by count, so the excused entries are taken out
+  // first and the rest are summed by hand.
+  const arrivalEntries = (await readShiftEntries(page))
+    .slice(reading.since)
+    .filter((entry) => !(reading.excusesSidebar && isSidebarShift(entry)));
+  expect(
+    shiftScoreAfter(arrivalEntries, 0),
+    `${where}: the card arriving moved ${arrivalEntries.flatMap((entry) => entry.sources).join('; ')}`,
+  ).toBe(0);
+
+  const geometry = await readCardGeometry(page);
+  expect(geometry.below, `${where}: something sits under the card in the page flow`).toEqual([]);
+  expectCardFits(geometry, where);
+  expect(await unreachableKeys(page), `${where}: keys a thumb cannot land on`).toEqual([]);
+
+  // DISMISS is a tap on the card, so nothing the person did not ask to move may
+  // move. With nothing under the card, nothing can.
+  const topsWithCard = await readTops(page);
+  const sinceDismiss = (await readShiftEntries(page)).length;
+  await card.getByRole('button', { name: EN.card.dismiss, exact: true }).click();
+  await expect(card, `${where}: the tap hides the card`).toHaveCount(0);
+  await settleFrames(page);
+  expect(movedBetween(topsWithCard, await readTops(page)), `${where}: elements that moved on Dismiss`).toEqual([]);
+  expect(shiftScoreAfter(await readShiftEntries(page), sinceDismiss), `${where}: Dismiss recorded a layout shift`).toBe(
+    0,
+  );
+}
+
+/**
+ * The same walk at whatever viewport the enclosing `describe` set.
+ *
+ * @param label - the viewport, for failure messages and test names.
+ */
+function registerArrivalTests(label: string): void {
+  for (const { path, anchor } of CARD_PAGES) {
+    test(`${label} ${path}: a device that switched the card on gets it with nothing moving`, async ({ page }) => {
+      await installShiftObserver(page);
+      await turnOffScrollAnchoring(page);
+      await completeOnboarding(page);
+      await acknowledge(page, OLDEST_VERSION);
+
+      ////////////////////////////////////////////////////////////////////////
+      // THE REAL LOAD: switched on before the page opens, so the card arrives
+      // after the profile read, exactly as it does for a person.
+      ////////////////////////////////////////////////////////////////////////
+      await chooseCard(page, 'on');
+      await page.goto(path);
+      await expect(page.locator(anchor)).toBeVisible();
+      await expect(whatsNewCard(page), 'the control: an older acknowledgement is told').toBeVisible();
+      await settleFrames(page);
+      const load = await wholeLoadShift(page);
+      expect(load.score, `${label} ${path}: the load moved ${load.moved.join('; ')}`).toBe(0);
+
+      ////////////////////////////////////////////////////////////////////////
+      // THE ARRIVAL, caught between two readings: the card is hidden, the
+      // tops are read, and then the card is switched on in the open page.
+      ////////////////////////////////////////////////////////////////////////
+      await chooseCard(page, 'off');
+      await page.goto(path);
+      await expect(page.locator(anchor)).toBeVisible();
+      await settleWhatsNew(page);
+      await expect(whatsNewCard(page), 'the reading starts from a page without the card').toHaveCount(0);
+      const tops = await readTops(page);
+      const since = (await readShiftEntries(page)).length;
+      await switchCardOnLive(page);
+      await expectArrivalAndDismissMoveNothing(page, { tops, since, excusesSidebar: false }, `${label} ${path}`);
+    });
+  }
+
+  test.describe(`${label}: an administrator whose role lands after the page`, () => {
+    test.use({ serviceWorkers: 'block' });
+
+    for (const { path, anchor } of CARD_PAGES) {
+      test(`${label} ${path}: the card arrives with the role and nothing moves`, async ({ page }) => {
+        const stub = adminConsoleStub();
+        await installShiftObserver(page);
+        await turnOffScrollAnchoring(page);
+        await routeAdminConsole(page, stub);
+        await completeOnboarding(page);
+        await signInFixtureAccount(page);
+        // The administrator default mounted the card and recorded this new
+        // device; waited on so that write cannot land on the older
+        // acknowledgement written next.
+        await expect
+          .poll(() => acknowledgedVersion(page), { message: 'the administrator default mounts the card' })
+          .toBe(BUILD.version);
+        await acknowledge(page, OLDEST_VERSION);
+
+        // The role is held back until the page has asked for it, so the page is
+        // drawn WITHOUT it first and the card can only come with the answer.
+        const { asked, release } = await holdAccountRead(page);
+        await page.goto(path, { waitUntil: 'commit' });
+        await asked;
+        await expect(page.locator(anchor)).toBeVisible();
+        await settleFrames(page);
+        await expect(whatsNewCard(page), 'the control: with the role unread there is no card').toHaveCount(0);
+        const tops = await readTops(page);
+        const since = (await readShiftEntries(page)).length;
+
+        release();
+        await expectArrivalAndDismissMoveNothing(
+          page,
+          { tops, since, excusesSidebar: true },
+          `${label} ${path} (administrator)`,
+        );
+      });
+    }
+  });
+}
+
+test.describe('on a phone', () => {
+  registerArrivalTests('phone 390x844');
+});
+
+test.describe('on a desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  registerArrivalTests('desktop 1280x800');
+});
+
+test('the arrival reading is not blind: a card put at the top of the page is read as a move', async ({ page }) => {
+  await installShiftObserver(page);
+  await turnOffScrollAnchoring(page);
+  await completeOnboarding(page);
+  await acknowledge(page, OLDEST_VERSION);
+  await chooseCard(page, 'off');
+  await page.goto('/diary');
+  await expect(page.locator('[data-slot="date-nav"]')).toBeVisible();
+  await settleWhatsNew(page);
+  const tops = await readTops(page);
+  const since = (await readShiftEntries(page)).length;
+  await switchCardOnLive(page);
+  await expect(whatsNewCard(page)).toBeVisible();
+  await settleFrames(page);
+
+  // The card is lifted to the top of the page, where it used to be mounted.
+  // Every reading the tests above rely on has to see that.
+  await page.evaluate(() => {
+    const card = document.querySelector('[data-slot="whats-new"]');
+    card?.parentElement?.prepend(card);
+  });
+  await settleFrames(page);
+  const geometry = await readCardGeometry(page);
+  expect(geometry.below, 'the control: the geometry reading sees things under a card at the top').not.toEqual([]);
+  expect(
+    movedBetween(tops, await readTops(page)),
+    'the control: the tops reading sees the page pushed down',
+  ).not.toEqual([]);
+  expect(
+    shiftScoreAfter(await readShiftEntries(page), since),
+    'the control: the browser records the push as a layout shift',
+  ).toBeGreaterThan(0);
 });
