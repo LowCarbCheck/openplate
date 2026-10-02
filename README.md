@@ -8,18 +8,31 @@ An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI pla
 
 Find guides, screenshots, and full documentation on [openplate.de](https://openplate.de), or see the repository [Documentation](#documentation) section.
 
-## Try it
-
-The maintainers run a hosted version from this code at **<https://app.openplate.de>**. Sign up to receive either 10 free AI scans or 14 days, whichever finishes first. No credit card is required. Continuing after the trial requires a paid plan. See [Pricing](https://openplate.de/pricing) for details. Your diary is encrypted on your device before syncing. Like any managed instance, the operator holds a backup key that can read your data. To self-host openplate for free, follow the Quickstart below.
-
 ## Quickstart
+
+Run openplate on your machine. Start the base setup with two commands:
 
 ```bash
 curl -O https://raw.githubusercontent.com/LowCarbCheck/openplate/main/docker/compose.yml
 docker compose -f compose.yml up -d
 ```
 
-This deployment uses one container, no database, and no `.env` configuration step. The app is reachable at `http://localhost:3000`. [`docker/topologies/`](docker/topologies/README.md) contains larger setups for sync, self-hosted AI, and running all services together.
+This command runs one container from `ghcr.io/lowcarbcheck/openplate`. It needs no database, secret, or `.env` file. Open `http://localhost:3000`. The server stores no data. Your diary stays in your browser storage. Back it up using the in-app JSON export. Add your own AI key in Settings.
+
+To add services, pick a compose file:
+
+| Setup | What you gain | What you now run |
+| --- | --- | --- |
+| App only, [`docker/compose.yml`](docker/compose.yml) | The whole tracker. This is the quickstart above. | One stateless container. |
+| App and core server, [`compose.core.yml`](docker/topologies/compose.core.yml) | Accounts, and sync across a person's devices. | Three containers with Postgres. Back up the database and `SERVER_SECRET`. |
+| App and inference, [`compose.inference.yml`](docker/topologies/compose.inference.yml) | One-tap AI for everyone, on your own hardware. | Two containers and about 2 GiB of model weights. |
+| Everything, [`compose.full.yml`](docker/topologies/compose.full.yml) | All of the above together. | Four containers. |
+
+See [`docker/topologies/`](docker/topologies/README.md) for setup and backup guides. Podman units live in [`docker/quadlet/`](docker/quadlet).
+
+### Hosted by the maintainers
+
+To skip hosting, use the maintainer instance at **<https://app.openplate.de>**. New signups get 10 free AI scans or 14 days, whichever comes first. No credit card is needed. Continued use requires a paid subscription. See [Pricing](https://openplate.de/pricing) for details. The client encrypts your diary before sync. As with any managed instance, the operator holds a backup key that can read your data.
 
 ## What is in this repository
 
