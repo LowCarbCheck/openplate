@@ -91,6 +91,14 @@ import {
   openSyncVault,
   revokeCachedSession,
 } from './session-cache';
+import {
+  decideDeviceOpen,
+  DeviceHeldByAnotherAccountError,
+  isDeviceHeldFromEmail,
+  readDeviceLock,
+  type DeviceLock,
+  type DeviceLockOwner,
+} from './sync-state';
 import { clearHomeHint } from '#app/lib/home-entry';
 import { releasePushForSignOut } from '#app/lib/push';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
@@ -185,6 +193,49 @@ async function settleHealthConsent({
   if (agreed?.version !== owed) return owed;
   await authClient.recordHealthConsent({ version: owed });
   return null;
+}
+
+/**
+ * The owner a locked device names, for a refusal to carry; `null` for an
+ * unlocked device or an owner nobody can name.
+ */
+function lockOwnerOf(lock: DeviceLock): DeviceLockOwner | null {
+  return lock.kind === 'locked' ? lock.owner : null;
+}
+
+/**
+ * Refuses, BEFORE THE INVITE IS SPENT, an invitation on a device that holds
+ * another account's diary (ADR-0022).
+ *
+ * An invitation always creates a NEW account, so on a locked device it can
+ * only go ahead when the lock's address is known and is the invitation's own:
+ * the service then answers `409` and `/join` sends the person to sign in. The
+ * invitation's address is read with the idempotent lookup, and only on a
+ * locked device, so an ordinary signup makes no extra round trip. `/join`
+ * asks the same question before it draws the form; this is the line that
+ * holds for any other caller, because a signup refused AFTER the service
+ * created the account would spend the invitation on an account this device
+ * then refuses to open.
+ *
+ * @throws DeviceHeldByAnotherAccountError when the device holds another account's diary.
+ */
+async function refuseInviteOnHeldDevice({
+  authClient,
+  inviteToken,
+}: {
+  authClient: SyncAuthClient;
+  inviteToken: string;
+}): Promise<void> {
+  const lock = readDeviceLock();
+  if (lock.kind === 'unlocked') return;
+  const owner = lockOwnerOf(lock);
+  if (owner === null || owner.email === null) throw new DeviceHeldByAnotherAccountError({ owner });
+  const looked = await authClient.inviteLookup({ inviteToken });
+  // A dead invitation is the signup's own answer to give, and it spends nothing.
+  if ('status' in looked) return;
+  if (isDeviceHeldFromEmail({ lock, email: looked.email, isNewAccount: true })) {
+    throw new DeviceHeldByAnotherAccountError({ owner });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -319,6 +370,8 @@ export async function createSyncAccount({
   healthConsent?: HealthConsentRequestWire | null;
 } & SyncActionOptions): Promise<SyncSetupOutcome> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
+  // FIRST, before the key derivation and before the invite is spent (ADR-0022).
+  await refuseInviteOnHeldDevice({ authClient, inviteToken });
   await requireCompatibleService(authClient);
 
   const recovery = generateRecoveryCode();
@@ -404,6 +457,13 @@ async function putFirstKeyRecord(http: SyncHttpClient, record: FirstKeyRecord): 
 export type SignInToSyncResult =
   | { status: 'connected' }
   /**
+   * This device holds ANOTHER account's diary (ADR-0022). Nothing was opened:
+   * either the typed address is not the lock's, and no request was made, or
+   * the core said who this is, the id is not the lock's, and the new tokens
+   * were logged out again. The page shows the account-switch step.
+   */
+  | { status: 'device-held'; owner: DeviceLockOwner | null }
+  /**
    * Hand this straight to the setup ceremony as its `provision`. It re-derives
    * from the passphrase the user just typed, mints a DEK and a recovery code,
    * pushes both key records and opens the vault — so the ceremony's own
@@ -451,6 +511,15 @@ export async function signInToSync({
   deriveHash = workerArgon2idDeriver,
   fetchImpl,
 }: { serverUrl: string; email: string; passphrase: string } & SyncActionOptions): Promise<SignInToSyncResult> {
+  // THE ADDRESS, BEFORE ANYTHING (ADR-0022). On a device that holds another
+  // account's diary, an address that cannot be the owner's stops here, before
+  // the handshake, the key lookup, the Argon2id run and the login: nothing
+  // about this account reaches the server from a device that will not open it.
+  const lockAtStart = readDeviceLock();
+  if (isDeviceHeldFromEmail({ lock: lockAtStart, email, isNewAccount: false })) {
+    return { status: 'device-held', owner: lockOwnerOf(lockAtStart) };
+  }
+
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   await requireCompatibleService(authClient);
 
@@ -466,6 +535,17 @@ export async function signInToSync({
   });
 
   const session = await authClient.login({ email, authHash });
+
+  // THE ID, RIGHT AFTER THE LOGIN (ADR-0022), for the lock that knows its
+  // owner only by id (an older build's): the core has just said who this is.
+  // Before the key records are read and before the unfinished-setup repair,
+  // which would write records for an account this device then refuses. The
+  // fresh tokens are revoked again, best effort, because nothing will use them.
+  const opening = decideDeviceOpen({ lock: readDeviceLock(), accountId: session.account.id });
+  if (opening.kind === 'refuse') {
+    await authClient.logout();
+    return { status: 'device-held', owner: opening.owner };
+  }
 
   const records = await http.listKeyRecords();
   const passphraseRecord = records.find((record) => record.kind === 'passphrase');
@@ -1330,6 +1410,16 @@ export async function resetSyncPassphrase({
   // own screen rather than a throw. Everything else still throws.
   if ('status' in opened) return { status: 'invalid' };
 
+  // A HELD DEVICE, BY ADDRESS (ADR-0022). The link names no address and the
+  // core has no way to read a token without spending it, so this is the first
+  // moment the account is known, and the token is already spent. Nothing else
+  // has happened: no recovery, no rotation, no session. The old password still
+  // works, and a new link returns the same escrowed code.
+  const lock = readDeviceLock();
+  if (isDeviceHeldFromEmail({ lock, email: opened.email, isNewAccount: false })) {
+    return { status: 'device-held', owner: lockOwnerOf(lock), email: opened.email };
+  }
+
   return finishReset({
     recovery: {
       serverUrl,
@@ -1354,6 +1444,8 @@ async function finishReset({
 }): Promise<ResetSyncPassphraseResult> {
   const recovered = await recoverSyncAccount({ ...recovery, healthConsent });
   if (recovered.status === 'recovered') return { status: 'ready', email: recovery.email };
+  if (recovered.status === 'device-held')
+    return { status: 'device-held', owner: recovered.owner, email: recovery.email };
   return {
     status: 'consent-required',
     continueWithConsent: () => finishReset({ recovery, healthConsent: { version: recovered.version } }),
@@ -1373,10 +1465,21 @@ async function finishReset({
 export type ResetSyncPassphraseResult =
   | { status: 'ready'; email: string }
   | { status: 'invalid' }
+  /**
+   * This device holds ANOTHER account's diary (ADR-0022). The link is spent,
+   * nothing rotated and no session opened, so the old password still works
+   * and a new link returns the same escrowed code. `email` is the account the
+   * link was for, remembered for `/forgot` after the erase.
+   */
+  | { status: 'device-held'; owner: DeviceLockOwner | null; email: string }
   | { status: 'consent-required'; continueWithConsent: () => Promise<ResetSyncPassphraseResult> };
 
 /** How a recovery ended: done, or stopped before its first write because the account owes the instance a consent. */
-export type RecoverSyncAccountResult = { status: 'recovered' } | { status: 'consent-required'; version: string };
+export type RecoverSyncAccountResult =
+  | { status: 'recovered' }
+  | { status: 'consent-required'; version: string }
+  /** Refused before anything rotated: the device holds another account's diary (ADR-0022). */
+  | { status: 'device-held'; owner: DeviceLockOwner | null };
 
 /**
  * Sets a new passphrase using the recovery code, and mints a replacement code
@@ -1440,6 +1543,19 @@ export async function recoverSyncAccount({
     email,
     recoveryAuthHash: await deriveRecoveryAuthHash(rawRecoveryCode),
   });
+
+  // A HELD DEVICE, BY ID, BEFORE ANYTHING ROTATES (ADR-0022). The guard inside
+  // `openSyncVault` would refuse this account too, but only AFTER the rotation
+  // below had committed, and the compartment's rewrap that follows the vault
+  // would then never run: its doors would stay on a passphrase and a code that
+  // no longer exist, and the share keys, the pins and the research identity
+  // would be lost for good. So the device is asked here, where the recovery
+  // has written nothing, and the session it just opened is revoked again.
+  const opening = decideDeviceOpen({ lock: readDeviceLock(), accountId: recovered.account.id });
+  if (opening.kind === 'refuse') {
+    await authClient.logout();
+    return { status: 'device-held', owner: opening.owner };
+  }
 
   // THE CONSENT, BEFORE ANYTHING ROTATES (M266). The last step below pushes
   // the compartment's rewrap, which the core refuses to an account without

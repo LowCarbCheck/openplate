@@ -31,6 +31,17 @@
  * with a diary was handed the first-run questionnaire, and the entries turned
  * up afterwards behind the answers.
  *
+ * ── A device that holds another account's diary (ADR-0022) ──────────────
+ *
+ * The link names no address, and the core cannot read a token without
+ * spending it, so the account is known only once the token is spent. On a
+ * device locked to another account the reset then stops BEFORE it recovers or
+ * rotates anything (`device-held`): a refusal after the rotation would strand
+ * the account's private compartment on doors that no longer exist. The step
+ * says the link is used up and the old password still works; its erase leads
+ * to `/forgot`, filled in for the address the link was for, because a new
+ * link returns the same escrowed code.
+ *
  * CLIENT-ONLY and TOP-LEVEL. No loader could read the fragment even if one
  * existed.
  */
@@ -41,6 +52,7 @@ import { getFormProps, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
 import { Loader2 } from 'lucide-react';
 
+import { AccountSwitchCard } from '#app/components/account-switch-card';
 import { FieldError } from '#app/components/field-error';
 import { FirstPullStatus } from '#app/components/first-pull-status';
 import { HealthConsentStep } from '#app/components/health-consent-step';
@@ -56,7 +68,10 @@ import { useFirstPull } from '#app/hooks/use-first-pull';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { consumeResetToken, isForeignSyncServer, takeResetLinkFromUrl } from '#app/lib/join-link';
 import { trackPasswordResetCompleted } from '#app/lib/matomo-events';
+import { readHeldDiaryNotice } from '#app/lib/sync/account-switch';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
+import type { EraseNoticeLine } from '#app/lib/sync/erase-notice';
+import type { DeviceLockOwner } from '#app/lib/sync/sync-state';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import type { SignInDestination } from '#app/lib/sign-in-flow';
 import { resetSyncPassphrase, type ResetSyncPassphraseResult } from '#app/lib/sync/sync-actions';
@@ -102,6 +117,12 @@ type Phase =
    * answered "the first-run questionnaire", to an account with a diary.
    */
   | { status: 'pulling' }
+  /**
+   * The device holds another account's diary (ADR-0022). The link is spent
+   * and nothing else happened: no recovery, no rotation, no session. `lines`
+   * are what an erase would lose, read before this phase is set.
+   */
+  | { status: 'device-held'; owner: DeviceLockOwner | null; email: string; lines: EraseNoticeLine[] }
   | { status: 'invalid-token' }
   | { status: 'failed'; resetToken: string; message: string };
 
@@ -158,6 +179,12 @@ export default function Reset() {
         setPhase({ status: 'consent', resetToken, continueWithConsent: result.continueWithConsent });
         return;
       }
+      if (result.status === 'device-held') {
+        // Read while the spinner is still up, so the step is drawn once, settled.
+        const lines = await readHeldDiaryNotice({ owner: result.owner });
+        setPhase({ status: 'device-held', owner: result.owner, email: result.email, lines });
+        return;
+      }
       // THE RESET OPENS THE SESSION, and that is only half of getting back in.
       // The profile row travels inside the encrypted snapshot, so the pull has
       // to finish before anything can ask where this person belongs. Landing
@@ -206,6 +233,16 @@ export default function Reset() {
               {phase.status === 'consent' && (
                 <HealthConsentStep
                   onAgree={() => void settle({ resetToken: phase.resetToken, run: phase.continueWithConsent })}
+                />
+              )}
+              {phase.status === 'device-held' && (
+                <AccountSwitchCard
+                  owner={phase.owner}
+                  lines={phase.lines}
+                  incomingEmail={phase.email}
+                  destination="/forgot"
+                  isResetSpent
+                  onCancel={() => void navigate('/welcome')}
                 />
               )}
               {(phase.status === 'no-token' ||

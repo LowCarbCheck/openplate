@@ -2765,6 +2765,15 @@
     },
     "eraseFailed": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again, or press Cancel to leave the diary here."
   },
+  "accountSwitch": {
+    "title": "This device holds another account's diary",
+    "body": "{{email}} signed out on this device, and that diary is still here. To use another account, erase it from this device first.",
+    "bodyUnknown": "An account signed out on this device, and its diary is still here. To use another account, erase it from this device first.",
+    "yours": "If this diary is yours, sign in with the account that signed out instead.",
+    "erase": "Erase it and continue",
+    "eraseFailed": "The diary could not be erased, because openplate is open in another tab. Close that tab, then try again.",
+    "resetSpent": "This reset link is used up, and your old password still works. After the erase, ask for a new link."
+  },
   "strangerNote": {
     "device": "You are not signed in. This setting applies to this device.",
     "home": "Home",

@@ -44,12 +44,24 @@
  * This client posts its passphrase-derived verifier to the server ITS OPERATOR
  * configured. A link cannot redirect that; a link naming a different server is
  * reported and nothing is dialled. See `isForeignSyncServer`.
+ *
+ * ── A device that holds another account's diary (ADR-0022) ──────────────
+ *
+ * On a managed instance a sign-out without an erase leaves the last account's
+ * diary on the device behind a lock that names that account, and "Sign out and
+ * continue" below is exactly such a sign-out. An invitation always creates a
+ * NEW account, so on a locked device the form is replaced by the
+ * account-switch step unless the lock's address is the invitation's own (the
+ * service then answers `409`, and the already-registered card sends the
+ * person to sign in). The step's erase reloads this page, and the invitation
+ * comes back from the tab's pending slot.
  */
 import { useEffect, useState } from 'react';
 import type { MetaFunction } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { AccountSwitchCard } from '#app/components/account-switch-card';
 import { AccountsNeedHttps } from '#app/components/accounts-need-https';
 import { Link } from '#app/components/link';
 import { CreateAccountPanel } from '#app/components/create-account-panel';
@@ -58,7 +70,10 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { isForeignSyncServer, isJoinLinkEmpty, takeJoinLinkFromUrl } from '#app/lib/join-link';
 import { judgeDeviceSession } from '#app/lib/join-device-session';
-import { clearSessionCache, readDeviceSessionIdentity } from '#app/lib/sync/session-cache';
+import { readHeldDiaryNotice } from '#app/lib/sync/account-switch';
+import type { EraseNoticeLine } from '#app/lib/sync/erase-notice';
+import { clearSessionCache, readDeviceSessionIdentity, readSessionCache } from '#app/lib/sync/session-cache';
+import { isDeviceHeldFromEmail, readDeviceLock, type DeviceLockOwner } from '#app/lib/sync/sync-state';
 import { defaultSignOutSteps, runSignOut } from '#app/lib/sync/sign-out-flow';
 import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
@@ -122,6 +137,12 @@ type Phase =
   | { status: 'signed-in-elsewhere'; signedInAs: string; invitedEmail: string }
   /** The service answered `409`: the invited address already has an account. */
   | { status: 'already-registered'; email: string }
+  /**
+   * This device holds ANOTHER account's diary (ADR-0022), so the form is not
+   * offered until it is erased. `lines` are what the erase would lose, read
+   * before this phase is set, so the step is drawn once, settled.
+   */
+  | { status: 'account-switch'; owner: DeviceLockOwner | null; lines: EraseNoticeLine[]; invitedEmail: string }
   /**
    * The form. `healthConsent` is the consent the instance asks of a new
    * account, read off a FRESH handshake beside the invite lookup, or `null`
@@ -231,6 +252,17 @@ export default function Join() {
         // forgotten here, the way a reload would discard it, so nothing about
         // the old server outlives the new one's invitation.
         if (verdict.kind === 'stale') await clearSessionCache();
+        // A DEVICE THAT HOLDS ANOTHER ACCOUNT'S DIARY: the step, not the form.
+        // Asked after the signed-in check, because a device with a session is
+        // not locked; "Sign out and continue" above is what locks it.
+        const lock = readDeviceLock();
+        if (isDeviceHeldFromEmail({ lock, email: invite.email, isNewAccount: true })) {
+          const owner = lock.kind === 'locked' ? lock.owner : null;
+          const lines = await readHeldDiaryNotice({ owner });
+          if (!isMounted) return;
+          setPhase({ status: 'account-switch', owner, lines, invitedEmail: invite.email });
+          return;
+        }
         const instance = await instanceRead;
         if (!isMounted) return;
         setPhase({ status: 'ready', inviteToken, invite, healthConsent: instance?.healthConsent ?? null });
@@ -288,6 +320,17 @@ export default function Join() {
         {shown.status === 'already-registered' && (
           <AlreadyRegisteredCard email={shown.email} onSignIn={() => void navigate('/sign-in')} />
         )}
+        {shown.status === 'account-switch' && (
+          <CardContent>
+            <AccountSwitchCard
+              owner={shown.owner}
+              lines={shown.lines}
+              incomingEmail={shown.invitedEmail}
+              destination="/join"
+              onCancel={() => void navigate('/welcome')}
+            />
+          </CardContent>
+        )}
         {shown.status === 'ready' && configuredSyncUrl !== null && (
           <CardContent className="space-y-4">
             {/* The address is SHOWN, never asked for: an admin wrote it on the
@@ -299,6 +342,14 @@ export default function Join() {
               initialInvite={shown.inviteToken}
               healthConsent={shown.healthConsent}
               onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: shown.invite.email })}
+              onDeviceHeld={(owner) => {
+                // The guard's own refusal, for a lock another tab wrote after
+                // this form was drawn: the same step, before the invite is spent.
+                const invitedEmail = shown.invite.email;
+                void readHeldDiaryNotice({ owner }).then((lines) =>
+                  setPhase({ status: 'account-switch', owner, lines, invitedEmail }),
+                );
+              }}
               onCeremonyComplete={() => void landAfterJoin({ navigate, serverUrl: configuredSyncUrl })}
             />
           </CardContent>
@@ -355,12 +406,19 @@ async function landAfterJoin({
  * the invitation is parked in the tab's pending slot (`takeJoinLinkFromUrl`),
  * so the fresh load reads it back with no second link. Nothing is erased; that
  * stays the settings dialog's opt-in.
+ *
+ * THE LOCK NAMES WHO SIGNED OUT (ADR-0022). A document load of this page has
+ * no open session, so the account is read from the CACHED session before the
+ * sign-out forgets it. The reloaded page then finds the lock and, for an
+ * invitation to another account, offers the account-switch step.
  */
 async function signOutAndContinue({ serverUrl, locksDevice }: { serverUrl: string; locksDevice: boolean }): Promise<void> {
+  const cached = await readSessionCache();
+  const owner = cached === null ? null : { accountId: cached.accountId, email: cached.email };
   await runSignOut(
     { eraseDevice: false, locksDevice },
     {
-      ...defaultSignOutSteps(),
+      ...defaultSignOutSteps({ owner }),
       revokeAndCloseSession: () => signOutOfDeviceSession({ serverUrl }),
       leaveTheApp: () => globalThis.window.location.assign('/join'),
     },

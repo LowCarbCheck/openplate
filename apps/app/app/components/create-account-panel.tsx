@@ -18,6 +18,11 @@
  * Nothing here collects an ADDRESS. The invite is written to one, and the
  * service reads it off the token — a form that asked would let somebody create
  * an account at an address their admin did not invite.
+ *
+ * A DEVICE THAT HOLDS ANOTHER ACCOUNT'S DIARY (ADR-0022) refuses the signup
+ * before the invite is spent (`createSyncAccount`). That refusal leaves this
+ * form through `onDeviceHeld`, the way a `409` leaves through
+ * `onAlreadyRegistered`: nothing typed here answers it.
  */
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +37,7 @@ import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { SyncFieldError, type SyncRefusal } from '#app/lib/sync/form-field-error';
 import { classifySignupFailure } from '#app/lib/sync/signup-error';
 import { createSyncAccount } from '#app/lib/sync/sync-actions';
+import { DeviceHeldByAnotherAccountError, type DeviceLockOwner } from '#app/lib/sync/sync-state';
 
 export function CreateAccountPanel({
   serverUrl,
@@ -39,6 +45,7 @@ export function CreateAccountPanel({
   healthConsent: initialHealthConsent,
   onCancel,
   onAlreadyRegistered,
+  onDeviceHeld,
   onCeremonyActiveChange,
   onCeremonyComplete,
 }: {
@@ -64,6 +71,12 @@ export function CreateAccountPanel({
    * in. `/join` swaps the whole card for one that offers that door.
    */
   onAlreadyRegistered?: () => void;
+  /**
+   * This device holds another account's diary, and the signup was refused
+   * before the invite was spent (ADR-0022). `/join` swaps the card for the
+   * account-switch step.
+   */
+  onDeviceHeld?: (owner: DeviceLockOwner | null) => void;
   onCeremonyActiveChange?: (isActive: boolean) => void;
   /** Fired once, when the account card has been shown and acknowledged. */
   onCeremonyComplete?: () => void;
@@ -129,6 +142,12 @@ export function CreateAccountPanel({
             trackAccountCreated();
             return account;
           } catch (error) {
+            // A HELD DEVICE leaves this form, like a `409` below, and still
+            // throws so the ceremony ends in `error` rather than in an account.
+            if (error instanceof DeviceHeldByAnotherAccountError && onDeviceHeld !== undefined) {
+              onDeviceHeld(error.owner);
+              throw new Error(t('accountSwitch.title'), { cause: error });
+            }
             // THE CONSENT WAS REFUSED: missing, or given to a wording the
             // instance no longer asks for. Nothing was created and the invite
             // is still good (`PROTOCOL.md` §5.8), so the box comes back,

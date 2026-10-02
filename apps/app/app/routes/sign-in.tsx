@@ -109,7 +109,12 @@ export default function SignIn() {
   }, [startFirstPull]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10 text-foreground">
+    // TOP-ALIGNED, NOT CENTRED (ADR-0022), as `/join` is. The card body can be
+    // swapped for one of another height after a tap: the account-switch step
+    // replaces the form on a device that holds another account's diary. A
+    // centred card grew both ways and moved its own title; anchored at the
+    // top, only its bottom edge moves.
+    <main className="flex min-h-screen flex-col items-center justify-start bg-background px-4 py-10 text-foreground sm:py-16">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{t('signIn.title')}</CardTitle>

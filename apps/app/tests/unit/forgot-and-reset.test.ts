@@ -228,8 +228,17 @@ describe('/reset asks for a new password and nothing else', () => {
     // first-run questionnaire, because the gate was asked while the profile
     // row was still inside an undownloaded snapshot. The salad turned up
     // afterwards, behind the answers.
-    const submitBody = resetRoute.slice(resetRoute.indexOf('async function submit'));
+    // THE CEREMONY, from the submit to the end of `settle`: the markup below
+    // it holds doors the PERSON presses (the account-switch step's cancel,
+    // ADR-0022), which are navigations by choice and not the ceremony's.
+    const ceremonyStart = resetRoute.indexOf('async function submit');
+    const submitBody = resetRoute.slice(ceremonyStart, resetRoute.indexOf('\n  return (', ceremonyStart));
     assert.match(submitBody, /firstPull\.start\(\)/, 'a finished reset runs the first pull');
+    assert.match(
+      submitBody,
+      /async function settle/,
+      'the slice must hold the whole ceremony, or the absence below proves nothing',
+    );
     assert.doesNotMatch(submitBody, /navigate\(/, 'and the ceremony itself navigates nowhere');
   });
 

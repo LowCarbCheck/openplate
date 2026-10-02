@@ -20,6 +20,15 @@
  * `onCeremonyActiveChange` has to be threaded up to the caller for the same
  * reason it is on the create path — otherwise `resolveSyncScreen` swaps in the
  * connected panel and unmounts the wizard mid-flight.
+ *
+ * ── A device that holds another account's diary (ADR-0022) ──────────────
+ *
+ * `signInToSync` answers `device-held` instead of opening a session, either
+ * before any request (the typed address is not the lock's) or right after the
+ * login (the id is not the lock's). The button keeps spinning while the held
+ * diary is read for the step, and the step then REPLACES this form in one
+ * paint with its lines settled. Cancel brings the form back as it was; the
+ * erase reloads this same page for the incoming address.
  */
 import { useState } from 'react';
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
@@ -28,6 +37,7 @@ import { parseWithZod } from '@conform-to/zod/v4';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { AccountSwitchCard } from '#app/components/account-switch-card';
 import { CredentialSubmitButton } from '#app/components/credential-submit-button';
 import { FieldError } from '#app/components/field-error';
 import { HealthConsentStep } from '#app/components/health-consent-step';
@@ -35,12 +45,22 @@ import { SyncSetupFlow } from '#app/components/sync-setup-flow';
 import { Button } from '#app/components/ui/button';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
+import { readHeldDiaryNotice } from '#app/lib/sync/account-switch';
 import { canonicalizeEmail } from '#app/lib/sync/email';
+import type { EraseNoticeLine } from '#app/lib/sync/erase-notice';
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { classifySignInFailure } from '#app/lib/sync/sign-in-error';
 import { makeSyncSignInSchema, type SyncSignInValues } from '#app/lib/sync/sign-in-schema';
 import type { HealthConsentRequestWire } from '#app/lib/sync/engine/client/auth-wire';
 import { signInToSync, syncNow, type SignInToSyncResult } from '#app/lib/sync/sync-actions';
+import { DeviceHeldByAnotherAccountError, type DeviceLockOwner } from '#app/lib/sync/sync-state';
+
+/** The account-switch step, once its lines are read: whose diary, what an erase loses, and who is arriving. */
+interface HeldDevice {
+  owner: DeviceLockOwner | null;
+  lines: EraseNoticeLine[];
+  incomingEmail: string;
+}
 
 /** The shape `parseWithZod` hands back for the sign-in form, and what a service refusal is replied onto. */
 type SyncSignInSubmission = Submission<SyncSignInValues, string[], SyncSignInValues>;
@@ -111,6 +131,9 @@ export function SignInPanel({
   // core refuses them to an account that owes the instance a consent, so it is
   // not mounted until the account owes nothing or the box has been ticked.
   const [agreedConsent, setAgreedConsent] = useState<HealthConsentRequestWire | null>(null);
+  // THE STEP, when the device holds another account's diary (ADR-0022). Set
+  // only once its lines are read, so it is drawn once, settled.
+  const [held, setHeld] = useState<HeldDevice | null>(null);
 
   const [form, fields] = useForm({
     id: 'sync-signin',
@@ -143,6 +166,10 @@ export function SignInPanel({
       // raw field would derive a verifier against a different string, which on
       // screen is indistinguishable from a wrong password.
       const result = await signInToSync({ serverUrl, email: canonicalizeEmail(email), passphrase });
+      if (result.status === 'device-held') {
+        await showAccountSwitch({ owner: result.owner, incomingEmail: email });
+        return;
+      }
       if (result.status === 'setup-incomplete') {
         setRepair({ ...result, passphrase });
         return;
@@ -153,10 +180,28 @@ export function SignInPanel({
       }
       await syncNow();
     } catch (caught) {
+      // THE GUARD'S OWN REFUSAL, for a lock another tab wrote while this
+      // sign-in ran: the same step, never an error under the form.
+      if (caught instanceof DeviceHeldByAnotherAccountError) {
+        await showAccountSwitch({ owner: caught.owner, incomingEmail: email });
+        return;
+      }
       setLastResult(submission.reply({ formErrors: [describeSignInError(caught, t)] }));
     } finally {
       setIsBusy(false);
     }
+  }
+
+  /** Reads the held diary while the button still spins, then swaps the form for the step. */
+  async function showAccountSwitch({
+    owner,
+    incomingEmail,
+  }: {
+    owner: DeviceLockOwner | null;
+    incomingEmail: string;
+  }): Promise<void> {
+    const lines = await readHeldDiaryNotice({ owner });
+    setHeld({ owner, lines, incomingEmail });
   }
 
   // The hint under the email field, and the id it shares with that field's
@@ -168,6 +213,20 @@ export function SignInPanel({
   const emailHintId = `${fields.email.id}-hint`;
   const emailInputProps = getInputProps(fields.email, { type: 'email' });
   const emailDescribedBy = [emailInputProps['aria-describedby'], emailHintId].filter(Boolean).join(' ');
+
+  if (held !== null) {
+    return (
+      <AccountSwitchCard
+        owner={held.owner}
+        lines={held.lines}
+        incomingEmail={held.incomingEmail}
+        // THIS PAGE, AGAIN, as a new document: `/sign-in` or the signed-out
+        // settings screen, filled in for the incoming address.
+        destination={globalThis.window.location.pathname}
+        onCancel={() => setHeld(null)}
+      />
+    );
+  }
 
   if (repair !== null) {
     const owedConsent = repair.healthConsent;
