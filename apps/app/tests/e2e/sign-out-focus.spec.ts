@@ -27,6 +27,8 @@
  * Each "focus is here" claim has its other side: before the dialog opens the
  * focused element is outside it, and the two doors end on two different
  * elements, so a host that always focused one fixed element fails one of them.
+ *
+ * @area sign-out
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

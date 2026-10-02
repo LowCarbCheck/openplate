@@ -30,6 +30,8 @@
  * timings are measured, each is held against its own bound, and the hung one
  * must be the slower of the two: a route that never matched anything would
  * leave the second sign-out as fast as the first and fail that comparison.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

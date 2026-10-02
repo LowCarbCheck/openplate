@@ -40,6 +40,8 @@
  * and no `suspended` line. Without it a screen that said `suspended` for every
  * ended session would pass the suspension check, and a screen that showed no
  * reason at all would fail it for the wrong reason.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Page, type Response } from '@playwright/test';
 

@@ -47,6 +47,8 @@
  * - After the finished retry the document's storage still holds the device id,
  *   so the empty answers for the lock and the baselines come from a storage
  *   the read can see into.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';

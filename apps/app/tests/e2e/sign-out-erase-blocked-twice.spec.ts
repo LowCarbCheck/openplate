@@ -24,6 +24,8 @@
  * Closing the other tab and pressing once more must leave the page and remove
  * the diary database. Without it, a dialog that failed every erase would pass
  * the assertions above.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

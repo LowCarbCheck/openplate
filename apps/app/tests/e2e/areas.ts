@@ -143,6 +143,7 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
     pattern: /^app\/lib\/(gamification\/|repeated-meal|save-meal-hint|usual-at-slot|add-|catch-up-|query-parts)/,
     area: 'diary-and-add',
   },
+  { pattern: /^app\/hooks\/use-leave-when-another-tab-signs-out/, area: 'sign-out' },
   { pattern: /^app\/hooks\/use-(update-status|install-affordance)/, area: 'offline-and-updates' },
   { pattern: /^app\/hooks\/use-(plan|trial|offer|payment|intended-plan|public-plan)/, area: 'plans-and-paywall' },
   { pattern: /^app\/hooks\/use-(ai-connection|plate-photo|provider)/, area: 'scan' },

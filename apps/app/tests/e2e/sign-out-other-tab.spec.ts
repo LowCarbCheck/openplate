@@ -42,6 +42,8 @@
  * Without it a listener that sent EVERY tab of the origin away would pass.
  * (b) The diary tab moving is the positive control for (a): if the event never
  * arrived in this run, (a) would pass for the wrong reason.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

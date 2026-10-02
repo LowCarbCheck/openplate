@@ -38,6 +38,8 @@
  * (anchor) The computed styles are asserted, so a `tailwind-merge` that kept
  * the base component's `top-[50%]` or its centring translate fails here: a
  * dialog still centred reads a top of half the viewport, not 16 px.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

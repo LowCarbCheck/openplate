@@ -34,6 +34,8 @@
  * recorder that sees no login for the wrong address sees the owner's login a
  * moment later. The layout reading is taken twice, and the second time with
  * the page centred again, which moves the title and has to be caught.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';

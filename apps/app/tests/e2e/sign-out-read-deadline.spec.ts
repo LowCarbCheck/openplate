@@ -24,6 +24,8 @@
  * The same dialog without a held lock answers with a count or the all-clear,
  * never with "could not be checked". Without it, a dialog that said "unchecked"
  * to everybody would pass the first test.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

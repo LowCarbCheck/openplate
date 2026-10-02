@@ -45,6 +45,8 @@
  * `/` on the way. The open tier's twin is in `sign-out-unsent.spec.ts`, which
  * must end on `/dashboard`, so a destination that was `/welcome` everywhere
  * would fail there.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

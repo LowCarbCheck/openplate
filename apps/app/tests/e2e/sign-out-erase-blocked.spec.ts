@@ -48,6 +48,8 @@
  * and the revalidation that would have sent the person on was skipped while the
  * sign-out ran, so a Cancel that only closed the dialog left a signed-out
  * person on a diary page. Cancel from an idle dialog still keeps the page.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 
