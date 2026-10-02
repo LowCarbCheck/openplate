@@ -2181,6 +2181,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Yasal"
+    },
     "data": {
       "description": "Günlüğün bu cihazda tutulur: istediğin zaman tam bir kopyasını indir, platforma bağımlılık yok, talep edip bekleme yok.",
       "descriptionManaged": "Günlüğün bu cihazda durur, sunucu ise yüklemeden önce şifrelenmiş bir kopyasını tutar. Yönetici, bu kopyanın şifresini çözebilen bir kurtarma anahtarı saklar, parola sıfırlama işlemi günlüğünü bu şekilde geri getirir. İstediğin zaman tam bir kopyayı indir, platforma bağımlılık yok, talep edip bekleme yok.",

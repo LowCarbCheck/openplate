@@ -1,7 +1,6 @@
 {
-  "repo": "LowCarbCheck/openplate",
-  "path": "apps/website",
-  "commit": "89238d16d831d92d02fc5e1f73e5e367aaa4d19d",
+  "repo": "LowCarbCheck/openplate-website",
+  "commit": "0a9a45bcc55ced9f60eaee40bf286f100d9935a4",
   "producedBy": "openplate, scripts/sync-translate-lib.ts",
   "rewrites": [
     {

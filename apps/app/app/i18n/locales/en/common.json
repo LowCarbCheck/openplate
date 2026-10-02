@@ -2181,6 +2181,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Legal"
+    },
     "data": {
       "description": "Your diary lives on this device: download a full copy anytime, no lock-in, no request-and-wait.",
       "descriptionManaged": "Your diary lives on this device, and the server holds a copy encrypted before upload. The operator keeps a recovery key that can decrypt that copy, which is how a password reset gets your diary back. Download a full copy anytime, no lock-in, no request-and-wait.",

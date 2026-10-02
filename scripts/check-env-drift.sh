@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-env-drift.sh: fail when the node or pnpm sources of the four apps
+# check-env-drift.sh: fail when the node or pnpm sources of the three apps
 # disagree. Needs only bash, grep, sed and awk: no nix, no node, no jq.
 #
 # Node. The target is the nodejs_<N> attribute in flake.nix. Checked against it:
@@ -11,7 +11,7 @@
 #   - every `node-version: <N>` and `node:<N>` in .github/workflows (equal),
 #     printed as an IMAGE line; release-app.yml must carry one.
 # pnpm. The reference is packageManager in apps/app/package.json:
-#   - packageManager is pnpm@x.y.z and identical in all four apps,
+#   - packageManager is pnpm@x.y.z and identical in all three apps,
 #   - the flake pnpm_<M> major equals its major,
 #   - no Dockerfile and no workflow carries a pnpm version literal (pnpm@<n>)
 #     or installs pnpm with npm: corepack reads packageManager instead.
@@ -37,7 +37,7 @@ while [ $# -gt 0 ]; do
 done
 [ -f "$root/flake.nix" ] || { echo "ERROR: $root/flake.nix not found, is --root the openplate root?" >&2; exit 2; }
 
-APPS=(app core inference website)
+APPS=(app core inference)
 node_drift=0
 pnpm_drift=0
 drift_node() { echo "DRIFT: $*"; node_drift=1; }
@@ -139,7 +139,7 @@ ref=""
 if ! printf '%s' "$ref" | grep -qE '^pnpm@[0-9]+\.[0-9]+\.[0-9]+$'; then
   drift_pnpm "apps/app/package.json packageManager says ${ref:-nothing}, the rule says pnpm@x.y.z"
 fi
-for a in core inference website; do
+for a in core inference; do
   f="apps/$a/package.json"
   [ -f "$root/$f" ] || continue
   pm=$(pkg_field "$root/$f" packageManager)

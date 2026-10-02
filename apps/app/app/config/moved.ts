@@ -7,7 +7,7 @@
  * that keeps the app's pages in its own cache. A redirect of the whole host, or a host that simply
  * goes away, never reaches that worker: a browser does not follow a redirect when it checks
  * `/sw.js` for an update, so the old worker stays installed and keeps opening its saved pages.
- * openplate.de met exactly that after the M194 cutover (see `apps/website/public/sw.js`). So the
+ * openplate.de met exactly that after the M194 cutover (see `public/sw.js` in LowCarbCheck/openplate-website). So the
  * closed instance keeps running, in this mode, until the last installed copy has asked for its
  * worker again: `/sw.js` answers a worker that deletes every cache and unregisters itself, and
  * every page answers one server-rendered page that names the new address. See

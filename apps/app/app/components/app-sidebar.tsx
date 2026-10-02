@@ -34,6 +34,8 @@ import { Link } from '#app/components/link';
 import { Wordmark } from '#app/components/wordmark';
 import { useSyncSession } from '#app/components/sync-status';
 import { AppBuildStamp } from '#app/components/build-stamp';
+import { XMark } from '#app/components/x-mark';
+import { X_PROFILE_HANDLE, X_PROFILE_URL } from '#app/lib/brand';
 import { PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
 import { useTranslation } from 'react-i18next';
 
@@ -274,6 +276,25 @@ function NavigationRow({ item, isActive }: { item: NavigationItem; isActive: boo
   );
 }
 
+/**
+ * The project's X profile, the last row of the footer group. An external
+ * anchor, so a plain `<a>` and not the router's `Link`. The tooltip is what
+ * names it on the collapsed icon rail, where the row is the mark alone and
+ * `SidebarMenuButton` clips the label.
+ */
+export function SidebarXProfileRow() {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild tooltip={X_PROFILE_HANDLE}>
+        <a href={X_PROFILE_URL} target="_blank" rel="noopener noreferrer">
+          <XMark />
+          <span>{X_PROFILE_HANDLE}</span>
+        </a>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
 export interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   /** Whether the plan entry is drawn, decided once in the shell (`usePlanNavigationEntry`). */
   showsPlanEntry: boolean;
@@ -349,6 +370,7 @@ export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
           {footerNavigationItems.map((item) => (
             <NavigationRow key={item.to} item={item} isActive={activeHref === item.to} />
           ))}
+          <SidebarXProfileRow />
         </SidebarMenu>
         {/* Which build this is, readable without navigating. Hidden on the
             collapsed icon rail, where there is no room for a version string and

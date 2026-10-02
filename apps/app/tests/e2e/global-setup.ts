@@ -7,6 +7,8 @@
  *     path (`env.ts`, ADR-0017), so they differ per worktree and nobody can
  *     read them off the source. A run that later refuses a port, or an
  *     operator looking at `ss -ltnp`, needs the three numbers in the log.
+ *     A shard of a sharded run (`scripts/e2e-sharded.sh`) says which shard it
+ *     is, because its triple is not the one the checkout's path alone gives.
  *
  *  1. RESET THIS TIER'S FONTCONFIG CACHE. A run the harness kills for low
  *     memory can leave a truncated cache file that crashes every later run
@@ -41,6 +43,7 @@ import {
 import { holdFakeFoodDb, holdFakeService } from './fake-service-handle';
 import { startFakeFoodDb } from './fake-food-db';
 import { resetFontconfigCache } from './font-cache';
+import { E2E_SHARD_VAR, parseShardNumber } from './shard';
 
 /** The ceremony that redeems the invite, run under `tsx`. */
 const REDEEM_SCRIPT = fileURLToPath(new URL('./create-fixture-account.ts', import.meta.url));
@@ -72,9 +75,13 @@ async function redeemInvite(inviteToken: string): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  const shard = parseShardNumber(process.env[E2E_SHARD_VAR]);
+  const origin =
+    shard === null ?
+      `derived from this checkout's path; ${E2E_PORT_BASE_VAR} overrides them`
+    : `shard ${shard} of a sharded run, from ${E2E_PORT_BASE_VAR}`;
   console.log(
-    `browser tier ports: food database ${E2E_FOOD_DB_PORT}, sync ${E2E_SYNC_PORT}, app ${E2E_APP_PORT} ` +
-      `(derived from this checkout's path; ${E2E_PORT_BASE_VAR} overrides them)`,
+    `browser tier ports: food database ${E2E_FOOD_DB_PORT}, sync ${E2E_SYNC_PORT}, app ${E2E_APP_PORT} (${origin})`,
   );
 
   await resetFontconfigCache();

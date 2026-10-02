@@ -30,6 +30,8 @@ import {
   REPO_URL,
   SELF_HOSTING_DOCS_URL,
   SELF_HOSTING_HTTPS_DOCS_PATH,
+  X_PROFILE_HANDLE,
+  X_PROFILE_URL,
   YAZIO_IMPORT_DOCS_PATH,
   projectSiteUrl,
 } from '../../app/lib/brand';
@@ -65,11 +67,26 @@ describe('REPO_URL', () => {
   });
 });
 
+describe('X_PROFILE_URL', () => {
+  it('is the project profile, and its handle is read off the address', () => {
+    assert.equal(X_PROFILE_URL, 'https://x.com/LowCarbCheckOrg');
+    assert.equal(X_PROFILE_HANDLE, '@LowCarbCheckOrg');
+  });
+
+  it('appears as a literal in exactly one file, so a fork is one edit', () => {
+    const carriers = sourceFiles(APP_DIR).filter((path) => readFileSync(path, 'utf8').includes(X_PROFILE_URL));
+    assert.deepEqual(
+      carriers.map((path) => path.slice(APP_DIR.length + 1)),
+      ['lib/brand.ts'],
+    );
+  });
+});
+
 /**
  * THE PROJECT SITE AND ITS LANGUAGES (M266 design, step 2).
  *
  * openplate.de puts German at its root and every other language under a
- * prefix (`apps/website/app/i18n/language.ts`). The app's links to it used to
+ * prefix (`app/i18n/language.ts` in LowCarbCheck/openplate-website). The app's links to it used to
  * be the English copy for everybody, and the door page and the footer now link
  * it too, so the rule is pinned here with the URLs written out: a test that
  * rebuilt them from the same table would agree with any mistake in it.

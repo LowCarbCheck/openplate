@@ -83,6 +83,7 @@
     "sync:brand": "tsx ./scripts/sync-brand.ts",
     "sync:translate-lib": "tsx ./scripts/sync-translate-lib.ts",
     "test:e2e": "playwright test",
+    "test:e2e:sharded": "bash scripts/e2e-sharded.sh",
     "test:integration": "node --import tsx --test --test-concurrency=1 'tests/integration/**/*.test.ts'",
     "test:unit": "node --import tsx --test 'tests/unit/**/*.test.ts' 'tests/unit/**/*.test.tsx'",
     "translate:ui": "tsx ./scripts/translate-ui.ts",

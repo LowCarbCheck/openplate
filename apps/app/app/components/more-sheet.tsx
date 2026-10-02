@@ -11,10 +11,12 @@ import {
 } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { Link } from '#app/components/link';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#app/components/ui/sheet';
 import { cn } from '#app/lib/utils';
+import { X_PROFILE_HANDLE, X_PROFILE_URL } from '#app/lib/brand';
+import { XMark } from '#app/components/x-mark';
 import { useSheetLeavesWithItsPage } from '#app/hooks/use-sheet-leaves-with-its-page';
 import {
   activeCatalog,
@@ -58,7 +60,8 @@ import {
  * that's reachable via the profile menu"). It is a row at the TOP, not a
  * seventh tile: seven tiles in three columns leave two blank cells, and the
  * operator found Settings "closest to the thumb" odd in the old drawer. Plan
- * and Administration stay in the avatar menu only.
+ * and Administration stay in the avatar menu only. The project's X profile is
+ * the last row, under the grid.
  *
  * WHERE EACH TILE SITS. Three columns, filled from the top left, over the
  * catalog order reversed: the first page of that order, Overview, is the last
@@ -153,13 +156,37 @@ function MoreRow({ item, isActive }: MoreSheetEntryProps) {
 }
 
 /**
- * The sheet's body: the configuration rows, then the grid of tiles.
+ * The project's X profile, the last row of the sheet. An external anchor, so a
+ * plain `<a>` and not the router's `Link`, drawn as a row: 44 px tall like
+ * Settings above the grid, with the leaving-the-app mark where Settings has its
+ * chevron. It has its own `data-slot`, because it is neither a page the sheet
+ * reaches nor a tile, and the browser tier counts those.
+ */
+function MoreXProfileRow() {
+  return (
+    <a
+      href={X_PROFILE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-slot="more-external"
+      className={cn(ROW_CLASS, TILE_IDLE_CLASS)}
+    >
+      <XMark className="size-5 shrink-0" />
+      <span className="min-w-0 flex-1 truncate text-left">{X_PROFILE_HANDLE}</span>
+      <ExternalLink className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+    </a>
+  );
+}
+
+/**
+ * The sheet's body: the configuration rows, then the grid of tiles, then the
+ * X profile.
  *
  * The grid keeps the `px-2` and `gap-1.5` the tile budget above is measured
  * against, and the rows share its padding, so a row is exactly as wide as the
- * grid under it.
+ * grid under it. Exported for `tests/unit/x-profile-link.test.ts`.
  */
-function MoreSheetBody({ activeHref }: { activeHref: string | null }) {
+export function MoreSheetBody({ activeHref }: { activeHref: string | null }) {
   const blanks = (COLUMNS - (moreSheetNavigationItems.length % COLUMNS)) % COLUMNS;
 
   return (
@@ -175,6 +202,7 @@ function MoreSheetBody({ activeHref }: { activeHref: string | null }) {
           <MoreTile key={item.to} item={item} isActive={activeHref === item.to} />
         ))}
       </div>
+      <MoreXProfileRow />
     </nav>
   );
 }

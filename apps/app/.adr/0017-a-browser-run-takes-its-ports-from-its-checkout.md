@@ -1,6 +1,6 @@
 # 0017: A browser run takes its ports from its checkout
 
-- **Status:** Accepted
+- **Status:** Amended (2026-10-02)
 - **Date:** 2026-09-20
 - **Deciders:** Altan Sarisin (operator), Fable (architecture review)
 - **Tracker:** M241/01
@@ -135,6 +135,32 @@ CI is unaffected in substance: a fresh GitHub runner has one checkout, so it
 derives one triple from the runner's workspace path and every port in the range
 is free there.
 
+## Amendment, a sharded run (2026-10-02)
+
+`scripts/e2e-sharded.sh` (`pnpm test:e2e:sharded`) runs the browser tier as N
+Playwright processes of one checkout, each with `--shard=i/N`. N is
+`OPENPLATE_E2E_SHARDS`, else the smaller of 4 and `nproc / 4`, and at least 1.
+The pre-push gate calls it. `pnpm test:e2e` is still the plain serial run, and
+everything above holds for it unchanged. This amendment adds what a shard owns.
+
+- **Ports.** Shard `i` takes `OPENPLATE_E2E_PORT_BASE` set to the derived base
+  plus `3 * (i - 1)` (`shardPortBase` and `planShardPortBases` in
+  `tests/e2e/env.ts`). The triples of one run are adjacent and disjoint by
+  construction. The script checks every port of every shard before it starts
+  any of them.
+- **Collision margin.** A sharded run holds N slots of the 7000, so another
+  checkout collides with it when its own slot falls in one of them: about N in
+  7000 against a plain run, and `2N - 1` in 7000 against another sharded run
+  (see the comment on `shardPortBase`). The failure is still loud and still
+  names the port.
+- **Fontconfig cache.** The Consequences below say the cache stays shared
+  between runs. That stays true for a plain run. It is wrong for shards: each
+  shard's `globalSetup` wipes the cache, so a shared directory let one shard
+  delete the cache a sibling was writing. Each shard now has its own cache
+  directory and a generated copy of `fonts.conf` that names it
+  (`tests/e2e/font-cache.ts`). The committed `fonts.conf` is unchanged.
+- **Output.** Each shard writes Playwright output to `test-results/shard-<i>`.
+
 ## References
 
 - `.tracker/M241-e2e-port-collision/01-a-colliding-port-fails-fast-instead-of-hanging.md`
@@ -143,4 +169,5 @@ is free there.
 - `tests/unit/fake-service-port-in-use.test.ts` (a taken port fails, it does not hang)
 - `scripts/repro-e2e-port-collision.sh` (two concurrent runs, proven)
 - `playwright.config.ts` (the `FONTCONFIG_FILE` precedent this follows)
+- `scripts/e2e-sharded.sh` and `tests/e2e/font-cache.ts` (the sharded run, 2026-10-02 amendment)
 - Commit `5067833`, the fast-failure half that shipped first

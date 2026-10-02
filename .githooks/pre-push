@@ -3,22 +3,22 @@
 # this repository; there is no cloud CI. M262 spec 05.
 #
 # Git runs hooks only from the root core.hooksPath (`.githooks`, set by
-# `make hooks`), so the gates the four apps carry in apps/<x>/.githooks/pre-push
+# `make hooks`), so the gates the three apps carry in apps/<x>/.githooks/pre-push
 # never run on their own. This file runs them. It decides nothing about HOW an
 # app is tested: each app's own hook stays the unit of truth, with its own
 # stages in its own order, run from inside apps/<x> so that it reads its own
 # lockfile, pnpm-workspace.yaml and tsconfig.json.
 #
 # What it decides is WHICH apps run:
-#   * a path under apps/app/, apps/core/, apps/inference/ or apps/website/
+#   * a path under apps/app/, apps/core/ or apps/inference/
 #     runs that app's gate;
 #   * any other path (root files, .github/, .githooks/, packages/, docker/, a
-#     new folder under apps/) runs ALL four gates, because it can affect any
+#     new folder under apps/) runs ALL three gates, because it can affect any
 #     of them. docker/ holds the app's compose files and quadlet units since
-#     M262, so the app gate is always among the four it runs.
+#     M262, so the app gate is always among the three it runs.
 #   * an app with no changed path is skipped, and the skip is logged by name.
 #   * when the range cannot be computed (no origin/main, a remote sha this
-#     clone does not have), it runs all four and says why. Guessing "nothing
+#     clone does not have), it runs all three and says why. Guessing "nothing
 #     changed" would push untested code with a green hook.
 #
 # The pushed range, per stdin line "<local_ref> <local_sha> <remote_ref>
@@ -30,9 +30,31 @@
 # Stdin is read ONCE and replayed to every app hook, which reads it again for
 # its own deletion-only check.
 #
-# Test seam: GIT_DIFF_OVERRIDE, a newline-separated path list used instead of
-# git diff. The stdin lines still decide whether the push is deletion-only.
-# .githooks/test-dispatch.sh proves the app selection in a scratch repo.
+# ONE FULL GATE AT A TIME. A gate is minutes of unit tests, a production build
+# and a browser tier, and two of them at once on one host starve each other:
+# every timing in the browser tier gets worse, and a gate that fails for load is
+# a gate nobody trusts. So once the push is known to test something (the
+# SKIP_TESTS and deletion-only exits come first, they take no lock), this
+# takes an exclusive flock on /tmp/openplate-gate.lock, held until the hook
+# exits and released by the kernel on ANY exit, a kill included. When it is
+# held by another gate it says so in one line, names the holder when the lock
+# file says who it is, and waits up to an hour. The lock file is NOT
+# /tmp/openplate-e2e.lock: that one is taken by hand around single Playwright
+# runs, and the two must not be confused.
+#   * Without `flock` (macOS, a bare contributor host) it says so in one line
+#     and goes on. A push is never failed for a missing lock tool, and never for
+#     a lock that cannot be opened or was not freed within the hour: those say
+#     so and the gate runs unguarded.
+#   * The app hooks run with that file descriptor CLOSED, so a stray child that
+#     outlives a hook cannot keep the lock after the dispatcher exits.
+#   * `make check` runs an app hook directly and takes no lock.
+#
+# Test seams: GIT_DIFF_OVERRIDE, a newline-separated path list used instead of
+# git diff; the stdin lines still decide whether the push is deletion-only.
+# OPENPLATE_GATE_LOCK and OPENPLATE_GATE_LOCK_WAIT_SECONDS name another lock
+# file and a shorter wait, so a test never queues behind a real gate.
+# .githooks/test-dispatch.sh proves the app selection and the lock in a scratch
+# repo.
 #
 # Escape hatch (use deliberately, it pushes unverified code):
 #   SKIP_TESTS=1 git push        skip the whole gate
@@ -43,7 +65,7 @@ if [ "${SKIP_TESTS:-0}" = "1" ]; then
   exit 0
 fi
 
-APPS=(app core inference website)
+APPS=(app core inference)
 ZERO_SHA_PATTERN='^0+$'
 
 toplevel=$(git rev-parse --show-toplevel)
@@ -52,7 +74,7 @@ apps_root=$toplevel/apps
 # In a linked worktree git exports GIT_DIR, and a git command run with GIT_DIR
 # but no GIT_WORK_TREE takes its CURRENT DIRECTORY as the top of the working
 # tree. Every app hook runs from apps/<x>, so without this its `git status`
-# (the website's staleness check) saw the whole tree as deleted and untracked.
+# saw the whole tree as deleted and untracked.
 # Pin both to absolute values before the first cd.
 if [ -n "${GIT_DIR:-}" ]; then
   GIT_DIR=$(git rev-parse --absolute-git-dir)
@@ -93,6 +115,46 @@ if [ "$has_content" = "0" ]; then
   exit 0
 fi
 
+# ── ONE FULL GATE AT A TIME ─────────────────────────────────────────────────
+# After the two exits above, so a push that tests nothing never waits for one
+# that does. See the header for what each outcome means.
+GATE_LOCK_FILE=${OPENPLATE_GATE_LOCK:-/tmp/openplate-gate.lock}
+GATE_LOCK_WAIT_SECONDS=${OPENPLATE_GATE_LOCK_WAIT_SECONDS:-3600}
+
+take_gate_lock() {
+  local holder="" branch started
+  if ! command -v flock >/dev/null 2>&1; then
+    echo "▪ pre-push: flock is not installed, the one-gate-at-a-time lock is skipped"
+    return 0
+  fi
+  # Created with mode 666 when it is new, so another account on a shared host
+  # can open it too. A host that still refuses (a sticky /tmp that protects
+  # regular files, say) is a host where the lock cannot work, not a failed push.
+  if ! (umask 0 && : >>"$GATE_LOCK_FILE") 2>/dev/null; then
+    echo "▪ pre-push: $GATE_LOCK_FILE cannot be opened, the one-gate-at-a-time lock is skipped"
+    return 0
+  fi
+  # `>>` and not `>`: opening for write would empty the file, and with it the
+  # note a gate that holds the lock keeps there, before this one knows whether
+  # it may have the lock.
+  exec 9>>"$GATE_LOCK_FILE"
+  if ! flock -n 9; then
+    read -r holder <"$GATE_LOCK_FILE" || true
+    echo "▪ pre-push: another gate holds $GATE_LOCK_FILE${holder:+ ($holder)}, waiting up to ${GATE_LOCK_WAIT_SECONDS}s for it"
+    started=$SECONDS
+    if ! flock -w "$GATE_LOCK_WAIT_SECONDS" 9; then
+      echo "⚠ pre-push: the lock was still held after ${GATE_LOCK_WAIT_SECONDS}s, running this gate without it"
+      exec 9>&-
+      return 0
+    fi
+    echo "▪ pre-push: got the gate lock after waiting $((SECONDS - started))s"
+  fi
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown branch")
+  printf 'branch %s at %s, pid %s\n' "$branch" "$toplevel" "$$" >"$GATE_LOCK_FILE"
+}
+
+take_gate_lock
+
 if [ -n "${GIT_DIFF_OVERRIDE:-}" ]; then
   echo "⚠ pre-push: GIT_DIFF_OVERRIDE is set, using its path list instead of git diff"
   changed=$GIT_DIFF_OVERRIDE
@@ -115,12 +177,11 @@ else
       apps/app/*) touched[app]=1 ;;
       apps/core/*) touched[core]=1 ;;
       apps/inference/*) touched[inference]=1 ;;
-      apps/website/*) touched[website]=1 ;;
       *) outside=${outside:-$path} ;;
     esac
   done <<<"$changed"
   if [ -n "$outside" ]; then
-    echo "▶ pre-push: $outside is outside the four apps, running every app gate"
+    echo "▶ pre-push: $outside is outside the three apps, running every app gate"
     mark_all
   fi
 fi
@@ -137,7 +198,9 @@ for app in "${APPS[@]}"; do
   fi
   echo "▶ pre-push: apps/$app gate"
   status=0
-  (cd "$apps_root/$app" && ./.githooks/pre-push) <<<"$stdin_lines" || status=$?
+  # 9>&-: the hook and everything it starts run without the gate lock's file
+  # descriptor, so only this process can be what holds the lock.
+  (cd "$apps_root/$app" && ./.githooks/pre-push) 9>&- <<<"$stdin_lines" || status=$?
   if [ "$status" != "0" ]; then
     echo "✖ pre-push: apps/$app gate failed with exit $status, the gates after it did not run"
     exit "$status"

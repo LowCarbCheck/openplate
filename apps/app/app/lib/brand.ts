@@ -30,6 +30,22 @@ export const REPO_URL = 'https://github.com/LowCarbCheck/openplate';
 export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
 /**
+ * The project's X profile, in ONE place, for the link at the foot of the app
+ * menu. A CONSTANT for the reason {@link REPO_URL} gives: a fork edits this
+ * line and the menu follows.
+ *
+ * `tests/unit/brand.test.ts` pins "exactly one literal" here too.
+ */
+export const X_PROFILE_URL = 'https://x.com/LowCarbCheckOrg';
+
+/**
+ * The profile's handle as a reader sees it, `@LowCarbCheckOrg`. Derived from
+ * {@link X_PROFILE_URL}, so the fork edit moves the label with the address.
+ * A proper noun, so no catalog carries it.
+ */
+export const X_PROFILE_HANDLE = `@${new URL(X_PROFILE_URL).pathname.slice(1)}`;
+
+/**
  * The project site, in ONE place (M266 design, step 2, owner decision 10).
  *
  * openplate.de is where openplate is explained and priced; every app host is a
@@ -65,7 +81,7 @@ export type ProjectSitePath = `/${string}`;
 
 /**
  * The URL prefix of each app language on the project site, mirroring
- * `LANGUAGE_PREFIXES` in `apps/website/app/i18n/language.ts`: German owns the
+ * `LANGUAGE_PREFIXES` in `app/i18n/language.ts` in LowCarbCheck/openplate-website: German owns the
  * unprefixed paths, every other language lives under its own. `satisfies`
  * makes a seventh app language a compile error here until the site has a
  * prefix for it.
@@ -116,7 +132,7 @@ export const SELF_HOSTING_HTTPS_DOCS_PATH = '/docs/app/self-hosting/#https' sati
  * The guide to bringing a YAZIO diary over (M254/03), linked from the import
  * section on "Data & backup", in the reader's language through
  * {@link projectSiteUrl}. The site publishes `docs/import-from-yazio.md` from
- * this repository at `/docs/app/<slug>` (`apps/website`'s `doc-routes.ts`),
+ * this repository at `/docs/app/<slug>` (`doc-routes.ts` in LowCarbCheck/openplate-website),
  * German at the root and every other language under its prefix.
  */
 export const YAZIO_IMPORT_DOCS_PATH = '/docs/app/import-from-yazio/' satisfies ProjectSitePath;

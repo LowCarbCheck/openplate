@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Proves the four app pre-push hooks run without the toolbox. M269 spec 08.
+# Proves the three app pre-push hooks run without the toolbox. M269 spec 08.
 #
 # A contributor has Node, pnpm and make, and no `toolbox` and no container.
 # Each hook must then run its stages with the node and pnpm on PATH. Before
@@ -10,10 +10,9 @@
 # node. `toolbox`, `podlet`, `nc` and the real pnpm are never on it. pnpm is a
 # STUB that records every call ("<CI>|<arguments>") and passes, so a run proves
 # which stages the hook reaches, in which order and how, and never runs a real
-# suite, a database or the network. The stub can play a missing Chromium or a
-# missing network. Two things stay real: node (the Postgres probe in the core
-# hook is real node against a real socket) and, for the podlet rows, the app's
-# own scripts/check-docs-manifest.sh and scripts/quadlet.sh.
+# suite, a database or the network. The stub can play a missing Chromium. Two
+# things stay real: node (the Postgres probe in the core hook is real node
+# against a real socket) and, for the podlet rows, the app's own scripts/check-docs-manifest.sh and scripts/quadlet.sh.
 #
 # Cases, for each app:
 #   * with no toolbox, the hook gets past the toolbox selection and runs lint
@@ -41,7 +40,7 @@ HOOKS_DIR=${HOOKS_DIR:-}
 self_test=1
 [ "${1:-}" = "--no-self-test" ] && self_test=0
 
-APPS="app core inference website"
+APPS="app core inference"
 ZERO=0000000000000000000000000000000000000000
 failures=0
 
@@ -89,18 +88,12 @@ stub=$scratch/stub
 mkdir -p "$stub"
 cat >"$stub/pnpm" <<'STUB'
 #!/bin/sh
-# Stub pnpm: records "<CI>|<arguments>", plays a missing browser or network.
+# Stub pnpm: records "<CI>|<arguments>", plays a missing browser.
 printf '%s|%s\n' "${CI:-unset}" "$*" >>"$STUB_LOG"
 case "$*" in
   *"exec node -e"*chromium*)
     [ "${STUB_NO_CHROMIUM:-0}" = "1" ] && exit 1
     exit 0
-    ;;
-  sync:docs)
-    if [ "${STUB_NO_NETWORK:-0}" = "1" ]; then
-      echo "fatal: unable to access 'https://github.com/LowCarbCheck/openplate.git/': Could not resolve host: github.com" >&2
-      exit 128
-    fi
     ;;
 esac
 exit 0
@@ -161,15 +154,6 @@ sandbox() {
     printf '#!/bin/sh\necho "stub %s $*"\n' "$s" >"$dir/scripts/$s"
     chmod +x "$dir/scripts/$s"
   done
-  if [ "$app" = website ]; then
-    mkdir -p "$dir/src/generated" "$dir/public"
-    echo '{"app":{"ref":"v1.0.0"},"core":{"ref":"core-v1.0.0"},"inference":{"ref":"inference-v1.0.0"}}' \
-      >"$dir/src/generated/SOURCE.json"
-    cp "$dir/src/generated/SOURCE.json" "$dir/public/SOURCE.json"
-    git -C "$dir" init -q
-    git -C "$dir" add -A
-    git -C "$dir" -c user.name=t -c user.email=t@invalid -c commit.gpgsign=false commit -q -m fixture
-  fi
   echo "$dir"
 }
 
@@ -192,10 +176,9 @@ run_hook() {
 # The stages each hook must reach, as the stub sees them (arguments only).
 stages_of() {
   case "$1" in
-    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e ;;
+    app) printf '%s\n' lint typecheck test:unit test:integration build test:e2e:sharded ;;
     core) printf '%s\n' lint format:check typecheck test:unit test:integration build ;;
     inference) printf '%s\n' lint typecheck check:doc-claims 'test --run' build ;;
-    website) printf '%s\n' lint typecheck test:unit sync:docs build:stub-core test:e2e ;;
   esac
 }
 
@@ -275,16 +258,19 @@ else
   not_ok "app integration: with no pnpm the hook gave exit $rc: $(printf '%s\n' "$out" | tail -2 | tr '\n' ' ')"
 fi
 
-for app in app website; do
-  dir=$(sandbox "$app")
-  run_hook "$app" "$dir" "$push_line" '' STUB_NO_CHROMIUM=1
-  if [ "$rc" = 1 ] && said 'Chromium will not start here' && said 'pnpm exec playwright install chromium' \
-    && ! called test:e2e; then
-    ok "$app browser: missing Chromium is named and the hook exits 1"
-  else
-    not_ok "$app browser: with no Chromium the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
-  fi
-done
+# The app hook checks Chromium FIRST and runs its browser tier through the
+# sharded runner. So the row also requires that no earlier stage ran: lint, the
+# build and the unit tests never start on a host with no browser. (The old hook
+# ran lint first, so that part of the row fails against it.)
+dir=$(sandbox app)
+run_hook app "$dir" "$push_line" '' STUB_NO_CHROMIUM=1
+early_stage_ran() { called lint || called test:unit || called build; }
+if [ "$rc" = 1 ] && said 'Chromium will not start here' && said 'pnpm exec playwright install chromium' \
+  && ! called test:e2e:sharded && ! early_stage_ran; then
+  ok "app browser: missing Chromium is named and the hook exits 1"
+else
+  not_ok "app browser: with no Chromium the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
+fi
 
 dir=$(sandbox core)
 run_hook core "$dir" "$push_line" '' TEST_DATABASE_URL="postgres://u:p@127.0.0.1:$pg_down/t"
@@ -293,14 +279,6 @@ if [ "$rc" = 1 ] && said "no Postgres on 127.0.0.1:$pg_down" && said 'docker/com
   ok "core integration: missing Postgres is named and the hook exits 1"
 else
   not_ok "core integration: with no Postgres the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
-fi
-
-dir=$(sandbox website)
-run_hook website "$dir" "$push_line" '' STUB_NO_NETWORK=1
-if [ "$rc" = 1 ] && said 'the docs sync failed' && said 'so it needs the network' && said 'SKIP_SYNC=1' && ! called build:stub-core; then
-  ok "website docs-sync: missing network is named and the hook exits 1"
-else
-  not_ok "website docs-sync: with no network the hook gave exit $rc: $(printf '%s\n' "$out" | tail -3 | tr '\n' ' ')"
 fi
 
 # ── result ──────────────────────────────────────────────────────────────────
@@ -313,7 +291,7 @@ echo "PASS: every check passed"
 [ "$self_test" = "1" ] || exit 0
 
 # ── self-test: a broken hook must fail this suite ───────────────────────────
-# mutate <name> <app> <sed expression>: copy the four hooks, break one, rerun.
+# mutate <name> <app> <sed expression>: copy the three hooks, break one, rerun.
 mutate() {
   local name=$1 app=$2 expr=$3
   local broken=$scratch/broken-$name
@@ -343,11 +321,9 @@ done
 # A hook that reads every push as content, so empty stdin runs the stages.
 mutate stdin inference 's#^has_content=0#has_content=1#'
 # A Chromium message that no longer says how to get it.
-mutate chromium-hint website 's#pnpm exec playwright install chromium"#install a browser"#'
+mutate chromium-hint app 's#pnpm exec playwright install chromium"#install a browser"#'
 # A Postgres probe that always says yes.
 mutate postgres-probe core 's#socket.on("error", () => process.exit(1));#socket.on("error", () => process.exit(0));#'
-# A docs sync failure that no longer names the network.
-mutate network-hint website 's#so it needs the network#so it stopped#'
 # A hook that takes any toolbox as ts-dev, as the hooks did before M269.
 mutate any-toolbox core 's#^  \&\& toolbox list -c .*; then$#  ; then#'
 # A missing pnpm that is no longer caught before the stages.

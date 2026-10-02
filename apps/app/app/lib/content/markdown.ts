@@ -4,7 +4,7 @@
  * A deliberately small markdown reader, written for one contract and nothing
  * more: the file format that `openplate-billing/legal/CONTRACT.md` fixes and
  * `docs/content.md` restates for a self-hoster. It follows the hand-written
- * pattern of `apps/website/scripts/lib/markdown.ts` (no dependency, a
+ * pattern of `scripts/lib/markdown.ts` in LowCarbCheck/openplate-website (no dependency, a
  * typed tree out), with one difference that is the point of this module:
  *
  * ── IT REFUSES, IT NEVER DROPS AND NEVER ESCAPES ──
