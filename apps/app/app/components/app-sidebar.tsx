@@ -335,6 +335,29 @@ export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
             ))}
           </SidebarMenu>
         </SidebarGroup>
+        {/* THE ADMINISTRATION ROW, DIRECTLY UNDER THE LIST (2026-10-02). The
+            role is read after the first paint, so this row arrives late, and
+            it used to sit in the footer. The footer is anchored to the bottom
+            of the rail, so a row added to it grew it upward: the footer's top
+            edge and the bottom of this box moved 49 px, a layout shift the
+            browser reports at 1280 px even with the What's new card off.
+            Here the row takes the empty space between the list and the plan
+            entry instead. This box is top-anchored, so the row grows
+            downward into room that was already there, and the plan entry
+            below it is `mt-auto`, bottom-anchored, so it gives up that
+            room instead of being pushed. The two late rows sit at opposite
+            ends of the same free space, so neither arriving first moves the
+            other. The cost is a window so short that the list has no free
+            space left: there the rail scrolls, as it already does for the
+            plan entry. */}
+        {session.account?.role === 'admin' && (
+          <SidebarGroup data-nav-entry="admin" className="pt-0">
+            <SidebarSeparator className="mx-0 mb-2" />
+            <SidebarMenu>
+              <NavigationRow item={adminNavigationItem} isActive={adminActiveHref === adminNavigationItem.to} />
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
         {/* THE PLAN ENTRY, AT THE FOOT OF THE LIST, directly above the rule
             over Settings (M250). It is known only after the session and a
             fresh handshake, so it arrives after the first paint, and it must
@@ -357,14 +380,6 @@ export function AppSidebar({ showsPlanEntry, ...props }: AppSidebarProps) {
           equal row. On a phone it is in the avatar menu, and a row at the top
           of the More sheet (M259). */}
       <SidebarFooter>
-        {session.account?.role === 'admin' && (
-          <>
-            <SidebarSeparator className="mx-0" />
-            <SidebarMenu>
-              <NavigationRow item={adminNavigationItem} isActive={adminActiveHref === adminNavigationItem.to} />
-            </SidebarMenu>
-          </>
-        )}
         <SidebarSeparator className="mx-0" />
         <SidebarMenu>
           {footerNavigationItems.map((item) => (

@@ -85,7 +85,6 @@ import {
   settleFrames,
   shiftScoreAfter,
   turnOffScrollAnchoring,
-  type ShiftEntry,
 } from './layout-shift';
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1187,20 +1186,6 @@ async function switchCardOnLive(page: Page): Promise<void> {
 }
 
 /**
- * A shift whose every source is the desktop sidebar's own.
- *
- * An administrator's role lands after the page and the sidebar's footer grows
- * an Administration row, which moves the footer up by one row (49 px, a score of
- * about 0.0014). That belongs to the ROLE, not to the card, and it happens with
- * the card switched off too. It is excused only in the administrator walks, so
- * the card's own arrival is still read in full everywhere else, and only for an
- * entry that moved nothing outside the sidebar.
- */
-function isSidebarShift(entry: ShiftEntry): boolean {
-  return entry.sources.length > 0 && entry.sources.every((source) => /^[a-z0-9]+\[sidebar/.test(source));
-}
-
-/**
  * Everything the card's arrival and its Dismiss must leave alone, asserted on a
  * page where the card has JUST appeared and `before` is the reading taken the
  * moment before it did.
@@ -1211,7 +1196,7 @@ function isSidebarShift(entry: ShiftEntry): boolean {
  */
 async function expectArrivalAndDismissMoveNothing(
   page: Page,
-  reading: { tops: Record<string, number>; since: number; excusesSidebar: boolean },
+  reading: { tops: Record<string, number>; since: number },
   where: string,
 ): Promise<void> {
   const card = whatsNewCard(page);
@@ -1220,11 +1205,10 @@ async function expectArrivalAndDismissMoveNothing(
 
   const afterArrival = await readTops(page);
   expect(movedBetween(reading.tops, afterArrival), `${where}: elements that moved when the card arrived`).toEqual([]);
-  // `shiftScoreAfter` skips by count, so the excused entries are taken out
-  // first and the rest are summed by hand.
-  const arrivalEntries = (await readShiftEntries(page))
-    .slice(reading.since)
-    .filter((entry) => !(reading.excusesSidebar && isSidebarShift(entry)));
+  // EVERY entry counts, the administrator's sidebar included: the role's own
+  // row no longer moves anything (`admin-sidebar-row-moves-nothing.spec.ts`),
+  // so there is nothing left to excuse.
+  const arrivalEntries = (await readShiftEntries(page)).slice(reading.since);
   expect(
     shiftScoreAfter(arrivalEntries, 0),
     `${where}: the card arriving moved ${arrivalEntries.flatMap((entry) => entry.sources).join('; ')}`,
@@ -1285,7 +1269,7 @@ function registerArrivalTests(label: string): void {
       const tops = await readTops(page);
       const since = (await readShiftEntries(page)).length;
       await switchCardOnLive(page);
-      await expectArrivalAndDismissMoveNothing(page, { tops, since, excusesSidebar: false }, `${label} ${path}`);
+      await expectArrivalAndDismissMoveNothing(page, { tops, since }, `${label} ${path}`);
     });
   }
 
@@ -1322,7 +1306,7 @@ function registerArrivalTests(label: string): void {
         release();
         await expectArrivalAndDismissMoveNothing(
           page,
-          { tops, since, excusesSidebar: true },
+          { tops, since },
           `${label} ${path} (administrator)`,
         );
       });
