@@ -89,7 +89,7 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '#app/lib/sync/sync-menu-state';
 import { resolveAvatarLabel } from '#app/lib/avatar-name';
-import { SignOutDialog } from './sign-out-dialog';
+import { getSignOutProgress, openSignOutDialog } from '#app/lib/sync/sign-out-progress';
 import { adminNavigationItem, footerNavigationItems, planNavigationItem, type NavigationItem } from './app-sidebar';
 import { cn } from '#app/lib/utils';
 
@@ -128,26 +128,19 @@ export function AccountDoor({ door }: { door: AvatarMenuDoor }) {
   return <SignInRow />;
 }
 
-/** The way out, behind the shared confirm dialog `/settings/account` also opens. */
+/**
+ * The way out, which opens the shared confirm dialog `/settings/account` also
+ * opens. The dialog is not rendered here: it is mounted once in `root.tsx`, so
+ * it survives the session this row disappears with.
+ */
 function SignOutRow() {
   const { t } = useTranslation();
 
   return (
-    <SignOutDialog
-      trigger={
-        <DropdownMenuItem
-          // `preventDefault` keeps the menu mounted. Radix unmounts a closed
-          // dropdown's content, and the dialog's trigger lives inside it, so
-          // letting the select close the menu would tear the dialog down in
-          // the same frame it opened. The modal covers the menu anyway.
-          onSelect={(event) => event.preventDefault()}
-          className="cursor-pointer py-2"
-        >
-          <LogOut className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-          <span>{t('signOut.menuItem')}</span>
-        </DropdownMenuItem>
-      }
-    />
+    <DropdownMenuItem onSelect={() => openSignOutDialog()} className="cursor-pointer py-2">
+      <LogOut className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+      <span>{t('signOut.menuItem')}</span>
+    </DropdownMenuItem>
   );
 }
 
@@ -366,7 +359,16 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent
+        align="end"
+        className="w-64"
+        // The sign-out dialog opens as the menu closes. Letting the menu take
+        // the focus back to its trigger then fights the dialog's own focus
+        // trap, and can leave `pointer-events: none` stuck on the body.
+        onCloseAutoFocus={(event) => {
+          if (getSignOutProgress().isOpen) event.preventDefault();
+        }}
+      >
         {/* WHO THIS IS: the account's name, or the device when there is no
             name to show. The email used to sit under this label as well; the
             footer strip carries it now, and printing the same address twice

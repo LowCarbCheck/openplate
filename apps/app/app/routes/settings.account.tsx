@@ -71,7 +71,7 @@ import { trackAccountDeleted, trackPasswordChanged } from '#app/lib/matomo-event
 import { describeErrorForUser } from '#app/lib/sync/error-text';
 import { consentPageHref } from '#app/lib/health-consent/consent-gate';
 import { isConsentRequiredRefusal } from '#app/lib/health-consent/health-consent';
-import { SignOutDialog } from '#app/components/sign-out-dialog';
+import { openSignOutDialog } from '#app/lib/sync/sign-out-progress';
 import { makeSyncRecoverySchema } from '#app/lib/sync/recovery-schema';
 import {
   changeSyncPassphrase,
@@ -745,13 +745,9 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
           cannot mean one thing in the chrome and another on this page.
           Signing out still revokes the token family server-side, which is
           what ends a session left open on a lost phone. */}
-      <SignOutDialog
-        trigger={
-          <Button type="button" variant="outline" className="h-11 w-full sm:w-auto">
-            <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
-          </Button>
-        }
-      />
+      <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => openSignOutDialog()}>
+        <LogOut className="h-4 w-4" aria-hidden="true" /> {t('account.signOut.cta')}
+      </Button>
       <p className="text-xs text-muted-foreground">{t('account.signOut.note')}</p>
 
       <AlertDialog>

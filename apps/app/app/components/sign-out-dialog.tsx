@@ -26,14 +26,25 @@
  * reached the server. When the device cannot be checked, the dialog says that
  * instead, and it never gives the all-clear for rows the check cannot see.
  *
- * ── Two doors, one dialog ────────────────────────────────────────────────
+ * ── Two doors, one dialog, mounted once ──────────────────────────────────
  *
- * The header menu and `/settings/account` both render this, with their own
- * trigger. The old settings button signed out on click with no confirmation
- * and no erase; it now opens this, so the two doors cannot drift into meaning
- * different things.
+ * The header menu and `/settings/account` both open this, by calling
+ * `openSignOutDialog()`. The old settings button signed out on click with no
+ * confirmation and no erase; it now opens this, so the two doors cannot drift
+ * into meaning different things.
+ *
+ * The dialog is rendered ONCE, in `root.tsx`, and not by either door. Both
+ * doors depend on the session, and the first step of a sign-out closes the
+ * session: a dialog rendered by a door unmounted at the start of its own work,
+ * so a failed erase wrote its error to a component that was gone and the person
+ * saw a signed-out app, the diary still on the device, and no message. Here the
+ * host outlives the session and the routes, and `sign-out-progress.ts` holds
+ * the two facts the doors and the host share.
+ *
+ * It therefore never follows the live session. The account is read ONCE, when
+ * the dialog opens, and kept: the session is null by the time an erase fails.
  */
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
@@ -45,7 +56,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '#app/components/ui/alert-dialog';
 import { Button } from '#app/components/ui/button';
 import { Label } from '#app/components/ui/label';
@@ -58,6 +68,12 @@ import {
   type UnsentRead,
 } from '#app/lib/sync/erase-notice';
 import { runSignOut } from '#app/lib/sync/sign-out-flow';
+import {
+  closeSignOutDialog,
+  isSignOutRunning,
+  setSignOutPhase,
+  useSignOutProgress,
+} from '#app/lib/sync/sign-out-progress';
 import { useSyncSession } from './sync-status';
 
 const ERASE_FIELD_ID = 'sign-out-erase';
@@ -105,22 +121,30 @@ interface KeyedRead {
 }
 
 /**
- * @param trigger - the control that opens this. A menu item in the header, a
- *   button on the settings page.
+ * The one sign-out dialog. Mount it once, above every route; the doors open it
+ * through `openSignOutDialog()`.
  */
-export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
+export function SignOutDialogHost() {
   const { t } = useTranslation();
   // `signOutClosesTheDiary` is the question, never the mode name: it is the one
   // that says whether the diary belongs to the account or to the device, and
   // therefore whether this sign-out has to close it.
   const { signOutClosesTheDiary } = useInstancePolicy();
   const session = useSyncSession();
-  const accountId = session.account?.id ?? null;
-  const isSyncing = session.phase === 'syncing';
-  const [open, setOpen] = useState(false);
+  const { isOpen, phase } = useSignOutProgress();
+  const isBusy = phase === 'running';
+  // Once the sign-out has started, the session ending is its own doing. The
+  // dialog stops asking the session anything: no new read (it would open the
+  // database the erase is about to delete), no "syncing", no new key.
+  const isFrozen = phase !== 'idle';
+  // THE ACCOUNT, READ ONCE when the dialog opens. It is state and not
+  // `session.account`, because the session is null by the time an erase fails.
+  const [openedFor, setOpenedFor] = useState<{ accountId: number | null } | null>(null);
+  if (isOpen && openedFor === null) setOpenedFor({ accountId: session.account?.id ?? null });
+  const accountId = openedFor?.accountId ?? null;
+  const isSyncing = !isFrozen && session.phase === 'syncing';
   const [eraseDevice, setEraseDevice] = useState(false);
   const [keyedRead, setKeyedRead] = useState<KeyedRead | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // WHICH MOMENT A READ DESCRIBES: this account, as of its last completed
@@ -128,7 +152,10 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
   // a read from before it is then a statement about a device that no longer
   // exists, so it is not shown; the line says "checking" until the next one.
   const readKey = `${accountId ?? 'none'}:${session.lastSyncedAt ?? 'never'}`;
-  const unsentRead: UnsentRead = keyedRead?.key === readKey ? keyedRead.read : { status: 'pending' };
+  // Frozen, the last read stands whatever the key says: the session going null
+  // moves the key, and a sign-out in flight must not flip the line to "checking".
+  const isCurrentRead = isFrozen || keyedRead?.key === readKey;
+  const unsentRead: UnsentRead = isCurrentRead && keyedRead !== null ? keyedRead.read : { status: 'pending' };
   const noticeLines = resolveEraseNotice({ read: unsentRead, isSyncing, hasSession: accountId !== null });
 
   // Read only while the dialog is open. This is a genuine external read with a
@@ -139,7 +166,7 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
   // the effect waits for it to settle and reads then; `isSyncing` in the deps
   // is what brings it back.
   useEffect(() => {
-    if (!open || accountId === null || isSyncing) return;
+    if (!isOpen || isFrozen || accountId === null || isSyncing) return;
     let cancelled = false;
     void (async () => {
       let read: UnsentRead;
@@ -156,41 +183,49 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [open, accountId, isSyncing, readKey]);
+  }, [isOpen, isFrozen, accountId, isSyncing, readKey]);
 
   async function handleSignOut(): Promise<void> {
-    setIsBusy(true);
     setError(null);
+    setSignOutPhase('running');
     try {
       await runSignOut({ eraseDevice, locksDevice: signOutClosesTheDiary });
     } catch (caught) {
       // Reached only when an opted-in erase failed, which in practice means a
       // second tab is holding the database. The session is already closed and
       // the device already locked by then, so this reports the erase and not
-      // the sign-out.
+      // the sign-out. This component is still mounted to say so: it lives in
+      // the root, not under the session.
       setError(describeErrorForUser(caught, t('signOut.eraseFailed')));
-      setIsBusy(false);
+      setSignOutPhase('failed');
     }
+  }
+
+  function handleClose(): void {
+    // A running sign-out cannot be closed: its error would have nowhere to go.
+    // Escape and the overlay both end here.
+    if (isSignOutRunning()) return;
+    setSignOutPhase('idle');
+    closeSignOutDialog();
+    // Reopening starts from unchecked. A box that remembered a tick from a
+    // dialog somebody cancelled is a wipe nobody asked for twice.
+    setEraseDevice(false);
+    setError(null);
+    // And from no read. A read kept from the last opening would be shown
+    // for a moment on the next one, about a device that may have changed
+    // since. And from no account: the next opening reads it again.
+    setKeyedRead(null);
+    setOpenedFor(null);
   }
 
   return (
     <AlertDialog
-      open={open}
+      open={isOpen}
       onOpenChange={(next) => {
-        setOpen(next);
-        // Reopening starts from unchecked. A box that remembered a tick from a
-        // dialog somebody cancelled is a wipe nobody asked for twice.
-        if (!next) {
-          setEraseDevice(false);
-          setError(null);
-          // And from no read. A read kept from the last opening would be shown
-          // for a moment on the next one, about a device that may have changed
-          // since.
-          setKeyedRead(null);
-        }
+        // Opening is the doors' act (`openSignOutDialog`); this only ever closes.
+        if (!next) handleClose();
       }}
     >
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('signOut.title')}</AlertDialogTitle>
@@ -226,7 +261,11 @@ export function SignOutDialog({ trigger }: { trigger: ReactNode }) {
           </div>
         </div>
 
-        {error !== null && <p className="text-sm text-destructive">{error}</p>}
+        {error !== null && (
+          <p data-slot="sign-out-error" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isBusy}>{t('confirm.cancel')}</AlertDialogCancel>

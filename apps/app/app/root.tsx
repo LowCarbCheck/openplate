@@ -27,6 +27,7 @@ import { BOOT_FAILURE_SCRIPT, markAppStarted } from '#app/lib/boot-failure';
 import { startPwaInstallCapture } from '#app/lib/pwa-install-capture';
 import { reconcileFastWakeAtOnBoot } from '#app/lib/fast-wake';
 import { ErrorFallback } from '#app/components/route-error-boundary';
+import { SignOutDialogHost } from '#app/components/sign-out-dialog';
 import { StatusFallbackHost } from '#app/components/status-fallback-host';
 import { useTranslation } from 'react-i18next';
 import { I18nProvider } from '#app/i18n/I18nProvider';
@@ -278,6 +279,12 @@ export default function App() {
           `/sign-in`, `/join` and the rest) and nothing else. See
           `components/status-fallback-host.tsx` for the three tiers. */}
       <StatusFallbackHost />
+      {/* The sign-out dialog, mounted ONCE, here, because this sits above every
+          route and so outlives the session. A dialog rendered by the header
+          menu or the settings page unmounted the moment a sign-out closed the
+          session, and a failed erase then had nowhere to show its error. The
+          doors open it with `openSignOutDialog()`. */}
+      <SignOutDialogHost />
     </>
   );
 }

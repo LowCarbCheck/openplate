@@ -124,8 +124,12 @@ describe('the menu renders the door it was given', () => {
 
   it('reaches sign out from the header menu, in one action', () => {
     assert.match(source, /resolveAvatarMenuDoor/);
-    assert.match(source, /SignOutDialog/);
+    assert.match(source, /openSignOutDialog/);
+    assert.match(source, /onSelect=\{\(\) => openSignOutDialog\(\)\}/);
     assert.match(source, /signOut\.menuItem/);
+    // The dialog is mounted once in root.tsx; a copy rendered here would
+    // unmount with the session and lose a failed erase's message.
+    assert.doesNotMatch(source, /<SignOutDialog/);
   });
 
   it('sends the signed-out managed state to the sign-in door', () => {
@@ -180,7 +184,8 @@ describe('both doors open the same dialog', () => {
   const settings = readFileSync(new URL('../../app/routes/settings.account.tsx', import.meta.url), 'utf8');
 
   it('keeps the /settings/account control working, through the shared dialog', () => {
-    assert.match(settings, /SignOutDialog/);
+    assert.match(settings, /openSignOutDialog/);
+    assert.doesNotMatch(settings, /<SignOutDialog/);
     assert.match(settings, /account\.signOut\.cta/);
   });
 

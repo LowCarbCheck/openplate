@@ -15,6 +15,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The What's new card is hidden until you switch it on.** The card on the diary and the dashboard, and the release notes row in About, now show by default only for administrators. Everyone else turns them on with a new switch in Preferences, and an administrator can turn them off there. The choice is kept on the device, and the notes page still opens at `/settings/whats-new`.
 
+### Fixed
+
+- **A failed erase on sign-out now says so, and Escape no longer closes a running sign-out.** The sign-out dialog used to disappear the moment the session closed, so when the erase failed (a second tab held the diary) the person saw a signed-out app, the diary still on the device and no message. The dialog now stays on screen until the sign-out finishes, shows the error inside itself and lets the person try again. While the sign-out runs, Escape and a click outside no longer close it.
+
 ## [0.62.0] - 2026-10-02
 
 ### Changed

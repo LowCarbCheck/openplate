@@ -25,6 +25,7 @@ import { SyncController } from '#app/components/sync-controller';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
+import { isSignOutRunning } from '#app/lib/sync/sign-out-progress';
 import { hasSyncBaselineEntities, isDeviceLocked } from '#app/lib/sync/sync-state';
 import { resolveSignInDestination } from '#app/lib/sign-in-flow';
 import { PublicShell } from '#app/components/public-shell';
@@ -421,6 +422,10 @@ function useRevalidateWhenTheSessionEnds(): void {
     const ended = hadAccount.current && !hasAccount;
     hadAccount.current = hasAccount;
     if (!ended) return;
+    // A sign-out the person asked for ends the session as its first step, and
+    // it finishes with a hard navigation. Asking the gate now would race the
+    // lock and could flash `/welcome` before that navigation.
+    if (isSignOutRunning()) return;
     if (revalidator.state !== 'idle') return;
     void revalidator.revalidate();
   }, [session.account, revalidator]);
