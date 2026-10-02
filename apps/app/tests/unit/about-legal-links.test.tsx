@@ -20,6 +20,14 @@
  * "None of the five links is drawn" passes on a render that printed nothing at
  * all. The off case therefore also asserts the provenance rows the page always
  * has, and the on case is the control for the heading and every href.
+ *
+ * ── THE LANDMARK IS A ROW EVERY RENDER DRAWS ─────────────────────────────
+ *
+ * The release notes row is behind the What's new switch (`useWhatsNewVisible`),
+ * and this harness can never show it: `renderToStaticMarkup` reads only the
+ * server snapshots, an unset preference and a signed-out session, which resolve
+ * to hidden. So the last provenance row a render always draws is the source
+ * code row, `href` exactly `REPO_URL`, and the order and the control read that.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,6 +36,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 
 import type { PublicConfig } from '../../app/config/public-config';
+import { REPO_URL } from '../../app/lib/brand';
 import SettingsAbout from '../../app/routes/settings.about';
 import enCommon from '../../app/i18n/locales/en/common.json';
 import { withI18n } from './trends-i18n-harness';
@@ -67,6 +76,12 @@ function renderAbout(hasLegalPages: boolean): string {
   return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
+/** The source code row, the last provenance row a server render always draws. */
+const SOURCE_ROW = `href="${REPO_URL}"`;
+
+/** The release notes row, drawn only when the What's new switch resolves to shown. */
+const RELEASE_NOTES_ROW = 'href="/settings/whats-new"';
+
 /** The text of the `<a>` whose href is `href`, or null when there is no such anchor. */
 function anchorText(markup: string, href: string): string | null {
   const found = new RegExp(`<a\\b[^>]*\\bhref="${href}"[^>]*>([\\s\\S]*?)</a>`).exec(markup);
@@ -103,7 +118,7 @@ describe('the About screen on an instance whose content folder holds the legal p
   });
 
   it('puts the group under the provenance rows and above the Updates card', () => {
-    const lastProvenanceRow = markup.indexOf('href="/settings/whats-new"');
+    const lastProvenanceRow = markup.indexOf(SOURCE_ROW);
     const heading = markup.indexOf(`>${enCommon.settings.about.legalHeading}<`);
     const updates = markup.indexOf(`>${enCommon.about.updates.title}<`);
     assert.ok(lastProvenanceRow > 0 && heading > 0 && updates > 0, 'a landmark is missing from the markup');
@@ -141,9 +156,21 @@ describe('the About screen on an instance with no content folder', () => {
   });
 
   it('CONTROL: the same render still draws the provenance rows and the Updates card, so the absence above is not an empty page', () => {
-    assert.ok(markup.includes('href="/settings/whats-new"'), 'the release notes row is missing');
+    assert.ok(markup.includes(SOURCE_ROW), 'the source code row is missing');
     assert.ok(markup.includes(`>${enCommon.about.title}<`), 'the About section heading is missing');
     assert.ok(markup.includes(`>${enCommon.about.updates.title}<`), 'the Updates card heading is missing');
+  });
+});
+
+describe('the release notes row in a server render', () => {
+  const markup = renderAbout(true);
+
+  it("is hidden, because the What's new switch resolves an unset choice and no account to hidden", () => {
+    assert.equal(markup.includes(RELEASE_NOTES_ROW), false, 'the release notes row is drawn with the switch unset');
+  });
+
+  it('CONTROL: the same render draws the source code row, so the absence above is not an empty page', () => {
+    assert.ok(markup.includes(SOURCE_ROW), 'the source code row is missing');
   });
 });
 
