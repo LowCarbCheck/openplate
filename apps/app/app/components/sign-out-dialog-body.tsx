@@ -105,6 +105,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
+import { EraseNoticeText } from '#app/components/erase-notice-text';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -148,42 +149,6 @@ const log = createComponentLogger('sign-out');
 const ERASE_FIELD_ID = 'sign-out-erase';
 const ERASE_REGION_ID = 'sign-out-erase-region';
 const ERASE_WAITING_NOTE_ID = 'sign-out-erase-waiting';
-
-/**
- * One sentence per named line (`erase-notice.ts`), and nothing decided here.
- *
- * `data-erase-line` names the line and `data-count` carries its number, so the
- * browser tier asserts what the dialog SAID without pinning a sentence the
- * wordsmith pass is free to rephrase.
- */
-function EraseNoticeText({ line }: { line: EraseNoticeLine }) {
-  const { t } = useTranslation();
-  if (line.kind === 'checking') return <span data-erase-line={line.kind}>{t('signOut.unsent.checking')}</span>;
-  if (line.kind === 'unchecked') return <span data-erase-line={line.kind}>{t('signOut.unsent.unchecked')}</span>;
-  if (line.kind === 'all-sent') return <span data-erase-line={line.kind}>{t('signOut.unsent.allSent')}</span>;
-  // TWO LINES SINCE M240/03, where one blanket sentence used to stand. Each
-  // says one true thing, and `resolveEraseNotice` pushes each only when it is
-  // true, so a person is never warned about saved meals the account already
-  // holds.
-  if (line.kind === 'saved-meals-unsent') {
-    return <span data-erase-line={line.kind}>{t('signOut.unsent.savedMealsUnsent')}</span>;
-  }
-  if (line.kind === 'keys-not-covered') {
-    return <span data-erase-line={line.kind}>{t('signOut.unsent.keysNotCovered')}</span>;
-  }
-  if (line.kind === 'unsent-changes') {
-    return (
-      <span data-erase-line={line.kind} data-count={line.count}>
-        {t('signOut.unsent.changes', { count: line.count })}
-      </span>
-    );
-  }
-  return (
-    <span data-erase-line={line.kind} data-count={line.count}>
-      {t('signOut.unsent.reports', { count: line.count })}
-    </span>
-  );
-}
 
 /** A read tagged with the moment it describes, so a read from before a sync is never shown after it. */
 interface KeyedRead {

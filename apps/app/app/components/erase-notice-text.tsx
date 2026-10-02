@@ -2,11 +2,10 @@
  * One sentence about what an erase would lose, rendered from one
  * `EraseNoticeLine` (`app/lib/sync/erase-notice.ts`).
  *
- * SHARED by every screen that asks before an erase: the account-switch step
- * (ADR-0022) reads it here. It is a copy of the private component in
- * `sign-out-dialog.tsx`, made while that file was being restructured in
- * parallel; the two are to become this one once both land, and until then a
- * change to one is a change to both.
+ * SHARED by every screen that asks before an erase: the sign-out dialog
+ * (`sign-out-dialog-body.tsx`) and the account-switch step (ADR-0022) both
+ * render their lines here, so a sentence is wired to its string in one place.
+ * `tests/unit/erase-notice-text-source.test.ts` fails on a second definition.
  *
  * Each line is one named string and carries its kind in `data-erase-line`, so
  * a browser check reads which sentence was said without pinning its words. A
