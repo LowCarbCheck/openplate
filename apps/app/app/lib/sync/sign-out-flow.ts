@@ -39,10 +39,11 @@
  * `tests/unit/sign-out-flow.test.ts` without a browser, a session or a router.
  */
 import { createComponentLogger } from '#app/lib/logger';
+import type { DeviceEraseDeps } from '#app/lib/local-store/device-erase';
 import { eraseDiaryAndReleaseLock } from './account-switch';
 import { signOutOfSync } from './sync-actions';
-import { getSyncSessionSnapshot } from './sync-session';
-import { lockDevice, type DeviceLockOwner } from './sync-state';
+import { getSyncSessionSnapshot, type SyncSessionSnapshot } from './sync-session';
+import { deviceStorage, lockDevice, type DeviceLockOwner } from './sync-state';
 
 const log = createComponentLogger('sign-out');
 
@@ -150,18 +151,36 @@ export async function runSignOut(
  * quietly left behind. A retry of a failed erase that builds new steps reads
  * the session again and finds it closed, which is why a caller that can pass
  * the owner should.
+ *
+ * `deps` is the storage and the database delete the lock and the erase use;
+ * this browser's by default, injected in tests, where a storage that cannot
+ * list its keys is the one that makes the owner observable (the erase takes
+ * every baseline it can list, and only the owner's key when it cannot).
  */
 export function defaultSignOutSteps({
   destination = '/dashboard',
   owner,
-}: { destination?: SignOutDestination; owner?: DeviceLockOwner | null } = {}): SignOutSteps {
-  const account = getSyncSessionSnapshot().account;
-  const signingOut: DeviceLockOwner | null =
-    owner ?? (account === null ? null : { accountId: account.id, email: account.email });
+  deps,
+}: { destination?: SignOutDestination; owner?: DeviceLockOwner | null; deps?: DeviceEraseDeps } = {}): SignOutSteps {
+  const signingOut: DeviceLockOwner | null = owner ?? ownerOfSession(getSyncSessionSnapshot().account);
   return {
     revokeAndCloseSession: signOutOfSync,
-    lockDevice: () => lockDevice({ owner: signingOut }),
-    eraseDevice: () => eraseDiaryAndReleaseLock({ accountId: signingOut?.accountId ?? null }),
+    lockDevice: () => lockDevice({ owner: signingOut, storage: deps?.storage ?? deviceStorage() }),
+    eraseDevice: () => eraseDiaryAndReleaseLock({ accountId: signingOut?.accountId ?? null }, deps),
     leaveTheApp: () => window.location.assign(destination),
   };
+}
+
+/**
+ * The account a session belongs to, in the shape the lock and the erase name
+ * it by, or `null` when no session is open.
+ *
+ * The dialog reads it ONCE, when it opens, and hands it to every press of
+ * "Sign out" as `owner`; `defaultSignOutSteps` reads it from the open session
+ * when no caller did. One function, so the two cannot disagree on what names an
+ * account.
+ */
+export function ownerOfSession(account: SyncSessionSnapshot['account']): DeviceLockOwner | null {
+  if (account === null) return null;
+  return { accountId: account.id, email: account.email };
 }

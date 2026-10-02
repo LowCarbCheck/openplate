@@ -125,7 +125,7 @@ import {
   type EraseNoticeLine,
   type UnsentRead,
 } from '#app/lib/sync/erase-notice';
-import { defaultSignOutSteps, runSignOut, signOutDestination } from '#app/lib/sync/sign-out-flow';
+import { defaultSignOutSteps, ownerOfSession, runSignOut, signOutDestination } from '#app/lib/sync/sign-out-flow';
 import {
   closeSignOutDialog,
   getSignOutProgress,
@@ -139,6 +139,7 @@ import {
   applyUnsentReadDeadline,
   startUnsentReadDeadline,
 } from '#app/lib/sync/unsent-read-deadline';
+import type { DeviceLockOwner } from '#app/lib/sync/sync-state';
 import { cn } from '#app/lib/utils';
 import { useSyncSession } from './sync-status';
 
@@ -230,11 +231,15 @@ export default function SignOutDialogBody({ readDeadlineMs = UNSENT_READ_DEADLIN
   // dialog stops asking the session anything: no new read (it would open the
   // database the erase is about to delete), no "syncing", no new key.
   const isFrozen = phase !== 'idle';
-  // THE ACCOUNT, READ ONCE when the dialog opens. It is state and not
-  // `session.account`, because the session is null by the time an erase fails.
-  const [openedFor, setOpenedFor] = useState<{ accountId: number | null } | null>(null);
-  if (isOpen && openedFor === null) setOpenedFor({ accountId: session.account?.id ?? null });
-  const accountId = openedFor?.accountId ?? null;
+  // THE ACCOUNT, READ ONCE when the dialog opens: its id for the device read,
+  // and with its address as the `owner` every press hands to the sign-out
+  // (ADR-0022). It is state and not `session.account`, because the session is
+  // null by the time an erase fails, and a retry that read it again would find
+  // nobody to name in the lock or in the erase.
+  const [openedFor, setOpenedFor] = useState<{ owner: DeviceLockOwner | null } | null>(null);
+  if (isOpen && openedFor === null) setOpenedFor({ owner: ownerOfSession(session.account) });
+  const owner = openedFor?.owner ?? null;
+  const accountId = owner?.accountId ?? null;
   // THE DEADLINE for the device read, from the moment the dialog opens. Past it
   // a read that has not answered counts as one that failed, and a cycle that
   // has not ended stops holding the answer back (the same lock can be what the
@@ -315,7 +320,7 @@ export default function SignOutDialogBody({ readDeadlineMs = UNSENT_READ_DEADLIN
       // THE SAME TWO FACTS decide what happens and where the person lands, so
       // the request is built once and both read it.
       const request = { eraseDevice, locksDevice: signOutClosesTheDiary };
-      await runSignOut(request, defaultSignOutSteps({ destination: signOutDestination(request) }));
+      await runSignOut(request, defaultSignOutSteps({ destination: signOutDestination(request), owner }));
     } catch (caught) {
       // Reached only when an opted-in erase failed, which in practice means a
       // second tab is holding the database. The session is already closed and
