@@ -22,7 +22,9 @@
  *   holds the whole diary in memory in TinyBase stores whose persisters are
  *   still autosaving; a client-side redirect would leave those alive, and
  *   after an erase they would cheerfully write the rows back into a database
- *   that was just deleted. A document load is the one thing that ends them.
+ *   that was just deleted. The erase stops them before its first delete
+ *   (`stopAllPersisters`, because a poll can land before the load does), and
+ *   the document load ends everything else the page holds.
  *
  * ── Where the person lands ───────────────────────────────────────────────
  *
@@ -39,8 +41,7 @@
  * `tests/unit/sign-out-flow.test.ts` without a browser, a session or a router.
  */
 import { createComponentLogger } from '#app/lib/logger';
-import type { DeviceEraseDeps } from '#app/lib/local-store/device-erase';
-import { eraseDiaryAndReleaseLock } from './account-switch';
+import { eraseDiaryAndReleaseLock, type DiaryEraseDeps } from './account-switch';
 import { signOutOfSync } from './sync-actions';
 import { getSyncSessionSnapshot, type SyncSessionSnapshot } from './sync-session';
 import { deviceStorage, lockDevice, type DeviceLockOwner } from './sync-state';
@@ -152,16 +153,16 @@ export async function runSignOut(
  * the session again and finds it closed, which is why a caller that can pass
  * the owner should.
  *
- * `deps` is the storage and the database delete the lock and the erase use;
- * this browser's by default, injected in tests, where a storage that cannot
- * list its keys is the one that makes the owner observable (the erase takes
+ * `deps` is the store stop, the storage and the database delete the lock and
+ * the erase use; this browser's by default, injected in tests, where a
+ * storage that cannot list its keys is the one that makes the owner observable (the erase takes
  * every baseline it can list, and only the owner's key when it cannot).
  */
 export function defaultSignOutSteps({
   destination = '/dashboard',
   owner,
   deps,
-}: { destination?: SignOutDestination; owner?: DeviceLockOwner | null; deps?: DeviceEraseDeps } = {}): SignOutSteps {
+}: { destination?: SignOutDestination; owner?: DeviceLockOwner | null; deps?: DiaryEraseDeps } = {}): SignOutSteps {
   const signingOut: DeviceLockOwner | null = owner ?? ownerOfSession(getSyncSessionSnapshot().account);
   return {
     revokeAndCloseSession: signOutOfSync,

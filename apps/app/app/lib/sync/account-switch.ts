@@ -34,6 +34,7 @@
  */
 import { createComponentLogger } from '#app/lib/logger';
 import { defaultDeviceEraseDeps, eraseDeviceData, type DeviceEraseDeps } from '#app/lib/local-store/device-erase';
+import { stopAllPersisters } from '#app/lib/local-store/persist';
 import { withTimeout } from '#app/lib/with-timeout';
 import { canonicalizeEmail } from './email';
 import { readUnsentOnDevice, resolveEraseNotice, type EraseNoticeLine, type UnsentOnDevice } from './erase-notice';
@@ -54,12 +55,28 @@ const log = createComponentLogger('account-switch');
  */
 export const HELD_DIARY_READ_DEADLINE_MS = 5_000;
 
+/** What {@link eraseDiaryAndReleaseLock} touches: the erase's own seams, plus the stop of this page's stores. */
+export interface DiaryEraseDeps extends DeviceEraseDeps {
+  /** Stops every store persister this page started; `stopAllPersisters` in a browser. Never rejects. */
+  stopStores: () => Promise<void>;
+}
+
+/** The real seams: this page's stores, `indexedDB` and `localStorage`. */
+export function defaultDiaryEraseDeps(): DiaryEraseDeps {
+  return { ...defaultDeviceEraseDeps(), stopStores: stopAllPersisters };
+}
+
 /**
  * Erases the held diary and every sync baseline on this device, and only then
  * lifts the device lock.
  *
  * THE ORDER IS THE GUARANTEE:
  *
+ *  0. Every store persister this page started is stopped, and none may start
+ *     again in this page (`stopAllPersisters`). A running store polls its
+ *     database about once a second, and a poll after the delete creates an
+ *     empty database again, so an erase with a store still running does not
+ *     stay erased.
  *  1. Every `openplate.sync.state.v1:*` key goes first, for the reason
  *     `eraseDeviceData` gives about its own one key: a diary gone with a
  *     baseline left is a silent empty diary on the next sign-in. Every key and
@@ -74,13 +91,14 @@ export const HELD_DIARY_READ_DEADLINE_MS = 5_000;
  * On an open instance there is no lock, and step 3 removes nothing.
  *
  * @param accountId - the owner, whose baseline `eraseDeviceData` names, or `null` when it is unknown.
- * @param deps - the storage and the database delete; this browser's by default.
+ * @param deps - the store stop, the storage and the database delete; this browser's by default.
  * @throws when a database could not be deleted. The lock is still set then.
  */
 export async function eraseDiaryAndReleaseLock(
   { accountId }: { accountId: number | null },
-  deps: DeviceEraseDeps = defaultDeviceEraseDeps(),
+  deps: DiaryEraseDeps = defaultDiaryEraseDeps(),
 ): Promise<void> {
+  await deps.stopStores();
   for (const key of listSyncBaselineKeys(deps.storage)) deps.storage.removeItem(key);
   await eraseDeviceData({ accountId }, deps);
   clearDeviceLockAfterErase(deps.storage);

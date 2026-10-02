@@ -18,6 +18,17 @@
  * listens (`use-leave-when-another-tab-signs-out.ts`) and leaves by a hard
  * navigation, so its in-memory stores die with the document.
  *
+ * ── The erase that did not stay erased (2026-10-02, found under load) ────
+ *
+ * "An erase in one tab is not written back by the other tab" failed under
+ * load with `openplate-photos` still in the database list. Neither tab wrote
+ * it back: a TinyBase `startAutoLoad` poll did, about once a second, by
+ * opening the deleted database without a version, which creates an empty one.
+ * In the erasing tab the poll landed between the delete and the new page
+ * load; the leaving tab had the same window before its `location.assign`. The
+ * erase and the leave now stop every store persister first
+ * (`stopAllPersisters` in `persist.ts`), and this test is the guard.
+ *
  * ── What is real and what is stubbed ─────────────────────────────────────
  *
  * REAL: the production build as a managed instance, the sign-in, two pages in

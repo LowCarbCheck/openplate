@@ -10,7 +10,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { shouldLeave, type StorageChange } from '../../app/hooks/use-leave-when-another-tab-signs-out';
+import {
+  shouldLeave,
+  stopStoresThenLeave,
+  type StorageChange,
+} from '../../app/hooks/use-leave-when-another-tab-signs-out';
 import {
   DEVICE_LOCK_KEY,
   lockDevice,
@@ -145,5 +149,54 @@ describe('the lock key this listener watches', () => {
 
   it('CONTROL: a key that is not the lock key does not leave, so the rows above name the real one', () => {
     assert.equal(shouldLeave({ key: 'openplate.device-lock', newValue: 'x', ownBaselineKey: OWN_KEY }), false);
+  });
+});
+
+/** A promise and the function that resolves it, so a test decides when a step finishes. */
+interface Deferred {
+  promise: Promise<void>;
+  resolve: () => void;
+}
+
+function deferred(): Deferred {
+  let resolvePromise: (() => void) | undefined;
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: () => resolvePromise?.() };
+}
+
+describe('stopStoresThenLeave', () => {
+  it('does not leave until the stores have stopped', async () => {
+    const steps: string[] = [];
+    const { promise: stopping, resolve: finishStop } = deferred();
+    const leaving = stopStoresThenLeave({
+      stopStores: async () => {
+        steps.push('stop started');
+        await stopping;
+        steps.push('stop finished');
+      },
+      leave: () => void steps.push('leave'),
+    });
+
+    // CONTROL FOR THE ORDER: while the stop is still running, nothing has left.
+    // A version that navigated first, or did not await the stop, fails here.
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(steps, ['stop started']);
+
+    finishStop();
+    await leaving;
+    assert.deepEqual(steps, ['stop started', 'stop finished', 'leave']);
+  });
+
+  it('still leaves when the stop throws, since the page load ends the stores as well', async () => {
+    const steps: string[] = [];
+    await stopStoresThenLeave({
+      stopStores: async () => {
+        throw new Error('a persister would not stop');
+      },
+      leave: () => void steps.push('leave'),
+    });
+    assert.deepEqual(steps, ['leave']);
   });
 });

@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 
 import { useSyncSession } from '#app/components/sync-status';
+import { stopAllPersisters } from '#app/lib/local-store/persist';
+import { createComponentLogger } from '#app/lib/logger';
 import { DEVICE_LOCK_KEY, isDeviceLocked, syncBaselineStorageKey } from '#app/lib/sync/sync-state';
+
+const log = createComponentLogger('leave-when-another-tab-signs-out');
 
 /** What one `storage` event says, reduced to the three facts the decision needs. */
 export interface StorageChange {
@@ -39,6 +43,36 @@ export function shouldLeave({ key, newValue, ownBaselineKey }: StorageChange): b
 }
 
 /**
+ * Stops this page's stores, then leaves. Exported so the order is a unit test.
+ *
+ * THE STOP COMES FIRST. A sign-out with an erase sets the lock and then
+ * deletes the databases, and this tab hears the lock before the deletes run.
+ * A store left running here polls its database about once a second, and a
+ * poll that lands after the delete and before the document load creates an
+ * empty database again (`persist.ts`, mechanism 7). Nothing is flushed: the
+ * other tab may be about to erase, and a flush would be the write-back.
+ *
+ * A stop that throws still leaves: the document load ends the stores as well,
+ * only later.
+ */
+export async function stopStoresThenLeave({
+  stopStores,
+  leave,
+}: {
+  stopStores: () => Promise<void>;
+  leave: () => void;
+}): Promise<void> {
+  try {
+    await stopStores();
+  } catch (cause) {
+    log.error('could not stop the stores before leaving', {
+      error: cause instanceof Error ? cause.message : String(cause),
+    });
+  }
+  leave();
+}
+
+/**
  * Sends this tab away when another tab of the same device signs out.
  *
  * ── The defect (2026-10-02) ──────────────────────────────────────────────
@@ -60,9 +94,11 @@ export function shouldLeave({ key, newValue, ownBaselineKey }: StorageChange): b
  *
  * Same reason as `sign-out-flow.ts`: this tab holds the diary in TinyBase
  * stores whose persisters are still autosaving, and a router navigation would
- * leave them alive. Only a document load ends them. It also closes the tab's
- * IndexedDB connections, which is what lets the erase in the other tab delete
- * the databases instead of waiting on this one.
+ * leave them alive. The persisters are stopped first (`stopStoresThenLeave`),
+ * because the document load comes too late for a poll already due, and the
+ * load then ends the rest. Stopping also closes the tab's IndexedDB
+ * connections, which is what lets the erase in the other tab delete the
+ * databases instead of waiting on this one.
  *
  * ── Where it lands ───────────────────────────────────────────────────────
  *
@@ -84,7 +120,10 @@ export function useLeaveWhenAnotherTabSignsOut(): void {
     const onStorage = (event: StorageEvent): void => {
       if (event.storageArea !== window.localStorage) return;
       if (!shouldLeave({ key: event.key, newValue: event.newValue, ownBaselineKey })) return;
-      window.location.assign(isDeviceLocked() ? '/welcome' : '/dashboard');
+      void stopStoresThenLeave({
+        stopStores: stopAllPersisters,
+        leave: () => window.location.assign(isDeviceLocked() ? '/welcome' : '/dashboard'),
+      });
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);

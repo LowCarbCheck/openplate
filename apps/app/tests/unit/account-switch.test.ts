@@ -3,8 +3,9 @@
  *
  * ── The order the erase must keep ────────────────────────────────────────
  *
- * Every baseline, then the databases, then the lock, and the lock only when
- * the databases are gone. A device whose erase failed still holds the diary,
+ * The stores stopped, then every baseline, then the databases, then the lock,
+ * and the lock only when the databases are gone. A device whose erase failed
+ * still holds the diary,
  * so it must stay locked: the CONTROL makes the second delete fail and the
  * lock is still there. The success case reads the removal of the lock from
  * the same log as the deletes, so "after the last delete" is a statement about
@@ -23,8 +24,8 @@ import {
   eraseDiaryAndReleaseLock,
   HELD_DIARY_READ_DEADLINE_MS,
   readHeldDiaryNotice,
+  type DiaryEraseDeps,
 } from '../../app/lib/sync/account-switch';
-import type { DeviceEraseDeps } from '../../app/lib/local-store/device-erase';
 import { ERASED_DATABASES } from '../../app/lib/local-store/device-erase';
 import type { UnsentOnDevice } from '../../app/lib/sync/erase-notice';
 import {
@@ -37,8 +38,10 @@ import {
 
 const LOCK_KEY = 'openplate.device-locked';
 
-/** Storage and database deletes that write one shared log, so their ORDER can be read. */
-function loggedDeps({ failOn }: { failOn?: string } = {}): DeviceEraseDeps & {
+const STOP_STORES = 'stop stores';
+
+/** The store stop, storage and database deletes, writing one shared log, so their ORDER can be read. */
+function loggedDeps({ failOn }: { failOn?: string } = {}): DiaryEraseDeps & {
   log: string[];
   storage: KeyValueStorage;
 } {
@@ -64,6 +67,9 @@ function loggedDeps({ failOn }: { failOn?: string } = {}): DeviceEraseDeps & {
   return {
     log,
     storage,
+    stopStores: async () => {
+      log.push(STOP_STORES);
+    },
     deleteDatabase: async (name) => {
       if (name === failOn) throw new Error(`${name} is open in another tab`);
       log.push(`delete ${name}`);
@@ -71,7 +77,34 @@ function loggedDeps({ failOn }: { failOn?: string } = {}): DeviceEraseDeps & {
   };
 }
 
+/**
+ * Throws unless the stores were stopped before anything was erased: before the
+ * first delete, and before the first baseline removal, which is what sends
+ * another tab away. A store still running when a database goes recreates it.
+ */
+function assertStoresStoppedFirst(log: readonly string[]): void {
+  const stopped = log.indexOf(STOP_STORES);
+  const firstErase = log.findIndex((entry) => entry.startsWith('delete ') || entry.startsWith('remove '));
+  assert.ok(stopped >= 0, `the stores were never stopped: ${log.join(', ')}`);
+  assert.ok(firstErase >= 0, 'the log saw no erase, so the order proves nothing');
+  assert.ok(stopped < firstErase, `the stores were stopped after the erase began: ${log.join(', ')}`);
+}
+
 describe('eraseDiaryAndReleaseLock', () => {
+  it('stops every store before the first delete and before the first baseline goes', async () => {
+    const deps = loggedDeps();
+    await eraseDiaryAndReleaseLock({ accountId: 7 }, deps);
+    assertStoresStoppedFirst(deps.log);
+  });
+
+  it('CONTROL: the order check fails for a log where the stop came after a delete', () => {
+    const swapped = ['remove openplate.sync.state.v1:7', `delete ${ERASED_DATABASES[0]}`, STOP_STORES];
+    assert.throws(() => assertStoresStoppedFirst(swapped), /stopped after the erase began/);
+    const stopBetween = [`delete ${ERASED_DATABASES[0]}`, STOP_STORES, `delete ${ERASED_DATABASES[1]}`];
+    assert.throws(() => assertStoresStoppedFirst(stopBetween), /stopped after the erase began/);
+    assert.throws(() => assertStoresStoppedFirst([`delete ${ERASED_DATABASES[0]}`]), /never stopped/);
+  });
+
   it('takes every baseline and every database, and lifts the lock after the last delete', async () => {
     const deps = loggedDeps();
     await eraseDiaryAndReleaseLock({ accountId: 7 }, deps);

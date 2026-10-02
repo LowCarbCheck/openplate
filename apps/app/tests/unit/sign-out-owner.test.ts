@@ -29,7 +29,7 @@ import { after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import type { DeviceEraseDeps } from '../../app/lib/local-store/device-erase';
+import type { DiaryEraseDeps } from '../../app/lib/sync/account-switch';
 import { defaultSignOutSteps, ownerOfSession } from '../../app/lib/sync/sign-out-flow';
 import { closeSyncSession, getSyncSessionSnapshot } from '../../app/lib/sync/sync-session';
 import { readDeviceLock, syncBaselineStorageKey, type KeyValueStorage } from '../../app/lib/sync/sync-state';
@@ -47,13 +47,14 @@ function unlistableStorage(initial: Record<string, string>): KeyValueStorage {
 }
 
 /** Two accounts' baselines on a device that cannot list them, and a delete that always succeeds. */
-function deviceWithTwoBaselines(): DeviceEraseDeps {
+function deviceWithTwoBaselines(): DiaryEraseDeps {
   return {
     storage: unlistableStorage({
       [syncBaselineStorageKey(OWNER.accountId)]: '{}',
       [syncBaselineStorageKey(12)]: '{}',
     }),
     deleteDatabase: async () => undefined,
+    stopStores: async () => undefined,
   };
 }
 
@@ -103,8 +104,9 @@ describe('defaultSignOutSteps with a closed session', () => {
   it('keeps the owner it was given for every press, as a retry builds its steps again', async () => {
     const deps = deviceWithTwoBaselines();
     let failures = 1;
-    const failingOnce: DeviceEraseDeps = {
+    const failingOnce: DiaryEraseDeps = {
       storage: deps.storage,
+      stopStores: async () => undefined,
       deleteDatabase: async () => {
         if (failures-- > 0) throw new Error('the diary is open in another tab');
       },

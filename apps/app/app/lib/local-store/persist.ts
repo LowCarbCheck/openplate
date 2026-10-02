@@ -138,8 +138,17 @@
  *    Re-applying costs nothing when nothing was clobbered (TinyBase reports an
  *    untouched transaction — see `reapplyRecordedTransactions`), so this is a
  *    widening of (5)'s window, not a second mechanism competing with it.
+ * 7. `stopAllPersisters`, which closes an ERASE that did not stay erased (found
+ *    2026-10-02, `sign-out-other-tab.spec.ts` under load). An erase deletes
+ *    the databases, but the page that ran it kept its persisters, and the
+ *    `startAutoLoad` poll opens its database versionless about once a second.
+ *    On a deleted database that open creates an empty v1 database again (the
+ *    same effect mechanism 4 names), so a poll landing between the delete and
+ *    the next page load left an `openplate-photos` behind. The erase now stops
+ *    every persister this page started, waits out a load or save in flight,
+ *    and from then on every `getXStore()` refuses to start a new one.
  */
-import { createIndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
+import { createIndexedDbPersister, type IndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
 import type { ChangedCells, ChangedValues, Store } from 'tinybase';
 import { z } from 'zod';
 import { createComponentLogger } from '#app/lib/logger';
@@ -1177,8 +1186,185 @@ export async function primeFreshDatabaseIfNeeded(dbName: string, persister: Save
  */
 type AfterLoad = (store: Store) => void | Promise<void>;
 
+// ---------------------------------------------------------------------------
+// Mechanism 7 (see this file's module doc): stop every persister before an
+// erase deletes the databases, and start no new one in this page afterwards.
+// ---------------------------------------------------------------------------
+
+/**
+ * TinyBase's `Status.Idle`, spelled locally for the reason
+ * {@link PERSISTER_STATUS_LOADING} gives.
+ */
+const PERSISTER_STATUS_IDLE = 0;
+
+/**
+ * How long {@link stopAllPersisters} waits for a load or save that is already
+ * in flight. One IndexedDB read or write, so milliseconds on a healthy device.
+ * The bound only keeps a wedged database from holding the erase open; the
+ * delete that follows has its own bounded wait and reports a connection that
+ * is still open (`device-erase.ts`).
+ */
+const PERSISTER_SETTLE_TIMEOUT_MS = 2_000;
+
+/** One persister this page started, and what it takes to end it. */
+interface RunningPersister {
+  dbName: string;
+  persister: IndexedDbPersister;
+  /** Removes this page's autosave listener and its flush-on-hide; a no-op until the autosave is installed. */
+  stopAutoSave: () => void;
+  /** Set once {@link stopAllPersisters} reached this persister. Every save and every load start reads it. */
+  isStopped: boolean;
+}
+
+/** Every persister this page started and has not stopped yet. */
+const runningPersisters = new Set<RunningPersister>();
+
+/**
+ * Set by {@link stopAllPersisters} and never cleared: the page is about to be
+ * replaced by a document load, and a new document starts with a new module.
+ */
+let arePersistersStopped = false;
+
+function persistersStoppedError(dbName: string): Error {
+  return new Error(
+    `local-store "${dbName}": this page stopped every store for an erase, so no store may start here. ` +
+      'A new page load starts them again.',
+  );
+}
+
+/**
+ * The persister as {@link runLockedSave} and {@link startLockedAutoSave} see
+ * it, with a save that does nothing once the persister is stopped.
+ *
+ * A save is the one call that can write a database back after the erase
+ * deleted it (`save()` opens with `create=1`), and the autosave chain can be
+ * holding one behind the Web Lock or behind a load at the moment the erase
+ * starts. Checking the flag at the call, rather than tearing the chain down,
+ * covers every save already queued without having to find it.
+ */
+function guardSavesAfterStop(running: RunningPersister): SaveStep {
+  const { persister } = running;
+  const guarded: SaveStep = {
+    save: async () => {
+      if (running.isStopped) return;
+      await persister.save();
+    },
+    getStatus: () => persister.getStatus(),
+    addStatusListener: (listener) => persister.addStatusListener((_persister, status) => listener(guarded, status)),
+    delListener: (listenerId) => {
+      persister.delListener(listenerId);
+    },
+  };
+  return guarded;
+}
+
+/**
+ * The persister's load start, refused once it is stopped. The check and the
+ * call sit in one synchronous turn, and TinyBase issues the IndexedDB open
+ * synchronously inside `startAutoLoad`, so a stop either comes before the
+ * open (and this refuses) or after it (and the stop waits for it to settle).
+ */
+function guardLoadStartAfterStop(running: RunningPersister): LoadStep {
+  return {
+    startAutoLoad: () => {
+      if (running.isStopped) return Promise.reject(persistersStoppedError(running.dbName));
+      return running.persister.startAutoLoad();
+    },
+  };
+}
+
+/** Resolves once `persister` is Idle, or after `timeoutMs`, whichever comes first. */
+async function waitForPersisterIdle(
+  { dbName, persister }: Pick<RunningPersister, 'dbName' | 'persister'>,
+  timeoutMs: number,
+): Promise<void> {
+  if (persister.getStatus() === PERSISTER_STATUS_IDLE) return;
+  let listenerId: string | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const isSettled = await new Promise<boolean>((resolve) => {
+      listenerId = persister.addStatusListener((_persister, status) => {
+        if (status === PERSISTER_STATUS_IDLE) resolve(true);
+      });
+      timer = setTimeout(() => resolve(false), timeoutMs);
+    });
+    if (!isSettled) {
+      log.warn('local-store: a persister was still loading or saving when the stop bound expired', {
+        dbName,
+        timeoutMs,
+      });
+    }
+  } finally {
+    if (listenerId !== undefined) persister.delListener(listenerId);
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+/**
+ * Ends one persister: no save from here on, no autosave listener, no autoLoad
+ * poll, and nothing of it still in flight when this resolves.
+ *
+ * Idempotent, and that is used: a store that was still starting when the stop
+ * came may add its poll AFTER this ran (`startAutoLoad` installs it once its
+ * first load returns), so {@link initPersistedStore} runs this again for it.
+ */
+async function stopRunningPersister(running: RunningPersister, timeoutMs: number): Promise<void> {
+  running.isStopped = true;
+  running.stopAutoSave();
+  // `destroy` is `stopAutoLoad` (clears the poll's interval), `stopAutoSave`
+  // (TinyBase's own, unused here), and a clear of the persister's queue of
+  // actions that have not started. It does not cancel one that has.
+  await running.persister.destroy();
+  await waitForPersisterIdle(running, timeoutMs);
+  runningPersisters.delete(running);
+}
+
+/** Throws, after ending `running` once more, when the stop came while this store was starting. */
+async function assertStillRunning(running: RunningPersister): Promise<void> {
+  if (!running.isStopped) return;
+  await stopRunningPersister(running, PERSISTER_SETTLE_TIMEOUT_MS);
+  throw persistersStoppedError(running.dbName);
+}
+
+/**
+ * Stops every store persister this page started, and makes every
+ * `getXStore()` refuse to start another one in this page.
+ *
+ * The erase calls this BEFORE it deletes a database (`account-switch.ts`), and
+ * a tab that leaves because another tab signed out calls it before it
+ * navigates (`use-leave-when-another-tab-signs-out.ts`). Without it, the
+ * `startAutoLoad` poll of a store this page had opened recreates an empty
+ * database after the delete; see mechanism 7 in this file's module doc.
+ *
+ * The flag is set FIRST, before any await, so a getter called while this
+ * waits cannot start a persister behind its back. The cached store promises
+ * are dropped, so a getter called afterwards answers with the refusal rather
+ * than a store whose persister is gone.
+ *
+ * Unsaved writes are NOT flushed. Every caller is about to delete the data or
+ * hand the device to an erase in another tab, and a flush would be exactly
+ * the write-back this exists to prevent.
+ *
+ * Never rejects: a persister that does not settle in time is logged, and the
+ * delete that follows reports a connection that is still open.
+ */
+export async function stopAllPersisters({
+  settleTimeoutMs = PERSISTER_SETTLE_TIMEOUT_MS,
+}: { settleTimeoutMs?: number } = {}): Promise<void> {
+  arePersistersStopped = true;
+  primaryPromise = null;
+  outboxPromise = null;
+  photosPromise = null;
+  aiPromise = null;
+  loadedAiStore = null;
+  const stopping = [...runningPersisters].map((running) => stopRunningPersister(running, settleTimeoutMs));
+  await Promise.all(stopping);
+  log.info('local-store: every store persister stopped', { stopped: stopping.length });
+}
+
 async function initPersistedStore(store: Store, dbName: string, afterLoad?: AfterLoad): Promise<Store> {
   assertBrowserWithIndexedDb(dbName);
+  if (arePersistersStopped) throw persistersStoppedError(dbName);
   const persister = createIndexedDbPersister(store, dbName, undefined, (cause: unknown) => {
     // TinyBase itself swallows this error silently (no callback = discarded).
     // Surfacing it here is the difference between "diagnosable" and
@@ -1193,16 +1379,24 @@ async function initPersistedStore(store: Store, dbName: string, afterLoad?: Afte
     );
   });
 
-  await primeFreshDatabaseIfNeeded(dbName, persister);
+  // Registered before the first await, so a stop that arrives while this store
+  // is still starting reaches it (mechanism 7).
+  const running: RunningPersister = { dbName, persister, stopAutoSave: noop, isStopped: false };
+  runningPersisters.add(running);
+  const saveStep = guardSavesAfterStop(running);
 
-  await loadAndVerifyOrThrow(store, dbName, persister);
+  await primeFreshDatabaseIfNeeded(dbName, saveStep);
+  await assertStillRunning(running);
+
+  await loadAndVerifyOrThrow(store, dbName, guardLoadStartAfterStop(running));
+  await assertStillRunning(running);
 
   // Every open tab persists its OWN writes from here on — synchronous setup,
   // no promise to await: this only installs a store-change listener, it
   // doesn't wait on winning anything. See `startLockedAutoSave`'s doc for why
   // this replaced the old single-elected-writer design (which silently
   // discarded every non-winning tab's writes — see this file's module doc).
-  startLockedAutoSave(store, dbName, persister);
+  running.stopAutoSave = startLockedAutoSave(store, dbName, saveStep);
 
   await afterLoad?.(store);
 
