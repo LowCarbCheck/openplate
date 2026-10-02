@@ -1765,7 +1765,7 @@ function WayToLogCard({
       pendingLabel={t('onboarding.firstFood.opening')}
       disabled={isBusy}
       variant="outline"
-      className="h-auto w-full justify-start gap-4 whitespace-normal p-4 text-left"
+      className="h-auto w-full justify-start gap-4 whitespace-normal p-4 text-left md:h-auto"
     >
       {/* The drawing is decoration around the label, so its absence while the
           chunk loads must not move the text: the fallback reserves the box. */}

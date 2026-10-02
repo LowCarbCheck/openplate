@@ -808,7 +808,7 @@ function LadderCard({
 
 /** The classes of the hero's one filled button. See the comments where the hero draws it. */
 const HERO_PRIMARY_CLASS =
-  'h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-lg shadow-primary/20';
+  'h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-lg shadow-primary/20 md:h-auto';
 
 /** The hero's row of one button and one quieter link. */
 const HERO_ROW_CLASS = 'flex w-full flex-wrap items-center justify-center gap-4';
@@ -1238,7 +1238,7 @@ export function LandingOpen({ syncEnabled, newsletter, analyticsLevel }: Landing
             asChild
             variant="outline"
             size="lg"
-            className="h-auto min-h-12 max-w-full whitespace-normal py-2 text-center"
+            className="h-auto min-h-12 max-w-full whitespace-normal py-2 text-center md:h-auto"
           >
             <Link to="/dashboard" onClick={() => trackLandingCtaClicked('mid')}>
               {t('landing.cta.tryItFree')}
@@ -1380,7 +1380,7 @@ export function LandingOpen({ syncEnabled, newsletter, analyticsLevel }: Landing
         <Button
           asChild
           size="lg"
-          className="mt-7 h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-md shadow-primary/20"
+          className="mt-7 h-auto min-h-12 max-w-full whitespace-normal px-7 py-2 text-center text-base shadow-md shadow-primary/20 md:h-auto"
         >
           <Link to="/dashboard" onClick={() => trackLandingCtaClicked('footer')}>
             {t('landing.cta.tryIt')}
