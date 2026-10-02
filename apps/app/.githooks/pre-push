@@ -246,6 +246,9 @@ tail -n 15 "$build_log"
 # shard takes three ports of its own from that base.
 if [ "${OPENPLATE_PUSH_TAG:-0}" = "1" ] || [ "${OPENPLATE_E2E_FULL:-0}" = "1" ]; then
   echo "▶ pre-push: browser tier, FULL (release gate)"
+  # One retry: a test that passes on it is listed as flaky by name, not failed.
+  OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
+  export OPENPLATE_E2E_RETRIES
   CI=true pnpm test:e2e:sharded
 else
   echo "▶ pre-push: browser tier, scoped to the push"

@@ -42,3 +42,30 @@ export function parseShardNumber(raw: string | undefined): number | null {
   }
   return parsed;
 }
+
+/** The variable that sets how many times Playwright retries a failed spec. */
+export const E2E_RETRIES_VAR = 'OPENPLATE_E2E_RETRIES';
+
+/** The most retries a run may ask for: more than this is a race being hidden, not a load spike. */
+const MAX_RETRIES = 3;
+
+/**
+ * Reads the retry count, or refuses it.
+ *
+ * Unset or empty is 0, today's behaviour. Anything else must be a whole number from 0 to 3, and
+ * is NOT trimmed: a typo that quietly read as 0 would turn a gate meant to tolerate one slow
+ * spec into one that fails on it, and a value that quietly read as a large number would hide a
+ * race. So the refusal is one sentence that names the variable and the value.
+ *
+ * @param value - the variable's value.
+ */
+export function retriesFromEnv(value: string | undefined): number {
+  if (value === undefined || value === '') return 0;
+  const parsed = Number(value);
+  if (!WHOLE_NUMBER.test(value) || parsed > MAX_RETRIES) {
+    throw new Error(
+      `${E2E_RETRIES_VAR}=${value} is not a retry count: it has to be a whole number from 0 to ${MAX_RETRIES}.`,
+    );
+  }
+  return parsed;
+}

@@ -36,7 +36,7 @@ import {
   resetFontconfigCache,
   writeFontsConfFor,
 } from '../e2e/font-cache';
-import { E2E_SHARD_VAR, parseShardNumber } from '../e2e/shard';
+import { E2E_RETRIES_VAR, E2E_SHARD_VAR, parseShardNumber, retriesFromEnv } from '../e2e/shard';
 
 /** The three ports a base stands for. */
 const PORTS_PER_SHARD = 3;
@@ -161,6 +161,30 @@ describe('the shard number', () => {
   it('refuses anything else that is not a whole number of 1 or more, naming the variable', () => {
     for (const raw of ['0', '-1', '1.5', '1e1', '0x2', 'two', '1/4']) {
       assert.throws(() => parseShardNumber(raw), new RegExp(E2E_SHARD_VAR), `${raw} must be refused`);
+    }
+  });
+});
+
+describe('the retry count', () => {
+  it('reads as 0 when unset or empty, so the push gate keeps failing loudly', () => {
+    assert.equal(retriesFromEnv(undefined), 0);
+    assert.equal(retriesFromEnv(''), 0);
+
+    // THE CONTROL. A parser that returned 0 for everything would pass the two lines above.
+    assert.equal(retriesFromEnv('1'), 1);
+    assert.equal(retriesFromEnv('3'), 3);
+  });
+
+  it('accepts an explicit 0 without throwing', () => {
+    // THE CONTROL for the refusals below: a parser that threw on everything would pass them.
+    assert.doesNotThrow(() => retriesFromEnv('0'));
+    assert.equal(retriesFromEnv('0'), 0);
+  });
+
+  it('refuses anything that is not a whole number from 0 to 3, naming the variable and the value', () => {
+    for (const raw of ['4', '-1', '1.5', 'one', ' 1']) {
+      const named = new RegExp(`${E2E_RETRIES_VAR}=${raw.replace('.', '\\.')} is not a retry count`);
+      assert.throws(() => retriesFromEnv(raw), named, `${JSON.stringify(raw)} must be refused`);
     }
   });
 });

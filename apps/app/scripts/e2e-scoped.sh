@@ -24,6 +24,9 @@
 #   * the selector says `all` (the push touches shared code).
 # An empty selection is a pass: no spec covers the change.
 #
+# OPENPLATE_E2E_RETRIES (0 to 3, read by playwright.config.ts) is exported here:
+# 1 on every full-tier path, 0 on the scoped path, unless the caller set it.
+#
 # Test seam: OPENPLATE_E2E_SELECT is a command (run through `bash -c`) that
 # replaces `node --import tsx scripts/e2e-select.ts`. It reads the same stdin
 # and prints the same words. scripts/test-e2e-scoped.sh uses it.
@@ -34,13 +37,21 @@ cd "$app_dir"
 
 select_cmd=${OPENPLATE_E2E_SELECT:-node --import tsx scripts/e2e-select.ts}
 
+# The full tier gets one retry by default and the scoped tier none. On a loaded
+# host a layout spec can fail once and pass 18 of 18 alone; Playwright lists a
+# test that passes on retry as flaky by name and exits 0. The scoped tier keeps
+# 0, so a real race in a push still fails loudly. A caller's value wins.
+run_full() {
+  export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
+  echo "e2e-scoped: full tier ($1), retries=$OPENPLATE_E2E_RETRIES"
+  exec bash scripts/e2e-sharded.sh "${@:2}"
+}
+
 if [ "${OPENPLATE_E2E_FULL:-0}" = "1" ]; then
-  echo "e2e-scoped: full tier (OPENPLATE_E2E_FULL=1)"
-  exec bash scripts/e2e-sharded.sh "$@"
+  run_full "OPENPLATE_E2E_FULL=1" "$@"
 fi
 if [ -z "${OPENPLATE_PUSH_RANGE:-}" ]; then
-  echo "e2e-scoped: full tier (no single pushed range to scope by)"
-  exec bash scripts/e2e-sharded.sh "$@"
+  run_full "no single pushed range to scope by" "$@"
 fi
 
 repo_root=$(git rev-parse --show-toplevel)
@@ -51,8 +62,7 @@ changed=$(git -C "$repo_root" diff --name-only "$OPENPLATE_PUSH_RANGE" | grep '^
 selection=$(printf '%s' "$changed" | bash -c "$select_cmd")
 
 if [ "$selection" = "all" ]; then
-  echo "e2e-scoped: full tier (the push touches shared code)"
-  exec bash scripts/e2e-sharded.sh "$@"
+  run_full "the push touches shared code" "$@"
 fi
 if [ -z "$selection" ]; then
   echo "e2e-scoped: no browser specs for this push"
@@ -64,6 +74,7 @@ while IFS= read -r spec; do
   [ -z "$spec" ] || specs+=("$spec")
 done <<<"$selection"
 
-echo "e2e-scoped: ${#specs[@]} specs"
+export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-0}
+echo "e2e-scoped: ${#specs[@]} specs, retries=$OPENPLATE_E2E_RETRIES"
 printf '  %s\n' "${specs[@]}"
 exec bash scripts/e2e-sharded.sh "${specs[@]}" "$@"

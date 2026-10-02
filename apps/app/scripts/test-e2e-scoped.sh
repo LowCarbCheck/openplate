@@ -23,7 +23,7 @@ self=$here/$(basename -- "$0")
 SCRIPT=${SCRIPT:-$here/e2e-scoped.sh}
 self_test=1
 [ "${1:-}" = "--no-self-test" ] && self_test=0
-unset OPENPLATE_E2E_FULL OPENPLATE_PUSH_RANGE OPENPLATE_E2E_SELECT GIT_DIR GIT_WORK_TREE
+unset OPENPLATE_E2E_FULL OPENPLATE_PUSH_RANGE OPENPLATE_E2E_SELECT OPENPLATE_E2E_RETRIES GIT_DIR GIT_WORK_TREE
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/test-e2e-scoped.XXXXXX") || exit 1
 trap 'rm -rf "$scratch"' EXIT
@@ -40,6 +40,7 @@ cp "$SCRIPT" "$repo/apps/app/scripts/e2e-scoped.sh"
 cat >"$repo/apps/app/scripts/e2e-sharded.sh" <<'STUB'
 #!/usr/bin/env bash
 printf 'sharded:%s\n' "$#" >>"$STUB_LOG"
+printf 'retries:%s\n' "${OPENPLATE_E2E_RETRIES-unset}" >>"$STUB_LOG"
 for a in "$@"; do printf 'arg:%s\n' "$a" >>"$STUB_LOG"; done
 exit "${SHARDED_RC:-0}"
 STUB
@@ -143,6 +144,22 @@ else
   not_ok "selector stdin: '$(cat "$STUB_LOG.stdin" 2>/dev/null)'"
 fi
 
+# ── retries: 1 on every full path, 0 on the scoped path, the caller wins ────
+run_scoped OPENPLATE_PUSH_RANGE="$range" SELECT_OUTPUT=all
+if has 'retries:1' && says 'retries=1'; then ok "retries: the selector's all path runs with retries=1"; else not_ok "retries all: out '$out', log '$log'"; fi
+run_scoped SELECT_OUTPUT=all
+if has 'retries:1' && says 'retries=1'; then ok "retries: the no-range path runs with retries=1"; else not_ok "retries no range: out '$out', log '$log'"; fi
+run_scoped OPENPLATE_E2E_FULL=1 OPENPLATE_PUSH_RANGE="$range"
+if has 'retries:1' && says 'retries=1'; then ok "retries: the OPENPLATE_E2E_FULL=1 path runs with retries=1"; else not_ok "retries full flag: out '$out', log '$log'"; fi
+run_scoped OPENPLATE_PUSH_RANGE="$range" SELECT_OUTPUT='tests/e2e/a.spec.ts'
+if has 'retries:0' && says 'retries=0'; then ok "retries: the scoped path runs with retries=0"; else not_ok "retries scoped: out '$out', log '$log'"; fi
+# Controls: the two values differ, and a caller's value survives on both paths.
+if ! has 'retries:1'; then ok "  control: the scoped path does not carry the full tier's 1"; else not_ok "retries control: scoped saw 1"; fi
+run_scoped OPENPLATE_PUSH_RANGE="$range" SELECT_OUTPUT=all OPENPLATE_E2E_RETRIES=2
+if has 'retries:2' && says 'retries=2'; then ok "retries: a caller's 2 survives on a full path"; else not_ok "retries caller full: out '$out', log '$log'"; fi
+run_scoped OPENPLATE_PUSH_RANGE="$range" SELECT_OUTPUT='tests/e2e/a.spec.ts' OPENPLATE_E2E_RETRIES=2
+if has 'retries:2' && says 'retries=2'; then ok "retries: a caller's 2 survives on the scoped path"; else not_ok "retries caller scoped: out '$out', log '$log'"; fi
+
 if [ "$failures" != 0 ]; then
   echo "FAIL: $failures check(s) failed"
   exit 1
@@ -173,4 +190,7 @@ mutate all-is-a-spec 's#^if \[ "$selection" = "all" \]; then#if false; then#'
 mutate drops-specs 's#"${specs\[@\]}" "$@"#"$@"#'
 mutate no-prefix-filter "s#grep '^apps/app/' | ##"
 mutate full-flag-ignored 's#^if \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#if false; then#'
+mutate retries-forced-zero 's#export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}#export OPENPLATE_E2E_RETRIES=0#'
+mutate retries-caller-ignored 's#export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-0}#export OPENPLATE_E2E_RETRIES=0#'
+mutate retries-scoped-one 's#export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-0}#export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}#'
 echo "PASS: the self-test caught every broken copy"

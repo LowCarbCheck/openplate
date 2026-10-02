@@ -74,7 +74,7 @@ import {
   E2E_CORE_URL,
 } from './tests/e2e/env';
 import { writeFontsConfFor } from './tests/e2e/font-cache';
-import { E2E_SHARD_VAR, parseShardNumber } from './tests/e2e/shard';
+import { E2E_RETRIES_VAR, E2E_SHARD_VAR, parseShardNumber, retriesFromEnv } from './tests/e2e/shard';
 import { buildTierServerCommand } from './tests/e2e/server-env';
 
 /** The build artefact the production server serves. */
@@ -130,9 +130,12 @@ export default defineConfig({
   // shared row.
   fullyParallel: false,
   workers: 1,
-  // NO RETRIES. A smoke tier that passes on the second attempt is a tier that
-  // hides a race; this one is small enough to fix instead.
-  retries: 0,
+  // RETRIES COME FROM `OPENPLATE_E2E_RETRIES` (`retriesFromEnv`), and unset means 0. The push gate
+  // runs the scoped tier with 0, so a race fails loudly: a tier that passes on the second attempt
+  // hides one. The full tier at a release tag and the nightly run with 1, because on this shared
+  // host a layout spec can time out under another project's load, and Playwright then reports
+  // that test as flaky BY NAME instead of failing the gate. A typo throws at load, never reads as 0.
+  retries: retriesFromEnv(process.env[E2E_RETRIES_VAR]),
   reporter: 'list',
   timeout: SPEC_TIMEOUT_MS,
   // PLAYWRIGHT EMPTIES ITS OUTPUT FOLDER AT THE START OF A RUN. Several shards of one checkout

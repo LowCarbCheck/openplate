@@ -46,15 +46,25 @@ keep_logs() {
 # "[shard 2/4]   1) [chromium] > tests/e2e/foo.spec.ts:12:5 > name"; the
 # separator after the project is a unicode arrow, so only the spec path is read.
 summarize() {
-  local file=$1 code=$2 shards passed failed_specs failed_count
+  local file=$1 code=$2 shards passed failed_specs failed_count flaky_count flaky_specs flaky_note
   shards=$(sed -nE 's/.*e2e-sharded: ([0-9]+) shards.*/\1/p' "$file" | tail -n 1)
   passed=$(grep -oE '[0-9]+ passed' "$file" | grep -oE '[0-9]+' | awk '{ sum += $1 } END { print sum + 0 }' || true)
   failed_specs=$(grep -E '^\[shard [0-9]+/[0-9]+\] +[0-9]+\) ' "$file" | grep -oE '[A-Za-z0-9_./-]+\.spec\.ts' | sort -u | paste -sd, - | sed 's/,/, /g' || true)
   failed_count=$(grep -E '^\[shard [0-9]+/[0-9]+\] +[0-9]+\) ' "$file" | sort -u | wc -l | tr -d ' ')
+  # "[shard 1/4]   2 flaky" opens a block, one "[shard 1/4]     [project] > spec"
+  # line per test follows, up to the next count line. Specs are read from those.
+  flaky_count=$(sed -nE 's/^\[shard [0-9]+\/[0-9]+\] +([0-9]+) flaky.*/\1/p' "$file" | awk '{ sum += $1 } END { print sum + 0 }')
+  flaky_specs=$(awk '
+    /^\[shard [0-9]+\/[0-9]+\] +[0-9]+ flaky/ { inblock = 1; next }
+    /^\[shard [0-9]+\/[0-9]+\] +[0-9]+ (passed|failed|skipped|did not run|interrupted)/ { inblock = 0 }
+    inblock && match($0, /[A-Za-z0-9_.\/-]+\.spec\.ts/) { print substr($0, RSTART, RLENGTH) }
+  ' "$file" | sort -u | paste -sd, - | sed 's/,/, /g')
+  flaky_note=""
+  [ "$flaky_count" = "0" ] || flaky_note=", $flaky_count flaky: ${flaky_specs:-see the log}"
   if [ "$code" = "0" ]; then
-    echo "${shards:-?} shards, ${passed:-0} passed"
+    echo "${shards:-?} shards, ${passed:-0} passed$flaky_note"
   elif [ "${failed_count:-0}" != "0" ]; then
-    echo "$failed_count failed: ${failed_specs:-see the log}"
+    echo "$failed_count failed: ${failed_specs:-see the log}$flaky_note"
   else
     echo "the run stopped with exit $code before it reported a failure, see the log"
   fi
@@ -105,6 +115,8 @@ else
     nvm use 24.8.0
     set -u
     export PATH=$HOME/.local/share/pnpm:$PATH
+    # One retry: a test that passes on it is reported as flaky, not failed.
+    export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
     cd "$worktree/apps/app"
     CI=true pnpm install --frozen-lockfile
     CI=true pnpm build

@@ -90,6 +90,7 @@ cat >"$stub/pnpm" <<'STUB'
 #!/bin/sh
 # Stub pnpm: records "<CI>|<arguments>", plays a missing browser.
 printf '%s|%s\n' "${CI:-unset}" "$*" >>"$STUB_LOG"
+case "$*" in test:e2e*) printf 'retries|%s|%s\n' "$*" "${OPENPLATE_E2E_RETRIES-unset}" >>"$STUB_LOG" ;; esac
 case "$*" in
   *"exec node -e"*chromium*)
     [ "${STUB_NO_CHROMIUM:-0}" = "1" ] && exit 1
@@ -295,6 +296,26 @@ if [ "$rc" = 0 ] && said 'browser tier, FULL (release gate)' && called test:e2e:
 else
   not_ok "app browser tier: OPENPLATE_E2E_FULL=1 gave exit $rc, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
 fi
+# Retries: the direct full-tier path exports 1 unless the caller set a value;
+# the scoped path leaves the choice to scripts/e2e-scoped.sh (unset here).
+run_hook app "$dir" "$push_line" '' OPENPLATE_PUSH_TAG=1
+if printf '%s\n' "$calls" | grep -qxF 'retries|test:e2e:sharded|1'; then
+  ok "app browser tier: the tag path runs test:e2e:sharded with OPENPLATE_E2E_RETRIES=1"
+else
+  not_ok "app browser tier: the tag path did not export retries=1, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
+run_hook app "$dir" "$push_line" '' OPENPLATE_PUSH_TAG=1 OPENPLATE_E2E_RETRIES=3
+if printf '%s\n' "$calls" | grep -qxF 'retries|test:e2e:sharded|3'; then
+  ok "  control: a caller's OPENPLATE_E2E_RETRIES=3 wins on the tag path"
+else
+  not_ok "retries control: the caller's 3 was not kept, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
+run_hook app "$dir" "$push_line" ''
+if printf '%s\n' "$calls" | grep -qxF 'retries|test:e2e:scoped|unset'; then
+  ok "  control: the scoped path exports no retries itself"
+else
+  not_ok "retries control: the scoped path touched retries, calls: $(printf '%s\n' "$calls" | tr '\n' ' ')"
+fi
 # Controls: a value other than 1 asks for nothing.
 run_hook app "$dir" "$push_line" '' OPENPLATE_PUSH_TAG=0 OPENPLATE_E2E_FULL=0
 if [ "$rc" = 0 ] && called test:e2e:scoped && ! called test:e2e:sharded; then
@@ -364,4 +385,5 @@ mutate always-full app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || \[ "${OP
 mutate never-full app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#if false; then#'
 mutate tag-ignored app 's#^if \[ "${OPENPLATE_PUSH_TAG:-0}" = "1" \] || #if #'
 mutate full-flag-ignored app 's# || \[ "${OPENPLATE_E2E_FULL:-0}" = "1" \]; then#; then#'
+mutate retries-not-exported app 's#^  export OPENPLATE_E2E_RETRIES$#  :#'
 echo "PASS: the self-test caught every broken copy"
