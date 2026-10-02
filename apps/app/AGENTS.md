@@ -107,6 +107,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0019](.adr/0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted   |
 | [0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted   |
 | [0021](.adr/0021-the-release-check-asks-openplate-de-and-the-site-counts-the-asks.md) | The release check asks openplate.de, and the site counts the asks | Accepted   |
+| [0022](.adr/0022-the-device-lock-names-its-owner.md) | The device lock names its owner, and another account erases first | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
