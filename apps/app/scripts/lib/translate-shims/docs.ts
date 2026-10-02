@@ -1,5 +1,5 @@
 /**
- * A stand-in for `apps/website/app/lib/docs.ts`, the documentation tree the vendored
+ * A stand-in for `app/lib/docs.ts` in LowCarbCheck/openplate-website, the documentation tree the vendored
  * translator was written beside.
  *
  * ── WHY A STAND-IN AND NOT A COPY ──

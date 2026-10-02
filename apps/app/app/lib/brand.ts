@@ -81,7 +81,7 @@ export type ProjectSitePath = `/${string}`;
 
 /**
  * The URL prefix of each app language on the project site, mirroring
- * `LANGUAGE_PREFIXES` in `apps/website/app/i18n/language.ts`: German owns the
+ * `LANGUAGE_PREFIXES` in `app/i18n/language.ts` in LowCarbCheck/openplate-website: German owns the
  * unprefixed paths, every other language lives under its own. `satisfies`
  * makes a seventh app language a compile error here until the site has a
  * prefix for it.
@@ -132,7 +132,7 @@ export const SELF_HOSTING_HTTPS_DOCS_PATH = '/docs/app/self-hosting/#https' sati
  * The guide to bringing a YAZIO diary over (M254/03), linked from the import
  * section on "Data & backup", in the reader's language through
  * {@link projectSiteUrl}. The site publishes `docs/import-from-yazio.md` from
- * this repository at `/docs/app/<slug>` (`apps/website`'s `doc-routes.ts`),
+ * this repository at `/docs/app/<slug>` (`doc-routes.ts` in LowCarbCheck/openplate-website),
  * German at the root and every other language under its prefix.
  */
 export const YAZIO_IMPORT_DOCS_PATH = '/docs/app/import-from-yazio/' satisfies ProjectSitePath;

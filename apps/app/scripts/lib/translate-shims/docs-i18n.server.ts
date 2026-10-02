@@ -1,5 +1,5 @@
 /**
- * A stand-in for `apps/website/app/lib/docs-i18n.server.ts`: the part of it the UI
+ * A stand-in for `app/lib/docs-i18n.server.ts` in LowCarbCheck/openplate-website: the part of it the UI
  * translator needs, done for real, and the part only the documentation pipeline needs, refused.
  *
  * ── WHAT IS REAL HERE, AND WHY IT MUST MATCH UPSTREAM BYTE FOR BYTE ──

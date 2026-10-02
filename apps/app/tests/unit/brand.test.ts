@@ -86,7 +86,7 @@ describe('X_PROFILE_URL', () => {
  * THE PROJECT SITE AND ITS LANGUAGES (M266 design, step 2).
  *
  * openplate.de puts German at its root and every other language under a
- * prefix (`apps/website/app/i18n/language.ts`). The app's links to it used to
+ * prefix (`app/i18n/language.ts` in LowCarbCheck/openplate-website). The app's links to it used to
  * be the English copy for everybody, and the door page and the footer now link
  * it too, so the rule is pinned here with the URLs written out: a test that
  * rebuilt them from the same table would agree with any mistake in it.
