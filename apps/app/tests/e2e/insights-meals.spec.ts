@@ -37,6 +37,8 @@
  * in the exact shape the primary store persists, the same layout
  * `insights-range.spec.ts` / `insights-nutrition.spec.ts` already use, and the
  * page is then loaded fresh.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -25,6 +25,8 @@
  * WHY THREE DAYS AND NOT TWO. Under `MIN_TREND_DAYS` logged days the chart is
  * replaced outright by the sparse notice, so a two-day fixture has no bars to
  * measure at all.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

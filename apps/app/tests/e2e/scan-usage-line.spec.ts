@@ -18,6 +18,8 @@
  * at ten of ten, but an account at zero is now sent from the scan screen to
  * the plan page, so the line can no longer be read there. Nine of ten is the
  * same defect: the device's count against the account's.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

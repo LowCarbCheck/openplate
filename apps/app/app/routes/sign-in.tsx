@@ -109,7 +109,7 @@ export default function SignIn() {
   }, [startFirstPull]);
 
   return (
-    // TOP-ALIGNED, NOT CENTRED (ADR-0022), as `/join` is. The card body can be
+    // TOP-ALIGNED, NOT CENTRED (ADR-0023), as `/join` is. The card body can be
     // swapped for one of another height after a tap: the account-switch step
     // replaces the form on a device that holds another account's diary. A
     // centred card grew both ways and moved its own title; anchored at the

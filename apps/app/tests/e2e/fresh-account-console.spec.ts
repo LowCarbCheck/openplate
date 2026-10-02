@@ -22,6 +22,8 @@
  * THE CONTROL is the build before the fix, where this check counted one
  * warning per load. The account is new per run, made through the fake
  * service's `__e2e__` invite seam, so the shared fixture account is untouched.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Page } from '@playwright/test';
 import { z } from 'zod';

@@ -17,6 +17,8 @@
  * Every presence has a control that finds it absent through the same query,
  * and the "moves nothing" reading has a control that moves something and sees
  * it.
+ *
+ * @area health-consent
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

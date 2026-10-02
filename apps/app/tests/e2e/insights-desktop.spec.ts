@@ -27,6 +27,8 @@
  * taller control block than the desktop, so the height reader tells rows apart.
  * Two different bars must give two different tooltips, or the tooltip is a
  * constant. A pointer that leaves must close the tooltips it opened.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

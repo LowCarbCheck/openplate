@@ -20,6 +20,8 @@
  * (the webhook arrived), so the returning page draws no second offer. Each
  * step must reach Matomo exactly once, and a reload must not count the return
  * again.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test } from '@playwright/test';
 

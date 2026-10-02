@@ -1,5 +1,5 @@
 /**
- * The account-switch erase and the step's read of the held diary (ADR-0022).
+ * The account-switch erase and the step's read of the held diary (ADR-0023).
  *
  * ── The order the erase must keep ────────────────────────────────────────
  *

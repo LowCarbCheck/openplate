@@ -15,6 +15,8 @@
  * does not know the invite below and answers 404, so the page lands on "this
  * invitation is no longer valid". That card, and not a form, is the proof the
  * second link was read and dialled.
+ *
+ * @area accounts-and-sign-in
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

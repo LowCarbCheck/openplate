@@ -20,6 +20,9 @@
  *
  * THE CONTROL is the state before the fix: both checks failed with a total of
  * about 0.03 and 0.107 against the old layouts.
+ *
+ * @area shell
+ * @smoke
  */
 import { expect, test, type Page } from '@playwright/test';
 

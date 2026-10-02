@@ -1,5 +1,5 @@
 /**
- * A session on a device that holds another account's diary (ADR-0022): the
+ * A session on a device that holds another account's diary (ADR-0023): the
  * guard fails closed, the resume refuses quietly, and every lock names whose
  * diary it closes.
  *

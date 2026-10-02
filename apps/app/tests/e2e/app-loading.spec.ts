@@ -20,6 +20,9 @@
  * switched off must read as "not running", a letter given wider spacing must read as moved, and
  * the wave forced on under reduced motion must read as "animating". A reader that answered the same for every page would fail its control. The spec
  * was also run once against the old component, three pulsing dots and no word, and failed there.
+ *
+ * @area shell
+ * @smoke
  */
 import { expect, test, type Browser, type Page } from '@playwright/test';
 

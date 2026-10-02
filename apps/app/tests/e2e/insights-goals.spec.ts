@@ -21,6 +21,8 @@
  * full load can beat the save. THE DIARY is written straight into IndexedDB in
  * the shape the primary store persists, the layout `insights-meals.spec.ts`
  * and `insights-nutrition.spec.ts` already use.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

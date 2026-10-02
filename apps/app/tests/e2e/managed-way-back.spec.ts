@@ -14,6 +14,8 @@
  * site: a self-hoster's instance is nobody's storefront. The header keeps its two doors on this
  * page, which proves the door page's rule (they step aside on `/` only) did not reach the rest
  * of the chrome. The overflow reader is proven to see a break before its silence is trusted.
+ *
+ * @area accounts-and-sign-in
  */
 import { expect, test, type Page } from '@playwright/test';
 

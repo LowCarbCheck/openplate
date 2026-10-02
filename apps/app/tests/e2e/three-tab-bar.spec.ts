@@ -58,6 +58,8 @@
  * already existed. Run against the 0.47.0 build (openplate 2dc8719) before M259, the photo test
  * found no photo door in the add sheet, the plus test found no "Plate photo" button, and both
  * Settings tests found no way to `/settings` in the More sheet.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

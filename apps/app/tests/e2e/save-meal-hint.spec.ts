@@ -10,6 +10,8 @@
  * THE DISMISSAL IS PROVEN ACROSS A RELOAD, not across a re-render. The claim
  * is that it persists, and a component that merely hid the hint in local state
  * would satisfy every check short of loading the page again.
+ *
+ * @area diary-and-add
  */
 import { expect, test } from '@playwright/test';
 

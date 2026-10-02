@@ -19,6 +19,8 @@
  * chooser for the right input or does not. The insecure origin is made the way
  * `accounts-need-https.spec.ts` makes it, by mapping a name onto the tier's
  * loopback server, and the first assertion reads `isSecureContext` back.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -28,6 +28,8 @@
  * against (`insights-layout.spec.ts` says the same), and a German or Turkish
  * label is the one that turns a tight row into a broken one, so the walks that
  * depend on a string run in all three.
+ *
+ * @area shell
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

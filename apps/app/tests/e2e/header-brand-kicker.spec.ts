@@ -32,6 +32,8 @@
  * column could, so a short title and a long one are both read, in English and in German, and the
  * header's own fixed 64 px is re-read beside every one of them. German is where the operator saw
  * the defect and is where the titles are longest.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 

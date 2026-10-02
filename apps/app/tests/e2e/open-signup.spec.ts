@@ -22,6 +22,9 @@
  * (`account-door-page.spec.ts` covers that page). Every other public page keeps
  * the header's two doors, and `/imprint` is one every instance with legal
  * pages serves.
+ *
+ * @area accounts-and-sign-in
+ * @smoke
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

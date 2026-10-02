@@ -24,6 +24,8 @@
  * A title forced back to 16 px must fail the size read and the ratio. A sentence pushed into a stat
  * tile must be found by the reader that says "a tile holds a figure". A filter group with only its
  * screen-reader legend must read as unlabelled to the reader that looks for the visible name.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

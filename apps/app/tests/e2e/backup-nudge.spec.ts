@@ -40,6 +40,8 @@
  * probe installed before any page script records whether the banner ever
  * reached the document, and the control for it is the signed-out load, where
  * the same probe must answer `true`.
+ *
+ * @area settings
  */
 import { expect, test, type Page } from '@playwright/test';
 

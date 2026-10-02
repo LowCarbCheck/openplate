@@ -27,6 +27,8 @@
  * THE DIARY IS WRITTEN STRAIGHT INTO INDEXEDDB, in the shape the primary
  * store persists, the same layout `insights-meals.spec.ts` and
  * `insights-goals.spec.ts` already use.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

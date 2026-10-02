@@ -23,6 +23,8 @@
  * calorie ones (or the "they changed" claim would pass against a control that
  * did nothing), and the shift reading is taken with scroll anchoring off, so a
  * shift cannot be absorbed by the browser scrolling the page back.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

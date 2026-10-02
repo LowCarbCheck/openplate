@@ -31,6 +31,8 @@
  * heading, which they must flag.
  *
  * A DIARY AND NOT AN EMPTY ONE. See above. The food is logged through the real manual form.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

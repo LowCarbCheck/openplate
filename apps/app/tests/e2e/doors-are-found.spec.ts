@@ -32,6 +32,8 @@
  *
  * The same read also catches a door pushed off the side of a 390 px phone,
  * which is the other way a shipped door stays unfound.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

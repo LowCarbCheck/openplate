@@ -198,7 +198,7 @@ export default function SignOutDialogBody({ readDeadlineMs = UNSENT_READ_DEADLIN
   const isFrozen = phase !== 'idle';
   // THE ACCOUNT, READ ONCE when the dialog opens: its id for the device read,
   // and with its address as the `owner` every press hands to the sign-out
-  // (ADR-0022). It is state and not `session.account`, because the session is
+  // (ADR-0023). It is state and not `session.account`, because the session is
   // null by the time an erase fails, and a retry that read it again would find
   // nobody to name in the lock or in the erase.
   const [openedFor, setOpenedFor] = useState<{ owner: DeviceLockOwner | null } | null>(null);

@@ -30,6 +30,8 @@
  * partition and requires it to come back unexplained, hands the partition an entry for a title
  * that fits and requires it to come back stale, and forces the title to 14 px and requires the
  * size read to see it.
+ *
+ * @area brand-and-lineage
  */
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

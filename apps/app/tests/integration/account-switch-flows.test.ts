@@ -1,6 +1,6 @@
 /**
  * The session-opening flows on a device that holds another account's diary
- * (ADR-0022), against the in-repo fake core, with every request recorded.
+ * (ADR-0023), against the in-repo fake core, with every request recorded.
  *
  * ── The one this file exists for: the reset ──────────────────────────────
  *

@@ -22,6 +22,8 @@
  *
  * THE CONTROL is the same walk with the door left open: the same click reaches
  * the order, so the 404 above is the door and not a walk that never arrived.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

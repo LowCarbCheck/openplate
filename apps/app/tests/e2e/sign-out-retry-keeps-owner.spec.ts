@@ -1,6 +1,6 @@
 /**
  * A managed sign-out whose erase failed, and the press that retries it
- * (ADR-0022, thread C's follow-up P8).
+ * (ADR-0023, thread C's follow-up P8).
  *
  * ── The defect this file guards ──────────────────────────────────────────
  *
@@ -82,7 +82,7 @@ const BASELINE_PREFIX = 'openplate.sync.state.v1:';
 /** A key a sign-out and an erase leave alone, which is what makes the empty answers readings. */
 const DEVICE_ID_KEY = 'openplate.sync.device-id';
 
-/** The lock this build writes (ADR-0022): version 2, the account and its address. */
+/** The lock this build writes (ADR-0023): version 2, the account and its address. */
 const ownedLockSchema = z.object({ v: z.literal(2), accountId: z.number().int(), email: z.string() });
 
 /** A signed-in account on an instance that sells nothing, so no paywall stands in the way. */

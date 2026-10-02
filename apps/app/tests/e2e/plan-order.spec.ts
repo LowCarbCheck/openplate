@@ -10,6 +10,8 @@
  *
  * No assertion pins a sentence: the order texts are the fixture's, read from
  * the fixture, and the app's own lines are read from the shipped catalog.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';

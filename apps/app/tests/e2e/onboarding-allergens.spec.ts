@@ -18,6 +18,8 @@
  * reads awards and pantry rows through, and it POLLS, for the reason those
  * readers give: TinyBase saves asynchronously after the transaction, so a read
  * fired the instant the next step paints can beat the save.
+ *
+ * @area onboarding
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

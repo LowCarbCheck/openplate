@@ -33,6 +33,8 @@
  *
  * Every assertion reads text or an `aria-label`. A fontless headless Chromium
  * reports text as hidden, so a screenshot here would be evidence of nothing.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 import { de, enGB } from 'react-day-picker/locale';

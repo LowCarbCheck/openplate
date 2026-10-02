@@ -15,6 +15,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **The What's new card is hidden until you switch it on.** The card on the diary and the dashboard, and the release notes row in About, now show by default only for administrators. Everyone else turns them on with a new switch in Preferences, and an administrator can turn them off there. The choice is kept on the device, and the notes page still opens at `/settings/whats-new`.
 - **The sign-out dialog now loads when it is needed, not with every page.** The public front page used to download the whole sign-out dialog and the sync code behind it, about 48 KB gzip, for visitors who never sign in. The dialog is now a separate chunk. Once you are signed in the app fetches it in the background when the browser is idle, so Sign out still opens at once on a poor connection or in a tab that was left open across an update.
+- **The push gate now runs a scoped browser tier, and the full tier runs on a release tag and every night.** A push runs the smoke set, the specs for the touched area and the specs the push changed, so it stays under about 3 minutes. Shared code still runs everything. Pushing a tag `v*`, `core-v*` or `inference-v*` runs the full tier first, and a nightly run on origin/main reports to `~/.local/state/openplate/nightly-e2e/latest.txt`. The reasons are in `ADR-0022`.
 
 ### Fixed
 

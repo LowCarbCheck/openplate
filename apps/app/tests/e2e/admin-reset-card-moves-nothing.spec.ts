@@ -24,6 +24,8 @@
  * Chrome can scroll such a line away and record nothing
  * (`turnOffScrollAnchoring` in `layout-shift.ts`). On the code before this
  * change the first test fails at the details' tops.
+ *
+ * @area admin
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

@@ -21,6 +21,8 @@
  * each refusal here is the server knowing better than the device's last read:
  * a standing grant that was ended, or one free scan left that another device
  * used. That is the case this card is for now.
+ *
+ * @area scan
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';

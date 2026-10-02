@@ -11,6 +11,8 @@
  * `matomo-stub.ts`, so what is counted is a request that left the page.
  *
  * Every "nothing is sent" check has a control in the same file that sends: the first test.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 

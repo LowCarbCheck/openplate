@@ -96,7 +96,7 @@ export interface SignOutSteps {
   lockDevice: () => void;
   /**
    * Erases the diary and every sync baseline, then releases the device lock;
-   * the lock stays if the erase fails (`eraseDiaryAndReleaseLock`, ADR-0022).
+   * the lock stays if the erase fails (`eraseDiaryAndReleaseLock`, ADR-0023).
    */
   eraseDevice: () => Promise<void>;
   /** Ends this document, so no in-memory copy of the diary and no persister outlives the sign-out. */
@@ -140,7 +140,7 @@ export async function runSignOut(
  * that is never wrong: a gate that finds the device locked or empty sends it on
  * to `/welcome` by itself, and one that finds a diary leaves it where it is.
  *
- * ── Whose diary the lock names (ADR-0022) ────────────────────────────────
+ * ── Whose diary the lock names (ADR-0023) ────────────────────────────────
  *
  * `owner` is the account signing out. A caller that knows it passes it, and
  * that wins: the sign-out dialog reads the account once, when it opens, and

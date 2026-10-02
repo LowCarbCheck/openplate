@@ -22,6 +22,8 @@
  *   either size. The present cases are its control: the same walk, the same
  *   selector, one fact changed.
  * - Square corners on the entry, read off the computed style.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

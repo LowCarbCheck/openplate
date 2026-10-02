@@ -1,4 +1,4 @@
-# 0022, the device lock names its owner, and another account erases first
+# 0023, the device lock names its owner, and another account erases first
 
 - **Status:** Accepted
 - **Date:** 2026-10-02

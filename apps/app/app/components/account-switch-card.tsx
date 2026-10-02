@@ -1,6 +1,6 @@
 /**
  * The step a second account meets on a device that holds another account's
- * diary (ADR-0022).
+ * diary (ADR-0023).
  *
  * ── What it says, and what it offers ─────────────────────────────────────
  *

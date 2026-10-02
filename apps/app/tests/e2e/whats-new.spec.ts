@@ -49,6 +49,8 @@
  * the onboarding stamp that the real questionnaire just wrote is back-dated on
  * disk, and the seed is read back through a fresh document before anything is
  * asserted.
+ *
+ * @area offline-and-updates
  */
 import { readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';

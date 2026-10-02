@@ -1,6 +1,6 @@
 /**
  * A managed device that holds one account's diary, and a SECOND account that
- * arrives on it (ADR-0022).
+ * arrives on it (ADR-0023).
  *
  * ── The defect this file encodes (thread C, 2026-10-02) ──────────────────
  *

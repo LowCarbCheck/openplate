@@ -13,6 +13,8 @@
  * picking "Calories" with no calorie target shows a hint, and that hint's line
  * is on the page from the first paint. The reading is the one section 7 names,
  * every element's top before and after plus a `layout-shift` total of 0.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

@@ -27,6 +27,8 @@
  * against the tier's fake core server, the scan screen and its action. WHAT
  * IS STUBBED: `/health`, the account's allowance on every auth answer, and the
  * proxy's chat completions.
+ *
+ * @area scan
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

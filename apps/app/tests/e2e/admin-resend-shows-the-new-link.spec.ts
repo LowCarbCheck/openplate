@@ -24,6 +24,8 @@
  *
  * On the code before this change the first test fails at the link: it is never
  * drawn, because the tab reloads the list instead.
+ *
+ * @area admin
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

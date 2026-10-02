@@ -55,6 +55,8 @@
  * The record is a FROZEN SET, like the colour literals in `brand-colors.test.ts`: it fails
  * when a glyph moves in either direction. A `→` that starts drawing in Victor Mono or in
  * Inter is good news, and the test still goes red so the record is edited on purpose.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

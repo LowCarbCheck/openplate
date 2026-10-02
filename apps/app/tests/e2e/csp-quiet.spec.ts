@@ -16,6 +16,8 @@
  * THE CONTROL loads a script from a host the policy does not allow and
  * requires the same listener to record it. Without it, a listener that never
  * fired would pass the zero check.
+ *
+ * @area shell
  */
 import { expect, test, type Page } from '@playwright/test';
 

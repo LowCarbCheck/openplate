@@ -26,6 +26,8 @@
  * For the reasons `scan-review.spec.ts` gives: the production CSP allows a
  * provider origin it knows plus `'self'`, and a same-origin address needs no
  * CORS preflight, which `page.route` does not answer.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

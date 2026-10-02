@@ -36,6 +36,8 @@
  * THE SERVICE WORKER IS BLOCKED. A first visit would otherwise register it, and a worker that
  * takes over can reload the document being measured. The swap is a property of the network fetch
  * of a font, and that is the same with or without a worker.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

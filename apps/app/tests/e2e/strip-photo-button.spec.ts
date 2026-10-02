@@ -34,6 +34,8 @@
  *
  * WIDTHS ARE READ FROM `clientWidth`, never from `innerWidth`: this project runs with `isMobile`,
  * and a mobile Chromium zooms out on an overflowing page, which would hide the overflow.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

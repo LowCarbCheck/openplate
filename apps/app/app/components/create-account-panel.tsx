@@ -19,7 +19,7 @@
  * service reads it off the token — a form that asked would let somebody create
  * an account at an address their admin did not invite.
  *
- * A DEVICE THAT HOLDS ANOTHER ACCOUNT'S DIARY (ADR-0022) refuses the signup
+ * A DEVICE THAT HOLDS ANOTHER ACCOUNT'S DIARY (ADR-0023) refuses the signup
  * before the invite is spent (`createSyncAccount`). That refusal leaves this
  * form through `onDeviceHeld`, the way a `409` leaves through
  * `onAlreadyRegistered`: nothing typed here answers it.
@@ -73,7 +73,7 @@ export function CreateAccountPanel({
   onAlreadyRegistered?: () => void;
   /**
    * This device holds another account's diary, and the signup was refused
-   * before the invite was spent (ADR-0022). `/join` swaps the card for the
+   * before the invite was spent (ADR-0023). `/join` swaps the card for the
    * account-switch step.
    */
   onDeviceHeld?: (owner: DeviceLockOwner | null) => void;

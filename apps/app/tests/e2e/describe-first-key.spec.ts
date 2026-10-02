@@ -29,6 +29,8 @@
  *
  * Before the fix, the English meal walk read the composer 84 px tall before
  * the key and 36 px after it, with a shift total above 0.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

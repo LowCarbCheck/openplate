@@ -17,6 +17,8 @@
  * NO SENTENCE IS PINNED BUT ONE THAT ALREADY SHIPPED. The answers are found by
  * their `data-slot`, and only the "sent" sentence is compared with the
  * catalog, because it is the one the page has always said.
+ *
+ * @area accounts-and-sign-in
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

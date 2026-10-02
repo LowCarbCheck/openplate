@@ -1,5 +1,5 @@
 /**
- * The device lock names its owner (ADR-0022): how a stored value is read, who
+ * The device lock names its owner (ADR-0023): how a stored value is read, who
  * may open a session on it, and how a lock is written.
  *
  * ── The defect behind every row ──────────────────────────────────────────

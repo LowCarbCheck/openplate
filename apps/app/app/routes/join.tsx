@@ -45,7 +45,7 @@
  * configured. A link cannot redirect that; a link naming a different server is
  * reported and nothing is dialled. See `isForeignSyncServer`.
  *
- * ── A device that holds another account's diary (ADR-0022) ──────────────
+ * ── A device that holds another account's diary (ADR-0023) ──────────────
  *
  * On a managed instance a sign-out without an erase leaves the last account's
  * diary on the device behind a lock that names that account, and "Sign out and
@@ -138,7 +138,7 @@ type Phase =
   /** The service answered `409`: the invited address already has an account. */
   | { status: 'already-registered'; email: string }
   /**
-   * This device holds ANOTHER account's diary (ADR-0022), so the form is not
+   * This device holds ANOTHER account's diary (ADR-0023), so the form is not
    * offered until it is erased. `lines` are what the erase would lose, read
    * before this phase is set, so the step is drawn once, settled.
    */
@@ -407,7 +407,7 @@ async function landAfterJoin({
  * so the fresh load reads it back with no second link. Nothing is erased; that
  * stays the settings dialog's opt-in.
  *
- * THE LOCK NAMES WHO SIGNED OUT (ADR-0022). A document load of this page has
+ * THE LOCK NAMES WHO SIGNED OUT (ADR-0023). A document load of this page has
  * no open session, so the account is read from the CACHED session before the
  * sign-out forgets it. The reloaded page then finds the lock and, for an
  * invitation to another account, offers the account-switch step.

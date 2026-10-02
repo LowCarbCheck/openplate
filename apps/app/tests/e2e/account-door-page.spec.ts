@@ -18,6 +18,8 @@
  * "Invitation only" in the box the offer uses. The tier's own server is an OPEN instance: it
  * still draws the whole landing, with its screenshots and `/dashboard`, and no link to
  * openplate.de. Every layout reading carries a control that moves something and is seen.
+ *
+ * @area accounts-and-sign-in
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

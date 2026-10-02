@@ -31,7 +31,7 @@
  * with a diary was handed the first-run questionnaire, and the entries turned
  * up afterwards behind the answers.
  *
- * ── A device that holds another account's diary (ADR-0022) ──────────────
+ * ── A device that holds another account's diary (ADR-0023) ──────────────
  *
  * The link names no address, and the core cannot read a token without
  * spending it, so the account is known only once the token is spent. On a
@@ -118,7 +118,7 @@ type Phase =
    */
   | { status: 'pulling' }
   /**
-   * The device holds another account's diary (ADR-0022). The link is spent
+   * The device holds another account's diary (ADR-0023). The link is spent
    * and nothing else happened: no recovery, no rotation, no session. `lines`
    * are what an erase would lose, read before this phase is set.
    */

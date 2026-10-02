@@ -33,6 +33,8 @@
  * Every presence has a control that finds the other answer through the same
  * query: the onboarded account below goes to the diary from the very same
  * link, so "the questionnaire" is a reading and not a constant.
+ *
+ * @area onboarding
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

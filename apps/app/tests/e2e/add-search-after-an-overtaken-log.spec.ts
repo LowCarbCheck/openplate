@@ -23,6 +23,8 @@
  * - THE CONTROL: the same one-task tap on Search with no log keeps the portion step. A draft
  *   survives a switch (M255/01), so the grams reader must find the field there; a reader that
  *   never saw the field would pass the claim above for nothing.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

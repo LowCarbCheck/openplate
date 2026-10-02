@@ -20,6 +20,9 @@
  * delete in each language, with the button and the sentence read out of THAT
  * language's bundle, and measures the same three numbers plus where the slot
  * sits on the phone.
+ *
+ * @area shell
+ * @smoke
  */
 import { expect, test, type Page } from '@playwright/test';
 

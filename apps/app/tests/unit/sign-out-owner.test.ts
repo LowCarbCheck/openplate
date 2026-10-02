@@ -1,6 +1,6 @@
 /**
  * The account a sign-out names, when the session is already closed
- * (ADR-0022, thread C's follow-up P8).
+ * (ADR-0023, thread C's follow-up P8).
  *
  * ── The defect ───────────────────────────────────────────────────────────
  *

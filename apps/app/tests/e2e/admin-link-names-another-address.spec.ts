@@ -41,6 +41,8 @@
  * says why. The link is the stub's `handedLink`, so the page gets exactly the
  * body a core with no mail sends. The session, the sign-in and the handshake
  * are the fake core server's own.
+ *
+ * @area admin
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

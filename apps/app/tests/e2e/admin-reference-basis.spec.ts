@@ -36,6 +36,8 @@
  * Chrome hides scrollbars, never applies `hover:` styles, and a fontless one
  * reports every text as hidden, so a screenshot of this screen would be
  * evidence of nothing.
+ *
+ * @area admin
  */
 import { expect, test, type Page } from '@playwright/test';
 

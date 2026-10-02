@@ -3,7 +3,7 @@
  * `EraseNoticeLine` (`app/lib/sync/erase-notice.ts`).
  *
  * SHARED by every screen that asks before an erase: the sign-out dialog
- * (`sign-out-dialog-body.tsx`) and the account-switch step (ADR-0022) both
+ * (`sign-out-dialog-body.tsx`) and the account-switch step (ADR-0023) both
  * render their lines here, so a sentence is wired to its string in one place.
  * `tests/unit/erase-notice-text-source.test.ts` fails on a second definition.
  *

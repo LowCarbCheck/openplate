@@ -25,6 +25,8 @@
  * cell; see `tests/e2e/helpers.ts` for the same layout read back), and the
  * page is then loaded fresh, so the app reads them the way it reads any
  * diary it finds on disk.
+ *
+ * @area insights
  */
 import { expect, test, type Page } from '@playwright/test';
 

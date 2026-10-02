@@ -21,7 +21,7 @@
  * reason it is on the create path — otherwise `resolveSyncScreen` swaps in the
  * connected panel and unmounts the wizard mid-flight.
  *
- * ── A device that holds another account's diary (ADR-0022) ──────────────
+ * ── A device that holds another account's diary (ADR-0023) ──────────────
  *
  * `signInToSync` answers `device-held` instead of opening a session, either
  * before any request (the typed address is not the lock's) or right after the
@@ -131,7 +131,7 @@ export function SignInPanel({
   // core refuses them to an account that owes the instance a consent, so it is
   // not mounted until the account owes nothing or the box has been ticked.
   const [agreedConsent, setAgreedConsent] = useState<HealthConsentRequestWire | null>(null);
-  // THE STEP, when the device holds another account's diary (ADR-0022). Set
+  // THE STEP, when the device holds another account's diary (ADR-0023). Set
   // only once its lines are read, so it is drawn once, settled.
   const [held, setHeld] = useState<HeldDevice | null>(null);
 

@@ -31,6 +31,8 @@
  *
  * Every sentence is read from the shipped English catalog by key, never
  * transcribed here.
+ *
+ * @area settings
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

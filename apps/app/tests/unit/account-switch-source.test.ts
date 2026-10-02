@@ -1,6 +1,6 @@
 /**
  * Where a session may open and where the device lock may lift, read off the
- * source (ADR-0022).
+ * source (ADR-0023).
  *
  * The guard in `openSyncVault` holds for every flow only while every session
  * opens THROUGH it, and the lock protects a held diary only while nothing but

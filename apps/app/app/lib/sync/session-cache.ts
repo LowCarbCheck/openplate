@@ -408,7 +408,7 @@ export function deviceTokenStore(): SessionTokenStore {
  * The cache write is deliberately NOT awaited by the caller's happy path — it
  * is fire-and-forget, and a failed write costs a reload, not a session.
  *
- * ── It refuses another account's device FIRST (ADR-0022) ────────────────
+ * ── It refuses another account's device FIRST (ADR-0023) ────────────────
  *
  * The first statement asks the device lock whether this account may open
  * here, and throws `DeviceHeldByAnotherAccountError` before a vault, a cache
@@ -618,7 +618,7 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
   const session = authClient.getSession();
   if (session === null) return getSyncSessionSnapshot();
 
-  // A CACHED SESSION FOR ANOTHER ACCOUNT ON A HELD DEVICE (ADR-0022) is not
+  // A CACHED SESSION FOR ANOTHER ACCOUNT ON A HELD DEVICE (ADR-0023) is not
   // reopened. Asked here, before the vault, so the refusal is an ordinary
   // signed-out boot rather than the guard's throw; the guard inside
   // `openSyncVault` still answers a lock another tab wrote in between.
@@ -645,7 +645,7 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
 
 /**
  * Ends a resume whose cached session belongs to another account than the one
- * this device's lock names (ADR-0022).
+ * this device's lock names (ADR-0023).
  *
  * The cached row goes, so no later reload tries again; its tokens are revoked,
  * best effort, because nothing on this device will use them; and the
@@ -716,7 +716,7 @@ export async function endSessionRefused(
   failure: NonNullable<SyncSessionSnapshot['error']>,
   owner?: DeviceLockOwner | null,
 ): Promise<void> {
-  // THE OWNER, BEFORE ANYTHING CLOSES (ADR-0022). The lock names whose diary
+  // THE OWNER, BEFORE ANYTHING CLOSES (ADR-0023). The lock names whose diary
   // it closes, and both places that know close below: the vault on the next
   // line, the cache on the one after. A caller that knows passes it; every
   // other one is read here first. With neither, `lockDevice` keeps any owner

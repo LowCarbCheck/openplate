@@ -25,6 +25,8 @@
  * the same IndexedDB layout `insights-layout.spec.ts` and its siblings write,
  * so the Overview draws a real ridge and offers its one-time Insights door
  * rather than an empty page a broken build could also produce.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Page } from '@playwright/test';
 

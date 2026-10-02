@@ -45,6 +45,8 @@
  * WIDTHS ARE READ FROM `document.documentElement.clientWidth`, never from `innerWidth`: the phone
  * project runs with `isMobile`, and a mobile Chromium zooms out on an overflowing page, which would
  * widen `innerWidth` to fit exactly the overflow this spec exists to catch.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

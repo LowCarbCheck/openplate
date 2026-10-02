@@ -9,7 +9,17 @@
 #
 # Runs: Chromium launch check -> docs manifest -> quadlet units -> changelog
 #       -> lint -> typecheck -> unit tests + integration tests, with the
-#       production build running beside them -> browser smoke tier (sharded).
+#       production build running beside them -> browser smoke tier.
+#
+# Two browser tiers, both sharded. The push gate runs the SCOPED tier: only the
+# specs the push can affect (`pnpm test:e2e:scoped`, scripts/e2e-scoped.sh),
+# chosen from the pushed range the root hook exports as OPENPLATE_PUSH_RANGE.
+# The FULL tier (`pnpm test:e2e:sharded`) runs when
+#   * OPENPLATE_PUSH_TAG=1, which the root hook sets for a v*, core-v* or
+#     inference-v* tag push (the release gate), or
+#   * OPENPLATE_E2E_FULL=1 is set by the person: OPENPLATE_E2E_FULL=1 git push.
+# The nightly run (scripts/nightly-e2e.sh at the root) runs the full tier too,
+# so a spec the scoped selection missed still fails within a day.
 #
 # Stage order, in plain words:
 #   * The Chromium launch check runs FIRST of all the stages. A host with no
@@ -24,8 +34,8 @@
 #     that it happened. A SIGINT, SIGTERM or SIGHUP to the hook, or a failing
 #     test stage, stops the build's process group before the hook exits, so no
 #     build is left running.
-#   * The browser smoke tier runs LAST, sharded: `pnpm test:e2e:sharded` runs N
-#     Playwright processes at once (scripts/e2e-sharded.sh, ADR-0017).
+#   * The browser smoke tier runs LAST, sharded: N Playwright processes at once
+#     (scripts/e2e-sharded.sh, ADR-0017), over all specs or the scoped few.
 #
 # The browser smoke tier (added 2026-09-13) comes after the build because it needs
 # the build, and it is the one stage that does not run in the toolbox:
@@ -234,7 +244,15 @@ tail -n 15 "$build_log"
 # checkout's own path (`tests/e2e/env.ts`, ADR-0017) and printed by every run;
 # `scripts/repro-e2e-port-collision.sh` proves two trees pass concurrently. Each
 # shard takes three ports of its own from that base.
-echo "▶ pre-push: browser smoke tier (host only, sharded, the toolbox has no Chromium)"
-CI=true pnpm test:e2e:sharded
+if [ "${OPENPLATE_PUSH_TAG:-0}" = "1" ] || [ "${OPENPLATE_E2E_FULL:-0}" = "1" ]; then
+  echo "▶ pre-push: browser tier, FULL (release gate)"
+  # One retry: a test that passes on it is listed as flaky by name, not failed.
+  OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
+  export OPENPLATE_E2E_RETRIES
+  CI=true pnpm test:e2e:sharded
+else
+  echo "▶ pre-push: browser tier, scoped to the push"
+  CI=true pnpm test:e2e:scoped
+fi
 
 echo "✅ pre-push: all gates passed"

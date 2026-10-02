@@ -46,7 +46,7 @@ export interface KeyValueStorage {
   removeItem(key: string): void;
   /**
    * How many keys are stored, and the key at one index: `localStorage`'s own
-   * two members for walking its keys (ADR-0022).
+   * two members for walking its keys (ADR-0023).
    *
    * OPTIONAL, because only two questions need them: whose baselines this
    * device holds, for a lock an older build wrote, and every baseline an
@@ -304,13 +304,13 @@ export function deviceStorage(): KeyValueStorage {
 export const DEVICE_LOCK_KEY = 'openplate.device-locked';
 
 /**
- * The value every build before ADR-0022 wrote. It names nobody, so the owner
+ * The value every build before ADR-0023 wrote. It names nobody, so the owner
  * is worked out on read (`legacyLockOwner`). It is still WRITTEN, and only when
  * a lock has to be set and nothing says whose diary it holds.
  */
 const LEGACY_DEVICE_LOCK_VALUE = 'locked';
 
-/** The lock that names its owner (ADR-0022). An account id, and the address in its canonical form when it is known. */
+/** The lock that names its owner (ADR-0023). An account id, and the address in its canonical form when it is known. */
 const ownedLockSchema = z.object({
   v: z.literal(2),
   accountId: z.number().int(),
@@ -335,7 +335,7 @@ export interface DeviceLockOwner {
  *
  * `owner: null` is a device that is locked and cannot say for whom: a lock an
  * older build wrote on a device with no baseline, or with several. Every
- * account is refused there, the one that signed out included (ADR-0022).
+ * account is refused there, the one that signed out included (ADR-0023).
  */
 export type DeviceLock = { kind: 'unlocked' } | { kind: 'locked'; owner: DeviceLockOwner | null };
 
@@ -344,7 +344,7 @@ export type DeviceOpenDecision = { kind: 'open' } | { kind: 'refuse'; owner: Dev
 
 /**
  * A session for one account was asked to open on a device that holds another
- * account's diary (ADR-0022).
+ * account's diary (ADR-0023).
  *
  * THROWN, never returned, by the guard in `openSyncVault` and again in
  * `openSyncSession`, so a flow that forgets to ask first fails CLOSED: no
@@ -384,7 +384,7 @@ function listStorageKeys(storage: KeyValueStorage): string[] {
 const ACCOUNT_ID_PATTERN = /^[0-9]+$/;
 
 /**
- * Every per-account baseline key this device holds (ADR-0022).
+ * Every per-account baseline key this device holds (ADR-0023).
  *
  * For the erase that hands the device to another account, which must take
  * every account's baseline and not only the owner's: a baseline left behind is
@@ -408,7 +408,7 @@ export function listSyncBaselineKeys(storage: KeyValueStorage = deviceStorage())
  * The one account whose baseline names an entity of its diary
  * (`hasSyncBaselineEntities`) is the account whose diary this is. No such
  * baseline, or several, and nobody can be named: the device then refuses every
- * account until it is erased, which is the cost ADR-0022 accepts for the
+ * account until it is erased, which is the cost ADR-0023 accepts for the
  * devices that carry an old lock.
  */
 function legacyLockOwner(storage: KeyValueStorage): DeviceLockOwner | null {
@@ -556,7 +556,7 @@ export function assertDeviceMayOpen({
  * the app reading the last one's diary, which is what an account on a shared
  * device is for.
  *
- * ── It names its owner (ADR-0022) ────────────────────────────────────────
+ * ── It names its owner (ADR-0023) ────────────────────────────────────────
  *
  * The marker used to be the bare word `locked`, and any session that opened
  * lifted it. A second account signing in on a shared device therefore opened
@@ -616,7 +616,7 @@ export function releaseDeviceLockForOwner({
 
 /**
  * Lifts the lock whoever it names. ONLY for `account-switch.ts`, after the
- * held diary and every baseline are gone from this device (ADR-0022).
+ * held diary and every baseline are gone from this device (ADR-0023).
  *
  * Nothing is held any more at that point, so there is nobody for the lock to
  * protect. A unit source test keeps every other module from calling this; an

@@ -23,6 +23,8 @@
  *
  * THE SECOND reproduced and is fixed: a plan set to stop now says it is paid
  * until the end date and does not renew.
+ *
+ * @area plans-and-paywall
  */
 import { expect, test, type Page } from '@playwright/test';
 

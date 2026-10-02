@@ -37,6 +37,8 @@
  * build on a kernel-picked port, stop it, and start the moved build on the SAME port: the same
  * container redeployed with one more variable, which is what production will do. Node listens
  * with address reuse on Linux, so the second bind does not wait out the first one's sockets.
+ *
+ * @area offline-and-updates
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

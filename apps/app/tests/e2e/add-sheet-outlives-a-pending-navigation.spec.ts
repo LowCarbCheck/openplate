@@ -24,6 +24,8 @@
  *   locator reads as gone after a door is used, so "still open" is not a locator that sees an
  *   open dialog everywhere.
  * - Back closes it. The page the sheet was opened on is gone, so the sheet goes with it.
+ *
+ * @area diary-and-add
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 

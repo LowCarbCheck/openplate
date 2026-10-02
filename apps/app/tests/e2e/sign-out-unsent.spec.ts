@@ -33,6 +33,8 @@
  * the marketing page for a frame and then redirected back, so a sign-out
  * looked like a flash and then nothing. The managed twin is in
  * `sign-out-managed.spec.ts`, which must end on `/welcome`.
+ *
+ * @area sign-out
  */
 import { expect, test, type Page } from '@playwright/test';
 

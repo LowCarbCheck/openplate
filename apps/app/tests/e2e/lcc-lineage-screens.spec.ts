@@ -36,6 +36,8 @@
  * document; a second injects a 30 px button and a 44 px button and requires the tap reader to
  * list the first and not the second; a third centres the empty state by hand and requires the
  * alignment claim to go red. No claim here can be satisfied by a reader that returns nothing.
+ *
+ * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 

@@ -1,6 +1,6 @@
 /**
  * Handing a device that holds one account's diary to ANOTHER account
- * (ADR-0022).
+ * (ADR-0023).
  *
  * ── The defect this module closes ────────────────────────────────────────
  *

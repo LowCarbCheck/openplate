@@ -327,7 +327,7 @@ export function applyTrialScansLeft(left: number): void {
  * would reintroduce, so there is no `?? 'member'` / `?? 0` left to write one.
  */
 export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number | null }): void {
-  // THE GUARD, AGAIN, AND FIRST (ADR-0022). `openSyncVault` asks it before it
+  // THE GUARD, AGAIN, AND FIRST (ADR-0023). `openSyncVault` asks it before it
   // builds anything; it is asked here too because this is where the lock is
   // lifted, and a lock must never lift for an account it does not name. A
   // refusal throws before the vault below is set or a snapshot is published.

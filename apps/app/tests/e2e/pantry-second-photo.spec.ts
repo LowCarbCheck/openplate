@@ -24,6 +24,8 @@
  * Its control is a food logged by hand: the same probe on the same page finds
  * that one, so the four absences are a fact about the pantry path rather than
  * a blind locator.
+ *
+ * @area scan
  */
 import { expect, test, type Page } from '@playwright/test';
 

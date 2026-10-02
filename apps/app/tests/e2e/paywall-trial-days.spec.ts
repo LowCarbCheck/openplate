@@ -15,6 +15,8 @@
  * THE CONTROLS. The same account with its scans used up and its days still running is locked too,
  * and its heading names the scans, so a page that always said "days" fails. The same account
  * with scans and days left stays open, so a gate that locked on any end date fails.
+ *
+ * @area plans-and-paywall
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';

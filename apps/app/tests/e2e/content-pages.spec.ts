@@ -17,6 +17,8 @@
  * a control that reveals a field on purpose and requires the reading to see
  * it. The square-corner reader is handed an injected rounded box first and
  * must report it.
+ *
+ * @area content-and-legal
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
 

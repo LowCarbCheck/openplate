@@ -44,6 +44,8 @@
  * The last test below finds it inside the mark's button, visible, in the picture's bottom right
  * quarter and not in the brand colour, and reads the header rects this file already freezes. It
  * failed on the 0.48.0 build (openplate 9603605): the mark had no badge to find.
+ *
+ * @area shell
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
