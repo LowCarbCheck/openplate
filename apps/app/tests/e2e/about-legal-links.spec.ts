@@ -23,6 +23,8 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
+import { REPO_URL } from '#app/lib/brand';
+
 import { completeOnboarding } from './helpers';
 import {
   installShiftObserver,
@@ -83,14 +85,17 @@ test.describe('the Legal group on /settings/about', () => {
   test('the group sits below the provenance links, not above them', async ({ page }) => {
     await openAbout(page);
 
-    // The last link that was on this page before the group: the release notes row.
-    const lastExisting = page.locator('main a[href="/settings/whats-new"]');
+    // The last provenance link every visit draws: the source code row. The
+    // release notes row below it is behind the What's new switch, which is off
+    // by default for anyone who is not an administrator, so it cannot anchor
+    // this check.
+    const lastExisting = page.locator(`main a[href="${REPO_URL}"]`);
     await expect(lastExisting).toBeVisible();
     const heading = page.getByRole('heading', { level: 2, name: 'Legal', exact: true });
 
     const existingTop = (await lastExisting.boundingBox())?.y;
     const headingTop = (await heading.boundingBox())?.y;
-    expect(existingTop, 'the release notes link must be measurable').toBeDefined();
+    expect(existingTop, 'the source code link must be measurable').toBeDefined();
     expect(headingTop, 'the Legal heading must be measurable').toBeDefined();
     expect(headingTop ?? 0, 'the Legal heading is below the last existing link').toBeGreaterThan(existingTop ?? 0);
     // CONTROL: read the other way round, the same two numbers fail, so the line above can fail.
