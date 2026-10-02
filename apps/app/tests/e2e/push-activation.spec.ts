@@ -30,6 +30,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
+import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
 import { ENVELOPE_VERSION, PROTOCOL_VERSION } from '../../app/lib/sync/engine/protocol';
 import { E2E_ACCOUNT_EMAIL, E2E_CORE_URL } from './env';
 import {
@@ -154,8 +155,21 @@ async function stubPermission(
 }
 
 /**
+ * Where the stub keeps "this browser holds a subscription", so the answer
+ * survives the document load a sign-out ends with. A window global would not:
+ * the stub is reinstalled on every document, and a subscription that vanished
+ * with the reload would make "it is gone after the sign-out" true for the wrong
+ * reason.
+ */
+const STUB_SUBSCRIPTION_KEY = 'e2e-push-subscription-key';
+
+/**
  * Replaces the push subscription with one a headless browser can produce,
  * recording the key it was asked to subscribe with.
+ *
+ * `getSubscription` answers from device storage (`STUB_SUBSCRIPTION_KEY`) and
+ * `unsubscribe` removes it, so a spec can ask the browser whether it still
+ * holds a subscription, before and after a sign-out.
  *
  * Every member of `PushSubscription` is implemented rather than asserted past:
  * a cast would hide the day the app starts reading a fourth one.
@@ -163,27 +177,41 @@ async function stubPermission(
  * @param page - the page, before its first navigation.
  */
 async function stubPushSubscribe(page: Page): Promise<void> {
-  await page.addInitScript((endpoint: string) => {
-    PushManager.prototype.subscribe = (options?: PushSubscriptionOptionsInit): Promise<PushSubscription> => {
-      // The key arrives as the bytes `decodePublicKey` produced. A string form
-      // is legal in the DOM signature and this app never sends one, so it
-      // records nothing and the assertion in the spec goes red.
-      const key = options?.applicationServerKey ?? null;
-      let recorded: number[] = [];
-      if (key instanceof ArrayBuffer) recorded = [...new Uint8Array(key)];
-      else if (ArrayBuffer.isView(key)) recorded = [...new Uint8Array(key.buffer, key.byteOffset, key.byteLength)];
-      window.e2eApplicationServerKey = recorded;
-      const applicationServerKey = new Uint8Array(recorded).buffer;
-      return Promise.resolve({
+  await page.addInitScript(
+    (settings: { endpoint: string; storeKey: string }) => {
+      const { endpoint, storeKey } = settings;
+      const subscriptionFor = (recorded: number[], userVisibleOnly: boolean): PushSubscription => ({
         endpoint,
         expirationTime: null,
-        options: { applicationServerKey, userVisibleOnly: options?.userVisibleOnly ?? true },
+        options: { applicationServerKey: new Uint8Array(recorded).buffer, userVisibleOnly },
         getKey: () => null,
         toJSON: () => ({ endpoint, keys: { p256dh: 'e2e-p256dh', auth: 'e2e-auth' } }),
-        unsubscribe: () => Promise.resolve(true),
+        unsubscribe: () => {
+          window.localStorage.removeItem(storeKey);
+          return Promise.resolve(true);
+        },
       });
-    };
-  }, FAKE_ENDPOINT);
+      PushManager.prototype.subscribe = (options?: PushSubscriptionOptionsInit): Promise<PushSubscription> => {
+        // The key arrives as the bytes `decodePublicKey` produced. A string form
+        // is legal in the DOM signature and this app never sends one, so it
+        // records nothing and the assertion in the spec goes red.
+        const key = options?.applicationServerKey ?? null;
+        let recorded: number[] = [];
+        if (key instanceof ArrayBuffer) recorded = [...new Uint8Array(key)];
+        else if (ArrayBuffer.isView(key)) recorded = [...new Uint8Array(key.buffer, key.byteOffset, key.byteLength)];
+        window.e2eApplicationServerKey = recorded;
+        window.localStorage.setItem(storeKey, JSON.stringify(recorded));
+        return Promise.resolve(subscriptionFor(recorded, options?.userVisibleOnly ?? true));
+      };
+      PushManager.prototype.getSubscription = (): Promise<PushSubscription | null> => {
+        const stored = window.localStorage.getItem(storeKey);
+        if (stored === null) return Promise.resolve(null);
+        // SAFETY: this stub wrote the value itself, as a JSON array of bytes.
+        return Promise.resolve(subscriptionFor(JSON.parse(stored) as number[], true));
+      };
+    },
+    { endpoint: FAKE_ENDPOINT, storeKey: STUB_SUBSCRIPTION_KEY },
+  );
 }
 
 /**
@@ -296,4 +324,104 @@ test('a session that has ended is named as a sign-in, not as an instance with pu
   // signing in again is what fixes it.
   await expect(masterSwitch(page)).toBeVisible();
   await expect(page.getByText(EN.settings.notifications.state.serverOff)).toHaveCount(0);
+});
+
+/**
+ * What this browser says it is subscribed to, read from the page: the endpoint,
+ * or `null` for no subscription, or `'no-registration'` when the worker is not
+ * there at all (which would make a `null` below meaningless, so it is its own
+ * answer).
+ */
+async function readBrowserSubscription(page: Page): Promise<string | null> {
+  return await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration === undefined) return 'no-registration';
+    const subscription = await registration.pushManager.getSubscription();
+    return subscription === null ? null : subscription.endpoint;
+  });
+}
+
+/** One request to the core, reduced to what the order and the bearer check need. */
+interface CoreRequest {
+  method: string;
+  path: string;
+  authorization: string | undefined;
+}
+
+test("signing out without an erase releases this device's push subscription and keeps the kinds", async ({ page }) => {
+  await routePushyHealth(page);
+  await routePushConfig(page, 200);
+  await routeSubscriptionAccepted(page);
+  await stubPermission(page, 'granted', 'granted');
+  await stubPushSubscribe(page);
+
+  const coreRequests: CoreRequest[] = [];
+  page.on('request', (request) => {
+    if (!request.url().startsWith(E2E_CORE_URL)) return;
+    coreRequests.push({
+      method: request.method(),
+      path: new URL(request.url()).pathname,
+      authorization: request.headers().authorization,
+    });
+  });
+
+  await openNotificationsSignedIn(page);
+  await masterSwitch(page).click();
+  await expect(masterSwitch(page)).toBeChecked();
+
+  // CONTROLS, all before the sign-out: the browser HOLDS a subscription, this
+  // device remembers its endpoint, and the kinds are on storage. Without them,
+  // a stub that never subscribed would pass every "gone" below.
+  expect(await readBrowserSubscription(page), 'the browser holds a subscription before the sign-out').toBe(
+    FAKE_ENDPOINT,
+  );
+  const storageBefore = await page.evaluate(() => ({
+    endpoint: window.localStorage.getItem('openplate:push-endpoint'),
+    prefs: window.localStorage.getItem('openplate:push-prefs'),
+    disabled: window.localStorage.getItem('openplate:push-disabled'),
+  }));
+  expect(storageBefore.endpoint).toBe(FAKE_ENDPOINT);
+  expect(storageBefore.prefs, 'the kinds were written when the switch went on').not.toBeNull();
+
+  // A plain sign-out: the erase box stays unticked.
+  await page.goto('/settings/account');
+  await expect(page.getByText(E2E_ACCOUNT_EMAIL).first()).toBeVisible();
+  await page.locator('button:has(svg.lucide-log-out)').first().click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await expect(page.getByRole('alertdialog').getByRole('checkbox')).not.toBeChecked();
+
+  // Only the sign-out's own traffic counts.
+  coreRequests.length = 0;
+  await page.getByRole('alertdialog').getByRole('button', { name: EN.signOut.confirm, exact: true }).click();
+  await page.waitForURL((url) => url.pathname === '/dashboard');
+
+  // THE DEFECT, stated as state: the browser no longer holds the subscription,
+  // so nothing can wake this device with the last person's numbers.
+  expect(await readBrowserSubscription(page), 'the browser subscription is released').toBeNull();
+
+  // The server row is released too, with the bearer, and BEFORE the logout
+  // revokes that bearer.
+  const deleteIndex = coreRequests.findIndex(
+    (request) => request.method === 'DELETE' && request.path === '/v1/push/subscriptions',
+  );
+  const logoutIndex = coreRequests.findIndex(
+    (request) => request.method === 'POST' && request.path === `${AUTH_API_PREFIX}/logout`,
+  );
+  // CONTROL: the recorder saw the logout, so an order check on an empty list
+  // cannot pass by accident.
+  expect(logoutIndex, 'the recorder saw the logout').toBeGreaterThanOrEqual(0);
+  expect(deleteIndex, 'the subscription is deleted on the server').toBeGreaterThanOrEqual(0);
+  expect(deleteIndex, 'the delete goes out before the logout').toBeLessThan(logoutIndex);
+  expect(coreRequests[deleteIndex]?.authorization ?? '', 'the delete carries the bearer').toMatch(/^Bearer \S+/u);
+
+  // The endpoint is forgotten, the kinds survive and no refusal is recorded:
+  // the person did not turn notifications off, they signed out.
+  const storageAfter = await page.evaluate(() => ({
+    endpoint: window.localStorage.getItem('openplate:push-endpoint'),
+    prefs: window.localStorage.getItem('openplate:push-prefs'),
+    disabled: window.localStorage.getItem('openplate:push-disabled'),
+  }));
+  expect(storageAfter.endpoint, 'the endpoint is forgotten').toBeNull();
+  expect(storageAfter.prefs, 'the kinds survive the sign-out').toBe(storageBefore.prefs);
+  expect(storageAfter.disabled, 'a sign-out is not an opt-out').toBeNull();
 });

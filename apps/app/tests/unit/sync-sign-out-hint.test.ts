@@ -61,6 +61,39 @@ describe('signOutOfSync', () => {
   });
 });
 
+/**
+ * True when `first` appears in `body` before `second`, and both appear.
+ *
+ * A pure string question, so the test below can run it against the real body
+ * AND against the same text with the two swapped, which is the control that
+ * proves the check can fail.
+ */
+function appearsBefore({ body, first, second }: { body: string; first: string; second: string }): boolean {
+  const firstAt = body.indexOf(first);
+  const secondAt = body.indexOf(second);
+  return firstAt !== -1 && secondAt !== -1 && firstAt < secondAt;
+}
+
+describe('signOutOfSync releases push while the bearer is still valid', () => {
+  const body = extractFunctionBody('signOutOfSync');
+  const release = 'releasePushForSignOut()';
+  const logout = 'vault.authClient.logout()';
+
+  it('releases the push subscription before it revokes the session', () => {
+    assert.equal(appearsBefore({ body, first: release, second: logout }), true);
+  });
+
+  it('THE CONTROL: the same check fails on a body with the two swapped', () => {
+    const swapped = body.replace(release, '@@release@@').replace(logout, release).replace('@@release@@', logout);
+    assert.equal(appearsBefore({ body: swapped, first: release, second: logout }), false);
+  });
+
+  it('the cached-only branch releases the browser subscription too', () => {
+    const cachedOnly = extractFunctionBody('signOutOfDeviceSession');
+    assert.equal(appearsBefore({ body: cachedOnly, first: release, second: 'revokeCachedSession(' }), true);
+  });
+});
+
 describe('deleteSyncAccount', () => {
   const body = extractFunctionBody('deleteSyncAccount');
 

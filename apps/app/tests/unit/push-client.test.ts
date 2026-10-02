@@ -36,8 +36,10 @@ import {
   PUSH_DISABLED_STORAGE_KEY,
   PUSH_ENDPOINT_STORAGE_KEY,
   PUSH_PREFS_STORAGE_KEY,
+  PUSH_RELEASE_TIMEOUT_MS,
   PushSetupError,
   fastWakeAtIso,
+  releasePushForSignOut,
   resetPush,
   setFastWakeAt,
   setPushDependencies,
@@ -331,6 +333,143 @@ describe('turning push off', () => {
 
     assert.deepEqual(device.calls, []);
     assert.equal(isPushDisabledByUser(), true);
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
+// Releasing push for a sign-out
+//////////////////////////////////////////////////////////////////////////////
+
+describe('releasing push for a sign-out', () => {
+  const KINDS = JSON.stringify({ catchUpMinute: 390, fastTargetEnabled: false });
+  const registered = () =>
+    fakeStorage({ [PUSH_ENDPOINT_STORAGE_KEY]: 'https://push.example.test/aaa', [PUSH_PREFS_STORAGE_KEY]: KINDS });
+
+  it('deletes the row with the bearer, drops the browser subscription and forgets the endpoint', async () => {
+    const device = installDevice({ storage: registered() });
+
+    await releasePushForSignOut();
+
+    assert.deepEqual(
+      device.calls.map((call) => `${call.method} ${call.url}`),
+      ['DELETE https://sync.example.test/v1/push/subscriptions'],
+    );
+    assert.equal(device.calls[0]?.authorization, 'Bearer token-abc');
+    assert.deepEqual(device.calls[0]?.body, { endpoint: 'https://push.example.test/aaa' });
+    assert.equal(device.wasUnsubscribed(), true);
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('keeps the kinds and does not record an opt-out, unlike the switch', async () => {
+    const device = installDevice({ storage: registered() });
+
+    await releasePushForSignOut();
+
+    assert.equal(device.storage.entries.get(PUSH_PREFS_STORAGE_KEY), KINDS);
+    assert.equal(isPushDisabledByUser(), false);
+    assert.equal(device.storage.entries.has(PUSH_DISABLED_STORAGE_KEY), false);
+  });
+
+  it('THE CONTROL: the settings switch DOES record the opt-out on the same device', async () => {
+    const device = installDevice({ storage: registered() });
+
+    await disablePush();
+
+    assert.equal(device.storage.entries.get(PUSH_DISABLED_STORAGE_KEY), '1');
+  });
+
+  it('sends no request with no stored endpoint, but still drops the browser subscription', async () => {
+    const device = installDevice();
+
+    await releasePushForSignOut();
+
+    assert.deepEqual(device.calls, []);
+    assert.equal(device.wasUnsubscribed(), true);
+  });
+
+  it('sends no request with no open session, but still drops the browser subscription', async () => {
+    const device = installDevice({ storage: registered() });
+    setPushDependencies({ readAccount: () => null });
+
+    await releasePushForSignOut();
+
+    assert.deepEqual(device.calls, []);
+    assert.equal(device.wasUnsubscribed(), true);
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('still drops the browser subscription when the request is rejected, and does not throw', async () => {
+    const device = installDevice({ storage: registered() });
+    setPushDependencies({
+      fetchImpl: async () => {
+        throw new TypeError('network down');
+      },
+    });
+
+    await releasePushForSignOut();
+
+    assert.equal(device.wasUnsubscribed(), true);
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('does not throw when the browser unsubscribe itself fails, and still forgets the endpoint', async () => {
+    const device = installDevice({ storage: registered() });
+    setPushDependencies({
+      unsubscribeFromPush: async () => {
+        throw new Error('push manager gone');
+      },
+    });
+
+    await releasePushForSignOut();
+
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('aborts a hung request at the bound, then still drops the browser subscription', async () => {
+    const device = installDevice({ storage: registered() });
+    let signal: AbortSignal | null | undefined;
+    setPushDependencies({
+      fetchImpl: (_input, init) => {
+        signal = init?.signal;
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'TimeoutError')));
+        });
+      },
+    });
+
+    const startedAt = Date.now();
+    await releasePushForSignOut({ timeoutMs: 40 });
+
+    assert.ok(Date.now() - startedAt < 2000, 'the bound, not the network, decided how long this took');
+    assert.equal(signal?.aborted, true, 'the request was told to stop');
+    assert.equal(device.wasUnsubscribed(), true);
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('is not held by a transport that ignores its signal either', async () => {
+    const device = installDevice({ storage: registered() });
+    setPushDependencies({ fetchImpl: () => new Promise<Response>(() => undefined) });
+
+    const startedAt = Date.now();
+    await releasePushForSignOut({ timeoutMs: 40 });
+
+    assert.ok(Date.now() - startedAt < 2000);
+    assert.equal(device.wasUnsubscribed(), true);
+  });
+
+  it('is not held by a browser unsubscribe that never settles', async () => {
+    const device = installDevice({ storage: registered() });
+    setPushDependencies({ unsubscribeFromPush: () => new Promise<void>(() => undefined) });
+
+    const startedAt = Date.now();
+    await releasePushForSignOut({ timeoutMs: 40 });
+
+    assert.ok(Date.now() - startedAt < 2000);
+    assert.equal(device.storage.entries.has(PUSH_ENDPOINT_STORAGE_KEY), false);
+  });
+
+  it('bounds the real wait at three seconds', () => {
+    assert.equal(PUSH_RELEASE_TIMEOUT_MS, 3000);
   });
 });
 

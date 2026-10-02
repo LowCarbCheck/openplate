@@ -91,6 +91,7 @@ import {
   revokeCachedSession,
 } from './session-cache';
 import { clearHomeHint } from '#app/lib/home-entry';
+import { releasePushForSignOut } from '#app/lib/push';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
@@ -930,6 +931,11 @@ export function markSyncPending(): void {
 export async function signOutOfSync(): Promise<void> {
   const vault = getSyncVault();
   if (vault === null) return;
+  // THE PUSH SUBSCRIPTION GOES FIRST, while the bearer is still valid: the
+  // server delete needs it, and `logout()` revokes it. Without this a shared
+  // device keeps receiving the last person's notifications (`push.ts`). It
+  // never throws and waits at most a few seconds.
+  await releasePushForSignOut();
   await vault.authClient.logout();
   await closeAndForgetSyncSession();
   // THE HOME HINT GOES WITH THE SESSION (M201 spec 01). `openplate-home` is
@@ -962,6 +968,9 @@ export async function signOutOfDeviceSession({ serverUrl }: { serverUrl: string 
     await signOutOfSync();
     return;
   }
+  // NO OPEN SESSION, so no bearer for a server delete: this drops only the
+  // browser's subscription, and the server prunes the dead endpoint itself.
+  await releasePushForSignOut();
   await revokeCachedSession({ serverUrl });
   clearHomeHint();
 }

@@ -630,22 +630,108 @@ export async function enablePush(prefs: PushPrefs): Promise<void> {
  */
 export async function disablePush(): Promise<void> {
   setPushDisabledByUser(true);
+  await deleteSubscriptionOnServer();
+  await dependencies.unsubscribeFromPush();
+  rememberEndpoint(null);
+}
+
+/**
+ * Asks the server to drop THIS device's row, and swallows every failure.
+ *
+ * ONE call for the switch ({@link disablePush}) and for a sign-out
+ * ({@link releasePushForSignOut}), so the two can never name different routes.
+ * Sends nothing when there is no remembered endpoint or no account to speak
+ * for it. A hung server is the caller's problem only when it passes a `signal`.
+ *
+ * @param signal - aborts the request, or undefined to wait as long as the browser does.
+ */
+async function deleteSubscriptionOnServer(signal?: AbortSignal): Promise<void> {
   const endpoint = rememberedEndpoint();
   const account = dependencies.readAccount();
-
-  if (endpoint !== null && account !== null) {
-    try {
-      await dependencies.fetchImpl(`${account.serverUrl}/v1/push/subscriptions`, {
-        method: 'DELETE',
-        headers: authHeaders(account, true),
-        body: JSON.stringify({ endpoint }),
-      });
-    } catch (caught) {
-      pushLog.debug('push delete failed', { error: caught instanceof Error ? caught.message : 'unknown' });
-    }
+  if (endpoint === null || account === null) return;
+  try {
+    await dependencies.fetchImpl(`${account.serverUrl}/v1/push/subscriptions`, {
+      method: 'DELETE',
+      headers: authHeaders(account, true),
+      body: JSON.stringify({ endpoint }),
+      signal,
+    });
+  } catch (caught) {
+    pushLog.debug('push delete failed', { error: caught instanceof Error ? caught.message : 'unknown' });
   }
+}
 
-  await dependencies.unsubscribeFromPush();
+/** The browser step of a release: this device's unsubscribe, with every failure logged and swallowed. */
+async function unsubscribeQuietly(): Promise<void> {
+  try {
+    await dependencies.unsubscribeFromPush();
+  } catch (caught) {
+    pushLog.debug('push unsubscribe on sign-out failed', { error: caught instanceof Error ? caught.message : 'unknown' });
+  }
+}
+
+/**
+ * How long a sign-out waits on the push release, server and browser together.
+ *
+ * A sign-out is the one action that must work on a train, so a dead network may
+ * cost a person this long and no longer.
+ */
+export const PUSH_RELEASE_TIMEOUT_MS = 3000;
+
+/** Resolves when `signal` aborts, at once if it already has. */
+function whenAborted(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) resolve();
+    else signal.addEventListener('abort', () => resolve(), { once: true });
+  });
+}
+
+/**
+ * Lets go of this device's push subscription because the person is signing
+ * out, WITHOUT turning notifications off.
+ *
+ * ── Why a sign-out has to do this ────────────────────────────────────────
+ *
+ * A sign-out that leaves the subscription behind leaves a device the server
+ * keeps sending to (it prunes only after a week of silence), and the service
+ * worker writes each notification from the last `openplate-notify` record,
+ * which holds net carbs, protein and fasting numbers. On a shared device the
+ * next person reads the last person's numbers on the lock screen. Only an
+ * erase cleared push before this.
+ *
+ * ── What it keeps, and why that differs from {@link disablePush} ─────────
+ *
+ * The kinds stay on storage and the "turned off by the person" flag is NOT
+ * written. Nobody chose to turn anything off: if that flag were set, settings
+ * would read as a deliberate opt-out after the next sign-in. With only the
+ * endpoint forgotten, the switch reads off and one tap turns it on with the
+ * kinds the person had.
+ *
+ * ── The order, and the one bound ─────────────────────────────────────────
+ *
+ * Called BEFORE the logout, while the bearer is still valid: the server delete
+ * needs it. With no open session (`signOutOfDeviceSession`'s cached-only
+ * branch) the account reads null, so no request goes out and only the browser
+ * subscription is dropped; a dead endpoint makes the server prune its own row
+ * on the next send. One deadline ({@link PUSH_RELEASE_TIMEOUT_MS}) covers the
+ * request AND the browser step, so a hung network or a stalled PushManager can
+ * delay a sign-out by that long at most. It never throws.
+ *
+ * @param options.timeoutMs - the deadline; tests shorten it.
+ */
+export async function releasePushForSignOut({
+  timeoutMs = PUSH_RELEASE_TIMEOUT_MS,
+}: { timeoutMs?: number } = {}): Promise<void> {
+  const deadline = AbortSignal.timeout(timeoutMs);
+  // Raced as well as signalled: a transport that ignores its signal must not
+  // hold a sign-out either.
+  await Promise.race([deleteSubscriptionOnServer(deadline), whenAborted(deadline)]);
+  // The browser step is started whatever became of the request. Racing it
+  // against the same deadline stops a stalled PushManager from outliving the
+  // bound; the call itself still runs to its own end in the background, so its
+  // failure is caught on the call, not on the race.
+  const unsubscribing = unsubscribeQuietly();
+  await Promise.race([unsubscribing, whenAborted(deadline)]);
   rememberEndpoint(null);
 }
 
