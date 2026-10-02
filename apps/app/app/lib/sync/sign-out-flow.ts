@@ -39,10 +39,10 @@
  * `tests/unit/sign-out-flow.test.ts` without a browser, a session or a router.
  */
 import { createComponentLogger } from '#app/lib/logger';
-import { eraseDeviceData } from '#app/lib/local-store/device-erase';
+import { eraseDiaryAndReleaseLock } from './account-switch';
 import { signOutOfSync } from './sync-actions';
 import { getSyncSessionSnapshot } from './sync-session';
-import { lockDevice } from './sync-state';
+import { lockDevice, type DeviceLockOwner } from './sync-state';
 
 const log = createComponentLogger('sign-out');
 
@@ -55,8 +55,9 @@ export interface SignOutRequest {
    * this device?
    *
    * `true` on a managed instance, where the diary belongs to the account.
-   * `false` on an open one, where signing out of sync is not meant to take
-   * anything away and locking the device would be a wipe with extra steps.
+   * `false` on an open one. On an open instance the diary is the device's
+   * own, so a lock would hide a person's own diary from them until they sign
+   * in again; signing out of sync must not do that.
    */
   locksDevice: boolean;
 }
@@ -89,9 +90,12 @@ export function signOutDestination({ locksDevice, eraseDevice }: SignOutRequest)
 export interface SignOutSteps {
   /** Revokes the token family server-side and drops the local session. Best effort. */
   revokeAndCloseSession: () => Promise<void>;
-  /** Marks this device as signed out of an account whose diary it must stop showing. */
+  /** Marks this device as signed out of an account whose diary it must stop showing, naming that account. */
   lockDevice: () => void;
-  /** Deletes the diary, the photos, the outbox and the sync baseline, in one step. */
+  /**
+   * Erases the diary and every sync baseline, then releases the device lock;
+   * the lock stays if the erase fails (`eraseDiaryAndReleaseLock`, ADR-0022).
+   */
   eraseDevice: () => Promise<void>;
   /** Ends this document, so no in-memory copy of the diary and no persister outlives the sign-out. */
   leaveTheApp: () => void;
@@ -134,19 +138,30 @@ export async function runSignOut(
  * that is never wrong: a gate that finds the device locked or empty sends it on
  * to `/welcome` by itself, and one that finds a diary leaves it where it is.
  *
- * The account id is read HERE, while the session is still open, and closed
- * over. Reading it inside `eraseDevice` would read it after
- * `revokeAndCloseSession` has published a signed-out snapshot, and the
- * baseline key would then be the one thing an erase quietly left behind.
+ * ── Whose diary the lock names (ADR-0022) ────────────────────────────────
+ *
+ * `owner` is the account signing out. A caller that knows it passes it, and
+ * that wins: the sign-out dialog reads the account once, when it opens, and
+ * `/join` reads it from the cached session before it signs that session out.
+ * Without one, the open session is read HERE, while it is still open, and
+ * closed over. Reading it inside a step would read it after
+ * `revokeAndCloseSession` has published a signed-out snapshot, and then the
+ * lock would name nobody and the baseline key would be the one thing an erase
+ * quietly left behind. A retry of a failed erase that builds new steps reads
+ * the session again and finds it closed, which is why a caller that can pass
+ * the owner should.
  */
 export function defaultSignOutSteps({
   destination = '/dashboard',
-}: { destination?: SignOutDestination } = {}): SignOutSteps {
-  const accountId = getSyncSessionSnapshot().account?.id ?? null;
+  owner,
+}: { destination?: SignOutDestination; owner?: DeviceLockOwner | null } = {}): SignOutSteps {
+  const account = getSyncSessionSnapshot().account;
+  const signingOut: DeviceLockOwner | null =
+    owner ?? (account === null ? null : { accountId: account.id, email: account.email });
   return {
     revokeAndCloseSession: signOutOfSync,
-    lockDevice: () => lockDevice(),
-    eraseDevice: () => eraseDeviceData({ accountId }),
+    lockDevice: () => lockDevice({ owner: signingOut }),
+    eraseDevice: () => eraseDiaryAndReleaseLock({ accountId: signingOut?.accountId ?? null }),
     leaveTheApp: () => window.location.assign(destination),
   };
 }

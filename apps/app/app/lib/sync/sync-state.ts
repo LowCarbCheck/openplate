@@ -21,6 +21,7 @@
  */
 import { z } from 'zod';
 import { randomUuid } from '#app/lib/uuid';
+import { canonicalizeEmail } from './email';
 import { PRIVATE_STORE_ENTITY_KEY, type SyncBaseline } from './snapshot-sync';
 
 /** Bumped only if the shape below changes incompatibly; an unreadable state is simply discarded and rebuilt. */
@@ -43,6 +44,17 @@ export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  /**
+   * How many keys are stored, and the key at one index: `localStorage`'s own
+   * two members for walking its keys (ADR-0022).
+   *
+   * OPTIONAL, because only two questions need them: whose baselines this
+   * device holds, for a lock an older build wrote, and every baseline an
+   * erase must take. A storage that cannot list its keys answers both with
+   * "none known", and the first of those answers fails closed (`readDeviceLock`).
+   */
+  readonly length?: number;
+  key?(index: number): string | null;
 }
 
 export interface SyncStateStore {
@@ -281,7 +293,233 @@ export function deviceStorage(): KeyValueStorage {
  * SYNCHRONOUSLY, before any store opens, by `_personal.tsx`'s gate.
  */
 const DEVICE_LOCK_KEY = 'openplate.device-locked';
-const DEVICE_LOCK_VALUE = 'locked';
+
+/**
+ * The value every build before ADR-0022 wrote. It names nobody, so the owner
+ * is worked out on read (`legacyLockOwner`). It is still WRITTEN, and only when
+ * a lock has to be set and nothing says whose diary it holds.
+ */
+const LEGACY_DEVICE_LOCK_VALUE = 'locked';
+
+/** The lock that names its owner (ADR-0022). An account id, and the address in its canonical form when it is known. */
+const ownedLockSchema = z.object({
+  v: z.literal(2),
+  accountId: z.number().int(),
+  email: z.string().nullable(),
+});
+
+/**
+ * Whose diary a locked device holds.
+ *
+ * `email` is `null` for a lock an older build wrote: its owner is worked out
+ * from the one baseline on the device, and a baseline carries an id and no
+ * address. The address is canonical (`canonicalizeEmail`) whenever it is
+ * known, so a comparison with a typed address is a plain `===`.
+ */
+export interface DeviceLockOwner {
+  accountId: number;
+  email: string | null;
+}
+
+/**
+ * What the lock says, read without writing anything.
+ *
+ * `owner: null` is a device that is locked and cannot say for whom: a lock an
+ * older build wrote on a device with no baseline, or with several. Every
+ * account is refused there, the one that signed out included (ADR-0022).
+ */
+export type DeviceLock = { kind: 'unlocked' } | { kind: 'locked'; owner: DeviceLockOwner | null };
+
+/** May a session for one account open on this device? */
+export type DeviceOpenDecision = { kind: 'open' } | { kind: 'refuse'; owner: DeviceLockOwner | null };
+
+/**
+ * A session for one account was asked to open on a device that holds another
+ * account's diary (ADR-0022).
+ *
+ * THROWN, never returned, by the guard in `openSyncVault` and again in
+ * `openSyncSession`, so a flow that forgets to ask first fails CLOSED: no
+ * vault, no cache row, no unlock. The flows that can ask first (sign-in, the
+ * invitation, the reset) do, and turn the answer into the account-switch step
+ * before anything reaches the server.
+ */
+export class DeviceHeldByAnotherAccountError extends Error {
+  readonly owner: DeviceLockOwner | null;
+
+  constructor({ owner }: { owner: DeviceLockOwner | null }) {
+    super('This device holds another account’s diary; erase it before another account opens here.');
+    this.name = 'DeviceHeldByAnotherAccountError';
+    this.owner = owner;
+  }
+}
+
+/**
+ * Every key this storage holds, or none when it cannot list them.
+ *
+ * `localStorage` lists its keys by index. A storage that cannot is read as
+ * holding no baselines, which for a legacy lock means "owner unknown" and
+ * therefore the refusing direction.
+ */
+function listStorageKeys(storage: KeyValueStorage): string[] {
+  const { key, length } = storage;
+  if (key === undefined || length === undefined) return [];
+  const keys: string[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const name = key.call(storage, index);
+    if (name !== null) keys.push(name);
+  }
+  return keys;
+}
+
+/** A whole decimal account id and nothing else, so `1e3` and `0x10` are not ids. */
+const ACCOUNT_ID_PATTERN = /^[0-9]+$/;
+
+/**
+ * Every per-account baseline key this device holds (ADR-0022).
+ *
+ * For the erase that hands the device to another account, which must take
+ * every account's baseline and not only the owner's: a baseline left behind is
+ * the silent empty diary `eraseDeviceData` describes, for whichever account it
+ * names.
+ *
+ * @param storage - this device's storage by default.
+ * @returns the keys, listed before any is removed.
+ */
+export function listSyncBaselineKeys(storage: KeyValueStorage = deviceStorage()): string[] {
+  const prefix = `${STATE_KEY_PREFIX}:`;
+  return listStorageKeys(storage).filter(
+    (name) => name.startsWith(prefix) && ACCOUNT_ID_PATTERN.test(name.slice(prefix.length)),
+  );
+}
+
+/**
+ * The owner of a lock an older build wrote, or `null` when this device cannot
+ * say.
+ *
+ * The one account whose baseline names an entity of its diary
+ * (`hasSyncBaselineEntities`) is the account whose diary this is. No such
+ * baseline, or several, and nobody can be named: the device then refuses every
+ * account until it is erased, which is the cost ADR-0022 accepts for the
+ * devices that carry an old lock.
+ */
+function legacyLockOwner(storage: KeyValueStorage): DeviceLockOwner | null {
+  const prefix = `${STATE_KEY_PREFIX}:`;
+  const owners = listSyncBaselineKeys(storage)
+    .map((name) => Number(name.slice(prefix.length)))
+    .filter((accountId) => Number.isSafeInteger(accountId) && hasSyncBaselineEntities({ accountId, storage }));
+  const [only] = owners;
+  if (owners.length !== 1 || only === undefined) return null;
+  return { accountId: only, email: null };
+}
+
+/**
+ * Parses one stored lock value. Exact, and never in the locking direction for
+ * a value it does not recognise.
+ *
+ * Exact match rather than truthiness, for the same reason
+ * `parseHomeHintCookie` is exact: an unrecognisable value means "not locked",
+ * and locking somebody out of their own diary on a half-written string would
+ * be the worse failure of the two. The owned lock is the one shape this build
+ * writes; a JSON value of any other shape is the same unrecognisable string.
+ *
+ * @param raw - the stored value, or `null` for none.
+ * @param storage - where the baselines live, read only for the legacy value.
+ */
+export function parseDeviceLock({ raw, storage }: { raw: string | null; storage: KeyValueStorage }): DeviceLock {
+  if (raw === null) return { kind: 'unlocked' };
+  if (raw === LEGACY_DEVICE_LOCK_VALUE) return { kind: 'locked', owner: legacyLockOwner(storage) };
+  const owned = parseOwnedLock(raw);
+  if (owned === null) return { kind: 'unlocked' };
+  return { kind: 'locked', owner: owned };
+}
+
+/** The owner an owned lock names, or `null` for any value that is not one. */
+function parseOwnedLock(raw: string): DeviceLockOwner | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const lock = ownedLockSchema.safeParse(parsed);
+  if (!lock.success) return null;
+  return { accountId: lock.data.accountId, email: lock.data.email };
+}
+
+/**
+ * What this device's lock says. READING NEVER WRITES: a legacy value keeps its
+ * legacy form, and its owner is worked out again on every read.
+ *
+ * @param storage - this device's storage by default; injected in tests.
+ */
+export function readDeviceLock(storage: KeyValueStorage = deviceStorage()): DeviceLock {
+  return parseDeviceLock({ raw: storage.getItem(DEVICE_LOCK_KEY), storage });
+}
+
+/**
+ * May a session for `accountId` open on a device whose lock says `lock`?
+ *
+ * Open when the device is unlocked, or when the lock names this very account.
+ * Refused for everything else, the unknown owner included, and the refusal
+ * carries the owner so the step can name whose diary it is.
+ *
+ * Pure, so every row is in `tests/unit/device-lock.test.ts`.
+ */
+export function decideDeviceOpen({ lock, accountId }: { lock: DeviceLock; accountId: number }): DeviceOpenDecision {
+  if (lock.kind === 'unlocked') return { kind: 'open' };
+  if (lock.owner !== null && lock.owner.accountId === accountId) return { kind: 'open' };
+  return { kind: 'refuse', owner: lock.owner };
+}
+
+/**
+ * Must the account-switch step come BEFORE the server is asked anything, for
+ * an incoming account that is known only by its address?
+ *
+ * `true` when the device is locked and the address cannot be the owner's: the
+ * owner is unknown, or the owner's address is known and differs. When the
+ * owner is known only by its id (a legacy lock), the address decides nothing
+ * and the answer depends on the flow. A sign-in or a reset reaches an EXISTING
+ * account, so the core is asked who it is and the id decides
+ * (`decideDeviceOpen`). An invitation always creates a NEW account, whose id
+ * can never be the owner's, so the step comes first (`isNewAccount`).
+ *
+ * @param lock - what the lock says.
+ * @param email - the incoming address, in any form; compared canonically.
+ * @param isNewAccount - does this flow create the account it opens?
+ */
+export function isDeviceHeldFromEmail({
+  lock,
+  email,
+  isNewAccount,
+}: {
+  lock: DeviceLock;
+  email: string;
+  isNewAccount: boolean;
+}): boolean {
+  if (lock.kind === 'unlocked') return false;
+  if (lock.owner === null) return true;
+  if (lock.owner.email === null) return isNewAccount;
+  return lock.owner.email !== canonicalizeEmail(email);
+}
+
+/**
+ * Throws {@link DeviceHeldByAnotherAccountError} unless a session for
+ * `accountId` may open here.
+ *
+ * THE GUARD. It is the first statement of `openSyncVault` and of
+ * `openSyncSession`, and it runs before a vault, a cache write or an unlock
+ * exists, so a flow that never asked still cannot open another person's diary.
+ */
+export function assertDeviceMayOpen({
+  accountId,
+  storage = deviceStorage(),
+}: {
+  accountId: number;
+  storage?: KeyValueStorage;
+}): void {
+  const decision = decideDeviceOpen({ lock: readDeviceLock(storage), accountId });
+  if (decision.kind === 'refuse') throw new DeviceHeldByAnotherAccountError({ owner: decision.owner });
+}
 
 /**
  * LOCKING IS THE GUARANTEE; ERASING IS THE EXTRA (M201 spec 02).
@@ -309,18 +547,73 @@ const DEVICE_LOCK_VALUE = 'locked';
  * the app reading the last one's diary, which is what an account on a shared
  * device is for.
  *
+ * ── It names its owner (ADR-0022) ────────────────────────────────────────
+ *
+ * The marker used to be the bare word `locked`, and any session that opened
+ * lifted it. A second account signing in on a shared device therefore opened
+ * the first person's diary, and its first sync pushed that diary into the
+ * second account. The lock now records whose diary it closes, and only that
+ * account's session may lift it (`releaseDeviceLockForOwner`); every other
+ * account is refused until the diary is erased.
+ *
+ * A KNOWN OWNER IS NEVER DOWNGRADED. With `owner: null` (nothing at hand says
+ * whose diary this is) the legacy value is written only where no owned lock
+ * stands already, because replacing a named owner with nobody would refuse
+ * that owner their own diary.
+ *
+ * @param owner - whose diary the device now holds, or `null` when no caller can say.
  * @param storage - defaults to this device's storage; injected in tests.
  */
-export function lockDevice(storage: KeyValueStorage = deviceStorage()): void {
-  storage.setItem(DEVICE_LOCK_KEY, DEVICE_LOCK_VALUE);
+export function lockDevice({
+  owner,
+  storage = deviceStorage(),
+}: {
+  owner: DeviceLockOwner | null;
+  storage?: KeyValueStorage;
+}): void {
+  if (owner !== null) {
+    const email = owner.email === null ? null : canonicalizeEmail(owner.email);
+    storage.setItem(DEVICE_LOCK_KEY, JSON.stringify({ v: 2, accountId: owner.accountId, email }));
+    return;
+  }
+  const current = storage.getItem(DEVICE_LOCK_KEY);
+  if (current !== null && parseOwnedLock(current) !== null) return;
+  storage.setItem(DEVICE_LOCK_KEY, LEGACY_DEVICE_LOCK_VALUE);
 }
 
 /**
- * Clears the lock. Called from {@link openSyncSession}, so signing back in is
- * the ONLY way a locked device becomes readable again, and every path that
- * opens a session gets it without remembering to.
+ * Lifts the lock for the account it names. Called ONLY from
+ * `openSyncSession`, so signing back in as the owner is the one way a locked
+ * device becomes readable again without an erase, and every path that opens a
+ * session gets it without remembering to.
+ *
+ * It re-asks the guard first, and throws for any other account: a lock never
+ * lifts for somebody it does not name, whatever the caller already checked.
+ * An unlocked device is left as it is.
+ *
+ * @throws DeviceHeldByAnotherAccountError when the lock names another account, or nobody.
  */
-export function unlockDevice(storage: KeyValueStorage = deviceStorage()): void {
+export function releaseDeviceLockForOwner({
+  accountId,
+  storage = deviceStorage(),
+}: {
+  accountId: number;
+  storage?: KeyValueStorage;
+}): void {
+  assertDeviceMayOpen({ accountId, storage });
+  if (readDeviceLock(storage).kind === 'unlocked') return;
+  storage.removeItem(DEVICE_LOCK_KEY);
+}
+
+/**
+ * Lifts the lock whoever it names. ONLY for `account-switch.ts`, after the
+ * held diary and every baseline are gone from this device (ADR-0022).
+ *
+ * Nothing is held any more at that point, so there is nobody for the lock to
+ * protect. A unit source test keeps every other module from calling this; an
+ * erase that failed never reaches it, and the lock stays.
+ */
+export function clearDeviceLockAfterErase(storage: KeyValueStorage = deviceStorage()): void {
   storage.removeItem(DEVICE_LOCK_KEY);
 }
 
@@ -355,15 +648,12 @@ export function lockDeviceWhenSessionEnds(): boolean {
 }
 
 /**
- * Is this device locked?
- *
- * Exact value match rather than truthiness, for the same reason
- * `parseHomeHintCookie` is exact: an unrecognisable value means "not locked",
- * and locking somebody out of their own diary on a half-written string would
- * be the worse failure of the two.
+ * Is this device locked, for anybody? The onboarding gate's question, which
+ * keeps its boolean shape: the gate closes the diary to a device with no
+ * session whoever the owner is (`onboarding-gate.ts`).
  */
 export function isDeviceLocked(storage: KeyValueStorage = deviceStorage()): boolean {
-  return storage.getItem(DEVICE_LOCK_KEY) === DEVICE_LOCK_VALUE;
+  return readDeviceLock(storage).kind === 'locked';
 }
 
 /** An in-memory {@link KeyValueStorage}, for tests and for the SSR/no-storage fallback. */
@@ -373,5 +663,9 @@ export function createMemoryStorage(initial: Record<string, string> = {}): KeyVa
     getItem: (key) => map.get(key) ?? null,
     setItem: (key, value) => void map.set(key, value),
     removeItem: (key) => void map.delete(key),
+    get length() {
+      return map.size;
+    },
+    key: (index) => [...map.keys()][index] ?? null,
   };
 }

@@ -96,7 +96,7 @@ export interface DeviceEraseDeps {
  */
 export async function eraseDeviceData(
   { accountId }: { accountId: number | null },
-  deps: DeviceEraseDeps = browserEraseDeps(),
+  deps: DeviceEraseDeps = defaultDeviceEraseDeps(),
 ): Promise<void> {
   // FIRST, and see the header for why the order is the whole point.
   if (accountId !== null) deps.storage.removeItem(syncBaselineStorageKey(accountId));
@@ -107,8 +107,12 @@ export async function eraseDeviceData(
   }
 }
 
-/** The real seams: `indexedDB` and `localStorage`. */
-function browserEraseDeps(): DeviceEraseDeps {
+/**
+ * The real seams: `indexedDB` and `localStorage`. Exported for the
+ * account-switch erase (`sync/account-switch.ts`), which removes the device
+ * lock and every baseline from the SAME storage this erase uses.
+ */
+export function defaultDeviceEraseDeps(): DeviceEraseDeps {
   return { deleteDatabase: deleteIndexedDbDatabase, storage: browserKeyValueStorage() };
 }
 

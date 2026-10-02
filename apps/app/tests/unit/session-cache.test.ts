@@ -39,7 +39,7 @@ import {
   type SessionCacheRecord,
 } from '../../app/lib/sync/session-cache';
 import { closeSyncSession, getSyncSessionSnapshot, getSyncVault } from '../../app/lib/sync/sync-session';
-import { isDeviceLocked, setLockDeviceWhenSessionEnds, unlockDevice } from '../../app/lib/sync/sync-state';
+import { isDeviceLocked, setLockDeviceWhenSessionEnds, clearDeviceLockAfterErase } from '../../app/lib/sync/sync-state';
 import { deriveAesKeyViaHkdf, HKDF_INFO } from '../../app/lib/sync/engine/crypto/hkdf';
 import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
 import { SyncHttpClient } from '../../app/lib/sync/engine/client/http-client';
@@ -135,7 +135,7 @@ beforeEach(async () => {
   // The device lock and the policy that writes it are module state, shared by
   // every test in this file. An open instance is the default everywhere else.
   setLockDeviceWhenSessionEnds(false);
-  unlockDevice();
+  clearDeviceLockAfterErase();
 });
 
 after(() => {

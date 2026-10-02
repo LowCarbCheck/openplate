@@ -49,11 +49,16 @@ import type { SessionTokensWire } from './engine/client/auth-wire';
 import { createPrivateStoreSession, type PrivateStoreSession } from './private-store';
 import type { EstablishedPrivateStore } from './engine/crypto/private-store';
 import {
+  assertDeviceMayOpen,
   createSyncStateStore,
+  decideDeviceOpen,
+  DeviceHeldByAnotherAccountError,
   deviceStorage,
   lockDevice,
   lockDeviceWhenSessionEnds,
+  readDeviceLock,
   resolveDeviceId,
+  type DeviceLockOwner,
 } from './sync-state';
 import { createDeviceLock, SYNC_SESSION_TOKEN_LOCK_NAME } from './sync-lock';
 import {
@@ -402,6 +407,17 @@ export function deviceTokenStore(): SessionTokenStore {
  *
  * The cache write is deliberately NOT awaited by the caller's happy path — it
  * is fire-and-forget, and a failed write costs a reload, not a session.
+ *
+ * ── It refuses another account's device FIRST (ADR-0022) ────────────────
+ *
+ * The first statement asks the device lock whether this account may open
+ * here, and throws `DeviceHeldByAnotherAccountError` before a vault, a cache
+ * row, an account hint or an unlock exists. The flows that can ask earlier do,
+ * and show the account-switch step; this is the line that holds for the one
+ * that forgets, so forgetting fails closed instead of opening somebody else's
+ * diary. `openSyncSession` asks again, because that is where the lock lifts.
+ *
+ * @throws DeviceHeldByAnotherAccountError when the device holds another account's diary.
  */
 export function openSyncVault(input: {
   authClient: SyncAuthClient;
@@ -417,6 +433,7 @@ export function openSyncVault(input: {
   /** The compartment session to adopt verbatim, for a resume that has already built one. */
   privateStoreSession?: PrivateStoreSession;
 }): SyncVault {
+  assertDeviceMayOpen({ accountId: input.accountId });
   const storage = deviceStorage();
   const state = createSyncStateStore({ storage, accountId: input.accountId });
   const vault: SyncVault = {
@@ -601,16 +618,44 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
   const session = authClient.getSession();
   if (session === null) return getSyncSessionSnapshot();
 
-  openSyncVault({
-    authClient,
-    http,
-    serverUrl,
-    accountId: session.account.id,
-    email: session.account.email,
-    dek: cached.dek,
-    privateStoreKek: cached.compartment.passphraseKek,
-  });
+  // A CACHED SESSION FOR ANOTHER ACCOUNT ON A HELD DEVICE (ADR-0022) is not
+  // reopened. Asked here, before the vault, so the refusal is an ordinary
+  // signed-out boot rather than the guard's throw; the guard inside
+  // `openSyncVault` still answers a lock another tab wrote in between.
+  if (decideDeviceOpen({ lock: readDeviceLock(), accountId: session.account.id }).kind === 'refuse') {
+    await refuseResumeOnHeldDevice(authClient);
+    return getSyncSessionSnapshot();
+  }
+  try {
+    openSyncVault({
+      authClient,
+      http,
+      serverUrl,
+      accountId: session.account.id,
+      email: session.account.email,
+      dek: cached.dek,
+      privateStoreKek: cached.compartment.passphraseKek,
+    });
+  } catch (cause) {
+    if (!(cause instanceof DeviceHeldByAnotherAccountError)) throw cause;
+    await refuseResumeOnHeldDevice(authClient);
+  }
   return getSyncSessionSnapshot();
+}
+
+/**
+ * Ends a resume whose cached session belongs to another account than the one
+ * this device's lock names (ADR-0022).
+ *
+ * The cached row goes, so no later reload tries again; its tokens are revoked,
+ * best effort, because nothing on this device will use them; and the
+ * signed-out snapshot is published, so the boot settles. THE LOCK STAYS AS IT
+ * IS: it names the diary this device holds, and that has not changed.
+ */
+async function refuseResumeOnHeldDevice(authClient: SyncAuthClient): Promise<void> {
+  await authClient.logout();
+  await clearSessionCache();
+  closeSyncSession();
 }
 
 /**
@@ -667,11 +712,28 @@ async function endStaleAttempt({
  * the device, and shutting somebody out of their own rows because a token
  * expired would be the worse of the two failures.
  */
-export async function endSessionRefused(failure: NonNullable<SyncSessionSnapshot['error']>): Promise<void> {
+export async function endSessionRefused(
+  failure: NonNullable<SyncSessionSnapshot['error']>,
+  owner?: DeviceLockOwner | null,
+): Promise<void> {
+  // THE OWNER, BEFORE ANYTHING CLOSES (ADR-0022). The lock names whose diary
+  // it closes, and both places that know close below: the vault on the next
+  // line, the cache on the one after. A caller that knows passes it; every
+  // other one is read here first. With neither, `lockDevice` keeps any owner
+  // already named rather than replace it with nobody.
+  const lockOwner = owner ?? (await ownerOfTheEndingSession());
   closeSyncSession();
   await clearSessionCache();
   updateSyncSession({ error: failure });
-  if (lockDeviceWhenSessionEnds()) lockDevice();
+  if (lockDeviceWhenSessionEnds()) lockDevice({ owner: lockOwner });
+}
+
+/** The account a session the server just ended belonged to: the open vault's, else the cached row's, else nobody. */
+async function ownerOfTheEndingSession(): Promise<DeviceLockOwner | null> {
+  const vault = getSyncVault();
+  if (vault !== null) return { accountId: vault.accountId, email: vault.email };
+  const cached = await readSessionCache();
+  return cached === null ? null : { accountId: cached.accountId, email: cached.email };
 }
 
 /** Whether a failure means "this session is over", as opposed to "we could not tell". */

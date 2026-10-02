@@ -36,7 +36,7 @@ import type { SyncHttpClient } from './engine/client/http-client';
 import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
-import { browserStorage, unlockDevice } from './sync-state';
+import { assertDeviceMayOpen, browserStorage, releaseDeviceLockForOwner } from './sync-state';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
@@ -327,13 +327,20 @@ export function applyTrialScansLeft(left: number): void {
  * would reintroduce, so there is no `?? 'member'` / `?? 0` left to write one.
  */
 export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number | null }): void {
+  // THE GUARD, AGAIN, AND FIRST (ADR-0022). `openSyncVault` asks it before it
+  // builds anything; it is asked here too because this is where the lock is
+  // lifted, and a lock must never lift for an account it does not name. A
+  // refusal throws before the vault below is set or a snapshot is published.
+  assertDeviceMayOpen({ accountId: next.accountId });
   vault = next;
-  // THE ONLY WAY OUT OF THE DEVICE LOCK (M201 spec 02). Signing out on a
+  // THE OWNER'S WAY OUT OF THE DEVICE LOCK (M201 spec 02). Signing out on a
   // managed instance leaves a marker that closes the diary to `_personal`'s
-  // gate; signing back in has to lift it, and it is lifted HERE rather than in
-  // each of the four flows that open a session so that none of them can
-  // forget. A resumed session counts: this device held one all along.
-  unlockDevice();
+  // gate; signing back in as the account it names has to lift it, and it is
+  // lifted HERE rather than in each of the four flows that open a session so
+  // that none of them can forget. A resumed session counts: this device held
+  // one all along. Any other account never gets this far (the guard above),
+  // and the one other way out is an erase (`account-switch.ts`).
+  releaseDeviceLockForOwner({ accountId: next.accountId });
   const account = next.authClient.getSession()?.account ?? null;
   const knownAccount = account !== null && !isPendingAccountView(account) ? account : null;
   publish({

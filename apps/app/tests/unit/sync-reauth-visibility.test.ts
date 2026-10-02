@@ -35,7 +35,7 @@ import 'fake-indexeddb/auto';
 import { clearSessionCache, endSessionRefused, readSessionCache } from '../../app/lib/sync/session-cache';
 import { endsTheSession } from '../../app/lib/sync/session-refusal';
 import { closeSyncSession, getSyncSessionSnapshot, updateSyncSession } from '../../app/lib/sync/sync-session';
-import { isDeviceLocked, setLockDeviceWhenSessionEnds, unlockDevice } from '../../app/lib/sync/sync-state';
+import { isDeviceLocked, setLockDeviceWhenSessionEnds, clearDeviceLockAfterErase } from '../../app/lib/sync/sync-state';
 
 const REFUSED = { reason: 'reauth-required', message: 'Your session ended.' } as const;
 
@@ -47,7 +47,7 @@ beforeEach(async () => {
   closeSyncSession();
   await clearSessionCache();
   setLockDeviceWhenSessionEnds(false);
-  unlockDevice();
+  clearDeviceLockAfterErase();
 });
 
 test('a refused cycle leaves the reason ON the snapshot, not wiped off it', async () => {
