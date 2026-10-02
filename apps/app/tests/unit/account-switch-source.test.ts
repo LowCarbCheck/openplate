@@ -110,6 +110,17 @@ describe('who may lift the lock', () => {
     assert.deepEqual(owners.toSorted(), ['clearDeviceLockAfterErase', 'releaseDeviceLockForOwner']);
   });
 
+  test('CONTROL: the key scan reports the literal in a planted file, and ignores it in a comment', () => {
+    const planted: Array<[string, string]> = [
+      ['app/hooks/planted.ts', "const KEY = 'openplate.device-locked';"],
+      [
+        'app/hooks/prose.ts',
+        '// the key openplate.device-locked is spelled in sync-state.ts\n/* openplate.device-locked */',
+      ],
+    ];
+    assert.deepEqual(filesMatching(planted, /openplate\.device-locked/), ['app/hooks/planted.ts']);
+  });
+
   test('CONTROL: the reference scan reports a planted caller', () => {
     const planted: Array<[string, string]> = [['app/routes/planted.tsx', 'clearDeviceLockAfterErase();']];
     assert.deepEqual(filesMatching(planted, /\bclearDeviceLockAfterErase\b/), ['app/routes/planted.tsx']);

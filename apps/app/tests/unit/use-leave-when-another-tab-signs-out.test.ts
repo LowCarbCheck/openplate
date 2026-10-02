@@ -10,12 +10,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { shouldLeave, type StorageChange } from '../../app/hooks/use-leave-when-another-tab-signs-out';
 import {
-  DEVICE_LOCK_STORAGE_KEY,
-  shouldLeave,
-  type StorageChange,
-} from '../../app/hooks/use-leave-when-another-tab-signs-out';
-import { lockDevice, syncBaselineStorageKey, type KeyValueStorage } from '../../app/lib/sync/sync-state';
+  DEVICE_LOCK_KEY,
+  lockDevice,
+  syncBaselineStorageKey,
+  type KeyValueStorage,
+} from '../../app/lib/sync/sync-state';
 
 const OWN_KEY = syncBaselineStorageKey(7);
 const OTHER_ACCOUNT_KEY = syncBaselineStorageKey(8);
@@ -23,27 +24,27 @@ const OTHER_ACCOUNT_KEY = syncBaselineStorageKey(8);
 const ROWS: Array<{ name: string; change: StorageChange; leaves: boolean }> = [
   {
     name: 'the lock set to its current value leaves',
-    change: { key: DEVICE_LOCK_STORAGE_KEY, newValue: 'locked', ownBaselineKey: OWN_KEY },
+    change: { key: DEVICE_LOCK_KEY, newValue: 'locked', ownBaselineKey: OWN_KEY },
     leaves: true,
   },
   {
     name: 'the lock set to JSON, the format another change may give it, leaves',
-    change: { key: DEVICE_LOCK_STORAGE_KEY, newValue: '{"reason":"signed-out","at":1}', ownBaselineKey: OWN_KEY },
+    change: { key: DEVICE_LOCK_KEY, newValue: '{"reason":"signed-out","at":1}', ownBaselineKey: OWN_KEY },
     leaves: true,
   },
   {
     name: 'the lock set to garbage that parses as nothing still leaves, the value is never read',
-    change: { key: DEVICE_LOCK_STORAGE_KEY, newValue: '{not json', ownBaselineKey: OWN_KEY },
+    change: { key: DEVICE_LOCK_KEY, newValue: '{not json', ownBaselineKey: OWN_KEY },
     leaves: true,
   },
   {
     name: 'the lock set while no account is open in this tab still leaves',
-    change: { key: DEVICE_LOCK_STORAGE_KEY, newValue: 'locked', ownBaselineKey: null },
+    change: { key: DEVICE_LOCK_KEY, newValue: 'locked', ownBaselineKey: null },
     leaves: true,
   },
   {
     name: 'the lock removed, which is a sign-in, does NOT leave',
-    change: { key: DEVICE_LOCK_STORAGE_KEY, newValue: null, ownBaselineKey: OWN_KEY },
+    change: { key: DEVICE_LOCK_KEY, newValue: null, ownBaselineKey: OWN_KEY },
     leaves: false,
   },
   {
@@ -96,15 +97,53 @@ describe('shouldLeave', () => {
   });
 });
 
+/** What {@link recordingStorage} hands back: a storage, and every write it saw as `[key, value]`. */
+interface RecordingStorage {
+  storage: KeyValueStorage;
+  written: Array<[string, string]>;
+}
+
+/** A storage that records every key written and the value it got. */
+function recordingStorage(): RecordingStorage {
+  const written: Array<[string, string]> = [];
+  const storage: KeyValueStorage = {
+    getItem: () => null,
+    setItem: (key, value) => void written.push([key, value]),
+    removeItem: () => undefined,
+  };
+  return { storage, written };
+}
+
 describe('the lock key this listener watches', () => {
-  it('is the key lockDevice really writes', () => {
-    const written: string[] = [];
-    const recording: KeyValueStorage = {
-      getItem: () => null,
-      setItem: (key) => void written.push(key),
-      removeItem: () => undefined,
-    };
-    lockDevice(recording);
-    assert.deepEqual(written, [DEVICE_LOCK_STORAGE_KEY]);
+  it('is the key lockDevice really writes, for an owned lock', () => {
+    const { storage, written } = recordingStorage();
+    lockDevice({ owner: { accountId: 7, email: 'anna@example.org' }, storage });
+    assert.deepEqual(
+      written.map(([key]) => key),
+      [DEVICE_LOCK_KEY],
+    );
+  });
+
+  it('is the key lockDevice really writes, for a lock that names nobody', () => {
+    const { storage, written } = recordingStorage();
+    lockDevice({ owner: null, storage });
+    assert.deepEqual(
+      written.map(([key]) => key),
+      [DEVICE_LOCK_KEY],
+    );
+  });
+
+  it('leaves for whatever value lockDevice wrote, whichever format it is', () => {
+    const { storage, written } = recordingStorage();
+    lockDevice({ owner: { accountId: 7, email: 'anna@example.org' }, storage });
+    lockDevice({ owner: null, storage });
+    assert.equal(written.length, 2);
+    for (const [key, value] of written) {
+      assert.equal(shouldLeave({ key, newValue: value, ownBaselineKey: OWN_KEY }), true);
+    }
+  });
+
+  it('CONTROL: a key that is not the lock key does not leave, so the rows above name the real one', () => {
+    assert.equal(shouldLeave({ key: 'openplate.device-lock', newValue: 'x', ownBaselineKey: OWN_KEY }), false);
   });
 });

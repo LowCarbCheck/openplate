@@ -1,17 +1,7 @@
 import { useEffect } from 'react';
 
 import { useSyncSession } from '#app/components/sync-status';
-import { isDeviceLocked, syncBaselineStorageKey } from '#app/lib/sync/sync-state';
-
-/**
- * The `localStorage` key `lockDevice` writes (`sync-state.ts`, `DEVICE_LOCK_KEY`).
- *
- * Spelled here because that constant is not exported and this listener must
- * not make another module edit its file. `use-leave-when-another-tab-signs-out.test.ts`
- * pins this copy to the real one by calling `lockDevice` against a recording
- * storage, so the two cannot drift apart unseen.
- */
-export const DEVICE_LOCK_STORAGE_KEY = 'openplate.device-locked';
+import { DEVICE_LOCK_KEY, isDeviceLocked, syncBaselineStorageKey } from '#app/lib/sync/sync-state';
 
 /** What one `storage` event says, reduced to the three facts the decision needs. */
 export interface StorageChange {
@@ -29,7 +19,8 @@ export interface StorageChange {
  * Two writes qualify, and both are writes a sign-out already makes, so there is
  * no new signal and no change to the order of its steps:
  *
- * - THE DEVICE LOCK WAS SET. Any value, never parsed: the lock's value format
+ * - THE DEVICE LOCK WAS SET (`DEVICE_LOCK_KEY`, imported: the key is spelled in
+ *   `sync-state.ts` and nowhere else). Any value, never parsed: the lock's value format
  *   is not this module's business (it has changed before), and a tab that has
  *   to decide "was a lock written" must not break when it does again. Removing
  *   the lock (`newValue === null`) is a sign-IN and leaves nothing to leave.
@@ -42,7 +33,7 @@ export interface StorageChange {
  */
 export function shouldLeave({ key, newValue, ownBaselineKey }: StorageChange): boolean {
   if (key === null) return false;
-  if (key === DEVICE_LOCK_STORAGE_KEY) return newValue !== null;
+  if (key === DEVICE_LOCK_KEY) return newValue !== null;
   if (ownBaselineKey === null) return false;
   return key === ownBaselineKey && newValue === null;
 }

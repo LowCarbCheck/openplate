@@ -24,7 +24,7 @@ import { SyncAuthClient } from '../../app/lib/sync/engine/client/auth-client';
 import { clearSessionCache, resumeSyncSession, writeSessionCache } from '../../app/lib/sync/session-cache';
 import { deriveAesKeyViaHkdf, HKDF_INFO } from '../../app/lib/sync/engine/crypto/hkdf';
 import { closeSyncSession, getSyncSessionSnapshot } from '../../app/lib/sync/sync-session';
-import { setLockDeviceWhenSessionEnds, unlockDevice } from '../../app/lib/sync/sync-state';
+import { clearDeviceLockAfterErase, setLockDeviceWhenSessionEnds } from '../../app/lib/sync/sync-state';
 
 const SERVER_URL = 'https://sync.example.test';
 
@@ -76,7 +76,7 @@ beforeEach(async () => {
   closeSyncSession();
   await clearSessionCache();
   setLockDeviceWhenSessionEnds(false);
-  unlockDevice();
+  clearDeviceLockAfterErase();
 });
 
 after(() => {

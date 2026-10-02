@@ -291,8 +291,17 @@ export function deviceStorage(): KeyValueStorage {
  *
  * Deliberately not versioned into the state above: it has to be readable
  * SYNCHRONOUSLY, before any store opens, by `_personal.tsx`'s gate.
+ *
+ * EXPORTED FOR ONE READER, AND THE LITERAL STAYS HERE. The `storage` listener
+ * that sends a second tab away (`use-leave-when-another-tab-signs-out.ts`) has
+ * to know which key to watch, and it imports this constant instead of spelling
+ * the key a second time. `account-switch-source.test.ts` fails if the literal
+ * appears in any other file, which is what keeps every removal of the lock in
+ * the two functions that may lift it. Importing the NAME grants nothing the
+ * test does not already police: a `removeItem` of it outside those two
+ * functions is caught there too.
  */
-const DEVICE_LOCK_KEY = 'openplate.device-locked';
+export const DEVICE_LOCK_KEY = 'openplate.device-locked';
 
 /**
  * The value every build before ADR-0022 wrote. It names nobody, so the owner
