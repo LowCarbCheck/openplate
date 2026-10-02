@@ -42,6 +42,7 @@
  */
 import { SyncAuthClient, type SessionTokenStore } from './engine/client/auth-client';
 import { SyncHttpClient } from './engine/client/http-client';
+import { SIGN_OUT_REQUEST_BOUND_MS, waitAtMost } from './engine/client/bounded-wait';
 import { SyncRequestError } from './engine/client/sync-error';
 import type { SessionTokensWire } from './engine/client/auth-wire';
 import { createPrivateStoreSession, type PrivateStoreSession } from './private-store';
@@ -256,7 +257,14 @@ export async function readDeviceSessionIdentity(): Promise<DeviceSessionIdentity
  * A session cached for ANOTHER server is not dialled at all. This client posts
  * its tokens only to the server its operator configured.
  */
-export async function revokeCachedSession({ serverUrl }: { serverUrl: string }): Promise<void> {
+export async function revokeCachedSession({
+  serverUrl,
+  timeoutMs = SIGN_OUT_REQUEST_BOUND_MS,
+}: {
+  serverUrl: string;
+  /** How long the refresh and the logout may take TOGETHER. Defaults to the sign-out bound; tests shorten it. */
+  timeoutMs?: number;
+}): Promise<void> {
   const cached = await readSessionCache();
   if (cached === null) return;
   try {
@@ -271,8 +279,22 @@ export async function revokeCachedSession({ serverUrl }: { serverUrl: string }):
         refreshTokenExpiresAt: cached.refreshTokenExpiresAt,
       },
     });
-    await authClient.refreshAccessToken();
-    await authClient.logout();
+    // BOUNDED AS ONE: a running sign-out cannot be closed, and neither request
+    // has a timeout of its own. A request that finishes after the bound writes
+    // nothing: this client has NO token store (`setTokenStore` is never called
+    // on it), so a late refresh's rotation reaches no cache, and the client is
+    // local to this call. The `finally` below clears the cache whichever way
+    // this ends, so the device is signed out even when the server never said.
+    const outcome = await waitAtMost({
+      timeoutMs,
+      work: async () => {
+        await authClient.refreshAccessToken();
+        await authClient.logout();
+      },
+    });
+    if (outcome === 'timed-out') {
+      log.warn('the server did not answer the sign-out in time, forgetting the cached sync session on this device');
+    }
   } catch (cause) {
     log.warn('could not revoke the cached sync session, forgetting it on this device', {
       error: cause instanceof Error ? cause.message : String(cause),

@@ -76,6 +76,7 @@ import {
 } from './auth-wire';
 import { errorKindForStatus, SyncRequestError } from './sync-error';
 import { defaultFetchImpl } from './fetch-impl';
+import { SIGN_OUT_REQUEST_BOUND_MS, waitAtMost } from './bounded-wait';
 import type { PlanKey } from './plans-wire';
 import type { LanguageCode } from '#app/i18n/language-prefs';
 import {
@@ -177,6 +178,8 @@ function isStrictlyNewerPair({ candidate, held }: { candidate: SessionTokensWire
 export interface SyncAuthClientOptions {
   baseUrl: string;
   fetchImpl?: FetchImpl;
+  /** How long {@link SyncAuthClient.logout} waits for the server. Defaults to the sign-out bound; tests shorten it. */
+  logoutTimeoutMs?: number;
 }
 
 /** What the blob client needs from an authenticated session — nothing more. */
@@ -242,13 +245,15 @@ export function isPendingAccountView(account: AccountViewWire): boolean {
 export class SyncAuthClient implements SyncTokenProvider {
   private readonly baseUrl: string;
   private readonly fetchImpl: FetchImpl;
+  private readonly logoutTimeoutMs: number;
   private session: SyncAuthSession | null = null;
   private refreshInFlight: Promise<string | null> | null = null;
   private tokenStore: SessionTokenStore | null = null;
 
-  constructor({ baseUrl, fetchImpl = defaultFetchImpl }: SyncAuthClientOptions) {
+  constructor({ baseUrl, fetchImpl = defaultFetchImpl, logoutTimeoutMs = SIGN_OUT_REQUEST_BOUND_MS }: SyncAuthClientOptions) {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
     this.fetchImpl = fetchImpl;
+    this.logoutTimeoutMs = logoutTimeoutMs;
   }
 
   /**
@@ -754,15 +759,29 @@ export class SyncAuthClient implements SyncTokenProvider {
     }
   }
 
-  /** Revokes this device's token family server-side and drops local state. Other devices keep their sessions. */
+  /**
+   * Revokes this device's token family server-side and drops local state. Other devices keep their sessions.
+   *
+   * THE WAIT IS BOUNDED (`logoutTimeoutMs`, four seconds by default). A running
+   * sign-out cannot be closed by the person, so it has to end, and `fetch` has
+   * no timeout of its own: a captive portal or a half-open connection would
+   * hold the dialog open indefinitely. The local session is cleared BEFORE the
+   * request goes out, so nothing on the device depends on the answer, and a
+   * late answer writes nothing: its response is never read, and this method
+   * touches no state after the request is sent.
+   */
   async logout(): Promise<void> {
     const token = this.getAccessToken();
     this.clearSession();
     if (token === null) return;
     try {
-      await this.fetchImpl(`${this.baseUrl}${AUTH_API_PREFIX}/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+      await waitAtMost({
+        timeoutMs: this.logoutTimeoutMs,
+        work: () =>
+          this.fetchImpl(`${this.baseUrl}${AUTH_API_PREFIX}/logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          }),
       });
     } catch {
       // Local state is already cleared, which is the part the user can see.
