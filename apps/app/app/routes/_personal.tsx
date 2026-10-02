@@ -33,6 +33,7 @@ import { StrangerNote, strangerNoteVariantForPath } from '#app/components/strang
 import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { shellForGate } from '#app/lib/personal-shell';
 import { useSettleAppNavigation } from '#app/hooks/use-app-navigate';
+import { useLeaveWhenAnotherTabSignsOut } from '#app/hooks/use-leave-when-another-tab-signs-out';
 import { recordPlanGateHold, shouldHoldStartForPlanGate } from '#app/lib/plans/plan-gate-hold';
 import {
   getPlanGateFactsSnapshot,
@@ -319,6 +320,7 @@ export default function PersonalLayout() {
   // right meaning of Back.
   useSettleAppNavigation();
   useRevalidateWhenTheSessionEnds();
+  useLeaveWhenAnotherTabSignsOut();
   useNoteRenderedPathForThePaywall(pathname);
   const matches = useMatches();
   const leafMatch = matches[matches.length - 1];
