@@ -53,3 +53,19 @@ test('a blob this device cannot decrypt is reported as a version mismatch', asyn
 
   assert.deepEqual(describeSyncFailure(thrown), { reason: 'incompatible', message: thrown.message });
 });
+
+test('a suspension is reported as suspended, not as a session to open again', () => {
+  const suspension = new SyncRequestError({ kind: 'suspended', status: 403, message: 'account-suspended' });
+  const failure = describeSyncFailure(suspension);
+
+  // THE DEFECT: a suspension used to map to `reauth-required`, so `/welcome`
+  // told a suspended person to sign in again, and that sign-in cannot work.
+  assert.equal(failure.reason, 'suspended');
+  // The sentence is this app's own, not the server's protocol token.
+  assert.notEqual(failure.message, suspension.message);
+});
+
+test('a refused session that is not a suspension still asks to sign in again (control)', () => {
+  const revoked = new SyncRequestError({ kind: 'unauthorized', status: 401, message: 'invalid refresh token' });
+  assert.deepEqual(describeSyncFailure(revoked), { reason: 'reauth-required', message: revoked.message });
+});

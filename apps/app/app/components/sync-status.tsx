@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Loader2, RefreshCw, RotateCcw } from 'lucide-react';
+import { syncErrorCopyKey } from '#app/lib/sync/sync-error-copy';
 import type { StorageHealNotice } from '#app/lib/sync/storage-heal';
 import {
   getServerSyncSessionSnapshot,
@@ -108,7 +109,9 @@ export function SyncStatus({ onSyncNow }: { onSyncNow: () => void }) {
         <output className="flex items-start gap-2 border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div className="space-y-1">
-            <p className="font-medium">{t(`sync.status.error.${session.error.reason}`)}</p>
+            <p className="font-medium">
+              {t(syncErrorCopyKey({ reason: session.error.reason, hasHiddenTheDiary: false }))}
+            </p>
             {/* The service's own words underneath the reassurance, so a
                 self-hoster debugging their instance has something to go on. */}
             <p className="text-xs opacity-80">{session.error.message}</p>

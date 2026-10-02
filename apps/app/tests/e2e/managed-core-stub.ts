@@ -75,6 +75,14 @@ export interface ManagedCoreStub {
    * the core does, so a reload reads what was agreed to.
    */
   accountHealthConsent?: { version: string; at: string } | null;
+  /**
+   * What the core answers to `POST /v1/auth/refresh`, or absent to leave the
+   * fake core server's own answer (a rotated pair). `unauthorized` is a
+   * revoked token family (`401`); `suspended` is an account an administrator
+   * suspended (`403 account-suspended`, `PROTOCOL.md` §4). Read per request,
+   * so a spec can sign in normally and then end the session on the next load.
+   */
+  refreshRefusal?: 'unauthorized' | 'suspended';
 }
 
 /** A trial account that has scans left, on an instance with member invites. */
@@ -95,6 +103,9 @@ const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.un
 
 /** The body of `POST /v1/auth/account/health-consent` (`PROTOCOL.md` §5.15.1). */
 const healthConsentBodySchema = z.object({ version: z.string() });
+
+/** The `403` body the core uses for a suspended account (`PROTOCOL.md` §4), the token `sync-error.ts` reads. */
+const ACCOUNT_SUSPENDED = 'account-suspended';
 
 /** The one refusal of both consent paths, transcribed from `PROTOCOL.md` §5.15.1. */
 export const HEALTH_CONSENT_REQUIRED = 'health-consent-required';
@@ -174,6 +185,20 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       );
     },
   );
+  // REGISTERED AFTER the route above, so it answers first. The refresh is the
+  // call a resumed session spends first, so refusing it is how a spec ends a
+  // session the SERVER ended, in the two ways the core can: a revoked token
+  // family and a suspended account.
+  await page.route(`${E2E_CORE_URL}/v1/auth/refresh`, (route) => {
+    const request = route.request();
+    // The preflight goes on to the fake service, which answers it for every path.
+    if (request.method() !== 'POST' || stub.refreshRefusal === undefined) return route.fallback();
+    const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
+    if (stub.refreshRefusal === 'suspended') {
+      return route.fulfill({ status: 403, headers: cors, json: { error: ACCOUNT_SUSPENDED } });
+    }
+    return route.fulfill({ status: 401, headers: cors, json: { error: 'invalid refresh token' } });
+  });
   // REGISTERED AFTER the route above, so it answers first (`PROTOCOL.md`
   // §5.15.1). The fake service has no such route; this is the core's rule:
   // 404 where the instance asks nothing, 400 for another version, and 200

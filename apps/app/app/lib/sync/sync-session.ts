@@ -58,6 +58,12 @@ export type SyncPhase = 'idle' | 'syncing';
 export type SyncErrorReason =
   /** The session expired and could not be renewed. The user signs in again; nothing is lost. */
   | 'reauth-required'
+  /**
+   * An administrator suspended the account. Signing in again cannot help, so
+   * this is NOT `reauth-required`: the screen says the account is suspended and
+   * who to ask, never "sign in again".
+   */
+  | 'suspended'
   /** The service is unreachable, or the device is offline. Local editing continues normally. */
   | 'offline'
   /**

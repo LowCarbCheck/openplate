@@ -37,6 +37,7 @@ import {
   generateRecoveryCode,
   parseRecoveryCode,
 } from './engine/client/recovery-kek';
+import { endsTheSession, failureWithRefusal, suspendedFailure } from './session-refusal';
 import { establishPrivateStore } from './engine/crypto/private-store';
 import { ARGON2ID_DEFAULT_PARAMS, generateArgon2idSalt, type Argon2idParams } from './engine/crypto/argon2';
 import { generateDek, unwrapDek, wrapDek } from './engine/crypto/dek-wrap';
@@ -694,7 +695,10 @@ export async function syncNow(): Promise<void> {
       signalConsentRefusal();
       throw error;
     }
-    const failure = describeSyncFailure(error);
+    const failure = failureWithRefusal({
+      failure: describeSyncFailure(error),
+      refusal: vault.authClient.getLastRefusal(),
+    });
     updateSyncSession({ phase: 'idle', error: failure });
     // A REFUSED SESSION DROPS THE CACHE, wherever it surfaces. The auth client
     // has already cleared its own tokens by this point; leaving the cached
@@ -706,7 +710,7 @@ export async function syncNow(): Promise<void> {
     // publishes the plain signed-out snapshot, whose `error` is `null`, which
     // wiped the failure set one line above and made `sync.status.error.reauth-required`
     // unreachable copy. The person was signed out and told nothing.
-    if (failure.reason === 'reauth-required') await endSessionRefused(failure);
+    if (endsTheSession(failure)) await endSessionRefused(failure);
     throw error;
   }
 }
@@ -848,21 +852,19 @@ export interface SyncFailure {
  * `reauth-required` is the one that must not be swallowed: the session
  * expired, the refresh could not renew it, and the ONLY correct response is a
  * visible prompt. Silently retrying there produces a device that has looked
- * "synced" for a week and has not sent a byte.
+ * "synced" for a week and has not sent a byte. `suspended` ends the session the
+ * same way and is just as visible, with a different sentence, because a
+ * prompt to sign in again cannot help a suspended account.
  */
 export function describeSyncFailure(cause: unknown): SyncFailure {
   if (cause instanceof SyncRequestError) {
     if (cause.kind === 'unauthorized') return { reason: 'reauth-required', message: cause.message };
-    // A SUSPENSION IS A REAUTH, not a generic failure, because the response is
-    // the same one: this session is over and the app must stop pretending
-    // otherwise. The message is this app's own rather than the server's token
+    // A SUSPENSION IS NOT A REAUTH. Both end the session and the app must stop
+    // pretending otherwise, but signing in again cannot help a suspended
+    // account, so the status surface says so instead of asking for it. The
+    // message is this app's own rather than the server's token
     // (`account-suspended` is a protocol word, not a sentence).
-    if (cause.kind === 'suspended') {
-      return {
-        reason: 'reauth-required',
-        message: 'An administrator has suspended this account, so it cannot sync. Ask them to reactivate it.',
-      };
-    }
+    if (cause.kind === 'suspended') return suspendedFailure();
     if (cause.kind === 'transport') return { reason: 'offline', message: cause.message };
     // `invalid` HAS TWO PRODUCERS, and they are not the same event (M225).
     // `status` is what tells them apart, and it is the honest discriminator:

@@ -2858,7 +2858,8 @@
         "failed": "Sync didn’t finish. Your diary on this device is unaffected.",
         "incompatible": "This app and the core server don’t speak the same version yet, so syncing is paused on purpose.",
         "offline": "Couldn’t reach the core server. Your diary is safe on this device and will catch up later.",
-        "reauth-required": "Your session ended. Sign in again to keep syncing. Nothing has been lost."
+        "reauth-required": "Your session ended. Sign in again to keep syncing. Nothing has been lost.",
+        "reauthRequiredManaged": "Your session ended, so this device hid your diary. Sign in again to see it. Nothing has been lost."
       },
       "lastSynced": "Last synced {{when}}",
       "never": "Not synced from this device yet",

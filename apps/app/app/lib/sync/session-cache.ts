@@ -44,6 +44,7 @@ import { SyncAuthClient, type SessionTokenStore } from './engine/client/auth-cli
 import { SyncHttpClient } from './engine/client/http-client';
 import { SIGN_OUT_REQUEST_BOUND_MS, waitAtMost } from './engine/client/bounded-wait';
 import { SyncRequestError } from './engine/client/sync-error';
+import { failureForRefusal, type SessionEndedFailure } from './session-refusal';
 import type { SessionTokensWire } from './engine/client/auth-wire';
 import { createPrivateStoreSession, type PrivateStoreSession } from './private-store';
 import type { EstablishedPrivateStore } from './engine/crypto/private-store';
@@ -573,13 +574,19 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
   try {
     const refreshed = await authClient.refreshAccessToken();
     if (refreshed === null) {
-      await endStaleAttempt(cached.refreshToken);
+      await endStaleAttempt({
+        startedWithRefreshToken: cached.refreshToken,
+        failure: failureForRefusal(authClient.getLastRefusal()),
+      });
       return getSyncSessionSnapshot();
     }
     await authClient.getAccount();
   } catch (cause) {
     if (isSessionEnded(cause)) {
-      await endStaleAttempt(cached.refreshToken);
+      await endStaleAttempt({
+        startedWithRefreshToken: cached.refreshToken,
+        failure: failureForRefusal(cause.kind === 'suspended' ? 'suspended' : 'unauthorized'),
+      });
       return getSyncSessionSnapshot();
     }
     // Offline, a 500, a service mid-deploy. The cache is KEPT: this device is
@@ -618,16 +625,20 @@ async function performResume({ serverUrl }: { serverUrl: string }): Promise<Sync
  * a token pair nothing depends on any more — and clearing the cache here would
  * throw away the session that replaced it.
  */
-async function endStaleAttempt(startedWithRefreshToken: string): Promise<void> {
+async function endStaleAttempt({
+  startedWithRefreshToken,
+  failure,
+}: {
+  startedWithRefreshToken: string;
+  /** What the core actually said, so a suspension is not published as a revoked session. */
+  failure: SessionEndedFailure;
+}): Promise<void> {
   const vault = getSyncVault();
   const vaultHasMovedOn =
     vault !== null && vault.authClient.getSession()?.tokens.refreshToken !== startedWithRefreshToken;
   if (vaultHasMovedOn) return;
-  await endSessionRefused({ reason: 'reauth-required', message: REFUSED_SESSION_MESSAGE });
+  await endSessionRefused(failure);
 }
-
-/** The developer-facing half of a refusal, under the translated headline the status surface shows. */
-const REFUSED_SESSION_MESSAGE = 'The core server refused this device\u2019s session, so it has to be opened again.';
 
 /**
  * Ends a session the SERVER ended, VISIBLY.
@@ -664,7 +675,7 @@ export async function endSessionRefused(failure: NonNullable<SyncSessionSnapshot
 }
 
 /** Whether a failure means "this session is over", as opposed to "we could not tell". */
-function isSessionEnded(cause: unknown): boolean {
+function isSessionEnded(cause: unknown): cause is SyncRequestError {
   if (!(cause instanceof SyncRequestError)) return false;
   return cause.kind === 'unauthorized' || cause.kind === 'suspended';
 }

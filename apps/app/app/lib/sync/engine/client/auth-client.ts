@@ -175,6 +175,13 @@ function isStrictlyNewerPair({ candidate, held }: { candidate: SessionTokensWire
   return candidateExpiry > heldExpiry;
 }
 
+/**
+ * The two answers that end a session on the server's say-so: the token family
+ * was revoked or has expired (`401`), or an administrator suspended the account
+ * (`403 account-suspended`). See {@link SyncAuthClient.getLastRefusal}.
+ */
+export type SessionRefusal = 'unauthorized' | 'suspended';
+
 export interface SyncAuthClientOptions {
   baseUrl: string;
   fetchImpl?: FetchImpl;
@@ -247,6 +254,7 @@ export class SyncAuthClient implements SyncTokenProvider {
   private readonly fetchImpl: FetchImpl;
   private readonly logoutTimeoutMs: number;
   private session: SyncAuthSession | null = null;
+  private lastRefusal: SessionRefusal | null = null;
   private refreshInFlight: Promise<string | null> | null = null;
   private tokenStore: SessionTokenStore | null = null;
 
@@ -278,6 +286,20 @@ export class SyncAuthClient implements SyncTokenProvider {
 
   getAccessToken(): string | null {
     return this.session?.tokens.accessToken ?? null;
+  }
+
+  /**
+   * Why the last refresh was refused, or `null` when it was not.
+   *
+   * `refreshAccessToken` answers `null` for BOTH a revoked family and a
+   * suspended account, because the caller's response is the same (the session
+   * is over), and that is exactly what lost the difference: `/welcome` told a
+   * suspended person to sign in again. The caller that ends the session reads
+   * this to say which it was. Reset at the start of every refresh, so a refusal
+   * from an earlier attempt never colours a later one.
+   */
+  getLastRefusal(): SessionRefusal | null {
+    return this.lastRefusal;
   }
 
   /** Drops all token state. Local only — call `logout()` to also revoke server-side. */
@@ -711,6 +733,7 @@ export class SyncAuthClient implements SyncTokenProvider {
   }
 
   private async spendRefreshToken(refreshToken: string): Promise<string | null> {
+    this.lastRefusal = null;
     const request: RefreshRequestWire = { refreshToken };
     let response: RefreshResponseWire;
     try {
@@ -727,6 +750,7 @@ export class SyncAuthClient implements SyncTokenProvider {
       // would leave a device retrying a refresh it can never win, quietly, for
       // as long as the tab stays open.
       if (error instanceof SyncRequestError && (error.kind === 'unauthorized' || error.kind === 'suspended')) {
+        this.lastRefusal = error.kind;
         this.clearSession();
         return null;
       }

@@ -87,6 +87,7 @@ import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { hasOpenSignup } from '#app/lib/plans/signup-door';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { syncErrorCopyKey } from '#app/lib/sync/sync-error-copy';
 import { clearAccountHint, readAccountHint } from '#app/lib/sync/sync-session';
 import { resolveWelcomeHint, type WelcomeHintInput, type WelcomeHint } from '#app/lib/welcome-hint';
 
@@ -266,7 +267,7 @@ export default function Welcome() {
   // The screen offers two doors instead of three because an account is the
   // only way in here (M201/07). `resolveWelcomeHint` keeps the parameter name
   // `managed`, so the question is answered once and handed over.
-  const { requiresAccount } = useInstancePolicy();
+  const { requiresAccount, signOutClosesTheDiary } = useInstancePolicy();
   const { hint, forgetName } = useWelcomeHint(requiresAccount);
   // ON AN INSTANCE WITH OPEN SIGN-UP there is a third door, "create an
   // account", and the body says so instead of pointing at an invite link
@@ -288,6 +289,12 @@ export default function Welcome() {
   // since M117 and was unreachable until now: the old sign-out path published
   // a snapshot whose `error` is `null` and wiped it.
   const session = useSyncSession();
+  // A SUSPENDED ACCOUNT IS TOLD SO. Both reasons end the session, but signing
+  // in again cannot help a suspended person, so `suspended` has its own line
+  // (the sentence the sign-in screens already say) instead of "sign in again".
+  // Any other reason is a sync state and not a reason to be on this screen.
+  const failure = session.error?.reason;
+  const endedReason = failure === 'reauth-required' || failure === 'suspended' ? failure : null;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-10 text-foreground">
@@ -311,9 +318,12 @@ export default function Welcome() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {session.error?.reason === 'reauth-required' && (
-            <p className="border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber">
-              {t('sync.status.error.reauth-required')}
+          {endedReason !== null && (
+            <p
+              data-reason={endedReason}
+              className="border border-accent-amber-border bg-accent-amber-surface p-3 text-sm text-accent-amber"
+            >
+              {t(syncErrorCopyKey({ reason: endedReason, hasHiddenTheDiary: signOutClosesTheDiary }))}
             </p>
           )}
           {isPastingLink && <PasteInviteLink onCancel={() => setIsPastingLink(false)} />}

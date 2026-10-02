@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import 'fake-indexeddb/auto';
 
 import { clearSessionCache, endSessionRefused, readSessionCache } from '../../app/lib/sync/session-cache';
+import { endsTheSession } from '../../app/lib/sync/session-refusal';
 import { closeSyncSession, getSyncSessionSnapshot, updateSyncSession } from '../../app/lib/sync/sync-session';
 import { isDeviceLocked, setLockDeviceWhenSessionEnds, unlockDevice } from '../../app/lib/sync/sync-state';
 
@@ -81,7 +82,7 @@ test('the refused-cycle branch calls the visible ending, not the silent one', ()
 
   assert.match(
     source,
-    /failure\.reason === 'reauth-required'\) await endSessionRefused\(failure\)/,
+    /endsTheSession\(failure\)\) await endSessionRefused\(failure\)/,
     'the branch must pass the failure on, so the reason survives the sign-out',
   );
   // `closeAndForgetSyncSession` is still the right call for the two DELIBERATE
@@ -99,6 +100,17 @@ test('the welcome screen renders the reason the refusal published', () => {
 
   // The copy existed and was unreachable. This is the one place a person sent
   // here by a refused session can read why they are being asked to sign in.
-  assert.match(source, /session\.error\?\.reason === 'reauth-required'/);
-  assert.match(source, /t\('sync\.status\.error\.reauth-required'\)/);
+  assert.match(source, /failure === 'reauth-required' \|\| failure === 'suspended'/);
+  assert.match(source, /data-reason=\{endedReason\}/);
+  assert.match(source, /syncErrorCopyKey\(\{ reason: endedReason, hasHiddenTheDiary: signOutClosesTheDiary \}\)/);
+});
+
+test('both reasons that end a session end it visibly, and nothing else does', () => {
+  assert.equal(endsTheSession({ reason: 'reauth-required', message: '' }), true);
+  assert.equal(endsTheSession({ reason: 'suspended', message: '' }), true);
+  // CONTROL: the other reasons are sync states, and closing a session for
+  // "offline" would sign somebody out for a flaky train.
+  for (const reason of ['offline', 'incompatible', 'failed'] as const) {
+    assert.equal(endsTheSession({ reason, message: '' }), false, reason);
+  }
 });
