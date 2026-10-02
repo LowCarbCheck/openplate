@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The push gate now runs a scoped browser tier, and the full tier runs on a release tag and every night.** A push runs the smoke set, the specs for the touched area and the specs the push changed, so it stays under about 3 minutes. Shared code still runs everything. Pushing a tag `v*`, `core-v*` or `inference-v*` runs the full tier first, and a nightly run on origin/main reports to `~/.local/state/openplate/nightly-e2e/latest.txt`. The reasons are in `ADR-0022`.
+
 ### Fixed
 
 - **Signed-in people can now reach the legal pages from Settings.** The About screen lists Privacy, Terms, Imprint, the cancellation page and the withdrawal page under a Legal heading, in the footer's order. Before, only the logged-out footer drew them, so a person using the app had no link to the imprint. The group is drawn only when `CONTENT_DIR` holds the legal pages, as the footer is, so an instance without the folder shows no Legal heading and no dead links.

@@ -50,7 +50,9 @@ pnpm lint             # eslint --max-warnings 0
 pnpm test:unit        # node --test against tests/unit/**
 pnpm test:integration # node --test against tests/integration/** (real HTTP, fake core server)
 pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in the toolbox), needs `pnpm build` first
-pnpm test:e2e:sharded # The same tier as N Playwright processes at once (scripts/e2e-sharded.sh). The pre-push gate runs this
+pnpm test:e2e:sharded # The same tier as N Playwright processes at once (scripts/e2e-sharded.sh). The release gate and the nightly run this (the full tier)
+pnpm test:e2e:select  # Print the spec list for the pushed diff (scripts/e2e-select.ts)
+pnpm test:e2e:scoped  # Run that list through the sharded runner (scripts/e2e-scoped.sh). The push gate runs this
 ```
 
 The browser tier takes three consecutive ports derived from this checkout's
@@ -65,6 +67,22 @@ checkouts whose paths land on the same triple, and
 and at least 1. Shard `i` takes the derived base plus `3 * (i - 1)`, its own
 fontconfig cache directory, and its own output folder `test-results/shard-<i>`
 (ADR-0017, amendment of 2026-10-02). `pnpm test:e2e` stays the plain serial run.
+
+**Two tiers ([ADR-0022](.adr/0022-the-push-gate-runs-a-scoped-browser-tier.md)).**
+The push gate runs the smoke set, the specs whose area matches the touched
+code, and the spec files the push changed. Shared code and unmapped app paths
+run the full tier. A push of a tag `v*`, `core-v*` or `inference-v*` runs the
+full tier, and so does `OPENPLATE_E2E_FULL=1 git push`. A nightly run on
+origin/main writes `~/.local/state/openplate/nightly-e2e/latest.txt`
+(`make nightly-status`); a red line blocks nothing, but fix it first.
+
+Every `tests/e2e/*.spec.ts` carries ` * @area <name>` in its header, one of the
+areas in `tests/e2e/areas.ts`, and smoke specs carry ` * @smoke`. `areas.ts`
+also holds the ordered path rules. A new bug check goes into the file of its
+area. A spec passes in any shard and reads ports from `tests/e2e/env.ts`. A
+smoke spec takes under 10 seconds and covers a daily door. A missing path rule
+falls back to the full tier, so add the rule, never skip the gate. Shared
+saved sign-in state per worker is planned.
 
 ## Key Documentation
 
@@ -114,6 +132,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0019](.adr/0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted   |
 | [0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted   |
 | [0021](.adr/0021-the-release-check-asks-openplate-de-and-the-site-counts-the-asks.md) | The release check asks openplate.de, and the site counts the asks | Accepted   |
+| [0022](.adr/0022-the-push-gate-runs-a-scoped-browser-tier.md) | The push gate runs a scoped browser tier, the release gate and the nightly run the full one | Accepted |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
