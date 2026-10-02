@@ -43,7 +43,9 @@
  * person to close the other tab. The bound is generous because the app's own
  * persisters open and close a connection per operation (see `persist.ts`), so
  * a `blocked` here is a passing overlap and not a held handle in the ordinary
- * case.
+ * case. The wait is bounded from the request as well as from `blocked`, because
+ * a second erase queues behind the first, still pending, delete and never
+ * fires a `blocked` of its own (see {@link deleteIndexedDbDatabase}).
  */
 import { createComponentLogger } from '#app/lib/logger';
 import { setPulseEnabled } from '#app/lib/pulse';
@@ -66,6 +68,13 @@ export const ERASED_DATABASES = [PRIMARY_DB_NAME, PHOTOS_DB_NAME, OUTBOX_DB_NAME
 
 /** How long a `blocked` delete is given before the erase reports failure. */
 const BLOCKED_TIMEOUT_MS = 3_000;
+
+/**
+ * How long a delete is given in all, counted from the request. Under the
+ * dialog's own 15 s deadline, so a queued delete reports before the dialog
+ * gives up on it.
+ */
+const OVERALL_TIMEOUT_MS = 8_000;
 
 /** The two storage systems an erase touches, injected so the whole step is testable without a browser. */
 export interface DeviceEraseDeps {
@@ -131,21 +140,48 @@ function browserKeyValueStorage(): KeyValueStorage {
   return localStorage;
 }
 
+/** The timers {@link deleteIndexedDbDatabase} runs, injectable so a test needs no real seconds. */
+export interface DeleteWaitLimits {
+  /** How long after `blocked` the delete is given. Defaults to {@link BLOCKED_TIMEOUT_MS}. */
+  blockedTimeoutMs?: number;
+  /** How long after the request was made the delete is given in all. Defaults to {@link OVERALL_TIMEOUT_MS}. */
+  overallTimeoutMs?: number;
+}
+
 /**
- * Deletes one IndexedDB database, waiting out a `blocked` for a bounded time.
+ * Deletes one IndexedDB database, waiting out a `blocked` for a bounded time
+ * and a delete that never settles for a bounded time too.
  *
- * @throws when the delete errors, or is still blocked by another connection
- *   after {@link BLOCKED_TIMEOUT_MS}.
+ * @throws when the delete errors, is still blocked by another connection
+ *   after the blocked bound, or has not settled at all by the overall cap.
  */
-export async function deleteIndexedDbDatabase(name: string): Promise<void> {
+export async function deleteIndexedDbDatabase(name: string, limits: DeleteWaitLimits = {}): Promise<void> {
   if (globalThis.indexedDB === undefined) return;
+  const blockedTimeoutMs = limits.blockedTimeoutMs ?? BLOCKED_TIMEOUT_MS;
+  const overallTimeoutMs = limits.overallTimeoutMs ?? OVERALL_TIMEOUT_MS;
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(name);
-    // Armed only once `blocked` fires. A delete that is merely slow is not a
-    // delete that is blocked, and timing out on the former would report a
-    // failure that did not happen.
+    // Two bounds, because one event is not enough to start the clock on.
+    //
+    // The BLOCKED bound starts when `blocked` fires: a delete that is merely
+    // slow is not a delete that is blocked, and timing out on the former would
+    // report a failure that did not happen.
+    //
+    // The OVERALL cap starts NOW. A `deleteDatabase` request is queued behind
+    // any delete of the same database that is still pending, and a queued
+    // request never gets a `blocked` of its own: the first one already
+    // announced it. A second press of Sign out, with the other tab still open,
+    // is exactly that. With only the blocked bound it never settled, the dialog
+    // could not be closed, and the person had to reload. The cap is longer than
+    // the blocked bound on purpose, so a slow delete that finishes inside it
+    // still succeeds.
     let blockedTimer: ReturnType<typeof setTimeout> | null = null;
+    const overallTimer = setTimeout(() => {
+      settle();
+      reject(new Error(`${name} did not delete in time, another tab may hold it`));
+    }, overallTimeoutMs);
     const settle = (): void => {
+      clearTimeout(overallTimer);
       if (blockedTimer !== null) clearTimeout(blockedTimer);
     };
     request.addEventListener('success', () => {
@@ -158,9 +194,11 @@ export async function deleteIndexedDbDatabase(name: string): Promise<void> {
     });
     request.addEventListener('blocked', () => {
       log.warn(`erase blocked by another connection, waiting: ${name}`);
+      if (blockedTimer !== null) return;
       blockedTimer = setTimeout(() => {
+        settle();
         reject(new Error(`${name} is open in another tab`));
-      }, BLOCKED_TIMEOUT_MS);
+      }, blockedTimeoutMs);
     });
   });
 }
