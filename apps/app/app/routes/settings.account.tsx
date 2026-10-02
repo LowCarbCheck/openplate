@@ -744,11 +744,11 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
           look here must not find the control gone. What changed is that both
           open the SAME dialog, so the erase choice and the confirmation
           cannot mean one thing in the chrome and another on this page.
-          Signing out still revokes this device's token family server-side,
-          which is what ends a session left open on a lost phone. It is THIS
-          device's session only: other devices keep theirs, and only deleting
-          the account ends them all, which is what the section's sentence and
-          the button's label say.
+          Signing out still revokes this device's token family server-side.
+          It ends this device's session only. A session left open on a lost
+          phone ends when its tokens expire or when the account is deleted:
+          other devices keep theirs, and only deleting the account ends them
+          all, which is what the section's sentence and the button's label say.
           THE NOTE UNDER IT IS CHOSEN BY THE POLICY QUESTION, not by the mode:
           where signing out closes the diary the diary is locked and hidden
           until the next sign-in, so "stays on this device" would read as
