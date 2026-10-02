@@ -30,6 +30,8 @@ import {
   REPO_URL,
   SELF_HOSTING_DOCS_URL,
   SELF_HOSTING_HTTPS_DOCS_PATH,
+  X_PROFILE_HANDLE,
+  X_PROFILE_URL,
   YAZIO_IMPORT_DOCS_PATH,
   projectSiteUrl,
 } from '../../app/lib/brand';
@@ -62,6 +64,21 @@ describe('REPO_URL', () => {
   it('derives the licence URL, so the fork edit carries it too', () => {
     assert.ok(REPO_LICENSE_URL.startsWith(`${REPO_URL}/`));
     assert.match(REPO_LICENSE_URL, /\/LICENSE$/);
+  });
+});
+
+describe('X_PROFILE_URL', () => {
+  it('is the project profile, and its handle is read off the address', () => {
+    assert.equal(X_PROFILE_URL, 'https://x.com/LowCarbCheckOrg');
+    assert.equal(X_PROFILE_HANDLE, '@LowCarbCheckOrg');
+  });
+
+  it('appears as a literal in exactly one file, so a fork is one edit', () => {
+    const carriers = sourceFiles(APP_DIR).filter((path) => readFileSync(path, 'utf8').includes(X_PROFILE_URL));
+    assert.deepEqual(
+      carriers.map((path) => path.slice(APP_DIR.length + 1)),
+      ['lib/brand.ts'],
+    );
   });
 });
 

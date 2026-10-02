@@ -61,6 +61,8 @@
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
+import { X_PROFILE_URL } from '#app/lib/brand';
+
 import { BOTTOM_BAR } from './clip-baseline';
 import { EN } from './copy';
 import { completeOnboarding } from './helpers';
@@ -357,10 +359,16 @@ test('More opens a bottom sheet of six tiles under a Settings row, with no plan 
   await expect(tiles, 'six tiles, one per page the bar does not carry').toHaveCount(MORE_TILE_LABELS.length);
   const names = await tiles.evaluateAll((links) => links.map((link) => (link.textContent ?? '').trim()));
   expect(names, 'the tiles, top left to bottom right').toEqual([...MORE_TILE_LABELS]);
-  // Seven ways out in all: the six tiles and the Settings row. Nothing else is a link in here.
-  await expect(sheet.getByRole('link'), 'the tiles and the Settings row, and nothing else').toHaveCount(
-    MORE_TILE_LABELS.length + 1,
+  // Eight ways out in all: the six tiles, the Settings row and the X profile. Nothing else is a link in here.
+  await expect(sheet.getByRole('link'), 'the tiles, the Settings row and the X profile, and nothing else').toHaveCount(
+    MORE_TILE_LABELS.length + 2,
   );
+  // THE X PROFILE is the one way out of the app. Exactly one row carries the external slot, it
+  // points at the project's profile, and it opens in a new tab. A removed row leaves a count of 0.
+  const external = sheet.locator('[data-slot="more-external"]');
+  await expect(external, 'exactly one external row in the sheet').toHaveCount(1);
+  await expect(external, 'the external row points at the X profile').toHaveAttribute('href', X_PROFILE_URL);
+  await expect(external, 'and opens it in a new tab').toHaveAttribute('target', '_blank');
 
   // SETTINGS IS IN HERE SINCE M259, the rest of the configuration is not. By name and by address,
   // so a renamed row cannot slip through either.

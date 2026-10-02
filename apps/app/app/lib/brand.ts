@@ -30,6 +30,22 @@ export const REPO_URL = 'https://github.com/LowCarbCheck/openplate';
 export const REPO_LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 
 /**
+ * The project's X profile, in ONE place, for the link at the foot of the app
+ * menu. A CONSTANT for the reason {@link REPO_URL} gives: a fork edits this
+ * line and the menu follows.
+ *
+ * `tests/unit/brand.test.ts` pins "exactly one literal" here too.
+ */
+export const X_PROFILE_URL = 'https://x.com/LowCarbCheckOrg';
+
+/**
+ * The profile's handle as a reader sees it, `@LowCarbCheckOrg`. Derived from
+ * {@link X_PROFILE_URL}, so the fork edit moves the label with the address.
+ * A proper noun, so no catalog carries it.
+ */
+export const X_PROFILE_HANDLE = `@${new URL(X_PROFILE_URL).pathname.slice(1)}`;
+
+/**
  * The project site, in ONE place (M266 design, step 2, owner decision 10).
  *
  * openplate.de is where openplate is explained and priced; every app host is a
