@@ -283,7 +283,9 @@ export default function App() {
           route and so outlives the session. A dialog rendered by the header
           menu or the settings page unmounted the moment a sign-out closed the
           session, and a failed erase then had nowhere to show its error. The
-          doors open it with `openSignOutDialog()`. */}
+          doors open it with `openSignOutDialog()`. The host is tiny: the
+          dialog body is a lazy chunk (`sign-out-dialog.tsx`), so this adds
+          none of the sign-out code to the public landing page. */}
       <SignOutDialogHost />
     </>
   );

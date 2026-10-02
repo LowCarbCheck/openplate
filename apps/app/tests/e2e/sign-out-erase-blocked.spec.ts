@@ -37,8 +37,17 @@
  * sign-out, and a notice that followed it would warn about a device it can no
  * longer see. A `MutationObserver` records any moment that line is on screen,
  * and a planted line proves the recorder can see one.
- * (d) The error has its box before it is needed: the error layer exists from
- * the tick, hidden, and the confirm button does not move when it appears.
+ * (d) The error has its box before it is needed, and its ANNOUNCEMENT is a
+ * real one. A sizer layer (`sign-out-error-sizer`, `invisible`, `aria-hidden`)
+ * holds the fixed sentence so the box is reserved from the tick, and the
+ * `role="alert"` node is EMPTY until the failure and then receives the text,
+ * because a screen reader announces text arriving in a live region, not a node
+ * becoming visible. The confirm button does not move when the sentence arrives.
+ * (e) Cancel after a failed erase leaves the diary for the sign-out's own
+ * destination, by a hard navigation. The session was closed at the first step,
+ * and the revalidation that would have sent the person on was skipped while the
+ * sign-out ran, so a Cancel that only closed the dialog left a signed-out
+ * person on a diary page. Cancel from an idle dialog still keeps the page.
  */
 import { expect, test, type Page } from '@playwright/test';
 
@@ -51,6 +60,14 @@ const REPORT_TIMEOUT_MS = 5_000;
 
 /** A document of this app's origin that is not the app, so nothing in it opens the diary but this spec. */
 const HOLDER_PATH = '/robots.txt';
+
+/**
+ * Where a sign-out that did not erase leaves for on this tier (`signOutDestination`
+ * with `locksDevice: false`): the open instance the smoke tier runs, so the
+ * dashboard. A managed instance would say `/welcome`; `sign-out-managed.spec.ts`
+ * holds that side.
+ */
+const OPEN_TIER_DESTINATION = '/dashboard';
 
 /** The name of the diary database, as `local-store/store.ts` names it. */
 const PRIMARY_DB_NAME = 'openplate-primary';
@@ -98,9 +115,23 @@ async function holdTheDiaryInASecondTab(page: Page): Promise<Page> {
   return second;
 }
 
-/** The dialog's error layer: always in the erase region, shown only after a failure. */
+/** The dialog's error node: the `role="alert"` one, in the erase region from the tick, EMPTY until a failure. */
 function errorLayer(page: Page) {
   return page.getByRole('alertdialog').locator('[data-slot="sign-out-error"]');
+}
+
+/**
+ * Waits for the failure to be ANNOUNCED: the alert node has the sentence in it.
+ * Not `toBeVisible`: the empty alert fills its grid cell, so it counts as
+ * visible from the tick, and waiting on that would return before any failure.
+ */
+async function expectTheErrorToBeAnnounced(page: Page): Promise<void> {
+  await expect(errorLayer(page)).toHaveText(/\S/, { timeout: REPORT_TIMEOUT_MS });
+}
+
+/** The invisible layer that holds the fixed sentence, so the box is reserved before the alert has any text. */
+function errorSizer(page: Page) {
+  return page.getByRole('alertdialog').locator('[data-slot="sign-out-error-sizer"]');
 }
 
 /** The confirm button's top edge, from the top of the viewport (the dialog is fixed). */
@@ -143,21 +174,30 @@ test('a failed erase on sign-out says so inside the dialog, and the retry signs 
   await openSignOutDialogFromTheMenu(page);
   await page.getByRole('alertdialog').getByRole('checkbox').check();
 
-  // THE ERROR HAS ITS BOX BEFORE IT IS NEEDED (d): the layer is in the erase
-  // region from the tick, and it is hidden.
+  // THE ERROR HAS ITS BOX BEFORE IT IS NEEDED (d): the alert node is in the
+  // erase region from the tick and holds NO TEXT, and the sizer layer that
+  // reserves the box holds the sentence, hidden from sight and from a screen
+  // reader. A live region announces text arriving in it.
   await expect(errorLayer(page)).toHaveCount(1);
-  await expect(errorLayer(page)).not.toBeVisible();
+  await expect(errorLayer(page)).toHaveAttribute('role', 'alert');
+  expect(await errorLayer(page).textContent(), 'the alert is empty until the failure').toBe('');
+  await expect(errorSizer(page)).toHaveCount(1);
+  await expect(errorSizer(page)).toHaveAttribute('aria-hidden', 'true');
+  await expect(errorSizer(page)).not.toBeVisible();
+  expect((await errorSizer(page).textContent())?.trim().length, 'the sizer holds the sentence').toBeGreaterThan(0);
   await settleAnimations(page);
   const topBeforeThePress = await confirmTop(page);
   await confirmButton(page).click();
 
   // THE DEFECT, stated as state: the error is on screen, in the dialog, and
   // the page has not gone anywhere.
-  const dialog = page.getByRole('alertdialog');
-  await expect(dialog.locator('[data-slot="sign-out-error"]')).toBeVisible({ timeout: REPORT_TIMEOUT_MS });
+  await expectTheErrorToBeAnnounced(page);
   expect(new URL(page.url()).pathname).toBe(pathBefore);
-  // (d) CONTROL: the layer was hidden a moment ago and is shown now, and the
-  // button under it did not move for the sentence.
+  // (d) CONTROL: the alert was empty a moment ago and has the sentence now
+  // (the same node, so the announcement is text arriving), and the button
+  // under it did not move for the sentence.
+  expect((await errorLayer(page).textContent())?.trim().length, 'the alert received the sentence').toBeGreaterThan(0);
+  expect(await errorLayer(page).textContent()).toBe(await errorSizer(page).textContent());
   await settleAnimations(page);
   expect(await confirmTop(page), 'the error layer must not move the confirm button').toBe(topBeforeThePress);
 
@@ -167,6 +207,53 @@ test('a failed erase on sign-out says so inside the dialog, and the retry signs 
   await expect(confirmButton(page)).toBeEnabled();
   await Promise.all([page.waitForEvent('load'), confirmButton(page).click()]);
   await expect.poll(() => databaseNames(page), { timeout: REPORT_TIMEOUT_MS }).not.toContain(PRIMARY_DB_NAME);
+});
+
+test('cancelling after a failed erase leaves the diary for the sign-out destination', async ({ page }) => {
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+  const pathBefore = new URL(page.url()).pathname;
+  // The destination is not the page the person is on, or this would prove nothing.
+  expect(pathBefore).not.toBe(OPEN_TIER_DESTINATION);
+
+  const second = await holdTheDiaryInASecondTab(page);
+  await page.bringToFront();
+  await openSignOutDialogFromTheMenu(page);
+  await page.getByRole('alertdialog').getByRole('checkbox').check();
+  await confirmButton(page).click();
+  await expectTheErrorToBeAnnounced(page);
+  // The session is closed and the revalidation was skipped: the person is
+  // still on the diary page, with the error and the retry in front of them.
+  expect(new URL(page.url()).pathname).toBe(pathBefore);
+
+  // THE DEFECT: Cancel closed the dialog and left a signed-out person on a
+  // diary page. It now ends the visit with the hard navigation the sign-out
+  // itself would have made.
+  await cancelButton(page).click();
+  await page.waitForURL((url) => url.pathname === OPEN_TIER_DESTINATION, {
+    timeout: REPORT_TIMEOUT_MS,
+    waitUntil: 'commit',
+  });
+
+  await second.close();
+});
+
+test('cancelling an untouched dialog keeps the page, and no document is loaded', async ({ page }) => {
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+  const pathBefore = new URL(page.url()).pathname;
+  await page.evaluate(() => Reflect.set(window, '__stillHere', true));
+
+  await openSignOutDialogFromTheMenu(page);
+  await cancelButton(page).click();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+
+  // CONTROL for the failed-erase test above: its navigation is the failure's
+  // doing. A cancel from idle must not leave, or that test would pass for a
+  // Cancel that always navigates. The marker survives only in the same document.
+  await page.waitForTimeout(1_000);
+  expect(new URL(page.url()).pathname).toBe(pathBefore);
+  expect(await page.evaluate(() => Object.getOwnPropertyDescriptor(window, '__stillHere')?.value === true)).toBe(true);
 });
 
 test('a dialog opened from the header menu and cancelled leaves the menu and the page usable', async ({ page }) => {
@@ -202,7 +289,7 @@ test('a blocked erase never turns the notice into the could-not-check line', asy
   // RUNNING: the button is disabled and the session is closing under the dialog.
   await expect(dialog.locator('[data-erase-line="unchecked"]')).toHaveCount(0);
   // BLOCKED: the error is on screen, and the notice is still the lines it had.
-  await expect(errorLayer(page)).toBeVisible({ timeout: REPORT_TIMEOUT_MS });
+  await expectTheErrorToBeAnnounced(page);
   await expect(dialog.locator('[data-erase-line="unchecked"]')).toHaveCount(0);
   expect(await sawUnchecked(), 'the could-not-check line was on screen at some moment').toBe(false);
 

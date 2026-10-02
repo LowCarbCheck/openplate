@@ -89,7 +89,7 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { resolveAvatarMenuDoor, type AvatarMenuDoor } from '#app/lib/sync/sync-menu-state';
 import { resolveAvatarLabel } from '#app/lib/avatar-name';
-import { getSignOutProgress, openSignOutDialog } from '#app/lib/sync/sign-out-progress';
+import { openSignOutDialog } from '#app/lib/sync/sign-out-progress';
 import { adminNavigationItem, footerNavigationItems, planNavigationItem, type NavigationItem } from './app-sidebar';
 import { cn } from '#app/lib/utils';
 
@@ -131,7 +131,10 @@ export function AccountDoor({ door }: { door: AvatarMenuDoor }) {
 /**
  * The way out, which opens the shared confirm dialog `/settings/account` also
  * opens. The dialog is not rendered here: it is mounted once in `root.tsx`, so
- * it survives the session this row disappears with.
+ * it survives the session this row disappears with. Focus is the dialog's
+ * business too: when it closes, focus goes back to the avatar button this row's
+ * menu was opened from (`returnFocusAfterSignOutDialog`), and the menu itself
+ * needs no guard to keep out of the dialog's way.
  */
 function SignOutRow() {
   const { t } = useTranslation();
@@ -359,16 +362,7 @@ export function AvatarMenu({ showsPlanEntry }: AvatarMenuProps) {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-64"
-        // The sign-out dialog opens as the menu closes. Letting the menu take
-        // the focus back to its trigger then fights the dialog's own focus
-        // trap, and can leave `pointer-events: none` stuck on the body.
-        onCloseAutoFocus={(event) => {
-          if (getSignOutProgress().isOpen) event.preventDefault();
-        }}
-      >
+      <DropdownMenuContent align="end" className="w-64">
         {/* WHO THIS IS: the account's name, or the device when there is no
             name to show. The email used to sit under this label as well; the
             footer strip carries it now, and printing the same address twice

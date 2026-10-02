@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
       "keysNotCovered": "Your sharing and research keys are not part of this check. If you erase, you may lose them, so export a backup file first: it includes them."
     },
-    "eraseFailed": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again."
+    "eraseFailed": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again, or press Cancel to leave the diary here."
   },
   "strangerNote": {
     "device": "You are not signed in. This setting applies to this device.",

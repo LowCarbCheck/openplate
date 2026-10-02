@@ -29,10 +29,23 @@
  *
  * ── A running sign-out cannot be closed ──────────────────────────────────
  *
- * `closeSignOutDialog()` does nothing while `running`. Escape and a click on the
- * overlay both end in it, and closing a dialog whose work is in flight would
- * bring back exactly the silent failure above: the error would have nowhere to
- * be shown. Once the phase is `failed` (or `idle`) it closes as usual.
+ * `closeSignOutDialog()` does nothing while `running`. Escape ends in it, and
+ * so does the Cancel button (which is disabled while running anyway). A click
+ * on the overlay does NOT close a Radix AlertDialog, running or not: an alert
+ * dialog wants an answer, so only Escape and Cancel leave it. Closing a dialog
+ * whose work is in flight would bring back exactly the silent failure above:
+ * the error would have nowhere to be shown. Once the phase is `failed` (or
+ * `idle`) it closes as usual.
+ *
+ * ── Where the keyboard goes back to ──────────────────────────────────────
+ *
+ * The dialog has no Radix Trigger, because no door owns it, and Radix returns
+ * focus to the trigger when a dialog closes: with none, it returned it to
+ * nothing and a keyboard user was back at the top of the document.
+ * `openSignOutDialog()` therefore records the element that had focus when a
+ * door opened the dialog, and `returnFocusAfterSignOutDialog()` gives focus
+ * back to it. A header menu row is gone with its menu by then, so the answer
+ * for that door is the avatar button that opened the menu.
  *
  * ── Why not React state in the root ──────────────────────────────────────
  *
@@ -85,9 +98,41 @@ function getServerSnapshot(): SignOutProgress {
   return CLOSED;
 }
 
+/**
+ * The element that had focus when a door opened the dialog. A module variable
+ * like the snapshot, and never touched at import: the server has no `document`.
+ */
+let focusedBeforeOpening: HTMLElement | null = null;
+
+/** The avatar button of the header menu, the fallback home of focus (`avatar-menu.tsx` names it). */
+const AVATAR_TRIGGER_SELECTOR = '[data-slot="avatar-menu-trigger"]';
+
+/** Remembers what had focus, unless the dialog is already open (a second call must not record the dialog's own button). */
+function recordFocusedElement(): void {
+  if (snapshot.isOpen) return;
+  if (globalThis.document === undefined) return;
+  const active = document.activeElement;
+  focusedBeforeOpening = active instanceof HTMLElement && active !== document.body ? active : null;
+}
+
 /** Opens the dialog. Every door calls this and nothing else. */
 export function openSignOutDialog(): void {
+  recordFocusedElement();
   publish({ ...snapshot, isOpen: true });
+}
+
+/**
+ * Gives focus back after the dialog has closed: to the element that had it
+ * when the dialog opened, if that is still on the page, and to the avatar
+ * button otherwise (a menu row does not outlive its menu). Called from the
+ * dialog's `onCloseAutoFocus`, in place of the trigger it does not have.
+ */
+export function returnFocusAfterSignOutDialog(): void {
+  const recorded = focusedBeforeOpening;
+  focusedBeforeOpening = null;
+  if (globalThis.document === undefined) return;
+  const target = recorded?.isConnected ? recorded : document.querySelector<HTMLElement>(AVATAR_TRIGGER_SELECTOR);
+  target?.focus();
 }
 
 /**
