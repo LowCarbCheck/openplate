@@ -1755,6 +1755,10 @@
       "label": "Meine Besuche zählen",
       "description": "Diese openplate-Instanz zählt Seitenbesuche mit einem eigenen Matomo. Sie verwendet keine Cookies und protokolliert niemals, was du isst. Wenn du dies abschaltest, überträgt dieser Browser nichts.",
       "browserSignal": "Dein Browser fordert Websites auf, dich nicht zu verfolgen, daher überträgt dieser Browser nichts."
+    },
+    "whatsNew": {
+      "label": "Neuerungen anzeigen",
+      "description": "Nach einer Aktualisierung listet eine Karte auf, was sich geändert hat, und Über openplate verlinkt auf die Versionshinweise. Bleibt auf diesem Gerät."
     }
   },
   "portions": {

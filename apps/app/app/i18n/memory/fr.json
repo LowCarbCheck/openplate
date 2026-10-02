@@ -5893,6 +5893,13 @@
     "at": "2026-09-14",
     "fr": "Un seul conteneur sans état, aucune base de données à faire tourner et aucun secret à configurer. Le fichier compose se trouve dans le dépôt, et le tout se résume à un téléchargement et une seule commande."
   },
+  "4a5d370797abdc5d": {
+    "en": "After an update, a card lists what changed, and About links to the release notes. Kept on this device.",
+    "path": "common:preferences.whatsNew.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "fr": "Après une mise à jour, une carte liste les changements, et À propos d'openplate renvoie vers les notes de version. Données conservées sur cet appareil."
+  },
   "4a704ca4e8e13d9e": {
     "en": "Log this",
     "path": "common:recipes.logThis",
@@ -13417,6 +13424,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Lecture du lien…"
+  },
+  "a05960a7fed0e302": {
+    "en": "Show what's new",
+    "path": "common:preferences.whatsNew.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "fr": "Afficher les nouveautés"
   },
   "a06bea6ea544c96e": {
     "en": "Cancel",

@@ -47,6 +47,7 @@ import { Button } from '#app/components/ui/button';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useWhatsNewVisible } from '#app/hooks/use-whats-new-visible';
 import { cn } from '#app/lib/utils';
 import { useUpdateStatus, type UpdateStatusView } from '#app/hooks/use-update-status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -256,6 +257,7 @@ function UpdatesCard() {
 
 export default function SettingsAbout() {
   const { t } = useTranslation();
+  const isWhatsNewVisible = useWhatsNewVisible();
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -278,12 +280,16 @@ export default function SettingsAbout() {
           </a>
         </AboutRow>
         {/* The one row here that stays in the app: the release notes ship in the
-            bundle (ADR-0018), so this is a page and not a link to GitHub. */}
-        <AboutRow icon={Sparkles} label={t('about.whatsNew')}>
-          <Link to="/settings/whats-new" className={ABOUT_LINK_CLASS}>
-            {t('about.whatsNewValue')}
-          </Link>
-        </AboutRow>
+            bundle (ADR-0018), so this is a page and not a link to GitHub. Behind
+            the same switch as the card (`useWhatsNewVisible`): the page itself
+            stays open at its URL, only this door to it follows the setting. */}
+        {isWhatsNewVisible && (
+          <AboutRow icon={Sparkles} label={t('about.whatsNew')}>
+            <Link to="/settings/whats-new" className={ABOUT_LINK_CLASS}>
+              {t('about.whatsNewValue')}
+            </Link>
+          </AboutRow>
+        )}
       </SettingsSection>
       <UpdatesCard />
     </div>

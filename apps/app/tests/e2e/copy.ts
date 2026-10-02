@@ -373,6 +373,14 @@ const englishCatalogSchema = catalogSchema
         }),
       }),
     }),
+  )
+  // The What's new switch and the About row it hides. English only until the
+  // translation run has bought them for the other five catalogs.
+  .and(
+    z.object({
+      preferences: z.object({ whatsNew: z.object({ label: z.string(), description: z.string() }) }),
+      about: z.object({ whatsNew: z.string(), whatsNewValue: z.string() }),
+    }),
   );
 
 /** Every English string this tier reads, validated against the shipped bundle. */

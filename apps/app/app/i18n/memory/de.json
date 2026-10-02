@@ -5893,6 +5893,13 @@
     "at": "2026-09-14",
     "de": "Ein zustandsloser Container, keine Datenbank zu betreiben und kein Geheimnis einzurichten. Die Compose-Datei liegt im Repository: ein Download und ein Befehl."
   },
+  "4a5d370797abdc5d": {
+    "en": "After an update, a card lists what changed, and About links to the release notes. Kept on this device.",
+    "path": "common:preferences.whatsNew.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Nach einer Aktualisierung listet eine Karte auf, was sich geändert hat, und Über openplate verlinkt auf die Versionshinweise. Bleibt auf diesem Gerät."
+  },
   "4a704ca4e8e13d9e": {
     "en": "Log this",
     "path": "common:recipes.logThis",
@@ -13417,6 +13424,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Link wird gelesen…"
+  },
+  "a05960a7fed0e302": {
+    "en": "Show what's new",
+    "path": "common:preferences.whatsNew.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Neuerungen anzeigen"
   },
   "a06bea6ea544c96e": {
     "en": "Cancel",

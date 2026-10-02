@@ -21,6 +21,21 @@
  * - At 360 px in English, German and Turkish neither the card nor the page
  *   overflows the document, every key takes a thumb, and no text is drawn
  *   under the type floor.
+ * - NO LAYOUT SHIFT FROM THE SWITCH (DESIGN.md section 7). A hidden card
+ *   reserves nothing and moves nothing, the switch row is one fixed box in
+ *   every state, and an administrator whose role arrives late flips a thumb on
+ *   Preferences and inserts a row in About without the browser recording a
+ *   shift. NOT CLAIMED: that the card itself is shift-free when it shows. It is
+ *   inserted at the top of the page after an effect, and that has always moved
+ *   the page below it; this file does not pin it either way.
+ * - THE CARD IS BEHIND A SWITCH (Preferences). Every case above runs with the
+ *   switch turned ON before the first load, because a signed-out device has the
+ *   card off by default. The default itself is claimed separately: a signed-out
+ *   device and a signed-in member see no card and no About row, are never
+ *   stamped, and get the right card the moment they turn it on. An
+ *   administrator with nothing stored sees it, and an explicit off beats the
+ *   role. Each of those has its control in the same test: the same device with
+ *   one input changed, shown the card.
  *
  * NOTHING HERE PINS A VERSION, A DATE OR A SENTENCE. The versions come from
  * `build/build-info.json`, which is written by the build these specs run
@@ -38,12 +53,26 @@
 import { readFileSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 import { WHATS_NEW_STORAGE_KEY } from '#app/lib/whats-new';
+import { WHATS_NEW_VISIBLE_KEY } from '#app/lib/whats-new-visibility';
 
-import { completeOnboarding, useLanguage } from './helpers';
+import { AUTH_API_PREFIX } from '../../app/lib/sync/engine/client/auth-wire';
+import { adminConsoleStub, routeAdminConsole } from './admin-console-stub';
+import { EN as APP_EN } from './copy';
+import { E2E_CORE_URL } from './env';
+import { completeOnboarding, signInFixtureAccount, useLanguage } from './helpers';
+import {
+  installShiftObserver,
+  readShiftEntries,
+  readTops,
+  movedBetween,
+  settleFrames,
+  shiftScoreAfter,
+  turnOffScrollAnchoring,
+} from './layout-shift';
 
 ////////////////////////////////////////////////////////////////////////////////
 // What this build is, and what it ships
@@ -183,6 +212,39 @@ async function forgetAcknowledgement(page: Page): Promise<void> {
   await page.evaluate((key) => window.localStorage.removeItem(key), WHATS_NEW_STORAGE_KEY);
 }
 
+/** What the person chose about the card, read straight out of `localStorage`. `null` is "never chose". */
+async function storedChoice(page: Page): Promise<string | null> {
+  return page.evaluate((key) => window.localStorage.getItem(key), WHATS_NEW_VISIBLE_KEY);
+}
+
+/**
+ * Puts the card's switch on the device for the NEXT document load, the way the
+ * switch on Preferences leaves it. `null` leaves the device as one that never
+ * chose, which is the default under test.
+ *
+ * Every case that is about the card itself calls this with `'on'`: the card is
+ * off by default for anybody who is not an administrator.
+ */
+async function chooseCard(page: Page, choice: 'on' | 'off' | null): Promise<void> {
+  await page.evaluate(
+    ({ key, value }) => {
+      if (value === null) window.localStorage.removeItem(key);
+      else window.localStorage.setItem(key, value);
+    },
+    { key: WHATS_NEW_VISIBLE_KEY, value: choice },
+  );
+}
+
+/** The row in About that opens the notes page. */
+function aboutRow(page: Page) {
+  return page.locator('main a[href="/settings/whats-new"]');
+}
+
+/** The switch on Preferences, found by the name the bundle gives it. */
+function cardSwitch(page: Page) {
+  return page.getByRole('switch', { name: APP_EN.preferences.whatsNew.label, exact: true });
+}
+
 /**
  * Back-dates the onboarding stamp the real questionnaire just wrote, so the
  * device reads as one that was in use before this bundle existed.
@@ -305,6 +367,7 @@ async function settleWhatsNew(page: Page): Promise<void> {
 
 test('a first visit is told nothing about the release, and is recorded silently', async ({ page }) => {
   await completeOnboarding(page);
+  await chooseCard(page, 'on');
 
   await page.goto('/diary');
   await expect(page.locator('[data-slot="date-nav"]')).toBeVisible();
@@ -332,6 +395,7 @@ test('a first visit is told nothing about the release, and is recorded silently'
 
 test('a device that predates this build is told what the rule says, and nothing more', async ({ page }) => {
   await completeOnboarding(page);
+  await chooseCard(page, 'on');
 
   const oneDayMs = 24 * 60 * 60 * 1000;
   const beforeTheBuild = Date.parse(BUILD.builtAt) - oneDayMs;
@@ -367,10 +431,7 @@ test('a device that predates this build is told what the rule says, and nothing 
     await expect
       .poll(() => acknowledgedVersion(page), { message: 'a device told nothing is recorded' })
       .toBe(BUILD.version);
-    expect(
-      await whatsNewCard(page).count(),
-      'an established device with no acknowledgement is shown nothing',
-    ).toBe(0);
+    expect(await whatsNewCard(page).count(), 'an established device with no acknowledgement is shown nothing').toBe(0);
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -389,6 +450,7 @@ test('a device that predates this build is told what the rule says, and nothing 
 
 test('an older acknowledgement opens the notes from the card and ends up recorded', async ({ page }) => {
   await completeOnboarding(page);
+  await chooseCard(page, 'on');
   await acknowledge(page, OLDEST_VERSION);
 
   const newestUnseen = UNSEEN_FROM_OLDEST[0] ?? '';
@@ -446,6 +508,7 @@ test('an older acknowledgement opens the notes from the card and ends up recorde
 
 test('Dismiss hides the card and it stays gone across a reload', async ({ page }) => {
   await completeOnboarding(page);
+  await chooseCard(page, 'on');
   await acknowledge(page, OLDEST_VERSION);
 
   await page.goto('/diary');
@@ -471,6 +534,7 @@ test('Dismiss hides the card and it stays gone across a reload', async ({ page }
 
 test('a device on this build, or ahead of it, is told nothing and keeps its record', async ({ page }) => {
   await completeOnboarding(page);
+  await chooseCard(page, 'on');
 
   ////////////////////////////////////////////////////////////////////////////
   // THE CONTROL FIRST, so both silences below are known to be about the
@@ -581,6 +645,7 @@ async function expectNoOverflow(page: Page, where: string): Promise<void> {
 for (const locale of LOCALES) {
   test(`the card and the notes fit a 360px phone in ${locale}`, async ({ page }) => {
     await completeOnboarding(page);
+    await chooseCard(page, 'on');
     await acknowledge(page, OLDEST_VERSION);
     await page.setViewportSize({ width: NARROW_PHONE_WIDTH, height: PHONE_HEIGHT });
     await useLanguage(page, locale);
@@ -615,3 +680,359 @@ for (const locale of LOCALES) {
     expect(await smallText(page, '[data-slot="settings-inset"]', `${locale} page`)).toEqual([]);
   });
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// The switch: the card is off by default, and Preferences turns it on
+////////////////////////////////////////////////////////////////////////////////
+
+test('a signed-out device sees no card and no About row until it switches them on', async ({ page }) => {
+  await completeOnboarding(page);
+  expect(await storedChoice(page), 'the device has never chosen').toBeNull();
+
+  // A BRAND NEW DEVICE is the one case where a mounted card WRITES: it records
+  // the build silently. So it is the one that can tell a hidden card from a card
+  // that is merely not drawn, and a hidden card must leave it blank. The first
+  // test above is the control, the same device with the switch on is recorded.
+  await forgetAcknowledgement(page);
+  await page.goto('/diary');
+  await expect(page.locator('[data-slot="date-nav"]')).toBeVisible();
+  await settleWhatsNew(page);
+  expect(await acknowledgedVersion(page), 'a hidden card does not even record a new device').toBeNull();
+  await acknowledge(page, OLDEST_VERSION);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // THE DEFAULT: nothing on either screen that carries the card, and nothing
+  // written. A hidden card that still stamped would tell this device it had
+  // been told, and the card would never come when it was switched on.
+  ////////////////////////////////////////////////////////////////////////////
+  for (const path of ['/diary', '/dashboard']) {
+    await page.goto(path);
+    await expect(page.locator('main')).toBeVisible();
+    await settleWhatsNew(page);
+    await expect(whatsNewCard(page), `${path}: no card by default`).toHaveCount(0);
+  }
+  expect(await acknowledgedVersion(page), 'a hidden card must not change what was acknowledged').toBe(OLDEST_VERSION);
+
+  await page.goto('/settings/about');
+  await expect(page.locator('[data-slot="settings-inset"]').first()).toBeVisible();
+  await settleFrames(page);
+  await expect(aboutRow(page), 'no release notes row in About by default').toHaveCount(0);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // THE SWITCH, through the real page. It shows the EFFECTIVE state (off), and
+  // flipping it is what the device then remembers.
+  ////////////////////////////////////////////////////////////////////////////
+  await page.goto('/settings/preferences');
+  const toggle = cardSwitch(page);
+  await expect(toggle).not.toBeChecked();
+  await toggle.click();
+  // The switch holds no state of its own, it reads the store, so it can only
+  // turn over if the change reached the store and came back as an event.
+  await expect(toggle).toBeChecked();
+  expect(await storedChoice(page), 'the switch stores an explicit on').toBe('on');
+
+  // THE CONTROL: the same device, one switch later, is told.
+  await page.goto('/dashboard');
+  const card = whatsNewCard(page);
+  await expect(card, 'the control: switched on, the same device is told').toBeVisible();
+  await expect(card).toHaveAttribute('data-version', UNSEEN_FROM_OLDEST[0] ?? '');
+  await page.goto('/settings/about');
+  await expect(aboutRow(page), 'the control: switched on, the row is there').toHaveCount(1);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // OFF AGAIN, explicitly, and the page itself stays open at its address.
+  ////////////////////////////////////////////////////////////////////////////
+  await page.goto('/settings/preferences');
+  await expect(toggle).toBeChecked();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  expect(await storedChoice(page), 'the switch stores an explicit off, not a removal').toBe('off');
+
+  await page.goto('/diary');
+  await expect(page.locator('main')).toBeVisible();
+  await settleWhatsNew(page);
+  await expect(whatsNewCard(page), 'switched off, no card').toHaveCount(0);
+  await page.goto('/settings/about');
+  await expect(page.locator('[data-slot="settings-inset"]').first()).toBeVisible();
+  await settleFrames(page);
+  await expect(aboutRow(page), 'switched off, no row').toHaveCount(0);
+
+  await page.goto('/settings/whats-new');
+  await expect(page.locator('[data-slot="release"]'), 'the notes page itself is not behind the switch').toHaveCount(
+    CATALOG_VERSIONS.length,
+  );
+});
+
+test('a device that was never told still gets the right card the moment it switches the card on', async ({ page }) => {
+  await completeOnboarding(page);
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  await backdateOnboarding(page, Date.parse(BUILD.builtAt) - oneDayMs);
+  await forgetAcknowledgement(page);
+
+  // Hidden: the established device is neither told nor recorded. A card that
+  // stamped while hidden would make the answer below "nothing to say".
+  await page.goto('/dashboard');
+  await expect(page.locator('[data-slot="week-glance-card"]')).toBeVisible();
+  await settleWhatsNew(page);
+  await expect(whatsNewCard(page)).toHaveCount(0);
+  expect(await acknowledgedVersion(page), 'a hidden card records nothing').toBeNull();
+
+  await chooseCard(page, 'on');
+  await page.goto('/dashboard');
+  if (EXPECTED_FOR_ESTABLISHED !== null) {
+    await expect(
+      whatsNewCard(page),
+      `switched on, the established device is shown ${EXPECTED_FOR_ESTABLISHED}`,
+    ).toHaveAttribute('data-version', EXPECTED_FOR_ESTABLISHED);
+    return;
+  }
+  await expect
+    .poll(() => acknowledgedVersion(page), { message: 'switched on, a device with nothing to hear is recorded' })
+    .toBe(BUILD.version);
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// The role: an administrator has it on by default, a member does not
+////////////////////////////////////////////////////////////////////////////////
+
+test.describe('a signed-in account', () => {
+  // A cross-origin read the service worker made would never reach `page.route`.
+  test.use({ serviceWorkers: 'block' });
+
+  test('an administrator with nothing stored sees the card, and an explicit off beats the role', async ({ page }) => {
+    const stub = adminConsoleStub();
+    await routeAdminConsole(page, stub);
+    await completeOnboarding(page);
+    await signInFixtureAccount(page);
+    expect(stub.selfId, 'the sign-in answer named the account').not.toBeNull();
+    expect(await storedChoice(page), 'the administrator never chose').toBeNull();
+    // The card ran for this account: the new device was recorded silently, and
+    // only a mounted card does that. Waited on so a late stamp cannot land on
+    // top of the older acknowledgement written next.
+    await expect
+      .poll(() => acknowledgedVersion(page), { message: 'the administrator default mounts the card' })
+      .toBe(BUILD.version);
+
+    await acknowledge(page, OLDEST_VERSION);
+    await page.goto('/diary');
+    await expect(whatsNewCard(page), 'an administrator is told by default').toBeVisible();
+    await page.goto('/settings/about');
+    await expect(aboutRow(page), 'and has the row by default').toHaveCount(1);
+
+    // The switch shows the EFFECTIVE state, so it reads on with nothing stored.
+    await page.goto('/settings/preferences');
+    const toggle = cardSwitch(page);
+    await expect(toggle, 'the switch reads on for an administrator who never chose').toBeChecked();
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    expect(await storedChoice(page), 'off is stored, not removed').toBe('off');
+
+    await page.goto('/diary');
+    await expect(page.locator('[data-slot="date-nav"]')).toBeVisible();
+    await settleWhatsNew(page);
+    await expect(whatsNewCard(page), 'an explicit off beats the role').toHaveCount(0);
+    expect(await acknowledgedVersion(page), 'and a hidden card leaves the acknowledgement alone').toBe(OLDEST_VERSION);
+    await page.goto('/settings/about');
+    await expect(page.locator('[data-slot="settings-inset"]').first()).toBeVisible();
+    await settleFrames(page);
+    await expect(aboutRow(page), 'and takes the row with it').toHaveCount(0);
+  });
+
+  test('a member with nothing stored sees neither the card nor the row, and is never stamped', async ({ page }) => {
+    // The CONTROL for the administrator case above: the same sign-in, the same
+    // pages, with the role left as the account has it.
+    await completeOnboarding(page);
+    await signInFixtureAccount(page);
+    // A mounted card would have recorded this new device by now, see the
+    // signed-out test for why that is the write that tells hidden from unmounted.
+    await settleWhatsNew(page);
+    expect(await acknowledgedVersion(page), 'a card that never mounted records nothing').toBeNull();
+    await acknowledge(page, OLDEST_VERSION);
+
+    await page.goto('/diary');
+    await expect(page.locator('[data-slot="date-nav"]')).toBeVisible();
+    await settleWhatsNew(page);
+    await expect(whatsNewCard(page), 'a member is not told by default').toHaveCount(0);
+    expect(await acknowledgedVersion(page), 'and a card that never mounted never stamps').toBe(OLDEST_VERSION);
+
+    await page.goto('/settings/about');
+    await expect(page.locator('[data-slot="settings-inset"]').first()).toBeVisible();
+    await settleFrames(page);
+    await expect(aboutRow(page)).toHaveCount(0);
+
+    // And the switch is theirs to turn on.
+    await chooseCard(page, 'on');
+    await page.goto('/diary');
+    await expect(whatsNewCard(page), 'the control: a member who switched it on is told').toBeVisible();
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// No layout shift
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * An element's top and height measured from the top of the PAGE, so a scroll
+ * between two readings (a click scrolls its target into view) is not a move.
+ */
+async function pageBox(target: Locator): Promise<{ top: number; height: number }> {
+  return target.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { top: rect.top + window.scrollY, height: rect.height };
+  });
+}
+
+/** Every entry the browser recorded since the document loaded, summed, with what moved for a failure message. */
+async function wholeLoadShift(page: Page): Promise<{ score: number; moved: string[] }> {
+  const entries = await readShiftEntries(page);
+  return { score: shiftScoreAfter(entries, 0), moved: entries.flatMap((entry) => entry.sources) };
+}
+
+/** A promise and the function that settles it. */
+interface Deferred {
+  promise: Promise<void>;
+  resolve: () => void;
+}
+
+/** A {@link Deferred}. This repo's `lib` predates `Promise.withResolvers`, and the executor runs at once. */
+function createDeferred(): Deferred {
+  const settlers: Array<() => void> = [];
+  const promise = new Promise<void>((resolve) => {
+    settlers.push(resolve);
+  });
+  return {
+    promise,
+    resolve: () => {
+      for (const settle of settlers) settle();
+    },
+  };
+}
+
+/**
+ * Holds the core's account read, the answer that carries the role, until
+ * `release` is called. Registered AFTER the administrator routing, so it runs
+ * first and hands on to it with `fallback`.
+ *
+ * @param page - a signed-in page that has not navigated since.
+ * @returns `asked`, which settles when the page has asked for the account, and `release`.
+ */
+async function holdAccountRead(page: Page): Promise<{ asked: Promise<void>; release: () => void }> {
+  const gate = createDeferred();
+  const asked = createDeferred();
+  await page.route(`${E2E_CORE_URL}${AUTH_API_PREFIX}/account`, async (route) => {
+    asked.resolve();
+    await gate.promise;
+    await route.fallback();
+  });
+  return { asked: asked.promise, release: () => gate.resolve() };
+}
+
+test('a hidden card reserves nothing and moves nothing on the diary and the dashboard', async ({ page }) => {
+  await installShiftObserver(page);
+  await turnOffScrollAnchoring(page);
+  await completeOnboarding(page);
+  await acknowledge(page, OLDEST_VERSION);
+
+  for (const [path, anchor] of [
+    ['/diary', '[data-slot="date-nav"]'],
+    ['/dashboard', '[data-slot="week-glance-card"]'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.locator(anchor)).toBeVisible();
+    await settleWhatsNew(page);
+    await expect(whatsNewCard(page)).toHaveCount(0);
+    const { score, moved } = await wholeLoadShift(page);
+    expect(score, `${path}: a hidden card moved ${moved.join('; ')}`).toBe(0);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  // THE CONTROL, for the instrument and not for the card: a box of 100 px put
+  // in at the top of the page after load is read as a move by both readings.
+  // Without it, the zeros above would pass against a reading that is blind.
+  ////////////////////////////////////////////////////////////////////////////
+  await settleFrames(page);
+  const before = await readTops(page);
+  const since = (await readShiftEntries(page)).length;
+  const isInserted = await page.evaluate(() => {
+    const box = document.createElement('div');
+    box.style.height = '100px';
+    const container = document.querySelector('main .mx-auto.max-w-2xl');
+    container?.prepend(box);
+    return container !== null;
+  });
+  expect(isInserted, 'the control found the page to put its box in').toBe(true);
+  await settleFrames(page);
+  expect(movedBetween(before, await readTops(page)), 'the control: the geometry reading sees a box arrive').not.toEqual(
+    [],
+  );
+  expect(
+    shiftScoreAfter(await readShiftEntries(page), since),
+    'the control: the browser records the box as a layout shift',
+  ).toBeGreaterThan(0);
+});
+
+test('the switch on Preferences is one fixed box, and flipping it moves nothing', async ({ page }) => {
+  await installShiftObserver(page);
+  await turnOffScrollAnchoring(page);
+  await completeOnboarding(page);
+
+  await page.goto('/settings/preferences');
+  const toggle = cardSwitch(page);
+  await expect(toggle).toBeVisible();
+  await settleFrames(page);
+  const inset = page.locator('[data-slot="settings-inset"]').filter({ has: toggle });
+  const boxBefore = await pageBox(inset);
+  const topsBefore = await readTops(page);
+  const since = (await readShiftEntries(page)).length;
+
+  await toggle.click();
+  await expect(toggle, 'the switch turned over, so the reading is of a real change').toBeChecked();
+  await settleFrames(page);
+
+  const boxAfter = await pageBox(inset);
+  expect(boxAfter.height, 'the row keeps its height').toBe(boxBefore.height);
+  expect(boxAfter.top, 'the row keeps its place').toBe(boxBefore.top);
+  expect(movedBetween(topsBefore, await readTops(page)), 'elements that moved when the switch flipped').toEqual([]);
+  const entries = await readShiftEntries(page);
+  expect(shiftScoreAfter(entries, since), 'layout shift recorded by flipping the switch').toBe(0);
+  const whole = await wholeLoadShift(page);
+  expect(whole.score, `the page load moved ${whole.moved.join('; ')}`).toBe(0);
+  const widths = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+  }));
+  expect(widths.scroll, 'the document must not scroll sideways').toBeLessThanOrEqual(widths.client);
+});
+
+test.describe('an administrator whose role arrives after the page', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  for (const path of ['/settings/preferences', '/settings/about'] as const) {
+    test(`${path} records no layout shift when the role lands`, async ({ page }) => {
+      const stub = adminConsoleStub();
+      await installShiftObserver(page);
+      await turnOffScrollAnchoring(page);
+      await routeAdminConsole(page, stub);
+      await completeOnboarding(page);
+      await signInFixtureAccount(page);
+
+      // The role is held back until the page has asked for it, so the page is
+      // drawn (or waiting) WITHOUT it first. Without this hold the answer could
+      // arrive before the first paint and the reading below would be of nothing.
+      const { asked, release } = await holdAccountRead(page);
+      await page.goto(path, { waitUntil: 'commit' });
+      await asked;
+      await settleFrames(page);
+      release();
+
+      if (path === '/settings/preferences') {
+        await expect(cardSwitch(page), 'the role landed: the switch reads on').toBeChecked();
+      } else {
+        await expect(aboutRow(page), 'the role landed: the row is there').toHaveCount(1);
+      }
+      await settleFrames(page);
+      const { score, moved } = await wholeLoadShift(page);
+      expect(score, `${path}: the role landing moved ${moved.join('; ')}`).toBe(0);
+    });
+  }
+});

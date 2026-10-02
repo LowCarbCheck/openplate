@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The What's new card is hidden until you switch it on.** The card on the diary and the dashboard, and the release notes row in About, now show by default only for administrators. Everyone else turns them on with a new switch in Preferences, and an administrator can turn them off there. The choice is kept on the device, and the notes page still opens at `/settings/whats-new`.
+
 ## [0.62.0] - 2026-10-02
 
 ### Changed

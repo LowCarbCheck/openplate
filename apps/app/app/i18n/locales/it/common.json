@@ -1755,6 +1755,10 @@
       "label": "Conta le mie visite",
       "description": "Questa istanza di openplate conta le visite alle pagine con una propria istanza di Matomo. Non usa cookie e non registra mai ciò che mangi. Se disattivi l'opzione, questo browser non invia nulla.",
       "browserSignal": "Il tuo browser chiede ai siti di non tracciarlo, quindi questo browser non invia nulla."
+    },
+    "whatsNew": {
+      "label": "Mostra le novità",
+      "description": "Dopo un aggiornamento, una scheda elenca le modifiche e Info su openplate rimanda alle note di rilascio. I dati restano su questo dispositivo."
     }
   },
   "portions": {

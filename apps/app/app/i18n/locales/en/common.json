@@ -1755,6 +1755,10 @@
       "label": "Count my visits",
       "description": "This openplate counts page visits with its own Matomo. It uses no cookies and never logs what you eat. Switch it off and this browser sends nothing.",
       "browserSignal": "Your browser asks sites not to track it, so this browser sends nothing."
+    },
+    "whatsNew": {
+      "label": "Show what's new",
+      "description": "After an update, a card lists what changed, and About links to the release notes. Kept on this device."
     }
   },
   "portions": {

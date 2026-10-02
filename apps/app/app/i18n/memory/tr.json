@@ -5893,6 +5893,13 @@
     "at": "2026-09-14",
     "tr": "Durumsuz tek bir konteyner, çalıştırılacak veritabanı yok ve yapılandırılacak gizli anahtar yok. compose dosyası depoda bulunur; kurulum bir indirme ve tek bir komuttan ibarettir."
   },
+  "4a5d370797abdc5d": {
+    "en": "After an update, a card lists what changed, and About links to the release notes. Kept on this device.",
+    "path": "common:preferences.whatsNew.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Güncellemeden sonra bir kart nelerin değiştiğini listeler, Hakkında ise sürüm notlarına bağlantı verir. Bu cihazda tutulur."
+  },
   "4a704ca4e8e13d9e": {
     "en": "Log this",
     "path": "common:recipes.logThis",
@@ -13417,6 +13424,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bağlantı okunuyor…"
+  },
+  "a05960a7fed0e302": {
+    "en": "Show what's new",
+    "path": "common:preferences.whatsNew.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Yenilikleri göster"
   },
   "a06bea6ea544c96e": {
     "en": "Cancel",

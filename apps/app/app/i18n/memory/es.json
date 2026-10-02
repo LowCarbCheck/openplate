@@ -5893,6 +5893,13 @@
     "at": "2026-09-14",
     "es": "Un contenedor sin estado, sin base de datos que ejecutar y sin secretos que configurar. El archivo compose está en el repositorio, y todo se reduce a una descarga y un solo comando."
   },
+  "4a5d370797abdc5d": {
+    "en": "After an update, a card lists what changed, and About links to the release notes. Kept on this device.",
+    "path": "common:preferences.whatsNew.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Tras una actualización, una tarjeta muestra los cambios y Acerca de openplate enlaza a las notas de la versión. Se guarda en este dispositivo."
+  },
   "4a704ca4e8e13d9e": {
     "en": "Log this",
     "path": "common:recipes.logThis",
@@ -13417,6 +13424,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Leyendo el enlace…"
+  },
+  "a05960a7fed0e302": {
+    "en": "Show what's new",
+    "path": "common:preferences.whatsNew.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Mostrar las novedades"
   },
   "a06bea6ea544c96e": {
     "en": "Cancel",

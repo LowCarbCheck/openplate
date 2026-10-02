@@ -1755,6 +1755,10 @@
       "label": "Compter mes visites",
       "description": "Cette instance d'openplate compte les visites de pages avec son propre Matomo. Elle n'utilise aucun cookie et n'enregistre jamais ce que tu manges. Si tu la désactives, ce navigateur n'envoie rien.",
       "browserSignal": "Ton navigateur demande aux sites de ne pas le suivre, donc ce navigateur n'envoie rien."
+    },
+    "whatsNew": {
+      "label": "Afficher les nouveautés",
+      "description": "Après une mise à jour, une carte liste les changements, et À propos d'openplate renvoie vers les notes de version. Données conservées sur cet appareil."
     }
   },
   "portions": {

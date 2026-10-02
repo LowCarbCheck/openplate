@@ -34,6 +34,25 @@
  *
  * Its own bordered card, never a `.surface-brand` hero: each page already has
  * one hero, and this is an aside a person is free to ignore.
+ *
+ * ── THE GATE, AND WHY IT SITS ABOVE THE DECISION ─────────────────────────
+ *
+ * The card is hidden by default for a regular person and shown by default for
+ * an administrator (`#app/lib/whats-new-visibility`). {@link WhatsNewCard} reads
+ * that and mounts {@link WhatsNewCardBody} only when the answer is yes, and the
+ * body is where the decision effect lives. So a hidden card runs NO effect: it
+ * reads no profile, and above all it never stamps the device. A stamp is a
+ * statement that the person has been told, and a card nobody was shown has told
+ * nobody. The two cases that matter fall out of mounting late:
+ *
+ * - an administrator whose role resolves a moment after the page does, and a
+ *   person who switches the card on next week, both get the body mounted at that
+ *   moment, and it reads the acknowledgement as it stands THEN, so the card
+ *   names the newest release they have not seen and not a stale answer made
+ *   while it was hidden;
+ * - the card then appears after a role read and a profile read instead of after
+ *   the profile read alone. It is the same one-time insertion at the top of the
+ *   page it always was, reached later.
  */
 import { useEffect, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +63,7 @@ import { Button } from '#app/components/ui/button';
 import { Card, CardContent } from '#app/components/ui/card';
 import { BUILD } from '#app/lib/build-info';
 import { getLocalProfileGoals } from '#app/lib/local-store';
+import { useWhatsNewVisible } from '#app/hooks/use-whats-new-visible';
 import { reportError } from '#app/lib/report-error';
 import {
   countLeads,
@@ -90,11 +110,18 @@ function leadsOnTheCard(entry: ReleaseEntry): string[] {
 }
 
 /**
- * The card, or nothing.
+ * The card, or nothing, and nothing at all while it is switched off.
  *
- * @returns the release note card when this device has an update to hear about.
+ * @returns the release note card when it is shown on this device and there is an update to hear about.
  */
 export function WhatsNewCard(): ReactElement | null {
+  const isVisible = useWhatsNewVisible();
+  if (!isVisible) return null;
+  return <WhatsNewCardBody />;
+}
+
+/** The decision and the card. Mounted only where the card is shown, see the header. */
+function WhatsNewCardBody(): ReactElement | null {
   const { t } = useTranslation(['common', 'releases']);
   const [decision, setDecision] = useState<WhatsNewDecision | null>(null);
   const [isDismissedThisSession, setIsDismissedThisSession] = useState(false);

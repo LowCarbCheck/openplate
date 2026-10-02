@@ -1755,6 +1755,10 @@
       "label": "Ziyaretlerimi say",
       "description": "Bu openplate, sayfa ziyaretlerini kendi Matomo kurulumuyla sayar. Çerez kullanmaz ve ne yediğini asla kaydetmez. Kapatırsan bu tarayıcı hiçbir şey göndermez.",
       "browserSignal": "Tarayıcın sitelerden kendisini takip etmemelerini istiyor, bu yüzden bu tarayıcı hiçbir şey göndermiyor."
+    },
+    "whatsNew": {
+      "label": "Yenilikleri göster",
+      "description": "Güncellemeden sonra bir kart nelerin değiştiğini listeler, Hakkında ise sürüm notlarına bağlantı verir. Bu cihazda tutulur."
     }
   },
   "portions": {
