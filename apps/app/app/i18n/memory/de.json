@@ -10240,6 +10240,13 @@
     "at": "2026-09-17",
     "de": "Verwerfen"
   },
+  "7c2d3d84cca110c8": {
+    "en": "Your food logs, foods, weigh-ins, goals, fasts and pantry have all reached the server.",
+    "path": "common:signOut.unsent.allSent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Deine Mahlzeiteneinträge, Lebensmittel, Wiegewerte, Ziele, Fastenzeiten und deine Vorratskammer sind vollständig auf dem Server angekommen."
+  },
   "7c54b708e410593f": {
     "en": "Snap a photo, skip the typing",
     "path": "common:scan.setup.title",
@@ -13179,6 +13186,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Deine Testphase ist am {{date}} abgelaufen. Wähle einen Tarif, um KI-Einträge weiter zu nutzen. Die Suche in der Lebensmittel-Datenbank funktioniert weiterhin."
+  },
+  "9cf9a671a4b63a15": {
+    "en": "Your diary stays in your account. This device hides it until you sign in again.",
+    "path": "common:signOut.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Dein Tagebuch bleibt in deinem Konto. Dieses Gerät blendet es aus, bis du dich wieder anmeldest."
   },
   "9d25f26d04cd2a09": {
     "en": "Account {{accountId}}",
@@ -18023,6 +18037,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
     "de": "getippte Listen der Vorratskammer"
+  },
+  "d9003c32da640c68": {
+    "en": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again.",
+    "path": "common:signOut.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Du bist abgemeldet, aber das Tagebuch befindet sich noch auf diesem Gerät, weil openplate in einem anderen Tab geöffnet ist. Schließe diesen Tab und tippe dann erneut auf Abmelden."
   },
   "d91c2d1970bb7d38": {
     "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",

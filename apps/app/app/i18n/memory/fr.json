@@ -10240,6 +10240,13 @@
     "at": "2026-09-17",
     "fr": "Ignorer"
   },
+  "7c2d3d84cca110c8": {
+    "en": "Your food logs, foods, weigh-ins, goals, fasts and pantry have all reached the server.",
+    "path": "common:signOut.unsent.allSent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "fr": "Tes entrées alimentaires, aliments, pesées, objectifs, jeûnes et garde-manger ont tous été synchronisés avec le serveur."
+  },
   "7c54b708e410593f": {
     "en": "Snap a photo, skip the typing",
     "path": "common:scan.setup.title",
@@ -13179,6 +13186,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ton essai a pris fin le {{date}}. Choisis un forfait pour continuer à utiliser les entrées par IA. La recherche dans la base de données alimentaire fonctionne toujours."
+  },
+  "9cf9a671a4b63a15": {
+    "en": "Your diary stays in your account. This device hides it until you sign in again.",
+    "path": "common:signOut.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "fr": "Ton journal reste sur ton compte. Cet appareil le masque jusqu'à ta prochaine connexion."
   },
   "9d25f26d04cd2a09": {
     "en": "Account {{accountId}}",
@@ -18023,6 +18037,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
     "fr": "listes de garde-manger saisies"
+  },
+  "d9003c32da640c68": {
+    "en": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again.",
+    "path": "common:signOut.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "fr": "Tu es déconnecté, mais le journal se trouve toujours sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis appuie de nouveau sur Se déconnecter."
   },
   "d91c2d1970bb7d38": {
     "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",

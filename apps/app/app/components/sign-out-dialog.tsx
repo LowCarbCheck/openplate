@@ -15,9 +15,38 @@
  * Unchecked, always, and it is checked by the person or not at all. Wiping by
  * default destroys entries that never reached the server, and a research
  * participant's lost week is not recoverable while a diary left on a device
- * is. What an erase would lose is named BEFORE the box can be ticked, because
- * it is the number that says how much is at stake, and when nothing is waiting
- * the dialog says so in words rather than showing a zero (`erase-notice.ts`).
+ * is. What an erase would lose is named BEFORE AN ERASE CAN BE CONFIRMED,
+ * because it is the number that says how much is at stake, and when nothing is
+ * waiting the dialog says so in words rather than showing a zero
+ * (`erase-notice.ts`).
+ *
+ * It is named when the box is ticked and not before (ADR-0016, amended
+ * 2026-10-02). A plain sign-out deletes nothing: on a managed instance it hides
+ * the diary and on an open one it leaves it alone. A warning about lost data
+ * above a box nobody had touched read as if signing out removed something, and
+ * the operator found it confusing. The tick can be undone and the confirm
+ * cannot, so the cost has to be on screen before the second and not the first.
+ *
+ * ── Nothing moves ────────────────────────────────────────────────────────
+ *
+ * The notice appears after a tap, and a tap may not shift what is on screen
+ * (DESIGN.md section 7). Three decisions keep that true:
+ *
+ *  - The dialog is anchored at the TOP (`top-4`, `sm:top-[10vh]`, no centring
+ *    translate), so a box that grows pushes only what is below it. The centred
+ *    default would move the title when the notice arrived.
+ *  - The erase region is one grid cell with two layers, the notice and the
+ *    error sentence. The inactive one is `invisible`, `inert` and `aria-hidden`
+ *    and the cell keeps the taller layer's height, so a failed erase moves
+ *    nothing either. The error is always the one fixed sentence, because a free
+ *    message would not fit the box reserved for it; the real cause is logged.
+ *  - The spinner is always in the confirm button, `invisible` when idle, so the
+ *    button never changes width.
+ *
+ * The notice is FROZEN at the tick. From then until the dialog closes the lines
+ * the person saw stay, whatever the session does: a later sync can only make
+ * them over-warn, which this confirm is allowed to do, and a session that ends
+ * under a running sign-out must not turn them into "could not be checked".
  *
  * That number comes from the sync engine's own diff, the live diary against
  * the baseline this device last agreed with the account, plus the queued
@@ -60,8 +89,9 @@ import {
 import { Button } from '#app/components/ui/button';
 import { Label } from '#app/components/ui/label';
 import { useInstancePolicy } from '#app/hooks/use-public-config';
-import { describeErrorForUser } from '#app/lib/sync/error-text';
+import { createComponentLogger } from '#app/lib/logger';
 import {
+  isEraseNoticeSettled,
   readUnsentOnDevice,
   resolveEraseNotice,
   type EraseNoticeLine,
@@ -74,9 +104,13 @@ import {
   setSignOutPhase,
   useSignOutProgress,
 } from '#app/lib/sync/sign-out-progress';
+import { cn } from '#app/lib/utils';
 import { useSyncSession } from './sync-status';
 
+const log = createComponentLogger('sign-out');
+
 const ERASE_FIELD_ID = 'sign-out-erase';
+const ERASE_REGION_ID = 'sign-out-erase-region';
 
 /**
  * One sentence per named line (`erase-notice.ts`), and nothing decided here.
@@ -143,9 +177,14 @@ export function SignOutDialogHost() {
   if (isOpen && openedFor === null) setOpenedFor({ accountId: session.account?.id ?? null });
   const accountId = openedFor?.accountId ?? null;
   const isSyncing = !isFrozen && session.phase === 'syncing';
-  const [eraseDevice, setEraseDevice] = useState(false);
+  // THE NOTICE THE PERSON SAW WHEN THEY TICKED, and the tick itself: a box is
+  // ticked exactly when this holds lines. One state, so the box and the erase
+  // it asks for cannot disagree. Cleared on untick and on close.
+  const [frozenNotice, setFrozenNotice] = useState<EraseNoticeLine[] | null>(null);
+  const eraseDevice = frozenNotice !== null;
   const [keyedRead, setKeyedRead] = useState<KeyedRead | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Whether the erase failed. The sentence is fixed, so a flag is all it takes.
+  const [hasEraseFailed, setHasEraseFailed] = useState(false);
 
   // WHICH MOMENT A READ DESCRIBES: this account, as of its last completed
   // cycle. A cycle that lands while the dialog is open moves the baseline, and
@@ -157,6 +196,11 @@ export function SignOutDialogHost() {
   const isCurrentRead = isFrozen || keyedRead?.key === readKey;
   const unsentRead: UnsentRead = isCurrentRead && keyedRead !== null ? keyedRead.read : { status: 'pending' };
   const noticeLines = resolveEraseNotice({ read: unsentRead, isSyncing, hasSession: accountId !== null });
+  // THE BOX WAITS FOR AN ANSWER, any answer: a finished read, a failed one, or
+  // no session at all. Ticking it shows the lines, and the first paint of the
+  // region must not be "checking". Once ticked it stays operable, or a sync
+  // starting under an open dialog would lock the person into an erase.
+  const isNoticeSettled = isEraseNoticeSettled(noticeLines);
 
   // Read only while the dialog is open. This is a genuine external read with a
   // lifetime, not derived state: it reads IndexedDB, and doing so when the menu
@@ -186,7 +230,7 @@ export function SignOutDialogHost() {
   }, [isOpen, isFrozen, accountId, isSyncing, readKey]);
 
   async function handleSignOut(): Promise<void> {
-    setError(null);
+    setHasEraseFailed(false);
     setSignOutPhase('running');
     try {
       await runSignOut({ eraseDevice, locksDevice: signOutClosesTheDiary });
@@ -196,9 +240,21 @@ export function SignOutDialogHost() {
       // the device already locked by then, so this reports the erase and not
       // the sign-out. This component is still mounted to say so: it lives in
       // the root, not under the session.
-      setError(describeErrorForUser(caught, t('signOut.eraseFailed')));
+      // ALWAYS THE ONE FIXED SENTENCE. The box for it is reserved from the tick,
+      // and a free message would not be known to fit; the cause is logged.
+      log.error('the erase on sign-out failed', {
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
+      setHasEraseFailed(true);
       setSignOutPhase('failed');
     }
+  }
+
+  function handleEraseChange(isTicked: boolean): void {
+    // The freeze starts here. The error belongs to the tick it came from, so an
+    // untick takes it away with the region.
+    setHasEraseFailed(false);
+    setFrozenNotice(isTicked ? noticeLines : null);
   }
 
   function handleClose(): void {
@@ -209,8 +265,8 @@ export function SignOutDialogHost() {
     closeSignOutDialog();
     // Reopening starts from unchecked. A box that remembered a tick from a
     // dialog somebody cancelled is a wipe nobody asked for twice.
-    setEraseDevice(false);
-    setError(null);
+    setFrozenNotice(null);
+    setHasEraseFailed(false);
     // And from no read. A read kept from the last opening would be shown
     // for a moment on the next one, about a device that may have changed
     // since. And from no account: the next opening reads it again.
@@ -226,7 +282,11 @@ export function SignOutDialogHost() {
         if (!next) handleClose();
       }}
     >
-      <AlertDialogContent>
+      {/* ANCHORED AT THE TOP: the erase region grows below the box a person
+          ticked, and a centred dialog would move its own title when it did.
+          Both `top` and `translate-y` replace the base component's centring;
+          `sign-out-dialog-moves-nothing.spec.ts` reads the computed styles. */}
+      <AlertDialogContent className="top-4 max-h-[calc(100dvh-2rem)] translate-y-0 overflow-y-auto sm:top-[10vh]">
         <AlertDialogHeader>
           <AlertDialogTitle>{t('signOut.title')}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -236,36 +296,62 @@ export function SignOutDialogHost() {
 
         <div className="flex items-start gap-2.5 border border-border p-3">
           {/* Unticked on every open. Erasing is a second act inside this one,
-              and it is the person's act. */}
+              and it is the person's act. Drawn from the first paint and
+              disabled until the read has an answer: a disabled box moves
+              nothing. */}
           <input
             id={ERASE_FIELD_ID}
             type="checkbox"
             checked={eraseDevice}
-            onChange={(event) => setEraseDevice(event.target.checked)}
-            disabled={isBusy}
+            onChange={(event) => handleEraseChange(event.target.checked)}
+            disabled={isBusy || (!eraseDevice && !isNoticeSettled)}
+            aria-describedby={eraseDevice ? ERASE_REGION_ID : undefined}
             className="mt-0.5 h-4 w-4 shrink-0 border-input accent-primary"
           />
-          <div className="space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <Label htmlFor={ERASE_FIELD_ID} className="text-sm font-normal leading-relaxed">
               {t('signOut.erase.label')}
             </Label>
-            <p data-slot="erase-notice" className="text-xs leading-relaxed text-muted-foreground">
-              {/* One paragraph of sentences, so the spaces are text, not margin. */}
-              {noticeLines.map((line, index) => (
-                <Fragment key={line.kind}>
-                  {index > 0 && ' '}
-                  <EraseNoticeText line={line} />
-                </Fragment>
-              ))}
-            </p>
+            {/* THE ERASE REGION, mounted by the tick and by nothing else. One
+                grid cell, two layers: the notice and the error sentence. The
+                layer that is not showing is `invisible`, `inert` and
+                `aria-hidden`, and the cell keeps the taller one's height, so a
+                failed erase moves nothing. */}
+            {frozenNotice !== null && (
+              <div id={ERASE_REGION_ID} data-slot="erase-region" className="grid">
+                <p
+                  data-slot="erase-notice"
+                  className={cn(
+                    '[grid-area:1/1] text-xs leading-relaxed text-muted-foreground',
+                    hasEraseFailed && 'invisible',
+                  )}
+                  inert={hasEraseFailed}
+                  aria-hidden={hasEraseFailed || undefined}
+                >
+                  {/* One paragraph of sentences, so the spaces are text, not margin. */}
+                  {frozenNotice.map((line, index) => (
+                    <Fragment key={line.kind}>
+                      {index > 0 && ' '}
+                      <EraseNoticeText line={line} />
+                    </Fragment>
+                  ))}
+                </p>
+                <p
+                  data-slot="sign-out-error"
+                  role="alert"
+                  className={cn(
+                    '[grid-area:1/1] text-sm leading-relaxed text-destructive',
+                    !hasEraseFailed && 'invisible',
+                  )}
+                  inert={!hasEraseFailed}
+                  aria-hidden={!hasEraseFailed || undefined}
+                >
+                  {t('signOut.eraseFailed')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
-
-        {error !== null && (
-          <p data-slot="sign-out-error" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isBusy}>{t('confirm.cancel')}</AlertDialogCancel>
@@ -273,7 +359,9 @@ export function SignOutDialogHost() {
               it does not take anything away, and the erase beside it is opt-in
               and labelled for what it does. */}
           <Button type="button" onClick={() => void handleSignOut()} disabled={isBusy}>
-            {isBusy && <Loader2 className="animate-spin" />}
+            {/* ALWAYS DRAWN, `invisible` when idle, so the button keeps its
+                width when the sign-out starts. */}
+            <Loader2 className={cn('animate-spin', isBusy ? 'visible' : 'invisible')} />
             {t('signOut.confirm')}
           </Button>
         </AlertDialogFooter>

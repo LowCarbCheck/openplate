@@ -1,5 +1,5 @@
 /**
- * What the sign-out dialog says about an erase before anybody agrees to one
+ * What the sign-out dialog says about an erase before anybody confirms one
  * (M201 spec 02, and the fix to what it counted).
  *
  * ── The number it used to count, and why it was always zero ──────────────
@@ -140,6 +140,22 @@ export type EraseNoticeLine =
   | { kind: 'keys-not-covered' };
 
 /**
+ * Has the read settled into something the dialog can stand behind?
+ *
+ * FALSE ONLY FOR THE SINGLE `checking` LINE, the one state that says nothing
+ * yet. A finished read, a failed read and no session at all are all settled:
+ * each is a complete answer, and the last two are the answer "this device could
+ * not be checked". The dialog keeps the erase box disabled until this is true,
+ * because ticking the box is what puts the notice on screen, and a notice that
+ * has read nothing yet would be shown with nothing to say.
+ *
+ * @param lines - what {@link resolveEraseNotice} returned.
+ */
+export function isEraseNoticeSettled(lines: readonly EraseNoticeLine[]): boolean {
+  return !(lines.length === 1 && lines[0]?.kind === 'checking');
+}
+
+/**
  * The lines the dialog shows, in order.
  *
  * @param read - the device read, or its pending/failed state.
@@ -243,11 +259,15 @@ export function countUnsentChanges({ read, baseline }: { read: LocalSnapshotRead
  * so it can vouch for nothing: a device holding meals is warned, and a device
  * holding none has nothing to lose either way.
  *
- * NO CONTENT HASH, deliberately. A RENAME is invisible here, and that is
- * correct rather than a gap: `canonicalize` weighs the whole saved-meals list,
- * so a rename makes the very next cycle push by itself. Hashing here would be
- * a second definition of "changed" living beside the engine's own, free to
- * drift from it, to warn about a meal the next cycle was about to send anyway.
+ * THE CONTENT IS HASHED TOO, in the last step below. A meal RENAMED in place
+ * keeps its id, so the two id sets cannot see it. This comment used to argue
+ * the opposite: that a rename needs no warning because `canonicalize` weighs
+ * the whole saved-meals list and the very next cycle pushes it. It was dropped
+ * after review. The next cycle is the one that never runs on a train or a
+ * phone about to be wiped, and a destructive confirm may over-warn but may not
+ * under-warn. The price is a second definition of "changed" beside the
+ * engine's own, so the hash is the engine's own `contentHash` over the same
+ * id-sorted list that `baselineFromPayload` hashes.
  */
 export function holdsUnsentSavedMeals({
   snapshot,

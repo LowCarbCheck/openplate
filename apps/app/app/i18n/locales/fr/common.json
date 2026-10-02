@@ -2747,7 +2747,7 @@
     "menuItem": "Se déconnecter",
     "title": "Déconnexion",
     "body": "Tu restes déconnecté jusqu'à ta prochaine connexion. Ton journal reste sur cet appareil.",
-    "bodyManaged": "Ton journal est associé à ton compte. Une fois déconnecté, cet appareil ne l'affiche plus tant que tu ne te reconnectes pas.",
+    "bodyManaged": "Ton journal reste sur ton compte. Cet appareil le masque jusqu'à ta prochaine connexion.",
     "confirm": "Se déconnecter",
     "erase": {
       "label": "Effacer aussi le journal de cet appareil"
@@ -2755,7 +2755,7 @@
     "unsent": {
       "checking": "Vérification des éléments qui n'ont pas encore atteint le serveur.",
       "unchecked": "Cet appareil n'a pas pu vérifier ce qui a atteint le serveur. Si tu effaces, tu risques de perdre les modifications qui n'existent qu'ici.",
-      "allSent": "Tes entrées du journal, tes propres aliments, tes pesées et tes objectifs ont tous atteint le serveur.",
+      "allSent": "Tes entrées alimentaires, aliments, pesées, objectifs, jeûnes et garde-manger ont tous été synchronisés avec le serveur.",
       "changes_one": "Une modification sur cet appareil n'a pas encore atteint le serveur. Si tu effaces, tu la perdras.",
       "changes_other": "{{count}} modifications sur cet appareil n'ont pas encore atteint le serveur. Si tu effaces, tu les perdras.",
       "reports_one": "Un signalement d'estimation erronée n'a pas encore été envoyé. Si tu effaces, tu le perdras.",
@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Certains repas enregistrés ne sont pas encore arrivés sur le serveur. Si tu effaces, tu risques de les perdre.",
       "keysNotCovered": "Tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre, donc exporte d'abord un fichier de sauvegarde : il les contient."
     },
-    "eraseFailed": "Impossible d'effacer le journal, car openplate est ouvert dans un autre onglet. Ferme-le et réessaie."
+    "eraseFailed": "Tu es déconnecté, mais le journal se trouve toujours sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis appuie de nouveau sur Se déconnecter."
   },
   "strangerNote": {
     "device": "Tu n'es pas connecté. Ce paramètre s'applique à cet appareil.",

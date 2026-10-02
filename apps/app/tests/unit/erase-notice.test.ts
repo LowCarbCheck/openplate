@@ -28,6 +28,7 @@ import assert from 'node:assert/strict';
 import { HEALTHY_STORAGE } from '../sync-integrity-fixtures';
 import {
   countUnsentChanges,
+  isEraseNoticeSettled,
   holdsOwnerPrivateRows,
   holdsUnsentSavedMeals,
   resolveEraseNotice,
@@ -292,6 +293,51 @@ describe('resolveEraseNotice', () => {
       resolveEraseNotice({ read: { status: 'done', unsent: NOTHING_UNSENT }, isSyncing: false, hasSession: false }),
       [{ kind: 'unchecked' }],
     );
+  });
+});
+
+/**
+ * The erase box in the sign-out dialog waits for this. Every case goes through
+ * `resolveEraseNotice`, so the answer is read off what the dialog really
+ * computes and not off a hand-built line list. The first case is the control:
+ * a read that has not come back is the one thing that is NOT settled.
+ */
+describe('isEraseNoticeSettled', () => {
+  it('is not settled while the read has not come back', () => {
+    const lines = resolveEraseNotice({ read: { status: 'pending' }, isSyncing: false, hasSession: true });
+    assert.deepEqual(lines, [{ kind: 'checking' }]);
+    assert.equal(isEraseNoticeSettled(lines), false);
+  });
+
+  it('is not settled while a sync cycle runs, whatever the read says', () => {
+    const lines = resolveEraseNotice({
+      read: { status: 'done', unsent: NOTHING_UNSENT },
+      isSyncing: true,
+      hasSession: true,
+    });
+    assert.equal(isEraseNoticeSettled(lines), false);
+  });
+
+  it('is settled by a finished read, with the all-clear or with a count', () => {
+    for (const unsent of [NOTHING_UNSENT, { ...NOTHING_UNSENT, changes: 2 }]) {
+      const lines = resolveEraseNotice({ read: { status: 'done', unsent }, isSyncing: false, hasSession: true });
+      assert.equal(isEraseNoticeSettled(lines), true);
+    }
+  });
+
+  it('is settled by a failed read, because "could not check" is an answer', () => {
+    const lines = resolveEraseNotice({ read: { status: 'failed' }, isSyncing: false, hasSession: true });
+    assert.equal(isEraseNoticeSettled(lines), true);
+  });
+
+  it('is settled with no session at all, even if a read is still pending', () => {
+    const lines = resolveEraseNotice({ read: { status: 'pending' }, isSyncing: false, hasSession: false });
+    assert.deepEqual(lines, [{ kind: 'unchecked' }]);
+    assert.equal(isEraseNoticeSettled(lines), true);
+  });
+
+  it('is settled by several lines, even when one of them is the checking line', () => {
+    assert.equal(isEraseNoticeSettled([{ kind: 'unsent-changes', count: 1 }, { kind: 'checking' }]), true);
   });
 });
 

@@ -32,11 +32,19 @@
  * (b) A dialog opened from the header menu and cancelled leaves the menu
  * openable and the page clickable. The menu used to take focus back on close
  * and could leave `pointer-events: none` on the body.
+ * (c) The notice never flips to the "could not be checked" line while the
+ * erase runs or after it failed. The session closes at the first step of the
+ * sign-out, and a notice that followed it would warn about a device it can no
+ * longer see. A `MutationObserver` records any moment that line is on screen,
+ * and a planted line proves the recorder can see one.
+ * (d) The error has its box before it is needed: the error layer exists from
+ * the tick, hidden, and the confirm button does not move when it appears.
  */
 import { expect, test, type Page } from '@playwright/test';
 
 import { E2E_APP_URL } from './env';
 import { completeOnboarding, signInFixtureAccount } from './helpers';
+import { settleAnimations } from './layout-shift';
 
 /** How long the dialog may take to report a blocked erase: the erase's own 3 s bound, plus slack. */
 const REPORT_TIMEOUT_MS = 5_000;
@@ -90,6 +98,32 @@ async function holdTheDiaryInASecondTab(page: Page): Promise<Page> {
   return second;
 }
 
+/** The dialog's error layer: always in the erase region, shown only after a failure. */
+function errorLayer(page: Page) {
+  return page.getByRole('alertdialog').locator('[data-slot="sign-out-error"]');
+}
+
+/** The confirm button's top edge, from the top of the viewport (the dialog is fixed). */
+async function confirmTop(page: Page): Promise<number> {
+  return confirmButton(page).evaluate((element) => Math.round(element.getBoundingClientRect().top * 10) / 10);
+}
+
+/**
+ * Starts recording whether the "could not be checked" line is ever on screen.
+ * Returns a reader for the answer. The line is looked up in the whole document
+ * on every DOM change, so a moment between two polls is not missed.
+ */
+async function watchForTheUncheckedLine(page: Page): Promise<() => Promise<boolean>> {
+  await page.evaluate(() => {
+    const selector = '[data-erase-line="unchecked"]';
+    Reflect.set(window, '__sawUnchecked', document.querySelector(selector) !== null);
+    new MutationObserver(() => {
+      if (document.querySelector(selector) !== null) Reflect.set(window, '__sawUnchecked', true);
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+  });
+  return () => page.evaluate(() => Object.getOwnPropertyDescriptor(window, '__sawUnchecked')?.value === true);
+}
+
 /** The names of the databases this origin holds. */
 async function databaseNames(page: Page): Promise<string[]> {
   const found = await page.evaluate(() => indexedDB.databases());
@@ -108,6 +142,13 @@ test('a failed erase on sign-out says so inside the dialog, and the retry signs 
   await page.bringToFront();
   await openSignOutDialogFromTheMenu(page);
   await page.getByRole('alertdialog').getByRole('checkbox').check();
+
+  // THE ERROR HAS ITS BOX BEFORE IT IS NEEDED (d): the layer is in the erase
+  // region from the tick, and it is hidden.
+  await expect(errorLayer(page)).toHaveCount(1);
+  await expect(errorLayer(page)).not.toBeVisible();
+  await settleAnimations(page);
+  const topBeforeThePress = await confirmTop(page);
   await confirmButton(page).click();
 
   // THE DEFECT, stated as state: the error is on screen, in the dialog, and
@@ -115,6 +156,10 @@ test('a failed erase on sign-out says so inside the dialog, and the retry signs 
   const dialog = page.getByRole('alertdialog');
   await expect(dialog.locator('[data-slot="sign-out-error"]')).toBeVisible({ timeout: REPORT_TIMEOUT_MS });
   expect(new URL(page.url()).pathname).toBe(pathBefore);
+  // (d) CONTROL: the layer was hidden a moment ago and is shown now, and the
+  // button under it did not move for the sentence.
+  await settleAnimations(page);
+  expect(await confirmTop(page), 'the error layer must not move the confirm button').toBe(topBeforeThePress);
 
   // CONTROL (a): close the other tab and press confirm again. The page must
   // leave, and the diary must be gone from the device.
@@ -136,4 +181,41 @@ test('a dialog opened from the header menu and cancelled leaves the menu and the
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).pointerEvents)).not.toBe('none');
   await page.locator('header [data-slot="avatar-menu-trigger"]').click();
   await expect(page.getByRole('menu')).toBeVisible();
+});
+
+test('a blocked erase never turns the notice into the could-not-check line', async ({ page }) => {
+  await completeOnboarding(page);
+  await signInFixtureAccount(page);
+
+  const second = await holdTheDiaryInASecondTab(page);
+  await page.bringToFront();
+  await openSignOutDialogFromTheMenu(page);
+  const dialog = page.getByRole('alertdialog');
+  await dialog.getByRole('checkbox').check();
+
+  // From the tick on, every DOM change is checked for the line. A device that
+  // has a session and a settled read has no business saying it cannot be read.
+  const sawUnchecked = await watchForTheUncheckedLine(page);
+  await expect(dialog.locator('[data-erase-line]').first()).toBeVisible();
+  await confirmButton(page).click();
+
+  // RUNNING: the button is disabled and the session is closing under the dialog.
+  await expect(dialog.locator('[data-erase-line="unchecked"]')).toHaveCount(0);
+  // BLOCKED: the error is on screen, and the notice is still the lines it had.
+  await expect(errorLayer(page)).toBeVisible({ timeout: REPORT_TIMEOUT_MS });
+  await expect(dialog.locator('[data-erase-line="unchecked"]')).toHaveCount(0);
+  expect(await sawUnchecked(), 'the could-not-check line was on screen at some moment').toBe(false);
+
+  // CONTROL: the recorder sees that line when one is planted, so the `false`
+  // above is a reading and not a recorder that cannot fire.
+  await page.evaluate(() => {
+    const planted = document.createElement('span');
+    planted.dataset.eraseLine = 'unchecked';
+    planted.dataset.e2ePlanted = '';
+    document.body.append(planted);
+  });
+  await expect.poll(sawUnchecked).toBe(true);
+  await page.evaluate(() => document.querySelector('[data-e2e-planted]')?.remove());
+
+  await second.close();
 });

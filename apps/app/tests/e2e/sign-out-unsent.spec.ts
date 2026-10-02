@@ -70,12 +70,22 @@ async function openSignOutDialog(page: Page): Promise<void> {
   await expect(page.getByRole('alertdialog')).toBeVisible();
 }
 
+/**
+ * Ticks the erase box, which is what brings the notice on screen (ADR-0016,
+ * amended 2026-10-02). The box waits for the read to have an answer, so this
+ * also waits for that.
+ */
+async function tickTheEraseBox(page: Page): Promise<void> {
+  await page.getByRole('alertdialog').getByRole('checkbox').check();
+  await expect(page.locator('[data-slot="erase-region"]')).toHaveCount(1);
+}
+
 /** One named sentence of the dialog's erase notice. */
 function noticeLine(page: Page, kind: string) {
   return page.locator(`[data-slot="erase-notice"] [data-erase-line="${kind}"]`);
 }
 
-test('a change the push did not carry is named before the erase box, and the all-clear waits for the push', async ({
+test('a change the push did not carry is named once the erase box is ticked, and the all-clear waits for the push', async ({
   page,
 }) => {
   await completeOnboarding(page);
@@ -89,10 +99,17 @@ test('a change the push did not carry is named before the erase box, and the all
   await openAccountSettings(page);
   await openSignOutDialog(page);
 
+  // BEFORE THE TICK the dialog says nothing about an erase. A plain sign-out
+  // deletes nothing, so a warning about lost data here read as if it did.
+  await expect(page.locator('[data-slot="erase-notice"]')).toHaveCount(0);
+  await tickTheEraseBox(page);
+  // CONTROL: after the tick the same locator is there, with the lines in it.
+  await expect(page.locator('[data-slot="erase-notice"]')).toBeVisible();
+
   const unsent = noticeLine(page, 'unsent-changes');
   await expect(unsent).toBeVisible();
   expect(Number(await unsent.getAttribute('data-count')), 'at least the entry itself').toBeGreaterThanOrEqual(1);
-  // THE DEFECT, stated as state: no all-clear above the erase box.
+  // THE DEFECT, stated as state: no all-clear beside the erase box.
   await expect(noticeLine(page, 'all-sent')).toHaveCount(0);
 
   // CONTROL: once a push goes through, the same dialog gives the all-clear.
@@ -102,7 +119,15 @@ test('a change the push did not carry is named before the erase box, and the all
   await allowPushes(page);
   await openAccountSettings(page);
   await openSignOutDialog(page);
-
-  await expect(noticeLine(page, 'all-sent')).toBeVisible({ timeout: SETTLE_TIMEOUT_MS });
+  // THE NOTICE IS FROZEN AT THE TICK, so a tick taken before the push cycle
+  // has landed would keep the old lines for good. Untick and tick again until
+  // a tick lands on the settled answer: each tick takes a fresh reading, which
+  // is also what a person who unticks and ticks again gets.
+  const eraseBox = page.getByRole('alertdialog').getByRole('checkbox');
+  await expect(async () => {
+    await eraseBox.uncheck();
+    await eraseBox.check();
+    await expect(noticeLine(page, 'all-sent')).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: SETTLE_TIMEOUT_MS });
   await expect(noticeLine(page, 'unsent-changes')).toHaveCount(0);
 });

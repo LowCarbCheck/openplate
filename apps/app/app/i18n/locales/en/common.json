@@ -2747,7 +2747,7 @@
     "menuItem": "Sign out",
     "title": "Sign out",
     "body": "You stay signed out until you sign in again. Your diary stays on this device.",
-    "bodyManaged": "Your diary belongs to your account. After you sign out, this device does not show it again until you sign in.",
+    "bodyManaged": "Your diary stays in your account. This device hides it until you sign in again.",
     "confirm": "Sign out",
     "erase": {
       "label": "Also erase the diary from this device"
@@ -2755,7 +2755,7 @@
     "unsent": {
       "checking": "Checking what has not reached the server yet.",
       "unchecked": "This device could not check what has reached the server. If you erase, you may lose changes that exist only here.",
-      "allSent": "Your food logs, your own foods, weigh-ins and goals have all reached the server.",
+      "allSent": "Your food logs, foods, weigh-ins, goals, fasts and pantry have all reached the server.",
       "changes_one": "One change on this device has not reached the server yet. If you erase, you will lose it.",
       "changes_other": "{{count}} changes on this device have not reached the server yet. If you erase, you will lose them.",
       "reports_one": "One report about a wrong estimate has not been sent yet. If you erase, you will lose it.",
@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
       "keysNotCovered": "Your sharing and research keys are not part of this check. If you erase, you may lose them, so export a backup file first: it includes them."
     },
-    "eraseFailed": "The diary could not be erased, because openplate is open in another tab. Close it and try again."
+    "eraseFailed": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again."
   },
   "strangerNote": {
     "device": "You are not signed in. This setting applies to this device.",

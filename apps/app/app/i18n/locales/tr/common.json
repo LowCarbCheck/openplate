@@ -2747,7 +2747,7 @@
     "menuItem": "Çıkış yap",
     "title": "Çıkış yap",
     "body": "Tekrar giriş yapana kadar oturumun kapalı kalır. Günlüğün bu cihazda kalır.",
-    "bodyManaged": "Günlüğün hesabına aittir. Çıkış yaptıktan sonra, tekrar giriş yapana kadar bu cihaz günlüğü göstermez.",
+    "bodyManaged": "Günlüğün hesabında kalır. Tekrar giriş yapana kadar bu cihaz onu gizler.",
     "confirm": "Çıkış yap",
     "erase": {
       "label": "Günlüğü bu cihazdan da sil"
@@ -2755,7 +2755,7 @@
     "unsent": {
       "checking": "Sunucuya henüz nelerin ulaşmadığı denetleniyor.",
       "unchecked": "Bu cihaz sunucuya nelerin ulaştığını denetleyemedi. Silersen, yalnızca burada bulunan değişiklikleri kaybedebilirsin.",
-      "allSent": "Yiyecek kayıtların, kendi yiyeceklerin, tartı ölçümlerin ve hedeflerin sunucuya ulaştı.",
+      "allSent": "Yiyecek kayıtların, yiyeceklerin, tartımların, hedeflerin, oruçların ve kilerin sunucuya ulaştı.",
       "changes_one": "Bu cihazdaki bir değişiklik sunucuya henüz ulaşmadı. Silersen, bunu kaybedersin.",
       "changes_other": "Bu cihazdaki {{count}} değişiklik sunucuya henüz ulaşmadı. Silersen, bunları kaybedersin.",
       "reports_one": "Hatalı bir tahminle ilgili bir rapor henüz gönderilmedi. Silersen, bunu kaybedersin.",
@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Kaydedilen bazı öğünler henüz sunucuya ulaşmadı. Silersen bunları kaybedebilirsin.",
       "keysNotCovered": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin, bu yüzden önce bir yedekleme dosyası dışa aktar: anahtarlar bu dosyaya dahil edilir."
     },
-    "eraseFailed": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapatıp yeniden dene."
+    "eraseFailed": "Oturumun kapatıldı ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda bulunuyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas."
   },
   "strangerNote": {
     "device": "Giriş yapmadın. Bu ayar bu cihaz için geçerlidir.",

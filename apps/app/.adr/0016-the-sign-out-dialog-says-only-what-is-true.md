@@ -1,6 +1,6 @@
 # 0016, the sign-out dialog says only what it can prove
 
-- **Status:** Accepted
+- **Status:** Amended (2026-10-02)
 - **Date:** 2026-09-20
 - **Deciders:** Altan Sarisin (operator)
 - **Spec:** `M240/03`
@@ -33,6 +33,11 @@ always on is a warning nobody reads, and it sat on the one screen where the
 person has to decide something irreversible.
 
 ## Decision
+
+> **Amended 2026-10-02, the lines now wait for the tick; each line still speaks
+> for one thing.** See "Amendment" below. Where this ADR says the dialog tells
+> the person what an erase costs "above the box", read it as: after the box is
+> ticked, and before an erase can be confirmed.
 
 **Each line speaks for one thing, and is drawn only when that thing is true.**
 
@@ -72,6 +77,47 @@ read under the orchestrator lock. A second load could describe a cycle that
 committed in between, which would warn about meals that had just been sent, or
 stay silent about ones that had not.
 
+## Amendment, the cost shows before a confirm, not before a tick (2026-10-02)
+
+The rule used to read "the cost of an erase shows before the box can be
+ticked". It now reads **the cost of an erase shows before an erase can be
+CONFIRMED**. The lines in this ADR are unchanged. Only the moment they appear
+moved: they mount when the erase box is ticked, and not on open.
+
+**Why.** A plain sign-out deletes nothing. On a managed instance it hides the
+diary until the account signs in again, and on an open instance it leaves the
+diary where it is. The dialog still opened with "N changes have not reached the
+server, an erase loses them" and a pointer to the backup, above a box nobody
+had touched, so a plain sign-out read as if it removed data. The operator
+reported it as confusing (2026-10-02).
+
+**Why the tick is the right moment.** The tick can be undone and the confirm
+cannot. The person must see the cost before the second, and has no need of it
+before the first. Both modes use the one dialog and the same rule, and there is
+no new policy field: the instance-policy question that drives the device lock
+was renamed `signOutClosesTheDiary` for what it does and decides nothing here.
+
+**What stays true.**
+
+- The box is drawn from the first paint and is disabled until the unsent read
+  has an answer (any answer: done, failed, or no session). The lines are never
+  shown as "checking" in the region's first frame.
+- The notice is frozen at the tick and stays until the dialog closes. A later
+  sync can only make it over-warn, which a destructive confirm is allowed to do.
+  A session that ends under a running sign-out cannot turn it into "could not be
+  checked".
+- The region reserves its box, so nothing shifts. It is one grid cell with two
+  layers, the notice and the one fixed error sentence, and the layer that is not
+  showing is `invisible`, `inert` and `aria-hidden`. The dialog is anchored at
+  the top, so the notice grows downward only, and the spinner in the confirm
+  button is always drawn so the button never changes width.
+
+**Tests.** `tests/e2e/sign-out-managed.spec.ts` is the operator's report: no
+`data-erase-line` and no `data-slot="erase-region"` before the tick, and a line
+after it. `tests/e2e/sign-out-dialog-moves-nothing.spec.ts` reads the tops, and
+`tests/e2e/sign-out-erase-blocked.spec.ts` asserts the notice never flips under
+a blocked erase.
+
 ## Alternatives Considered
 
 - **Keep the blanket sentence and just drop the two collection names.**
@@ -103,9 +149,9 @@ stay silent about ones that had not.
   `SyncBaseline.passThrough.savedMeals` after `decidePassThrough`. The day saved
   meals become a merged entity, both go, and this dialog loses its last
   exclusion but the keys.
-- The browser tier is untouched: `tests/e2e/sign-out-unsent.spec.ts` asserts
-  `data-erase-line="unsent-changes"` and pins no sentence, which is why the line
-  names and the copy could both change here without it.
+- `tests/e2e/sign-out-unsent.spec.ts` asserts `data-erase-line="unsent-changes"`
+  and pins no sentence, which is why the line names and the copy could both
+  change here without it. Since the 2026-10-02 amendment it ticks the box first.
 
 ## References
 

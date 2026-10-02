@@ -10240,6 +10240,13 @@
     "at": "2026-09-17",
     "tr": "Sil"
   },
+  "7c2d3d84cca110c8": {
+    "en": "Your food logs, foods, weigh-ins, goals, fasts and pantry have all reached the server.",
+    "path": "common:signOut.unsent.allSent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Yiyecek kayıtların, yiyeceklerin, tartımların, hedeflerin, oruçların ve kilerin sunucuya ulaştı."
+  },
   "7c54b708e410593f": {
     "en": "Snap a photo, skip the typing",
     "path": "common:scan.setup.title",
@@ -13179,6 +13186,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Deneme süren {{date}} tarihinde bitti. Yapay zeka girdilerini kullanmaya devam etmek için bir plan seç. Besin veri tabanında arama yapmak halen çalışır."
+  },
+  "9cf9a671a4b63a15": {
+    "en": "Your diary stays in your account. This device hides it until you sign in again.",
+    "path": "common:signOut.bodyManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Günlüğün hesabında kalır. Tekrar giriş yapana kadar bu cihaz onu gizler."
   },
   "9d25f26d04cd2a09": {
     "en": "Account {{accountId}}",
@@ -18023,6 +18037,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
     "tr": "yazılan kiler listeleri"
+  },
+  "d9003c32da640c68": {
+    "en": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again.",
+    "path": "common:signOut.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Oturumun kapatıldı ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda bulunuyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas."
   },
   "d91c2d1970bb7d38": {
     "en": "Nothing else changes: your diary stays on this device, and you can disconnect at any time in AI settings.",

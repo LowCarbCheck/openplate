@@ -2747,7 +2747,7 @@
     "menuItem": "Disconnettiti",
     "title": "Disconnettiti",
     "body": "Rimarrai disconnesso fino al prossimo accesso. Il tuo diario resta su questo dispositivo.",
-    "bodyManaged": "Il tuo diario appartiene al tuo account. Dopo la disconnessione, questo dispositivo non lo mostrerà più finché non accedi di nuovo.",
+    "bodyManaged": "Il tuo diario rimane nel tuo account. Questo dispositivo lo nasconde fino a quando non accedi di nuovo.",
     "confirm": "Disconnettiti",
     "erase": {
       "label": "Cancella anche il diario da questo dispositivo"
@@ -2755,7 +2755,7 @@
     "unsent": {
       "checking": "Verifica degli elementi che non hanno ancora raggiunto il server.",
       "unchecked": "Questo dispositivo non ha potuto verificare cosa ha raggiunto il server. Se cancelli, potresti perdere le modifiche presenti solo qui.",
-      "allSent": "I tuoi registri alimentari, i tuoi alimenti, le pesate e gli obiettivi hanno tutti raggiunto il server.",
+      "allSent": "I tuoi registri alimentari, gli alimenti, le pesate, gli obiettivi, i digiuni e la dispensa hanno tutti raggiunto il server.",
       "changes_one": "Una modifica su questo dispositivo non ha ancora raggiunto il server. Se cancelli, la perderai.",
       "changes_other": "{{count}} modifiche su questo dispositivo non hanno ancora raggiunto il server. Se cancelli, le perderai.",
       "reports_one": "Una segnalazione su una stima errata non è ancora stata inviata. Se cancelli, la perderai.",
@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Alcuni pasti salvati non hanno ancora raggiunto il server. Se cancelli, potresti perderli.",
       "keysNotCovered": "Le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle, quindi esporta prima un file di backup: le include."
     },
-    "eraseFailed": "Impossibile cancellare il diario perché openplate è aperto in un'altra scheda. Chiudila e riprova."
+    "eraseFailed": "Hai effettuato la disconnessione, ma il diario è ancora su questo dispositivo, perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi premi di nuovo Disconnettiti."
   },
   "strangerNote": {
     "device": "Non hai effettuato l'accesso. Questa impostazione si applica a questo dispositivo.",
