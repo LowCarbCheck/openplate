@@ -2763,7 +2763,16 @@
       "savedMealsUnsent": "Algunas comidas guardadas todavía no han llegado al servidor. Si borras, podrías perderlas.",
       "keysNotCovered": "Tus claves de uso compartido y de investigación no forman parte de esta comprobación. Si borras, podrías perderlas, así que exporta antes un archivo de copia de seguridad: las incluye."
     },
-    "eraseFailed": "Has cerrado sesión, pero el diario sigue en este dispositivo porque openplate está abierto en otra pestaña. Cierra esa pestaña y vuelve a pulsar Cerrar sesión."
+    "eraseFailed": "Has cerrado sesión, pero el diario sigue en este dispositivo porque openplate está abierto en otra pestaña. Cierra esa pestaña y luego pulsa Cerrar sesión de nuevo, o pulsa Cancelar para dejar el diario aquí."
+  },
+  "accountSwitch": {
+    "title": "Este dispositivo contiene el diario de otra cuenta",
+    "body": "{{email}} cerró sesión en este dispositivo y ese diario sigue aquí. Para usar otra cuenta, bórralo primero de este dispositivo.",
+    "bodyUnknown": "Una cuenta cerró sesión en este dispositivo y su diario sigue aquí. Para usar otra cuenta, bórralo primero de este dispositivo.",
+    "yours": "Si este diario es tuyo, inicia sesión con la cuenta que cerró sesión.",
+    "erase": "Borrar y continuar",
+    "eraseFailed": "No se pudo borrar el diario porque openplate está abierto en otra pestaña. Cierra esa pestaña y vuelve a intentarlo.",
+    "resetSpent": "Este enlace de restablecimiento ya se ha utilizado y tu contraseña antigua sigue funcionando. Tras el borrado, solicita un enlace nuevo."
   },
   "strangerNote": {
     "device": "No has iniciado sesión. Este ajuste se aplica a este dispositivo.",
@@ -2858,7 +2867,8 @@
         "failed": "La sincronización no terminó. Tu diario en este dispositivo no se ha visto afectado.",
         "incompatible": "Esta aplicación y el servidor central todavía no usan la misma versión, por lo que la sincronización se ha pausado a propósito.",
         "offline": "No se ha podido conectar con el servidor central. Tu diario está a salvo en este dispositivo y se pondrá al día más tarde.",
-        "reauth-required": "Tu sesión terminó. Inicia sesión de nuevo para seguir sincronizando. No se ha perdido nada."
+        "reauth-required": "Tu sesión terminó. Inicia sesión de nuevo para seguir sincronizando. No se ha perdido nada.",
+        "reauthRequiredManaged": "Tu sesión ha terminado, por lo que este dispositivo ha ocultado tu diario. Inicia sesión de nuevo para verlo. No se ha perdido nada."
       },
       "lastSynced": "Última sincronización: {{when}}",
       "never": "Aún no se ha sincronizado desde este dispositivo",

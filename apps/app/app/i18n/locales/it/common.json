@@ -2763,7 +2763,16 @@
       "savedMealsUnsent": "Alcuni pasti salvati non hanno ancora raggiunto il server. Se cancelli, potresti perderli.",
       "keysNotCovered": "Le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle, quindi esporta prima un file di backup: le include."
     },
-    "eraseFailed": "Hai effettuato la disconnessione, ma il diario è ancora su questo dispositivo, perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi premi di nuovo Disconnettiti."
+    "eraseFailed": "La sessione è chiusa, ma il diario è ancora su questo dispositivo perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi premi di nuovo Disconnettiti, oppure premi Annulla per lasciare qui il diario."
+  },
+  "accountSwitch": {
+    "title": "Questo dispositivo contiene il diario di un altro account",
+    "body": "{{email}} si è disconnesso da questo dispositivo e quel diario è ancora qui. Per usare un altro account, prima cancellalo da questo dispositivo.",
+    "bodyUnknown": "Un account si è disconnesso da questo dispositivo e il suo diario è ancora qui. Per usare un altro account, prima cancellalo da questo dispositivo.",
+    "yours": "Se questo diario è tuo, accedi invece con l'account che si è disconnesso.",
+    "erase": "Cancella e continua",
+    "eraseFailed": "Impossibile cancellare il diario perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi riprova.",
+    "resetSpent": "Questo link di ripristino è già stato usato e la tua vecchia password funziona ancora. Dopo la cancellazione, richiedi un nuovo link."
   },
   "strangerNote": {
     "device": "Non hai effettuato l'accesso. Questa impostazione si applica a questo dispositivo.",
@@ -2858,7 +2867,8 @@
         "failed": "La sincronizzazione non è terminata. Il tuo diario su questo dispositivo non ha subito modifiche.",
         "incompatible": "Questa app e il server centrale non usano ancora la stessa versione, quindi la sincronizzazione è volutamente in pausa.",
         "offline": "Impossibile raggiungere il server centrale. Il tuo diario è al sicuro su questo dispositivo e si aggiornerà più tardi.",
-        "reauth-required": "La sessione è terminata. Accedi di nuovo per continuare a sincronizzare. Nessun dato è andato perso."
+        "reauth-required": "La sessione è terminata. Accedi di nuovo per continuare a sincronizzare. Nessun dato è andato perso.",
+        "reauthRequiredManaged": "La sessione è terminata, quindi questo dispositivo ha nascosto il tuo diario. Accedi di nuovo per vederlo. Non è andato perso nulla."
       },
       "lastSynced": "Ultima sincronizzazione: {{when}}",
       "never": "Non ancora sincronizzato da questo dispositivo",

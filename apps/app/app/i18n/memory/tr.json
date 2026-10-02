@@ -1518,6 +1518,13 @@
     "at": "2026-09-23",
     "tr": "Hesap oluştur"
   },
+  "11a671d21618e967": {
+    "en": "Erase it and continue",
+    "path": "common:accountSwitch.erase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Sil ve devam et"
+  },
   "11af66a9601ab403": {
     "en": "{{routine}}, starts {{time}}",
     "path": "common:settings.hub.fasting.description",
@@ -3632,6 +3639,13 @@
     "at": "2026-09-14",
     "tr": "Parolan belirleniyor"
   },
+  "29a600859baff727": {
+    "en": "If this diary is yours, sign in with the account that signed out instead.",
+    "path": "common:accountSwitch.yours",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Bu günlük seninse, bunun yerine çıkış yapan hesapla giriş yap."
+  },
   "29c9dcedb8fa6bb5": {
     "en": "Signs this account out on every device. Your diary stays on this one.",
     "path": "common:account.signOut.note",
@@ -4472,6 +4486,13 @@
     "at": "2026-09-14",
     "tr": "Bu davet geçerli değil. Önceden kullanılmış veya süresi dolmuş olabilir. Yeni bir davet iste."
   },
+  "370cd1b0d1adf51f": {
+    "en": "{{email}} signed out on this device, and that diary is still here. To use another account, erase it from this device first.",
+    "path": "common:accountSwitch.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "{{email}} bu cihazda çıkış yaptı ve o günlük hâlâ burada. Başka bir hesap kullanmak için önce onu bu cihazdan sil."
+  },
   "3733cc3597f64699": {
     "en": "Foods you've added yourself. Edit the numbers or remove one here.",
     "path": "common:add.custom.description",
@@ -5206,6 +5227,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "tr": "Kaydettiğin her yiyecek bu tarayıcının kendi depolama alanına yazılır. Cihazından çıkmadan önce şifrelenen bir kopyası da sunucuda tutulur. Yönetici, bu kopyayı açabilen bir kurtarma anahtarına sahiptir. İstediğin zaman tüm verileri bir dosya olarak dışa aktar."
+  },
+  "41240b9d6d957ce0": {
+    "en": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again, or press Cancel to leave the diary here.",
+    "path": "common:signOut.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Çıkış yaptın, ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda duruyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas veya günlüğü burada bırakmak için İptal düğmesine bas."
   },
   "412615f147f27e5a": {
     "en": "Daily net carbs",
@@ -14531,6 +14559,13 @@
     "at": "2026-09-14",
     "tr": "En az {{min}} karakter kullan."
   },
+  "ad254f72aceec351": {
+    "en": "The diary could not be erased, because openplate is open in another tab. Close that tab, then try again.",
+    "path": "common:accountSwitch.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapat, ardından tekrar dene."
+  },
   "ad43c89b109ea761": {
     "en": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all.",
     "path": "common:landing.features.noTracking.bodyAnalytics",
@@ -15784,6 +15819,13 @@
     "at": "2026-09-14",
     "tr": "Anahtar üretilemedi. Hiçbir şey değiştirilmedi."
   },
+  "bcb8bd0b3da4c28e": {
+    "en": "Your session ended, so this device hid your diary. Sign in again to see it. Nothing has been lost.",
+    "path": "common:sync.status.error.reauthRequiredManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Oturumun sona erdi, bu nedenle bu cihaz günlüğünü gizledi. Görmek için tekrar giriş yap. Hiçbir şey kaybolmadı."
+  },
   "bcd60088dbcbae9c": {
     "en": "Higher in {{nutrient}}",
     "path": "common:nutrients.suggestions.forNutrient",
@@ -16848,6 +16890,13 @@
     "at": "2026-09-14",
     "tr": "Belirtmek istemiyorum"
   },
+  "cb26d122d693a0d6": {
+    "en": "This device holds another account's diary",
+    "path": "common:accountSwitch.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Bu cihaz başka bir hesabın günlüğünü tutuyor"
+  },
   "cb6478022de7aadd": {
     "en": "jetzt kündigen",
     "path": "common:declarations.cancel.submit",
@@ -17841,6 +17890,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-30",
     "tr": "openplate taşındı"
+  },
+  "d634c9d587dd6f72": {
+    "en": "An account signed out on this device, and its diary is still here. To use another account, erase it from this device first.",
+    "path": "common:accountSwitch.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Bir hesap bu cihazda çıkış yaptı ve günlüğü hâlâ burada. Başka bir hesap kullanmak için önce onu bu cihazdan sil."
   },
   "d63a8c480c59d380": {
     "en": "Requested date (optional)",
@@ -21061,6 +21117,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "AB12-CD34-EF56"
+  },
+  "fb4bb0d543ad632c": {
+    "en": "This reset link is used up, and your old password still works. After the erase, ask for a new link.",
+    "path": "common:accountSwitch.resetSpent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Bu sıfırlama bağlantısı zaten kullanıldı ve eski parolan hâlâ çalışıyor. Silme işleminden sonra yeni bir bağlantı iste."
   },
   "fb75a3032e3d4b4a": {
     "en": "Not verified on this device",

@@ -1518,6 +1518,13 @@
     "at": "2026-09-23",
     "es": "Crear una cuenta"
   },
+  "11a671d21618e967": {
+    "en": "Erase it and continue",
+    "path": "common:accountSwitch.erase",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Borrar y continuar"
+  },
   "11af66a9601ab403": {
     "en": "{{routine}}, starts {{time}}",
     "path": "common:settings.hub.fasting.description",
@@ -3632,6 +3639,13 @@
     "at": "2026-09-14",
     "es": "Definiendo tu contraseña"
   },
+  "29a600859baff727": {
+    "en": "If this diary is yours, sign in with the account that signed out instead.",
+    "path": "common:accountSwitch.yours",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Si este diario es tuyo, inicia sesión con la cuenta que cerró sesión."
+  },
   "29c9dcedb8fa6bb5": {
     "en": "Signs this account out on every device. Your diary stays on this one.",
     "path": "common:account.signOut.note",
@@ -4472,6 +4486,13 @@
     "at": "2026-09-14",
     "es": "Esa invitación no es válida. Puede que ya se haya usado o que haya caducado. Pide una nueva."
   },
+  "370cd1b0d1adf51f": {
+    "en": "{{email}} signed out on this device, and that diary is still here. To use another account, erase it from this device first.",
+    "path": "common:accountSwitch.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "{{email}} cerró sesión en este dispositivo y ese diario sigue aquí. Para usar otra cuenta, bórralo primero de este dispositivo."
+  },
   "3733cc3597f64699": {
     "en": "Foods you've added yourself. Edit the numbers or remove one here.",
     "path": "common:add.custom.description",
@@ -5206,6 +5227,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "Cada alimento que registras se guarda en el almacenamiento de este navegador. El servidor también guarda una copia, cifrada antes de salir de tu dispositivo. Quien opera el servidor tiene una clave de recuperación que puede abrir esa copia. Exporta todo en un archivo cuando quieras."
+  },
+  "41240b9d6d957ce0": {
+    "en": "You are signed out, but the diary is still on this device, because openplate is open in another tab. Close that tab, then press Sign out again, or press Cancel to leave the diary here.",
+    "path": "common:signOut.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Has cerrado sesión, pero el diario sigue en este dispositivo porque openplate está abierto en otra pestaña. Cierra esa pestaña y luego pulsa Cerrar sesión de nuevo, o pulsa Cancelar para dejar el diario aquí."
   },
   "412615f147f27e5a": {
     "en": "Daily net carbs",
@@ -14531,6 +14559,13 @@
     "at": "2026-09-14",
     "es": "Usa al menos {{min}} caracteres."
   },
+  "ad254f72aceec351": {
+    "en": "The diary could not be erased, because openplate is open in another tab. Close that tab, then try again.",
+    "path": "common:accountSwitch.eraseFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "No se pudo borrar el diario porque openplate está abierto en otra pestaña. Cierra esa pestaña y vuelve a intentarlo."
+  },
   "ad43c89b109ea761": {
     "en": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all.",
     "path": "common:landing.features.noTracking.bodyAnalytics",
@@ -15784,6 +15819,13 @@
     "at": "2026-09-14",
     "es": "No se pudo generar la clave. No se modificó nada."
   },
+  "bcb8bd0b3da4c28e": {
+    "en": "Your session ended, so this device hid your diary. Sign in again to see it. Nothing has been lost.",
+    "path": "common:sync.status.error.reauthRequiredManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Tu sesión ha terminado, por lo que este dispositivo ha ocultado tu diario. Inicia sesión de nuevo para verlo. No se ha perdido nada."
+  },
   "bcd60088dbcbae9c": {
     "en": "Higher in {{nutrient}}",
     "path": "common:nutrients.suggestions.forNutrient",
@@ -16848,6 +16890,13 @@
     "at": "2026-09-14",
     "es": "Prefiero no decirlo"
   },
+  "cb26d122d693a0d6": {
+    "en": "This device holds another account's diary",
+    "path": "common:accountSwitch.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Este dispositivo contiene el diario de otra cuenta"
+  },
   "cb6478022de7aadd": {
     "en": "jetzt kündigen",
     "path": "common:declarations.cancel.submit",
@@ -17841,6 +17890,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-30",
     "es": "openplate se ha mudado"
+  },
+  "d634c9d587dd6f72": {
+    "en": "An account signed out on this device, and its diary is still here. To use another account, erase it from this device first.",
+    "path": "common:accountSwitch.bodyUnknown",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Una cuenta cerró sesión en este dispositivo y su diario sigue aquí. Para usar otra cuenta, bórralo primero de este dispositivo."
   },
   "d63a8c480c59d380": {
     "en": "Requested date (optional)",
@@ -21061,6 +21117,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "AB12-CD34-EF56"
+  },
+  "fb4bb0d543ad632c": {
+    "en": "This reset link is used up, and your old password still works. After the erase, ask for a new link.",
+    "path": "common:accountSwitch.resetSpent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "es": "Este enlace de restablecimiento ya se ha utilizado y tu contraseña antigua sigue funcionando. Tras el borrado, solicita un enlace nuevo."
   },
   "fb75a3032e3d4b4a": {
     "en": "Not verified on this device",

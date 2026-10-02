@@ -2763,7 +2763,16 @@
       "savedMealsUnsent": "Kaydedilen bazı öğünler henüz sunucuya ulaşmadı. Silersen bunları kaybedebilirsin.",
       "keysNotCovered": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin, bu yüzden önce bir yedekleme dosyası dışa aktar: anahtarlar bu dosyaya dahil edilir."
     },
-    "eraseFailed": "Oturumun kapatıldı ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda bulunuyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas."
+    "eraseFailed": "Çıkış yaptın, ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda duruyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas veya günlüğü burada bırakmak için İptal düğmesine bas."
+  },
+  "accountSwitch": {
+    "title": "Bu cihaz başka bir hesabın günlüğünü tutuyor",
+    "body": "{{email}} bu cihazda çıkış yaptı ve o günlük hâlâ burada. Başka bir hesap kullanmak için önce onu bu cihazdan sil.",
+    "bodyUnknown": "Bir hesap bu cihazda çıkış yaptı ve günlüğü hâlâ burada. Başka bir hesap kullanmak için önce onu bu cihazdan sil.",
+    "yours": "Bu günlük seninse, bunun yerine çıkış yapan hesapla giriş yap.",
+    "erase": "Sil ve devam et",
+    "eraseFailed": "openplate başka bir sekmede açık olduğu için günlük silinemedi. O sekmeyi kapat, ardından tekrar dene.",
+    "resetSpent": "Bu sıfırlama bağlantısı zaten kullanıldı ve eski parolan hâlâ çalışıyor. Silme işleminden sonra yeni bir bağlantı iste."
   },
   "strangerNote": {
     "device": "Giriş yapmadın. Bu ayar bu cihaz için geçerlidir.",
@@ -2858,7 +2867,8 @@
         "failed": "Eşitleme tamamlanmadı. Bu cihazdaki günlüğün bundan etkilenmedi.",
         "incompatible": "Bu uygulama ve çekirdek sunucu henüz aynı sürümü konuşmuyor, bu nedenle eşitleme kasıtlı olarak duraklatıldı.",
         "offline": "Çekirdek sunucuya ulaşılamadı. Günlüğün bu cihazda güvende ve daha sonra eşitlenecek.",
-        "reauth-required": "Oturumun sona erdi. Eşitlemeyi sürdürmek için tekrar giriş yap. Hiçbir şey kaybolmadı."
+        "reauth-required": "Oturumun sona erdi. Eşitlemeyi sürdürmek için tekrar giriş yap. Hiçbir şey kaybolmadı.",
+        "reauthRequiredManaged": "Oturumun sona erdi, bu nedenle bu cihaz günlüğünü gizledi. Görmek için tekrar giriş yap. Hiçbir şey kaybolmadı."
       },
       "lastSynced": "Son eşitleme: {{when}}",
       "never": "Bu cihazdan henüz eşitlenmedi",

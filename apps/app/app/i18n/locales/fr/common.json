@@ -2763,7 +2763,16 @@
       "savedMealsUnsent": "Certains repas enregistrés ne sont pas encore arrivés sur le serveur. Si tu effaces, tu risques de les perdre.",
       "keysNotCovered": "Tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre, donc exporte d'abord un fichier de sauvegarde : il les contient."
     },
-    "eraseFailed": "Tu es déconnecté, mais le journal se trouve toujours sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis appuie de nouveau sur Se déconnecter."
+    "eraseFailed": "Tu es déconnecté, mais le journal reste sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis clique à nouveau sur Se déconnecter, ou clique sur Annuler pour laisser le journal ici."
+  },
+  "accountSwitch": {
+    "title": "Cet appareil contient le journal d'un autre compte",
+    "body": "{{email}} s'est déconnecté sur cet appareil, et ce journal s'y trouve toujours. Pour utiliser un autre compte, efface-le d'abord de cet appareil.",
+    "bodyUnknown": "Un compte s'est déconnecté sur cet appareil, et son journal s'y trouve toujours. Pour utiliser un autre compte, efface-le d'abord de cet appareil.",
+    "yours": "S'il s'agit de ton journal, connecte-toi plutôt avec le compte qui a été déconnecté.",
+    "erase": "L'effacer et continuer",
+    "eraseFailed": "Impossible d'effacer le journal, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis réessaie.",
+    "resetSpent": "Ce lien de réinitialisation a déjà été utilisé, et ton ancien mot de passe fonctionne toujours. Après l'effacement, demande un nouveau lien."
   },
   "strangerNote": {
     "device": "Tu n'es pas connecté. Ce paramètre s'applique à cet appareil.",
@@ -2858,7 +2867,8 @@
         "failed": "La synchronisation n'a pas abouti. Ton journal sur cet appareil reste intact.",
         "incompatible": "Cette application et le serveur central n'utilisent pas encore la même version, la synchronisation est donc volontairement suspendue.",
         "offline": "Impossible de joindre le serveur central. Ton journal reste en sécurité sur cet appareil et se mettra à jour plus tard.",
-        "reauth-required": "Ta session a expiré. Reconnecte-toi pour continuer la synchronisation. Rien n'a été perdu."
+        "reauth-required": "Ta session a expiré. Reconnecte-toi pour continuer la synchronisation. Rien n'a été perdu.",
+        "reauthRequiredManaged": "Ta session a expiré, cet appareil a donc masqué ton journal. Connecte-toi à nouveau pour l'afficher. Aucune donnée n'a été perdue."
       },
       "lastSynced": "Dernière synchronisation {{when}}",
       "never": "Pas encore synchronisé depuis cet appareil",

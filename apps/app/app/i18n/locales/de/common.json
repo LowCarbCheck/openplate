@@ -2763,7 +2763,16 @@
       "savedMealsUnsent": "Einige gespeicherte Mahlzeiten haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie möglicherweise.",
       "keysNotCovered": "Deine Freigabe- und Forschungsschlüssel sind nicht Teil dieser Prüfung. Wenn du Daten löschst, verlierst du sie eventuell, exportiere daher zuerst eine Sicherungsdatei, denn sie enthält diese Schlüssel."
     },
-    "eraseFailed": "Du bist abgemeldet, aber das Tagebuch befindet sich noch auf diesem Gerät, weil openplate in einem anderen Tab geöffnet ist. Schließe diesen Tab und tippe dann erneut auf Abmelden."
+    "eraseFailed": "Du bist abgemeldet, aber das Tagebuch befindet sich noch auf diesem Gerät, weil openplate in einem anderen Tab geöffnet ist. Schließe diesen Tab und tippe erneut auf Abmelden, oder tippe auf Abbrechen, um das Tagebuch hier zu belassen."
+  },
+  "accountSwitch": {
+    "title": "Auf diesem Gerät befindet sich das Tagebuch eines anderen Kontos",
+    "body": "{{email}} hat sich auf diesem Gerät abgemeldet, und dieses Tagebuch befindet sich noch hier. Um ein anderes Konto zu nutzen, lösche es zuerst von diesem Gerät.",
+    "bodyUnknown": "Ein Konto hat sich auf diesem Gerät abgemeldet, und sein Tagebuch befindet sich noch hier. Um ein anderes Konto zu nutzen, lösche es zuerst von diesem Gerät.",
+    "yours": "Wenn dies dein Tagebuch ist, melde dich stattdessen mit dem abgemeldeten Konto an.",
+    "erase": "Löschen und fortfahren",
+    "eraseFailed": "Das Tagebuch konnte nicht gelöscht werden, weil openplate in einem anderen Tab geöffnet ist. Schließe diesen Tab und versuche es erneut.",
+    "resetSpent": "Dieser Link zum Zurücksetzen wurde bereits verwendet, und dein altes Passwort funktioniert weiterhin. Fordere nach dem Löschen einen neuen Link an."
   },
   "strangerNote": {
     "device": "Du bist nicht angemeldet. Diese Einstellung gilt für dieses Gerät.",
@@ -2858,7 +2867,8 @@
         "failed": "Der Sync ist nicht durchgelaufen. An deinem Tagebuch auf diesem Gerät ändert das nichts.",
         "incompatible": "Diese App und der Core-Server verwenden noch nicht dieselbe Version, daher ist die Synchronisierung absichtlich pausiert.",
         "offline": "Der Core-Server konnte nicht erreicht werden. Dein Tagebuch ist auf diesem Gerät sicher und wird später synchronisiert.",
-        "reauth-required": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um weiter zu synchronisieren. Es ist nichts verloren gegangen."
+        "reauth-required": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um weiter zu synchronisieren. Es ist nichts verloren gegangen.",
+        "reauthRequiredManaged": "Deine Sitzung ist abgelaufen, daher hat dieses Gerät dein Tagebuch ausgeblendet. Melde dich erneut an, um es zu sehen. Es ging nichts verloren."
       },
       "lastSynced": "Zuletzt synchronisiert: {{when}}",
       "never": "Von diesem Gerät noch nicht synchronisiert",
