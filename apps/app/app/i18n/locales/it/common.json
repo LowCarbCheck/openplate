@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Alcuni pasti salvati non hanno ancora raggiunto il server. Se cancelli, potresti perderli.",
       "keysNotCovered": "Le tue chiavi di condivisione e di ricerca non fanno parte di questo controllo. Se cancelli, potresti perderle, quindi esporta prima un file di backup: le include."
     },
-    "eraseFailed": "La sessione è chiusa, ma il diario è ancora su questo dispositivo perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi premi di nuovo Disconnettiti, oppure premi Annulla per lasciare qui il diario."
+    "eraseFailed": "Hai effettuato la disconnessione, ma il diario è ancora su questo dispositivo, perché openplate è aperto in un'altra scheda. Chiudi quella scheda, poi premi di nuovo Disconnettiti."
   },
   "accountSwitch": {
     "title": "Questo dispositivo contiene il diario di un altro account",

@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Certains repas enregistrés ne sont pas encore arrivés sur le serveur. Si tu effaces, tu risques de les perdre.",
       "keysNotCovered": "Tes clés de partage et de recherche ne font pas partie de cette vérification. Si tu effaces, tu risques de les perdre, donc exporte d'abord un fichier de sauvegarde : il les contient."
     },
-    "eraseFailed": "Tu es déconnecté, mais le journal reste sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis clique à nouveau sur Se déconnecter, ou clique sur Annuler pour laisser le journal ici."
+    "eraseFailed": "Tu es déconnecté, mais le journal se trouve toujours sur cet appareil, car openplate est ouvert dans un autre onglet. Ferme cet onglet, puis appuie de nouveau sur Se déconnecter."
   },
   "accountSwitch": {
     "title": "Cet appareil contient le journal d'un autre compte",

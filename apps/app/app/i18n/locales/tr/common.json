@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Kaydedilen bazı öğünler henüz sunucuya ulaşmadı. Silersen bunları kaybedebilirsin.",
       "keysNotCovered": "Paylaşım ve araştırma anahtarların bu denetime dahil değildir. Silersen bunları kaybedebilirsin, bu yüzden önce bir yedekleme dosyası dışa aktar: anahtarlar bu dosyaya dahil edilir."
     },
-    "eraseFailed": "Çıkış yaptın, ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda duruyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas veya günlüğü burada bırakmak için İptal düğmesine bas."
+    "eraseFailed": "Oturumun kapatıldı ancak openplate başka bir sekmede açık olduğu için günlük hâlâ bu cihazda bulunuyor. O sekmeyi kapat, ardından tekrar Çıkış yap düğmesine bas."
   },
   "accountSwitch": {
     "title": "Bu cihaz başka bir hesabın günlüğünü tutuyor",

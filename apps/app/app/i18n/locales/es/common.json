@@ -2763,7 +2763,7 @@
       "savedMealsUnsent": "Algunas comidas guardadas todavía no han llegado al servidor. Si borras, podrías perderlas.",
       "keysNotCovered": "Tus claves de uso compartido y de investigación no forman parte de esta comprobación. Si borras, podrías perderlas, así que exporta antes un archivo de copia de seguridad: las incluye."
     },
-    "eraseFailed": "Has cerrado sesión, pero el diario sigue en este dispositivo porque openplate está abierto en otra pestaña. Cierra esa pestaña y luego pulsa Cerrar sesión de nuevo, o pulsa Cancelar para dejar el diario aquí."
+    "eraseFailed": "Has cerrado sesión, pero el diario sigue en este dispositivo porque openplate está abierto en otra pestaña. Cierra esa pestaña y vuelve a pulsar Cerrar sesión."
   },
   "accountSwitch": {
     "title": "Este dispositivo contiene el diario de otra cuenta",

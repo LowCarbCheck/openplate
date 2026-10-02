@@ -161,3 +161,7 @@ a blocked erase.
 - M201 spec 02, which wrote this dialog after it counted a dead outbox and told
   everybody their diary was safe.
 - `app/lib/sync/erase-notice.ts` and `tests/unit/erase-notice.test.ts`.
+
+### Known edge: a refused erase can still complete later (2026-10-02)
+
+A refused erase is a rejected `deleteDatabase` request, and that request cannot be cancelled. It stays queued and completes when the other tab finally releases its connection, even after the person pressed Cancel. Closing the other tab therefore still erases this device, which is what the ticked box asked for. The message after a failed erase says only to close the other tab and press Sign out again, and never promises that Cancel keeps the diary. In practice the other tab leaves by itself, because the erase removes the sync baseline first and the other tab hard navigates away on that storage event (`use-leave-when-another-tab-signs-out.ts`).
