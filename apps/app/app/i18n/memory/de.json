@@ -18353,6 +18353,13 @@
     "at": "2026-09-28",
     "de": "Das \"Mehr\"-Bedienfeld bleibt geöffnet, wenn sich der Bildschirm darunter ändert."
   },
+  "dcf8db38e6195dad": {
+    "en": "Legal",
+    "path": "common:settings.about.legalHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "de": "Rechtliches"
+  },
   "dd0efc69da2f55f9": {
     "en": "{{day}}, logged, not graded",
     "path": "common:dashboard.ridge.day.logged",

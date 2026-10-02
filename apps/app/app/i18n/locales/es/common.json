@@ -2177,6 +2177,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Aviso legal"
+    },
     "data": {
       "description": "Tu diario reside en este dispositivo: descarga una copia completa cuando quieras, sin ataduras, sin pedirla ni esperar.",
       "descriptionManaged": "Tu diario se encuentra en este dispositivo, y el servidor guarda una copia cifrada antes de subirla. Quien opera el servidor conserva una clave de recuperación con la que puede descifrar esa copia, que es la forma de recuperar tu diario si restableces la contraseña. Descarga una copia completa en cualquier momento, sin bloqueos ni esperas.",

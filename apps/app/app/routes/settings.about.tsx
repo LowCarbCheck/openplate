@@ -37,16 +37,30 @@
  */
 import type { ReactNode } from 'react';
 import type { MetaFunction } from 'react-router';
-import { CalendarClock, Github, History, RefreshCw, Scale, Sparkles, Tag, type LucideIcon } from 'lucide-react';
+import {
+  Building2,
+  CalendarClock,
+  FileText,
+  FileX,
+  Github,
+  History,
+  RefreshCw,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Undo2,
+  type LucideIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
-import { SettingsSection } from '#app/components/settings/settings-section';
+import { SettingsGroup, SettingsRow, SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { APP_NAME, REPO_LICENSE_URL, REPO_URL } from '#app/lib/brand';
 import { BUILD, formatBuildLabel } from '#app/lib/build-info';
-import { useInstancePolicy } from '#app/hooks/use-public-config';
+import { useHasLegalPages, useInstancePolicy } from '#app/hooks/use-public-config';
 import { cn } from '#app/lib/utils';
 import { useUpdateStatus, type UpdateStatusView } from '#app/hooks/use-update-status';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
@@ -254,6 +268,51 @@ function UpdatesCard() {
   return <UpdatesCardView state={state} updatesAreSomeoneElsesJob={updatesAreSomeoneElsesJob} />;
 }
 
+/**
+ * THE FIVE LEGAL PAGES, in the order and under the words the public footer
+ * draws them (`public-wrapper.tsx`). The labels are the footer's own catalog
+ * keys, so a person who reads "Imprint" in the footer reads "Imprint" here.
+ */
+const LEGAL_LINKS = [
+  { to: '/privacy', icon: ShieldCheck, labelKey: 'chrome.privacy' },
+  { to: '/terms', icon: FileText, labelKey: 'chrome.terms' },
+  { to: '/imprint', icon: Building2, labelKey: 'chrome.imprint' },
+  { to: '/kuendigung', icon: FileX, labelKey: 'chrome.cancelContract' },
+  { to: '/widerrufen', icon: Undo2, labelKey: 'chrome.withdrawContract' },
+] as const;
+
+/**
+ * The legal pages for a person who is signed in.
+ *
+ * The public footer draws these five links, but a person who uses the app
+ * lives inside `_personal`, which has no footer, so an imprint that section 5
+ * DDG wants "leicht erkennbar, unmittelbar erreichbar" had no door for them
+ * (owner, 2026-10-02: "even when I am logged in the app does not render the
+ * imprint").
+ *
+ * SAME GATE AS THE FOOTER: `useHasLegalPages`, which is true only where the
+ * mounted content folder holds the pages. Without `CONTENT_DIR` each row would
+ * be a 404, so the whole group is absent, heading included.
+ *
+ * NO LAYOUT SHIFT. The answer comes off the root loader, so it is known at the
+ * first paint and the group either draws then or never. It sits directly under
+ * the provenance section and ABOVE the Updates card on purpose: that card
+ * fills in after a network read and grows, and a group below it would be
+ * pushed down by every answer.
+ */
+function LegalGroup() {
+  const { t } = useTranslation();
+  if (!useHasLegalPages()) return null;
+
+  return (
+    <SettingsGroup label={t('settings.about.legalHeading')}>
+      {LEGAL_LINKS.map(({ to, icon, labelKey }) => (
+        <SettingsRow key={to} to={to} icon={icon} title={t(labelKey)} status={null} />
+      ))}
+    </SettingsGroup>
+  );
+}
+
 export default function SettingsAbout() {
   const { t } = useTranslation();
 
@@ -285,6 +344,7 @@ export default function SettingsAbout() {
           </Link>
         </AboutRow>
       </SettingsSection>
+      <LegalGroup />
       <UpdatesCard />
     </div>
   );

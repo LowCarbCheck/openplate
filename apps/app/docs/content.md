@@ -29,6 +29,7 @@ This is the default, and it suits a household instance that sells nothing.
 
 - Every content route answers 404: `/terms`, `/privacy`, `/privacy/website`, `/imprint`, `/withdrawal`, `/kuendigung`, `/kuendigung/bestaetigt`, `/widerrufen` and `/widerrufen/bestaetigt`.
 - The public footer draws Source, Licence and Preferences only. The five legal links (Privacy, Terms, Imprint and the two statutory buttons) are not drawn.
+- Settings, About has no Legal group. With the folder mounted, that page lists the same five links under a Legal heading, so a signed-in person, who sees no footer, still reaches the imprint.
 - The note a signed-out visitor sees on a personal page links home and to sign in, with no imprint or privacy link.
 - The newsletter form, if you turned it on, drops its privacy line.
 

@@ -2177,6 +2177,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Note legali"
+    },
     "data": {
       "description": "Il tuo diario risiede su questo dispositivo: scarica una copia completa in qualsiasi momento, senza vincoli, senza richieste da attendere.",
       "descriptionManaged": "Il tuo diario risiede su questo dispositivo, e il server conserva una copia cifrata prima del caricamento. Il gestore possiede una chiave di recupero in grado di decifrare quella copia, ed è così che un ripristino della password ti permette di recuperare il diario. Scarica una copia completa quando vuoi, senza vincoli, senza dover fare richieste e attendere.",

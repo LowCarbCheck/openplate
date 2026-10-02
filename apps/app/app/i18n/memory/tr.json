@@ -18353,6 +18353,13 @@
     "at": "2026-09-28",
     "tr": "Alttaki ekran değiştiğinde Daha Fazla paneli açık kalır."
   },
+  "dcf8db38e6195dad": {
+    "en": "Legal",
+    "path": "common:settings.about.legalHeading",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-02",
+    "tr": "Yasal"
+  },
   "dd0efc69da2f55f9": {
     "en": "{{day}}, logged, not graded",
     "path": "common:dashboard.ridge.day.logged",

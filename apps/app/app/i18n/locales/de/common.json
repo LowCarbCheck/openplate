@@ -2177,6 +2177,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Rechtliches"
+    },
     "data": {
       "description": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit.",
       "descriptionManaged": "Dein Tagebuch liegt auf diesem Gerät, und der Server speichert eine vor dem Hochladen verschlüsselte Kopie. Der Betreiber besitzt einen Wiederherstellungsschlüssel, der diese Kopie entschlüsseln kann, wodurch ein Passwort-Reset dein Tagebuch wiederherstellt. Lade jederzeit eine vollständige Kopie herunter, ohne Lock-in und ohne Wartezeiten.",

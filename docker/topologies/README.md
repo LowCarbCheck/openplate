@@ -32,6 +32,10 @@ installed as its provider. See [docs/podman.md](../../apps/app/docs/podman.md) f
 distinction, and for rootless notes on SELinux volume labels, ports below
 1024, and the Postgres data directory for shapes 2 through 4.
 
+## Legal pages
+
+Terms, privacy and imprint come from a folder you mount and name with `CONTENT_DIR`, in every shape. Without it the links are hidden, in the footer and in Settings, About, and those URLs answer 404. The folder, the file format and the full list of what changes are in [docs/content.md](../../apps/app/docs/content.md).
+
 ## Self-host upgrade note
 
 The shape 2 file was `compose.sync.yml`. It is `compose.core.yml` now, and the

@@ -2177,6 +2177,9 @@
     }
   },
   "settings": {
+    "about": {
+      "legalHeading": "Mentions légales"
+    },
     "data": {
       "description": "Ton journal reste sur cet appareil : télécharge une copie complète à tout moment, sans verrouillage, sans attente d'export.",
       "descriptionManaged": "Ton journal réside sur cet appareil, et le serveur conserve une copie chiffrée avant le téléversement. L'opérateur détient une clé de récupération qui peut déchiffrer cette copie, ce qui permet de récupérer ton journal après réinitialisation du mot de passe. Télécharge une copie complète à tout moment, sans verrouillage ni demande en attente.",

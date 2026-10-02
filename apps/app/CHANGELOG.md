@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **Signed-in people can now reach the legal pages from Settings.** The About screen lists Privacy, Terms, Imprint, the cancellation page and the withdrawal page under a Legal heading, in the footer's order. Before, only the logged-out footer drew them, so a person using the app had no link to the imprint. The group is drawn only when `CONTENT_DIR` holds the legal pages, as the footer is, so an instance without the folder shows no Legal heading and no dead links.
+
 ## [0.62.0] - 2026-10-02
 
 ### Changed
