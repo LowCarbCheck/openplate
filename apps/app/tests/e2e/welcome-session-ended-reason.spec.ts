@@ -23,6 +23,13 @@
  * and the one answer under test, the refresh a resumed session spends first
  * (`refreshRefusal`).
  *
+ * The first `/diary` load resumes the saved session too, and that resume sends
+ * its own `POST /v1/auth/refresh` AFTER the avatar is already visible. The test
+ * waits for that first refresh to settle before it flips `refreshRefusal`. If
+ * the flag flipped under the request in flight, the FIRST page would get the
+ * 403, clear the saved session and keep the reason only in memory. The second
+ * load would then find no saved session, send no refresh and show no reason.
+ *
  * ── Why it reads a data attribute and not a sentence ─────────────────────
  *
  * The copy belongs to the wordsmith pass.
@@ -34,8 +41,9 @@
  * ended session would pass the suspension check, and a screen that showed no
  * reason at all would fail it for the wrong reason.
  */
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page, type Response } from '@playwright/test';
 
+import { E2E_CORE_URL } from './env';
 import { routeManagedCore, signInManaged, type ManagedCoreStub } from './managed-core-stub';
 import { startManagedAppServer, type ManagedAppServer } from './managed-app-server';
 import { NO_SUBSCRIPTION_VIEW } from './plans-stub';
@@ -73,6 +81,13 @@ function accountStub(): ManagedCoreStub {
   };
 }
 
+/** Starts listening for the refresh a resumed session spends, so the wait cannot miss it. */
+function watchRefresh(page: Page): Promise<Response> {
+  return page.waitForResponse(
+    (response) => response.url() === `${E2E_CORE_URL}/v1/auth/refresh` && response.request().method() === 'POST',
+  );
+}
+
 /** The reason line on `/welcome`, whatever it says. */
 const REASON_LINE = '[data-reason]';
 
@@ -81,8 +96,10 @@ test('a suspended account is told so on the welcome screen, not asked to sign in
   const stub = accountStub();
   await routeManagedCore(page, stub);
   await signInManaged(page, server.url);
+  const firstRefresh = watchRefresh(page);
   await page.goto(`${server.url}/diary`);
   await expect(page.locator('header [data-slot="avatar-menu-trigger"]')).toBeVisible({ timeout: 10_000 });
+  await firstRefresh;
 
   // The administrator suspends the account. The next load resumes the saved
   // session, spends the refresh token, and meets `403 account-suspended`.
@@ -101,8 +118,10 @@ test('a revoked session still asks the person to sign in again (control)', async
   const stub = accountStub();
   await routeManagedCore(page, stub);
   await signInManaged(page, server.url);
+  const firstRefresh = watchRefresh(page);
   await page.goto(`${server.url}/diary`);
   await expect(page.locator('header [data-slot="avatar-menu-trigger"]')).toBeVisible({ timeout: 10_000 });
+  await firstRefresh;
 
   stub.refreshRefusal = 'unauthorized';
   await page.goto(`${server.url}/diary`);
