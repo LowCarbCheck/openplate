@@ -12,7 +12,8 @@
 # WHERE. A worktree of its own (op-nightly, next to the repository), so it never
 # touches a checkout somebody is working in. It is created on the first run,
 # then each run fetches and detaches onto origin/main. It runs on the HOST with
-# node from nvm and pnpm from ~/.local/share/pnpm, because Chromium cannot start
+# node from nvm and pnpm from ~/.local/share/pnpm (or node and pnpm from nix
+# develop, see NIX), because Chromium cannot start
 # in the ts-dev toolbox.
 #
 # WHAT IT WRITES, under ${XDG_STATE_HOME:-~/.local/state}/openplate/nightly-e2e/:
@@ -24,10 +25,38 @@
 # skips the install, build and tier (the caller then supplies NIGHTLY_FAKE_LOG, a
 # file used instead of the tier's output, and NIGHTLY_FAKE_RC its exit code), so
 # the summary parsing can be tried without a browser.
+#
+# NIX. On a NixOS host there is no nvm and no host node. When the script runs
+# outside a nix shell, with `nix` on PATH and a flake.nix in the repository, it
+# re-executes itself once under `nix develop <repo> -c`, which gives it node 24
+# and pnpm. OPENPLATE_NIGHTLY_IN_NIX=1 marks the second pass, so it cannot loop.
+# Seam: NIGHTLY_DECIDE_ONLY=1 prints the decision (reexec, nix or host) and exits.
 set -euo pipefail
 
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
 repo=$(git -C "$script_dir" rev-parse --show-toplevel)
+
+# toolchain <in nix marker> <IN_NIX_SHELL> <nix on PATH: 1|0> <flake.nix present: 1|0>
+# prints "reexec" (restart under nix develop), "nix" (already in a nix toolchain)
+# or "host" (nvm and the host pnpm, the Fedora case).
+toolchain() {
+  if [ -n "$1" ] || [ -n "$2" ]; then echo nix; return; fi
+  if [ "$3" = "1" ] && [ "$4" = "1" ]; then echo reexec; return; fi
+  echo host
+}
+have_nix=0
+command -v nix >/dev/null 2>&1 && have_nix=1
+have_flake=0
+[ -f "$repo/flake.nix" ] && have_flake=1
+mode=$(toolchain "${OPENPLATE_NIGHTLY_IN_NIX:-}" "${IN_NIX_SHELL:-}" "$have_nix" "$have_flake")
+if [ "${NIGHTLY_DECIDE_ONLY:-0}" = "1" ]; then
+  echo "$mode"
+  exit 0
+fi
+if [ "$mode" = "reexec" ]; then
+  export OPENPLATE_NIGHTLY_IN_NIX=1
+  exec nix develop "$repo" -c "$script_dir/$(basename -- "$0")" "$@"
+fi
 worktree=${NIGHTLY_WORKTREE:-$(dirname -- "$repo")/op-nightly}
 state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/openplate/nightly-e2e
 mkdir -p "$state_dir"
@@ -108,13 +137,15 @@ if [ "${NIGHTLY_SKIP_RUN:-0}" = "1" ]; then
 else
   (
     set -euo pipefail
-    export NVM_DIR=$HOME/.config/nvm
-    # nvm.sh reads variables it never sets, which `set -u` would reject.
-    set +u
-    . "$NVM_DIR/nvm.sh"
-    nvm use 24.8.0
-    set -u
-    export PATH=$HOME/.local/share/pnpm:$PATH
+    if [ "$mode" = "host" ]; then
+      export NVM_DIR=$HOME/.config/nvm
+      # nvm.sh reads variables it never sets, which `set -u` would reject.
+      set +u
+      . "$NVM_DIR/nvm.sh"
+      nvm use 24.8.0
+      set -u
+      export PATH=$HOME/.local/share/pnpm:$PATH
+    fi
     # One retry: a test that passes on it is reported as flaky, not failed.
     export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
     cd "$worktree/apps/app"

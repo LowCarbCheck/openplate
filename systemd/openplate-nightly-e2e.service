@@ -3,7 +3,11 @@ Description=openplate nightly run of the full browser tier on origin/main
 
 [Service]
 Type=oneshot
-# Absolute path from the home directory, so the unit needs no edit per host.
-ExecStart=%h/projects/openplate-workspace/openplate/scripts/nightly-e2e.sh
+# @REPO@ is the checkout `make nightly` ran in; the Makefile writes the unit with
+# it filled in (a copy, not a symlink), so the unit needs no edit per host.
+ExecStart=@REPO@/scripts/nightly-e2e.sh
+# A user service starts with a minimal PATH. The script needs git, and on a nix
+# host nix itself. Directories that do not exist on a host are harmless.
+Environment=PATH=%h/.nix-profile/bin:/etc/profiles/per-user/%u/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin
 # A browser tier and a build on a host a person works on: yield to them.
 Nice=10

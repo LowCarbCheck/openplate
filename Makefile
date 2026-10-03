@@ -137,14 +137,17 @@ check-pg18:
 
 # The nightly run of the FULL browser tier (scripts/nightly-e2e.sh). The units
 # are installed by a person, never by a push: `make hooks` does not touch them.
-# Symlinks, so a pull updates the units; daemon-reload makes systemd see them.
+# The service unit is a copy with @REPO@ replaced by this checkout, so run
+# `make nightly` again after moving the checkout or editing a unit.
+# daemon-reload makes systemd see them.
 NIGHTLY_STATE := $${XDG_STATE_HOME:-$$HOME/.local/state}/openplate/nightly-e2e
 UNIT_DIR := $$HOME/.config/systemd/user
 
 nightly:
 	mkdir -p $(UNIT_DIR)
-	ln -sf "$(CURDIR)/systemd/openplate-nightly-e2e.service" $(UNIT_DIR)/openplate-nightly-e2e.service
-	ln -sf "$(CURDIR)/systemd/openplate-nightly-e2e.timer" $(UNIT_DIR)/openplate-nightly-e2e.timer
+	rm -f $(UNIT_DIR)/openplate-nightly-e2e.service $(UNIT_DIR)/openplate-nightly-e2e.timer
+	sed "s#@REPO@#$(CURDIR)#" "$(CURDIR)/systemd/openplate-nightly-e2e.service" > $(UNIT_DIR)/openplate-nightly-e2e.service
+	cp "$(CURDIR)/systemd/openplate-nightly-e2e.timer" $(UNIT_DIR)/openplate-nightly-e2e.timer
 	systemctl --user daemon-reload
 	systemctl --user enable --now openplate-nightly-e2e.timer
 	systemctl --user list-timers openplate-nightly-e2e.timer
