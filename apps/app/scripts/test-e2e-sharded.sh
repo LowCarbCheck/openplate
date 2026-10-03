@@ -20,6 +20,10 @@
 #   * spec file arguments cap the count, and reach every shard;
 #   * a bad OPENPLATE_E2E_SHARDS is refused, a taken port stops the run before
 #     any shard starts;
+#   * the liveness watchdog: a shard whose app server stops answering is named in
+#     one line, its server's last output is printed, the shard is stopped and
+#     counts as failed, while its sibling finishes; a healthy server never
+#     triggers it, and neither does a shard that ends on its own;
 #   * SIGTERM to the script reaches every shard as SIGINT first (what Ctrl-C
 #     does), every shard process is gone afterwards, and the exit code is 143.
 # Then it runs itself again against broken copies of the script and requires
@@ -93,6 +97,29 @@ shard=${OPENPLATE_E2E_SHARD:-none}
 printf 'shard=%s base=%s ci=%s args=%s\n' "$shard" "${OPENPLATE_E2E_PORT_BASE:-none}" "${CI:-unset}" "$*" >>"$STUB_LOG"
 echo "Running tests in shard $shard"
 echo "  ok 1 [phone] > example-$shard.spec.ts:1:1 > passes"
+# STUB_SERVE=1: this shard "has an app server", a listener on the app port (base + 2).
+# STUB_SERVER_DIES_SHARD=<i>: that shard's server is killed after a moment and the shard
+# then hangs, as Playwright does when a server dies under it, until a signal arrives.
+if [ -n "${STUB_SERVE:-}" ]; then
+  node -e '
+    require("node:net").createServer((c) => c.end()).listen(Number(process.argv[1]), "127.0.0.1");
+    setTimeout(() => process.exit(0), 60000);
+  ' "$((OPENPLATE_E2E_PORT_BASE + 2))" &
+  server=$!
+  trap 'kill "$server" 2>/dev/null; exit 130' INT TERM
+  sleep 1
+  if [ "${STUB_SERVER_DIES_SHARD:-}" = "$shard" ]; then
+    echo "[WebServer] Error: simulated crash of the app server in shard $shard"
+    kill "$server"
+    wait "$server" 2>/dev/null
+    i=0
+    while [ "$i" -lt 600 ]; do sleep 0.1; i=$((i + 1)); done
+    echo "  stub: the watchdog never stopped me"
+    exit 0
+  fi
+  sleep "${STUB_SERVE_SECONDS:-3}"
+  kill "$server" 2>/dev/null
+fi
 if [ -n "${STUB_HOLD:-}" ]; then
   echo "$$" >"$STUB_PIDS/$shard"
   trap 'echo int >"$STUB_PIDS/$shard.int"; exit 130' INT
@@ -276,6 +303,30 @@ else
   not_ok "control: after the listener stopped the run gave exit $rc and $(call_count) calls"
 fi
 
+# ── the watchdog: a shard whose app server dies is stopped and named ──
+# Shard 2's stub kills its own listener and then hangs. The interval is 0.3 s, so
+# three misses take about a second.
+run_runner OPENPLATE_E2E_SHARDS=2 STUB_SERVE=1 STUB_SERVER_DIES_SHARD=2 OPENPLATE_E2E_WATCH_INTERVAL=0.3 --
+if [ "$rc" = 1 ] && said "shard 2/2 app server on port $((planned[1] + 2)) stopped answering at" \
+  && said "simulated crash of the app server in shard 2" && ! said "the watchdog never stopped me" \
+  && said "shard 2/2: exit 130, FAILED because its app server died" && said "shard 1/2: exit 0 in"; then
+  ok "a dead app server: the shard is named, its server's output printed, the shard stopped and failed, the sibling passed"
+else
+  not_ok "a dead app server: exit $rc: $(printf '%s' "$out" | tail -14 | tr '\n' '|')"
+fi
+if said "after 1 tests" && [ "$(printf '%s\n' "$out" | grep -c 'stopped answering')" = 3 ]; then
+  ok "a dead app server: the line says how many tests had run, and the summary and the report repeat the cause"
+else
+  not_ok "a dead app server: count or summary line missing: $(printf '%s' "$out" | grep 'stopped answering' | tr '\n' '|')"
+fi
+# Control: the same run with every server staying up never fires it.
+run_runner OPENPLATE_E2E_SHARDS=2 STUB_SERVE=1 OPENPLATE_E2E_WATCH_INTERVAL=0.3 --
+if [ "$rc" = 0 ] && ! said "stopped answering" && said "every shard passed"; then
+  ok "control: healthy servers that end with their shard never trigger the watchdog, exit 0"
+else
+  not_ok "control: exit $rc: $(printf '%s' "$out" | tail -8 | tr '\n' '|')"
+fi
+
 # ── a signal reaches every shard, INT first, and none is left behind ──
 rm -f "$scratch"/pids/*
 export STUB_LOG=$scratch/calls
@@ -344,5 +395,8 @@ mutate hidden-failure 's#failed=1#failed=0#'
 mutate no-signal-forwarding 's#^  signal_groups INT$#  :#'
 mutate port-always-free 's#^  (exec 3<>"/dev/tcp/127.0.0.1/\$1") 2>/dev/null#  false#'
 mutate no-spec-cap 's#shards=\$spec_files#:#'
+mutate no-watchdog 's#^  watch_shard "\$index" .*#  :#'
+mutate watchdog-never-fails-shard 's#\[ -s "\$work/shard-\$index.dead" \]#false#'
+mutate watchdog-never-stops-shard 's#^      stop_group "\$pgid"#      :#'
 mutate no-pass-with-no-tests 's# --pass-with-no-tests##'
 echo "PASS: the self-test caught every broken copy"

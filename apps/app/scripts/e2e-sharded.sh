@@ -50,6 +50,9 @@
 #     code and how long it took, and the wall time of the whole run.
 #   * A shard is never retried and never skipped because a sibling failed:
 #     every shard runs to its own end, so one run reports every failure.
+#   * A shard whose APP SERVER dies is stopped early and named (see the
+#     watchdog below). The failure that matters is then one line, not a
+#     hundred `ERR_CONNECTION_REFUSED` lines.
 #
 # SIGNALS. Job control is on, so every shard is the leader of a process group of
 # its own. On INT, TERM or HUP this script sends each group SIGINT first, which
@@ -80,6 +83,15 @@ readonly TERM_GRACE_SECONDS=5
 
 # What the failure report falls back to when a log has no numbered failure.
 readonly FALLBACK_TAIL_LINES=60
+
+# THE LIVENESS WATCHDOG. Once a shard's app server has answered, it is probed
+# every WATCH_INTERVAL seconds, and WATCH_MISSES misses in a row stop that shard.
+# The interval is a variable only so that scripts/test-e2e-sharded.sh need not
+# wait six seconds to see it fire.
+readonly WATCH_INTERVAL=${OPENPLATE_E2E_WATCH_INTERVAL:-2}
+readonly WATCH_MISSES=3
+# How many lines of the server's own output are printed when the watchdog fires.
+readonly SERVER_TAIL_LINES=20
 
 APP_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P) || exit 1
 readonly APP_DIR
@@ -115,9 +127,12 @@ tee_log() {
   tee "$1"
 }
 
+# The server's routine request lines (pino levels 10 to 30) stay in the log and in
+# server.log but are not echoed live, or they bury the test lines. Warnings,
+# errors and anything that is not JSON still show.
 prefix_lines() {
   trap '' INT TERM HUP
-  awk -v prefix="$1" '{ print prefix $0; fflush() }'
+  awk -v prefix="$1" '/^\[WebServer\] \{"level":(10|20|30),/ { next } { print prefix $0; fflush() }'
 }
 
 format_duration() {
@@ -195,6 +210,7 @@ done
 work=$(mktemp -d "${TMPDIR:-/tmp}/openplate-e2e-shards-XXXXXX") || exit 1
 pids=()
 pgids=()
+watchers=()
 stopping=0
 
 # The reports two specs write into test-results/ itself are not Playwright
@@ -247,6 +263,10 @@ stop_shards() {
 }
 
 cleanup() {
+  local watcher
+  for watcher in ${watchers[@]+"${watchers[@]}"}; do
+    kill "$watcher" 2>/dev/null || true
+  done
   rm -rf "$work"
 }
 
@@ -269,6 +289,65 @@ trap cleanup EXIT
 # that reads the terminal would be stopped.
 set -m
 
+# WHY A WATCHDOG, and why this one. Playwright starts the shard's `webServer`
+# and waits for it to boot, but does not notice when it dies LATER: the remaining
+# tests each fail in about a second with net::ERR_CONNECTION_REFUSED, and the
+# gate of 2026-10-03 reported 94 of them after a server died on shard 4, with the
+# real cause buried. `maxFailures` is too blunt (a real spec failure would stop
+# the shard too), and a fixture or `globalSetup` check lives in a Playwright
+# process that cannot stop its own run cleanly and cannot be shared. This script
+# already owns the shard's process group and knows its app port, so a probe here
+# is the simplest thing that cannot be wrong about what it reads: a TCP connect
+# to the port. It is armed only after the first answer, so a slow boot is
+# Playwright's own timeout to report, never a false alarm here.
+# The shard is then stopped like Ctrl-C stops it (SIGINT, SIGTERM, SIGKILL, with
+# a grace before each), and counts as failed even if Playwright exits 0.
+count_results() {
+  local count
+  count=$(grep -cE '^[[:space:]]*(✓|✘|ok)[[:space:]]+[0-9]+[[:space:]]' "$1" 2>/dev/null) || count=0
+  echo "$count"
+}
+
+stop_group() {
+  local pgid=$1
+  kill -INT -- "-$pgid" 2>/dev/null || true
+  local waited=0
+  while group_is_alive "$pgid" && [ "$waited" -lt "$INT_GRACE_SECONDS" ]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
+  group_is_alive "$pgid" || return 0
+  kill -TERM -- "-$pgid" 2>/dev/null || true
+  sleep "$TERM_GRACE_SECONDS"
+  group_is_alive "$pgid" && kill -KILL -- "-$pgid" 2>/dev/null
+  return 0
+}
+
+watch_shard() {
+  local index=$1 count=$2 port=$3 pgid=$4
+  local log=$work/shard-$index.log misses=0 armed=0
+  while group_is_alive "$pgid"; do
+    sleep "$WATCH_INTERVAL"
+    # A shard that ended on its own takes its server with it: nothing to report.
+    group_is_alive "$pgid" || return 0
+    if port_is_taken "$port"; then
+      armed=1
+      misses=0
+    elif [ "$armed" = 1 ]; then
+      misses=$((misses + 1))
+    fi
+    if [ "$misses" -ge "$WATCH_MISSES" ]; then
+      {
+        echo "✖ e2e-sharded: shard $index/$count app server on port $port stopped answering at $(date +%H:%M:%S), after $(count_results "$log") tests"
+        echo "  last $SERVER_TAIL_LINES lines of its own output (full text: test-results/shard-$index/server.log):"
+        grep -F '[WebServer]' "$log" 2>/dev/null | tail -n "$SERVER_TAIL_LINES" | sed 's/^/    /'
+      } | tee "$work/shard-$index.dead" >&2
+      stop_group "$pgid"
+      return 0
+    fi
+  done
+}
+
 launch_shard() {
   local index=$1 count=$2 base=$3
   shift 3
@@ -282,6 +361,8 @@ launch_shard() {
   ) 2>&1 | tee_log "$log" | prefix_lines "[shard $index/$count] " &
   pids[index]=$!
   pgids[index]=$(ps -o pgid= -p "${pids[index]}" 2>/dev/null | tr -d ' ')
+  watch_shard "$index" "$count" "$((base + 2))" "${pgids[index]}" </dev/null &
+  watchers+=($!)
 }
 
 run_started=$(date +%s)
@@ -297,6 +378,15 @@ for ((index = 1; index <= shards; index++)); do
 done
 run_seconds=$(($(date +%s) - run_started))
 
+# What each shard's app server printed, kept beside that shard's other output.
+# Playwright prefixes it `[WebServer]` in the shard's log (stdout is piped for a
+# shard in playwright.config.ts). It is written now, not by the server, because
+# Playwright empties the output folder when the run starts.
+for ((index = 1; index <= shards; index++)); do
+  mkdir -p "test-results/shard-$index"
+  grep -F '[WebServer]' "$work/shard-$index.log" >"test-results/shard-$index/server.log" 2>/dev/null || true
+done
+
 # From here on a signal has nothing left to stop.
 set +m
 
@@ -309,6 +399,13 @@ for ((index = 1; index <= shards; index++)); do
   seconds=0
   if [ -s "$status_file" ]; then
     read -r code seconds <"$status_file"
+  fi
+  # A server that died outranks the exit code: Playwright may exit 0 or 130 after the stop.
+  if [ -s "$work/shard-$index.dead" ]; then
+    head -n 1 "$work/shard-$index.dead" | sed 's/^✖ e2e-sharded: /  /'
+    echo "  shard $index/$shards: exit ${code:-none}, FAILED because its app server died"
+    failed=1
+    continue
   fi
   case $code in
     0)
@@ -338,10 +435,14 @@ for ((index = 1; index <= shards; index++)); do
   status_file=$work/shard-$index.status
   code=""
   [ -s "$status_file" ] && read -r code _ <"$status_file"
-  [ "$code" = 0 ] && continue
+  [ "$code" = 0 ] && [ ! -s "$work/shard-$index.dead" ] && continue
   log=$work/shard-$index.log
   echo
   echo "── e2e-sharded: shard $index/$shards, what it reported ──"
+  if [ -s "$work/shard-$index.dead" ]; then
+    head -n 1 "$work/shard-$index.dead" | sed 's/^✖ //'
+    echo "  The test failures below after that moment are the dead server, not the specs."
+  fi
   if grep -q '^  1) ' "$log" 2>/dev/null; then
     sed -n '/^  1) /,$p' "$log"
   else

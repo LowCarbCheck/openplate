@@ -192,5 +192,11 @@ export default defineConfig({
     // build, which is the "you verified yesterday's build" failure.
     reuseExistingServer: false,
     timeout: SERVER_BOOT_TIMEOUT_MS,
+    // A SHARD KEEPS ITS SERVER'S OUTPUT. Playwright drops a web server's stdout by default and
+    // prints its stderr; piped, both arrive in the shard's log as `[WebServer]` lines, which
+    // `scripts/e2e-sharded.sh` writes to `test-results/shard-<i>/server.log` and prints when the
+    // server dies. A plain run keeps the default, so it stays as quiet as it was.
+    stdout: SHARD === null ? 'ignore' : 'pipe',
+    stderr: 'pipe',
   },
 });
