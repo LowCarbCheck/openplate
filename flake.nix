@@ -17,8 +17,11 @@
       # directory it switches to the packageManager version (one download),
       # so only the major has to match: scripts/check-env-drift.sh checks it.
       # The Playwright browsers path is not wired to nixpkgs: its
-      # playwright-driver differs from the @playwright/test pin, so the
-      # browser tier runs on the host until the two versions match.
+      # playwright-driver differs from the @playwright/test pin, so the browser
+      # tier keeps Playwright's own download in ~/.cache/ms-playwright. That
+      # Chromium is a generic Linux binary. On NixOS it starts only through
+      # nix-ld, and nix-ld's default library set lacks glib, nss and the rest.
+      # NIX_LD_LIBRARY_PATH below adds them.
       default = pkgs.mkShell {
         packages = [
           pkgs.nodejs_24
@@ -26,7 +29,47 @@
           pkgs.git
           pkgs.gnumake
           pkgs.bash
+          # All three pre-push hooks run scripts/quadlet.sh check, which needs
+          # podlet on PATH. The committed units come from podlet 0.3.2.
+          pkgs.podlet
         ];
+
+        # Libraries for Playwright's downloaded Chromium on NixOS with nix-ld.
+        # NIX_LD_LIBRARY_PATH, never LD_LIBRARY_PATH: nix-ld reads it only for
+        # non-nix binaries it launches, so the nix node and pnpm are untouched.
+        # NIX_LD points at the dynamic linker of this flake's glibc. The libraries
+        # below are built for that glibc, and the system's nix-ld may ship an
+        # older one (the host had 2.42, the lock has 2.43), which fails with
+        # "GLIBC_2.43 not found". NIX_LD overrides the system value in this shell.
+        # On non-NixOS Linux (Fedora Silverblue) there is no nix-ld and the
+        # variable does nothing. On macOS it is not set at all.
+        NIX_LD = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux pkgs.stdenv.cc.bintools.dynamicLinker;
+        NIX_LD_LIBRARY_PATH = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux (pkgs.lib.makeLibraryPath [
+          pkgs.glib
+          pkgs.nspr
+          pkgs.nss
+          pkgs.atk
+          pkgs.at-spi2-atk
+          pkgs.at-spi2-core
+          pkgs.dbus
+          pkgs.cups
+          pkgs.expat
+          pkgs.libxcb
+          pkgs.libxkbcommon
+          pkgs.alsa-lib
+          pkgs.libgbm
+          pkgs.libdrm
+          pkgs.libx11
+          pkgs.libxext
+          pkgs.libxcomposite
+          pkgs.libxdamage
+          pkgs.libxfixes
+          pkgs.libxrandr
+          pkgs.cairo
+          pkgs.pango
+          pkgs.systemd
+          pkgs.stdenv.cc.cc.lib
+        ]);
 
         # stderr only, so `nix develop -c <cmd>` prints just the command output.
         # The pnpm_11 version comes from nix, so the hook never runs a
