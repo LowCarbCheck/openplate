@@ -32,6 +32,9 @@
           # All three pre-push hooks run scripts/quadlet.sh check, which needs
           # podlet on PATH. The committed units come from podlet 0.3.2.
           pkgs.podlet
+        ] ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [
+          # The fonts the browser tier renders with, see OPENPLATE_E2E_FONT_DIRS.
+          pkgs.liberation_ttf
         ];
 
         # Libraries for Playwright's downloaded Chromium on NixOS with nix-ld.
@@ -70,6 +73,14 @@
           pkgs.systemd
           pkgs.stdenv.cc.cc.lib
         ]);
+
+        # Fonts for that Chromium. On NixOS none of the directories in
+        # apps/app/tests/e2e/fonts.conf hold fonts, so the browser has none and
+        # every text box is 0 px tall. OPENPLATE_E2E_FONT_DIRS is a colon
+        # separated list of directories; tests/e2e/font-cache.ts adds one <dir>
+        # per entry to the fontconfig it hands Chromium. Linux only: the
+        # variable is empty elsewhere, and an empty list adds nothing.
+        OPENPLATE_E2E_FONT_DIRS = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux "${pkgs.liberation_ttf}/share/fonts";
 
         # stderr only, so `nix develop -c <cmd>` prints just the command output.
         # The pnpm_11 version comes from nix, so the hook never runs a

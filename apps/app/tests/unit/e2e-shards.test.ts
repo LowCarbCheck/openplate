@@ -30,7 +30,10 @@ import { join } from 'node:path';
 
 import { E2E_PORT_BASE_VAR, canonicalRepoRoot, deriveE2ePortBase, planShardPortBases, shardPortBase } from '../e2e/env';
 import {
+  FONT_DIRS_VAR,
+  addFontDirs,
   fontconfigCacheDirName,
+  parseFontDirs,
   fontsConfPathFor,
   renameFontsConfCache,
   resetFontconfigCache,
@@ -261,6 +264,66 @@ describe('the fontconfig cache of a sharded run', () => {
       }
     }
     assert.equal(writeFontsConfFor(null), fontsConfPathFor(null), 'a run that is not sharded reads the committed file');
+  });
+});
+
+const dirsOf = (text: string): string[] =>
+  [...text.matchAll(/^ {2}<dir>([^<]*)<\/dir>$/gm)].map((match) => match[1] ?? '');
+
+describe('extra font directories from OPENPLATE_E2E_FONT_DIRS', () => {
+  const committed = dirsOf(FONTS_CONF);
+
+  it('leaves the committed text exactly as it is when there is nothing to add', () => {
+    assert.equal(addFontDirs({ template: FONTS_CONF, dirs: parseFontDirs(undefined) }), FONTS_CONF);
+    assert.equal(addFontDirs({ template: FONTS_CONF, dirs: parseFontDirs('') }), FONTS_CONF);
+    assert.equal(addFontDirs({ template: FONTS_CONF, dirs: parseFontDirs(':') }), FONTS_CONF);
+  });
+
+  it('adds one dir element per entry, inside fontconfig, and keeps the cache element', () => {
+    const copy = addFontDirs({
+      template: FONTS_CONF,
+      dirs: parseFontDirs('/nix/store/a/share/fonts:/nix/store/b/fonts'),
+    });
+
+    assert.deepEqual(dirsOf(copy), [...committed, '/nix/store/a/share/fonts', '/nix/store/b/fonts']);
+    assert.ok(
+      copy.indexOf('<dir>/nix/store/b/fonts</dir>') < copy.lastIndexOf('</fontconfig>'),
+      'added before the close',
+    );
+    assert.ok(copy.includes('<cachedir prefix="xdg">openplate-e2e-fontconfig</cachedir>'));
+    // THE CONTROL. A copy that added nothing would equal the template, and the line above would fail.
+    assert.notEqual(copy, FONTS_CONF);
+  });
+
+  it('ignores an empty entry', () => {
+    assert.deepEqual(parseFontDirs('/a::/b:'), ['/a', '/b']);
+    const copy = addFontDirs({ template: FONTS_CONF, dirs: parseFontDirs('/a::/b:') });
+    assert.deepEqual(dirsOf(copy), [...committed, '/a', '/b']);
+    assert.equal(dirsOf(copy).includes(''), false);
+  });
+
+  it('refuses a template with no closing tag', () => {
+    assert.throws(() => addFontDirs({ template: '<fontconfig>', dirs: ['/a'] }), /exactly one/);
+  });
+
+  it('is what a run reads when the variable is set, and the committed file when it is not', () => {
+    const saved = process.env[FONT_DIRS_VAR];
+    try {
+      delete process.env[FONT_DIRS_VAR];
+      assert.equal(writeFontsConfFor(null), fontsConfPathFor(null));
+      assert.equal(fontsConfPathFor(null).endsWith('tests/e2e/fonts.conf'), true, 'unset reads the committed file');
+
+      process.env[FONT_DIRS_VAR] = '/nix/store/x/share/fonts';
+      const path = writeFontsConfFor(null);
+      assert.notEqual(path.endsWith('tests/e2e/fonts.conf'), true, 'set reads a generated copy');
+      assert.ok(readFileSync(path, 'utf8').includes('<dir>/nix/store/x/share/fonts</dir>'));
+      const shardPath = writeFontsConfFor(1);
+      const shardText = readFileSync(shardPath, 'utf8');
+      assert.ok(shardText.includes('<dir>/nix/store/x/share/fonts</dir>'), 'a shard gets the directory too');
+      assert.ok(shardText.includes('-s1</cachedir>'), 'and still its own cache');
+    } finally {
+      restoreEnv(FONT_DIRS_VAR, saved);
+    }
   });
 });
 

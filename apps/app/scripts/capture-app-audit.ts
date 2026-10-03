@@ -70,7 +70,7 @@ import { buildSeedDiary, summarizeSeedDiary } from './lib/seed-diary';
 import { serializeBackup } from '../app/lib/local-store/backup';
 import { LANGUAGE_COOKIE, LANGUAGE_STORAGE_KEY } from '../app/i18n/language-prefs';
 import type { LanguageCode } from '../app/i18n/language-prefs';
-import { resetFontconfigCache } from '../tests/e2e/font-cache';
+import { resetFontconfigCache, writeFontsConfFor } from '../tests/e2e/font-cache';
 
 // ---------------------------------------------------------------------------
 // Fixed configuration
@@ -590,8 +590,7 @@ async function main(): Promise<void> {
   // same fontconfig `playwright.config.ts` points the e2e tier at; this host's
   // own `/etc/fonts/fonts.conf` has previously made every character in a
   // headless Chromium page measure as hidden text.
-  const fontsConf = fileURLToPath(new URL('../tests/e2e/fonts.conf', import.meta.url));
-  process.env.FONTCONFIG_FILE ??= fontsConf;
+  process.env.FONTCONFIG_FILE ??= writeFontsConfFor(null);
   await resetFontconfigCache();
 
   let appProcess: ChildProcess | null = null;
