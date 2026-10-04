@@ -14,6 +14,7 @@ change moves the minor.
 
 ### Fixed
 
+- **A delete scrubs the invitation address on an instance with no `TRIAL_ADDRESS_PEPPER` too.** Without a pepper, `POST /v1/auth/delete` and `DELETE /v1/admin/accounts/:id` left the address, the name and the key in the redeemed `signup_invites` row of the deleted account. They now clear all three, as an instance with a pepper does, and the row stays for the member's lifetime cap. Only the keyed hash needs the pepper, so none is written without one. One consequence on such an instance: the re-invite rule reads that row's address, so it no longer recognises an address whose member-invited account was deleted. An instance with a pepper behaves as before. `tests/integration/account-deletion-completeness.test.ts` runs the whole delete a second time with no pepper and fails on the old code.
 - **The AI proxy no longer follows a redirect from the provider.** A 307 or 308 made the proxy send the request body, photograph included, to the host in the `Location` header. It now answers 502, as for any unreachable provider.
 - **The terminal error handler no longer logs the error message.**
 - **The invitation and sign-up letters no longer say your data stays on your own device.** Both English letters said openplate "keeps your data on your own device", which was not true: your diary lives on your device, and your account keeps an encrypted copy on the server so you can use it on other devices and restore it. The letters now say that. The other languages still carry the old sentence until their translation pass runs.

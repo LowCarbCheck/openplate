@@ -833,9 +833,27 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       // member's pending letter would look like the operator's. Left pending,
       // a letter could still be redeemed after its sender left, and a day-trial
       // letter's allowance only starts at redemption.
+      //
+      // WITHOUT A PEPPER THE ADDRESS IS STILL SCRUBBED (2026-10-05). Only the
+      // keyed hash needs the pepper, and with no pepper nothing is kept in its
+      // place: the redeemed invite row for this mailbox loses its address, its
+      // name and its key like every other, and the row stays for the lifetime
+      // cap. The price, stated: the re-invite rule (`hasRedeemedMemberInvite`)
+      // answers from that row's address on such an instance, so it no longer
+      // recognises a deleted member-invited address.
       if (hashAddress === null) {
         await db.transaction(async (tx): Promise<void> => {
+          const [account] = await tx
+            .select({ email: accounts.email })
+            .from(accounts)
+            .where(eq(accounts.id, accountId))
+            .limit(1);
+          if (!account) return;
           await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
+          await tx
+            .update(signupInvites)
+            .set({ email: '', displayName: null, trialKey: null })
+            .where(or(eq(signupInvites.email, account.email), eq(signupInvites.redeemedAccountId, accountId)));
           await tx.delete(accounts).where(eq(accounts.id, accountId));
         });
         return;

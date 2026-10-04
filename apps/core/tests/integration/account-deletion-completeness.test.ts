@@ -569,6 +569,8 @@ let billerServer: RecordingServer;
 let pigeonServer: RecordingServer;
 let service: ServiceHarness;
 let outcome: Outcome;
+/** The same scenario on an instance with no `TRIAL_ADDRESS_PEPPER`, which the hosted one is not and a self-hosted one may be. */
+let pepperless: Outcome;
 
 interface SeedInput {
   accountId: number;
@@ -662,7 +664,7 @@ async function requireStatus(input: { label: string; status: number; wanted: num
   assert.equal(input.status, input.wanted, `${input.label} answered ${input.status}`);
 }
 
-async function runScenario(): Promise<Outcome> {
+async function runScenario(input: { pepper: string | null }): Promise<Outcome> {
   await database.reset();
   await database.pool.query("SELECT setval(pg_get_serial_sequence('accounts', 'id'), $1)", [LEAVER_ID - 1]);
   billerServer.requests.length = 0;
@@ -682,7 +684,7 @@ async function runScenario(): Promise<Outcome> {
   });
   service = await startService({
     db: database.db,
-    trialAddressPepper: PEPPER,
+    trialAddressPepper: input.pepper,
     plans: { baseUrl: `${billerServer.origin}/plans`, secret: PLANS_SECRET, timeoutMs: 1_000 },
     mailRecipientEraser: eraser,
   });
@@ -788,10 +790,13 @@ async function runScenario(): Promise<Outcome> {
   const countsAfter = await countTables({ pool: database.pool, schema });
   const hitsAfter = await scanForLeftovers({ pool: database.pool, schema });
   // Through drizzle, which reads a `timestamp` as UTC; a raw read would parse it in this machine's zone.
-  const [keptHash] = await database.db
-    .select()
-    .from(trialAddressHashes)
-    .where(eq(trialAddressHashes.hash, createTrialAddressHasher(PEPPER)(LEAVER_EMAIL)));
+  const [keptHash] =
+    input.pepper === null
+      ? []
+      : await database.db
+          .select()
+          .from(trialAddressHashes)
+          .where(eq(trialAddressHashes.hash, createTrialAddressHasher(input.pepper)(LEAVER_EMAIL)));
   const declarations = await database.pool.query<{ email: string; account_id: number | null }>(
     'SELECT email, account_id FROM legal_declarations',
   );
@@ -816,7 +821,8 @@ before(async () => {
   database = await setupTestDatabase();
   billerServer = await startRecordingServer();
   pigeonServer = await startRecordingServer();
-  outcome = await runScenario();
+  outcome = await runScenario({ pepper: PEPPER });
+  pepperless = await runScenario({ pepper: null });
 });
 
 after(async () => {
@@ -1028,4 +1034,32 @@ test('the fixtures carry no credential value', async () => {
     assert.equal(text.includes(PLANS_SECRET), false, `${file} holds the biller secret`);
     assert.equal(text.includes(MAIL_KEY), false, `${file} holds the mail key`);
   }
+});
+
+// =============================================================================
+// An instance with no pepper: the same delete, the same promise.
+// =============================================================================
+
+test('with no pepper the delete still leaves the address and the id only in the table kept on purpose', () => {
+  assert.equal(pepperless.deleteStatus, 204);
+  assert.deepEqual(
+    pepperless.hitsAfter.map((hit) => `${hit.table}.${hit.column}:${hit.needle}`),
+    ['legal_declarations.email:address'],
+    `a delete with no pepper left the account behind: ${describeHits(pepperless.hitsAfter)}`,
+  );
+  for (const table of pepperless.schema.tables) {
+    const counts = countsOf({ counts: pepperless.after, table });
+    if (counts.leaver !== null) assert.equal(counts.leaver, 0, `${table} still refers to the leaving account`);
+  }
+});
+
+test('with no pepper the invitation rows all stay for the lifetime cap and no hash is written', () => {
+  const invites = countsOf({ counts: pepperless.before, table: 'signup_invites' });
+  assert.equal(countsOf({ counts: pepperless.after, table: 'signup_invites' }).total, invites.total, 'a row went');
+  assert.equal(
+    countsOf({ counts: pepperless.after, table: 'trial_address_hashes' }).total,
+    countsOf({ counts: pepperless.before, table: 'trial_address_hashes' }).total,
+    'only the keyed hash needs the pepper, and none is written without one',
+  );
+  assert.equal(pepperless.keptHash, null);
 });
