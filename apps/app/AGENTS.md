@@ -72,9 +72,12 @@ fontconfig cache directory, and its own output folder `test-results/shard-<i>`
 The push gate runs the smoke set, the specs whose area matches the touched
 code, and the spec files the push changed. Shared code and unmapped app paths
 run the full tier. A push of a tag `v*`, `core-v*` or `inference-v*` runs the
-full tier, and so does `OPENPLATE_E2E_FULL=1 git push`. A nightly run on
-origin/main writes `~/.local/state/openplate/nightly-e2e/latest.txt`
-(`make nightly-status`); a red line blocks nothing, but fix it first.
+gate of the app the tag names, with the full tier, even when origin already
+holds the tagged commit. `OPENPLATE_E2E_FULL=1 git push` also runs the full
+tier. A nightly run on origin/main runs the full tier and then the photo path
+guard in `apps/core` (`pnpm test:guard`). It writes
+`~/.local/state/openplate/nightly-e2e/latest.txt` (`make nightly-status`); a
+red line blocks nothing, but fix it first.
 
 Every `tests/e2e/*.spec.ts` carries ` * @area <name>` in its header, one of the
 areas in `tests/e2e/areas.ts`, and smoke specs carry ` * @smoke`. `areas.ts`

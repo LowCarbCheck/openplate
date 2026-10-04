@@ -35,18 +35,21 @@ full tier.**
    push runs only the smoke set.
 
 3. **The release gate.** A push of a tag `v*`, `core-v*` or `inference-v*` runs
-   the full tier before the tag leaves the machine. Production changes only on a
-   tag, because Bay pins the version. So the full tier guards exactly what
-   reaches people. `OPENPLATE_E2E_FULL=1 git push` forces the full tier on any
-   push.
+   the gate of the app the tag names, with the full tier, before the tag leaves
+   the machine. It runs even when origin already holds the tagged commit.
+   Production changes only on a tag, because Bay pins the version. So the full
+   tier guards exactly what reaches people. `OPENPLATE_E2E_FULL=1 git push`
+   forces the full tier on any push.
 
 4. **The nightly.** `scripts/nightly-e2e.sh` runs the full tier on origin/main at
    03:30 from a systemd user timer, in its own worktree `op-nightly`, on the host
    node. It writes one line, `green|red <date> <sha> <summary>`, to
    `~/.local/state/openplate/nightly-e2e/latest.txt`, and a dated log beside it.
-   Every push gate prints that line at its start. A red nightly does not block a
-   push. It tells the next session what to fix first. `make nightly` installs the
-   timer, `make nightly-now` starts a run, `make nightly-status` prints the last
+   After the browser tier it runs the photo path guard in `apps/core`
+   (`pnpm test:guard`), and a failed guard turns the line red. Every push gate
+   prints that line at its start. A red nightly does not block a push. It tells
+   the next session what to fix first. `make nightly` installs the timer,
+   `make nightly-now` starts a run, `make nightly-status` prints the last
    result.
 
 5. **Every spec declares its area.** Each `apps/app/tests/e2e/*.spec.ts` carries
