@@ -1422,7 +1422,7 @@
     "reset": "Set a new password",
     "account": "Account",
     "admin": "Administration",
-    "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance is invitation only, and your diary is encrypted on this device before a copy reaches the server.",
+    "landingDescriptionManaged": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance needs an account, and your diary is encrypted on this device before a copy reaches the server.",
     "plan": "Your plan · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Pantry · openplate",
@@ -2803,7 +2803,7 @@
     "create": {
       "cta": "Create an account",
       "inviteLabel": "Invite code",
-      "inviteHint": "This instance is invite-only. Paste the code you were sent, or open the invite link.",
+      "inviteHint": "Paste the code you were sent, or open the invite link.",
       "inviteRequired": "That invite is not valid. It may have been used already, or expired. Ask for a new one.",
       "inviteMissing": "Paste your invite code, or open the invite link you were sent.",
       "inviteMalformed": "That does not look like an invite code. They start with {{prefix}}.",

@@ -564,6 +564,20 @@ describe('the description a search engine quotes follows the policy', () => {
     assert.notEqual(description, enCommon.meta.landingDescription);
   });
 
+  it('does not say the instance is invitation only, because sign-up can be open there', () => {
+    // `meta()` runs on the server and sees only the mode, never the handshake that says whether
+    // sign-up is open (`instance.openSignup`), so a managed description that said "invitation
+    // only" was false on app.openplate.de, where anybody may sign up. The line that does say it,
+    // the hero's `ticksManaged`, is drawn only after the handshake, which is the control that
+    // proves this pattern can match.
+    const INVITE_ONLY = /invit(ation|e)[- ]only/i;
+    assert.match(enCommon.landing.hero.ticksManaged, INVITE_ONLY, 'the control pattern cannot match');
+    assert.doesNotMatch(landingDescription(true), INVITE_ONLY);
+    assert.doesNotMatch(enCommon.sync.create.inviteHint, INVITE_ONLY);
+    // And the sentence still says what is true on both: an account is needed.
+    assert.match(landingDescription(true), /needs an account/);
+  });
+
   it('serves the managed description instead', () => {
     assert.equal(landingDescription(true), enCommon.meta.landingDescriptionManaged);
     assert.ok(!/[–—]/.test(enCommon.meta.landingDescriptionManaged));

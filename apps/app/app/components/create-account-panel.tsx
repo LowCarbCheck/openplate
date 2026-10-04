@@ -6,11 +6,15 @@
  * settings screen and any other door into account creation render the SAME
  * form. Two copies of a credential form is how one of them quietly rots.
  *
- * ── The invite is now REQUIRED, always (M192) ────────────────────────────
+ * ── The invite is REQUIRED in this panel (M192) ──────────────────────────
  *
- * There is no open signup and no closed mode to ask about, so this panel no
- * longer reads a signup mode from `/health` and no longer decides whether to
- * offer an invite field: every account comes from one. The field is still a
+ * This panel is the INVITE door. Open sign-up (M253) is another door, `/sign-up`,
+ * which asks the handshake (`instance.openSignup`) and sends an address a link;
+ * it is not drawn here, and this panel makes no statement about whether it
+ * exists. So the panel no longer reads a signup mode from `/health` and no
+ * longer decides whether to offer an invite field: every account made here
+ * comes from an invite. Nothing in it says the instance is "invite-only",
+ * because on an instance with open sign-up that would be false. The field is still a
  * FIELD OF THE CEREMONY'S FORM rather than a box above it (owner request,
  * 2026-09-02), which is what puts an invalid code under the invite box instead
  * of over the submit button.
