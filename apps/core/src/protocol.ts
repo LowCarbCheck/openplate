@@ -289,7 +289,7 @@ export interface AccountView {
    */
   trialScans: TrialScansView | null;
   /**
-   * When the free tier ends by the calendar (M267, `TRIAL_DAYS`), or `null`
+   * When the scan trial ends by the calendar (M267, `TRIAL_DAYS`), or `null`
    * for no end date: an account whose trial started before the setting
    * existed, one on an instance without it, and one with no trial at all.
    *

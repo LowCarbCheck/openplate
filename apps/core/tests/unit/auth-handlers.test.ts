@@ -649,6 +649,27 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   assert.equal(outcome.body.account.invitesLeft, null);
 });
 
+test('the account view reports the free limit the proxy enforces: the column, or the instance default', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const withDefault = { ...fixture.ctx, standing: { defaultFreeDailyAiLimit: 3 } };
+  const read = async (ctx: typeof fixture.ctx): Promise<number> => {
+    const outcome = await handleGetAccount({ accountId: session.account.id }, ctx);
+    if (outcome.status !== 'ok') throw new Error('the account read failed');
+    return outcome.body.account.freeDailyAiLimit;
+  };
+
+  // THE CONTROL: no standing at all is the column, which is 0 for this account.
+  assert.equal(await read(fixture.ctx), 0);
+  assert.equal(await read({ ...fixture.ctx, standing: { defaultFreeDailyAiLimit: 0 } }), 0);
+  // A default fills in for an account with no free limit of its own.
+  assert.equal(await read(withDefault), 3);
+  // An own limit wins, whichever way it compares with the default.
+  await fixture.store.updateStanding({ accountId: session.account.id, freeDailyAiLimit: 10 });
+  assert.equal(await read(withDefault), 10);
+  assert.equal(await read(fixture.ctx), 10);
+});
+
 test('PATCH /account sets and clears the display name, and refuses a missing key', async () => {
   const fixture = inviteFixture();
   const session = await signUp(fixture);

@@ -202,6 +202,10 @@ services:
       MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
       AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
       AI_TRIAL_NETWORK_DAILY_LIMIT: ${AI_TRIAL_NETWORK_DAILY_LIMIT:-}
+      # A standing free daily AI limit for every account with no free limit of its
+      # own, no end date and no trial. Empty or 0 means off. It cannot stand
+      # beside the trial above: the boot stops naming both.
+      DEFAULT_FREE_DAILY_AI_LIMIT: ${DEFAULT_FREE_DAILY_AI_LIMIT:-}
       # Web push: all three or none. Empty means no notifications.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}

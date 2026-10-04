@@ -828,7 +828,7 @@ Nothing secret is in it and nothing can be: no verifier, no KDF descriptor, no w
 
 `allowanceExpiresAt` is an ISO instant or `null`, and `null` means the AI allowance has no end date, which is what a self-hosted instance keeps. From that instant on, the proxy of §5.19 answers `403 allowance-expired`. **It gates AI and nothing else**: sync keeps working past the date, because the diary belongs to the account and a new device must be able to pull it. A client may render the date and must not authorize on it; the proxy is where the rule lives.
 
-`freeDailyAiLimit` is the account's **standing free grant**: AI units per UTC day (§5.19) that apply whenever no paid window is live, with no end date and no scan gate. `0` is none. The proxy's order (§5.19) is a live paid window (`allowanceExpiresAt` in the future, at `dailyAiLimit`), then this grant, then the scan trial, so an account with a free grant falls back to it when a paid window ends instead of losing AI. A client that shows a daily limit shows this one whenever no paid window is live. Only an operator writes it (§5.20); the biller's credential cannot. A client may render it and **MUST NOT authorize on it**. The field is additive: a client that ignores it decodes the view unchanged.
+`freeDailyAiLimit` is the account's **standing free grant**: AI units per UTC day (§5.19) that apply whenever no paid window is live, with no end date and no scan gate. `0` is none. The proxy's order (§5.19) is a live paid window (`allowanceExpiresAt` in the future, at `dailyAiLimit`), then this grant, then the scan trial, so an account with a free grant falls back to it when a paid window ends instead of losing AI. A client that shows a daily limit shows this one whenever no paid window is live. **The value in the view is the one the proxy enforces**: the account's own limit when it is above `0`, otherwise the instance default (§5.19), otherwise `0`. Only an operator writes it (§5.20); the biller's credential cannot. A client may render it and **MUST NOT authorize on it**. The field is additive: a client that ignores it decodes the view unchanged.
 
 `trialScans` is `{"granted": n, "left": n}` for an account with a scan trial, and `null` for one without, which is every account on an instance that runs none. `left` is `granted` minus the scans used, never below `0`. A client may render it and **MUST NOT authorize on it**: the proxy counts (§5.19), `left` is a snapshot taken when this view was built, and every proxied response carries the fresh number in `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the scan gate, so a paying account may still carry this field.
 
@@ -1259,10 +1259,23 @@ is decided per request, in this order:
 | -------------------------------------------------------------------- | ----------- | ----------------------- |
 | `allowanceExpiresAt` after the request's instant, `dailyAiLimit` > 0 | paid window | `dailyAiLimit`          |
 | otherwise `freeDailyAiLimit` > 0                                     | free grant  | `freeDailyAiLimit`      |
+| otherwise the instance's `DEFAULT_FREE_DAILY_AI_LIMIT` > 0           | free grant  | that default            |
 | otherwise `dailyAiLimit` is `0`                                      | none        | `403 ai-not-allowed`    |
 | otherwise `allowanceExpiresAt` is set (so it has passed)             | none        | `403 allowance-expired` |
 | otherwise `trialScans` is set                                        | scan trial  | `dailyAiLimit`          |
 | otherwise (a limit, no date, no trial, no free grant)                | none        | `403 ai-not-allowed`    |
+
+**The instance default (2026-10-05).** An operator can set
+`DEFAULT_FREE_DAILY_AI_LIMIT`. It is the free grant of every account whose own
+`freeDailyAiLimit` is `0`: the same grant in the same place of the order, so a
+live paid window still wins, an own limit is kept whatever the default is, and
+an account that holds a scan trial falls under the default instead of spending
+a scan. It never ends and has no scan gate. It is not written onto any row, so
+an operator who lowers or removes it changes every account at once. A day used
+up is the `429` below, with `Retry-After`, and never the `403 ai-not-allowed`
+of an account that has no grant. A service with no default behaves exactly as
+before. The default cannot be set beside the scan trial: that instance refuses
+to boot.
 
 The last row changed on 2026-09-30. That shape used to be a standing grant with
 no end; every account that held it was moved to `freeDailyAiLimit` by a
@@ -1282,7 +1295,7 @@ in the limit that applied:
 | Header               | Meaning                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | `X-Quota-Used`       | Units spent today, after this one                                                                    |
-| `X-Quota-Limit`      | The limit the order above picked, `dailyAiLimit` or `freeDailyAiLimit`                               |
+| `X-Quota-Limit`      | The limit the order above picked: `dailyAiLimit`, `freeDailyAiLimit` or the instance default         |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
 | Status | `error`                                | When                                                                                                                                                                                                               |
@@ -1324,12 +1337,12 @@ administrator" (`ai-not-allowed`) and not "your time ran out"
 (`allowance-expired`). A client older than the code reads an unknown `403`,
 which is why it is separate rather than folded into either.
 
-`403 trial-expired` is a **fourth**, for the free tier's other
+`403 trial-expired` is a **fourth**, for the scan trial's other
 limit: "your free days are over". It is not `allowance-expired`, which is a paid
 or granted window running out; a client that read one as the other would tell a
 person who paid that their trial is over. Both trial refusals carry
 **`endedBy`**, `"scans"` or `"days"`, so a client can name which limit ended
-the free tier from one field:
+the trial from one field:
 
 ```json
 { "error": "trial-expired", "endedBy": "days" }

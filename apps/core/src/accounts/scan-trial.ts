@@ -10,7 +10,7 @@
  * the three day trial: a window punishes the person who signs up on a Friday
  * and scans on Monday, and ten scans measure use rather than the calendar.
  *
- * AND A DAY LIMIT BESIDE IT (M267, owner decision 2026-09-29). The free tier
+ * AND A DAY LIMIT BESIDE IT (M267, owner decision 2026-09-29). The scan trial
  * is now "10 free AI scans or 14 days, whichever comes first". An instance
  * with `TRIAL_DAYS` writes `accounts.trial_ends_at` when the trial starts, at
  * redemption, and the proxy answers `403 trial-expired` from that instant on.
@@ -88,12 +88,12 @@ export const TRIAL_SCANS_SPENT = 'trial-scans-spent';
  * The refusal once a trial's end date has passed (M267), beside
  * {@link TRIAL_SCANS_SPENT}. A fourth code and not `allowance-expired`: that
  * one is a paid or granted window running out, and a client that read it as
- * the free tier ending would tell a person who paid that their trial is over.
+ * the trial ending would tell a person who paid that their trial is over.
  */
 export const TRIAL_EXPIRED = 'trial-expired';
 
 /**
- * Which of the free tier's two limits ended it (M267). Both refusals carry it
+ * Which of the scan trial's two limits ended it (M267). Both refusals carry it
  * as `endedBy`, so a client can name the reason from one field.
  */
 export type TrialEndedBy = 'scans' | 'days';
@@ -273,7 +273,7 @@ function localMidnight(input: { year: number; month: number; day: number; timeZo
 }
 
 /**
- * Whether the free tier has ended for this account right now, and by which
+ * Whether the scan trial has ended for this account right now, and by which
  * limit, or `null` while it still runs or does not apply (M267).
  *
  * ONLY WHERE THE SCAN GATE APPLIES (`accounts/ai-allowance.ts`, the `trial`

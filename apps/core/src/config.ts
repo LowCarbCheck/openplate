@@ -309,6 +309,23 @@ export interface ServiceConfig {
    */
   aiTrialNetworkDailyLimit: number | null;
   /**
+   * The free AI requests per UTC day every account gets that has no free
+   * limit of its own (`DEFAULT_FREE_DAILY_AI_LIMIT`, 2026-10-05), or `0` for
+   * none, which is the default and what every existing deployment and every
+   * self-hoster keeps.
+   *
+   * IT IS A STANDING CAP, NOT A TRIAL. It never ends, it is never scan gated,
+   * and it is counted per UTC day in `ai_usage_days` like every other limit.
+   * The proxy's order is unchanged: a live paid window, then the free limit
+   * (the account's own when above zero, otherwise this), then the scan trial.
+   *
+   * IT CANNOT STAND BESIDE A SCAN TRIAL. The cap replaces the trial, so an
+   * instance that sets both is a boot failure naming both: two free grants
+   * with no order between them would be a decision made by whichever door an
+   * account happened to come through. See {@link parseDefaultFreeDailyAiLimit}.
+   */
+  defaultFreeDailyAiLimit: number;
+  /**
    * The secret the one mailbox, one trial rule hashes addresses with
    * (`TRIAL_ADDRESS_PEPPER`, M253), or `null`.
    *
@@ -1810,6 +1827,30 @@ function parseAiTrialNetworkDailyLimit(input: {
 }
 
 /**
+ * `DEFAULT_FREE_DAILY_AI_LIMIT` (2026-10-05): an integer from 0 to
+ * `MAX_DAILY_AI_LIMIT`, where unset, empty and `0` all mean off.
+ *
+ * A BOOT FAILURE BESIDE A SCAN TRIAL. The standing cap replaces the trial, and
+ * an instance with both would give a new account whichever one its door wrote
+ * first. The message names both settings and says which to unset.
+ */
+function parseDefaultFreeDailyAiLimit(env: NodeJS.ProcessEnv, trial: TrialPolicy | null): number {
+  const limit = parseNonNegativeInteger(env, 'DEFAULT_FREE_DAILY_AI_LIMIT', 0);
+  if (limit > MAX_DAILY_AI_LIMIT) {
+    throw new Error(`DEFAULT_FREE_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT} (got ${limit})`);
+  }
+  if (limit > 0 && trial !== null) {
+    throw new Error(
+      'DEFAULT_FREE_DAILY_AI_LIMIT and the scan trial (TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT) cannot both be set: ' +
+        'the standing daily limit replaces the trial, and an instance with both would grant a new account ' +
+        'whichever one its door wrote first. Unset DEFAULT_FREE_DAILY_AI_LIMIT to keep the trial, or unset ' +
+        'TRIAL_SCANS, TRIAL_DAILY_AI_LIMIT and anything that depends on them to keep the standing limit.',
+    );
+  }
+  return limit;
+}
+
+/**
  * `TRIAL_ADDRESS_PEPPER` (M253): optional, at least
  * {@link MIN_SERVER_SECRET_LENGTH} characters, and REQUIRED when the instance
  * runs a scan trial, because the one mailbox, one trial rule cannot recognise
@@ -1979,6 +2020,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       env,
       trialInstanceDailyLimit: aiTrialInstanceDailyLimit,
     }),
+    defaultFreeDailyAiLimit: parseDefaultFreeDailyAiLimit(env, trial),
     trialAddressPepper: parseTrialAddressPepper(env, trial),
     openSignup,
     turnstile: parseTurnstile(env, openSignup),

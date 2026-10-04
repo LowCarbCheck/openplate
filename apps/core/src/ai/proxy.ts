@@ -33,8 +33,9 @@
  *                   before anything is counted: a plate photograph is health
  *                   data, and this route is where it passes through.
  *   2. allowance  : `accounts/ai-allowance.ts` picks the grant, a live paid
- *                   window, the standing free grant or the scan trial, and
- *                   the daily limit step 3 reserves against. No grant is
+ *                   window, the standing free grant (the account's own, or
+ *                   the instance's `DEFAULT_FREE_DAILY_AI_LIMIT`) or the scan
+ *                   trial, and the daily limit step 3 reserves against. No grant is
  *                   403 ai-not-allowed, a paid window that ended with no
  *                   free grant beneath it is 403 allowance-expired. Both
  *                   refuse BEFORE step 3, because a reservation writes a row.
@@ -213,7 +214,8 @@ import {
   TRIAL_SCANS_SPENT,
   trialEndedBy,
 } from '../accounts/scan-trial.js';
-import { aiAllowanceFor } from '../accounts/ai-allowance.js';
+import { aiAllowanceFor, effectiveFreeDailyAiLimit } from '../accounts/ai-allowance.js';
+import type { InstanceStanding } from '../accounts/instance-standing.js';
 import { clientAddressKey } from '../lib/client-address.js';
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
@@ -287,6 +289,15 @@ export interface ChatCompletionsDeps {
    * Required and nullable for the reason `instanceDailyLimit` is.
    */
   healthConsent: InstanceHealthConsent | null;
+  /**
+   * What the instance grants an account with no record of its own
+   * (`DEFAULT_FREE_DAILY_AI_LIMIT`, 2026-10-05). Required for the reason
+   * `instanceDailyLimit` is: a wiring change that forgot it must not compile
+   * into a proxy that ignores a standing limit the operator configured and
+   * the account view reports. `NO_INSTANCE_STANDING` is the written-out
+   * "nothing configured".
+   */
+  standing: InstanceStanding;
   /** Injectable so a test can freeze the UTC day boundary the quota keys on. */
   now?: () => Date;
 }
@@ -428,6 +439,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     instanceDailyLimit,
     logger,
     quota,
+    standing,
     trialInstanceDailyLimit,
     trialNetwork,
     upstream: upstreamConfig,
@@ -738,9 +750,17 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // able to sign in on a new device and pull what they wrote. An expired
     // allowance is a feature ending, not an account ending, and deletion is
     // the erasure path that already exists.
+    // THE FREE LIMIT IS THE ACCOUNT'S OWN, OR THE INSTANCE'S STANDING ONE
+    // (2026-10-05), read once so the allowance and the trial's end below judge
+    // the same number. An instance with no standing default passes `0` here, so
+    // the ladder reads the column alone, exactly as it always did.
+    const freeDailyAiLimit = effectiveFreeDailyAiLimit({
+      own: account.freeDailyAiLimit,
+      instanceDefault: standing.defaultFreeDailyAiLimit,
+    });
     const allowance = aiAllowanceFor({
       dailyAiLimit: account.dailyAiLimit,
-      freeDailyAiLimit: account.freeDailyAiLimit,
+      freeDailyAiLimit,
       allowanceExpiresAt: account.allowanceExpiresAt,
       trialScans: account.trialScans,
       now: requestedAt,
@@ -819,7 +839,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
           trialScansUsed: account.trialScansUsed,
           trialEndsAt: account.trialEndsAt,
           allowanceExpiresAt: account.allowanceExpiresAt,
-          freeDailyAiLimit: account.freeDailyAiLimit,
+          freeDailyAiLimit,
           now: requestedAt,
         })
       : null;

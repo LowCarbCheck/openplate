@@ -67,6 +67,7 @@ import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
 import type { AuthContext } from './accounts/auth-handlers.js';
 import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
+import type { InstanceStanding } from './accounts/instance-standing.js';
 import { SERVICE_VERSION } from './version.js';
 import { errorFields, scrubbedErrorMessage } from './log-error.js';
 
@@ -161,7 +162,7 @@ async function main(): Promise<void> {
         letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
       }
     : null;
-  if (openSignup !== null && config.trial === null) {
+  if (openSignup !== null && config.trial === null && config.defaultFreeDailyAiLimit === 0) {
     logger.info('Open sign-up is on, and new accounts get no AI until an operator grants some');
   }
   if (openSignup !== null) {
@@ -180,6 +181,17 @@ async function main(): Promise<void> {
   // self-hosted default and asks nobody anything.
   const healthConsent: InstanceHealthConsent | null =
     config.healthConsentVersion === null ? null : { version: config.healthConsentVersion };
+
+  // WHAT THE INSTANCE GRANTS AN ACCOUNT WITH NO RECORD OF ITS OWN, built once
+  // for the two readers of it: the account view (through the auth context) and
+  // the AI proxy (which `create-app.ts` hands the same object). All-off, and so
+  // today's behaviour, on an instance that set none of the variables.
+  const standing: InstanceStanding = { defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit };
+  if (config.defaultFreeDailyAiLimit > 0) {
+    logger.info('A standing free daily AI limit is on: accounts with no limit of their own get it, and no scan trial', {
+      defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
+    });
+  }
 
   const authContext: AuthContext = {
     // The zone a trial's last midnight falls in (`TRIAL_TIME_ZONE`), read at
@@ -205,6 +217,7 @@ async function main(): Promise<void> {
     // `null` leaves `POST /v1/auth/account/health-consent` answering the
     // ordinary unknown-path 404 and signup ignoring the field.
     healthConsent,
+    standing,
     // Both erasure paths tell the biller first, when there is one, so a
     // deleted account is never charged again. `null` without a biller.
     accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),

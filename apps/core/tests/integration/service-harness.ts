@@ -74,6 +74,7 @@ import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { parseRecoveryCode } from '../../src/accounts/auth-input.js';
 import { deriveRecoveryAuthHash } from '../../src/lib/recovery-auth.js';
 import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
+import type { InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 export interface HttpResponse<T> {
   status: number;
@@ -482,6 +483,13 @@ export interface StartServiceOptions {
    * then the target again under the source's, which is the whole switch.
    */
   serverSecret?: string;
+  /**
+   * What the instance grants an account with no record of its own
+   * (`DEFAULT_FREE_DAILY_AI_LIMIT`), as `main.ts` builds it. Absent is every
+   * instance that set none of the variables, which is every instance before
+   * 2026-10-05: no default free limit.
+   */
+  standing?: InstanceStanding | null;
 }
 
 /** The root secret every suite runs under unless it names another. */
@@ -607,6 +615,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     openSignup: openSignupSurface,
     // `null` by default, see `StartServiceOptions.healthConsent`.
     healthConsent,
+    // `null` by default, see `StartServiceOptions.standing`.
+    standing: options.standing ?? null,
     afterResponse: (task) => {
       pendingAfterResponse.push(
         new Promise<void>((resolve) => {

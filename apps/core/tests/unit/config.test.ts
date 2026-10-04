@@ -1265,3 +1265,34 @@ test('AI_MAX_OUTPUT_TOKENS defaults to 8192, takes a positive integer, and refus
     assert.throws(() => parseConfig(baseEnv({ AI_MAX_OUTPUT_TOKENS: invalid })), /AI_MAX_OUTPUT_TOKENS/, invalid);
   }
 });
+
+// ── DEFAULT_FREE_DAILY_AI_LIMIT (2026-10-05) ────────────────────────────────
+
+test('the standing free daily limit is off unless set, and unset, empty and 0 all mean off', () => {
+  assert.equal(parseConfig(baseEnv()).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '' })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: ' 3 ' })).defaultFreeDailyAiLimit, 3);
+});
+
+test('a standing free daily limit that is not a whole number from 0 to the ceiling stops the boot', () => {
+  for (const value of ['-1', '2.5', 'three', '10001']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: value })),
+      /DEFAULT_FREE_DAILY_AI_LIMIT/,
+      value,
+    );
+  }
+});
+
+test('a standing free daily limit beside a scan trial stops the boot, naming both settings', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '3' })),
+    /DEFAULT_FREE_DAILY_AI_LIMIT.*TRIAL_SCANS.*TRIAL_DAILY_AI_LIMIT/s,
+  );
+  // THE CONTROLS: each half alone boots, and a limit of 0 beside the trial is
+  // the same as no limit.
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '3' })).trial, null);
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).trial?.scans, 10);
+});

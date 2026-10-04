@@ -30,6 +30,7 @@ import { hashToken } from '../../src/lib/tokens.js';
 import type { LogFields, Logger } from '../../src/logger.js';
 import { createAuthFixture, type AuthFixture } from './auth-context-fixture.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
+import { NO_INSTANCE_STANDING, type InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 const servers: Server[] = [];
 
@@ -232,6 +233,8 @@ async function startProxy(options: {
   accountConsentVersion?: string;
   /** The input bounds and unit size, over the production defaults. */
   inputPolicy?: Partial<ChatInputPolicy>;
+  /** What the instance grants an account with no record of its own. Absent means nothing configured. */
+  standing?: InstanceStanding;
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
@@ -295,6 +298,7 @@ async function startProxy(options: {
       bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
       inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.inputPolicy },
       healthConsent: options.healthConsentVersion === undefined ? null : { version: options.healthConsentVersion },
+      standing: options.standing ?? NO_INSTANCE_STANDING,
       now: fixture.now,
     }),
   );
@@ -856,6 +860,92 @@ test('a spent allowance is 429 with a Retry-After to the next UTC midnight', asy
   assert.equal(retryAfter, 14 * 60 * 60);
   assert.equal(response.headers.get('x-quota-used'), '2');
   assert.equal(response.headers.get('x-quota-limit'), '2');
+
+  await harness.close();
+});
+
+// ── The instance's standing free limit (2026-10-05) ────────────────────────
+
+test('an account with no AI of its own is held to the instance default, and refused at it with a 429', async () => {
+  // A new account on an instance with DEFAULT_FREE_DAILY_AI_LIMIT=3: no free
+  // limit, no trial, no paid window. The default is what the proxy reserves
+  // against, and what it reports in the quota headers.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 0,
+    standing: { defaultFreeDailyAiLimit: 3 },
+  });
+
+  const first = await postCompletion(harness);
+  assert.equal(first.status, 200);
+  assert.equal(first.headers.get('x-quota-limit'), '3');
+  assert.equal(upstream.received.length, 1);
+
+  // Used up for the day: a 429 with a reset, NOT the 403 of "no allowance", so
+  // a client can say "come back tomorrow" rather than "you have no AI".
+  harness.quota.count = 3;
+  const spent = await postCompletion(harness);
+  assert.equal(spent.status, 429);
+  assert.equal(Number(spent.headers.get('retry-after')), 14 * 60 * 60);
+  assert.equal(spent.headers.get('x-quota-used'), '3');
+  assert.equal(spent.headers.get('x-quota-limit'), '3');
+  assert.match(String((await spent.json()).error), /^daily quota spent: 3 of 3 units used/);
+  assert.equal(upstream.received.length, 1, 'the refused request must not reach the provider');
+
+  await harness.close();
+});
+
+test('CONTROL: the same account with no instance default is 403 ai-not-allowed, as it always was', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0 });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: 'ai-not-allowed' });
+  assert.equal(harness.quota.reserves, 0);
+
+  await harness.close();
+});
+
+test('an own free limit is kept whatever the default is, and a live paid window beats both', async () => {
+  const upstream = await startFakeUpstream();
+  const own = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    freeDailyAiLimit: 10,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+    standing: { defaultFreeDailyAiLimit: 3 },
+  });
+  const ownResponse = await postCompletion(own);
+  assert.equal(ownResponse.status, 200);
+  assert.equal(ownResponse.headers.get('x-quota-limit'), '10');
+  await own.close();
+
+  const paid = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    allowanceExpiresAt: new Date('2026-08-05T09:00:00.000Z'),
+    standing: { defaultFreeDailyAiLimit: 3 },
+  });
+  const paidResponse = await postCompletion(paid);
+  assert.equal(paidResponse.status, 200);
+  assert.equal(paidResponse.headers.get('x-quota-limit'), '200');
+  await paid.close();
+});
+
+test('a paid period that ended falls back to the instance default, not to allowance-expired', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+    standing: { defaultFreeDailyAiLimit: 3 },
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('x-quota-limit'), '3');
 
   await harness.close();
 });

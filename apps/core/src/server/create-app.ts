@@ -114,6 +114,7 @@ import { SHARE_API_PREFIXES, registerShareRoutes } from './share-routes.js';
 import { RESEARCH_API_PREFIXES, registerResearchRoutes } from './research-routes.js';
 import { registerRotateDekRoute } from './rotate-dek-route.js';
 import { CHAT_COMPLETIONS_PATH, registerAiRoute } from '../ai/register-ai-route.js';
+import { NO_INSTANCE_STANDING } from '../accounts/instance-standing.js';
 import type { TrialNetworkShare } from '../ai/trial-network.js';
 import { FEEDBACK_API_PREFIX, registerFeedbackRoute } from '../feedback/register-feedback-route.js';
 import { registerPulseRoutes } from './register-pulse-routes.js';
@@ -501,6 +502,9 @@ export function createApp(options: CreateAppOptions): Express {
   // auth context rather than configured again here. `null` makes it a
   // pass-through, which is what every self-hosted instance runs.
   const healthConsent = options.authContext.healthConsent ?? null;
+  // The instance's standing, from the same context the account view reads, so
+  // what the proxy enforces and what a person is shown cannot be two bindings.
+  const standing = options.authContext.standing ?? NO_INSTANCE_STANDING;
   const requireConsent = createHealthConsentMiddleware(healthConsent);
   registerAuthRoutes(app, {
     ctx: options.authContext,
@@ -687,6 +691,7 @@ export function createApp(options: CreateAppOptions): Express {
       // Refused in the proxy's own ladder, beside the suspension, rather than
       // by `requireConsent` in front of it. See `ChatCompletionsDeps`.
       healthConsent,
+      standing,
     });
   }
 

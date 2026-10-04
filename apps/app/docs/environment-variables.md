@@ -156,6 +156,7 @@ The core server container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two v
 | `TRIAL_ADDRESS_PEPPER` | unset | The secret that enforces one trial per mailbox. It must be at least 32 characters. Required with the trial pair. Changing this value forgets which mailboxes had a trial. | |
 | `AI_TRIAL_INSTANCE_DAILY_LIMIT` | unset, no limit | The total amount all trial accounts together can spend per UTC day. Requires the trial. | |
 | `AI_TRIAL_NETWORK_DAILY_LIMIT` | a tenth of `AI_TRIAL_INSTANCE_DAILY_LIMIT`, at least 1 | The amount the trial requests from one network (an IPv6 /64, or one IPv4 address) can spend of the trial limit per UTC day. It is off without `AI_TRIAL_INSTANCE_DAILY_LIMIT`, and must not be above it. People behind one IPv4 carrier NAT share it. | |
+| `DEFAULT_FREE_DAILY_AI_LIMIT` | unset, off | The AI requests per UTC day every account gets that has no free limit of its own, 0 to 10000. It never ends and has no scan count. A day used up answers 429 with `Retry-After`. It replaces the scan trial, so setting it together with the trial pair stops the boot. An account that still holds a trial falls under this limit. | |
 
 ### Mail
 

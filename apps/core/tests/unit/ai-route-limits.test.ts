@@ -28,6 +28,7 @@ import express from 'express';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { registerAiRoute, CHAT_COMPLETIONS_PATH } from '../../src/ai/register-ai-route.js';
+import { NO_INSTANCE_STANDING } from '../../src/accounts/instance-standing.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
@@ -141,6 +142,7 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
     inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
     // An instance that asks for no consent, which this file is not about.
     healthConsent: null,
+    standing: NO_INSTANCE_STANDING,
   });
   // The terminal handler the real app mounts last. Present so a test can see
   // that the route's own handler answered rather than falling through to it.

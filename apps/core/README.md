@@ -334,6 +334,14 @@ less than `AI_BUDGET_ALERT_FRACTION` of the limit is left (default `0.2`),
 again. Another provider has no such read, so the route then reports capacity
 only.
 
+**Every account can get a free daily limit.** Set `DEFAULT_FREE_DAILY_AI_LIMIT`
+(1 to 10000) and every account with no free limit of its own may make that many
+AI requests per UTC day, with no end date and no scan count. An own limit
+(`pnpm core-api accounts set-free-limit`) is kept, and a live paid window still
+wins. A day used up answers `429` with `Retry-After`. Unset or 0 is off, and
+nothing changes. It takes the place of the scan trial below, so the boot stops
+if both are set.
+
 **New accounts can get free AI scans.** Set `TRIAL_SCANS` and
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
 them. An account from open sign-up, from an invite minted with

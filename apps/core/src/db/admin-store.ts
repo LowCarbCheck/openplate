@@ -94,7 +94,7 @@ const IDENTITY_COLUMNS = {
   trialScans: accounts.trialScans,
   trialScansUsed: accounts.trialScansUsed,
   // The day limit's end (M267), on the user-facing `AccountView` too, for the
-  // same reason: the person whose free tier ends has to be told when.
+  // same reason: the person whose trial ends has to be told when.
   trialEndsAt: accounts.trialEndsAt,
   suspendedAt: accounts.suspendedAt,
   // The health-data consent: the operator must be able to show when a person
