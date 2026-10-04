@@ -102,7 +102,8 @@ export const MAIL_STRINGS = {
     invite: {
       subject: 'Your openplate invitation',
       greeting: 'Hello,',
-      invited: 'You are invited to openplate, a food diary that keeps your data on your own device.',
+      invited:
+        'You are invited to openplate, a food diary. Your diary lives on your device, and your account keeps an encrypted copy on the server, so you can use it on other devices and restore it.',
       open: 'Open this link on the device you want to use openplate on:',
       expiry: 'The link works one time only, and it expires on {date}.',
       password:

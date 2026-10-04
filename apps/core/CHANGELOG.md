@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The invitation and sign-up letters no longer say your data stays on your own device.** Both English letters said openplate "keeps your data on your own device", which was not true: your diary lives on your device, and your account keeps an encrypted copy on the server so you can use it on other devices and restore it. The letters now say that. The other languages still carry the old sentence until their translation pass runs.
+
 ## [0.30.0] - 2026-10-01
 
 ### Changed

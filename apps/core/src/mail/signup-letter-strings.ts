@@ -61,7 +61,7 @@ const SIGNUP_LETTERS_EN: SignupLetterStrings = {
     subject: 'Create your openplate account',
     greeting: 'Hello,',
     asked:
-      'You, or someone using this email address, asked to create an openplate account. openplate is a food diary that keeps your data on your own device.',
+      'You, or someone using this email address, asked to create an openplate account. openplate is a food diary. Your diary lives on your device, and your account keeps an encrypted copy on the server, so you can use it on other devices and restore it.',
     open: 'To create the account, open this link on the device you want to use openplate on:',
     expiry: 'The link works one time only, and it expires on {date}.',
     password:
