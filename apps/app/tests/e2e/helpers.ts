@@ -494,3 +494,24 @@ export function recordDocumentPaths(page: Page): string[] {
   });
   return paths;
 }
+
+/**
+ * Goes to a page by the phone's More sheet, which is a CLIENT navigation.
+ *
+ * WHY NOT `goto`. A document load reopens the session from nothing, so the
+ * account view a feature gate reads has not landed when the screen first paints
+ * (the gate is held from the first paint and answers open for what it does not
+ * know yet, ADR-0024). A person reaches a gated screen from inside the app far
+ * more often than by loading its address, and that is the path a gate spec
+ * measures.
+ *
+ * @param page - a page on the diary or any page with the bottom bar.
+ * @param tileName - the tile's label, a catalog word such as `EN.nav.fasting`.
+ */
+export async function openFromMoreSheet(page: Page, tileName: string): Promise<void> {
+  await page
+    .locator('[data-slot="bottom-nav-shell"] nav')
+    .getByRole('button', { name: EN.nav.more, exact: true })
+    .click();
+  await page.locator('[data-slot="more-tile"]').filter({ hasText: tileName }).click();
+}

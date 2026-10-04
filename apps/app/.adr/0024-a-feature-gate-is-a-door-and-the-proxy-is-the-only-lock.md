@@ -104,5 +104,5 @@ build if a tier name appears in a string literal under `app/`.
   `app/hooks/use-feature-gate.ts`, `app/components/plans/feature-gate.tsx`,
   `app/lib/plans/tier-view.ts`, `app/components/plans/tier-list.tsx`.
 - `tests/unit/capabilities.test.ts`, `tests/unit/plan-tiers.test.ts`,
-  `tests/unit/no-tier-names.test.ts`, `tests/e2e/feature-gates.spec.ts`.
+  `tests/unit/no-tier-names.test.ts`, `tests/e2e/fasting-gate.spec.ts`, `tests/e2e/pantry-gate.spec.ts`, `tests/e2e/plan-tiers.spec.ts`.
 - ADR-0020, which this record supersedes.

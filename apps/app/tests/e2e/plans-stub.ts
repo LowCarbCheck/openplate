@@ -36,6 +36,16 @@ export const FIXTURE_OFFER_BODY: string = readFileSync(
   'utf8',
 );
 
+/**
+ * The neutral fixture offer WITH TIERS (M2/05): placeholder names, a free
+ * entry, one tier that is not on sale and the biller's privacy lines. No real
+ * tier name or price reaches this tier.
+ */
+export const FIXTURE_TIERS_OFFER_BODY: string = readFileSync(
+  resolve(process.cwd(), 'tests/fixtures/plan-offer-tiers.json'),
+  'utf8',
+);
+
 /** The plan view of somebody the biller holds no subscription for. */
 export const NO_SUBSCRIPTION_VIEW = {
   plan: 'none',
@@ -246,10 +256,17 @@ export async function routePortal(page: Page, returnTo: string): Promise<PortalR
 }
 
 /** The fields an allowance sets, leaving an absent `createdAt` and `trialScans` as the fake's own. */
-function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt, trialScans }: AccountAllowance): AccountAllowance {
+function accountPatch({
+  dailyAiLimit,
+  allowanceExpiresAt,
+  createdAt,
+  trialScans,
+  capabilities,
+}: AccountAllowance): AccountAllowance {
   const patch: AccountAllowance = { dailyAiLimit, allowanceExpiresAt };
   if (createdAt !== undefined) patch.createdAt = createdAt;
   if (trialScans !== undefined) patch.trialScans = trialScans;
+  if (capabilities !== undefined) patch.capabilities = capabilities;
   return patch;
 }
 
@@ -273,6 +290,12 @@ export interface AccountAllowance {
    * sends none, like a core older than the field.
    */
   trialScans?: { granted: number; left: number } | null;
+  /**
+   * The account's effective feature list (M2/05): the labels its plan includes,
+   * `null` for everything, or absent to leave the key out, as a core older than
+   * the field does. Absent and `null` both read as open on the device.
+   */
+  capabilities?: readonly string[] | null;
 }
 
 /**

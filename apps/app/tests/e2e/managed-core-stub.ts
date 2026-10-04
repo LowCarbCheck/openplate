@@ -83,6 +83,12 @@ export interface ManagedCoreStub {
    * so a spec can sign in normally and then end the session on the next load.
    */
   refreshRefusal?: 'unauthorized' | 'suspended';
+  /**
+   * `AccountView.capabilities` (M2/05): the labels the plan includes, `null` for
+   * everything, or absent to leave the key out as a core older than the field
+   * does. Read per request.
+   */
+  capabilities?: readonly string[] | null;
 }
 
 /** A trial account that has scans left, on an instance with member invites. */
@@ -124,9 +130,9 @@ function accountPatch(stub: ManagedCoreStub) {
   const withName = stub.displayName === undefined ? withRole : { ...withRole, displayName: stub.displayName };
   const withInvites =
     stub.invitesNeedAPlan === undefined ? withName : { ...withName, invitesNeedAPlan: stub.invitesNeedAPlan };
-  return stub.accountHealthConsent === undefined ?
-      withInvites
-    : { ...withInvites, healthConsent: stub.accountHealthConsent };
+  const withConsent =
+    stub.accountHealthConsent === undefined ? withInvites : { ...withInvites, healthConsent: stub.accountHealthConsent };
+  return stub.capabilities === undefined ? withConsent : { ...withConsent, capabilities: stub.capabilities };
 }
 
 /** The handshake's instance block, with `healthConsent` only when the stub names one. */
