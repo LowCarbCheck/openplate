@@ -341,6 +341,25 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
     }
   });
 
+  it('adds the tier id and the interval when a tier was picked, and keeps today\'s four keys (M2/05)', async () => {
+    const { transport, calls } = fakeTransport({ answers: { url: 'https://checkout.example.test/s/2' } });
+    await new PlansClient({ transport }).placeOrder({ ...ORDER, plan: 'monthly', tier: 'fixture-alpha' });
+    assert.deepEqual(calls[0]?.body, {
+      plan: 'monthly',
+      locale: 'en',
+      consentVersion: 'fixture-consent-1',
+      consents: { terms: true, earlyStart: true },
+      tier: 'fixture-alpha',
+      interval: 'month',
+    });
+    // THE CONTROL: with no tier the body has neither key, so a biller that never learnt tiers sees today's order.
+    const plain = fakeTransport({ answers: { url: 'https://checkout.example.test/s/3' } });
+    await new PlansClient({ transport: plain.transport }).placeOrder(ORDER);
+    const sent = JSON.stringify(plain.calls[0]?.body);
+    assert.equal(sent.includes('tier'), false);
+    assert.equal(sent.includes('interval'), false);
+  });
+
   it('answers a booked switch as a switch, with the day the year starts', async () => {
     const startsAt = '2026-10-09T00:00:00.000Z';
     const { transport } = fakeTransport({ answers: { switched: { plan: 'yearly', startsAt } } });

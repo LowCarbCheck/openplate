@@ -88,6 +88,19 @@ export const planViewSchema = z.object({
   cancelAtPeriodEnd: z.boolean(),
   /** Whether there is a customer to open the portal onto. `false` for somebody who never paid. */
   portalAvailable: z.boolean(),
+  /**
+   * The id of the tier the subscription is on, or `null` with none, for a
+   * biller that sells tiers (M2/04). A tier id is an OPAQUE STRING the biller
+   * chose, never compiled in and never shown: the page looks it up in the
+   * offer's `tiers` to find the name it displays.
+   *
+   * ABSENT FROM A BILLER OLDER THAN THE FIELD, and `.catch(undefined)` for the
+   * reason `planKey` has `.catch(null)`: the field is younger than the page.
+   * Absent and `null` both mean "no tier named", which leaves the page exactly
+   * as it was before tiers, and an absent key stays absent in the decoded
+   * view so a body without the field decodes to exactly what it did before.
+   */
+  currentTier: z.string().nullable().optional().catch(undefined),
 });
 
 export type PlanView = z.infer<typeof planViewSchema>;
@@ -128,6 +141,38 @@ export const offerPlanSchema = z
   .refine((plan) => PLAN_INTERVAL_BY_KEY[plan.key] === plan.interval, { message: 'key and interval disagree' });
 
 export type OfferPlan = z.infer<typeof offerPlanSchema>;
+
+/**
+ * One tier in `GET /plans/offer` (M2/04, M2/05).
+ *
+ * EVERYTHING A PERSON READS ABOUT A TIER IS THE BILLER'S DATA: the name, the
+ * description and the prices. This client has no tier name, no price and no
+ * limit of its own. `capabilities` are FEATURE words (`capabilities.ts`); the
+ * page maps the ones it knows to names in the reader's language and says
+ * nothing about one it does not.
+ *
+ * `prices` holds one entry per interval the tier is sold in, each the same
+ * entry the legacy `plans` list carries, so the existing card figures and the
+ * key-and-interval check apply unchanged.
+ */
+export const tierSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  /** AI scans per day, `0` for none, or `null` when the biller states no limit. */
+  dailyAiLimit: z.number().int().nonnegative().nullable().catch(null),
+  capabilities: z.array(z.string()).catch([]),
+  /** `false` is shown and not orderable: a tier being phased out, or not yet open. */
+  onSale: z.boolean(),
+  prices: z.object({ monthly: offerPlanSchema.optional(), yearly: offerPlanSchema.optional() }),
+});
+
+export type Tier = z.infer<typeof tierSchema>;
+
+/** The tier of a person with no paid plan: the same entry without prices. */
+export const freeTierSchema = tierSchema.omit({ prices: true, onSale: true });
+
+export type FreeTier = z.infer<typeof freeTierSchema>;
 
 /** The slot in `texts.termsConsent` the page replaces with a link, transcribed from `TERMS_SLOT` in the biller. */
 export const TERMS_SLOT = '{terms}';
@@ -177,6 +222,27 @@ export const planOfferSchema = z.object({
     switchNote: z.string().refine((text) => text.includes(DATE_SLOT), { message: 'switchNote has no date slot' }),
   }),
   links: z.object({ terms: appPathSchema, privacy: appPathSchema, withdrawal: appPathSchema }),
+  /**
+   * THE TIERS (M2/04), absent from a biller that sells one plan. ABSENT MEANS
+   * TODAY'S PAGE, BYTE FOR BYTE, and so does a list that does not decode:
+   * `.catch(undefined)` turns a malformed list into an absent one rather than
+   * into no offer at all, because the legacy `plans` above still sell.
+   */
+  tiers: z.array(tierSchema).min(1).optional().catch(undefined),
+  /** The entry for a person with no paid plan. Optional, and read only beside `tiers`. */
+  free: freeTierSchema.optional().catch(undefined),
+  /**
+   * The tier the signed-in account is on, or `null`. The same value
+   * `PlanView.currentTier` carries, kept here so the page that reads the offer
+   * has it without a second request.
+   */
+  currentTier: z.string().nullable().optional().catch(null),
+  /**
+   * The privacy lines for the order page, a plain text the biller wrote, drawn
+   * verbatim in a box above the two consents (M2/05). Blank lines separate
+   * paragraphs. Absent or empty draws no box.
+   */
+  whatHappens: z.string().optional().catch(undefined),
 });
 
 export type PlanOffer = z.infer<typeof planOfferSchema>;
@@ -200,6 +266,18 @@ export type OrderRequestWire = {
   locale: string;
   consentVersion: string;
   consents: OrderConsents;
+};
+
+/**
+ * The same order for a TIER (M2/05): today's four keys, untouched, plus the
+ * tier id and the interval. `plan` stays the key of the interval
+ * (`PLAN_INTERVAL_BY_KEY`), so a biller that has not learnt tiers reads the
+ * order as it always did. Built only when a tier was picked; without one the
+ * body is byte for byte {@link OrderRequestWire}.
+ */
+export type TierOrderRequestWire = OrderRequestWire & {
+  tier: string;
+  interval: PlanInterval;
 };
 
 /**

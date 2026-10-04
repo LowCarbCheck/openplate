@@ -49,6 +49,7 @@ import {
   ORDER_ALREADY_SUBSCRIBED,
   ORDER_STALE_VERSION,
   orderAnswerSchema,
+  PLAN_INTERVAL_BY_KEY,
   planOfferSchema,
   planViewSchema,
   redirectTargetSchema,
@@ -60,6 +61,7 @@ import type {
   OrderRequestWire,
   PortalRequestWire,
   PlanKey,
+  TierOrderRequestWire,
   PlanOffer,
   PlanView,
   RedirectTarget,
@@ -187,13 +189,17 @@ export class PlansClient {
     locale: string;
     consentVersion: string;
     consents: OrderConsents;
+    /** The tier id the person picked, for a biller that sells tiers. Absent sends today's order. */
+    tier?: string;
   }): Promise<OrderOutcome> {
-    const request: OrderRequestWire = {
+    const base: OrderRequestWire = {
       plan: input.plan,
       locale: input.locale,
       consentVersion: input.consentVersion,
       consents: { terms: input.consents.terms, earlyStart: input.consents.earlyStart },
     };
+    const request: OrderRequestWire | TierOrderRequestWire =
+      input.tier === undefined ? base : { ...base, tier: input.tier, interval: PLAN_INTERVAL_BY_KEY[input.plan] };
     let outcome: PlansOutcome<OrderAnswer>;
     try {
       outcome = await this.send({

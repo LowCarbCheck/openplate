@@ -45,7 +45,8 @@ A changed decision gets a new ADR that supersedes the old one and sets the old o
 | [0017](0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Amended |
 | [0018](0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted |
 | [0019](0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted |
-| [0020](0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted |
+| [0020](0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Superseded |
 | [0021](0021-the-release-check-asks-openplate-de-and-the-site-counts-the-asks.md) | The release check asks openplate.de, and the site counts the asks | Accepted |
 | [0022](0022-the-push-gate-runs-a-scoped-browser-tier.md) | The push gate runs a scoped browser tier, the release gate and the nightly run the full one | Accepted |
 | [0023](0023-the-device-lock-names-its-owner.md) | The device lock names its owner, and another account erases first | Accepted |
+| [0024](0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md) | A feature gate is a door, and the AI proxy is the only lock | Accepted |

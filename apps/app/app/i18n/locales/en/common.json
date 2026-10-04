@@ -3660,27 +3660,26 @@
     },
     "tiers": {
       "legend": "What each plan includes",
-      "current": "Your plan",
       "dailyLimit_one": "{{count}} AI scan a day",
       "dailyLimit_other": "{{count}} AI scans a day",
       "noScans": "No AI scans",
-      "includes": "Includes",
-      "notOnSale": "Not available to order right now.",
+      "includes": "Includes: {{features}}.",
       "pricePerMonth": "{{price}} a month",
       "pricePerYear": "{{price}} a year",
-      "choose": "Pick a plan and how often it bills"
+      "notOnSale": "Not available to order right now.",
+      "current": "Your plan"
     }
   },
   "featureGate": {
     "names": {
-      "fasting": "Fasting timer",
-      "pantry": "Pantry scan",
-      "voice": "Voice entry",
-      "chat": "Chat entry"
+      "fasting": "fasting timer",
+      "pantry": "pantry scan",
+      "voice": "voice entry",
+      "chat": "chat entry"
     },
     "closed": {
-      "title": "{{feature}} is not included in your plan",
-      "titleGeneric": "This is not included in your plan",
+      "title": "Not in your plan: {{feature}}",
+      "titleGeneric": "Not in your plan",
       "body": "What you already recorded stays here. You can still read it and export it.",
       "plans": "See plans"
     }

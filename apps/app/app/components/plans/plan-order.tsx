@@ -193,9 +193,29 @@ export interface PlanOrderProps {
   notice: OrderNotice;
   /** `true` while the order is in flight, and after it answered an address, until the browser leaves. */
   isOrdering: boolean;
+  /**
+   * The biller's privacy lines (`offer.whatHappens`), drawn in a box directly
+   * above the two consents (M2/05). Absent or blank draws no box. Passed in,
+   * not read from the offer here, so the page decides whether it is shown.
+   */
+  whatHappens?: string;
+  /**
+   * `true` adds the link to the instance's privacy notice to that box. The
+   * page passes `useHasLegalPages()`: an instance with no legal pages has no
+   * notice to link, and the box then says its lines and nothing more.
+   */
+  hasLegalPages?: boolean;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
   onOrder: () => void;
+}
+
+/** The paragraphs of a served text: blank lines separate them, and nothing is parsed as markup. */
+function paragraphsOf(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '');
 }
 
 export function PlanOrder({
@@ -205,6 +225,8 @@ export function PlanOrder({
   consents,
   notice,
   isOrdering,
+  whatHappens,
+  hasLegalPages = false,
   onSelectPlan,
   onConsentChange,
   onOrder,
@@ -213,6 +235,7 @@ export function PlanOrder({
   const baseId = useId();
   const plans = mode.kind === 'switch' ? offer.plans.filter((plan) => plan.key === 'yearly') : offer.plans;
   useIntendedPlanPick({ plans, mode, selectedPlan, onSelectPlan });
+  const whatHappensParagraphs = whatHappens === undefined ? [] : paragraphsOf(whatHappens);
   const held = holdReason({ selectedPlan, consents });
   const noticeKey = NOTICE_KEY[notice];
   const line = noticeKey ?? held;
@@ -249,6 +272,27 @@ export function PlanOrder({
           {withWiderrufenLink(offer.texts.withdrawal)}{' '}
           <LegalLink to={offer.links.withdrawal}>{t('plan.order.withdrawalLink')}</LegalLink>
         </p>
+
+        {/* WHAT HAPPENS TO THE PERSON'S DATA, directly above the two boxes
+            (M2/05): the biller's own lines, drawn as served, in the same render
+            as the rest of the order so nothing arrives under it. A plain box
+            with a uniform border, no accent rule. */}
+        {whatHappensParagraphs.length > 0 && (
+          <section
+            data-slot="plan-what-happens"
+            aria-label={t('plan.order.whatHappensLabel')}
+            className="space-y-2 border bg-muted/40 p-3 text-sm"
+          >
+            {whatHappensParagraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+            {hasLegalPages && (
+              <p>
+                <LegalLink to={offer.links.privacy}>{t('plan.order.privacyLink')}</LegalLink>
+              </p>
+            )}
+          </section>
+        )}
 
         <div className="space-y-3">
           <div className="flex items-start gap-2.5">

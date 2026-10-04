@@ -405,3 +405,47 @@ test('the day limit\'s refusal has its own headline and a translated sentence, a
   assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-expired', plansAvailable: true }), true);
   assert.equal(shouldOfferPlansDoor({ failureCause: 'trial-expired', plansAvailable: false }), false);
 });
+
+// ---------------------------------------------------------------------------
+// M2/05: the spent day and the closed feature
+// ---------------------------------------------------------------------------
+
+test('a spent day offers the plan page to somebody with no paid window, where there is one', () => {
+  const spent = { failureCause: 'rate-limit', retryAfterSeconds: 43_200 } as const;
+  assert.equal(shouldOfferPlansDoor({ ...spent, plansAvailable: true, hasPaidWindow: false }), true);
+  // THE CONTROLS, one input each.
+  assert.equal(shouldOfferPlansDoor({ ...spent, plansAvailable: false, hasPaidWindow: false }), false, 'no door');
+  assert.equal(shouldOfferPlansDoor({ ...spent, plansAvailable: true, hasPaidWindow: true }), false, 'already paying');
+  assert.equal(
+    shouldOfferPlansDoor({ failureCause: 'rate-limit', retryAfterSeconds: 30, plansAvailable: true }),
+    false,
+    'a burst clears within the minute and is not a spent day',
+  );
+  assert.equal(
+    shouldOfferPlansDoor({ failureCause: 'rate-limit', retryAfterSeconds: null, plansAvailable: true }),
+    false,
+    'no header is no claim',
+  );
+});
+
+test('the spent day names the plans only on an instance that sells them', () => {
+  const spent = { failureCause: 'rate-limit', retryAfterSeconds: 43_200, language: 'en' } as const;
+  const withPlans = describeFailureBody({ ...spent, plansAvailable: true, hasPaidWindow: false }, t);
+  const withoutPlans = describeFailureBody({ ...spent, plansAvailable: false }, t);
+  const byDefault = describeFailureBody(spent, t);
+  assert.equal(withPlans, EN.get('scan.errors.provider.allowanceSpentPlans'));
+  assert.equal(withoutPlans, EN.get('scan.errors.provider.allowanceSpent'));
+  assert.equal(byDefault, withoutPlans, 'an unset flag is the sentence the app always had');
+  assert.notEqual(withPlans, withoutPlans);
+  // A paid window keeps the bare sentence even where plans are sold.
+  assert.equal(describeFailureBody({ ...spent, plansAvailable: true, hasPaidWindow: true }, t), withoutPlans);
+});
+
+test('a closed feature has a plan door where there is one, and its own sentence', () => {
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'capability-required', plansAvailable: true }), true);
+  assert.equal(shouldOfferPlansDoor({ failureCause: 'capability-required', plansAvailable: false }), false);
+  assert.equal(
+    describeFailureBody({ failureCause: 'capability-required', language: 'en' }, t),
+    EN.get('featureGate.closed.body'),
+  );
+});

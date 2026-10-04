@@ -11,6 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The plan page now lists the tiers a plan service sells.** When the plan service sends tiers, the page lists each one with the name, description, daily AI scans, included features and prices exactly as the service sent them, and marks your own tier. You pick a tier that is on sale, then its interval, and the order carries the tier and the interval beside the plan key it always sent. A tier that is not on sale is listed and cannot be ordered. A service that sends no tiers draws the page it drew before. The words are in `plan.tiers.*`.
+- **The order page now says what happens to your data above the payment boxes.** When the plan service sends its privacy lines, a plain box above the two consent boxes shows them, with a link to the privacy notice on an instance that publishes one. The box is drawn in the same moment as the rest of the order, so nothing moves when it arrives. The words are the service's own, and the link label is in `plan.order.privacyLink`.
+- **A plan can now leave out a feature, and the app shows it the same way everywhere.** The fasting timer and the pantry scan draw a short note with a lock mark and a link to the plan page when the plan does not include them. Past fasts, the stats, the stored pantry list and a fast that is already running stay. A self-hosted instance, an instance with no plans and a person on their own AI key never see the note. The words are in `featureGate.*`, and the decision is `ADR-0024`.
+
+### Changed
+
+- **A spent day of AI scans now points at the plans where there are any.** When the daily scans are used up and no paid period is running, the scan screen says so and shows the plan page. An instance with no plans, and a person whose paid period is running, still read the plain sentence to try again tomorrow. The new sentence is `scan.errors.provider.allowanceSpentPlans`.
+- **A refused feature now shows the same note instead of an error.** When the server answers that the plan does not include the pantry, the screen shows the plan note in the place of the error box. The request for a pantry photo, a typed list or a recipe now names its feature in a header, and only on the instance's own AI, never on a key you brought.
+
 ## [0.63.0] - 2026-10-05
 
 ### Added

@@ -133,10 +133,11 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0017](.adr/0017-a-browser-run-takes-its-ports-from-its-checkout.md) | A browser run takes its ports from its checkout | Amended   |
 | [0018](.adr/0018-in-app-release-notes-come-from-the-changelog.md) | In-app release notes come from the changelog | Accepted   |
 | [0019](.adr/0019-intake-routes-nest-under-add.md) | Intake routes nest under `/add`, and voice is a query flag, not a route | Accepted   |
-| [0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Accepted   |
+| [0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md) | The paywall is a client door that fails open | Superseded |
 | [0021](.adr/0021-the-release-check-asks-openplate-de-and-the-site-counts-the-asks.md) | The release check asks openplate.de, and the site counts the asks | Accepted   |
 | [0022](.adr/0022-the-push-gate-runs-a-scoped-browser-tier.md) | The push gate runs a scoped browser tier, the release gate and the nightly run the full one | Accepted |
 | [0023](.adr/0023-the-device-lock-names-its-owner.md) | The device lock names its owner, and another account erases first | Accepted   |
+| [0024](.adr/0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md) | A feature gate is a door, and the AI proxy is the only lock | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 
@@ -177,7 +178,7 @@ Sync exists to move a diary between devices. It is opt-in, and it is split acros
 There is no mandatory "HTTP API first" layering. A typical feature touches:
 
 1. **Local store** (`app/lib/local-store/`) — for anything the user owns. This is where tracker data lives; there is no server model layer for it.
-2. **Route** (`app/routes/<name>.tsx`, registered in `app/routes.ts`): most routes are client-only (`clientLoader`/`clientAction` over the local store) and have no server loader at all. There is no auth middleware to attach. Two gates run in the `_personal` layout's loader, and both fail open. The first asks an account for its consent to health data once, and only on an instance whose core asks for one (`instance.healthConsent`); a page that must open without that consent is added to `CONSENT_GATE_EXEMPT_PATHS` in `app/lib/health-consent/consent-gate.ts`. The second is the paywall, and only on an instance that sells plans ([ADR-0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md)): a new feature screen is locked with the rest, and a page that must stay open while locked (data, account, a privacy switch) is added to `PLAN_GATE_EXEMPT_PATHS` in `app/lib/plans/plan-gate.ts`.
+2. **Route** (`app/routes/<name>.tsx`, registered in `app/routes.ts`): most routes are client-only (`clientLoader`/`clientAction` over the local store) and have no server loader at all. There is no auth middleware to attach. Two gates run in the `_personal` layout's loader, and both fail open. The first asks an account for its consent to health data once, and only on an instance whose core asks for one (`instance.healthConsent`); a page that must open without that consent is added to `CONSENT_GATE_EXEMPT_PATHS` in `app/lib/health-consent/consent-gate.ts`. The second is the paywall, and only on an instance that sells plans ([ADR-0020](.adr/0020-the-paywall-is-a-client-door-that-fails-open.md), restated in [ADR-0024](.adr/0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md)): a new feature screen is locked with the rest, and a page that must stay open while locked (data, account, a privacy switch) is added to `PLAN_GATE_EXEMPT_PATHS` in `app/lib/plans/plan-gate.ts`. A feature a tier may lack is gated beside that, per entry point, with `FeatureGate` and `useFeatureGate` (ADR-0024): a door that fails open, never a lock, and never a tier name in the source.
 
 ## BYOK Security Rules
 
