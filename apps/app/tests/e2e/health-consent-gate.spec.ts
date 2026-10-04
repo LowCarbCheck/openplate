@@ -200,6 +200,63 @@ test('an account that never agreed is asked once, agrees, and is not asked again
   expect(posts).toHaveLength(1);
 });
 
+test('an account on an older wording is asked once, agrees, and is not asked on the next load', async ({ page }) => {
+  test.setTimeout(WALK_BUDGET_MS);
+  await installShiftObserver(page);
+  const stub = core({ accountHealthConsent: { version: '2026-01-01', at: AGREED_AT } });
+  await routeManagedCore(page, stub);
+  const posts = recordConsentPosts(page);
+  expect(await signIn(page), 'the older wording was not asked').toBe('/consent?next=/diary');
+
+  // THE SCREEN, FROM A DOCUMENT LOAD, holds still: the whole load, from the
+  // first byte to the settled screen, records no layout shift, and the box
+  // and the button sit where they were once everything has settled.
+  await page.goto('/dashboard');
+  await expectConsentScreen(page, { next: '/dashboard', from: 'a load of /dashboard' });
+  await settleAnimations(page);
+  const topsBefore = await readTops(page);
+  await page.waitForTimeout(OPEN_WATCH_MS);
+  expect(movedBetween(topsBefore, await readTops(page)), 'what moved on the consent screen').toEqual([]);
+  // THE OBSERVER IS A NEW ONE ON EVERY DOCUMENT, so its whole list is this load's.
+  expect(
+    shiftScoreAfter(await readShiftEntries(page), 0),
+    'layout-shift on the consent screen, from the load to the settled screen',
+  ).toBe(0);
+  expect(posts, 'the screen agreed before anybody pressed anything').toEqual([]);
+
+  // THE CONTROL OF BOTH READINGS: a block that does grow above the button is
+  // seen by the geometry and by the browser's own layout-shift entries, so the
+  // zeros above are a screen that held still and not an observer that sees nothing.
+  const topsBeforeControl = await readTops(page);
+  const entriesBeforeControl = (await readShiftEntries(page)).length;
+  await agreeButton(page).evaluate((button) => {
+    const grown = document.createElement('p');
+    grown.textContent = 'control block';
+    grown.style.height = '40px';
+    button.before(grown);
+  });
+  await settleFrames(page);
+  expect(movedBetween(topsBeforeControl, await readTops(page)).length).toBeGreaterThan(0);
+  await expect.poll(async () => shiftScoreAfter(await readShiftEntries(page), entriesBeforeControl)).toBeGreaterThan(0);
+
+  await consentBox(page).check();
+  await agreeButton(page).click();
+  // THE TITLE, not the address: `/consent?next=/dashboard` ends in `/dashboard` too.
+  await expect(page).toHaveTitle(COPY.meta.dashboard);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  expect(posts).toEqual([{ version: VERSION }]);
+  expect(stub.accountHealthConsent?.version, 'the core still holds the older wording').toBe(VERSION);
+
+  // THE NEXT LOAD, and a second page after it: neither goes to the screen.
+  const anchor = handshake(page);
+  await page.reload();
+  await expectOpen(page, { path: '/dashboard', title: COPY.meta.dashboard, anchor });
+  const secondAnchor = handshake(page);
+  await page.goto('/diary');
+  await expectOpen(page, { path: '/diary', title: COPY.meta.diary, anchor: secondAnchor });
+  expect(posts, 'the screen asked a second time').toHaveLength(1);
+});
+
 test('the twin: an account that agreed to the current wording is not asked', async ({ page }) => {
   test.setTimeout(WALK_BUDGET_MS);
   await routeManagedCore(page, core({ accountHealthConsent: { version: VERSION, at: AGREED_AT } }));

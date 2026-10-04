@@ -3938,7 +3938,7 @@
   },
   "healthConsent": {
     "title": "Your consent",
-    "checkbox": "I agree that openplate processes my health data, such as what I eat, my weight and my fasting times, to run my account and sync my diary. The <privacy>privacy notice</privacy> explains how. I can withdraw my consent at any time by deleting my account.",
+    "checkbox": "I agree that openplate processes my health data, such as what I eat, my weight and my fasting times, to run my account and sync my diary. A photo or text I send for analysis goes through this server to the AI service it uses. On app.openplate.de that is OpenRouter in the USA, which passes it to Google. The operator of this server holds a recovery key and can read my diary. The <privacy>privacy notice</privacy> explains how. I can withdraw my consent at any time by deleting my account.",
     "requiredToCreate": "Please tick the box to create your account.",
     "requiredToContinue": "Please tick the box to continue.",
     "heading": "One more step: your consent",
