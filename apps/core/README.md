@@ -334,6 +334,35 @@ less than `AI_BUDGET_ALERT_FRACTION` of the limit is left (default `0.2`),
 again. Another provider has no such read, so the route then reports capacity
 only.
 
+**Every account can get a free daily limit.** Set `DEFAULT_FREE_DAILY_AI_LIMIT`
+(1 to 10000) and every account with no free limit of its own may make that many
+AI requests per UTC day, with no end date and no scan count. An own limit
+(`pnpm core-api accounts set-free-limit`) is kept, and a live paid window still
+wins. A day used up answers `429` with `Retry-After`. Unset or 0 is off, and
+nothing changes. It takes the place of the scan trial below, so the boot stops
+if both are set.
+
+**What each answer cost is logged.** On an OpenRouter upstream the proxy asks
+the provider to report usage. After an answer is delivered, the
+`Proxied a completion` log line carries the model, the token counts and the
+price in micro dollars (a millionth of a dollar), each `null` when the provider
+did not say, and the price is added to the day's total in
+`ai_instance_days.cost_micro_usd`. The numbers are read as the answer passes.
+Nothing of the answer text is kept, and a failure to record never fails a scan.
+Another upstream sends and logs what it did before.
+
+**Accounts can hold capabilities.** A capability is a short label, such as
+`scan` or `recipes`, for one kind of AI request. An administrator writes an
+account's list (`PATCH /v1/admin/accounts/:id` with `capabilities`), and so does
+the billing service, which may name this field and no other standing beyond its
+two. `DEFAULT_CAPABILITIES` is what an account with no list of its own may use:
+comma separated labels, or `none` for nothing. Unset or empty means no check at
+all, which is what an instance had before. A client names its feature with the
+`X-Openplate-Feature` header, and `CAPABILITY_SCHEMA_MAP` (`schemaName:label`
+pairs) ties a structured output schema to a label, so a client that lies in the
+header gains nothing. A feature the account lacks is `403 capability-required`,
+decided before the daily count and before the provider.
+
 **New accounts can get free AI scans.** Set `TRIAL_SCANS` and
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
 them. An account from open sign-up, from an invite minted with
@@ -353,6 +382,11 @@ after an answer claims a new scan, even under the same id. After the last scan t
 future allowance date, which a payment writes, lifts the count. One mailbox gets
 one trial, also after the account is deleted: deleting an account then keeps
 only a keyed hash of the mailbox and scrubs the address from its invite rows.
+The hash is kept `TRIAL_HASH_RETENTION_DAYS` days after the deletion (365 by
+default) and then an hourly sweep deletes it, so the same mailbox can have a
+trial again after that. An instance that grants no scan trial keeps no hash.
+[ADR-0010](./docs/adr/0010-the-mailbox-hash-has-a-basis-and-an-end.md) gives the
+basis and the period.
 An address on a known email alias or forwarding domain (SimpleLogin, addy.io,
 Firefox Relay, Hide My Email relay, disposable inboxes, and every subdomain of
 them) gets no trial when it signs up on its own through the open sign-up door.

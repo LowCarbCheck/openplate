@@ -160,6 +160,9 @@ test('the account body carries exactly the documented metadata fields and nothin
     'aiUsedToday',
     'allowanceExpiresAt',
     'blob',
+    // The account's OWN capability labels (2026-10-05), set by an operator or the
+    // biller. Feature names such as "scan": no personal data, nothing about the diary.
+    'capabilities',
     'createdAt',
     'dailyAiLimit',
     'displayName',

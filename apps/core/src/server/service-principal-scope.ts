@@ -5,8 +5,8 @@
  * and it exists because the alternative is worse. A biller that held
  * `ADMIN_TOKEN` could list every account on the instance, read an address,
  * suspend somebody, erase somebody and open a reported photograph. It needs to
- * move two numbers on one account. So the credential is scoped at the door
- * rather than trusted at the handler.
+ * move two numbers and a list of labels on one account. So the credential is
+ * scoped at the door rather than trusted at the handler.
  *
  * ── DEFAULT DENY, AND THE ALLOW LIST IS THE WHOLE POLICY ────────────────────
  * {@link SERVICE_PRINCIPAL_ROUTES} names three routes. Every other path under
@@ -24,7 +24,7 @@
  * exists, because nothing looked.
  *
  * ── THE FIELD LIST IS PART OF THE SCOPE, NOT PART OF VALIDATION ─────────────
- * {@link SERVICE_PRINCIPAL_PATCH_FIELDS} bounds the PATCH body to the two
+ * {@link SERVICE_PRINCIPAL_PATCH_FIELDS} bounds the PATCH body to the three
  * fields the biller pays for. A body naming anything else is refused whole and
  * NOTHING is written, not even the allowed keys beside it. Silently dropping
  * the extra key would let a defect in the biller, one that believes it just
@@ -33,7 +33,7 @@
  * here so there is one answer to "what can that credential change".
  *
  * ── AND THE VALUES ARE PART OF THE SCOPE TOO (2026-09-30) ───────────────────
- * The two fields are bounded as well: {@link isServiceValueInScope}. A payment
+ * The date and the limit are bounded as well: {@link isServiceValueInScope}. A payment
  * buys an allowance that ENDS, so the biller may set `allowanceExpiresAt` to a
  * date and never to `null`, which would be an allowance that never runs out.
  * And it may set `dailyAiLimit` only up to a configured ceiling
@@ -68,12 +68,21 @@ export const SERVICE_PRINCIPAL_ROUTES: readonly AdminRouteRef[] = [
 ];
 
 /**
- * The only two fields a service-principal PATCH may name.
+ * The only three fields a service-principal PATCH may name.
  *
- * `role`, `suspended` and `displayName` are absent deliberately: paying for a
- * plan buys an allowance, and it must not be able to buy an administrator.
+ * `capabilities` is the third (2026-10-05): the labels of the AI features an
+ * account may use, which a payment turns on and a lapse turns off. Writing a
+ * list of labels cannot raise a limit, extend a date or touch who the account
+ * is, and the proxy is still where every request is checked. The biller may
+ * also write `null`, which removes the record so the instance default decides
+ * again: unlike `allowanceExpiresAt: null`, that never grants more than an
+ * operator already chose as the default.
+ *
+ * `role`, `suspended`, `displayName`, `freeDailyAiLimit` and `trialScans` are
+ * absent deliberately: paying for a plan buys an allowance and features, and
+ * it must not be able to buy an administrator or a standing grant.
  */
-export const SERVICE_PRINCIPAL_PATCH_FIELDS: readonly string[] = ['allowanceExpiresAt', 'dailyAiLimit'];
+export const SERVICE_PRINCIPAL_PATCH_FIELDS: readonly string[] = ['allowanceExpiresAt', 'dailyAiLimit', 'capabilities'];
 
 /** The machine code for a route this credential may not reach. A code, not a sentence: the caller is a program. */
 export const SERVICE_SCOPE_REFUSAL = 'service-scope';

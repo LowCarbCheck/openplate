@@ -76,6 +76,9 @@ import { trialKeyFor } from './trial-key.js';
 import { isUnpaidTrial, trialScansView } from './scan-trial.js';
 import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
 import { PASSPHRASE_REJECTED } from './passphrase-gate.js';
+import { effectiveFreeDailyAiLimit } from './ai-allowance.js';
+import { effectiveCapabilities, toWireCapabilities } from '../lib/capabilities.js';
+import type { InstanceStanding } from './instance-standing.js';
 
 /** Everything the handlers need from the outside world. All of it injected — none of it imported. */
 export interface AuthContext {
@@ -157,6 +160,15 @@ export interface AuthContext {
    * it needs to agree, to leave and to read its own copy.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * What the instance grants an account with no record of its own
+   * (`DEFAULT_FREE_DAILY_AI_LIMIT`), or `null`/absent for an instance that
+   * configured none, which is the default and every self-hoster.
+   *
+   * READ BY THE ACCOUNT VIEW and handed on to the AI proxy by `create-app.ts`,
+   * so the free limit a person is shown is the one the proxy enforces.
+   */
+  standing?: InstanceStanding | null;
   /**
    * Runs work AFTER the response is sent, without the response waiting for
    * it. Absent means `setImmediate`, which is what `main.ts` runs.
@@ -313,7 +325,22 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
     dailyAiLimit: account.dailyAiLimit,
     aiUsedToday,
     allowanceExpiresAt: account.allowanceExpiresAt?.toISOString() ?? null,
-    freeDailyAiLimit: account.freeDailyAiLimit,
+    // THE LIMIT THE PROXY ENFORCES, not the bare column: an account with no free
+    // limit of its own is held to the instance's standing default, and a client
+    // that shows "N a day" must show that N. Equal to the column on an instance
+    // with no default.
+    freeDailyAiLimit: effectiveFreeDailyAiLimit({
+      own: account.freeDailyAiLimit,
+      instanceDefault: ctx.standing?.defaultFreeDailyAiLimit ?? 0,
+    }),
+    // THE CAPABILITIES THE PROXY CHECKS, not the bare record: the account's
+    // own list, else the instance default, else `null` for "no check".
+    capabilities: toWireCapabilities(
+      effectiveCapabilities({
+        own: account.capabilities,
+        instanceDefault: ctx.standing?.defaultCapabilities ?? null,
+      }),
+    ),
     trialScans: trialScansView({ granted: account.trialScans, used: account.trialScansUsed }),
     trialEndsAt: account.trialEndsAt?.toISOString() ?? null,
     suspendedAt: account.suspendedAt?.toISOString() ?? null,

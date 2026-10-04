@@ -970,8 +970,8 @@ test('two spellings of one mailbox redeemed at the same moment grant one trial',
   });
 });
 
-test('without a pepper a deletion keeps the invite rows as before and writes no hash', async () => {
-  // THE CONTROL for the scrub: the rule is the pepper's, not every deletion's.
+test('without a pepper a deletion writes no hash, and still scrubs the address from the invite rows', async () => {
+  // THE CONTROL for the hash: only the keyed hash is the pepper's. The scrub is every deletion's (2026-10-05).
   const service = await startService({ db: database.db });
   try {
     const session = await service.signupThroughInvite({ email: 'plain@example.org' });
@@ -983,7 +983,9 @@ test('without a pepper a deletion keeps the invite rows as before and writes no 
     });
     assert.equal((await database.db.select().from(trialAddressHashes)).length, 0);
     const [row] = await database.db.select().from(signupInvites);
-    assert.equal(row?.email, 'plain@example.org');
+    assert.equal(row?.email, '');
+    assert.equal(row?.displayName, null);
+    assert.equal(row?.trialKey, null);
   } finally {
     await service.close();
   }

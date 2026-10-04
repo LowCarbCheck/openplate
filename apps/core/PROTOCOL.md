@@ -484,12 +484,15 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
     "push": false,
     "healthConsent": { "version": "2026-09-28" },
     "nutrientReferenceBasis": "dge",
-    "ai": { "model": "google/gemini-3.7-flash" }
+    "ai": { "model": "google/gemini-3.7-flash" },
+    "defaultCapabilities": null
   }
 }
 ```
 
 `instance` describes what this deployment is and what it can do, and it is **optional**: a service older than the field omits it, and a client that requires it would refuse to talk to every such instance. `name` is the operator's label for the instance, `language` is one of `en`, `de`, `fr`, `it`, `es`, `tr` (the six languages its mail is written in; a client shows it and never branches on it, so a seventh is not a protocol change), `mail` says whether it can send a letter at all, `memberInvites` says whether an ordinary member may invite people here (§5.21), `openSignup` says whether a person may ask for an account here (§5.8.3), `signupCaptcha` says what that request needs, `trial` promises the free scans a new account gets (§5.19), `plans` says whether a biller stands behind this instance so `/v1/plans/*` exists (§5.22), `push` says whether this instance can send web push so `/v1/push/*` exists (§5.24), `healthConsent` names the health-data consent it asks of every account (§5.15.1), `nutrientReferenceBasis` says whose micronutrient reference values it shows, and `ai` is `null` when no upstream key is configured. `ai.model` is the model the proxy sends every request to (§5.19), or `null` when the operator named none and the caller's own model is sent.
+
+`defaultCapabilities` is the list of capabilities (§5.19, "Capabilities") an account holds when it has no record of its own, for example `["scan", "recipes"]`. It is **always present**: `null` means this instance checks no capability at all, so every feature is open, which is what a self-hosted instance that sets nothing has, and `[]` means an account holds none until a record says so. A client that finds no key (every service older than the field) reads it as `null`. It is descriptive, never a grant: the proxy decides per request from the account's own record and this default.
 
 `healthConsent` is the explicit consent to health data this instance asks of every account, `{"version": "<v>"}`, or `null` when it asks for none, which is the self-hosted default. It is `null` rather than absent, like `ai`, and a client that finds no key (every service older than the field) reads it as `null`. Unlike the rest of this block, the service **enforces** it: while it is non-`null`, account creation needs the matching consent (§5.8), and **every data route refuses an account that does not hold this exact version** with `403 {"error":"health-consent-required"}` until it agrees on §5.15.1. A client that finds a version asks before it syncs, and treats that `403` as the same question asked late. A client that finds `null` draws no consent checkbox, and the service refuses nothing for it.
 
@@ -810,6 +813,7 @@ All three bearer.
   "aiUsedToday": 3,
   "allowanceExpiresAt": null,
   "freeDailyAiLimit": 0,
+  "capabilities": null,
   "trialScans": { "granted": 10, "left": 7 },
   "trialEndsAt": "2026-09-19T00:00:00.000Z",
   "suspendedAt": null,
@@ -828,7 +832,9 @@ Nothing secret is in it and nothing can be: no verifier, no KDF descriptor, no w
 
 `allowanceExpiresAt` is an ISO instant or `null`, and `null` means the AI allowance has no end date, which is what a self-hosted instance keeps. From that instant on, the proxy of §5.19 answers `403 allowance-expired`. **It gates AI and nothing else**: sync keeps working past the date, because the diary belongs to the account and a new device must be able to pull it. A client may render the date and must not authorize on it; the proxy is where the rule lives.
 
-`freeDailyAiLimit` is the account's **standing free grant**: AI units per UTC day (§5.19) that apply whenever no paid window is live, with no end date and no scan gate. `0` is none. The proxy's order (§5.19) is a live paid window (`allowanceExpiresAt` in the future, at `dailyAiLimit`), then this grant, then the scan trial, so an account with a free grant falls back to it when a paid window ends instead of losing AI. A client that shows a daily limit shows this one whenever no paid window is live. Only an operator writes it (§5.20); the biller's credential cannot. A client may render it and **MUST NOT authorize on it**. The field is additive: a client that ignores it decodes the view unchanged.
+`freeDailyAiLimit` is the account's **standing free grant**: AI units per UTC day (§5.19) that apply whenever no paid window is live, with no end date and no scan gate. `0` is none. The proxy's order (§5.19) is a live paid window (`allowanceExpiresAt` in the future, at `dailyAiLimit`), then this grant, then the scan trial, so an account with a free grant falls back to it when a paid window ends instead of losing AI. A client that shows a daily limit shows this one whenever no paid window is live. **The value in the view is the one the proxy enforces**: the account's own limit when it is above `0`, otherwise the instance default (§5.19), otherwise `0`. Only an operator writes it (§5.20); the biller's credential cannot. A client may render it and **MUST NOT authorize on it**. The field is additive: a client that ignores it decodes the view unchanged.
+
+`capabilities` is the list of capabilities the proxy checks this account against (§5.19, "Capabilities"): the account's own record, otherwise the instance's `defaultCapabilities` (§5.6), otherwise `null`. **`null` means no check, not "nothing"**: every feature is open, which is every account on an instance that sets no default and no record. `[]` means no feature at all. A client that finds `null` MUST treat every feature as available. A client may render it and **MUST NOT authorize on it**: the proxy answers `403 capability-required`. The field is additive: a client that ignores it decodes the view unchanged. The admin and biller views carry the account's own record instead (§5.20), where `null` means no record.
 
 `trialScans` is `{"granted": n, "left": n}` for an account with a scan trial, and `null` for one without, which is every account on an instance that runs none. `left` is `granted` minus the scans used, never below `0`. A client may render it and **MUST NOT authorize on it**: the proxy counts (§5.19), `left` is a snapshot taken when this view was built, and every proxied response carries the fresh number in `X-Trial-Scans-Left`. A future `allowanceExpiresAt` lifts the scan gate, so a paying account may still carry this field.
 
@@ -850,7 +856,7 @@ Deletion removes the account and, by cascade, every blob, key record, reset toke
 
 The same transaction also **withdraws every invitation the account sent that is still pending** (§5.21). An invitation a person sent carries the terms of that person's door; one left pending after they are gone could still be redeemed, and on a day-trial door its allowance only starts at redemption.
 
-On an instance that runs a scan trial, the same transaction also **removes the address and the name from every invitation row about that mailbox**, and, when the account held a trial, **keeps one keyed one-way hash of the mailbox** so the one trial per mailbox rule of §5.8.3 survives the deletion. Nothing else about the person is kept (§9.2).
+On an instance that runs a scan trial, the same transaction also **removes the address and the name from every invitation row about that mailbox**, and, when the account held a trial, **keeps one keyed one-way hash of the mailbox** so the one trial per mailbox rule of §5.8.3 survives the deletion. The hash is kept for `TRIAL_HASH_RETENTION_DAYS` (365 by default) after the deletion and is then deleted by an hourly sweep, after which the same mailbox can have a trial again. An instance that grants no scan trial keeps no hash at all. Nothing else about the person is kept (§9.2). The basis and the period are written down in `docs/adr/0010-the-mailbox-hash-has-a-basis-and-an-end.md`.
 
 #### 5.15.1 `POST /v1/auth/account/health-consent`: explicit consent to health data
 
@@ -1153,6 +1159,8 @@ dropped.
 | `max_tokens`, `max_completion_tokens` | at most `AI_MAX_OUTPUT_TOKENS` (default 8192). A value above it, or one that is not a number, becomes the ceiling. A body with neither gets `max_tokens` written in.                                                                                                                                                                                   |
 | `reasoning.max_tokens`                | at most the same ceiling. `reasoning.effort` is kept.                                                                                                                                                                                                                                                                                                  |
 | `n`                                   | `1`, when present.                                                                                                                                                                                                                                                                                                                                     |
+| `usage`, on an OpenRouter upstream    | written as `{"include":true}`, so the answer reports its token counts and price (below). Any other upstream gets none. The caller's own `usage` is removed.                                                                                                                                                                                            |
+| `usage`, on an OpenRouter upstream    | written as `{"include":true}`, so the answer reports its token counts and price ("What a completion cost", below). Any other upstream gets none. The caller's own `usage` is removed.                                                                                                                                                                  |
 | any field not on the allow list above | removed, for example `models`, `route`, `plugins`, `web_search_options`, `prediction`, `tools`.                                                                                                                                                                                                                                                        |
 | `provider`, on an OpenRouter upstream | written back as `{"data_collection":"deny"}`: only endpoints that do not store or train on the request. The operator can add `"zdr":true` (`UPSTREAM_ZDR`) and `"only":[...]` with `"allow_fallbacks":false` (`UPSTREAM_PROVIDER_ONLY`). The caller's own `provider` is never forwarded. Any other upstream gets no `provider` field, whatever is set. |
 
@@ -1179,10 +1187,30 @@ the request body is a photograph of somebody's food:
    whatever the next provider decides to read.
 2. **No body is logged, in either direction.** Not a prefix, not a decoded
    buffer, not an error document. What may be logged: an account id, the
-   upstream status, byte counts, a duration.
+   upstream status, byte counts, a duration, and, read off a successful
+   answer, the token counts and price the provider reported and a model name
+   that looks like a model name (below).
 3. **Every string that came off the upstream wire is scrubbed** before it
    reaches a log line **or a response**. A provider that rejects a request
    routinely echoes the request back inside its error body, image and all.
+
+#### What a completion cost
+
+A provider that reports usage puts it in the answer. On an OpenRouter upstream
+the service writes `"usage": {"include": true}` into the forwarded body (never
+taken from the caller, whose own `usage` field is dropped like any field off the
+allow list), and any other upstream gets no such field, so its bodies stay what
+they were. After the answer has been **relayed** the service logs, on its
+`Proxied a completion` line, `model`, `promptTokens`, `completionTokens` and
+`costMicroUsd` (the provider's `usage.cost`, a price in dollars, as a whole
+number of millionths of a dollar), each `null` when the answer did not say. It
+also adds `costMicroUsd` to the instance's total for the UTC day,
+`ai_instance_days.cost_micro_usd`, a sum with no account in it, which stays `0`
+for a provider that reports no price. The numbers are read as the answer passes
+by, JSON or a server-sent stream, without delaying or changing a byte. A body
+larger than 1 MiB, a stream line larger than 64 KiB and any field that is not a
+plausible number are not read and give `null`. Never the text of the answer. A
+failure to record the cost is logged and never fails a request that was served.
 
 #### What one request may carry in
 
@@ -1259,10 +1287,23 @@ is decided per request, in this order:
 | -------------------------------------------------------------------- | ----------- | ----------------------- |
 | `allowanceExpiresAt` after the request's instant, `dailyAiLimit` > 0 | paid window | `dailyAiLimit`          |
 | otherwise `freeDailyAiLimit` > 0                                     | free grant  | `freeDailyAiLimit`      |
+| otherwise the instance's `DEFAULT_FREE_DAILY_AI_LIMIT` > 0           | free grant  | that default            |
 | otherwise `dailyAiLimit` is `0`                                      | none        | `403 ai-not-allowed`    |
 | otherwise `allowanceExpiresAt` is set (so it has passed)             | none        | `403 allowance-expired` |
 | otherwise `trialScans` is set                                        | scan trial  | `dailyAiLimit`          |
 | otherwise (a limit, no date, no trial, no free grant)                | none        | `403 ai-not-allowed`    |
+
+**The instance default (2026-10-05).** An operator can set
+`DEFAULT_FREE_DAILY_AI_LIMIT`. It is the free grant of every account whose own
+`freeDailyAiLimit` is `0`: the same grant in the same place of the order, so a
+live paid window still wins, an own limit is kept whatever the default is, and
+an account that holds a scan trial falls under the default instead of spending
+a scan. It never ends and has no scan gate. It is not written onto any row, so
+an operator who lowers or removes it changes every account at once. A day used
+up is the `429` below, with `Retry-After`, and never the `403 ai-not-allowed`
+of an account that has no grant. A service with no default behaves exactly as
+before. The default cannot be set beside the scan trial: that instance refuses
+to boot.
 
 The last row changed on 2026-09-30. That shape used to be a standing grant with
 no end; every account that held it was moved to `freeDailyAiLimit` by a
@@ -1282,7 +1323,7 @@ in the limit that applied:
 | Header               | Meaning                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
 | `X-Quota-Used`       | Units spent today, after this one                                                                    |
-| `X-Quota-Limit`      | The limit the order above picked, `dailyAiLimit` or `freeDailyAiLimit`                               |
+| `X-Quota-Limit`      | The limit the order above picked: `dailyAiLimit`, `freeDailyAiLimit` or the instance default         |
 | `X-Trial-Scans-Left` | Free scans left after this request, on an account the scan gate applies to (below). Absent otherwise |
 
 | Status | `error`                                | When                                                                                                                                                                                                               |
@@ -1292,10 +1333,12 @@ in the limit that applied:
 | `403`  | `allowance-expired`                    | `allowanceExpiresAt` is set and not after the instant the request arrived, and there is no free grant. Refused before anything leaves the host, and before a usage row is written                                  |
 | `403`  | `trial-scans-spent`                    | The account's free scans are used up and it has no allowance date. Refused before anything leaves the host, and before a usage row is written. `X-Trial-Scans-Left: 0`. The body carries `"endedBy": "scans"`      |
 | `403`  | `trial-expired`                        | The account's `trialEndsAt` is set and not after the instant the request arrived, its scans are not used up, and it has no allowance date. Refused before any row is written. The body carries `"endedBy": "days"` |
+| `403`  | `capability-required`                  | The request names a feature the account does not hold (below). The body carries `capability`, the missing label. Refused before anything is counted and before anything leaves the host                            |
 | `403`  | `account-suspended`                    | The account is suspended (§5.9 uses the same code)                                                                                                                                                                 |
 | `403`  | `health-consent-required`              | The instance asks for a health-data consent and the account does not hold its current version (§5.15.1). Refused before anything leaves the host, and before a usage row is written                                |
 | `400`  | `request body must be a JSON object`   | The body is not an object. The input is never quoted back                                                                                                                                                          |
 | `400`  | `ai-request-too-large`                 | The body carries more image parts, text bytes or messages than the instance allows (above). The body names `limit` and `max`. Refused before any row is written                                                    |
+| `400`  | `feature-header-invalid`               | `X-Openplate-Feature` is present and not a label, on an account that is checked (below). Refused before any row is written                                                                                         |
 | `400`  | `intake-id-invalid`                    | `X-Intake-Id` is present and not 16 to 64 characters of `A-Z a-z 0-9 _ -`. Refused before any row is written                                                                                                       |
 | `409`  | `intake-in-flight`                     | An earlier request with the same `X-Intake-Id` is still in flight, on an account the scan gate applies to (below). Nothing is spent and no row is written                                                          |
 | `429`  | a sentence naming the reset instant    | The allowance cannot take this request's units. `Retry-After` is seconds to the next UTC midnight                                                                                                                  |
@@ -1324,12 +1367,12 @@ administrator" (`ai-not-allowed`) and not "your time ran out"
 (`allowance-expired`). A client older than the code reads an unknown `403`,
 which is why it is separate rather than folded into either.
 
-`403 trial-expired` is a **fourth**, for the free tier's other
+`403 trial-expired` is a **fourth**, for the scan trial's other
 limit: "your free days are over". It is not `allowance-expired`, which is a paid
 or granted window running out; a client that read one as the other would tell a
 person who paid that their trial is over. Both trial refusals carry
 **`endedBy`**, `"scans"` or `"days"`, so a client can name which limit ended
-the free tier from one field:
+the trial from one field:
 
 ```json
 { "error": "trial-expired", "endedBy": "days" }
@@ -1338,7 +1381,8 @@ the free tier from one field:
 **The order of the refusals**, which a conforming server MUST keep: identity
 and suspension; the health-data consent (`health-consent-required`, §5.15.1);
 the grant (the table above: `ai-not-allowed` or `allowance-expired`); the body
-and what it carries in (`ai-request-too-large`); `X-Intake-Id`'s shape; then,
+is read, and then the capability (`capability-required`, `feature-header-invalid`,
+below); what the body carries in (`ai-request-too-large`); `X-Intake-Id`'s shape; then,
 only for the scan trial grant (free scans, **no** allowance date and no free
 grant), the day limit (`trial-expired`, asked only when the scans are not used
 up, so spent scans keep their own code) and the scan claim
@@ -1346,6 +1390,54 @@ up, so spent scans keep their own code) and the scan claim
 future lifts both: it is a paid or granted window, and the trial's limits
 decide only where there is no date at all. A free grant lifts both too. Then the scan-trial accounts'
 ceiling, the instance ceiling and the daily allowance, as below.
+
+#### Capabilities
+
+A **capability** is a short label, such as `scan` or `recipes`, for one kind of
+AI request. An account holds a list of them, and the proxy refuses a request
+whose feature the account does not hold. The service does not know why an
+account holds a label: an operator writes the list (§5.20), and so does the
+billing credential, which may name `capabilities` and no standing beyond its
+other two fields.
+
+A label is a lower case letter followed by up to 31 lower case letters, digits or
+hyphens (`^[a-z][a-z0-9-]{0,31}$`). A list holds at most 32, is stored
+deduplicated and sorted, and cannot hold `none`, which is reserved.
+
+**The account's own record has three states**, and they are three facts. `null`
+is no record, so the instance default decides. `[]` is a record that grants
+nothing. A list grants exactly those labels. **The effective value** is the own
+record, else the instance's `DEFAULT_CAPABILITIES` (published as
+`instance.defaultCapabilities`, §5.6), else `null`, and **an effective `null` is
+no check at all**: every request passes, and not even a malformed header is
+refused. That is what an instance that configures nothing has always had.
+`DEFAULT_CAPABILITIES` unset or empty is `null`. The word `none` is the empty
+list, because the compose files forward an unset variable as an empty string.
+
+**How a request names its feature.**
+
+- The request header `X-Openplate-Feature: <label>`. A header that is not a
+  label is `400 feature-header-invalid`. The header is the client's own word,
+  so on its own it protects nothing.
+- The body's structured output, `response_format.json_schema.name`. The
+  operator can tie a schema name to a label with `CAPABILITY_SCHEMA_MAP`
+  (`schemaName:label` pairs). A body that asks for a listed schema needs that
+  label **whatever the header says**, so a client that lies in the header gains
+  nothing. When both labels are missing, the schema's label is the one reported.
+
+A request that names no feature and no listed schema asks for nothing the check
+can compare, and passes. The schema map is what makes a feature enforceable
+against a client that sends no header.
+
+**The refusal** is `403 {"error": "capability-required", "capability": "<label>"}`.
+It is decided after the allowance and the body, and **before the daily count,
+the scan claim, the instance ceilings and the provider**: a refused request
+writes no usage row, spends no scan and sends nothing upstream. So an account
+that lacks a feature is told `403` and never `429`, and an account with no AI at
+all is still told `ai-not-allowed` first. A client branches on the code: it is
+"this account will not succeed here until its capabilities change", not "come
+back tomorrow". A browser client may send the header cross-origin: it is on the
+CORS allow list.
 
 #### The scan trial
 
@@ -1491,7 +1583,7 @@ Bearer`:
    what puts the console in the app rather than in a shell.
 3. **A scoped service token** (`BILLING_TOKEN`). It is a
    THIRD principal, not a second copy of the first: it reaches three routes and
-   two fields and is refused everywhere else. See "The billing principal"
+   three fields and is refused everywhere else. See "The billing principal"
    below.
 
 With **none** configured nor matching, the whole subtree answers the same
@@ -1500,30 +1592,30 @@ token is indistinguishable from one built before the feature existed. A `401`
 there would announce that a credential exists and is merely locked. Setting
 either token turns that `404` into the `401` a wrong value gets.
 
-| Endpoint                                    | Does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/admin/stats`                       | Aggregate counts: accounts, blobs, bytes, key records, `pendingInvites`, `admins`, `aiRequestsToday`, and the `aiInstanceDailyLimit` that bounds it (`null` for no ceiling); `aiTrialInstanceDailyLimit`; and `signup`: invites the request door of §5.8.3 minted today and in the last seven days, trials granted in the last seven days, and today's scan-trial requests                                                                                                                     |
-| `GET /v1/admin/ai/budget`                   | The provider key's budget and today's AI capacity, see "The AI budget" below. `404` on an instance with no AI. Not reachable with `BILLING_TOKEN`                                                                                                                                                                                                                                                                                                                                              |
-| `GET /v1/admin/accounts`                    | A page of `AccountView`s, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `GET /v1/admin/accounts/expiring`           | A page of `{ id, allowanceExpiresAt }` for accounts whose allowance ends in the future, plus `total`                                                                                                                                                                                                                                                                                                                                                                                           |
-| `GET /v1/admin/accounts/:id`                | One `AccountView`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `GET /v1/admin/accounts/:id/activity`       | Last sign-in, and one entry per UTC day over a bounded window                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `GET /v1/admin/activity`                    | The same day-by-day strip for a whole PAGE of accounts, in the list's order                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `freeDailyAiLimit` (the standing free grant, an integer from 0 to 10000; not writable with `BILLING_TOKEN`), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`, `label` (the operator's note, see below, or `null` to clear it). At least one required                              |
-| `POST /v1/admin/accounts/:id/reset-mail`    | Starts the reset of §5.12 on the operator's initiative                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `DELETE /v1/admin/accounts/:id`             | Erases the account and everything attached to it                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `GET /v1/admin/accounts/:id/blob/versions`  | Every retained blob version: number, envelope version, byte count, time, and the pin if it has one. Never ciphertext                                                                                                                                                                                                                                                                                                                                                                           |
-| `POST /v1/admin/accounts/:id/blob/rollback` | `{"targetVersion": n}`. Makes that version current again by DELETING every version above it (§5.1's shrink guard, ADR-0009). Refuses an unknown version, the current version, an envelope version this build does not accept, and a zero-byte row. A rollback rather than a re-upload, because §3.2's AAD binds `blobVersion`: re-inserting old bytes as a new version yields something no client can decrypt                                                                                  |
-| `GET /v1/admin/invites`                     | A page of pending invitations, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `POST /v1/admin/invites`                    | Mints one (§5.8). The token is returned **once**. `"trial": true` writes the instance's scan trial instead of an allowance: `400` on an instance that runs none, and `400` beside a `dailyAiLimit`. Without the field the mint's `dailyAiLimit` becomes the account's standing free grant (`freeDailyAiLimit`) at redemption                                                                                                                                                                   |
-| `POST /v1/admin/trials/grant-lapsed`        | `{"trialDays": n, "apply": false, "excludeAccountIds": []}`. Lists, or with `apply: true` grants the instance's scan trial to, every member whose day trial of `trialDays` ended and was never moved: its allowance date still equals its redemption plus `trialDays` to the millisecond, which only a payment or an operator changes. Clears the date and sets the trial's daily limit. Idempotent: a granted account is never listed again. Answers `{"accountIds": [...], "applied": bool}` |
-| `POST /v1/admin/invites/:id/resend`         | A NEW token on the SAME row, and a new expiry                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `DELETE /v1/admin/invites/:id`              | Withdraws a pending invitation                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `PATCH /v1/admin/settings`                  | `{"nutrientReferenceBasis": "dge" \| "efsa" \| "us"}`. The instance-wide reference basis (§5.6). Required; anything else is `400` and NOTHING is written. Answers `{"settings": {...}}` with what the instance now holds                                                                                                                                                                                                                                                                       |
-| `GET /v1/admin/feedback`                    | A page of reported estimates (§5.25), newest first: `{ id, accountId, hasImage, consentWordingVersion, createdAt }` each, plus `total`, `limit` and `offset`. No figures and no photograph                                                                                                                                                                                                                                                                                                     |
-| `GET /v1/admin/feedback/:id`                | One report: the list fields, `measurements` exactly as the device sent them, and `consent: { agreedAt, wordingVersion }`                                                                                                                                                                                                                                                                                                                                                                       |
-| `GET /v1/admin/feedback/:id/image`          | The photograph's bytes under its stored `Content-Type`, with `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. `404` when the report has none. Every read is logged with the report id and which credential asked                                                                                                                                                                                                                                                               |
-| `DELETE /v1/admin/feedback/:id`             | Deletes the photograph, then the report. `204`, or `404` for an unknown id                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Endpoint                                    | Does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/admin/stats`                       | Aggregate counts: accounts, blobs, bytes, key records, `pendingInvites`, `admins`, `aiRequestsToday`, and the `aiInstanceDailyLimit` that bounds it (`null` for no ceiling); `aiTrialInstanceDailyLimit`; and `signup`: invites the request door of §5.8.3 minted today and in the last seven days, trials granted in the last seven days, and today's scan-trial requests                                                                                                                                                                                                                                                                                                             |
+| `GET /v1/admin/ai/budget`                   | The provider key's budget and today's AI capacity, see "The AI budget" below. `404` on an instance with no AI. Not reachable with `BILLING_TOKEN`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `GET /v1/admin/accounts`                    | A page of `AccountView`s, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `GET /v1/admin/accounts/expiring`           | A page of `{ id, allowanceExpiresAt }` for accounts whose allowance ends in the future, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `GET /v1/admin/accounts/:id`                | One `AccountView`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `GET /v1/admin/accounts/:id/activity`       | Last sign-in, and one entry per UTC day over a bounded window                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `GET /v1/admin/activity`                    | The same day-by-day strip for a whole PAGE of accounts, in the list's order                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `PATCH /v1/admin/accounts/:id`              | `role`, `dailyAiLimit`, `allowanceExpiresAt` (an ISO instant, or `null` to clear it), `freeDailyAiLimit` (the standing free grant, an integer from 0 to 10000; not writable with `BILLING_TOKEN`), `capabilities` (the account's own capability list, an array of labels, `[]` for a record that grants nothing, or `null` to remove the record so the instance default decides; writable with `BILLING_TOKEN`, §5.19), `trialScans` (the free scans granted, an integer from 0 to 100, or `null` to take the scan trial away; it never touches how many are used), `suspended`, `displayName`, `label` (the operator's note, see below, or `null` to clear it). At least one required |
+| `POST /v1/admin/accounts/:id/reset-mail`    | Starts the reset of §5.12 on the operator's initiative                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `DELETE /v1/admin/accounts/:id`             | Erases the account and everything attached to it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `GET /v1/admin/accounts/:id/blob/versions`  | Every retained blob version: number, envelope version, byte count, time, and the pin if it has one. Never ciphertext                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `POST /v1/admin/accounts/:id/blob/rollback` | `{"targetVersion": n}`. Makes that version current again by DELETING every version above it (§5.1's shrink guard, ADR-0009). Refuses an unknown version, the current version, an envelope version this build does not accept, and a zero-byte row. A rollback rather than a re-upload, because §3.2's AAD binds `blobVersion`: re-inserting old bytes as a new version yields something no client can decrypt                                                                                                                                                                                                                                                                          |
+| `GET /v1/admin/invites`                     | A page of pending invitations, plus `total`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `POST /v1/admin/invites`                    | Mints one (§5.8). The token is returned **once**. `"trial": true` writes the instance's scan trial instead of an allowance: `400` on an instance that runs none, and `400` beside a `dailyAiLimit`. Without the field the mint's `dailyAiLimit` becomes the account's standing free grant (`freeDailyAiLimit`) at redemption                                                                                                                                                                                                                                                                                                                                                           |
+| `POST /v1/admin/trials/grant-lapsed`        | `{"trialDays": n, "apply": false, "excludeAccountIds": []}`. Lists, or with `apply: true` grants the instance's scan trial to, every member whose day trial of `trialDays` ended and was never moved: its allowance date still equals its redemption plus `trialDays` to the millisecond, which only a payment or an operator changes. Clears the date and sets the trial's daily limit. Idempotent: a granted account is never listed again. Answers `{"accountIds": [...], "applied": bool}`                                                                                                                                                                                         |
+| `POST /v1/admin/invites/:id/resend`         | A NEW token on the SAME row, and a new expiry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `DELETE /v1/admin/invites/:id`              | Withdraws a pending invitation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `PATCH /v1/admin/settings`                  | `{"nutrientReferenceBasis": "dge" \| "efsa" \| "us"}`. The instance-wide reference basis (§5.6). Required; anything else is `400` and NOTHING is written. Answers `{"settings": {...}}` with what the instance now holds                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `GET /v1/admin/feedback`                    | A page of reported estimates (§5.25), newest first: `{ id, accountId, hasImage, consentWordingVersion, createdAt }` each, plus `total`, `limit` and `offset`. No figures and no photograph                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `GET /v1/admin/feedback/:id`                | One report: the list fields, `measurements` exactly as the device sent them, and `consent: { agreedAt, wordingVersion }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `GET /v1/admin/feedback/:id/image`          | The photograph's bytes under its stored `Content-Type`, with `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`. `404` when the report has none. Every read is logged with the report id and which credential asked                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `DELETE /v1/admin/feedback/:id`             | Deletes the photograph, then the report. `204`, or `404` for an unknown id                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 **`GET /v1/admin/ai/budget` is the operator's AI budget**: what the provider
 key has left, and how much of today's instance capacity is used.
@@ -1674,17 +1766,17 @@ through `ON DELETE CASCADE`. Ninety is one number in one place: it is what the
 sweep prunes at and the longest window the endpoint above can answer.
 
 **The billing principal (`BILLING_TOKEN`).** A payment service needs to move
-two numbers on one account: the end of an allowance, and the number of AI
-requests a day it buys. Giving it the operator token would give it every
+two numbers and a list on one account: the end of an allowance, the number of AI
+requests a day it buys, and the labels of the AI features it turns on. Giving it the operator token would give it every
 address on the instance, the erase button and the reported photographs, so the
 credential is scoped at the door instead. It is optional, unset by default, and
 carries the same 24-character minimum the operator token does.
 
-| Endpoint                          | The billing principal may                                                                                                                                                             |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v1/admin/accounts/expiring` | Read `{ id, allowanceExpiresAt }` for accounts whose end date is in the future, paged with the same `limit`, `offset` and `400` sentence as every other paged endpoint here           |
-| `GET /v1/admin/accounts/:id`      | Read `{ id, allowanceExpiresAt, dailyAiLimit }` for that one account                                                                                                                  |
-| `PATCH /v1/admin/accounts/:id`    | Write `allowanceExpiresAt` and `dailyAiLimit`, and nothing else. `trialScans` is refused like every other field: a credential that pays for an allowance does not hand out free scans |
+| Endpoint                          | The billing principal may                                                                                                                                                                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/admin/accounts/expiring` | Read `{ id, allowanceExpiresAt }` for accounts whose end date is in the future, paged with the same `limit`, `offset` and `400` sentence as every other paged endpoint here                           |
+| `GET /v1/admin/accounts/:id`      | Read `{ id, allowanceExpiresAt, dailyAiLimit, capabilities }` for that one account, where `capabilities` is the account's own record (`null` is no record)                                            |
+| `PATCH /v1/admin/accounts/:id`    | Write `allowanceExpiresAt`, `dailyAiLimit` and `capabilities`, and nothing else. `trialScans` is refused like every other field: a credential that pays for an allowance does not hand out free scans |
 
 - **Every other route in this section answers `403` with
   `{"error": "service-scope"}`**, including the four feedback routes and
@@ -1698,7 +1790,10 @@ carries the same 24-character minimum the operator token does.
 - **The values are scoped too.** `allowanceExpiresAt: null` (an allowance with
   no end) and a `dailyAiLimit` above the instance's `BILLING_MAX_DAILY_AI_LIMIT`
   (default 1000) are `403` with `{"error": "service-scope-value"}`, and nothing
-  is written. The operator's credentials may write both.
+  is written. The operator's credentials may write both. `capabilities` takes
+  any valid list, and `null`, which removes the record and so never grants more
+  than the instance default the operator chose. A malformed list is the ordinary
+  `400`, for this credential as for an operator.
 - Beyond that, `dailyAiLimit` is validated exactly as it is for an operator. The
   credential relaxes no validation.
 - **The two reads are projections and never an `AccountView`.** No address, no
@@ -1716,7 +1811,9 @@ carries the same 24-character minimum the operator token does.
 `AccountView` is the same shape the account's own `GET /v1/auth/account`
 returns (§5.15), `invitesLeft` included and computed the same way, plus
 `aiUsedToday`, and on the admin surface plus `lastSeenAt`, `label`,
-`blob` and `keyRecordKinds`. `healthConsent` is on it too, and it is **read
+`blob` and `keyRecordKinds`. **`capabilities` and `freeDailyAiLimit` on the
+admin surface are the account's OWN record** (for `capabilities`, `null` is no
+record), where the account's own view reports the effective value. `healthConsent` is on it too, and it is **read
 only** here: `PATCH /v1/admin/accounts/:id` does not read it, because a consent
 an operator could set on somebody's behalf would prove nothing (§5.15.1). It
 carries **no verifier, no KDF
@@ -2071,7 +2168,7 @@ Being honest about the metadata, because "end-to-end encrypted" is often heard a
 - **The account's RECOVERY CODE, sealed** (`accounts.recovery_code_escrow`, §3.1). This is the entry on this list that a reader should stop at. It is AES-256-GCM under a subkey of `SERVER_SECRET`, so a dumped database alone does not open it, and the operator of a managed instance has both. **The operator of a managed instance can open any account on it.** Not through an endpoint, and not through any code path in this service, but by reading that column with the secret in hand and running the client's own HKDF. A self-hosted instance is its own operator, so the older promise holds there. Deciding whether to trust a hosted instance is therefore a decision about its operator.
 - **Pending invitations**: for each, an address, an optional name, a role and an allowance, belonging to somebody who has NO account yet and gave no consent. Minting one is an operator action, and `DELETE /v1/admin/invites/:id` withdraws the row. A row the request door of §5.8.3 minted is marked as such, so an operator can count them. **A finished invitation loses its address and name** within the hour: a revoked or expired one on every instance, a redeemed one on an instance with `TRIAL_ADDRESS_PEPPER`, which keeps only the keyed hash below. Without the pepper a redeemed row keeps its address, because the member re-invite rule of §5.21 reads it.
 - **The scan trial**, on an instance that runs one: the free scans granted and used, two integers on the account row. For a scan-trial account only, **one row per AI action**: an opaque id the client chose, a time, a request count and whether an answer was delivered, **kept 24 hours** and then deleted, and never logged. Each invitation row carries a **keyed one-way hash of its mailbox** (HMAC-SHA256 under `TRIAL_ADDRESS_PEPPER`, a secret only the operator holds, over the trial key of §5.8.3), never a second copy of the address.
-- **After an account is deleted**, on an instance that runs a scan trial: the address and the name are removed from every invitation row about that mailbox, and, only when the account held a trial, **one keyed hash of the mailbox is kept, and nothing else**: no date, no name, no id. It is what stops the same mailbox from getting a second trial. Without the operator's secret the hash cannot be reversed or matched against a list of addresses. On an instance that runs no scan trial, invitation rows keep their address after a deletion, for the member re-invite rule of §5.21.
+- **After an account is deleted**, on an instance that runs a scan trial: the address and the name are removed from every invitation row about that mailbox, and, only when the account held a trial, **one keyed hash of the mailbox is kept, and nothing else**: no name, no id, and one date, the instant of the deletion, which is what lets the row end. It is what stops the same mailbox from getting a second trial. Without the operator's secret the hash cannot be reversed or matched against a list of addresses. A sweep deletes it `TRIAL_HASH_RETENTION_DAYS` (365 by default) after that instant, on the legal basis of Art. 6(1)(f) GDPR (a legitimate interest in preventing abuse of the free scans, not reviewed by a lawyer, ADR-0010). An instance that grants no scan trial keeps no hash. On an instance that runs no scan trial, invitation rows keep their address after a deletion, for the member re-invite rule of §5.21.
 - **AI usage**: one integer per account per UTC day, **kept for 90 days and then deleted** (§5.20). A count, never a log: no prompt, no response, no model, no timestamp beyond the day. An operator can read one account's counters as a day-by-day strip (`GET /v1/admin/accounts/:id/activity`), which is metadata about when a person used a health app and is bounded for exactly that reason.
 - **The community pulse**, for accounts that turned it on (§5.23, ADR-0007): instance-wide day sums of meals, photographs, calories and grams of protein, one row per contributing account per day, and a short lived presence row saying that an account is fasting right now. The sums are not attributable to anybody; the contributor row and the presence row are, and they say only "this account contributed today" and "this account is fasting". Day sums and contributor rows are **kept 30 days**, presence expires 30 minutes after the last heartbeat, and the routes log no account id. A person who never turned it on sends nothing and appears in none of it.
 - **A push subscription**, for a device whose owner turned notifications on (§5.24, ADR-0008): the push service endpoint, the two keys it encrypts to, a capped user agent string, an IANA time zone, a locale, the minute of the local day a catch-up is due, the local day one last went out, the local day the device was last seen, the instant it asked to be woken, and a count of what has been sent today. Together those say roughly when this person is awake, roughly where in the world they are, and, through `wake_at`, when a fast of theirs ends. **That last one lines up with the pulse's presence row**, which says the same fast is running; ADR-0008 names the correlation rather than leaving it to be discovered. What is NOT stored is a word of any notification's text: every push carries a kind. The row goes when the device unsubscribes, when the push service disowns it, or with the account.

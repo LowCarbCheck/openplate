@@ -27,6 +27,7 @@ import { createDrizzleBlobRollbackStore } from './db/blob-rollback-store.js';
 import { createDrizzleAdminStore } from './db/admin-store.js';
 import { createDrizzleInviteStore } from './db/invite-store.js';
 import { scrubFinishedInvites } from './db/invite-retention.js';
+import { purgeExpiredTrialHashes } from './db/trial-hash-retention.js';
 import { createDrizzleShareStore } from './db/share-store.js';
 import { createDrizzleRotationStore } from './db/rotation-store.js';
 import { createDrizzleResearchStore } from './db/research-store.js';
@@ -67,6 +68,8 @@ import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
 import type { AuthContext } from './accounts/auth-handlers.js';
 import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
+import type { InstanceStanding } from './accounts/instance-standing.js';
+import { toWireCapabilities } from './lib/capabilities.js';
 import { SERVICE_VERSION } from './version.js';
 import { errorFields, scrubbedErrorMessage } from './log-error.js';
 
@@ -161,7 +164,7 @@ async function main(): Promise<void> {
         letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
       }
     : null;
-  if (openSignup !== null && config.trial === null) {
+  if (openSignup !== null && config.trial === null && config.defaultFreeDailyAiLimit === 0) {
     logger.info('Open sign-up is on, and new accounts get no AI until an operator grants some');
   }
   if (openSignup !== null) {
@@ -181,12 +184,30 @@ async function main(): Promise<void> {
   const healthConsent: InstanceHealthConsent | null =
     config.healthConsentVersion === null ? null : { version: config.healthConsentVersion };
 
+  // WHAT THE INSTANCE GRANTS AN ACCOUNT WITH NO RECORD OF ITS OWN, built once
+  // for the two readers of it: the account view (through the auth context) and
+  // the AI proxy (which `create-app.ts` hands the same object). All-off, and so
+  // today's behaviour, on an instance that set none of the variables.
+  const standing: InstanceStanding = {
+    defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
+    defaultCapabilities: config.defaultCapabilities,
+    capabilitySchemaMap: config.capabilitySchemaMap,
+  };
+  if (config.defaultFreeDailyAiLimit > 0) {
+    logger.info('A standing free daily AI limit is on: accounts with no limit of their own get it, and no scan trial', {
+      defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
+    });
+  }
+
   const authContext: AuthContext = {
     // The zone a trial's last midnight falls in (`TRIAL_TIME_ZONE`), read at
     // every redemption and never written on an invite row.
     store: createDrizzleAccountStore(database.db, {
       hashAddress,
       trialTimeZone: config.trial?.timeZone ?? DEFAULT_TRIAL_TIME_ZONE,
+      // An instance with no scan trial keeps no mailbox hash on a deletion:
+      // nothing would read it. See `DrizzleAccountStoreOptions.grantsScanTrial`.
+      grantsScanTrial: config.trial !== null,
     }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
@@ -205,6 +226,7 @@ async function main(): Promise<void> {
     // `null` leaves `POST /v1/auth/account/health-consent` answering the
     // ordinary unknown-path 404 and signup ignoring the field.
     healthConsent,
+    standing,
     // Both erasure paths tell the biller first, when there is one, so a
     // deleted account is never charged again. `null` without a biller.
     accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),
@@ -368,6 +390,10 @@ async function main(): Promise<void> {
     // publish one version and demand another. `null` when it asks for none,
     // which a client reads as "draw no consent checkbox".
     healthConsent: healthConsent === null ? null : { version: healthConsent.version },
+    // DESCRIPTIVE, NEVER A GRANT, and read from the SAME `standing` the proxy
+    // checks, so a client cannot be told one default while the proxy enforces
+    // another. `null` is "no check": every feature is open.
+    defaultCapabilities: toWireCapabilities(standing.defaultCapabilities),
     // `nutrientReferenceBasis` IS DELIBERATELY NOT HERE, and this is where a
     // reader looking for it will look. Every field above is env config read
     // once, so a copy taken at boot stays true for the life of the process.
@@ -640,6 +666,17 @@ async function main(): Promise<void> {
         if (scrubbed > 0) logger.info('Scrubbed finished invitation addresses', { scrubbed });
       } catch (cause) {
         logger.error('Invitation scrub failed', { ...errorFields(cause) });
+      }
+      // THE END OF THE MAILBOX HASH (ADR-0010): a deleted account's hash is kept
+      // `TRIAL_HASH_RETENTION_DAYS` and then deleted, on every instance.
+      try {
+        const purged = await purgeExpiredTrialHashes(database.db, {
+          now: new Date(),
+          retentionDays: config.trialHashRetentionDays,
+        });
+        if (purged > 0) logger.info('Purged expired trial mailbox hashes', { purged });
+      } catch (cause) {
+        logger.error('Trial hash purge failed', { ...errorFields(cause) });
       }
     })();
   }, TOKEN_SWEEP_INTERVAL_MS);

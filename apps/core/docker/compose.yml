@@ -199,9 +199,20 @@ services:
       TRIAL_DAYS: ${TRIAL_DAYS:-}
       TRIAL_TIME_ZONE: ${TRIAL_TIME_ZONE:-}
       TRIAL_ADDRESS_PEPPER: ${TRIAL_ADDRESS_PEPPER:-}
+      TRIAL_HASH_RETENTION_DAYS: ${TRIAL_HASH_RETENTION_DAYS:-}
       MEMBER_INVITE_TRIAL: ${MEMBER_INVITE_TRIAL:-}
       AI_TRIAL_INSTANCE_DAILY_LIMIT: ${AI_TRIAL_INSTANCE_DAILY_LIMIT:-}
       AI_TRIAL_NETWORK_DAILY_LIMIT: ${AI_TRIAL_NETWORK_DAILY_LIMIT:-}
+      # A standing free daily AI limit for every account with no free limit of its
+      # own, no end date and no trial. Empty or 0 means off. It cannot stand
+      # beside the trial above: the boot stops naming both.
+      DEFAULT_FREE_DAILY_AI_LIMIT: ${DEFAULT_FREE_DAILY_AI_LIMIT:-}
+      # AI feature permissions. DEFAULT_CAPABILITIES is what an account with no
+      # record of its own may use: comma separated labels, or "none" for nothing.
+      # Empty means no check at all. CAPABILITY_SCHEMA_MAP ties a structured
+      # output schema name to the label its use needs, as schemaName:label pairs.
+      DEFAULT_CAPABILITIES: ${DEFAULT_CAPABILITIES:-}
+      CAPABILITY_SCHEMA_MAP: ${CAPABILITY_SCHEMA_MAP:-}
       # Web push: all three or none. Empty means no notifications.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}

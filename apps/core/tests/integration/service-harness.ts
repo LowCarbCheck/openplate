@@ -74,6 +74,7 @@ import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { parseRecoveryCode } from '../../src/accounts/auth-input.js';
 import { deriveRecoveryAuthHash } from '../../src/lib/recovery-auth.js';
 import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
+import type { InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 export interface HttpResponse<T> {
   status: number;
@@ -377,6 +378,12 @@ export interface StartServiceOptions {
   /** `TRIAL_ADDRESS_PEPPER` (M253). Absent is no keyed mailbox hash, which `main.ts` refuses beside a trial. */
   trialAddressPepper?: string | null;
   /**
+   * Whether the instance still grants a scan trial, as `main.ts` reads it from
+   * `config.trial !== null` (ADR-0010). Absent is `true`, which keeps the hash
+   * a deletion writes for an account that held a trial.
+   */
+  grantsScanTrial?: boolean;
+  /**
    * Absent (the default) boots the service the way every deployment boots
    * today: no `VAPID_*` variables, and the whole `/v1/push` subtree answering
    * the ordinary unknown-path 404. `push-routes.test.ts` opts in.
@@ -482,6 +489,13 @@ export interface StartServiceOptions {
    * then the target again under the source's, which is the whole switch.
    */
   serverSecret?: string;
+  /**
+   * What the instance grants an account with no record of its own
+   * (`DEFAULT_FREE_DAILY_AI_LIMIT`), as `main.ts` builds it. Absent is every
+   * instance that set none of the variables, which is every instance before
+   * 2026-10-05: no default free limit.
+   */
+  standing?: InstanceStanding | null;
 }
 
 /** The root secret every suite runs under unless it names another. */
@@ -589,7 +603,11 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   const authContext: AuthContext = {
     // The zone the trial's last midnight falls in, as `main.ts` reads it from
     // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
-    store: createDrizzleAccountStore(options.db, { hashAddress, trialTimeZone: trial?.timeZone ?? 'UTC' }),
+    store: createDrizzleAccountStore(options.db, {
+      hashAddress,
+      trialTimeZone: trial?.timeZone ?? 'UTC',
+      grantsScanTrial: options.grantsScanTrial,
+    }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
     escrowKey: secrets.escrowKey,
@@ -607,6 +625,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     openSignup: openSignupSurface,
     // `null` by default, see `StartServiceOptions.healthConsent`.
     healthConsent,
+    // `null` by default, see `StartServiceOptions.standing`.
+    standing: options.standing ?? null,
     afterResponse: (task) => {
       pendingAfterResponse.push(
         new Promise<void>((resolve) => {
@@ -722,6 +742,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     // Reported from the SAME surface the routes are mounted on, as `main.ts`
     // does it, so a `create-app` that forgot to report it fails a suite.
     push: pushSurface !== null,
+    // From the SAME standing the proxy checks, as `main.ts` does it.
+    defaultCapabilities: options.standing?.defaultCapabilities?.slice() ?? null,
     // The SAME binding the auth context enforces, as `main.ts` does it.
     healthConsent: healthConsent === null ? null : { version: healthConsent.version },
   };

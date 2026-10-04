@@ -244,6 +244,19 @@ export function createDrizzleAiInstanceCeiling(db: Database): AiInstanceCeilingS
         .set({ count: sql`greatest(${aiInstanceDays.count} - ${input.weight}, 0)` })
         .where(and(eq(aiInstanceDays.day, input.day), gt(aiInstanceDays.count, 0)));
     },
+
+    async addInstanceCost(input: { day: string; costMicroUsd: number }): Promise<void> {
+      if (!Number.isInteger(input.costMicroUsd) || input.costMicroUsd < 0) {
+        throw new Error(`a cost is a whole number of micro dollars, got ${input.costMicroUsd}`);
+      }
+      await db
+        .insert(aiInstanceDays)
+        .values({ day: input.day, costMicroUsd: input.costMicroUsd })
+        .onConflictDoUpdate({
+          target: aiInstanceDays.day,
+          set: { costMicroUsd: sql`${aiInstanceDays.costMicroUsd} + ${input.costMicroUsd}` },
+        });
+    },
   };
 }
 
@@ -310,6 +323,17 @@ export interface AiInstanceCeilingStore {
    * `ai/proxy.ts`).
    */
   releaseInstance(input: { day: string; weight: number }): Promise<void>;
+  /**
+   * Adds what the provider charged for one answer, in micro dollars, to the
+   * instance's total for the UTC day. One statement, so two answers finishing
+   * together both land. It creates the day's row when there is none, because
+   * an instance with no ceiling has no row until now, and it touches neither
+   * counter. A sum, never a log: nothing says whose request it was.
+   *
+   * THE PROXY CALLS IT AFTER THE ANSWER HAS BEEN RELAYED, and never lets a
+   * failure here fail the request.
+   */
+  addInstanceCost(input: { day: string; costMicroUsd: number }): Promise<void>;
 }
 
 // =============================================================================

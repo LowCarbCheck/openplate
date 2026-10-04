@@ -23,7 +23,7 @@
  */
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { eq } from 'drizzle-orm';
+import { eq, isNotNull } from 'drizzle-orm';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import type { JsonObject } from '../../src/lib/json.js';
 import { createDrizzleInviteStore } from '../../src/db/invite-store.js';
@@ -312,11 +312,12 @@ const MEMBER_INVITE_POLICY = { dailyAiLimit: 25, allowanceDays: 14 };
 /** The admin credential the control cases present. Long enough to be the real thing. */
 const MEMBER_SUITE_ADMIN_TOKEN = 'integration-admin-token-0123456789abcdef';
 
-async function startWithMemberInvites(): Promise<ServiceHarness> {
+async function startWithMemberInvites(pepper: string | null = null): Promise<ServiceHarness> {
   return startService({
     db: database.db,
     memberInvites: MEMBER_INVITE_POLICY,
     adminToken: MEMBER_SUITE_ADMIN_TOKEN,
+    trialAddressPepper: pepper,
   });
 }
 
@@ -485,74 +486,86 @@ test('a new address, a pending invitation and an existing account get the same r
   }
 });
 
-test('a re-invite after a self-delete is not a fresh allowance, while an admin mint for that address still is', async () => {
-  const service = await startWithMemberInvites();
-  try {
-    const member = await service.signupThroughInvite({ email: 'anna@example.org' });
-    assert.equal(
-      (await memberMint(service, { accessToken: member.tokens.accessToken, email: 'boris@example.org' })).status,
-      202,
-    );
+/**
+ * A DELETE SCRUBS THE ADDRESS ON EVERY INSTANCE (2026-10-05), so what remembers a deleted member-invited
+ * address differs. With a pepper it is the keyed hash, and the re-invite rule still recognises the
+ * address. With none there is nothing to keep in its place, so the rule no longer does, and that is the
+ * stated price of erasing the address there. Each branch has its control: the admin mint is exempt.
+ */
+for (const pepper of [null, 'a-trial-address-pepper-for-this-suite']) {
+  const hasPepper = pepper !== null;
+  test(`a re-invite after a self-delete is ${hasPepper ? 'not a fresh allowance' : 'no longer recognised'} (pepper ${hasPepper ? 'on' : 'off'}), and the address is scrubbed either way`, async () => {
+    const service = await startWithMemberInvites(pepper);
+    try {
+      const member = await service.signupThroughInvite({ email: 'anna@example.org' });
+      assert.equal(
+        (await memberMint(service, { accessToken: member.tokens.accessToken, email: 'boris@example.org' })).status,
+        202,
+      );
 
-    // The friend redeems it, then deletes their own account. The invite row
-    // survives with its address and its redemption instant, because both
-    // foreign keys on it are `ON DELETE SET NULL`.
-    const inviteToken = service.mailer.invites.at(-1)?.inviteToken ?? '';
-    const friend = await service.request<{ tokens: { accessToken: string } }>({
-      method: 'POST',
-      path: '/v1/auth/signup',
-      body: signupBody(inviteToken),
-    });
-    assert.equal(friend.status, 201);
-    const deleted = await service.request({
-      method: 'POST',
-      path: '/v1/auth/delete',
-      accessToken: friend.body.tokens.accessToken,
-      body: { authHash: sampleAuthHash(11) },
-    });
-    assert.equal(deleted.status, 204);
+      // The friend redeems it, then deletes their own account. The invite row
+      // survives with its redemption instant, because both foreign keys on it
+      // are `ON DELETE SET NULL`, and it loses its address.
+      const inviteToken = service.mailer.invites.at(-1)?.inviteToken ?? '';
+      const friend = await service.request<{ tokens: { accessToken: string } }>({
+        method: 'POST',
+        path: '/v1/auth/signup',
+        body: signupBody(inviteToken),
+      });
+      assert.equal(friend.status, 201);
+      const deleted = await service.request({
+        method: 'POST',
+        path: '/v1/auth/delete',
+        accessToken: friend.body.tokens.accessToken,
+        body: { authHash: sampleAuthHash(11) },
+      });
+      assert.equal(deleted.status, 204);
 
-    const surviving = await database.db
-      .select()
-      .from(signupInvites)
-      .where(eq(signupInvites.email, 'boris@example.org'));
-    assert.equal(surviving.length, 1);
-    assert.notEqual(surviving[0]?.redeemedAt, null, 'the redemption instant must survive the account');
+      assert.deepEqual(
+        await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'boris@example.org')),
+        [],
+        'the address must not survive the account',
+      );
+      const redeemed = await database.db.select().from(signupInvites).where(isNotNull(signupInvites.redeemedAt));
+      const spent = redeemed.filter((row) => row.email === '');
+      assert.equal(spent.length, 1, 'the spent row stays, for the lifetime cap');
+      assert.notEqual(spent[0]?.redeemedAt, null, 'the redemption instant must survive the account');
 
-    // A DIFFERENT member now invites the same address. No second member invite
-    // is minted and no letter goes out, and the caller is told nothing.
-    const friendOfAFriend = await service.signupThroughInvite({ email: 'clara@example.org' });
-    const lettersBefore = service.mailer.invites.length;
-    const withheld = await memberMint(service, {
-      accessToken: friendOfAFriend.tokens.accessToken,
-      email: 'boris@example.org',
-    });
-    assert.equal(withheld.status, 202, 'the caller must not learn that the address is spent');
-    assert.equal(service.mailer.invites.length, lettersBefore, 'no second letter may go out');
-    assert.equal(
-      (await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'boris@example.org'))).length,
-      1,
-      'no second member invite may exist for that address',
-    );
+      // A DIFFERENT member now invites the same address.
+      const friendOfAFriend = await service.signupThroughInvite({ email: 'clara@example.org' });
+      const lettersBefore = service.mailer.invites.length;
+      const again = await memberMint(service, {
+        accessToken: friendOfAFriend.tokens.accessToken,
+        email: 'boris@example.org',
+      });
+      assert.equal(again.status, 202, 'the caller must not learn whether the address is spent');
+      const lettersSent = service.mailer.invites.length - lettersBefore;
+      const rowsForAddress = (
+        await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'boris@example.org'))
+      ).length;
+      // With a pepper: no second letter, no second member invite. Without one: the mint goes through.
+      assert.equal(lettersSent, hasPepper ? 0 : 1, 'letters sent by the second invitation');
+      assert.equal(rowsForAddress, hasPepper ? 0 : 1, 'invite rows now holding the address');
 
-    // THE CONTROL: the operator is exempt, so their mint for the same address
-    // does produce a row. Without it this test would pass against a service
-    // that had simply stopped minting anything.
-    const asOperator = await service.request({
-      method: 'POST',
-      path: '/v1/admin/invites',
-      adminToken: MEMBER_SUITE_ADMIN_TOKEN,
-      body: { email: 'boris@example.org' },
-    });
-    assert.equal(asOperator.status, 201);
-    assert.equal(
-      (await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'boris@example.org'))).length,
-      2,
-    );
-  } finally {
-    await service.close();
-  }
-});
+      // THE CONTROL: the operator is exempt, so their mint for the same address
+      // does produce a row. Without it this test would pass against a service
+      // that had simply stopped minting anything.
+      const asOperator = await service.request({
+        method: 'POST',
+        path: '/v1/admin/invites',
+        adminToken: MEMBER_SUITE_ADMIN_TOKEN,
+        body: { email: 'boris@example.org' },
+      });
+      assert.equal(asOperator.status, 201);
+      assert.equal(
+        (await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'boris@example.org'))).length,
+        rowsForAddress + 1,
+      );
+    } finally {
+      await service.close();
+    }
+  });
+}
 
 for (const pepper of [null, 'a-trial-address-pepper-for-this-suite']) {
   test(`deleting an account withdraws the invitations it sent that nobody redeemed (pepper ${pepper === null ? 'off' : 'on'})`, async () => {

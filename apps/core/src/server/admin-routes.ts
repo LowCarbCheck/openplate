@@ -61,6 +61,7 @@
 import express from 'express';
 import type { Request, Response, Router } from 'express';
 import { asyncHandler } from './async-handler.js';
+import { parseCapabilityArray, toWireCapabilities } from '../lib/capabilities.js';
 import type { AccountStore } from '../accounts/account-store.js';
 import type { AdminAccountSummary, AdminMetadataStore, AdminStats, ExpiringAllowance } from '../admin/admin-store.js';
 import type { SyncBlobRollbackStore } from '../contract-types.js';
@@ -143,7 +144,14 @@ export const PAGING_REFUSAL = `limit must be 0-${MAX_ADMIN_PAGE_LIMIT} and offse
  * field added to one is a compile error until it is added here too. The two
  * extra fields are ADR-0001's operator facts, see `admin/admin-store.ts`.
  */
-interface AdminAccountView extends AccountView {
+interface AdminAccountView extends Omit<AccountView, 'capabilities'> {
+  /**
+   * The account's OWN capability record: `null` is no record, so the instance
+   * default decides, and `[]` is a record that grants nothing. Not the effective
+   * value `GET /v1/auth/account` reports. The operator reads what was written,
+   * so a PATCH can be checked against it, the way `freeDailyAiLimit` already is.
+   */
+  capabilities: string[] | null;
   blob: { sizeBytes: number; updatedAt: string } | null;
   keyRecordKinds: SyncKeyRecordKind[];
   /**
@@ -292,6 +300,7 @@ function toAccountView(input: {
     aiUsedToday: summary.aiUsedToday,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
     freeDailyAiLimit: summary.freeDailyAiLimit,
+    capabilities: toWireCapabilities(summary.capabilities),
     trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
     trialEndsAt: summary.trialEndsAt?.toISOString() ?? null,
     suspendedAt: summary.suspendedAt?.toISOString() ?? null,
@@ -337,6 +346,8 @@ interface ServiceAccountView {
   id: number;
   allowanceExpiresAt: string | null;
   dailyAiLimit: number;
+  /** The account's OWN capability record, `null` for none. Not the effective value: the biller reads back what it wrote. */
+  capabilities: string[] | null;
 }
 
 /** The ONLY function that builds a body for the service principal. No address, no name, no role, no usage. */
@@ -345,6 +356,7 @@ function toServiceAccountView(summary: AdminAccountSummary): ServiceAccountView 
     id: summary.id,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
     dailyAiLimit: summary.dailyAiLimit,
+    capabilities: toWireCapabilities(summary.capabilities),
   };
 }
 
@@ -694,6 +706,12 @@ interface AccountPatch {
   freeDailyAiLimit?: number;
   /** The scans granted (M253), `0` to {@link MAX_TRIAL_SCANS}, or `null` to take the scan trial away. */
   trialScans?: number | null;
+  /**
+   * The account's own capability record (`lib/capabilities.ts`), validated and
+   * normalized. `null` removes the record, so the instance default decides
+   * again. Written by the operator AND by the biller's credential.
+   */
+  capabilities?: string[] | null;
   suspended?: boolean;
   displayName?: string | null;
   /** The operator's label, trimmed and bounded (`admin/account-label.ts`), or `null` to clear it. */
@@ -801,6 +819,15 @@ function parseAccountPatch(body: JsonValue): ParseAccountPatchResult {
       return { ok: false, reason: `freeDailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
     }
     patch.freeDailyAiLimit = limit;
+  }
+  if (fields.capabilities !== undefined) {
+    if (fields.capabilities === null) {
+      patch.capabilities = null;
+    } else {
+      const capabilities = parseCapabilityArray(fields.capabilities);
+      if (!capabilities.ok) return { ok: false, reason: capabilities.reason };
+      patch.capabilities = capabilities.value;
+    }
   }
   if (fields.trialScans !== undefined) {
     const trialScans = parseTrialScans(fields.trialScans);
@@ -1266,13 +1293,22 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         // silence must never read as consent.
         res.status(400).json({
           error:
-            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, freeDailyAiLimit, trialScans, suspended, displayName, label',
+            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, freeDailyAiLimit, capabilities, trialScans, suspended, displayName, label',
         });
         return;
       }
 
-      const { allowanceExpiresAt, displayName, label, role, dailyAiLimit, freeDailyAiLimit, suspended, trialScans } =
-        patch.value;
+      const {
+        allowanceExpiresAt,
+        capabilities: capabilityRecord,
+        displayName,
+        label,
+        role,
+        dailyAiLimit,
+        freeDailyAiLimit,
+        suspended,
+        trialScans,
+      } = patch.value;
       // Demoting or suspending oneself is the lockout; a rename is not.
       if (isSelfLockout({ req, targetAccountId: accountId, lockingOut: suspended === true || role === 'member' })) {
         res.status(400).json({ error: 'self-change' });
@@ -1301,6 +1337,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         dailyAiLimit !== undefined ||
         allowanceExpiresAt !== undefined ||
         freeDailyAiLimit !== undefined ||
+        capabilityRecord !== undefined ||
         trialScans !== undefined ||
         displayName !== undefined ||
         label !== undefined
@@ -1311,6 +1348,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
           dailyAiLimit,
           allowanceExpiresAt,
           freeDailyAiLimit,
+          capabilities: capabilityRecord,
           trialScans,
           displayName,
           label,

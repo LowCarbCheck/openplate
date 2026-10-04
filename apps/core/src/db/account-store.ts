@@ -112,6 +112,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     dailyAiLimit: row.dailyAiLimit,
     allowanceExpiresAt: row.allowanceExpiresAt,
     freeDailyAiLimit: row.freeDailyAiLimit,
+    capabilities: row.capabilities,
     trialScans: row.trialScans,
     trialScansUsed: row.trialScansUsed,
     trialEndsAt: row.trialEndsAt,
@@ -366,6 +367,16 @@ export interface DrizzleAccountStoreOptions {
    * days the offer is worth. See `accounts/scan-trial.ts`, `trialEndsAtFor`.
    */
   trialTimeZone: string;
+  /**
+   * Whether this instance still grants a scan trial. Absent is `true`, which
+   * is every instance before the standing daily limit replaced the trial.
+   *
+   * With `false`, a deletion still scrubs the address from the invite rows but
+   * KEEPS NO HASH: the hash exists only so a trial can be refused to a mailbox
+   * that had one, and an instance that grants none has nothing to refuse. Keeping
+   * it would hold a person's data for a rule that no longer runs.
+   */
+  grantsScanTrial?: boolean;
 }
 
 /**
@@ -389,6 +400,7 @@ function lapsedDayTrialPredicate(input: LapsedDayTrialQuery) {
 export function createDrizzleAccountStore(db: Database, options: DrizzleAccountStoreOptions): AccountStore {
   const hashAddress = options.hashAddress ?? null;
   const trialTimeZone = options.trialTimeZone;
+  const grantsScanTrial = options.grantsScanTrial ?? true;
 
   /**
    * Deletes an account on an instance with a pepper, keeping ONLY a keyed hash
@@ -397,7 +409,9 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
    * ONE TRANSACTION, THREE WRITES:
    *  1. the hash, when the account held a trial: a scan trial of any size, or
    *     an invite a member caused (a day trial), whose row may have lost its
-   *     inviter to an earlier deletion but not its `trial_scans`;
+   *     inviter to an earlier deletion but not its `trial_scans`. NOT on an
+   *     instance that no longer grants a scan trial (`grantsScanTrial`), and
+   *     deleted by the hourly sweep after `TRIAL_HASH_RETENTION_DAYS`;
    *  2. every invite row about this mailbox loses its address, its name and
    *     its hash: rows at the account's own address and rows at any other
    *     spelling that hashes the same. The row itself stays, because a
@@ -426,7 +440,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
           ),
         )
         .limit(1);
-      if (account.trialScans !== null || memberCaused !== undefined) {
+      if (grantsScanTrial && (account.trialScans !== null || memberCaused !== undefined)) {
         await tx.insert(trialAddressHashes).values({ hash: mailbox }).onConflictDoNothing();
       }
 
@@ -495,6 +509,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       if (input.dailyAiLimit !== undefined) changes.dailyAiLimit = input.dailyAiLimit;
       if (input.allowanceExpiresAt !== undefined) changes.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.freeDailyAiLimit !== undefined) changes.freeDailyAiLimit = input.freeDailyAiLimit;
+      if (input.capabilities !== undefined) changes.capabilities = input.capabilities;
       if (input.trialScans !== undefined) changes.trialScans = input.trialScans;
       if (input.displayName !== undefined) changes.displayName = input.displayName;
       if (input.label !== undefined) changes.label = input.label;
@@ -818,9 +833,27 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       // member's pending letter would look like the operator's. Left pending,
       // a letter could still be redeemed after its sender left, and a day-trial
       // letter's allowance only starts at redemption.
+      //
+      // WITHOUT A PEPPER THE ADDRESS IS STILL SCRUBBED (2026-10-05). Only the
+      // keyed hash needs the pepper, and with no pepper nothing is kept in its
+      // place: the redeemed invite row for this mailbox loses its address, its
+      // name and its key like every other, and the row stays for the lifetime
+      // cap. The price, stated: the re-invite rule (`hasRedeemedMemberInvite`)
+      // answers from that row's address on such an instance, so it no longer
+      // recognises a deleted member-invited address.
       if (hashAddress === null) {
         await db.transaction(async (tx): Promise<void> => {
+          const [account] = await tx
+            .select({ email: accounts.email })
+            .from(accounts)
+            .where(eq(accounts.id, accountId))
+            .limit(1);
+          if (!account) return;
           await withdrawPendingInvitesSentBy(tx, { accountId, revokedAt: new Date() });
+          await tx
+            .update(signupInvites)
+            .set({ email: '', displayName: null, trialKey: null })
+            .where(or(eq(signupInvites.email, account.email), eq(signupInvites.redeemedAccountId, accountId)));
           await tx.delete(accounts).where(eq(accounts.id, accountId));
         });
         return;

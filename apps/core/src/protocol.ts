@@ -276,6 +276,23 @@ export interface AccountView {
    */
   freeDailyAiLimit: number;
   /**
+   * The capabilities this account may use, as the proxy computes them: the
+   * account's own record, else the instance default, else `null`.
+   *
+   * `null` MEANS NO CHECK, NOT "NOTHING". It is what an instance that sets no
+   * default and no per-account record reports, and the proxy refuses nothing
+   * for a missing capability there. `[]` means no feature at all. A client
+   * that finds `null` MUST treat every feature as available.
+   *
+   * THE OPERATOR'S VIEWS SHOW THE OWN RECORD INSTEAD (`null` is "no record"
+   * there), the way `freeDailyAiLimit` already differs between the two.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT: the proxy answers
+   * `403 capability-required` (PROTOCOL.md §5.19). ADDITIVE: an older client
+   * ignores the key.
+   */
+  capabilities: string[] | null;
+  /**
    * The account's free AI scans (M253): `{granted, left}`, or `null` for an
    * account with no scan trial, which is every account on an instance that
    * runs none.
@@ -289,7 +306,7 @@ export interface AccountView {
    */
   trialScans: TrialScansView | null;
   /**
-   * When the free tier ends by the calendar (M267, `TRIAL_DAYS`), or `null`
+   * When the scan trial ends by the calendar (M267, `TRIAL_DAYS`), or `null`
    * for no end date: an account whose trial started before the setting
    * existed, one on an instance without it, and one with no trial at all.
    *
@@ -480,6 +497,21 @@ export interface InstanceInfo {
   healthConsent: InstanceHealthConsent | null;
   /** The AI proxy this instance offers, or `null` when it has no upstream key. Wired by spec 03. */
   ai: InstanceAi | null;
+  /**
+   * The capabilities an account holds when it has no record of its own
+   * (`DEFAULT_CAPABILITIES`), or `null` when the instance checks none, which is
+   * the self-hosted default: every feature is open.
+   *
+   * ALWAYS PRESENT, `null` WHEN THERE IS NO DEFAULT, like `ai` and
+   * `healthConsent`: "this instance checks no capability" is a statement every
+   * instance makes, and a client that finds the key missing (a service older
+   * than the field) reads it as `null`. `[]` is an instance whose accounts
+   * have no feature until a record says so.
+   *
+   * DESCRIPTIVE, NEVER A GRANT. The proxy decides, per request, from the
+   * account's own record and this default (PROTOCOL.md §5.19).
+   */
+  defaultCapabilities: string[] | null;
   /**
    * What this instance does with a reported photograph, or ABSENT when it
    * accepts no reports, see {@link InstanceFeedback}.

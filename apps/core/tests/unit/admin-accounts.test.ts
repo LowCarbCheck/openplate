@@ -137,6 +137,8 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'aiUsedToday',
     'allowanceExpiresAt',
     'blob',
+    // The account's own capability record (2026-10-05), `null` when none was written.
+    'capabilities',
     'createdAt',
     'dailyAiLimit',
     'displayName',

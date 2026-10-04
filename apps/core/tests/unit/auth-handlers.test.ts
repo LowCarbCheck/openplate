@@ -16,6 +16,7 @@
  * `signup-with-invite.test.ts` and `password-reset.test.ts` carry the two
  * flows M192 added; this file keeps the properties that predate them.
  */
+import { NO_INSTANCE_STANDING } from '../../src/accounts/instance-standing.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -620,6 +621,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   assert.deepEqual(Object.keys(outcome.body.account).toSorted(), [
     'aiUsedToday',
     'allowanceExpiresAt',
+    // 2026-10-05: the capabilities the proxy checks, `null` here because no record and no default exist.
+    'capabilities',
     'createdAt',
     'dailyAiLimit',
     'displayName',
@@ -647,6 +650,57 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   // is what every deployment runs until an operator sets both settings. The
   // counting-down case is `member-invites.test.ts`.
   assert.equal(outcome.body.account.invitesLeft, null);
+});
+
+test('the account view reports the free limit the proxy enforces: the column, or the instance default', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const withDefault = { ...fixture.ctx, standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 } };
+  const read = async (ctx: typeof fixture.ctx): Promise<number> => {
+    const outcome = await handleGetAccount({ accountId: session.account.id }, ctx);
+    if (outcome.status !== 'ok') throw new Error('the account read failed');
+    return outcome.body.account.freeDailyAiLimit;
+  };
+
+  // THE CONTROL: no standing at all is the column, which is 0 for this account.
+  assert.equal(await read(fixture.ctx), 0);
+  assert.equal(await read({ ...fixture.ctx, standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 0 } }), 0);
+  // A default fills in for an account with no free limit of its own.
+  assert.equal(await read(withDefault), 3);
+  // An own limit wins, whichever way it compares with the default.
+  await fixture.store.updateStanding({ accountId: session.account.id, freeDailyAiLimit: 10 });
+  assert.equal(await read(withDefault), 10);
+  assert.equal(await read(fixture.ctx), 10);
+});
+
+test('the account view reports the capabilities the proxy checks: own record, else the instance default, else null', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const read = async (ctx: typeof fixture.ctx): Promise<string[] | null> => {
+    const outcome = await handleGetAccount({ accountId: session.account.id }, ctx);
+    if (outcome.status !== 'ok') throw new Error('the account read failed');
+    return outcome.body.account.capabilities;
+  };
+  const withDefault = (defaultCapabilities: string[] | null): typeof fixture.ctx => ({
+    ...fixture.ctx,
+    standing: { ...NO_INSTANCE_STANDING, defaultCapabilities },
+  });
+
+  // THE CONTROL: nothing configured is `null`, which means "no check", not "nothing".
+  assert.equal(await read(fixture.ctx), null);
+  assert.equal(await read(withDefault(null)), null);
+  // The default fills in for an account with no record.
+  assert.deepEqual(await read(withDefault(['scan'])), ['scan']);
+  assert.deepEqual(await read(withDefault([])), []);
+  // A record replaces the default, and an empty record is still a record.
+  await fixture.store.updateStanding({ accountId: session.account.id, capabilities: ['recipes'] });
+  assert.deepEqual(await read(withDefault(['scan'])), ['recipes']);
+  assert.deepEqual(await read(fixture.ctx), ['recipes']);
+  await fixture.store.updateStanding({ accountId: session.account.id, capabilities: [] });
+  assert.deepEqual(await read(withDefault(['scan'])), []);
+  // Removing the record hands the decision back to the default.
+  await fixture.store.updateStanding({ accountId: session.account.id, capabilities: null });
+  assert.deepEqual(await read(withDefault(['scan'])), ['scan']);
 });
 
 test('PATCH /account sets and clears the display name, and refuses a missing key', async () => {

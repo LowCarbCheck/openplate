@@ -43,7 +43,7 @@ const PAST_EXPIRY = '2020-01-01T00:00:00.000Z';
  * assertions below instead of quietly widening this interface.
  */
 interface ServiceAccountBody {
-  account: { id: number; allowanceExpiresAt: string | null; dailyAiLimit: number };
+  account: { id: number; allowanceExpiresAt: string | null; dailyAiLimit: number; capabilities: string[] | null };
 }
 
 /** One row of the reconciliation list, and the page around it. Two fields per row, asserted. */
@@ -100,7 +100,7 @@ after(async () => {
   await harness.close();
 });
 
-test('the single read is exactly id, allowanceExpiresAt and dailyAiLimit', async () => {
+test('the single read is exactly id, allowanceExpiresAt, dailyAiLimit and capabilities', async () => {
   const response = await harness.request({
     method: 'GET',
     path: `/v1/admin/accounts/${payerId}`,
@@ -117,8 +117,14 @@ test('the single read is exactly id, allowanceExpiresAt and dailyAiLimit', async
   // SAFETY: the route answers a JSON object with one `account` key, and the
   // assertion below is what fixes its shape.
   const body = JSON.parse(text) as ServiceAccountBody;
-  assert.deepEqual(Object.keys(body.account).toSorted(), ['allowanceExpiresAt', 'dailyAiLimit', 'id']);
-  assert.deepEqual(body.account, { id: payerId, allowanceExpiresAt: FUTURE_EXPIRY, dailyAiLimit: 120 });
+  assert.deepEqual(Object.keys(body.account).toSorted(), ['allowanceExpiresAt', 'capabilities', 'dailyAiLimit', 'id']);
+  // `capabilities` is the account's OWN record: `null` is "no record", not "nothing".
+  assert.deepEqual(body.account, {
+    id: payerId,
+    allowanceExpiresAt: FUTURE_EXPIRY,
+    dailyAiLimit: 120,
+    capabilities: null,
+  });
 });
 
 test('the operator reading the same account DOES get the address, so the absences above mean something', async () => {
@@ -146,7 +152,7 @@ test('an account with no end date reads allowanceExpiresAt as null, never as an 
   });
   // SAFETY: as above, a JSON object with one `account` key.
   const body = (await response.json()) as ServiceAccountBody;
-  assert.deepEqual(Object.keys(body.account).toSorted(), ['allowanceExpiresAt', 'dailyAiLimit', 'id']);
+  assert.deepEqual(Object.keys(body.account).toSorted(), ['allowanceExpiresAt', 'capabilities', 'dailyAiLimit', 'id']);
   assert.equal(body.account.allowanceExpiresAt, null);
 });
 

@@ -30,6 +30,7 @@ import { hashToken } from '../../src/lib/tokens.js';
 import type { LogFields, Logger } from '../../src/logger.js';
 import { createAuthFixture, type AuthFixture } from './auth-context-fixture.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
+import { NO_INSTANCE_STANDING, type InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 const servers: Server[] = [];
 
@@ -132,9 +133,13 @@ interface RecordingQuota extends AiQuotaStore {
   calls: string[];
   /** The weight of every account reserve, in order (2026-09-30). */
   weights: number[];
+  /** Every cost the proxy added to the instance's day, in order (2026-10-05). */
+  costs: { day: string; costMicroUsd: number }[];
 }
 
-function createRecordingQuota(options: { failAt?: number; instanceFailAt?: number } = {}): RecordingQuota {
+function createRecordingQuota(
+  options: { failAt?: number; instanceFailAt?: number; isCostWriteFailing?: boolean } = {},
+): RecordingQuota {
   const store: RecordingQuota = {
     ...createUnusedTrialScanStore(),
     reserves: 0,
@@ -146,6 +151,7 @@ function createRecordingQuota(options: { failAt?: number; instanceFailAt?: numbe
     instanceDays: [],
     calls: [],
     weights: [],
+    costs: [],
     async reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
       store.instanceReserves += 1;
       store.instanceDays.push(input.day);
@@ -157,6 +163,10 @@ function createRecordingQuota(options: { failAt?: number; instanceFailAt?: numbe
       }
       store.instanceCount += input.weight;
       return { ok: true, used: store.instanceCount, limit: input.limit };
+    },
+    async addInstanceCost(input: { day: string; costMicroUsd: number }): Promise<void> {
+      if (options.isCostWriteFailing === true) throw new Error('the cost write failed');
+      store.costs.push(input);
     },
     async releaseInstance(input: { day: string; weight: number }): Promise<void> {
       store.instanceReleases += 1;
@@ -232,6 +242,10 @@ async function startProxy(options: {
   accountConsentVersion?: string;
   /** The input bounds and unit size, over the production defaults. */
   inputPolicy?: Partial<ChatInputPolicy>;
+  /** What the instance grants an account with no record of its own. Absent means nothing configured. */
+  standing?: InstanceStanding;
+  /** The account's OWN capability record. Absent is `null`, no record, where the instance default decides. */
+  capabilities?: string[];
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
@@ -260,6 +274,9 @@ async function startProxy(options: {
       dailyAiLimit: options.dailyAiLimit ?? 200,
       freeDailyAiLimit: 0,
     });
+  }
+  if (options.capabilities !== undefined) {
+    await fixture.store.updateStanding({ accountId: account.id, capabilities: options.capabilities });
   }
   await fixture.store.insertTokens([
     {
@@ -295,6 +312,7 @@ async function startProxy(options: {
       bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
       inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.inputPolicy },
       healthConsent: options.healthConsentVersion === undefined ? null : { version: options.healthConsentVersion },
+      standing: options.standing ?? NO_INSTANCE_STANDING,
       now: fixture.now,
     }),
   );
@@ -318,10 +336,15 @@ async function startProxy(options: {
   };
 }
 
-async function postCompletion(harness: Harness, body: JsonValue = { model: 'm', messages: [] }): Promise<Response> {
+async function postCompletion(
+  harness: Harness,
+  body: JsonValue = { model: 'm', messages: [] },
+  extraHeaders: Record<string, string> = {},
+): Promise<Response> {
   return fetch(`${harness.baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
+      ...extraHeaders,
       authorization: `Bearer ${harness.accessToken}`,
       'content-type': 'application/json',
       // Two headers a copy-then-overwrite would forward. Neither may reach the
@@ -856,6 +879,359 @@ test('a spent allowance is 429 with a Retry-After to the next UTC midnight', asy
   assert.equal(retryAfter, 14 * 60 * 60);
   assert.equal(response.headers.get('x-quota-used'), '2');
   assert.equal(response.headers.get('x-quota-limit'), '2');
+
+  await harness.close();
+});
+
+// ── The instance's standing free limit (2026-10-05) ────────────────────────
+
+test('an account with no AI of its own is held to the instance default, and refused at it with a 429', async () => {
+  // A new account on an instance with DEFAULT_FREE_DAILY_AI_LIMIT=3: no free
+  // limit, no trial, no paid window. The default is what the proxy reserves
+  // against, and what it reports in the quota headers.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 0,
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+  });
+
+  const first = await postCompletion(harness);
+  assert.equal(first.status, 200);
+  assert.equal(first.headers.get('x-quota-limit'), '3');
+  assert.equal(upstream.received.length, 1);
+
+  // Used up for the day: a 429 with a reset, NOT the 403 of "no allowance", so
+  // a client can say "come back tomorrow" rather than "you have no AI".
+  harness.quota.count = 3;
+  const spent = await postCompletion(harness);
+  assert.equal(spent.status, 429);
+  assert.equal(Number(spent.headers.get('retry-after')), 14 * 60 * 60);
+  assert.equal(spent.headers.get('x-quota-used'), '3');
+  assert.equal(spent.headers.get('x-quota-limit'), '3');
+  assert.match(String((await spent.json()).error), /^daily quota spent: 3 of 3 units used/);
+  assert.equal(upstream.received.length, 1, 'the refused request must not reach the provider');
+
+  await harness.close();
+});
+
+test('CONTROL: the same account with no instance default is 403 ai-not-allowed, as it always was', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0 });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 403);
+  assert.deepEqual(await response.json(), { error: 'ai-not-allowed' });
+  assert.equal(harness.quota.reserves, 0);
+
+  await harness.close();
+});
+
+test('an own free limit is kept whatever the default is, and a live paid window beats both', async () => {
+  const upstream = await startFakeUpstream();
+  const own = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    freeDailyAiLimit: 10,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+  });
+  const ownResponse = await postCompletion(own);
+  assert.equal(ownResponse.status, 200);
+  assert.equal(ownResponse.headers.get('x-quota-limit'), '10');
+  await own.close();
+
+  const paid = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    allowanceExpiresAt: new Date('2026-08-05T09:00:00.000Z'),
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+  });
+  const paidResponse = await postCompletion(paid);
+  assert.equal(paidResponse.status, 200);
+  assert.equal(paidResponse.headers.get('x-quota-limit'), '200');
+  await paid.close();
+});
+
+test('a paid period that ended falls back to the instance default, not to allowance-expired', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 200,
+    allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+  });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('x-quota-limit'), '3');
+
+  await harness.close();
+});
+
+// ── Capabilities (2026-10-05) ──────────────────────────────────────────────
+
+const SCAN_SCHEMA_BODY: JsonValue = {
+  model: 'm',
+  messages: [],
+  response_format: { type: 'json_schema', json_schema: { name: 'scan_result', schema: { type: 'object' } } },
+};
+
+const SCHEMA_MAP: ReadonlyMap<string, string> = new Map([['scan_result', 'scan']]);
+
+function standingWith(overrides: Partial<InstanceStanding>): InstanceStanding {
+  return { ...NO_INSTANCE_STANDING, ...overrides };
+}
+
+test('nothing configured means every feature is open, whatever the header says', async () => {
+  // THE CONTROL FOR EVERY CASE BELOW: an instance with no default and an
+  // account with no record is not checked, not even for a malformed header, so
+  // an instance that sets nothing behaves as it did before capabilities.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 200);
+  assert.equal((await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  assert.equal((await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'NOT A LABEL!' })).status, 200);
+  assert.equal(upstream.received.length, 3);
+
+  await harness.close();
+});
+
+test('a feature the account does not hold is a 403 that spends nothing and leaves nothing', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: ['scan'] });
+
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(refused.status, 403);
+  assert.deepEqual(await refused.json(), { error: 'capability-required', capability: 'recipes' });
+  // Decided BEFORE the count and before upstream: no reservation, no call.
+  assert.equal(harness.quota.reserves, 0);
+  assert.equal(harness.quota.count, 0);
+  assert.equal(upstream.received.length, 0);
+
+  // THE CONTROL: the feature it does hold is proxied, and counted.
+  const allowed = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(allowed.status, 200);
+  assert.equal(harness.quota.reserves, 1);
+  assert.equal(upstream.received.length, 1);
+
+  await harness.close();
+});
+
+test('the instance default applies to an account with no record, and its own record replaces it', async () => {
+  const upstream = await startFakeUpstream();
+  const onDefault = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: ['scan'] }),
+  });
+  assert.equal((await postCompletion(onDefault, undefined, { 'X-Openplate-Feature': 'scan' })).status, 200);
+  assert.equal((await postCompletion(onDefault, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 403);
+  await onDefault.close();
+
+  // A record replaces the default, it does not add to it.
+  const own = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: ['scan'] }),
+    capabilities: ['recipes'],
+  });
+  assert.equal((await postCompletion(own, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  assert.equal((await postCompletion(own, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await own.close();
+});
+
+test('an empty record, and the default "none", grant nothing, and are not the same as no record', async () => {
+  const upstream = await startFakeUpstream();
+  const emptyRecord = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: [] });
+  assert.equal((await postCompletion(emptyRecord, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await emptyRecord.close();
+
+  const noneDefault = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: [] }),
+  });
+  assert.equal((await postCompletion(noneDefault, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await noneDefault.close();
+
+  // THE CONTROL: no record, no default, same header.
+  const open = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+  assert.equal((await postCompletion(open, undefined, { 'X-Openplate-Feature': 'scan' })).status, 200);
+  await open.close();
+});
+
+test('a mapped schema needs its label, and a header that names another feature does not help', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes'],
+    standing: standingWith({ capabilitySchemaMap: SCHEMA_MAP }),
+  });
+
+  // The account holds `recipes`, the body asks for the scan schema, and the
+  // header LIES that it is a recipes call. The schema wins.
+  const lying = await postCompletion(harness, SCAN_SCHEMA_BODY, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(lying.status, 403);
+  assert.deepEqual(await lying.json(), { error: 'capability-required', capability: 'scan' });
+  // And with no header at all: the schema alone is enough.
+  assert.equal((await postCompletion(harness, SCAN_SCHEMA_BODY)).status, 403);
+  assert.equal(upstream.received.length, 0);
+  assert.equal(harness.quota.reserves, 0);
+  await harness.close();
+
+  // THE CONTROL: an account that holds `scan` gets the same body through, with
+  // the same header, so the refusal above is the schema map and nothing else.
+  const holder = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes', 'scan'],
+    standing: standingWith({ capabilitySchemaMap: SCHEMA_MAP }),
+  });
+  assert.equal((await postCompletion(holder, SCAN_SCHEMA_BODY, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  await holder.close();
+
+  // A schema nobody mapped is not checked: the map is the operator's list.
+  const unmapped = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes'],
+    standing: standingWith({ capabilitySchemaMap: new Map([['another_schema', 'scan']]) }),
+  });
+  assert.equal((await postCompletion(unmapped, SCAN_SCHEMA_BODY)).status, 200);
+  await unmapped.close();
+});
+
+test('a malformed feature header is a 400 only where a check is active', async () => {
+  const upstream = await startFakeUpstream();
+  const checked = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: ['scan'] });
+  for (const bad of ['Scan', 'scan result', '1scan', 'a'.repeat(33), 'scan;drop']) {
+    const refused = await postCompletion(checked, undefined, { 'X-Openplate-Feature': bad });
+    assert.equal(refused.status, 400, bad);
+    assert.deepEqual(await refused.json(), { error: 'feature-header-invalid' });
+  }
+  assert.equal(checked.quota.reserves, 0);
+  assert.equal(upstream.received.length, 0);
+  await checked.close();
+  // The unchecked case is the first test of this section.
+});
+
+test('the capability is checked before the daily cap, so a lacking account is told 403, not 429', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 2, capabilities: ['scan'] });
+  harness.quota.count = 2;
+
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(refused.status, 403);
+  // THE CONTROL: the feature it holds meets the spent cap.
+  const spent = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(spent.status, 429);
+
+  await harness.close();
+});
+
+test('the capability is checked after the allowance: no AI at all is still ai-not-allowed', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0, capabilities: [] });
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(refused.status, 403);
+  assert.deepEqual(await refused.json(), { error: 'ai-not-allowed' });
+  await harness.close();
+});
+
+// ── What a completion cost (2026-10-05) ────────────────────────────────────
+
+const PRICED_ANSWER = JSON.stringify({
+  model: 'google/gemini-3.7-flash',
+  choices: [{ message: { content: 'a bowl of rice, about 45 g of carbs' } }],
+  usage: { prompt_tokens: 1523, completion_tokens: 87, cost: 0.000412 },
+});
+
+function completionLine(harness: Harness): CapturedLine {
+  const line = harness.logger.lines.find((candidate) => candidate.message === 'Proxied a completion');
+  if (line === undefined) throw new Error('the proxy logged no completion');
+  return line;
+}
+
+test('a priced answer is logged as numbers and summed on the instance day, and reaches the caller untouched', async () => {
+  const upstream = await startFakeUpstream(() => ({ status: 200, body: PRICED_ANSWER }));
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), PRICED_ANSWER, 'the caller gets the provider answer byte for byte');
+
+  assert.deepEqual(completionLine(harness).fields, {
+    accountId: harness.accountId,
+    upstreamStatus: 200,
+    streaming: false,
+    requestBytes: completionLine(harness).fields?.requestBytes,
+    responseBytes: Buffer.byteLength(PRICED_ANSWER),
+    quotaUsed: 1,
+    quotaLimit: 200,
+    weight: 1,
+    durationMs: completionLine(harness).fields?.durationMs,
+    model: 'google/gemini-3.7-flash',
+    promptTokens: 1523,
+    completionTokens: 87,
+    costMicroUsd: 412,
+  });
+  assert.deepEqual(harness.quota.costs, [{ day: harness.quota.costs[0]?.day, costMicroUsd: 412 }]);
+  assert.match(harness.quota.costs[0]?.day ?? '', /^\d{4}-\d{2}-\d{2}$/);
+
+  // NO TEXT OF THE ANSWER IN ANY LOG LINE.
+  assert.ok(!JSON.stringify(harness.logger.lines).includes('bowl of rice'));
+
+  await harness.close();
+});
+
+test('CONTROL: an answer with no usage logs nulls and adds no cost', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 200);
+  const fields = completionLine(harness).fields;
+  assert.equal(fields?.promptTokens, null);
+  assert.equal(fields?.completionTokens, null);
+  assert.equal(fields?.costMicroUsd, null);
+  assert.deepEqual(harness.quota.costs, []);
+
+  await harness.close();
+});
+
+test('a streamed answer is read too, and a cost the store cannot write never fails the relay', async () => {
+  const streamed =
+    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [{ delta: { content: 'a bowl' } }] })}\n\n` +
+    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [], usage: { prompt_tokens: 10, completion_tokens: 5, cost: 0.000007 } })}\n\n` +
+    'data: [DONE]\n\n';
+  const upstream = await startFakeUpstream(() => ({ status: 200, body: streamed, contentType: 'text/event-stream' }));
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    quota: createRecordingQuota({ isCostWriteFailing: true }),
+  });
+
+  const response = await postCompletion(harness, { model: 'm', messages: [], stream: true });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), streamed);
+
+  assert.equal(completionLine(harness).fields?.costMicroUsd, 7);
+  const warning = harness.logger.lines.find((line) => line.message === 'Could not record what a completion cost');
+  assert.deepEqual(warning?.fields?.accountId, harness.accountId);
+  // The failure is logged by name and code, never by message.
+  assert.ok(!('message' in (warning?.fields ?? {})));
+
+  await harness.close();
+});
+
+test('a refused request reads no cost and adds none', async () => {
+  const upstream = await startFakeUpstream(() => ({
+    status: 429,
+    body: JSON.stringify({ error: { message: 'slow down' } }),
+  }));
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 429);
+  assert.deepEqual(harness.quota.costs, []);
+  assert.equal(
+    harness.logger.lines.some((line) => line.message === 'Proxied a completion'),
+    false,
+  );
 
   await harness.close();
 });

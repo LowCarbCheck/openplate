@@ -19,6 +19,7 @@
  */
 import { relations, sql, type InferInsertModel, type InferSelectModel } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   customType,
@@ -160,6 +161,22 @@ export const accounts = pgTable(
      * cannot name it (`server/service-principal-scope.ts`).
      */
     freeDailyAiLimit: integer('free_daily_ai_limit').default(0).notNull(),
+    /**
+     * The capabilities this account holds: labels such as `scan`, each one a
+     * kind of AI request it may make (`lib/capabilities.ts`). `NULL`, the
+     * default, is NO RECORD, and the instance default (`DEFAULT_CAPABILITIES`)
+     * decides. An empty array is a record that grants nothing. The two are
+     * different facts, which is why the column is nullable.
+     *
+     * WRITTEN BY an operator (the admin PATCH) and by the biller's credential,
+     * which may name this field and no other standing beyond its two
+     * (`server/service-principal-scope.ts`). READ BY the AI proxy, before it
+     * counts a request.
+     *
+     * NO BACKFILL. Every account that exists keeps `NULL`, so an instance that
+     * sets no default behaves exactly as it did before the column.
+     */
+    capabilities: text('capabilities').array(),
     /**
      * Free AI scans granted with no end date, or `NULL` for an account with no
      * scan trial (M253). `0` is a real value: an account whose mailbox already
@@ -701,6 +718,20 @@ export const aiInstanceDays = pgTable('ai_instance_days', {
    * `SUM`: an erased account must not refund the day.
    */
   trialCount: integer('trial_count').default(0).notNull(),
+  /**
+   * What the provider charged for the day's completions, in MICRO dollars (a
+   * millionth of a dollar), summed from the `usage.cost` the provider reports
+   * on each answer (`ai/usage-tap.ts`). Zero for a provider that reports none,
+   * so `0` means "nothing was reported", never "it was free".
+   *
+   * A SUM, LIKE THE COUNTERS BESIDE IT: a day and a number, with nothing that
+   * says who asked for what, so it can sit for ever beside the request counts.
+   * A `bigint` read as a JS number: a thousand dollars a day for a century is
+   * about 3.7e13 micro dollars, far below 2^53. Added in the same row as the
+   * counters, and written even on an instance with no ceiling, which is why
+   * the row can exist with a `count` of 0.
+   */
+  costMicroUsd: bigint('cost_micro_usd', { mode: 'number' }).default(0).notNull(),
 });
 
 /**
@@ -816,14 +847,22 @@ export type SelectAiTrialIntake = InferSelectModel<typeof aiTrialIntakes>;
  * needs to recognise the mailbox again. The hash is HMAC-SHA256 under
  * `TRIAL_ADDRESS_PEPPER` over the trial key (`accounts/trial-key.ts`), so the
  * table cannot be reversed or matched against a list of addresses without the
- * operator's secret, and it holds nothing else: no date, no name, no id.
+ * operator's secret, and it holds nothing else: no name, no id, and one date.
  *
  * WRITTEN ONLY BY `AccountStore.deleteAccount`, in the transaction that
  * deletes the account and scrubs the address from its invite rows, and only
- * on an instance with the pepper configured.
+ * on an instance with the pepper configured that still grants a scan trial.
+ *
+ * IT HAS AN END (2026-10-05, ADR-0010). `created_at` is the instant the
+ * account was deleted, and the hourly sweep (`db/trial-hash-retention.ts`)
+ * deletes a row `TRIAL_HASH_RETENTION_DAYS` (365 by default) after it. A row
+ * that existed before the column was added got the migration's instant, so its
+ * year starts there. The date is the whole reason the row can be purged, and
+ * it is as coarse as the deletion it records.
  */
 export const trialAddressHashes = pgTable('trial_address_hashes', {
   hash: text('hash').primaryKey(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export type InsertTrialAddressHash = InferInsertModel<typeof trialAddressHashes>;

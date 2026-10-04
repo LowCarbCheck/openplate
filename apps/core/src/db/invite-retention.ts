@@ -20,10 +20,11 @@
  * unredeemed row's key answers nothing, so a revoked or expired row loses it too.
  *
  * NO PEPPER, NO SCRUB OF REDEEMED ROWS. On an instance without `TRIAL_ADDRESS_PEPPER` the
- * re-invite rule (`hasRedeemedMemberInvite`) and the deletion path fall back to the redeemed row's
- * `email`, and there is no keyed hash to keep in its place. Scrubbing it there would let a member
- * re-invite an address that already spent an allowance. Revoked and expired rows are scrubbed on
- * every instance: no rule reads their address.
+ * re-invite rule (`hasRedeemedMemberInvite`) falls back to the redeemed row's `email`, and there is
+ * no keyed hash to keep in its place. Scrubbing it there would let a member re-invite an address that
+ * already spent an allowance. Revoked and expired rows are scrubbed on every instance: no rule reads
+ * their address. AN ACCOUNT DELETION is the exception (2026-10-05): it scrubs the deleted mailbox's
+ * rows with or without a pepper, because the person asked for their address to go.
  *
  * A PENDING ROW IS NEVER TOUCHED: its address is where the letter goes and what the account will
  * be. `reissue` refuses a row whose address is gone, so an expired row cannot be revived empty.

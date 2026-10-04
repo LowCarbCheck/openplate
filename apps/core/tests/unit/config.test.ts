@@ -1265,3 +1265,75 @@ test('AI_MAX_OUTPUT_TOKENS defaults to 8192, takes a positive integer, and refus
     assert.throws(() => parseConfig(baseEnv({ AI_MAX_OUTPUT_TOKENS: invalid })), /AI_MAX_OUTPUT_TOKENS/, invalid);
   }
 });
+
+// ── DEFAULT_FREE_DAILY_AI_LIMIT (2026-10-05) ────────────────────────────────
+
+test('the standing free daily limit is off unless set, and unset, empty and 0 all mean off', () => {
+  assert.equal(parseConfig(baseEnv()).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '' })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: ' 3 ' })).defaultFreeDailyAiLimit, 3);
+});
+
+test('a standing free daily limit that is not a whole number from 0 to the ceiling stops the boot', () => {
+  for (const value of ['-1', '2.5', 'three', '10001']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: value })),
+      /DEFAULT_FREE_DAILY_AI_LIMIT/,
+      value,
+    );
+  }
+});
+
+test('a standing free daily limit beside a scan trial stops the boot, naming both settings', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '3' })),
+    /DEFAULT_FREE_DAILY_AI_LIMIT.*TRIAL_SCANS.*TRIAL_DAILY_AI_LIMIT/s,
+  );
+  // THE CONTROLS: each half alone boots, and a limit of 0 beside the trial is
+  // the same as no limit.
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV })).defaultFreeDailyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '3' })).trial, null);
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).trial?.scans, 10);
+});
+
+// ── DEFAULT_CAPABILITIES and CAPABILITY_SCHEMA_MAP (2026-10-05) ─────────────
+
+test('no capability setting means no check and no schema map: an instance that sets nothing is unchanged', () => {
+  const unset = parseConfig(baseEnv());
+  assert.equal(unset.defaultCapabilities, null);
+  assert.equal(unset.capabilitySchemaMap.size, 0);
+  // The compose files forward an unset variable as the empty string.
+  const empty = parseConfig(baseEnv({ DEFAULT_CAPABILITIES: '', CAPABILITY_SCHEMA_MAP: '' }));
+  assert.equal(empty.defaultCapabilities, null);
+  assert.equal(empty.capabilitySchemaMap.size, 0);
+});
+
+test('DEFAULT_CAPABILITIES and CAPABILITY_SCHEMA_MAP are read, and "none" is the empty default', () => {
+  const config = parseConfig(
+    baseEnv({ DEFAULT_CAPABILITIES: 'scan, recipes', CAPABILITY_SCHEMA_MAP: 'scan_result:scan' }),
+  );
+  assert.deepEqual(config.defaultCapabilities, ['recipes', 'scan']);
+  assert.deepEqual([...config.capabilitySchemaMap], [['scan_result', 'scan']]);
+  assert.deepEqual(parseConfig(baseEnv({ DEFAULT_CAPABILITIES: 'none' })).defaultCapabilities, []);
+});
+
+test('a malformed capability setting stops the boot and names the variable', () => {
+  assert.throws(() => parseConfig(baseEnv({ DEFAULT_CAPABILITIES: 'Scan' })), /DEFAULT_CAPABILITIES/);
+  assert.throws(() => parseConfig(baseEnv({ CAPABILITY_SCHEMA_MAP: 'scan_result' })), /CAPABILITY_SCHEMA_MAP/);
+});
+
+// ── TRIAL_HASH_RETENTION_DAYS (2026-10-05, ADR-0010) ────────────────────────
+
+test('the mailbox hash is kept 365 days unless the operator says otherwise', () => {
+  assert.equal(parseConfig(baseEnv()).trialHashRetentionDays, 365);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: '' })).trialHashRetentionDays, 365);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: ' 90 ' })).trialHashRetentionDays, 90);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: '3650' })).trialHashRetentionDays, 3650);
+});
+
+test('TRIAL_HASH_RETENTION_DAYS refuses zero, a fraction, text and ten years and a day, naming the variable', () => {
+  for (const value of ['0', '-5', '1.5', 'a year', '3651']) {
+    assert.throws(() => parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: value })), /TRIAL_HASH_RETENTION_DAYS/, value);
+  }
+});

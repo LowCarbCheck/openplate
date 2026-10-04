@@ -311,3 +311,27 @@ test('a caller can neither set nor override the provider object, with the routin
   });
   assert.notEqual(first.provider, second.provider);
 });
+
+// ── usage and cost reporting (2026-10-05) ───────────────────────────────────
+
+test('an OpenRouter body asks the provider to report usage, and the caller cannot change it', () => {
+  const body = applyChatBodyPolicy({
+    body: { model: 'm', usage: { include: false } },
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+  });
+  assert.deepEqual(body.usage, { include: true });
+});
+
+test('any other upstream keeps its body byte for byte: no usage field, and the caller usage is dropped', () => {
+  // THE CONTROL for the test above: it fails against a policy that writes the field into every body.
+  for (const upstreamBaseUrl of ['https://api.openai.com/v1', 'http://inference:8300/v1', 'not a url']) {
+    const body = applyChatBodyPolicy({
+      body: { model: 'm', usage: { include: true } },
+      policy: OPEN,
+      upstreamBaseUrl,
+    });
+    assert.equal('usage' in body, false, upstreamBaseUrl);
+  }
+  assert.equal('usage' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);
+});

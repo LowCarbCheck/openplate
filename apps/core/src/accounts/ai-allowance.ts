@@ -9,6 +9,10 @@
  *  2. THE FREE GRANT: `freeDailyAiLimit` above zero. It never ends and it is
  *     never scan gated. It applies whenever no paid window is live, so a
  *     person whose paid period ended falls back to it rather than to nothing.
+ *     The number an account is held to is {@link effectiveFreeDailyAiLimit}:
+ *     its own when above zero, otherwise the instance's standing default
+ *     (`DEFAULT_FREE_DAILY_AI_LIMIT`, 2026-10-05), which is `0`, off, on every
+ *     instance that did not set it.
  *  3. THE SCAN TRIAL: no date, `trialScans` set, `dailyAiLimit` above zero.
  *     The proxy then counts scans and the trial's day limit.
  *
@@ -31,6 +35,20 @@ export const AI_NOT_ALLOWED = 'ai-not-allowed';
 
 /** The refusal for a paid window that ended with no free grant beneath it. */
 export const ALLOWANCE_EXPIRED = 'allowance-expired';
+
+/**
+ * The free daily limit an account is held to: its own column when above zero,
+ * otherwise the instance's standing default, which is `0` (none) where the
+ * operator set none.
+ *
+ * ONE FUNCTION FOR EVERY READER. The proxy reserves against it, and the
+ * account view reports it, so the number a person is shown is the number the
+ * proxy enforces. An account with its own free limit keeps it whatever the
+ * default says, so an operator's grant is never lowered by a default.
+ */
+export function effectiveFreeDailyAiLimit(input: { own: number; instanceDefault: number }): number {
+  return input.own > 0 ? input.own : input.instanceDefault;
+}
 
 /** The answer: a grant with the daily limit to reserve against, or a refusal code. */
 export type AiAllowance =

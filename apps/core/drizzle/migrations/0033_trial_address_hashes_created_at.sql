@@ -1,0 +1,1 @@
+ALTER TABLE "trial_address_hashes" ADD COLUMN "created_at" timestamp DEFAULT now() NOT NULL;

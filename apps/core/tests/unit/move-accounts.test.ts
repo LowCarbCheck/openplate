@@ -184,6 +184,20 @@ test('the drift check accepts a source without accounts.free_daily_ai_limit and 
   assert.match(refused[0] ?? '', /migration 0028/);
 });
 
+test('the drift check accepts a source without accounts.capabilities and refuses a target without it', () => {
+  const full = currentSchema();
+  const withoutCapabilities = new Map(full);
+  withoutCapabilities.set(
+    'accounts',
+    new Set([...(full.get('accounts') ?? [])].filter((column) => column !== 'capabilities')),
+  );
+  assert.deepEqual(checkSchemas({ source: withoutCapabilities, target: full }), []);
+
+  const refused = checkSchemas({ source: full, target: withoutCapabilities });
+  assert.equal(refused.length, 1);
+  assert.match(refused[0] ?? '', /migration 0031/);
+});
+
 test('the drift check refuses an unknown table and an unknown column on either side', () => {
   const full = currentSchema();
   const withTable = new Map(full);

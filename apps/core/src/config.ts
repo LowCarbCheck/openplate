@@ -44,6 +44,7 @@ import {
   type ChatInputPolicy,
 } from './ai/chat-input-bounds.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
+import { parseCapabilitySchemaMap, parseDefaultCapabilities } from './lib/capabilities.js';
 import {
   LEGAL_DECLARATION_RECEIPTS_PER_DAY,
   LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
@@ -309,6 +310,32 @@ export interface ServiceConfig {
    */
   aiTrialNetworkDailyLimit: number | null;
   /**
+   * The free AI requests per UTC day every account gets that has no free
+   * limit of its own (`DEFAULT_FREE_DAILY_AI_LIMIT`, 2026-10-05), or `0` for
+   * none, which is the default and what every existing deployment and every
+   * self-hoster keeps.
+   *
+   * IT IS A STANDING CAP, NOT A TRIAL. It never ends, it is never scan gated,
+   * and it is counted per UTC day in `ai_usage_days` like every other limit.
+   * The proxy's order is unchanged: a live paid window, then the free limit
+   * (the account's own when above zero, otherwise this), then the scan trial.
+   *
+   * IT CANNOT STAND BESIDE A SCAN TRIAL. The cap replaces the trial, so an
+   * instance that sets both is a boot failure naming both: two free grants
+   * with no order between them would be a decision made by whichever door an
+   * account happened to come through. See {@link parseDefaultFreeDailyAiLimit}.
+   */
+  defaultFreeDailyAiLimit: number;
+  /**
+   * `DEFAULT_CAPABILITIES`: what an account with no capability record of its own
+   * may do. `null`, which is unset or empty, means no check at all, which is
+   * what every instance had before capabilities existed. `[]` is the word
+   * `none`: such an account may use no feature. See `lib/capabilities.ts`.
+   */
+  defaultCapabilities: string[] | null;
+  /** `CAPABILITY_SCHEMA_MAP`: structured-output schema name to the capability its use requires. Empty when unset. */
+  capabilitySchemaMap: ReadonlyMap<string, string>;
+  /**
    * The secret the one mailbox, one trial rule hashes addresses with
    * (`TRIAL_ADDRESS_PEPPER`, M253), or `null`.
    *
@@ -323,6 +350,13 @@ export interface ServiceConfig {
    * old hashes no longer match. Generate it once, like `SERVER_SECRET`.
    */
   trialAddressPepper: string | null;
+  /**
+   * `TRIAL_HASH_RETENTION_DAYS`: how many days the keyed mailbox hash of a
+   * deleted account is kept (default 365), counted from the deletion. After it
+   * the hourly sweep deletes the row (`db/trial-hash-retention.ts`, ADR-0010)
+   * and the same mailbox can have a trial again.
+   */
+  trialHashRetentionDays: number;
   /**
    * Whether anybody may ask this instance for an account with their own
    * address (`OPEN_SIGNUP=true`, M253). `false`, the default, and what every
@@ -1810,6 +1844,45 @@ function parseAiTrialNetworkDailyLimit(input: {
 }
 
 /**
+ * `DEFAULT_FREE_DAILY_AI_LIMIT` (2026-10-05): an integer from 0 to
+ * `MAX_DAILY_AI_LIMIT`, where unset, empty and `0` all mean off.
+ *
+ * A BOOT FAILURE BESIDE A SCAN TRIAL. The standing cap replaces the trial, and
+ * an instance with both would give a new account whichever one its door wrote
+ * first. The message names both settings and says which to unset.
+ */
+function parseDefaultFreeDailyAiLimit(env: NodeJS.ProcessEnv, trial: TrialPolicy | null): number {
+  const limit = parseNonNegativeInteger(env, 'DEFAULT_FREE_DAILY_AI_LIMIT', 0);
+  if (limit > MAX_DAILY_AI_LIMIT) {
+    throw new Error(`DEFAULT_FREE_DAILY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT} (got ${limit})`);
+  }
+  if (limit > 0 && trial !== null) {
+    throw new Error(
+      'DEFAULT_FREE_DAILY_AI_LIMIT and the scan trial (TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT) cannot both be set: ' +
+        'the standing daily limit replaces the trial, and an instance with both would grant a new account ' +
+        'whichever one its door wrote first. Unset DEFAULT_FREE_DAILY_AI_LIMIT to keep the trial, or unset ' +
+        'TRIAL_SCANS, TRIAL_DAILY_AI_LIMIT and anything that depends on them to keep the standing limit.',
+    );
+  }
+  return limit;
+}
+
+/** What `TRIAL_HASH_RETENTION_DAYS` is when unset: one year after the deletion. */
+export const DEFAULT_TRIAL_HASH_RETENTION_DAYS = 365;
+
+/** The longest `TRIAL_HASH_RETENTION_DAYS`, ten years. A bound, so a typo is not a retention period nobody chose. */
+const MAX_TRIAL_HASH_RETENTION_DAYS = 3650;
+
+/** `TRIAL_HASH_RETENTION_DAYS`: a whole number of days from 1 to 3650, default 365 (ADR-0010). */
+function parseTrialHashRetentionDays(env: NodeJS.ProcessEnv): number {
+  const days = parsePositiveInteger(env, 'TRIAL_HASH_RETENTION_DAYS', DEFAULT_TRIAL_HASH_RETENTION_DAYS);
+  if (days > MAX_TRIAL_HASH_RETENTION_DAYS) {
+    throw new Error(`TRIAL_HASH_RETENTION_DAYS must be at most ${MAX_TRIAL_HASH_RETENTION_DAYS} (got ${days})`);
+  }
+  return days;
+}
+
+/**
  * `TRIAL_ADDRESS_PEPPER` (M253): optional, at least
  * {@link MIN_SERVER_SECRET_LENGTH} characters, and REQUIRED when the instance
  * runs a scan trial, because the one mailbox, one trial rule cannot recognise
@@ -1979,7 +2052,11 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       env,
       trialInstanceDailyLimit: aiTrialInstanceDailyLimit,
     }),
+    defaultFreeDailyAiLimit: parseDefaultFreeDailyAiLimit(env, trial),
+    defaultCapabilities: parseDefaultCapabilities(env.DEFAULT_CAPABILITIES),
+    capabilitySchemaMap: parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP),
     trialAddressPepper: parseTrialAddressPepper(env, trial),
+    trialHashRetentionDays: parseTrialHashRetentionDays(env),
     openSignup,
     turnstile: parseTurnstile(env, openSignup),
     aiMaxRequestBytes: parsePositiveInteger(env, 'AI_MAX_REQUEST_BYTES', DEFAULT_AI_MAX_REQUEST_BYTES),

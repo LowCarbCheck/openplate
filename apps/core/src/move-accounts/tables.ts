@@ -128,8 +128,10 @@ export const ACCOUNT_COPIED_COLUMNS = [
  * The columns the move SETS rather than copies: the new standing (a standing
  * free grant, no paid limit, no expiry, no scan trial, the operator's label)
  * and the row's own `updated_at`. `label` is absent on a source older than
- * migration 0024, and `free_daily_ai_limit` on one older than 0026; both are
- * allowed because neither is read from the source.
+ * migration 0024, `free_daily_ai_limit` on one older than 0026 and
+ * `capabilities` on one older than 0031; all three are allowed because none is
+ * read from the source. A moved account carries no capability record (`NULL`),
+ * so the target instance's default decides.
  *
  * THE FREE GRANT, NOT A PAID LIMIT WITH NO DATE (2026-09-30). The first move
  * wrote `daily_ai_limit` with no date, and a Beta supporter who then bought a
@@ -144,11 +146,12 @@ export const ACCOUNT_SET_COLUMNS = [
   'trial_scans_used',
   'trial_ends_at',
   'label',
+  'capabilities',
   'updated_at',
 ] as const;
 
 /** The account columns a source may lack, because the move never reads them from there. */
-export const ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES = ['label', 'free_daily_ai_limit'] as const;
+export const ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES = ['label', 'free_daily_ai_limit', 'capabilities'] as const;
 
 /** One source account row, by id, copied columns only. */
 export const SELECT_SOURCE_ACCOUNT = `SELECT ${ACCOUNT_COPIED_COLUMNS.map(quoted).join(', ')} FROM "accounts" WHERE "id" = $1`;
@@ -165,14 +168,15 @@ export const SELECT_TARGET_ACCOUNT = SELECT_SOURCE_ACCOUNT;
 export const INSERT_ACCOUNT =
   `INSERT INTO "accounts" (${ACCOUNT_COPIED_COLUMNS.map(quoted).join(', ')}, ` +
   `"daily_ai_limit", "free_daily_ai_limit", "allowance_expires_at", "trial_scans", "trial_scans_used", ` +
-  `"trial_ends_at", "label", "updated_at") ` +
+  `"trial_ends_at", "label", "capabilities", "updated_at") ` +
   `VALUES (${placeholders(ACCOUNT_COPIED_COLUMNS.length)}, 0, $${ACCOUNT_COPIED_COLUMNS.length + 1}, NULL, NULL, 0, ` +
-  `NULL, $${ACCOUNT_COPIED_COLUMNS.length + 2}, now())`;
+  `NULL, $${ACCOUNT_COPIED_COLUMNS.length + 2}, NULL, now())`;
 
 /** The set columns read back, as text, for the comparison against what the move meant to write. */
 export const SELECT_TARGET_STANDING =
   'SELECT "daily_ai_limit"::text, "free_daily_ai_limit"::text, ("allowance_expires_at" IS NULL)::text, ' +
-  '("trial_scans" IS NULL)::text, "trial_scans_used"::text, ("trial_ends_at" IS NULL)::text, "label" ' +
+  '("trial_scans" IS NULL)::text, "trial_scans_used"::text, ("trial_ends_at" IS NULL)::text, "label", ' +
+  '("capabilities" IS NULL)::text ' +
   'FROM "accounts" WHERE "id" = $1';
 
 // =============================================================================

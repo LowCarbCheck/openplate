@@ -33,8 +33,9 @@
  *                   before anything is counted: a plate photograph is health
  *                   data, and this route is where it passes through.
  *   2. allowance  : `accounts/ai-allowance.ts` picks the grant, a live paid
- *                   window, the standing free grant or the scan trial, and
- *                   the daily limit step 3 reserves against. No grant is
+ *                   window, the standing free grant (the account's own, or
+ *                   the instance's `DEFAULT_FREE_DAILY_AI_LIMIT`) or the scan
+ *                   trial, and the daily limit step 3 reserves against. No grant is
  *                   403 ai-not-allowed, a paid window that ended with no
  *                   free grant beneath it is 403 allowance-expired. Both
  *                   refuse BEFORE step 3, because a reservation writes a row.
@@ -213,8 +214,12 @@ import {
   TRIAL_SCANS_SPENT,
   trialEndedBy,
 } from '../accounts/scan-trial.js';
-import { aiAllowanceFor } from '../accounts/ai-allowance.js';
+import { aiAllowanceFor, effectiveFreeDailyAiLimit } from '../accounts/ai-allowance.js';
+import type { InstanceStanding } from '../accounts/instance-standing.js';
 import { clientAddressKey } from '../lib/client-address.js';
+import { effectiveCapabilities } from '../lib/capabilities.js';
+import { decideCapability } from './capability-gate.js';
+import { createUsageTap, type CompletionUsage, type UsageTap } from './usage-tap.js';
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
 
@@ -287,6 +292,15 @@ export interface ChatCompletionsDeps {
    * Required and nullable for the reason `instanceDailyLimit` is.
    */
   healthConsent: InstanceHealthConsent | null;
+  /**
+   * What the instance grants an account with no record of its own
+   * (`DEFAULT_FREE_DAILY_AI_LIMIT`, 2026-10-05). Required for the reason
+   * `instanceDailyLimit` is: a wiring change that forgot it must not compile
+   * into a proxy that ignores a standing limit the operator configured and
+   * the account view reports. `NO_INSTANCE_STANDING` is the written-out
+   * "nothing configured".
+   */
+  standing: InstanceStanding;
   /** Injectable so a test can freeze the UTC day boundary the quota keys on. */
   now?: () => Date;
 }
@@ -428,6 +442,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     instanceDailyLimit,
     logger,
     quota,
+    standing,
     trialInstanceDailyLimit,
     trialNetwork,
     upstream: upstreamConfig,
@@ -738,9 +753,17 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // able to sign in on a new device and pull what they wrote. An expired
     // allowance is a feature ending, not an account ending, and deletion is
     // the erasure path that already exists.
+    // THE FREE LIMIT IS THE ACCOUNT'S OWN, OR THE INSTANCE'S STANDING ONE
+    // (2026-10-05), read once so the allowance and the trial's end below judge
+    // the same number. An instance with no standing default passes `0` here, so
+    // the ladder reads the column alone, exactly as it always did.
+    const freeDailyAiLimit = effectiveFreeDailyAiLimit({
+      own: account.freeDailyAiLimit,
+      instanceDefault: standing.defaultFreeDailyAiLimit,
+    });
     const allowance = aiAllowanceFor({
       dailyAiLimit: account.dailyAiLimit,
-      freeDailyAiLimit: account.freeDailyAiLimit,
+      freeDailyAiLimit,
       allowanceExpiresAt: account.allowanceExpiresAt,
       trialScans: account.trialScans,
       now: requestedAt,
@@ -779,6 +802,32 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         accountId: account.id,
         fields: droppedFields.join(','),
       });
+    }
+    // THE CAPABILITY CHECK (2026-10-05), after the allowance and the body and
+    // BEFORE anything is counted: a refused request claims no scan, reserves no
+    // unit, writes no usage row and reaches no provider. An account with no
+    // record on an instance with no default is not checked at all, so an
+    // instance that sets nothing behaves as it did. See `ai/capability-gate.ts`.
+    const capability = decideCapability({
+      effective: effectiveCapabilities({
+        own: account.capabilities,
+        instanceDefault: standing.defaultCapabilities,
+      }),
+      // A LITERAL, because `tests/integration/cors-preflight.test.ts` finds the
+      // headers a route reads by this exact form and checks each one is allowed.
+      featureHeader: req.header('x-openplate-feature'),
+      schemaMap: standing.capabilitySchemaMap,
+      body: policedBody,
+    });
+    if (capability.kind === 'refused') {
+      res
+        .status(capability.status)
+        .json(
+          capability.status === 400
+            ? { error: capability.error }
+            : { error: capability.error, capability: capability.capability },
+        );
+      return;
     }
     // WHAT THE REQUEST CARRIES IN (2026-09-30), measured on the body the
     // provider receives and refused before any claim, reservation or upstream
@@ -819,7 +868,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
           trialScansUsed: account.trialScansUsed,
           trialEndsAt: account.trialEndsAt,
           allowanceExpiresAt: account.allowanceExpiresAt,
-          freeDailyAiLimit: account.freeDailyAiLimit,
+          freeDailyAiLimit,
           now: requestedAt,
         })
       : null;
@@ -1062,6 +1111,10 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     res.setHeader('X-Quota-Limit', String(reservation.limit));
 
     const counter = createByteCounter();
+    // WHAT THE ANSWER COST, read as it passes (2026-10-05): a few numbers and a
+    // model name, never the text. It sits AFTER the counter and passes every
+    // chunk on unchanged, so a stream is not held back. See `ai/usage-tap.ts`.
+    const usageTap: UsageTap = createUsageTap({ isEventStream: (contentType ?? '').includes('text/event-stream') });
     // The two states this relay can end in, named rather than widened: an
     // `unknown` here discards the fact that a caught throw is the ONLY thing
     // that can put a value in it.
@@ -1071,7 +1124,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // that reached the network; the guard keeps the type honest and turns the
       // impossible case into a destroyed socket rather than a TypeError.
       if (!upstream.body) throw new Error('upstream response had no body');
-      await pipeline(Readable.fromWeb(upstream.body), counter.stream, res);
+      await pipeline(Readable.fromWeb(upstream.body), counter.stream, usageTap.stream, res);
     } catch (cause) {
       // TIMEOUT SITE 2 of 2 — `bodyTimeout` lands HERE, not in the catch above:
       // `fetch()` already resolved 200 by the time the stream stalls, and undici
@@ -1116,6 +1169,12 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // relay, so a failed request does not report the person as active.
     await accounts.touchLastSeen({ accountId: account.id, seenAt: requestedAt });
 
+    // THE COST, AFTER THE ANSWER IS DELIVERED, and never able to fail it: the
+    // person has their scan, and a bookkeeping error is a log line. A provider
+    // that reports no cost leaves `null`, and nothing is written for it.
+    const usage = usageTap.result();
+    await recordCostQuietly({ accountId: account.id, day, usage });
+
     logger.info('Proxied a completion', {
       accountId: account.id,
       upstreamStatus: upstream.status,
@@ -1126,7 +1185,24 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       quotaLimit: reservation.limit,
       weight,
       durationMs,
+      // What the provider said this answer used and cost, or `null` where it
+      // said nothing. NUMBERS AND A MODEL NAME THAT LOOKS LIKE ONE: the text of
+      // the answer is never kept (`ai/usage-tap.ts`).
+      model: usage.model,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costMicroUsd: usage.costMicroUsd,
     });
+  }
+
+  /** Adds an answer's cost to the instance's day, and logs instead of throwing when it cannot. */
+  async function recordCostQuietly(context: { accountId: number; day: string; usage: CompletionUsage }): Promise<void> {
+    if (context.usage.costMicroUsd === null) return;
+    try {
+      await quota.addInstanceCost({ day: context.day, costMicroUsd: context.usage.costMicroUsd });
+    } catch (cause) {
+      logger.warn('Could not record what a completion cost', { accountId: context.accountId, ...errorFields(cause) });
+    }
   }
 
   /**
