@@ -3272,7 +3272,10 @@
     "delete": {
       "cta": "Delete account",
       "confirmTitle": "Delete this account?",
-      "confirmBody": "Everything stored for {{email}} is removed and cannot be brought back. The diary on this device stays.",
+      "confirmBody": "The account for {{email}} and the copy of your diary on the server are deleted now and cannot be brought back. The diary on this device stays.",
+      "stays": "Some records can stay for a time, for example backups, copies of mails sent to you, and records the operator must keep by law.",
+      "staysWithNotice": "Some records can stay for a time, for example backups, copies of mails sent to you, and records the operator must keep by law. The <privacy>privacy notice</privacy> lists them.",
+      "subscription": "If you have a paid subscription, it ends now. There is no refund for the time left.",
       "passwordLabel": "Your password",
       "confirmCta": "Delete it",
       "failed": "The account could not be deleted.",

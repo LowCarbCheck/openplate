@@ -35,6 +35,7 @@ import type { MetaFunction } from 'react-router';
 import { Loader2, LogOut, RefreshCw, Trash2 } from 'lucide-react';
 
 import { CONFIG } from '#app/config';
+import { DeleteAccountNotes } from '#app/components/delete-account-notes';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { ServerNoticeBanner } from '#app/components/sync-notice-banner';
@@ -240,7 +241,7 @@ export default function SettingsAccount() {
               nobody for the sentence to be about (M201/06). */}
               {operatorSeesActivity && <OperatorVisibilityCard />}
               <ChangePasswordCard />
-              <DangerZoneCard accountEmail={account.email} />
+              <DangerZoneCard accountEmail={account.email} plansAvailable={plansAvailable} />
             </>
           )}
         </>
@@ -712,7 +713,7 @@ function ChangePasswordCard() {
  * destructive confirm), built inline rather than reused because that component
  * submits to a route action and this page has none.
  */
-function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
+function DangerZoneCard({ accountEmail, plansAvailable }: { accountEmail: string; plansAvailable: boolean }) {
   const { t } = useTranslation();
   const { signOutClosesTheDiary } = useInstancePolicy();
   const [passphrase, setPassphrase] = useState('');
@@ -771,6 +772,7 @@ function DangerZoneCard({ accountEmail }: { accountEmail: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('account.delete.confirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>{t('account.delete.confirmBody', { email: accountEmail })}</AlertDialogDescription>
+            <DeleteAccountNotes plansAvailable={plansAvailable} />
           </AlertDialogHeader>
           <div className="space-y-2">
             <Label htmlFor="account-delete-password">{t('account.delete.passwordLabel')}</Label>
