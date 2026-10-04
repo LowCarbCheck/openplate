@@ -34,6 +34,7 @@ import type { InstanceFeedback } from '../protocol.js';
 import type { Logger } from '../logger.js';
 import type { FeedbackAdminStore } from './feedback-admin-store.js';
 import type { FeedbackImageStore } from './feedback-image-store.js';
+import { errorFields } from '../log-error.js';
 
 /**
  * How long a reported estimate is kept, in days. THIS IS THE NUMBER THE CONSENT
@@ -195,7 +196,7 @@ export function startFeedbackRetention(options: FeedbackRetentionOptions): Feedb
         await runOnce();
       } catch (cause) {
         logger.error('Feedback retention sweep failed', {
-          error: cause instanceof Error ? cause.message : 'unknown error',
+          ...errorFields(cause),
         });
       }
     })();

@@ -28,6 +28,7 @@
 import type { Logger } from '../logger.js';
 import { utcDayKeyDaysBefore } from '../lib/utc-day.js';
 import type { PulsePruneCounts, PulseStore } from './pulse-store.js';
+import { errorFields } from '../log-error.js';
 
 /**
  * How many UTC days of pulse sums are kept, counting today.
@@ -118,7 +119,7 @@ export function startPulseRetention(options: PulseRetentionOptions): PulseRetent
         await runOnce();
       } catch (cause) {
         logger.error('Community pulse retention sweep failed', {
-          error: cause instanceof Error ? cause.message : 'unknown error',
+          ...errorFields(cause),
         });
       }
     })();

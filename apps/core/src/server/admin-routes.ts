@@ -112,6 +112,7 @@ import { healthConsentView } from '../accounts/health-consent.js';
 import { parseAccountLabel } from '../admin/account-label.js';
 import type { AiCapacityReader } from '../ai/quota-store.js';
 import type { UpstreamBudgetRead, UpstreamBudgetReset, UpstreamBudgetSource } from '../ai/upstream-budget.js';
+import { scrubbedErrorMessage } from '../log-error.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -1005,7 +1006,12 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       logger.warn('Mail send failed', {
         what: input.what,
         id: input.id,
-        error: cause instanceof Error ? cause.message : 'unknown error',
+        // The words, scrubbed and capped: the mail transports build this
+        // message themselves from a status or a reply code ("SMTP server
+        // responded 550") and never from what the server echoed, and it is
+        // what tells an operator why a letter did not leave. An admin invite
+        // is not on the photo path.
+        error: scrubbedErrorMessage(cause),
       });
       return false;
     }

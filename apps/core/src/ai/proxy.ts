@@ -132,7 +132,8 @@
  *     decoded buffer. What is logged: account id, upstream status, byte COUNTS,
  *     duration. Counts are not bytes.
  *  2. EVERY STRING THAT CAME OFF THE UPSTREAM WIRE GOES THROUGH `scrubPayloads`
- *     / `describeError` before it reaches a log line OR a response. A provider
+ *     before it reaches a log line OR a response, and a CAUGHT error reaches a
+ *     log line only as `errorFields` (a name and a code, `log-error.ts`). A provider
  *     that rejects a request routinely echoes the request back at you, image and
  *     all, inside its error body. That string is the single most likely way a
  *     photograph escapes this process, and it is also the string a debugging
@@ -182,7 +183,7 @@ import { ACCOUNT_SUSPENDED } from '../accounts/auth-handlers.js';
 import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-consent.js';
 import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
-import { describeError, scrubPayloads } from './scrub.js';
+import { scrubPayloads } from './scrub.js';
 import { applyChatBodyPolicy, listDroppedChatFields, type ChatBodyPolicy } from './chat-body-policy.js';
 import {
   AI_REQUEST_TOO_LARGE,
@@ -204,6 +205,7 @@ import {
 import { aiAllowanceFor } from '../accounts/ai-allowance.js';
 import { clientAddressKey } from '../lib/client-address.js';
 import type { TrialNetworkShare } from './trial-network.js';
+import { errorFields } from '../log-error.js';
 
 /** The upstream this proxy forwards to, already validated all-or-nothing by `config.ts`. */
 export interface AiUpstreamConfig {
@@ -504,7 +506,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       logger.warn('Could not release a quota reservation', {
         accountId: input.accountId,
         day: input.day,
-        error: describeError(cause),
+        ...errorFields(cause),
       });
     }
     await releaseInstanceQuietly({
@@ -544,7 +546,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         input.res.setHeader(TRIAL_SCANS_LEFT_HEADER, String(input.scan.left + 1));
       }
     } catch (cause) {
-      logger.warn('Could not give a trial scan back', { accountId: input.accountId, error: describeError(cause) });
+      logger.warn('Could not give a trial scan back', { accountId: input.accountId, ...errorFields(cause) });
     }
   }
 
@@ -605,7 +607,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     } catch (cause) {
       logger.warn('Could not release an instance quota reservation', {
         day: input.day,
-        error: describeError(cause),
+        ...errorFields(cause),
       });
     }
   }
@@ -615,7 +617,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     try {
       await quota.releaseTrialInstance({ day: input.day, weight: input.weight });
     } catch (cause) {
-      logger.warn('Could not release a trial day reservation', { day: input.day, error: describeError(cause) });
+      logger.warn('Could not release a trial day reservation', { day: input.day, ...errorFields(cause) });
     }
   }
 
@@ -633,7 +635,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     try {
       await quota.releaseTrialNetwork({ day: input.day, networkHash: input.networkHash, weight: input.weight });
     } catch (cause) {
-      logger.warn('Could not release a trial network reservation', { day: input.day, error: describeError(cause) });
+      logger.warn('Could not release a trial network reservation', { day: input.day, ...errorFields(cause) });
     }
   }
 
@@ -979,8 +981,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         timedOut,
         requestBytes: forwardedBody.byteLength,
         durationMs: Math.round(performance.now() - startedAt),
-        // Scrubbed: a transport error can quote the request it failed to send.
-        error: describeError(cause),
+        // Name and code only: a transport error can quote the request it failed
+        // to send.
+        ...errorFields(cause),
       });
       res.status(timedOut ? 504 : 502).json({
         error: timedOut
@@ -1023,7 +1026,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       try {
         await quota.markTrialScanDelivered({ accountId: account.id, intakeId: scan.intakeId, claim: scan.claim });
       } catch (cause) {
-        logger.warn('Could not mark a trial scan delivered', { accountId: account.id, error: describeError(cause) });
+        logger.warn('Could not mark a trial scan delivered', { accountId: account.id, ...errorFields(cause) });
       }
     }
 
@@ -1071,7 +1074,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         timedOut: isTimeoutError(relayFailure.cause),
         responseBytes: counter.total(),
         durationMs,
-        error: describeError(relayFailure.cause),
+        ...errorFields(relayFailure.cause),
       });
       // THE SCAN, BY WHO FAILED (M253). The provider stopping mid-body is no
       // answer, so the scan goes back and the delivery stamped above is

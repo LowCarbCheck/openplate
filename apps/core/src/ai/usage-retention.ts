@@ -31,6 +31,7 @@ import { utcDayKey, utcDayKeyDaysBefore } from '../lib/utc-day.js';
 import { INTAKE_RETENTION_MS } from '../accounts/scan-trial.js';
 import type { LegalDeclarationsStore } from '../legal/legal-declarations-store.js';
 import { LEGAL_DECLARATION_RETENTION_YEARS, legalDeclarationsCutoff } from '../legal/legal-declarations-retention.js';
+import { errorFields } from '../log-error.js';
 
 /**
  * How many UTC days of AI usage counters are kept, counting today.
@@ -165,7 +166,7 @@ export function startAiUsageRetention(options: AiUsageRetentionOptions): AiUsage
         await runOnce();
       } catch (cause) {
         logger.error('AI usage retention sweep failed', {
-          error: cause instanceof Error ? cause.message : 'unknown error',
+          ...errorFields(cause),
         });
       }
     })();

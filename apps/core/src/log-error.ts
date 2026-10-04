@@ -16,10 +16,12 @@
  *
  *  - {@link errorFields} is the default. It yields a name and a code, both
  *    checked against a short character class, so neither can carry free text.
- *  - {@link scrubbedErrorMessage} is for the one case where an operator needs
- *    the words: a failure BEFORE the listener opens (a bad `DATABASE_URL`, a
- *    missing secret) or in an operator CLI, where no request exists to have
- *    leaked. It still scrubs and still caps.
+ *  - {@link scrubbedErrorMessage} is for the cases where an operator needs the
+ *    words and no request content can be in them: a failure BEFORE the
+ *    listener opens (a bad `DATABASE_URL`, a missing secret), in an operator
+ *    CLI, and a mail transport's own sentence ("SMTP server responded 550"),
+ *    which `src/mail/` builds from a status and never from what the server
+ *    echoed. It still scrubs and still caps.
  */
 import { asNumber, asString, type JsonValue } from './lib/json.js';
 import { scrubPayloads } from './ai/scrub.js';
@@ -93,11 +95,10 @@ export function errorFields(cause: unknown): ErrorFields {
 }
 
 /**
- * A one-line, scrubbed, 200-character description of a caught value. For a
- * failure at boot or in an operator CLI ONLY, where the words are what the
- * person who runs the service needs and no request has been read yet.
- *
- * Never reachable from a request: a handler that wants to say what failed uses
+ * A one-line, scrubbed, 200-character description of a caught value. For the
+ * three cases the module header names ONLY: boot, the operator CLI, and a mail
+ * transport's own sentence. Nothing on the AI path, or any path that holds a
+ * request body, calls it: a handler that wants to say what failed uses
  * {@link errorFields}. Never a stack and never the `cause` chain, which is
  * where a wrapped library error keeps what it was handed.
  */

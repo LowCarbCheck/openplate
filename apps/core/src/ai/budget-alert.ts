@@ -28,6 +28,7 @@ import type { Logger } from '../logger.js';
 import type { Mailer } from '../mail/mailer.js';
 import { utcDayKey } from '../lib/utc-day.js';
 import type { UpstreamBudgetRead, UpstreamBudgetSource, UpstreamKeyBudget } from './upstream-budget.js';
+import { errorFields } from '../log-error.js';
 
 /** Alert when less than this share of the limit is left, unless `AI_BUDGET_ALERT_FRACTION` says otherwise. */
 export const DEFAULT_AI_BUDGET_ALERT_FRACTION = 0.2;
@@ -88,10 +89,6 @@ export interface CreateBudgetAlerterOptions {
   now: () => Date;
 }
 
-function describeError(cause: unknown): string {
-  return cause instanceof Error ? cause.message : 'unknown error';
-}
-
 export function createBudgetAlerter(options: CreateBudgetAlerterOptions): BudgetAlerter {
   const { store, mailer, logger } = options;
   /**
@@ -117,7 +114,7 @@ export function createBudgetAlerter(options: CreateBudgetAlerterOptions): Budget
     } catch (cause) {
       settled.delete(input.period);
       await store.releasePeriod({ period: input.period });
-      logger.warn('AI budget alert could not be mailed', { period: input.period, error: describeError(cause) });
+      logger.warn('AI budget alert could not be mailed', { period: input.period, ...errorFields(cause) });
     }
   }
 
@@ -134,7 +131,7 @@ export function createBudgetAlerter(options: CreateBudgetAlerterOptions): Budget
       try {
         await claimAndSend({ budget, period });
       } catch (cause) {
-        logger.warn('AI budget alert check failed', { period, error: describeError(cause) });
+        logger.warn('AI budget alert check failed', { period, ...errorFields(cause) });
       }
     },
   };
@@ -174,7 +171,7 @@ export function startBudgetWatch(input: {
 
   const timer = setInterval(() => {
     tick().catch((cause: unknown) => {
-      logger.warn('AI budget watch tick failed', { error: describeError(cause) });
+      logger.warn('AI budget watch tick failed', { ...errorFields(cause) });
     });
   }, input.intervalMs ?? BUDGET_WATCH_INTERVAL_MS);
   // Never the reason the process stays alive.
@@ -184,7 +181,7 @@ export function startBudgetWatch(input: {
     async read(): Promise<UpstreamBudgetRead> {
       const read = await source.read();
       checkRead(read).catch((cause: unknown) => {
-        logger.warn('AI budget alert check failed', { error: describeError(cause) });
+        logger.warn('AI budget alert check failed', { ...errorFields(cause) });
       });
       return read;
     },

@@ -91,8 +91,3 @@ export function scrubPayloads(text: string, options: ScrubOptions = {}): string 
   if (redacted.length <= maxChars) return redacted;
   return `${redacted.slice(0, maxChars)}${TRUNCATION_SUFFIX}`;
 }
-
-/** TEMPORARY, removed with the last call site in the commit that adds `log-error.ts`. */
-export function describeError(cause: unknown): string {
-  return cause instanceof Error ? scrubPayloads(cause.message) : 'unknown error';
-}
