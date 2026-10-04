@@ -89,6 +89,8 @@ import {
 } from '#app/models/fasting-care';
 import { selectFastingStats } from '#app/models/fasting-stats';
 import { useNow } from '#app/hooks/use-now';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
+import { FeatureGate } from '#app/components/plans/feature-gate';
 import { ConfirmAction } from '#app/components/confirm-action';
 import { FieldError } from '#app/components/field-error';
 import { CareSheet, PregnancyNotice } from '#app/components/fasting/care-notice';
@@ -1415,6 +1417,7 @@ export default function Fasting({ loaderData }: Route.ComponentProps) {
   const { fasts, timezone, fastingSettings, reproductiveStatus } = loaderData;
   const nowMs = useNow({ intervalMs: FAST_TICK_MS });
   useLiveFastRevalidation();
+  const fastingGate = useFeatureGate('fasting');
 
   const current = selectCurrentFast(fasts);
   const timeline = current === null ? null : resolveFastTimeline(current, nowMs);
@@ -1443,13 +1446,19 @@ export default function Fasting({ loaderData }: Route.ComponentProps) {
       {isCareStatus(reproductiveStatus) && <PregnancyNotice />}
 
       {timeline === null || current === null ?
-        <PlanFastCard
-          recentlyEnded={selectRecentlyEndedFast(fasts, nowMs)}
-          nowMs={nowMs}
-          timezone={timezone}
-          fastingSettings={fastingSettings}
-          reproductiveStatus={reproductiveStatus}
-        />
+        // STARTING IS THE ONLY THING A CLOSED PLAN TAKES AWAY (M2/05). A fast
+        // that is scheduled or running is shown below in every case, so it can
+        // be ended and is never lost, and the history and the stats are the
+        // person's own record and stay.
+        <FeatureGate feature="fasting" isOpen={fastingGate.isOpen}>
+          <PlanFastCard
+            recentlyEnded={selectRecentlyEndedFast(fasts, nowMs)}
+            nowMs={nowMs}
+            timezone={timezone}
+            fastingSettings={fastingSettings}
+            reproductiveStatus={reproductiveStatus}
+          />
+        </FeatureGate>
       : timeline.status === 'scheduled' ?
         <ScheduledFastCard fast={current} timeline={timeline} timezone={timezone} />
       : <ActiveFastCard fast={current} timeline={timeline} timezone={timezone} />}

@@ -41,11 +41,27 @@ interface HeldAnswer {
 /**
  * @param feature - the feature word.
  * @param options.isOwnKey - `true` for an AI feature on the person's own key,
- *   which is never gated. Read at the time of the first render.
+ *   which is never gated. Read at the time the answer is first taken.
+ * @param options.isReady - `false` while the entry point is not on screen yet
+ *   (the live fast chip draws nothing until a fast exists). The answer is NOT
+ *   taken until the first render where this is `true`, so a slot that mounts at
+ *   boot decides when it first has something to draw, not before the account
+ *   view could have landed. Open while not ready. Defaults to `true`.
  */
-export function useFeatureGate(feature: FeatureLabel, { isOwnKey = false }: { isOwnKey?: boolean } = {}): FeatureGateState {
+export function useFeatureGate(
+  feature: FeatureLabel,
+  { isOwnKey = false, isReady = true }: { isOwnKey?: boolean; isReady?: boolean } = {},
+): FeatureGateState {
   const accountId = useSyncSession().account?.id ?? null;
-  const [held, setHeld] = useState<HeldAnswer>(() => ({ accountId, isOpen: isFeatureOpenNow({ feature, isOwnKey }) }));
+  const [held, setHeld] = useState<HeldAnswer | null>(() =>
+    isReady ? { accountId, isOpen: isFeatureOpenNow({ feature, isOwnKey }) } : null,
+  );
+  if (held === null) {
+    if (!isReady) return { isOpen: true };
+    const first: HeldAnswer = { accountId, isOpen: isFeatureOpenNow({ feature, isOwnKey }) };
+    setHeld(first);
+    return { isOpen: first.isOpen };
+  }
   if (accountId === null || held.accountId === accountId) return { isOpen: held.isOpen };
 
   // THE ACCOUNT ARRIVED, or CHANGED. Arriving after an open first paint keeps

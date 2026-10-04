@@ -69,12 +69,17 @@ describe('decodeCapabilities', () => {
     assert.deepEqual(decodeCapabilities([]), []);
   });
 
-  it('reads null, an absent key and nonsense as null, which is "everything"', () => {
+  it('reads null and an absent key as null, which is "everything"', () => {
     assert.equal(decodeCapabilities(null), null);
     assert.equal(decodeCapabilities(undefined), null);
-    assert.equal(decodeCapabilities('fasting'), null);
-    assert.equal(decodeCapabilities([1, 2]), null);
-    assert.equal(decodeCapabilities({ fasting: true }), null);
+  });
+
+  it('reads a server that breaks the type as null too, never as a closed door', () => {
+    // `JSON.parse` is how nonsense really arrives, and it is the one call that
+    // hands a typed parameter a value the type forbids.
+    for (const body of ['"fasting"', '[1,2]', '{"fasting":true}', '["fasting",3]']) {
+      assert.equal(decodeCapabilities(JSON.parse(body)), null, body);
+    }
   });
 });
 
@@ -140,9 +145,13 @@ describe('X-Openplate-Feature', () => {
   });
 });
 
+/** A `403` with the JSON body a test names. */
+function forbidden(body: { error?: string; capability?: string }): Response {
+  return new Response(JSON.stringify(body), { status: 403, headers: { 'Content-Type': 'application/json' } });
+}
+
 describe('403 capability-required', () => {
-  const refusal = (body: unknown): Response =>
-    new Response(JSON.stringify(body), { status: 403, headers: { 'Content-Type': 'application/json' } });
+  const refusal = forbidden;
 
   it('is its own cause and carries the label the proxy named', async () => {
     const classification = await classifyVisionHttpFailure(refusal({ error: 'capability-required', capability: 'pantry' }));

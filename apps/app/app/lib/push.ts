@@ -281,6 +281,12 @@ export interface PushDependencies {
   readTimeZone: () => string;
   readLocale: () => string;
   storage: PushStorage;
+  /**
+   * Whether the plan includes fasting right now (M2/05). The fast-target
+   * reminder is part of fasting, so a closed plan neither registers nor arms
+   * it. Fails open like every gate (`feature-gate-now.ts`).
+   */
+  isFastingOpen: () => boolean;
 }
 
 /** The live session, reduced to the two things a registration needs. Mirrors `pulse.ts`. */
@@ -422,6 +428,22 @@ function readBrowserPermission(): NotificationPermission {
   return Notification.permission;
 }
 
+/**
+ * Where the plan's answer for fasting comes from, set by `feature-gate-now.ts`
+ * when that module loads (`registerFastingGate`).
+ *
+ * A REGISTRATION AND NOT AN IMPORT, because the import closes a loop: the sync
+ * actions import this module, and the gate reader imports the sync session and
+ * the plan facts, which import the sync actions. Until something registers, the
+ * answer is open, which is also what a gate says when it knows nothing.
+ */
+let readFastingOpen: () => boolean = () => true;
+
+/** Installs the reader of whether the plan includes fasting. Called once, by `feature-gate-now.ts`. */
+export function registerFastingGate(read: () => boolean): void {
+  readFastingOpen = read;
+}
+
 const DEFAULT_DEPENDENCIES: PushDependencies = {
   fetchImpl: (...args) => globalThis.fetch(...args),
   readAccount: readAccountFromVault,
@@ -434,6 +456,7 @@ const DEFAULT_DEPENDENCIES: PushDependencies = {
   // and refuses `en-US` with a 400, and the switcher sets exactly this cookie.
   readLocale: readDeviceLanguage,
   storage: browserStorage,
+  isFastingOpen: () => readFastingOpen(),
 };
 
 let dependencies: PushDependencies = DEFAULT_DEPENDENCIES;
@@ -600,7 +623,7 @@ export async function enablePush(prefs: PushPrefs): Promise<void> {
     timeZone: dependencies.readTimeZone(),
     locale: dependencies.readLocale(),
     catchUpMinute: prefs.catchUpMinute,
-    fastTargetEnabled: prefs.fastTargetEnabled,
+    fastTargetEnabled: isFastTargetOnTheWire(prefs),
   });
 
   const response = await dependencies.fetchImpl(`${account.serverUrl}/v1/push/subscriptions`, {
@@ -777,6 +800,15 @@ async function patchSubscription(patch: Omit<PushPatchBody, 'endpoint'>): Promis
 }
 
 /**
+ * Whether the fast-target kind goes to the server as ON: ticked AND included in
+ * the plan. The stored tick is never rewritten, so a plan that gets fasting
+ * back finds the person's choice as they left it.
+ */
+function isFastTargetOnTheWire(prefs: PushPrefs): boolean {
+  return prefs.fastTargetEnabled && dependencies.isFastingOpen();
+}
+
+/**
  * Changes what this device asked for, without re-subscribing.
  *
  * The time zone and the locale ride along because a person changing their
@@ -792,7 +824,7 @@ export async function updatePushSchedule(prefs: PushPrefs): Promise<void> {
     timeZone: dependencies.readTimeZone(),
     locale: dependencies.readLocale(),
     catchUpMinute: prefs.catchUpMinute,
-    fastTargetEnabled: prefs.fastTargetEnabled,
+    fastTargetEnabled: isFastTargetOnTheWire(prefs),
   });
 }
 
@@ -810,6 +842,10 @@ export async function updatePushSchedule(prefs: PushPrefs): Promise<void> {
 export async function setFastWakeAt(wakeAt: string | null): Promise<void> {
   if (rememberedEndpoint() === null) return;
   if (!readPushPrefs().fastTargetEnabled) return;
+  // A CLOSED PLAN ARMS NOTHING, BUT STILL CANCELS: a fast that was running when
+  // fasting closed may be ended, and ending it must take its wake instant off
+  // the server (`null`), not leave a reminder for a fast that is over.
+  if (wakeAt !== null && !dependencies.isFastingOpen()) return;
   try {
     await patchSubscription({ wakeAt });
   } catch (caught) {

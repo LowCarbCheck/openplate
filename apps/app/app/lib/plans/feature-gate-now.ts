@@ -15,6 +15,7 @@
  * screen keeps it for that visit (`use-feature-gate.ts`), which is the price of
  * a gate that never flips after paint. The core's proxy is what enforces.
  */
+import { registerFastingGate } from '#app/lib/push';
 import { peekSettledServerInstance } from '#app/hooks/use-server-instance';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
@@ -55,3 +56,8 @@ export function isFeatureOpenNow({
     capabilities: getSyncSessionSnapshot().account?.capabilities,
   });
 }
+
+// THE FAST TARGET REMINDER IS PART OF FASTING, and `push.ts` cannot import this
+// module (it would close a loop through the sync actions), so it is handed the
+// answer here. This module is in the app shell's chunk through the fast chip.
+registerFastingGate(() => isFeatureOpenNow({ feature: 'fasting' }));

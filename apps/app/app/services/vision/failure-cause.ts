@@ -354,11 +354,9 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
   if (response.status === 403) {
     const { code, capability } = await readForbiddenBody(response);
     if (code === CAPABILITY_REQUIRED_CODE) {
-      return {
-        cause: 'capability-required',
-        message: CAPABILITY_REQUIRED_MESSAGE,
-        ...(capability === undefined ? {} : { capability }),
-      };
+      const refused: HttpFailureClassification = { cause: 'capability-required', message: CAPABILITY_REQUIRED_MESSAGE };
+      if (capability !== undefined) refused.capability = capability;
+      return refused;
     }
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
     if (code === HEALTH_CONSENT_REQUIRED_CODE) {

@@ -65,9 +65,12 @@ const capabilityListSchema = z.array(z.string());
  * client that reads it, and a hostile or newer server must never be able to
  * close a door by sending nonsense.
  *
- * @param wire - `AccountView.capabilities` or `InstanceDescriptor.defaultCapabilities`.
+ * @param wire - `AccountView.capabilities`, as typed. Nonsense that gets past the type reads `null`.
  */
-export function decodeCapabilities(wire: unknown): string[] | null {
+export function decodeCapabilities(wire: readonly string[] | null | undefined): string[] | null {
+  // The type is the contract; the parse is for the server that breaks it. The
+  // account view is read by a cast (`requestJson<T>`), so nothing upstream has
+  // checked what this key really holds.
   const parsed = capabilityListSchema.safeParse(wire);
   return parsed.success ? parsed.data : null;
 }

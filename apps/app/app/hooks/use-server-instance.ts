@@ -62,15 +62,13 @@ async function announceAnswer({
 /** Sends one `/health` read and makes it the tab's answer for that server. */
 function startInstanceRead(serverUrl: string): InstanceRead {
   const read: InstanceRead = { promise: readServerInstance(serverUrl), isSettled: false, value: null };
-  read.promise.then(
-    (instance) => {
-      read.value = instance;
-      read.isSettled = true;
-    },
-    () => {
-      read.isSettled = true;
-    },
-  );
+  // `readServerInstance` never rejects, so there is one arm. Chained as a
+  // `void` of its own so the lint's `always-return` has nothing to object to.
+  void read.promise.then((instance) => {
+    read.value = instance;
+    read.isSettled = true;
+    return instance;
+  });
   void announceAnswer({ serverUrl, answer: read.promise });
   instanceCache.set(serverUrl, read);
   return read;

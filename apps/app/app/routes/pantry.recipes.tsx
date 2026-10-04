@@ -48,7 +48,10 @@ import { useProviderCapabilities } from '#app/components/add/use-provider-capabi
 import { MealSelectField } from '#app/components/meal-select-field';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
-import { useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
+import { useServerInstance, useServerInstanceRead } from '#app/hooks/use-server-instance';
+import { ClosedFeatureNote } from '#app/components/plans/feature-gate';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { taskSupported } from '#app/lib/ai/provider-capabilities';
 import { newIntakeId } from '#app/lib/plans/trial-scans';
@@ -165,7 +168,10 @@ export function HydrateFallback(): ReactElement {
 ////////////////////////////////////////////////////////////////////////////////
 
 /** What one proposal attempt answers with: recipes, or a sentence saying why not. */
-type RecipeReadResult = { ok: true; proposals: RecipeProposals } | { ok: false; error: string };
+type RecipeReadResult =
+  | { ok: true; proposals: RecipeProposals }
+  // `isFeatureClosed`: the core refused because the plan lacks the pantry (`403 capability-required`).
+  | { ok: false; error: string; isFeatureClosed?: boolean };
 
 /**
  * Runs ONE recipe task against the person's provider and records the usage.
@@ -241,7 +247,11 @@ async function proposeRecipes({
     // A `VisionProviderError`'s own message is authored provider-neutrally in
     // the adapter layer and is already the actionable detail; anything else is
     // a throw this screen cannot explain, so it gets the generic sentence.
-    return { ok: false, error: error instanceof VisionProviderError ? error.message : failedMessage };
+    return {
+      ok: false,
+      error: error instanceof VisionProviderError ? error.message : failedMessage,
+      isFeatureClosed: error instanceof VisionProviderFailure && error.failureCause === 'capability-required',
+    };
   }
 }
 
@@ -475,12 +485,23 @@ export function RecipeCard({
 
 /** What the screen is doing right now. One value, so "asking" and "failed" cannot both be true. */
 type RecipePhase =
-  { kind: 'asking' } | { kind: 'ready'; recipes: RecipeProposal[] } | { kind: 'failed'; message: string };
+  | { kind: 'asking' }
+  | { kind: 'ready'; recipes: RecipeProposal[] }
+  | { kind: 'failed'; message: string; isFeatureClosed: boolean };
 
 export default function PantryRecipes({ loaderData }: Route.ComponentProps): ReactElement {
   const { t, i18n } = useTranslation();
   const navigate = useAppNavigate();
   const effective = useEffectiveAiSettings(loaderData.settings);
+  // THE PANTRY'S GATE (M2/05): recipes are built from the pantry and are part
+  // of it. Taken once the connection is known, so a person on their own key
+  // (`source: 'stored'`) is never closed out. This screen asks on ARRIVAL, so a
+  // closed answer must stop the request, not only hide its result.
+  const pantryGate = useFeatureGate('pantry', {
+    isReady: effective !== null,
+    isOwnKey: effective?.source === 'stored',
+  });
+  const plansAvailable = hasPlansDoor(useServerInstance());
   // WHAT THE CONNECTED SERVER SAYS IT RUNS. This screen buys its answer on
   // ARRIVAL, with no tap in between, so it is the one place that has to wait
   // for the answer: asking a server that cannot suggest recipes would fail
@@ -530,6 +551,9 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
     // back to the connect card below, and the ref stays empty so the answer is
     // bought the moment a connection resolves.
     if (effective === null) return;
+    // A CLOSED PLAN BUYS NOTHING: the note below is drawn instead, and the ref
+    // stays empty.
+    if (!pantryGate.isOpen) return;
     // NOTHING IS BOUGHT until the server has said what it runs, and nothing at
     // all from one that does not suggest recipes: the card below says so, and
     // the ref stays empty.
@@ -537,7 +561,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
     // AN INSTANCE WITH NO MODEL AT ALL is a failure to show, not a wait: the
     // handshake has answered and named none, so no round can be bought.
     if (hasNoManagedModel) {
-      setPhase({ kind: 'failed', message: t('recipes.errors.noModel') });
+      setPhase({ kind: 'failed', message: t('recipes.errors.noModel'), isFeatureClosed: false });
       return;
     }
     // A MANAGED MODEL NOT READ YET is no answer to buy with (M253/05). The
@@ -560,7 +584,7 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         failedMessage: t('recipes.errors.failed'),
       });
       if (!result.ok) {
-        setPhase({ kind: 'failed', message: result.error });
+        setPhase({ kind: 'failed', message: result.error, isFeatureClosed: result.isFeatureClosed === true });
         return;
       }
       // A RECIPE WHOSE SERVING WEIGHT IS NOT PLAUSIBLE IS NOT SHOWN. See
@@ -571,12 +595,12 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
       // arrived, and it says so with the same alert.
       const servable = keepServableRecipes(result.proposals.recipes);
       if (servable.length === 0) {
-        setPhase({ kind: 'failed', message: t('recipes.errors.failed') });
+        setPhase({ kind: 'failed', message: t('recipes.errors.failed'), isFeatureClosed: false });
         return;
       }
       setPhase({ kind: 'ready', recipes: servable });
     })();
-  }, [effective, haveCapabilities, isRecipesSupported, hasNoManagedModel, slot, i18n.language, t]);
+  }, [effective, pantryGate.isOpen, haveCapabilities, isRecipesSupported, hasNoManagedModel, slot, i18n.language, t]);
 
   const logRecipe = useCallback(
     async (recipe: RecipeProposal, servingsEaten: number): Promise<void> => {
@@ -622,6 +646,14 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
   // after a failed call.
   if (!isRecipesSupported) return <IntakeUnsupportedCard subject="recipes" />;
 
+  if (!pantryGate.isOpen) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4">
+        <ClosedFeatureNote feature="pantry" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <p className="text-sm text-muted-foreground">{t('recipes.lead')}</p>
@@ -656,11 +688,14 @@ export default function PantryRecipes({ loaderData }: Route.ComponentProps): Rea
         </IntakeFailureAlert>
       )}
 
-      {phase.kind === 'failed' && (
-        <IntakeFailureAlert subject="text" title={t('recipes.errors.title')}>
-          {phase.message}
-        </IntakeFailureAlert>
-      )}
+      {/* THE CORE'S REFUSAL OF A CLOSED FEATURE takes the error slot's place
+          with the same note the gate draws (M2/05). */}
+      {phase.kind === 'failed' &&
+        (phase.isFeatureClosed ?
+          <ClosedFeatureNote feature="pantry" hasPlansLink={plansAvailable} />
+        : <IntakeFailureAlert subject="text" title={t('recipes.errors.title')}>
+            {phase.message}
+          </IntakeFailureAlert>)}
 
       {phase.kind === 'ready' &&
         phase.recipes.map((recipe) => (
