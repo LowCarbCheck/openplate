@@ -28,7 +28,8 @@
     "earlyStartConsent": "Fixture early start consent.",
     "button": "Fixture order button",
     "paymentNote": "Fixture payment note.",
-    "switchNote": "Fixture switch note, the year starts {date}."
+    "switchNote": "Fixture switch note, the year starts {date}.",
+    "whatHappens": "Fixture privacy line one.\n\nFixture privacy line two."
   },
   "links": {
     "terms": "/terms",
@@ -37,53 +38,70 @@
   },
   "tiers": [
     {
+      "id": "fixture-zero",
+      "name": "Fixture Zero",
+      "description": "Fixture description zero.",
+      "isSold": false,
+      "dailyAiLimit": 3,
+      "capabilities": [],
+      "plans": []
+    },
+    {
       "id": "fixture-alpha",
       "name": "Fixture Alpha",
       "description": "Fixture description alpha.",
+      "isSold": true,
       "dailyAiLimit": 10,
       "capabilities": [],
-      "onSale": true,
-      "prices": {
-        "monthly": {
+      "plans": [
+        {
           "key": "monthly",
           "interval": "month",
           "grossCents": 299,
           "currency": "EUR",
           "term": "Fixture alpha monthly term."
         },
-        "yearly": {
+        {
           "key": "yearly",
           "interval": "year",
           "grossCents": 1499,
           "currency": "EUR",
           "term": "Fixture alpha yearly term."
         }
-      }
+      ]
     },
     {
       "id": "fixture-beta",
       "name": "Fixture Beta",
       "description": "Fixture description beta.",
+      "isSold": true,
       "dailyAiLimit": 25,
       "capabilities": [
         "fasting",
         "pantry"
       ],
-      "onSale": true,
-      "prices": {
-        "monthly": {
+      "plans": [
+        {
           "key": "monthly",
           "interval": "month",
           "grossCents": 499,
           "currency": "EUR",
           "term": "Fixture beta monthly term."
+        },
+        {
+          "key": "yearly",
+          "interval": "year",
+          "grossCents": 2499,
+          "currency": "EUR",
+          "term": "Fixture beta yearly term."
         }
-      }
+      ]
     },
     {
       "id": "fixture-gamma",
       "name": "Fixture Gamma",
       "description": "Fixture description gamma.",
+      "isSold": true,
       "dailyAiLimit": 50,
       "capabilities": [
         "fasting",
@@ -92,25 +110,22 @@
         "chat",
         "future-word"
       ],
-      "onSale": false,
-      "prices": {
-        "monthly": {
+      "plans": [
+        {
           "key": "monthly",
           "interval": "month",
           "grossCents": 699,
           "currency": "EUR",
           "term": "Fixture gamma monthly term."
+        },
+        {
+          "key": "yearly",
+          "interval": "year",
+          "grossCents": 3499,
+          "currency": "EUR",
+          "term": "Fixture gamma yearly term."
         }
-      }
+      ]
     }
-  ],
-  "free": {
-    "id": "fixture-zero",
-    "name": "Fixture Zero",
-    "description": "Fixture description zero.",
-    "dailyAiLimit": 3,
-    "capabilities": []
-  },
-  "currentTier": null,
-  "whatHappens": "Fixture privacy line one.\n\nFixture privacy line two."
+  ]
 }

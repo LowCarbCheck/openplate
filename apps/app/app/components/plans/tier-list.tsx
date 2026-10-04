@@ -4,22 +4,25 @@
  * One card per row of `tiersViewOf`: the name, the description and the prices
  * are the biller's words and figures, drawn as served. What this file writes is
  * chrome: the line about scans a day, the names of the features (from the
- * catalog, by feature word), the mark on the person's own tier and the note on
- * a tier that is not on sale. No tier name and no price is in this file.
+ * catalog, by feature word), the mark on the person's own tier and the label of
+ * the switch button. No tier name and no price is in this file.
  *
- * ── A PICK IS ONE RADIO GROUP, FOR THE ORDERABLE TIERS ONLY ──────────────
+ * ── A FIRST ORDER PICKS BY RADIO, A SUBSCRIBER SWITCHES BY BUTTON ────────
  *
  * Choosing a tier does not order it. It opens the order block below, which
  * offers that tier's intervals, the order texts and the two consents, exactly
- * as for a single plan. The person's own tier, the free entry and a tier that is
- * not on sale are drawn WITHOUT a radio, so nothing that cannot be ordered looks
- * like it can.
+ * as for a single plan. A reader with no plan picks by a radio, for the
+ * orderable tiers only. A SUBSCRIBER (`row.effect` is set) gets a "switch"
+ * button on every other tier, and on their own tier when it can move from
+ * monthly to yearly; the button reports a pick the same way and names what it
+ * does in words. The free entry, and a row nothing can be ordered from, are
+ * drawn WITHOUT either, so nothing that cannot be ordered looks like it can.
  *
  * ── EVERY CARD DRAWS THE SAME LINES ──────────────────────────────────────
  *
- * The mark and the not-on-sale note are reserved lines (`invisible` when they
- * have nothing to say), so a card keeps its height whatever it is, and picking
- * one changes a colour and never a size.
+ * The mark is a reserved line (`invisible` when it has nothing to say), so a
+ * card keeps its height whatever it is, and picking one changes a colour and
+ * never a size.
  *
  * Props only, apart from `t`, so it renders in a unit test.
  */
@@ -27,6 +30,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { featureNameKey } from '#app/components/plans/feature-gate';
+import { Button } from '#app/components/ui/button';
 import { formatCents, monthlyEquivalentCents } from '#app/lib/plans/plan-prices';
 import type { TierRowView } from '#app/lib/plans/tier-view';
 import { cn } from '#app/lib/utils';
@@ -38,7 +42,7 @@ export interface TierListProps {
   rows: readonly TierRowView[];
   /** The picked tier's id, or `null`. */
   pickedTierId: string | null;
-  /** `false` draws the list with no radios: a subscriber reading the page, or an order held elsewhere. */
+  /** `false` draws the list with no radios and no switch buttons: an order held elsewhere, or a payment being confirmed. */
   canPick: boolean;
   onPick: (tierId: string) => void;
 }
@@ -111,35 +115,40 @@ export function TierList({ rows, pickedTierId, canPick, onPick }: TierListProps)
                   )}
                 </span>
               ))}
-              <span
-                data-slot="tier-not-on-sale"
-                className={cn('block text-xs text-muted-foreground', !row.isClosedToOrders && 'invisible')}
-              >
-                {row.isClosedToOrders ? t('plan.tiers.notOnSale') : EMPTY_LINE}
-              </span>
             </>
           );
+          const rowProps = {
+            'data-slot': 'plan-tier',
+            'data-tier-id': row.id,
+            'data-current': row.isCurrent ? 'true' : 'false',
+          } as const;
           if (!isPickable) {
             return (
-              <div
-                key={row.id}
-                data-slot="plan-tier"
-                data-tier-id={row.id}
-                data-current={row.isCurrent ? 'true' : 'false'}
-                className={cardClass({ isPicked: false, isPickable: false })}
-              >
+              <div key={row.id} {...rowProps} className={cardClass({ isPicked: false, isPickable: false })}>
                 {body}
               </div>
             );
           }
+          // A SUBSCRIBER'S MOVE: a button, which says in words what it does.
+          if (row.effect !== null) {
+            return (
+              <div key={row.id} {...rowProps} className={cardClass({ isPicked, isPickable: false })}>
+                {body}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  data-slot="tier-switch"
+                  aria-pressed={isPicked}
+                  className="mt-2 h-11 w-full"
+                  onClick={() => onPick(row.id)}
+                >
+                  {row.isCurrent ? t('plan.tiers.switchYearly') : t('plan.tiers.switchTo', { name: row.name })}
+                </Button>
+              </div>
+            );
+          }
           return (
-            <label
-              key={row.id}
-              data-slot="plan-tier"
-              data-tier-id={row.id}
-              data-current={row.isCurrent ? 'true' : 'false'}
-              className={cardClass({ isPicked, isPickable: true })}
-            >
+            <label key={row.id} {...rowProps} className={cardClass({ isPicked, isPickable: true })}>
               <input
                 type="radio"
                 name="tier"

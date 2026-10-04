@@ -341,7 +341,7 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
     }
   });
 
-  it('adds the tier id and the interval when a tier was picked, and keeps today\'s four keys (M2/05)', async () => {
+  it('adds the tier id when a tier was picked, and keeps today\'s four keys (M2/05)', async () => {
     const { transport, calls } = fakeTransport({ answers: { url: 'https://checkout.example.test/s/2' } });
     await new PlansClient({ transport }).placeOrder({ ...ORDER, plan: 'monthly', tier: 'fixture-alpha' });
     assert.deepEqual(calls[0]?.body, {
@@ -350,14 +350,34 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
       consentVersion: 'fixture-consent-1',
       consents: { terms: true, earlyStart: true },
       tier: 'fixture-alpha',
-      interval: 'month',
     });
-    // THE CONTROL: with no tier the body has neither key, so a biller that never learnt tiers sees today's order.
+    // THE CONTROL: with no tier the body has no `tier` key, so a biller reads today's order as the legacy plan.
     const plain = fakeTransport({ answers: { url: 'https://checkout.example.test/s/3' } });
     await new PlansClient({ transport: plain.transport }).placeOrder(ORDER);
-    const sent = JSON.stringify(plain.calls[0]?.body);
-    assert.equal(sent.includes('tier'), false);
-    assert.equal(sent.includes('interval'), false);
+    assert.equal(JSON.stringify(plain.calls[0]?.body).includes('tier'), false);
+  });
+
+  it('reads the tier and the effect of a move, and leaves them out when the biller sent none', async () => {
+    const startsAt = '2026-10-09T00:00:00.000Z';
+    for (const effect of ['now', 'period-end'] as const) {
+      const { transport } = fakeTransport({ answers: { switched: { plan: 'monthly', tier: 'fixture-gamma', effect, startsAt } } });
+      assert.deepEqual(await new PlansClient({ transport }).placeOrder({ ...ORDER, tier: 'fixture-gamma' }), {
+        kind: 'switched',
+        plan: 'monthly',
+        tier: 'fixture-gamma',
+        effect,
+        startsAt,
+      });
+    }
+    // A VALUE THIS BUILD DOES NOT KNOW is an absent effect, never a thrown answer after the money moved.
+    const odd = fakeTransport({ answers: { switched: { plan: 'monthly', effect: 'tomorrow', startsAt } } });
+    const outcome = await new PlansClient({ transport: odd.transport }).placeOrder(ORDER);
+    assert.equal(outcome.kind, 'switched');
+    assert.equal(outcome.kind === 'switched' ? outcome.effect : 'not a switch', undefined);
+    // THE CONTROL: the known value is kept, so the line above can fail.
+    const known = fakeTransport({ answers: { switched: { plan: 'monthly', effect: 'now', startsAt } } });
+    const kept = await new PlansClient({ transport: known.transport }).placeOrder(ORDER);
+    assert.equal(kept.kind === 'switched' ? kept.effect : null, 'now');
   });
 
   it('answers a booked switch as a switch, with the day the year starts', async () => {

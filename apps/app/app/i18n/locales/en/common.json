@@ -3632,7 +3632,9 @@
       "unavailable": "The order page could not be loaded. Try again later.",
       "withdrawalLink": "Withdrawal instruction and form",
       "privacyLink": "Read the privacy notice",
-      "whatHappensLabel": "What happens to your data"
+      "whatHappensLabel": "What happens to your data",
+      "moveRefused": "This change is not possible right now. Your plan has not changed.",
+      "planUnavailable": "That plan is not on sale any more. The page shows the plans on sale now."
     },
     "countdown": {
       "daysLeft_one": "{{count}} day of AI scans left in your trial.",
@@ -3666,8 +3668,15 @@
       "includes": "Includes: {{features}}.",
       "pricePerMonth": "{{price}} a month",
       "pricePerYear": "{{price}} a year",
-      "notOnSale": "Not available to order right now.",
-      "current": "Your plan"
+      "current": "Your plan",
+      "switchTo": "Switch to {{name}}",
+      "switchYearly": "Pay yearly instead"
+    },
+    "move": {
+      "effectNow": "This change takes effect now. The price is settled pro rata against what you already paid.",
+      "effectPeriodEnd": "This change takes effect at the end of your paid period. You keep your current plan until then.",
+      "doneNow": "Your plan has changed. The price is settled pro rata.",
+      "donePeriodEnd": "Your plan changes on {{date}}. You keep your current plan until then."
     }
   },
   "featureGate": {
