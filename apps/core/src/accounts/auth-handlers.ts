@@ -69,6 +69,7 @@ import {
 import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
 import type { AccountView, InstanceHealthConsent } from '../protocol.js';
 import type { AccountEraseNotifier } from './erase-notifier.js';
+import type { MailRecipientEraser } from '../mail/recipient-eraser.js';
 import { SIGNUP_REQUEST_REFUSALS, readSignupIntent, type OpenSignupSurface } from './open-signup.js';
 import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
@@ -177,6 +178,14 @@ export interface AuthContext {
    * `accounts/erase-notifier.ts`.
    */
   accountEraseNotifier?: AccountEraseNotifier | null;
+  /**
+   * Asks the mail service to erase every copy of a deleted account's address,
+   * or `null`/absent when the mail API is not Pigeon (no mail, SMTP, another
+   * HTTP API). Called by `handleDeleteAccount` AFTER the delete, and read off
+   * this context by the admin delete route too. It never throws and waits at
+   * most two seconds. See `mail/recipient-eraser.ts`.
+   */
+  mailRecipientEraser?: MailRecipientEraser | null;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -1717,5 +1726,9 @@ export async function handleDeleteAccount(
   await ctx.accountEraseNotifier?.({ accountId: account.id });
   await ctx.store.deleteAccount(account.id);
   ctx.logger.info('Account deleted with all sync data', { accountId: account.id });
+  // LAST, after the delete and after any letter this flow itself sends (it
+  // sends none): a letter sent afterwards would be a new copy of the address.
+  // The address was read off the row before the row went.
+  await ctx.mailRecipientEraser?.({ email: account.email });
   return { status: 'no-content' };
 }

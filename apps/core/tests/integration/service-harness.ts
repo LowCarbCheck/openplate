@@ -60,6 +60,7 @@ import type {
   SendSignupRequestInput,
 } from '../../src/mail/mailer.js';
 import { createDrizzleLegalDeclarationsStore } from '../../src/legal/legal-declarations-store.js';
+import type { MailRecipientEraser } from '../../src/mail/recipient-eraser.js';
 import { createPlansEraseNotifier } from '../../src/accounts/erase-notifier.js';
 import type { SyncKeyRecordKind } from '../../src/protocol.js';
 import type { Database } from '../../src/db/client.js';
@@ -412,6 +413,14 @@ export interface StartServiceOptions {
    */
   plans?: { baseUrl: string; secret: string; timeoutMs?: number } | null;
   /**
+   * What asks the mail service to erase a deleted account's address
+   * (`mail/recipient-eraser.ts`), as `main.ts` binds it. Absent (the default) is
+   * an instance whose mail API is not Pigeon: a delete calls nobody. A suite
+   * about the erasure builds the real eraser with
+   * `createPigeonRecipientEraser` against its own fake Pigeon.
+   */
+  mailRecipientEraser?: MailRecipientEraser | null;
+  /**
    * M214/09's rate limit. Absent means a HIGH ceiling (10,000/minute), so a
    * suite that is not ABOUT the limiter never trips it — exactly the
    * `PERMISSIVE_THROTTLE` argument, applied to this route's own limiter.
@@ -617,6 +626,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
             logger: options.authLogger ?? createSilentLogger(),
             timeoutMs: options.plans.timeoutMs,
           }),
+    mailRecipientEraser: options.mailRecipientEraser ?? null,
   };
 
   const aiSurface =

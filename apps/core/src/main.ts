@@ -61,6 +61,7 @@ import { createDrizzlePushStore } from './push/push-store.js';
 import { createPushEndpointPolicy } from './push/endpoint-policy.js';
 import { createWebPushSender } from './push/web-push-sender.js';
 import { createPlansEraseNotifier } from './accounts/erase-notifier.js';
+import { createPigeonRecipientEraser } from './mail/recipient-eraser.js';
 import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.js';
 import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
@@ -124,6 +125,12 @@ async function main(): Promise<void> {
   // and the login stay out of the log.
   if (config.mail !== null) {
     logger.info('Mail is configured', { transport: config.mail.transport === 'smtp' ? 'smtp' : 'http' });
+  }
+  // Only Pigeon has the route that erases a recipient. `null` for no mail, SMTP
+  // and any other HTTP mail API, which the log line below says once at boot.
+  const mailRecipientEraser = createPigeonRecipientEraser({ mail: config.mail, logger });
+  if (config.mail !== null && config.mail.transport !== 'smtp' && mailRecipientEraser === null) {
+    logger.info('The mail API is not Pigeon, so deleting an account cannot erase its address there');
   }
   if (config.mail !== null && config.contentDir === null) {
     logger.info('CONTENT_DIR is not set, so declaration letters use the neutral text');
@@ -201,6 +208,8 @@ async function main(): Promise<void> {
     // Both erasure paths tell the biller first, when there is one, so a
     // deleted account is never charged again. `null` without a biller.
     accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),
+    // After a delete, Pigeon is asked to forget the address. `null` unless the mail API is Pigeon.
+    mailRecipientEraser,
   };
 
   // ALWAYS PRESENT, because signup is invite-only and the invite store is the
