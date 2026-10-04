@@ -727,6 +727,13 @@
     "at": "2026-09-24",
     "fr": "Le fichier products.json est manquant. Sélectionne-le avec days.json."
   },
+  "092d4830639f6f20": {
+    "en": "What each plan includes",
+    "path": "common:plan.tiers.legend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ce que chaque forfait comprend"
+  },
   "09662ef923e7e14f": {
     "en": "Carbs",
     "path": "common:scan.review.sanity.macro.carbs",
@@ -2057,6 +2064,13 @@
     "at": "2026-09-19",
     "fr": "Un signalement d'estimation erronée n'a pas encore été envoyé. Si tu effaces, tu le perdras."
   },
+  "16cec13c8da4fd3d": {
+    "en": "What you already recorded stays here. You can still read it and export it.",
+    "path": "common:featureGate.closed.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ce que tu as déjà enregistré reste ici. Tu peux toujours le consulter et l'exporter."
+  },
   "16cef1eb3f9b41df": {
     "en": "Save",
     "path": "common:settings.notifications.save",
@@ -2337,6 +2351,13 @@
     "at": "2026-09-14",
     "fr": "lipides"
   },
+  "19a75b798822dddf": {
+    "en": "Not in your plan: {{feature}}",
+    "path": "common:featureGate.closed.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Non inclus dans ton forfait : {{feature}}"
+  },
   "19bdb11426f2dcdb": {
     "en": "You haven't saved a meal yet.",
     "path": "common:meals.emptyLead",
@@ -2441,6 +2462,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Impossible d'identifier les aliments à partir de ta description."
+  },
+  "1b1a1fff84512499": {
+    "en": "Read the privacy notice",
+    "path": "common:plan.order.privacyLink",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Lire la politique de confidentialité"
   },
   "1b323deb885f7df6": {
     "en": "Saved, couldn't verify the key right now (often the content-security policy blocking a non-localhost endpoint, or the endpoint not allowing browser CORS requests, see the base URL help text above).",
@@ -2721,6 +2749,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Le lien pointe vers un emplacement inconnu de cette application. Ouvre-le dans l'application à laquelle tu as reçu une invitation."
+  },
+  "1da2f728a15b00ba": {
+    "en": "fasting timer",
+    "path": "common:featureGate.names.fasting",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "minuteur de jeûne"
   },
   "1da3bf3f5895ce85": {
     "en": "Premium option",
@@ -4206,6 +4241,13 @@
     "at": "2026-09-23",
     "fr": "Tous les angles de l'application sont désormais droits, sauf les cercles parfaits."
   },
+  "30fb9deb1cb10f00": {
+    "en": "{{count}} AI scans a day",
+    "path": "common:plan.tiers.dailyLimit_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "{{count}} analyses par IA par jour"
+  },
   "317021ec4d860c9c": {
     "en": "Macros unknown, logged as name only.",
     "path": "common:scan.review.macrosUnknown",
@@ -4920,6 +4962,13 @@
     "at": "2026-09-14",
     "fr": "Aliment"
   },
+  "3b895221f753719f": {
+    "en": "You have used today's AI scans. Try again tomorrow, or see the plans.",
+    "path": "common:scan.errors.provider.allowanceSpentPlans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Tu as épuisé tes analyses par IA du jour. Réessaie demain, ou consulte les forfaits."
+  },
   "3b8e454185456a40": {
     "en": "Every app setting now reaches the container from your .env file.",
     "path": "releases:v0_54_0.changed.02",
@@ -5465,6 +5514,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "{{amount}} {{unit}} par jour"
+  },
+  "42cbb4dedcf5aa5d": {
+    "en": "Your plan",
+    "path": "common:plan.tiers.current",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ton forfait"
   },
   "42d2b98b8fa8178b": {
     "en": "Log your first food",
@@ -8643,6 +8699,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "La journée d'hier en chiffres"
+  },
+  "683aef641ec3a99d": {
+    "en": "Your plan changes on {{date}}. You keep your current plan until then.",
+    "path": "common:plan.move.donePeriodEnd",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ton forfait change le {{date}}. Tu conserves ton forfait actuel d'ici là."
   },
   "6882f22907058d79": {
     "en": "You have read the note for fasts of 24 hours or more.",
@@ -11850,6 +11913,13 @@
     "at": "2026-09-18",
     "fr": "Tu as suivi un jeûne avec le minuteur."
   },
+  "8bc61ed28e44c4f9": {
+    "en": "What happens to your data",
+    "path": "common:plan.order.whatHappensLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ce qu'il advient de tes données"
+  },
   "8bccfd968180b6bb": {
     "en": "Your food logs, your own foods, weigh-ins and goals have all reached the server.",
     "path": "common:signOut.unsent.allSent",
@@ -12325,6 +12395,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Impossible de joindre {{origin}}"
+  },
+  "9006cd6e362cea96": {
+    "en": "Your plan has changed. The price is settled pro rata.",
+    "path": "common:plan.move.doneNow",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ton forfait a changé. Le tarif est calculé au prorata."
   },
   "9010842f0fa94005": {
     "en": "Wording {{version}}",
@@ -12836,6 +12913,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ton lien de connexion sous forme de code à scanner"
+  },
+  "967898934af895fc": {
+    "en": "See plans",
+    "path": "common:featureGate.closed.plans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Voir les forfaits"
   },
   "967d02d31ed3efc9": {
     "en": "Scanning and AI",
@@ -13669,6 +13753,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "fr": "Contient du lupin"
+  },
+  "9fa18110bc641ebb": {
+    "en": "Not in your plan",
+    "path": "common:featureGate.closed.titleGeneric",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Non inclus dans ton forfait"
   },
   "9fa41d71eb02d8af": {
     "en": "Overview",
@@ -14608,6 +14699,13 @@
     "at": "2026-09-14",
     "fr": "Faible en glucides"
   },
+  "aa2310ee0f66eed6": {
+    "en": "Includes: {{features}}.",
+    "path": "common:plan.tiers.includes",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Comprend : {{features}}."
+  },
   "aa2bc71c4deca874": {
     "en": "Protein",
     "path": "common:mainGoal.option.protein",
@@ -15216,6 +15314,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Société allemande de nutrition (DGE), s'ouvre dans un nouvel onglet"
+  },
+  "b1b9ca15e3d0efe3": {
+    "en": "No AI scans",
+    "path": "common:plan.tiers.noScans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Aucune analyse par IA"
   },
   "b1be0f072c74cfc2": {
     "en": "Protein {{value}} g",
@@ -15853,6 +15958,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Saisis un nombre entier d'heures compris entre {{min}} et {{max}}."
+  },
+  "b99a020b598ba289": {
+    "en": "voice entry",
+    "path": "common:featureGate.names.voice",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "saisie vocale"
   },
   "b99b2c2ac5214429": {
     "en": "What's new · openplate",
@@ -16847,6 +16959,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Fixe une cible, puis regarde l'historique se construire"
+  },
+  "c6b9bff0dfcbdc86": {
+    "en": "{{price}} a month",
+    "path": "common:plan.tiers.pricePerMonth",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "{{price}} par mois"
   },
   "c6d66bf5a14d6e5d": {
     "en": "Your plan",
@@ -18108,6 +18227,13 @@
     "at": "2026-09-14",
     "fr": "Depuis l'étiquette"
   },
+  "d52463cc23c2a56f": {
+    "en": "This change takes effect at the end of your paid period. You keep your current plan until then.",
+    "path": "common:plan.move.effectPeriodEnd",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Cette modification prend effet à la fin de la période payée. Tu conserves ton forfait actuel d'ici là."
+  },
   "d52fecc22d663d79": {
     "en": "Meals logged",
     "path": "common:pulse.tile.meals",
@@ -18661,6 +18787,13 @@
     "at": "2026-09-14",
     "fr": "Consigne quelques jours et ta progression s'affichera ici."
   },
+  "dc15fc15153a26ff": {
+    "en": "Pay yearly instead",
+    "path": "common:plan.tiers.switchYearly",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Payer plutôt à l'année"
+  },
   "dc1c8918491f247a": {
     "en": "30 days",
     "path": "common:nutrients.range.month",
@@ -18828,6 +18961,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Réessayer"
+  },
+  "ddcc94bb2a7e1f8f": {
+    "en": "{{count}} AI scan a day",
+    "path": "common:plan.tiers.dailyLimit_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "{{count}} analyse par IA par jour"
   },
   "ddddbf851be49987": {
     "en": "Your diary lives on <strong>this device</strong> and syncs to the server in encrypted form. The operator keeps a backup key to restore your diary if you forget your password. That key also lets the operator read your diary. The operator runs the AI, so photos you send for estimates pass through its server.",
@@ -19207,6 +19347,13 @@
     "at": "2026-09-14",
     "fr": "Cela ne ressemble pas à un lien d'invitation. Colle le lien entier, exactement comme tu l'as reçu."
   },
+  "e27601fdc33714d2": {
+    "en": "chat entry",
+    "path": "common:featureGate.names.chat",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "saisie par messagerie"
+  },
   "e2787cc990e2365d": {
     "en": "MIT",
     "path": "common:about.licenceValue",
@@ -19318,6 +19465,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Les chiffres sont conservés pendant {{days}} jours, puis supprimés."
+  },
+  "e3e8b36a4a32a59b": {
+    "en": "{{price}} a year",
+    "path": "common:plan.tiers.pricePerYear",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "{{price}} par an"
   },
   "e3e8f0e9d823101c": {
     "en": "No target set",
@@ -19507,6 +19661,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "fr": "Récupère ton journal YAZIO. Exporte-le avec l'outil open source yazio-exporter, puis sélectionne à la fois ses fichiers days.json et products.json."
+  },
+  "e5de970c813cd372": {
+    "en": "pantry scan",
+    "path": "common:featureGate.names.pantry",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "analyse du garde-manger"
   },
   "e5f500e2e687b392": {
     "en": "broccoli",
@@ -20243,6 +20404,13 @@
     "at": "2026-09-14",
     "fr": "Commencer à {{time}}"
   },
+  "edac7d7bff383a3e": {
+    "en": "This change takes effect now. The price is settled pro rata against what you already paid.",
+    "path": "common:plan.move.effectNow",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Cette modification prend effet immédiatement. Le tarif est calculé au prorata de ce que tu as déjà payé."
+  },
   "edb0042d22c6c97a": {
     "en": "They get a mail with a link. It asks for a password and puts them straight into the app.",
     "path": "common:admin.invite.body",
@@ -20263,6 +20431,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "fr": "Facultatif. Ces informations nous permettent d'adapter tes apports de référence en nutriments et de te suggérer un objectif calorique. Comme le reste de ton journal, elles sont stockées sur cet appareil, et ton compte en conserve une copie chiffrée sur le serveur. La personne qui administre ce serveur conserve une clé de secours pour te permettre de réinitialiser un mot de passe oublié, et cette clé lui permet de lire ton journal."
+  },
+  "ee1bbfbfeb0ea3f1": {
+    "en": "That plan is not on sale any more. The page shows the plans on sale now.",
+    "path": "common:plan.order.planUnavailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ce forfait n'est plus proposé. La page présente les forfaits disponibles actuellement."
   },
   "ee1db21a73ccfdfc": {
     "en": "{{used}} of {{limit}} units",
@@ -20347,6 +20522,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Accéder à tes études"
+  },
+  "eef56a833d4762db": {
+    "en": "This change is not possible right now. Your plan has not changed.",
+    "path": "common:plan.order.moveRefused",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Cette modification est impossible pour le moment. Ton forfait n'a pas changé."
   },
   "ef0088d2d5da6448": {
     "en": "Photograph your plate",
@@ -21426,6 +21608,13 @@
     "at": "2026-09-14",
     "fr": "AB12-CD34-EF56"
   },
+  "fb2b71f4552d2f1e": {
+    "en": "What you have at home. Keep the list by hand.",
+    "path": "common:pantry.leadClosed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Ce que tu as chez toi. Tiens la liste à la main."
+  },
   "fb326f29179e4f9d": {
     "en": "What happens to your data",
     "path": "common:signUp.whatHappens.title",
@@ -21621,6 +21810,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Les photos se transforment en macronutriments avec ta propre clé"
+  },
+  "fcf95ec50968dd13": {
+    "en": "Switch to {{name}}",
+    "path": "common:plan.tiers.switchTo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "fr": "Passer à {{name}}"
   },
   "fd14924653bf90f7": {
     "en": "Thirty days running at or under your carb goal.",
