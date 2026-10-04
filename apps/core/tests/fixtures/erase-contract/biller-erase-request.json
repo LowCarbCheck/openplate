@@ -1,0 +1,13 @@
+{
+  "contract": "core to the biller: an account is about to be erased",
+  "testAccountId": 48211,
+  "testAddress": "leaving.person@example.org",
+  "method": "POST",
+  "path": "/plans/erase",
+  "headerNames": ["x-account-id", "x-plans-secret"],
+  "secretHeaderNames": ["x-plans-secret"],
+  "headerValues": {
+    "x-account-id": "48211"
+  },
+  "body": ""
+}

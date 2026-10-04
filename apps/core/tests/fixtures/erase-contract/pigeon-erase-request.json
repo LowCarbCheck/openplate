@@ -1,0 +1,13 @@
+{
+  "contract": "core to Pigeon: forget this address",
+  "testAccountId": 48211,
+  "testAddress": "leaving.person@example.org",
+  "method": "POST",
+  "path": "/v1/recipients/erase",
+  "headerNames": ["authorization", "content-type"],
+  "secretHeaderNames": ["authorization"],
+  "headerValues": {
+    "content-type": "application/json"
+  },
+  "body": "{\"email\":\"leaving.person@example.org\"}"
+}
