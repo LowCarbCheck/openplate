@@ -57,6 +57,7 @@ import { CredentialSubmitButton } from '#app/components/credential-submit-button
 import { FieldError } from '#app/components/field-error';
 import { Link } from '#app/components/link';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { SignUpWhatHappens } from '#app/components/sign-up-what-happens';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
 import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
@@ -314,6 +315,12 @@ function SignUpForm({
           {t('signUp.sent')}
         </output>
       </div>
+      {/* DIRECTLY BELOW THE FORM, and in the same commit as the form: it is
+          drawn only where a person can ask for an account, and whether it is
+          drawn comes from the public config, so nothing already on screen
+          moves when it arrives. Above the field it would be 570 px tall on a
+          390 px phone and push the address field off the screen. */}
+      <SignUpWhatHappens />
       <SignInLink />
     </div>
   );

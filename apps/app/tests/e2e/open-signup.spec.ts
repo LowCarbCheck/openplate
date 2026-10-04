@@ -23,6 +23,14 @@
  * the header's two doors, and `/imprint` is one every instance with legal
  * pages serves.
  *
+ * THE DATA BOX (M3/07, 2026-10-04). `/sign-up` on a managed instance says what
+ * happens to a photo, a diary and a deletion, directly below the form. It is
+ * drawn in the same commit as the form, from the public config (the instance
+ * mode and the legal pages), never from a second read, so nothing on screen
+ * moves when it arrives and nothing moves when the form turns into the inbox
+ * line. The control is the tier's own OPEN server: the same page, the same
+ * fixture legal pages, the same handshake, and no box.
+ *
  * @area accounts-and-sign-in
  * @smoke
  */
@@ -50,6 +58,12 @@ const copySchema = z.object({
   chrome: z.object({ signUp: z.string(), requestAccess: z.string(), signIn: z.string() }),
   welcome: z.object({ managed: z.object({ signUp: z.string(), haveInvite: z.string() }) }),
   signUp: z.object({
+    whatHappens: z.object({
+      title: z.string(),
+      photo: z.string(),
+      notice: z.string(),
+      proof: z.string(),
+    }),
     sent: z.string(),
     submit: z.string(),
     wait_other: z.string(),
@@ -437,4 +451,111 @@ test('the control: the open instance, whose CSP names no Cloudflare, refuses the
     document.head.append(script);
   }, TURNSTILE_SCRIPT);
   await expect.poll(() => cloudflareViolations(page)).not.toEqual([]);
+});
+
+/** The words a catalog sentence puts inside `<tag>...</tag>`. Throws when the tag is not there. */
+function textInsideTag(sentence: string, tag: string): string {
+  const inside = new RegExp(`<${tag}>(.+?)</${tag}>`, 'u').exec(sentence)?.[1];
+  if (inside === undefined) throw new Error(`the sentence has no <${tag}> run: ${sentence}`);
+  return inside;
+}
+
+/** The box the managed `/sign-up` draws. */
+function dataBox(page: Page): Locator {
+  return page.locator('[data-slot="sign-up-what-happens"]');
+}
+
+/** Where an element's top is on the PAGE, not in the viewport: a press scrolls, and a scroll is not a move. */
+async function pageTop(locator: Locator): Promise<number> {
+  return locator.evaluate((element) => Math.round((element.getBoundingClientRect().top + window.scrollY) * 10) / 10);
+}
+
+test('the managed sign-up says what happens to the data below the form, and nothing moves when it arrives or when the form turns', async ({
+  page,
+}) => {
+  const gate = createGate();
+  await routeHealth(page, { openSignup: true, trialScans: 10 }, gate.promise);
+  const bodies = await routeSignupRequest(page, [{ status: 202, json: {} }]);
+  await page.setViewportSize(NARROW_PHONE);
+  await page.goto(`${server.url}/sign-up`);
+
+  // BEFORE THE HANDSHAKE there is no form, so there is no box either: the two
+  // arrive in one commit, and a box with no form to belong to would be the
+  // thing that arrives alone.
+  await expect(page.getByRole('heading', { name: COPY.signUp.whatHappens.title })).toHaveCount(0);
+  await settleFrames(page);
+
+  gate.open();
+  await expect(page.getByRole('button', { name: COPY.signUp.submit })).toBeEnabled({ timeout: 10_000 });
+  await expect(dataBox(page)).toBeVisible();
+  await expect(dataBox(page).getByRole('heading', { name: COPY.signUp.whatHappens.title })).toBeVisible();
+  await expect(dataBox(page).locator('[data-slot="sign-up-what-happens-photo"]')).toHaveText(
+    COPY.signUp.whatHappens.photo,
+  );
+  await settleFrames(page);
+  expect(shiftScoreAfter(await readShiftEntries(page), 0), 'layout-shift from the load to the form and the box').toBe(
+    0,
+  );
+
+  // BELOW THE FORM: under the submit button, above the way back to sign in.
+  const field = page.locator('input[name="email"]');
+  const submit = page.getByRole('button', { name: COPY.signUp.submit });
+  const signIn = page.locator('[data-slot="sign-up-sign-in"]');
+  const submitBottom = (await pageTop(submit)) + ((await submit.boundingBox())?.height ?? 0);
+  expect(await pageTop(dataBox(page)), 'the box is not below the submit button').toBeGreaterThan(submitBottom);
+  expect(await pageTop(field), 'the box is above the address field').toBeLessThan(await pageTop(dataBox(page)));
+  expect(await pageTop(signIn), 'the way back is not below the box').toBeGreaterThan(await pageTop(dataBox(page)));
+
+  // THE FORM TURNING INTO THE INBOX LINE moves neither the box nor what is under it.
+  const boxTop = await pageTop(dataBox(page));
+  const signInTop = await pageTop(signIn);
+  const shiftsBefore = (await readShiftEntries(page)).length;
+  await submitAddress(page, 'anna@example.org');
+  await expect(page.locator('[data-slot="sign-up-sent"]')).toBeVisible();
+  await settleFrames(page);
+  expect(bodies).toHaveLength(1);
+  expect(await pageTop(dataBox(page)), 'the box moved when the form turned').toBe(boxTop);
+  expect(await pageTop(signIn), 'the link under the box moved when the form turned').toBe(signInTop);
+  expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift as the form turned').toBe(0);
+
+  // THE LINKS GO WHERE THEY SAY. The link TEXT is read, not only the address:
+  // a link tag named like a void element renders empty. The text is the run
+  // the catalog entry puts inside the tag, so a reword passes and an empty link fails.
+  const privacyText = textInsideTag(COPY.signUp.whatHappens.notice, 'privacy');
+  const privacy = dataBox(page).getByRole('link', { name: privacyText });
+  await expect(privacy).toHaveText(privacyText);
+  await expect(privacy).toHaveAttribute('href', '/privacy');
+  const proxyText = textInsideTag(COPY.signUp.whatHappens.proof, 'proxy');
+  const proxy = dataBox(page).getByRole('link', { name: proxyText });
+  await expect(proxy).toHaveText(proxyText);
+  await expect(proxy).toHaveAttribute(
+    'href',
+    'https://github.com/LowCarbCheck/openplate/blob/main/apps/core/src/ai/proxy.ts',
+  );
+
+  // SQUARE, with a hairline on all four sides and no thick rule down one edge.
+  const edges = await dataBox(page).evaluate((box) => {
+    const style = getComputedStyle(box);
+    return {
+      radius: style.borderTopLeftRadius,
+      widths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+    };
+  });
+  expect(edges.radius).toBe('0px');
+  expect(new Set(edges.widths).size, 'the border is not the same on all four sides').toBe(1);
+});
+
+test('the control: the open instance draws the same sign-up form and no data box', async ({ page }) => {
+  // The tier's own server mounts the same fixture legal pages, so the only
+  // thing that differs from the test above is the instance mode.
+  await routeHealth(page, { openSignup: true });
+  await page.goto('/sign-up');
+  await expect(page.getByRole('button', { name: COPY.signUp.submit })).toBeEnabled({ timeout: 10_000 });
+  await expect(page.locator('[data-slot="sign-up-sign-in"]')).toBeVisible();
+  await expect(dataBox(page)).toHaveCount(0);
+  await expect(page.getByText(COPY.signUp.whatHappens.photo)).toHaveCount(0);
+  // THE CONTROL OF THE CONTROL: this server does publish legal pages, so the
+  // absence above is the mode and not a missing notice.
+  const imprint = await page.request.get('/imprint');
+  expect(imprint.status()).toBe(200);
 });

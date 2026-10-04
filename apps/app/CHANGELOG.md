@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The sign-up page now says what happens to your data.** On an instance that runs its own AI and publishes a privacy notice, a plain box under the sign-up form says that the server passes a photo on and does not save it, who receives it, that a reported photo is kept for up to 37 days, that the operator holds a recovery key and can read the diary, and what deletion removes. It links the privacy notice and the public source of the photo proxy. The box is drawn in the same moment as the form, so nothing moves when it arrives. Self-hosted instances and instances with no legal pages do not show it. The sentences are in `signUp.whatHappens.*`.
+
 ### Changed
 
 - **The What's new card is hidden until you switch it on.** The card on the diary and the dashboard, and the release notes row in About, now show by default only for administrators. Everyone else turns them on with a new switch in Preferences, and an administrator can turn them off there. The choice is kept on the device, and the notes page still opens at `/settings/whats-new`.

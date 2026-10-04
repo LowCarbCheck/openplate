@@ -2726,7 +2726,17 @@
     "captchaUnavailable": "The check could not load. Reload the page, or turn off a blocker for this page.",
     "domainBlocked": "We cannot take sign-ups from this email domain. Use another address.",
     "failed": "The request did not go through. Try again in a moment.",
-    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up."
+    "legal": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up.",
+    "whatHappens": {
+      "title": "What happens to your data",
+      "photo": "Our server does not save your photo. It passes the photo to OpenRouter (USA), which passes it to Google. Our server drops it when the answer comes back. Your phone keeps a copy until you clear it.",
+      "providers": "For OpenRouter and Google we can say what we ask them to do, and we cannot check it.",
+      "report": "If you report a wrong estimate, we keep that one photo for up to 37 days.",
+      "diary": "Your diary is encrypted on your device. We also hold a recovery key, so we can read your diary. We do not read diaries in normal operation.",
+      "deletion": "When you delete your account, your account and your diary are removed from our server at once. Some records stay for a time, such as invoices and backups.",
+      "notice": "The <privacy>privacy notice</privacy> lists what stays and for how long.",
+      "proof": "The code that handles the photo is public: <proxy>read the proxy</proxy>."
+    }
   },
   "signupOffer": {
     "scans_one": "{{count}} free AI scan. No card needed.",
