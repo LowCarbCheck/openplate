@@ -7,6 +7,20 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- **A caught error reaches a log line only as a name and a code.** Log lines used to carry `error.message`, and a body parser or a driver can quote the request in it. They now carry `errorName` and `errorCode`. A failure at boot, in the `move-accounts` tool, or in an admin mail send still writes its words, scrubbed and cut to 200 characters. `tests/unit/log-allow-list.test.ts` fails when a log call reads `.message`.
+- **The scrubber catches more.** It now redacts base64 with JSON-escaped slashes, URL-safe base64 and percent-encoded base64, and it cuts its output at 4096 characters.
+
+### Fixed
+
+- **The AI proxy no longer follows a redirect from the provider.** A 307 or 308 made the proxy send the request body, photograph included, to the host in the `Location` header. It now answers 502, as for any unreachable provider.
+- **The terminal error handler no longer logs the error message.**
+
+### Added
+
+- **The photo path guard.** `pnpm test:guard` starts the real core, sends a marked photograph through every failure mode and searches the logs, the responses and the database for it. It runs in the integration suite and every night.
+
 ## [0.30.0] - 2026-10-01
 
 ### Changed
