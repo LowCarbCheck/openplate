@@ -737,7 +737,21 @@ ADMIN_TOKEN=... pnpm core-api invites resend 7
 ADMIN_TOKEN=... pnpm core-api settings get
 ADMIN_TOKEN=... pnpm core-api settings set nutrient-reference-basis efsa
 pnpm core-api push keygen
+ADMIN_TOKEN=... CORE_URL=https://api.example.org pnpm core-api canary --email you@example.org
 ```
+
+`canary` is the check to run after a release. It mints an invite with five AI
+requests a day, reads the invite token off the admin response (never off a
+letter, though the invitation is mailed to the address too, so use one you
+own), signs up the way a client does, sends ONE small PNG with a random 16 byte
+marker to `/v1/chat/completions`, and deletes the account (`--keep` leaves it,
+`--model <id>` names a model for an instance that advertises none). It prints
+JSON: the HTTP status of the scan, the marker in hex, and every 12 byte window
+of it in hex, base64 at three alignments and URL-safe base64. Search those in the
+host's logs, the reverse proxy, the container runtime and the journal. It exits
+1 unless the scan answered 2xx and the account is gone. It never prints a
+token, a key or a password. The signup keys are random bytes of the right
+length, not a derived key set, because nothing is ever wrapped under them.
 
 `settings` is the one thing here that changes what the instance IS rather than
 what one account may do, and it is the only setting on this service an
