@@ -831,6 +831,8 @@ export function createApp(options: CreateAppOptions): Express {
       // The SAME notifier the self-service delete calls, read off the auth
       // context, so both erasure paths tell the biller or neither does.
       accountEraseNotifier: options.authContext.accountEraseNotifier ?? null,
+      // Likewise the mail erasure: the same binding on both delete paths.
+      mailRecipientEraser: options.authContext.mailRecipientEraser ?? null,
       invites: options.admin.invites,
       accounts: options.authContext.store,
       blobs: options.admin.blobs,

@@ -29,12 +29,14 @@ flaky='[shard 1/2]   1 flaky
 [shard 2/2]     [chromium] › tests/e2e/layout-a.spec.ts:10:5 › holds still'
 failed='[shard 2/2]   1) [chromium] › tests/e2e/bar.spec.ts:3:1 › broken'
 
-# run_case <log text> <exit code>: sets $rc and $line (latest.txt).
+# run_case <log text> <exit code> [<guard exit code>]: sets $rc and $line
+# (latest.txt). Without a guard exit code the photo guard stage does not run,
+# which is what every case above the guard cases asserts by their anchored line.
 run_case() {
   printf '%s\n' "$1" >"$scratch/fake.txt"
   rc=0
   NIGHTLY_SKIP_RUN=1 NIGHTLY_WORKTREE="$here" NIGHTLY_FAKE_LOG="$scratch/fake.txt" NIGHTLY_FAKE_RC=$2 \
-    XDG_STATE_HOME="$scratch/state" "$SCRIPT" >/dev/null 2>&1 || rc=$?
+    NIGHTLY_FAKE_GUARD_RC="${3:-}" XDG_STATE_HOME="$scratch/state" "$SCRIPT" >/dev/null 2>&1 || rc=$?
   line=$(cat "$scratch/state/openplate/nightly-e2e/latest.txt")
 }
 expect() {
@@ -50,6 +52,17 @@ run_case "$green"$'\n'"$failed" 1
 expect "failed: red, names the spec, no flaky note" 1 '^red .* 1 failed: tests/e2e/bar.spec.ts$'
 run_case "$green"$'\n'"$failed"$'\n'"$flaky" 1
 expect "failed and flaky: red, both listed" 1 '^red .* 1 failed: tests/e2e/bar.spec.ts, 3 flaky: tests/e2e/layout-a.spec.ts'
+
+# The photo path guard stage (apps/core, pnpm test:guard): its verdict is part of
+# the night's.
+run_case "$green" 0 0
+expect "guard passed: green, and the line says so" 0 '^green .* 2 shards, 190 passed, photo guard passed$'
+run_case "$green" 0 1
+expect "guard failed with a green tier: red, and the line says so" 1 '^red .* 2 shards, 190 passed, photo guard FAILED, see the log$'
+run_case "$green"$'\n'"$failed" 1 0
+expect "tier failed with a green guard: still red, both facts in the line" 1 '^red .* 1 failed: tests/e2e/bar.spec.ts, photo guard passed$'
+run_case "$green"$'\n'"$failed" 1 1
+expect "both failed: red, both facts in the line" 1 '^red .* 1 failed: tests/e2e/bar.spec.ts, photo guard FAILED, see the log$'
 
 # The nix re-exec decision, with a fake `nix` on PATH and a fake repo, through
 # the NIGHTLY_DECIDE_ONLY seam.
@@ -102,4 +115,8 @@ mutate flaky-makes-red 's#^  \[ "$code" = "0" \] || verdict=red#  [ "$code" = "0
 mutate nix-loop-guard-dropped 's#if \[ -n "\$1" \] || \[ -n "\$2" \]; then echo nix; return; fi#:#'
 mutate nix-never-reexecs 's#echo reexec; return#echo host; return#'
 mutate flaky-block-never-ends 's#inblock = 0#inblock = 1#'
+# The guard stage, broken one part at a time: its failure ignored, and its
+# success never reported.
+mutate guard-failure-ignored 's#^      \[ "\$code" != "0" \] || code=1#      :#'
+mutate guard-never-reported 's#^  if \[ "\$guard_ran" = "1" \]; then#  if false; then#'
 echo "PASS: the self-test caught every broken copy"

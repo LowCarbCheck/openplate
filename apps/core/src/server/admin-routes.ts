@@ -108,10 +108,12 @@ import {
   isServiceValueInScope,
 } from './service-principal-scope.js';
 import type { AccountEraseNotifier } from '../accounts/erase-notifier.js';
+import type { MailRecipientEraser } from '../mail/recipient-eraser.js';
 import { healthConsentView } from '../accounts/health-consent.js';
 import { parseAccountLabel } from '../admin/account-label.js';
 import type { AiCapacityReader } from '../ai/quota-store.js';
 import type { UpstreamBudgetRead, UpstreamBudgetReset, UpstreamBudgetSource } from '../ai/upstream-budget.js';
+import { scrubbedErrorMessage } from '../log-error.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -859,6 +861,13 @@ export interface AdminRoutesOptions {
    * `accounts/erase-notifier.ts`.
    */
   accountEraseNotifier: AccountEraseNotifier | null;
+  /**
+   * Asks the mail service to erase a deleted account's address, or `null`/absent
+   * when the mail API is not Pigeon. The SAME binding the self-service delete
+   * calls, read off the auth context by `create-app.ts`. See
+   * `mail/recipient-eraser.ts`.
+   */
+  mailRecipientEraser?: MailRecipientEraser | null;
   /** Invite minting, reissue and revocation, see `admin/invite-store.ts`. */
   invites: InviteStore;
   /** The SAME store the self-service delete path uses. `deleteAccount` and the reset-mail write. */
@@ -1005,7 +1014,12 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       logger.warn('Mail send failed', {
         what: input.what,
         id: input.id,
-        error: cause instanceof Error ? cause.message : 'unknown error',
+        // The words, scrubbed and capped: the mail transports build this
+        // message themselves from a status or a reply code ("SMTP server
+        // responded 550") and never from what the server echoed, and it is
+        // what tells an operator why a letter did not leave. An admin invite
+        // is not on the photo path.
+        error: scrubbedErrorMessage(cause),
       });
       return false;
     }
@@ -1361,6 +1375,9 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       // The account id is the correlation handle; the address is not logged,
       // here or anywhere (`logger.ts`).
       logger.info('Account deleted by admin with all sync data', { accountId });
+      // LAST, after the delete: the mail service forgets the address the summary
+      // above read before the row went. This route sends no letter itself.
+      await options.mailRecipientEraser?.({ email: summary.email });
       res.status(204).end();
     }),
   );

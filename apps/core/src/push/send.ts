@@ -142,22 +142,3 @@ export function sendErrorStatus(cause: unknown): number | null {
 export function isGoneStatus(status: number | null): boolean {
   return status === 404 || status === 410;
 }
-
-/**
- * What actually went wrong, for the log.
- *
- * `web-push` throws a `WebPushError` whose message is the constant "Received
- * unexpected response code", which is useless on its own, while the status and
- * the service's own reason (Apple's `{"reason":"BadDeviceToken"}`, FCM's text)
- * sit unread on the error. Surfacing them is what makes a transient 5xx
- * distinguishable from a permanent rejection.
- *
- * IT NAMES NO ENDPOINT AND NO ACCOUNT. The caller logs a count and this
- * sentence; see `server/register-push-routes.ts` on the same rule for the
- * routes.
- */
-export function describeSendError(cause: unknown): string {
-  const message = cause instanceof Error ? cause.message : 'unknown push error';
-  const status = sendErrorStatus(cause);
-  return status === null ? message : `${message} status=${status}`;
-}

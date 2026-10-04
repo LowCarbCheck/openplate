@@ -21,7 +21,7 @@ import express from 'express';
 import { createChatCompletionsHandler } from '../../src/ai/proxy.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
-import { scrubPayloads, describeError } from '../../src/ai/scrub.js';
+import { scrubPayloads } from '../../src/ai/scrub.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
 import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
 import { utcDayKey } from '../../src/lib/utc-day.js';
@@ -809,6 +809,38 @@ test('a connect failure RELEASES: the request never left this host', async () =>
   await harness.close();
 });
 
+test('an upstream that answers 307 gets no second request, and the caller sees the unreachable answer', async () => {
+  // A redirect would make undici resend the body, photograph included, to
+  // whatever host the Location header names. The second server stands for
+  // that host: it must hear nothing.
+  const second = await startFakeUpstream();
+  const redirecting = createServer((req, res) => {
+    req.resume();
+    req.on('end', () => {
+      res.writeHead(307, { location: `${second.baseUrl}/chat/completions` });
+      res.end();
+    });
+  });
+  servers.push(redirecting);
+  redirecting.listen(0);
+  await new Promise<void>((resolve) => redirecting.once('listening', resolve));
+  // SAFETY: `listen(0)` binds a TCP port, never a Unix domain socket.
+  const { port } = redirecting.address() as AddressInfo;
+  const harness = await startProxy({ upstreamBaseUrl: `http://127.0.0.1:${port}/v1`, dailyAiLimit: 3 });
+
+  const response = await postCompletion(harness, {
+    model: 'm',
+    messages: [{ role: 'user', content: PHOTOGRAPH }],
+  });
+
+  assert.equal(second.received.length, 0, 'the redirect target received the request body');
+  assert.equal(response.status, 502);
+  assert.deepEqual(await response.json(), { error: 'the upstream provider could not be reached' });
+  assert.equal(harness.quota.releases, 1, 'nothing was served, so the unit goes back');
+
+  await harness.close();
+});
+
 test('a spent allowance is 429 with a Retry-After to the next UTC midnight', async () => {
   const upstream = await startFakeUpstream();
   const quota = createRecordingQuota();
@@ -912,15 +944,6 @@ test('the scrubber redacts data URIs and long base64 runs, and is idempotent', (
   // ...and short identifiers survive whole, or the scrubber would eat the
   // fields somebody actually wanted to read.
   assert.equal(scrubPayloads('accountId=42 family=abc123'), 'accountId=42 family=abc123');
-});
-
-test('describeError never returns a stack, a cause chain or an unscrubbed message', () => {
-  const wrapped = new Error(`upstream said ${PHOTOGRAPH}`, { cause: new Error(`inner ${PHOTOGRAPH}`) });
-  const described = describeError(wrapped);
-  assert.ok(!described.includes(PHOTOGRAPH));
-  assert.ok(!described.includes('at '), 'a stack can quote source lines');
-  assert.equal(describeError('a thrown string'), 'a thrown string');
-  assert.equal(describeError({ weird: true }), 'unknown error');
 });
 
 // ── Streaming ──────────────────────────────────────────────────────────────

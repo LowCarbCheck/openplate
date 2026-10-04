@@ -91,6 +91,7 @@
  */
 import { MOVE_USAGE, parseMoveCommand } from './move-accounts/options.js';
 import { runMove } from './move-accounts/run.js';
+import { scrubbedErrorMessage } from './log-error.js';
 
 /** 0: the proofs hold (dry run) or everything planned happened (apply). 1: refused or incomplete. 2: usage. */
 async function run(): Promise<number> {
@@ -111,9 +112,11 @@ async function main(): Promise<void> {
   try {
     process.exitCode = await run();
   } catch (cause) {
-    // A connection or driver failure. Its message names a host or a SQLSTATE,
-    // never a password: the URLs are only ever handed to the driver.
-    process.stderr.write(`move-accounts: stopped: ${cause instanceof Error ? cause.message : 'unknown failure'}\n`);
+    // A connection or driver failure, in an operator's terminal and before any
+    // request exists. Its message names a host or a SQLSTATE, never a
+    // password: the URLs are only ever handed to the driver. Scrubbed and
+    // capped all the same, through the one door `log-error.ts` keeps for it.
+    process.stderr.write(`move-accounts: stopped: ${scrubbedErrorMessage(cause)}\n`);
     process.exitCode = 1;
   }
 }

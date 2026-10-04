@@ -229,6 +229,8 @@ AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite   # the model every request is 
 AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 8192
 AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
 UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
+UPSTREAM_ZDR=true                  # optional, OpenRouter only: zero data retention endpoints only
+UPSTREAM_PROVIDER_ONLY=google-vertex  # optional, OpenRouter only: pin to these providers, no fallback
 AI_INSTANCE_DAILY_LIMIT=2000       # optional, whole instance, per UTC day
 AI_BUDGET_ALERT_FRACTION=0.2       # optional, OpenRouter only: mail when less than this share is left
 ```
@@ -254,8 +256,18 @@ or without it, `max_tokens` and `max_completion_tokens` are capped at
 are forwarded: every other one (`tools`, `plugins`, `models`, a field nobody
 has invented yet) is dropped and its name logged. On OpenRouter the service
 writes its own `provider` field, `{"data_collection":"deny"}`, so a photo only
-goes to endpoints that do not store it or train on it. Nothing is refused for
-these fields, so a client that sends them still gets an answer.
+goes to endpoints that do not store it or train on it. That is a routing
+request, not a guarantee. Two optional settings ask for more, and only on an
+OpenRouter host: `UPSTREAM_ZDR=true` adds `"zdr":true` (endpoints with zero data
+retention only), and `UPSTREAM_PROVIDER_ONLY=google-vertex` adds
+`"only":["google-vertex"]` and `"allow_fallbacks":false` (that provider or an
+error, never another). With both set the field is
+`{"zdr":true,"data_collection":"deny","only":["google-vertex"],"allow_fallbacks":false}`.
+Unset, the default, the field is what it always was. A value that is not `true`,
+`false` or empty in `UPSTREAM_ZDR`, or a provider list with an empty entry or a
+name that is not a lowercase slug, stops the boot. A caller can set none of
+this: its own `provider` field is replaced. Nothing is refused for these
+fields, so a client that sends them still gets an answer.
 PROTOCOL.md §5.19 has the table.
 
 **Input is bounded too.** A request with more than one image, more than 48 KB
@@ -661,6 +673,8 @@ open the screen, and one source address may read it 60 times a minute.
 
 **It tells the plans service when an account is erased.** Before a person's own delete or your admin delete removes an account, the service sends `POST <PLANS_UPSTREAM_URL>/erase` with the secret and the account id, so the plans service cancels that account's subscriptions first. It waits five seconds at most. If the call fails, the log gets an error with the account id and the account is deleted anyway; the plans service's nightly reconciliation then cancels the subscription.
 
+**It asks the mail service to forget an erased account's address, when that service is Pigeon.** If `MAIL_API_URL` ends in `/v1/emails`, which is Pigeon's path (Resend's is `/emails`), then after a person's own delete or your admin delete has removed the account, the service sends `POST <base>/v1/recipients/erase` with `{"email": "<address>"}` in the body, never in the URL, and the same Bearer key that sends the letters. Pigeon then erases every copy of that address it holds. It never blocks the delete. The service tries up to three times, a quarter and three quarters of a second apart, and the person or the admin waits for that at most two seconds; attempts still owed after that go on after the answer. Only a network error, a timeout, a 408, a 429 and a 5xx are tried again. A 404 from an older Pigeon without the route is not. When the last attempt fails, the log gets one error line with the number of attempts and the last status or error code, and no address. **Nothing remembers the address after that**, because a list of deleted people's addresses to retry from would be the copy this exists to remove, so a restart in the middle of a retry loses the call. Pigeon's own retention limit then removes the letters. SMTP and any other mail API get no such call. Letters that carry a link, which are the invitation, the password reset and the sign-up link, also ask Pigeon to keep no body after sending (`retain_body: false`). An older Pigeon ignores that field.
+
 **It gives the plans service a narrow admin credential.** `BILLING_TOKEN`
 provides a third credential for `/v1/admin`, beside the two above. An allowlist
 limits everything it can do: `GET /v1/admin/accounts/expiring`,
@@ -697,6 +711,7 @@ pnpm install
 pnpm run typecheck
 pnpm run test:unit          # node:test, handler cores, auth policy, protocol drift guard. No DB.
 pnpm run test:integration   # boots the real app against a real Postgres
+pnpm run test:guard         # the photo path guard alone, see below
 pnpm run lint               # oxlint, zero warnings
 pnpm run build              # esbuild → dist/server.js
 pnpm run dev                # tsx watch
@@ -722,7 +737,21 @@ ADMIN_TOKEN=... pnpm core-api invites resend 7
 ADMIN_TOKEN=... pnpm core-api settings get
 ADMIN_TOKEN=... pnpm core-api settings set nutrient-reference-basis efsa
 pnpm core-api push keygen
+ADMIN_TOKEN=... CORE_URL=https://api.example.org pnpm core-api canary --email you@example.org
 ```
+
+`canary` is the check to run after a release. It mints an invite with five AI
+requests a day, reads the invite token off the admin response (never off a
+letter, though the invitation is mailed to the address too, so use one you
+own), signs up the way a client does, sends ONE small PNG with a random 16 byte
+marker to `/v1/chat/completions`, and deletes the account (`--keep` leaves it,
+`--model <id>` names a model for an instance that advertises none). It prints
+JSON: the HTTP status of the scan, the marker in hex, and every 12 byte window
+of it in hex, base64 at three alignments and URL-safe base64. Search those in the
+host's logs, the reverse proxy, the container runtime and the journal. It exits
+1 unless the scan answered 2xx and the account is gone. It never prints a
+token, a key or a password. The signup keys are random bytes of the right
+length, not a derived key set, because nothing is ever wrapped under them.
 
 `settings` is the one thing here that changes what the instance IS rather than
 what one account may do, and it is the only setting on this service an
@@ -770,6 +799,12 @@ runtime.
 The integration suite targets a local Postgres at `localhost:5433` (user `postgres`, password `postgres`) and creates `openplate_sync_test` on first run. Override with `TEST_DATABASE_URL`. It deliberately does **not** use the self-hosting database in `docker/compose.yml`: that one is for self-hosters. If you have no Postgres on 5433, `docker/compose.dev.yml` is a one-service file that provides exactly that and nothing else.
 
 The test suite and `docker/compose.dev.yml` use Postgres 17 to match production. This catches features that require 18 before release. The self-host files use 18. Before cutting a core tag, run `make check-pg18` from the repository root. It starts a temporary `postgres:18-alpine` from `docker/topologies/compose.core.yml`, builds the image, and runs it against that database. The check requires `/health` to return 200, match the version in `package.json`, and show every committed migration applied. It then cleans up created resources. Because it builds an image, this runs as a release check rather than a pre-push gate. Set `CORE_IMAGE` to test an existing build.
+
+### The photo path guard
+
+Any new media path, audio included, joins `tests/integration/photo-path-guard.test.ts` before it ships. The test starts the real core, sends a photograph of random bytes with a unique marker through every way a request can fail, and searches stdout, stderr, the response and every table for it. Add the new path's failure modes to that file and its bytes to `tests/integration/leak-search.ts`.
+
+The test runs in `pnpm test:integration`, so in the push gate and the release gate, and every night through `scripts/nightly-e2e.sh`. To prove it can fail, make `scrubPayloads` in `src/ai/scrub.ts` return its input, run `pnpm test:guard`, and expect the three "upstream answers 500 and echoes" cases to fail. Then restore the function. A caught error reaches a log only through `src/log-error.ts`, and `tests/unit/log-allow-list.test.ts` fails when a log call reads `.message`.
 
 ### Layout
 

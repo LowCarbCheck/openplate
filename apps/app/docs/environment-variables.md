@@ -178,6 +178,8 @@ The core server container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two v
 | --- | --- | --- | --- |
 | `UPSTREAM_BASE_URL` | unset, no AI | The provider's OpenAI-compatible address, for example `https://openrouter.ai/api/v1`. Set it together with `UPSTREAM_API_KEY`. | [Managed instances](configuration.md#managed-instances) |
 | `UPSTREAM_API_KEY` | unset | The provider key. It never reaches a browser. | [Managed instances](configuration.md#managed-instances) |
+| `UPSTREAM_ZDR` | unset | OpenRouter only. Set it to `true` and the proxy asks OpenRouter to route a request only to endpoints with zero data retention. Any other host ignores it. Another value than `true`, `false` or empty stops the boot. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
+| `UPSTREAM_PROVIDER_ONLY` | unset | OpenRouter only. A comma separated list of provider slugs, for example `google-vertex`. A request goes to one of them or fails, and never falls back to another provider. Any other host ignores it. | [The AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it) |
 | `UPSTREAM_TIMEOUT_MS` | `120000` | The time in milliseconds the proxy waits for the provider's first answer, and then between parts of it. | |
 | `AI_ADVERTISED_MODEL` | unset | The model every scan uses. `/health` names it, and the proxy writes it into every request. The app does not scan without it. | [Managed instances](configuration.md#managed-instances) |
 | `AI_MAX_OUTPUT_TOKENS` | `8192` | The maximum output tokens one request can ask for. | |

@@ -76,6 +76,7 @@ import type { AccountStore } from '../accounts/account-store.js';
 import type { Mailer } from '../mail/mailer.js';
 import type { Logger } from '../logger.js';
 import { INSTANCE_LANGUAGES, type InstanceLanguage } from '../protocol.js';
+import { errorFields } from '../log-error.js';
 
 /** `/v1/legal/declarations`, the one path this family owns. */
 export const LEGAL_DECLARATIONS_PATH = '/v1/legal/declarations';
@@ -284,7 +285,7 @@ async function countOrZero(input: {
   } catch (cause) {
     input.logger.error('Could not count declaration receipts, sending the receipt', {
       count: input.count,
-      error: cause instanceof Error ? cause.name : 'unknown error',
+      ...errorFields(cause),
     });
     return 0;
   }
@@ -339,7 +340,7 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
         });
       } catch (cause) {
         options.logger.error('Could not persist a legal declaration', {
-          error: cause instanceof Error ? cause.name : 'unknown error',
+          ...errorFields(cause),
         });
         res.status(502).json({ error: 'declaration-upstream-unreachable' });
         return;
@@ -426,7 +427,7 @@ export function registerLegalDeclarationsRoute(app: Express, options: LegalDecla
       for (const settled of outcomes) {
         if (settled.status === 'rejected') {
           options.logger.error('Could not mail a declaration message', {
-            error: settled.reason instanceof Error ? settled.reason.name : 'unknown error',
+            ...errorFields(settled.reason),
           });
         }
       }

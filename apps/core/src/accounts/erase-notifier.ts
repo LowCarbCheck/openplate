@@ -28,6 +28,7 @@
  */
 import { buildPlansAccountHeaders, type PlansUpstreamConfig } from '../server/plans-proxy.js';
 import type { Logger } from '../logger.js';
+import { errorFields } from '../log-error.js';
 
 /** How long an erasure waits for the biller before it deletes anyway. */
 export const ERASE_NOTIFY_TIMEOUT_MS = 5_000;
@@ -62,7 +63,7 @@ export function createPlansEraseNotifier(options: CreatePlansEraseNotifierOption
     } catch (cause) {
       options.logger.error('Could not tell the biller about an erasure, deleting anyway', {
         accountId: input.accountId,
-        error: cause instanceof Error ? cause.name : 'unknown error',
+        ...errorFields(cause),
       });
       return;
     }

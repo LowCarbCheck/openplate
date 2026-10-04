@@ -18,11 +18,13 @@
  * identical on the wire. This middleware is what makes that true.
  *
  * Nothing internal is ever echoed to the client: unexpected errors are logged
- * server-side with a scrubbed message and answered with a fixed sentence.
+ * server-side by name and code (never the message, the body or the cause) and
+ * answered with a fixed sentence.
  */
 import type { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
 import type { Logger } from '../logger.js';
 import { asString } from '../lib/json.js';
+import { errorFields } from '../log-error.js';
 
 /** `body-parser` marks its own failures with a `type` field; these are the two that carry protocol meaning. */
 const BODY_PARSER_TOO_LARGE = 'entity.too.large';
@@ -71,7 +73,10 @@ export function createErrorMiddleware(logger: Logger): ErrorRequestHandler {
     logger.error('Unhandled request error', {
       method: req.method,
       path: req.path,
-      error: cause instanceof Error ? cause.message : 'unknown error',
+      // NAME AND CODE ONLY. `body-parser` puts the raw request body on
+      // `err.body` and quotes it in the message, and on the AI route that body
+      // is a photograph. See `log-error.ts`.
+      ...errorFields(cause),
     });
     res.status(500).json({ error: 'internal server error' });
   };

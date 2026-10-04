@@ -28,6 +28,7 @@
  */
 import type { NutrientReferenceBasis } from '../protocol.js';
 import type { Logger } from '../logger.js';
+import { errorFields } from '../log-error.js';
 
 /** The stored row, as everything above the database sees it. */
 export interface InstanceSettingsRecord {
@@ -112,7 +113,7 @@ export async function startInstanceSettings(options: StartInstanceSettingsOption
     // to keep serving while they find out.
     logger.error('Could not read instance settings at boot, using the environment default', {
       nutrientReferenceBasis: basis,
-      error: cause instanceof Error ? cause.message : 'unknown error',
+      ...errorFields(cause),
     });
   }
 
@@ -120,7 +121,7 @@ export async function startInstanceSettings(options: StartInstanceSettingsOption
     void refresh().catch((cause: unknown) => {
       logger.warn('Instance settings refresh failed, keeping the last known value', {
         nutrientReferenceBasis: basis,
-        error: cause instanceof Error ? cause.message : 'unknown error',
+        ...errorFields(cause),
       });
     });
   }, options.refreshIntervalMs ?? SETTINGS_REFRESH_INTERVAL_MS);

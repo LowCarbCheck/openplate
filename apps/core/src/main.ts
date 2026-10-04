@@ -61,12 +61,14 @@ import { createDrizzlePushStore } from './push/push-store.js';
 import { createPushEndpointPolicy } from './push/endpoint-policy.js';
 import { createWebPushSender } from './push/web-push-sender.js';
 import { createPlansEraseNotifier } from './accounts/erase-notifier.js';
+import { createPigeonRecipientEraser } from './mail/recipient-eraser.js';
 import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.js';
 import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
 import type { AuthContext } from './accounts/auth-handlers.js';
 import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
 import { SERVICE_VERSION } from './version.js';
+import { errorFields, scrubbedErrorMessage } from './log-error.js';
 
 /** How long a fully-expired token row is kept before the sweeper drops it. */
 const TOKEN_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -123,6 +125,12 @@ async function main(): Promise<void> {
   // and the login stay out of the log.
   if (config.mail !== null) {
     logger.info('Mail is configured', { transport: config.mail.transport === 'smtp' ? 'smtp' : 'http' });
+  }
+  // Only Pigeon has the route that erases a recipient. `null` for no mail, SMTP
+  // and any other HTTP mail API, which the log line below says once at boot.
+  const mailRecipientEraser = createPigeonRecipientEraser({ mail: config.mail, logger });
+  if (config.mail !== null && config.mail.transport !== 'smtp' && mailRecipientEraser === null) {
+    logger.info('The mail API is not Pigeon, so deleting an account cannot erase its address there');
   }
   if (config.mail !== null && config.contentDir === null) {
     logger.info('CONTENT_DIR is not set, so declaration letters use the neutral text');
@@ -200,6 +208,8 @@ async function main(): Promise<void> {
     // Both erasure paths tell the biller first, when there is one, so a
     // deleted account is never charged again. `null` without a biller.
     accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),
+    // After a delete, Pigeon is asked to forget the address. `null` unless the mail API is Pigeon.
+    mailRecipientEraser,
   };
 
   // ALWAYS PRESENT, because signup is invite-only and the invite store is the
@@ -273,7 +283,7 @@ async function main(): Promise<void> {
   // One read at boot, so a restart during a low period finds its claim in the
   // database rather than waiting fifteen minutes to look.
   budgetWatch?.tick().catch((cause: unknown) => {
-    logger.warn('AI budget watch tick failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
+    logger.warn('AI budget watch tick failed', { ...errorFields(cause) });
   });
 
   const ai =
@@ -621,7 +631,7 @@ async function main(): Promise<void> {
         });
         if (deleted > 0) logger.info('Purged expired token rows', { deleted });
       } catch (cause) {
-        logger.error('Token sweep failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
+        logger.error('Token sweep failed', { ...errorFields(cause) });
       }
       // THE PRIVACY NOTICE'S PROMISE: a redeemed, revoked or expired invitation keeps no address.
       // On the same hourly tick, so a finished row holds one for an hour at most.
@@ -629,7 +639,7 @@ async function main(): Promise<void> {
         const scrubbed = await scrubFinishedInvites(database.db, { now: new Date(), hashAddress });
         if (scrubbed > 0) logger.info('Scrubbed finished invitation addresses', { scrubbed });
       } catch (cause) {
-        logger.error('Invitation scrub failed', { error: cause instanceof Error ? cause.message : 'unknown error' });
+        logger.error('Invitation scrub failed', { ...errorFields(cause) });
       }
     })();
   }, TOKEN_SWEEP_INTERVAL_MS);
@@ -655,7 +665,10 @@ async function main(): Promise<void> {
 }
 
 main().catch((cause: unknown) => {
-  // Scrubbed: a config or connection error can carry a connection string.
-  process.stderr.write(`${cause instanceof Error ? cause.message : 'unknown startup error'}\n`);
+  // The one place the words of an error are written out: nothing has been
+  // read from a request yet, and an operator needs "SERVER_SECRET must be at
+  // least 32 characters" rather than a code. Scrubbed and capped all the same,
+  // because a config or connection error can carry a connection string.
+  process.stderr.write(`${scrubbedErrorMessage(cause)}\n`);
   process.exit(1);
 });

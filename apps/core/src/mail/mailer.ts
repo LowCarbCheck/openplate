@@ -271,6 +271,29 @@ export interface OutgoingMail {
   subject: string;
   text: string;
   html: string;
+  /**
+   * `false` on a letter that carries a secret link or code (an invitation, a
+   * password reset, a sign-up link): the HTTP transport then sends
+   * `retain_body: false`, and Pigeon keeps no copy of the body after the send
+   * (M1 spec 01). A letter that sets nothing is kept as before. SMTP has no
+   * such field and ignores it. An older Pigeon ignores the unknown field, so
+   * sending it before Pigeon deploys is safe.
+   *
+   * A NEW LETTER THAT CARRIES A TOKEN SETS IT. `tests/unit/mailer.test.ts` lists
+   * the letters that must, and one that does not is a failing test.
+   */
+  retainBody?: false;
+}
+
+/** The body the HTTP mail API receives. Resend-compatible, plus Pigeon's one extra field. */
+interface MailApiPayload {
+  from: string;
+  to: string[];
+  subject: string;
+  text: string;
+  html: string;
+  /** Present only as `false`, on a letter that carries a secret. Pigeon's field, in its exact spelling. */
+  retain_body?: false;
 }
 
 /**
@@ -301,20 +324,24 @@ export interface MailTransport {
  * is the point.
  */
 async function postMail(input: { mail: HttpMailConfig; timeoutMs: number; outgoing: OutgoingMail }): Promise<void> {
+  const payload: MailApiPayload = {
+    from: input.mail.from,
+    // An array even for one recipient: see the header.
+    to: [input.outgoing.to],
+    subject: input.outgoing.subject,
+    text: input.outgoing.text,
+    html: input.outgoing.html,
+  };
+  // A letter with a secret asks Pigeon to keep no body. The field is added only
+  // then, so every other letter posts exactly what it always did.
+  if (input.outgoing.retainBody === false) payload.retain_body = false;
   const response = await fetch(input.mail.url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${input.mail.apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: input.mail.from,
-      // An array even for one recipient: see the header.
-      to: [input.outgoing.to],
-      subject: input.outgoing.subject,
-      text: input.outgoing.text,
-      html: input.outgoing.html,
-    }),
+    body: JSON.stringify(payload),
     // No retry, and no idempotency key: with nothing retrying, there is no
     // duplicate for a key to suppress. See `DEFAULT_MAIL_API_TIMEOUT_MS`.
     signal: AbortSignal.timeout(input.timeoutMs),
@@ -377,7 +404,14 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
         expiresAt: input.expiresAt,
         language,
       });
-      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
+      // THE LINK IS A CREDENTIAL: Pigeon keeps no body after the send (`retainBody`).
+      await transport.send({
+        to: input.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        retainBody: false,
+      });
       logger.info('Invitation mailed');
     },
 
@@ -388,7 +422,14 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
         resetToken: input.resetToken,
         language,
       });
-      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
+      // THE LINK OPENS THE ESCROWED RECOVERY CODE: Pigeon keeps no body after the send (`retainBody`).
+      await transport.send({
+        to: input.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        retainBody: false,
+      });
       logger.info('Password reset mailed');
     },
 
@@ -411,7 +452,14 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
         language: input.intent.locale ?? language,
         intent: input.intent,
       });
-      await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
+      // THE LINK REDEEMS AN INVITATION: Pigeon keeps no body after the send (`retainBody`).
+      await transport.send({
+        to: input.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        retainBody: false,
+      });
       logger.info('Sign-up letter mailed');
     },
 

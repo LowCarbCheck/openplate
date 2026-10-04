@@ -47,6 +47,7 @@ import {
   type MintInviteRequestBody,
 } from './client.js';
 import { resolveCoreUrl } from './core-url.js';
+import { runCanary } from './canary.js';
 import { generateVapidKeys } from '../../src/push/vapid-keys.js';
 import { MAX_ACCOUNT_LABEL_LENGTH, parseAccountLabel } from '../../src/admin/account-label.js';
 import {
@@ -111,6 +112,13 @@ const USAGE = `core-api, the openplate-core admin CLI
     trials grant-lapsed --trial-days <n> [--apply] [--exclude <id,id>]
                                Give the scan trial to day trials that ran out
                                unpaid. A dry run unless --apply
+    canary --email <address> [--keep] [--model <id>]
+                               Send ONE marked photograph through the live AI proxy
+                               with a throwaway account, then delete the account.
+                               Prints JSON: the scan's HTTP status and the marker
+                               in the forms to search the host's logs for. An
+                               invitation is mailed to the address as well. Exits
+                               1 unless the scan answered 2xx and the account is gone
     push keygen                Print a fresh VAPID key pair for the environment
     settings get               What this instance's settings say
     settings set nutrient-reference-basis dge|efsa|us
@@ -134,6 +142,8 @@ const USAGE = `core-api, the openplate-core admin CLI
     --expires-in-days <n>  Invite lifetime, 1-30 (default 7)
     --trial                The invite carries the instance's free scans
     --trial-days <n>       How long the old day trial was (for grant-lapsed)
+    --keep                 "canary" leaves its account in place instead of deleting it
+    --model <id>           "canary" model for an instance that names none
     --apply                Write the grant; without it, grant-lapsed only lists
     --exclude <id,id>      Accounts grant-lapsed must leave alone
 
@@ -161,6 +171,8 @@ interface Invocation {
   trialDays: string | null;
   apply: boolean;
   exclude: string | null;
+  keep: boolean;
+  model: string | null;
   json: boolean;
   yes: boolean;
   help: boolean;
@@ -190,6 +202,8 @@ function parseInvocation(argv: string[]): Invocation {
       'trial-days': { type: 'string' },
       apply: { type: 'boolean', default: false },
       exclude: { type: 'string' },
+      keep: { type: 'boolean', default: false },
+      model: { type: 'string' },
       json: { type: 'boolean', default: false },
       yes: { type: 'boolean', default: false },
       help: { type: 'boolean', default: false },
@@ -213,6 +227,8 @@ function parseInvocation(argv: string[]): Invocation {
     trialDays: parsed.values['trial-days'] ?? null,
     apply: parsed.values.apply === true,
     exclude: parsed.values.exclude ?? null,
+    keep: parsed.values.keep === true,
+    model: parsed.values.model ?? null,
     json: parsed.values.json === true,
     yes: parsed.values.yes === true,
     help: parsed.values.help === true,
@@ -765,6 +781,38 @@ async function runSettings(client: AdminClient, invocation: Invocation): Promise
   throw new CliError(`Unknown settings subcommand "${subcommand}". Try: get, set.`);
 }
 
+/**
+ * `canary`, one marked photograph through the live proxy (`canary.ts` says why
+ * and how). The report is JSON on standard output whatever `--json` says,
+ * because its reader is `jq` and a log search. The exit code is 1 unless the
+ * scan answered 2xx and the account is gone (or `--keep` was given), so a
+ * failed canary cannot be read as a clean one.
+ */
+async function runCanaryCommand(client: AdminClient, invocation: Invocation): Promise<void> {
+  // Checked BEFORE a request is built: an invite with no address is not an invite.
+  if (invocation.email === null || invocation.email.trim() === '') {
+    throw new CliError(
+      'canary needs --email <address>: the invitation it mints is mailed there. Use an address you own.',
+    );
+  }
+  const report = await runCanary({
+    client,
+    baseUrl: invocation.baseUrl,
+    email: invocation.email.trim(),
+    keep: invocation.keep,
+    model: invocation.model,
+  });
+  print(JSON.stringify(report, null, 2));
+  const scanned = report.scan.status !== null && report.scan.status >= 200 && report.scan.status < 300;
+  if (!scanned) writeWarning(`The scan did not answer 2xx (status ${report.scan.status ?? 'none'}).`);
+  if (!report.account.deleted && !report.account.kept) {
+    writeWarning(
+      `The canary account ${report.account.id} is still there. Delete it: pnpm core-api accounts delete ${report.account.id} --yes`,
+    );
+  }
+  if (!scanned || (!report.account.deleted && !report.account.kept)) process.exitCode = 1;
+}
+
 async function runStatus(client: AdminClient, invocation: Invocation): Promise<void> {
   const handshake = decodeHandshake(await client.request({ method: 'GET', path: '/health' }));
   // The second call is the one that proves the ADMIN surface is reachable and
@@ -829,6 +877,10 @@ async function run(argv: string[]): Promise<void> {
   }
   if (command === 'status') {
     await runStatus(client, invocation);
+    return;
+  }
+  if (command === 'canary') {
+    await runCanaryCommand(client, invocation);
     return;
   }
 

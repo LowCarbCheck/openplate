@@ -149,6 +149,78 @@ function mailerIn(input: { url: string; logger: Logger; language: InstanceLangua
   });
 }
 
+// ── Which letters ask Pigeon to keep no body ───────────────────────────────
+
+/** The one field these tests read off a posted body. */
+interface RetainPayload {
+  retain_body?: boolean;
+}
+
+/** The request body of the one request a fake mail API received, parsed. */
+function onlyPayload(api: FakeMailApi): RetainPayload {
+  assert.equal(api.received.length, 1);
+  // SAFETY: this adapter posted the body, and it is a JSON object by construction.
+  return JSON.parse(api.received[0]?.body ?? '{}') as RetainPayload;
+}
+
+interface LetterCase {
+  name: string;
+  send: (mailer: Mailer) => Promise<void>;
+}
+
+test('every letter that carries a secret link posts retain_body: false, spelled exactly so', async () => {
+  const letters: LetterCase[] = [
+    {
+      name: 'an invitation',
+      send: (mailer) =>
+        mailer.sendInvite({ email: 'a@example.org', displayName: null, inviteToken: 'si_t', expiresAt: 'x' }),
+    },
+    {
+      name: 'a password reset',
+      send: (mailer) => mailer.sendReset({ email: 'a@example.org', resetToken: 'sr_t', expiresAt: 'x' }),
+    },
+    {
+      name: 'a sign-up link',
+      send: (mailer) =>
+        mailer.sendSignupRequest({
+          email: 'a@example.org',
+          displayName: null,
+          inviteToken: 'si_t',
+          expiresAt: 'x',
+          intent: { plan: null, locale: null },
+        }),
+    },
+  ];
+  for (const letter of letters) {
+    const api = await startFakeMailApi();
+    await letter.send(mailerFor(api.url, createCapturingLogger().logger));
+    assert.equal(onlyPayload(api).retain_body, false, letter.name);
+    // The wire spelling, not only the parsed key: snake_case, a boolean, no string.
+    assert.ok(api.received[0]?.body.includes('"retain_body":false'), letter.name);
+  }
+});
+
+test('a letter with no secret in it posts no retain_body field at all', async () => {
+  // THE CONTROL for the test above: it fails against a transport that adds the field to everything.
+  const quiet: LetterCase[] = [
+    { name: 'the account notice', send: (mailer) => mailer.sendAccountNotice({ email: 'a@example.org' }) },
+    {
+      name: 'the sign-up account notice',
+      send: (mailer) => mailer.sendSignupAccountNotice({ email: 'a@example.org', language: null }),
+    },
+    {
+      name: 'a declaration receipt',
+      send: (mailer) =>
+        mailer.sendDeclarationReceipt({ ...sampleReceipt(), receiptId: 'r', to: 'a@example.org', language: 'en' }),
+    },
+  ];
+  for (const letter of quiet) {
+    const api = await startFakeMailApi();
+    await letter.send(mailerFor(api.url, createCapturingLogger().logger));
+    assert.equal('retain_body' in onlyPayload(api), false, letter.name);
+  }
+});
+
 // ── What it posts ──────────────────────────────────────────────────────────
 
 test('an invite send posts the Resend-shaped payload, with the recipient as an array', async () => {

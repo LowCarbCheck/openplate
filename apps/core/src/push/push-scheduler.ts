@@ -56,15 +56,8 @@ import type { InstanceHealthConsent } from '../protocol.js';
 import { localClock, localDaysBetween } from './local-day.js';
 import type { PushEndpointPolicy } from './endpoint-policy.js';
 import type { PushSubscriptionRow, PushStore } from './push-store.js';
-import {
-  describeSendError,
-  isGoneStatus,
-  pushPayload,
-  sendErrorStatus,
-  sendOptionsFor,
-  type PushKind,
-  type PushSender,
-} from './send.js';
+import { isGoneStatus, pushPayload, sendErrorStatus, sendOptionsFor, type PushKind, type PushSender } from './send.js';
+import { errorFields } from '../log-error.js';
 
 /** At most this many pushes reach one subscription in one UTC day. ADR-0008 states the number. */
 export const PUSH_DAILY_SEND_CAP = 2;
@@ -405,7 +398,8 @@ async function recordFailure(input: {
   options.logger.warn('Push delivery failed', {
     kind: input.planned.kind,
     failedSends,
-    error: describeSendError(input.cause),
+    status,
+    ...errorFields(input.cause),
   });
   if (failedSends >= PUSH_FAILED_SENDS_LIMIT) {
     await options.store.deleteGoneEndpoint({ endpoint: row.endpoint });
@@ -453,7 +447,7 @@ export function startPushScheduler(options: PushSchedulerOptions): PushScheduler
         await runOnce();
       } catch (cause) {
         options.logger.error('Push tick failed', {
-          error: cause instanceof Error ? cause.message : 'unknown error',
+          ...errorFields(cause),
         });
       } finally {
         isTickRunning = false;

@@ -175,7 +175,8 @@ dispatch "$push_line" SKIP_TESTS=1 GIT_DIFF_OVERRIDE='apps/core/README.md'
 expect_ran "SKIP_TESTS=1 runs none" ""
 expect_out "  and logs the warning" "gate SKIPPED explicitly \\(SKIP_TESTS=1\\)"
 
-two_lines="$push_line"$'\n'"refs/tags/v1 $base_sha refs/tags/v1 $ZERO"
+# A tag that is no release: a release tag would add the app it names (below).
+two_lines="$push_line"$'\n'"refs/tags/backup-1 $base_sha refs/tags/backup-1 $ZERO"
 dispatch "$two_lines" GIT_DIFF_OVERRIDE='apps/inference/README.md'
 if [ "$ran" = "inference" ] && [ "$(cat "$DISPATCH_TEST_LOG.stdin.inference")" = "$two_lines" ]; then
   ok "the app hook gets the same stdin lines the dispatcher got"
@@ -237,6 +238,26 @@ dispatch "refs/tags/backup-1 $head_sha refs/tags/backup-1 $ZERO" GIT_DIFF_OVERRI
 expect_env "  control: a tag that is not v*, core-v* or inference-v* is no release tag" "tag=unset range=$base_sha..$head_sha"
 dispatch "$push_line"$'\n'"refs/tags/v9 $head_sha refs/tags/v9 $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
 expect_env "a tag among two refs sets the tag and still no range" "tag=1 range=unset"
+
+# A release tag runs the gate of the app it names, even when the range it
+# pushes changed nothing. A tag usually points at a commit origin/main already
+# holds, so the range is empty, and without this rule the release gate of
+# docs/CLAUDE.md would run no gate at all.
+for pair in "refs/tags/v1.2.3:app" "refs/tags/core-v0.1.0:core" "refs/tags/inference-v0.2.0:inference"; do
+  tag_ref=${pair%%:*}
+  named=${pair##*:}
+  dispatch "$tag_ref $head_sha $tag_ref $ZERO"
+  expect_ran "a push of $tag_ref at a commit origin already holds runs $named and nothing else" "$named"
+done
+dispatch "refs/tags/core-v0.1.0 $head_sha refs/tags/core-v0.1.0 $ZERO"
+expect_out "  and says why" "a release tag names apps/core"
+# Controls: the same push with nothing to say it is a release runs no gate.
+dispatch "refs/tags/backup-1 $head_sha refs/tags/backup-1 $ZERO"
+expect_ran "  control: a tag that is no release runs no gate when nothing changed" ""
+dispatch "refs/heads/v1 $head_sha refs/heads/v1 $ZERO"
+expect_ran "  control: a branch named core-v1 or v1 runs no gate when nothing changed" ""
+dispatch "refs/tags/core-v0.1.0 $head_sha refs/tags/core-v0.1.0 $ZERO" GIT_DIFF_OVERRIDE='apps/app/README.md'
+expect_ran "a core tag beside a changed app path runs both" "app core"
 
 # The nightly status line: printed from the file, or the hint without it. It
 # never blocks the push, even when the line says red.
@@ -457,6 +478,9 @@ mutate lock-fd-leaks hooks/pre-push 's# 9>&- <<<"\$stdin_lines"# <<<"$stdin_line
 # The browser tier variables and the nightly line, one break at a time:
 mutate tag-never-exported hooks/pre-push 's#^  export OPENPLATE_PUSH_TAG=1#  :#'
 mutate tag-matches-branches hooks/pre-push 's#refs/tags/v\* | refs/tags/core-v\*#refs/heads/v* | refs/tags/v* | refs/tags/core-v*#'
+# A release tag that names no app, and one that never reaches the selection:
+mutate tag-names-no-app hooks/pre-push 's#^    refs/tags/core-v\*) tag_apps+=(core) ;;#    refs/tags/core-v*) ;;#'
+mutate tag-app-not-run hooks/pre-push 's#^  touched\[\$tag_app\]=1#  :#'
 mutate range-always hooks/pre-push 's#^if \[ "$content_refs" = "1" \] \&\& \[ -n "$range_base" \]; then#if [ -n "$range_base" ]; then#'
 mutate range-from-merge-base hooks/pre-push 's#^    range_base=$remote_sha#    range_base=$(git merge-base refs/remotes/origin/main "$local_sha")#'
 mutate nightly-line-gone hooks/pre-push 's#^  echo "pre-push: nightly browser tier: $nightly_line"#  :#'
