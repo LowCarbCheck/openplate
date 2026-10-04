@@ -1,4 +1,42 @@
 {
+  "v0_63_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "La page d'inscription indique désormais ce qu'il advient de tes données."
+    },
+    "changed": {
+      "01": "La carte Nouveautés reste masquée tant que tu ne l'actives pas.",
+      "02": "La boîte de dialogue de déconnexion se charge désormais uniquement au besoin, et non à chaque page.",
+      "03": "La vérification avant push exécute désormais un niveau de tests navigateur restreint, le niveau complet tournant sur tag de release et chaque nuit.",
+      "04": "La carte Nouveautés se place désormais à la fin du journal et de Vue d'ensemble.",
+      "05": "Le texte de consentement santé précise désormais que l'opérateur peut lire ton journal."
+    },
+    "fixed": {
+      "10": "Un deuxième onglet ouvert quitte désormais le journal lorsqu'un autre onglet se déconnecte.",
+      "11": "Annuler après un effacement échoué te fait désormais quitter le journal.",
+      "12": "La case d'effacement ne reste plus désactivée lorsqu'un autre onglet bloque la vérification.",
+      "13": "La boîte de dialogue de déconnexion annonce désormais un effacement échoué et rend le focus à sa fermeture.",
+      "14": "Un autre compte ne peut plus ouvrir un journal laissé sur un appareil géré.",
+      "15": "Un deuxième appui sur Se déconnecter pendant qu'un autre onglet utilise le journal signale désormais l'erreur au lieu de bloquer.",
+      "16": "Un effacement ne laisse désormais plus de base de données de photos vide.",
+      "17": "Les cartes d'options de saisie de l'accueil sur ordinateur conservent leur texte.",
+      "18": "La barre latérale sur ordinateur ne saute plus au moment de charger le rôle administrateur.",
+      "19": "La carte Nouveautés ne saute plus lors du chargement de la tuile d'activité.",
+      "20": "La boîte de dialogue de suppression de compte indique désormais ce qui est conservé.",
+      "21": "La description de la page et l'indice sur les invitations n'indiquent plus que l'instance fonctionne uniquement sur invitation.",
+      "22": "Une photo impossible à réencoder n'est plus envoyée telle quelle.",
+      "23": "Une photo partagée vers l'application expire désormais au bout de 24 heures.",
+      "01": "Un shard du niveau navigateur dont le serveur applicatif s'arrête s'interrompt désormais et le signale.",
+      "02": "Les personnes connectées peuvent désormais accéder aux mentions légales depuis Paramètres.",
+      "03": "Un échec d'effacement lors de la déconnexion est désormais signalé, et Échap ne ferme plus une déconnexion en cours.",
+      "04": "La boîte de dialogue de déconnexion n'affiche ses avertissements d'effacement qu'après avoir coché la case d'effacement.",
+      "05": "Le bouton de déconnexion des Paramètres ne prétend plus te déconnecter de partout.",
+      "06": "La déconnexion renvoie directement sur la bonne page au lieu d'afficher brièvement la page d'accueil.",
+      "07": "Se déconnecter libère désormais l'abonnement push de cet appareil.",
+      "08": "Une déconnexion ne reste plus bloquée si le serveur ne répond jamais.",
+      "09": "Un compte suspendu est informé de sa suspension au lieu d'être invité à se reconnecter."
+    }
+  },
   "v0_62_0": {
     "date": "2026-10-02",
     "changed": {
@@ -12,19 +50,6 @@
       "02": "Tu définis désormais l'adresse du serveur central avec CORE_URL ; l'ancien nom fonctionne encore avec un avertissement jusqu'à une version ultérieure.",
       "03": "La répartition des macronutriments affiche la part de calories par défaut.",
       "04": "Les fichiers d'Auto-hébergement nomment le service core et exécutent Postgres 18."
-    }
-  },
-  "v0_60_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "L'application indique quand un serveur d'IA auto-hébergé ne peut pas exécuter une tâche.",
-      "02": "La vérification des scans signale quand les contrôles d'allergies et de grossesse sont incomplets."
-    },
-    "changed": {
-      "01": "Les serveurs d'IA auto-hébergés reçoivent la langue de ton application."
-    },
-    "fixed": {
-      "01": "Les scans non vérifiés pour les allergènes ne s'affichent plus comme sans danger."
     }
   }
 }

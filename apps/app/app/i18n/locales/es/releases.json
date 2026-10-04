@@ -1,4 +1,42 @@
 {
+  "v0_63_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "La página de registro ahora explica qué ocurre con tus datos."
+    },
+    "changed": {
+      "01": "La tarjeta Novedades permanece oculta hasta que la activas.",
+      "02": "El cuadro de diálogo de cierre de sesión ahora se carga cuando hace falta, no con cada página.",
+      "03": "El filtro de push ahora ejecuta un nivel de navegador delimitado, y el nivel completo se ejecuta con cada etiqueta de versión y cada noche.",
+      "04": "La tarjeta Novedades ahora se ubica al final del diario y del panel.",
+      "05": "El texto de consentimiento de salud ahora indica que el operador puede leer tu diario."
+    },
+    "fixed": {
+      "10": "Si tienes otra pestaña abierta, ahora sale del diario cuando se cierra sesión desde otra pestaña.",
+      "11": "Cancelar tras un borrado fallido ahora te saca del diario.",
+      "12": "La casilla de borrado ya no se queda desactivada cuando otra pestaña bloquea la comprobación.",
+      "13": "El cuadro de diálogo de cierre de sesión ahora avisa si falla el borrado y devuelve el foco al cerrarse.",
+      "14": "Otra cuenta ya no puede abrir un diario que haya quedado en un dispositivo administrado.",
+      "15": "Pulsar por segunda vez Cerrar sesión mientras otra pestaña mantiene abierto el diario ahora notifica el error en lugar de bloquearse.",
+      "16": "Al borrar datos, ya no queda atrás una base de datos de fotos vacía.",
+      "17": "Las tarjetas de formas de registrar en la incorporación de escritorio conservan su texto.",
+      "18": "La barra lateral de escritorio ya no da saltos cuando se carga el rol de un administrador.",
+      "19": "La tarjeta Novedades ya no da saltos cuando se carga el mosaico de actividad.",
+      "20": "El cuadro de diálogo para eliminar la cuenta ahora detalla qué datos se conservan.",
+      "21": "La descripción de la página y la pista de invitación ya no indican que la instancia funciona solo por invitación.",
+      "22": "Una foto que no se puede volver a codificar ya no se envía tal cual.",
+      "23": "Una foto compartida con la app ahora caduca a las 24 horas.",
+      "01": "Si el servidor de la app asociado a un fragmento del nivel de navegador se cae, este se detiene y muestra el aviso correspondiente.",
+      "02": "Quienes hayan iniciado sesión ahora pueden acceder a las páginas legales desde Ajustes.",
+      "03": "Si el borrado falla al cerrar sesión, ahora se muestra un aviso, y pulsar Escape ya no cierra un cierre de sesión en curso.",
+      "04": "El cuadro de diálogo de cierre de sesión muestra sus advertencias de borrado solo tras marcar la casilla de borrado.",
+      "05": "El botón para cerrar sesión de Ajustes ya no afirma que cierra la sesión en todas partes.",
+      "06": "Al cerrar sesión se llega a la página correcta en lugar de mostrar fugazmente la página principal.",
+      "07": "Cerrar sesión ahora libera la suscripción push de este dispositivo.",
+      "08": "El cierre de sesión ya no se queda colgado si el servidor no responde nunca.",
+      "09": "A una cuenta suspendida se le notifica que está suspendida, en lugar de pedirle que vuelva a iniciar sesión."
+    }
+  },
   "v0_62_0": {
     "date": "2026-10-02",
     "changed": {
@@ -12,19 +50,6 @@
       "02": "La dirección del servidor central ahora se define con CORE_URL; el nombre antiguo sigue funcionando con una advertencia hasta una versión posterior.",
       "03": "Los desgloses de macronutrientes muestran la proporción de calorías de forma predeterminada.",
       "04": "Los archivos de Autoalojamiento llaman al servicio core y ejecutan Postgres 18."
-    }
-  },
-  "v0_60_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "La aplicación muestra cuándo un servidor de IA autoalojado no puede realizar una tarea.",
-      "02": "Las revisiones de los escaneos avisan si las comprobaciones de alergias y embarazo están incompletas."
-    },
-    "changed": {
-      "01": "Los servidores de IA autoalojados reciben el idioma de tu aplicación."
-    },
-    "fixed": {
-      "01": "Los escaneos sin comprobación de alérgenos ya no aparecen como aptos."
     }
   }
 }

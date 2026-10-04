@@ -1,4 +1,42 @@
 {
+  "v0_63_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Die Registrierungsseite gibt nun an, was mit deinen Daten geschieht."
+    },
+    "changed": {
+      "01": "Die Karte „Was ist neu“ bleibt ausgeblendet, bis du sie einschaltest.",
+      "02": "Der Abmeldedialog lädt nun erst bei Bedarf und nicht mehr mit jeder Seite.",
+      "03": "Das Push-Gate führt nun eine bereichsbezogene Browser-Ebene aus, während die vollständige Ebene bei einem Release-Tag sowie jede Nacht läuft.",
+      "04": "Die Karte „Was ist neu“ befindet sich nun am Ende des Tagebuchs und der Übersicht.",
+      "05": "Der Text zur Einwilligung in Gesundheitsdaten besagt nun, dass die betreibende Person dein Tagebuch lesen kann."
+    },
+    "fixed": {
+      "10": "Ein zweiter geöffneter Tab verlässt nun das Tagebuch, wenn sich ein anderer Tab abmeldet.",
+      "11": "Das Abbrechen nach einem fehlgeschlagenen Löschvorgang führt dich nun aus dem Tagebuch heraus.",
+      "12": "Das Lösch-Kontrollkästchen bleibt nicht mehr deaktiviert, wenn ein anderer Tab die Prüfung blockiert.",
+      "13": "Der Abmeldedialog meldet nun einen fehlgeschlagenen Löschvorgang und gibt den Fokus beim Schließen zurück.",
+      "14": "Ein anderes Konto kann kein Tagebuch mehr öffnen, das auf einem verwalteten Gerät verblieben ist.",
+      "15": "Ein erneutes Betätigen von Abmelden, während ein anderer Tab das Tagebuch belegt, meldet nun den Fehler, anstatt hängenzubleiben.",
+      "16": "Ein Löschvorgang hinterlässt nun keine leere Fotodatenbank mehr.",
+      "17": "Die Erfassungskarten im Desktop-Onboarding behalten ihren Text.",
+      "18": "Die Desktop-Seitenleiste springt nicht mehr, wenn die Rolle einer administrierenden Person lädt.",
+      "19": "Die Karte „Was ist neu“ springt nicht mehr, wenn die Puls-Kachel lädt.",
+      "20": "Der Dialog zum Löschen des Kontos gibt nun an, was erhalten bleibt.",
+      "21": "Die Seitenbeschreibung und der Einladungshinweis geben nicht mehr an, dass die Instanz nur auf Einladung zugänglich ist.",
+      "22": "Ein Foto, das sich nicht neu enkodieren lässt, wird nicht mehr unverändert übertragen.",
+      "23": "Ein in die App geteiltes Foto läuft nun nach 24 Stunden ab.",
+      "01": "Ein Shard der Browser-Ebene, dessen App-Server ausfällt, stoppt nun und weist darauf hin.",
+      "02": "Angemeldete Personen können die rechtlichen Seiten nun über die Einstellungen erreichen.",
+      "03": "Ein fehlgeschlagener Löschvorggang beim Abmelden wird nun gemeldet, und Escape schließt eine laufende Abmeldung nicht mehr.",
+      "04": "Der Abmeldedialog zeigt seine Löschwarnungen erst an, nachdem du das Lösch-Kontrollkästchen angekreuzt hast.",
+      "05": "Die Abmeldeschaltfläche in den Einstellungen behauptet nicht mehr, dass sie dich überall abmeldet.",
+      "06": "Das Abmelden führt direkt zur richtigen Seite, ohne dass die Startseite kurz aufblinkt.",
+      "07": "Beim Abmelden wird nun das Push-Abonnement dieses Geräts freigegeben.",
+      "08": "Eine Abmeldung bleibt nicht mehr hängen, wenn der Server nicht antwortet.",
+      "09": "Ein gesperrtes Konto erhält den Hinweis auf die Sperrung, anstatt erneut zur Anmeldung aufgefordert zu werden."
+    }
+  },
   "v0_62_0": {
     "date": "2026-10-02",
     "changed": {
@@ -12,19 +50,6 @@
       "02": "Die Adresse des Core-Servers legst du jetzt mit CORE_URL fest, der alte Name funktioniert bis zu einem späteren Release weiterhin mit einer Warnung.",
       "03": "Makronährstoff-Aufschlüsselungen zeigen standardmäßig den Kalorienanteil.",
       "04": "Die Dateien für das Self-Hosting nennen den Dienst Core und führen Postgres 18 aus."
-    }
-  },
-  "v0_60_0": {
-    "date": "2026-10-01",
-    "added": {
-      "01": "Die App zeigt an, wenn ein selbst gehosteter KI-Server eine Aufgabe nicht ausführen kann.",
-      "02": "Scan-Prüfungen warnen, wenn Abgleiche zu Allergien und Schwangerschaft unvollständig sind."
-    },
-    "changed": {
-      "01": "Selbst gehostete KI-Server empfangen deine App-Sprache."
-    },
-    "fixed": {
-      "01": "Scans, die nicht auf Allergene geprüft wurden, werden nicht mehr als unbedenklich angezeigt."
     }
   }
 }

@@ -811,6 +811,13 @@
     "at": "2026-09-14",
     "es": "Eliminar el ayuno de {{when}}"
   },
+  "09de7f2579914867": {
+    "en": "The sign-up page now says what happens to your data.",
+    "path": "releases:v0_63_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La página de registro ahora explica qué ocurre con tus datos."
+  },
   "09e37508971facfd": {
     "en": "The source link in the pregnancy caution note shows its words again.",
     "path": "releases:v0_58_1.fixed.02",
@@ -1139,6 +1146,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "es": "Widerruf bestätigen"
+  },
+  "0ccd65be2063351e": {
+    "en": "A browser-tier shard whose app server dies now stops and says so.",
+    "path": "releases:v0_63_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Si el servidor de la app asociado a un fragmento del nivel de navegador se cae, este se detiene y muestra el aviso correspondiente."
   },
   "0cd4439401429a33": {
     "en": "Redirecting…",
@@ -1833,6 +1847,13 @@
     "at": "2026-09-21",
     "es": "Queso blando, puede estar madurado con moho, evitar durante el embarazo"
   },
+  "1424408cedaa747c": {
+    "en": "A photo shared into the app now expires after 24 hours.",
+    "path": "releases:v0_63_0.fixed.23",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Una foto compartida con la app ahora caduca a las 24 horas."
+  },
   "144f9c162c09cd66": {
     "en": "Decrease grams",
     "path": "common:entry.edit.decreaseGrams",
@@ -2147,6 +2168,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "es": "Sulfitos"
+  },
+  "182a058388451172": {
+    "en": "The health consent text now says the operator can read your diary.",
+    "path": "releases:v0_63_0.changed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El texto de consentimiento de salud ahora indica que el operador puede leer tu diario."
   },
   "1831b9d9e003eb8f": {
     "en": "Run openplate yourself",
@@ -3359,6 +3387,13 @@
     "at": "2026-09-14",
     "es": "no cumplido"
   },
+  "24f49bf47f21e1eb": {
+    "en": "The sign-out dialog now announces a failed erase and gives focus back when it closes.",
+    "path": "releases:v0_63_0.fixed.13",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El cuadro de diálogo de cierre de sesión ahora avisa si falla el borrado y devuelve el foco al cerrarse."
+  },
   "25016c063966df72": {
     "en": "Create an account",
     "path": "common:landing.sync.link",
@@ -3414,6 +3449,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "es": "De dónde proceden tus calorías"
+  },
+  "259035bd2a58f4c0": {
+    "en": "A second open tab now leaves the diary when another tab signs out.",
+    "path": "releases:v0_63_0.fixed.10",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Si tienes otra pestaña abierta, ahora sale del diario cuando se cierra sesión desde otra pestaña."
   },
   "25a1007bd147e5a8": {
     "en": "System",
@@ -3631,6 +3673,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Comidas guardadas"
+  },
+  "292c39c02144a9d3": {
+    "en": "The way-to-log cards on desktop onboarding hold their text.",
+    "path": "releases:v0_63_0.fixed.17",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Las tarjetas de formas de registrar en la incorporación de escritorio conservan su texto."
   },
   "292d196f1332f383": {
     "en": "Protein",
@@ -4184,6 +4233,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Esta entrada no tiene foto, por lo que no se envía ninguna imagen. Envías las cifras de esta entrada y nada más de tu diario. Un administrador de este servidor puede leerlas."
+  },
+  "3207b01d12d28013": {
+    "en": "The What's new card no longer jumps when the pulse tile loads.",
+    "path": "releases:v0_63_0.fixed.19",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La tarjeta Novedades ya no da saltos cuando se carga el mosaico de actividad."
   },
   "3268321e6efa90e9": {
     "en": "openplate contains no analytics, no advertising and no tracking pixel. Nothing you do in the app is counted or sent anywhere. The server only asks openplate.de for the newest version, and you can turn that off.",
@@ -5340,6 +5396,13 @@
     "at": "2026-09-14",
     "es": "Aceptable. Unas pocas palabras más harían que fuera mucho más difícil de adivinar."
   },
+  "41cb119a93c9595e": {
+    "en": "The desktop sidebar no longer jumps when an administrator's role loads.",
+    "path": "releases:v0_63_0.fixed.18",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La barra lateral de escritorio ya no da saltos cuando se carga el rol de un administrador."
+  },
   "41d8ad1fe08aad0b": {
     "en": "Current password",
     "path": "common:sync.changePassphrase.currentLabel",
@@ -6249,6 +6312,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Reintentar"
+  },
+  "4db3af101b4cc614": {
+    "en": "The What's new card is hidden until you switch it on.",
+    "path": "releases:v0_63_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La tarjeta Novedades permanece oculta hasta que la activas."
   },
   "4dc7938a9b92757e": {
     "en": "Copying…",
@@ -7650,6 +7720,13 @@
     "at": "2026-09-14",
     "es": "Obtener la cohorte"
   },
+  "5d0730bc6ef07586": {
+    "en": "A suspended account is told it is suspended, not asked to sign in again.",
+    "path": "releases:v0_63_0.fixed.09",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "A una cuenta suspendida se le notifica que está suspendida, en lugar de pedirle que vuelva a iniciar sesión."
+  },
   "5d08b775e9744d53": {
     "en": "Start a fresh diary",
     "path": "common:recover.startFresh",
@@ -8216,6 +8293,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tus alimentos"
+  },
+  "639873bd66771e4c": {
+    "en": "The What's new card now sits at the end of the diary and the dashboard.",
+    "path": "releases:v0_63_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La tarjeta Novedades ahora se ubica al final del diario y del panel."
   },
   "63a184216e3f3438": {
     "en": "The account for {{email}} and the copy of your diary on the server are deleted now and cannot be brought back. The diary on this device stays.",
@@ -8923,6 +9007,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "es": "Un nombre largo de alimento termina con puntos suspensivos en el estado de la cabecera."
+  },
+  "6c7af3b9ab404993": {
+    "en": "A photo that cannot be re-encoded is no longer sent as it is.",
+    "path": "releases:v0_63_0.fixed.22",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Una foto que no se puede volver a codificar ya no se envía tal cual."
   },
   "6c9e1cfa736f18b2": {
     "en": "Resets every week",
@@ -10436,6 +10527,13 @@
     "at": "2026-10-01",
     "es": "openplate no contiene publicidad. Esta instancia ejecuta su propio Matomo sin cookies con nivel de investigación. Además de visitas y uso de funciones, contabiliza que ocurrió un ayuno, una entrada de peso, una compartición con un médico o una contribución a un estudio. Nunca se le comunica lo que comes, pesas o registras. Tu diario se cifra en este dispositivo antes de que una copia llegue al servidor. Cuando ejecutas openplate por tu cuenta, lo único que se cuenta es que tu servidor solicitó la versión más reciente. Puedes desactivarlo."
   },
+  "7d32d8988d835a5e": {
+    "en": "The delete-account dialog now says what stays.",
+    "path": "releases:v0_63_0.fixed.20",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El cuadro de diálogo para eliminar la cuenta ahora detalla qué datos se conservan."
+  },
   "7d35bae3bb732fe3": {
     "en": "Read the <terms>terms</terms> and the <privacy>privacy notice</privacy> before you sign up.",
     "path": "common:signUp.legal",
@@ -10631,6 +10729,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Sobre ti"
+  },
+  "7f0c8897f4dd6c71": {
+    "en": "A sign-out no longer hangs when the server never answers.",
+    "path": "releases:v0_63_0.fixed.08",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El cierre de sesión ya no se queda colgado si el servidor no responde nunca."
   },
   "7f0e0c72a1401d59": {
     "en": "On average {{amount}} under your goal.",
@@ -11465,6 +11570,13 @@
     "at": "2026-09-14",
     "es": "Este mes: {{cost}} · {{scans}}"
   },
+  "880bbc1c8178354b": {
+    "en": "The page description and the invite hint no longer say the instance is invitation only.",
+    "path": "releases:v0_63_0.fixed.21",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La descripción de la página y la pista de invitación ya no indican que la instancia funciona solo por invitación."
+  },
   "880e7c9e8c6b4bfa": {
     "en": "Back to search",
     "path": "common:add.portion.back",
@@ -12263,6 +12375,13 @@
     "at": "2026-09-14",
     "es": "Las fotos del plato no se incluyen en esta descarga: se conservan solo en este dispositivo (mira \"Fotos en este dispositivo\" más abajo), nunca se empaquetan en una copia de seguridad ni en una exportación. Tu descarga contiene solo los números que registraste."
   },
+  "90bd92305e4b5de0": {
+    "en": "Signing out lands on the right page instead of flashing the front page.",
+    "path": "releases:v0_63_0.fixed.06",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Al cerrar sesión se llega a la página correcta en lugar de mostrar fugazmente la página principal."
+  },
   "90e395c439b46c2f": {
     "en": "Meal (optional)",
     "path": "common:add.manual.mealOptional",
@@ -12599,6 +12718,13 @@
     "at": "2026-09-14",
     "es": "Configurando tu conexión con la IA."
   },
+  "955718f01d1279ec": {
+    "en": "The Settings sign-out button no longer claims it signs you out everywhere.",
+    "path": "releases:v0_63_0.fixed.05",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El botón para cerrar sesión de Ajustes ya no afirma que cierra la sesión en todas partes."
+  },
   "9577ed444748a2a3": {
     "en": "The fasting history, the Insights charts and their filters fit a phone.",
     "path": "releases:v0_36_0.fixed.13",
@@ -12619,6 +12745,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Unirse a esta pasarela"
+  },
+  "95efb9ce694eea5c": {
+    "en": "An erase now leaves no empty photo database behind.",
+    "path": "releases:v0_63_0.fixed.16",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Al borrar datos, ya no queda atrás una base de datos de fotos vacía."
   },
   "95f4df8593cb0b69": {
     "en": "per 100 g: {{summary}}",
@@ -12844,6 +12977,13 @@
     "at": "2026-09-14",
     "es": "Todo lo que has registrado se sella de nuevo con una clave nueva, y cada persona con la que aún compartes recibe una copia sellada actualizada. Recibirás un código de recuperación nuevo y el anterior dejará de funcionar."
   },
+  "97dfd94693b21349": {
+    "en": "The erase box no longer stays disabled when another tab hangs the check.",
+    "path": "releases:v0_63_0.fixed.12",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "La casilla de borrado ya no se queda desactivada cuando otra pestaña bloquea la comprobación."
+  },
   "9800869ab55b451f": {
     "en": "Data & backup",
     "path": "common:settings.rows.data.title",
@@ -13011,6 +13151,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "En ayunas durante {{duration}}, abre el temporizador"
+  },
+  "99743a1c22e7d403": {
+    "en": "Another account can no longer open a diary left on a managed device.",
+    "path": "releases:v0_63_0.fixed.14",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Otra cuenta ya no puede abrir un diario que haya quedado en un dispositivo administrado."
   },
   "99c29c4dacecb181": {
     "en": "That does not look like an invite code. They start with {{prefix}}.",
@@ -14083,6 +14230,13 @@
     "at": "2026-09-14",
     "es": "Esto lo elimina de tus alimentos. Todo lo que ya hayas registrado con él se mantendrá en tu diario."
   },
+  "a5dd910f397d27fc": {
+    "en": "Cancel after a failed erase now takes you out of the diary.",
+    "path": "releases:v0_63_0.fixed.11",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Cancelar tras un borrado fallido ahora te saca del diario."
+  },
   "a5e2cf6bb820db1d": {
     "en": "Ask the person who runs this openplate for a reset link. They can make one in Administration, under People.",
     "path": "common:forgot.noMailHint",
@@ -14601,6 +14755,13 @@
     "at": "2026-09-14",
     "es": "La fecha que te dieron. Calculamos la semana a partir de ella, para que siga siendo correcta sin que tengas que volver a cambiarla."
   },
+  "ac630c527fe34bd4": {
+    "en": "The push gate now runs a scoped browser tier, and the full tier runs on a release tag and every night.",
+    "path": "releases:v0_63_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El filtro de push ahora ejecuta un nivel de navegador delimitado, y el nivel completo se ejecuta con cada etiqueta de versión y cada noche."
+  },
   "ac83b857fb38c3b0": {
     "en": "Notifications are on.",
     "path": "common:settings.notifications.toast.on",
@@ -14663,6 +14824,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-02",
     "es": "No se pudo borrar el diario porque openplate está abierto en otra pestaña. Cierra esa pestaña y vuelve a intentarlo."
+  },
+  "ad3dca87be63b43d": {
+    "en": "A second press of Sign out while another tab holds the diary now reports the failure instead of hanging.",
+    "path": "releases:v0_63_0.fixed.15",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Pulsar por segunda vez Cerrar sesión mientras otra pestaña mantiene abierto el diario ahora notifica el error en lugar de bloquearse."
   },
   "ad43c89b109ea761": {
     "en": "openplate contains no advertising. This instance counts visits and feature use with its own cookie-free Matomo, never what you eat, weigh or log; your diary stays on this device. Run openplate yourself and nothing is counted at all.",
@@ -16701,6 +16869,13 @@
     "at": "2026-09-14",
     "es": "Aún no hay ninguna clave configurada, solo se almacena en este dispositivo."
   },
+  "c7100daf54da7b9c": {
+    "en": "The sign-out dialog now loads when it is needed, not with every page.",
+    "path": "releases:v0_63_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El cuadro de diálogo de cierre de sesión ahora se carga cuando hace falta, no con cada página."
+  },
   "c756d027defc05de": {
     "en": "Per 100 g",
     "path": "common:add.manual.per100g",
@@ -17127,6 +17302,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "La foto es demasiado grande (máximo 8MB)."
+  },
+  "cd3da96493510279": {
+    "en": "Signed-in people can now reach the legal pages from Settings.",
+    "path": "releases:v0_63_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Quienes hayan iniciado sesión ahora pueden acceder a las páginas legales desde Ajustes."
   },
   "cd5c8321442632e3": {
     "en": "Download, import, photos on this device",
@@ -19634,6 +19816,13 @@
     "at": "2026-09-14",
     "es": "Ayunando"
   },
+  "e8dd07f6041d19b9": {
+    "en": "Signing out now releases this device's push subscription.",
+    "path": "releases:v0_63_0.fixed.07",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Cerrar sesión ahora libera la suscripción push de este dispositivo."
+  },
   "e900f29499ef62f9": {
     "en": "Add your height, year of birth and sex below, plus a weigh-in, and we can suggest a starting number.",
     "path": "common:goals.kcal.suggestionUnavailable",
@@ -19829,6 +20018,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Impacto moderado en carbohidratos"
+  },
+  "eb43ef6341476394": {
+    "en": "A failed erase on sign-out now says so, and Escape no longer closes a running sign-out.",
+    "path": "releases:v0_63_0.fixed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Si el borrado falla al cerrar sesión, ahora se muestra un aviso, y pulsar Escape ya no cierra un cierre de sesión en curso."
   },
   "eb57566cd817133e": {
     "en": "Nobody in \"{{group}}\" matches \"{{query}}\".",
@@ -21467,6 +21663,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Todavía no hay nada registrado en las últimas 13 semanas. Cada día que registres rellenará un cuadrado."
+  },
+  "fd6b08c889b1a549": {
+    "en": "The sign-out dialog shows its erase warnings only after you tick the erase box.",
+    "path": "releases:v0_63_0.fixed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "El cuadro de diálogo de cierre de sesión muestra sus advertencias de borrado solo tras marcar la casilla de borrado."
   },
   "fd78db94340ca4da": {
     "en": "This instance is out of capacity today",
