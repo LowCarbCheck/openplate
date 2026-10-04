@@ -16,6 +16,9 @@
 #     new folder under apps/) runs ALL three gates, because it can affect any
 #     of them. docker/ holds the app's compose files and quadlet units since
 #     M262, so the app gate is always among the three it runs.
+#   * a release tag (v*, core-v*, inference-v*) runs the gate of the app it
+#     names (app, core, inference) whatever its range changed, because a tag
+#     usually points at a commit origin already holds and its range is empty;
 #   * an app with no changed path is skipped, and the skip is logged by name.
 #   * when the range cannot be computed (no origin/main, a remote sha this
 #     clone does not have), it runs all three and says why. Guessing "nothing
@@ -103,6 +106,7 @@ run_all_reason=""
 changed=""
 content_refs=0
 push_tag=0
+tag_apps=()
 range_base=""
 range_head=""
 while read -r local_ref local_sha _remote_ref remote_sha; do
@@ -114,6 +118,12 @@ while read -r local_ref local_sha _remote_ref remote_sha; do
   # What the app hook needs to choose a browser tier, see the header.
   case "$local_ref" in
     refs/tags/v* | refs/tags/core-v* | refs/tags/inference-v*) push_tag=1 ;;
+  esac
+  # The app a release tag names, for the rule after the path scan below.
+  case "$local_ref" in
+    refs/tags/v*) tag_apps+=(app) ;;
+    refs/tags/core-v*) tag_apps+=(core) ;;
+    refs/tags/inference-v*) tag_apps+=(inference) ;;
   esac
   content_refs=$((content_refs + 1))
   range_head=$local_sha
@@ -239,6 +249,19 @@ else
     mark_all
   fi
 fi
+
+# A RELEASE TAG ALWAYS RUNS THE GATE OF THE APP IT NAMES. The path scan above
+# reads the range a push carries, and a tag usually points at a commit
+# origin/main already holds: its range is empty, so without this rule a tag push
+# would run no gate at all, and "the release gate runs before the tag leaves the
+# machine" (CLAUDE.md) would be a sentence and not a fact. core-v* names core,
+# and core's gate carries the integration tier, the photo path guard among it.
+for tag_app in "${tag_apps[@]}"; do
+  if [ -z "${touched[$tag_app]:-}" ]; then
+    echo "▶ pre-push: a release tag names apps/$tag_app, running its gate whatever the range changed"
+  fi
+  touched[$tag_app]=1
+done
 
 for app in "${APPS[@]}"; do
   if [ -z "${touched[$app]:-}" ]; then
