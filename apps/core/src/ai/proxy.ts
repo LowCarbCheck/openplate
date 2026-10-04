@@ -960,6 +960,12 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         },
         body: forwardedBody,
         dispatcher,
+        // A redirect would resend this body, photograph included, to whatever
+        // host the provider (or whoever sits in front of it) names. `error`
+        // turns any 3xx into a thrown failure, which lands in the catch below
+        // as an unreachable upstream. A provider that really moved is fixed by
+        // changing `UPSTREAM_BASE_URL`, not by following it blind.
+        redirect: 'error',
       });
     } catch (cause) {
       // TIMEOUT SITE 1 of 2 — `headersTimeout` lands HERE, together with every

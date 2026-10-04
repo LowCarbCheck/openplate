@@ -809,6 +809,38 @@ test('a connect failure RELEASES: the request never left this host', async () =>
   await harness.close();
 });
 
+test('an upstream that answers 307 gets no second request, and the caller sees the unreachable answer', async () => {
+  // A redirect would make undici resend the body, photograph included, to
+  // whatever host the Location header names. The second server stands for
+  // that host: it must hear nothing.
+  const second = await startFakeUpstream();
+  const redirecting = createServer((req, res) => {
+    req.resume();
+    req.on('end', () => {
+      res.writeHead(307, { location: `${second.baseUrl}/chat/completions` });
+      res.end();
+    });
+  });
+  servers.push(redirecting);
+  redirecting.listen(0);
+  await new Promise<void>((resolve) => redirecting.once('listening', resolve));
+  // SAFETY: `listen(0)` binds a TCP port, never a Unix domain socket.
+  const { port } = redirecting.address() as AddressInfo;
+  const harness = await startProxy({ upstreamBaseUrl: `http://127.0.0.1:${port}/v1`, dailyAiLimit: 3 });
+
+  const response = await postCompletion(harness, {
+    model: 'm',
+    messages: [{ role: 'user', content: PHOTOGRAPH }],
+  });
+
+  assert.equal(second.received.length, 0, 'the redirect target received the request body');
+  assert.equal(response.status, 502);
+  assert.deepEqual(await response.json(), { error: 'the upstream provider could not be reached' });
+  assert.equal(harness.quota.releases, 1, 'nothing was served, so the unit goes back');
+
+  await harness.close();
+});
+
 test('a spent allowance is 429 with a Retry-After to the next UTC midnight', async () => {
   const upstream = await startFakeUpstream();
   const quota = createRecordingQuota();
