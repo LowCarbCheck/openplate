@@ -1296,3 +1296,29 @@ test('a standing free daily limit beside a scan trial stops the boot, naming bot
   assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '3' })).trial, null);
   assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).trial?.scans, 10);
 });
+
+// ── DEFAULT_CAPABILITIES and CAPABILITY_SCHEMA_MAP (2026-10-05) ─────────────
+
+test('no capability setting means no check and no schema map: an instance that sets nothing is unchanged', () => {
+  const unset = parseConfig(baseEnv());
+  assert.equal(unset.defaultCapabilities, null);
+  assert.equal(unset.capabilitySchemaMap.size, 0);
+  // The compose files forward an unset variable as the empty string.
+  const empty = parseConfig(baseEnv({ DEFAULT_CAPABILITIES: '', CAPABILITY_SCHEMA_MAP: '' }));
+  assert.equal(empty.defaultCapabilities, null);
+  assert.equal(empty.capabilitySchemaMap.size, 0);
+});
+
+test('DEFAULT_CAPABILITIES and CAPABILITY_SCHEMA_MAP are read, and "none" is the empty default', () => {
+  const config = parseConfig(
+    baseEnv({ DEFAULT_CAPABILITIES: 'scan, recipes', CAPABILITY_SCHEMA_MAP: 'scan_result:scan' }),
+  );
+  assert.deepEqual(config.defaultCapabilities, ['recipes', 'scan']);
+  assert.deepEqual([...config.capabilitySchemaMap], [['scan_result', 'scan']]);
+  assert.deepEqual(parseConfig(baseEnv({ DEFAULT_CAPABILITIES: 'none' })).defaultCapabilities, []);
+});
+
+test('a malformed capability setting stops the boot and names the variable', () => {
+  assert.throws(() => parseConfig(baseEnv({ DEFAULT_CAPABILITIES: 'Scan' })), /DEFAULT_CAPABILITIES/);
+  assert.throws(() => parseConfig(baseEnv({ CAPABILITY_SCHEMA_MAP: 'scan_result' })), /CAPABILITY_SCHEMA_MAP/);
+});

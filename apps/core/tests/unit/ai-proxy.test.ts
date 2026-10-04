@@ -235,6 +235,8 @@ async function startProxy(options: {
   inputPolicy?: Partial<ChatInputPolicy>;
   /** What the instance grants an account with no record of its own. Absent means nothing configured. */
   standing?: InstanceStanding;
+  /** The account's OWN capability record. Absent is `null`, no record, where the instance default decides. */
+  capabilities?: string[];
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
@@ -263,6 +265,9 @@ async function startProxy(options: {
       dailyAiLimit: options.dailyAiLimit ?? 200,
       freeDailyAiLimit: 0,
     });
+  }
+  if (options.capabilities !== undefined) {
+    await fixture.store.updateStanding({ accountId: account.id, capabilities: options.capabilities });
   }
   await fixture.store.insertTokens([
     {
@@ -322,10 +327,15 @@ async function startProxy(options: {
   };
 }
 
-async function postCompletion(harness: Harness, body: JsonValue = { model: 'm', messages: [] }): Promise<Response> {
+async function postCompletion(
+  harness: Harness,
+  body: JsonValue = { model: 'm', messages: [] },
+  extraHeaders: Record<string, string> = {},
+): Promise<Response> {
   return fetch(`${harness.baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
+      ...extraHeaders,
       authorization: `Bearer ${harness.accessToken}`,
       'content-type': 'application/json',
       // Two headers a copy-then-overwrite would forward. Neither may reach the
@@ -874,7 +884,7 @@ test('an account with no AI of its own is held to the instance default, and refu
   const harness = await startProxy({
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 0,
-    standing: { defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
   });
 
   const first = await postCompletion(harness);
@@ -915,7 +925,7 @@ test('an own free limit is kept whatever the default is, and a live paid window 
     dailyAiLimit: 200,
     freeDailyAiLimit: 10,
     allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
-    standing: { defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
   });
   const ownResponse = await postCompletion(own);
   assert.equal(ownResponse.status, 200);
@@ -926,7 +936,7 @@ test('an own free limit is kept whatever the default is, and a live paid window 
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 200,
     allowanceExpiresAt: new Date('2026-08-05T09:00:00.000Z'),
-    standing: { defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
   });
   const paidResponse = await postCompletion(paid);
   assert.equal(paidResponse.status, 200);
@@ -940,13 +950,179 @@ test('a paid period that ended falls back to the instance default, not to allowa
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 200,
     allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
-    standing: { defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
   });
 
   const response = await postCompletion(harness);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('x-quota-limit'), '3');
 
+  await harness.close();
+});
+
+// ── Capabilities (2026-10-05) ──────────────────────────────────────────────
+
+const SCAN_SCHEMA_BODY: JsonValue = {
+  model: 'm',
+  messages: [],
+  response_format: { type: 'json_schema', json_schema: { name: 'scan_result', schema: { type: 'object' } } },
+};
+
+const SCHEMA_MAP: ReadonlyMap<string, string> = new Map([['scan_result', 'scan']]);
+
+function standingWith(overrides: Partial<InstanceStanding>): InstanceStanding {
+  return { ...NO_INSTANCE_STANDING, ...overrides };
+}
+
+test('nothing configured means every feature is open, whatever the header says', async () => {
+  // THE CONTROL FOR EVERY CASE BELOW: an instance with no default and an
+  // account with no record is not checked, not even for a malformed header, so
+  // an instance that sets nothing behaves as it did before capabilities.
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 200);
+  assert.equal((await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  assert.equal((await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'NOT A LABEL!' })).status, 200);
+  assert.equal(upstream.received.length, 3);
+
+  await harness.close();
+});
+
+test('a feature the account does not hold is a 403 that spends nothing and leaves nothing', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: ['scan'] });
+
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(refused.status, 403);
+  assert.deepEqual(await refused.json(), { error: 'capability-required', capability: 'recipes' });
+  // Decided BEFORE the count and before upstream: no reservation, no call.
+  assert.equal(harness.quota.reserves, 0);
+  assert.equal(harness.quota.count, 0);
+  assert.equal(upstream.received.length, 0);
+
+  // THE CONTROL: the feature it does hold is proxied, and counted.
+  const allowed = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(allowed.status, 200);
+  assert.equal(harness.quota.reserves, 1);
+  assert.equal(upstream.received.length, 1);
+
+  await harness.close();
+});
+
+test('the instance default applies to an account with no record, and its own record replaces it', async () => {
+  const upstream = await startFakeUpstream();
+  const onDefault = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: ['scan'] }),
+  });
+  assert.equal((await postCompletion(onDefault, undefined, { 'X-Openplate-Feature': 'scan' })).status, 200);
+  assert.equal((await postCompletion(onDefault, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 403);
+  await onDefault.close();
+
+  // A record replaces the default, it does not add to it.
+  const own = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: ['scan'] }),
+    capabilities: ['recipes'],
+  });
+  assert.equal((await postCompletion(own, undefined, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  assert.equal((await postCompletion(own, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await own.close();
+});
+
+test('an empty record, and the default "none", grant nothing, and are not the same as no record', async () => {
+  const upstream = await startFakeUpstream();
+  const emptyRecord = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: [] });
+  assert.equal((await postCompletion(emptyRecord, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await emptyRecord.close();
+
+  const noneDefault = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    standing: standingWith({ defaultCapabilities: [] }),
+  });
+  assert.equal((await postCompletion(noneDefault, undefined, { 'X-Openplate-Feature': 'scan' })).status, 403);
+  await noneDefault.close();
+
+  // THE CONTROL: no record, no default, same header.
+  const open = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+  assert.equal((await postCompletion(open, undefined, { 'X-Openplate-Feature': 'scan' })).status, 200);
+  await open.close();
+});
+
+test('a mapped schema needs its label, and a header that names another feature does not help', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes'],
+    standing: standingWith({ capabilitySchemaMap: SCHEMA_MAP }),
+  });
+
+  // The account holds `recipes`, the body asks for the scan schema, and the
+  // header LIES that it is a recipes call. The schema wins.
+  const lying = await postCompletion(harness, SCAN_SCHEMA_BODY, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(lying.status, 403);
+  assert.deepEqual(await lying.json(), { error: 'capability-required', capability: 'scan' });
+  // And with no header at all: the schema alone is enough.
+  assert.equal((await postCompletion(harness, SCAN_SCHEMA_BODY)).status, 403);
+  assert.equal(upstream.received.length, 0);
+  assert.equal(harness.quota.reserves, 0);
+  await harness.close();
+
+  // THE CONTROL: an account that holds `scan` gets the same body through, with
+  // the same header, so the refusal above is the schema map and nothing else.
+  const holder = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes', 'scan'],
+    standing: standingWith({ capabilitySchemaMap: SCHEMA_MAP }),
+  });
+  assert.equal((await postCompletion(holder, SCAN_SCHEMA_BODY, { 'X-Openplate-Feature': 'recipes' })).status, 200);
+  await holder.close();
+
+  // A schema nobody mapped is not checked: the map is the operator's list.
+  const unmapped = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    capabilities: ['recipes'],
+    standing: standingWith({ capabilitySchemaMap: new Map([['another_schema', 'scan']]) }),
+  });
+  assert.equal((await postCompletion(unmapped, SCAN_SCHEMA_BODY)).status, 200);
+  await unmapped.close();
+});
+
+test('a malformed feature header is a 400 only where a check is active', async () => {
+  const upstream = await startFakeUpstream();
+  const checked = await startProxy({ upstreamBaseUrl: upstream.baseUrl, capabilities: ['scan'] });
+  for (const bad of ['Scan', 'scan result', '1scan', 'a'.repeat(33), 'scan;drop']) {
+    const refused = await postCompletion(checked, undefined, { 'X-Openplate-Feature': bad });
+    assert.equal(refused.status, 400, bad);
+    assert.deepEqual(await refused.json(), { error: 'feature-header-invalid' });
+  }
+  assert.equal(checked.quota.reserves, 0);
+  assert.equal(upstream.received.length, 0);
+  await checked.close();
+  // The unchecked case is the first test of this section.
+});
+
+test('the capability is checked before the daily cap, so a lacking account is told 403, not 429', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 2, capabilities: ['scan'] });
+  harness.quota.count = 2;
+
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'recipes' });
+  assert.equal(refused.status, 403);
+  // THE CONTROL: the feature it holds meets the spent cap.
+  const spent = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(spent.status, 429);
+
+  await harness.close();
+});
+
+test('the capability is checked after the allowance: no AI at all is still ai-not-allowed', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0, capabilities: [] });
+  const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
+  assert.equal(refused.status, 403);
+  assert.deepEqual(await refused.json(), { error: 'ai-not-allowed' });
   await harness.close();
 });
 

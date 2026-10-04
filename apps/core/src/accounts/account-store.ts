@@ -44,6 +44,12 @@ export interface AccountRecord {
    */
   freeDailyAiLimit: number;
   /**
+   * The capabilities this account's OWN record grants, or `null` for no record,
+   * where the instance default decides (`lib/capabilities.ts`). Not the
+   * effective value: that is the proxy's and the account view's to compute.
+   */
+  capabilities: string[] | null;
+  /**
    * Non-`null` while the account is suspended. Every caller that authenticates
    * an account MUST check this — login, refresh, the bearer middleware and the
    * recovery paths all answer `403 account-suspended` for a non-`null` value.
@@ -535,6 +541,13 @@ export interface UpdateStandingInput {
   allowanceExpiresAt?: Date | null;
   /** The standing free grant, `0` to take it away. Absent leaves it alone. An operator's field only. */
   freeDailyAiLimit?: number;
+  /**
+   * The account's own capability record, already validated and normalized
+   * (`lib/capabilities.ts`). `null` removes the record, so the instance default
+   * decides again; `[]` is a record that grants nothing. Absent leaves it alone.
+   * Written by an operator and by the biller's credential.
+   */
+  capabilities?: string[] | null;
   displayName?: string | null;
   /**
    * The operator's label (`admin/account-label.ts`), already trimmed and

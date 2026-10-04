@@ -61,6 +61,12 @@ export interface AdminAccountSummary {
   allowanceExpiresAt: Date | null;
   /** The standing free grant (2026-09-30): AI requests per UTC day when no paid window is live, `0` for none. */
   freeDailyAiLimit: number;
+  /**
+   * The account's OWN capability record: `null` for none, so the instance
+   * default decides, `[]` for a record that grants nothing (`lib/capabilities.ts`).
+   * The operator sees what is written, not what the proxy computes from it.
+   */
+  capabilities: string[] | null;
   /** Free scans granted, or `null` for no scan trial (M253). */
   trialScans: number | null;
   /** How many of them are used. */

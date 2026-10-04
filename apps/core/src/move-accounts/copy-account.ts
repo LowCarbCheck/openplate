@@ -158,6 +158,7 @@ async function compareWithSource(input: {
     '0',
     'true',
     input.standing.label,
+    'true',
   ];
   if (digestRows(standing) !== digestRows([expectedStanding])) differences.push('accounts: set columns differ');
 

@@ -68,6 +68,7 @@ import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-
 import type { AuthContext } from './accounts/auth-handlers.js';
 import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
 import type { InstanceStanding } from './accounts/instance-standing.js';
+import { toWireCapabilities } from './lib/capabilities.js';
 import { SERVICE_VERSION } from './version.js';
 import { errorFields, scrubbedErrorMessage } from './log-error.js';
 
@@ -186,7 +187,11 @@ async function main(): Promise<void> {
   // for the two readers of it: the account view (through the auth context) and
   // the AI proxy (which `create-app.ts` hands the same object). All-off, and so
   // today's behaviour, on an instance that set none of the variables.
-  const standing: InstanceStanding = { defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit };
+  const standing: InstanceStanding = {
+    defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
+    defaultCapabilities: config.defaultCapabilities,
+    capabilitySchemaMap: config.capabilitySchemaMap,
+  };
   if (config.defaultFreeDailyAiLimit > 0) {
     logger.info('A standing free daily AI limit is on: accounts with no limit of their own get it, and no scan trial', {
       defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
@@ -381,6 +386,10 @@ async function main(): Promise<void> {
     // publish one version and demand another. `null` when it asks for none,
     // which a client reads as "draw no consent checkbox".
     healthConsent: healthConsent === null ? null : { version: healthConsent.version },
+    // DESCRIPTIVE, NEVER A GRANT, and read from the SAME `standing` the proxy
+    // checks, so a client cannot be told one default while the proxy enforces
+    // another. `null` is "no check": every feature is open.
+    defaultCapabilities: toWireCapabilities(standing.defaultCapabilities),
     // `nutrientReferenceBasis` IS DELIBERATELY NOT HERE, and this is where a
     // reader looking for it will look. Every field above is env config read
     // once, so a copy taken at boot stays true for the life of the process.

@@ -157,6 +157,8 @@ The core server container, `ghcr.io/lowcarbcheck/openplate-core`. It needs two v
 | `AI_TRIAL_INSTANCE_DAILY_LIMIT` | unset, no limit | The total amount all trial accounts together can spend per UTC day. Requires the trial. | |
 | `AI_TRIAL_NETWORK_DAILY_LIMIT` | a tenth of `AI_TRIAL_INSTANCE_DAILY_LIMIT`, at least 1 | The amount the trial requests from one network (an IPv6 /64, or one IPv4 address) can spend of the trial limit per UTC day. It is off without `AI_TRIAL_INSTANCE_DAILY_LIMIT`, and must not be above it. People behind one IPv4 carrier NAT share it. | |
 | `DEFAULT_FREE_DAILY_AI_LIMIT` | unset, off | The AI requests per UTC day every account gets that has no free limit of its own, 0 to 10000. It never ends and has no scan count. A day used up answers 429 with `Retry-After`. It replaces the scan trial, so setting it together with the trial pair stops the boot. An account that still holds a trial falls under this limit. | |
+| `DEFAULT_CAPABILITIES` | unset, no check | What an account with no capability list of its own may use: comma separated labels such as `scan,recipes`, or `none` for nothing. Unset or empty means the AI proxy checks no feature and every request passes. A request for a feature the account lacks gets `403 capability-required`. | |
+| `CAPABILITY_SCHEMA_MAP` | unset, empty | Comma separated `schemaName:label` pairs. A request that asks for the structured output schema you list needs that label, whatever its `X-Openplate-Feature` header says. | |
 
 ### Mail
 

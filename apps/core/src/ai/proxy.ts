@@ -217,6 +217,8 @@ import {
 import { aiAllowanceFor, effectiveFreeDailyAiLimit } from '../accounts/ai-allowance.js';
 import type { InstanceStanding } from '../accounts/instance-standing.js';
 import { clientAddressKey } from '../lib/client-address.js';
+import { effectiveCapabilities } from '../lib/capabilities.js';
+import { decideCapability } from './capability-gate.js';
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
 
@@ -799,6 +801,32 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         accountId: account.id,
         fields: droppedFields.join(','),
       });
+    }
+    // THE CAPABILITY CHECK (2026-10-05), after the allowance and the body and
+    // BEFORE anything is counted: a refused request claims no scan, reserves no
+    // unit, writes no usage row and reaches no provider. An account with no
+    // record on an instance with no default is not checked at all, so an
+    // instance that sets nothing behaves as it did. See `ai/capability-gate.ts`.
+    const capability = decideCapability({
+      effective: effectiveCapabilities({
+        own: account.capabilities,
+        instanceDefault: standing.defaultCapabilities,
+      }),
+      // A LITERAL, because `tests/integration/cors-preflight.test.ts` finds the
+      // headers a route reads by this exact form and checks each one is allowed.
+      featureHeader: req.header('x-openplate-feature'),
+      schemaMap: standing.capabilitySchemaMap,
+      body: policedBody,
+    });
+    if (capability.kind === 'refused') {
+      res
+        .status(capability.status)
+        .json(
+          capability.status === 400
+            ? { error: capability.error }
+            : { error: capability.error, capability: capability.capability },
+        );
+      return;
     }
     // WHAT THE REQUEST CARRIES IN (2026-09-30), measured on the body the
     // provider receives and refused before any claim, reservation or upstream

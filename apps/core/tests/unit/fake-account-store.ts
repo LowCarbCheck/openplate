@@ -213,6 +213,7 @@ export function createFakeAccountStore(): FakeAccountStore {
       if (input.dailyAiLimit !== undefined) account.dailyAiLimit = input.dailyAiLimit;
       if (input.allowanceExpiresAt !== undefined) account.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.freeDailyAiLimit !== undefined) account.freeDailyAiLimit = input.freeDailyAiLimit;
+      if (input.capabilities !== undefined) account.capabilities = input.capabilities;
       if (input.trialScans !== undefined) account.trialScans = input.trialScans;
       if (input.displayName !== undefined) account.displayName = input.displayName;
       if (input.label === null) labelByAccount.delete(input.accountId);
@@ -301,6 +302,8 @@ export function createFakeAccountStore(): FakeAccountStore {
         role: invite.role,
         dailyAiLimit: memberGrant === null ? 0 : invite.dailyAiLimit,
         freeDailyAiLimit: isMember ? 0 : invite.dailyAiLimit,
+        // No seeded invite carries a capability record: the instance default decides.
+        capabilities: null,
         allowanceExpiresAt:
           memberGrant?.kind === 'days'
             ? new Date(input.now.getTime() + memberGrant.allowanceDays * 24 * 60 * 60 * 1000)

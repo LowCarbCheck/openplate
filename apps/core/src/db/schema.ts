@@ -161,6 +161,22 @@ export const accounts = pgTable(
      */
     freeDailyAiLimit: integer('free_daily_ai_limit').default(0).notNull(),
     /**
+     * The capabilities this account holds: labels such as `scan`, each one a
+     * kind of AI request it may make (`lib/capabilities.ts`). `NULL`, the
+     * default, is NO RECORD, and the instance default (`DEFAULT_CAPABILITIES`)
+     * decides. An empty array is a record that grants nothing. The two are
+     * different facts, which is why the column is nullable.
+     *
+     * WRITTEN BY an operator (the admin PATCH) and by the biller's credential,
+     * which may name this field and no other standing beyond its two
+     * (`server/service-principal-scope.ts`). READ BY the AI proxy, before it
+     * counts a request.
+     *
+     * NO BACKFILL. Every account that exists keeps `NULL`, so an instance that
+     * sets no default behaves exactly as it did before the column.
+     */
+    capabilities: text('capabilities').array(),
+    /**
      * Free AI scans granted with no end date, or `NULL` for an account with no
      * scan trial (M253). `0` is a real value: an account whose mailbox already
      * had its trial, which the proxy refuses with `403 trial-scans-spent`.

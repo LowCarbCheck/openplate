@@ -172,6 +172,7 @@ before(async () => {
       memberInvites: true,
       openSignup: false,
       healthConsent: null,
+      defaultCapabilities: null,
       ai: null,
       plans: false,
       push: false,

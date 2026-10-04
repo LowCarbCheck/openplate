@@ -41,11 +41,15 @@ const ALLOWED_METHODS = 'GET, POST, PUT, DELETE, OPTIONS';
  * `X-Intake-Id` (M253) is the AI proxy's: one id per person action, which
  * a retry of that action reuses so it costs one free scan and not two.
  *
+ * `X-Openplate-Feature` (2026-10-05) is the AI proxy's too: the label of the
+ * feature the request calls, checked against the account's capabilities
+ * (`ai/capability-gate.ts`).
+ *
  * ADDING A ROUTE THAT READS A REQUEST HEADER MEANS ADDING IT HERE.
  * `tests/integration/cors-preflight.test.ts` walks the source for
  * `req.header(...)` and fails when a name is missing from this line.
  */
-const ALLOWED_HEADERS = 'Authorization, Content-Type, Idempotency-Key, X-Intake-Id';
+const ALLOWED_HEADERS = 'Authorization, Content-Type, Idempotency-Key, X-Intake-Id, X-Openplate-Feature';
 /**
  * EVERY RESPONSE HEADER A CROSS-ORIGIN CALLER IS ALLOWED TO READ, and this is a
  * separate list from the one above for a separate browser rule.

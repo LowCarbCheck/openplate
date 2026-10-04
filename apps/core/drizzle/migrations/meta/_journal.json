@@ -218,6 +218,13 @@
       "when": 1790858016555,
       "tag": "0030_trial_network_days",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791153471468,
+      "tag": "0031_accounts_capabilities",
+      "breakpoints": true
     }
   ]
 }

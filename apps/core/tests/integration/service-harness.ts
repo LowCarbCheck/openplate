@@ -732,6 +732,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     // Reported from the SAME surface the routes are mounted on, as `main.ts`
     // does it, so a `create-app` that forgot to report it fails a suite.
     push: pushSurface !== null,
+    // From the SAME standing the proxy checks, as `main.ts` does it.
+    defaultCapabilities: options.standing?.defaultCapabilities?.slice() ?? null,
     // The SAME binding the auth context enforces, as `main.ts` does it.
     healthConsent: healthConsent === null ? null : { version: healthConsent.version },
   };

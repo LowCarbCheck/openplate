@@ -530,6 +530,14 @@ services:
       # beside the trial above: the boot stops naming both.
       DEFAULT_FREE_DAILY_AI_LIMIT: ${DEFAULT_FREE_DAILY_AI_LIMIT:-}
 
+      # ── AI feature permissions (optional) ──
+      # DEFAULT_CAPABILITIES is what an account with no record of its own may
+      # use: comma separated labels, or "none" for nothing. Empty means no
+      # check at all. CAPABILITY_SCHEMA_MAP ties a structured-output schema
+      # name to the label its use needs, as schemaName:label pairs.
+      DEFAULT_CAPABILITIES: ${DEFAULT_CAPABILITIES:-}
+      CAPABILITY_SCHEMA_MAP: ${CAPABILITY_SCHEMA_MAP:-}
+
       # ── Web push (optional) ──
       # All three or none. Empty means no notifications.
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}

@@ -124,6 +124,7 @@ async function startHarness({ basis }: { basis: NutrientReferenceBasis | null })
       memberInvites: false,
       openSignup: false,
       healthConsent: null,
+      defaultCapabilities: null,
       ai: null,
       push: false,
       plans: false,

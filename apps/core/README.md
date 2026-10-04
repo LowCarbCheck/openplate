@@ -342,6 +342,18 @@ wins. A day used up answers `429` with `Retry-After`. Unset or 0 is off, and
 nothing changes. It takes the place of the scan trial below, so the boot stops
 if both are set.
 
+**Accounts can hold capabilities.** A capability is a short label, such as
+`scan` or `recipes`, for one kind of AI request. An administrator writes an
+account's list (`PATCH /v1/admin/accounts/:id` with `capabilities`), and so does
+the billing service, which may name this field and no other standing beyond its
+two. `DEFAULT_CAPABILITIES` is what an account with no list of its own may use:
+comma separated labels, or `none` for nothing. Unset or empty means no check at
+all, which is what an instance had before. A client names its feature with the
+`X-Openplate-Feature` header, and `CAPABILITY_SCHEMA_MAP` (`schemaName:label`
+pairs) ties a structured output schema to a label, so a client that lies in the
+header gains nothing. A feature the account lacks is `403 capability-required`,
+decided before the daily count and before the provider.
+
 **New accounts can get free AI scans.** Set `TRIAL_SCANS` and
 `TRIAL_DAILY_AI_LIMIT`, both or neither, with `TRIAL_ADDRESS_PEPPER` beside
 them. An account from open sign-up, from an invite minted with

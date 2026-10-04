@@ -19,9 +19,19 @@ export interface InstanceStanding {
    * instance that did not set it has. See `accounts/ai-allowance.ts`.
    */
   defaultFreeDailyAiLimit: number;
+  /**
+   * `DEFAULT_CAPABILITIES`: the capabilities an account has when it holds no
+   * record of its own. `null` is no check at all, which is what an instance
+   * that set nothing has. `[]` grants nothing. See `lib/capabilities.ts`.
+   */
+  defaultCapabilities: readonly string[] | null;
+  /** `CAPABILITY_SCHEMA_MAP`: a structured-output schema name to the capability its use needs. Empty is none. */
+  capabilitySchemaMap: ReadonlyMap<string, string>;
 }
 
 /** The standing of an instance that configured none: no default free limit. */
 export const NO_INSTANCE_STANDING: InstanceStanding = {
   defaultFreeDailyAiLimit: 0,
+  defaultCapabilities: null,
+  capabilitySchemaMap: new Map(),
 };

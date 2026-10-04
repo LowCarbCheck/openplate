@@ -77,6 +77,7 @@ import { isUnpaidTrial, trialScansView } from './scan-trial.js';
 import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
 import { PASSPHRASE_REJECTED } from './passphrase-gate.js';
 import { effectiveFreeDailyAiLimit } from './ai-allowance.js';
+import { effectiveCapabilities, toWireCapabilities } from '../lib/capabilities.js';
 import type { InstanceStanding } from './instance-standing.js';
 
 /** Everything the handlers need from the outside world. All of it injected — none of it imported. */
@@ -332,6 +333,14 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
       own: account.freeDailyAiLimit,
       instanceDefault: ctx.standing?.defaultFreeDailyAiLimit ?? 0,
     }),
+    // THE CAPABILITIES THE PROXY CHECKS, not the bare record: the account's
+    // own list, else the instance default, else `null` for "no check".
+    capabilities: toWireCapabilities(
+      effectiveCapabilities({
+        own: account.capabilities,
+        instanceDefault: ctx.standing?.defaultCapabilities ?? null,
+      }),
+    ),
     trialScans: trialScansView({ granted: account.trialScans, used: account.trialScansUsed }),
     trialEndsAt: account.trialEndsAt?.toISOString() ?? null,
     suspendedAt: account.suspendedAt?.toISOString() ?? null,

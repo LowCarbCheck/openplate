@@ -26,6 +26,7 @@ import { startAdminHarness, type AdminHarness } from './admin-harness.js';
 import {
   DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
   SERVICE_FIELD_REFUSAL,
+  SERVICE_PRINCIPAL_PATCH_FIELDS,
   SERVICE_VALUE_REFUSAL,
 } from '../../src/server/service-principal-scope.js';
 
@@ -285,4 +286,70 @@ test('an empty body from the billing principal is the ordinary empty-patch 400',
   const refused = await patchAs({ token: BILLING_TOKEN, body: {} });
   assert.equal(refused.status, 400);
   assert.notEqual(refused.error, SERVICE_FIELD_REFUSAL);
+});
+
+// ── capabilities (2026-10-05): the third field the biller may write ─────────
+
+test('the biller may name exactly three fields, so a fourth is a decision and not an accident', () => {
+  assert.deepEqual([...SERVICE_PRINCIPAL_PATCH_FIELDS].toSorted(), [
+    'allowanceExpiresAt',
+    'capabilities',
+    'dailyAiLimit',
+  ]);
+});
+
+test('the biller writes capabilities, and the list is stored normalized', async () => {
+  const written = await patchAs({ token: BILLING_TOKEN, body: { capabilities: ['scan', 'recipes', 'scan'] } });
+  assert.equal(written.status, 200);
+  assert.deepEqual((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, ['recipes', 'scan']);
+
+  // An empty list is a record that grants nothing, and is NOT the same as removing it.
+  const empty = await patchAs({ token: BILLING_TOKEN, body: { capabilities: [] } });
+  assert.equal(empty.status, 200);
+  assert.deepEqual((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, []);
+
+  // `null` removes the record, so the instance default decides again. Unlike
+  // `allowanceExpiresAt: null`, the biller may send it.
+  const removed = await patchAs({ token: BILLING_TOKEN, body: { capabilities: null } });
+  assert.equal(removed.status, 200);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, null);
+});
+
+test('capabilities beside the other two allowed fields are written together', async () => {
+  const changed = await patchAs({
+    token: BILLING_TOKEN,
+    body: { dailyAiLimit: 60, allowanceExpiresAt: '2099-01-01T00:00:00.000Z', capabilities: ['scan'] },
+  });
+  assert.equal(changed.status, 200);
+  const account = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(account?.dailyAiLimit, 60);
+  assert.deepEqual(account?.capabilities, ['scan']);
+});
+
+test('capabilities beside a refused field writes nothing, and the capabilities do not move', async () => {
+  const refused = await patchAs({ token: BILLING_TOKEN, body: { capabilities: ['scan'], role: 'admin' } });
+  assert.equal(refused.status, 403);
+  assert.equal(refused.error, SERVICE_FIELD_REFUSAL);
+  const account = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(account?.capabilities, null);
+  assert.equal(account?.role, 'member');
+});
+
+test('a malformed capabilities value is the ordinary 400 and writes nothing, for the biller and the operator alike', async () => {
+  for (const token of [BILLING_TOKEN, ADMIN_TOKEN]) {
+    for (const bad of ['scan', 7, ['Scan'], ['none'], ['scan', 1], [''], { scan: true }]) {
+      const refused = await patchAs({ token, body: { capabilities: bad } });
+      assert.equal(refused.status, 400, JSON.stringify(bad));
+    }
+  }
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, null);
+
+  // THE CONTROL: a good list goes through on the same route.
+  assert.equal((await patchAs({ token: BILLING_TOKEN, body: { capabilities: ['scan'] } })).status, 200);
+});
+
+test('the operator writes capabilities too, and reads the record back from the account', async () => {
+  const written = await patchAs({ token: ADMIN_TOKEN, body: { capabilities: ['recipes'] } });
+  assert.equal(written.status, 200);
+  assert.deepEqual((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, ['recipes']);
 });

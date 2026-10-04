@@ -112,6 +112,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     dailyAiLimit: row.dailyAiLimit,
     allowanceExpiresAt: row.allowanceExpiresAt,
     freeDailyAiLimit: row.freeDailyAiLimit,
+    capabilities: row.capabilities,
     trialScans: row.trialScans,
     trialScansUsed: row.trialScansUsed,
     trialEndsAt: row.trialEndsAt,
@@ -495,6 +496,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       if (input.dailyAiLimit !== undefined) changes.dailyAiLimit = input.dailyAiLimit;
       if (input.allowanceExpiresAt !== undefined) changes.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.freeDailyAiLimit !== undefined) changes.freeDailyAiLimit = input.freeDailyAiLimit;
+      if (input.capabilities !== undefined) changes.capabilities = input.capabilities;
       if (input.trialScans !== undefined) changes.trialScans = input.trialScans;
       if (input.displayName !== undefined) changes.displayName = input.displayName;
       if (input.label !== undefined) changes.label = input.label;

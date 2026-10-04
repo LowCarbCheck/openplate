@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { eq } from 'drizzle-orm';
+import { NO_INSTANCE_STANDING } from '../../src/accounts/instance-standing.js';
 import { accounts, aiUsageDays } from '../../src/db/schema.js';
 import { setupTestDatabase, type TestDatabase } from './db-harness.js';
 import { startService, type HttpResponse, type ServiceHarness } from './service-harness.js';
@@ -61,7 +62,9 @@ async function startInstance(input: { defaultFreeDailyAiLimit: number | null }):
     db: database.db,
     ai: { baseUrl: upstreamBaseUrl, apiKey: 'sk-the-operators-key' },
     standing:
-      input.defaultFreeDailyAiLimit === null ? null : { defaultFreeDailyAiLimit: input.defaultFreeDailyAiLimit },
+      input.defaultFreeDailyAiLimit === null
+        ? null
+        : { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: input.defaultFreeDailyAiLimit },
   });
 }
 

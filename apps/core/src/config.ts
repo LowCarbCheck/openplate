@@ -44,6 +44,7 @@ import {
   type ChatInputPolicy,
 } from './ai/chat-input-bounds.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
+import { parseCapabilitySchemaMap, parseDefaultCapabilities } from './lib/capabilities.js';
 import {
   LEGAL_DECLARATION_RECEIPTS_PER_DAY,
   LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
@@ -325,6 +326,15 @@ export interface ServiceConfig {
    * account happened to come through. See {@link parseDefaultFreeDailyAiLimit}.
    */
   defaultFreeDailyAiLimit: number;
+  /**
+   * `DEFAULT_CAPABILITIES`: what an account with no capability record of its own
+   * may do. `null`, which is unset or empty, means no check at all, which is
+   * what every instance had before capabilities existed. `[]` is the word
+   * `none`: such an account may use no feature. See `lib/capabilities.ts`.
+   */
+  defaultCapabilities: string[] | null;
+  /** `CAPABILITY_SCHEMA_MAP`: structured-output schema name to the capability its use requires. Empty when unset. */
+  capabilitySchemaMap: ReadonlyMap<string, string>;
   /**
    * The secret the one mailbox, one trial rule hashes addresses with
    * (`TRIAL_ADDRESS_PEPPER`, M253), or `null`.
@@ -2021,6 +2031,8 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       trialInstanceDailyLimit: aiTrialInstanceDailyLimit,
     }),
     defaultFreeDailyAiLimit: parseDefaultFreeDailyAiLimit(env, trial),
+    defaultCapabilities: parseDefaultCapabilities(env.DEFAULT_CAPABILITIES),
+    capabilitySchemaMap: parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP),
     trialAddressPepper: parseTrialAddressPepper(env, trial),
     openSignup,
     turnstile: parseTurnstile(env, openSignup),
