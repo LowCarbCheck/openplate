@@ -112,6 +112,8 @@ const catalogSchema = z.object({
     }),
     errors: z.object({
       titles: z.object({ allowanceExpired: z.string(), trialScansSpent_other: z.string(), aiNotAllowed: z.string() }),
+      /** The pick this device could not re-encode, refused instead of sent as it was (M3/05). */
+      photo: z.object({ notPrepared: z.string() }),
     }),
     review: z.object({
       heading: z.string(),

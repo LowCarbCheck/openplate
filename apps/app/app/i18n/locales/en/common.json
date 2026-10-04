@@ -2012,6 +2012,7 @@
       "photo": {
         "empty": "Please choose a photo to upload.",
         "tooLarge": "Photo is too large (max 8MB).",
+        "notPrepared": "That photo could not be prepared on this device. Take it as a JPEG, or choose another photo.",
         "undecodableFormat": "That format won't work in this browser, a JPEG or PNG will.",
         "unsupportedType": "Unsupported image type. Use JPEG, PNG, WEBP, or HEIC.",
         "unreadable": "That photo could not be read. Try again in better light, closer, and hold still.",

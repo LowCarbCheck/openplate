@@ -90,7 +90,8 @@ import { createOptionalNonNegativeNumberSchema, createRequiredNonNegativeNumberS
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { checkMacroSanity } from '#app/lib/macro-sanity';
 import { isConfidentTier, matchTier, matchTierChipClass, type MatchTier } from '#app/lib/match-quality';
-import { ALLOWED_MIME_TYPES, downscaleToJpeg, validatePhoto } from '#app/lib/photo-constraints';
+import { validatePhoto } from '#app/lib/photo-constraints';
+import { prepareUploadPhoto } from '#app/lib/prepare-upload-photo';
 import { buildUrlWithoutSharedParam, hasSharedPhotoFlag, readSharedPhoto } from '#app/lib/shared-photo';
 import { savePlatePhoto } from '#app/lib/local-store/photos';
 import { dropPlatePhoto, offerPlatePhoto, takePlatePhoto } from '#app/lib/plate-photo-handoff';
@@ -1759,27 +1760,27 @@ function ScanFlow({
     }
     setSelectionError(null);
     setIsProcessing(true);
-    let nextFile: File;
-    try {
-      // ONE CEILING, `MAX_IMAGE_DIMENSION`. There used to be a second, higher
-      // one for a nutrition panel, chosen by a mode the person picked before
-      // the shutter. Merging the two photo tasks forced one answer, and the
-      // operator took the cheaper one on 2026-09-08: every scan stays at
-      // today's cost on the person's own key, and a panel line too small to
-      // read comes back as `null` with a note rather than as a guess. See
-      // ADR-0005's amendment.
-      nextFile = await downscaleToJpeg(picked);
-    } catch {
-      // Decode failed (e.g. HEIC outside Safari). Send the original when the
-      // browser will still accept it; otherwise ask for a friendlier format.
-      if (!ALLOWED_MIME_TYPES.includes(picked.type)) {
-        setSelectionError(t('scan.errors.photo.undecodableFormat'));
-        setFile(null);
-        setIsProcessing(false);
-        return;
-      }
-      nextFile = picked;
+    // ONE CEILING, `MAX_IMAGE_DIMENSION`. There used to be a second, higher
+    // one for a nutrition panel, chosen by a mode the person picked before
+    // the shutter. Merging the two photo tasks forced one answer, and the
+    // operator took the cheaper one on 2026-09-08: every scan stays at
+    // today's cost on the person's own key, and a panel line too small to
+    // read comes back as `null` with a note rather than as a guess. See
+    // ADR-0005's amendment.
+    //
+    // A PHOTO THAT CANNOT BE PREPARED IS NOT SENT. This used to fall back to
+    // the original file when the decode failed (a HEIC outside Safari), and
+    // the original is the version that still carries the EXIF: position,
+    // camera, time. The error goes in the slot under the buttons and the
+    // person picks again (`prepare-upload-photo.ts`).
+    const preparation = await prepareUploadPhoto({ picked });
+    if (preparation.kind === 'not-prepared') {
+      setSelectionError(t('scan.errors.photo.notPrepared'));
+      setFile(null);
+      setIsProcessing(false);
+      return;
     }
+    const nextFile = preparation.file;
     setIsProcessing(false);
     // Drop any prior identify result, then arm: a camera capture dispatches now,
     // a library pick waits out the cancellable grace window. A result restored
@@ -2527,19 +2528,28 @@ export function UploadForm({
                 </div>
               )}
 
-              {isProcessing && (
-                <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('scan.capture.preparing')}
-                </p>
-              )}
-
               {!isTextIntake && file && !isProcessing && (
                 <p className="min-w-0 truncate text-xs text-muted-foreground">
                   {file.name} · {formatFileSize(file.size)}
                 </p>
               )}
 
-              <FieldError errors={selectionError ? [selectionError] : undefined} />
+              {/* THE STATUS SLOT, HELD FROM THE FIRST PAINT: the "preparing"
+                  line and the reason a pick was refused (too large, the wrong
+                  type, a photo this device could not re-encode) take turns in
+                  one box that is three lines tall whether either is showing,
+                  so the card never grows when a pick fails and the blocks
+                  below it stay where they are. Three, because the longest
+                  refusal wraps to three lines on a 360 px phone
+                  (`scan-photo-leaves-re-encoded.spec.ts` measures it). */}
+              <div data-slot="photo-status" className="min-h-[3.75rem]">
+                {isProcessing && (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('scan.capture.preparing')}
+                  </p>
+                )}
+                <FieldError errors={selectionError ? [selectionError] : undefined} />
+              </div>
             </div>
 
             {error && (

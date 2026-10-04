@@ -69,6 +69,7 @@ import { displayFoodName, pinShownFoodName } from '#app/lib/food-name';
 import { trackPantryCaptured, type PantryCapturePath } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
 import { fileToBase64 } from '#app/lib/file-to-base64';
+import { prepareUploadPhoto } from '#app/lib/prepare-upload-photo';
 import {
   getLocalAiSettings,
   listLocalPantryItems,
@@ -124,6 +125,13 @@ export function HydrateFallback(): ReactElement {
 /** What one pantry reading attempt answers with: rows, or a sentence saying why not. */
 type PantryReadResult = { ok: true; identification: PantryIdentification } | { ok: false; error: string };
 
+/** The hand-off with its photo re-encoded, or `null` when the photo could not be. A sentence passes as it is. */
+async function withPreparedPhoto(handoff: ScanHandoff): Promise<ScanHandoff | null> {
+  if (handoff.kind === 'text') return handoff;
+  const preparation = await prepareUploadPhoto({ picked: handoff.file });
+  return preparation.kind === 'ready' ? { kind: 'photo', file: preparation.file } : null;
+}
+
 /**
  * Runs ONE pantry task against the person's provider and records the usage.
  *
@@ -137,6 +145,7 @@ async function readPantry({
   effective,
   language,
   failedMessage,
+  notPreparedMessage,
 }: {
   handoff: ScanHandoff;
   effective: EffectiveAiSettings;
@@ -144,9 +153,17 @@ async function readPantry({
   language: LanguageCode;
   /** The generic "that did not work" sentence, already translated by the caller. */
   failedMessage: string;
+  /** The sentence for a photo this device could not re-encode, already translated by the caller. */
+  notPreparedMessage: string;
 }): Promise<PantryReadResult> {
   const triple = resolveProviderTriple(effective);
   if (triple === null) return { ok: false, error: failedMessage };
+  // A PHOTO IS RE-ENCODED BEFORE IT LEAVES, and one that cannot be is not sent.
+  // The shelf photo used to go out as the camera wrote it, EXIF and all
+  // (M3/05). Done before the `try` below on purpose: nothing was attempted, so
+  // no usage row is written for it.
+  const intake = await withPreparedPhoto(handoff);
+  if (intake === null) return { ok: false, error: notPreparedMessage };
 
   const record = async (usage: ScanTokenUsage | undefined, outcome: 'identified' | 'no_foods' | 'error') => {
     await recordLocalAiUsageEvent({
@@ -177,12 +194,12 @@ async function readPantry({
         : { apiKey: effective.settings.apiKey ?? '' },
     });
     const identification =
-      handoff.kind === 'photo' ?
+      intake.kind === 'photo' ?
         await provider.runScan({
           task: pantryPhotoTask(language),
-          image: { base64: await fileToBase64(handoff.file), mimeType: handoff.file.type },
+          image: { base64: await fileToBase64(intake.file), mimeType: intake.file.type },
         })
-      : await provider.runTextIntake({ task: pantryTextTask(language), text: handoff.text });
+      : await provider.runTextIntake({ task: pantryTextTask(language), text: intake.text });
     await record(identification.usage, identification.items.length === 0 ? 'no_foods' : 'identified');
     return { ok: true, identification };
   } catch (error) {
@@ -617,6 +634,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
           effective: settings,
           language: toLanguageCode(i18n.language),
           failedMessage: t('pantry.errors.failed'),
+          notPreparedMessage: t('scan.errors.photo.notPrepared'),
         });
         if (!result.ok) {
           setPhase({ kind: 'failed', subject, message: result.error });
