@@ -21,13 +21,28 @@
  * DOES carry the base64 and asserting the bytes appear in neither the log lines
  * nor the response body.
  *
- * Ported from `openplate-gateway/src/scrub.ts` with its zod `safeParse`
- * replaced by this repo's `asString` (`lib/json.ts`), which is the same check
- * without the dependency.
+ * Ported from `openplate-gateway/src/scrub.ts`. Error values do NOT come
+ * through here any more: `log-error.ts` is the door for those, and it logs a
+ * name and a code. This module scrubs the strings that are text by nature, the
+ * upstream's error body above all.
  */
-import { asString, type JsonValue } from '../lib/json.js';
-
 const REDACTED = '[redacted]';
+
+/**
+ * One character of a base64 payload, in every dress a payload arrives in:
+ *
+ *  - the standard alphabet and the URL-safe one (`-` and `_`), and `=` padding;
+ *  - `\/` (up to four backslashes, for a body that was encoded again), because
+ *    PHP's `json_encode` and some echoing proxies escape the slash, which would
+ *    otherwise end a run in the middle of a photograph and leave the pieces
+ *    under the length floor;
+ *  - `\u002b`, `\u002f` and `\u003d`, the same escape written as a code point;
+ *  - `%2B`, `%2F` and `%3D`, a payload that went through a form encoder.
+ *
+ * Alternatives start with different characters, so none of them backtracks
+ * into another.
+ */
+const BASE64_CHAR = String.raw`(?:[A-Za-z0-9+/=_-]|\\{1,4}/|\\u002[bBfF]|\\u003[dD]|%2[bBfF]|%3[dD])`;
 
 /**
  * A data URI of any media type. The payload class deliberately excludes
@@ -35,39 +50,49 @@ const REDACTED = '[redacted]';
  * match run past the URI and eat the rest of the sentence, which destroys the
  * message a human is meant to read.
  */
-const DATA_URI = /data:[a-zA-Z0-9.+/-]+;base64,[A-Za-z0-9+/=]+/g;
+const DATA_URI = new RegExp(String.raw`data:[a-zA-Z0-9.+/-]+;base64,${BASE64_CHAR}+`, 'g');
 
 /**
  * A bare base64-ish run. 48 characters is well below any real image payload and
  * well above any identifier this service logs (a family id is 32 hex, a UUID is
  * 36), so this cannot eat a field somebody wanted to read.
+ *
+ * THE URL-SAFE ALPHABET COSTS A LITTLE READABILITY: a 48-character kebab-case
+ * or snake_case word is now a run. That is the safe direction, see the test
+ * for the data-URI-free case.
  */
-const LONG_BASE64_RUN = /[A-Za-z0-9+/=]{48,}/g;
+const LONG_BASE64_RUN = new RegExp(String.raw`${BASE64_CHAR}{48,}`, 'g');
 
-/** Replaces data URIs and long base64 runs with a marker. Idempotent. */
-export function scrubPayloads(text: string): string {
-  return text.replace(DATA_URI, REDACTED).replace(LONG_BASE64_RUN, REDACTED);
+/** What a capped string ends with, so a reader knows it was cut. Plain ASCII, no run of base64. */
+const TRUNCATION_SUFFIX = '...[truncated]';
+
+/**
+ * The cap on scrubbed output when a caller names none. Above the 4096 an
+ * upstream error body is sliced to before it gets here, so it never bites
+ * there, and well below anything that could be a photograph.
+ */
+export const DEFAULT_SCRUBBED_MAX_CHARS = 4096;
+
+export interface ScrubOptions {
+  /** The most characters of the scrubbed text kept, before the truncation marker. */
+  maxChars?: number;
 }
 
 /**
- * A scrubbed one-line description of an unknown thrown value, safe to log.
+ * Replaces data URIs and long base64 runs with a marker, then caps the length.
+ * Idempotent.
  *
- * Never includes a stack (a stack can quote source lines) and never the `cause`
- * chain (which is where a wrapped library error's echoed input hides).
- *
- * `cause: unknown` is the honest annotation and it is what forces the two
- * checks below: the value reaching here was produced by `throw`, JS permits
- * throwing anything, and this function's whole job is to be right about values
- * nobody promised anything about. The parameter is named `cause` for the same
- * reason `lib/storage-conflict.ts` and `server/error-middleware.ts` name theirs
- * that way: it is a caught throw, not a parsed input.
+ * REDACT FIRST, CUT SECOND. Cutting first could split a run and leave a tail
+ * under the 48-character floor; cutting a redacted string cannot.
  */
+export function scrubPayloads(text: string, options: ScrubOptions = {}): string {
+  const maxChars = options.maxChars ?? DEFAULT_SCRUBBED_MAX_CHARS;
+  const redacted = text.replace(DATA_URI, REDACTED).replace(LONG_BASE64_RUN, REDACTED);
+  if (redacted.length <= maxChars) return redacted;
+  return `${redacted.slice(0, maxChars)}${TRUNCATION_SUFFIX}`;
+}
+
+/** TEMPORARY, removed with the last call site in the commit that adds `log-error.ts`. */
 export function describeError(cause: unknown): string {
-  if (cause instanceof Error) return scrubPayloads(cause.message);
-  // SAFETY: a thrown value is `unknown` and this widens it to the boundary type
-  // `lib/json.ts` decodes. `asString` is TOTAL over that type — it answers
-  // `null` for anything that is not a string, which is the fallback below — so
-  // the assertion cannot make the decoder wrong, only let it run.
-  const asText = asString(cause as JsonValue);
-  return asText === null ? 'unknown error' : scrubPayloads(asText);
+  return cause instanceof Error ? scrubPayloads(cause.message) : 'unknown error';
 }
