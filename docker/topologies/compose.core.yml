@@ -301,6 +301,10 @@ services:
       # neither. Empty means this instance offers no AI of its own.
       UPSTREAM_BASE_URL: ${UPSTREAM_BASE_URL:-}
       UPSTREAM_API_KEY: ${UPSTREAM_API_KEY:-}
+      # OpenRouter only, both optional: zero data retention endpoints, and a pin
+      # to named providers with no fallback. Empty is the proxy's old behaviour.
+      UPSTREAM_ZDR: ${UPSTREAM_ZDR:-}
+      UPSTREAM_PROVIDER_ONLY: ${UPSTREAM_PROVIDER_ONLY:-}
       # The model every proxied request is sent to. The app scans with the
       # model this names, so a managed instance with AI needs it set.
       AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}

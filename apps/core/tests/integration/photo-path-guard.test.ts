@@ -322,7 +322,11 @@ function inheritedEnvironment(): NodeJS.ProcessEnv {
   return inherited;
 }
 
-async function startCore(input: { upstreamBaseUrl: string }): Promise<CoreProcess> {
+async function startCore(input: {
+  upstreamBaseUrl: string;
+  /** Extra settings for this core, on top of the ones every guard core gets. */
+  extraEnv?: NodeJS.ProcessEnv;
+}): Promise<CoreProcess> {
   const port = await freePort();
   const out: Buffer[] = [];
   const err: Buffer[] = [];
@@ -342,6 +346,7 @@ async function startCore(input: { upstreamBaseUrl: string }): Promise<CoreProces
       UPSTREAM_TIMEOUT_MS: String(UPSTREAM_TIMEOUT_MS),
       AI_MAX_REQUEST_BYTES: String(MAX_REQUEST_BYTES),
       AI_RATE_LIMIT_PER_MINUTE: '1000',
+      ...input.extraEnv,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -505,6 +510,8 @@ interface ModeInput {
   /** The response must show the scrubber's marker, not the photograph. */
   expectRedacted?: boolean;
   before?: () => void;
+  /** The core to send to. Absent is the guard's main core. */
+  target?: CoreProcess;
 }
 
 async function searchEverywhere(input: {
@@ -542,11 +549,12 @@ async function runMode(input: ModeInput): Promise<void> {
   const image = jpegWithMarker({ bytes: input.imageBytes ?? IMAGE_BYTES, marker });
   const searcher = createLeakSearcher({ image, marker });
   searchers.push(searcher);
-  const url = `${core.baseUrl}/v1/chat/completions`;
+  const target = input.target ?? core;
+  const url = `${target.baseUrl}/v1/chat/completions`;
   const body = chatBody(image);
 
-  const stdoutFrom = core.stdout().length;
-  const stderrFrom = core.stderr().length;
+  const stdoutFrom = target.stdout().length;
+  const stderrFrom = target.stderr().length;
   const outcome =
     input.send !== undefined
       ? await input.send({ url, body, image })
@@ -558,11 +566,11 @@ async function runMode(input: ModeInput): Promise<void> {
           }),
         );
   await sleep(SETTLE_MS);
-  const stdout = core.stdout().slice(stdoutFrom);
-  const stderr = core.stderr().slice(stderrFrom);
+  const stdout = target.stdout().slice(stdoutFrom);
+  const stderr = target.stderr().slice(stderrFrom);
 
   // The premises, so the search below is a result and not an accident.
-  assert.equal(core.child.exitCode, null, `the core died during "${input.name}"`);
+  assert.equal(target.child.exitCode, null, `the core died during "${input.name}"`);
   if (input.expectStatus !== undefined) assert.equal(outcome.status, input.expectStatus, `status for "${input.name}"`);
   if (input.expectReachesProvider) {
     assert.ok(provider.received.length >= 1, 'the request never reached the provider');
@@ -720,6 +728,53 @@ test('the body is not valid JSON, cut off inside the photograph (parse error)', 
     expectStatus: 400,
     expectReachesProvider: false,
   });
+});
+
+/**
+ * ONE CORE WITH BOTH ROUTING SETTINGS ON (M3 spec 02, 2026-10-04). `UPSTREAM_ZDR` and
+ * `UPSTREAM_PROVIDER_ONLY` change the `provider` object of a body bound for
+ * OpenRouter, and the fake provider here is not an OpenRouter host, so the
+ * settings are parsed and inert on this path. What this proves is narrower and
+ * still worth a mode: a core booted with both settings proxies a photograph, and
+ * echoes one back through the scrubber, without a trace of it in its own
+ * transcript or the database. The provider object itself is asserted in
+ * `tests/unit/chat-body-policy.test.ts`.
+ */
+test('a core with zero retention and a pinned provider set still keeps the photograph out', async () => {
+  const flagged = await startCore({
+    upstreamBaseUrl: provider.baseUrl,
+    extraEnv: { UPSTREAM_ZDR: 'true', UPSTREAM_PROVIDER_ONLY: 'google-vertex' },
+  });
+  const firstSearcher = searchers.length;
+  try {
+    await runMode({
+      name: 'routing settings on, upstream 200',
+      behavior: 'ok',
+      target: flagged,
+      expectStatus: 200,
+      expectLogged: 'Proxied a completion',
+      ...POST_OK,
+    });
+    await runMode({
+      name: 'routing settings on, upstream 500 echoing the request',
+      behavior: 'error-echo',
+      target: flagged,
+      expectStatus: 500,
+      expectLogged: 'Upstream provider returned an error',
+      expectRedacted: true,
+      ...POST_OK,
+    });
+  } finally {
+    await flagged.stop();
+  }
+  const scan = await readDatabaseHaystacks(database.pool);
+  const haystacks: Haystack[] = [
+    { source: 'flagged core stdout, whole run', text: flagged.stdout() },
+    { source: 'flagged core stderr, whole run', text: flagged.stderr() },
+    ...scan.haystacks,
+  ];
+  assert.ok(flagged.stdout().includes('Proxied a completion'), 'the flagged core transcript lacks the 200 case');
+  for (const searcher of searchers.slice(firstSearcher)) assert.deepEqual(searcher.find(haystacks), []);
 });
 
 test('after every mode the core is alive, and its whole transcript holds no photograph', async () => {

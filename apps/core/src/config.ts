@@ -32,7 +32,7 @@ import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } from './server/service-principal-s
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
-import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
+import { DEFAULT_AI_MAX_OUTPUT_TOKENS, type OpenRouterRouting } from './ai/chat-body-policy.js';
 import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
 import { defaultTrialNetworkDailyLimit } from './ai/trial-network.js';
 import {
@@ -1323,6 +1323,10 @@ const DEFAULT_FEEDBACK_DAILY_LIMIT = 5;
  * outage.
  */
 function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
+  // PARSED BEFORE THE ALL-OR-NOTHING CHECK, so a malformed routing value stops
+  // the boot even on an instance that has no AI yet: the typo is found on the
+  // day it is made, not the day somebody adds the provider key.
+  const routing = parseOpenRouterRouting(env);
   const present = AI_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
   if (present.length === 0) return null;
 
@@ -1351,7 +1355,51 @@ function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
     baseUrl: baseUrl.replace(/\/+$/, ''),
     apiKey: env.UPSTREAM_API_KEY?.trim() ?? '',
     timeoutMs: parsePositiveInteger(env, 'UPSTREAM_TIMEOUT_MS', DEFAULT_UPSTREAM_TIMEOUT_MS),
+    routing,
   };
+}
+
+/**
+ * An OpenRouter provider slug: lowercase letters and digits, joined by `-`,
+ * `.`, `_` or `/` (`google-vertex`, `amazon-bedrock`, `deepinfra/turbo`). Not a
+ * model id, and not a display name such as "Google Vertex".
+ */
+const PROVIDER_SLUG = /^[a-z0-9][a-z0-9._/-]*$/;
+
+/**
+ * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`: two OPTIONAL routing settings
+ * for an OpenRouter upstream (M3 spec 02). Both unset, the default, change
+ * nothing: an instance that runs another host or another model is not touched.
+ *
+ *  - `UPSTREAM_ZDR=true` asks for endpoints with zero data retention. `false`
+ *    and empty mean off. Any other spelling (`yes`, `1`) is a boot failure,
+ *    because a typo that quietly meant "off" would leave the operator believing
+ *    retention is switched off at the provider.
+ *  - `UPSTREAM_PROVIDER_ONLY` is a comma separated list of provider slugs. An
+ *    empty entry (`a,,b`, a trailing comma) or a name that is not a slug (an
+ *    uppercase letter, a space) is a boot failure that names the entry.
+ *
+ * BOTH ONLY ACT ON AN OPENROUTER HOST. Another host gets no `provider` object
+ * at all (`ai/chat-body-policy.ts`), so on one these settings do nothing.
+ */
+function parseOpenRouterRouting(env: NodeJS.ProcessEnv): OpenRouterRouting {
+  const zdr = env.UPSTREAM_ZDR?.trim().toLowerCase() ?? '';
+  if (zdr !== '' && zdr !== 'true' && zdr !== 'false') {
+    throw new Error(`Invalid UPSTREAM_ZDR: expected true, or leave it unset, got "${env.UPSTREAM_ZDR?.trim()}"`);
+  }
+
+  const rawOnly = env.UPSTREAM_PROVIDER_ONLY?.trim() ?? '';
+  const onlyProviders = rawOnly === '' ? [] : rawOnly.split(',').map((entry) => entry.trim());
+  for (const slug of onlyProviders) {
+    if (!PROVIDER_SLUG.test(slug)) {
+      throw new Error(
+        `Invalid UPSTREAM_PROVIDER_ONLY entry "${slug}": expected comma separated lowercase provider slugs ` +
+          'such as google-vertex, with no empty entry',
+      );
+    }
+  }
+
+  return { zeroDataRetention: zdr === 'true', onlyProviders: [...new Set(onlyProviders)] };
 }
 
 /**

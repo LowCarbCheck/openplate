@@ -724,6 +724,50 @@ test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says 
   assert.throws(() => parseConfig(baseEnv({ AI_INSTANCE_DAILY_LIMIT: 'lots' })), /AI_INSTANCE_DAILY_LIMIT/);
 });
 
+test('UPSTREAM_ZDR and UPSTREAM_PROVIDER_ONLY are optional, parse whole, and a malformed value stops the boot', () => {
+  const aiEnv = { UPSTREAM_BASE_URL: 'https://openrouter.ai/api/v1', UPSTREAM_API_KEY: 'sk-test' };
+  // THE CONTROL FIRST: real values parse and are carried whole, so the refusals below
+  // cannot pass by the parser refusing everything.
+  const both = parseConfig(
+    baseEnv({ ...aiEnv, UPSTREAM_ZDR: 'true', UPSTREAM_PROVIDER_ONLY: 'google-vertex, amazon-bedrock' }),
+  );
+  assert.deepEqual(both.ai?.routing, { zeroDataRetention: true, onlyProviders: ['google-vertex', 'amazon-bedrock'] });
+  // Unset, empty and `false` all mean today's behaviour.
+  const none = { zeroDataRetention: false, onlyProviders: [] };
+  assert.deepEqual(parseConfig(baseEnv(aiEnv)).ai?.routing, none);
+  assert.deepEqual(
+    parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: '', UPSTREAM_PROVIDER_ONLY: '  ' })).ai?.routing,
+    none,
+  );
+  assert.deepEqual(parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: 'false' })).ai?.routing, none);
+  // A duplicate slug is one slug.
+  assert.deepEqual(parseConfig(baseEnv({ ...aiEnv, UPSTREAM_PROVIDER_ONLY: 'a,a' })).ai?.routing?.onlyProviders, ['a']);
+
+  // A spelling that is not `true` must not quietly mean "off": the operator would believe retention is.
+  for (const bad of ['yes', '1', 'on', 'tru']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: bad })),
+      /Invalid UPSTREAM_ZDR.*expected true/,
+      bad,
+    );
+  }
+  // Each bad slug list names the entry that is wrong.
+  for (const bad of ['a,,b', 'google-vertex,', ',a', 'Google Vertex', 'GOOGLE-VERTEX', 'a b']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ ...aiEnv, UPSTREAM_PROVIDER_ONLY: bad })),
+      /Invalid UPSTREAM_PROVIDER_ONLY entry/,
+      bad,
+    );
+  }
+  assert.throws(
+    () => parseConfig(baseEnv({ ...aiEnv, UPSTREAM_PROVIDER_ONLY: 'google-vertex,Bad Slug' })),
+    /entry "Bad Slug"/,
+  );
+  // The typo is found even before the AI block exists.
+  assert.throws(() => parseConfig(baseEnv({ UPSTREAM_ZDR: 'yes' })), /Invalid UPSTREAM_ZDR/);
+  assert.equal(parseConfig(baseEnv({ UPSTREAM_ZDR: 'true' })).ai, null);
+});
+
 test('AI_BUDGET_ALERT_FRACTION defaults to 0.2, takes a share, and refuses 0, 1 and words', () => {
   // THE CONTROL FIRST: a real share parses and is carried whole.
   assert.equal(parseConfig(baseEnv({ AI_BUDGET_ALERT_FRACTION: '0.15' })).aiBudgetAlertFraction, 0.15);

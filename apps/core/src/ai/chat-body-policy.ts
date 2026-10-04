@@ -40,8 +40,15 @@
  *    not store or train on what they receive (2026-09-28, the pre-launch
  *    privacy audit). A plate photo is a health-adjacent picture of somebody's
  *    meal, and deleting the caller's `provider` field used to delete the only
- *    place that request could have been made. Any other upstream gets no
- *    `provider` field at all: it is an OpenRouter extension.
+ *    place that request could have been made. Two OPTIONAL operator settings
+ *    tighten it (2026-10-04, M3 spec 02), both off by default: `UPSTREAM_ZDR`
+ *    adds `zdr: true` (zero data retention endpoints only) and
+ *    `UPSTREAM_PROVIDER_ONLY` adds `only: [slugs]` with `allow_fallbacks:
+ *    false` (one named provider, and no quiet fall back to another).
+ *    {@link openRouterProviderPreferences} builds the object. The CALLER never
+ *    sets any of it: its own `provider` field is replaced, not merged. Any
+ *    other upstream gets no `provider` field at all, whatever is set: it is an
+ *    OpenRouter extension, and another host would reject or ignore it.
  *
  * The app sends `model`, `messages`, `response_format` and, for a catalog
  * model that reasons by default, `reasoning` (measured in `openplate`'s
@@ -104,9 +111,44 @@ const MAX_LOGGED_FIELD_NAME_LENGTH = 64;
  * OpenRouter's provider preferences for every forwarded body. `data_collection:
  * 'deny'` restricts routing to endpoints whose provider does not store or train
  * on the request; checked live on 2026-09-28 that `google/gemini-3.7-flash`
- * still routes (to Google) under it.
+ * still routes (to Google) under it. This is what an instance with no routing
+ * settings sends, byte for byte what it sent before 2026-10-04.
  */
 export const OPENROUTER_PROVIDER_PREFERENCES: JsonObject = { data_collection: 'deny' };
+
+/**
+ * The operator's two optional routing settings for OpenRouter, already parsed
+ * by `config.ts`. Both off is today's behaviour.
+ */
+export interface OpenRouterRouting {
+  /** `UPSTREAM_ZDR`: route only to endpoints with zero data retention (`zdr: true`). */
+  zeroDataRetention: boolean;
+  /** `UPSTREAM_PROVIDER_ONLY`: provider slugs that may serve a request, or empty for any. */
+  onlyProviders: readonly string[];
+}
+
+/** The routing of an instance that set neither variable. */
+export const NO_OPENROUTER_ROUTING: OpenRouterRouting = { zeroDataRetention: false, onlyProviders: [] };
+
+/**
+ * The `provider` object an OpenRouter body carries: the base preferences, plus
+ * `zdr: true` when zero retention is on, plus `only` and `allow_fallbacks:
+ * false` when providers are pinned. `allow_fallbacks: false` goes with `only`
+ * because a pin that falls back to another provider when the first is busy is
+ * no pin. Verified against the live API on 2026-10-04: `{"zdr":true,
+ * "data_collection":"deny","only":["google-vertex"],"allow_fallbacks":false}`
+ * is accepted for `google/gemini-3.7-flash`.
+ */
+export function openRouterProviderPreferences(routing: OpenRouterRouting): JsonObject {
+  const preferences: WritableJsonObject = {};
+  if (routing.zeroDataRetention) preferences.zdr = true;
+  preferences.data_collection = OPENROUTER_PROVIDER_PREFERENCES.data_collection;
+  if (routing.onlyProviders.length > 0) {
+    preferences.only = [...routing.onlyProviders];
+    preferences.allow_fallbacks = false;
+  }
+  return preferences;
+}
 
 /** Whether the upstream is OpenRouter, which reads the `provider` preferences above. */
 export function isOpenRouterUpstream(baseUrl: string): boolean {
@@ -260,6 +302,7 @@ export function listDroppedChatFields(body: JsonObject): string[] {
  * @param input.body - the parsed request body, already proved to be an object.
  * @param input.policy - the instance's model and output ceiling.
  * @param input.upstreamBaseUrl - where the body goes, which decides the `provider` preferences.
+ * @param input.openRouterRouting - the operator's optional zero retention and provider pin; read for an OpenRouter host only.
  * @returns the body to serialise and forward.
  */
 export function applyChatBodyPolicy(input: {
@@ -267,13 +310,15 @@ export function applyChatBodyPolicy(input: {
   policy: ChatBodyPolicy;
   /** The upstream the body goes to; OpenRouter gets {@link OPENROUTER_PROVIDER_PREFERENCES}. */
   upstreamBaseUrl?: string;
+  /** Absent means today's preferences, `data_collection: 'deny'` alone. Ignored for any other upstream. */
+  openRouterRouting?: OpenRouterRouting;
 }): JsonObject {
   const rewritten: WritableJsonObject = Object.fromEntries(
     Object.entries(input.body).filter(([field]) => ALLOWED_CHAT_FIELDS.has(field)),
   );
   if (rewritten.messages !== undefined) rewritten.messages = allowMessages(rewritten.messages);
   if (input.upstreamBaseUrl !== undefined && isOpenRouterUpstream(input.upstreamBaseUrl)) {
-    rewritten.provider = { ...OPENROUTER_PROVIDER_PREFERENCES };
+    rewritten.provider = openRouterProviderPreferences(input.openRouterRouting ?? NO_OPENROUTER_ROUTING);
   }
   if (input.policy.model !== null) rewritten.model = input.policy.model;
   capOutputTokens({ body: rewritten, ceiling: input.policy.maxOutputTokens });

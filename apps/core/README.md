@@ -229,6 +229,8 @@ AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite   # the model every request is 
 AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 8192
 AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
 UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
+UPSTREAM_ZDR=true                  # optional, OpenRouter only: zero data retention endpoints only
+UPSTREAM_PROVIDER_ONLY=google-vertex  # optional, OpenRouter only: pin to these providers, no fallback
 AI_INSTANCE_DAILY_LIMIT=2000       # optional, whole instance, per UTC day
 AI_BUDGET_ALERT_FRACTION=0.2       # optional, OpenRouter only: mail when less than this share is left
 ```
@@ -254,8 +256,18 @@ or without it, `max_tokens` and `max_completion_tokens` are capped at
 are forwarded: every other one (`tools`, `plugins`, `models`, a field nobody
 has invented yet) is dropped and its name logged. On OpenRouter the service
 writes its own `provider` field, `{"data_collection":"deny"}`, so a photo only
-goes to endpoints that do not store it or train on it. Nothing is refused for
-these fields, so a client that sends them still gets an answer.
+goes to endpoints that do not store it or train on it. That is a routing
+request, not a guarantee. Two optional settings ask for more, and only on an
+OpenRouter host: `UPSTREAM_ZDR=true` adds `"zdr":true` (endpoints with zero data
+retention only), and `UPSTREAM_PROVIDER_ONLY=google-vertex` adds
+`"only":["google-vertex"]` and `"allow_fallbacks":false` (that provider or an
+error, never another). With both set the field is
+`{"zdr":true,"data_collection":"deny","only":["google-vertex"],"allow_fallbacks":false}`.
+Unset, the default, the field is what it always was. A value that is not `true`,
+`false` or empty in `UPSTREAM_ZDR`, or a provider list with an empty entry or a
+name that is not a lowercase slug, stops the boot. A caller can set none of
+this: its own `provider` field is replaced. Nothing is refused for these
+fields, so a client that sends them still gets an answer.
 PROTOCOL.md §5.19 has the table.
 
 **Input is bounded too.** A request with more than one image, more than 48 KB

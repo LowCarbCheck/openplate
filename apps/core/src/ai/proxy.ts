@@ -50,7 +50,13 @@
  *   4. forward    : the caller's `Authorization` is REPLACED, not merged, and
  *                   the body is rewritten by the instance's body policy: its
  *                   model when one is set, a capped answer always, and no
- *                   field that multiplies the cost of one request.
+ *                   field that multiplies the cost of one request. On an
+ *                   OpenRouter host the body also carries the `provider`
+ *                   object the INSTANCE writes: `data_collection: 'deny'`,
+ *                   plus `zdr: true` (UPSTREAM_ZDR) and `only` with
+ *                   `allow_fallbacks: false` (UPSTREAM_PROVIDER_ONLY) when the
+ *                   operator set them. The caller's own `provider` never goes
+ *                   through, and another host gets no such object.
  *   5. release?   : only when the provider cannot have billed us. See the
  *                   spent-vs-released table below; it is the money question.
  *   6. relay      : piped, never buffered, so `stream: true` streams.
@@ -184,7 +190,12 @@ import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-
 import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
 import { scrubPayloads } from './scrub.js';
-import { applyChatBodyPolicy, listDroppedChatFields, type ChatBodyPolicy } from './chat-body-policy.js';
+import {
+  applyChatBodyPolicy,
+  listDroppedChatFields,
+  type ChatBodyPolicy,
+  type OpenRouterRouting,
+} from './chat-body-policy.js';
 import {
   AI_REQUEST_TOO_LARGE,
   findExceededInputLimit,
@@ -212,6 +223,12 @@ export interface AiUpstreamConfig {
   baseUrl: string;
   apiKey: string;
   timeoutMs: number;
+  /**
+   * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`, for an OpenRouter upstream.
+   * Absent is the same as both unset: `config.ts` always fills it, and a test
+   * that builds this object by hand may leave it out.
+   */
+  routing?: OpenRouterRouting;
 }
 
 export interface ChatCompletionsDeps {
@@ -754,6 +771,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       body: bodyObject,
       policy: bodyPolicy,
       upstreamBaseUrl: upstreamConfig.baseUrl,
+      openRouterRouting: upstreamConfig.routing,
     });
     const droppedFields = listDroppedChatFields(bodyObject);
     if (droppedFields.length > 0) {

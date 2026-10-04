@@ -10,6 +10,7 @@ import {
   applyChatBodyPolicy,
   DEFAULT_AI_MAX_OUTPUT_TOKENS,
   listDroppedChatFields,
+  type OpenRouterRouting,
 } from '../../src/ai/chat-body-policy.js';
 import type { JsonObject } from '../../src/lib/json.js';
 
@@ -194,4 +195,119 @@ test('the dropped fields are listed by NAME, and a name made of a photograph is 
     }),
     [],
   );
+});
+
+const OPENROUTER = 'https://openrouter.ai/api/v1';
+const BOTH_ON: OpenRouterRouting = { zeroDataRetention: true, onlyProviders: ['google-vertex'] };
+
+test('with zero retention and a pinned provider set, an OpenRouter body carries exactly the verified provider object', () => {
+  const body = applyChatBodyPolicy({
+    body: { model: 'm' },
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: BOTH_ON,
+  });
+  // The object the architect checked against the live API on 2026-10-04.
+  assert.deepEqual(body.provider, {
+    zdr: true,
+    data_collection: 'deny',
+    only: ['google-vertex'],
+    allow_fallbacks: false,
+  });
+});
+
+test('with neither setting, an OpenRouter body carries exactly the object it carried before', () => {
+  // THE CONTROL for the test above: it fails against a policy that always writes the extra keys.
+  const unset = applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN, upstreamBaseUrl: OPENROUTER });
+  assert.deepEqual(unset.provider, { data_collection: 'deny' });
+  const off = applyChatBodyPolicy({
+    body: { model: 'm' },
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: { zeroDataRetention: false, onlyProviders: [] },
+  });
+  assert.deepEqual(off.provider, { data_collection: 'deny' });
+});
+
+test('each setting acts alone: zero retention adds zdr only, a pin adds only and no fallbacks only', () => {
+  const zdr = applyChatBodyPolicy({
+    body: {},
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: { zeroDataRetention: true, onlyProviders: [] },
+  });
+  assert.deepEqual(zdr.provider, { zdr: true, data_collection: 'deny' });
+  const pinned = applyChatBodyPolicy({
+    body: {},
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: { zeroDataRetention: false, onlyProviders: ['google-vertex', 'amazon-bedrock'] },
+  });
+  assert.deepEqual(pinned.provider, {
+    data_collection: 'deny',
+    only: ['google-vertex', 'amazon-bedrock'],
+    allow_fallbacks: false,
+  });
+});
+
+test('a host that is not OpenRouter gets no provider object, even with both settings on', () => {
+  // THE CONTROL for the host check: the same routing on an OpenRouter host does write one.
+  for (const upstreamBaseUrl of [
+    'https://api.openai.com/v1',
+    'http://inference:8300/v1',
+    'https://openrouter.ai.example.com/v1',
+    'not a url',
+  ]) {
+    const body = applyChatBodyPolicy({
+      body: { model: 'm', provider: { only: ['x'] } },
+      policy: OPEN,
+      upstreamBaseUrl,
+      openRouterRouting: BOTH_ON,
+    });
+    assert.equal('provider' in body, false, upstreamBaseUrl);
+  }
+  const noUpstream = applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN, openRouterRouting: BOTH_ON });
+  assert.equal('provider' in noUpstream, false);
+  const onOpenRouter = applyChatBodyPolicy({
+    body: { model: 'm' },
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: BOTH_ON,
+  });
+  assert.equal('provider' in onOpenRouter, true);
+});
+
+test('a caller can neither set nor override the provider object, with the routing on or off', () => {
+  const hostile: JsonObject = {
+    model: 'm',
+    provider: { zdr: false, data_collection: 'allow', only: ['somewhere-else'], allow_fallbacks: true, order: ['x'] },
+  };
+  const routed = applyChatBodyPolicy({
+    body: hostile,
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: BOTH_ON,
+  });
+  assert.deepEqual(routed.provider, {
+    zdr: true,
+    data_collection: 'deny',
+    only: ['google-vertex'],
+    allow_fallbacks: false,
+  });
+  const plain = applyChatBodyPolicy({ body: hostile, policy: OPEN, upstreamBaseUrl: OPENROUTER });
+  assert.deepEqual(plain.provider, { data_collection: 'deny' });
+  // And the rewrite does not alias the shared list: a later edit of one body cannot reach the next.
+  const first = applyChatBodyPolicy({
+    body: {},
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: BOTH_ON,
+  });
+  const second = applyChatBodyPolicy({
+    body: {},
+    policy: OPEN,
+    upstreamBaseUrl: OPENROUTER,
+    openRouterRouting: BOTH_ON,
+  });
+  assert.notEqual(first.provider, second.provider);
 });

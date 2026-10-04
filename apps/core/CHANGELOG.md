@@ -20,6 +20,7 @@ change moves the minor.
 ### Added
 
 - **The photo path guard.** `pnpm test:guard` starts the real core, sends a marked photograph through every failure mode and searches the logs, the responses and the database for it. It runs in the integration suite and every night.
+- **Two optional OpenRouter routing settings.** `UPSTREAM_ZDR=true` adds `zdr: true` to the `provider` object of every forwarded body, so a request goes only to endpoints with zero data retention. `UPSTREAM_PROVIDER_ONLY=google-vertex` (comma separated slugs) adds `only` and `allow_fallbacks: false`, so a request goes to one of those providers or fails. Both are off by default, and the body is then what it was. Both act on an OpenRouter host only, and a caller still cannot set the `provider` object. A value that is not `true`, `false` or empty in `UPSTREAM_ZDR`, or a slug list with an empty or malformed entry, stops the boot. `tests/unit/chat-body-policy.test.ts` and `tests/unit/config.test.ts` assert the exact objects.
 
 ## [0.30.0] - 2026-10-01
 
