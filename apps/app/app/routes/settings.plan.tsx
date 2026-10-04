@@ -442,8 +442,13 @@ function PlanBody(props: PlanScreenProps) {
   const portalAvailable = state.kind === 'ready' && state.plan.portalAvailable;
   // The account section above an order: drawn for every state that is not an
   // answer, and for an answer with something to say besides the order.
+  //
+  // WITH TIERS it is drawn for the whole visit: the order block appears only
+  // once a tier is picked, and a section that vanished at that moment would pull
+  // the list the person just tapped up the screen (M2/05, no layout shift).
+  const hasTierList = props.tiers !== undefined && props.tiers !== null && state.kind === 'ready';
   const showsAccountSection =
-    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable);
+    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable || hasTierList);
 
   return (
     <>
