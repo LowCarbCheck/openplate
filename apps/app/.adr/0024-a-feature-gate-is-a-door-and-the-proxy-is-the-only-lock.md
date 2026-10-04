@@ -62,11 +62,23 @@ unchanged. This record adds a second, finer thing beside it.
 - **Self-hosted and BYOK are never gated.** With the plans door off, or with the
   capability list absent, every gate site draws its open form.
 
-**Tiers are data.** The offer lists tiers with their names, descriptions, daily
-limits, capabilities, whether each is on sale, and prices. The plan page draws
-them as served, marks `currentTier`, and offers an order only for a tier that is
-on sale. An offer with no tiers draws the page it drew before. A test fails the
-build if a tier name appears in a string literal under `app/`.
+**Tiers are data.** The offer lists `tiers`: the free entry first, then every
+tier on sale, lowest first. Each entry carries a name, a description, a daily
+limit, capabilities, whether it is sold, and its plans with prices. The account's
+own tier is `tier` on the plan view. The array order is the rank. The plan page
+draws the entries as served and marks the one that is the account's own. An offer
+with no tiers draws the page it drew before. A test fails the build if a tier name
+appears in a string literal under `app/`.
+
+**A move between tiers is an order.** A subscriber orders another tier through the
+same order endpoint, with the same two consents as a first order. A higher rank
+takes effect now with the price settled pro rata. A lower rank, and the monthly to
+yearly move of one tier, take effect at the end of the paid period.
+`moveEffectOf` is that rule as a pure function of two ranks. The page says the
+effect before the order from the ranks, and after the order from the `effect` the
+biller answers. A person with an overdue payment is offered no move, and neither
+is anyone on a tier the offer does not list, because the biller refuses the first
+and the app has no rank for the second.
 
 ## Alternatives Considered
 
@@ -94,9 +106,7 @@ build if a tier name appears in a string literal under `app/`.
 - The fast target reminder reads the gate through a registration
   (`registerFastingGate`), because `push.ts` cannot import the reader without
   closing an import loop through the sync actions.
-- A subscriber on a tier sees the tier list with theirs marked and nothing to
-  pick here. What a tier may move to is the billing portal's to say until the
-  biller defines a switch path.
+
 
 ## References
 

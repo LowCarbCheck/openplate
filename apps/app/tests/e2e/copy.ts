@@ -394,8 +394,14 @@ const englishCatalogSchema = catalogSchema
       }),
       pantry: z.object({ leadClosed: z.string(), review: z.object({ addLine: z.string() }) }),
       plan: z.object({
-        tiers: z.object({ legend: z.string(), current: z.string(), notOnSale: z.string() }),
-        order: z.object({ whatHappensLabel: z.string(), privacyLink: z.string() }),
+        tiers: z.object({ legend: z.string(), current: z.string(), switchTo: z.string(), switchYearly: z.string() }),
+        order: z.object({ whatHappensLabel: z.string(), privacyLink: z.string(), moveRefused: z.string() }),
+        move: z.object({
+          effectNow: z.string(),
+          effectPeriodEnd: z.string(),
+          doneNow: z.string(),
+          donePeriodEnd: z.string(),
+        }),
       }),
     }),
   )

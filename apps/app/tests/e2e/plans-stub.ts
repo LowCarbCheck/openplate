@@ -192,6 +192,23 @@ export const MONTHLY_SUBSCRIBER_VIEW = {
   portalAvailable: true,
 };
 
+/**
+ * A monthly subscriber the biller puts on a tier (M2/04): `GET /plans/me` names
+ * the tier by the id the tiers fixture uses. THE SAME VIEW with no `tier` key is
+ * today's subscriber, so the pair is the control for the tiers world.
+ *
+ * @param tier - the tier id, from `tests/fixtures/plan-offer-tiers.json`.
+ * @param planKey - the interval of the live plan.
+ */
+export function subscriberOnTier(tier: string, planKey: 'monthly' | 'yearly' = 'monthly') {
+  return {
+    ...MONTHLY_SUBSCRIBER_VIEW,
+    planKey,
+    interval: planKey === 'monthly' ? 'month' : 'year',
+    tier,
+  };
+}
+
 /** One answer of the stubbed `POST /v1/plans/order`. */
 export interface OrderAnswer {
   status: number;
