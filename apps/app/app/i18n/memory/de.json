@@ -174,6 +174,13 @@
     "at": "2026-09-14",
     "de": "Melde dich an, um deinen Tarif zu sehen."
   },
+  "026a73b03e8f4b55": {
+    "en": "That photo could not be prepared on this device. Take it as a JPEG, or choose another photo.",
+    "path": "common:scan.errors.photo.notPrepared",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Dieses Foto konnte auf diesem Gerät nicht vorbereitet werden. Nimm es als JPEG auf oder wähle ein anderes Foto."
+  },
   "0284e38b28a6db40": {
     "en": "Restoring…",
     "path": "common:recover.restoring",
@@ -362,6 +369,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Deine Lebensmittel"
+  },
+  "04c053aa7fe718a7": {
+    "en": "The code that handles the photo is public: <proxy>read the proxy</proxy>.",
+    "path": "common:signUp.whatHappens.proof",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Der Code, der das Foto verarbeitet, ist öffentlich: <proxy>Lies den Proxy-Code</proxy>."
   },
   "04c054d8cd53f21a": {
     "en": "The report could not be deleted.",
@@ -2085,6 +2099,13 @@
     "at": "2026-09-14",
     "de": "Wir zählen die Stillmonate ab diesem Tag, und nach sechs Monaten ändern sich die Richtwerte."
   },
+  "17c183fda2540129": {
+    "en": "Our server does not save your photo. It passes the photo to OpenRouter (USA), which passes it to Google. Our server drops it when the answer comes back. Your phone keeps a copy until you clear it.",
+    "path": "common:signUp.whatHappens.photo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Unser Server speichert dein Foto nicht. Er leitet das Foto an OpenRouter (USA) weiter, welches es an Google weiterleitet. Unser Server verwirft es, sobald die Antwort zurückkommt. Dein Smartphone behält eine Kopie, bis du sie löschst."
+  },
   "17c21f54b89090e9": {
     "en": "Macro ratio by calories: {{ratio}}",
     "path": "common:diary.macroRatio.labelKcal",
@@ -2140,6 +2161,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{value}} g Ballaststoffe"
+  },
+  "185ff1315d2caa91": {
+    "en": "If you report a wrong estimate, we keep that one photo for up to 37 days.",
+    "path": "common:signUp.whatHappens.report",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Wenn du eine falsche Schätzung meldest, speichern wir dieses eine Foto bis zu 37 Tage lang."
   },
   "185ff578e7e48bd5": {
     "en": "Type a whole meal in one line, like 3 eggs and 2 slices of toast. The AI works it out from your words, the same as from a photo. Searching the food database is still there for one exact item.",
@@ -3030,6 +3058,13 @@
     "at": "2026-10-01",
     "de": "Dieser KI-Server verarbeitet keine getippten Listen für die Vorratskammer."
   },
+  "21cfa9dead9a52d6": {
+    "en": "When you delete your account, your account and your diary are removed from our server at once. Some records stay for a time, such as invoices and backups.",
+    "path": "common:signUp.whatHappens.deletion",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Wenn du dein Konto löschst, werden dein Konto und dein Tagebuch sofort von unserem Server entfernt. Einige Datensätze bleiben für eine gewisse Zeit erhalten, beispielsweise Rechnungen und Backups."
+  },
   "21d559836f8882bb": {
     "en": "Published by",
     "path": "common:admin.settings.basisLegend",
@@ -3842,6 +3877,13 @@
     "at": "2026-09-14",
     "de": "Noch in Arbeit, das kann einen Moment dauern…"
   },
+  "2c2b2330dc1f86e6": {
+    "en": "For OpenRouter and Google we can say what we ask them to do, and we cannot check it.",
+    "path": "common:signUp.whatHappens.providers",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Bei OpenRouter und Google können wir nur angeben, worum wir sie bitten, wir können es jedoch nicht überprüfen."
+  },
   "2c2b54451d8ae9a0": {
     "en": "Enter a time between 00:00 and 23:59.",
     "path": "common:settings.fasting.startTime.invalid",
@@ -4100,6 +4142,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Heute eingetragen: {{weight}} {{unit}}."
+  },
+  "30b2aef398746a7d": {
+    "en": "Your diary is encrypted on your device. We also hold a recovery key, so we can read your diary. We do not read diaries in normal operation.",
+    "path": "common:signUp.whatHappens.diary",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Dein Tagebuch wird auf deinem Gerät verschlüsselt. Wir besitzen auch einen Wiederherstellungsschlüssel, sodass wir dein Tagebuch lesen können. Im normalen Betrieb lesen wir keine Tagebücher."
   },
   "30be5db6e0b7c5cb": {
     "en": "Every corner in the app is square now, except a real circle.",
@@ -4947,6 +4996,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Eintrag wird geladen…"
+  },
+  "3d74b1b3ebaa5147": {
+    "en": "Paste the code you were sent, or open the invite link.",
+    "path": "common:sync.create.inviteHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Füge den Code ein, den du erhalten hast, oder öffne den Einladungslink."
   },
   "3d7c47f61d52201c": {
     "en": "Take a photo of your plate, and the AI works out the carbs for you.",
@@ -8161,6 +8217,13 @@
     "at": "2026-09-14",
     "de": "Deine Lebensmittel"
   },
+  "63a184216e3f3438": {
+    "en": "The account for {{email}} and the copy of your diary on the server are deleted now and cannot be brought back. The diary on this device stays.",
+    "path": "common:account.delete.confirmBody",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Das Konto für {{email}} und die Kopie deines Tagebuchs auf dem Server werden jetzt gelöscht und lassen sich nicht wiederherstellen. Das Tagebuch auf diesem Gerät bleibt erhalten."
+  },
   "63a808022bcbf060": {
     "en": "Fiber per week, daily average",
     "path": "common:trends.chart.titleWeekly.fiber",
@@ -10135,6 +10198,13 @@
     "at": "2026-09-27",
     "de": "Der KI-Anbieter für diese Instanz hat die Anfrage abgelehnt. Bitte die Person, die sie betreibt, ihre Anbieterkonfiguration zu prüfen."
   },
+  "7abe7918aaad592e": {
+    "en": "Some records can stay for a time, for example backups, copies of mails sent to you, and records the operator must keep by law.",
+    "path": "common:account.delete.stays",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Einige Datensätze können für eine gewisse Zeit verbleiben, beispielsweise Backups, Kopien von an dich gesendeten E-Mails sowie Aufzeichnungen, die der Betreiber gesetzlich aufbewahren muss."
+  },
   "7acb8c38f867e59e": {
     "en": "Yesterday: {{meals}}, {{netCarbs}} g net carbs of your {{ceiling}} g ceiling, {{protein}} g protein of your {{floor}} g floor.",
     "path": "common:catchUp.yesterdayFull",
@@ -11037,6 +11107,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Jedes eingetragene Lebensmittel wird im lokalen Speicher dieses Browsers abgelegt. Der Server speichert keine Kopie: Er hat überhaupt keine Datenbank, also kann dort auch nichts von dir nach außen dringen. Exportiere jederzeit alles als Datei."
+  },
+  "843f4c1c3f1b17dc": {
+    "en": "Some records can stay for a time, for example backups, copies of mails sent to you, and records the operator must keep by law. The <privacy>privacy notice</privacy> lists them.",
+    "path": "common:account.delete.staysWithNotice",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Einige Datensätze können für eine gewisse Zeit verbleiben, beispielsweise Backups, Kopien von an dich gesendeten E-Mails sowie Aufzeichnungen, die der Betreiber gesetzlich aufbewahren muss. Die <privacy>Datenschutzerklärung</privacy> listet sie auf."
   },
   "84566ad98e6814f1": {
     "en": "Ways to add food",
@@ -12942,6 +13019,13 @@
     "at": "2026-09-14",
     "de": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}."
   },
+  "99d7a981107d9c97": {
+    "en": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance needs an account, and your diary is encrypted on this device before a copy reaches the server.",
+    "path": "common:meta.landingDescriptionManaged",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekunden und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz erfordert ein Konto, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht."
+  },
   "99ee63e6055f1643": {
     "en": "Then there is nothing left to bring back, and we're sorry, that is the honest answer. You can start a fresh diary from here, and if a backup does turn up later you can still restore it on top.",
     "path": "common:recover.noBackupBody",
@@ -14328,6 +14412,13 @@
     "at": "2026-09-14",
     "de": "E-Mail-Adresse"
   },
+  "a9c5b165aea06635": {
+    "en": "I agree that openplate processes my health data, such as what I eat, my weight and my fasting times, to run my account and sync my diary. A photo or text I send for analysis goes through this server to the AI service it uses. On app.openplate.de that is OpenRouter in the USA, which passes it to Google. The operator of this server holds a recovery key and can read my diary. The <privacy>privacy notice</privacy> explains how. I can withdraw my consent at any time by deleting my account.",
+    "path": "common:healthConsent.checkbox",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Ich bin damit einverstanden, dass openplate meine Gesundheitsdaten wie meine Mahlzeiten, mein Gewicht und meine Fastenzeiten verarbeitet, um mein Konto zu führen und mein Tagebuch zu synchronisieren. Ein Foto oder ein Text, den ich zur Analyse sende, wird über diesen Server an den von ihm genutzten KI-Dienst weitergeleitet. Bei app.openplate.de ist das OpenRouter in den USA, das die Daten an Google weiterleitet. Der Betreiber dieses Servers besitzt einen Wiederherstellungsschlüssel und kann mein Tagebuch lesen. Die <privacy>Datenschutzerklärung</privacy> erläutert die Details. Ich kann meine Einwilligung jederzeit widerrufen, indem ich mein Konto lösche."
+  },
   "a9d5bd9539f7304e": {
     "en": "against your {{value}} g goal",
     "path": "common:diary.impact.againstGoal",
@@ -14397,6 +14488,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{name}} zu Favoriten hinzufügen"
+  },
+  "aac036e6ebb6e610": {
+    "en": "If you have a paid subscription, it ends now. There is no refund for the time left.",
+    "path": "common:account.delete.subscription",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Falls du ein kostenpflichtiges Abonnement hast, endet es jetzt. Für die verbleibende Zeit gibt es keine Rückerstattung."
   },
   "aac955b40fa2c0e3": {
     "en": "Log lunch on your phone, then review your week on your laptop. Every account works this way by default. Your diary is encrypted on your device, and the server stores only the ciphertext. The operator also keeps a recovery key. This key lets you restore your diary after a password reset, and it means the operator can technically decrypt your data.",
@@ -17330,6 +17428,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Kopieren ging nicht"
+  },
+  "d0e44ae62954a0c2": {
+    "en": "The <privacy>privacy notice</privacy> lists what stays and for how long.",
+    "path": "common:signUp.whatHappens.notice",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Die <privacy>Datenschutzerklärung</privacy> führt auf, was wie lange gespeichert bleibt."
   },
   "d0f9519525774df7": {
     "en": "openplate is a carb-first food diary that keeps an encrypted copy on the operator's server: photograph your plate or search for what you ate, and see where the day stands.",
@@ -21124,6 +21229,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "AB12-CD34-EF56"
+  },
+  "fb326f29179e4f9d": {
+    "en": "What happens to your data",
+    "path": "common:signUp.whatHappens.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "de": "Was mit deinen Daten passiert"
   },
   "fb4bb0d543ad632c": {
     "en": "This reset link is used up, and your old password still works. After the erase, ask for a new link.",

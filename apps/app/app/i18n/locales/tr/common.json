@@ -1422,7 +1422,7 @@
     "reset": "Yeni bir şifre belirle",
     "account": "Hesap",
     "admin": "Yönetim",
-    "landingDescriptionManaged": "Tabağının fotoğrafını çek veya ne yediğini ara. openplate karbonhidrat miktarını saniyeler içinde gösterir ve belirlediğin günlük hedefe göre takip eder. Bu sunucu örneği yalnızca davetiyelidir ve bir kopyası sunucuya ulaşmadan önce günlüğün bu cihazda şifrelenir.",
+    "landingDescriptionManaged": "Tabağının fotoğrafını çek veya ne yediğini ara. openplate saniyeler içinde karbonhidrat miktarını gösterir ve belirlediğin günlük hedefe göre takip eder. Bu kurulum bir hesap gerektirir ve bir kopyası sunucuya ulaşmadan önce günlüğün bu cihazda şifrelenir.",
     "plan": "Planın · openplate",
     "notifications": "Bildirimler · openplate",
     "pantry": "Kiler · openplate",
@@ -2012,6 +2012,7 @@
       "photo": {
         "empty": "Lütfen yüklemek için bir fotoğraf seç.",
         "tooLarge": "Fotoğraf çok büyük (en fazla 8 MB).",
+        "notPrepared": "Bu fotoğraf bu cihazda hazırlanamadı. Fotoğrafı JPEG olarak çek veya başka bir fotoğraf seç.",
         "undecodableFormat": "Bu biçim bu tarayıcıda çalışmaz, JPEG veya PNG çalışır.",
         "unsupportedType": "Desteklenmeyen görsel türü. JPEG, PNG, WEBP veya HEIC kullan.",
         "unreadable": "Bu fotoğraf okunamadı. Daha iyi ışıkta, daha yakından ve titretmeden tekrar dene.",
@@ -2726,7 +2727,17 @@
     "captchaUnavailable": "Doğrulama yüklenemedi. Sayfayı yenile veya bu sayfa için engelleyiciyi kapat.",
     "domainBlocked": "Bu e-posta alan adından kayıt kabul edemiyoruz. Başka bir adres kullan.",
     "failed": "İstek tamamlanamadı. Birazdan tekrar dene.",
-    "legal": "Kayıt olmadan önce <terms>şartları</terms> ve <privacy>gizlilik bildirimini</privacy> oku."
+    "legal": "Kayıt olmadan önce <terms>şartları</terms> ve <privacy>gizlilik bildirimini</privacy> oku.",
+    "whatHappens": {
+      "title": "Verilerine ne olur",
+      "photo": "Sunucumuz fotoğrafını kaydetmez. Fotoğrafı OpenRouter (ABD) şirketine iletir, o da Google'a iletir. Yanıt döndüğünde sunucumuz fotoğrafı siler. Sen temizleyene kadar telefonun bir kopyasını tutar.",
+      "providers": "OpenRouter ve Google için onlardan ne yapmalarını istediğimizi söyleyebiliriz, ancak bunu denetleyemeyiz.",
+      "report": "Hatalı bir tahmin bildirirsen, o fotoğrafı 37 güne kadar saklarız.",
+      "diary": "Günlüğün cihazında şifrelenir. Ayrıca bir kurtarma anahtarı tuttuğumuz için günlüğünü okuyabiliriz. Normal işleyişte günlükleri okumayız.",
+      "deletion": "Hesabını sildiğinde, hesabın ve günlüğün sunucumuzdan hemen kaldırılır. Faturalar ve yedekler gibi bazı kayıtlar bir süre kalır.",
+      "notice": "<privacy>Gizlilik bildirimi</privacy> nelerin ne kadar süreyle kaldığını listeler.",
+      "proof": "Fotoğrafı işleyen kod herkese açıktır: <proxy>vekil sunucu kodunu oku</proxy>."
+    }
   },
   "signupOffer": {
     "scans_one": "{{count}} ücretsiz yapay zeka taraması. Kart gerekmez.",
@@ -2803,7 +2814,7 @@
     "create": {
       "cta": "Hesap oluştur",
       "inviteLabel": "Davet kodu",
-      "inviteHint": "Bu sunucu yalnızca davetle çalışır. Sana gönderilen kodu yapıştır ya da davet bağlantısını aç.",
+      "inviteHint": "Sana gönderilen kodu yapıştır veya davet bağlantısını aç.",
       "inviteRequired": "Bu davet geçerli değil. Önceden kullanılmış veya süresi dolmuş olabilir. Yeni bir davet iste.",
       "inviteMissing": "Davet kodunu yapıştır ya da sana gönderilen davet bağlantısını aç.",
       "inviteMalformed": "Bu bir davet koduna benzemiyor. Davet kodları {{prefix}} ile başlar.",
@@ -3272,7 +3283,10 @@
     "delete": {
       "cta": "Hesabı sil",
       "confirmTitle": "Bu hesap silinsin mi?",
-      "confirmBody": "{{email}} için saklanan her şey kaldırılır ve geri getirilemez. Bu cihazdaki günlük kalır.",
+      "confirmBody": "{{email}} hesabı ve günlüğünün sunucudaki kopyası şu anda silindi ve geri getirilemez. Bu cihazdaki günlük kalır.",
+      "stays": "Yedekler, sana gönderilen e-postaların kopyaları ve işletmecinin yasal olarak saklamak zorunda olduğu kayıtlar gibi bazı kayıtlar bir süre kalabilir.",
+      "staysWithNotice": "Yedekler, sana gönderilen e-postaların kopyaları ve işletmecinin yasal olarak saklamak zorunda olduğu kayıtlar gibi bazı kayıtlar bir süre kalabilir. <privacy>Gizlilik bildirimi</privacy> bunları listeler.",
+      "subscription": "Ücretli bir aboneliğin varsa şu anda sona erer. Kalan süre için geri ödeme yapılmaz.",
       "passwordLabel": "Parolan",
       "confirmCta": "Sil",
       "failed": "Hesap silinemedi.",
@@ -3935,7 +3949,7 @@
   },
   "healthConsent": {
     "title": "Açık rızan",
-    "checkbox": "openplate'in hesabımı yönetmek ve günlüğümü senkronize etmek için ne yediğim, kilom ve oruç sürelerim gibi sağlık verilerimi işlemesini kabul ediyorum. <privacy>Gizlilik bildirimi</privacy> bunun nasıl yapıldığını açıklar. Rızamı dilediğim zaman hesabımı silerek geri çekebilirim.",
+    "checkbox": "Hesabımı çalıştırmak ve günlüğümü eşitlemek için openplate uygulamasının ne yediğim, kilom ve oruç sürelerim gibi sağlık verilerimi işlemesini kabul ediyorum. Analiz için gönderdiğim bir fotoğraf veya metin, bu sunucu üzerinden kullandığı yapay zeka hizmetine gider. app.openplate.de üzerinde bu, veriyi Google'a ileten ABD'deki OpenRouter hizmetidir. Bu sunucunun işletmecisi bir kurtarma anahtarı tutar ve günlüğümü okuyabilir. <privacy>Gizlilik bildirimi</privacy> bunun nasıl olduğunu açıklar. Onayımı istediğim zaman hesabımı silerek geri çekebilirim.",
     "requiredToCreate": "Hesabını oluşturmak için lütfen kutuyu işaretle.",
     "requiredToContinue": "Devam etmek için lütfen kutuyu işaretle.",
     "heading": "Son bir adım: açık rızan",

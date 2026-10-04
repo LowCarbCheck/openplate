@@ -1422,7 +1422,7 @@
     "reset": "Neues Passwort festlegen",
     "account": "Konto",
     "admin": "Administration",
-    "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekundenschnelle und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz ist nur auf Einladung zugänglich, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
+    "landingDescriptionManaged": "Fotografiere deinen Teller oder suche nach dem, was du gegessen hast. openplate zeigt dir die Kohlenhydrate in Sekunden und gleicht sie mit deinem festgelegten Tagesziel ab. Diese Instanz erfordert ein Konto, und dein Tagebuch wird auf diesem Gerät verschlüsselt, bevor eine Kopie den Server erreicht.",
     "plan": "Dein Tarif · openplate",
     "notifications": "Benachrichtigungen · openplate",
     "pantry": "Vorratskammer · openplate",
@@ -2012,6 +2012,7 @@
       "photo": {
         "empty": "Wähl ein Foto zum Hochladen aus.",
         "tooLarge": "Das Foto ist zu groß (max. 8 MB).",
+        "notPrepared": "Dieses Foto konnte auf diesem Gerät nicht vorbereitet werden. Nimm es als JPEG auf oder wähle ein anderes Foto.",
         "undecodableFormat": "Dieses Format funktioniert in diesem Browser nicht, ein JPEG oder PNG hingegen schon.",
         "unsupportedType": "Dieses Bildformat geht nicht. Nimm JPEG, PNG, WEBP oder HEIC.",
         "unreadable": "Das Foto war nicht lesbar. Versuch es noch mal mit besserem Licht, näher dran und halte still.",
@@ -2726,7 +2727,17 @@
     "captchaUnavailable": "Die Überprüfung konnte nicht geladen werden. Lade die Seite neu oder deaktiviere einen Blocker für diese Seite.",
     "domainBlocked": "Wir können keine Registrierungen von dieser E-Mail-Domain annehmen. Nutze eine andere Adresse.",
     "failed": "Die Anfrage hat nicht geklappt. Versuche es gleich noch einmal.",
-    "legal": "Lies die <terms>Nutzungsbedingungen</terms> und die <privacy>Datenschutzhinweise</privacy>, bevor du dich registrierst."
+    "legal": "Lies die <terms>Nutzungsbedingungen</terms> und die <privacy>Datenschutzhinweise</privacy>, bevor du dich registrierst.",
+    "whatHappens": {
+      "title": "Was mit deinen Daten passiert",
+      "photo": "Unser Server speichert dein Foto nicht. Er leitet das Foto an OpenRouter (USA) weiter, welches es an Google weiterleitet. Unser Server verwirft es, sobald die Antwort zurückkommt. Dein Smartphone behält eine Kopie, bis du sie löschst.",
+      "providers": "Bei OpenRouter und Google können wir nur angeben, worum wir sie bitten, wir können es jedoch nicht überprüfen.",
+      "report": "Wenn du eine falsche Schätzung meldest, speichern wir dieses eine Foto bis zu 37 Tage lang.",
+      "diary": "Dein Tagebuch wird auf deinem Gerät verschlüsselt. Wir besitzen auch einen Wiederherstellungsschlüssel, sodass wir dein Tagebuch lesen können. Im normalen Betrieb lesen wir keine Tagebücher.",
+      "deletion": "Wenn du dein Konto löschst, werden dein Konto und dein Tagebuch sofort von unserem Server entfernt. Einige Datensätze bleiben für eine gewisse Zeit erhalten, beispielsweise Rechnungen und Backups.",
+      "notice": "Die <privacy>Datenschutzerklärung</privacy> führt auf, was wie lange gespeichert bleibt.",
+      "proof": "Der Code, der das Foto verarbeitet, ist öffentlich: <proxy>Lies den Proxy-Code</proxy>."
+    }
   },
   "signupOffer": {
     "scans_one": "{{count}} kostenloser KI-Scan. Keine Karte nötig.",
@@ -2803,7 +2814,7 @@
     "create": {
       "cta": "Konto erstellen",
       "inviteLabel": "Einladungscode",
-      "inviteHint": "Dieser Server ist nur mit Einladung nutzbar. Füge den Code ein, den du bekommen hast, oder öffne den Einladungslink.",
+      "inviteHint": "Füge den Code ein, den du erhalten hast, oder öffne den Einladungslink.",
       "inviteRequired": "Diese Einladung ist ungültig. Sie wurde vielleicht schon benutzt oder ist abgelaufen. Bitte um eine neue.",
       "inviteMissing": "Füge deinen Einladungscode ein oder öffne den Einladungslink, den du erhalten hast.",
       "inviteMalformed": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}.",
@@ -3272,7 +3283,10 @@
     "delete": {
       "cta": "Konto löschen",
       "confirmTitle": "Dieses Konto löschen?",
-      "confirmBody": "Alles, was für {{email}} gespeichert ist, wird gelöscht und kann nicht wiederhergestellt werden. Das Tagebuch auf diesem Gerät bleibt erhalten.",
+      "confirmBody": "Das Konto für {{email}} und die Kopie deines Tagebuchs auf dem Server werden jetzt gelöscht und lassen sich nicht wiederherstellen. Das Tagebuch auf diesem Gerät bleibt erhalten.",
+      "stays": "Einige Datensätze können für eine gewisse Zeit verbleiben, beispielsweise Backups, Kopien von an dich gesendeten E-Mails sowie Aufzeichnungen, die der Betreiber gesetzlich aufbewahren muss.",
+      "staysWithNotice": "Einige Datensätze können für eine gewisse Zeit verbleiben, beispielsweise Backups, Kopien von an dich gesendeten E-Mails sowie Aufzeichnungen, die der Betreiber gesetzlich aufbewahren muss. Die <privacy>Datenschutzerklärung</privacy> listet sie auf.",
+      "subscription": "Falls du ein kostenpflichtiges Abonnement hast, endet es jetzt. Für die verbleibende Zeit gibt es keine Rückerstattung.",
       "passwordLabel": "Dein Passwort",
       "confirmCta": "Löschen",
       "failed": "Das Konto konnte nicht gelöscht werden.",
@@ -3935,7 +3949,7 @@
   },
   "healthConsent": {
     "title": "Deine Einwilligung",
-    "checkbox": "Ich willige ein, dass openplate meine Gesundheitsdaten, wie meine Mahlzeiten, mein Gewicht und meine Fastenzeiten, verarbeitet, um mein Konto zu führen und mein Tagebuch zu synchronisieren. Die <privacy>Datenschutzhinweise</privacy> erklären die Einzelheiten. Ich kann meine Einwilligung jederzeit widerrufen, indem ich mein Konto lösche.",
+    "checkbox": "Ich bin damit einverstanden, dass openplate meine Gesundheitsdaten wie meine Mahlzeiten, mein Gewicht und meine Fastenzeiten verarbeitet, um mein Konto zu führen und mein Tagebuch zu synchronisieren. Ein Foto oder ein Text, den ich zur Analyse sende, wird über diesen Server an den von ihm genutzten KI-Dienst weitergeleitet. Bei app.openplate.de ist das OpenRouter in den USA, das die Daten an Google weiterleitet. Der Betreiber dieses Servers besitzt einen Wiederherstellungsschlüssel und kann mein Tagebuch lesen. Die <privacy>Datenschutzerklärung</privacy> erläutert die Details. Ich kann meine Einwilligung jederzeit widerrufen, indem ich mein Konto lösche.",
     "requiredToCreate": "Bitte setze das Häkchen, um dein Konto zu erstellen.",
     "requiredToContinue": "Bitte setze das Häkchen, um fortzufahren.",
     "heading": "Noch ein Schritt: deine Einwilligung",

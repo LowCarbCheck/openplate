@@ -1422,7 +1422,7 @@
     "reset": "Imposta una nuova password",
     "account": "Account",
     "admin": "Amministrazione",
-    "landingDescriptionManaged": "Fotografa il tuo piatto o cerca quello che hai mangiato. openplate ti mostra i carboidrati in pochi secondi e ne tiene traccia rispetto all'obiettivo giornaliero che hai impostato. Questa istanza è accessibile solo su invito e il tuo diario viene cifrato su questo dispositivo prima che una copia raggiunga il server.",
+    "landingDescriptionManaged": "Fotografa il tuo piatto o cerca cosa hai mangiato. openplate ti mostra i carboidrati in pochi secondi e ne tiene traccia rispetto all'obiettivo giornaliero che hai impostato. Questa istanza richiede un account, e il tuo diario viene cifrato su questo dispositivo prima che una copia raggiunga il server.",
     "plan": "Il tuo piano · openplate",
     "notifications": "Notifiche · openplate",
     "pantry": "Dispensa · openplate",
@@ -2012,6 +2012,7 @@
       "photo": {
         "empty": "Scegli una foto da caricare.",
         "tooLarge": "La foto è troppo grande (massimo 8MB).",
+        "notPrepared": "Non è stato possibile preparare quella foto su questo dispositivo. Scattala in formato JPEG, oppure scegli un'altra foto.",
         "undecodableFormat": "Questo formato non funziona in questo browser, usa un JPEG o un PNG.",
         "unsupportedType": "Tipo di immagine non supportato. Usa JPEG, PNG, WEBP o HEIC.",
         "unreadable": "Impossibile leggere quella foto. Riprova con più luce, da più vicino e senza muoverti.",
@@ -2726,7 +2727,17 @@
     "captchaUnavailable": "Impossibile caricare la verifica. Ricarica la pagina o disattiva i blocchi dei contenuti per questo sito.",
     "domainBlocked": "Non possiamo accettare registrazioni da questo dominio email. Usa un altro indirizzo.",
     "failed": "La richiesta non è andata a buon fine. Riprova tra poco.",
-    "legal": "Leggi i <terms>termini di servizio</terms> e l'<privacy>informativa sulla privacy</privacy> prima di registrarti."
+    "legal": "Leggi i <terms>termini di servizio</terms> e l'<privacy>informativa sulla privacy</privacy> prima di registrarti.",
+    "whatHappens": {
+      "title": "Cosa succede ai tuoi dati",
+      "photo": "Il nostro server non salva la tua foto. La passa a OpenRouter (USA), che la passa a Google. Il nostro server la scarta all'arrivo della risposta. Il tuo telefono ne conserva una copia finché non la cancelli.",
+      "providers": "Per OpenRouter e Google possiamo indicare ciò che chiediamo loro di fare, ma non possiamo verificarlo.",
+      "report": "Se segnali una stima errata, conserviamo quella singola foto per un massimo di 37 giorni.",
+      "diary": "Il tuo diario è cifrato sul tuo dispositivo. Conserviamo anche una chiave di recupero, quindi possiamo leggere il tuo diario. Non leggiamo i diari durante il normale funzionamento.",
+      "deletion": "Quando elimini il tuo account, il tuo account e il tuo diario vengono rimossi dal nostro server all'istante. Alcuni record rimangono per un certo periodo, come le fatture e i backup.",
+      "notice": "L'<privacy>informativa sulla privacy</privacy> elenca cosa rimane e per quanto tempo.",
+      "proof": "Il codice che gestisce la foto è pubblico: <proxy>leggi il proxy</proxy>."
+    }
   },
   "signupOffer": {
     "scans_one": "{{count}} scansione con IA gratuita. Nessuna carta richiesta.",
@@ -2803,7 +2814,7 @@
     "create": {
       "cta": "Crea un account",
       "inviteLabel": "Codice di invito",
-      "inviteHint": "Questa istanza è solo su invito. Incolla il codice che hai ricevuto oppure apri il link di invito.",
+      "inviteHint": "Incolla il codice che hai ricevuto, oppure apri il link di invito.",
       "inviteRequired": "Questo invito non è valido. Potrebbe essere già stato usato o essere scaduto. Chiedine uno nuovo.",
       "inviteMissing": "Incolla il tuo codice di invito oppure apri il link di invito che hai ricevuto.",
       "inviteMalformed": "Questo non sembra un codice di invito. Iniziano con {{prefix}}.",
@@ -3272,7 +3283,10 @@
     "delete": {
       "cta": "Elimina account",
       "confirmTitle": "Vuoi eliminare questo account?",
-      "confirmBody": "Tutti i dati archiviati per {{email}} vengono rimossi e non possono essere recuperati. Il diario su questo dispositivo resta.",
+      "confirmBody": "L'account per {{email}} e la copia del tuo diario sul server vengono eliminati ora e non possono essere recuperati. Il diario su questo dispositivo rimane.",
+      "stays": "Alcuni record possono rimanere per un certo periodo, ad esempio backup, copie delle email inviate a te e record che il gestore deve conservare per legge.",
+      "staysWithNotice": "Alcuni record possono rimanere per un certo periodo, ad esempio backup, copie delle email inviate a te e record che il gestore deve conservare per legge. L'<privacy>informativa sulla privacy</privacy> li elenca.",
+      "subscription": "Se hai un abbonamento a pagamento, termina adesso. Non è previsto alcun rimborso per il periodo rimanente.",
       "passwordLabel": "La tua password",
       "confirmCta": "Eliminalo",
       "failed": "Impossibile eliminare l'account.",
@@ -3935,7 +3949,7 @@
   },
   "healthConsent": {
     "title": "Il tuo consenso",
-    "checkbox": "Acconsento a che openplate tratti i miei dati relativi alla salute, come ciò che mangio, il mio peso e i miei orari di digiuno, per gestire il mio account e sincronizzare il mio diario. L'<privacy>informativa sulla privacy</privacy> spiega come. Posso revocare il mio consenso in qualsiasi momento eliminando il mio account.",
+    "checkbox": "Accetto che openplate tratti i miei dati sanitari, come ciò che mangio, il mio peso e i miei orari di digiuno, per gestire il mio account e sincronizzare il mio diario. Una foto o un testo inviato per l'analisi passa attraverso questo server verso il servizio di IA utilizzato. Su app.openplate.de si tratta di OpenRouter negli USA, che lo passa a Google. Il gestore di questo server conserva una chiave di recupero e può leggere il mio diario. L'<privacy>informativa sulla privacy</privacy> ne illustra le modalità. Posso revocare il mio consenso in qualsiasi momento eliminando il mio account.",
     "requiredToCreate": "Seleziona la casella per creare il tuo account.",
     "requiredToContinue": "Seleziona la casella per continuare.",
     "heading": "Ancora un passaggio: il tuo consenso",

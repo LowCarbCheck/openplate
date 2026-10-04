@@ -1422,7 +1422,7 @@
     "reset": "Définir un nouveau mot de passe",
     "account": "Compte",
     "admin": "Administration",
-    "landingDescriptionManaged": "Prends ta photo d'assiette ou recherche ce que tu as mangé. openplate calcule les glucides en quelques secondes et les compare à l'objectif quotidien que tu as fixé. Cette instance est accessible uniquement sur invitation, et ton journal est chiffré sur cet appareil avant qu'une copie n'arrive sur le serveur.",
+    "landingDescriptionManaged": "Prends ton assiette en photo ou cherche ce que tu as mangé. openplate t'affiche les glucides en quelques secondes et les compare à l'objectif quotidien que tu as fixé. Cette instance nécessite un compte, et ton journal est chiffré sur cet appareil avant qu'une copie n'arrive sur le serveur.",
     "plan": "Ton forfait · openplate",
     "notifications": "Notifications · openplate",
     "pantry": "Garde-manger · openplate",
@@ -2012,6 +2012,7 @@
       "photo": {
         "empty": "Choisis une photo à téléverser.",
         "tooLarge": "La photo est trop volumineuse (max 8 Mo).",
+        "notPrepared": "Impossible de préparer cette photo sur cet appareil. Prends-la au format JPEG ou choisis une autre photo.",
         "undecodableFormat": "Ce format ne fonctionne pas dans ce navigateur, utilise plutôt un JPEG ou un PNG.",
         "unsupportedType": "Type d'image non pris en charge. Utilise JPEG, PNG, WEBP ou HEIC.",
         "unreadable": "Cette photo n'a pas pu être lue. Réessaie avec un meilleur éclairage, de plus près, sans bouger.",
@@ -2726,7 +2727,17 @@
     "captchaUnavailable": "Impossible de charger la vérification. Recharge la page ou désactive ton bloqueur pour cette page.",
     "domainBlocked": "Nous ne pouvons pas accepter d'inscription avec ce domaine d'e-mail. Utilise une autre adresse.",
     "failed": "La demande n'a pas abouti. Réessaie dans un instant.",
-    "legal": "Consulte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy> avant de t'inscrire."
+    "legal": "Consulte les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy> avant de t'inscrire.",
+    "whatHappens": {
+      "title": "Ce qu'il advient de tes données",
+      "photo": "Notre serveur n'enregistre pas ta photo. Il la transmet à OpenRouter (États-Unis), qui la transmet à Google. Notre serveur la supprime dès la réception de la réponse. Ton téléphone en garde une copie jusqu'à ce que tu l'effaces.",
+      "providers": "Concernant OpenRouter et Google, nous pouvons indiquer ce que nous leur demandons de faire, mais nous ne pouvons pas le vérifier.",
+      "report": "Si tu signales une estimation erronée, nous conservons cette photo précise pendant 37 jours au maximum.",
+      "diary": "Ton journal est chiffré sur ton appareil. Nous détenons aussi une clé de récupération, nous pouvons donc lire ton journal. Nous ne lisons pas les journaux en fonctionnement normal.",
+      "deletion": "Lorsque tu supprimes ton compte, ton compte et ton journal sont immédiatement effacés de notre serveur. Certains enregistrements subsistent un certain temps, comme les factures et les sauvegardes.",
+      "notice": "La <privacy>politique de confidentialité</privacy> détaille ce qui subsiste et pour quelle durée.",
+      "proof": "Le code qui traite la photo est public : <proxy>consulte le proxy</proxy>."
+    }
   },
   "signupOffer": {
     "scans_one": "{{count}} scan IA gratuit. Pas besoin de carte.",
@@ -2803,7 +2814,7 @@
     "create": {
       "cta": "Créer un compte",
       "inviteLabel": "Code d'invitation",
-      "inviteHint": "Cette instance est accessible uniquement sur invitation. Colle le code que tu as reçu, ou ouvre le lien d'invitation.",
+      "inviteHint": "Colle le code que tu as reçu, ou ouvre le lien d'invitation.",
       "inviteRequired": "Cette invitation n'est pas valide. Elle a peut-être déjà été utilisée ou a expiré. Demande-en une nouvelle.",
       "inviteMissing": "Colle ton code d'invitation, ou ouvre le lien d'invitation que tu as reçu.",
       "inviteMalformed": "Cela ne ressemble pas à un code d'invitation. Ils commencent par {{prefix}}.",
@@ -3272,7 +3283,10 @@
     "delete": {
       "cta": "Supprimer le compte",
       "confirmTitle": "Supprimer ce compte ?",
-      "confirmBody": "Tout ce qui est stocké pour {{email}} est supprimé de façon définitive. Le journal sur cet appareil reste conservé.",
+      "confirmBody": "Le compte associé à {{email}} et la copie de ton journal sur le serveur sont désormais supprimés et ne peuvent pas être restaurés. Le journal sur cet appareil reste conservé.",
+      "stays": "Certains enregistrements peuvent subsister un certain temps, par exemple les sauvegardes, les copies des courriels qui t'ont été envoyés et les documents que l'exploitant doit légalement conserver.",
+      "staysWithNotice": "Certains enregistrements peuvent subsister un certain temps, par exemple les sauvegardes, les copies des courriels qui t'ont été envoyés et les documents que l'exploitant doit légalement conserver. La <privacy>politique de confidentialité</privacy> les énumère.",
+      "subscription": "Si tu as un abonnement payant, il prend fin maintenant. La période restante n'est pas remboursée.",
       "passwordLabel": "Ton mot de passe",
       "confirmCta": "Le supprimer",
       "failed": "Impossible de supprimer le compte.",
@@ -3935,7 +3949,7 @@
   },
   "healthConsent": {
     "title": "Ton consentement",
-    "checkbox": "J'accepte que openplate traite mes données de santé, comme ce que je mange, mon poids et mes périodes de jeûne, pour faire fonctionner mon compte et synchroniser mon journal. La <privacy>politique de confidentialité</privacy> explique comment. Je peux retirer mon consentement à tout moment en supprimant mon compte.",
+    "checkbox": "J'accepte qu'openplate traite mes données de santé, comme ce que je mange, mon poids et mes périodes de jeûne, pour faire fonctionner mon compte et synchroniser mon journal. Une photo ou un texte que j'envoie pour analyse transite par ce serveur jusqu'au service d'IA qu'il utilise. Sur app.openplate.de, il s'agit d'OpenRouter aux États-Unis, qui la transmet à Google. L'exploitant de ce serveur détient une clé de récupération et peut lire mon journal. La <privacy>politique de confidentialité</privacy> en explique le fonctionnement. Je peux retirer mon consentement à tout moment en supprimant mon compte.",
     "requiredToCreate": "Coche la case pour créer ton compte.",
     "requiredToContinue": "Coche la case pour continuer.",
     "heading": "Encore une étape : ton consentement",
