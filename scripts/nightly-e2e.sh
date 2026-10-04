@@ -16,6 +16,18 @@
 # develop, see NIX), because Chromium cannot start
 # in the ts-dev toolbox.
 #
+# AND THE PHOTO PATH GUARD. After the browser tier it runs one more stage, in
+# apps/core: `pnpm test:guard`, the end-to-end test that sends a photograph
+# through the real core and searches every log, response and table for it
+# (apps/core/tests/integration/photo-path-guard.test.ts). It is here because the
+# push gate and the release gate can both be bypassed with SKIP_TESTS=1, and a
+# claim about what the server keeps should be checked on a night nobody pushed.
+# It needs Postgres, and uses its OWN database, openplate_nightly_guard on the
+# shared server (NIGHTLY_GUARD_DATABASE_URL names another), so it never deadlocks
+# a gate that holds openplate_sync_test. The two stages are independent: a red
+# browser tier does not skip the guard, and a red guard turns the night red with
+# "photo guard FAILED" at the end of the summary.
+#
 # WHAT IT WRITES, under ${XDG_STATE_HOME:-~/.local/state}/openplate/nightly-e2e/:
 #   <YYYY-MM-DD>.log   the whole run; the newest 14 are kept
 #   latest.txt         one line: green|red <ISO datetime> <sha> <summary>
@@ -24,7 +36,8 @@
 # Test seams: NIGHTLY_WORKTREE names another worktree path and NIGHTLY_SKIP_RUN=1
 # skips the install, build and tier (the caller then supplies NIGHTLY_FAKE_LOG, a
 # file used instead of the tier's output, and NIGHTLY_FAKE_RC its exit code), so
-# the summary parsing can be tried without a browser.
+# the summary parsing can be tried without a browser. With NIGHTLY_SKIP_RUN=1 the
+# guard stage is skipped too, unless NIGHTLY_FAKE_GUARD_RC names its exit code.
 #
 # NIX. On a NixOS host there is no nvm and no host node. When the script runs
 # outside a nix shell, with `nix` on PATH and a flake.nix in the repository, it
@@ -62,6 +75,23 @@ state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/openplate/nightly-e2e
 mkdir -p "$state_dir"
 log=$state_dir/$(date +%F).log
 latest=$state_dir/latest.txt
+
+# The node and pnpm of the Fedora host. Under nix develop both are already on PATH.
+use_host_toolchain() {
+  export NVM_DIR=$HOME/.config/nvm
+  # nvm.sh reads variables it never sets, which `set -u` would reject.
+  set +u
+  . "$NVM_DIR/nvm.sh"
+  nvm use 24.8.0
+  set -u
+  export PATH=$HOME/.local/share/pnpm:$PATH
+}
+
+# The guard's own database, on the shared Postgres. Not openplate_sync_test: a
+# push gate that is running at 03:30 owns that one.
+guard_database_url=${NIGHTLY_GUARD_DATABASE_URL:-postgres://postgres:postgres@localhost:5433/openplate_nightly_guard}
+guard_ran=0
+guard_code=0
 
 keep_logs() {
   # Newest first, so everything past the 14th is old. Names sort by date.
@@ -103,6 +133,15 @@ sha=unknown
 finish() {
   local code=$1 summary verdict=green
   summary=$(summarize "$tier_log" "$code")
+  # The guard stage, when it ran, decides the night as much as the tier does.
+  if [ "$guard_ran" = "1" ]; then
+    if [ "$guard_code" = "0" ]; then
+      summary="$summary, photo guard passed"
+    else
+      summary="$summary, photo guard FAILED, see the log"
+      [ "$code" != "0" ] || code=1
+    fi
+  fi
   [ "$code" = "0" ] || verdict=red
   printf '%s %s %s %s\n' "$verdict" "$(date +%Y-%m-%dT%H:%M:%S%z)" "$sha" "$summary" >"$latest"
   keep_logs
@@ -138,13 +177,7 @@ else
   (
     set -euo pipefail
     if [ "$mode" = "host" ]; then
-      export NVM_DIR=$HOME/.config/nvm
-      # nvm.sh reads variables it never sets, which `set -u` would reject.
-      set +u
-      . "$NVM_DIR/nvm.sh"
-      nvm use 24.8.0
-      set -u
-      export PATH=$HOME/.local/share/pnpm:$PATH
+      use_host_toolchain
     fi
     # One retry: a test that passes on it is reported as flaky, not failed.
     export OPENPLATE_E2E_RETRIES=${OPENPLATE_E2E_RETRIES:-1}
@@ -157,4 +190,23 @@ else
 fi
 # The pipeline above ends in tee, but `set -o pipefail` is on in the subshell,
 # so a failing tier still gives a non-zero code here.
+
+# THE PHOTO PATH GUARD, after the tier and whatever the tier said.
+if [ "${NIGHTLY_SKIP_RUN:-0}" = "1" ]; then
+  if [ -n "${NIGHTLY_FAKE_GUARD_RC:-}" ]; then
+    guard_ran=1
+    guard_code=$NIGHTLY_FAKE_GUARD_RC
+  fi
+else
+  guard_ran=1
+  (
+    set -euo pipefail
+    if [ "$mode" = "host" ]; then
+      use_host_toolchain
+    fi
+    cd "$worktree/apps/core"
+    CI=true pnpm install --frozen-lockfile
+    CI=true TEST_DATABASE_URL="$guard_database_url" pnpm test:guard
+  ) >>"$log" 2>&1 || guard_code=$?
+fi
 finish "$code"
