@@ -30,12 +30,24 @@ import { createSilentLogger } from '../../src/logger.js';
 
 const ADMIN_TOKEN = 'integration-admin-token-0123456789abcdef';
 
+/**
+ * THE FIXTURE CLOCK STARTS AT NOON UTC, NOT AT THE REAL TIME. Every pulse count
+ * is keyed by the UTC day of the injected clock, and the file moves that clock
+ * on by hours (each `beforeEach` jumps past the ten minute limiter, each test
+ * jumps past the cache). A start near the real time put UTC midnight between a
+ * write and the read that follows it in a five minute slice of every day: the
+ * read then asked for the next day and got `0 !== 2` (seen at 23:28 UTC). The
+ * product was right, the new day IS empty. Noon leaves twelve hours of room,
+ * and the whole file adds well under two.
+ */
+const CLOCK_STARTS_AT = Date.parse('2026-10-01T12:00:00.000Z');
+
 let database: TestDatabase;
 let service: ServiceHarness;
 
 before(async () => {
   database = await setupTestDatabase();
-  service = await startService({ db: database.db, adminToken: ADMIN_TOKEN });
+  service = await startService({ db: database.db, adminToken: ADMIN_TOKEN, clockStartsAt: CLOCK_STARTS_AT });
 });
 
 after(async () => {
