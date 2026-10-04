@@ -697,6 +697,7 @@ pnpm install
 pnpm run typecheck
 pnpm run test:unit          # node:test, handler cores, auth policy, protocol drift guard. No DB.
 pnpm run test:integration   # boots the real app against a real Postgres
+pnpm run test:guard         # the photo path guard alone, see below
 pnpm run lint               # oxlint, zero warnings
 pnpm run build              # esbuild → dist/server.js
 pnpm run dev                # tsx watch
@@ -770,6 +771,12 @@ runtime.
 The integration suite targets a local Postgres at `localhost:5433` (user `postgres`, password `postgres`) and creates `openplate_sync_test` on first run. Override with `TEST_DATABASE_URL`. It deliberately does **not** use the self-hosting database in `docker/compose.yml`: that one is for self-hosters. If you have no Postgres on 5433, `docker/compose.dev.yml` is a one-service file that provides exactly that and nothing else.
 
 The test suite and `docker/compose.dev.yml` use Postgres 17 to match production. This catches features that require 18 before release. The self-host files use 18. Before cutting a core tag, run `make check-pg18` from the repository root. It starts a temporary `postgres:18-alpine` from `docker/topologies/compose.core.yml`, builds the image, and runs it against that database. The check requires `/health` to return 200, match the version in `package.json`, and show every committed migration applied. It then cleans up created resources. Because it builds an image, this runs as a release check rather than a pre-push gate. Set `CORE_IMAGE` to test an existing build.
+
+### The photo path guard
+
+Any new media path, audio included, joins `tests/integration/photo-path-guard.test.ts` before it ships. The test starts the real core, sends a photograph of random bytes with a unique marker through every way a request can fail, and searches stdout, stderr, the response and every table for it. Add the new path's failure modes to that file and its bytes to `tests/integration/leak-search.ts`.
+
+The test runs in `pnpm test:integration`, so in the push gate and the release gate, and every night through `scripts/nightly-e2e.sh`. To prove it can fail, make `scrubPayloads` in `src/ai/scrub.ts` return its input, run `pnpm test:guard`, and expect the three "upstream answers 500 and echoes" cases to fail. Then restore the function. A caught error reaches a log only through `src/log-error.ts`, and `tests/unit/log-allow-list.test.ts` fails when a log call reads `.message`.
 
 ### Layout
 
