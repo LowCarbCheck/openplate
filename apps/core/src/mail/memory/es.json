@@ -48,6 +48,13 @@
     "at": "2026-09-14",
     "es": "Alguien ha solicitado una contraseña nueva para la cuenta de openplate asociada a este correo electrónico."
   },
+  "6c7bc8f0bfaad18a": {
+    "en": "You are invited to openplate, a food diary. Your diary lives on your device, and your account keeps an encrypted copy on the server, so you can use it on other devices and restore it.",
+    "path": "mail:invite.invited",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-04",
+    "es": "Te damos la bienvenida a openplate, un diario de comidas. Tu diario se guarda en tu dispositivo y tu cuenta mantiene una copia cifrada en el servidor, de modo que puedes usarlo en otros dispositivos y recuperarlo si lo necesitas."
+  },
   "718de6d461032d81": {
     "en": "You are invited to openplate, a food diary that keeps your data on your own device.",
     "path": "mail:invite.invited",

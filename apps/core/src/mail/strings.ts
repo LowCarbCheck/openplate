@@ -133,7 +133,7 @@ export const MAIL_STRINGS = {
       subject: 'Deine Einladung zu openplate',
       greeting: 'Hallo,',
       invited:
-        'Du bist zu openplate eingeladen, einem Ernährungstagebuch, das deine Daten auf deinem eigenen Gerät speichert.',
+        'Du bist zu openplate eingeladen, einem Ernährungstagebuch. Dein Tagebuch liegt auf deinem Gerät, und dein Konto speichert eine verschlüsselte Kopie auf dem Server, damit du es auf anderen Geräten nutzen und wiederherstellen kannst.',
       open: 'Öffne diesen Link auf dem Gerät, auf dem du openplate nutzen möchtest:',
       expiry: 'Der Link funktioniert nur einmal und läuft am {date} ab.',
       password:

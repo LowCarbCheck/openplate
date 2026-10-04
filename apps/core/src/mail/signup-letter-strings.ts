@@ -86,7 +86,7 @@ const SIGNUP_LETTERS_DE: SignupLetterStrings = {
     subject: 'Erstelle dein openplate-Konto',
     greeting: 'Hallo,',
     asked:
-      'Du oder jemand mit dieser E-Mail-Adresse möchte ein openplate-Konto erstellen. openplate ist ein Ernährungstagebuch, das deine Daten auf deinem eigenen Gerät speichert.',
+      'Du oder jemand mit dieser E-Mail-Adresse möchte ein openplate-Konto erstellen. openplate ist ein Ernährungstagebuch. Dein Tagebuch liegt auf deinem Gerät, und dein Konto speichert eine verschlüsselte Kopie auf dem Server, damit du es auf anderen Geräten nutzen und wiederherstellen kannst.',
     open: 'Um das Konto zu erstellen, öffne diesen Link auf dem Gerät, auf dem du openplate nutzen möchtest:',
     expiry: 'Der Link funktioniert nur einmal und läuft am {date} ab.',
     password:
@@ -112,7 +112,7 @@ const SIGNUP_LETTERS_FR: SignupLetterStrings = {
     subject: 'Crée ton compte openplate',
     greeting: 'Bonjour,',
     asked:
-      "Toi ou quelqu'un utilisant cette adresse e-mail a demandé à créer un compte openplate. openplate est un journal alimentaire qui conserve tes données sur ton propre appareil.",
+      "Toi ou quelqu'un utilisant cette adresse e-mail a demandé à créer un compte openplate. openplate est un journal alimentaire. Ton journal reste sur ton appareil, et ton compte garde une copie chiffrée sur le serveur, pour que tu puisses l'utiliser sur d'autres appareils et le restaurer.",
     open: "Pour créer ton compte, ouvre ce lien sur l'appareil avec lequel tu souhaites utiliser openplate :",
     expiry: "Ce lien n'est valable qu'une seule fois et expire le {date}.",
     password:
@@ -138,7 +138,7 @@ const SIGNUP_LETTERS_IT: SignupLetterStrings = {
     subject: 'Crea il tuo account openplate',
     greeting: 'Ciao,',
     asked:
-      'Tu, o qualcuno che usa questo indirizzo email, hai chiesto di creare un account openplate. openplate è un diario alimentare che conserva i tuoi dati direttamente sul tuo dispositivo.',
+      'Tu, o qualcuno che usa questo indirizzo email, hai chiesto di creare un account openplate. openplate è un diario alimentare. Il tuo diario si trova sul tuo dispositivo e il tuo account ne conserva una copia cifrata sul server, così puoi usarlo su altri dispositivi e ripristinarlo.',
     open: "Per creare l'account, apri questo link sul dispositivo su cui vuoi usare openplate:",
     expiry: 'Il link è utilizzabile una sola volta e scade il {date}.',
     password:
@@ -164,7 +164,7 @@ const SIGNUP_LETTERS_ES: SignupLetterStrings = {
     subject: 'Crea tu cuenta de openplate',
     greeting: 'Hola,',
     asked:
-      'Tú, o alguien con esta dirección de correo electrónico, solicitó crear una cuenta de openplate. openplate es un diario de comidas que guarda tus datos en tu propio dispositivo.',
+      'Tú, o alguien con esta dirección de correo electrónico, solicitó crear una cuenta de openplate. openplate es un diario de comidas. Tu diario vive en tu dispositivo y tu cuenta guarda una copia cifrada en el servidor, para que puedas usarlo en otros dispositivos y restaurarlo.',
     open: 'Para crear la cuenta, abre este enlace en el dispositivo en el que quieras usar openplate:',
     expiry: 'El enlace funciona solo una vez y caduca el {date}.',
     password:
@@ -189,7 +189,7 @@ const SIGNUP_LETTERS_TR: SignupLetterStrings = {
     subject: 'openplate hesabını oluştur',
     greeting: 'Merhaba,',
     asked:
-      'Sen veya bu e-posta adresini kullanan biri, bir openplate hesabı oluşturmak istedi. openplate, verilerini kendi cihazında saklayan bir yemek günlüğüdür.',
+      'Sen veya bu e-posta adresini kullanan biri, bir openplate hesabı oluşturmak istedi. openplate bir yemek günlüğüdür. Günlüğün cihazında tutulur ve hesabın sunucuda şifrelenmiş bir kopyasını saklar, böylece onu diğer cihazlarda kullanabilir ve geri yükleyebilirsin.',
     open: "Hesabı oluşturmak için, openplate'i kullanmak istediğin cihazda bu bağlantıyı aç:",
     expiry: 'Bağlantı yalnızca bir kez geçerlidir ve son geçerlilik tarihi {date}.',
     password:

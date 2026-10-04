@@ -6,13 +6,11 @@
  * encrypted copy on the server so the diary can be restored on another device. A person who pays
  * for the hosted plan reads this letter first, so the claim has a test.
  *
- * THE ENGLISH IS FIXED. The other five languages are not yet. `strings.ts` has `de` by hand and
- * four generated modules (`pnpm translate:mail`), `signup-letter-strings.ts` has all five by hand
- * (wordsmith). A person runs those passes at a keyboard, so this file FREEZES the languages that
- * still carry the old claim in `STILL_CARRIES_THE_OLD_CLAIM`, the same way the app freezes the
- * colour literals it ships. The list is held both ways: a language on it must still say the old
- * thing (the detector can fail), and a language off it must not. Emptying the list is the last
- * step of the translation pass, and the test goes red until it is done.
+ * ALL SIX LANGUAGES ARE FIXED (2026-10-05). `strings.ts` has `de` by hand and four generated modules
+ * (`pnpm translate:mail`), `signup-letter-strings.ts` has all five by hand (wordsmith). The list
+ * `STILL_CARRIES_THE_OLD_CLAIM` is empty now and stays as the door for the next wording change:
+ * a language put on it must still say the old thing (the detector can fail), and a language off
+ * it must not.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -44,7 +42,7 @@ const OLD_SENTENCE = {
  * Languages still waiting for the translation pass. Remove a language here when its letters are
  * regenerated or rewritten; the test below fails if it is removed too early or kept too long.
  */
-const STILL_CARRIES_THE_OLD_CLAIM: readonly InstanceLanguage[] = ['de', 'fr', 'it', 'es', 'tr'];
+const STILL_CARRIES_THE_OLD_CLAIM: readonly InstanceLanguage[] = [];
 
 /** The two letters that introduce openplate to a person: the invitation and the sign-up request. */
 function introductions(language: InstanceLanguage): Array<[name: string, text: string]> {
