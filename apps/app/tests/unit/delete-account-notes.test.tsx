@@ -87,7 +87,7 @@ describe('the catalog lines', () => {
 
   it('no line carries a dash', () => {
     for (const line of [DELETE.confirmBody, DELETE.stays, DELETE.staysWithNotice, DELETE.subscription]) {
-      assert.doesNotMatch(line, /[–—]/, `a dash in: ${line}`);
+      assert.doesNotMatch(line, /[\u2013\u2014]/, `a dash in: ${line}`);
     }
   });
 
