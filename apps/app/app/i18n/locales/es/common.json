@@ -2033,7 +2033,8 @@
         "trialScansSpent": "Elige un plan para seguir usando las entradas con IA. La búsqueda en la base de datos de alimentos sigue funcionando.",
         "allowanceExpiredOn": "Tu cuota para estimaciones a partir de fotos terminó el {{date}}. Todo lo demás en openplate sigue funcionando.",
         "instanceCeiling": "Esta instancia ya procesó todas las fotos posibles por hoy. Vuelve a intentarlo mañana. Tu cuenta no tiene ningún problema.",
-        "managedUpstream": "El proveedor de IA de esta instancia rechazó la solicitud. Pide a quien la administra que revise la configuración de su proveedor."
+        "managedUpstream": "El proveedor de IA de esta instancia rechazó la solicitud. Pide a quien la administra que revise la configuración de su proveedor.",
+        "allowanceSpentPlans": "Has agotado los análisis con IA de hoy. Inténtalo de nuevo mañana o consulta los planes."
       },
       "readPhoto": "No se pudo leer esa foto. Prueba con otra.",
       "titles": {
@@ -3629,7 +3630,11 @@
       "stale": "Esta página ha cambiado. Léela de nuevo y marca las dos casillas.",
       "alreadySubscribed": "Tu cuenta ya tiene un plan o ya se ha programado un cambio.",
       "unavailable": "No se ha podido cargar la página del pedido. Inténtalo más tarde.",
-      "withdrawalLink": "Información y formulario de desistimiento"
+      "withdrawalLink": "Información y formulario de desistimiento",
+      "privacyLink": "Lee el aviso de privacidad",
+      "whatHappensLabel": "Qué ocurre con tus datos",
+      "moveRefused": "No es posible realizar este cambio ahora mismo. Tu plan no ha cambiado.",
+      "planUnavailable": "Ese plan ya no está disponible. La página muestra los planes disponibles actualmente."
     },
     "countdown": {
       "daysLeft_one": "Te queda {{count}} día de prueba con IA.",
@@ -3654,6 +3659,38 @@
       "price": "Gratis",
       "body": "Todas las funciones, en un servidor que gestionas tú. No hay nada que contratar aquí.",
       "link": "Cómo alojarlo tú mismo"
+    },
+    "tiers": {
+      "legend": "Qué incluye cada plan",
+      "dailyLimit_one": "{{count}} análisis con IA al día",
+      "dailyLimit_other": "{{count}} análisis con IA al día",
+      "noScans": "Sin análisis con IA",
+      "includes": "Incluye: {{features}}.",
+      "pricePerMonth": "{{price}} al mes",
+      "pricePerYear": "{{price}} al año",
+      "current": "Tu plan",
+      "switchTo": "Cambiar a {{name}}",
+      "switchYearly": "Pagar anualmente"
+    },
+    "move": {
+      "effectNow": "Este cambio entra en vigor ahora. El importe se ajusta de forma prorrateada con lo que ya pagaste.",
+      "effectPeriodEnd": "Este cambio entra en vigor al final de tu periodo pagado. Mantendrás tu plan actual hasta entonces.",
+      "doneNow": "Tu plan ha cambiado. El importe se ajusta de forma prorrateada.",
+      "donePeriodEnd": "Tu plan cambiará el {{date}}. Mantendrás tu plan actual hasta entonces."
+    }
+  },
+  "featureGate": {
+    "names": {
+      "fasting": "temporizador de ayuno",
+      "pantry": "escaneo de despensa",
+      "voice": "registro por voz",
+      "chat": "registro por chat"
+    },
+    "closed": {
+      "title": "No incluido en tu plan: {{feature}}",
+      "titleGeneric": "No incluido en tu plan",
+      "body": "Lo que ya registraste permanece aquí. Todavía puedes consultarlo y exportarlo.",
+      "plans": "Ver planes"
     }
   },
   "usual": {
@@ -3684,6 +3721,7 @@
     "lead": "Lo que tienes en casa. Haz una foto a un estante o escribe la lista.",
     "leadPhoto": "Lo que tienes en casa. Fotografía un estante.",
     "leadWords": "Lo que tienes en casa. Escribe la lista.",
+    "leadClosed": "Lo que tienes en casa. Mantén la lista a mano.",
     "empty": "Todavía no hay nada aquí. Haz una foto a tu nevera o escribe lo que tienes.",
     "emptyPhoto": "Todavía no hay nada aquí. Fotografía tu nevera.",
     "emptyWords": "Todavía no hay nada aquí. Escribe lo que tienes.",

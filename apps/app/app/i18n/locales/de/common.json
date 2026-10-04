@@ -2033,7 +2033,8 @@
         "trialScansSpent": "Wähle einen Tarif, um KI-Einträge weiter zu nutzen. Die Suche in der Lebensmitteldatenbank funktioniert weiterhin.",
         "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
         "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung.",
-        "managedUpstream": "Der KI-Anbieter für diese Instanz hat die Anfrage abgelehnt. Bitte die Person, die sie betreibt, ihre Anbieterkonfiguration zu prüfen."
+        "managedUpstream": "Der KI-Anbieter für diese Instanz hat die Anfrage abgelehnt. Bitte die Person, die sie betreibt, ihre Anbieterkonfiguration zu prüfen.",
+        "allowanceSpentPlans": "Du hast die heutigen KI-Scans aufgebraucht. Versuche es morgen wieder oder sieh dir die Tarife an."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -3629,7 +3630,11 @@
       "stale": "Diese Seite hat sich geändert. Lies sie noch einmal und setze beide Haken.",
       "alreadySubscribed": "Dein Konto hat bereits einen Tarif, oder ein Wechsel ist gebucht.",
       "unavailable": "Die Bestellseite konnte nicht geladen werden. Versuche es später noch einmal.",
-      "withdrawalLink": "Widerrufsbelehrung und Widerrufsformular"
+      "withdrawalLink": "Widerrufsbelehrung und Widerrufsformular",
+      "privacyLink": "Lies die Datenschutzerklärung",
+      "whatHappensLabel": "Was mit deinen Daten geschieht",
+      "moveRefused": "Diese Änderung ist gerade nicht möglich. Dein Tarif hat sich nicht geändert.",
+      "planUnavailable": "Dieser Tarif wird nicht mehr angeboten. Die Seite zeigt die derzeit verfügbaren Tarife."
     },
     "countdown": {
       "daysLeft_one": "Du hast noch {{count}} Tag Testphase.",
@@ -3654,6 +3659,38 @@
       "price": "Kostenlos",
       "body": "Alle Funktionen auf einem Server, den du selbst betreibst. Hier gibt es nichts zu bestellen.",
       "link": "So hostest du selbst"
+    },
+    "tiers": {
+      "legend": "Was die einzelnen Tarife enthalten",
+      "dailyLimit_one": "{{count}} KI-Scan pro Tag",
+      "dailyLimit_other": "{{count}} KI-Scans pro Tag",
+      "noScans": "Keine KI-Scans",
+      "includes": "Enthält: {{features}}.",
+      "pricePerMonth": "{{price}} pro Monat",
+      "pricePerYear": "{{price}} pro Jahr",
+      "current": "Dein Tarif",
+      "switchTo": "Zu {{name}} wechseln",
+      "switchYearly": "Stattdessen jährlich zahlen"
+    },
+    "move": {
+      "effectNow": "Diese Änderung wird sofort wirksam. Der Preis wird anteilig mit deinen bisherigen Zahlungen verrechnet.",
+      "effectPeriodEnd": "Diese Änderung wird am Ende deines Abrechnungszeitraums wirksam. Bis dahin behältst du deinen aktuellen Tarif.",
+      "doneNow": "Dein Tarif hat sich geändert. Der Preis wird anteilig verrechnet.",
+      "donePeriodEnd": "Dein Tarif ändert sich am {{date}}. Bis dahin behältst du deinen aktuellen Tarif."
+    }
+  },
+  "featureGate": {
+    "names": {
+      "fasting": "Fasten-Timer",
+      "pantry": "Scan für Vorratskammer",
+      "voice": "Spracheingabe",
+      "chat": "Chat-Eingabe"
+    },
+    "closed": {
+      "title": "Nicht in deinem Tarif enthalten: {{feature}}",
+      "titleGeneric": "Nicht in deinem Tarif enthalten",
+      "body": "Was du bereits erfasst hast, bleibt hier. Du kannst es weiterhin einsehen und exportieren.",
+      "plans": "Tarife ansehen"
     }
   },
   "usual": {
@@ -3684,6 +3721,7 @@
     "lead": "Was du zu Hause hast. Fotografiere ein Regal oder schreibe die Liste.",
     "leadPhoto": "Was du zu Hause hast. Fotografiere ein Regal.",
     "leadWords": "Was du zu Hause hast. Schreibe die Liste.",
+    "leadClosed": "Was du zu Hause hast. Führe die Liste manuell.",
     "empty": "Hier ist noch nichts. Fotografiere deinen Kühlschrank oder schreibe auf, was du hast.",
     "emptyPhoto": "Noch nichts vorhanden. Fotografiere deinen Kühlschrank.",
     "emptyWords": "Noch nichts vorhanden. Schreibe auf, was du da hast.",

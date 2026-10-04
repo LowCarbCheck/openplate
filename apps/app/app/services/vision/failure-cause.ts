@@ -119,6 +119,18 @@ export type VisionFailureCause =
    */
   | 'trial-expired'
   /**
+   * `403 {"error":"capability-required","capability":"<label>"}`, the account's
+   * plan does not include the feature this request was made for (M2/03,
+   * `PROTOCOL.md`). The request named it in `X-Openplate-Feature`.
+   *
+   * A FIFTH REFUSAL, NOT `ai-not-allowed` AND NOT `auth`. The account has AI
+   * and a perfectly good credential; one FEATURE is not part of its plan, and
+   * the screen shows the same closed-feature note the client's own gate shows,
+   * with the way to the plan page (ADR-0024). `VisionProviderFailure.capability`
+   * carries the label the proxy named.
+   */
+  | 'capability-required'
+  /**
    * `503 {"error":"ai-instance-ceiling"}`, the whole instance has spent its
    * daily ceiling, and every account is refused until the next UTC day.
    *
@@ -143,16 +155,29 @@ export class VisionProviderFailure extends VisionProviderError {
    * them.
    */
   readonly retryAfterSeconds: number | null;
+  /**
+   * The feature label a `capability-required` refusal names, or `null` for
+   * every other cause and for a refusal whose body named none. A label is a
+   * string the SERVER chose; a screen maps it to a feature name it knows
+   * (`isFeatureLabel`) and says nothing about one it does not.
+   */
+  readonly capability: string | null;
 
   constructor(
     failureCause: VisionFailureCause,
     message: string,
-    options?: { cause?: unknown; usage?: ScanTokenUsage; retryAfterSeconds?: number | null },
+    options?: {
+      cause?: unknown;
+      usage?: ScanTokenUsage;
+      retryAfterSeconds?: number | null;
+      capability?: string | null;
+    },
   ) {
     super(message, options);
     this.name = 'VisionProviderFailure';
     this.failureCause = failureCause;
     this.retryAfterSeconds = options?.retryAfterSeconds ?? null;
+    this.capability = options?.capability ?? null;
   }
 }
 
@@ -169,6 +194,9 @@ const KnownErrorBodySchema = z.object({
   // the I/O boundary, into one `{ code }` domain value, so nothing
   // downstream has to ask which representation arrived. The free-text
   // `message` member is still never read (see above).
+  // The label a `capability-required` refusal names. A sibling of `error`, not
+  // inside it: the managed proxy's flat body is `{"error":"...","capability":"..."}`.
+  capability: z.string().optional().catch(undefined),
   error: z
     .union([
       z.string().transform((code) => ({ code })),
@@ -230,6 +258,7 @@ const HEALTH_CONSENT_REQUIRED_CODE = 'health-consent-required';
 const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
 const TRIAL_SCANS_SPENT_CODE = 'trial-scans-spent';
 const TRIAL_EXPIRED_CODE = 'trial-expired';
+const CAPABILITY_REQUIRED_CODE = 'capability-required';
 
 /** The marker on the instance-wide `503`, see `VisionFailureCause`. */
 const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
@@ -243,8 +272,9 @@ const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
  * how the two managed refusals were classified as ordinary key rejections
  * while a passing test suite watched (M192/06).
  */
-async function readForbiddenCode(response: Response): Promise<string | undefined> {
-  return (await readErrorBody(response))?.error?.code;
+async function readForbiddenBody(response: Response): Promise<{ code: string | undefined; capability: string | undefined }> {
+  const body = await readErrorBody(response);
+  return { code: body?.error?.code, capability: body?.capability };
 }
 
 const AUTH_MESSAGE = 'Your API key was rejected by the provider — check it in AI settings and try again.';
@@ -267,6 +297,9 @@ const ALLOWANCE_EXPIRED_MESSAGE = 'Your allowance for photo estimates has ended.
 const TRIAL_SCANS_SPENT_MESSAGE = 'You used your free AI scans. Pick a plan to keep using AI entries.';
 // No number either: the screen names the days from what the session read.
 const TRIAL_EXPIRED_MESSAGE = 'Your free days are over. Pick a plan to keep using AI entries.';
+// No feature name: this module has no `t`, and the screen restates the refusal
+// with the name of the feature in the reader's language (`featureGate.closed`).
+const CAPABILITY_REQUIRED_MESSAGE = 'This feature is not included in your plan.';
 const AI_INSTANCE_CEILING_MESSAGE =
   'This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.';
 
@@ -283,6 +316,8 @@ export interface HttpFailureClassification {
   message: string;
   /** The server's `Retry-After` in seconds, when it sent one. Set on a `rate-limit` and on the instance ceiling. */
   retryAfterSeconds?: number | null;
+  /** The feature label a `capability-required` refusal names, when the body carried one. */
+  capability?: string;
 }
 
 /** `Retry-After` as a number of seconds, or `null` for an absent or unparseable header. */
@@ -317,7 +352,12 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
   // managed instance there is no key and no settings page to ask about
   // (M192/06).
   if (response.status === 403) {
-    const code = await readForbiddenCode(response);
+    const { code, capability } = await readForbiddenBody(response);
+    if (code === CAPABILITY_REQUIRED_CODE) {
+      const refused: HttpFailureClassification = { cause: 'capability-required', message: CAPABILITY_REQUIRED_MESSAGE };
+      if (capability !== undefined) refused.capability = capability;
+      return refused;
+    }
     if (code === ACCOUNT_SUSPENDED_CODE) return { cause: 'account-suspended', message: ACCOUNT_SUSPENDED_MESSAGE };
     if (code === HEALTH_CONSENT_REQUIRED_CODE) {
       return { cause: 'consent-required', message: HEALTH_CONSENT_REQUIRED_MESSAGE };

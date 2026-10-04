@@ -41,7 +41,9 @@ import { Label } from '#app/components/ui/label';
 import { Switch } from '#app/components/ui/switch';
 import { useInstallAffordance } from '#app/hooks/use-install-affordance';
 import type { InstallAffordanceControls } from '#app/hooks/use-install-affordance';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
 import { useServerInstance } from '#app/hooks/use-server-instance';
+import { FeatureGate } from '#app/components/plans/feature-gate';
 import { loadCatchUpInput } from '#app/lib/catch-up-input';
 import { buildCatchUp } from '#app/models/catch-up';
 import { isIosDevice, isRunningStandalone } from '#app/lib/pwa-install';
@@ -303,12 +305,15 @@ export function NotificationKinds({
   prefs,
   previewLines,
   isSaving,
+  isFastingOpen = true,
   onChange,
   onSave,
 }: {
   prefs: PushPrefs;
   previewLines: readonly string[];
   isSaving: boolean;
+  /** `false` swaps the fast target box for the closed-feature note (M2/05). The stored tick is kept. */
+  isFastingOpen?: boolean;
   onChange: (next: PushPrefs) => void;
   onSave: () => void;
 }) {
@@ -355,16 +360,18 @@ export function NotificationKinds({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <input
-          id="fast-target-enabled"
-          type="checkbox"
-          className="h-5 w-5 accent-primary"
-          checked={prefs.fastTargetEnabled}
-          onChange={(event) => onChange({ ...prefs, fastTargetEnabled: event.target.checked })}
-        />
-        <Label htmlFor="fast-target-enabled">{t('settings.notifications.fastTarget.label')}</Label>
-      </div>
+      <FeatureGate feature="fasting" isOpen={isFastingOpen}>
+        <div className="flex items-center gap-3">
+          <input
+            id="fast-target-enabled"
+            type="checkbox"
+            className="h-5 w-5 accent-primary"
+            checked={prefs.fastTargetEnabled}
+            onChange={(event) => onChange({ ...prefs, fastTargetEnabled: event.target.checked })}
+          />
+          <Label htmlFor="fast-target-enabled">{t('settings.notifications.fastTarget.label')}</Label>
+        </div>
+      </FeatureGate>
 
       <Button type="button" onClick={onSave} disabled={isSaving} className="h-11 sm:h-9">
         {t(isSaving ? 'settings.notifications.saving' : 'settings.notifications.save')}
@@ -381,6 +388,7 @@ export default function SettingsNotifications() {
   const { t, i18n } = useTranslation();
   const install = useInstallAffordance();
   const instance = useServerInstance();
+  const fastingGate = useFeatureGate('fasting');
 
   // `null` until the browser facts are readable: `isSecureContext`,
   // `PushManager` and the permission are all window reads, and a server render
@@ -589,6 +597,7 @@ export default function SettingsNotifications() {
             prefs={prefs}
             previewLines={previewLines}
             isSaving={isSaving}
+            isFastingOpen={fastingGate.isOpen}
             onChange={setPrefs}
             onSave={() => void handleSave()}
           />

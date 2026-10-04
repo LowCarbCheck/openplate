@@ -59,7 +59,14 @@ import { SettingsSection } from '#app/components/settings/settings-section';
 import { Button } from '#app/components/ui/button';
 import { readIntendedPlan } from '#app/lib/plans/intended-plan';
 import { WIDERRUFEN_PATH, splitAtWiderrufenAddress } from '#app/lib/plans/widerrufen-address';
-import { DATE_SLOT, TERMS_SLOT, type OfferPlan, type PlanKey, type PlanOffer } from '#app/lib/sync/engine/client/plans-wire';
+import {
+  DATE_SLOT,
+  TERMS_SLOT,
+  type MoveEffect,
+  type OfferPlan,
+  type PlanKey,
+  type PlanOffer,
+} from '#app/lib/sync/engine/client/plans-wire';
 import { cn } from '#app/lib/utils';
 
 /** The two boxes, as the page holds them. */
@@ -81,8 +88,18 @@ export const NO_CONSENTS: ConsentState = { terms: false, earlyStart: false };
  * - `stale`: the offer changed under the page; it was read again and both
  *   boxes were cleared, and the line says so.
  * - `already-subscribed`: the biller says the account already pays.
+ * - `move-refused`: the biller refused a move between plans (an overdue
+ *   payment, or a change somebody already booked). The plan did not change.
+ * - `plan-unavailable`: the plan ordered is not on sale any more. The offer
+ *   was read again.
  */
-export type OrderNotice = 'none' | 'failed' | 'stale' | 'already-subscribed';
+export type OrderNotice =
+  | 'none'
+  | 'failed'
+  | 'stale'
+  | 'already-subscribed'
+  | 'move-refused'
+  | 'plan-unavailable';
 
 /**
  * What kind of order this page places.
@@ -90,8 +107,15 @@ export type OrderNotice = 'none' | 'failed' | 'stale' | 'already-subscribed';
  * `first` is an account with no live plan: both plans, and the payment note.
  * `switch` is a monthly subscriber moving to the yearly plan (M245/07): the
  * yearly plan alone, and the switch note with the day the year starts.
+ * `move` is a subscriber moving to a tier or to the yearly plan of their own
+ * tier (M2/04): the plans of the picked tier, and in place of the payment note
+ * one sentence that says WHEN the move takes effect (`effect`), which the
+ * caller decides from the tier ranks (`moveEffectOf`).
  */
-export type OrderMode = { kind: 'first' } | { kind: 'switch'; startsAt: string };
+export type OrderMode =
+  | { kind: 'first' }
+  | { kind: 'switch'; startsAt: string }
+  | { kind: 'move'; effect: MoveEffect };
 
 /** The catalog key of each notice. A `Record`, so a fifth notice fails to compile here. */
 const NOTICE_KEY = {
@@ -99,7 +123,15 @@ const NOTICE_KEY = {
   failed: 'plan.order.failed',
   stale: 'plan.order.stale',
   'already-subscribed': 'plan.order.alreadySubscribed',
+  'move-refused': 'plan.order.moveRefused',
+  'plan-unavailable': 'plan.order.planUnavailable',
 } satisfies Record<OrderNotice, string | null>;
+
+/** The sentence that says when a move takes effect, in place of the payment note. A `Record`, so a third effect fails to compile here. */
+const MOVE_NOTE_KEY = {
+  now: 'plan.move.effectNow',
+  'period-end': 'plan.move.effectPeriodEnd',
+} satisfies Record<MoveEffect, string>;
 
 /** A link to a legal page, opened beside the order so neither the pick nor a tick is lost. */
 function LegalLink({ to, children }: { to: string; children: ReactNode }) {
@@ -193,9 +225,23 @@ export interface PlanOrderProps {
   notice: OrderNotice;
   /** `true` while the order is in flight, and after it answered an address, until the browser leaves. */
   isOrdering: boolean;
+  /**
+   * `true` adds the link to the instance's privacy notice to that box. The
+   * page passes `useHasLegalPages()`: an instance with no legal pages has no
+   * notice to link, and the box then says its lines and nothing more.
+   */
+  hasLegalPages?: boolean;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
   onOrder: () => void;
+}
+
+/** The paragraphs of a served text: blank lines separate them, and nothing is parsed as markup. */
+function paragraphsOf(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '');
 }
 
 export function PlanOrder({
@@ -205,6 +251,7 @@ export function PlanOrder({
   consents,
   notice,
   isOrdering,
+  hasLegalPages = false,
   onSelectPlan,
   onConsentChange,
   onOrder,
@@ -213,12 +260,15 @@ export function PlanOrder({
   const baseId = useId();
   const plans = mode.kind === 'switch' ? offer.plans.filter((plan) => plan.key === 'yearly') : offer.plans;
   useIntendedPlanPick({ plans, mode, selectedPlan, onSelectPlan });
+  // THE BILLER'S PRIVACY LINES, `texts.whatHappens`, drawn as served.
+  const whatHappensParagraphs = paragraphsOf(offer.texts.whatHappens ?? '');
   const held = holdReason({ selectedPlan, consents });
   const noticeKey = NOTICE_KEY[notice];
   const line = noticeKey ?? held;
   const isAlert = noticeKey !== null;
   const note =
-    mode.kind === 'switch' ?
+    mode.kind === 'move' ? t(MOVE_NOTE_KEY[mode.effect])
+    : mode.kind === 'switch' ?
       offer.texts.switchNote.split(DATE_SLOT).join(
         new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, { dateStyle: 'long' }).format(
           new Date(mode.startsAt),
@@ -249,6 +299,27 @@ export function PlanOrder({
           {withWiderrufenLink(offer.texts.withdrawal)}{' '}
           <LegalLink to={offer.links.withdrawal}>{t('plan.order.withdrawalLink')}</LegalLink>
         </p>
+
+        {/* WHAT HAPPENS TO THE PERSON'S DATA, directly above the two boxes
+            (M2/05): the biller's own lines, drawn as served, in the same render
+            as the rest of the order so nothing arrives under it. A plain box
+            with a uniform border, no accent rule. */}
+        {whatHappensParagraphs.length > 0 && (
+          <section
+            data-slot="plan-what-happens"
+            aria-label={t('plan.order.whatHappensLabel')}
+            className="space-y-2 border bg-muted/40 p-3 text-sm"
+          >
+            {whatHappensParagraphs.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+            {hasLegalPages && (
+              <p>
+                <LegalLink to={offer.links.privacy}>{t('plan.order.privacyLink')}</LegalLink>
+              </p>
+            )}
+          </section>
+        )}
 
         <div className="space-y-3">
           <div className="flex items-start gap-2.5">

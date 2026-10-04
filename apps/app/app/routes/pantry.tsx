@@ -58,6 +58,10 @@ import { IntakeFailureAlert } from '#app/components/intake/intake-failure-alert'
 import { IntakeUnsupportedCard } from '#app/components/intake/intake-unsupported-card';
 import { useProviderCapabilities } from '#app/components/add/use-provider-capabilities';
 import { useEffectiveAiSettings } from '#app/hooks/use-effective-ai-settings';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
+import { useServerInstance } from '#app/hooks/use-server-instance';
+import { ClosedFeatureNote, FeatureGate } from '#app/components/plans/feature-gate';
+import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { taskSupported, type ProviderCapabilities } from '#app/lib/ai/provider-capabilities';
 import { managedAiCredential, type EffectiveAiSettings } from '#app/lib/ai/managed-ai-settings';
 import { newIntakeId } from '#app/lib/plans/trial-scans';
@@ -123,7 +127,11 @@ export function HydrateFallback(): ReactElement {
 ////////////////////////////////////////////////////////////////////////////////
 
 /** What one pantry reading attempt answers with: rows, or a sentence saying why not. */
-type PantryReadResult = { ok: true; identification: PantryIdentification } | { ok: false; error: string };
+type PantryReadResult =
+  | { ok: true; identification: PantryIdentification }
+  // `isFeatureClosed`: the core refused the request because the plan lacks the
+  // pantry (`403 capability-required`), shown as the closed-feature note and not as a failure.
+  | { ok: false; error: string; isFeatureClosed?: boolean };
 
 /** The hand-off with its photo re-encoded, or `null` when the photo could not be. A sentence passes as it is. */
 async function withPreparedPhoto(handoff: ScanHandoff): Promise<ScanHandoff | null> {
@@ -211,7 +219,11 @@ async function readPantry({
     // A `VisionProviderError`'s own message is authored provider-neutrally in
     // the adapter layer and is already the actionable detail; anything else is
     // a throw this screen cannot explain, so it gets the generic sentence.
-    return { ok: false, error: error instanceof VisionProviderError ? error.message : failedMessage };
+    return {
+      ok: false,
+      error: error instanceof VisionProviderError ? error.message : failedMessage,
+      isFeatureClosed: error instanceof VisionProviderFailure && error.failureCause === 'capability-required',
+    };
   }
 }
 
@@ -472,6 +484,7 @@ export function PantryList({
   isSaving,
   hasStoredItems,
   intakeWays,
+  isPantryOpen = true,
   alert = null,
 }: {
   rows: readonly PantryDraftRow[];
@@ -496,14 +509,27 @@ export function PantryList({
    * which is the confusing failure this prop exists to end.
    */
   intakeWays: PantryIntakeWays;
+  /**
+   * `false` when the plan does not include the pantry scan (M2/05). The AI
+   * composer is replaced by the closed-feature note; the stored list, its
+   * manual editing and the recipes door stay exactly as they are. Defaults open
+   * so every other caller, and every instance with no plans, is unchanged.
+   */
+  isPantryOpen?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-xl space-y-4">
       {alert}
-      <p className="text-sm text-muted-foreground">{t(pantryLeadKey({ intakeWays, hasStoredItems }))}</p>
-      <PantryComposer intakeWays={intakeWays} />
-      {hasStoredItems && (
+      <p className="text-sm text-muted-foreground">
+        {isPantryOpen ? t(pantryLeadKey({ intakeWays, hasStoredItems })) : t('pantry.leadClosed')}
+      </p>
+      <FeatureGate feature="pantry" isOpen={isPantryOpen}>
+        <PantryComposer intakeWays={intakeWays} />
+      </FeatureGate>
+      {/* A CLOSED PLAN KEEPS THE LIST BY HAND, EMPTY OR NOT: with no scan to
+          start a list from, the rows and their add line are the only way in. */}
+      {(hasStoredItems || !isPantryOpen) && (
         <>
           <PantryRows rows={rows} onChange={onChange} />
           <Button type="button" className="h-11 w-full sm:h-9" onClick={onSave} disabled={isSaving}>
@@ -597,12 +623,20 @@ type PantryPhase =
   | { kind: 'list' }
   | { kind: 'reading'; subject: 'photo' | 'text' }
   | { kind: 'review'; subject: 'photo' | 'text'; notes: string | null }
-  | { kind: 'failed'; subject: 'photo' | 'text'; message: string };
+  | { kind: 'failed'; subject: 'photo' | 'text'; message: string; isFeatureClosed: boolean };
 
 export default function Pantry({ loaderData }: Route.ComponentProps): ReactElement {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const effective = useEffectiveAiSettings(loaderData.settings);
+  // THE PANTRY SCAN'S GATE (M2/05). A person on their OWN key is never gated
+  // (`source: 'stored'`), and the answer is taken once the connection is known
+  // so that fact is in it. The stored list is not behind this gate.
+  const pantryGate = useFeatureGate('pantry', {
+    isReady: effective !== null,
+    isOwnKey: effective?.source === 'stored',
+  });
+  const plansAvailable = hasPlansDoor(useServerInstance());
   // WHAT THE CONNECTED SERVER SAYS IT RUNS. Full for every provider that is
   // not a self-hosted server, and settled at once for all of them.
   const providerCapabilities = useProviderCapabilities(effective);
@@ -637,11 +671,11 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
           notPreparedMessage: t('scan.errors.photo.notPrepared'),
         });
         if (!result.ok) {
-          setPhase({ kind: 'failed', subject, message: result.error });
+          setPhase({ kind: 'failed', subject, message: result.error, isFeatureClosed: result.isFeatureClosed === true });
           return;
         }
         if (result.identification.items.length === 0) {
-          setPhase({ kind: 'failed', subject, message: t('pantry.errors.nothingFound') });
+          setPhase({ kind: 'failed', subject, message: t('pantry.errors.nothingFound'), isFeatureClosed: false });
           return;
         }
         setRows(result.identification.items.map((item, index) => draftFromReading(item, `read-${index}`, i18n.language)));
@@ -752,9 +786,14 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
   if (phase.kind === 'failed') {
     return (
       <div className="mx-auto max-w-xl space-y-4">
-        <IntakeFailureAlert subject={phase.subject} title={t('pantry.errors.title')}>
-          {phase.message}
-        </IntakeFailureAlert>
+        {/* THE CORE'S REFUSAL OF A CLOSED FEATURE takes the error slot's place
+            with the same note the gate draws (M2/05). */}
+        {phase.isFeatureClosed ?
+          <ClosedFeatureNote feature="pantry" hasPlansLink={plansAvailable} />
+        : <IntakeFailureAlert subject={phase.subject} title={t('pantry.errors.title')}>
+            {phase.message}
+          </IntakeFailureAlert>
+        }
         <PantryList
           rows={rows}
           onChange={setRows}
@@ -762,6 +801,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
           isSaving={isSaving}
           hasStoredItems={stored.length > 0}
           intakeWays={intakeWays}
+          isPantryOpen={pantryGate.isOpen}
           alert={saveAlert}
         />
       </div>
@@ -776,6 +816,7 @@ export default function Pantry({ loaderData }: Route.ComponentProps): ReactEleme
       isSaving={isSaving}
       hasStoredItems={stored.length > 0}
       intakeWays={intakeWays}
+      isPantryOpen={pantryGate.isOpen}
       alert={saveAlert}
     />
   );

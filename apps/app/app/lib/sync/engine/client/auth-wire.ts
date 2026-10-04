@@ -153,6 +153,17 @@ export interface AccountViewWire {
    * not a parse.
    */
   healthConsent?: HealthConsentWire | null;
+  /**
+   * The feature labels this account may use, the EFFECTIVE list (the account's
+   * own, or the instance default when it has none), or `null` for "everything
+   * is allowed" (M2/03). ABSENT on a core older than the field, which means
+   * the same thing.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. The proxy refuses a request that names a
+   * feature the account lacks (`403 capability-required`). Read only through
+   * `decodeCapabilities`, because this interface is a cast, not a parse.
+   */
+  capabilities?: string[] | null;
   createdAt: IsoTimestamp;
 }
 

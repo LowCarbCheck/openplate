@@ -80,7 +80,14 @@ import { SETTINGS_INSET_CLASS, SettingsSection } from '#app/components/settings/
 import { PLAN_PAGE_HREF, offerLocaleFor, requirePlansDoor } from '#app/lib/plans/plans-door';
 import { currentPlansClient } from '#app/lib/plans/plans-session';
 import type { OrderOutcome } from '#app/lib/sync/engine/client/plans-client';
-import { PLAN_KEYS, type PlanKey, type PlanOffer, type PlanStatus } from '#app/lib/sync/engine/client/plans-wire';
+import {
+  ORDER_UNKNOWN_PLAN,
+  PLAN_KEYS,
+  type MoveEffect,
+  type PlanKey,
+  type PlanOffer,
+  type PlanStatus,
+} from '#app/lib/sync/engine/client/plans-wire';
 import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
@@ -102,6 +109,16 @@ import { grantedTrialDays } from '#app/lib/plans/trial-scans';
 import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
+import { TierList } from '#app/components/plans/tier-list';
+import { useHasLegalPages } from '#app/hooks/use-public-config';
+import {
+  NO_OWN_PLAN,
+  defaultTierIdOf,
+  offerForTier,
+  tiersViewOf,
+  type OwnPlan,
+  type TiersView,
+} from '#app/lib/plans/tier-view';
 import {
   NO_CONSENTS,
   PlanOrder,
@@ -238,11 +255,46 @@ export interface PlanScreenProps {
   paymentConfirmation: PaymentConfirmation;
   /** Where the link after a confirmed payment leads, and so what it says. */
   afterPaymentDoor: PaymentReturnDoor;
+  /**
+   * The tiers the biller sells, or absent/`null` for a biller that sells one
+   * plan, which draws the page exactly as it was before tiers (M2/05).
+   */
+  tiers?: TiersView | null;
+  /** The tier picked in the list, or `null`. Read only when `tiers` is set. */
+  pickedTierId?: string | null;
+  /** `false` lists the tiers with no pick and no switch button: a payment is being confirmed. */
+  canPickTier?: boolean;
+  onPickTier?: (tierId: string) => void;
+  /**
+   * What the biller answered to the last move between plans, or absent. Drawn in
+   * the place the order block had, so the answer replaces what was pressed and
+   * moves nothing above it.
+   */
+  moveResult?: MoveResult | null;
   onCheckAgain: () => void;
   onSelectPlan: (key: PlanKey) => void;
   onConsentChange: (key: ConsentKey, isTicked: boolean) => void;
   onOrder: () => void;
   onManage: () => void;
+}
+
+/** The biller's answer to a move: when it takes effect, and from which instant the new plan runs. */
+export interface MoveResult {
+  effect: MoveEffect;
+  startsAt: string;
+}
+
+/** What the page says once a move is booked or done, from the biller's own `effect`. */
+function MoveResultLine({ result }: { result: MoveResult }) {
+  const { t, i18n } = useTranslation();
+  const date = new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, { dateStyle: 'long' }).format(
+    new Date(result.startsAt),
+  );
+  return (
+    <output data-slot="plan-move-result" data-effect={result.effect} className="block border p-3 text-sm">
+      {result.effect === 'now' ? t('plan.move.doneNow') : t('plan.move.donePeriodEnd', { date })}
+    </output>
+  );
 }
 
 /** The manage button and the one reserved line that says it failed. */
@@ -429,8 +481,13 @@ function PlanBody(props: PlanScreenProps) {
   const portalAvailable = state.kind === 'ready' && state.plan.portalAvailable;
   // The account section above an order: drawn for every state that is not an
   // answer, and for an answer with something to say besides the order.
+  //
+  // WITH TIERS it is drawn for the whole visit: the order block appears only
+  // once a tier is picked, and a section that vanished at that moment would pull
+  // the list the person just tapped up the screen (M2/05, no layout shift).
+  const hasTierList = props.tiers !== undefined && props.tiers !== null && state.kind === 'ready';
   const showsAccountSection =
-    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable);
+    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable || hasTierList);
 
   return (
     <>
@@ -507,6 +564,23 @@ function PlanBody(props: PlanScreenProps) {
         </p>
       )}
 
+      {/* THE TIERS, listed as the biller sent them, above the order they open
+          (M2/05). Absent for a biller that sells one plan, and then this is
+          the page as it was. A subscriber on a tier reads the list with their
+          own marked and nothing to pick. */}
+      {props.tiers !== undefined && props.tiers !== null && state.kind === 'ready' && (
+        <TierList
+          rows={props.tiers.rows}
+          pickedTierId={props.pickedTierId ?? null}
+          canPick={props.canPickTier === true}
+          onPick={props.onPickTier ?? (() => {})}
+        />
+      )}
+
+      {order === null && props.moveResult !== undefined && props.moveResult !== null && (
+        <MoveResultLine result={props.moveResult} />
+      )}
+
       {order !== null && (
         <PlanOrder
           {...order}
@@ -563,11 +637,14 @@ export function switchStartFor(standing: PlanStanding): string | null {
 async function sendOrder(input: {
   offer: PlanOffer;
   plan: PlanKey;
+  /** The picked tier's id, or absent for the one-plan order. */
+  tier?: string;
 }): Promise<OrderOutcome | null> {
   const client = currentPlansClient();
   if (client === null) return null;
   return await client.placeOrder({
     plan: input.plan,
+    tier: input.tier,
     // THE OFFER'S OWN LANGUAGE, not the UI's: the biller rebuilds the page
     // for this language to compare versions, so it must be the page read.
     locale: input.offer.locale,
@@ -587,6 +664,9 @@ export default function SettingsPlan() {
   const [planRefresh, setPlanRefresh] = useState(0);
   const [offerRefresh, setOfferRefresh] = useState(0);
   const [pickedPlan, setPickedPlan] = useState<PlanKey | null>(null);
+  const [pickedTierId, setPickedTierId] = useState<string | null>(null);
+  const [moveResult, setMoveResult] = useState<MoveResult | null>(null);
+  const hasLegalPages = useHasLegalPages();
   const [consents, setConsents] = useState<ConsentState>(NO_CONSENTS);
   const [notice, setNotice] = useState<OrderNotice>('none');
   const [busy, setBusy] = useState<PlanAction>('none');
@@ -637,11 +717,20 @@ export default function SettingsPlan() {
   // Read LIVE from the address, so the status card's link opens the order on
   // the page that is already mounted.
   const linkedPlan = readPlanParam(searchParams.get('plan'));
-  const switchStart = switchStartsAt === null ? switchStartFor(standing) : null;
+  // A SUBSCRIBER THE BILLER PUTS ON A TIER IS IN THE TIERS WORLD (M2/04): the
+  // page lists the tiers with theirs marked and a switch button on the others,
+  // and the legacy move of a monthly plan to the yearly one is not offered,
+  // because an order that names no tier means the legacy plan to the biller.
+  // A subscriber with no tier named keeps today's page.
+  const ownTierId = isSubscribed ? (planViewOf(read)?.tier ?? null) : null;
+  const isTierSubscriber = ownTierId !== null;
+  const switchStart = switchStartsAt === null && !isTierSubscriber ? switchStartFor(standing) : null;
   const isSwitching = isSubscribed && switchStart !== null && linkedPlan === 'yearly';
   const wantsOrder = read.kind === 'ready' && !isAwaitingPayment && (!isSubscribed || isSwitching);
+  // THE OFFER IS ALSO READ FOR A TIER SUBSCRIBER, for the tier list and the name of their own tier.
+  const wantsTierList = read.kind === 'ready' && !isAwaitingPayment && isTierSubscriber;
   const offerRead = usePlanOffer({
-    isEnabled: wantsOrder,
+    isEnabled: wantsOrder || wantsTierList,
     locale: offerLocaleFor(i18n.language),
     refresh: offerRefresh,
   });
@@ -653,12 +742,33 @@ export default function SettingsPlan() {
   });
 
   const offer = offerRead.settled ? offerRead.offer : null;
-  const wantedPick = isSwitching ? 'yearly' : (pickedPlan ?? linkedPlan);
+  const ownPlan: OwnPlan =
+    standing.kind === 'subscribed' ?
+      { tierId: ownTierId, planKey: standing.planKey, isPastDue: standing.isPastDue }
+    : NO_OWN_PLAN;
+  const tiers: TiersView | null = offer === null ? null : tiersViewOf({ offer, own: ownPlan });
+  // A FIRST ORDER OF A BILLER THAT SELLS ONE TIER needs no tap on it. A move is always chosen.
+  const effectiveTierId = pickedTierId ?? (tiers === null || isSubscribed ? null : defaultTierIdOf(tiers));
+  // IN THE TIERS WORLD THE ORDER IS FOR THE PICKED TIER: the order block draws
+  // that tier's own prices, and none until one is picked. Without tiers it is
+  // the offer as served.
+  const orderOffer: PlanOffer | null =
+    offer === null ? null
+    : tiers === null ? offer
+    : offerForTier({ offer, view: tiers, tierId: effectiveTierId });
+  const pickedRow = tiers?.rows.find((row) => row.id === effectiveTierId) ?? null;
+  const move: MoveEffect | null = isTierSubscriber ? (pickedRow?.effect ?? null) : null;
+  // A MOVE TO ONE PLAN, such as the own tier's yearly one, has nothing to choose between.
+  const [onlyPlan] = orderOffer?.plans ?? [];
+  const soleMovePlan = move !== null && orderOffer?.plans.length === 1 ? (onlyPlan?.key ?? null) : null;
+  const wantedPick = isSwitching ? 'yearly' : (soleMovePlan ?? pickedPlan ?? linkedPlan);
   // A linked plan the offer does not contain is no pick at all.
-  const selectedPlan = offer?.plans.some((plan) => plan.key === wantedPick) ? wantedPick : null;
+  const selectedPlan = orderOffer?.plans.some((plan) => plan.key === wantedPick) ? wantedPick : null;
   const mode: OrderMode =
-    isSwitching && switchStart !== null ? { kind: 'switch', startsAt: switchStart } : { kind: 'first' };
-  const isOrderLoading = wantsOrder && !offerRead.settled;
+    move !== null ? { kind: 'move', effect: move }
+    : isSwitching && switchStart !== null ? { kind: 'switch', startsAt: switchStart }
+    : { kind: 'first' };
+  const isOrderLoading = (wantsOrder || wantsTierList) && !offerRead.settled;
   // HELD UNTIL THE OFFER AND THE TRIAL RECAP ARE IN for somebody without a
   // plan, so neither the order nor the recap line above it arrives underneath
   // a page that is already drawn and pushes it down.
@@ -666,8 +776,16 @@ export default function SettingsPlan() {
   const state: PlanReadState =
     (isOrderLoading && !isSubscribed) || isWaitingForRecap ? { kind: 'loading' } : read;
   const order: OrderView | null =
-    wantsOrder && offer !== null ?
-      { offer, mode, selectedPlan, consents, notice, isOrdering: busy === 'order' }
+    (wantsOrder || (wantsTierList && move !== null)) && orderOffer !== null ?
+      {
+        offer: orderOffer,
+        mode,
+        selectedPlan,
+        consents,
+        notice,
+        isOrdering: busy === 'order',
+        hasLegalPages,
+      }
     : null;
 
   // WHAT THIS PAGE READS, THE PAYWALL KNOWS. A plan read here is fresher than
@@ -712,7 +830,7 @@ export default function SettingsPlan() {
 
   /** What the page does with each answer. See the route header. */
   const settleOrder = useCallback(
-    (outcome: OrderOutcome | null): void => {
+    (outcome: OrderOutcome | null, isMove: boolean): void => {
       if (outcome === null) {
         setNotice('failed');
         setBusy('none');
@@ -725,8 +843,19 @@ export default function SettingsPlan() {
           window.location.assign(outcome.url);
           return;
         case 'switched':
-          setSwitchStartsAt(outcome.startsAt);
           setConsents(NO_CONSENTS);
+          if (isMove) {
+            // A MOVE BETWEEN PLANS: say what the biller says, when it takes
+            // effect. An upgrade is already in the biller's books, so the plan is
+            // read again and the list marks the new tier; a booked move leaves
+            // the paid plan as it is until the period ends.
+            setMoveResult({ effect: outcome.effect ?? 'period-end', startsAt: outcome.startsAt });
+            setPickedTierId(null);
+            setPickedPlan(null);
+            if (outcome.effect === 'now') setPlanRefresh((count) => count + 1);
+            break;
+          }
+          setSwitchStartsAt(outcome.startsAt);
           leaveOrder();
           break;
         case 'stale':
@@ -738,11 +867,26 @@ export default function SettingsPlan() {
           setOfferRefresh((count) => count + 1);
           break;
         case 'already-subscribed':
-          setNotice('already-subscribed');
           setPlanRefresh((count) => count + 1);
+          // A MOVE THE BILLER REFUSED keeps its order block, so the answer is
+          // said in the line above the button, which has its box already.
+          if (isMove) {
+            setNotice('move-refused');
+            break;
+          }
+          setNotice('already-subscribed');
           leaveOrder();
           break;
         case 'refused':
+          // THE PLAN LEFT THE OFFER while the page was open: read the offer again.
+          if (outcome.code === ORDER_UNKNOWN_PLAN) {
+            setConsents(NO_CONSENTS);
+            setNotice('plan-unavailable');
+            setOfferRefresh((count) => count + 1);
+            break;
+          }
+          setNotice('failed');
+          break;
         case 'absent':
           setNotice('failed');
           break;
@@ -753,12 +897,28 @@ export default function SettingsPlan() {
   );
 
   const onOrder = useCallback(() => {
-    if (offer === null || selectedPlan === null || !consents.terms || !consents.earlyStart) return;
+    if (orderOffer === null || selectedPlan === null || !consents.terms || !consents.earlyStart) return;
     trackOrderSent(selectedPlan);
     setBusy('order');
     setNotice('none');
-    void sendOrder({ offer, plan: selectedPlan }).then(settleOrder, () => settleOrder(null));
-  }, [offer, selectedPlan, consents, settleOrder]);
+    // The tier id goes only when a tier was picked: without one the order is
+    // byte for byte what it was before tiers.
+    const tier = tiers === null ? undefined : (effectiveTierId ?? undefined);
+    const isMove = move !== null;
+    void sendOrder({ offer: orderOffer, plan: selectedPlan, tier }).then(
+      (outcome) => settleOrder(outcome, isMove),
+      () => settleOrder(null, isMove),
+    );
+  }, [orderOffer, selectedPlan, consents, settleOrder, tiers, effectiveTierId, move]);
+
+  const onPickTier = useCallback((tierId: string) => {
+    setPickedTierId(tierId);
+    setMoveResult(null);
+    setNotice('none');
+    // THE INTERVAL BELONGS TO THE TIER: a pick made on another tier's prices is dropped, and the consents with it.
+    setPickedPlan(null);
+    setConsents(NO_CONSENTS);
+  }, []);
 
   const onConsentChange = useCallback((key: ConsentKey, isTicked: boolean) => {
     setConsents((current) => ({ ...current, [key]: isTicked }));
@@ -799,6 +959,11 @@ export default function SettingsPlan() {
       orderYearlyHref={switchStart === null ? null : ORDER_YEARLY_HREF}
       switchStartsAt={switchStartsAt}
       isAlreadySubscribed={notice === 'already-subscribed'}
+      tiers={tiers}
+      pickedTierId={effectiveTierId}
+      moveResult={moveResult}
+      canPickTier={(wantsOrder || wantsTierList) && !isSwitching}
+      onPickTier={onPickTier}
       onSelectPlan={setPickedPlan}
       onConsentChange={onConsentChange}
       onOrder={onOrder}

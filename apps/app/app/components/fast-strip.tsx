@@ -23,6 +23,7 @@ import { Link } from '#app/components/link';
 import { SECTION_EYEBROW_CLASS } from '#app/components/typography';
 import { cn } from '#app/lib/utils';
 import { useCurrentFast } from '#app/hooks/use-current-fast';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
 import { formatFastDuration, formatFastOvertime, resolveFastTimeline } from '#app/models/fasting';
 import type { LocalFast } from '#app/lib/local-store';
 
@@ -94,6 +95,8 @@ export function FastStripRow({ fast, nowMs }: FastStripRowProps): ReactElement {
  */
 export function FastStrip(): ReactElement | null {
   const { fast, nowMs } = useCurrentFast({ intervalMs: STRIP_TICK_MS });
-  if (fast === null) return null;
+  // The dashboard's row is the live chip's twin and is gated with it (M2/05).
+  const { isOpen: isFastingOpen } = useFeatureGate('fasting', { isReady: fast !== null });
+  if (fast === null || !isFastingOpen) return null;
   return <FastStripRow fast={fast} nowMs={nowMs} />;
 }

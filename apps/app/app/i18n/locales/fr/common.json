@@ -2033,7 +2033,8 @@
         "trialScansSpent": "Choisis un forfait pour continuer à utiliser les saisies par IA. La recherche dans la base d'aliments fonctionne toujours.",
         "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
         "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème.",
-        "managedUpstream": "Le fournisseur d'IA de cette instance a rejeté la requête. Demande à la personne qui l'administre de vérifier sa configuration."
+        "managedUpstream": "Le fournisseur d'IA de cette instance a rejeté la requête. Demande à la personne qui l'administre de vérifier sa configuration.",
+        "allowanceSpentPlans": "Tu as épuisé tes analyses par IA du jour. Réessaie demain, ou consulte les forfaits."
       },
       "readPhoto": "Impossible de lire cette photo. Essaie avec une autre.",
       "titles": {
@@ -3629,7 +3630,11 @@
       "stale": "Cette page a changé. Relis-la et coche les deux cases.",
       "alreadySubscribed": "Ton compte a déjà un forfait, ou un changement est déjà prévu.",
       "unavailable": "Impossible de charger la page de commande. Réessaie plus tard.",
-      "withdrawalLink": "Informations et formulaire de rétractation"
+      "withdrawalLink": "Informations et formulaire de rétractation",
+      "privacyLink": "Lire la politique de confidentialité",
+      "whatHappensLabel": "Ce qu'il advient de tes données",
+      "moveRefused": "Cette modification est impossible pour le moment. Ton forfait n'a pas changé.",
+      "planUnavailable": "Ce forfait n'est plus proposé. La page présente les forfaits disponibles actuellement."
     },
     "countdown": {
       "daysLeft_one": "Il te reste {{count}} jour d’IA.",
@@ -3654,6 +3659,38 @@
       "price": "Gratuit",
       "body": "Toutes les fonctionnalités, sur ton propre serveur. Rien à commander ici.",
       "link": "Comment l'auto-héberger"
+    },
+    "tiers": {
+      "legend": "Ce que chaque forfait comprend",
+      "dailyLimit_one": "{{count}} analyse par IA par jour",
+      "dailyLimit_other": "{{count}} analyses par IA par jour",
+      "noScans": "Aucune analyse par IA",
+      "includes": "Comprend : {{features}}.",
+      "pricePerMonth": "{{price}} par mois",
+      "pricePerYear": "{{price}} par an",
+      "current": "Ton forfait",
+      "switchTo": "Passer à {{name}}",
+      "switchYearly": "Payer plutôt à l'année"
+    },
+    "move": {
+      "effectNow": "Cette modification prend effet immédiatement. Le tarif est calculé au prorata de ce que tu as déjà payé.",
+      "effectPeriodEnd": "Cette modification prend effet à la fin de la période payée. Tu conserves ton forfait actuel d'ici là.",
+      "doneNow": "Ton forfait a changé. Le tarif est calculé au prorata.",
+      "donePeriodEnd": "Ton forfait change le {{date}}. Tu conserves ton forfait actuel d'ici là."
+    }
+  },
+  "featureGate": {
+    "names": {
+      "fasting": "minuteur de jeûne",
+      "pantry": "analyse du garde-manger",
+      "voice": "saisie vocale",
+      "chat": "saisie par messagerie"
+    },
+    "closed": {
+      "title": "Non inclus dans ton forfait : {{feature}}",
+      "titleGeneric": "Non inclus dans ton forfait",
+      "body": "Ce que tu as déjà enregistré reste ici. Tu peux toujours le consulter et l'exporter.",
+      "plans": "Voir les forfaits"
     }
   },
   "usual": {
@@ -3684,6 +3721,7 @@
     "lead": "Ce que tu as chez toi. Prends une étagère en photo, ou écris la liste.",
     "leadPhoto": "Ce que tu as chez toi. Prends une étagère en photo.",
     "leadWords": "Ce que tu as chez toi. Écris la liste.",
+    "leadClosed": "Ce que tu as chez toi. Tiens la liste à la main.",
     "empty": "Rien ici pour le moment. Prends ton frigo en photo, ou écris ce que tu as.",
     "emptyPhoto": "Rien ici pour le moment. Prends ton réfrigérateur en photo.",
     "emptyWords": "Rien ici pour le moment. Écris ce que tu as.",

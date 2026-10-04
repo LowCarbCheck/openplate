@@ -36,6 +36,16 @@ export const FIXTURE_OFFER_BODY: string = readFileSync(
   'utf8',
 );
 
+/**
+ * The neutral fixture offer WITH TIERS (M2/05): placeholder names, a free
+ * entry, one tier that is not on sale and the biller's privacy lines. No real
+ * tier name or price reaches this tier.
+ */
+export const FIXTURE_TIERS_OFFER_BODY: string = readFileSync(
+  resolve(process.cwd(), 'tests/fixtures/plan-offer-tiers.json'),
+  'utf8',
+);
+
 /** The plan view of somebody the biller holds no subscription for. */
 export const NO_SUBSCRIPTION_VIEW = {
   plan: 'none',
@@ -182,6 +192,23 @@ export const MONTHLY_SUBSCRIBER_VIEW = {
   portalAvailable: true,
 };
 
+/**
+ * A monthly subscriber the biller puts on a tier (M2/04): `GET /plans/me` names
+ * the tier by the id the tiers fixture uses. THE SAME VIEW with no `tier` key is
+ * today's subscriber, so the pair is the control for the tiers world.
+ *
+ * @param tier - the tier id, from `tests/fixtures/plan-offer-tiers.json`.
+ * @param planKey - the interval of the live plan.
+ */
+export function subscriberOnTier(tier: string, planKey: 'monthly' | 'yearly' = 'monthly') {
+  return {
+    ...MONTHLY_SUBSCRIBER_VIEW,
+    planKey,
+    interval: planKey === 'monthly' ? 'month' : 'year',
+    tier,
+  };
+}
+
 /** One answer of the stubbed `POST /v1/plans/order`. */
 export interface OrderAnswer {
   status: number;
@@ -246,10 +273,17 @@ export async function routePortal(page: Page, returnTo: string): Promise<PortalR
 }
 
 /** The fields an allowance sets, leaving an absent `createdAt` and `trialScans` as the fake's own. */
-function accountPatch({ dailyAiLimit, allowanceExpiresAt, createdAt, trialScans }: AccountAllowance): AccountAllowance {
+function accountPatch({
+  dailyAiLimit,
+  allowanceExpiresAt,
+  createdAt,
+  trialScans,
+  capabilities,
+}: AccountAllowance): AccountAllowance {
   const patch: AccountAllowance = { dailyAiLimit, allowanceExpiresAt };
   if (createdAt !== undefined) patch.createdAt = createdAt;
   if (trialScans !== undefined) patch.trialScans = trialScans;
+  if (capabilities !== undefined) patch.capabilities = capabilities;
   return patch;
 }
 
@@ -273,6 +307,12 @@ export interface AccountAllowance {
    * sends none, like a core older than the field.
    */
   trialScans?: { granted: number; left: number } | null;
+  /**
+   * The account's effective feature list (M2/05): the labels its plan includes,
+   * `null` for everything, or absent to leave the key out, as a core older than
+   * the field does. Absent and `null` both read as open on the device.
+   */
+  capabilities?: readonly string[] | null;
 }
 
 /**

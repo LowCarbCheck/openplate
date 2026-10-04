@@ -34,6 +34,8 @@ import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 interface InstanceRead {
   promise: Promise<InstanceDescriptor | null>;
   isSettled: boolean;
+  /** What the read answered, once settled. `null` while in flight and for an unreadable service. */
+  value: InstanceDescriptor | null;
 }
 
 /** One in-flight or settled `/health` read per server URL. Shared by every mount in the tab. */
@@ -59,14 +61,30 @@ async function announceAnswer({
 
 /** Sends one `/health` read and makes it the tab's answer for that server. */
 function startInstanceRead(serverUrl: string): InstanceRead {
-  const read: InstanceRead = { promise: readServerInstance(serverUrl), isSettled: false };
-  const settle = (): void => {
+  const read: InstanceRead = { promise: readServerInstance(serverUrl), isSettled: false, value: null };
+  // `readServerInstance` never rejects, so there is one arm. Chained as a
+  // `void` of its own so the lint's `always-return` has nothing to object to.
+  void read.promise.then((instance) => {
+    read.value = instance;
     read.isSettled = true;
-  };
-  read.promise.then(settle, settle);
+    return instance;
+  });
   void announceAnswer({ serverUrl, answer: read.promise });
   instanceCache.set(serverUrl, read);
   return read;
+}
+
+/**
+ * What the tab's read of this server has ALREADY answered, or `null` while it
+ * is in flight, was never started or could not be read. Synchronous and never
+ * sends a request: for a decision that must be made in the first render, where
+ * waiting is not an option and `null` is read as "not known" (a feature gate
+ * answers open, ADR-0024).
+ */
+export function peekSettledServerInstance(serverUrl: string): InstanceDescriptor | null {
+  const read = instanceCache.get(serverUrl);
+  if (read === undefined || !read.isSettled) return null;
+  return read.value;
 }
 
 /** The instance descriptor for a server, read at most once per tab. Never rejects. */

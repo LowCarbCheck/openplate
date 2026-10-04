@@ -274,6 +274,22 @@ export type InstanceDescriptor = {
    * Absent and `null` are the same fact for every reader: draw no box.
    */
   healthConsent?: InstanceHealthConsent | null;
+  /**
+   * The feature labels an account with no record of its own may use on this
+   * instance (M2/03), or `null` for "everything is allowed", which is the
+   * self-hosted default.
+   *
+   * DESCRIPTIVE, NEVER A GRANT, like every other field here. OPTIONAL IN THE
+   * TYPE, but the decoder always writes it, answering `null` for a service older
+   * than the field and for a value that is not a list of strings. Absent and
+   * `null` are the same fact for every reader: no feature is closed by it.
+   *
+   * THE APP DOES NOT GATE ON THIS. A person's own list is
+   * `AccountView.capabilities`, the effective one, which already folds this
+   * default in (`capabilities.ts`, `canUseFeature`). It is carried so a screen
+   * that has no account yet can still say what a stranger would get.
+   */
+  defaultCapabilities?: string[] | null;
 };
 
 /** What {@link InstanceDescriptor.healthConsent} asks for: the version of the wording a person agrees to. */
@@ -426,6 +442,11 @@ const instanceDescriptorSchema = z.object({
     .object({ version: z.string().min(1) })
     .nullable()
     .catch(null),
+  // `.catch(null)` for the reason the line above gives: a missing key (a core
+  // older than the field) and a nonsense value both read "everything is
+  // allowed", and neither may fail the whole descriptor and take the AI model
+  // down with it. A malformed list must never CLOSE a feature.
+  defaultCapabilities: z.array(z.string()).nullable().catch(null),
 });
 
 /** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */

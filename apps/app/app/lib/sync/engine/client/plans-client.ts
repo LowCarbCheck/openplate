@@ -57,6 +57,7 @@ import {
 import type {
   OrderAnswer,
   OrderConsents,
+  MoveEffect,
   OrderRequestWire,
   PortalRequestWire,
   PlanKey,
@@ -107,7 +108,7 @@ export const PLANS_ABSENT: PlansOutcome<never> = { status: 'absent' };
  */
 export type OrderOutcome =
   | { kind: 'redirect'; url: string }
-  | { kind: 'switched'; plan: PlanKey; startsAt: string }
+  | { kind: 'switched'; plan: PlanKey; tier?: string; effect?: MoveEffect; startsAt: string }
   | { kind: 'stale' }
   | { kind: 'already-subscribed' }
   | { kind: 'refused'; code: string | null }
@@ -187,13 +188,18 @@ export class PlansClient {
     locale: string;
     consentVersion: string;
     consents: OrderConsents;
+    /** The id of the tier ordered, for a biller that sells tiers. Absent sends today's order. */
+    tier?: string;
   }): Promise<OrderOutcome> {
-    const request: OrderRequestWire = {
+    const base: OrderRequestWire = {
       plan: input.plan,
       locale: input.locale,
       consentVersion: input.consentVersion,
       consents: { terms: input.consents.terms, earlyStart: input.consents.earlyStart },
     };
+    // THE TIER GOES ONLY WHEN A TIER WAS PICKED: without one the body is byte
+    // for byte what it was before tiers, and the biller reads it as the legacy plan.
+    const request: OrderRequestWire = input.tier === undefined ? base : { ...base, tier: input.tier };
     let outcome: PlansOutcome<OrderAnswer>;
     try {
       outcome = await this.send({

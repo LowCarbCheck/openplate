@@ -88,6 +88,21 @@ export const planViewSchema = z.object({
   cancelAtPeriodEnd: z.boolean(),
   /** Whether there is a customer to open the portal onto. `false` for somebody who never paid. */
   portalAvailable: z.boolean(),
+  /**
+   * The id of the tier the subscription is on, or `null` with none, for a
+   * biller that sells tiers (M2/04, `GET /plans/me` `tier`). A tier id is an
+   * OPAQUE STRING the biller chose, never compiled in and never shown: the
+   * page looks it up in the offer's `tiers` to find the name it displays. The
+   * biller sends `null` whenever `planKey` is `null`, and Plus for a row
+   * written before tiers.
+   *
+   * ABSENT FROM A BILLER OLDER THAN THE FIELD, and `.catch(undefined)` for the
+   * reason `planKey` has `.catch(null)`: the field is younger than the page.
+   * Absent and `null` both mean "no tier named", which leaves the page exactly
+   * as it was before tiers, and an absent key stays absent in the decoded
+   * view so a body without the field decodes to exactly what it did before.
+   */
+  tier: z.string().nullable().optional().catch(undefined),
 });
 
 export type PlanView = z.infer<typeof planViewSchema>;
@@ -129,6 +144,39 @@ export const offerPlanSchema = z
 
 export type OfferPlan = z.infer<typeof offerPlanSchema>;
 
+/**
+ * One entry of `tiers` in `GET /plans/offer` (M2/04, `OfferTier` in the biller).
+ *
+ * EVERYTHING A PERSON READS ABOUT A TIER IS THE BILLER'S DATA: the name, the
+ * description and the prices. This client has no tier name, no price and no
+ * limit of its own. `capabilities` are FEATURE words (`capabilities.ts`); the
+ * page maps the ones it knows to names in the reader's language and says
+ * nothing about one it does not.
+ *
+ * `plans` holds the entries this tier is ordered by, one per interval, each the
+ * same shape the legacy top level `plans` carries, so the existing card
+ * figures and the key-and-interval check apply unchanged. It is empty for the
+ * free entry, which is listed for display and is never ordered
+ * (`isSold: false`).
+ */
+export const tierSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string(),
+    /** `true` for a tier that can be ordered. `false` is the free entry. */
+    isSold: z.boolean(),
+    /** AI scans per day, `0` for none, or `null` when the biller states no limit. */
+    dailyAiLimit: z.number().int().nonnegative().nullable().catch(null),
+    capabilities: z.array(z.string()).catch([]),
+    plans: z.array(offerPlanSchema),
+  })
+  .refine((tier) => new Set(tier.plans.map((plan) => plan.key)).size === tier.plans.length, {
+    message: 'a plan key appears twice in one tier',
+  });
+
+export type Tier = z.infer<typeof tierSchema>;
+
 /** The slot in `texts.termsConsent` the page replaces with a link, transcribed from `TERMS_SLOT` in the biller. */
 export const TERMS_SLOT = '{terms}';
 
@@ -151,33 +199,60 @@ const appPathSchema = z.string().regex(/^\/(?!\/)/);
  * them. A body that does not decode is treated as no offer at all, the
  * existing rule that unknown must not sell (`PLANS_ABSENT`).
  */
-export const planOfferSchema = z.object({
-  locale: z.string(),
-  consentVersion: z.string().min(1),
-  plans: z
-    .array(offerPlanSchema)
-    .min(1)
-    .refine((plans) => new Set(plans.map((plan) => plan.key)).size === plans.length, {
+export const planOfferSchema = z
+  .object({
+    locale: z.string(),
+    consentVersion: z.string().min(1),
+    /**
+     * The legacy single plan, monthly and yearly. EMPTY when the biller does not
+     * sell that tier and sells others (M2/04): then `tiers` carries every plan,
+     * and the refinement below keeps an offer with nothing to order from being
+     * read at all.
+     */
+    plans: z.array(offerPlanSchema).refine((plans) => new Set(plans.map((plan) => plan.key)).size === plans.length, {
       message: 'a plan key appears twice',
     }),
-  texts: z.object({
-    heading: z.string().min(1),
-    summary: z.array(z.string().min(1)),
-    withdrawal: z.string().min(1),
-    /** Carries {@link TERMS_SLOT}, which the page draws as the link to `links.terms`. */
-    termsConsent: z.string().refine((text) => text.includes(TERMS_SLOT), { message: 'termsConsent has no terms slot' }),
-    earlyStartConsent: z.string().min(1),
-    /** The label of the order button, and the only one it may carry. */
-    button: z.string().min(1),
-    paymentNote: z.string().min(1),
+    texts: z.object({
+      heading: z.string().min(1),
+      summary: z.array(z.string().min(1)),
+      withdrawal: z.string().min(1),
+      /** Carries {@link TERMS_SLOT}, which the page draws as the link to `links.terms`. */
+      termsConsent: z
+        .string()
+        .refine((text) => text.includes(TERMS_SLOT), { message: 'termsConsent has no terms slot' }),
+      earlyStartConsent: z.string().min(1),
+      /** The label of the order button, and the only one it may carry. */
+      button: z.string().min(1),
+      paymentNote: z.string().min(1),
+      /**
+       * Shown INSTEAD of `paymentNote` to a monthly subscriber ordering the
+       * yearly plan (M245/07). Carries {@link DATE_SLOT}, the day the year starts.
+       */
+      switchNote: z.string().refine((text) => text.includes(DATE_SLOT), { message: 'switchNote has no date slot' }),
+      /**
+       * The privacy lines for the order page, a plain text the biller wrote
+       * (M2/04, `texts.whatHappens`), drawn verbatim in a box above the two
+       * consents. Blank lines separate paragraphs. Absent or blank draws no box.
+       * `.catch(undefined)`: a field younger than the page must not unread the offer.
+       */
+      whatHappens: z.string().optional().catch(undefined),
+    }),
+    links: z.object({ terms: appPathSchema, privacy: appPathSchema, withdrawal: appPathSchema }),
     /**
-     * Shown INSTEAD of `paymentNote` to a monthly subscriber ordering the
-     * yearly plan (M245/07). Carries {@link DATE_SLOT}, the day the year starts.
+     * THE TIERS (M2/04): the free entry first, then every tier on sale, lowest
+     * first. THE ARRAY ORDER IS THE RANK the page uses to tell an upgrade from a
+     * downgrade (`tier-view.ts`). Absent from a biller that sells one plan.
+     * ABSENT MEANS TODAY'S PAGE, BYTE FOR BYTE, and so does a list that does not
+     * decode: `.catch(undefined)` turns a malformed list into an absent one
+     * rather than into no offer at all, because the legacy `plans` above still
+     * sell.
      */
-    switchNote: z.string().refine((text) => text.includes(DATE_SLOT), { message: 'switchNote has no date slot' }),
-  }),
-  links: z.object({ terms: appPathSchema, privacy: appPathSchema, withdrawal: appPathSchema }),
-});
+    tiers: z.array(tierSchema).min(1).optional().catch(undefined),
+  })
+  // AN OFFER MUST HAVE SOMETHING TO ORDER: the legacy plans, or a sold tier with a price.
+  .refine((offer) => offer.plans.length > 0 || (offer.tiers ?? []).some((tier) => tier.isSold && tier.plans.length > 0), {
+    message: 'the offer sells nothing',
+  });
 
 export type PlanOffer = z.infer<typeof planOfferSchema>;
 
@@ -191,12 +266,18 @@ export type PlanOffer = z.infer<typeof planOfferSchema>;
 export type OrderConsents = { terms: true; earlyStart: true };
 
 /**
- * `POST /plans/order`. A plan KEY, the language and version of the page the
- * person read, and the two consents. Nothing here names a price, an account or
+ * `POST /plans/order`. A plan KEY, optionally the tier, the language and
+ * version of the page the person read, and the two consents. Nothing here names a price, an account or
  * a customer. A type alias for the reason `JsonValue` needs one.
  */
 export type OrderRequestWire = {
   plan: PlanKey;
+  /**
+   * The id of the tier ordered (M2/04), for a biller that sells tiers. ABSENT
+   * MEANS THE LEGACY PLAN: the body of an order for a one-plan page is byte for
+   * byte what it was before tiers.
+   */
+  tier?: string;
   locale: string;
   consentVersion: string;
   consents: OrderConsents;
@@ -213,12 +294,30 @@ export type PortalRequestWire = {
 };
 
 /**
- * `200` from `POST /plans/order`: Stripe's address for a first order, or the
- * booked move of a monthly subscription to the yearly plan (M245/07).
+ * When a move between plans takes effect (M2/04): `now` for a move to a higher
+ * tier, settled pro rata, `period-end` for a lower tier and for the monthly to
+ * yearly move of one tier.
+ */
+export const MOVE_EFFECTS = ['now', 'period-end'] as const;
+
+export type MoveEffect = (typeof MOVE_EFFECTS)[number];
+
+/**
+ * `200` from `POST /plans/order`: Stripe's address for a first order, or a move
+ * of a subscription (M245/07, M2/04). A move names the plan and, since M2/04,
+ * the tier and when it takes effect. Both are optional and read tolerantly: an
+ * older biller sends neither, and a value this client does not know is absent.
  */
 export const orderAnswerSchema = z.union([
   redirectTargetSchema,
-  z.object({ switched: z.object({ plan: z.enum(PLAN_KEYS), startsAt: z.string().min(1) }) }),
+  z.object({
+    switched: z.object({
+      plan: z.enum(PLAN_KEYS),
+      tier: z.string().optional().catch(undefined),
+      effect: z.enum(MOVE_EFFECTS).optional().catch(undefined),
+      startsAt: z.string().min(1),
+    }),
+  }),
 ]);
 
 export type OrderAnswer = z.infer<typeof orderAnswerSchema>;

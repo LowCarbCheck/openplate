@@ -22,6 +22,7 @@ import { Timer } from 'lucide-react';
 
 import { Link } from '#app/components/link';
 import { useCurrentFast } from '#app/hooks/use-current-fast';
+import { useFeatureGate } from '#app/hooks/use-feature-gate';
 import { usePulseToday } from '#app/hooks/use-pulse-today';
 import { othersFastingLine } from '#app/lib/pulse';
 import { formatFastDuration, resolveFastTimeline } from '#app/models/fasting';
@@ -95,11 +96,16 @@ export function FastChip({ fast, nowMs, stageLabel, othersFasting = null }: Fast
 export function FastChipSlot(): ReactElement | null {
   const { t } = useTranslation();
   const { fast, nowMs } = useCurrentFast();
+  // THE LIVE CHIP IS PART OF FASTING, so a closed plan does not draw it (M2/05,
+  // ADR-0024). The running fast itself stays on `/fasting`, where it can be
+  // ended. Held from the first render in which a fast exists: this slot mounts
+  // once per visit, at boot, long before there is anything to draw.
+  const { isOpen: isFastingOpen } = useFeatureGate('fasting', { isReady: fast !== null });
   // Nothing is asked of the server while no fast is open, which is most of this
   // component's life on every route. See `use-pulse-today.ts` for why that is an
   // option on the hook and not a conditional call.
-  const pulseToday = usePulseToday({ enabled: fast !== null });
-  if (fast === null) return null;
+  const pulseToday = usePulseToday({ enabled: fast !== null && isFastingOpen });
+  if (fast === null || !isFastingOpen) return null;
 
   // A SCHEDULED fast carries no stage: nothing has started, so there is
   // nothing happening in the body to name, and `stageAt(0)` would confidently

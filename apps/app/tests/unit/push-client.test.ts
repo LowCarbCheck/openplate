@@ -580,6 +580,56 @@ describe('the fast wake instant', () => {
 });
 
 //////////////////////////////////////////////////////////////////////////////
+// A plan without fasting (M2/05)
+//////////////////////////////////////////////////////////////////////////////
+
+describe('a plan that does not include fasting', () => {
+  const REGISTERED = {
+    [PUSH_ENDPOINT_STORAGE_KEY]: 'https://push.example.test/aaa',
+    [PUSH_PREFS_STORAGE_KEY]: JSON.stringify(DEFAULT_PUSH_PREFS),
+  };
+
+  it('arms no wake instant', async () => {
+    const device = installDevice({ storage: fakeStorage(REGISTERED) });
+    setPushDependencies({ isFastingOpen: () => false });
+
+    await setFastWakeAt('2026-09-13T12:00:00.000Z');
+
+    assert.deepEqual(device.calls, []);
+  });
+
+  it('still clears a wake instant, so ending a running fast leaves no reminder behind', async () => {
+    const device = installDevice({ storage: fakeStorage(REGISTERED) });
+    setPushDependencies({ isFastingOpen: () => false });
+
+    await setFastWakeAt(null);
+
+    assert.deepEqual(device.calls[0]?.body, { endpoint: 'https://push.example.test/aaa', wakeAt: null });
+  });
+
+  it('sends the fast target kind as off even when the box is ticked, and keeps the tick stored', async () => {
+    const device = installDevice({ storage: fakeStorage(REGISTERED) });
+    setPushDependencies({ isFastingOpen: () => false });
+
+    await updatePushSchedule({ catchUpMinute: 390, fastTargetEnabled: true });
+
+    assert.equal(device.calls[0]?.body?.fastTargetEnabled, false);
+    assert.equal(JSON.parse(device.storage.entries.get(PUSH_PREFS_STORAGE_KEY) ?? '{}').fastTargetEnabled, true);
+  });
+
+  it('THE CONTROL: with fasting open the same calls arm the instant and send the tick', async () => {
+    const device = installDevice({ storage: fakeStorage(REGISTERED) });
+    setPushDependencies({ isFastingOpen: () => true });
+
+    await setFastWakeAt('2026-09-13T12:00:00.000Z');
+    await updatePushSchedule({ catchUpMinute: 390, fastTargetEnabled: true });
+
+    assert.equal(device.calls[0]?.body?.wakeAt, '2026-09-13T12:00:00.000Z');
+    assert.equal(device.calls[1]?.body?.fastTargetEnabled, true);
+  });
+});
+
+//////////////////////////////////////////////////////////////////////////////
 // What the three permission answers mean
 //////////////////////////////////////////////////////////////////////////////
 

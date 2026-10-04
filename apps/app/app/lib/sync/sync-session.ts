@@ -40,6 +40,7 @@ import { assertDeviceMayOpen, browserStorage, releaseDeviceLockForOwner } from '
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
+import { decodeCapabilities } from '#app/lib/plans/capabilities';
 
 /**
  * The address this device last signed in with.
@@ -181,6 +182,18 @@ export interface SyncSessionSnapshot {
      * `createdAt` is: every other snapshot fixture is right without it.
      */
     healthConsent?: HealthConsent | null;
+    /**
+     * The feature labels this account may use, the effective list, or
+     * `null`/absent for "everything is allowed" (M2/03, ADR-0024).
+     *
+     * `null` IS THREE THINGS AND ALL THREE MEAN OPEN: an account the core
+     * allows everything, "not read yet", and a core older than the field. A
+     * reader that closed a door for `null` would close every feature on every
+     * self-hosted instance and for the first moments after every reload.
+     * Read through `canUseFeature` (`#app/lib/plans/capabilities`), never
+     * directly. OPTIONAL for the reason `createdAt` above is.
+     */
+    capabilities?: string[] | null;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -374,6 +387,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       trialEndsAt: decodeTrialEndsAt(knownAccount?.trialEndsAt),
       createdAt: knownAccount?.createdAt ?? null,
       healthConsent: decodeHealthConsent(knownAccount?.healthConsent),
+      capabilities: decodeCapabilities(knownAccount?.capabilities),
     },
     isResuming: false,
     phase: 'idle',

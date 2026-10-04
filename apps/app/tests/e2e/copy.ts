@@ -376,6 +376,35 @@ const englishCatalogSchema = catalogSchema
       }),
     }),
   )
+  // The closed-feature note, the tier list and the order page's privacy box (M2/05), and the
+  // words of the fasting and pantry screens the gate specs press. English only until the
+  // translation run has bought them for the other five catalogs.
+  .and(
+    z.object({
+      featureGate: z.object({
+        names: z.object({ fasting: z.string(), pantry: z.string() }),
+        closed: z.object({ title: z.string(), plans: z.string() }),
+      }),
+      fasting: z.object({
+        plan: z.object({ submitNow: z.string() }),
+        active: z.object({ end: z.string() }),
+        end: z.object({ confirm: z.string() }),
+        history: z.object({ title: z.string(), empty: z.string() }),
+        strip: z.object({ fasting: z.string() }),
+      }),
+      pantry: z.object({ leadClosed: z.string(), review: z.object({ addLine: z.string() }) }),
+      plan: z.object({
+        tiers: z.object({ legend: z.string(), current: z.string(), switchTo: z.string(), switchYearly: z.string() }),
+        order: z.object({ whatHappensLabel: z.string(), privacyLink: z.string(), moveRefused: z.string() }),
+        move: z.object({
+          effectNow: z.string(),
+          effectPeriodEnd: z.string(),
+          doneNow: z.string(),
+          donePeriodEnd: z.string(),
+        }),
+      }),
+    }),
+  )
   // The What's new switch and the About row it hides. English only until the
   // translation run has bought them for the other five catalogs.
   .and(

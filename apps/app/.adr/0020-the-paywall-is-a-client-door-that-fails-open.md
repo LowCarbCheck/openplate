@@ -1,6 +1,6 @@
 # 0020, the paywall is a client door that fails open
 
-- **Status:** Accepted
+- **Status:** Superseded by [0024](0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md). The whole-app lock described here is unchanged, and 0024 restates it beside the per feature gates.
 - **Date:** 2026-09-28
 - **Deciders:** Altan Sarisin (owner), with an architecture brief from Fable
 

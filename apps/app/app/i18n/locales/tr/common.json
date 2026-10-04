@@ -2033,7 +2033,8 @@
         "trialScansSpent": "Yapay zeka ile kayıt eklemeye devam etmek için bir plan seç. Besin veritabanında arama yapmaya devam edebilirsin.",
         "allowanceExpiredOn": "Fotoğraf tahminleri için kotan {{date}} tarihinde doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
         "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok.",
-        "managedUpstream": "Bu kurulumun yapay zeka sağlayıcısı isteği reddetti. Burayı yöneten kişiden sağlayıcı yapılandırmasını kontrol etmesini iste."
+        "managedUpstream": "Bu kurulumun yapay zeka sağlayıcısı isteği reddetti. Burayı yöneten kişiden sağlayıcı yapılandırmasını kontrol etmesini iste.",
+        "allowanceSpentPlans": "Bugünkü yapay zeka taramalarını kullandın. Yarın tekrar dene veya planlara göz at."
       },
       "readPhoto": "Fotoğraf okunamadı. Başka bir tane dene.",
       "titles": {
@@ -3629,7 +3630,11 @@
       "stale": "Bu sayfa değişti. Tekrar oku ve her iki kutuyu da işaretle.",
       "alreadySubscribed": "Hesabında zaten bir plan var veya bir değişiklik planlandı.",
       "unavailable": "Sipariş sayfası yüklenemedi. Daha sonra tekrar dene.",
-      "withdrawalLink": "Cayma hakkı bilgilendirmesi ve formu"
+      "withdrawalLink": "Cayma hakkı bilgilendirmesi ve formu",
+      "privacyLink": "Gizlilik bildirimini oku",
+      "whatHappensLabel": "Verilerine ne olur",
+      "moveRefused": "Bu değişiklik şu anda yapılamıyor. Planın değişmedi.",
+      "planUnavailable": "Bu plan artık satışta değil. Sayfa şu anda satışta olan planları gösteriyor."
     },
     "countdown": {
       "daysLeft_one": "Yapay zeka deneme sürende son {{count}} gün.",
@@ -3654,6 +3659,38 @@
       "price": "Ücretsiz",
       "body": "Tüm özellikler, kendi çalıştırdığın bir sunucuda. Buradan satın alacağın bir şey yok.",
       "link": "Kendi sunucunda nasıl çalıştırırsın"
+    },
+    "tiers": {
+      "legend": "Her planın neleri içerdiği",
+      "dailyLimit_one": "Günde {{count}} yapay zeka taraması",
+      "dailyLimit_other": "Günde {{count}} yapay zeka taraması",
+      "noScans": "Yapay zeka taraması yok",
+      "includes": "Şunları içerir: {{features}}.",
+      "pricePerMonth": "Ayda {{price}}",
+      "pricePerYear": "Yılda {{price}}",
+      "current": "Senin planın",
+      "switchTo": "{{name}} planına geç",
+      "switchYearly": "Bunun yerine yıllık öde"
+    },
+    "move": {
+      "effectNow": "Bu değişiklik hemen yürürlüğe girer. Ücret, önceden ödediğin tutara göre orantılı olarak mahsup edilir.",
+      "effectPeriodEnd": "Bu değişiklik ücretli döneminin sonunda yürürlüğe girer. O zamana kadar mevcut planını kullanmaya devam edersin.",
+      "doneNow": "Planın değişti. Ücret orantılı olarak mahsup edildi.",
+      "donePeriodEnd": "Planın {{date}} tarihinde değişecek. O zamana kadar mevcut planını kullanmaya devam edersin."
+    }
+  },
+  "featureGate": {
+    "names": {
+      "fasting": "oruç zamanlayıcısı",
+      "pantry": "kiler taraması",
+      "voice": "sesle giriş",
+      "chat": "sohbetle giriş"
+    },
+    "closed": {
+      "title": "Planında yok: {{feature}}",
+      "titleGeneric": "Planında yok",
+      "body": "Daha önce kaydettiğin veriler burada kalır. Bunları okumaya ve dışa aktarmaya devam edebilirsin.",
+      "plans": "Planları gör"
     }
   },
   "usual": {
@@ -3684,6 +3721,7 @@
     "lead": "Evde neyin var. Bir rafın fotoğrafını çek veya listeyi yaz.",
     "leadPhoto": "Evde neyin var. Bir rafın fotoğrafını çek.",
     "leadWords": "Evde neyin var. Listeyi yaz.",
+    "leadClosed": "Evinde olanlar. Listeyi elle tut.",
     "empty": "Burada henüz bir şey yok. Buzdolabının fotoğrafını çek veya elindekileri yaz.",
     "emptyPhoto": "Henüz burada bir şey yok. Buzdolabının fotoğrafını çek.",
     "emptyWords": "Henüz burada bir şey yok. Elindekileri yaz.",
