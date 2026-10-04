@@ -29,6 +29,7 @@
  * more.
  */
 import type { LanguageCode } from '#app/i18n/language-prefs';
+import type { FeatureLabel } from '#app/lib/plans/capabilities';
 import type { PlateIdentification, ScanResultBase, ScanTokenUsage } from './types';
 import type { PantryIdentification } from './pantry-schema';
 import type { RecipeProposals } from './recipe-schema';
@@ -99,6 +100,14 @@ export interface IntakeTaskDescriptor<TResult extends ScanResultBase> {
    * text block it is handed.
    */
   readonly language?: LanguageCode;
+  /**
+   * The feature this task is part of, when it is part of one a plan can close
+   * (M2/03). The managed credential sends it as `X-Openplate-Feature`, and the
+   * core's proxy refuses it with `403 capability-required` for an account whose
+   * plan lacks it. ABSENT on the diary's two tasks, which every plan includes.
+   * Never sent on a BYOK credential, and never a tier name: it is a feature word.
+   */
+  readonly feature?: FeatureLabel;
 }
 
 /**
@@ -172,6 +181,7 @@ export function pantryPhotoTask(language: LanguageCode): IntakeTaskDescriptor<Pa
     schemaName: 'pantry_identification',
     toolName: 'record_pantry_identification',
     toolDescription: 'Record the ingredients visible in the photo of food storage.',
+    feature: 'pantry',
     parse: (rawText) => parsePantryIdentificationJson(rawText, language),
     validate: (value) => validatePantryIdentification(value, language),
   };
@@ -196,6 +206,7 @@ export function pantryTextTask(language: LanguageCode): IntakeTaskDescriptor<Pan
     schemaName: 'pantry_identification',
     toolName: 'record_pantry_identification',
     toolDescription: 'Record the ingredients the person says they have at home.',
+    feature: 'pantry',
     parse: (rawText) => parsePantryIdentificationJson(rawText, language),
     validate: (value) => validatePantryIdentification(value, language),
   };
@@ -225,6 +236,7 @@ export const RECIPE_PROPOSAL_TASK: IntakeTaskDescriptor<RecipeProposals> = {
   schemaName: 'recipe_proposals',
   toolName: 'record_recipe_proposals',
   toolDescription: 'Record the recipes proposed from the pantry for the next meal slot.',
+  feature: 'pantry',
   parse: parseRecipeProposalsJson,
   validate: validateRecipeProposals,
 };

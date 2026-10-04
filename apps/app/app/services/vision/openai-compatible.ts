@@ -38,6 +38,7 @@ import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
 import { readTrialScansLeft } from '#app/lib/plans/trial-scans';
+import { FEATURE_HEADER } from '#app/lib/plans/capabilities';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const HTTP_CLIENT_ERROR_START = 400;
@@ -303,6 +304,13 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       // THE SAME ID ON EVERY SEND of this intake, the retries below included:
       // `sendRequest` is the one place a request is built.
       if (isBearerProvider(credential)) headers.set(INTAKE_ID_HEADER, credential.intakeId);
+      // THE FEATURE THIS REQUEST IS MADE FOR, so the core's proxy can refuse it
+      // for an account whose plan lacks it (M2/03). Only on the managed
+      // credential and only for a task that names one, for the reason the
+      // intake id above gives: a custom header to a provider the person
+      // configured would fail that provider's CORS preflight, and a BYOK
+      // request is never gated (ADR-0024).
+      if (isBearerProvider(credential) && task.feature !== undefined) headers.set(FEATURE_HEADER, task.feature);
       // The browser sends its OWN language list by default; this replaces it
       // with the one language the app is shown in, the language the service
       // must answer in. A task with no language keeps the browser's.
@@ -363,6 +371,7 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       const classification = await classifyVisionHttpFailure(response);
       throw new VisionProviderFailure(classification.cause, classification.message, {
         retryAfterSeconds: classification.retryAfterSeconds,
+        capability: classification.capability ?? null,
       });
     }
 

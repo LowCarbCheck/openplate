@@ -102,6 +102,7 @@ import {
 import { clearHomeHint } from '#app/lib/home-entry';
 import { releasePushForSignOut } from '#app/lib/push';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
+import { decodeCapabilities } from '#app/lib/plans/capabilities';
 import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
   decodeHealthConsent,
@@ -1230,6 +1231,7 @@ function publishAccountView(account: AccountViewWire): void {
       trialEndsAt: decodeTrialEndsAt(account.trialEndsAt),
       createdAt: account.createdAt,
       healthConsent: decodeHealthConsent(account.healthConsent),
+      capabilities: decodeCapabilities(account.capabilities),
     },
   });
 }

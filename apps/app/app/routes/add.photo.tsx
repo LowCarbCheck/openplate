@@ -127,6 +127,7 @@ import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
 import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { isPaidWindowLive } from '#app/lib/plans/free-grant';
 import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
 import { bindingTrialScans, newIntakeId, type TrialScans } from '#app/lib/plans/trial-scans';
 import i18nSingleton from '#app/i18n/i18n';
@@ -2041,6 +2042,10 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   'trial-scans-spent': 'scan.errors.titles.trialScansSpentUncounted',
   // THE DAY LIMIT (M267): the free tier's days are over, with scans left.
   'trial-expired': 'scan.errors.titles.trialDaysOver',
+  // A FEATURE THE PLAN DOES NOT INCLUDE (M2/05). The diary's own scan names no
+  // feature, so this is the generic headline; the pantry restates the refusal
+  // with the feature's name (`pantry.tsx`).
+  'capability-required': 'featureGate.closed.titleGeneric',
 } satisfies Record<Exclude<VisionFailureCause, 'genuinely-no-food'>, string>;
 
 /**
@@ -2138,6 +2143,8 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   'trial-scans-spent': 'scan.errors.provider.trialScansSpent',
   // The same next step for the day limit (M267): that sentence names no scans.
   'trial-expired': 'scan.errors.provider.trialScansSpent',
+  // The closed-feature note's own sentence, the same one the client's gate draws.
+  'capability-required': 'featureGate.closed.body',
   // The remaining causes deliberately keep the adapter's own English (see above).
   'invalid-request': undefined,
   transient: undefined,
@@ -2149,6 +2156,8 @@ const PLAN_DOOR_CAUSES: ReadonlySet<VisionFailureCause> = new Set([
   'allowance-expired',
   'trial-scans-spent',
   'trial-expired',
+  // A feature the plan lacks is answered by a plan that has it (M2/05).
+  'capability-required',
 ]);
 
 /**
@@ -2167,8 +2176,41 @@ const PLAN_DOOR_CAUSES: ReadonlySet<VisionFailureCause> = new Set([
  * PURE AND EXPORTED so the branch has a test with a control on both inputs; a
  * link rendered from a `&&` inside the alert would have neither.
  */
-export function shouldOfferPlansDoor(input: { failureCause?: VisionFailureCause; plansAvailable: boolean }): boolean {
-  return input.plansAvailable && input.failureCause !== undefined && PLAN_DOOR_CAUSES.has(input.failureCause);
+export function shouldOfferPlansDoor(input: {
+  failureCause?: VisionFailureCause;
+  plansAvailable: boolean;
+  /** The server's `Retry-After`, in seconds, when it sent one. Tells a spent day from a burst. */
+  retryAfterSeconds?: number | null;
+  /** Whether a paid window is live on the account, which a spent day does not offer a plan against. */
+  hasPaidWindow?: boolean;
+}): boolean {
+  if (!input.plansAvailable || input.failureCause === undefined) return false;
+  if (PLAN_DOOR_CAUSES.has(input.failureCause)) return true;
+  return isSpentDayWithoutPaidWindow(input);
+}
+
+/**
+ * Whether this refusal is the daily cap used up on an account that holds no
+ * paid window (M2/02, M2/05).
+ *
+ * THE PROXY SAYS IT WITH A `429` AND A `Retry-After` OF A MINUTE OR MORE (a
+ * burst limit clears within the minute), and `describeFailureBody` already
+ * reads the header that way. What changed is who is offered something: a
+ * person with no paid window can answer the spent day with a plan, so the
+ * screen offers the plan page. A person whose paid window is live has already
+ * paid, and keeps the bare "try again tomorrow".
+ *
+ * PURE AND EXPORTED so both inputs have a control case.
+ */
+export function isSpentDayWithoutPaidWindow(input: {
+  failureCause?: VisionFailureCause;
+  retryAfterSeconds?: number | null;
+  hasPaidWindow?: boolean;
+}): boolean {
+  if (input.failureCause !== 'rate-limit') return false;
+  if (input.hasPaidWindow === true) return false;
+  const retryAfter = input.retryAfterSeconds;
+  return retryAfter !== null && retryAfter !== undefined && retryAfter >= RATE_LIMIT_MINUTE_SECONDS;
 }
 
 /**
@@ -2197,6 +2239,14 @@ export function describeFailureBody(
     allowanceEndsAt?: string | null;
     /** The app language, for the allowance end date. Never the browser's own (M251 spec 01). */
     language: string;
+    /**
+     * Whether this instance sells plans. With it, a spent day says so and
+     * names the plans (`allowanceSpentPlans`); without it, and by default, the
+     * spent day only says to come back tomorrow, as it always did.
+     */
+    plansAvailable?: boolean;
+    /** Whether a paid window is live on the account. A spent day on a paid window offers no plan. */
+    hasPaidWindow?: boolean;
   },
   t: Translate,
 ): string | undefined {
@@ -2219,7 +2269,16 @@ export function describeFailureBody(
     if (retryAfter !== null && retryAfter !== undefined && retryAfter < RATE_LIMIT_MINUTE_SECONDS) {
       return t('scan.errors.provider.rateLimitMinute');
     }
-    if (retryAfter !== null && retryAfter !== undefined) return t('scan.errors.provider.allowanceSpent');
+    if (retryAfter !== null && retryAfter !== undefined) {
+      // THE SPENT DAY OFFERS THE PLAN PAGE WHERE THERE IS ONE (M2/05), and only
+      // to an account with no paid window. The mechanism is unchanged: the
+      // proxy's refusal, the header, the card below the alert.
+      return t(
+        params.plansAvailable === true && isSpentDayWithoutPaidWindow(params) ?
+          'scan.errors.provider.allowanceSpentPlans'
+        : 'scan.errors.provider.allowanceSpent',
+      );
+    }
   }
   const bodyKey = params.failureCause ? FAILURE_BODY_KEY_BY_CAUSE[params.failureCause] : undefined;
   if (bodyKey) return t(bodyKey);
@@ -2322,6 +2381,9 @@ export function UploadForm({
   onRetry: () => void;
 }) {
   const { t, i18n } = useTranslation();
+  // A paid window that is live now, read where the clock is, so a spent day is
+  // only answered with a plan for somebody who is not already paying.
+  const hasPaidWindow = isPaidWindowLive({ allowanceExpiresAt: allowanceEndsAt ?? null, now: new Date() });
   const monthlyUsageLine =
     accountTrialScans === null ?
       formatMonthlyUsageLine(monthlyUsage)
@@ -2566,7 +2628,16 @@ export function UploadForm({
                     // `describeFailureBody` additionally swaps in OpenRouter-
                     // specific free-tier copy for a `rate-limit` failure.
                   : describeFailureBody(
-                      { failureCause, provider, error, retryAfterSeconds, allowanceEndsAt, language: i18n.language },
+                      {
+                        failureCause,
+                        provider,
+                        error,
+                        retryAfterSeconds,
+                        allowanceEndsAt,
+                        language: i18n.language,
+                        plansAvailable,
+                        hasPaidWindow,
+                      },
                       t,
                     )
 
@@ -2581,7 +2652,13 @@ export function UploadForm({
                 surfaces drifting apart that `shouldOfferPlansDoor` exists to
                 stop. So the card carries no lead of its own, only the lowest
                 monthly price and the one button to the plan page. */}
-            {error && shouldOfferPlansDoor({ failureCause, plansAvailable: plansAvailable ?? false }) && (
+            {error &&
+              shouldOfferPlansDoor({
+                failureCause,
+                plansAvailable: plansAvailable ?? false,
+                retryAfterSeconds,
+                hasPaidWindow,
+              }) && (
               <PlanOfferCompact placement="ai-limit" />
             )}
 

@@ -2033,7 +2033,8 @@
         "trialScansSpent": "Pick a plan to keep using AI entries. Searching the food database still works.",
         "allowanceExpiredOn": "Your allowance for photo estimates ended on {{date}}. Everything else in openplate keeps working.",
         "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.",
-        "managedUpstream": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup."
+        "managedUpstream": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup.",
+        "allowanceSpentPlans": "You have used today's AI scans. Try again tomorrow, or see the plans."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -3629,7 +3630,9 @@
       "stale": "This page changed. Read it again and tick both boxes.",
       "alreadySubscribed": "Your account already has a plan, or a change to it is booked.",
       "unavailable": "The order page could not be loaded. Try again later.",
-      "withdrawalLink": "Withdrawal instruction and form"
+      "withdrawalLink": "Withdrawal instruction and form",
+      "privacyLink": "Read the privacy notice",
+      "whatHappensLabel": "What happens to your data"
     },
     "countdown": {
       "daysLeft_one": "{{count}} day of AI scans left in your trial.",
@@ -3654,6 +3657,32 @@
       "price": "Free",
       "body": "Every feature, on a server you run. Nothing to order here.",
       "link": "How to self-host"
+    },
+    "tiers": {
+      "legend": "What each plan includes",
+      "current": "Your plan",
+      "dailyLimit_one": "{{count}} AI scan a day",
+      "dailyLimit_other": "{{count}} AI scans a day",
+      "noScans": "No AI scans",
+      "includes": "Includes",
+      "notOnSale": "Not available to order right now.",
+      "pricePerMonth": "{{price}} a month",
+      "pricePerYear": "{{price}} a year",
+      "choose": "Pick a plan and how often it bills"
+    }
+  },
+  "featureGate": {
+    "names": {
+      "fasting": "Fasting timer",
+      "pantry": "Pantry scan",
+      "voice": "Voice entry",
+      "chat": "Chat entry"
+    },
+    "closed": {
+      "title": "{{feature}} is not included in your plan",
+      "titleGeneric": "This is not included in your plan",
+      "body": "What you already recorded stays here. You can still read it and export it.",
+      "plans": "See plans"
     }
   },
   "usual": {
