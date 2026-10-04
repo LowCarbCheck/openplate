@@ -23,6 +23,9 @@
  * hit for each.
  */
 import type pg from 'pg';
+import { base64WindowText, toUrlSafe, WINDOW_BYTES } from '../../src/lib/marker-forms.js';
+
+export { WINDOW_BYTES };
 
 /** One body of text to search, and where it came from, for the failure message. */
 export interface Haystack {
@@ -40,22 +43,6 @@ export interface LeakSearcher {
   find(haystacks: readonly Haystack[]): string[];
   /** How many needles the searcher looks for, so a test can show it is not empty. */
   needleCount: number;
-}
-
-/** The bytes of a marker a window is cut from. 12 is long enough that a chance hit in random bytes is out of the question. */
-export const WINDOW_BYTES = 12;
-
-/** The first and last characters of a window's base64 depend on its neighbours; only the characters fixed by the window itself are used. */
-function base64WindowText(input: { window: Buffer; alignment: number }): string {
-  const { window, alignment } = input;
-  const encoded = Buffer.concat([Buffer.alloc(alignment), window]).toString('base64');
-  const start = Math.ceil((4 * alignment) / 3);
-  const end = Math.floor((8 * (alignment + window.length)) / 6);
-  return encoded.slice(start, end);
-}
-
-function toUrlSafe(base64: string): string {
-  return base64.replaceAll('+', '-').replaceAll('/', '_');
 }
 
 function squash(text: string): string {
