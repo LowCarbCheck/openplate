@@ -1,12 +1,14 @@
-# Sync across devices (optional)
+# Sync across devices
 
-openplate is a local app by default: your diary lives in the browser's IndexedDB on the
-device you use, and nothing leaves it. Moving that diary between devices is the one thing
-that needs an account, so it lives in a separate service,
+On your own instance, openplate is a local app by default: your diary lives in the browser's
+IndexedDB on the device you use, and nothing leaves it until you point the app at a core
+server. Moving that diary between devices is the one thing that needs an account, so it lives
+in a separate service,
 [openplate-core](https://github.com/LowCarbCheck/openplate/tree/main/apps/core), with its own image,
 database and secrets.
 
-Sync is entirely optional. Unset, openplate loses no feature.
+On your own instance sync is optional. Unset, openplate loses no feature. On the hosted
+service every account syncs, so the diary also has an encrypted copy on the server.
 
 ## What travels between your devices
 
@@ -43,8 +45,9 @@ Three things never travel, whatever you switch on:
 - A secure page. Signing in derives your keys with the browser's Web Crypto API, which
   browsers only offer over `https://` or on `localhost`. See
   [self-hosting.md](self-hosting.md#https).
-- An account. Signup is by invitation only, so on your own instance you mint the first one
-  yourself: [self-hosting.md](self-hosting.md#create-the-first-account).
+- An account. On your own instance sign-up is by invitation unless you set `OPEN_SIGNUP=true`,
+  so you mint the first one yourself:
+  [self-hosting.md](self-hosting.md#create-the-first-account).
 
 ## Turning it on
 
@@ -104,7 +107,8 @@ the code once and ask a person to keep it forever. Nobody does.
 
 Plate photos are never part of a sync payload. They stay on the device that took them, they
 are excluded from JSON exports, and on a managed instance the copy that reaches the AI proxy
-is read once and not stored.
+is read once and the proxy does not store it. A photo that is sent along with a report of a
+wrong estimate is kept by the operator for a limited time.
 
 ## Sharing a diary with a clinician
 

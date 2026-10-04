@@ -104,3 +104,42 @@ describe('the README scopes its BYOK promise to a copy you run yourself', () => 
     );
   });
 });
+
+/**
+ * SYNC IS OPTIONAL ONLY WHERE YOU RUN IT YOURSELF (M3/01). `docs/sync.md` said "Sync is entirely
+ * optional" and put "(optional)" in its title. On the hosted service every account syncs, because
+ * the account is the sync: the diary keeps an encrypted copy on the server. A bare "optional" is
+ * the false sentence; one that names the copy you run yourself, and says the hosted service
+ * differs, is the true one.
+ */
+const SYNC_DOC = 'docs/sync.md';
+const BARE_OPTIONAL_SYNC = /(?:^|[.!?]\s)Sync is entirely optional\./m;
+const OPTIONAL_IN_TITLE = /^# .*\(optional\)/m;
+const OPTIONAL_ONLY_ON_YOUR_OWN = /On your own instance sync is optional\./;
+const HOSTED_ALWAYS_SYNCS = /On the hosted service every account syncs/;
+
+describe('docs/sync.md scopes "sync is optional" to an instance you run yourself', () => {
+  const doc = normalise(readFileSync(new URL(SYNC_DOC, REPO_ROOT), 'utf8'));
+  const rawDoc = readFileSync(new URL(SYNC_DOC, REPO_ROOT), 'utf8');
+
+  it('does not call sync entirely optional, and its title does not say "(optional)"', () => {
+    assert.equal(BARE_OPTIONAL_SYNC.test(doc), false);
+    assert.equal(OPTIONAL_IN_TITLE.test(rawDoc), false);
+  });
+
+  it('says that sync is optional on your own instance and that every hosted account syncs', () => {
+    assert.equal(OPTIONAL_ONLY_ON_YOUR_OWN.test(doc), true);
+    assert.equal(HOSTED_ALWAYS_SYNCS.test(doc), true);
+  });
+
+  it('THE CONTROL: the old sentence and the old title are caught, the scoped sentence is left alone', () => {
+    assert.equal(BARE_OPTIONAL_SYNC.test('Sync is entirely optional. Unset, openplate loses no feature.'), true);
+    assert.equal(BARE_OPTIONAL_SYNC.test('Text before. Sync is entirely optional.'), true);
+    assert.equal(OPTIONAL_IN_TITLE.test('# Sync across devices (optional)\n\nBody'), true);
+    assert.equal(
+      BARE_OPTIONAL_SYNC.test('On your own instance sync is optional. Unset, openplate loses no feature.'),
+      false,
+    );
+    assert.equal(OPTIONAL_IN_TITLE.test('# Sync across devices\n\nBody'), false);
+  });
+});
