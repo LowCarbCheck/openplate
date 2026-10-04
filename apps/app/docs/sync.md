@@ -20,8 +20,10 @@ activity marks and awards behind the streak. Your saved meals travel too, as a w
 list rather than row by row, which is the last part of the diary still waiting for a
 per-row merge.
 
-Your sharing and research keys travel as well, in a sealed part of the blob that only
-your own devices can open. A clinician you grant a diary to cannot read it.
+Your sharing and research keys travel as well, in a sealed part of the blob that your
+own devices can open, and so can an operator who holds your recovery key (see
+[Encryption, and what the operator holds](#encryption-and-what-the-operator-holds)). A clinician you
+grant a diary to cannot read it.
 
 Three things never travel, whatever you switch on:
 

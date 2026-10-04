@@ -4,7 +4,7 @@ The account service for [openplate](https://github.com/LowCarbCheck/openplate). 
 
 **What this server holds, in one paragraph.** An email address, an opaque ciphertext blob per account, wrapped key records it cannot unwrap, and each account's recovery code sealed under a key in the environment. It cannot read the ciphertext, not as a policy, but as a consequence of never receiving a key: your passphrase never leaves your device, and what reaches the server is a derived value that authenticates you and decrypts nothing. The escrowed recovery code is the deliberate exception, and it is what makes "forgot password" restore the diary rather than only the login. **It also means the operator of a hosted instance can open any account on it**, not through an endpoint, there is none, but by reading that column with `SERVER_SECRET` in hand. A self-hosted instance is its own operator. The full argument, including what it costs and why it was taken, is [ADR-0005](./docs/adr/0005-organization-accounts-and-escrowed-recovery.md).
 
-**And five places the zero-knowledge claim does not hold.** All five are optional, all five are off until somebody turns them on, and they are not the same kind of thing.
+**And five more places the zero-knowledge claim does not hold, besides the escrowed recovery code above.** All five are optional, all five are off until somebody turns them on, and they are not the same kind of thing.
 
 The first is the AI proxy. If the operator configures a provider key, this service proxies the app's food-photo requests to that provider at `POST /v1/chat/completions`, so the photograph and the model's answer cross this process. Neither is written, cached or logged: not the body, not a prefix, not a decoded buffer. What a log line carries is an account id, an upstream status, byte counts and a duration. It SEES a photograph and keeps nothing. Leave `UPSTREAM_BASE_URL` and `UPSTREAM_API_KEY` unset, and the route does not exist.
 
@@ -416,7 +416,7 @@ reading.
 
 **WHAT THIS COSTS YOU, PLAINLY.** You hold photographs of your users' food, in
 your database, and you can look at them. Every other write path on this service
-stores something nobody can read. This one does not, and no amount of care in
+stores ciphertext, which only an operator holding the escrowed recovery code can open. This one does not, and no amount of care in
 the code changes that: it is the point of the feature. If you run an instance
 for other people, this is a promise you are now making to them, it belongs in
 whatever you told them about this server, and it is a change you should make
