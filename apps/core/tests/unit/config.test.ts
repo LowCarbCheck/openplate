@@ -1322,3 +1322,18 @@ test('a malformed capability setting stops the boot and names the variable', () 
   assert.throws(() => parseConfig(baseEnv({ DEFAULT_CAPABILITIES: 'Scan' })), /DEFAULT_CAPABILITIES/);
   assert.throws(() => parseConfig(baseEnv({ CAPABILITY_SCHEMA_MAP: 'scan_result' })), /CAPABILITY_SCHEMA_MAP/);
 });
+
+// ── TRIAL_HASH_RETENTION_DAYS (2026-10-05, ADR-0010) ────────────────────────
+
+test('the mailbox hash is kept 365 days unless the operator says otherwise', () => {
+  assert.equal(parseConfig(baseEnv()).trialHashRetentionDays, 365);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: '' })).trialHashRetentionDays, 365);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: ' 90 ' })).trialHashRetentionDays, 90);
+  assert.equal(parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: '3650' })).trialHashRetentionDays, 3650);
+});
+
+test('TRIAL_HASH_RETENTION_DAYS refuses zero, a fraction, text and ten years and a day, naming the variable', () => {
+  for (const value of ['0', '-5', '1.5', 'a year', '3651']) {
+    assert.throws(() => parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: value })), /TRIAL_HASH_RETENTION_DAYS/, value);
+  }
+});

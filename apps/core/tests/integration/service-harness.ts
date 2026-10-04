@@ -378,6 +378,12 @@ export interface StartServiceOptions {
   /** `TRIAL_ADDRESS_PEPPER` (M253). Absent is no keyed mailbox hash, which `main.ts` refuses beside a trial. */
   trialAddressPepper?: string | null;
   /**
+   * Whether the instance still grants a scan trial, as `main.ts` reads it from
+   * `config.trial !== null` (ADR-0010). Absent is `true`, which keeps the hash
+   * a deletion writes for an account that held a trial.
+   */
+  grantsScanTrial?: boolean;
+  /**
    * Absent (the default) boots the service the way every deployment boots
    * today: no `VAPID_*` variables, and the whole `/v1/push` subtree answering
    * the ordinary unknown-path 404. `push-routes.test.ts` opts in.
@@ -597,7 +603,11 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   const authContext: AuthContext = {
     // The zone the trial's last midnight falls in, as `main.ts` reads it from
     // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
-    store: createDrizzleAccountStore(options.db, { hashAddress, trialTimeZone: trial?.timeZone ?? 'UTC' }),
+    store: createDrizzleAccountStore(options.db, {
+      hashAddress,
+      trialTimeZone: trial?.timeZone ?? 'UTC',
+      grantsScanTrial: options.grantsScanTrial,
+    }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
     escrowKey: secrets.escrowKey,

@@ -367,6 +367,16 @@ export interface DrizzleAccountStoreOptions {
    * days the offer is worth. See `accounts/scan-trial.ts`, `trialEndsAtFor`.
    */
   trialTimeZone: string;
+  /**
+   * Whether this instance still grants a scan trial. Absent is `true`, which
+   * is every instance before the standing daily limit replaced the trial.
+   *
+   * With `false`, a deletion still scrubs the address from the invite rows but
+   * KEEPS NO HASH: the hash exists only so a trial can be refused to a mailbox
+   * that had one, and an instance that grants none has nothing to refuse. Keeping
+   * it would hold a person's data for a rule that no longer runs.
+   */
+  grantsScanTrial?: boolean;
 }
 
 /**
@@ -390,6 +400,7 @@ function lapsedDayTrialPredicate(input: LapsedDayTrialQuery) {
 export function createDrizzleAccountStore(db: Database, options: DrizzleAccountStoreOptions): AccountStore {
   const hashAddress = options.hashAddress ?? null;
   const trialTimeZone = options.trialTimeZone;
+  const grantsScanTrial = options.grantsScanTrial ?? true;
 
   /**
    * Deletes an account on an instance with a pepper, keeping ONLY a keyed hash
@@ -398,7 +409,9 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
    * ONE TRANSACTION, THREE WRITES:
    *  1. the hash, when the account held a trial: a scan trial of any size, or
    *     an invite a member caused (a day trial), whose row may have lost its
-   *     inviter to an earlier deletion but not its `trial_scans`;
+   *     inviter to an earlier deletion but not its `trial_scans`. NOT on an
+   *     instance that no longer grants a scan trial (`grantsScanTrial`), and
+   *     deleted by the hourly sweep after `TRIAL_HASH_RETENTION_DAYS`;
    *  2. every invite row about this mailbox loses its address, its name and
    *     its hash: rows at the account's own address and rows at any other
    *     spelling that hashes the same. The row itself stays, because a
@@ -427,7 +440,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
           ),
         )
         .limit(1);
-      if (account.trialScans !== null || memberCaused !== undefined) {
+      if (grantsScanTrial && (account.trialScans !== null || memberCaused !== undefined)) {
         await tx.insert(trialAddressHashes).values({ hash: mailbox }).onConflictDoNothing();
       }
 

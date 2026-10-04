@@ -847,14 +847,22 @@ export type SelectAiTrialIntake = InferSelectModel<typeof aiTrialIntakes>;
  * needs to recognise the mailbox again. The hash is HMAC-SHA256 under
  * `TRIAL_ADDRESS_PEPPER` over the trial key (`accounts/trial-key.ts`), so the
  * table cannot be reversed or matched against a list of addresses without the
- * operator's secret, and it holds nothing else: no date, no name, no id.
+ * operator's secret, and it holds nothing else: no name, no id, and one date.
  *
  * WRITTEN ONLY BY `AccountStore.deleteAccount`, in the transaction that
  * deletes the account and scrubs the address from its invite rows, and only
- * on an instance with the pepper configured.
+ * on an instance with the pepper configured that still grants a scan trial.
+ *
+ * IT HAS AN END (2026-10-05, ADR-0010). `created_at` is the instant the
+ * account was deleted, and the hourly sweep (`db/trial-hash-retention.ts`)
+ * deletes a row `TRIAL_HASH_RETENTION_DAYS` (365 by default) after it. A row
+ * that existed before the column was added got the migration's instant, so its
+ * year starts there. The date is the whole reason the row can be purged, and
+ * it is as coarse as the deletion it records.
  */
 export const trialAddressHashes = pgTable('trial_address_hashes', {
   hash: text('hash').primaryKey(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export type InsertTrialAddressHash = InferInsertModel<typeof trialAddressHashes>;

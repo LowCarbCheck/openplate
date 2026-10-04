@@ -351,6 +351,13 @@ export interface ServiceConfig {
    */
   trialAddressPepper: string | null;
   /**
+   * `TRIAL_HASH_RETENTION_DAYS`: how many days the keyed mailbox hash of a
+   * deleted account is kept (default 365), counted from the deletion. After it
+   * the hourly sweep deletes the row (`db/trial-hash-retention.ts`, ADR-0010)
+   * and the same mailbox can have a trial again.
+   */
+  trialHashRetentionDays: number;
+  /**
    * Whether anybody may ask this instance for an account with their own
    * address (`OPEN_SIGNUP=true`, M253). `false`, the default, and what every
    * instance that did not set it keeps: invite-only.
@@ -1860,6 +1867,21 @@ function parseDefaultFreeDailyAiLimit(env: NodeJS.ProcessEnv, trial: TrialPolicy
   return limit;
 }
 
+/** What `TRIAL_HASH_RETENTION_DAYS` is when unset: one year after the deletion. */
+export const DEFAULT_TRIAL_HASH_RETENTION_DAYS = 365;
+
+/** The longest `TRIAL_HASH_RETENTION_DAYS`, ten years. A bound, so a typo is not a retention period nobody chose. */
+const MAX_TRIAL_HASH_RETENTION_DAYS = 3650;
+
+/** `TRIAL_HASH_RETENTION_DAYS`: a whole number of days from 1 to 3650, default 365 (ADR-0010). */
+function parseTrialHashRetentionDays(env: NodeJS.ProcessEnv): number {
+  const days = parsePositiveInteger(env, 'TRIAL_HASH_RETENTION_DAYS', DEFAULT_TRIAL_HASH_RETENTION_DAYS);
+  if (days > MAX_TRIAL_HASH_RETENTION_DAYS) {
+    throw new Error(`TRIAL_HASH_RETENTION_DAYS must be at most ${MAX_TRIAL_HASH_RETENTION_DAYS} (got ${days})`);
+  }
+  return days;
+}
+
 /**
  * `TRIAL_ADDRESS_PEPPER` (M253): optional, at least
  * {@link MIN_SERVER_SECRET_LENGTH} characters, and REQUIRED when the instance
@@ -2034,6 +2056,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     defaultCapabilities: parseDefaultCapabilities(env.DEFAULT_CAPABILITIES),
     capabilitySchemaMap: parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP),
     trialAddressPepper: parseTrialAddressPepper(env, trial),
+    trialHashRetentionDays: parseTrialHashRetentionDays(env),
     openSignup,
     turnstile: parseTurnstile(env, openSignup),
     aiMaxRequestBytes: parsePositiveInteger(env, 'AI_MAX_REQUEST_BYTES', DEFAULT_AI_MAX_REQUEST_BYTES),

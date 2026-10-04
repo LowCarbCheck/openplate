@@ -27,6 +27,7 @@ import { createDrizzleBlobRollbackStore } from './db/blob-rollback-store.js';
 import { createDrizzleAdminStore } from './db/admin-store.js';
 import { createDrizzleInviteStore } from './db/invite-store.js';
 import { scrubFinishedInvites } from './db/invite-retention.js';
+import { purgeExpiredTrialHashes } from './db/trial-hash-retention.js';
 import { createDrizzleShareStore } from './db/share-store.js';
 import { createDrizzleRotationStore } from './db/rotation-store.js';
 import { createDrizzleResearchStore } from './db/research-store.js';
@@ -204,6 +205,9 @@ async function main(): Promise<void> {
     store: createDrizzleAccountStore(database.db, {
       hashAddress,
       trialTimeZone: config.trial?.timeZone ?? DEFAULT_TRIAL_TIME_ZONE,
+      // An instance with no scan trial keeps no mailbox hash on a deletion:
+      // nothing would read it. See `DrizzleAccountStoreOptions.grantsScanTrial`.
+      grantsScanTrial: config.trial !== null,
     }),
     pepper: secrets.verifierPepper,
     enumerationSecret: secrets.enumerationSecret,
@@ -662,6 +666,17 @@ async function main(): Promise<void> {
         if (scrubbed > 0) logger.info('Scrubbed finished invitation addresses', { scrubbed });
       } catch (cause) {
         logger.error('Invitation scrub failed', { ...errorFields(cause) });
+      }
+      // THE END OF THE MAILBOX HASH (ADR-0010): a deleted account's hash is kept
+      // `TRIAL_HASH_RETENTION_DAYS` and then deleted, on every instance.
+      try {
+        const purged = await purgeExpiredTrialHashes(database.db, {
+          now: new Date(),
+          retentionDays: config.trialHashRetentionDays,
+        });
+        if (purged > 0) logger.info('Purged expired trial mailbox hashes', { purged });
+      } catch (cause) {
+        logger.error('Trial hash purge failed', { ...errorFields(cause) });
       }
     })();
   }, TOKEN_SWEEP_INTERVAL_MS);

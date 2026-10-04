@@ -382,6 +382,11 @@ after an answer claims a new scan, even under the same id. After the last scan t
 future allowance date, which a payment writes, lifts the count. One mailbox gets
 one trial, also after the account is deleted: deleting an account then keeps
 only a keyed hash of the mailbox and scrubs the address from its invite rows.
+The hash is kept `TRIAL_HASH_RETENTION_DAYS` days after the deletion (365 by
+default) and then an hourly sweep deletes it, so the same mailbox can have a
+trial again after that. An instance that grants no scan trial keeps no hash.
+[ADR-0010](./docs/adr/0010-the-mailbox-hash-has-a-basis-and-an-end.md) gives the
+basis and the period.
 An address on a known email alias or forwarding domain (SimpleLogin, addy.io,
 Firefox Relay, Hide My Email relay, disposable inboxes, and every subdomain of
 them) gets no trial when it signs up on its own through the open sign-up door.

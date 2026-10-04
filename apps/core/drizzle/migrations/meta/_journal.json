@@ -232,6 +232,13 @@
       "when": 1791154366213,
       "tag": "0032_ai_instance_days_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791154779573,
+      "tag": "0033_trial_address_hashes_created_at",
+      "breakpoints": true
     }
   ]
 }
