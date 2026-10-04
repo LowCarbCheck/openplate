@@ -19,6 +19,7 @@
  */
 import { relations, sql, type InferInsertModel, type InferSelectModel } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   customType,
@@ -717,6 +718,20 @@ export const aiInstanceDays = pgTable('ai_instance_days', {
    * `SUM`: an erased account must not refund the day.
    */
   trialCount: integer('trial_count').default(0).notNull(),
+  /**
+   * What the provider charged for the day's completions, in MICRO dollars (a
+   * millionth of a dollar), summed from the `usage.cost` the provider reports
+   * on each answer (`ai/usage-tap.ts`). Zero for a provider that reports none,
+   * so `0` means "nothing was reported", never "it was free".
+   *
+   * A SUM, LIKE THE COUNTERS BESIDE IT: a day and a number, with nothing that
+   * says who asked for what, so it can sit for ever beside the request counts.
+   * A `bigint` read as a JS number: a thousand dollars a day for a century is
+   * about 3.7e13 micro dollars, far below 2^53. Added in the same row as the
+   * counters, and written even on an instance with no ceiling, which is why
+   * the row can exist with a `count` of 0.
+   */
+  costMicroUsd: bigint('cost_micro_usd', { mode: 'number' }).default(0).notNull(),
 });
 
 /**

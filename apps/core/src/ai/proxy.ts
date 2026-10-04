@@ -219,6 +219,7 @@ import type { InstanceStanding } from '../accounts/instance-standing.js';
 import { clientAddressKey } from '../lib/client-address.js';
 import { effectiveCapabilities } from '../lib/capabilities.js';
 import { decideCapability } from './capability-gate.js';
+import { createUsageTap, type CompletionUsage, type UsageTap } from './usage-tap.js';
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
 
@@ -1110,6 +1111,10 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     res.setHeader('X-Quota-Limit', String(reservation.limit));
 
     const counter = createByteCounter();
+    // WHAT THE ANSWER COST, read as it passes (2026-10-05): a few numbers and a
+    // model name, never the text. It sits AFTER the counter and passes every
+    // chunk on unchanged, so a stream is not held back. See `ai/usage-tap.ts`.
+    const usageTap: UsageTap = createUsageTap({ isEventStream: (contentType ?? '').includes('text/event-stream') });
     // The two states this relay can end in, named rather than widened: an
     // `unknown` here discards the fact that a caught throw is the ONLY thing
     // that can put a value in it.
@@ -1119,7 +1124,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // that reached the network; the guard keeps the type honest and turns the
       // impossible case into a destroyed socket rather than a TypeError.
       if (!upstream.body) throw new Error('upstream response had no body');
-      await pipeline(Readable.fromWeb(upstream.body), counter.stream, res);
+      await pipeline(Readable.fromWeb(upstream.body), counter.stream, usageTap.stream, res);
     } catch (cause) {
       // TIMEOUT SITE 2 of 2 — `bodyTimeout` lands HERE, not in the catch above:
       // `fetch()` already resolved 200 by the time the stream stalls, and undici
@@ -1164,6 +1169,12 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // relay, so a failed request does not report the person as active.
     await accounts.touchLastSeen({ accountId: account.id, seenAt: requestedAt });
 
+    // THE COST, AFTER THE ANSWER IS DELIVERED, and never able to fail it: the
+    // person has their scan, and a bookkeeping error is a log line. A provider
+    // that reports no cost leaves `null`, and nothing is written for it.
+    const usage = usageTap.result();
+    await recordCostQuietly({ accountId: account.id, day, usage });
+
     logger.info('Proxied a completion', {
       accountId: account.id,
       upstreamStatus: upstream.status,
@@ -1174,7 +1185,24 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       quotaLimit: reservation.limit,
       weight,
       durationMs,
+      // What the provider said this answer used and cost, or `null` where it
+      // said nothing. NUMBERS AND A MODEL NAME THAT LOOKS LIKE ONE: the text of
+      // the answer is never kept (`ai/usage-tap.ts`).
+      model: usage.model,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costMicroUsd: usage.costMicroUsd,
     });
+  }
+
+  /** Adds an answer's cost to the instance's day, and logs instead of throwing when it cannot. */
+  async function recordCostQuietly(context: { accountId: number; day: string; usage: CompletionUsage }): Promise<void> {
+    if (context.usage.costMicroUsd === null) return;
+    try {
+      await quota.addInstanceCost({ day: context.day, costMicroUsd: context.usage.costMicroUsd });
+    } catch (cause) {
+      logger.warn('Could not record what a completion cost', { accountId: context.accountId, ...errorFields(cause) });
+    }
   }
 
   /**

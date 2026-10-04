@@ -163,6 +163,7 @@ function createStubQuota(): AiQuotaStore {
       return { ok: true, used: 1, limit: input.limit };
     },
     async releaseInstance(): Promise<void> {},
+    async addInstanceCost(): Promise<void> {},
   };
 }
 

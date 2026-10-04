@@ -342,6 +342,15 @@ wins. A day used up answers `429` with `Retry-After`. Unset or 0 is off, and
 nothing changes. It takes the place of the scan trial below, so the boot stops
 if both are set.
 
+**What each answer cost is logged.** On an OpenRouter upstream the proxy asks
+the provider to report usage. After an answer is delivered, the
+`Proxied a completion` log line carries the model, the token counts and the
+price in micro dollars (a millionth of a dollar), each `null` when the provider
+did not say, and the price is added to the day's total in
+`ai_instance_days.cost_micro_usd`. The numbers are read as the answer passes.
+Nothing of the answer text is kept, and a failure to record never fails a scan.
+Another upstream sends and logs what it did before.
+
 **Accounts can hold capabilities.** A capability is a short label, such as
 `scan` or `recipes`, for one kind of AI request. An administrator writes an
 account's list (`PATCH /v1/admin/accounts/:id` with `capabilities`), and so does

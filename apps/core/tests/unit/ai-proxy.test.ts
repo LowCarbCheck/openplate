@@ -133,9 +133,13 @@ interface RecordingQuota extends AiQuotaStore {
   calls: string[];
   /** The weight of every account reserve, in order (2026-09-30). */
   weights: number[];
+  /** Every cost the proxy added to the instance's day, in order (2026-10-05). */
+  costs: { day: string; costMicroUsd: number }[];
 }
 
-function createRecordingQuota(options: { failAt?: number; instanceFailAt?: number } = {}): RecordingQuota {
+function createRecordingQuota(
+  options: { failAt?: number; instanceFailAt?: number; isCostWriteFailing?: boolean } = {},
+): RecordingQuota {
   const store: RecordingQuota = {
     ...createUnusedTrialScanStore(),
     reserves: 0,
@@ -147,6 +151,7 @@ function createRecordingQuota(options: { failAt?: number; instanceFailAt?: numbe
     instanceDays: [],
     calls: [],
     weights: [],
+    costs: [],
     async reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
       store.instanceReserves += 1;
       store.instanceDays.push(input.day);
@@ -158,6 +163,10 @@ function createRecordingQuota(options: { failAt?: number; instanceFailAt?: numbe
       }
       store.instanceCount += input.weight;
       return { ok: true, used: store.instanceCount, limit: input.limit };
+    },
+    async addInstanceCost(input: { day: string; costMicroUsd: number }): Promise<void> {
+      if (options.isCostWriteFailing === true) throw new Error('the cost write failed');
+      store.costs.push(input);
     },
     async releaseInstance(input: { day: string; weight: number }): Promise<void> {
       store.instanceReleases += 1;
@@ -1123,6 +1132,107 @@ test('the capability is checked after the allowance: no AI at all is still ai-no
   const refused = await postCompletion(harness, undefined, { 'X-Openplate-Feature': 'scan' });
   assert.equal(refused.status, 403);
   assert.deepEqual(await refused.json(), { error: 'ai-not-allowed' });
+  await harness.close();
+});
+
+// ── What a completion cost (2026-10-05) ────────────────────────────────────
+
+const PRICED_ANSWER = JSON.stringify({
+  model: 'google/gemini-3.7-flash',
+  choices: [{ message: { content: 'a bowl of rice, about 45 g of carbs' } }],
+  usage: { prompt_tokens: 1523, completion_tokens: 87, cost: 0.000412 },
+});
+
+function completionLine(harness: Harness): CapturedLine {
+  const line = harness.logger.lines.find((candidate) => candidate.message === 'Proxied a completion');
+  if (line === undefined) throw new Error('the proxy logged no completion');
+  return line;
+}
+
+test('a priced answer is logged as numbers and summed on the instance day, and reaches the caller untouched', async () => {
+  const upstream = await startFakeUpstream(() => ({ status: 200, body: PRICED_ANSWER }));
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  const response = await postCompletion(harness);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), PRICED_ANSWER, 'the caller gets the provider answer byte for byte');
+
+  assert.deepEqual(completionLine(harness).fields, {
+    accountId: harness.accountId,
+    upstreamStatus: 200,
+    streaming: false,
+    requestBytes: completionLine(harness).fields?.requestBytes,
+    responseBytes: Buffer.byteLength(PRICED_ANSWER),
+    quotaUsed: 1,
+    quotaLimit: 200,
+    weight: 1,
+    durationMs: completionLine(harness).fields?.durationMs,
+    model: 'google/gemini-3.7-flash',
+    promptTokens: 1523,
+    completionTokens: 87,
+    costMicroUsd: 412,
+  });
+  assert.deepEqual(harness.quota.costs, [{ day: harness.quota.costs[0]?.day, costMicroUsd: 412 }]);
+  assert.match(harness.quota.costs[0]?.day ?? '', /^\d{4}-\d{2}-\d{2}$/);
+
+  // NO TEXT OF THE ANSWER IN ANY LOG LINE.
+  assert.ok(!JSON.stringify(harness.logger.lines).includes('bowl of rice'));
+
+  await harness.close();
+});
+
+test('CONTROL: an answer with no usage logs nulls and adds no cost', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 200);
+  const fields = completionLine(harness).fields;
+  assert.equal(fields?.promptTokens, null);
+  assert.equal(fields?.completionTokens, null);
+  assert.equal(fields?.costMicroUsd, null);
+  assert.deepEqual(harness.quota.costs, []);
+
+  await harness.close();
+});
+
+test('a streamed answer is read too, and a cost the store cannot write never fails the relay', async () => {
+  const streamed =
+    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [{ delta: { content: 'a bowl' } }] })}\n\n` +
+    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [], usage: { prompt_tokens: 10, completion_tokens: 5, cost: 0.000007 } })}\n\n` +
+    'data: [DONE]\n\n';
+  const upstream = await startFakeUpstream(() => ({ status: 200, body: streamed, contentType: 'text/event-stream' }));
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    quota: createRecordingQuota({ isCostWriteFailing: true }),
+  });
+
+  const response = await postCompletion(harness, { model: 'm', messages: [], stream: true });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), streamed);
+
+  assert.equal(completionLine(harness).fields?.costMicroUsd, 7);
+  const warning = harness.logger.lines.find((line) => line.message === 'Could not record what a completion cost');
+  assert.deepEqual(warning?.fields?.accountId, harness.accountId);
+  // The failure is logged by name and code, never by message.
+  assert.ok(!('message' in (warning?.fields ?? {})));
+
+  await harness.close();
+});
+
+test('a refused request reads no cost and adds none', async () => {
+  const upstream = await startFakeUpstream(() => ({
+    status: 429,
+    body: JSON.stringify({ error: { message: 'slow down' } }),
+  }));
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl });
+
+  assert.equal((await postCompletion(harness)).status, 429);
+  assert.deepEqual(harness.quota.costs, []);
+  assert.equal(
+    harness.logger.lines.some((line) => line.message === 'Proxied a completion'),
+    false,
+  );
+
   await harness.close();
 });
 

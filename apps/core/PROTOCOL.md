@@ -1159,6 +1159,8 @@ dropped.
 | `max_tokens`, `max_completion_tokens` | at most `AI_MAX_OUTPUT_TOKENS` (default 8192). A value above it, or one that is not a number, becomes the ceiling. A body with neither gets `max_tokens` written in.                                                                                                                                                                                   |
 | `reasoning.max_tokens`                | at most the same ceiling. `reasoning.effort` is kept.                                                                                                                                                                                                                                                                                                  |
 | `n`                                   | `1`, when present.                                                                                                                                                                                                                                                                                                                                     |
+| `usage`, on an OpenRouter upstream    | written as `{"include":true}`, so the answer reports its token counts and price (below). Any other upstream gets none. The caller's own `usage` is removed.                                                                                                                                                                                            |
+| `usage`, on an OpenRouter upstream    | written as `{"include":true}`, so the answer reports its token counts and price ("What a completion cost", below). Any other upstream gets none. The caller's own `usage` is removed.                                                                                                                                                                  |
 | any field not on the allow list above | removed, for example `models`, `route`, `plugins`, `web_search_options`, `prediction`, `tools`.                                                                                                                                                                                                                                                        |
 | `provider`, on an OpenRouter upstream | written back as `{"data_collection":"deny"}`: only endpoints that do not store or train on the request. The operator can add `"zdr":true` (`UPSTREAM_ZDR`) and `"only":[...]` with `"allow_fallbacks":false` (`UPSTREAM_PROVIDER_ONLY`). The caller's own `provider` is never forwarded. Any other upstream gets no `provider` field, whatever is set. |
 
@@ -1185,10 +1187,30 @@ the request body is a photograph of somebody's food:
    whatever the next provider decides to read.
 2. **No body is logged, in either direction.** Not a prefix, not a decoded
    buffer, not an error document. What may be logged: an account id, the
-   upstream status, byte counts, a duration.
+   upstream status, byte counts, a duration, and, read off a successful
+   answer, the token counts and price the provider reported and a model name
+   that looks like a model name (below).
 3. **Every string that came off the upstream wire is scrubbed** before it
    reaches a log line **or a response**. A provider that rejects a request
    routinely echoes the request back inside its error body, image and all.
+
+#### What a completion cost
+
+A provider that reports usage puts it in the answer. On an OpenRouter upstream
+the service writes `"usage": {"include": true}` into the forwarded body (never
+taken from the caller, whose own `usage` field is dropped like any field off the
+allow list), and any other upstream gets no such field, so its bodies stay what
+they were. After the answer has been **relayed** the service logs, on its
+`Proxied a completion` line, `model`, `promptTokens`, `completionTokens` and
+`costMicroUsd` (the provider's `usage.cost`, a price in dollars, as a whole
+number of millionths of a dollar), each `null` when the answer did not say. It
+also adds `costMicroUsd` to the instance's total for the UTC day,
+`ai_instance_days.cost_micro_usd`, a sum with no account in it, which stays `0`
+for a provider that reports no price. The numbers are read as the answer passes
+by, JSON or a server-sent stream, without delaying or changing a byte. A body
+larger than 1 MiB, a stream line larger than 64 KiB and any field that is not a
+plausible number are not read and give `null`. Never the text of the answer. A
+failure to record the cost is logged and never fails a request that was served.
 
 #### What one request may carry in
 

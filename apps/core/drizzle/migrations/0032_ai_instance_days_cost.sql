@@ -1,0 +1,1 @@
+ALTER TABLE "ai_instance_days" ADD COLUMN "cost_micro_usd" bigint DEFAULT 0 NOT NULL;

@@ -49,6 +49,11 @@
  *    sets any of it: its own `provider` field is replaced, not merged. Any
  *    other upstream gets no `provider` field at all, whatever is set: it is an
  *    OpenRouter extension, and another host would reject or ignore it.
+ *  - On OpenRouter, `usage` is written as `{include: true}` (2026-10-05) so
+ *    the answer carries its token counts and its price, which the proxy logs
+ *    and sums per day. The caller's own `usage` is dropped like any field off
+ *    the allow list, and another upstream gets no `usage` field: it is an
+ *    OpenRouter extension too, so its bodies stay byte for byte what they were.
  *
  * The app sends `model`, `messages`, `response_format` and, for a catalog
  * model that reasons by default, `reasoning` (measured in `openplate`'s
@@ -319,6 +324,11 @@ export function applyChatBodyPolicy(input: {
   if (rewritten.messages !== undefined) rewritten.messages = allowMessages(rewritten.messages);
   if (input.upstreamBaseUrl !== undefined && isOpenRouterUpstream(input.upstreamBaseUrl)) {
     rewritten.provider = openRouterProviderPreferences(input.openRouterRouting ?? NO_OPENROUTER_ROUTING);
+    // ASK THE PROVIDER TO REPORT USAGE AND COST (2026-10-05), written by the
+    // instance like `provider`, never taken from the caller (`usage` is not on
+    // the allow list). The proxy reads the numbers off the answer
+    // (`ai/usage-tap.ts`) for the cost log. Another upstream gets no field.
+    rewritten.usage = { include: true };
   }
   if (input.policy.model !== null) rewritten.model = input.policy.model;
   capOutputTokens({ body: rewritten, ceiling: input.policy.maxOutputTokens });
