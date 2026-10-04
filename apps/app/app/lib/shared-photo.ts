@@ -29,6 +29,17 @@ export const SHARE_TARGET_CACHE = 'share-target';
 /** Synthetic GET key the shared photo is stored under (keep in sync with public/sw.js). */
 export const SHARED_PHOTO_KEY = '/share-target/photo';
 
+/** Header the service worker stamps the entry with: the instant it stored the photo, in epoch milliseconds (keep in sync with public/sw.js). */
+export const SHARED_AT_HEADER = 'X-Shared-At';
+
+/**
+ * How long a stored shared photo may wait for the page to read it (keep in sync with public/sw.js).
+ *
+ * The page reads it seconds after the share. One still here a day later was
+ * never opened, and it is the ORIGINAL file with its EXIF, so it goes.
+ */
+export const SHARED_PHOTO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 /** True when the current query string carries the `?shared=1` flag. */
 export function hasSharedPhotoFlag(search: string): boolean {
   return new URLSearchParams(search).get(SHARED_PHOTO_FLAG) === '1';
@@ -73,4 +84,32 @@ export async function readSharedPhoto(cacheStorage: SharedPhotoCacheStorage): Pr
   const filename = filenameHeader ? decodeURIComponent(filenameHeader) : 'shared-photo.jpg';
   const type = response.headers.get('Content-Type') || blob.type || 'image/jpeg';
   return new File([blob], filename, { type });
+}
+
+/**
+ * Removes the stored shared photo when it is older than {@link SHARED_PHOTO_MAX_AGE_MS},
+ * or carries no stamp, or a stamp that is not a number. The service worker does
+ * the same at activate (`public/sw.js`); this is the sweep at app start, for a
+ * device whose worker has not activated since.
+ *
+ * Run it only on a page that is NOT arriving with `?shared=1`: that page is
+ * about to read the photo, and a sweep that raced the read could take a photo
+ * stored by a worker from before the stamp.
+ *
+ * @param input.cacheStorage - a `CacheStorage`-like handle (pass `window.caches`).
+ * @param input.nowMs - the current instant, injected so a test needs no clock.
+ */
+export async function sweepStaleSharedPhoto({
+  cacheStorage,
+  nowMs,
+}: {
+  cacheStorage: SharedPhotoCacheStorage;
+  nowMs: number;
+}): Promise<void> {
+  const cache = await cacheStorage.open(SHARE_TARGET_CACHE);
+  const response = await cache.match(SHARED_PHOTO_KEY);
+  if (!response) return;
+  const age = nowMs - Number(response.headers.get(SHARED_AT_HEADER));
+  if (Math.abs(age) < SHARED_PHOTO_MAX_AGE_MS) return;
+  await cache.delete(SHARED_PHOTO_KEY);
 }

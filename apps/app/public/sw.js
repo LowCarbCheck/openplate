@@ -52,6 +52,14 @@ const IMAGE_CACHE = `images-${CACHE_VERSION}`;
 const SHARE_CACHE = 'share-target';
 const SHARED_PHOTO_KEY = '/share-target/photo';
 
+// A shared photo is read by the page seconds after it is stored. One that is
+// still here a day later was never opened, and it is the ORIGINAL file, EXIF
+// and all, so it must not stay on the device for ever (M3/05).
+// `app/lib/shared-photo.ts` holds the same two values and sweeps the same way
+// at app start. Keep them in sync.
+const SHARED_PHOTO_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const SHARED_AT_HEADER = 'X-Shared-At';
+
 // Small cap so cached food/plate images can't grow without bound.
 const MAX_IMAGE_ENTRIES = 60;
 
@@ -153,9 +161,27 @@ self.addEventListener('activate', (event) => {
             .map((n) => caches.delete(n)),
         ),
       )
+      .then(() => sweepStaleSharedPhoto())
       .then(() => self.clients.claim()),
   );
 });
+
+// Removes the shared photo when it is older than a day, or carries no stamp (a
+// worker from before the stamp stored it). A stamp that cannot be read as a
+// number counts as old. Never throws: a failed sweep is retried at the next
+// activate and at the next app start.
+async function sweepStaleSharedPhoto() {
+  try {
+    const cache = await caches.open(SHARE_CACHE);
+    const entry = await cache.match(SHARED_PHOTO_KEY);
+    if (!entry) return;
+    const age = Date.now() - Number(entry.headers.get(SHARED_AT_HEADER));
+    if (Math.abs(age) < SHARED_PHOTO_MAX_AGE_MS) return;
+    await cache.delete(SHARED_PHOTO_KEY);
+  } catch {
+    // Nothing to do: the next start sweeps again.
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Fetch, share-target POST, then per-request-type GET strategies
@@ -207,7 +233,10 @@ async function handleShareTarget(request) {
       // mount. Only stamp a type the sender actually provided, a hardcoded
       // binary fallback here would defeat the image/jpeg default applied on
       // read-back and fail photo validation.
-      const headers = { 'X-Shared-Filename': encodeURIComponent(photo.name || 'shared-photo') };
+      const headers = {
+        'X-Shared-Filename': encodeURIComponent(photo.name || 'shared-photo'),
+        [SHARED_AT_HEADER]: String(Date.now()),
+      };
       if (photo.type) headers['Content-Type'] = photo.type;
       await cache.put(SHARED_PHOTO_KEY, new Response(photo, { headers }));
       return Response.redirect(new URL('/add/photo?shared=1', self.location.origin).toString(), 303);

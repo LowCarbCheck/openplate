@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { hasSharedPhotoFlag, sweepStaleSharedPhoto } from '#app/lib/shared-photo';
+
 /**
  * Service-worker registration + online-status hook, ported from the SHW
  * reference. `registerServiceWorker` is SSR-safe (guards on `navigator`, defers
@@ -171,6 +173,24 @@ async function registerAndWatchForUpdates(): Promise<void> {
   }
 }
 
+/**
+ * The app-start half of the share-target sweep (M3/05): the stored shared
+ * photo is the ORIGINAL file, so one the page never opened must not wait on the
+ * device for ever. The worker sweeps it at activate too, but a worker that is
+ * already active does not activate again.
+ *
+ * Skipped on the page that arrives WITH `?shared=1`, which is about to read the
+ * photo. Fire and forget, like the rest of this module: a failed sweep is
+ * retried at the next start.
+ */
+function sweepStaleSharedPhotoAtStart(): void {
+  if (globalThis.caches === undefined) return;
+  if (hasSharedPhotoFlag(window.location.search)) return;
+  sweepStaleSharedPhoto({ cacheStorage: caches, nowMs: Date.now() }).catch(() => {
+    // Best-effort cleanup; the next start sweeps again.
+  });
+}
+
 export function registerServiceWorker(): void {
   if (globalThis.navigator === undefined || !('serviceWorker' in navigator)) return;
 
@@ -180,6 +200,8 @@ export function registerServiceWorker(): void {
     healDevBrowser();
     return;
   }
+
+  sweepStaleSharedPhotoAtStart();
 
   const doRegister = (): void => {
     // Whether this page is ALREADY controlled, sampled before registering.
