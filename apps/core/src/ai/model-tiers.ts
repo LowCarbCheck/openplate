@@ -158,15 +158,49 @@ function readText(input: { value: JsonValue | undefined; where: string; key: str
   return text;
 }
 
-/** Rule 7: a model id the usage tap can log, and not an alias that re-points without a review. */
+/**
+ * Rule 7, as a reason: a model id the usage tap can log, not an alias that
+ * re-points without a review, and no OpenRouter variant suffix. `null` is fine.
+ *
+ * A `:` SUFFIX IS A VARIANT, NOT A VERSION. `:online` adds the web plugin, which
+ * sends the prompt to a search provider, and zero data retention is not verified
+ * to cover it; `:nitro` and `:free` choose other providers than the ones the
+ * tier names. Refuse it now: after self-hosters mount their own files, the same
+ * refusal could break them.
+ */
+function modelRuleProblem(model: string): string | null {
+  if (!SAFE_MODEL_NAME.test(model)) {
+    return `model "${model}" does not look like a model id (letters, digits and . _ : / @ + -)`;
+  }
+  if (model.toLowerCase().endsWith('latest')) {
+    return `model "${model}" ends in "latest", an alias that re-points silently; name a version`;
+  }
+  if (model.includes(':')) {
+    return `model "${model}" carries a ":" variant suffix, which can route the prompt to another provider than the tier names; name the plain model id`;
+  }
+  return null;
+}
+
+/** Rule 7. */
 function parseModel(input: { value: JsonValue | undefined; where: string }): string {
   const model = asString(input.value);
   if (model === null || model === '') throw invalid(input.where, 'model must be a non-empty string');
-  if (!SAFE_MODEL_NAME.test(model)) {
-    throw invalid(input.where, `model "${model}" does not look like a model id (letters, digits and . _ : / @ + -)`);
-  }
-  if (model.toLowerCase().endsWith('latest')) {
-    throw invalid(input.where, `model "${model}" ends in "latest", an alias that re-points silently; name a version`);
+  const problem = modelRuleProblem(model);
+  if (problem !== null) throw invalid(input.where, problem);
+  return model;
+}
+
+/**
+ * The `AI_ADVERTISED_MODEL` override of a tier FILE, held to rule 7 like a tier
+ * model: it is the knob a person turns under stress, and it must not be the way
+ * round the rule. Legacy mode never comes here and stays unchecked.
+ */
+function parseModelOverride(model: string): string {
+  const problem = modelRuleProblem(model);
+  if (problem !== null) {
+    throw new Error(
+      `Invalid AI_ADVERTISED_MODEL: ${problem}. The same model rules as a tier model apply to the override.`,
+    );
   }
   return model;
 }
@@ -336,7 +370,7 @@ function parseRouteMap(input: {
  *  4. `defaultTier` names a tier.
  *  5. A route key is a schema name and its tier exists.
  *  6. Every tier is used: the default, or the target of a route. Dead config rots.
- *  7. `model` is a model id and does not end in `latest`.
+ *  7. `model` is a model id, does not end in `latest` and carries no `:` variant suffix.
  *  8. `routing.zdr` is a boolean and `routing.only` holds provider slugs.
  *  9. `maxOutputTokens` and `audioTokensPerSecond`, when present, are positive.
  * 10. `reasoningEffort`, when present, is one of the four values.
@@ -413,11 +447,13 @@ export interface EmergencyOverrides {
  *    emergency reroute.
  *
  * A malformed `UPSTREAM_ZDR` or `UPSTREAM_PROVIDER_ONLY` throws, as it does in
- * legacy mode. Returns new objects; the input is not changed. Logs nothing: the
+ * legacy mode. So does an `AI_ADVERTISED_MODEL` that breaks rule 7 (an unsafe
+ * name, a `latest` alias, a `:` variant suffix). Returns new objects; the input is not changed. Logs nothing: the
  * caller prints the warnings.
  */
 export function applyEmergencyOverrides(input: { tiers: ModelTiers; env: NodeJS.ProcessEnv }): EmergencyOverrides {
-  const model = input.env.AI_ADVERTISED_MODEL?.trim() || null;
+  const rawModel = input.env.AI_ADVERTISED_MODEL?.trim() || null;
+  const model = rawModel === null ? null : parseModelOverride(rawModel);
   const routing = parseOpenRouterRouting(input.env);
   const hasProviderOverride = routing.onlyProviders.length > 0;
 

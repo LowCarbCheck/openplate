@@ -145,10 +145,24 @@ test('rule 7: a model must be a non-empty model id that does not end in latest',
   refuses(inTier({ model: 'vendor/test-model:latest' }), /tiers\.standard.*"latest"/);
   refuses(inTier({ model: 'vendor/test-latest' }), /tiers\.standard.*"latest"/);
   refuses(inTier({ model: 'a'.repeat(65) }), /tiers\.standard.*model/);
-  // THE CONTROL: an ordinary id with a version, a colon and a dot is accepted.
+  // THE CONTROL: an ordinary id with a version and a dot is accepted.
   assert.equal(
-    accepts(inTier({ model: 'vendor/test-model-1.5:beta' })).tiers.get('standard')?.model,
-    'vendor/test-model-1.5:beta',
+    accepts(inTier({ model: 'vendor/test-model-1.5' })).tiers.get('standard')?.model,
+    'vendor/test-model-1.5',
+  );
+});
+
+test('rule 7: a ":" variant suffix is refused and the message names the tier and the rule', () => {
+  // `:online` sends the prompt to a search provider; `:nitro` and `:free` pick other providers.
+  for (const suffix of [':online', ':nitro', ':free']) {
+    const model = `vendor/test-model${suffix}`;
+    refuses(inTier({ model }), new RegExp(`tiers\\.standard.*model "${model}".*":" variant suffix`));
+  }
+  // THE CONTROL: the same ids without the suffix are accepted, so the refusal is the colon and not the id.
+  assert.equal(accepts(inTier({ model: 'vendor/test-model' })).tiers.get('standard')?.model, 'vendor/test-model');
+  assert.equal(
+    accepts(inTier({ model: 'google/gemini-3.8-flash' })).tiers.get('standard')?.model,
+    'google/gemini-3.8-flash',
   );
 });
 
@@ -341,6 +355,46 @@ test('AI_ADVERTISED_MODEL overrides the default tier only, and warns with both v
   assert.deepEqual(quiet.warnings, []);
   // The input is not changed.
   assert.equal(tiers.tiers.get('standard')?.model, 'vendor/test-model');
+});
+
+test('in tier mode the AI_ADVERTISED_MODEL override meets the same model rules as a tier model', () => {
+  const tiers = twoTiers();
+  const names = /Invalid AI_ADVERTISED_MODEL: model "/;
+  for (const bad of [
+    'google/gemini-flash-latest',
+    'vendor/test-model:online',
+    'vendor/test-model:nitro',
+    'vendor test',
+  ]) {
+    assert.throws(() => applyEmergencyOverrides({ tiers, env: { AI_ADVERTISED_MODEL: bad } }), names, bad);
+  }
+  assert.throws(
+    () => applyEmergencyOverrides({ tiers, env: { AI_ADVERTISED_MODEL: 'vendor/test-model:online' } }),
+    /":" variant suffix/,
+  );
+  // The boot path stops with the same message, so a person reading the log finds the variable.
+  assert.throws(
+    () =>
+      loadModelTiers({
+        env: { AI_TIERS_FILE: 'bundled', AI_ADVERTISED_MODEL: 'google/gemini-flash-latest' },
+        bundled: file(),
+        readFile: neverRead,
+      }),
+    /Invalid AI_ADVERTISED_MODEL.*"latest"/,
+  );
+  // THE CONTROL: a plain id passes, and so does a padded one (the value is trimmed first).
+  const ok = applyEmergencyOverrides({ tiers, env: { AI_ADVERTISED_MODEL: '  vendor/emergency  ' } });
+  assert.equal(ok.tiers.tiers.get('standard')?.model, 'vendor/emergency');
+});
+
+test('legacy mode does not validate AI_ADVERTISED_MODEL: its behaviour stays byte for byte', () => {
+  for (const model of ['google/gemini-flash-latest', 'vendor/test-model:online']) {
+    const legacy = legacyModelTiers({ AI_ADVERTISED_MODEL: model });
+    assert.equal(legacy.tiers.get('standard')?.model, model);
+    const loaded = loadModelTiers({ env: { AI_ADVERTISED_MODEL: model }, bundled: file(), readFile: neverRead });
+    assert.equal(loaded.source.kind, 'legacy');
+    assert.equal(loaded.tiers.tiers.get('standard')?.model, model);
+  }
 });
 
 test('UPSTREAM_ZDR=true is a floor on every tier', () => {
