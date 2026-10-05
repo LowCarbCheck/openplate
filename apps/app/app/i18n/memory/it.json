@@ -7090,6 +7090,13 @@
     "at": "2026-09-14",
     "it": "Obiettivo proteico raggiunto"
   },
+  "550f59a9ba12fb4a": {
+    "en": "A running fast no longer moves the header when its chip arrives.",
+    "path": "releases:v0_65_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "it": "Un digiuno in corso non sposta più l'intestazione quando compare il relativo riquadro."
+  },
   "5511bc8237d7231a": {
     "en": "{{value}} kcal",
     "path": "common:admin.feedback.calories",
@@ -9490,6 +9497,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Non hai ancora aggiunto alcun alimento. Usa \"Aggiungi manualmente\" per crearne uno. Comparirà qui."
+  },
+  "7132e52586ec6d28": {
+    "en": "The plan page now shows a booked downgrade and lets you keep your tier.",
+    "path": "releases:v0_65_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "it": "La pagina del piano ora mostra un downgrade programmato e ti permette di mantenere il tuo livello."
   },
   "7149cbc71416aa6d": {
     "en": "{{value}} g net carbs",
@@ -15574,6 +15588,13 @@
     "at": "2026-09-14",
     "it": "Foto del piatto"
   },
+  "b418fbd941983117": {
+    "en": "A tier chosen on the website now survives the sign-up letter.",
+    "path": "releases:v0_65_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "it": "Il livello scelto sul sito web ora rimane attivo anche dopo l'email di registrazione."
+  },
   "b42543ab202e4ba2": {
     "en": "Enter a valid number",
     "path": "common:errors.notANumber",
@@ -21264,6 +21285,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Proteine"
+  },
+  "f6cf56c9784a3cdf": {
+    "en": "A declined card on an upgrade now says so.",
+    "path": "releases:v0_65_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "it": "Se una carta viene rifiutata durante un passaggio a un livello superiore, ora viene indicato chiaramente."
   },
   "f6e1f15f60457de1": {
     "en": "At your target",

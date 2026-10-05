@@ -7090,6 +7090,13 @@
     "at": "2026-09-14",
     "de": "Eiweißziel erreicht"
   },
+  "550f59a9ba12fb4a": {
+    "en": "A running fast no longer moves the header when its chip arrives.",
+    "path": "releases:v0_65_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein laufendes Fasten verschiebt den Header nicht mehr, wenn sein Chip erscheint."
+  },
   "5511bc8237d7231a": {
     "en": "{{value}} kcal",
     "path": "common:admin.feedback.calories",
@@ -9490,6 +9497,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Du hast noch keine Lebensmittel hinzugefügt. Nutze „Manuell hinzufügen“, um eines zu erstellen. Es wird dann hier angezeigt."
+  },
+  "7132e52586ec6d28": {
+    "en": "The plan page now shows a booked downgrade and lets you keep your tier.",
+    "path": "releases:v0_65_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Die Tarifseite zeigt ein gebuchtes Downgrade nun an und lässt dich deine Stufe behalten."
   },
   "7149cbc71416aa6d": {
     "en": "{{value}} g net carbs",
@@ -15574,6 +15588,13 @@
     "at": "2026-09-14",
     "de": "Teller-Foto"
   },
+  "b418fbd941983117": {
+    "en": "A tier chosen on the website now survives the sign-up letter.",
+    "path": "releases:v0_65_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Eine auf der Website gewählte Stufe bleibt nach der Registrierungs-E-Mail nun erhalten."
+  },
   "b42543ab202e4ba2": {
     "en": "Enter a valid number",
     "path": "common:errors.notANumber",
@@ -21264,6 +21285,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Eiweiß"
+  },
+  "f6cf56c9784a3cdf": {
+    "en": "A declined card on an upgrade now says so.",
+    "path": "releases:v0_65_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Wird eine Karte bei einem Upgrade abgelehnt, weist das System nun darauf hin."
   },
   "f6e1f15f60457de1": {
     "en": "At your target",

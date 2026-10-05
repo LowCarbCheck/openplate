@@ -1,4 +1,15 @@
 {
+  "v0_65_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Le niveau choisi sur le site web reste désormais actif après l'e-mail d'inscription.",
+      "02": "La page des forfaits affiche désormais le passage à un niveau inférieur planifié et te permet de conserver ton niveau."
+    },
+    "fixed": {
+      "01": "Le refus d'une carte lors d'un passage à un niveau supérieur est désormais explicitement indiqué.",
+      "02": "Un jeûne en cours ne déplace plus l'en-tête quand son badge apparaît."
+    }
+  },
   "v0_64_0": {
     "date": "2026-10-05",
     "added": {
@@ -48,12 +59,6 @@
       "07": "Se déconnecter libère désormais l'abonnement push de cet appareil.",
       "08": "Une déconnexion ne reste plus bloquée si le serveur ne répond jamais.",
       "09": "Un compte suspendu est informé de sa suspension au lieu d'être invité à se reconnecter."
-    }
-  },
-  "v0_62_0": {
-    "date": "2026-10-02",
-    "changed": {
-      "01": "La vérification des versions interroge désormais openplate.de au lieu de GitHub."
     }
   }
 }

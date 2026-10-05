@@ -1,4 +1,15 @@
 {
+  "v0_65_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Web sitesinde seçilen bir kademe artık kayıt e-postasından sonra da korunur.",
+      "02": "Plan sayfası artık planlanmış bir alt kademeye geçişi gösterir ve kademeni korumana izin verir."
+    },
+    "fixed": {
+      "01": "Yükseltme sırasında reddedilen bir kart artık durumu açıkça belirtir.",
+      "02": "Devam eden bir oruç, etiketi ekranda belirdiğinde artık üst bilgi alanını kaydırmaz."
+    }
+  },
   "v0_64_0": {
     "date": "2026-10-05",
     "added": {
@@ -48,12 +59,6 @@
       "07": "Çıkış yapmak artık bu cihazın push aboneliğini serbest bırakıyor.",
       "08": "Sunucu hiç yanıt vermediğinde çıkış işlemi artık askıda kalmıyor.",
       "09": "Askıya alınmış bir hesaba yeniden giriş yapması istenmek yerine hesabın askıya alındığı söylenir."
-    }
-  },
-  "v0_62_0": {
-    "date": "2026-10-02",
-    "changed": {
-      "01": "Sürüm denetimi artık GitHub yerine openplate.de adresine sorar."
     }
   }
 }

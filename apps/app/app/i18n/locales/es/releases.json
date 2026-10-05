@@ -1,4 +1,15 @@
 {
+  "v0_65_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "El nivel elegido en el sitio web ahora se mantiene tras el correo de registro.",
+      "02": "La página del plan ahora muestra un cambio a un nivel inferior programado y te permite conservar tu nivel."
+    },
+    "fixed": {
+      "01": "Si se rechaza una tarjeta al mejorar el plan, ahora se indica con claridad.",
+      "02": "Un ayuno en curso ya no desplaza la cabecera cuando aparece su etiqueta."
+    }
+  },
   "v0_64_0": {
     "date": "2026-10-05",
     "added": {
@@ -48,12 +59,6 @@
       "07": "Cerrar sesión ahora libera la suscripción push de este dispositivo.",
       "08": "El cierre de sesión ya no se queda colgado si el servidor no responde nunca.",
       "09": "A una cuenta suspendida se le notifica que está suspendida, en lugar de pedirle que vuelva a iniciar sesión."
-    }
-  },
-  "v0_62_0": {
-    "date": "2026-10-02",
-    "changed": {
-      "01": "La comprobación de versiones ahora consulta openplate.de en lugar de GitHub."
     }
   }
 }

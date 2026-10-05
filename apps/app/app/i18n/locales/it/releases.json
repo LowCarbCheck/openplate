@@ -1,4 +1,15 @@
 {
+  "v0_65_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Il livello scelto sul sito web ora rimane attivo anche dopo l'email di registrazione.",
+      "02": "La pagina del piano ora mostra un downgrade programmato e ti permette di mantenere il tuo livello."
+    },
+    "fixed": {
+      "01": "Se una carta viene rifiutata durante un passaggio a un livello superiore, ora viene indicato chiaramente.",
+      "02": "Un digiuno in corso non sposta più l'intestazione quando compare il relativo riquadro."
+    }
+  },
   "v0_64_0": {
     "date": "2026-10-05",
     "added": {
@@ -48,12 +59,6 @@
       "07": "La disconnessione ora rimuove l'iscrizione push di questo dispositivo.",
       "08": "Una disconnessione non si blocca più quando il server non risponde.",
       "09": "Se un account è sospeso, viene informato della sospensione invece di richiedere nuovamente l'accesso."
-    }
-  },
-  "v0_62_0": {
-    "date": "2026-10-02",
-    "changed": {
-      "01": "Il controllo delle nuove versioni ora interroga openplate.de invece di GitHub."
     }
   }
 }

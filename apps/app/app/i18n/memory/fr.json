@@ -7090,6 +7090,13 @@
     "at": "2026-09-14",
     "fr": "Objectif de protéines atteint"
   },
+  "550f59a9ba12fb4a": {
+    "en": "A running fast no longer moves the header when its chip arrives.",
+    "path": "releases:v0_65_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "fr": "Un jeûne en cours ne déplace plus l'en-tête quand son badge apparaît."
+  },
   "5511bc8237d7231a": {
     "en": "{{value}} kcal",
     "path": "common:admin.feedback.calories",
@@ -9490,6 +9497,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Tu n'as encore ajouté aucun aliment. Utilise « Ajouter manuellement » pour en créer un. Il apparaîtra ici."
+  },
+  "7132e52586ec6d28": {
+    "en": "The plan page now shows a booked downgrade and lets you keep your tier.",
+    "path": "releases:v0_65_0.added.02",
+    "model": "hand-written",
+    "at": "2026-10-05",
+    "fr": "La page des forfaits affiche désormais le passage à un niveau inférieur planifié et te permet de conserver ton niveau."
   },
   "7149cbc71416aa6d": {
     "en": "{{value}} g net carbs",
@@ -15574,6 +15588,13 @@
     "at": "2026-09-14",
     "fr": "Photo d'assiette"
   },
+  "b418fbd941983117": {
+    "en": "A tier chosen on the website now survives the sign-up letter.",
+    "path": "releases:v0_65_0.added.01",
+    "model": "hand-written",
+    "at": "2026-10-05",
+    "fr": "Le niveau choisi sur le site web reste désormais actif après l'e-mail d'inscription."
+  },
   "b42543ab202e4ba2": {
     "en": "Enter a valid number",
     "path": "common:errors.notANumber",
@@ -21264,6 +21285,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Protéines"
+  },
+  "f6cf56c9784a3cdf": {
+    "en": "A declined card on an upgrade now says so.",
+    "path": "releases:v0_65_0.fixed.01",
+    "model": "hand-written",
+    "at": "2026-10-05",
+    "fr": "Le refus d'une carte lors d'un passage à un niveau supérieur est désormais explicitement indiqué."
   },
   "f6e1f15f60457de1": {
     "en": "At your target",

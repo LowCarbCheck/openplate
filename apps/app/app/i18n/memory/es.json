@@ -7090,6 +7090,13 @@
     "at": "2026-09-14",
     "es": "Objetivo de proteínas alcanzado"
   },
+  "550f59a9ba12fb4a": {
+    "en": "A running fast no longer moves the header when its chip arrives.",
+    "path": "releases:v0_65_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "es": "Un ayuno en curso ya no desplaza la cabecera cuando aparece su etiqueta."
+  },
   "5511bc8237d7231a": {
     "en": "{{value}} kcal",
     "path": "common:admin.feedback.calories",
@@ -9490,6 +9497,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Aún no has añadido ningún alimento. Usa «Añadir manualmente» para crear uno. Aparecerá aquí."
+  },
+  "7132e52586ec6d28": {
+    "en": "The plan page now shows a booked downgrade and lets you keep your tier.",
+    "path": "releases:v0_65_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "es": "La página del plan ahora muestra un cambio a un nivel inferior programado y te permite conservar tu nivel."
   },
   "7149cbc71416aa6d": {
     "en": "{{value}} g net carbs",
@@ -15574,6 +15588,13 @@
     "at": "2026-09-14",
     "es": "Foto del plato"
   },
+  "b418fbd941983117": {
+    "en": "A tier chosen on the website now survives the sign-up letter.",
+    "path": "releases:v0_65_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "es": "El nivel elegido en el sitio web ahora se mantiene tras el correo de registro."
+  },
   "b42543ab202e4ba2": {
     "en": "Enter a valid number",
     "path": "common:errors.notANumber",
@@ -21264,6 +21285,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Proteínas"
+  },
+  "f6cf56c9784a3cdf": {
+    "en": "A declined card on an upgrade now says so.",
+    "path": "releases:v0_65_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "es": "Si se rechaza una tarjeta al mejorar el plan, ahora se indica con claridad."
   },
   "f6e1f15f60457de1": {
     "en": "At your target",

@@ -7090,6 +7090,13 @@
     "at": "2026-09-14",
     "tr": "Protein hedefine ulaşıldı"
   },
+  "550f59a9ba12fb4a": {
+    "en": "A running fast no longer moves the header when its chip arrives.",
+    "path": "releases:v0_65_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "tr": "Devam eden bir oruç, etiketi ekranda belirdiğinde artık üst bilgi alanını kaydırmaz."
+  },
   "5511bc8237d7231a": {
     "en": "{{value}} kcal",
     "path": "common:admin.feedback.calories",
@@ -9490,6 +9497,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Henüz hiç yiyecek eklemedin. Bir tane oluşturmak için \"Elle ekle\" seçeneğini kullan. Burada görünecektir."
+  },
+  "7132e52586ec6d28": {
+    "en": "The plan page now shows a booked downgrade and lets you keep your tier.",
+    "path": "releases:v0_65_0.added.02",
+    "model": "hand-written",
+    "at": "2026-10-05",
+    "tr": "Plan sayfası artık planlanmış bir alt kademeye geçişi gösterir ve kademeni korumana izin verir."
   },
   "7149cbc71416aa6d": {
     "en": "{{value}} g net carbs",
@@ -15574,6 +15588,13 @@
     "at": "2026-09-14",
     "tr": "Tabak fotoğrafı"
   },
+  "b418fbd941983117": {
+    "en": "A tier chosen on the website now survives the sign-up letter.",
+    "path": "releases:v0_65_0.added.01",
+    "model": "hand-written",
+    "at": "2026-10-05",
+    "tr": "Web sitesinde seçilen bir kademe artık kayıt e-postasından sonra da korunur."
+  },
   "b42543ab202e4ba2": {
     "en": "Enter a valid number",
     "path": "common:errors.notANumber",
@@ -21264,6 +21285,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Protein"
+  },
+  "f6cf56c9784a3cdf": {
+    "en": "A declined card on an upgrade now says so.",
+    "path": "releases:v0_65_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "tr": "Yükseltme sırasında reddedilen bir kart artık durumu açıkça belirtir."
   },
   "f6e1f15f60457de1": {
     "en": "At your target",

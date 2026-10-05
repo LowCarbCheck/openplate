@@ -1,4 +1,15 @@
 {
+  "v0_65_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Eine auf der Website gewählte Stufe bleibt nach der Registrierungs-E-Mail nun erhalten.",
+      "02": "Die Tarifseite zeigt ein gebuchtes Downgrade nun an und lässt dich deine Stufe behalten."
+    },
+    "fixed": {
+      "01": "Wird eine Karte bei einem Upgrade abgelehnt, weist das System nun darauf hin.",
+      "02": "Ein laufendes Fasten verschiebt den Header nicht mehr, wenn sein Chip erscheint."
+    }
+  },
   "v0_64_0": {
     "date": "2026-10-05",
     "added": {
@@ -48,12 +59,6 @@
       "07": "Beim Abmelden wird nun das Push-Abonnement dieses Geräts freigegeben.",
       "08": "Eine Abmeldung bleibt nicht mehr hängen, wenn der Server nicht antwortet.",
       "09": "Ein gesperrtes Konto erhält den Hinweis auf die Sperrung, anstatt erneut zur Anmeldung aufgefordert zu werden."
-    }
-  },
-  "v0_62_0": {
-    "date": "2026-10-02",
-    "changed": {
-      "01": "Die Versionsprüfung fragt jetzt openplate.de statt GitHub ab."
     }
   }
 }
