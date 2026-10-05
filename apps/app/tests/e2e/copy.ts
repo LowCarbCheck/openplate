@@ -395,7 +395,13 @@ const englishCatalogSchema = catalogSchema
       pantry: z.object({ leadClosed: z.string(), review: z.object({ addLine: z.string() }) }),
       plan: z.object({
         tiers: z.object({ legend: z.string(), current: z.string(), switchTo: z.string(), switchYearly: z.string() }),
-        order: z.object({ whatHappensLabel: z.string(), privacyLink: z.string(), moveRefused: z.string() }),
+        order: z.object({
+          whatHappensLabel: z.string(),
+          privacyLink: z.string(),
+          moveRefused: z.string(),
+          paymentFailed: z.string(),
+        }),
+        pending: z.object({ line: z.string(), keep: z.string(), keepFailed: z.string() }),
         move: z.object({
           effectNow: z.string(),
           effectPeriodEnd: z.string(),

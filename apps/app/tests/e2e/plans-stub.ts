@@ -209,6 +209,24 @@ export function subscriberOnTier(tier: string, planKey: 'monthly' | 'yearly' = '
   };
 }
 
+/**
+ * A tier subscriber with a downgrade booked (M2): the same view as
+ * {@link subscriberOnTier} plus the two fields the biller adds to `GET /plans/me`
+ * while a change waits for the end of the period. THE SAME VIEW without them is
+ * the control.
+ *
+ * @param input.tier - the tier the subscriber is on.
+ * @param input.pendingTier - the tier the booked change moves to.
+ * @param input.pendingChangeAt - the ISO instant the change takes effect.
+ */
+export function subscriberWithPendingChange(input: { tier: string; pendingTier: string; pendingChangeAt: string }) {
+  return {
+    ...subscriberOnTier(input.tier),
+    pendingTier: input.pendingTier,
+    pendingChangeAt: input.pendingChangeAt,
+  };
+}
+
 /** One answer of the stubbed `POST /v1/plans/order`. */
 export interface OrderAnswer {
   status: number;
@@ -245,6 +263,41 @@ export async function routeOrder(page: Page, answers: readonly OrderAnswer[]): P
   await page.route(`${E2E_CORE_URL}/v1/plans/checkout`, (route) => {
     requests.checkoutCalls += 1;
     return route.fulfill({ status: 410, json: { error: 'checkout-gone' } });
+  });
+  return requests;
+}
+
+/** What the page sent to the pending-change cancel route. */
+export interface PendingCancelRequests {
+  /** The HTTP method of each request, so a spec can say it was a POST and only that. */
+  methods: string[];
+  /** The raw body of each request, `null` for none: the biller reads none. */
+  bodies: Array<string | null>;
+}
+
+/**
+ * Routes `POST /v1/plans/pending-change/cancel` (M2). The answers are used in
+ * order and the last one repeats, like {@link routeOrder}'s.
+ *
+ * @param page - the page, before the button is pressed.
+ * @param answers - what the biller answers, one per press.
+ * @param onAnswer - called with each answer as it is given, so a spec can make
+ *   the next `GET /plans/me` say what the biller would say after it.
+ * @returns the requests, recorded as they arrive.
+ */
+export async function routePendingCancel(
+  page: Page,
+  answers: readonly OrderAnswer[],
+  onAnswer: (answer: OrderAnswer) => void = () => {},
+): Promise<PendingCancelRequests> {
+  const requests: PendingCancelRequests = { methods: [], bodies: [] };
+  await page.route(`${E2E_CORE_URL}/v1/plans/pending-change/cancel`, (route) => {
+    requests.methods.push(route.request().method());
+    requests.bodies.push(route.request().postData());
+    const answer = answers[Math.min(requests.methods.length, answers.length) - 1];
+    if (answer === undefined) throw new Error('routePendingCancel was given no answer');
+    onAnswer(answer);
+    return route.fulfill({ status: answer.status, json: answer.json });
   });
   return requests;
 }
