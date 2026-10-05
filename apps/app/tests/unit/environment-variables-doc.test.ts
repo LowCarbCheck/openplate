@@ -70,7 +70,14 @@ const SOURCES = {
     shell: [],
   },
   core: {
-    typescript: ['../core/src/config.ts', '../core/src/main.ts', '../core/src/version.ts'],
+    typescript: [
+      '../core/src/config.ts',
+      '../core/src/main.ts',
+      '../core/src/version.ts',
+      // The tier file and the routing variables are read here, not in config.ts.
+      '../core/src/ai/model-tiers.ts',
+      '../core/src/ai/openrouter-routing.ts',
+    ],
     shell: [],
   },
   inference: {

@@ -316,12 +316,17 @@ escrowed recovery code that unwraps the data key after the reset (see
 [sync.md](sync.md#encryption-and-what-the-operator-holds)).
 
 A managed instance with AI needs three values on the core server as well: `UPSTREAM_BASE_URL`
-and `UPSTREAM_API_KEY` (the provider and its key) and `AI_ADVERTISED_MODEL`, the model every
-scan uses. **`AI_ADVERTISED_MODEL` is required for scans.** Without it, the core server
-reports no model, and the app refuses to scan rather than pick a model on your bill. Name the
-model the way your provider does, for example `google/gemini-3.5-flash-lite` with
-`UPSTREAM_BASE_URL=https://openrouter.ai/api/v1`, or `openplate-plate-1` in front of
-openplate-inference. Each account then needs a daily allowance,
+and `UPSTREAM_API_KEY` (the provider and its key) and a model. The model is
+`AI_ADVERTISED_MODEL`, the model every scan uses. Or set `AI_TIERS_FILE=bundled`, and the model
+comes from the core's tier file, `ai-tiers.json`, which holds the model, its routing and its
+price in one reviewed place (a path to a file you mount works too; see
+[the AI proxy](https://github.com/LowCarbCheck/openplate/blob/main/apps/core/README.md#the-ai-proxy-and-the-allowance-that-bounds-it)).
+**A model is required for scans.** Without one, the core server reports no model, and the app
+refuses to scan rather than pick a model on your bill. Name the model the way your provider
+does, for example `vendor/model-name` with `UPSTREAM_BASE_URL=https://openrouter.ai/api/v1`, or
+`openplate-plate-1` in front of openplate-inference. With a tier file, `AI_ADVERTISED_MODEL`
+stays only as an emergency override of the default tier's model, and the core logs a warning at
+every start. Each account then needs a daily allowance,
 which starts at 0. Give it with `"dailyAiLimit"` when you mint the invitation, or set it later in
 `/admin`.
 

@@ -169,16 +169,16 @@ The answer is one line of JSON. The part that matters looks like this:
 
 Open the link in a browser on a secure page, choose a password, and the account exists. A phone or second device can sign in only after you set up [HTTPS](#https), because the ssh tunnel and `localhost` serve one computer only. The link works once and runs out after seven days. `"role":"admin"` makes this first account an administrator. From now on, you invite people in the app itself at `/admin`. On an instance with no mail, it displays each new link. Leave `role` out for an ordinary member. [Mail](#mail) explains both ways: passing each link on by hand, or letting the core server mail it.
 
-On a managed instance, where the core server pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without `AI_ADVERTISED_MODEL`, because the app will not choose a model on your bill:
+On a managed instance, where the core server pays for everyone's scans, add `"dailyAiLimit":200` to the body to give the account 200 AI requests a day. The default is 0. A managed instance needs four more lines in `.env`. Scans refuse to start without a model, because the app will not choose a model on your bill:
 
 ```bash
 echo "INSTANCE_MODE=managed" >> .env
 echo "UPSTREAM_BASE_URL=https://openrouter.ai/api/v1" >> .env
 echo "UPSTREAM_API_KEY=sk-or-..." >> .env
-echo "AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite" >> .env
+echo "AI_ADVERTISED_MODEL=vendor/model-name" >> .env
 ```
 
-The model name must match the provider's exact spelling. See [configuration.md](configuration.md#managed-instances).
+Replace `vendor/model-name` with your provider's model, spelled exactly as the provider spells it. Instead of `AI_ADVERTISED_MODEL` you can set `AI_TIERS_FILE=bundled`, and the core server takes the model from its tier file, `ai-tiers.json`. See [configuration.md](configuration.md#managed-instances).
 
 ### When someone forgets their password
 
