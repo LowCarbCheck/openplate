@@ -183,6 +183,7 @@ function dataRequests(): DataRequest[] {
       },
     },
     { name: 'the plan read', method: 'GET', path: '/v1/plans/me' },
+    { name: 'taking a booked downgrade back', method: 'POST', path: '/v1/plans/pending-change/cancel' },
     { name: 'the account patch', method: 'PATCH', path: '/v1/auth/account', body: { displayName: 'Anna' } },
     { name: 'the member mint', method: 'POST', path: '/v1/auth/invites', body: { email: 'friend@example.org' } },
     { name: 'the passphrase change', method: 'POST', path: '/v1/auth/change-passphrase', body: {} },

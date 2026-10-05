@@ -1873,8 +1873,9 @@ Content-Type: application/json
 
 The example is illustrative: the biller's routes are its own. openplate's
 biller serves `GET /v1/plans/prices`, `GET /v1/plans/offer`, `POST
-/v1/plans/order`, `GET /v1/plans/me` and the portal route; its older `POST
-/v1/plans/checkout` now answers `410`.
+/v1/plans/order`, `GET /v1/plans/me`, the portal route and `POST
+/v1/plans/pending-change/cancel`; its older `POST /v1/plans/checkout` now
+answers `410`.
 
 Five properties a conforming implementation MUST hold:
 
@@ -1882,7 +1883,7 @@ Five properties a conforming implementation MUST hold:
 2. **The forwarded headers are BUILT, never copied and overwritten.** They are exactly `X-Account-Id` from the resolved session, `X-Account-Email` read from the account row, `X-Plans-Secret` holding the shared secret, and the inbound `Content-Type`. A copy-then-overwrite forwards cookies and whatever the next client decides to send.
 3. **The caller's own credential is never forwarded.** This is the rule the whole arrangement rests on: forwarding the access token would make the biller a second place a stolen one works.
 4. **The account id is the session's, and the address is the row's.** A client that sends its own `X-Account-Id` or `X-Account-Email` cannot influence what the upstream reads. An `accountId` a browser can choose is an authorization bug, and a biller that read that account's address to prefill a checkout would be an address-disclosure oracle.
-5. **The answer passes through with its status and its JSON body, and only `Content-Type` comes back with it.** A `402` or a `409` from the biller is a real answer about the caller's plan and is relayed as one.
+5. **The answer passes through with its status and its JSON body, and only `Content-Type` comes back with it.** A `402` or a `409` from the biller is a real answer about the caller's plan and is relayed as one. Two of openplate's biller routes show why. An upgrade is invoiced and paid at once, so `POST /v1/plans/order` answers a declined card `402 {"error":"payment-failed"}` and the caller stays on the old tier. A downgrade is booked for the end of the paid period, and `POST /v1/plans/pending-change/cancel` (no body) takes it back: `200 {"kept":{"plan":"…","tier":"…"}}`, `409 {"error":"no-pending-change"}` when nothing is booked (also the answer to a second call), or `502 {"error":"pending-change-cancel-failed"}` when the payment provider failed and the change is still booked. The gateway relays each unchanged and adds no route, no code and no check of its own. That `502` is the biller's own answer and is not one of the gateway's `plans-upstream-*` codes below. The `GET /v1/plans/me` answer and the booked downgrade's `200` order answer may carry `pendingTier` and `pendingChangeAt`, absent when nothing is booked; a client that does not know them ignores them.
 
 An upstream that is unreachable, times out, answers something that is not JSON, or answers a body over the relay cap is `502` in the §4 envelope with a machine code: `plans-upstream-unreachable`, `plans-upstream-timeout` or `plans-upstream-invalid`. A request body over the subtree's own small cap is `413 {"error":"plans-request-too-large"}`, which is a different statement: the biller is fine, and what you sent will never be accepted. **No body is logged in either direction**; a refusal is logged with the status and the path and nothing else.
 
