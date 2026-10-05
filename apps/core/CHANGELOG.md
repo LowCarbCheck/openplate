@@ -7,6 +7,12 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-10-05
+
+### Changed
+
+- **The managed model is now `google/gemini-3.8-flash`.** One edit in `ai-tiers.json` (model and the price source line). Same price on OpenRouter (0.75 input and 3.75 output USD per million), same Vertex endpoint with zero data retention, same pin. An instance that sets `AI_ADVERTISED_MODEL` or runs without a tier file is not affected. Checked with `pnpm ai-tiers:check-live` and 18 of 18 schema outputs valid in a probe with the production routing. There is no migration.
+
 ## [0.34.0] - 2026-10-05
 
 This release changes nothing for an instance that does not set `AI_TIERS_FILE`. There is no migration. openplate.de opts in with `AI_TIERS_FILE=bundled` in a later Bay change.

@@ -5,13 +5,13 @@
   "tiers": {
     "standard": {
       "use": "Every managed request today: plate photo, typed words, pantry, recipes.",
-      "model": "google/gemini-3.7-flash",
+      "model": "google/gemini-3.8-flash",
       "routing": { "zdr": true, "only": ["google-vertex"] },
       "price": {
         "inputUsdPerMillion": 0.75,
         "outputUsdPerMillion": 3.75,
         "checked": "2026-10-05",
-        "source": "openrouter.ai/api/v1/models/google/gemini-3.7-flash/endpoints, google-vertex, standard"
+        "source": "openrouter.ai/api/v1/models/google/gemini-3.8-flash/endpoints, google-vertex, standard"
       },
       "disclose": ["Gemini", "Google Cloud Vertex AI"]
     }

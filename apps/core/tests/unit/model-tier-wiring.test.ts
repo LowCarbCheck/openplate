@@ -5,13 +5,16 @@
  * retention routing all come from ONE tier.
  *
  * Fake model ids (`vendor/test-model`) everywhere except the two tests that
- * compare the shipped file with what production ran before the tier file
- * (`google/gemini-3.7-flash`). Every assertion has a control: the same input
+ * compare the shipped file with what production ran before the tier file (the
+ * model in ai-tiers.json, read from the file so a model switch edits one file
+ * and no test). Every assertion has a control: the same input
  * with the one switch flipped must give a different answer, so an assertion
  * that cannot fail does not pass.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   BUNDLED_MODEL_TIERS,
   chatBodyPolicyFor,
@@ -24,7 +27,7 @@ import {
   type ModelTier,
   type ModelTiers,
 } from '../../src/ai/model-tiers.js';
-import { asObject, type JsonObject, type JsonValue } from '../../src/lib/json.js';
+import { asObject, asString, type JsonObject, type JsonValue } from '../../src/lib/json.js';
 import { bareBody, effortBody, photoBody, readLegacyCases, type LegacyCase } from './legacy-request-bodies.js';
 
 const OPENROUTER = 'https://openrouter.ai/api/v1';
@@ -181,8 +184,23 @@ test('legacy mode with no model keeps the caller model, and a tier file never do
 
 // ── (b) The shipped file equals what Bay production runs today ───────────────
 
+/**
+ * The model id of the standard tier in the shipped `ai-tiers.json`, read with
+ * `JSON.parse` straight from the file, not through the loader under test.
+ */
+function readShippedStandardModel(): string {
+  const path = fileURLToPath(new URL('../../ai-tiers.json', import.meta.url));
+  // SAFETY: the tier file is a JSON file this repository ships.
+  const file = JSON.parse(readFileSync(path, 'utf8')) as JsonValue;
+  const model = asString(asObject(asObject(asObject(file)?.tiers)?.standard)?.model);
+  if (model === null) throw new Error('ai-tiers.json has no standard tier model');
+  return model;
+}
+
+const SHIPPED_MODEL = readShippedStandardModel();
+
 const BAY_PRODUCTION_ENV: NodeJS.ProcessEnv = {
-  AI_ADVERTISED_MODEL: 'google/gemini-3.7-flash',
+  AI_ADVERTISED_MODEL: SHIPPED_MODEL,
   UPSTREAM_ZDR: 'true',
   UPSTREAM_PROVIDER_ONLY: 'google-vertex',
 };
@@ -192,7 +210,7 @@ test('the shipped file gives the model and the provider block Bay production giv
   const production = legacyModelTiers(BAY_PRODUCTION_ENV);
   for (const body of BODIES.values()) {
     const fromFile = forwarded({ tiers: bundled, body });
-    assert.equal(fromFile.model, 'google/gemini-3.7-flash');
+    assert.equal(fromFile.model, SHIPPED_MODEL);
     assert.deepEqual(fromFile.provider, {
       zdr: true,
       data_collection: 'deny',
@@ -202,6 +220,19 @@ test('the shipped file gives the model and the provider block Bay production giv
     // The WHOLE body, byte for byte, not only the two fields named above.
     assert.equal(JSON.stringify(fromFile), JSON.stringify(forwarded({ tiers: production, body })));
   }
+});
+
+test('CONTROL: the model read from the file is a real id, and the equality fails for another id', () => {
+  assert.match(SHIPPED_MODEL, /^[a-z0-9-]+\/[\w.:-]+$/);
+  const bundled = fileTiers({ file: BUNDLED_MODEL_TIERS });
+  const model = forwarded({ tiers: bundled, body: photoBody }).model;
+  assert.equal(model, SHIPPED_MODEL);
+  assert.notEqual(model, `${SHIPPED_MODEL}-other`);
+  assert.notEqual(model, 'vendor/test-model');
+  assert.notEqual(
+    describeModelTiers({ tiers: bundled, source: { kind: 'bundled' }, isModelOverridden: false }),
+    'AI tiers from bundled: default standard; standard vendor/other (zdr, only google-vertex)',
+  );
 });
 
 test('CONTROL: a different production env gives a different body than the shipped file', () => {
@@ -429,11 +460,11 @@ test('the boot line names the source, the default and each tier model and routin
   });
   assert.equal(
     describeModelTiers({ tiers: bundled.tiers, source: bundled.source, isModelOverridden: false }),
-    'AI tiers from bundled: default standard; standard google/gemini-3.7-flash (zdr, only google-vertex)',
+    `AI tiers from bundled: default standard; standard ${SHIPPED_MODEL} (zdr, only google-vertex)`,
   );
   assert.equal(
     describeModelTiers({ tiers: bundled.tiers, source: bundled.source, isModelOverridden: true }),
-    'AI tiers from bundled: default standard; standard google/gemini-3.7-flash (zdr, only google-vertex) (model overridden by AI_ADVERTISED_MODEL)',
+    `AI tiers from bundled: default standard; standard ${SHIPPED_MODEL} (zdr, only google-vertex) (model overridden by AI_ADVERTISED_MODEL)`,
   );
   assert.equal(
     describeModelTiers({ tiers: legacyModelTiers({}), source: { kind: 'legacy' }, isModelOverridden: false }),
