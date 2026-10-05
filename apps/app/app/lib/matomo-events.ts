@@ -72,6 +72,7 @@
  */
 import type { AnalyticsEventLevel } from '#app/config/analytics';
 import { mayCountVisits } from '#app/lib/analytics-opt-out';
+import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 
 declare global {
@@ -107,9 +108,69 @@ export function setAnalyticsEventLevel(level: AnalyticsEventLevel | null): void 
   currentLevel = level ?? 'pageviews';
 }
 
-/** Test seam: puts the level back to its pre-hook default. Never called by app code. */
+/**
+ * The scrubbed address of the page whose `setCustomUrl` is already in the
+ * queue, or `null` before the first one. Module state, like `currentLevel`,
+ * because the queue it describes is the page's own global.
+ */
+let lastStampedUrl: string | null = null;
+
+/** Test seam: puts the level and the page stamp back to their pre-hook defaults. Never called by app code. */
 export function __resetAnalyticsEventLevelForTests(): void {
   currentLevel = 'pageviews';
+  lastStampedUrl = null;
+}
+
+/**
+ * Puts this page's SCRUBBED address in the queue, so the next request Matomo
+ * builds from it cannot carry the real one.
+ *
+ * ── Why this lives next to `trackEvent` and not only in the hook ─────────
+ *
+ * `_paq` is a queue the tracker replays in order once its script loads. A
+ * request built from an entry reports whatever custom URL the entries BEFORE
+ * it set, and the real `location.href` when none did. The hook used to push
+ * `setCustomUrl` only after the script had loaded, so every event queued
+ * earlier was replayed with the real address, query and all. On 2026-09-02 an
+ * `install-prompt-shown` on `/verify-email?token=…` stored a one-time sign-in
+ * token in Matomo, and three other first-load events stored `?checkout=success`
+ * and `?range=14&tab=nutrition&slot=dinner`.
+ *
+ * Events are fired from child effects, which run BEFORE the root effect that
+ * owns the hook, so the hook cannot be the only place this happens. So
+ * `trackEvent` stamps before it pushes, and the hook stamps before its own
+ * first push (`disableCookies`). Whichever reaches the queue first puts
+ * `setCustomUrl` at the head of it.
+ *
+ * It repeats on a client navigation, again BEFORE the events of the new route:
+ * the stamp is keyed on the scrubbed address, so a navigation to another page
+ * stamps once and the many events of one page do not repeat it.
+ *
+ * The referrer rides along for the same reason: `document.referrer` can hold a
+ * tokenised address too.
+ *
+ * Does nothing during SSR, and nothing when there is no `location` to read,
+ * which is what the bare `{ _paq }` window stubs in the unit tests are.
+ *
+ * @param options.force - push again even when this page is already stamped. The
+ *   hook sets it before a pageview, which Matomo documents as needing a fresh
+ *   `setCustomUrl` per view.
+ */
+export function stampAnalyticsPage(options: { force: boolean } = { force: false }): void {
+  if (globalThis.window === undefined) return;
+  // Typed as possibly missing on purpose: see the paragraph above.
+  const location: Location | undefined = window.location;
+  if (location === undefined) return;
+  const safeUrl = sanitizeAnalyticsUrl(location.href);
+  if (safeUrl === null) return;
+  if (!options.force && safeUrl === lastStampedUrl) return;
+  lastStampedUrl = safeUrl;
+
+  const _paq = (window._paq = window._paq || []);
+  _paq.push(['setCustomUrl', safeUrl]);
+  const doc: Document | undefined = globalThis.document;
+  const safeReferrer = sanitizeAnalyticsUrl(doc?.referrer ?? '');
+  if (safeReferrer !== null) _paq.push(['setReferrerUrl', safeReferrer]);
 }
 
 /**
@@ -130,6 +191,8 @@ function trackEvent(tier: EventTier, category: string, action: string, name?: st
   // Do Not Track, Global Privacy Control or the Preferences switch: not even
   // buffered, so a tracker that loads later has nothing of this visit to send.
   if (!mayCountVisits()) return;
+  // Before the event, never after: see `stampAnalyticsPage`.
+  stampAnalyticsPage();
   const _paq = (window._paq = window._paq || []);
   const args: unknown[] = ['trackEvent', category, action];
   if (name !== undefined) args.push(name);

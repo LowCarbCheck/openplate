@@ -4,8 +4,7 @@ import { z } from 'zod';
 
 import type { AnalyticsConfig } from '#app/config/analytics';
 import { ANALYTICS_OPT_OUT_EVENT, mayCountVisits } from '#app/lib/analytics-opt-out';
-import { setAnalyticsEventLevel, trackOfflinePageview } from '#app/lib/matomo-events';
-import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
+import { setAnalyticsEventLevel, stampAnalyticsPage, trackOfflinePageview } from '#app/lib/matomo-events';
 
 /**
  * Loads Matomo and reports SPA navigations.
@@ -35,7 +34,11 @@ import { sanitizeAnalyticsUrl } from '#app/lib/matomo-url';
  *    `sanitizeAnalyticsUrl`. SHW reports `location.href` directly; doing that
  *    here would have posted live email-verification tokens, password-reset
  *    tokens and OAuth codes to Matomo. This is the difference that matters —
- *    read `matomo-url.ts` before changing either push below.
+ *    read `matomo-url.ts` before changing either push below. The scrubbed URL
+ *    and referrer are put in the queue by `stampAnalyticsPage`, which has to
+ *    be the FIRST entry of every page: an event queued before the script
+ *    loads is replayed with whatever custom URL came before it, and with the
+ *    real `location.href` when none did. See `matomo-events.ts`.
  *
  * 5. **This hook owns the event LEVEL.** `matomo-events.ts` starts at
  *    `pageviews` and fires nothing until it is told the instance's level, so
@@ -106,6 +109,9 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
     // Do Not Track, Global Privacy Control, or the person's own switch.
     if (!mayCountVisits()) return;
 
+    // First entry of the queue, before even `disableCookies`: an event a child
+    // effect already queued stamped it, and when none did this is the stamp.
+    stampAnalyticsPage();
     const _paq = (window._paq = window._paq || []);
     _paq.push(['disableCookies']);
     _paq.push(['enableLinkTracking']);
@@ -136,15 +142,12 @@ export function useMatomoTracker(config: AnalyticsConfig | null): boolean {
 
     const _paq = (window._paq = window._paq || []);
     // NEVER `window.location.href` raw — openplate puts single-use tokens in
-    // the query string and account ids in the path. See `matomo-url.ts`.
-    const safeUrl = sanitizeAnalyticsUrl(window.location.href);
-    if (safeUrl !== null) _paq.push(['setCustomUrl', safeUrl]);
+    // the query string and account ids in the path. The stamp scrubs the URL
+    // and the referrer: an in-app navigation FROM `/verify-email?token=…`
+    // would otherwise leak the token as a referrer even though the
+    // destination page was harmless. See `matomo-url.ts`.
+    stampAnalyticsPage({ force: true });
     _paq.push(['setDocumentTitle', document.title]);
-    // The referrer gets the same treatment: an in-app navigation FROM
-    // `/verify-email?token=…` would otherwise leak the token as a referrer
-    // even though the destination page was harmless.
-    const safeReferrer = sanitizeAnalyticsUrl(document.referrer);
-    if (safeReferrer !== null) _paq.push(['setReferrerUrl', safeReferrer]);
     _paq.push(['trackPageView']);
     if (!navigator.onLine) {
       trackOfflinePageview();

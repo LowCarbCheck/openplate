@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **An event sent before the analytics script loads no longer carries the real page address.** The page address without its query and fragment is now the first entry in the analytics queue on every page, and again on every move to another page, before any event of that page. Before this, an event fired while the script was still loading was recorded with the full address. On 2026-09-02 that stored a one-time sign-in token from `/verify-email?token=...`, and three other first-load events stored `?checkout=success` and `?range=14&tab=nutrition&slot=dinner`. The referrer is scrubbed the same way.
+
 ## [0.65.0] - 2026-10-05
 
 ### Added
