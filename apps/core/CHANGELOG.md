@@ -7,13 +7,16 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-05
+
 ### Added
 
-- **A sign-up request can name the tier, and the mailed link carries it.** `POST /v1/auth/signup-request` takes an optional `tier`, kept only when it is a lowercase label of 1 to 32 characters, a letter first, then letters, digits and hyphens. Any other value is dropped silently and the answer stays `202`, like an unknown `plan`. Nothing is stored: the link gets `&tier=<id>` after `&plan=` and before `&lang=`, which is how `plan` already travels. The service reads no tier list, so it does not check that the biller sells the tier.
+- **A sign-up request can name the tier, and the mailed link carries it.** `POST /v1/auth/signup-request` takes an optional `tier`, kept only when it is a lowercase label of 1 to 32 characters, a letter first, then letters, digits and hyphens. Any other value is dropped silently and the answer stays `202`, like an unknown `plan`. Nothing is stored: the link gets `&tier=<id>` after `&plan=` and before `&lang=`, which is how `plan` already travels. The service reads no tier list, so it does not check that the biller sells the tier. ([65a838c9](https://github.com/LowCarbCheck/openplate/commit/65a838c9))
 
 ### Docs
 
-- **`PROTOCOL.md` says the price list may carry tiers.** Section 5.22 now states that the gateway relays the body of `GET /v1/plans/prices` untouched, that a biller may add a `tiers` array with the same entry shape as the tiers of its offer, and that a client must ignore every field it does not know. The gateway itself did not change.
+- **`PROTOCOL.md` says the price list may carry tiers.** Section 5.22 now states that the gateway relays the body of `GET /v1/plans/prices` untouched, that a biller may add a `tiers` array with the same entry shape as the tiers of its offer, and that a client must ignore every field it does not know. The gateway itself did not change. ([6ae364b5](https://github.com/LowCarbCheck/openplate/commit/6ae364b5))
+- **`PROTOCOL.md` names the biller's route that takes a booked downgrade back, and the codes the gateway relays for it.** Section 5.22 now lists `POST /v1/plans/pending-change/cancel` beside the other plan routes. The route takes no body and answers `200 {"kept":{"plan":"…","tier":"…"}}`, `409 {"error":"no-pending-change"}` when nothing is booked, or `502 {"error":"pending-change-cancel-failed"}` when the payment provider failed and the change is still booked. A declined card on an upgrade is `402 {"error":"payment-failed"}` from `POST /v1/plans/order`. The gateway relays each unchanged and adds no route, no code and no check of its own, and the biller's `502` is not one of its `plans-upstream-*` codes. The `GET /v1/plans/me` answer may carry `pendingTier` and `pendingChangeAt`, and a client that does not know them ignores them. The gateway itself did not change. ([e639ebbd](https://github.com/LowCarbCheck/openplate/commit/e639ebbd))
 
 ## [0.32.0] - 2026-10-05
 
