@@ -110,10 +110,10 @@ test('the instance block is optional, so a service older than the field is still
 
   const managed = {
     ...base,
-    instance: { name: 'openplate', language: 'de', mail: true, ai: { model: 'google/gemini-3.7-flash' } },
+    instance: { name: 'openplate', language: 'de', mail: true, ai: { model: 'google/gemini-3.8-flash' } },
   };
   assert.equal(isProtocolHandshake(managed), true);
-  assert.deepEqual(readHandshakeInstance(managed)?.ai, { model: 'google/gemini-3.7-flash' });
+  assert.deepEqual(readHandshakeInstance(managed)?.ai, { model: 'google/gemini-3.8-flash' });
 
   // `ai: null` is the instance SAYING it proxies no model, which is why it is
   // nullable rather than absent — see `InstanceDescriptor`.

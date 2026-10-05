@@ -484,7 +484,7 @@ Unauthenticated, deliberately: a client must be able to discover that it is inco
     "push": false,
     "healthConsent": { "version": "2026-09-28" },
     "nutrientReferenceBasis": "dge",
-    "ai": { "model": "google/gemini-3.7-flash" },
+    "ai": { "model": "google/gemini-3.8-flash" },
     "defaultCapabilities": null
   }
 }

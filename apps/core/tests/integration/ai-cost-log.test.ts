@@ -50,7 +50,7 @@ after(async () => {
 beforeEach(async () => {
   await database.reset();
   answer = JSON.stringify({
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     choices: [{ message: { content: 'a plate' } }],
     usage: { prompt_tokens: 100, completion_tokens: 20, cost: 0.000412 },
   });

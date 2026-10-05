@@ -42,7 +42,7 @@ async function relay(input: {
 
 const ANSWER = {
   id: 'gen-1',
-  model: 'google/gemini-3.7-flash',
+  model: 'google/gemini-3.8-flash',
   choices: [{ message: { role: 'assistant', content: 'a bowl of rice, about 45 g of carbs' } }],
   usage: { prompt_tokens: 1523, completion_tokens: 87, total_tokens: 1610, cost: 0.000412 },
 };
@@ -52,7 +52,7 @@ test('a JSON answer gives its model, its token counts and its price in micro dol
   const { out, usage } = await relay({ pieces: [text], isEventStream: false });
   assert.equal(out.toString('utf8'), text, 'the answer passes through unchanged');
   assert.deepEqual(usage, {
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     promptTokens: 1523,
     completionTokens: 87,
     costMicroUsd: 412,
@@ -104,7 +104,7 @@ test('CONTROL: fields that are not what they claim to be are null, not repaired 
 });
 
 test('a model name is kept only when it looks like one, so an answer cannot smuggle text into a log', () => {
-  assert.equal(modelOf('google/gemini-3.7-flash'), 'google/gemini-3.7-flash');
+  assert.equal(modelOf('google/gemini-3.8-flash'), 'google/gemini-3.8-flash');
   assert.equal(modelOf('anthropic/claude-sonnet:beta'), 'anthropic/claude-sonnet:beta');
   assert.equal(modelOf('a bowl of rice, about 45 g of carbs'), null);
   assert.equal(modelOf('x'.repeat(65)), null);
@@ -118,10 +118,10 @@ function sse(...events: JsonObject[]): string {
 }
 
 const STREAM_EVENTS: JsonObject[] = [
-  { model: 'google/gemini-3.7-flash', choices: [{ delta: { content: 'a bowl ' } }] },
-  { model: 'google/gemini-3.7-flash', choices: [{ delta: { content: 'of rice' } }] },
+  { model: 'google/gemini-3.8-flash', choices: [{ delta: { content: 'a bowl ' } }] },
+  { model: 'google/gemini-3.8-flash', choices: [{ delta: { content: 'of rice' } }] },
   {
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     choices: [{ delta: {} }],
     usage: { prompt_tokens: 1523, completion_tokens: 87, cost: 0.000412 },
   },
@@ -132,7 +132,7 @@ test('a streamed answer gives the usage the last chunk carries, and passes every
   const { out, usage } = await relay({ pieces: [text], isEventStream: true });
   assert.equal(out.toString('utf8'), text);
   assert.deepEqual(usage, {
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     promptTokens: 1523,
     completionTokens: 87,
     costMicroUsd: 412,
@@ -157,7 +157,7 @@ test('CONTROL: a stream that never reports usage gives a model and nulls', async
   const text = sse(...STREAM_EVENTS.slice(0, 2));
   const { usage } = await relay({ pieces: [text], isEventStream: true });
   assert.deepEqual(usage, {
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     promptTokens: null,
     completionTokens: null,
     costMicroUsd: null,

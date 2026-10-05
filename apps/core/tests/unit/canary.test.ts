@@ -123,8 +123,8 @@ test('the shared searcher finds the canary marker in the request body, in every 
 
 test('the scan body is an OpenAI-style request with one text part and one PNG data URI', () => {
   const png = buildCanaryPng(makeMarker());
-  const body = buildScanBody({ model: 'google/gemini-3.7-flash', png });
-  assert.equal(body.model, 'google/gemini-3.7-flash');
+  const body = buildScanBody({ model: 'google/gemini-3.8-flash', png });
+  assert.equal(body.model, 'google/gemini-3.8-flash');
   const text = JSON.stringify(body);
   assert.ok(text.includes(`data:image/png;base64,${png.toString('base64')}`));
   assert.equal(text.match(/"type":"image_url"/g)?.length, 1);
@@ -278,7 +278,7 @@ function stubService(behavior: StubBehavior): StubService {
       return json(
         200,
         behavior.health ?? {
-          instance: { ai: { model: 'google/gemini-3.7-flash' }, healthConsent: { version: '2026-09-28' } },
+          instance: { ai: { model: 'google/gemini-3.8-flash' }, healthConsent: { version: '2026-09-28' } },
         },
       );
     }
@@ -366,7 +366,7 @@ test('the whole flow runs in order, the scan carries the account bearer and an i
   const scan = calls[3];
   assert.equal(scan?.authorization, `Bearer ${ACCESS_TOKEN}`);
   assert.match(scan?.intakeId ?? '', /^[A-Za-z0-9_-]{16,64}$/);
-  assert.equal(JSON.parse(scan?.body ?? '{}').model, 'google/gemini-3.7-flash');
+  assert.equal(JSON.parse(scan?.body ?? '{}').model, 'google/gemini-3.8-flash');
   // The admin token went to the admin calls only.
   assert.equal(calls[3]?.authorization?.includes(ADMIN_TOKEN), false);
   assert.equal(calls[2]?.authorization, null);

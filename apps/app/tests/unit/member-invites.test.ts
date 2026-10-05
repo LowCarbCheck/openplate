@@ -66,7 +66,7 @@ const PROTOCOL_INSTANCE: JsonObject = {
   name: 'openplate',
   language: 'de',
   mail: true,
-  ai: { model: 'google/gemini-3.7-flash' },
+  ai: { model: 'google/gemini-3.8-flash' },
 };
 
 /** One `/health` body around a given instance block. */
@@ -155,7 +155,7 @@ describe('the handshake carries memberInvites, decoded as PROTOCOL.md §5.6 desc
     // refuse to talk to it and would take the AI model down with it.
     const descriptor = readHandshakeInstance(health(PROTOCOL_INSTANCE));
     assert.equal(descriptor?.memberInvites, false);
-    assert.equal(descriptor?.ai?.model, 'google/gemini-3.7-flash', 'the model survived the missing key');
+    assert.equal(descriptor?.ai?.model, 'google/gemini-3.8-flash', 'the model survived the missing key');
   });
 
   it('reads a nonsense value as false rather than dropping the whole instance block', () => {

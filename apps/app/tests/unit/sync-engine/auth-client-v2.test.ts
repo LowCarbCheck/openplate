@@ -401,10 +401,10 @@ test('instance() reads the model an instance advertises, and fails OPEN', async 
       protocolVersion: 2,
       envelopeVersion: 1,
       serviceVersion: '0.6.0',
-      instance: { name: 'openplate', language: 'de', mail: true, ai: { model: 'google/gemini-3.7-flash' } },
+      instance: { name: 'openplate', language: 'de', mail: true, ai: { model: 'google/gemini-3.8-flash' } },
     });
   assert.deepEqual((await new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl: withAi }).instance())?.ai, {
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
   });
 
   // FAILS OPEN, unlike `handshake()`: nothing this answers can destroy

@@ -34,7 +34,7 @@ const CORE_DIRECTORY = new URL('../../', import.meta.url).pathname;
 const ADMIN_TOKEN = 'admin-token-of-the-canary-test-long-enough-to-be-real';
 const ADDRESS = 'canary.operator@example.org';
 const CONSENT_VERSION = '2026-09-28';
-const MODEL = 'google/gemini-3.7-flash';
+const MODEL = 'google/gemini-3.8-flash';
 
 let database: TestDatabase;
 let upstream: FakeUpstream;

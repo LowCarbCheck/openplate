@@ -1138,7 +1138,7 @@ test('the capability is checked after the allowance: no AI at all is still ai-no
 // ── What a completion cost (2026-10-05) ────────────────────────────────────
 
 const PRICED_ANSWER = JSON.stringify({
-  model: 'google/gemini-3.7-flash',
+  model: 'google/gemini-3.8-flash',
   choices: [{ message: { content: 'a bowl of rice, about 45 g of carbs' } }],
   usage: { prompt_tokens: 1523, completion_tokens: 87, cost: 0.000412 },
 });
@@ -1167,7 +1167,7 @@ test('a priced answer is logged as numbers and summed on the instance day, and r
     quotaLimit: 200,
     weight: 1,
     durationMs: completionLine(harness).fields?.durationMs,
-    model: 'google/gemini-3.7-flash',
+    model: 'google/gemini-3.8-flash',
     promptTokens: 1523,
     completionTokens: 87,
     costMicroUsd: 412,
@@ -1197,8 +1197,8 @@ test('CONTROL: an answer with no usage logs nulls and adds no cost', async () =>
 
 test('a streamed answer is read too, and a cost the store cannot write never fails the relay', async () => {
   const streamed =
-    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [{ delta: { content: 'a bowl' } }] })}\n\n` +
-    `data: ${JSON.stringify({ model: 'google/gemini-3.7-flash', choices: [], usage: { prompt_tokens: 10, completion_tokens: 5, cost: 0.000007 } })}\n\n` +
+    `data: ${JSON.stringify({ model: 'google/gemini-3.8-flash', choices: [{ delta: { content: 'a bowl' } }] })}\n\n` +
+    `data: ${JSON.stringify({ model: 'google/gemini-3.8-flash', choices: [], usage: { prompt_tokens: 10, completion_tokens: 5, cost: 0.000007 } })}\n\n` +
     'data: [DONE]\n\n';
   const upstream = await startFakeUpstream(() => ({ status: 200, body: streamed, contentType: 'text/event-stream' }));
   const harness = await startProxy({

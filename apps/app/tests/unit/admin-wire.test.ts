@@ -72,7 +72,7 @@ test('the handshake carries the basis, and a service older than the field carrie
       language: 'de',
       mail: true,
       nutrientReferenceBasis: 'dge',
-      ai: { model: 'google/gemini-3.7-flash' },
+      ai: { model: 'google/gemini-3.8-flash' },
     },
   };
   assert.equal(readHandshakeInstance(health)?.nutrientReferenceBasis, 'dge');
