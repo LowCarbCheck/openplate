@@ -191,7 +191,7 @@ import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-
 import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
 import { scrubPayloads } from './scrub.js';
-import { listDroppedChatFields, type OpenRouterRouting } from './chat-body-policy.js';
+import { listDroppedChatFields } from './chat-body-policy.js';
 import { policeChatBodyForTier, type ModelTiers } from './model-tiers.js';
 import {
   AI_REQUEST_TOO_LARGE,
@@ -219,21 +219,16 @@ import { createUsageTap, type CompletionUsage, type UsageTap } from './usage-tap
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
 
-/** The upstream this proxy forwards to, already validated all-or-nothing by `config.ts`. */
+/**
+ * The upstream this proxy forwards to, already validated all-or-nothing by
+ * `config.ts`. It carries NO routing on purpose: the zero retention routing of
+ * a request is the routing of its TIER (`ChatCompletionsDeps.tiers`), the one
+ * place that folds `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY` in.
+ */
 export interface AiUpstreamConfig {
   baseUrl: string;
   apiKey: string;
   timeoutMs: number;
-  /**
-   * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY` as the environment spells them.
-   * THE PROXY DOES NOT READ THIS. The routing of a request is the routing of its
-   * TIER (`ChatCompletionsDeps.tiers`), which already folds these two variables
-   * in (legacy mode is exactly them; with a tier file `UPSTREAM_ZDR=true` is a
-   * floor and `UPSTREAM_PROVIDER_ONLY` replaces `only`). `config.ts` still
-   * fills it, so a typo stops the boot even with no key, and a test that builds
-   * this object by hand may leave it out.
-   */
-  routing?: OpenRouterRouting;
 }
 
 export interface ChatCompletionsDeps {

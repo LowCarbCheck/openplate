@@ -731,22 +731,24 @@ test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says 
 
 test('UPSTREAM_ZDR and UPSTREAM_PROVIDER_ONLY are optional, parse whole, and a malformed value stops the boot', () => {
   const aiEnv = { UPSTREAM_BASE_URL: 'https://openrouter.ai/api/v1', UPSTREAM_API_KEY: 'sk-test' };
+  // The routing is the routing of the (legacy) default tier: the proxy reads it from there and nowhere else.
+  const routingOf = (extra: Record<string, string>): unknown =>
+    parseConfig(baseEnv({ ...aiEnv, ...extra })).aiTiers.tiers.get('standard')?.routing;
   // THE CONTROL FIRST: real values parse and are carried whole, so the refusals below
   // cannot pass by the parser refusing everything.
-  const both = parseConfig(
-    baseEnv({ ...aiEnv, UPSTREAM_ZDR: 'true', UPSTREAM_PROVIDER_ONLY: 'google-vertex, amazon-bedrock' }),
-  );
-  assert.deepEqual(both.ai?.routing, { zeroDataRetention: true, onlyProviders: ['google-vertex', 'amazon-bedrock'] });
+  assert.deepEqual(routingOf({ UPSTREAM_ZDR: 'true', UPSTREAM_PROVIDER_ONLY: 'google-vertex, amazon-bedrock' }), {
+    zeroDataRetention: true,
+    onlyProviders: ['google-vertex', 'amazon-bedrock'],
+  });
   // Unset, empty and `false` all mean today's behaviour.
   const none = { zeroDataRetention: false, onlyProviders: [] };
-  assert.deepEqual(parseConfig(baseEnv(aiEnv)).ai?.routing, none);
-  assert.deepEqual(
-    parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: '', UPSTREAM_PROVIDER_ONLY: '  ' })).ai?.routing,
-    none,
-  );
-  assert.deepEqual(parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: 'false' })).ai?.routing, none);
+  assert.deepEqual(routingOf({}), none);
+  assert.deepEqual(routingOf({ UPSTREAM_ZDR: '', UPSTREAM_PROVIDER_ONLY: '  ' }), none);
+  assert.deepEqual(routingOf({ UPSTREAM_ZDR: 'false' }), none);
   // A duplicate slug is one slug.
-  assert.deepEqual(parseConfig(baseEnv({ ...aiEnv, UPSTREAM_PROVIDER_ONLY: 'a,a' })).ai?.routing?.onlyProviders, ['a']);
+  assert.deepEqual(routingOf({ UPSTREAM_PROVIDER_ONLY: 'a,a' }), { zeroDataRetention: false, onlyProviders: ['a'] });
+  // The upstream block carries no routing of its own: the tier is the only place the proxy can read it.
+  assert.equal('routing' in (parseConfig(baseEnv({ ...aiEnv, UPSTREAM_ZDR: 'true' })).ai ?? { routing: true }), false);
 
   // A spelling that is not `true` must not quietly mean "off": the operator would believe retention is.
   for (const bad of ['yes', '1', 'on', 'tru']) {

@@ -41,7 +41,6 @@ import {
   type ModelTiers,
   type ModelTiersSource,
 } from './ai/model-tiers.js';
-import { parseOpenRouterRouting } from './ai/openrouter-routing.js';
 import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
 import { defaultTrialNetworkDailyLimit } from './ai/trial-network.js';
 import {
@@ -1389,10 +1388,6 @@ const DEFAULT_FEEDBACK_DAILY_LIMIT = 5;
  * outage.
  */
 function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
-  // PARSED BEFORE THE ALL-OR-NOTHING CHECK, so a malformed routing value stops
-  // the boot even on an instance that has no AI yet: the typo is found on the
-  // day it is made, not the day somebody adds the provider key.
-  const routing = parseOpenRouterRouting(env);
   const present = AI_VARIABLES.filter((name) => (env[name]?.trim() ?? '') !== '');
   if (present.length === 0) return null;
 
@@ -1421,7 +1416,6 @@ function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
     baseUrl: baseUrl.replace(/\/+$/, ''),
     apiKey: env.UPSTREAM_API_KEY?.trim() ?? '',
     timeoutMs: parsePositiveInteger(env, 'UPSTREAM_TIMEOUT_MS', DEFAULT_UPSTREAM_TIMEOUT_MS),
-    routing,
   };
 }
 
