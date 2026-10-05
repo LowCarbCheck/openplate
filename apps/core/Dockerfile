@@ -31,6 +31,9 @@ RUN pnpm install --prod --frozen-lockfile
 
 FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+# The model tier file is imported into the bundle (`src/ai/model-tiers.ts`), so a
+# build stage without it fails at `pnpm build`, loudly, rather than at boot.
+COPY ai-tiers.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY src ./src
 COPY scripts ./scripts

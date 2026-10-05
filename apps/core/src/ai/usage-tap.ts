@@ -41,7 +41,7 @@ export const MAX_JSON_BYTES = 1024 * 1024;
 export const MAX_SSE_LINE_BYTES = 64 * 1024;
 
 /** A model name worth logging: letters, digits and the punctuation model names use, at most 64 characters. */
-const SAFE_MODEL_NAME = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,63}$/;
+export const SAFE_MODEL_NAME = /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,63}$/;
 
 /** The sanity ceiling on a token count. Anything above it is a field that is not what it claims to be. */
 const MAX_TOKEN_COUNT = 1_000_000_000;
