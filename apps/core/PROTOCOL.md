@@ -1914,6 +1914,34 @@ GET /v1/plans/prices
 
 The body is the biller's and is relayed unread, like every answer in this subtree. The example is what openplate's biller serves: the plans it sells, each with the amount charged per `interval` in the minor unit of `currency`, tax included, read from its payment provider at boot. The figures above are an example, never a price list.
 
+**The gateway relays the body untouched, so the biller may add to it.** The gateway parses the body only to check that it is JSON of the allowed size, and it neither reads nor rewrites a field. A biller that sells tiers may therefore add a `tiers` array beside `currency` and `plans`. An entry of `tiers` has the same shape as an entry of the `tiers` array of the biller's offer (`GET /v1/plans/offer`): `id`, `name`, `description`, `isSold`, `dailyAiLimit`, `capabilities` and its own `plans`. The offer is the biller's contract and not part of this protocol (see above), so the entry is described here only so a reader knows what to expect:
+
+```json
+{
+  "currency": "EUR",
+  "plans": [
+    { "key": "monthly", "interval": "month", "grossCents": 500 },
+    { "key": "yearly", "interval": "year", "grossCents": 4000 }
+  ],
+  "tiers": [
+    {
+      "id": "tier-a",
+      "name": "…",
+      "description": "…",
+      "isSold": true,
+      "dailyAiLimit": 10,
+      "capabilities": ["scan"],
+      "plans": [
+        { "key": "monthly", "interval": "month", "grossCents": 500 },
+        { "key": "yearly", "interval": "year", "grossCents": 4000 }
+      ]
+    }
+  ]
+}
+```
+
+**A client MUST ignore every field it does not know**, at the top level and inside an entry, and MUST NOT refuse the body for one. A body with no `tiers` is as valid as it was, and a client that never reads `tiers` reads `currency` and `plans` exactly as before. The ids are labels the biller chose (`tier-a` is a placeholder), the order of `tiers` is the biller's own order, and the amounts repeat the figures of the example above only so the shape is visible.
+
 Four properties set this route apart from the rest of the subtree:
 
 1. **It goes out with `X-Plans-Secret` alone.** There is no account, so there is no `X-Account-Id` and no `X-Account-Email`, and nothing from the inbound request travels: not a header, not the query string.

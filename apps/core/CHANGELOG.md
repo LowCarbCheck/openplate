@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Docs
+
+- **`PROTOCOL.md` says the price list may carry tiers.** Section 5.22 now states that the gateway relays the body of `GET /v1/plans/prices` untouched, that a biller may add a `tiers` array with the same entry shape as the tiers of its offer, and that a client must ignore every field it does not know. The gateway itself did not change.
+
 ## [0.32.0] - 2026-10-05
 
 This release carries three migrations, 0031, 0032 and 0033, which run at boot. 0031 adds the nullable column `accounts.capabilities`, 0032 adds `ai_instance_days.cost_micro_usd` (default 0), and 0033 adds `trial_address_hashes.created_at` (default the instant of the migration). All three add a column and rewrite no data. No env change is required. New optional variables are `DEFAULT_FREE_DAILY_AI_LIMIT`, `DEFAULT_CAPABILITIES`, `CAPABILITY_SCHEMA_MAP` and `TRIAL_HASH_RETENTION_DAYS`. The first three are off when unset. `TRIAL_HASH_RETENTION_DAYS` defaults to 365, so the hourly sweep starts to age mailbox hashes after the upgrade.
