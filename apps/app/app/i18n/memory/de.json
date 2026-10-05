@@ -503,6 +503,13 @@
     "at": "2026-09-14",
     "de": "Noch ein leerer Teller. Trag ein paar Mahlzeiten ein, dann füllt sich das hier."
   },
+  "0680e987e117d53c": {
+    "en": "A spent day of AI scans now points at the plans where there are any.",
+    "path": "releases:v0_64_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein aufgebrauchter Tag an KI-Scans verweist nun auf die Tarife, sofern welche vorhanden sind."
+  },
   "06ba4b71275b28f4": {
     "en": "Fiber",
     "path": "common:add.macros.fiber",
@@ -6683,6 +6690,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Willkommen bei openplate"
+  },
+  "51168251f67038f0": {
+    "en": "The plan page now lists the tiers a plan service sells, and a subscriber can switch between them.",
+    "path": "releases:v0_64_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Die Tarifseite listet nun die Stufen auf, die ein Tarifdienst anbietet, und Abonnenten können zwischen ihnen wechseln."
   },
   "511cc1192560b6a8": {
     "en": "Choose another provider",
@@ -13880,6 +13894,13 @@
     "at": "2026-09-30",
     "de": "Wird jeden Tag zurückgesetzt"
   },
+  "a10c43cc5d4f25a4": {
+    "en": "The order page now says what happens to your data above the payment boxes.",
+    "path": "releases:v0_64_0.added.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Die Bestellseite gibt nun über den Zahlungsfeldern an, was mit deinen Daten geschieht."
+  },
   "a11ad9b2d97a9437": {
     "en": "Delete this weigh-in?",
     "path": "common:trends.weight.deleteTitle",
@@ -14971,6 +14992,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Fett"
+  },
+  "adc1477a71be3250": {
+    "en": "A plan can now leave out a feature, and the app shows it the same way everywhere.",
+    "path": "releases:v0_64_0.added.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein Tarif kann ein Feature nun weglassen, und die App stellt dies überall einheitlich dar."
   },
   "adccd4087e991dc2": {
     "en": "Type: Cancellation",
@@ -20054,6 +20082,13 @@
     "at": "2026-09-14",
     "de": "Dieses Fasten beenden"
   },
+  "e9a219e1bb7c3efa": {
+    "en": "A refused feature now shows the same note instead of an error.",
+    "path": "releases:v0_64_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein verweigertes Feature zeigt nun denselben Hinweis statt eines Fehlers an."
+  },
   "e9c014ad122c4ebf": {
     "en": "The plan page shows one answer after a slow payment.",
     "path": "releases:v0_50_0.fixed.01",
@@ -21390,6 +21425,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Heute, läuft noch."
+  },
+  "f91d03c99cdd6db6": {
+    "en": "A tier link from the website now picks that tier on the plan page.",
+    "path": "releases:v0_64_0.added.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein Stufen-Link von der Website wählt diese Stufe nun auf der Tarifseite aus."
   },
   "f91df78856757c32": {
     "en": "This device has no record of the key this share was made to, so it cannot show you a fingerprint. The share still works. Do the fingerprint check with them again to bring it back here.",

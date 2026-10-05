@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Plan sayfası artık bir plan servisinin sattığı kademeleri listeler ve abone olan biri bunlar arasında geçiş yapabilir.",
+      "02": "Sipariş sayfası artık ödeme kutularının üzerinde verilerine ne olduğunu belirtir.",
+      "03": "Bir plan artık bir özelliği hariç tutabilir ve uygulama bunu her yerde aynı şekilde gösterir.",
+      "04": "Web sitesinden gelen bir kademe bağlantısı artık plan sayfasında o kademeyi seçer."
+    },
+    "changed": {
+      "01": "Tükenen günlük yapay zeka tarama kotası, artık varsa planlara yönlendirir.",
+      "02": "Reddedilen bir özellik artık bir hata yerine aynı notu gösterir."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "Sürüm denetimi artık GitHub yerine openplate.de adresine sorar."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "Belgeler ve metinler sunucuyu sync olarak değil, çekirdek olarak adlandırır.",
-      "02": "Çekirdek sunucu adresi artık CORE_URL ile ayarlanır, eski ad ise sonraki bir sürüme kadar bir uyarıyla çalışmaya devam eder.",
-      "03": "Makro dağılımları varsayılan olarak kalori payını gösterir.",
-      "04": "Kendi sunucunda barındırma dosyaları hizmeti çekirdek olarak adlandırır ve Postgres 18 çalıştırır."
     }
   }
 }

@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "Die Tarifseite listet nun die Stufen auf, die ein Tarifdienst anbietet, und Abonnenten können zwischen ihnen wechseln.",
+      "02": "Die Bestellseite gibt nun über den Zahlungsfeldern an, was mit deinen Daten geschieht.",
+      "03": "Ein Tarif kann ein Feature nun weglassen, und die App stellt dies überall einheitlich dar.",
+      "04": "Ein Stufen-Link von der Website wählt diese Stufe nun auf der Tarifseite aus."
+    },
+    "changed": {
+      "01": "Ein aufgebrauchter Tag an KI-Scans verweist nun auf die Tarife, sofern welche vorhanden sind.",
+      "02": "Ein verweigertes Feature zeigt nun denselben Hinweis statt eines Fehlers an."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "Die Versionsprüfung fragt jetzt openplate.de statt GitHub ab."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "Dokumentation und Fließtext nennen den Server Core, nicht Sync.",
-      "02": "Die Adresse des Core-Servers legst du jetzt mit CORE_URL fest, der alte Name funktioniert bis zu einem späteren Release weiterhin mit einer Warnung.",
-      "03": "Makronährstoff-Aufschlüsselungen zeigen standardmäßig den Kalorienanteil.",
-      "04": "Die Dateien für das Self-Hosting nennen den Dienst Core und führen Postgres 18 aus."
     }
   }
 }

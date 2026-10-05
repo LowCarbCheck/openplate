@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "La página del plan ahora enumera los niveles que vende un servicio de planes, y un suscriptor puede cambiar entre ellos.",
+      "02": "La página del pedido ahora indica qué ocurre con tus datos encima de las casillas de pago.",
+      "03": "Un plan ahora puede omitir una función, y la aplicación la muestra de la misma forma en todas partes.",
+      "04": "Un enlace a un nivel desde el sitio web ahora selecciona ese nivel en la página del plan."
+    },
+    "changed": {
+      "01": "Un día agotado de escaneos de IA ahora remite a los planes, si los hay.",
+      "02": "Una función rechazada ahora muestra la misma nota en lugar de un error."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "La comprobación de versiones ahora consulta openplate.de en lugar de GitHub."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "La documentación y el texto llaman al servidor core, no sync.",
-      "02": "La dirección del servidor central ahora se define con CORE_URL; el nombre antiguo sigue funcionando con una advertencia hasta una versión posterior.",
-      "03": "Los desgloses de macronutrientes muestran la proporción de calorías de forma predeterminada.",
-      "04": "Los archivos de Autoalojamiento llaman al servicio core y ejecutan Postgres 18."
     }
   }
 }

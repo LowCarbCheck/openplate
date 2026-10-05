@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "La page des forfaits liste désormais les niveaux vendus par un service de forfaits, et un abonné peut passer de l'un à l'autre.",
+      "02": "La page de commande indique désormais ce qu'il advient de tes données au-dessus des zones de paiement.",
+      "03": "Un forfait peut désormais exclure une fonctionnalité, et l'application l'affiche de la même manière partout.",
+      "04": "Un lien de niveau depuis le site web sélectionne désormais ce niveau sur la page des forfaits."
+    },
+    "changed": {
+      "01": "Une journée épuisée d'analyses par IA renvoie désormais vers les forfaits s'il en existe.",
+      "02": "Une fonctionnalité refusée affiche désormais la même note au lieu d'une erreur."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "La vérification des versions interroge désormais openplate.de au lieu de GitHub."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "La documentation et les textes appellent le serveur core, et non sync.",
-      "02": "Tu définis désormais l'adresse du serveur central avec CORE_URL ; l'ancien nom fonctionne encore avec un avertissement jusqu'à une version ultérieure.",
-      "03": "La répartition des macronutriments affiche la part de calories par défaut.",
-      "04": "Les fichiers d'Auto-hébergement nomment le service core et exécutent Postgres 18."
     }
   }
 }

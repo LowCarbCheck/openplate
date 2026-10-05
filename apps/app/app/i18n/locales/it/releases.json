@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "La pagina del piano ora elenca i livelli venduti da un servizio di piani, e chi ha sottoscritto un abbonamento può passare da uno all'altro.",
+      "02": "Sopra i riquadri di pagamento, la pagina dell'ordine ora indica cosa accade ai tuoi dati.",
+      "03": "Un piano ora può escludere una funzionalità, e l'app la mostra nello stesso modo ovunque.",
+      "04": "Un link a un livello proveniente dal sito web ora seleziona quel livello nella pagina del piano."
+    },
+    "changed": {
+      "01": "Un giorno esaurito di scansioni IA ora rimanda ai piani, se disponibili.",
+      "02": "Una funzionalità rifiutata ora mostra la stessa nota invece di un errore."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "Il controllo delle nuove versioni ora interroga openplate.de invece di GitHub."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "La documentazione e i testi chiamano il server centrale, non sync.",
-      "02": "L'indirizzo del server centrale ora si imposta con CORE_URL; il vecchio nome funziona ancora mostrando un avviso fino a una versione successiva.",
-      "03": "Le ripartizioni dei macronutrienti mostrano la quota calorica come impostazione predefinita.",
-      "04": "I file per il Self-hosting chiamano il servizio core ed eseguono Postgres 18."
     }
   }
 }
