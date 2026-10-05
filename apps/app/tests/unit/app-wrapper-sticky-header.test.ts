@@ -106,3 +106,25 @@ describe('the header status row can shrink below its text width', () => {
     );
   });
 });
+
+describe('the fast chip is a sibling of the avatar group, not a member of it', () => {
+  const groupOpening = '<div className="flex shrink-0 items-center gap-3">';
+
+  it('is mounted before the avatar group opens, so a late chip cannot widen the group', () => {
+    const chipAt = source.indexOf('<FastChipSlot />');
+    const groupAt = source.indexOf(groupOpening);
+    assert.notEqual(chipAt, -1, 'app-wrapper.tsx no longer mounts <FastChipSlot />; this test needs updating.');
+    assert.notEqual(groupAt, -1, 'The avatar group div changed; this test needs updating.');
+    assert.ok(
+      chipAt < groupAt,
+      'The fast chip must come BEFORE the avatar group div. Inside it, a chip that arrives after the first paint ' +
+        'widens the group and moves its left edge 68 px (tests/e2e/header-fast-chip-moves-nothing.spec.ts).',
+    );
+  });
+
+  it('control: the avatar menu is inside the group, so the order above is the one that matters', () => {
+    const groupAt = source.indexOf(groupOpening);
+    const menuAt = source.indexOf('<AvatarMenu');
+    assert.ok(menuAt > groupAt, 'The avatar menu must stay inside the group the chip is kept out of.');
+  });
+});

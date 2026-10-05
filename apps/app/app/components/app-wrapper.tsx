@@ -332,14 +332,20 @@ function InnerContent({
                 </h1>
               </div>
             </HeaderStatus>
+            {/* The one live fact in the app, and the only thing in this bar
+                that is not always there: it renders nothing unless a fast is
+                scheduled or running. `min-h-9` inside this header's `min-h-16`
+                is what keeps the bar's height fixed either way.
+
+                A SIBLING OF THE AVATAR GROUP, NOT A MEMBER OF IT (2026-10-05).
+                A running fast is read after the first paint, so the chip
+                arrives a frame after the avatar. Inside the group it widened
+                the group and moved its left edge 68 px. Here the group keeps
+                its start edge and only the title slot, which is `flex-1`,
+                gets shorter. Nothing is reserved: most people have no fast.
+                `tests/e2e/header-fast-chip-moves-nothing.spec.ts` reads it. */}
+            <FastChipSlot />
             <div className="flex shrink-0 items-center gap-3">
-              {/* The one live fact in the app, and the only thing in this bar
-                  that is not always there: it renders nothing unless a fast is
-                  scheduled or running. `min-h-9` inside this header's
-                  `min-h-16` is what keeps the bar's height fixed either way,
-                  and it sits in the shrink-0 group so the `h1` beside it
-                  truncates first. */}
-              <FastChipSlot />
               {/* No markup at all: it beats a "still fasting" signal while a
                   fast is running and this tab is visible, and it is mounted
                   beside the chip for the chip's own reason, a fast runs

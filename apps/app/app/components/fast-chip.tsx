@@ -8,9 +8,18 @@
  * becoming the only place the hours are visible.
  *
  * SIZE IS THE CONTRACT. The pill is `min-h-9` inside a `min-h-16` header, so it
- * cannot change the header's height, and it sits beside `AvatarMenu` in the
- * shrinking-last group so the `h1` truncates before this moves. A stage label
- * only appears from `md:` up, where there is room for it.
+ * cannot change the header's height. A stage label only appears from `md:` up,
+ * where there is room for it.
+ *
+ * IT ARRIVES LATE, AND IT MUST MOVE NOTHING ALREADY DRAWN. A running fast is
+ * read from the device after the first paint, so the pill comes a frame after
+ * the avatar. It sits in `app-wrapper.tsx` as a SIBLING BEFORE the avatar
+ * group, not inside it: the group is anchored to the header's right edge and
+ * keeps its start edge, and the only thing that gives way is the page title,
+ * which is the one box in the bar that can be shorter. Inside the group it
+ * widened the group, and the group's left edge moved 68 px (the pill's 56 px
+ * and the 12 px gap). Nothing is reserved for it: most people have no fast.
+ * `tests/e2e/header-fast-chip-moves-nothing.spec.ts` reads it.
  *
  * Overtime is NOT amber. Fasting past the target is the normal, intended
  * outcome, and colouring it as a warning would turn a good outcome into an
@@ -71,11 +80,14 @@ export function FastChip({ fast, nowMs, stageLabel, othersFasting = null }: Fast
   const label =
     othersFasting === null ? stateLabel : `${stateLabel} ${t('pulse.fasting.others', { count: othersFasting })}`;
 
+  // `mr-1` tops the header row's 8 px gap up to the 12 px the chip has always kept
+  // from the avatar, and `ml-auto` keeps it against the avatar group whatever the
+  // title slot beside it does. `shrink-0` so the title truncates before this does.
   return (
     <Link
       to="/fasting"
       aria-label={label}
-      className="inline-flex min-h-9 items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 text-xs font-medium tabular-nums text-primary hover:bg-primary/10"
+      className="ml-auto mr-1 inline-flex min-h-9 shrink-0 items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 text-xs font-medium tabular-nums text-primary hover:bg-primary/10"
     >
       <Timer className="size-3.5 shrink-0" aria-hidden="true" />
       <span>{text}</span>
