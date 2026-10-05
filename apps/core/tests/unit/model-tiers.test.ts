@@ -86,6 +86,40 @@ test('the shipped ai-tiers.json parses, and every tier keeps zero data retention
   assert.throws(() => parseModelTiers({}), /version/);
 });
 
+/** The names of the tiers that do NOT pin a provider and ask for zero data retention. */
+function unpinnedTiers(tiers: ModelTiers): string[] {
+  return [...tiers.tiers]
+    .filter(([, entry]) => entry.routing.onlyProviders.length === 0 || entry.routing.zeroDataRetention !== true)
+    .map(([name]) => name);
+}
+
+test('every tier of the shipped ai-tiers.json pins at least one provider and asks for zdr', () => {
+  // WHY THIS TEST EXISTS. The privacy pages name one provider ("Google Cloud Vertex AI"). The
+  // only thing that makes that sentence true is `routing.only` in this file: with `only: []`
+  // a request may land on ANY endpoint that has zero data retention, one the pages do not name.
+  // Once the deployment stops setting UPSTREAM_PROVIDER_ONLY, this test is the only thing
+  // that pins the provider the pages name.
+  assert.deepEqual(unpinnedTiers(accepts(BUNDLED_MODEL_TIERS)), []);
+  for (const entry of accepts(BUNDLED_MODEL_TIERS).tiers.values()) {
+    assert.ok(entry.routing.onlyProviders.length > 0);
+    assert.equal(entry.routing.zeroDataRetention, true);
+  }
+
+  // THE CONTROL: the same assertion on a copy of the file with every `only` emptied (the file
+  // still parses, which is why the parser alone cannot guard this) must fail.
+  const emptied: JsonValue = JSON.parse(JSON.stringify(BUNDLED_MODEL_TIERS), (key, value: JsonValue) =>
+    key === 'only' ? [] : value,
+  );
+  const unpinned = accepts(emptied);
+  assert.deepEqual(unpinnedTiers(unpinned), [...unpinned.tiers.keys()]);
+  assert.throws(() => assert.deepEqual(unpinnedTiers(unpinned), []));
+  // And a copy with zdr turned off is caught by the same helper.
+  const noZdr: JsonValue = JSON.parse(JSON.stringify(BUNDLED_MODEL_TIERS), (key, value: JsonValue) =>
+    key === 'zdr' ? false : value,
+  );
+  assert.deepEqual(unpinnedTiers(accepts(noZdr)), [...accepts(noZdr).tiers.keys()]);
+});
+
 // ── the twelve boot rules ────────────────────────────────────────────────────
 
 test('rule 1: a version other than 1 is refused and names version', () => {
