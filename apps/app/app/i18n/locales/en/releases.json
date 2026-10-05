@@ -1,4 +1,10 @@
 {
+  "v0_65_1": {
+    "date": "2026-10-05",
+    "fixed": {
+      "01": "An event sent before the analytics script loads no longer carries the real page address."
+    }
+  },
   "v0_65_0": {
     "date": "2026-10-05",
     "added": {
@@ -21,44 +27,6 @@
     "changed": {
       "01": "A spent day of AI scans now points at the plans where there are any.",
       "02": "A refused feature now shows the same note instead of an error."
-    }
-  },
-  "v0_63_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "The sign-up page now says what happens to your data."
-    },
-    "changed": {
-      "01": "The What's new card is hidden until you switch it on.",
-      "02": "The sign-out dialog now loads when it is needed, not with every page.",
-      "03": "The push gate now runs a scoped browser tier, and the full tier runs on a release tag and every night.",
-      "04": "The What's new card now sits at the end of the diary and the dashboard.",
-      "05": "The health consent text now says the operator can read your diary."
-    },
-    "fixed": {
-      "10": "A second open tab now leaves the diary when another tab signs out.",
-      "11": "Cancel after a failed erase now takes you out of the diary.",
-      "12": "The erase box no longer stays disabled when another tab hangs the check.",
-      "13": "The sign-out dialog now announces a failed erase and gives focus back when it closes.",
-      "14": "Another account can no longer open a diary left on a managed device.",
-      "15": "A second press of Sign out while another tab holds the diary now reports the failure instead of hanging.",
-      "16": "An erase now leaves no empty photo database behind.",
-      "17": "The way-to-log cards on desktop onboarding hold their text.",
-      "18": "The desktop sidebar no longer jumps when an administrator's role loads.",
-      "19": "The What's new card no longer jumps when the pulse tile loads.",
-      "20": "The delete-account dialog now says what stays.",
-      "21": "The page description and the invite hint no longer say the instance is invitation only.",
-      "22": "A photo that cannot be re-encoded is no longer sent as it is.",
-      "23": "A photo shared into the app now expires after 24 hours.",
-      "01": "A browser-tier shard whose app server dies now stops and says so.",
-      "02": "Signed-in people can now reach the legal pages from Settings.",
-      "03": "A failed erase on sign-out now says so, and Escape no longer closes a running sign-out.",
-      "04": "The sign-out dialog shows its erase warnings only after you tick the erase box.",
-      "05": "The Settings sign-out button no longer claims it signs you out everywhere.",
-      "06": "Signing out lands on the right page instead of flashing the front page.",
-      "07": "Signing out now releases this device's push subscription.",
-      "08": "A sign-out no longer hangs when the server never answers.",
-      "09": "A suspended account is told it is suspended, not asked to sign in again."
     }
   }
 }
