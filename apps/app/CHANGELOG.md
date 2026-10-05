@@ -11,15 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.65.0] - 2026-10-05
+
 ### Added
 
-- **A tier chosen on the website now survives the sign-up letter.** The sign-up page sends the tier from a pricing link beside the plan, and only beside a plan. The core puts `&tier=` into the mailed join link after `&plan=`. The app reads that tier the way it reads the plan, so a letter opened on another phone still lands on the order page with the tier named. An id that is not a lowercase label of 1 to 32 characters is dropped without a word, and a core that does not know tiers sends a link without one, which behaves as before.
-- **The plan page now shows a booked downgrade and lets you keep your tier.** When a lower tier is booked for the end of the paid period, the plan card says "Switches to the lower tier on the date" and offers a "Keep" button that cancels the change and reads the plan again. If nothing is booked any more, the button ends the same way. The room for the line is reserved from the first paint, so nothing moves when it arrives or leaves. The words are in `plan.pending.*`.
+- **A tier chosen on the website now survives the sign-up letter.** The sign-up page sends the tier from a pricing link beside the plan, and only beside a plan. The core puts `&tier=` into the mailed join link after `&plan=`. The app reads that tier the way it reads the plan, so a letter opened on another phone still lands on the order page with the tier named. An id that is not a lowercase label of 1 to 32 characters is dropped without a word, and a core that does not know tiers sends a link without one, which behaves as before. ([65a838c9](https://github.com/LowCarbCheck/openplate/commit/65a838c9))
+- **The plan page now shows a booked downgrade and lets you keep your tier.** When a lower tier is booked for the end of the paid period, the plan card says "Switches to the lower tier on the date" and offers a "Keep" button that cancels the change and reads the plan again. If nothing is booked any more, the button ends the same way. The room for the line is reserved from the first paint, so nothing moves when it arrives or leaves. The words are in `plan.pending.*`. ([4e389e05](https://github.com/LowCarbCheck/openplate/commit/4e389e05), [269d5507](https://github.com/LowCarbCheck/openplate/commit/269d5507))
 
 ### Fixed
 
-- **A declined card on an upgrade now says so.** An upgrade is paid at once. When the card is declined, the order page says the card was declined and that the plan has not changed, and the order stays as it was so you can try again. The new sentence is `plan.order.paymentFailed`.
-- **A running fast no longer moves the header when its chip arrives.** The chip used to widen the right-hand group one frame after first paint, which shifted the header row by 68 px. It now sits beside the avatar group and only the title gets shorter.
+- **A declined card on an upgrade now says so.** An upgrade is paid at once. When the card is declined, the order page says the card was declined and that the plan has not changed, and the order stays as it was so you can try again. The new sentence is `plan.order.paymentFailed`. ([4e389e05](https://github.com/LowCarbCheck/openplate/commit/4e389e05), [269d5507](https://github.com/LowCarbCheck/openplate/commit/269d5507))
+- **A running fast no longer moves the header when its chip arrives.** The chip used to widen the right-hand group one frame after first paint, which shifted the header row by 68 px. It now sits beside the avatar group and only the title gets shorter. ([e8e860c6](https://github.com/LowCarbCheck/openplate/commit/e8e860c6))
 
 ## [0.64.0] - 2026-10-05
 
