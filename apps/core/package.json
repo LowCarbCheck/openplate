@@ -18,6 +18,7 @@
     "sync:translate-lib": "tsx scripts/sync-translate-lib.ts",
     "translate:mail": "tsx scripts/translate-mail.ts",
     "sync:disposable-domains": "tsx scripts/sync-disposable-domains.ts",
+    "ai-tiers:check-live": "tsx scripts/ai-tiers-check-live.ts",
     "typecheck": "tsc --noEmit",
     "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "node --import tsx --test 'tests/unit/**/*.test.ts'",
