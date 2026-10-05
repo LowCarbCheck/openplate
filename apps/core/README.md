@@ -278,6 +278,17 @@ weighs what it carries: one unit per 8192 estimated input tokens
 (`AI_UNIT_INPUT_TOKENS`, images at `AI_IMAGE_INPUT_TOKENS` each), never less
 than one, so a plate scan is one unit and a very long text is two.
 
+**Check the tier file against OpenRouter.** `ai-tiers.json` writes down the model,
+the routing and the price of each tier. A price changes, or a provider drops off the
+zero retention list, and nothing in this repository notices. `pnpm ai-tiers:check-live`
+asks OpenRouter's public API (no key, none sent) and prints one line per check: the
+model exists, each pinned provider serves it, that endpoint is on the ZDR list when
+`zdr` is on, and `price` equals the provider's standard tier price. A `price.checked`
+older than 45 days warns. It exits 0 when nothing failed, 1 when a check failed, and 2
+when OpenRouter could not be reached (no verdict). `--file <path>` checks a candidate
+file instead of the shipped one. Run it before every model switch, against the edited
+file, and once a week.
+
 **The allowance is per account, per UTC day, and it defaults to zero.** A new
 invite hands out no AI at all unless you say otherwise, so an operator who
 mints an ordinary invitation has not given away their provider key by accident:
