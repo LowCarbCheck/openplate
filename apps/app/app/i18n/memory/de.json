@@ -3653,6 +3653,13 @@
     "at": "2026-09-28",
     "de": "Wenn deine kostenlosen KI-Scans aufgebraucht sind, kostet openplate {{monthly}} im Monat oder {{yearly}} im Jahr. Preise inkl. MwSt."
   },
+  "2810b5ef78fe387c": {
+    "en": "An event sent before the analytics script loads no longer carries the real page address.",
+    "path": "releases:v0_65_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Ein Ereignis, das vor dem Laden des Analytics-Skripts gesendet wird, enthält nicht mehr die echte Seitenadresse."
+  },
   "284746f1451a5681": {
     "en": "The protein reference follows the instance's reference values.",
     "path": "releases:v0_50_0.changed.01",

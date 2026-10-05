@@ -1,4 +1,10 @@
 {
+  "v0_65_1": {
+    "date": "2026-10-05",
+    "fixed": {
+      "01": "Un evento inviato prima del caricamento dello script di analisi non include più l'indirizzo reale della pagina."
+    }
+  },
   "v0_65_0": {
     "date": "2026-10-05",
     "added": {
@@ -21,44 +27,6 @@
     "changed": {
       "01": "Un giorno esaurito di scansioni IA ora rimanda ai piani, se disponibili.",
       "02": "Una funzionalità rifiutata ora mostra la stessa nota invece di un errore."
-    }
-  },
-  "v0_63_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "La pagina di registrazione ora spiega cosa accade ai tuoi dati."
-    },
-    "changed": {
-      "01": "La scheda Novità rimane nascosta finché non la attivi.",
-      "02": "La finestra di disconnessione ora viene caricata solo quando serve, non a ogni pagina.",
-      "03": "Il gate di push ora esegue un livello browser limitato, mentre il livello completo gira sui tag di release e ogni notte.",
-      "04": "La scheda Novità ora si trova alla fine del diario e della dashboard.",
-      "05": "Il testo del consenso sanitario ora indica che il gestore può leggere il tuo diario."
-    },
-    "fixed": {
-      "10": "Una seconda scheda aperta ora esce dal diario quando un'altra scheda si disconnette.",
-      "11": "Se annulli dopo una cancellazione non riuscita, ora esci dal diario.",
-      "12": "La casella di cancellazione non rimane più disabilitata quando un'altra scheda blocca la verifica.",
-      "13": "La finestra di disconnessione ora segnala una cancellazione non riuscita e restituisce lo stato attivo alla chiusura.",
-      "14": "Un altro account non può più aprire un diario rimasto su un dispositivo gestito.",
-      "15": "Premendo una seconda volta Esci mentre un'altra scheda occupa il diario, ora viene segnalato l'errore invece di bloccarsi.",
-      "16": "Una cancellazione ora non lascia alcun database di foto vuoto.",
-      "17": "Le schede con le modalità di registrazione nell'onboarding su desktop mantengono il proprio testo.",
-      "18": "La barra laterale su desktop non salta più quando viene caricato il ruolo di un amministratore.",
-      "19": "La scheda Novità non salta più quando viene caricato il riquadro dell'attività.",
-      "20": "La finestra di eliminazione dell'account ora specifica cosa viene conservato.",
-      "21": "La descrizione della pagina e il suggerimento per l'invito non indicano più che l'istanza è solo su invito.",
-      "22": "Una foto che non può essere ricodificata non viene più inviata così com'è.",
-      "23": "Una foto condivisa nell'app ora scade dopo 24 ore.",
-      "01": "Uno shard del livello browser il cui server applicativo smette di funzionare ora si arresta e lo segnala.",
-      "02": "Chi ha effettuato l'accesso può ora raggiungere le pagine legali da Impostazioni.",
-      "03": "Una cancellazione non riuscita durante la disconnessione ora viene segnalata, e il tasto Esc non chiude più una disconnessione in corso.",
-      "04": "La finestra di disconnessione mostra gli avvisi di cancellazione solo dopo aver spuntato la casella di cancellazione.",
-      "05": "Il pulsante di disconnessione in Impostazioni non dichiara più di disconnetterti ovunque.",
-      "06": "La disconnessione indirizza alla pagina corretta invece di mostrare brevemente la pagina iniziale.",
-      "07": "La disconnessione ora rimuove l'iscrizione push di questo dispositivo.",
-      "08": "Una disconnessione non si blocca più quando il server non risponde.",
-      "09": "Se un account è sospeso, viene informato della sospensione invece di richiedere nuovamente l'accesso."
     }
   }
 }

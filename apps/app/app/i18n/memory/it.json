@@ -3653,6 +3653,13 @@
     "at": "2026-09-28",
     "it": "Una volta esaurite le scansioni gratuite, openplate costa {{monthly}} al mese o {{yearly}} all'anno. I prezzi includono l'IVA."
   },
+  "2810b5ef78fe387c": {
+    "en": "An event sent before the analytics script loads no longer carries the real page address.",
+    "path": "releases:v0_65_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "it": "Un evento inviato prima del caricamento dello script di analisi non include più l'indirizzo reale della pagina."
+  },
   "284746f1451a5681": {
     "en": "The protein reference follows the instance's reference values.",
     "path": "releases:v0_50_0.changed.01",

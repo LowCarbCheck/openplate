@@ -1,4 +1,10 @@
 {
+  "v0_65_1": {
+    "date": "2026-10-05",
+    "fixed": {
+      "01": "Analiz betiği yüklenmeden önce gönderilen bir olay, artık gerçek sayfa adresini taşımaz."
+    }
+  },
   "v0_65_0": {
     "date": "2026-10-05",
     "added": {
@@ -21,44 +27,6 @@
     "changed": {
       "01": "Tükenen günlük yapay zeka tarama kotası, artık varsa planlara yönlendirir.",
       "02": "Reddedilen bir özellik artık bir hata yerine aynı notu gösterir."
-    }
-  },
-  "v0_63_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Kayıt sayfası artık verilerine ne olduğunu açıklıyor."
-    },
-    "changed": {
-      "01": "Neler yeni kartı, sen açana kadar gizli kalır.",
-      "02": "Çıkış iletişim kutusu artık her sayfayla birlikte değil, yalnızca gerektiğinde yüklenir.",
-      "03": "Push denetimi artık kapsamı daraltılmış bir tarayıcı katmanı çalıştırıyor, tam katman ise bir sürüm etiketinde ve her gece çalışıyor.",
-      "04": "Neler yeni kartı artık günlüğün ve kontrol panelinin sonunda duruyor.",
-      "05": "Sağlık verisi izin metni artık işletmecinin günlüğünü okuyabileceğini belirtiyor."
-    },
-    "fixed": {
-      "10": "Başka bir sekme çıkış yaptığında, açık olan ikinci sekme de artık günlükten ayrılıyor.",
-      "11": "Başarısız bir silme işleminden sonra iptal etmek, seni artık günlükten çıkarır.",
-      "12": "Başka bir sekme denetimi askıda bıraktığında, silme kutusu artık devre dışı kalmıyor.",
-      "13": "Çıkış iletişim kutusu artık başarısız bir silme işlemini bildiriyor ve kapandığında odağı geri veriyor.",
-      "14": "Yönetilen bir cihazda bırakılan bir günlüğü başka bir hesap artık açamaz.",
-      "15": "Başka bir sekme günlüğü tutarken Çıkış yap düğmesine ikinci kez basmak, askıda kalmak yerine artık hatayı bildiriyor.",
-      "16": "Silme işlemi artık geride boş bir fotoğraf veritabanı bırakmıyor.",
-      "17": "Masaüstü ilk katılımındaki kayıt yöntemi kartları metinlerini koruyor.",
-      "18": "Bir yöneticinin rolü yüklendiğinde masaüstü kenar çubuğu artık kayma yapmıyor.",
-      "19": "Nabız kutucuğu yüklendiğinde Neler yeni kartı artık kayma yapmıyor.",
-      "20": "Hesap silme iletişim kutusu artık nelerin kaldığını belirtiyor.",
-      "21": "Sayfa açıklaması ve davet ipucu artık sunucu örneğinin yalnızca davetle çalıştığını söylemiyor.",
-      "22": "Yeniden kodlanamayan bir fotoğraf artık olduğu gibi gönderilmiyor.",
-      "23": "Uygulamayla paylaşılan bir fotoğrafın süresi artık 24 saat sonra doluyor.",
-      "01": "Uygulama sunucusu çöken bir tarayıcı katmanı parçası artık duruyor ve bunu bildiriyor.",
-      "02": "Giriş yapmış kişiler artık yasal sayfalara Ayarlar'dan ulaşabiliyor.",
-      "03": "Çıkış sırasında silme işlemi başarısız olursa artık bildiriliyor ve Escape tuşu çalışan bir çıkış işlemini artık kapatmıyor.",
-      "04": "Çıkış iletişim kutusu, silme uyarılarını yalnızca sen silme kutusunu işaretledikten sonra gösterir.",
-      "05": "Ayarlar'daki çıkış düğmesi artık seni her yerden çıkardığını iddia etmiyor.",
-      "06": "Çıkış yapıldığında ana sayfa anlık görünüp kaybolmak yerine doğru sayfaya yönlendiriyor.",
-      "07": "Çıkış yapmak artık bu cihazın push aboneliğini serbest bırakıyor.",
-      "08": "Sunucu hiç yanıt vermediğinde çıkış işlemi artık askıda kalmıyor.",
-      "09": "Askıya alınmış bir hesaba yeniden giriş yapması istenmek yerine hesabın askıya alındığı söylenir."
     }
   }
 }
