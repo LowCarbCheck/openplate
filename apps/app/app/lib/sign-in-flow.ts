@@ -21,9 +21,10 @@ export type SignInDestination = '/diary' | '/onboarding' | '/recover';
 
 /**
  * The order page, with the plan the person chose named in its query, the one
- * way that page takes a pick it did not make itself (`readPlanParam`).
+ * way that page takes a pick it did not make itself (`readPlanParam`), and the
+ * tier beside it when the link named one (`readTierParam`).
  */
-export type PlanOrderDestination = `/settings/plan?plan=${PlanKey}`;
+export type PlanOrderDestination = `/settings/plan?plan=${PlanKey}` | `/settings/plan?plan=${PlanKey}&tier=${string}`;
 
 /** Every path a finished `/join` can send somebody to. */
 export type JoinDestination = SignInDestination | PlanOrderDestination;
@@ -78,19 +79,27 @@ export function resolveSignInDestination({ gate }: { gate: OnboardingGateOutcome
  *    another must not land somebody on a 404.
  *
  * @param input.intendedPlan - `readIntendedPlan()`, or `null`.
+ * @param input.intendedTier - `readIntendedTier()`, or `null`. Sent only with a plan. It is a validated label
+ *   (`TIER_ID_PATTERN`), so it needs no escaping in the query.
  * @param input.sellsPlans - whether this instance's handshake says it sells plans.
  */
 export function resolveJoinDestination({
   gate,
   intendedPlan,
+  intendedTier = null,
   sellsPlans,
 }: {
   gate: OnboardingGateOutcome['kind'];
   intendedPlan: PlanKey | null;
+  intendedTier?: string | null;
   sellsPlans: boolean;
 }): JoinDestination {
   if (gate === 'recover') return '/recover';
-  if (intendedPlan !== null && sellsPlans) return `/settings/plan?plan=${intendedPlan}`;
+  if (intendedPlan !== null && sellsPlans) {
+    return intendedTier === null ?
+        `/settings/plan?plan=${intendedPlan}`
+      : `/settings/plan?plan=${intendedPlan}&tier=${intendedTier}`;
+  }
   return resolveSignInDestination({ gate });
 }
 

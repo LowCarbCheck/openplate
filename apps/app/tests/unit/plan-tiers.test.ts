@@ -24,11 +24,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
-import { PlanScreen, type MoveResult, type OrderView } from '../../app/routes/settings.plan';
+import { PlanScreen, readTierParam, type MoveResult, type OrderView } from '../../app/routes/settings.plan';
 import { NO_CONSENTS, type OrderMode } from '../../app/components/plans/plan-order';
 import {
   NO_OWN_PLAN,
   defaultTierIdOf,
+  linkedTierIdOf,
   moveEffectOf,
   offerForTier,
   tiersViewOf,
@@ -213,6 +214,44 @@ describe('the tiers view model', () => {
     assert.equal(defaultTierIdOf(viewOf(solo)), 'fixture-alpha');
     assert.equal(defaultTierIdOf(viewOf(WITH_TIERS)), null, 'three tiers to choose from');
     assert.equal(defaultTierIdOf(viewOf(solo, onTier('fixture-alpha'))), null, 'a move is always chosen');
+  });
+});
+
+describe('a tier the pricing page linked', () => {
+  it('preselects a tier the offer sells, and no other', () => {
+    const view = viewOf(WITH_TIERS);
+    assert.equal(linkedTierIdOf({ view, tierId: 'fixture-beta' }), 'fixture-beta');
+    assert.equal(linkedTierIdOf({ view, tierId: 'fixture-alpha' }), 'fixture-alpha');
+  });
+
+  it('ignores an unknown id, the free entry and a tier that is not on sale', () => {
+    assert.equal(linkedTierIdOf({ view: viewOf(WITH_TIERS), tierId: 'no-such-tier' }), null, 'unknown');
+    assert.equal(linkedTierIdOf({ view: viewOf(WITH_TIERS), tierId: 'fixture-zero' }), null, 'the free entry');
+    const unsold = offerWith((tiers) => tiers.map((tier) => (tier.id === 'fixture-beta' ? { ...tier, isSold: false } : tier)));
+    assert.equal(linkedTierIdOf({ view: viewOf(unsold), tierId: 'fixture-beta' }), null, 'not on sale');
+    // THE CONTROL: the same offer still preselects a tier that is on sale, so the line above can fail.
+    assert.equal(linkedTierIdOf({ view: viewOf(unsold), tierId: 'fixture-gamma' }), 'fixture-gamma');
+  });
+
+  it('ignores a tier whose sold entry carries no plan', () => {
+    const empty = offerWith((tiers) => tiers.map((tier) => (tier.id === 'fixture-beta' ? { ...tier, plans: [] } : tier)));
+    assert.equal(linkedTierIdOf({ view: viewOf(empty), tierId: 'fixture-beta' }), null);
+  });
+
+  it('is null when nothing was linked, which leaves the page as it was', () => {
+    assert.equal(linkedTierIdOf({ view: viewOf(WITH_TIERS), tierId: null }), null);
+    assert.equal(defaultTierIdOf(viewOf(WITH_TIERS)), null);
+  });
+
+  it('never preselects for a subscriber, whose moves are chosen', () => {
+    assert.equal(linkedTierIdOf({ view: viewOf(WITH_TIERS, onTier('fixture-alpha')), tierId: 'fixture-beta' }), null);
+  });
+
+  it('is read from the parameter by shape alone', () => {
+    assert.equal(readTierParam('fixture-beta'), 'fixture-beta');
+    assert.equal(readTierParam('Fixture-Beta'), null);
+    assert.equal(readTierParam(''), null);
+    assert.equal(readTierParam(null), null);
   });
 });
 

@@ -19,6 +19,12 @@
  * AFTER it from the biller's own answer, which replaces the order block without
  * moving anything above it.
  *
+ * THE LINKED TIER (M2/06). The website links a tier button to
+ * `/settings/plan?tier=<id>&plan=<interval>` (through sign-up, which stores the
+ * choice). A tier the offer sells is the pick of a first order, with the linked
+ * interval, and its order block arrives IN THE SAME COMMIT as the list. An
+ * unknown tier, a tier that is not on sale and no tier at all preselect nothing.
+ *
  * THE CONTROLS: an offer with no tiers draws no list and the order block it
  * always had; a subscriber with no tier named gets no switch buttons; a move the
  * biller refuses keeps its order block and says so in the line that was already
@@ -392,3 +398,128 @@ test('the control: a subscriber whose biller names no tier gets no switch button
   await expect(page.locator('[data-slot="tier-switch"]')).toHaveCount(0);
   await expect(page.locator('[data-slot="plan-tiers"]')).toHaveCount(0);
 });
+
+/** What the observer below saw at the first change that drew the tier list. */
+const listSightingSchema = z.array(z.enum(['list-only', 'list-and-order']));
+
+/**
+ * Records, at the first DOM change that draws the tier list, whether the order
+ * block was drawn in that same change. A MutationObserver callback runs before
+ * the next render commits, so an order block that arrived one render after the
+ * list is seen as `list-only`, which a later `toBeVisible` could never tell.
+ * Call before the first `goto`.
+ */
+async function watchOrderWithList(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const sightings: string[] = [];
+    Object.defineProperty(window, '__orderWithList', { value: sightings });
+    new MutationObserver(() => {
+      if (sightings.length > 0) return;
+      if (document.querySelector('[data-slot="plan-tiers"]') === null) return;
+      sightings.push(document.querySelector('[data-slot="plan-order"]') === null ? 'list-only' : 'list-and-order');
+    }).observe(document, { childList: true, subtree: true });
+  });
+}
+
+/** The first sighting of the list, or `none` when it has not been drawn. */
+async function firstListSighting(page: Page): Promise<'list-only' | 'list-and-order' | 'none'> {
+  const raw = await page.evaluate(() => Object.getOwnPropertyDescriptor(window, '__orderWithList')?.value);
+  return listSightingSchema.parse(raw)[0] ?? 'none';
+}
+
+/** The checked state of every tier radio, by tier id, so a preselect is read off the page. */
+async function checkedTierIds(page: Page): Promise<string[]> {
+  return tierRows(page).evaluateAll((rows) =>
+    rows
+      .filter((row) => row.querySelector('input[type="radio"]:checked') !== null)
+      .map((row) => row.getAttribute('data-tier-id') ?? ''),
+  );
+}
+
+test('a linked tier the offer sells is the pick, with the linked interval, from the first paint of the list', async ({
+  page,
+}) => {
+  await watchOrderWithList(page);
+  await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody: FIXTURE_TIERS_OFFER_BODY });
+  const orders = await routeOrder(page, [
+    { status: 200, json: { url: `${E2E_APP_URL}/settings/plan?checkout=cancelled` } },
+  ]);
+  await openPlanPageSignedIn(page, `?tier=${MIDDLE.id}&plan=yearly`);
+
+  await expect(page.locator('[data-slot="plan-tiers"]')).toBeVisible();
+  // THE TIER IS PICKED and no other, the order block is there, and the yearly card is the chosen one.
+  expect(await checkedTierIds(page)).toEqual([MIDDLE.id]);
+  await expect(whatHappensBox(page)).toBeVisible();
+  await expect(page.locator('[data-slot="plan-card"][data-plan-key="yearly"] input')).toBeChecked();
+  await expect(page.locator('[data-slot="plan-card"][data-plan-key="monthly"] input')).not.toBeChecked();
+  // THE ORDER BLOCK CAME WITH THE LIST, in one commit, so nothing arrived under a list already drawn.
+  expect(await firstListSighting(page)).toBe('list-and-order');
+
+  await settleAnimations(page);
+  const shiftsBefore = (await readShiftEntries(page)).length;
+  const tops = await readTops(page);
+  await settleFrames(page);
+  expect(movedBetween(tops, await readTops(page)), 'something moved after the first paint').toEqual([]);
+  expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift on the plan page').toBe(0);
+
+  // THE PRESELECT IS WHAT IS ORDERED: the order names the linked tier and the linked interval.
+  await consent(page);
+  await orderButton(page).click();
+  await page.waitForURL('**/settings/plan?checkout=cancelled');
+  expect(orders.bodies).toEqual([
+    {
+      plan: 'yearly',
+      tier: MIDDLE.id,
+      locale: 'en',
+      consentVersion: FIXTURE.consentVersion,
+      consents: { terms: true, earlyStart: true },
+    },
+  ]);
+});
+
+/** The raw offer with every key kept (the schema above strips what this spec does not read), so a variant stays a valid offer. */
+const rawOfferSchema = z.looseObject({ tiers: z.array(z.looseObject({ id: z.string() })) });
+
+/** An offer whose middle tier is not on sale, the rest of the served body untouched. */
+function middleUnsoldOfferBody(): string {
+  const raw = rawOfferSchema.parse(JSON.parse(FIXTURE_TIERS_OFFER_BODY));
+  return JSON.stringify(
+    Object.assign({}, raw, {
+      tiers: raw.tiers.map((tier) => (tier.id === MIDDLE.id ? Object.assign({}, tier, { isSold: false }) : tier)),
+    }),
+  );
+}
+
+const MIDDLE_UNSOLD_OFFER_BODY: string = middleUnsoldOfferBody();
+
+const NOTHING_PRESELECTED: ReadonlyArray<{ name: string; search: string; offerBody: string }> = [
+  { name: 'no tier in the link', search: '?plan=yearly', offerBody: FIXTURE_TIERS_OFFER_BODY },
+  {
+    name: 'a tier the offer does not list',
+    search: '?tier=no-such-tier&plan=yearly',
+    offerBody: FIXTURE_TIERS_OFFER_BODY,
+  },
+  { name: 'the free entry', search: `?tier=${FREE.id}&plan=yearly`, offerBody: FIXTURE_TIERS_OFFER_BODY },
+  { name: 'a tier that is not on sale', search: `?tier=${MIDDLE.id}&plan=yearly`, offerBody: MIDDLE_UNSOLD_OFFER_BODY },
+  { name: 'a tier that is not a label', search: '?tier=Not_A_Label&plan=yearly', offerBody: FIXTURE_TIERS_OFFER_BODY },
+];
+
+for (const { name, search, offerBody } of NOTHING_PRESELECTED) {
+  test(`the control: ${name} preselects no tier, and the list is drawn alone`, async ({ page }) => {
+    await watchOrderWithList(page);
+    await routePlansCore(page, { planView: NO_SUBSCRIPTION_VIEW, offerBody });
+    await openPlanPageSignedIn(page, search);
+
+    await expect(page.locator('[data-slot="plan-tiers"]')).toBeVisible();
+    await expect(tierRows(page)).toHaveCount(FIXTURE.tiers.length);
+    expect(await checkedTierIds(page)).toEqual([]);
+    await expect(page.locator('[data-slot="plan-order"]')).toHaveCount(0);
+    // THE SIGHTING PROBE CAN FAIL: here it reads the list alone, in the test above the list with its order block.
+    expect(await firstListSighting(page)).toBe('list-only');
+    // AN IGNORED LINK IS NO ERROR: the page says nothing about it, and a tier can still be picked.
+    await expect(page.locator('[role="alert"]')).toHaveCount(0);
+    await tierRow(page, HIGH.id).click();
+    expect(await checkedTierIds(page)).toEqual([HIGH.id]);
+    await expect(whatHappensBox(page)).toBeVisible();
+  });
+}

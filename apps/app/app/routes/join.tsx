@@ -86,7 +86,7 @@ import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { readCachedServerInstance, readFreshServerInstance } from '#app/hooks/use-server-instance';
 import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
 import { withTimeout } from '#app/lib/with-timeout';
-import { captureIntendedPlan, readIntendedPlan } from '#app/lib/plans/intended-plan';
+import { captureIntendedPlan, readIntendedPlan, readIntendedTier } from '#app/lib/plans/intended-plan';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { addressWithoutLanguage, applyLanguageLink, decideLanguageLink, languageParamOf } from '#app/i18n/language-link';
 import { browserLanguageLinkEffects } from '#app/hooks/use-language-from-link';
@@ -179,7 +179,7 @@ export default function Join() {
     // capability, so it goes to `localStorage` rather than the pending slot
     // (`intended-plan.ts`). A second run of this effect finds no parameter and
     // reads it back from storage.
-    captureIntendedPlan({ search, hash });
+    captureIntendedPlan({ search, hash, isMailedLink: true });
     // THE LANGUAGE the person signed up in rides in the same fragment
     // (`&lang=fr`), so it too is read before the strip.
     const linkLanguage = languageParamOf({ search, hash });
@@ -392,7 +392,14 @@ async function landAfterJoin({
   trackJoinCompleted();
   const intendedPlan = readIntendedPlan();
   const sellsPlans = intendedPlan !== null && hasPlansDoor(await readCachedServerInstance(serverUrl));
-  navigate(resolveJoinDestination({ gate: await readOnboardingGateKind(), intendedPlan, sellsPlans }));
+  navigate(
+    resolveJoinDestination({
+      gate: await readOnboardingGateKind(),
+      intendedPlan,
+      intendedTier: readIntendedTier(),
+      sellsPlans,
+    }),
+  );
 }
 
 /**

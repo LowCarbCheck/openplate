@@ -415,6 +415,38 @@ test('a join link that names the yearly plan lands a new account on the order pa
   await expect(planRadio(page, 'monthly')).not.toBeChecked();
 });
 
+test('a tier linked on the sign-up page rides through the mailed join link to the order page', async ({ page }) => {
+  test.setTimeout(120_000);
+  await routeManagedCore(page, trialAccountStub(TRIAL_SCANS));
+
+  // THE PRICING PAGE'S LINK: a tier and a plan. The tier is a label and is stored beside the plan.
+  await page.goto(`${server.url}/sign-up?tier=tier-a&plan=yearly`);
+  await expect(page.locator('[data-slot="signup-offer-chosen"]')).toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => localStorage.getItem('openplate:intended-plan:v1'))).toContain('"tier":"tier-a"');
+
+  // THE MAILED LINK echoes the plan and never the tier, as the core writes it.
+  await page.goto(joinLink(await mintInvite(), '&plan=yearly'));
+  await createAccount(page);
+
+  await page.waitForURL(/\/settings\/plan\?plan=yearly&tier=tier-a$/u, { timeout: 60_000 });
+});
+
+test('the control: a tier that is not a label is never stored, and the join lands as it always did', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await routeManagedCore(page, trialAccountStub(TRIAL_SCANS));
+
+  await page.goto(`${server.url}/sign-up?tier=Not_A_Label&plan=yearly`);
+  await expect(page.locator('[data-slot="signup-offer-chosen"]')).toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => localStorage.getItem('openplate:intended-plan:v1'))).not.toContain('tier');
+
+  await page.goto(joinLink(await mintInvite(), '&plan=yearly'));
+  await createAccount(page);
+
+  await page.waitForURL(/\/settings\/plan\?plan=yearly$/u, { timeout: 60_000 });
+});
+
 test('the control: a join link with no plan lands where it always did, and picks nothing', async ({ page }) => {
   test.setTimeout(120_000);
   await routeManagedCore(page, trialAccountStub(TRIAL_SCANS));

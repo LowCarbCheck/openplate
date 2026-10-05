@@ -20,6 +20,26 @@
  * `monthly` or `yearly` is ignored, never an error, and it does not erase what
  * an earlier, valid link left.
  *
+ * ── The tier rides with the plan (M2/06) ─────────────────────────────────
+ *
+ * Once the biller sells tiers, the pricing page links to
+ * `/sign-up?tier=<id>&plan=<monthly|yearly>`. The tier is kept in the same
+ * record, the same way, and under the same rules, with three differences:
+ *
+ * - It is a LABEL, not a key from a short list. No tier name is compiled into
+ *   this app, so the only check here is the shape of an id
+ *   ({@link TIER_ID_PATTERN}). Whether the offer lists the tier as sold is the
+ *   plan page's question, asked of the offer it reads (`linkedTierIdOf`).
+ * - It is stored only with a plan that arrived in the same address. A tier
+ *   with no valid plan next to it is ignored, like any other parameter this
+ *   module does not understand.
+ * - The mailed join link carries the plan and not the tier (the core appends
+ *   `&plan=` only). An address that names a plan and no tier therefore keeps
+ *   the stored tier when it is that mailed link and the stored plan is the
+ *   same one ({@link captureIntendedPlan}, `isMailedLink`). A mail opened on
+ *   another device loses the tier, as it loses everything stored here, and the
+ *   plan page then shows its tier list as it always did.
+ *
  * ── A choice, never a pick made for somebody ─────────────────────────────
  *
  * The order page preselects the plan named here, the same way it preselects a
@@ -46,6 +66,19 @@ export const INTENDED_PLAN_STORAGE_KEY = 'openplate:intended-plan:v1';
 /** The name of the parameter in a link, on `/sign-up` and on `/join`. */
 export const PLAN_PARAM = 'plan';
 
+/** The name of the tier parameter, beside {@link PLAN_PARAM}. */
+export const TIER_PARAM = 'tier';
+
+/**
+ * What a tier id looks like: a lowercase label of one to 32 characters, a
+ * letter first, then letters, digits and hyphens. The biller's ids are labels
+ * of this kind. The pattern is the whole check, so no tier name lives here.
+ */
+export const TIER_ID_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
+
+/** {@link TIER_ID_PATTERN} as a schema, so the stored record and a parameter are judged by one rule. */
+const TIER_ID_SCHEMA = z.string().regex(TIER_ID_PATTERN);
+
 /** How long a stored choice is honoured: seven days, in milliseconds. */
 export const INTENDED_PLAN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -56,9 +89,11 @@ export interface IntendedPlanStorage {
   removeItem: (key: string) => void;
 }
 
-/** The stored record: the plan key and the epoch milliseconds it arrived at. */
+/** The stored record: the plan key, the tier id if the link had one, and the epoch milliseconds it arrived at. */
 const storedIntentSchema = z.object({
   plan: z.enum(PLAN_KEYS),
+  /** Absent for a choice with no tier. A value that is not a label is dropped, and the plan stays. */
+  tier: TIER_ID_SCHEMA.optional().catch(undefined),
   at: z.number(),
 });
 
@@ -108,9 +143,45 @@ export function planParamOf({ search, hash }: { search: string; hash: string }):
   return readPlanKey(new URLSearchParams(fragment).get(PLAN_PARAM));
 }
 
-/** The stored record for a plan that arrived at `now`. */
-export function encodeIntendedPlan({ plan, now }: { plan: PlanKey; now: number }): string {
-  return JSON.stringify({ plan, at: now });
+/**
+ * The tier id a raw parameter value is, or `null` for anything else.
+ *
+ * Exact match of {@link TIER_ID_PATTERN}: `Alpha`, ` alpha` and `a_b` are all
+ * `null`. Whether the biller sells it is not decided here.
+ */
+export function readTierId(value: string | null | undefined): string | null {
+  const parsed = TIER_ID_SCHEMA.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+/** The tier an address names, from its query string first and its fragment second, or `null`. */
+export function tierParamOf({ search, hash }: { search: string; hash: string }): string | null {
+  const fromQuery = readTierId(new URLSearchParams(search).get(TIER_PARAM));
+  if (fromQuery !== null) return fromQuery;
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash;
+  return readTierId(new URLSearchParams(fragment).get(TIER_PARAM));
+}
+
+/** The stored record for a plan, and the tier beside it if any, that arrived at `now`. */
+export function encodeIntendedPlan({
+  plan,
+  tier = null,
+  now,
+}: {
+  plan: PlanKey;
+  tier?: string | null;
+  now: number;
+}): string {
+  return JSON.stringify(tier === null ? { plan, at: now } : { plan, tier, at: now });
+}
+
+/** The stored record, or `null` when there is none, it does not decode, or it is seven days old or older. */
+function decodeIntent({ raw, now }: { raw: string | null; now: number }): StoredIntent | null {
+  if (raw === null) return null;
+  const stored = parseStoredIntent(raw);
+  if (stored === null) return null;
+  if (now - stored.at >= INTENDED_PLAN_TTL_MS) return null;
+  return stored;
 }
 
 /**
@@ -118,11 +189,12 @@ export function encodeIntendedPlan({ plan, now }: { plan: PlanKey; now: number }
  * decode, or it is seven days old or older.
  */
 export function decodeIntendedPlan({ raw, now }: { raw: string | null; now: number }): PlanKey | null {
-  if (raw === null) return null;
-  const stored = parseStoredIntent(raw);
-  if (stored === null) return null;
-  if (now - stored.at >= INTENDED_PLAN_TTL_MS) return null;
-  return stored.plan;
+  return decodeIntent({ raw, now })?.plan ?? null;
+}
+
+/** The tier a stored record names, or `null`: none was stored, or the record does not count (see {@link decodeIntendedPlan}). */
+export function decodeIntendedTier({ raw, now }: { raw: string | null; now: number }): string | null {
+  return decodeIntent({ raw, now })?.tier ?? null;
 }
 
 /**
@@ -144,33 +216,41 @@ interface IntentShellInput {
 }
 
 /**
- * The stored choice, or `null`. A record that no longer counts (expired, or
+ * The stored record, or `null`. A record that no longer counts (expired, or
  * unreadable) is removed on the way, so it cannot come back.
  */
-export function readIntendedPlan({
-  now = Date.now(),
-  storage = deviceStorage(),
-}: IntentShellInput = {}): PlanKey | null {
+function readIntent({ now = Date.now(), storage = deviceStorage() }: IntentShellInput = {}): StoredIntent | null {
   if (storage === null) return null;
   try {
     const raw = storage.getItem(INTENDED_PLAN_STORAGE_KEY);
-    const plan = decodeIntendedPlan({ raw, now });
-    if (plan === null && raw !== null) storage.removeItem(INTENDED_PLAN_STORAGE_KEY);
-    return plan;
+    const intent = decodeIntent({ raw, now });
+    if (intent === null && raw !== null) storage.removeItem(INTENDED_PLAN_STORAGE_KEY);
+    return intent;
   } catch {
     return null;
   }
 }
 
+/** The stored plan, or `null`. See {@link readIntent} for what is removed on the way. */
+export function readIntendedPlan(input: IntentShellInput = {}): PlanKey | null {
+  return readIntent(input)?.plan ?? null;
+}
+
+/** The stored tier id, or `null`: no choice, no tier beside it, or a record that no longer counts. */
+export function readIntendedTier(input: IntentShellInput = {}): string | null {
+  return readIntent(input)?.tier ?? null;
+}
+
 /** Stores a choice with the time it arrived. Never throws: a full or blocked storage keeps nothing. */
 export function rememberIntendedPlan({
   plan,
+  tier = null,
   now = Date.now(),
   storage = deviceStorage(),
-}: IntentShellInput & { plan: PlanKey }): void {
+}: IntentShellInput & { plan: PlanKey; tier?: string | null }): void {
   if (storage === null) return;
   try {
-    storage.setItem(INTENDED_PLAN_STORAGE_KEY, encodeIntendedPlan({ plan, now }));
+    storage.setItem(INTENDED_PLAN_STORAGE_KEY, encodeIntendedPlan({ plan, tier, now }));
   } catch {
     // Private mode or a full quota. The address still carries the plan on
     // this page; only a later page loses it.
@@ -194,15 +274,23 @@ export function clearIntendedPlan({ storage = deviceStorage() }: Pick<IntentShel
  *
  * @param input.search - `location.search` of the page.
  * @param input.hash - `location.hash`, on `/join`; `''` elsewhere.
+ * @param input.isMailedLink - `true` on `/join`, whose address is the link the
+ *   core mailed: it echoes the plan and never the tier, so a stored tier of the
+ *   same plan is kept. On `/sign-up` the address is the choice, and a link with
+ *   no tier replaces a tier an older link left.
  */
 export function captureIntendedPlan({
   search,
   hash,
+  isMailedLink = false,
   now = Date.now(),
   storage = deviceStorage(),
-}: IntentShellInput & { search: string; hash: string }): PlanKey | null {
+}: IntentShellInput & { search: string; hash: string; isMailedLink?: boolean }): PlanKey | null {
   const fromAddress = planParamOf({ search, hash });
   if (fromAddress === null) return readIntendedPlan({ now, storage });
-  rememberIntendedPlan({ plan: fromAddress, now, storage });
+  const addressTier = tierParamOf({ search, hash });
+  const stored = addressTier === null && isMailedLink ? readIntent({ now, storage }) : null;
+  const tier = addressTier ?? (stored?.plan === fromAddress ? (stored.tier ?? null) : null);
+  rememberIntendedPlan({ plan: fromAddress, tier, now, storage });
   return fromAddress;
 }

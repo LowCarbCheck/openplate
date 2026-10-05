@@ -148,6 +148,23 @@ describe('the anonymous price read', () => {
       yearlyCents: YEARLY_CENTS,
     });
   });
+
+  it('ignores a tiers array and any other key it does not know, as PROTOCOL.md 5.22 promises', () => {
+    const withTiers = {
+      ...PRICES_BODY,
+      tiers: [{ id: 'tier-a', name: 'Alpha', isSold: true, plans: PRICES_BODY.plans }],
+      futureField: { anything: true },
+    };
+    // THE SAME DECODED VALUE as the body with no extra key, so the extra keys changed nothing.
+    assert.deepEqual(planPricesSchema.parse(withTiers), planPricesSchema.parse(PRICES_BODY));
+    assert.deepEqual(publicPlanPricesOf(planPricesSchema.parse(withTiers)), {
+      currency: 'EUR',
+      monthlyCents: MONTHLY_CENTS,
+      yearlyCents: YEARLY_CENTS,
+    });
+    // THE CONTROL: a body whose known part is broken is still refused, tiers or not.
+    assert.equal(planPricesSchema.safeParse({ ...withTiers, currency: 'euro' }).success, false);
+  });
 });
 
 /** A transport answering one value, or throwing one error. */
@@ -240,5 +257,30 @@ describe('where a finished join lands', () => {
 
   it('asks about a possible data loss before the plan', () => {
     assert.equal(resolveJoinDestination({ gate: 'recover', intendedPlan: 'yearly', sellsPlans: true }), '/recover');
+  });
+
+  it('names the linked tier beside the plan, and only then', () => {
+    assert.equal(
+      resolveJoinDestination({ gate: 'onboard', intendedPlan: 'yearly', intendedTier: 'tier-a', sellsPlans: true }),
+      '/settings/plan?plan=yearly&tier=tier-a',
+    );
+    // THE CONTROLS: no tier is the address it always was, and a tier with no plan, an instance
+    // that sells nothing, or a possible data loss ahead of it name nothing.
+    assert.equal(
+      resolveJoinDestination({ gate: 'onboard', intendedPlan: 'yearly', intendedTier: null, sellsPlans: true }),
+      '/settings/plan?plan=yearly',
+    );
+    assert.equal(
+      resolveJoinDestination({ gate: 'onboard', intendedPlan: null, intendedTier: 'tier-a', sellsPlans: true }),
+      '/onboarding',
+    );
+    assert.equal(
+      resolveJoinDestination({ gate: 'onboard', intendedPlan: 'yearly', intendedTier: 'tier-a', sellsPlans: false }),
+      '/onboarding',
+    );
+    assert.equal(
+      resolveJoinDestination({ gate: 'recover', intendedPlan: 'yearly', intendedTier: 'tier-a', sellsPlans: true }),
+      '/recover',
+    );
   });
 });

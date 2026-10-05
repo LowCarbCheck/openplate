@@ -92,6 +92,8 @@ import type { InstanceDescriptor } from '#app/lib/sync/engine/protocol';
 import { planViewOf, usePlanRead, type PlanReadState } from '#app/hooks/use-plan-standing';
 import { usePlanOffer } from '#app/hooks/use-plan-offer';
 import { useTrialRecap } from '#app/hooks/use-trial-recap';
+import { useStoredIntendedTier } from '#app/hooks/use-intended-plan';
+import { readTierId } from '#app/lib/plans/intended-plan';
 import { useSyncSession } from '#app/components/sync-status';
 import { planStanding, type PlanStanding } from '#app/lib/plans/plan-standing';
 import { hasFreeScansLeft, paywallNoticeFor, planGateStanding, type PaywallNotice } from '#app/lib/plans/plan-gate';
@@ -114,6 +116,7 @@ import { useHasLegalPages } from '#app/hooks/use-public-config';
 import {
   NO_OWN_PLAN,
   defaultTierIdOf,
+  linkedTierIdOf,
   offerForTier,
   tiersViewOf,
   type OwnPlan,
@@ -619,6 +622,18 @@ export function readPlanParam(value: string | null): PlanKey | null {
 }
 
 /**
+ * The tier a link named, `?tier=<id>`, or `null`.
+ *
+ * Only the SHAPE of an id is checked here (`TIER_ID_PATTERN`, a label), because
+ * no tier name is compiled into the app. Whether the offer sells the tier is
+ * `linkedTierIdOf`'s question, asked of the offer once it is read. Anything in
+ * the parameter that is not a label is ignored.
+ */
+export function readTierParam(value: string | null): string | null {
+  return readTierId(value);
+}
+
+/**
  * Whether this subscriber may order the yearly plan here, and from when it
  * would start: the end of the paid month.
  *
@@ -717,6 +732,10 @@ export default function SettingsPlan() {
   // Read LIVE from the address, so the status card's link opens the order on
   // the page that is already mounted.
   const linkedPlan = readPlanParam(searchParams.get('plan'));
+  // THE TIER THE PRICING PAGE LINKED: the address first, what sign-up stored
+  // beside the plan second. Judged against the offer below.
+  const storedTierId = useStoredIntendedTier();
+  const linkedTierId = readTierParam(searchParams.get('tier')) ?? storedTierId;
   // A SUBSCRIBER THE BILLER PUTS ON A TIER IS IN THE TIERS WORLD (M2/04): the
   // page lists the tiers with theirs marked and a switch button on the others,
   // and the legacy move of a monthly plan to the yearly one is not offered,
@@ -748,7 +767,14 @@ export default function SettingsPlan() {
     : NO_OWN_PLAN;
   const tiers: TiersView | null = offer === null ? null : tiersViewOf({ offer, own: ownPlan });
   // A FIRST ORDER OF A BILLER THAT SELLS ONE TIER needs no tap on it. A move is always chosen.
-  const effectiveTierId = pickedTierId ?? (tiers === null || isSubscribed ? null : defaultTierIdOf(tiers));
+  // A LINKED TIER the offer sells is the pick of a first order, from the first
+  // paint of the list, so nothing arrives under it. An unknown or unsold one is
+  // no pick at all (`linkedTierIdOf`), and the page is as it was with no link.
+  const effectiveTierId =
+    pickedTierId ??
+    (tiers === null || isSubscribed ?
+      null
+    : (linkedTierIdOf({ view: tiers, tierId: linkedTierId }) ?? defaultTierIdOf(tiers)));
   // IN THE TIERS WORLD THE ORDER IS FOR THE PICKED TIER: the order block draws
   // that tier's own prices, and none until one is picked. Without tiers it is
   // the offer as served.
@@ -822,6 +848,7 @@ export default function SettingsPlan() {
     setSearchParams(
       (params) => {
         params.delete('plan');
+        params.delete('tier');
         return params;
       },
       { replace: true, preventScrollReset: true },

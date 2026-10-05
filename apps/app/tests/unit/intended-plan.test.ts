@@ -8,6 +8,8 @@
  *  3. VALIDITY: only `monthly` and `yearly`; anything else is ignored and
  *     leaves an earlier valid choice alone.
  *  4. CLEAR: gone after the order, and a storage that throws never throws here.
+ *  5. THE TIER beside the plan (M2/06): a label, kept only with a plan, kept
+ *     through the mailed join link, and never invented.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,8 +23,13 @@ import {
   encodeIntendedPlan,
   planParamOf,
   readIntendedPlan,
+  readIntendedTier,
   readPlanKey,
+  readTierId,
   rememberIntendedPlan,
+  tierParamOf,
+  decodeIntendedTier,
+  TIER_ID_PATTERN,
   type IntendedPlanStorage,
 } from '../../app/lib/plans/intended-plan';
 
@@ -210,5 +217,185 @@ describe('clearIntendedPlan', () => {
     assert.doesNotThrow(() => clearIntendedPlan({ storage: throwingStorage() }));
     assert.doesNotThrow(() => rememberIntendedPlan({ plan: 'yearly', now: NOW, storage: throwingStorage() }));
     assert.equal(readIntendedPlan({ now: NOW, storage: throwingStorage() }), null);
+  });
+});
+
+/** The 32 characters the pattern allows, so the boundary is a fact and not a number copied from the source. */
+const LONGEST_LABEL = `a${'b'.repeat(31)}`;
+
+describe('readTierId', () => {
+  it('accepts a label: lowercase letter first, then letters, digits and hyphens', () => {
+    for (const label of ['alpha', 'tier-a', 'a1', 'a-1-b', 'x', LONGEST_LABEL]) {
+      assert.equal(readTierId(label), label, label);
+    }
+  });
+
+  it('refuses everything else, so the control above can fail', () => {
+    const refused = [
+      '',
+      'Alpha',
+      ' alpha',
+      'alpha ',
+      '1alpha',
+      '-alpha',
+      'a_b',
+      'a.b',
+      'a/b',
+      'al pha',
+      'alpha\n',
+      `${LONGEST_LABEL}c`,
+      '<script>',
+    ];
+    for (const value of refused) assert.equal(readTierId(value), null, JSON.stringify(value));
+    assert.equal(readTierId(null), null);
+    assert.equal(readTierId(undefined), null);
+  });
+
+  it('is the label pattern, with no tier name in it', () => {
+    assert.equal(TIER_ID_PATTERN.source, '^[a-z][a-z0-9-]{0,31}$');
+  });
+});
+
+describe('tierParamOf', () => {
+  it('reads the query string first and the fragment second', () => {
+    assert.equal(tierParamOf({ search: '?tier=tier-a&plan=yearly', hash: '' }), 'tier-a');
+    assert.equal(tierParamOf({ search: '', hash: '#invite=si_abc&tier=tier-b&plan=yearly' }), 'tier-b');
+    assert.equal(tierParamOf({ search: '?tier=tier-a', hash: '#tier=tier-b' }), 'tier-a');
+  });
+
+  it('is null for no parameter and for a value that is not a label', () => {
+    assert.equal(tierParamOf({ search: '?plan=yearly', hash: '' }), null);
+    assert.equal(tierParamOf({ search: '?tier=Tier-A', hash: '' }), null);
+    assert.equal(tierParamOf({ search: '?tier=', hash: '' }), null);
+  });
+});
+
+describe('captureIntendedPlan and the tier', () => {
+  it('stores the tier with the plan, in the one record', () => {
+    const { storage, items } = memoryStorage();
+    assert.equal(captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage }), 'yearly');
+    assert.equal(
+      items.get(INTENDED_PLAN_STORAGE_KEY),
+      encodeIntendedPlan({ plan: 'yearly', tier: 'tier-a', now: NOW }),
+    );
+    assert.equal(readIntendedTier({ now: NOW + 1, storage }), 'tier-a');
+    assert.equal(readIntendedPlan({ now: NOW + 1, storage }), 'yearly');
+  });
+
+  it('CONTROL: a link with no tier stores none, and the record is the one it always was', () => {
+    const { storage, items } = memoryStorage();
+    captureIntendedPlan({ search: '?plan=yearly', hash: '', now: NOW, storage });
+    assert.equal(items.get(INTENDED_PLAN_STORAGE_KEY), encodeIntendedPlan({ plan: 'yearly', now: NOW }));
+    assert.equal(items.get(INTENDED_PLAN_STORAGE_KEY), JSON.stringify({ plan: 'yearly', at: NOW }));
+    assert.equal(readIntendedTier({ now: NOW, storage }), null);
+  });
+
+  it('drops a tier that is not a label and keeps the plan', () => {
+    const { storage } = memoryStorage();
+    assert.equal(
+      captureIntendedPlan({ search: '?tier=Not_A_Label&plan=monthly', hash: '', now: NOW, storage }),
+      'monthly',
+    );
+    assert.equal(readIntendedTier({ now: NOW, storage }), null);
+    assert.equal(readIntendedPlan({ now: NOW, storage }), 'monthly');
+  });
+
+  it('stores a tier only beside a valid plan', () => {
+    const { storage, items } = memoryStorage();
+    assert.equal(captureIntendedPlan({ search: '?tier=tier-a', hash: '', now: NOW, storage }), null);
+    assert.equal(captureIntendedPlan({ search: '?tier=tier-a&plan=weekly', hash: '', now: NOW, storage }), null);
+    assert.equal(items.size, 0);
+  });
+
+  it('lets a sign-up link with no tier replace the tier an older link left', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
+    captureIntendedPlan({ search: '?plan=yearly', hash: '', now: NOW + 1, storage });
+    assert.equal(readIntendedTier({ now: NOW + 2, storage }), null);
+  });
+
+  it('keeps the tier through the mailed join link, which echoes the plan and not the tier', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
+    const hash = '#invite=si_abc&plan=yearly';
+    assert.equal(captureIntendedPlan({ search: '', hash, isMailedLink: true, now: NOW + 1000, storage }), 'yearly');
+    assert.equal(readIntendedTier({ now: NOW + 2000, storage }), 'tier-a');
+    // A SECOND RUN of the join page's effect, the case the page comments name, changes nothing.
+    captureIntendedPlan({ search: '', hash, isMailedLink: true, now: NOW + 3000, storage });
+    assert.equal(readIntendedTier({ now: NOW + 4000, storage }), 'tier-a');
+  });
+
+  it('drops the stored tier when the mailed link names another plan, or when no tier was stored', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
+    captureIntendedPlan({ search: '', hash: '#invite=si_abc&plan=monthly', isMailedLink: true, now: NOW + 1, storage });
+    assert.equal(readIntendedTier({ now: NOW + 2, storage }), null);
+    assert.equal(readIntendedPlan({ now: NOW + 2, storage }), 'monthly');
+
+    const clean = memoryStorage();
+    captureIntendedPlan({
+      search: '',
+      hash: '#invite=si_abc&plan=yearly',
+      isMailedLink: true,
+      now: NOW,
+      storage: clean.storage,
+    });
+    assert.equal(readIntendedTier({ now: NOW, storage: clean.storage }), null);
+  });
+
+  it('lets a tier in the mailed link win over the stored one', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
+    captureIntendedPlan({
+      search: '',
+      hash: '#invite=si_abc&tier=tier-b&plan=yearly',
+      isMailedLink: true,
+      now: NOW + 1,
+      storage,
+    });
+    assert.equal(readIntendedTier({ now: NOW + 2, storage }), 'tier-b');
+  });
+
+  it('reads storage for the tier when the address names nothing', () => {
+    const { storage } = memoryStorage();
+    rememberIntendedPlan({ plan: 'monthly', tier: 'tier-a', now: NOW, storage });
+    assert.equal(captureIntendedPlan({ search: '', hash: '', now: NOW + 1, storage }), 'monthly');
+    assert.equal(readIntendedTier({ now: NOW + 1, storage }), 'tier-a');
+  });
+});
+
+describe('the stored tier', () => {
+  it('expires with the plan, after seven days', () => {
+    const { storage, items } = memoryStorage([
+      [
+        INTENDED_PLAN_STORAGE_KEY,
+        encodeIntendedPlan({ plan: 'yearly', tier: 'tier-a', now: NOW - INTENDED_PLAN_TTL_MS }),
+      ],
+    ]);
+    assert.equal(readIntendedTier({ now: NOW, storage }), null);
+    assert.equal(items.has(INTENDED_PLAN_STORAGE_KEY), false);
+    // THE CONTROL: a day younger, it still counts.
+    const young = memoryStorage([
+      [
+        INTENDED_PLAN_STORAGE_KEY,
+        encodeIntendedPlan({ plan: 'yearly', tier: 'tier-a', now: NOW - INTENDED_PLAN_TTL_MS + 1 }),
+      ],
+    ]);
+    assert.equal(readIntendedTier({ now: NOW, storage: young.storage }), 'tier-a');
+  });
+
+  it('drops a hand-written tier that is not a label and keeps the plan', () => {
+    const raw = JSON.stringify({ plan: 'yearly', tier: 'Not A Label', at: NOW });
+    assert.equal(decodeIntendedTier({ raw, now: NOW }), null);
+    assert.equal(decodeIntendedPlan({ raw, now: NOW }), 'yearly');
+  });
+
+  it('is gone once the choice is cleared, and a refusing storage never throws', () => {
+    const { storage } = memoryStorage();
+    rememberIntendedPlan({ plan: 'yearly', tier: 'tier-a', now: NOW, storage });
+    clearIntendedPlan({ storage });
+    assert.equal(readIntendedTier({ now: NOW, storage }), null);
+    assert.equal(readIntendedTier({ now: NOW, storage: throwingStorage() }), null);
+    assert.equal(readIntendedTier({ now: NOW, storage: null }), null);
   });
 });

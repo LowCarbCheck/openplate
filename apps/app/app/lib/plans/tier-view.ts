@@ -187,6 +187,27 @@ export function defaultTierIdOf(view: TiersView): string | null {
 }
 
 /**
+ * The tier a link or the stored choice named, when a FIRST ORDER may start on
+ * it: the offer lists it, sells it and has a plan for it. `null` for anything
+ * else (an unknown id, the free entry, a tier that is not on sale, a stale
+ * link), and the page then does what it did with no link at all.
+ *
+ * PURE and the only place a linked tier is judged. The id arrives already
+ * shaped as a label (`readTierId`); this decides whether the biller has it.
+ * A subscriber is never preselected: a move is always chosen, so the view of a
+ * subscriber has rows with an `effect`, and none of them is returned here.
+ *
+ * @param input.view - `tiersViewOf` for the reader.
+ * @param input.tierId - the linked id, or `null` when nothing was linked.
+ */
+export function linkedTierIdOf({ view, tierId }: { view: TiersView; tierId: string | null }): string | null {
+  if (tierId === null) return null;
+  const row = view.rows.find((candidate) => candidate.id === tierId);
+  if (row === undefined || !row.isOrderable || row.effect !== null) return null;
+  return row.id;
+}
+
+/**
  * The offer as the order block should draw it for a picked tier: the same
  * offer, with the row's own plans as the plans. `null` when no tier is picked,
  * or the pick is not an orderable row (an id from a stale link).
