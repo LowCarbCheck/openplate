@@ -13,6 +13,7 @@ import {
   MIN_SERVER_SECRET_LENGTH,
   parseConfig,
 } from '../../src/config.js';
+import type { OpenRouterRouting } from '../../src/ai/chat-body-policy.js';
 import { BUNDLED_MODEL_TIERS, parseModelTiers } from '../../src/ai/model-tiers.js';
 import type { JsonObject } from '../../src/lib/json.js';
 import { INSTANCE_LANGUAGES, NUTRIENT_REFERENCE_BASES } from '../../src/protocol.js';
@@ -732,7 +733,7 @@ test('AI_INSTANCE_DAILY_LIMIT is optional, and zero is a boot failure that says 
 test('UPSTREAM_ZDR and UPSTREAM_PROVIDER_ONLY are optional, parse whole, and a malformed value stops the boot', () => {
   const aiEnv = { UPSTREAM_BASE_URL: 'https://openrouter.ai/api/v1', UPSTREAM_API_KEY: 'sk-test' };
   // The routing is the routing of the (legacy) default tier: the proxy reads it from there and nowhere else.
-  const routingOf = (extra: Record<string, string>): unknown =>
+  const routingOf = (extra: Record<string, string>): OpenRouterRouting | undefined =>
     parseConfig(baseEnv({ ...aiEnv, ...extra })).aiTiers.tiers.get('standard')?.routing;
   // THE CONTROL FIRST: real values parse and are carried whole, so the refusals below
   // cannot pass by the parser refusing everything.
