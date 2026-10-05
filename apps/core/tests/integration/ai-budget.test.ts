@@ -36,6 +36,16 @@ const LOW: UpstreamKeyBudget = {
   usageMonthlyUsd: 4.5,
 };
 
+/**
+ * THE FIXTURE CLOCK STARTS AT NOON UTC, NOT AT THE REAL TIME. Both ceilings key on the UTC day of the injected clock.
+ * A start near the real time put UTC midnight between a write and the read that
+ * follows it in a short slice of every day (the same flake pulse-today.test.ts
+ * showed at 23:28 UTC). Noon leaves twelve hours of room, and this file adds
+ * well under one. The day key is read from `service.now()`, never from the real
+ * clock, so the test and the app always name the same UTC day.
+ */
+const CLOCK_STARTS_AT = Date.parse('2026-10-01T12:00:00.000Z');
+
 let database: TestDatabase;
 let service: ServiceHarness;
 
@@ -44,6 +54,7 @@ before(async () => {
   service = await startService({
     db: database.db,
     adminToken: ADMIN_TOKEN,
+    clockStartsAt: CLOCK_STARTS_AT,
     ai: {
       baseUrl: 'http://127.0.0.1:1/v1',
       apiKey: 'never-called',
@@ -70,7 +81,7 @@ interface BudgetBody {
 
 test('the route reports the units the proxy counters hold for today, against both ceilings', async () => {
   const quota = createDrizzleAiQuotaStore(database.db);
-  const day = utcDayKey(new Date());
+  const day = utcDayKey(new Date(service.now()));
   await quota.reserveInstance({ day, limit: 2000, weight: 3 });
   await quota.reserveInstance({ day, limit: 2000, weight: 2 });
   await quota.reserveTrialInstance({ day, limit: 300, weight: 4 });

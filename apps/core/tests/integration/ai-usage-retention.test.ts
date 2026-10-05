@@ -33,12 +33,22 @@ import { createSilentLogger } from '../../src/logger.js';
 
 const ADMIN_TOKEN = 'integration-admin-token-0123456789abcdef';
 
+/**
+ * THE FIXTURE CLOCK STARTS AT NOON UTC, NOT AT THE REAL TIME. The activity strip ends on the UTC day of the injected clock.
+ * A start near the real time put UTC midnight between a write and the read that
+ * follows it in a short slice of every day (the same flake pulse-today.test.ts
+ * showed at 23:28 UTC). Noon leaves twelve hours of room, and this file adds
+ * well under one. The day key is read from `service.now()`, never from the real
+ * clock, so the test and the app always name the same UTC day.
+ */
+const CLOCK_STARTS_AT = Date.parse('2026-10-01T12:00:00.000Z');
+
 let database: TestDatabase;
 let service: ServiceHarness;
 
 before(async () => {
   database = await setupTestDatabase();
-  service = await startService({ db: database.db, adminToken: ADMIN_TOKEN });
+  service = await startService({ db: database.db, adminToken: ADMIN_TOKEN, clockStartsAt: CLOCK_STARTS_AT });
 });
 
 after(async () => {
@@ -79,7 +89,7 @@ async function countUsageRows(accountId: number): Promise<number> {
 
 test('the prune deletes a counter outside the window and keeps one inside it', async () => {
   const accountId = await seedAccount();
-  const now = new Date();
+  const now = new Date(service.now());
   const overAge = utcDayKeyDaysBefore(now, AI_USAGE_RETENTION_DAYS + 3);
   const oldestKept = utcDayKeyDaysBefore(now, AI_USAGE_RETENTION_DAYS - 1);
   const today = utcDayKey(now);
@@ -128,7 +138,7 @@ test('the prune deletes a counter outside the window and keeps one inside it', a
 test('the prune leaves other accounts alone', async () => {
   const stale = await seedAccount();
   const fresh = await seedAccount();
-  const now = new Date();
+  const now = new Date(service.now());
   await seedUsage({ accountId: stale, day: utcDayKeyDaysBefore(now, AI_USAGE_RETENTION_DAYS + 1), count: 1 });
   await seedUsage({ accountId: fresh, day: utcDayKey(now), count: 1 });
 
@@ -150,7 +160,7 @@ test('the prune leaves other accounts alone', async () => {
 
 test('a deleted account leaves zero usage rows and no last_seen_at, counted rather than assumed', async () => {
   const accountId = await seedAccount();
-  const now = new Date();
+  const now = new Date(service.now());
 
   await seedUsage({ accountId, day: utcDayKeyDaysBefore(now, 2), count: 3 });
   await seedUsage({ accountId, day: utcDayKey(now), count: 4 });
@@ -180,7 +190,7 @@ test('a deleted account leaves zero usage rows and no last_seen_at, counted rath
 
 test('a deleted account leaves no usage row behind for a later account to inherit', async () => {
   const first = await seedAccount();
-  const day = utcDayKey(new Date());
+  const day = utcDayKey(new Date(service.now()));
   await seedUsage({ accountId: first, day, count: 9 });
 
   await service.request({ method: 'DELETE', path: `/v1/admin/accounts/${first}`, adminToken: ADMIN_TOKEN });
@@ -196,7 +206,7 @@ test('a deleted account leaves no usage row behind for a later account to inheri
 
 test('the activity endpoint draws the real rows, zero-filled, from the real table', async () => {
   const accountId = await seedAccount();
-  const now = new Date();
+  const now = new Date(service.now());
   const twoDaysAgo = utcDayKeyDaysBefore(now, 2);
   const today = utcDayKey(now);
 

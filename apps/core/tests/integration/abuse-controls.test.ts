@@ -38,6 +38,16 @@ import {
   startService,
 } from './service-harness.js';
 
+/**
+ * THE CEILING TEST'S CLOCK STARTS AT NOON UTC, NOT AT THE REAL TIME. The
+ * instance counter is keyed by the UTC day of the injected clock. A start near
+ * the real time put UTC midnight between the proxied requests and the read that
+ * follows them in a short slice of every day (the flake pulse-today.test.ts
+ * showed at 23:28 UTC). The day key is read from `service.now()`, never from the
+ * real clock.
+ */
+const CLOCK_STARTS_AT = Date.parse('2026-10-01T12:00:00.000Z');
+
 let database: TestDatabase;
 
 /**
@@ -434,6 +444,7 @@ test('deleting an account does not refund the instance ceiling it spent', async 
   // redeem another invitation, spend it again.
   const service = await startService({
     db: database.db,
+    clockStartsAt: CLOCK_STARTS_AT,
     ai: { baseUrl: upstreamBaseUrl, apiKey: 'sk-the-operators-key', instanceDailyLimit: 10 },
   });
   try {
@@ -451,7 +462,7 @@ test('deleting an account does not refund the instance ceiling it spent', async 
     assert.equal((await send(leaver.tokens.accessToken)).status, 200);
     assert.equal((await send(stayer.tokens.accessToken)).status, 200);
 
-    const day = utcDayKey(new Date());
+    const day = utcDayKey(new Date(service.now()));
     const instanceBefore = await database.db.select().from(aiInstanceDays).where(eq(aiInstanceDays.day, day));
     assert.equal(instanceBefore[0]?.count, 3);
     // The number the rejected design would have used, measured before the
