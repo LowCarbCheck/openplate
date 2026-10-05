@@ -119,8 +119,8 @@ const MAX_LOGGED_FIELD_NAME_LENGTH = 64;
 /**
  * OpenRouter's provider preferences for every forwarded body. `data_collection:
  * 'deny'` restricts routing to endpoints whose provider does not store or train
- * on the request; checked live on 2026-09-28 that `google/gemini-3.7-flash`
- * still routes (to Google) under it. This is what an instance with no routing
+ * on the request; checked live on 2026-09-28 that the production model of that
+ * day still routes (to Google) under it. This is what an instance with no routing
  * settings sends, byte for byte what it sent before 2026-10-04.
  */
 export const OPENROUTER_PROVIDER_PREFERENCES: JsonObject = { data_collection: 'deny' };
@@ -146,7 +146,7 @@ export const NO_OPENROUTER_ROUTING: OpenRouterRouting = { zeroDataRetention: fal
  * because a pin that falls back to another provider when the first is busy is
  * no pin. Verified against the live API on 2026-10-04: `{"zdr":true,
  * "data_collection":"deny","only":["google-vertex"],"allow_fallbacks":false}`
- * is accepted for `google/gemini-3.7-flash`.
+ * was accepted for the production model of that day.
  */
 export function openRouterProviderPreferences(routing: OpenRouterRouting): JsonObject {
   const preferences: WritableJsonObject = {};

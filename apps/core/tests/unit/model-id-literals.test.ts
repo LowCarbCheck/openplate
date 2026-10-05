@@ -38,12 +38,6 @@ const ALLOWED: readonly AllowedPath[] = [
     path: 'src/mail/strings.*.ts',
     reason: 'the generated letter bundles cite the translator model in their header',
   },
-  {
-    path: 'src/ai/chat-body-policy.ts',
-    reason:
-      'two dated live checks (2026-09-28, 2026-10-04) record what was verified against the endpoint of that day; ' +
-      'they are history with a date, not a claim about the model of today',
-  },
 ];
 
 function readTree(path: string): ScannedFile[] {
@@ -99,6 +93,23 @@ test('the same text at an allowed path gives no finding, and only that path is a
     { path: 'xai-tiers.json', text },
   ];
   assert.equal(findModelIdLiterals({ files: neighbours, allow }).length, 4);
+});
+
+test('chat-body-policy.ts is scanned: it writes `model`, so a hardcoded id there must be caught', () => {
+  const path = 'src/ai/chat-body-policy.ts';
+  const real = readShippedFiles().find((file) => file.path === path);
+  assert.ok(real !== undefined, `${path} was not read`);
+  // The real file names no model id (this is the same scan the tree test below runs).
+  assert.deepEqual(findModelIdLiterals({ files: [real], allow: ALLOWED }), []);
+  // CONTROL: the same file with one planted id is caught at that line.
+  const planted = { path, text: `${real.text}\nconst model = 'google/gemini-9-flash';\n` };
+  const findings = findModelIdLiterals({ files: [planted], allow: ALLOWED });
+  assert.deepEqual(
+    findings.map((found) => [found.path, found.match]),
+    [[path, 'google/gemini-9-flash']],
+  );
+  // And the allow list holds no entry that covers the file.
+  assert.equal(isAllowedPath({ path, allow: ALLOWED }), false);
 });
 
 test('text that names no model gives no finding', () => {
