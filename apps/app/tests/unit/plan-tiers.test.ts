@@ -24,7 +24,15 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
-import { PlanScreen, readTierParam, type MoveResult, type OrderView } from '../../app/routes/settings.plan';
+import {
+  PlanScreen,
+  readTierParam,
+  type MoveResult,
+  type OrderView,
+  type PlanAction,
+  type PlanScreenProps,
+} from '../../app/routes/settings.plan';
+import enCommon from '../../app/i18n/locales/en/common.json';
 import { NO_CONSENTS, type OrderMode } from '../../app/components/plans/plan-order';
 import {
   NO_OWN_PLAN,
@@ -317,6 +325,9 @@ interface RenderInput {
   withTiers?: boolean;
   moveResult?: MoveResult | null;
   notice?: OrderView['notice'];
+  pendingChange?: PlanScreenProps['pendingChange'];
+  keepFailed?: boolean;
+  busy?: PlanAction;
 }
 
 /** What the page knows about the reader, from the plan view the way the route reads it. */
@@ -334,6 +345,9 @@ function render({
   withTiers = true,
   moveResult = null,
   notice = 'none',
+  pendingChange,
+  keepFailed = false,
+  busy = 'none',
 }: RenderInput): string {
   const state = { kind: 'ready', plan: planView } as const;
   const standing = planStanding({ instance: SELLING, account: null, planView, now: NOW });
@@ -364,9 +378,12 @@ function render({
           order,
           isOrderLoading: false,
           isOfferUnavailable: false,
-          busy: 'none',
+          busy,
           checkoutReturn: 'none',
           portalFailed: false,
+          keepFailed,
+          pendingChange,
+          onKeepPlan: () => undefined,
           orderYearlyHref: null,
           switchStartsAt: null,
           isAlreadySubscribed: false,
@@ -561,5 +578,95 @@ describe('the privacy box on the order page', () => {
     const plain = planOfferSchema.parse({ ...fixtureOffer, texts: { ...fixtureOffer.texts, whatHappens: 'Fixture privacy line one.' } });
     assert.ok(render({ offer: plain, withTiers: false }).includes('data-slot="plan-what-happens"'));
     assert.equal(render({ offer: ONE_PLAN, withTiers: false }).includes('data-slot="plan-what-happens"'), false);
+  });
+});
+
+/** A catalog sentence with its slots filled, so a test reads the shipped wording and pins none. */
+function sentence(template: string, slots: Record<string, string>): string {
+  return Object.entries(slots).reduce((text, [slot, value]) => text.replaceAll(`{{${slot}}}`, value), template);
+}
+
+/** The status card's pending slot, or `null`. */
+function pendingSlot(markup: string): string | null {
+  const start = markup.indexOf('data-slot="plan-pending-change"');
+  if (start < 0) return null;
+  const end = markup.indexOf('</div>', start);
+  return markup.slice(start, end);
+}
+
+describe('the booked downgrade in the status card', () => {
+  const BOOKED = { tierName: 'Fixture Alpha', keepTierName: 'Fixture Beta', at: '2026-10-09T12:00:00.000Z' };
+  const DAY = new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(new Date(BOOKED.at));
+
+  it('says which tier the plan switches to and on which day, and offers to keep the current one', () => {
+    const slot = pendingSlot(render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED })) ?? '';
+    assert.ok(slot.includes(sentence(enCommon.plan.pending.line, { tier: 'Fixture Alpha', date: DAY })), 'the line');
+    assert.ok(slot.includes(sentence(enCommon.plan.pending.keep, { tier: 'Fixture Beta' })), 'the button label');
+    assert.match(slot, /data-slot="plan-pending-keep"/);
+    assert.match(slot, /data-state="booked"/);
+    assert.equal(slot.includes('invisible'), false, 'a booked change is not hidden');
+  });
+
+  it('CONTROL: with nothing booked the slot is there with its box and says nothing', () => {
+    const empty = pendingSlot(render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: null })) ?? '';
+    assert.match(empty, /data-state="empty"/);
+    assert.match(empty, /min-h-10/);
+    assert.match(empty, /h-11/);
+    assert.match(empty, /invisible/);
+    assert.match(empty, /inert/);
+    assert.equal(empty.includes('Fixture Alpha'), false);
+  });
+
+  it('CONTROL: a page that is not in the tiers world has no slot at all, as before tiers', () => {
+    assert.equal(pendingSlot(render({ offer: WITH_TIERS, planView: SUBSCRIBED })), null);
+    assert.equal(pendingSlot(render({ offer: ONE_PLAN, withTiers: false, planView: SUBSCRIBED })), null);
+  });
+
+  it('holds the button while the change is being taken back, and not otherwise', () => {
+    const keeping = pendingSlot(render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED, busy: 'keep' })) ?? '';
+    assert.match(keeping, /data-slot="plan-pending-keep"[^>]*disabled/);
+    const idle = pendingSlot(render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED })) ?? '';
+    assert.equal(/data-slot="plan-pending-keep"[^>]*disabled=""/.test(idle), false);
+  });
+
+  it('says a failed cancel in the sentence\'s own place, so no line is added, and keeps the button', () => {
+    const failed = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED, keepFailed: true });
+    const slot = pendingSlot(failed) ?? '';
+    assert.match(slot, /data-slot="plan-pending-line" role="alert"/);
+    assert.ok(slot.includes(enCommon.plan.pending.keepFailed));
+    assert.ok(slot.includes('data-slot="plan-pending-keep"'), 'the button stays so the person can press again');
+    assert.match(slot, /data-state="booked"/);
+    // NO NEW LINE: the report line under the card is the one the portal press uses, and it stays empty.
+    assert.match(failed, /data-slot="plan-portal-line" class="[^"]*invisible/);
+    // THE CONTROL: no failure, no alert and no sentence.
+    const fine = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED });
+    assert.equal(fine.includes(enCommon.plan.pending.keepFailed), false);
+    assert.equal(fine.includes('role="alert"'), false);
+  });
+
+  it('sits inside the status card, above the manage button', () => {
+    const markup = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED });
+    const card = markup.indexOf('data-slot="plan-status-card"');
+    const slot = markup.indexOf('data-slot="plan-pending-change"');
+    assert.ok(card >= 0 && slot > card);
+    assert.ok(slot < markup.indexOf(enCommon.plan.manage), 'above Manage');
+  });
+});
+
+describe('the declined card on an upgrade', () => {
+  it('says the card was declined and the plan did not change, in the line above the order button', () => {
+    const picked = render({
+      offer: WITH_TIERS,
+      planView: SUBSCRIBED,
+      pickedTierId: 'fixture-gamma',
+      notice: 'payment-failed',
+    });
+    assert.match(picked, /data-slot="plan-action-line" role="alert"/);
+    assert.ok(picked.includes(enCommon.plan.order.paymentFailed));
+    // THE CONTROL: the refused-move notice is another sentence, and with no notice there is no alert.
+    const refused = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pickedTierId: 'fixture-gamma', notice: 'move-refused' });
+    assert.equal(refused.includes(enCommon.plan.order.paymentFailed), false);
+    const quiet = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pickedTierId: 'fixture-gamma' });
+    assert.equal(quiet.includes('role="alert"'), false);
   });
 });

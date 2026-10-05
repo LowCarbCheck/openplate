@@ -31,7 +31,9 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
+import type { PendingChange } from '#app/lib/plans/pending-change';
 import type { PlanStanding } from '#app/lib/plans/plan-standing';
+import { cn } from '#app/lib/utils';
 import type { PlanInterval } from '#app/lib/sync/engine/client/plans-wire';
 
 /** The standing this card is drawn for. */
@@ -61,6 +63,91 @@ export interface PlanStatusCardProps {
   orderYearlyHref?: string | null;
   /** The ISO day a booked move to the yearly plan starts, or `null` when none was booked on this page. */
   switchStartsAt?: string | null;
+  /**
+   * A booked downgrade (M2). THREE STATES, because the box is reserved:
+   * `undefined` draws no slot at all, the page as it was before tiers;
+   * `null` draws the slot empty, with its box, so the line can arrive without
+   * moving anything under it; an object draws the line and the button.
+   */
+  pendingChange?: PendingChange | null;
+  /** `true` while the change is being taken back. */
+  isKeeping?: boolean;
+  /** `true` when the last press on "Keep" did not take it back. Said in the sentence's own place. */
+  keepFailed?: boolean;
+  onKeepPlan?: () => void;
+}
+
+/** A stable no-op, so a card drawn without a handler has one reference and not a new function per render. */
+const NO_ACTION = (): void => {};
+
+/** A non-breaking space, so an empty line keeps one line's height. */
+const EMPTY_LINE = '\u00a0';
+
+/**
+ * The booked downgrade: one sentence, and under it the button that takes it back.
+ *
+ * THE BOX IS THE SAME EMPTY AS FULL. The sentence has two lines of room
+ * (`min-h-10`) and the button is 44 px (`h-11`), stacked, so the slot is 92 px
+ * whatever it says and the line arriving, leaving or being replaced by a failure
+ * moves nothing below it (DESIGN.md section 7). A first version put the button
+ * beside the sentence and measured 60 px on a phone, because a button that
+ * is nowrap leaves the sentence about 170 px, so the sentence grew a third line.
+ * Stacked, the sentence has the card's width and two lines hold every language.
+ * Empty, the slot is `invisible` and `inert`, with its transitions off: nothing
+ * in it takes a tap or the focus, and no frame paints it while it is only there
+ * for its size.
+ *
+ * A FAILED CANCEL IS SAID IN THE SENTENCE'S OWN PLACE, never in a new line, for
+ * the same reason; the button stays so the person can press again.
+ */
+function PendingChangeSlot({
+  change,
+  isKeeping,
+  keepFailed,
+  onKeepPlan,
+}: {
+  change: PendingChange | null;
+  isKeeping: boolean;
+  keepFailed: boolean;
+  onKeepPlan: () => void;
+}) {
+  const { t } = useTranslation();
+  const longDate = useLongDate();
+  const isEmpty = change === null;
+  const text =
+    isEmpty ? EMPTY_LINE
+    : keepFailed ? t('plan.pending.keepFailed')
+    : t('plan.pending.line', { tier: change.tierName, date: longDate(change.at) });
+  return (
+    <div
+      data-slot="plan-pending-change"
+      data-state={isEmpty ? 'empty' : 'booked'}
+      aria-hidden={isEmpty}
+      inert={isEmpty}
+      className={cn('flex flex-col gap-2', isEmpty && 'invisible [&_*]:transition-none')}
+    >
+      <p
+        data-slot="plan-pending-line"
+        role={keepFailed && !isEmpty ? 'alert' : undefined}
+        className={cn('min-h-10 text-sm', keepFailed && !isEmpty && 'text-destructive')}
+      >
+        {text}
+      </p>
+      <Button
+        type="button"
+        variant="secondary"
+        data-slot="plan-pending-keep"
+        className="h-11 self-start"
+        onClick={onKeepPlan}
+        disabled={isKeeping}
+      >
+        {isKeeping ?
+          <Loader2 className="h-4 w-4 animate-spin" />
+        : null}
+        {isEmpty ? EMPTY_LINE : t('plan.pending.keep', { tier: change.keepTierName })}
+      </Button>
+    </div>
+  );
 }
 
 /** The date line, one sentence for each of the three meanings of the period end. */
@@ -118,6 +205,10 @@ export function PlanStatusCard({
   onManage,
   orderYearlyHref = null,
   switchStartsAt = null,
+  pendingChange,
+  isKeeping = false,
+  keepFailed = false,
+  onKeepPlan = NO_ACTION,
 }: PlanStatusCardProps) {
   const { t } = useTranslation();
   const longDate = useLongDate();
@@ -132,6 +223,14 @@ export function PlanStatusCard({
           <p data-slot="plan-switch-booked" className="text-sm">
             {t('plan.card.switchBooked', { date: longDate(switchStartsAt) })}
           </p>
+        )}
+        {pendingChange !== undefined && (
+          <PendingChangeSlot
+            change={pendingChange}
+            isKeeping={isKeeping}
+            keepFailed={keepFailed}
+            onKeepPlan={onKeepPlan}
+          />
         )}
         {orderYearlyHref !== null && switchStartsAt === null && (
           <p>

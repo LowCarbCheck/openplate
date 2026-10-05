@@ -3624,6 +3624,11 @@
       "orderYearly": "Contratar el plan anual",
       "switchBooked": "Tu plan anual empieza el {{date}}."
     },
+    "pending": {
+      "line": "Cambia a {{tier}} el {{date}}.",
+      "keep": "Mantener {{tier}}",
+      "keepFailed": "No se pudo cancelar el cambio. Inténtalo de nuevo en un momento."
+    },
     "order": {
       "confirmFirst": "Marca las dos casillas para hacer el pedido.",
       "failed": "El pedido no se ha podido tramitar. Inténtalo de nuevo.",
@@ -3634,6 +3639,7 @@
       "privacyLink": "Lee el aviso de privacidad",
       "whatHappensLabel": "Qué ocurre con tus datos",
       "moveRefused": "No es posible realizar este cambio ahora mismo. Tu plan no ha cambiado.",
+      "paymentFailed": "Tu tarjeta fue rechazada. Tu plan no ha cambiado.",
       "planUnavailable": "Ese plan ya no está disponible. La página muestra los planes disponibles actualmente."
     },
     "countdown": {

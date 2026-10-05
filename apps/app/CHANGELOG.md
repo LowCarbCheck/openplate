@@ -11,6 +11,14 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The plan page now shows a booked downgrade and lets you keep your tier.** When a lower tier is booked for the end of the paid period, the plan card says "Switches to the lower tier on the date" and offers a "Keep" button that cancels the change and reads the plan again. If nothing is booked any more, the button ends the same way. The room for the line is reserved from the first paint, so nothing moves when it arrives or leaves. The words are in `plan.pending.*`.
+
+### Fixed
+
+- **A declined card on an upgrade now says so.** An upgrade is paid at once. When the card is declined, the order page says the card was declined and that the plan has not changed, and the order stays as it was so you can try again. The new sentence is `plan.order.paymentFailed`.
+
 ## [0.64.0] - 2026-10-05
 
 ### Added
