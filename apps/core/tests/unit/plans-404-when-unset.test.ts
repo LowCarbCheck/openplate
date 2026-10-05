@@ -37,6 +37,8 @@ const PLANS_ROUTES: readonly { method: string; path: string; body?: string }[] =
   { method: 'GET', path: '/v1/plans/prices' },
   { method: 'POST', path: '/v1/plans/checkout', body: '{"plan":"monthly"}' },
   { method: 'POST', path: '/v1/plans/portal', body: '{}' },
+  // The route that takes a booked downgrade back. It sends no body.
+  { method: 'POST', path: '/v1/plans/pending-change/cancel' },
   { method: 'PUT', path: '/v1/plans/me', body: '{}' },
   { method: 'DELETE', path: '/v1/plans/me' },
   { method: 'GET', path: '/v1/plans/anything-else' },
@@ -125,6 +127,15 @@ test('the same paths stop being 404 once an operator configures a biller', async
 
     const refusedVerb = await lit.request({ method: 'DELETE', path: '/v1/plans/me', token: lit.accessToken });
     assert.equal(refusedVerb.status, 405, 'a verb this subtree does not forward is a 405 here, not a 404');
+
+    // THE NEW ROUTE IS RELAYED, NOT MISSING: a bodiless POST reaches the upstream at its own path, and an anonymous one meets the gate.
+    const received = lit.received.length;
+    const keepAnonymous = await lit.request({ method: 'POST', path: '/v1/plans/pending-change/cancel' });
+    assert.equal(keepAnonymous.status, 401, 'the cancel route is behind the bearer gate');
+    const keep = await lit.request({ method: 'POST', path: '/v1/plans/pending-change/cancel', token: lit.accessToken });
+    assert.equal(keep.status, 200, 'a signed-in caller reaches the upstream with it');
+    assert.equal(lit.received.length, received + 1, 'only the signed-in call reached the upstream');
+    assert.equal(lit.received.at(-1)?.url, '/plans/pending-change/cancel', 'at the path the client named');
 
     const prices = await lit.request({ method: 'GET', path: '/v1/plans/prices' });
     assert.equal(prices.status, 200, 'the price list exists here, and an anonymous caller reads it');

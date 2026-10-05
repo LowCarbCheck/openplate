@@ -67,6 +67,11 @@ export const PLAN_INTERVALS = ['month', 'year'] as const;
 
 export type PlanInterval = (typeof PLAN_INTERVALS)[number];
 
+/** An ISO date or instant the browser can read as a day, so a sentence never says "Invalid Date". */
+function isoDaySchema() {
+  return z.string().refine((text) => !Number.isNaN(Date.parse(text)), { message: 'not a date' });
+}
+
 /** `GET /plans/me`, transcribed field for field from `PlanView` in the biller. */
 export const planViewSchema = z.object({
   /** The subscription STATUS. The name is historic: M245/01 kept it and put the key beside it. */
@@ -103,6 +108,21 @@ export const planViewSchema = z.object({
    * view so a body without the field decodes to exactly what it did before.
    */
   tier: z.string().nullable().optional().catch(undefined),
+  /**
+   * The id of the tier a BOOKED DOWNGRADE moves the subscription to (M2, the
+   * biller reads it from the Stripe schedule), and {@link pendingChangeAt} the
+   * day it takes effect. Both ABSENT, never `null`, when nothing is booked, and
+   * both absent when the biller's bounded read of the schedule failed: a page
+   * that cannot name the change says nothing about it.
+   *
+   * `.catch(undefined)` and a parseable day, for the reason `tier` has it: a
+   * field younger than the page must not turn a paying person's plan page into
+   * a read failure, and "Invalid Date" must never reach a sentence about money.
+   * The page draws the line only from the PAIR, so one without the other is
+   * the same as neither.
+   */
+  pendingTier: z.string().min(1).optional().catch(undefined),
+  pendingChangeAt: isoDaySchema().optional().catch(undefined),
 });
 
 export type PlanView = z.infer<typeof planViewSchema>;
@@ -317,10 +337,37 @@ export const orderAnswerSchema = z.union([
       effect: z.enum(MOVE_EFFECTS).optional().catch(undefined),
       startsAt: z.string().min(1),
     }),
+    /**
+     * The downgrade this answer booked, at the TOP level beside `switched` and
+     * the same two fields `GET /plans/me` carries. Absent for an upgrade,
+     * which takes effect now and books nothing. Read as tolerantly as there.
+     */
+    pendingTier: z.string().min(1).optional().catch(undefined),
+    pendingChangeAt: isoDaySchema().optional().catch(undefined),
   }),
 ]);
 
 export type OrderAnswer = z.infer<typeof orderAnswerSchema>;
+
+/**
+ * `POST /v1/plans/pending-change/cancel`: takes a booked downgrade back, so the
+ * subscription stays on the tier it is on. No request body.
+ *
+ * `200 { kept: { plan, tier } }` names what the person keeps. It is read
+ * tolerantly because the change is ALREADY taken back when it arrives: a plan
+ * key this build does not know is absent, and a body that is not an answer at
+ * all is still a decode failure, so a gateway's stray 200 is never read as one.
+ */
+export const PENDING_CHANGE_CANCEL_PATH = `${PLANS_API_PREFIX}/pending-change/cancel`;
+
+export const pendingChangeCancelAnswerSchema = z.object({
+  kept: z.object({
+    plan: z.enum(PLAN_KEYS).optional().catch(undefined),
+    tier: z.string().optional().catch(undefined),
+  }),
+});
+
+export type PendingChangeCancelAnswer = z.infer<typeof pendingChangeCancelAnswerSchema>;
 
 /**
  * `GET /v1/plans/prices`, the one ANONYMOUS route under the prefix
@@ -372,3 +419,9 @@ export const ORDER_CONSENT_MISSING = 'order-consent-missing';
 export const ORDER_STALE_VERSION = 'order-stale-version';
 /** 409: the account already pays for a plan this order cannot move it to, or a move is booked. */
 export const ORDER_ALREADY_SUBSCRIBED = 'order-already-subscribed';
+/** 402 from `POST /plans/order`: an upgrade is invoiced and paid at once, the card was declined, the person stays on the old tier. */
+export const PAYMENT_FAILED = 'payment-failed';
+/** 409 from the pending-change cancel route: nothing is booked, also the answer to a second press. */
+export const NO_PENDING_CHANGE = 'no-pending-change';
+/** 502 from the pending-change cancel route: Stripe failed, the change is still booked. */
+export const PENDING_CHANGE_CANCEL_FAILED = 'pending-change-cancel-failed';

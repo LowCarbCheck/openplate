@@ -111,6 +111,12 @@ import { grantedTrialDays } from '#app/lib/plans/trial-scans';
 import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
 import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
+import {
+  pendingChangeOf,
+  pendingFactsOf,
+  type PendingChange,
+  type PendingFacts,
+} from '#app/lib/plans/pending-change';
 import { TierList } from '#app/components/plans/tier-list';
 import { useHasLegalPages } from '#app/hooks/use-public-config';
 import {
@@ -193,8 +199,8 @@ export function HydrateFallback() {
 /** Where the plan read is. Owned by `use-plan-standing.ts`, re-exported for the screen's own tests. */
 export type { PlanReadState };
 
-/** Which press is in flight, so neither can be pressed twice. */
-export type PlanAction = 'none' | 'order' | 'portal';
+/** Which press is in flight, so none can be pressed twice. */
+export type PlanAction = 'none' | 'order' | 'portal' | 'keep';
 
 /** What the person came back from, read off the address the biller sent them to. */
 export type CheckoutReturn = 'none' | 'success' | 'cancelled';
@@ -239,6 +245,15 @@ export interface PlanScreenProps {
   checkoutReturn: CheckoutReturn;
   /** `true` when the last portal press did not produce an address to follow. */
   portalFailed: boolean;
+  /** `true` when the last press on "Keep" did not take the booked change back. */
+  keepFailed?: boolean;
+  /**
+   * A booked downgrade, drawn in the status card (M2). `undefined` draws no
+   * slot, the page before tiers; `null` draws the slot empty with its box
+   * reserved; an object draws the line and the button that takes it back.
+   */
+  pendingChange?: PendingChange | null;
+  onKeepPlan?: () => void;
   /** Where a monthly subscriber may order the yearly plan, or `null` when they may not. */
   orderYearlyHref: string | null;
   /** The ISO day a switch booked on this page starts, or `null`. */
@@ -518,6 +533,10 @@ function PlanBody(props: PlanScreenProps) {
             onManage={props.onManage}
             orderYearlyHref={order === null && !props.isOrderLoading ? props.orderYearlyHref : null}
             switchStartsAt={props.switchStartsAt}
+            pendingChange={props.pendingChange}
+            isKeeping={busy === 'keep'}
+            keepFailed={props.keepFailed === true}
+            onKeepPlan={props.onKeepPlan}
           />
           {portalAvailable && (
             <p
@@ -687,6 +706,11 @@ export default function SettingsPlan() {
   const [busy, setBusy] = useState<PlanAction>('none');
   const [portalFailed, setPortalFailed] = useState(false);
   const [switchStartsAt, setSwitchStartsAt] = useState<string | null>(null);
+  // A booked downgrade: what this visit's order booked, and whether the person
+  // took it back. Both feed `pendingFactsOf`, beside the plan read.
+  const [bookedPending, setBookedPending] = useState<PendingFacts | null>(null);
+  const [isPendingCancelled, setIsPendingCancelled] = useState(false);
+  const [keepFailed, setKeepFailed] = useState(false);
 
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
@@ -782,6 +806,15 @@ export default function SettingsPlan() {
     offer === null ? null
     : tiers === null ? offer
     : offerForTier({ offer, view: tiers, tierId: effectiveTierId });
+  // THE BOOKED DOWNGRADE (M2): the slot exists, empty, for every tier subscriber
+  // from the first paint, and holds the line once the offer names both tiers.
+  const pendingChange: PendingChange | null | undefined =
+    isTierSubscriber ?
+      pendingChangeOf({
+        facts: pendingFactsOf({ planView: planViewOf(read), booked: bookedPending, isCancelled: isPendingCancelled }),
+        tiers,
+      })
+    : undefined;
   const pickedRow = tiers?.rows.find((row) => row.id === effectiveTierId) ?? null;
   const move: MoveEffect | null = isTierSubscriber ? (pickedRow?.effect ?? null) : null;
   // A MOVE TO ONE PLAN, such as the own tier's yearly one, has nothing to choose between.
@@ -877,6 +910,13 @@ export default function SettingsPlan() {
             // read again and the list marks the new tier; a booked move leaves
             // the paid plan as it is until the period ends.
             setMoveResult({ effect: outcome.effect ?? 'period-end', startsAt: outcome.startsAt });
+            // A BOOKED DOWNGRADE comes back named in the answer, so the status
+            // card says it now and not after the next plan read.
+            if (outcome.pendingTier !== undefined && outcome.pendingChangeAt !== undefined) {
+              setBookedPending({ tierId: outcome.pendingTier, at: outcome.pendingChangeAt });
+              setIsPendingCancelled(false);
+              setKeepFailed(false);
+            }
             setPickedTierId(null);
             setPickedPlan(null);
             if (outcome.effect === 'now') setPlanRefresh((count) => count + 1);
@@ -884,6 +924,12 @@ export default function SettingsPlan() {
           }
           setSwitchStartsAt(outcome.startsAt);
           leaveOrder();
+          break;
+        case 'payment-failed':
+          // THE CARD WAS DECLINED and the person is still on the old tier. The
+          // order block, the pick and both ticks stay, so the next press is one
+          // tap, and the line above the button says what happened.
+          setNotice('payment-failed');
           break;
         case 'stale':
           // NOTHING IS UNTICKED SILENTLY. The page the person agreed to is not
@@ -973,6 +1019,29 @@ export default function SettingsPlan() {
     })();
   }, [portalLocale]);
 
+  /** Takes the booked downgrade back. A 409 "nothing booked" is also the answer the person wanted. */
+  const onKeepPlan = useCallback(() => {
+    setBusy('keep');
+    setKeepFailed(false);
+    void (async () => {
+      try {
+        const client = currentPlansClient();
+        const outcome = client === null ? null : await client.cancelPendingChange();
+        if (outcome === null || outcome.kind === 'absent') {
+          setKeepFailed(true);
+        } else {
+          setBookedPending(null);
+          setIsPendingCancelled(true);
+          setMoveResult(null);
+          setPlanRefresh((count) => count + 1);
+        }
+      } catch {
+        setKeepFailed(true);
+      }
+      setBusy('none');
+    })();
+  }, []);
+
   return (
     <PlanScreen
       state={state}
@@ -983,6 +1052,9 @@ export default function SettingsPlan() {
       busy={busy}
       checkoutReturn={checkoutReturn}
       portalFailed={portalFailed}
+      keepFailed={keepFailed}
+      pendingChange={pendingChange}
+      onKeepPlan={onKeepPlan}
       orderYearlyHref={switchStart === null ? null : ORDER_YEARLY_HREF}
       switchStartsAt={switchStartsAt}
       isAlreadySubscribed={notice === 'already-subscribed'}

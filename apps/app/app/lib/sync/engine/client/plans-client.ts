@@ -46,9 +46,13 @@
  * act on beyond "try again" (a 502, a dead connection, a body it cannot read).
  */
 import {
+  NO_PENDING_CHANGE,
   ORDER_ALREADY_SUBSCRIBED,
   ORDER_STALE_VERSION,
+  PAYMENT_FAILED,
+  PENDING_CHANGE_CANCEL_PATH,
   orderAnswerSchema,
+  pendingChangeCancelAnswerSchema,
   planOfferSchema,
   planViewSchema,
   redirectTargetSchema,
@@ -92,6 +96,19 @@ export interface PlansTransport {
  */
 export type PlansOutcome<T> = { status: 'ok'; value: T } | { status: 'absent' };
 
+/**
+ * What taking a booked downgrade back came to.
+ *
+ * - `kept`: the change is cancelled; `plan` and `tier` are what the person keeps.
+ * - `none-booked`: nothing was booked (409). The person wanted it gone and it
+ *   is, so a page treats it as success; it is also the answer to a second press.
+ * - `absent`: the door shut between the handshake and the press.
+ */
+export type PendingChangeOutcome =
+  | { kind: 'kept'; plan?: PlanKey; tier?: string }
+  | { kind: 'none-booked' }
+  | { kind: 'absent' };
+
 /** The single `absent` value, so no call site builds a second one. */
 export const PLANS_ABSENT: PlansOutcome<never> = { status: 'absent' };
 
@@ -99,7 +116,12 @@ export const PLANS_ABSENT: PlansOutcome<never> = { status: 'absent' };
  * What one order came to.
  *
  * - `redirect`: a first order; Stripe takes the payment at `url`.
- * - `switched`: a monthly subscription moves to the yearly plan at `startsAt`.
+ * - `switched`: a monthly subscription moves to the yearly plan at `startsAt`,
+ *   or a move between tiers is done (`now`) or booked (`period-end`). A booked
+ *   downgrade carries `pendingTier` and `pendingChangeAt`, the same two fields
+ *   `GET /plans/me` carries from then on; both are absent otherwise.
+ * - `payment-failed`: an upgrade is invoiced and paid at once and the card was
+ *   declined (402). The person stays on the old tier and nothing was booked.
  * - `stale`: the page the person read is no longer the offer. Read it again.
  * - `already-subscribed`: the account pays for a plan this order cannot move.
  * - `refused`: any other 400. The page let through something it should not
@@ -108,7 +130,16 @@ export const PLANS_ABSENT: PlansOutcome<never> = { status: 'absent' };
  */
 export type OrderOutcome =
   | { kind: 'redirect'; url: string }
-  | { kind: 'switched'; plan: PlanKey; tier?: string; effect?: MoveEffect; startsAt: string }
+  | {
+      kind: 'switched';
+      plan: PlanKey;
+      tier?: string;
+      effect?: MoveEffect;
+      startsAt: string;
+      pendingTier?: string;
+      pendingChangeAt?: string;
+    }
+  | { kind: 'payment-failed' }
   | { kind: 'stale' }
   | { kind: 'already-subscribed' }
   | { kind: 'refused'; code: string | null }
@@ -135,8 +166,13 @@ export class PlansClient {
   /**
    * The plan this account holds, read from the biller's own tables.
    *
-   * NO STRIPE CALL STANDS BEHIND IT, which is why a settings screen may open
-   * it on every mount without waiting on somebody else's uptime.
+   * MOSTLY THE BILLER'S OWN TABLES, with one bounded Stripe read: since the
+   * pending change, the biller reads the subscription's schedule from Stripe
+   * to say whether a downgrade is booked (`pendingTier`, `pendingChangeAt`),
+   * and gives that read at most three seconds. If it fails or runs out, the
+   * two fields are simply absent and the rest of the view is unchanged, so a
+   * screen may still open this on every mount without depending on Stripe's
+   * uptime; it just draws no booked change then.
    */
   async readPlan(): Promise<PlansOutcome<PlanView>> {
     return this.send({
@@ -217,8 +253,39 @@ export class PlansClient {
     if (outcome.status === 'absent') return { kind: 'absent' };
     const answer = outcome.value;
     this.onOrderPlaced();
-    if ('switched' in answer) return { kind: 'switched', ...answer.switched };
+    if ('switched' in answer) {
+      const { switched, ...pending } = answer;
+      return { kind: 'switched', ...switched, ...pending };
+    }
     return { kind: 'redirect', url: answer.url };
+  }
+
+  /**
+   * Takes a booked downgrade back, so the subscription stays on its tier.
+   *
+   * No body: the account comes from the session, and the biller knows what is
+   * booked. Not an order, so it never tells `onOrderPlaced` anything.
+   *
+   * @throws a {@link SyncRequestError} for a 502 (Stripe failed, the change is
+   *   still booked) or any status not decoded below, and a `ZodError` for a 200
+   *   body that is not an answer.
+   */
+  async cancelPendingChange(): Promise<PendingChangeOutcome> {
+    let outcome: PlansOutcome<{ kept: { plan?: PlanKey; tier?: string } }>;
+    try {
+      outcome = await this.send({
+        path: PENDING_CHANGE_CANCEL_PATH,
+        method: 'POST',
+        parse: (body) => pendingChangeCancelAnswerSchema.parse(body),
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.status === 409 && error.code === NO_PENDING_CHANGE) {
+        return { kind: 'none-booked' };
+      }
+      throw error;
+    }
+    if (outcome.status === 'absent') return { kind: 'absent' };
+    return { kind: 'kept', ...outcome.value.kept };
   }
 
   /**
@@ -282,10 +349,13 @@ export class PlansClient {
  * that is not a refusal and must be thrown on.
  *
  * The status says which family; the biller's machine code says which member.
- * Only these two codes change what the page does, so only they are named.
+ * Only these three codes change what the page does, so only they are named.
  */
 function orderRefusalOf(error: SyncRequestError): OrderOutcome | null {
   if (error.status === 409 && error.code === ORDER_ALREADY_SUBSCRIBED) return { kind: 'already-subscribed' };
+  // A 402 IS KIND `server` here (`errorKindForStatus` knows no 402), so the
+  // status and the code are read, never the kind.
+  if (error.status === 402 && error.code === PAYMENT_FAILED) return { kind: 'payment-failed' };
   if (error.status !== 400) return null;
   if (error.code === ORDER_STALE_VERSION) return { kind: 'stale' };
   return { kind: 'refused', code: error.code };

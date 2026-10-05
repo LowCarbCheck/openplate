@@ -4661,6 +4661,13 @@
     "at": "2026-09-20",
     "de": "Was neu ist in {{version}}"
   },
+  "37457439eb607af9": {
+    "en": "Keep {{tier}}",
+    "path": "common:plan.pending.keep",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "{{tier}} behalten"
+  },
   "37484a7c5ef012fa": {
     "en": "You put something in the pantry.",
     "path": "common:awards.explorer.pantry.edit.note",
@@ -6235,6 +6242,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Für diese Seite ist eine Anmeldung erforderlich."
+  },
+  "4be7012cf09c4366": {
+    "en": "The change could not be cancelled. Try again in a moment.",
+    "path": "common:plan.pending.keepFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Die Änderung konnte nicht abgebrochen werden. Versuch es gleich noch einmal."
   },
   "4c1b2d0c5a5f6ee0": {
     "en": "Cancel",
@@ -19305,6 +19319,13 @@
     "at": "2026-09-29",
     "de": "Du hast {{count}} Mahlzeiten mit KI erfasst."
   },
+  "e16777c87ffa3f53": {
+    "en": "Switches to {{tier}} on {{date}}.",
+    "path": "common:plan.pending.line",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Wechselt am {{date}} zu {{tier}}."
+  },
   "e16e9dc593f46c36": {
     "en": "The diary lives on this device, and the server keeps an encrypted copy",
     "path": "common:landing.features.local.titleManaged",
@@ -20046,6 +20067,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "de": "Erreicht am {{date}}"
+  },
+  "e94f5ae76be87b1e": {
+    "en": "Your card was declined. Your plan has not changed.",
+    "path": "common:plan.order.paymentFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "de": "Deine Karte wurde abgelehnt. Dein Tarif hat sich nicht geändert."
   },
   "e956605b6ac05484": {
     "en": "We cannot take sign-ups from this email domain. Use another address.",

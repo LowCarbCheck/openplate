@@ -3624,6 +3624,11 @@
       "orderYearly": "Yıllık planı sipariş et",
       "switchBooked": "Yıllık planın {{date}} tarihinde başlıyor."
     },
+    "pending": {
+      "line": "{{date}} tarihinde {{tier}} planına geçer.",
+      "keep": "{{tier}} planını koru",
+      "keepFailed": "Değişiklik iptal edilemedi. Birazdan tekrar dene."
+    },
     "order": {
       "confirmFirst": "Sipariş vermek için her iki kutuyu da işaretle.",
       "failed": "Sipariş tamamlanamadı. Tekrar dene.",
@@ -3634,6 +3639,7 @@
       "privacyLink": "Gizlilik bildirimini oku",
       "whatHappensLabel": "Verilerine ne olur",
       "moveRefused": "Bu değişiklik şu anda yapılamıyor. Planın değişmedi.",
+      "paymentFailed": "Kartın reddedildi. Planın değişmedi.",
       "planUnavailable": "Bu plan artık satışta değil. Sayfa şu anda satışta olan planları gösteriyor."
     },
     "countdown": {

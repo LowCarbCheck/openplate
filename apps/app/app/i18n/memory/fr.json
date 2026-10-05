@@ -4661,6 +4661,13 @@
     "at": "2026-09-20",
     "fr": "Nouveautés de la version {{version}}"
   },
+  "37457439eb607af9": {
+    "en": "Keep {{tier}}",
+    "path": "common:plan.pending.keep",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "fr": "Conserver {{tier}}"
+  },
   "37484a7c5ef012fa": {
     "en": "You put something in the pantry.",
     "path": "common:awards.explorer.pantry.edit.note",
@@ -6235,6 +6242,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Cette page nécessite une connexion."
+  },
+  "4be7012cf09c4366": {
+    "en": "The change could not be cancelled. Try again in a moment.",
+    "path": "common:plan.pending.keepFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "fr": "Impossible d'annuler la modification. Réessaie dans un instant."
   },
   "4c1b2d0c5a5f6ee0": {
     "en": "Cancel",
@@ -19305,6 +19319,13 @@
     "at": "2026-09-29",
     "fr": "Pendant ton essai, tu as noté {{count}} repas avec l'IA."
   },
+  "e16777c87ffa3f53": {
+    "en": "Switches to {{tier}} on {{date}}.",
+    "path": "common:plan.pending.line",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "fr": "Passe à {{tier}} le {{date}}."
+  },
   "e16e9dc593f46c36": {
     "en": "The diary lives on this device, and the server keeps an encrypted copy",
     "path": "common:landing.features.local.titleManaged",
@@ -20046,6 +20067,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "fr": "Obtenu le {{date}}"
+  },
+  "e94f5ae76be87b1e": {
+    "en": "Your card was declined. Your plan has not changed.",
+    "path": "common:plan.order.paymentFailed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-05",
+    "fr": "Ta carte a été refusée. Ton forfait n'a pas changé."
   },
   "e956605b6ac05484": {
     "en": "We cannot take sign-ups from this email domain. Use another address.",

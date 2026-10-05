@@ -3624,6 +3624,11 @@
       "orderYearly": "Order the yearly plan",
       "switchBooked": "Your yearly plan starts on {{date}}."
     },
+    "pending": {
+      "line": "Switches to {{tier}} on {{date}}.",
+      "keep": "Keep {{tier}}",
+      "keepFailed": "The change could not be cancelled. Try again in a moment."
+    },
     "order": {
       "confirmFirst": "Tick both boxes to order.",
       "failed": "The order did not go through. Try again.",
@@ -3634,6 +3639,7 @@
       "privacyLink": "Read the privacy notice",
       "whatHappensLabel": "What happens to your data",
       "moveRefused": "This change is not possible right now. Your plan has not changed.",
+      "paymentFailed": "Your card was declined. Your plan has not changed.",
       "planUnavailable": "That plan is not on sale any more. The page shows the plans on sale now."
     },
     "countdown": {

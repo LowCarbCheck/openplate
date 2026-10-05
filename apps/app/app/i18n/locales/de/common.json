@@ -3624,6 +3624,11 @@
       "orderYearly": "Jahrestarif bestellen",
       "switchBooked": "Dein Jahrestarif beginnt am {{date}}."
     },
+    "pending": {
+      "line": "Wechselt am {{date}} zu {{tier}}.",
+      "keep": "{{tier}} behalten",
+      "keepFailed": "Die Änderung konnte nicht abgebrochen werden. Versuch es gleich noch einmal."
+    },
     "order": {
       "confirmFirst": "Setze beide Haken, um zu bestellen.",
       "failed": "Die Bestellung hat nicht geklappt. Versuche es noch einmal.",
@@ -3634,6 +3639,7 @@
       "privacyLink": "Lies die Datenschutzerklärung",
       "whatHappensLabel": "Was mit deinen Daten geschieht",
       "moveRefused": "Diese Änderung ist gerade nicht möglich. Dein Tarif hat sich nicht geändert.",
+      "paymentFailed": "Deine Karte wurde abgelehnt. Dein Tarif hat sich nicht geändert.",
       "planUnavailable": "Dieser Tarif wird nicht mehr angeboten. Die Seite zeigt die derzeit verfügbaren Tarife."
     },
     "countdown": {

@@ -3624,6 +3624,11 @@
       "orderYearly": "Commander le forfait annuel",
       "switchBooked": "Ton forfait annuel commence le {{date}}."
     },
+    "pending": {
+      "line": "Passe à {{tier}} le {{date}}.",
+      "keep": "Conserver {{tier}}",
+      "keepFailed": "Impossible d'annuler la modification. Réessaie dans un instant."
+    },
     "order": {
       "confirmFirst": "Coche les deux cases pour commander.",
       "failed": "La commande n'a pas abouti. Réessaie.",
@@ -3634,6 +3639,7 @@
       "privacyLink": "Lire la politique de confidentialité",
       "whatHappensLabel": "Ce qu'il advient de tes données",
       "moveRefused": "Cette modification est impossible pour le moment. Ton forfait n'a pas changé.",
+      "paymentFailed": "Ta carte a été refusée. Ton forfait n'a pas changé.",
       "planUnavailable": "Ce forfait n'est plus proposé. La page présente les forfaits disponibles actuellement."
     },
     "countdown": {

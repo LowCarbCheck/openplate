@@ -14,7 +14,9 @@
  *
  * The literals below were read from `openplate-billing/src/plans/me.ts`
  * (`PlanView`, `toPlanStatus`) and `portal.ts` on 2026-09-09, and from
- * `offer.ts` and `order.ts` (branch `feat/m245-two-plans`) on 2026-09-23.
+ * `offer.ts` and `order.ts` (branch `feat/m245-two-plans`) on 2026-09-23, and the
+ * paid upgrade (402 `payment-failed`), `pendingTier` and `pendingChangeAt` and
+ * `POST /plans/pending-change/cancel` (branch `feat/m2-tiers`) on 2026-10-05.
  *
  * ── Every assertion has a control ────────────────────────────────────────
  *
@@ -34,6 +36,10 @@ import {
   ORDER_INVALID,
   ORDER_STALE_VERSION,
   ORDER_UNKNOWN_PLAN,
+  NO_PENDING_CHANGE,
+  PAYMENT_FAILED,
+  PENDING_CHANGE_CANCEL_FAILED,
+  PENDING_CHANGE_CANCEL_PATH,
   PLANS_API_PREFIX,
   PLAN_INTERVALS,
   PLAN_KEYS,
@@ -93,6 +99,18 @@ const ORDER = {
 function refusedWith(status: number, code: string): () => never {
   return () => {
     throw new SyncRequestError({ kind: status === 409 ? 'conflict' : 'invalid', message: code, status, code });
+  };
+}
+
+/**
+ * A refusal built the way the session builds it, from a real response, so the
+ * error kind is the one the app really gets: a 402 is `server` there, which is
+ * why the client has to read its code and cannot branch on the kind.
+ */
+async function refusedByResponse(status: number, code: string): Promise<() => never> {
+  const error = await toRequestError(new Response(JSON.stringify({ error: code }), { status }));
+  return () => {
+    throw error;
   };
 }
 
@@ -169,6 +187,58 @@ describe('the plan wire shapes, transcribed from openplate-billing', () => {
     });
     assert.equal(view.currentPeriodEnd, null);
   });
+
+  it('decodes a booked downgrade: the tier it moves to and the day it takes effect', () => {
+    // M2 pending change (openplate-billing, `GET /plans/me`): both fields are
+    // ABSENT, never null, when nothing is booked. The biller reads them from
+    // the Stripe schedule, so they are also absent when that read fails.
+    const view = planViewSchema.parse({
+      ...PAID_VIEW,
+      tier: 'fixture-beta',
+      pendingTier: 'fixture-alpha',
+      pendingChangeAt: '2026-10-09T00:00:00.000Z',
+    });
+    assert.equal(view.pendingTier, 'fixture-alpha');
+    assert.equal(view.pendingChangeAt, '2026-10-09T00:00:00.000Z');
+  });
+
+  it('CONTROL: a view with nothing booked decodes to exactly the keys it had before', () => {
+    const view = planViewSchema.parse({ ...PAID_VIEW, tier: 'fixture-beta' });
+    assert.equal('pendingTier' in view, false);
+    assert.equal('pendingChangeAt' in view, false);
+    assert.deepEqual(Object.keys(view).toSorted(), [
+      'cancelAtPeriodEnd',
+      'currentPeriodEnd',
+      'interval',
+      'plan',
+      'planKey',
+      'portalAvailable',
+      'tier',
+    ]);
+  });
+
+  it('reads a pending field it cannot use as absent, never as a failed read of a paying plan', () => {
+    // A null, a number or a date that is not a date must not unread the plan:
+    // the page draws the line only from a tier AND a day it can name.
+    for (const odd of [
+      { pendingTier: null, pendingChangeAt: null },
+      { pendingTier: 4, pendingChangeAt: 5 },
+      { pendingTier: 'fixture-alpha', pendingChangeAt: 'next tuesday' },
+      { pendingTier: '', pendingChangeAt: '2026-10-09T00:00:00.000Z' },
+    ]) {
+      const view = planViewSchema.parse({ ...PAID_VIEW, ...odd });
+      assert.equal(view.plan, 'active');
+      assert.equal(view.pendingTier === undefined || view.pendingChangeAt === undefined, true);
+    }
+    // THE CONTROL: the same two fields, well formed, are kept.
+    const good = planViewSchema.parse({
+      ...PAID_VIEW,
+      pendingTier: 'fixture-alpha',
+      pendingChangeAt: '2026-10-09T00:00:00.000Z',
+    });
+    assert.equal(good.pendingTier, 'fixture-alpha');
+    assert.equal(good.pendingChangeAt, '2026-10-09T00:00:00.000Z');
+  });
 });
 
 describe('the plan client', () => {
@@ -178,6 +248,15 @@ describe('the plan client', () => {
     assert.equal(outcome.status, 'ok');
     assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/me`, method: 'GET', body: undefined }]);
     assert.equal(calls.length, 1, 'the plan read made more than one request');
+  });
+
+  it('hands the booked downgrade through readPlan, so the page can draw it', async () => {
+    const booked = { ...PAID_VIEW, tier: 'fixture-beta', pendingTier: 'fixture-alpha', pendingChangeAt: '2026-10-09T00:00:00.000Z' };
+    const outcome = await new PlansClient({ transport: fakeTransport({ answers: booked }).transport }).readPlan();
+    assert.equal(outcome.status === 'ok' ? outcome.value.pendingTier : null, 'fixture-alpha');
+    // THE CONTROL: the same read without the fields hands nothing through.
+    const plain = await new PlansClient({ transport: fakeTransport({ answers: PAID_VIEW }).transport }).readPlan();
+    assert.equal(plain.status === 'ok' ? plain.value.pendingTier : 'not ok', undefined);
   });
 
   it('opens the portal with a POST that names the page language, as an order does', async () => {
@@ -316,6 +395,15 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
     );
   });
 
+  it('names the codes of the paid upgrade and of taking a booked downgrade back', () => {
+    // openplate-billing, branch feat/m2-tiers. A declined card on an upgrade is
+    // a 402 with `payment-failed`; the cancel route answers 409 and 502 with these.
+    assert.equal(PAYMENT_FAILED, 'payment-failed');
+    assert.equal(NO_PENDING_CHANGE, 'no-pending-change');
+    assert.equal(PENDING_CHANGE_CANCEL_FAILED, 'pending-change-cancel-failed');
+    assert.equal(PENDING_CHANGE_CANCEL_PATH, '/v1/plans/pending-change/cancel');
+  });
+
   it('posts the plan key, the offer language and version, and both consents, and nothing else', async () => {
     const { transport, calls } = fakeTransport({ answers: { url: 'https://checkout.example.test/s/1' } });
     const outcome = await new PlansClient({ transport }).placeOrder(ORDER);
@@ -390,6 +478,54 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
     });
   });
 
+  it('carries the booked downgrade the order answer names beside `switched`', async () => {
+    // In the order answer the two fields sit at the TOP level, not inside `switched`.
+    const startsAt = '2026-10-09T00:00:00.000Z';
+    const { transport } = fakeTransport({
+      answers: {
+        switched: { plan: 'monthly', tier: 'fixture-alpha', effect: 'period-end', startsAt },
+        pendingTier: 'fixture-alpha',
+        pendingChangeAt: startsAt,
+      },
+    });
+    assert.deepEqual(await new PlansClient({ transport }).placeOrder(ORDER), {
+      kind: 'switched',
+      plan: 'monthly',
+      tier: 'fixture-alpha',
+      effect: 'period-end',
+      startsAt,
+      pendingTier: 'fixture-alpha',
+      pendingChangeAt: startsAt,
+    });
+    // THE CONTROL: an upgrade answer names none, and the outcome gains no key for them.
+    const upgrade = fakeTransport({ answers: { switched: { plan: 'monthly', tier: 'fixture-gamma', effect: 'now', startsAt } } });
+    const outcome = await new PlansClient({ transport: upgrade.transport }).placeOrder(ORDER);
+    assert.equal('pendingTier' in outcome, false);
+    assert.equal('pendingChangeAt' in outcome, false);
+  });
+
+  it('answers a declined card as its own outcome and tells nobody the order was placed', async () => {
+    // The upgrade is invoiced and paid at once. A 402 `payment-failed` means
+    // the person stays on the old tier; the page says the card was declined.
+    let placed = 0;
+    const declined = fakeTransport({ fails: await refusedByResponse(402, PAYMENT_FAILED) });
+    const client = new PlansClient({ transport: declined.transport, onOrderPlaced: () => (placed += 1) });
+    assert.deepEqual(await client.placeOrder(ORDER), { kind: 'payment-failed' });
+    assert.equal(placed, 0, 'a declined card cleared the intended plan');
+    // THE CONTROL: an accepted order does tell it, so the zero above can fail.
+    const accepted = fakeTransport({ answers: { url: 'https://checkout.example.test/s/9' } });
+    await new PlansClient({ transport: accepted.transport, onOrderPlaced: () => (placed += 1) }).placeOrder(ORDER);
+    assert.equal(placed, 1);
+  });
+
+  it('throws every other 402, and a payment-failed that is not a 402', async () => {
+    // THE CONTROLS for the branch above: it reads the status AND the code.
+    const otherCode = fakeTransport({ fails: await refusedByResponse(402, 'something-else') });
+    await assert.rejects(new PlansClient({ transport: otherCode.transport }).placeOrder(ORDER), /something-else/);
+    const wrongStatus = fakeTransport({ fails: await refusedByResponse(502, PAYMENT_FAILED) });
+    await assert.rejects(new PlansClient({ transport: wrongStatus.transport }).placeOrder(ORDER), /payment-failed/);
+  });
+
   it('throws on a 200 that is neither an address nor a switch', async () => {
     // THE CONTROL for the two answers above: a decoder that accepted anything
     // would send the browser to `undefined`.
@@ -434,6 +570,46 @@ describe('the order, transcribed from openplate-billing/src/plans/order.ts', () 
     // THE CONTROL: a body with no token carries no code.
     const bare = await toRequestError(new Response('not json', { status: 400 }));
     assert.equal(bare.code, null);
+  });
+});
+
+describe('taking a booked downgrade back, POST /plans/pending-change/cancel', () => {
+  const KEPT = { kept: { plan: 'monthly', tier: 'fixture-beta' } };
+
+  it('posts once to the transcribed path with no body, and answers the plan that was kept', async () => {
+    const { transport, calls } = fakeTransport({ answers: KEPT });
+    const outcome = await new PlansClient({ transport }).cancelPendingChange();
+    assert.deepEqual(outcome, { kind: 'kept', plan: 'monthly', tier: 'fixture-beta' });
+    assert.deepEqual(calls, [{ path: `${PLANS_API_PREFIX}/pending-change/cancel`, method: 'POST', body: undefined }]);
+    assert.equal(calls.length, 1);
+  });
+
+  it('reads 409 no-pending-change as nothing booked, which is what the person wanted', async () => {
+    // Also the answer to a second press: the first one already took it back.
+    const none = fakeTransport({ fails: await refusedByResponse(409, NO_PENDING_CHANGE) });
+    assert.deepEqual(await new PlansClient({ transport: none.transport }).cancelPendingChange(), { kind: 'none-booked' });
+    // THE CONTROL: any other 409 is a failure, not a success.
+    const other = fakeTransport({ fails: await refusedByResponse(409, 'something-else') });
+    await assert.rejects(new PlansClient({ transport: other.transport }).cancelPendingChange(), /something-else/);
+  });
+
+  it('throws a Stripe failure, so the page can say so and let the person try again', async () => {
+    const failed = fakeTransport({ fails: await refusedByResponse(502, PENDING_CHANGE_CANCEL_FAILED) });
+    await assert.rejects(new PlansClient({ transport: failed.transport }).cancelPendingChange(), /pending-change-cancel-failed/);
+  });
+
+  it('answers absent for the shut door and throws a body that is not an answer', async () => {
+    const shut = fakeTransport({ fails: notFound });
+    assert.deepEqual(await new PlansClient({ transport: shut.transport }).cancelPendingChange(), { kind: 'absent' });
+    const odd = fakeTransport({ answers: { ok: true } });
+    await assert.rejects(new PlansClient({ transport: odd.transport }).cancelPendingChange());
+  });
+
+  it('keeps a kept plan it does not know as absent, never as a failure after the change was taken back', async () => {
+    const odd = fakeTransport({ answers: { kept: { plan: 'quarterly', tier: 'fixture-beta' } } });
+    const outcome = await new PlansClient({ transport: odd.transport }).cancelPendingChange();
+    assert.equal(outcome.kind, 'kept');
+    assert.equal(outcome.kind === 'kept' ? outcome.plan : 'not kept', undefined);
   });
 });
 

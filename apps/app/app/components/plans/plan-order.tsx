@@ -92,10 +92,14 @@ export const NO_CONSENTS: ConsentState = { terms: false, earlyStart: false };
  *   payment, or a change somebody already booked). The plan did not change.
  * - `plan-unavailable`: the plan ordered is not on sale any more. The offer
  *   was read again.
+ * - `payment-failed`: an upgrade is paid at once and the card was declined.
+ *   The plan did not change, and the order stays as it was so the person can
+ *   try again.
  */
 export type OrderNotice =
   | 'none'
   | 'failed'
+  | 'payment-failed'
   | 'stale'
   | 'already-subscribed'
   | 'move-refused'
@@ -117,10 +121,11 @@ export type OrderMode =
   | { kind: 'switch'; startsAt: string }
   | { kind: 'move'; effect: MoveEffect };
 
-/** The catalog key of each notice. A `Record`, so a fifth notice fails to compile here. */
+/** The catalog key of each notice. A `Record`, so a seventh notice fails to compile here. */
 const NOTICE_KEY = {
   none: null,
   failed: 'plan.order.failed',
+  'payment-failed': 'plan.order.paymentFailed',
   stale: 'plan.order.stale',
   'already-subscribed': 'plan.order.alreadySubscribed',
   'move-refused': 'plan.order.moveRefused',
