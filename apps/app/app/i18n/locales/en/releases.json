@@ -1,4 +1,17 @@
 {
+  "v0_64_0": {
+    "date": "2026-10-05",
+    "added": {
+      "01": "The plan page now lists the tiers a plan service sells, and a subscriber can switch between them.",
+      "02": "The order page now says what happens to your data above the payment boxes.",
+      "03": "A plan can now leave out a feature, and the app shows it the same way everywhere.",
+      "04": "A tier link from the website now picks that tier on the plan page."
+    },
+    "changed": {
+      "01": "A spent day of AI scans now points at the plans where there are any.",
+      "02": "A refused feature now shows the same note instead of an error."
+    }
+  },
   "v0_63_0": {
     "date": "2026-10-05",
     "added": {
@@ -41,15 +54,6 @@
     "date": "2026-10-02",
     "changed": {
       "01": "The release check now asks openplate.de instead of GitHub."
-    }
-  },
-  "v0_61_0": {
-    "date": "2026-10-01",
-    "changed": {
-      "01": "Docs and prose call the server core, not sync.",
-      "02": "The core server address is now set with CORE_URL; the old name still works with a warning until a later release.",
-      "03": "Macro breakdowns show the calorie share by default.",
-      "04": "The self-host files call the service core and run Postgres 18."
     }
   }
 }
