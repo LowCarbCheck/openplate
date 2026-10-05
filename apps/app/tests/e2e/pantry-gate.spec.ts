@@ -28,7 +28,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { EN } from './copy';
+import { EN, fill } from './copy';
 import { E2E_ACCOUNT_EMAIL, E2E_ACCOUNT_PASSPHRASE, E2E_CORE_URL } from './env';
 import {
   completeOnboarding,
@@ -184,6 +184,18 @@ test('a plan without the pantry shows the note in place of the composer, keeps t
   await page.getByRole('button', { name: EN.pantry.review.saveList }).click();
   await expect.poll(() => pantryRowsOnDisk(page)).toBeGreaterThan(rowsBefore);
   expect(await pantryRowNames(page)).toContain('Gate test cabbage');
+
+  // LEAVE NOTHING IN THE SHARED ACCOUNT. Its diary is synced and every spec in a
+  // run signs the same account in, so the row is taken out again and the push
+  // that carries its removal is awaited before this spec ends.
+  await page.getByRole('button', { name: fill(EN.pantry.review.removeAria, { name: 'Gate test cabbage' }) }).click();
+  const pushed = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && new URL(response.url()).pathname === '/v1/sync/blob' && response.ok(),
+  );
+  await page.getByRole('button', { name: EN.pantry.review.saveList }).click();
+  await pushed;
+  expect(await pantryRowNames(page)).not.toContain('Gate test cabbage');
 
   expect(proxy.calls, 'a request reached the AI proxy for a closed feature').toBe(0);
 });

@@ -26,7 +26,7 @@
  *
  * @area diary-and-add
  */
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Response } from '@playwright/test';
 
 import { EN } from './copy';
 import { completeOnboarding, openFromMoreSheet, signInFixtureAccount } from './helpers';
@@ -84,6 +84,31 @@ async function expectHistoryKept(page: Page): Promise<void> {
   await expect(historyRows(page).first()).toBeVisible();
 }
 
+/**
+ * Starts waiting for the sync push that follows the next change on the device.
+ *
+ * THE ACCOUNT IS SHARED BY EVERY SPEC IN A RUN, and its diary is synced. A fast
+ * left running here would come down to the next spec that signs in, which would
+ * then draw the live chip in the header, late, and move its row (the font swap
+ * and consent screen specs read exactly that header). So a spec that starts a
+ * fast ends it again and waits for the push that carries the end before it
+ * returns. Call BEFORE the press, then await the result.
+ */
+function nextBlobPush(page: Page): Promise<Response> {
+  return page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && new URL(response.url()).pathname === '/v1/sync/blob' && response.ok(),
+  );
+}
+
+/** Ends the running fast on the open fasting screen and waits until the account holds the end. */
+async function endRunningFastAndSync(page: Page): Promise<void> {
+  await page.getByRole('button', { name: EN.fasting.active.end, exact: true }).click();
+  const pushed = nextBlobPush(page);
+  await page.getByRole('button', { name: EN.fasting.end.confirm, exact: true }).click();
+  await pushed;
+}
+
 /** Signs in and opens the fasting screen from inside the app. */
 async function signInAndOpenFasting(page: Page): Promise<void> {
   await signInFixtureAccount(page);
@@ -119,10 +144,14 @@ test('a plan without fasting shows the note in place of the start card, keeps th
   await settleFrames(page);
   await expect(note).toBeVisible();
   await expect(startButton(page)).toHaveCount(0);
-  expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift on the gated fasting screen').toBe(0);
+  expect(shiftScoreAfter(await readShiftEntries(page), shiftsBefore), 'layout-shift on the gated fasting screen').toBe(
+    0,
+  );
 });
 
-test('the control: an account with no feature list (everything allowed) still gets the start button', async ({ page }) => {
+test('the control: an account with no feature list (everything allowed) still gets the start button', async ({
+  page,
+}) => {
   await routeInstance(page, { capabilities: null, hasPlansDoor: true });
   await completeOnboarding(page);
   await recordOneFinishedFast(page);
@@ -151,7 +180,9 @@ test('the control: with the plans door off, the list that closes it changes noth
   await expect(closedNote(page)).toHaveCount(0);
 });
 
-test('a fast already running stays on screen and can be ended, and the dashboard strip is not drawn', async ({ page }) => {
+test('a fast already running stays on screen and can be ended, and the dashboard strip is not drawn', async ({
+  page,
+}) => {
   await routeInstance(page, { capabilities: ['pantry'], hasPlansDoor: true });
   await completeOnboarding(page);
   await page.goto('/fasting');
@@ -174,9 +205,10 @@ test('a fast already running stays on screen and can be ended, and the dashboard
   await expect(closedNote(page)).toHaveCount(0);
   await expect(endButton).toBeVisible();
   const rowsBefore = await historyRows(page).count();
-  await endButton.click();
-  await page.getByRole('button', { name: EN.fasting.end.confirm, exact: true }).click();
-  await expect.poll(() => historyRows(page).count(), { message: 'the ended fast never reached the history' }).toBeGreaterThan(rowsBefore);
+  await endRunningFastAndSync(page);
+  await expect
+    .poll(() => historyRows(page).count(), { message: 'the ended fast never reached the history' })
+    .toBeGreaterThan(rowsBefore);
   // ENDED, THE START IS CLOSED: the same screen now shows the note.
   await expect(closedNote(page)).toBeVisible();
 });
@@ -192,4 +224,9 @@ test('the control: with everything allowed, the same running fast draws the dash
   await openFromMoreSheet(page, EN.nav.dashboard);
   await page.waitForURL('**/dashboard');
   await expect(page.locator('main').getByText(EN.fasting.strip.fasting, { exact: true })).toBeVisible();
+
+  // LEAVE NO RUNNING FAST IN THE SHARED ACCOUNT (see `nextBlobPush`).
+  await openFromMoreSheet(page, EN.nav.fasting);
+  await page.waitForURL('**/fasting');
+  await endRunningFastAndSync(page);
 });
