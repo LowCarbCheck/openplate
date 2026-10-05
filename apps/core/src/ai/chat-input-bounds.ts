@@ -5,9 +5,10 @@
  * WHY. `ai/chat-body-policy.ts` caps what one request may cost on the way
  * OUT: the answer, the reasoning, the number of answers. Nothing bounded the
  * way IN. The production model reads about a million tokens, and one request
- * under the byte limit could carry most of them: at $0.75 per million input
- * tokens that is about 80 cents for one request, and the daily counters
- * counted it as one request like every plate photograph. So two things live
+ * under the byte limit could carry most of them: at the input price recorded
+ * in `ai-tiers.json` (`price.inputUsdPerMillion`) that is real money for one
+ * request, and the daily counters counted it as one request like every plate
+ * photograph. So two things live
  * here, both measured on the body AFTER the allow list, which is the body the
  * provider receives:
  *

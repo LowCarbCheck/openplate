@@ -225,7 +225,8 @@ service is the thing that stands between your users and your bill.
 ```bash
 UPSTREAM_BASE_URL=https://openrouter.ai/api/v1
 UPSTREAM_API_KEY=sk-...            # both, or neither. One alone is a boot failure.
-AI_ADVERTISED_MODEL=google/gemini-3.5-flash-lite   # the model every request is sent to; openplate needs it
+AI_TIERS_FILE=bundled              # optional: take the model and its routing from a tier file (below)
+AI_ADVERTISED_MODEL=vendor/model-name   # without a tier file: the model every request is sent to; openplate needs one
 AI_MAX_OUTPUT_TOKENS=8192          # most output tokens per request, default 8192
 AI_RATE_LIMIT_PER_MINUTE=20        # per account, default 20
 UPSTREAM_TIMEOUT_MS=120000         # per request, default two minutes
@@ -242,23 +243,25 @@ provider key, forwards the body, and streams the answer back. The account never
 learns your key. The provider never learns the account's token.
 
 **Your instance decides what one request costs, not the caller.** The body goes
-through as sent except for the fields that set its price. With
-`AI_ADVERTISED_MODEL` set, `model` is replaced by it, for every account.
-**The openplate app needs it set.** On a managed instance, the app sends no
-model of its own. It scans with the model named by `/health`. Without one, it
+through as sent except for the fields that set its price. `model` is replaced by
+the model of the request's tier (see "Which model" below: the tier file, or
+`AI_ADVERTISED_MODEL` on an instance without one), for every account.
+**The openplate app needs a model named.** On a managed instance, the app sends
+no model of its own. It scans with the model named by `/health`. Without one, it
 refuses to scan rather than pick a model on your bill. Name the model the way
-your provider does (`google/gemini-3.5-flash-lite` on OpenRouter,
-`openplate-plate-1` in front of openplate-inference). Leaving it unset passes
+your provider does (`vendor/model-name` on OpenRouter,
+`openplate-plate-1` in front of openplate-inference). Naming none passes
 the caller's model through, which only helps a client that sends one. With
-or without it, `max_tokens` and `max_completion_tokens` are capped at
-`AI_MAX_OUTPUT_TOKENS` (written in when the body has neither), so is
+or without a model, `max_tokens` and `max_completion_tokens` are capped at
+`AI_MAX_OUTPUT_TOKENS`, or at the tier's own lower cap when it has one (written
+in when the body has neither), so is
 `reasoning.max_tokens`, `n` becomes 1, and only the fields on an allow list
 are forwarded: every other one (`tools`, `plugins`, `models`, a field nobody
 has invented yet) is dropped and its name logged. On OpenRouter the service
 writes its own `provider` field, `{"data_collection":"deny"}`, so a photo only
 goes to endpoints that do not store it or train on it. That is a routing
-request, not a guarantee. Two optional settings ask for more, and only on an
-OpenRouter host: `UPSTREAM_ZDR=true` adds `"zdr":true` (endpoints with zero data
+request, not a guarantee. Two optional settings ask for more (a tier's `routing`
+asks for the same), and only on an OpenRouter host: `UPSTREAM_ZDR=true` adds `"zdr":true` (endpoints with zero data
 retention only), and `UPSTREAM_PROVIDER_ONLY=google-vertex` adds
 `"only":["google-vertex"]` and `"allow_fallbacks":false` (that provider or an
 error, never another). With both set the field is
@@ -269,6 +272,46 @@ name that is not a lowercase slug, stops the boot. A caller can set none of
 this: its own `provider` field is replaced. Nothing is refused for these
 fields, so a client that sends them still gets an answer.
 PROTOCOL.md §5.19 has the table.
+
+**Which model: the tier file.** The model, its routing and its price are written
+down in one reviewed file, `ai-tiers.json` at the root of this app, not spread over
+environment variables and comments. A _tier_ is a named level of capability, and it
+holds `model` (the provider's model id), `routing` (`zdr`, and `only` for pinned
+providers), `price` (what the operator last read, with the day and the source),
+`disclose` (the words your privacy text must name for it), `use` (one sentence on
+who uses it), and optionally `maxOutputTokens` and `reasoningEffort`. A request gets
+the tier that the schema name in its own body (`response_format.json_schema.name`)
+is routed to in `routes`, else `defaultTier`. The caller never picks a model or a
+provider: it can only name a schema, and only a tier you defined answers it. The
+shipped file has one tier, `standard`, and no routes. A key nobody reads, a model
+id that ends in `latest`, or a missing price stops the boot and names the rule.
+
+`AI_TIERS_FILE` chooses where the tiers come from, and **it is opt-in**:
+
+- Unset or empty, the default: there is no file. The model is `AI_ADVERTISED_MODEL`
+  and the routing is `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`, exactly as before
+  the file existed. An upgrade changes nothing for you.
+- `bundled`: the file inside the image.
+- An absolute path: a file you mount, read once at boot. A relative path, or a path
+  that cannot be read, stops the boot.
+
+The file is read at boot even when no upstream key is set, so a typo is found the
+day it is made. `/health` publishes the model of the default tier as
+`instance.ai.model`.
+
+With a tier file, `AI_ADVERTISED_MODEL` stays as an **emergency override**: it
+replaces the model of the default tier only, and the boot log warns on every start
+and names both values. Use it for an outage or a withdrawn model, then fix the file.
+`UPSTREAM_ZDR=true` is a floor that turns zero retention on for every tier and can
+never turn a tier's own `zdr` off, and `UPSTREAM_PROVIDER_ONLY` replaces the provider
+list of every tier, with a warning. `AI_MAX_OUTPUT_TOKENS` stays the ceiling, and a
+tier can only lower it.
+
+**To change the model**, edit `model` in `ai-tiers.json` together with the `price`
+and `disclose` that go with it, run `pnpm ai-tiers:check-live` (below), and release.
+Nothing else in this app holds a model id: `tests/unit/model-id-literals.test.ts`
+fails when one is written outside that file, and `tests/unit/model-swap.test.ts`
+proves a swap touches only the file.
 
 **Input is bounded too.** A request with more than one image, more than 48 KB
 of text (the schema in `response_format` included) or more than four messages
