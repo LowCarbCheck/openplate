@@ -1,8 +1,9 @@
 /**
  * The app side of the 2026-09-28 sign-up funnel contract with the core.
  *
- *  1. `POST /v1/auth/signup-request` carries `plan` and `locale` only when
- *     given, so a request with neither is exactly `{ email }`, as before.
+ *  1. `POST /v1/auth/signup-request` carries `plan`, `tier` and `locale` only
+ *     when given, so a request with none is exactly `{ email }`, as before.
+ *     The tier goes only beside a plan.
  *  2. `GET /v1/plans/prices` is read without a token, decoded, and every
  *     failure (a 404, a 429, a dead connection, a body that does not decode, a
  *     missing plan) is the sentence without a price, never a half-read figure.
@@ -24,6 +25,7 @@ import { PlansClient, type PlansTransport } from '../../app/lib/sync/engine/clie
 import { PLAN_PRICES_PATH, planPricesSchema } from '../../app/lib/sync/engine/client/plans-wire';
 import { SyncRequestError } from '../../app/lib/sync/engine/client/sync-error';
 import type { JsonValue } from '../../app/lib/sync/engine/protocol';
+import { tierToSendWith } from '../../app/lib/plans/intended-plan';
 import { publicPlanPricesOf, readPublicPlanPrices } from '../../app/lib/plans/public-plan-prices';
 import { resolveJoinDestination, resolveSignInDestination } from '../../app/lib/sign-in-flow';
 
@@ -78,6 +80,7 @@ describe('the sign-up request', () => {
       email: 'anna@example.org',
       captchaToken: null,
       plan: null,
+      tier: null,
       locale: null,
     });
     assert.equal(requests.length, 1);
@@ -91,6 +94,7 @@ describe('the sign-up request', () => {
       email: 'anna@example.org',
       captchaToken: 'token-1',
       plan: 'yearly',
+      tier: null,
       locale: 'fr',
     });
     assert.deepEqual(JSON.parse(requests[0]?.body ?? 'null'), {
@@ -99,6 +103,44 @@ describe('the sign-up request', () => {
       plan: 'yearly',
       locale: 'fr',
     });
+  });
+
+  it('carries the tier beside the plan, after the address and the token', async () => {
+    const { fetchImpl, requests } = recordingFetch(() => json({}, 202));
+    await new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl }).signupRequest({
+      email: 'anna@example.org',
+      captchaToken: 'token-1',
+      plan: 'yearly',
+      tier: 'tier-a',
+      locale: 'fr',
+    });
+    assert.deepEqual(JSON.parse(requests[0]?.body ?? 'null'), {
+      email: 'anna@example.org',
+      captchaToken: 'token-1',
+      plan: 'yearly',
+      tier: 'tier-a',
+      locale: 'fr',
+    });
+  });
+
+  it('never sends a tier without a plan, whatever the caller handed in', async () => {
+    const { fetchImpl, requests } = recordingFetch(() => json({}, 202));
+    await new SyncAuthClient({ baseUrl: BASE_URL, fetchImpl }).signupRequest({
+      email: 'anna@example.org',
+      captchaToken: null,
+      plan: null,
+      tier: 'tier-a',
+      locale: null,
+    });
+    // THE CONTROL is the test above: the same tier beside a plan is on the wire.
+    assert.deepEqual(JSON.parse(requests[0]?.body ?? 'null'), { email: 'anna@example.org' });
+  });
+
+  it('decides what the form sends with one rule: the tier rides only beside a plan that is sent', () => {
+    assert.equal(tierToSendWith({ plan: 'yearly', tier: 'tier-a' }), 'tier-a');
+    assert.equal(tierToSendWith({ plan: 'monthly', tier: null }), null);
+    assert.equal(tierToSendWith({ plan: null, tier: 'tier-a' }), null);
+    assert.equal(tierToSendWith({ plan: null, tier: null }), null);
   });
 });
 

@@ -33,12 +33,15 @@
  * - It is stored only with a plan that arrived in the same address. A tier
  *   with no valid plan next to it is ignored, like any other parameter this
  *   module does not understand.
- * - The mailed join link carries the plan and not the tier (the core appends
- *   `&plan=` only). An address that names a plan and no tier therefore keeps
+ * - The sign-up request carries the tier beside the plan, and the core puts
+ *   `&tier=<id>` into the mailed join link after `&plan=` ({@link tierToSendWith}
+ *   is the app's half of that). That link goes through the SAME capture as the
+ *   plan, so a mail opened on another device keeps the tier too. A link from a
+ *   core that predates the tier names a plan and no tier; such an address keeps
  *   the stored tier when it is that mailed link and the stored plan is the
  *   same one ({@link captureIntendedPlan}, `isMailedLink`). A mail opened on
- *   another device loses the tier, as it loses everything stored here, and the
- *   plan page then shows its tier list as it always did.
+ *   another device then loses the tier, as it loses everything stored here,
+ *   and the plan page shows its tier list as it always did.
  *
  * ── A choice, never a pick made for somebody ─────────────────────────────
  *
@@ -162,6 +165,16 @@ export function tierParamOf({ search, hash }: { search: string; hash: string }):
   return readTierId(new URLSearchParams(fragment).get(TIER_PARAM));
 }
 
+/**
+ * The tier a sign-up request may carry: the tier, only beside a plan that is
+ * itself sent. A tier with no plan is the same unusable thing here as it is in
+ * storage, so it is left out rather than sent for the core to carry into a
+ * link nobody reads it from.
+ */
+export function tierToSendWith({ plan, tier }: { plan: PlanKey | null; tier: string | null }): string | null {
+  return plan === null ? null : tier;
+}
+
 /** The stored record for a plan, and the tier beside it if any, that arrived at `now`. */
 export function encodeIntendedPlan({
   plan,
@@ -275,8 +288,9 @@ export function clearIntendedPlan({ storage = deviceStorage() }: Pick<IntentShel
  * @param input.search - `location.search` of the page.
  * @param input.hash - `location.hash`, on `/join`; `''` elsewhere.
  * @param input.isMailedLink - `true` on `/join`, whose address is the link the
- *   core mailed: it echoes the plan and never the tier, so a stored tier of the
- *   same plan is kept. On `/sign-up` the address is the choice, and a link with
+ *   core mailed: it echoes the plan and, from a core that knows tiers, the
+ *   tier. A link with no tier (an older core) keeps a stored tier of the same
+ *   plan. On `/sign-up` the address is the choice, and a link with
  *   no tier replaces a tier an older link left.
  */
 export function captureIntendedPlan({

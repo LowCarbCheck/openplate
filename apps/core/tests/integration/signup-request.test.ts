@@ -77,6 +77,8 @@ interface SignupRequestBody {
   role?: string;
   /** Typed wide on purpose: the door must drop every value that is not a plan key, whatever its type. */
   plan?: unknown;
+  /** Typed wide for the same reason: only a lowercase label of 1 to 32 characters survives. */
+  tier?: unknown;
   locale?: unknown;
 }
 
@@ -254,7 +256,7 @@ test('an unknown plan or language is dropped silently: the same 202, and no para
     // Every letter went, one per address, and none of their links names a plan or a language.
     assert.equal(service.mailer.signupRequests.length, odd.length + 1);
     for (const letter of service.mailer.signupRequests) {
-      assert.deepEqual(letter.intent, { plan: null, locale: null }, letter.email);
+      assert.deepEqual(letter.intent, { plan: null, tier: null, locale: null }, letter.email);
       const link = mailedLink(letter);
       assert.ok(!link.includes('plan=') && !link.includes('lang='), `${letter.email}: ${link}`);
     }
@@ -262,6 +264,78 @@ test('an unknown plan or language is dropped silently: the same 202, and no para
     // THE CONTROL: the same door on the same instance does carry a valid pick.
     await requestSignup(service, { email: 'valid@example.org', plan: 'yearly' });
     assert.ok(mailedLink(service.mailer.signupRequests.at(-1)).includes('&plan=yearly'));
+  });
+});
+
+test('a picked tier rides in the mailed link after the plan, and nothing about it is stored', async () => {
+  await withOpenDoor({}, async (service) => {
+    const response = await requestSignup(service, {
+      email: 'tiered@example.org',
+      plan: 'yearly',
+      tier: 'tier-a',
+      locale: 'de',
+    });
+    assert.equal(response.status, 202);
+    assert.deepEqual(response.body, {});
+
+    const link = mailedLink(service.mailer.signupRequests[0]);
+    assert.ok(link.endsWith('&plan=yearly&tier=tier-a&lang=de'), link);
+    const fragment = new URLSearchParams(link.split('#')[1]);
+    assert.deepEqual(fragment.getAll('tier'), ['tier-a']);
+    assert.deepEqual(fragment.getAll('plan'), ['yearly']);
+
+    // THE LINK IS THE ONLY PLACE: the invite row holds no trace of the tier.
+    const [row] = await database.db.select().from(signupInvites).where(eq(signupInvites.email, 'tiered@example.org'));
+    assert.ok(row !== undefined, 'the door minted a row');
+    assert.ok(!JSON.stringify(row).includes('tier-a'), JSON.stringify(row));
+
+    // THE CONTROL: the same plan with no tier on another mailbox carries no tier parameter.
+    await requestSignup(service, { email: 'untiered@example.org', plan: 'yearly' });
+    const untiered = mailedLink(service.mailer.signupRequests[1]);
+    assert.ok(untiered.endsWith('&plan=yearly'), untiered);
+    assert.ok(!untiered.includes('tier='), untiered);
+  });
+});
+
+test('an unfit tier is dropped silently: the same 202, and no parameter in the link', async () => {
+  await withOpenDoor({}, async (service) => {
+    const plain = await requestSignup(service, { email: 'plain-tier@example.org', plan: 'yearly' });
+    const odd: { email: string; tier: unknown }[] = [
+      { email: 'upper@example.org', tier: 'Alpha' },
+      { email: 'long@example.org', tier: `a${'b'.repeat(32)}` },
+      { email: 'padded@example.org', tier: ' alpha' },
+      { email: 'trailing@example.org', tier: 'alpha ' },
+      { email: 'empty@example.org', tier: '' },
+      { email: 'digit@example.org', tier: '1alpha' },
+      { email: 'under@example.org', tier: 'alpha_beta' },
+      { email: 'null@example.org', tier: null },
+      { email: 'number@example.org', tier: 42 },
+      { email: 'object@example.org', tier: { id: 'alpha' } },
+      { email: 'array@example.org', tier: ['alpha'] },
+      // A SECOND PARAMETER IN DISGUISE: it must not reach the fragment as one.
+      { email: 'smuggle@example.org', tier: 'a&plan=monthly' },
+    ];
+    for (const { email, tier } of odd) {
+      const response = await requestSignup(service, { email, plan: 'yearly', tier });
+      assert.equal(response.status, plain.status, `${email}: never a 400, never an oracle`);
+      assert.deepEqual(response.body, plain.body);
+      assert.deepEqual(comparableHeaders(response.headers), comparableHeaders(plain.headers));
+    }
+
+    // Every letter went, one per address, with the plan kept and no tier in its link.
+    assert.equal(service.mailer.signupRequests.length, odd.length + 1);
+    for (const letter of service.mailer.signupRequests) {
+      assert.deepEqual(letter.intent, { plan: 'yearly', tier: null, locale: null }, letter.email);
+      const link = mailedLink(letter);
+      assert.ok(link.endsWith('&plan=yearly'), `${letter.email}: ${link}`);
+      assert.deepEqual(new URLSearchParams(link.split('#')[1]).getAll('plan'), ['yearly'], letter.email);
+      assert.ok(!link.includes('tier='), `${letter.email}: ${link}`);
+    }
+
+    // THE CONTROL: the longest fitting label, 32 characters, is kept on the same door.
+    const longest = `a${'b'.repeat(31)}`;
+    await requestSignup(service, { email: 'longest@example.org', plan: 'yearly', tier: longest });
+    assert.ok(mailedLink(service.mailer.signupRequests.at(-1)).endsWith(`&plan=yearly&tier=${longest}`));
   });
 });
 

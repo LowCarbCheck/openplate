@@ -1,12 +1,14 @@
 /**
- * The plan a person chose before they had an account, for a screen that
- * shows it or sends it: `/sign-up` (`app/lib/plans/intended-plan.ts`).
+ * The plan a person chose before they had an account, and the tier linked
+ * beside it, for a screen that shows or sends them: `/sign-up`
+ * (`app/lib/plans/intended-plan.ts`).
  *
  * The address is read, and a plan it names is stored, in an EFFECT: storage
  * does not exist while the server renders, and reading it in render would
- * hydrate a different tree than the server sent. `null` until the effect has
- * run, which on `/sign-up` is before the form is drawn, because the form waits
- * for the handshake.
+ * hydrate a different tree than the server sent. Both are `null` until the
+ * effect has run, which on `/sign-up` is before the form is drawn, because the
+ * form waits for the handshake. The tier is read back from the record the
+ * capture just wrote, so it can only be the one stored beside this plan.
  */
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
@@ -14,16 +16,26 @@ import { useLocation } from 'react-router';
 import { captureIntendedPlan, readIntendedTier } from '#app/lib/plans/intended-plan';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
 
-export function useIntendedPlanFromLink(): PlanKey | null {
+/** What the address and the device remember of the pricing page's choice. */
+export interface IntendedChoice {
+  plan: PlanKey | null;
+  /** The tier id stored beside `plan`, or `null`. Never set while `plan` is `null`. */
+  tier: string | null;
+}
+
+const NO_CHOICE: IntendedChoice = { plan: null, tier: null };
+
+export function useIntendedChoiceFromLink(): IntendedChoice {
   const { search } = useLocation();
-  const [plan, setPlan] = useState<PlanKey | null>(null);
+  const [choice, setChoice] = useState<IntendedChoice>(NO_CHOICE);
 
   useEffect(() => {
     // The query string only: on `/sign-up` the fragment carries nothing.
-    setPlan(captureIntendedPlan({ search, hash: '' }));
+    const plan = captureIntendedPlan({ search, hash: '' });
+    setChoice(plan === null ? NO_CHOICE : { plan, tier: readIntendedTier() });
   }, [search]);
 
-  return plan;
+  return choice;
 }
 
 /**

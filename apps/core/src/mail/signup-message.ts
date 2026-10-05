@@ -6,8 +6,9 @@
  * THE LINK IS THE INVITATION'S LINK. What the person redeems is an ordinary
  * addressed invite (PROTOCOL.md §5.8.3), so the grammar is `/join#server=...&
  * invite=si_...`, built by the same `buildInviteLink`. Only the words differ,
- * and the two parameters a person's own request may add: `&plan=<key>` for
- * the plan they picked and `&lang=<code>` for the language they asked in.
+ * and the three parameters a person's own request may add: `&plan=<key>` for
+ * the plan they picked, `&tier=<id>` for the tier it belongs to and
+ * `&lang=<code>` for the language they asked in.
  *
  * THE BUILDERS TAKE THE LANGUAGE THEY ARE HANDED. Which one that is, the
  * person's or the instance's, is decided by the mailer (`mailer.ts`).
@@ -31,10 +32,10 @@ export interface SignupRequestMessageInput {
 }
 
 /**
- * The invitation's link, plus the intent's two parameters after the invite,
- * `plan` first, each only when it is set. Both values come from closed lists
- * (`readSignupIntent`), and they are encoded anyway, like every other value
- * in the fragment.
+ * The invitation's link, plus the intent's three parameters after the invite,
+ * in the order `plan`, `tier`, `lang`, each only when it is set. The values
+ * come from a closed list or a fixed shape (`readSignupIntent`), and they are
+ * encoded anyway, like every other value in the fragment.
  */
 export function buildSignupRequestLink(parts: {
   clientBaseUrl: string;
@@ -48,8 +49,9 @@ export function buildSignupRequestLink(parts: {
     inviteToken: parts.inviteToken,
   });
   const plan = parts.intent.plan === null ? '' : `&plan=${encodeURIComponent(parts.intent.plan)}`;
+  const tier = parts.intent.tier === null ? '' : `&tier=${encodeURIComponent(parts.intent.tier)}`;
   const lang = parts.intent.locale === null ? '' : `&lang=${encodeURIComponent(parts.intent.locale)}`;
-  return `${link}${plan}${lang}`;
+  return `${link}${plan}${tier}${lang}`;
 }
 
 /**

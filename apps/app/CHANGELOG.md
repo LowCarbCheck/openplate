@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **A tier chosen on the website now survives the sign-up letter.** The sign-up page sends the tier from a pricing link beside the plan, and only beside a plan. The core puts `&tier=` into the mailed join link after `&plan=`. The app reads that tier the way it reads the plan, so a letter opened on another phone still lands on the order page with the tier named. An id that is not a lowercase label of 1 to 32 characters is dropped without a word, and a core that does not know tiers sends a link without one, which behaves as before.
+
 ## [0.64.0] - 2026-10-05
 
 ### Added

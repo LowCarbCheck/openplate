@@ -18,15 +18,15 @@
  *    do not multiply it: somebody filling a stranger's inbox.
  *
  * WHAT THE PERSON PICKED REACHES THE LETTERS AND NOWHERE ELSE. A paid instance
- * shows its price before sign-up, so the request may name a plan and the
- * language the person asked in ({@link SignupIntent}). Both ride in the mailed
- * link, and the language also picks the words the letters are written in.
- * Neither is stored, and neither changes the answer: an unknown value is
- * dropped without a word, so the field can never be a `400` or tell a caller
- * anything.
+ * shows its price before sign-up, so the request may name a plan, the tier it
+ * belongs to and the language the person asked in ({@link SignupIntent}). All
+ * three ride in the mailed link, and the language also picks the words the
+ * letters are written in. None is stored, and none changes the answer: an
+ * unknown value is dropped without a word, so the field can never be a `400`
+ * or tell a caller anything.
  */
 import type { InviteStore } from '../admin/invite-store.js';
-import type { JsonObject, JsonValue } from '../lib/json.js';
+import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
 import type { ThrottleConfig, ThrottleStore } from '../lib/throttle.js';
 import { isInstanceLanguage, type InstanceLanguage } from '../protocol.js';
 import type { CaptchaVerifier } from './captcha.js';
@@ -86,14 +86,30 @@ export const SIGNUP_PLAN_KEYS = ['monthly', 'yearly'] as const;
 export type SignupPlanKey = (typeof SIGNUP_PLAN_KEYS)[number];
 
 /**
+ * What a tier id looks like: a lowercase label of one to 32 characters, a
+ * letter first, then letters, digits and hyphens. The same shape the app keeps
+ * (`TIER_ID_PATTERN` in its `intended-plan.ts`), so what this door lets into a
+ * link is exactly what the app reads out of one.
+ *
+ * A LABEL, NOT A LIST. The plans are two keys this service knows; the tiers
+ * are the biller's catalogue, which this service never reads, so there is no
+ * list to check a tier against. The shape is the whole check, and it is also
+ * what keeps a value from carrying anything into the fragment it rides in:
+ * `a&plan=monthly` has neither an `&` nor an `=` to offer.
+ */
+export const SIGNUP_TIER_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
+
+/**
  * What the person picked on the sign-up screen before they asked. It rides in
- * the mailed join link, as `plan` and `lang`, so the app they open from the
- * letter can carry on where they left off. `locale` also picks the language
- * the letter, or the note to an existing account, is written in; with none,
- * both are written in the instance's language.
+ * the mailed join link, as `plan`, `tier` and `lang`, so the app they open from
+ * the letter can carry on where they left off. `locale` also picks the
+ * language the letter, or the note to an existing account, is written in; with
+ * none, both are written in the instance's language.
  */
 export interface SignupIntent {
   plan: SignupPlanKey | null;
+  /** The biller's tier id the plan belongs to, a label of {@link SIGNUP_TIER_PATTERN}, or `null`. */
+  tier: string | null;
   /** The language the person asked in, one of `INSTANCE_LANGUAGES`, or `null`. */
   locale: InstanceLanguage | null;
 }
@@ -103,13 +119,24 @@ function isSignupPlanKey(value: JsonValue | undefined): value is SignupPlanKey {
 }
 
 /**
- * Reads `plan` and `locale` off a request body. A missing value, `null`, a
- * wrong type and an unknown key all read as `null`, silently: the door answers
- * the same `202` whatever these fields say.
+ * The tier id a request body names, or `null`. Exact: no trimming and no
+ * case folding, so ` alpha` and `Alpha` are dropped like any other value that
+ * is not a label.
+ */
+function readSignupTier(value: JsonValue | undefined): string | null {
+  const text = asString(value);
+  return text !== null && SIGNUP_TIER_PATTERN.test(text) ? text : null;
+}
+
+/**
+ * Reads `plan`, `tier` and `locale` off a request body. A missing value,
+ * `null`, a wrong type and an unknown key all read as `null`, silently: the
+ * door answers the same `202` whatever these fields say.
  */
 export function readSignupIntent(fields: JsonObject): SignupIntent {
   return {
     plan: isSignupPlanKey(fields.plan) ? fields.plan : null,
+    tier: readSignupTier(fields.tier),
     locale: isInstanceLanguage(fields.locale) ? fields.locale : null,
   };
 }

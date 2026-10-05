@@ -385,7 +385,7 @@ test('the invite letter tells the reader what happens next, in every language', 
 
 // ── The open sign-up door's own letters (M253) ─────────────────────────────
 
-function signupRequestFor(language: InstanceLanguage, intent: SignupIntent = { plan: null, locale: null }) {
+function signupRequestFor(language: InstanceLanguage, intent: SignupIntent = { plan: null, tier: null, locale: null }) {
   return buildSignupRequestMessage({
     clientBaseUrl: CLIENT_BASE_URL,
     serverPublicUrl: SERVER_PUBLIC_URL,
@@ -396,7 +396,7 @@ function signupRequestFor(language: InstanceLanguage, intent: SignupIntent = { p
   });
 }
 
-test('the sign-up link adds the plan and then the language after the invite, and nothing when neither is set', () => {
+test('the sign-up link adds the plan, the tier and then the language after the invite, and nothing when none is set', () => {
   const invite = buildInviteLink({
     clientBaseUrl: CLIENT_BASE_URL,
     serverPublicUrl: SERVER_PUBLIC_URL,
@@ -404,11 +404,29 @@ test('the sign-up link adds the plan and then the language after the invite, and
   });
   // THE CONTROL: with nothing picked, the letter's link is the invitation's link, byte for byte.
   assert.equal(signupRequestFor('en').link, invite);
-  assert.equal(signupRequestFor('en', { plan: 'yearly', locale: 'de' }).link, `${invite}&plan=yearly&lang=de`);
-  assert.equal(signupRequestFor('en', { plan: 'monthly', locale: null }).link, `${invite}&plan=monthly`);
-  assert.equal(signupRequestFor('en', { plan: null, locale: 'tr' }).link, `${invite}&lang=tr`);
+  assert.equal(
+    signupRequestFor('en', { plan: 'yearly', tier: null, locale: 'de' }).link,
+    `${invite}&plan=yearly&lang=de`,
+  );
+  assert.equal(signupRequestFor('en', { plan: 'monthly', tier: null, locale: null }).link, `${invite}&plan=monthly`);
+  assert.equal(signupRequestFor('en', { plan: null, tier: null, locale: 'tr' }).link, `${invite}&lang=tr`);
 
-  const withBoth = signupRequestFor('de', { plan: 'yearly', locale: 'fr' });
+  // THE TIER FOLLOWS THE PLAN AND PRECEDES THE LANGUAGE, whichever of the three are set.
+  assert.equal(
+    signupRequestFor('en', { plan: 'yearly', tier: 'tier-a', locale: 'de' }).link,
+    `${invite}&plan=yearly&tier=tier-a&lang=de`,
+  );
+  assert.equal(
+    signupRequestFor('en', { plan: 'monthly', tier: 'tier-a', locale: null }).link,
+    `${invite}&plan=monthly&tier=tier-a`,
+  );
+  assert.equal(
+    signupRequestFor('en', { plan: null, tier: 'tier-a', locale: 'tr' }).link,
+    `${invite}&tier=tier-a&lang=tr`,
+  );
+  assert.equal(signupRequestFor('en', { plan: null, tier: 'tier-a', locale: null }).link, `${invite}&tier=tier-a`);
+
+  const withBoth = signupRequestFor('de', { plan: 'yearly', tier: null, locale: 'fr' });
   // Still a fragment, never a query string, so no access log on the way sees the plan either.
   assert.ok(!withBoth.link.includes('?'), withBoth.link);
   assert.equal(withBoth.text.split(withBoth.link).length - 1, 1, 'the text part carries the link once');

@@ -37,10 +37,11 @@
  * with `?plan=monthly|yearly` and `?lang=<code>`. The language becomes the
  * device's (`useLanguageFromLink`), the plan is stored for the join link and
  * the order page (`intended-plan.ts`), and both ride in the request as `plan`
- * and `locale`, so the core puts them in the mailed link. Under the free scans
- * the form says what comes after them, from the anonymous price read
- * (`SignupOffer`), and names the chosen plan. A price line keeps its box while
- * the read is in flight.
+ * and `locale` (and the tier id the pricing page linked beside the plan as
+ * `tier`, only with a plan), so the core puts them in the mailed link. Under
+ * the free scans the form says what comes after them, from the anonymous price
+ * read (`SignupOffer`), and names the chosen plan. A price line keeps its box
+ * while the read is in flight.
  *
  * CLIENT-ONLY and TOP-LEVEL, like `/sign-in` and `/forgot`: the address goes
  * to the core server's own origin and none of it is this server's business.
@@ -63,13 +64,14 @@ import { Input } from '#app/components/ui/input';
 import { Label } from '#app/components/ui/label';
 import { SignupOffer } from '#app/components/plans/signup-offer';
 import { useCanRunAccounts } from '#app/hooks/use-can-run-accounts';
-import { useIntendedPlanFromLink } from '#app/hooks/use-intended-plan';
+import { useIntendedChoiceFromLink } from '#app/hooks/use-intended-plan';
 import { useLanguageFromLink } from '#app/hooks/use-language-from-link';
 import { useHasLegalPages, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { usePublicPlanPrices } from '#app/hooks/use-public-plan-prices';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { toLanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
+import { tierToSendWith } from '#app/lib/plans/intended-plan';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
 import { hasOpenSignup, offeredTrialDays, offeredTrialScans, signupCaptchaOf } from '#app/lib/plans/signup-door';
 import type { PlanKey } from '#app/lib/sync/engine/client/plans-wire';
@@ -91,7 +93,7 @@ const SIGN_IN_PATH = '/sign-in';
 export default function SignUp() {
   const { t } = useTranslation();
   useLanguageFromLink();
-  const intendedPlan = useIntendedPlanFromLink();
+  const intendedChoice = useIntendedChoiceFromLink();
   const serverUrl = useSyncServerUrl();
   const { isSettled, instance } = useServerInstanceRead();
   // THE LETTER'S LINK WOULD LAND ON A PAGE THAT CANNOT FINISH. The account is
@@ -136,7 +138,8 @@ export default function SignUp() {
               trialDays={offeredTrialDays(instance)}
               captcha={signupCaptchaOf(instance)}
               sellsPlans={hasPlansDoor(instance)}
-              chosenPlan={intendedPlan}
+              chosenPlan={intendedChoice.plan}
+              chosenTier={intendedChoice.tier}
             />
           )}
         </CardContent>
@@ -169,6 +172,7 @@ function SignUpForm({
   captcha,
   sellsPlans,
   chosenPlan,
+  chosenTier,
 }: {
   serverUrl: string;
   /** The instance's promise, or `null`, which says nothing about AI at all. */
@@ -180,6 +184,8 @@ function SignUpForm({
   sellsPlans: boolean;
   /** The plan chosen on the pricing page, or `null`. */
   chosenPlan: PlanKey | null;
+  /** The tier linked beside that plan, or `null`. */
+  chosenTier: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const hasLegalPages = useHasLegalPages();
@@ -189,6 +195,8 @@ function SignUpForm({
   // Sent only where a plan can be bought: the mailed link would otherwise
   // lead a new account to a plan page this instance does not have.
   const planToSend = sellsPlans ? chosenPlan : null;
+  // THE TIER FOLLOWS THE PLAN EXACTLY: sent only beside a plan that is sent.
+  const tierToSend = tierToSendWith({ plan: planToSend, tier: chosenTier });
   const [state, setState] = useState<SendState>({ kind: 'idle' });
   const challenge = useChallenge({ captcha, language: i18n.resolvedLanguage ?? i18n.language });
   const isSent = state.kind === 'sent';
@@ -217,6 +225,7 @@ function SignUpForm({
         email,
         captchaToken: challenge.token,
         plan: planToSend,
+        tier: tierToSend,
         // The language this form is drawn in, so the letter's link opens `/join` in it too.
         locale: toLanguageCode(i18n.resolvedLanguage ?? i18n.language),
       });

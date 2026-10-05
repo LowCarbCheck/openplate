@@ -187,7 +187,7 @@ test('every letter that carries a secret link posts retain_body: false, spelled 
           displayName: null,
           inviteToken: 'si_t',
           expiresAt: 'x',
-          intent: { plan: null, locale: null },
+          intent: { plan: null, tier: null, locale: null },
         }),
     },
   ];
@@ -281,7 +281,7 @@ test('the sign-up door posts its own letter and its own note, never the invitati
     displayName: null,
     inviteToken: 'si_a-token',
     expiresAt: '2026-09-11T10:00:00.000Z',
-    intent: { plan: null, locale: null },
+    intent: { plan: null, tier: null, locale: null },
   });
   await mailer.sendSignupAccountNotice({ email: 'bert@example.org', language: null });
 
@@ -296,7 +296,7 @@ test('the sign-up door posts its own letter and its own note, never the invitati
   assert.ok(!note.text.includes('http') && !note.text.includes('invited'));
 });
 
-test("the posted sign-up letter's link carries the plan and the language the person picked", async () => {
+test("the posted sign-up letter's link carries the plan, the tier and the language the person picked", async () => {
   const api = await startFakeMailApi();
   const captured = createCapturingLogger();
   const mailer = mailerFor(api.url, captured.logger);
@@ -306,7 +306,7 @@ test("the posted sign-up letter's link carries the plan and the language the per
     displayName: null,
     inviteToken: 'si_a-token',
     expiresAt: '2026-09-11T10:00:00.000Z',
-    intent: { plan: 'yearly', locale: 'de' },
+    intent: { plan: 'yearly', tier: 'tier-a', locale: 'de' },
   });
   // THE CONTROL: the same adapter with nothing picked adds neither parameter.
   await mailer.sendSignupRequest({
@@ -314,20 +314,23 @@ test("the posted sign-up letter's link carries the plan and the language the per
     displayName: null,
     inviteToken: 'si_b-token',
     expiresAt: '2026-09-11T10:00:00.000Z',
-    intent: { plan: null, locale: null },
+    intent: { plan: null, tier: null, locale: null },
   });
 
   // SAFETY: as above, our own adapter posted these bodies.
   const picked = JSON.parse(api.received[0]?.body ?? '{}') as MailPayload;
   // SAFETY: as above, our own adapter posted this body.
   const plain = JSON.parse(api.received[1]?.body ?? '{}') as MailPayload;
-  assert.ok(picked.text.includes('invite=si_a-token&plan=yearly&lang=de'), picked.text);
+  assert.ok(picked.text.includes('invite=si_a-token&plan=yearly&tier=tier-a&lang=de'), picked.text);
   assert.ok(
-    picked.html.includes('invite=si_a-token&amp;plan=yearly&amp;lang=de'),
+    picked.html.includes('invite=si_a-token&amp;plan=yearly&amp;tier=tier-a&amp;lang=de'),
     'the HTML part carries the same link',
   );
   assert.ok(plain.text.includes('invite=si_b-token'));
-  assert.ok(!plain.text.includes('plan=') && !plain.text.includes('lang='), plain.text);
+  assert.ok(
+    !plain.text.includes('plan=') && !plain.text.includes('tier=') && !plain.text.includes('lang='),
+    plain.text,
+  );
 });
 
 test('the sign-up letter is written in the language the person asked in, and in the instance language when they named none', async () => {
@@ -341,7 +344,7 @@ test('the sign-up letter is written in the language the person asked in, and in 
       displayName: null,
       inviteToken: 'si_a-token',
       expiresAt: '2026-09-11T10:00:00.000Z',
-      intent: { plan: null, locale },
+      intent: { plan: null, tier: null, locale },
     });
 
   await askIn('en');

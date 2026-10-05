@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **A sign-up request can name the tier, and the mailed link carries it.** `POST /v1/auth/signup-request` takes an optional `tier`, kept only when it is a lowercase label of 1 to 32 characters, a letter first, then letters, digits and hyphens. Any other value is dropped silently and the answer stays `202`, like an unknown `plan`. Nothing is stored: the link gets `&tier=<id>` after `&plan=` and before `&lang=`, which is how `plan` already travels. The service reads no tier list, so it does not check that the biller sells the tier.
+
 ### Docs
 
 - **`PROTOCOL.md` says the price list may carry tiers.** Section 5.22 now states that the gateway relays the body of `GET /v1/plans/prices` untouched, that a biller may add a `tiers` array with the same entry shape as the tiers of its offer, and that a client must ignore every field it does not know. The gateway itself did not change.

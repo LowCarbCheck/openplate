@@ -963,11 +963,14 @@ export class SyncAuthClient implements SyncTokenProvider {
     email: string;
     captchaToken: string | null;
     plan: PlanKey | null;
+    /** The biller's tier id the plan was linked with. Sent only beside a plan: a tier alone is left out. */
+    tier: string | null;
     locale: LanguageCode | null;
   }): Promise<void> {
     const request: SignupRequestRequestWire = { email: input.email };
     if (input.captchaToken !== null) request.captchaToken = input.captchaToken;
     if (input.plan !== null) request.plan = input.plan;
+    if (input.plan !== null && input.tier !== null) request.tier = input.tier;
     if (input.locale !== null) request.locale = input.locale;
     await this.requestJson<unknown>({
       path: `${AUTH_API_PREFIX}/signup-request`,

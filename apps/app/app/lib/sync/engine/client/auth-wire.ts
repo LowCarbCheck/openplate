@@ -386,15 +386,19 @@ export interface ResetRequestWire {
  *
  * `plan` rides along only when the person arrived with a plan chosen on the
  * pricing page (`app/lib/plans/intended-plan.ts`) and the instance sells
- * plans. `locale` is the language the form was drawn in, one of the six app
- * languages. The core appends `&plan=<key>` and `&lang=<code>` to the mailed
- * join link, so the choice and the language survive the mail app. A missing
- * or unknown value is dropped there, never an error (2026-09-28).
+ * plans. `tier` is the biller's tier id the pricing page linked with it, and
+ * it rides along ONLY BESIDE a plan, the rule `intended-plan.ts` keeps for
+ * the stored choice. `locale` is the language the form was drawn in, one of
+ * the six app languages. The core appends `&plan=<key>`, `&tier=<id>` and
+ * `&lang=<code>` to the mailed join link, so the choice and the language
+ * survive the mail app. A missing or unfit value is dropped there, never an
+ * error (2026-09-28; the tier, M3).
  */
 export interface SignupRequestRequestWire {
   email: string;
   captchaToken?: string;
   plan?: PlanKey;
+  tier?: string;
   locale?: LanguageCode;
 }
 

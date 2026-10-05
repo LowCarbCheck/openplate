@@ -1345,6 +1345,7 @@ export async function requestOpenSignup({
   email,
   captchaToken,
   plan,
+  tier,
   locale,
   fetchImpl,
 }: {
@@ -1353,11 +1354,13 @@ export async function requestOpenSignup({
   captchaToken: string | null;
   /** The plan chosen on the pricing page, or `null`. The core carries it into the mailed link. */
   plan: PlanKey | null;
+  /** The tier id linked beside that plan, or `null`. Sent only with a plan, and carried into the link the same way. */
+  tier: string | null;
   /** The language the form was drawn in. The core carries it into the mailed link as `lang`. */
   locale: LanguageCode;
 } & SyncActionOptions): Promise<void> {
   const { authClient } = clients({ serverUrl, fetchImpl });
-  await authClient.signupRequest({ email, captchaToken, plan, locale });
+  await authClient.signupRequest({ email, captchaToken, plan, tier, locale });
 }
 
 /**

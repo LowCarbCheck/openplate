@@ -285,6 +285,46 @@ test('an unknown plan and an unknown language are ignored, never stored and neve
   expect(bodies).toEqual([{ email: 'anna@example.org', locale: 'en' }]);
 });
 
+test('a tier linked beside the plan is sent beside it, and the plan is still sent', async ({ page }) => {
+  await routeHandshake(page, { openSignup: true, plans: true, trialScans: TRIAL_SCANS });
+  await routePrices(page, 'prices');
+  const bodies = await routeSignupRequest(page);
+
+  await page.goto(`${server.url}/sign-up?tier=tier-a&plan=yearly`);
+  await expect(page.locator('[data-slot="signup-offer-chosen"]')).toHaveText(EN_FUNNEL.signupOffer.chosenYearly, {
+    timeout: 10_000,
+  });
+
+  await submitAddress(page);
+  expect(bodies, 'one request, with the tier right beside the plan').toEqual([
+    { email: 'anna@example.org', plan: 'yearly', tier: 'tier-a', locale: 'en' },
+  ]);
+});
+
+test('the control: a tier with no plan beside it is never sent, and a tier that is not a label is never sent', async ({
+  page,
+}) => {
+  await routeHandshake(page, { openSignup: true, plans: true, trialScans: TRIAL_SCANS });
+  await routePrices(page, 'prices');
+  const bodies = await routeSignupRequest(page);
+
+  // A TIER ALONE: it has no plan to ride beside, and nothing is stored for it.
+  await page.goto(`${server.url}/sign-up?tier=tier-a`);
+  await expect(page.locator('[data-slot="signup-offer-prices"]')).toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => localStorage.getItem('openplate:intended-plan:v1'))).toBeNull();
+  await submitAddress(page);
+
+  // NOT A LABEL: the plan is kept and sent, the tier is not.
+  await page.goto(`${server.url}/sign-up?tier=Not_A_Label&plan=yearly`);
+  await expect(page.locator('[data-slot="signup-offer-chosen"]')).toBeVisible({ timeout: 10_000 });
+  await submitAddress(page);
+
+  expect(bodies).toEqual([
+    { email: 'anna@example.org', locale: 'en' },
+    { email: 'anna@example.org', plan: 'yearly', locale: 'en' },
+  ]);
+});
+
 for (const answer of ['failure', 'prices'] as const) {
   test(`the price line keeps its box while the read is in flight, and moves nothing when it answers (${answer})`, async ({
     page,
@@ -426,6 +466,20 @@ test('a tier linked on the sign-up page rides through the mailed join link to th
 
   // THE MAILED LINK echoes the plan and never the tier, as the core writes it.
   await page.goto(joinLink(await mintInvite(), '&plan=yearly'));
+  await createAccount(page);
+
+  await page.waitForURL(/\/settings\/plan\?plan=yearly&tier=tier-a$/u, { timeout: 60_000 });
+});
+
+test('a mailed join link that names the tier lands a new account on the order page with that tier', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  // A FRESH BROWSER with nothing stored: the mail was opened on another device than the sign-up
+  // page, so the plan AND the tier can only come from the link, as the core now writes it.
+  await routeManagedCore(page, trialAccountStub(TRIAL_SCANS));
+
+  await page.goto(joinLink(await mintInvite(), '&plan=yearly&tier=tier-a&lang=en'));
   await createAccount(page);
 
   await page.waitForURL(/\/settings\/plan\?plan=yearly&tier=tier-a$/u, { timeout: 60_000 });

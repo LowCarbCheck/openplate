@@ -657,13 +657,14 @@ Unknown, malformed, wrong-service, expired, revoked and spent tokens are ONE `40
 
 Unauthenticated. **Present only where `instance.openSignup` is `true`**; everywhere else the path answers the ordinary unknown-path `404`. An instance needs mail configured to open it, because the letter is the address check.
 
-Request: `{"email": "anna@example.org", "captchaToken": "…", "plan": "yearly", "locale": "de"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise. `plan` and `locale` are optional and say what the person picked on the sign-up screen before they asked; nothing else in the body is read.
+Request: `{"email": "anna@example.org", "captchaToken": "…", "plan": "yearly", "tier": "tier-a", "locale": "de"}`. `captchaToken` is required when `instance.signupCaptcha` is present and ignored otherwise. `plan`, `tier` and `locale` are optional and say what the person picked on the sign-up screen before they asked; nothing else in the body is read.
 
 - `plan` is `"monthly"` or `"yearly"`. When it is one of those, the mailed link carries `&plan=<key>` after the invite.
+- `tier` is the id of the biller's tier the plan belongs to (§5.22). The service knows no list of tiers, so it judges the **shape** and nothing else: a lowercase label of 1 to 32 characters, a letter first, then letters, digits and hyphens (`^[a-z][a-z0-9-]{0,31}$`), matched exactly with no trimming and no case folding. When it fits, the mailed link carries `&tier=<id>` after `&plan=` (or after the invite when there is no plan). The service does not check that the biller sells the tier, or that a plan came with it; a client decides that when it reads the link.
 - `locale` is one of the six instance languages (`en`, `de`, `fr`, `it`, `es`, `tr`), the same list the push `locale` (§5.24) accepts. When it is one of those, the mailed link carries `&lang=<code>`, and the letter, or the account-holder note, is written in that language. Without a valid `locale`, both are written in the instance's language (`instance.language`).
-- A missing value, `null`, a value of another type and any other string are **dropped silently**: never a `400`, and the answer below does not change. Neither field is stored; each rides in the link, so a link opened on another device still knows the plan. The account-holder note carries no link, so it carries neither; only its language follows `locale`.
+- A missing value, `null`, a value of another type and any other string are **dropped silently**: never a `400`, and the answer below does not change. For `tier` that covers `Alpha` (case), ` alpha` (padding), a label of 33 characters, `42`, an object, an array and `a&plan=monthly` (which has no `&` or `=` to offer the fragment). No field is stored; each rides in the link, so a link opened on another device still knows the plan and the tier. The account-holder note carries no link, so it carries none of them; only its language follows `locale`.
 
-A link with both reads `<client>/join#server=…&invite=si_…&plan=yearly&lang=de`.
+A link with all three reads `<client>/join#server=…&invite=si_…&plan=yearly&tier=tier-a&lang=de`.
 
 ```json
 {}

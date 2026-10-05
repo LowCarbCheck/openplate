@@ -325,6 +325,32 @@ describe('captureIntendedPlan and the tier', () => {
     assert.equal(readIntendedTier({ now: NOW + 4000, storage }), 'tier-a');
   });
 
+  it('stores the tier a mailed link names, through the same capture as the plan', () => {
+    const { storage } = memoryStorage();
+    // A DEVICE THAT NEVER SAW THE PRICING PAGE: the mail was opened on a new phone.
+    const hash = '#server=https%3A%2F%2Fsync.example&invite=si_abc&plan=yearly&tier=tier-a&lang=de';
+    assert.equal(captureIntendedPlan({ search: '', hash, isMailedLink: true, now: NOW, storage }), 'yearly');
+    assert.equal(readIntendedPlan({ now: NOW + 1, storage }), 'yearly');
+    assert.equal(readIntendedTier({ now: NOW + 1, storage }), 'tier-a');
+  });
+
+  it('lets the tier in a mailed link replace a different stored one', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
+    captureIntendedPlan({ search: '', hash: '#invite=si_abc&plan=yearly&tier=tier-b', isMailedLink: true, now: NOW + 1, storage });
+    assert.equal(readIntendedTier({ now: NOW + 2, storage }), 'tier-b');
+  });
+
+  it('ignores a tier in a mailed link that is not a label, and a tier with no plan beside it', () => {
+    const { storage } = memoryStorage();
+    captureIntendedPlan({ search: '', hash: '#invite=si_abc&plan=yearly&tier=Tier-A', isMailedLink: true, now: NOW, storage });
+    assert.equal(readIntendedPlan({ now: NOW + 1, storage }), 'yearly');
+    assert.equal(readIntendedTier({ now: NOW + 1, storage }), null);
+    const other = memoryStorage().storage;
+    assert.equal(captureIntendedPlan({ search: '', hash: '#invite=si_abc&tier=tier-a', isMailedLink: true, now: NOW, storage: other }), null);
+    assert.equal(readIntendedTier({ now: NOW + 1, storage: other }), null);
+  });
+
   it('drops the stored tier when the mailed link names another plan, or when no tier was stored', () => {
     const { storage } = memoryStorage();
     captureIntendedPlan({ search: '?tier=tier-a&plan=yearly', hash: '', now: NOW, storage });
