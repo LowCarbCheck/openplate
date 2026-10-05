@@ -2,14 +2,19 @@
  * Config parsing — every assertion here is a boot that MUST fail rather than
  * a service that starts half-configured and takes real accounts.
  */
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   MAX_SYNC_NOTICE_LENGTH,
   MIN_ADMIN_TOKEN_LENGTH,
   MIN_SERVER_SECRET_LENGTH,
   parseConfig,
 } from '../../src/config.js';
+import { BUNDLED_MODEL_TIERS, parseModelTiers } from '../../src/ai/model-tiers.js';
+import type { JsonObject } from '../../src/lib/json.js';
 import { INSTANCE_LANGUAGES, NUTRIENT_REFERENCE_BASES } from '../../src/protocol.js';
 
 const SECRET = 'x'.repeat(MIN_SERVER_SECRET_LENGTH);
@@ -1336,4 +1341,171 @@ test('TRIAL_HASH_RETENTION_DAYS refuses zero, a fraction, text and ten years and
   for (const value of ['0', '-5', '1.5', 'a year', '3651']) {
     assert.throws(() => parseConfig(baseEnv({ TRIAL_HASH_RETENTION_DAYS: value })), /TRIAL_HASH_RETENTION_DAYS/, value);
   }
+});
+
+// ── AI_TIERS_FILE ────────────────────────────────────────────────────────────
+
+const tierDirectories: string[] = [];
+
+after(() => {
+  for (const directory of tierDirectories) rmSync(directory, { recursive: true, force: true });
+});
+
+/** Writes a file into a fresh temporary directory and returns its absolute path. */
+function mountedFile(contents: string): string {
+  const directory = mkdtempSync(join(tmpdir(), 'ai-tiers-config-'));
+  tierDirectories.push(directory);
+  const path = join(directory, 'ai-tiers.json');
+  writeFileSync(path, contents);
+  return path;
+}
+
+const TEST_PRICE = { inputUsdPerMillion: 1, outputUsdPerMillion: 4, checked: '2026-10-05', source: 'a fixture' };
+
+function testTier(patch: JsonObject = {}): JsonObject {
+  return {
+    use: 'A test tier.',
+    model: 'vendor/test-model',
+    routing: { zdr: true, only: ['test-provider'] },
+    price: TEST_PRICE,
+    disclose: ['Test Model'],
+    ...patch,
+  };
+}
+
+function testTierFile(patch: JsonObject = {}): string {
+  return JSON.stringify({ version: 1, defaultTier: 'standard', routes: {}, tiers: { standard: testTier() }, ...patch });
+}
+
+function defaultModelOf(env: NodeJS.ProcessEnv): string | null {
+  const config = parseConfig(env);
+  return config.aiTiers.tiers.get(config.aiTiers.defaultTier)?.model ?? null;
+}
+
+test('AI_TIERS_FILE unset or blank is legacy mode: one implicit tier from the three older variables, no warnings', () => {
+  for (const value of [undefined, '', '   ']) {
+    const config = parseConfig(baseEnv({ AI_TIERS_FILE: value }));
+    assert.deepEqual(config.aiTiersSource, { kind: 'legacy' });
+    assert.deepEqual(config.aiTiersWarnings, []);
+    assert.equal(config.aiTiers.defaultTier, 'standard');
+    assert.equal(config.aiTiers.tiers.size, 1);
+    assert.equal(config.aiTiers.tiers.get('standard')?.model, null);
+    assert.equal(config.aiAdvertisedModel, null);
+  }
+  // The three older variables ARE the tier, and nothing warns about them.
+  const legacy = parseConfig(
+    baseEnv({
+      AI_ADVERTISED_MODEL: 'vendor/test-model',
+      UPSTREAM_ZDR: 'true',
+      UPSTREAM_PROVIDER_ONLY: 'test-provider',
+    }),
+  );
+  assert.deepEqual(legacy.aiTiersSource, { kind: 'legacy' });
+  assert.deepEqual(legacy.aiTiersWarnings, []);
+  assert.equal(legacy.aiAdvertisedModel, 'vendor/test-model');
+  assert.deepEqual(legacy.aiTiers.tiers.get('standard')?.routing, {
+    zeroDataRetention: true,
+    onlyProviders: ['test-provider'],
+  });
+  assert.equal(legacy.aiTiers.tiers.get('standard')?.model, 'vendor/test-model');
+});
+
+test('AI_TIERS_FILE=bundled loads the file in the image, and AI_ADVERTISED_MODEL stays the parsed override with a warning', () => {
+  const bundled = parseConfig(baseEnv({ AI_TIERS_FILE: 'bundled' }));
+  assert.deepEqual(bundled.aiTiersSource, { kind: 'bundled' });
+  assert.deepEqual(bundled.aiTiersWarnings, []);
+  assert.equal(bundled.aiAdvertisedModel, null);
+  // The model comes from the file, whatever it is today: compare with the parsed file itself.
+  const shipped = parseModelTiers(BUNDLED_MODEL_TIERS);
+  assert.equal(bundled.aiTiers.defaultTier, shipped.defaultTier);
+  assert.equal(defaultModelOf(baseEnv({ AI_TIERS_FILE: 'bundled' })), shipped.tiers.get(shipped.defaultTier)?.model);
+
+  // CONTROL: the override replaces the default tier model, is kept as parsed, and says so once.
+  const overridden = parseConfig(baseEnv({ AI_TIERS_FILE: 'bundled', AI_ADVERTISED_MODEL: 'vendor/emergency' }));
+  assert.equal(overridden.aiAdvertisedModel, 'vendor/emergency');
+  assert.equal(overridden.aiTiers.tiers.get('standard')?.model, 'vendor/emergency');
+  assert.equal(overridden.aiTiersWarnings.length, 1);
+  assert.match(overridden.aiTiersWarnings[0] ?? '', /AI_ADVERTISED_MODEL.*vendor\/emergency/);
+});
+
+test('AI_TIERS_FILE with a relative path, or a word that is not bundled, stops the boot and names the variable', () => {
+  for (const value of ['ai-tiers.json', './ai-tiers.json', '../ai-tiers.json', 'Bundled', 'default']) {
+    assert.throws(() => parseConfig(baseEnv({ AI_TIERS_FILE: value })), /Invalid AI_TIERS_FILE .*absolute path/, value);
+  }
+  // CONTROL: the same variable with a good value boots.
+  assert.doesNotThrow(() => parseConfig(baseEnv({ AI_TIERS_FILE: 'bundled' })));
+});
+
+test('AI_TIERS_FILE naming a missing file stops the boot, with the path and the variable', () => {
+  const missing = join(tmpdir(), 'ai-tiers-config-nowhere', 'ai-tiers.json');
+  assert.throws(() => parseConfig(baseEnv({ AI_TIERS_FILE: missing })), {
+    message: /^AI_TIERS_FILE .*ai-tiers-config-nowhere.* cannot be read/,
+  });
+  // CONTROL: the same path, once the file exists, boots.
+  assert.doesNotThrow(() => parseConfig(baseEnv({ AI_TIERS_FILE: mountedFile(testTierFile()) })));
+});
+
+test('AI_TIERS_FILE with a mounted file reads it once at boot and runs on its tiers', () => {
+  const path = mountedFile(testTierFile());
+  const config = parseConfig(baseEnv({ AI_TIERS_FILE: path }));
+  assert.deepEqual(config.aiTiersSource, { kind: 'file', path });
+  assert.equal(config.aiTiers.tiers.get('standard')?.model, 'vendor/test-model');
+  assert.deepEqual(config.aiTiers.tiers.get('standard')?.routing, {
+    zeroDataRetention: true,
+    onlyProviders: ['test-provider'],
+  });
+  assert.equal(config.aiAdvertisedModel, null);
+});
+
+test('a mounted file that is not JSON, or breaks a rule, stops the boot and names AI_TIERS_FILE and the rule', () => {
+  const garbage = mountedFile('{ "version": 1, ');
+  assert.throws(() => parseConfig(baseEnv({ AI_TIERS_FILE: garbage })), /AI_TIERS_FILE .* is not valid JSON/);
+
+  const typo = mountedFile(testTierFile({ tiers: { standard: testTier({ modle: 'x' }) } }));
+  assert.throws(
+    () => parseConfig(baseEnv({ AI_TIERS_FILE: typo })),
+    /AI_TIERS_FILE.*tiers\.standard.*unknown key "modle"/,
+  );
+
+  const wrongVersion = mountedFile(testTierFile({ version: 2 }));
+  assert.throws(() => parseConfig(baseEnv({ AI_TIERS_FILE: wrongVersion })), /AI_TIERS_FILE.*version/);
+});
+
+test('the tier file is parsed even with no upstream key, so a typo is found on the day it is made', () => {
+  const typo = mountedFile(testTierFile({ defaultTier: 'nothing' }));
+  // No UPSTREAM_BASE_URL and no UPSTREAM_API_KEY in this environment.
+  assert.throws(() => parseConfig(baseEnv({ AI_TIERS_FILE: typo })), /AI_TIERS_FILE.*defaultTier/);
+  assert.doesNotThrow(() => parseConfig(baseEnv()));
+});
+
+test('a malformed UPSTREAM_ZDR stops the boot with a tier file too, and the message is unchanged', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ AI_TIERS_FILE: 'bundled', UPSTREAM_ZDR: 'yes' })),
+    /Invalid UPSTREAM_ZDR: expected true, or leave it unset, got "yes"/,
+  );
+});
+
+test('a routed tier dearer than the default warns at boot unless CAPABILITY_SCHEMA_MAP guards its schema', () => {
+  const twoTiers = (inputUsdPerMillion: number): string =>
+    testTierFile({
+      routes: { speech_transcript: 'audio' },
+      tiers: {
+        standard: testTier(),
+        audio: testTier({
+          model: 'vendor/test-audio',
+          routing: { zdr: false, only: [] },
+          price: { ...TEST_PRICE, inputUsdPerMillion },
+        }),
+      },
+    });
+  const dear = mountedFile(twoTiers(2));
+  const unguarded = parseConfig(baseEnv({ AI_TIERS_FILE: dear }));
+  assert.equal(unguarded.aiTiersWarnings.length, 1);
+  assert.match(unguarded.aiTiersWarnings[0] ?? '', /"audio".*"speech_transcript".*CAPABILITY_SCHEMA_MAP/);
+
+  // CONTROLS: guarded, and not dearer, give no warning.
+  const guarded = parseConfig(baseEnv({ AI_TIERS_FILE: dear, CAPABILITY_SCHEMA_MAP: 'speech_transcript:voice' }));
+  assert.deepEqual(guarded.aiTiersWarnings, []);
+  const cheap = parseConfig(baseEnv({ AI_TIERS_FILE: mountedFile(twoTiers(0.5)) }));
+  assert.deepEqual(cheap.aiTiersWarnings, []);
 });

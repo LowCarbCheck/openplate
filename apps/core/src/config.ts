@@ -11,6 +11,7 @@
  * `.env.example` is the operator-facing counterpart to this file and must be
  * kept in step with it.
  */
+import { readFileSync } from 'node:fs';
 import { isLogLevel, type LogLevel } from './logger.js';
 import {
   INSTANCE_LANGUAGES,
@@ -32,7 +33,15 @@ import { DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT } from './server/service-principal-s
 import { DEFAULT_MEMBER_INVITE_LIFETIME_CAP, type MemberInvitePolicy } from './accounts/member-invites.js';
 import type { TurnstileConfig } from './accounts/captcha.js';
 import { DEFAULT_TRIAL_TIME_ZONE, MAX_TRIAL_DAYS, MAX_TRIAL_SCANS, type TrialPolicy } from './accounts/scan-trial.js';
-import { DEFAULT_AI_MAX_OUTPUT_TOKENS, type OpenRouterRouting } from './ai/chat-body-policy.js';
+import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from './ai/chat-body-policy.js';
+import {
+  BUNDLED_MODEL_TIERS,
+  findDearUnguardedRoutes,
+  loadModelTiers,
+  type ModelTiers,
+  type ModelTiersSource,
+} from './ai/model-tiers.js';
+import { parseOpenRouterRouting } from './ai/openrouter-routing.js';
 import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
 import { defaultTrialNetworkDailyLimit } from './ai/trial-network.js';
 import {
@@ -180,8 +189,31 @@ export interface ServiceConfig {
    * caller cannot pick a dearer model on the operator's key. `null` publishes
    * no model and passes the caller's `model` through, which is the freedom a
    * self-hosted instance may want. See `ai/chat-body-policy.ts`.
+   *
+   * SINCE THE TIER FILE this is the PARSED OVERRIDE, not the model that is
+   * published: with `AI_TIERS_FILE` set it replaces the model of the DEFAULT
+   * tier alone (the emergency knob), and without it the one implicit tier IS
+   * this value. The model a request gets is the model of its tier, see
+   * {@link ServiceConfig.aiTiers}.
    */
   aiAdvertisedModel: string | null;
+  /**
+   * The model tiers (`AI_TIERS_FILE`, see `ai/model-tiers.ts`): which model,
+   * which zero retention routing and which output cap a proxied request gets.
+   * Unset is LEGACY MODE, one implicit tier built from `AI_ADVERTISED_MODEL`,
+   * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`, so an instance that sets none
+   * of the new variable behaves exactly as before. Parsed even when no upstream
+   * key is set, so a typo in the file is found on the day it is made.
+   */
+  aiTiers: ModelTiers;
+  /** Where {@link ServiceConfig.aiTiers} came from, for the boot log line. */
+  aiTiersSource: ModelTiersSource;
+  /**
+   * What the boot log prints at warn level about the tiers: each emergency
+   * override that is set, and each route to a dearer tier that no
+   * `CAPABILITY_SCHEMA_MAP` entry guards. Never a key.
+   */
+  aiTiersWarnings: readonly string[];
   /**
    * `AI_MAX_OUTPUT_TOKENS`: the most output tokens one proxied request may ask
    * for, default {@link DEFAULT_AI_MAX_OUTPUT_TOKENS}. Applied with or without
@@ -1393,47 +1425,37 @@ function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
   };
 }
 
-/**
- * An OpenRouter provider slug: lowercase letters and digits, joined by `-`,
- * `.`, `_` or `/` (`google-vertex`, `amazon-bedrock`, `deepinfra/turbo`). Not a
- * model id, and not a display name such as "Google Vertex".
- */
-const PROVIDER_SLUG = /^[a-z0-9][a-z0-9._/-]*$/;
+/** What {@link parseAiTiers} makes of `AI_TIERS_FILE`. */
+interface ParsedAiTiers {
+  tiers: ModelTiers;
+  source: ModelTiersSource;
+  warnings: string[];
+}
 
 /**
- * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`: two OPTIONAL routing settings
- * for an OpenRouter upstream (M3 spec 02). Both unset, the default, change
- * nothing: an instance that runs another host or another model is not touched.
+ * `AI_TIERS_FILE`: unset is legacy mode, `bundled` is the file in the image,
+ * an absolute path is a mounted file read once. Every failure stops the boot
+ * and names the variable (a relative path, a file that cannot be read, JSON
+ * that is not JSON, a rule of the file that fails). THE FILE IS PARSED EVEN
+ * WITH NO UPSTREAM KEY, like the routing variables: a typo is found on the day
+ * it is made, not the day somebody adds the provider key.
  *
- *  - `UPSTREAM_ZDR=true` asks for endpoints with zero data retention. `false`
- *    and empty mean off. Any other spelling (`yes`, `1`) is a boot failure,
- *    because a typo that quietly meant "off" would leave the operator believing
- *    retention is switched off at the provider.
- *  - `UPSTREAM_PROVIDER_ONLY` is a comma separated list of provider slugs. An
- *    empty entry (`a,,b`, a trailing comma) or a name that is not a slug (an
- *    uppercase letter, a space) is a boot failure that names the entry.
- *
- * BOTH ONLY ACT ON AN OPENROUTER HOST. Another host gets no `provider` object
- * at all (`ai/chat-body-policy.ts`), so on one these settings do nothing.
+ * The one place that reads a file; the rest of `parseConfig` reads `env` alone.
  */
-function parseOpenRouterRouting(env: NodeJS.ProcessEnv): OpenRouterRouting {
-  const zdr = env.UPSTREAM_ZDR?.trim().toLowerCase() ?? '';
-  if (zdr !== '' && zdr !== 'true' && zdr !== 'false') {
-    throw new Error(`Invalid UPSTREAM_ZDR: expected true, or leave it unset, got "${env.UPSTREAM_ZDR?.trim()}"`);
-  }
-
-  const rawOnly = env.UPSTREAM_PROVIDER_ONLY?.trim() ?? '';
-  const onlyProviders = rawOnly === '' ? [] : rawOnly.split(',').map((entry) => entry.trim());
-  for (const slug of onlyProviders) {
-    if (!PROVIDER_SLUG.test(slug)) {
-      throw new Error(
-        `Invalid UPSTREAM_PROVIDER_ONLY entry "${slug}": expected comma separated lowercase provider slugs ` +
-          'such as google-vertex, with no empty entry',
-      );
-    }
-  }
-
-  return { zeroDataRetention: zdr === 'true', onlyProviders: [...new Set(onlyProviders)] };
+function parseAiTiers(input: {
+  env: NodeJS.ProcessEnv;
+  capabilitySchemaMap: ReadonlyMap<string, string>;
+}): ParsedAiTiers {
+  const loaded = loadModelTiers({
+    env: input.env,
+    bundled: BUNDLED_MODEL_TIERS,
+    readFile: (path) => readFileSync(path, 'utf8'),
+  });
+  const warnings = [
+    ...loaded.warnings,
+    ...findDearUnguardedRoutes({ tiers: loaded.tiers, schemaMap: input.capabilitySchemaMap }),
+  ];
+  return { tiers: loaded.tiers, source: loaded.source, warnings };
 }
 
 /**
@@ -2019,6 +2041,8 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   const trial = parseTrial(env);
   const aiTrialInstanceDailyLimit = parseAiTrialInstanceDailyLimit(env, trial);
   const tokens = parseTokens(env);
+  const capabilitySchemaMap = parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP);
+  const aiTiers = parseAiTiers({ env, capabilitySchemaMap });
 
   return {
     port: parsePositiveInteger(env, 'PORT', 3000),
@@ -2034,6 +2058,9 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     contentDir: env.CONTENT_DIR?.trim() || null,
     ai: parseAi(env),
     aiAdvertisedModel: env.AI_ADVERTISED_MODEL?.trim() || null,
+    aiTiers: aiTiers.tiers,
+    aiTiersSource: aiTiers.source,
+    aiTiersWarnings: aiTiers.warnings,
     aiMaxOutputTokens: parsePositiveInteger(env, 'AI_MAX_OUTPUT_TOKENS', DEFAULT_AI_MAX_OUTPUT_TOKENS),
     aiInputPolicy: {
       maxImageParts: parsePositiveInteger(env, 'AI_MAX_IMAGE_PARTS', DEFAULT_AI_MAX_IMAGE_PARTS),
@@ -2054,7 +2081,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
     }),
     defaultFreeDailyAiLimit: parseDefaultFreeDailyAiLimit(env, trial),
     defaultCapabilities: parseDefaultCapabilities(env.DEFAULT_CAPABILITIES),
-    capabilitySchemaMap: parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP),
+    capabilitySchemaMap,
     trialAddressPepper: parseTrialAddressPepper(env, trial),
     trialHashRetentionDays: parseTrialHashRetentionDays(env),
     openSignup,

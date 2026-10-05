@@ -30,6 +30,7 @@ import type { AddressInfo } from 'node:net';
 import { registerAiRoute, CHAT_COMPLETIONS_PATH } from '../../src/ai/register-ai-route.js';
 import { NO_INSTANCE_STANDING } from '../../src/accounts/instance-standing.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { legacyModelTiers } from '../../src/ai/model-tiers.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import { createErrorMiddleware } from '../../src/server/error-middleware.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
@@ -139,7 +140,8 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
     instanceDailyLimit: null,
     trialInstanceDailyLimit: null,
     trialNetwork: null,
-    bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+    tiers: legacyModelTiers({}),
+    maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS,
     inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
     // An instance that asks for no consent, which this file is not about.
     healthConsent: null,

@@ -33,6 +33,7 @@ import {
   createDrizzleAiQuotaStore,
   type AiQuotaStore,
 } from '../../src/ai/quota-store.js';
+import { legacyModelTiers, type ModelTiers } from '../../src/ai/model-tiers.js';
 import type { UpstreamBudgetSource } from '../../src/ai/upstream-budget.js';
 import { createTrialNetworkHasher, type TrialNetworkShare } from '../../src/ai/trial-network.js';
 import { createDrizzleFeedbackStore } from '../../src/feedback/feedback-store.js';
@@ -298,6 +299,11 @@ export interface StartServiceOptions {
      * model through, exactly as `main.ts` wires the same binding (M256).
      */
     advertisedModel?: string;
+    /**
+     * The model tiers, for a suite about tiers. Absent builds the one legacy
+     * tier from `advertisedModel`, as `main.ts` does with no `AI_TIERS_FILE`.
+     */
+    tiers?: ModelTiers;
     maxRequestBytes?: number;
     /** `AI_MAX_OUTPUT_TOKENS`. Absent is the production default. */
     maxOutputTokens?: number;
@@ -683,10 +689,8 @@ export async function startService(options: StartServiceOptions): Promise<Servic
             upstream: options.ai.budgetUpstream ?? null,
           },
           // ONE BINDING FOR `/health` AND THE PROXY, as in `main.ts` (M256).
-          bodyPolicy: {
-            model: options.ai.advertisedModel ?? null,
-            maxOutputTokens: options.ai.maxOutputTokens ?? DEFAULT_AI_MAX_OUTPUT_TOKENS,
-          },
+          tiers: options.ai.tiers ?? legacyModelTiers({ AI_ADVERTISED_MODEL: options.ai.advertisedModel }),
+          maxOutputTokens: options.ai.maxOutputTokens ?? DEFAULT_AI_MAX_OUTPUT_TOKENS,
           // THE PRODUCTION DEFAULTS, so every suite runs against the real
           // bounds, and a suite about one of them overrides only that one.
           inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.ai.inputPolicy },

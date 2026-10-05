@@ -4,9 +4,8 @@
  *
  * This module is where the model tier file (`ai/model-tiers.ts`) gets its
  * provider slug rule and its two emergency overrides, so that rule is written
- * once. `config.ts` still carries its own private copy of the same two
- * definitions until the wiring task points it here; the text below is that copy,
- * moved, not reworded.
+ * once. `config.ts` parses the two variables through it too (it used to carry
+ * a private copy), so a typo stops the boot with the same message either way.
  *
  * Pure module: no config, no DB, no clock.
  */

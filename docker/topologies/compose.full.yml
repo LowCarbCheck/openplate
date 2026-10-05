@@ -449,8 +449,14 @@ services:
       # to named providers with no fallback. Empty is the proxy's old behaviour.
       UPSTREAM_ZDR: ${UPSTREAM_ZDR:-}
       UPSTREAM_PROVIDER_ONLY: ${UPSTREAM_PROVIDER_ONLY:-}
+      # Which file decides the model, the zero retention routing and the output
+      # cap of each kind of request: empty (the default) keeps AI_ADVERTISED_MODEL
+      # and the two settings above as the whole answer, `bundled` is the file in
+      # the image, or an absolute path to a file you mount.
+      AI_TIERS_FILE: ${AI_TIERS_FILE:-}
       # The model every proxied request is sent to. The app scans with the
-      # model this names, so a managed instance with AI needs it set.
+      # model this names, so a managed instance with AI needs it set. With a
+      # tier file it replaces the default tier's model (an emergency override).
       AI_ADVERTISED_MODEL: ${AI_ADVERTISED_MODEL:-}
       # The whole instance's AI requests per UTC day. Empty means no ceiling.
       AI_INSTANCE_DAILY_LIMIT: ${AI_INSTANCE_DAILY_LIMIT:-}

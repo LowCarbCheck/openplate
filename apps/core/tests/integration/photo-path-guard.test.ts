@@ -777,6 +777,57 @@ test('a core with zero retention and a pinned provider set still keeps the photo
   for (const searcher of searchers.slice(firstSearcher)) assert.deepEqual(searcher.find(haystacks), []);
 });
 
+/**
+ * ONE CORE ON THE TIER FILE (`AI_TIERS_FILE=bundled`, 2026-10-05). A request now
+ * resolves to a tier before the body policy runs, and the tier decides the model
+ * and the routing. The tier path reads the caller's body, so this mode proves it
+ * leaves no trace of a photograph in the core's transcript or the database, in
+ * the 200 case and in the case where the provider echoes the request back. The
+ * fake provider is not an OpenRouter host, so no routing block is sent here; what
+ * is proved is the model the provider receives (the tier's, not the caller's),
+ * that the boot line and the completion line name the tier, and that scrubbing
+ * is unchanged. The routing itself is `tests/unit/model-tier-wiring.test.ts`.
+ */
+test('a core on the bundled tier file still keeps the photograph out', async () => {
+  const tiered = await startCore({ upstreamBaseUrl: provider.baseUrl, extraEnv: { AI_TIERS_FILE: 'bundled' } });
+  const firstSearcher = searchers.length;
+  try {
+    await runMode({
+      name: 'bundled tier file, upstream 200',
+      behavior: 'ok',
+      target: tiered,
+      expectStatus: 200,
+      expectLogged: 'Proxied a completion',
+      ...POST_OK,
+    });
+    // THE PREMISE: the tier path ran. The caller's body names the model "m"
+    // (`chatBody`), and the provider must have received the tier's instead.
+    const forwardedModel = /"model":"([^"]*)"/.exec(provider.received[0] ?? '')?.[1];
+    assert.ok(forwardedModel !== undefined && forwardedModel !== '', 'the provider received no model');
+    assert.notEqual(forwardedModel, 'm', 'the caller model reached the provider: the tier path did not run');
+    await runMode({
+      name: 'bundled tier file, upstream 500 echoing the request',
+      behavior: 'error-echo',
+      target: tiered,
+      expectStatus: 500,
+      expectLogged: 'Upstream provider returned an error',
+      expectRedacted: true,
+      ...POST_OK,
+    });
+  } finally {
+    await tiered.stop();
+  }
+  const scan = await readDatabaseHaystacks(database.pool);
+  const haystacks: Haystack[] = [
+    { source: 'tiered core stdout, whole run', text: tiered.stdout() },
+    { source: 'tiered core stderr, whole run', text: tiered.stderr() },
+    ...scan.haystacks,
+  ];
+  assert.ok(tiered.stdout().includes('AI tiers from bundled'), 'the tiered core did not log its tier line');
+  assert.match(tiered.stdout(), /"tier":"standard"/, 'the completion line does not name the tier');
+  for (const searcher of searchers.slice(firstSearcher)) assert.deepEqual(searcher.find(haystacks), []);
+});
+
 test('after every mode the core is alive, and its whole transcript holds no photograph', async () => {
   assert.ok(modesRun.length >= 12, `expected the whole table of failure modes, ran ${modesRun.length}`);
   assert.equal(core.child.exitCode, null, 'the core died');

@@ -23,9 +23,10 @@
  *    is `text` or `image_url`, and an `image_url` keeps `url` alone, which
  *    must be a `data:image/` URI (a remote URL or a document behind a data
  *    URI is input nobody measured, see `ai/chat-input-bounds.ts`).
- *  - `model` becomes the instance's model (`AI_ADVERTISED_MODEL`) when the
- *    operator set one. Unset keeps the caller's model: a self-hosted instance
- *    may let its people pick, and that is the operator's call.
+ *  - `model` becomes the model of the request's TIER (`ai/model-tiers.ts`:
+ *    the tier file, or in legacy mode `AI_ADVERTISED_MODEL`) when it has one.
+ *    No model keeps the caller's model: a self-hosted instance may let its
+ *    people pick, and that is the operator's call. The CALLER never picks.
  *  - `max_tokens` and `max_completion_tokens` are capped at
  *    `AI_MAX_OUTPUT_TOKENS`. A body with neither gets `max_tokens` written in,
  *    so no answer is unbounded. A value that is not a number (`null`, a
@@ -33,7 +34,9 @@
  *  - `reasoning.max_tokens` is capped at the same ceiling. Reasoning tokens
  *    are billed as output, and this is the one field that asks for them by
  *    count. `reasoning.effort` is kept: it moves where inside the cap the
- *    answer lands, not the cap.
+ *    answer lands, not the cap. A tier that sets `reasoningEffort` goes one
+ *    step further: core writes `reasoning.effort` itself and drops the
+ *    caller's `reasoning.max_tokens`, because OpenRouter takes one of the two.
  *  - `n` becomes 1 when it is present: n answers cost n times one.
  *  - On OpenRouter, `provider` is written back as
  *    {@link OPENROUTER_PROVIDER_PREFERENCES}: route only to endpoints that do
@@ -64,6 +67,7 @@
  * NOTHING HERE READS A CLOCK, A DATABASE OR AN ENVIRONMENT.
  */
 import { asArray, asNumber, asObject, asString, type JsonObject, type JsonValue } from '../lib/json.js';
+import type { ReasoningEffort } from './model-tiers.js';
 
 /**
  * The default for `AI_MAX_OUTPUT_TOKENS`.
@@ -171,10 +175,16 @@ const OUTPUT_CAP_FIELDS = ['max_tokens', 'max_completion_tokens'];
 
 /** What the instance decides for every forwarded chat body. */
 export interface ChatBodyPolicy {
-  /** `AI_ADVERTISED_MODEL`, or `null` to keep the caller's model. */
+  /** The request's tier model, or `null` to keep the caller's model. */
   model: string | null;
-  /** `AI_MAX_OUTPUT_TOKENS`: the most output tokens one request may ask for. */
+  /** The most output tokens one request may ask for: the tier's cap, never above `AI_MAX_OUTPUT_TOKENS`. */
   maxOutputTokens: number;
+  /**
+   * The tier's `reasoningEffort`. Set, it is written as `reasoning.effort` and
+   * the caller's `reasoning.max_tokens` is dropped. Absent or `null` leaves the
+   * caller's `reasoning` as it was (capped), byte for byte what it was before.
+   */
+  reasoningEffort?: ReasoningEffort | null;
 }
 
 /** A JSON object this module builds and may still write to. */
@@ -209,6 +219,16 @@ function capReasoningBudget(input: { body: WritableJsonObject; ceiling: number }
     ...reasoning,
     max_tokens: capTokenCount({ requested: reasoning.max_tokens, ceiling: input.ceiling }),
   };
+}
+
+/**
+ * Writes the tier's `reasoning.effort`. The caller's other `reasoning` fields
+ * stay (`exclude`, `enabled`); its `max_tokens` goes, because OpenRouter takes
+ * an effort or a token budget, not both, and the tier chose the effort.
+ */
+function applyReasoningEffort(input: { body: WritableJsonObject; effort: ReasoningEffort }): void {
+  const kept = Object.entries(asObject(input.body.reasoning) ?? {}).filter(([field]) => field !== 'max_tokens');
+  input.body.reasoning = { ...Object.fromEntries(kept), effort: input.effort };
 }
 
 /** One content part as forwarded, or `null` when it is dropped. */
@@ -305,9 +325,9 @@ export function listDroppedChatFields(body: JsonObject): string[] {
  * fields (streaming or not) still read what was asked for.
  *
  * @param input.body - the parsed request body, already proved to be an object.
- * @param input.policy - the instance's model and output ceiling.
+ * @param input.policy - the request's tier model, output cap and reasoning effort.
  * @param input.upstreamBaseUrl - where the body goes, which decides the `provider` preferences.
- * @param input.openRouterRouting - the operator's optional zero retention and provider pin; read for an OpenRouter host only.
+ * @param input.openRouterRouting - the routing of the request's tier (zero retention, provider pin); read for an OpenRouter host only.
  * @returns the body to serialise and forward.
  */
 export function applyChatBodyPolicy(input: {
@@ -333,6 +353,9 @@ export function applyChatBodyPolicy(input: {
   if (input.policy.model !== null) rewritten.model = input.policy.model;
   capOutputTokens({ body: rewritten, ceiling: input.policy.maxOutputTokens });
   capReasoningBudget({ body: rewritten, ceiling: input.policy.maxOutputTokens });
+  if (input.policy.reasoningEffort != null) {
+    applyReasoningEffort({ body: rewritten, effort: input.policy.reasoningEffort });
+  }
   if (rewritten.n !== undefined) rewritten.n = 1;
   return rewritten;
 }

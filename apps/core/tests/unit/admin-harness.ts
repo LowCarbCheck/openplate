@@ -40,6 +40,7 @@ import type { FeedbackReportDetail } from '../../src/feedback/feedback-admin-sto
 import { createFakeBlobRollbackStore, type FakeBlobRollbackStore } from './fake-blob-rollback-store.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { legacyModelTiers } from '../../src/ai/model-tiers.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import type { Mailer } from '../../src/mail/mailer.js';
 import type { AiBudgetSurfaceOptions } from '../../src/server/create-app.js';
@@ -234,7 +235,8 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
             instanceDailyLimit: options.aiInstanceDailyLimit,
             trialInstanceDailyLimit: options.aiTrialInstanceDailyLimit ?? null,
             budget: options.aiBudget ?? null,
-            bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+            tiers: legacyModelTiers({}),
+            maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS,
             inputPolicy: DEFAULT_CHAT_INPUT_POLICY,
           },
   });

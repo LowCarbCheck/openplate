@@ -191,12 +191,8 @@ import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-
 import type { InstanceHealthConsent } from '../protocol.js';
 import type { AiQuotaStore, TrialClaim } from './quota-store.js';
 import { scrubPayloads } from './scrub.js';
-import {
-  applyChatBodyPolicy,
-  listDroppedChatFields,
-  type ChatBodyPolicy,
-  type OpenRouterRouting,
-} from './chat-body-policy.js';
+import { listDroppedChatFields, type OpenRouterRouting } from './chat-body-policy.js';
+import { policeChatBodyForTier, type ModelTiers } from './model-tiers.js';
 import {
   AI_REQUEST_TOO_LARGE,
   findExceededInputLimit,
@@ -229,9 +225,13 @@ export interface AiUpstreamConfig {
   apiKey: string;
   timeoutMs: number;
   /**
-   * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY`, for an OpenRouter upstream.
-   * Absent is the same as both unset: `config.ts` always fills it, and a test
-   * that builds this object by hand may leave it out.
+   * `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY` as the environment spells them.
+   * THE PROXY DOES NOT READ THIS. The routing of a request is the routing of its
+   * TIER (`ChatCompletionsDeps.tiers`), which already folds these two variables
+   * in (legacy mode is exactly them; with a tier file `UPSTREAM_ZDR=true` is a
+   * floor and `UPSTREAM_PROVIDER_ONLY` replaces `only`). `config.ts` still
+   * fills it, so a typo stops the boot even with no key, and a test that builds
+   * this object by hand may leave it out.
    */
   routing?: OpenRouterRouting;
 }
@@ -268,12 +268,22 @@ export interface ChatCompletionsDeps {
    */
   trialNetwork: TrialNetworkShare | null;
   /**
-   * The model and the output ceiling every forwarded body gets
-   * (`AI_ADVERTISED_MODEL`, `AI_MAX_OUTPUT_TOKENS`, M256). Required for the
-   * reason `instanceDailyLimit` is: a wiring change that forgot it must not
-   * compile into a proxy that lets the caller pick the cost again.
+   * The model tiers (`AI_TIERS_FILE`, `ai/model-tiers.ts`). Every request
+   * resolves to ONE tier from its own schema name, and that tier's model,
+   * output cap, routing and reasoning effort are what the forwarded body gets
+   * (M256: the caller never picks the model or the cost). Legacy mode is one
+   * implicit tier built from `AI_ADVERTISED_MODEL`, `UPSTREAM_ZDR` and
+   * `UPSTREAM_PROVIDER_ONLY`. Required for the reason `instanceDailyLimit` is:
+   * a wiring change that forgot it must not compile into a proxy that lets the
+   * caller pick the cost again.
    */
-  bodyPolicy: ChatBodyPolicy;
+  tiers: ModelTiers;
+  /**
+   * `AI_MAX_OUTPUT_TOKENS`: the most output tokens one request may ask for,
+   * whatever its tier. A tier can lower its own cap and never raise this.
+   * Required for the reason `tiers` is.
+   */
+  maxOutputTokens: number;
   /**
    * What one request may carry in, and what one unit of the daily counters
    * covers (`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`,
@@ -436,13 +446,14 @@ function createByteCounter(): ByteCounter {
 export function createChatCompletionsHandler(deps: ChatCompletionsDeps): RequestHandler {
   const {
     accounts,
-    bodyPolicy,
     healthConsent,
     inputPolicy,
     instanceDailyLimit,
     logger,
+    maxOutputTokens,
     quota,
     standing,
+    tiers,
     trialInstanceDailyLimit,
     trialNetwork,
     upstream: upstreamConfig,
@@ -785,16 +796,22 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       res.status(400).json({ error: 'request body must be a JSON object' });
       return;
     }
-    // THE INSTANCE DECIDES WHAT ONE REQUEST MAY COST (M256): its model when
-    // one is set, a capped answer always, and only the fields on its allow
-    // list. Quietly, never a 400, see `ai/chat-body-policy.ts`. The dropped
-    // NAMES are logged, never a value, so an operator sees a client that
-    // sends something new.
-    const policedBody = applyChatBodyPolicy({
+    // THE INSTANCE DECIDES WHAT ONE REQUEST MAY COST (M256): the model of the
+    // request's TIER when it has one, a capped answer always, and only the
+    // fields on its allow list. Quietly, never a 400, see
+    // `ai/chat-body-policy.ts`. The dropped NAMES are logged, never a value, so
+    // an operator sees a client that sends something new.
+    //
+    // THE TIER IS RESOLVED FROM THE CALLER'S BODY, BEFORE THE POLICY RUNS, and
+    // it decides the model, the cap, the reasoning effort AND the zero
+    // retention routing together: the privacy promise of a model travels with
+    // the model, so no path can send one tier's model under another's routing.
+    // The caller can pick a tier only by naming a schema the operator routed.
+    const { resolved: resolvedTier, body: policedBody } = policeChatBodyForTier({
+      tiers,
       body: bodyObject,
-      policy: bodyPolicy,
+      ceiling: maxOutputTokens,
       upstreamBaseUrl: upstreamConfig.baseUrl,
-      openRouterRouting: upstreamConfig.routing,
     });
     const droppedFields = listDroppedChatFields(bodyObject);
     if (droppedFields.length > 0) {
@@ -1185,6 +1202,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       quotaLimit: reservation.limit,
       weight,
       durationMs,
+      // The tier the request resolved to, so cost per tier is readable from
+      // the logs. A name from the operator's file, never caller input.
+      tier: resolvedTier.name,
       // What the provider said this answer used and cost, or `null` where it
       // said nothing. NUMBERS AND A MODEL NAME THAT LOOKS LIKE ONE: the text of
       // the answer is never kept (`ai/usage-tap.ts`).

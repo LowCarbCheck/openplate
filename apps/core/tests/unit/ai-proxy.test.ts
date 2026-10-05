@@ -20,6 +20,7 @@ import type { AddressInfo } from 'node:net';
 import express from 'express';
 import { createChatCompletionsHandler } from '../../src/ai/proxy.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
+import { legacyModelTiers, parseModelTiers, type ModelTiers } from '../../src/ai/model-tiers.js';
 import { DEFAULT_CHAT_INPUT_POLICY, type ChatInputPolicy } from '../../src/ai/chat-input-bounds.js';
 import { scrubPayloads } from '../../src/ai/scrub.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
@@ -29,6 +30,7 @@ import type { JsonValue } from '../../src/lib/json.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import type { LogFields, Logger } from '../../src/logger.js';
 import { createAuthFixture, type AuthFixture } from './auth-context-fixture.js';
+import { photoBody, readLegacyCases } from './legacy-request-bodies.js';
 import { createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { NO_INSTANCE_STANDING, type InstanceStanding } from '../../src/accounts/instance-standing.js';
 
@@ -246,6 +248,10 @@ async function startProxy(options: {
   standing?: InstanceStanding;
   /** The account's OWN capability record. Absent is `null`, no record, where the instance default decides. */
   capabilities?: string[];
+  /** The model tiers. Absent is legacy mode with no model, the caller's model passes. */
+  tiers?: ModelTiers;
+  /** `AI_MAX_OUTPUT_TOKENS`. Absent is the production default. */
+  maxOutputTokens?: number;
 }): Promise<Harness> {
   const fixture = createAuthFixture();
   const account = await fixture.store.seedAccount({
@@ -309,7 +315,8 @@ async function startProxy(options: {
       trialNetwork: null,
       // The production wiring's shape with no model: the caller's model
       // passes, and the output ceiling is still written in (M256).
-      bodyPolicy: { model: null, maxOutputTokens: DEFAULT_AI_MAX_OUTPUT_TOKENS },
+      tiers: options.tiers ?? legacyModelTiers({}),
+      maxOutputTokens: options.maxOutputTokens ?? DEFAULT_AI_MAX_OUTPUT_TOKENS,
       inputPolicy: { ...DEFAULT_CHAT_INPUT_POLICY, ...options.inputPolicy },
       healthConsent: options.healthConsentVersion === undefined ? null : { version: options.healthConsentVersion },
       standing: options.standing ?? NO_INSTANCE_STANDING,
@@ -1167,6 +1174,7 @@ test('a priced answer is logged as numbers and summed on the instance day, and r
     quotaLimit: 200,
     weight: 1,
     durationMs: completionLine(harness).fields?.durationMs,
+    tier: 'standard',
     model: 'google/gemini-3.8-flash',
     promptTokens: 1523,
     completionTokens: 87,
@@ -1517,4 +1525,119 @@ test('dropped fields are logged by name, never by value, and never reach the pro
   assert.ok(!JSON.stringify(harness.logger.lines).includes(secret), 'a dropped value reached the log');
 
   await harness.close();
+});
+
+// ── The tier of a request (2026-10-05) ──────────────────────────────────────
+
+const TIER_PRICE = { inputUsdPerMillion: 1, outputUsdPerMillion: 4, checked: '2026-10-05', source: 'a fixture' };
+
+/** `standard` and `audio`, the second reached by the schema `speech_transcript`. Fake ids throughout. */
+const TWO_TIERS: ModelTiers = parseModelTiers({
+  version: 1,
+  defaultTier: 'standard',
+  routes: { speech_transcript: 'audio' },
+  tiers: {
+    standard: {
+      use: 'A test tier.',
+      model: 'vendor/test-model',
+      routing: { zdr: true, only: ['test-provider'] },
+      price: TIER_PRICE,
+      disclose: ['Test Model'],
+    },
+    audio: {
+      use: 'A second test tier.',
+      model: 'vendor/test-audio',
+      routing: { zdr: false, only: [] },
+      maxOutputTokens: 64,
+      price: TIER_PRICE,
+      disclose: ['Test Audio'],
+    },
+  },
+});
+
+function askingForSchema(name: string): JsonValue {
+  return {
+    model: 'attacker/expensive-model',
+    messages: [{ role: 'user', content: 'hi' }],
+    max_tokens: 5000,
+    response_format: { type: 'json_schema', json_schema: { name, schema: { type: 'object' } } },
+  };
+}
+
+function forwardedBody(upstream: FakeUpstream): Record<string, JsonValue> {
+  const request = upstream.received[0];
+  if (request === undefined) throw new Error('the provider received nothing');
+  // SAFETY: the proxy forwards `JSON.stringify` of an object.
+  return JSON.parse(request.body) as Record<string, JsonValue>;
+}
+
+test('a request resolves to its tier: the routed tier model and cap are forwarded, and the log line names the tier', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, tiers: TWO_TIERS });
+
+  assert.equal((await postCompletion(harness, askingForSchema('speech_transcript'))).status, 200);
+  const routed = forwardedBody(upstream);
+  assert.equal(routed.model, 'vendor/test-audio', 'the caller named another model; the tier decides');
+  assert.equal(routed.max_tokens, 64, 'the routed tier lowers the cap below what the caller asked');
+  assert.equal(completionLine(harness).fields?.tier, 'audio');
+
+  await harness.close();
+});
+
+test('CONTROL: an unrouted request gets the default tier, and the line says so', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, tiers: TWO_TIERS });
+
+  assert.equal((await postCompletion(harness, askingForSchema('plate_identification'))).status, 200);
+  const plain = forwardedBody(upstream);
+  assert.equal(plain.model, 'vendor/test-model');
+  assert.equal(plain.max_tokens, 5000);
+  assert.equal(completionLine(harness).fields?.tier, 'standard');
+
+  await harness.close();
+});
+
+test('the tier cap never raises the instance ceiling', async () => {
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, tiers: TWO_TIERS, maxOutputTokens: 32 });
+
+  assert.equal((await postCompletion(harness, askingForSchema('speech_transcript'))).status, 200);
+  assert.equal(forwardedBody(upstream).max_tokens, 32, 'the ceiling is below the tier cap of 64');
+
+  await harness.close();
+});
+
+test('legacy mode through the live handler forwards the exact bytes the code forwarded before tiers', async () => {
+  const recorded = readLegacyCases().find(
+    (entry) =>
+      entry.bodyName === 'photoBody' &&
+      entry.urlName === 'local' &&
+      entry.policyName === 'model only' &&
+      entry.ceiling === 8192,
+  );
+  assert.ok(recorded, 'the fixture lost its case');
+
+  const upstream = await startFakeUpstream();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    tiers: legacyModelTiers({ AI_ADVERTISED_MODEL: 'vendor/test-model' }),
+  });
+  assert.equal((await postCompletion(harness, photoBody)).status, 200);
+
+  // The provider's URL is the only thing the recording did not know about, and
+  // a loopback URL is not OpenRouter either way, so the bytes are the same.
+  assert.equal(upstream.received[0]?.body, recorded.expected);
+  assert.equal(completionLine(harness).fields?.tier, 'standard');
+
+  // CONTROL: another model gives other bytes, so the comparison above can fail.
+  const other = await startFakeUpstream();
+  const otherHarness = await startProxy({
+    upstreamBaseUrl: other.baseUrl,
+    tiers: legacyModelTiers({ AI_ADVERTISED_MODEL: 'vendor/other-model' }),
+  });
+  assert.equal((await postCompletion(otherHarness, photoBody)).status, 200);
+  assert.notEqual(other.received[0]?.body, recorded.expected);
+
+  await harness.close();
+  await otherHarness.close();
 });

@@ -335,3 +335,30 @@ test('any other upstream keeps its body byte for byte: no usage field, and the c
   }
   assert.equal('usage' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);
 });
+
+// ── reasoningEffort (the tier's, 2026-10-05) ────────────────────────────────
+
+test('a policy reasoningEffort writes reasoning.effort and drops the caller reasoning.max_tokens', () => {
+  const body = applyChatBodyPolicy({
+    body: { reasoning: { max_tokens: 5_000, effort: 'high', exclude: true } },
+    policy: { ...OPEN, reasoningEffort: 'low' },
+  });
+  assert.deepEqual(body.reasoning, { effort: 'low', exclude: true });
+  // A body with no reasoning gets just the effort, and a non-object one is replaced.
+  assert.deepEqual(applyChatBodyPolicy({ body: {}, policy: { ...OPEN, reasoningEffort: 'minimal' } }).reasoning, {
+    effort: 'minimal',
+  });
+  assert.deepEqual(
+    applyChatBodyPolicy({ body: { reasoning: 'lots' }, policy: { ...OPEN, reasoningEffort: 'medium' } }).reasoning,
+    { effort: 'medium' },
+  );
+});
+
+test('CONTROL: a policy with reasoningEffort absent or null leaves reasoning as it was, only capped', () => {
+  const caller = { reasoning: { max_tokens: 5_000, effort: 'high' } };
+  for (const policy of [OPEN, { ...OPEN, reasoningEffort: null }, { ...OPEN, reasoningEffort: undefined }]) {
+    const body = applyChatBodyPolicy({ body: caller, policy });
+    assert.deepEqual(body.reasoning, { max_tokens: 1_000, effort: 'high' });
+  }
+  assert.equal('reasoning' in applyChatBodyPolicy({ body: { model: 'm' }, policy: OPEN }), false);
+});

@@ -44,6 +44,7 @@ import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
 import { createDrizzleAiCapacityReader, createDrizzleAiQuotaStore } from './ai/quota-store.js';
 import { createTrialNetworkHasher, type TrialNetworkShare } from './ai/trial-network.js';
+import { defaultTierOf, describeModelTiers } from './ai/model-tiers.js';
 import { createUpstreamBudgetSource, upstreamBudgetKeyUrl } from './ai/upstream-budget.js';
 import { createBudgetAlerter, startBudgetWatch, type BudgetWatch } from './ai/budget-alert.js';
 import { createDrizzleBudgetAlertStore } from './db/budget-alert-store.js';
@@ -308,6 +309,11 @@ async function main(): Promise<void> {
     logger.warn('AI budget watch tick failed', { ...errorFields(cause) });
   });
 
+  // The model `/health` publishes and the "no model" warning reads: the DEFAULT
+  // tier's, after `AI_ADVERTISED_MODEL`'s override. In legacy mode that is the
+  // variable itself, as it always was.
+  const defaultModel = defaultTierOf(config.aiTiers).model;
+
   const ai =
     config.ai === null
       ? null
@@ -321,21 +327,35 @@ async function main(): Promise<void> {
           // ONE NETWORK'S SHARE OF IT (M270 spec 12), named under the pepper
           // the trial already requires, so the counter never holds an address.
           trialNetwork: trialNetworkShareOf(config),
-          // THE SAME BINDING `/health` publishes below (M256): the model an
-          // instance names is the model its proxy sends, so the two cannot
-          // disagree.
-          bodyPolicy: { model: config.aiAdvertisedModel, maxOutputTokens: config.aiMaxOutputTokens },
+          // THE SAME BINDING `/health` publishes below (M256): the default
+          // tier's model is what `/health` names, and the proxy resolves every
+          // request to a tier of this same set, so the two cannot disagree.
+          tiers: config.aiTiers,
+          maxOutputTokens: config.aiMaxOutputTokens,
           inputPolicy: config.aiInputPolicy,
           budget: { capacity: createDrizzleAiCapacityReader(database.db), upstream: budgetWatch },
         };
 
+  // THE TIERS, ONE LINE AND ONE WARNING EACH (`AI_TIERS_FILE`). Names and
+  // slugs only, never a key. Logged whether or not an upstream key is set, so
+  // an operator sees which file a booted process runs on.
+  logger.info(
+    describeModelTiers({
+      tiers: config.aiTiers,
+      source: config.aiTiersSource,
+      isModelOverridden: config.aiAdvertisedModel !== null && config.aiTiersSource.kind !== 'legacy',
+    }),
+  );
+  for (const warning of config.aiTiersWarnings) logger.warn(warning);
+
   // AN UPSTREAM KEY WITH NO NAMED MODEL. Non-fatal, like the two warnings
   // above: a self-built client that sends its own `model` still gets a proxied
-  // answer (`aiAdvertisedModel: null` passes it through, see `config.ts`). But
-  // openplate itself sends no model on a managed instance and refuses to scan
-  // rather than pick one on the operator's bill (README, "The AI proxy"), so a
-  // managed instance in this shape looks configured and never serves a scan.
-  if (ai !== null && config.aiAdvertisedModel === null) {
+  // answer (a default tier with no model passes it through, see `config.ts`).
+  // But openplate itself sends no model on a managed instance and refuses to
+  // scan rather than pick one on the operator's bill (README, "The AI proxy"),
+  // so a managed instance in this shape looks configured and never serves a
+  // scan. Only legacy mode can be in this shape: a tier file always names a model.
+  if (ai !== null && defaultModel === null) {
     logger.warn(
       'UPSTREAM_API_KEY is set but AI_ADVERTISED_MODEL is not: openplate will refuse to ' +
         'scan until you set AI_ADVERTISED_MODEL, because it never sends a model of its own.',
@@ -373,7 +393,7 @@ async function main(): Promise<void> {
     // one thing it does need, "the instance is out of capacity right now", it
     // learns from the 503 the proxy answers. `GET /v1/admin/stats` reports it
     // to the operator instead, behind the admin credential.
-    ai: ai === null ? null : { model: config.aiAdvertisedModel },
+    ai: ai === null ? null : { model: defaultModel },
     // DESCRIPTIVE, NEVER A GRANT, and built from the SAME config binding that
     // decides whether the subtree is mounted at all, so an instance cannot
     // advertise a door it does not have. `false` means `/v1/plans/*` answers

@@ -1,0 +1,173 @@
+{
+  "comment": "Recorded 2026-10-05 from applyChatBodyPolicy as it was at d18f60ec (before the tier wiring). Each expected is the exact JSON text the old code forwarded.",
+  "cases": [
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"caller-chose-this\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "no model, no routing",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"caller-chose-this\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "model only",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"zdr\":true,\"data_collection\":\"deny\",\"only\":[\"test-provider\"],\"allow_fallbacks\":false},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "openrouter",
+      "policyName": "model, zdr and only",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2,\"provider\":{\"zdr\":true,\"data_collection\":\"deny\",\"only\":[\"test-provider\"],\"allow_fallbacks\":false},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"caller-chose-this\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "no model, no routing",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"caller-chose-this\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "model only",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":8192,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":8192,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "photoBody",
+      "urlName": "local",
+      "policyName": "model, zdr and only",
+      "ceiling": 1000,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"system\",\"content\":\"You read plates.\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is on this plate?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4AAQSkZJRg==\"}}]}],\"response_format\":{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"plate_identification\",\"strict\":true,\"schema\":{\"type\":\"object\"}}},\"max_tokens\":1000,\"max_completion_tokens\":50,\"reasoning\":{\"max_tokens\":1000,\"effort\":\"high\",\"exclude\":true},\"n\":1,\"stream\":false,\"temperature\":0.2}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "openrouter",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true},\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "openrouter",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true},\"model\":\"vendor/test-model\",\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "openrouter",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"provider\":{\"zdr\":true,\"data_collection\":\"deny\",\"only\":[\"test-provider\"],\"allow_fallbacks\":false},\"usage\":{\"include\":true},\"model\":\"vendor/test-model\",\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "local",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "local",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"model\":\"vendor/test-model\",\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "bareBody",
+      "urlName": "local",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"messages\":[{\"role\":\"user\",\"content\":\"two eggs and toast\"}],\"model\":\"vendor/test-model\",\"max_tokens\":8192}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "openrouter",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"m\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"},\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "openrouter",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"},\"provider\":{\"data_collection\":\"deny\"},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "openrouter",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"},\"provider\":{\"zdr\":true,\"data_collection\":\"deny\",\"only\":[\"test-provider\"],\"allow_fallbacks\":false},\"usage\":{\"include\":true}}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "local",
+      "policyName": "no model, no routing",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"m\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"}}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "local",
+      "policyName": "model only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"}}"
+    },
+    {
+      "bodyName": "effortBody",
+      "urlName": "local",
+      "policyName": "model, zdr and only",
+      "ceiling": 8192,
+      "expected": "{\"model\":\"vendor/test-model\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":700,\"reasoning\":{\"effort\":\"low\"}}"
+    }
+  ]
+}

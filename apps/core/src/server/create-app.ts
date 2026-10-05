@@ -131,7 +131,7 @@ import type { FeedbackStore } from '../feedback/feedback-store.js';
 import type { AiCapacityReader, AiQuotaStore } from '../ai/quota-store.js';
 import type { UpstreamBudgetSource } from '../ai/upstream-budget.js';
 import type { AiUpstreamConfig } from '../ai/proxy.js';
-import type { ChatBodyPolicy } from '../ai/chat-body-policy.js';
+import type { ModelTiers } from '../ai/model-tiers.js';
 import type { ChatInputPolicy } from '../ai/chat-input-bounds.js';
 import {
   createBearerAuthMiddleware,
@@ -245,10 +245,11 @@ export interface AiSurfaceOptions {
    */
   trialNetwork?: TrialNetworkShare | null;
   /**
-   * The model and output ceiling every forwarded chat body gets (M256).
-   * Required: see `ChatCompletionsDeps.bodyPolicy`.
+   * The model tiers and the output ceiling every forwarded chat body gets
+   * (M256). Required: see `ChatCompletionsDeps.tiers`.
    */
-  bodyPolicy: ChatBodyPolicy;
+  tiers: ModelTiers;
+  maxOutputTokens: number;
   /**
    * What one request may carry in and what one daily unit covers
    * (2026-09-30). Required: see `ChatCompletionsDeps.inputPolicy`.
@@ -686,7 +687,8 @@ export function createApp(options: CreateAppOptions): Express {
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
       trialNetwork: ai.trialNetwork ?? null,
-      bodyPolicy: ai.bodyPolicy,
+      tiers: ai.tiers,
+      maxOutputTokens: ai.maxOutputTokens,
       inputPolicy: ai.inputPolicy,
       // Refused in the proxy's own ladder, beside the suspension, rather than
       // by `requireConsent` in front of it. See `ChatCompletionsDeps`.

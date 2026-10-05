@@ -44,7 +44,7 @@ import {
   type JsonValue,
 } from '../lib/json.js';
 import { schemaNameOf } from './capability-gate.js';
-import type { OpenRouterRouting } from './chat-body-policy.js';
+import { applyChatBodyPolicy, type ChatBodyPolicy, type OpenRouterRouting } from './chat-body-policy.js';
 import { parseOpenRouterRouting, PROVIDER_SLUG } from './openrouter-routing.js';
 import { SAFE_MODEL_NAME } from './usage-tap.js';
 
@@ -388,7 +388,7 @@ export function legacyModelTiers(env: NodeJS.ProcessEnv): ModelTiers {
 }
 
 /** The default tier, or a thrown error: a `ModelTiers` that names a default it does not hold is a bug in its builder. */
-function defaultTierOf(tiers: ModelTiers): ModelTier {
+export function defaultTierOf(tiers: ModelTiers): ModelTier {
   const tier = tiers.tiers.get(tiers.defaultTier);
   if (tier === undefined) throw new Error(`The default AI tier "${tiers.defaultTier}" is not among the tiers`);
   return tier;
@@ -478,6 +478,16 @@ function readTiersFile(input: { path: string; readFile: (path: string) => string
   }
 }
 
+/** {@link parseModelTiers}, with the setting that chose the file named in the message, so a boot log points at the variable. */
+function parseNamed(input: { json: JsonValue; setting: string }): ModelTiers {
+  try {
+    return parseModelTiers(input.json);
+  } catch (cause) {
+    const reason = cause instanceof Error ? cause.message : 'the file did not parse';
+    throw new Error(`Invalid AI_TIERS_FILE ${input.setting}: ${reason}`, { cause });
+  }
+}
+
 /**
  * Chooses the tiers for this process from `AI_TIERS_FILE`.
  *
@@ -499,7 +509,7 @@ export function loadModelTiers(input: {
     throw new Error(`Invalid AI_TIERS_FILE "${setting}": expected bundled, an absolute path, or leave it unset`);
   }
   const json = isBundled ? input.bundled : readTiersFile({ path: setting, readFile: input.readFile });
-  const overridden = applyEmergencyOverrides({ tiers: parseModelTiers(json), env: input.env });
+  const overridden = applyEmergencyOverrides({ tiers: parseNamed({ json, setting }), env: input.env });
   return {
     tiers: overridden.tiers,
     source: isBundled ? { kind: 'bundled' } : { kind: 'file', path: setting },
@@ -523,4 +533,113 @@ export function resolveTier(input: { tiers: ModelTiers; body: JsonObject }): Res
   const tier = input.tiers.tiers.get(name);
   if (tier === undefined) throw new Error(`The AI tier "${name}" is not among the tiers`);
   return { name, tier };
+}
+
+/**
+ * The body policy one tier gives a request: its model, its reasoning effort,
+ * and the smaller of its own output cap and the instance ceiling
+ * (`AI_MAX_OUTPUT_TOKENS`). A tier can lower the ceiling and never raise it.
+ *
+ * In legacy mode the one implicit tier has no cap and no effort, so this is
+ * `{ model: AI_ADVERTISED_MODEL, maxOutputTokens: AI_MAX_OUTPUT_TOKENS }`,
+ * which is what the proxy built before tiers existed.
+ */
+export function chatBodyPolicyFor(input: { tier: ModelTier; ceiling: number }): ChatBodyPolicy {
+  const own = input.tier.maxOutputTokens;
+  return {
+    model: input.tier.model,
+    maxOutputTokens: own === null ? input.ceiling : Math.min(own, input.ceiling),
+    reasoningEffort: input.tier.reasoningEffort,
+  };
+}
+
+/** The body to forward, and the tier that decided it. */
+export interface PolicedChatBody {
+  resolved: ResolvedTier;
+  body: JsonObject;
+}
+
+/**
+ * The body the provider receives, and the tier that decided it.
+ *
+ * THIS IS THE WHOLE PRIVACY PATH OF A PROXIED REQUEST IN ONE PURE FUNCTION. The
+ * tier is resolved from the CALLER's body, and then ONE tier supplies the model,
+ * the output cap, the reasoning effort and the zero retention routing, so no
+ * request can carry one tier's model under another tier's routing. The caller's
+ * own `model` and `provider` never survive (`applyChatBodyPolicy`).
+ *
+ * Legacy mode gives exactly the body the proxy built before tiers existed.
+ */
+export function policeChatBodyForTier(input: {
+  tiers: ModelTiers;
+  body: JsonObject;
+  /** `AI_MAX_OUTPUT_TOKENS`. */
+  ceiling: number;
+  upstreamBaseUrl: string;
+}): PolicedChatBody {
+  const resolved = resolveTier({ tiers: input.tiers, body: input.body });
+  const body = applyChatBodyPolicy({
+    body: input.body,
+    policy: chatBodyPolicyFor({ tier: resolved.tier, ceiling: input.ceiling }),
+    upstreamBaseUrl: input.upstreamBaseUrl,
+    openRouterRouting: resolved.tier.routing,
+  });
+  return { resolved, body };
+}
+
+/**
+ * One boot warning for each route that sends a request to a tier dearer than
+ * the default while its schema is not in `CAPABILITY_SCHEMA_MAP`.
+ *
+ * WHY. A client picks a tier by naming a schema (`resolveTier`), so a dear tier
+ * behind a schema no capability guards is reachable by any account that names
+ * it. The design allows it, and asks for a warning, not a refusal. "Dearer" is
+ * the input price. A tier with no price (legacy mode) never warns.
+ */
+export function findDearUnguardedRoutes(input: {
+  tiers: ModelTiers;
+  schemaMap: ReadonlyMap<string, string>;
+}): string[] {
+  const defaultPrice = defaultTierOf(input.tiers).price;
+  if (defaultPrice === null) return [];
+  const warnings: string[] = [];
+  for (const [schemaName, tierName] of input.tiers.routes) {
+    const price = input.tiers.tiers.get(tierName)?.price ?? null;
+    if (price === null || price.inputUsdPerMillion <= defaultPrice.inputUsdPerMillion) continue;
+    if (input.schemaMap.has(schemaName)) continue;
+    warnings.push(
+      `The AI tier "${tierName}" costs more per input token than the default tier "${input.tiers.defaultTier}" ` +
+        `(${price.inputUsdPerMillion} against ${defaultPrice.inputUsdPerMillion} USD per million), ` +
+        `and its schema "${schemaName}" is not in CAPABILITY_SCHEMA_MAP: any account can reach it by naming that schema. ` +
+        'Add the schema to CAPABILITY_SCHEMA_MAP.',
+    );
+  }
+  return warnings;
+}
+
+function describeRouting(routing: OpenRouterRouting): string {
+  const zdr = routing.zeroDataRetention ? 'zdr' : 'no zdr';
+  const providers = routing.onlyProviders.length > 0 ? `only ${routing.onlyProviders.join(', ')}` : 'any provider';
+  return `${zdr}, ${providers}`;
+}
+
+/**
+ * The one boot log line: where the tiers came from, the default, and each
+ * tier's model and routing. Names and slugs only: no key is ever in a tier.
+ * `isModelOverridden` is true when `AI_ADVERTISED_MODEL` replaced the default
+ * tier's model, which only a tier FILE can have (legacy mode is that variable).
+ */
+export function describeModelTiers(input: {
+  tiers: ModelTiers;
+  source: ModelTiersSource;
+  isModelOverridden: boolean;
+}): string {
+  const parts = [`default ${input.tiers.defaultTier}`];
+  for (const [name, tier] of input.tiers.tiers) {
+    const model = tier.model ?? "the caller's model";
+    const note =
+      name === input.tiers.defaultTier && input.isModelOverridden ? ' (model overridden by AI_ADVERTISED_MODEL)' : '';
+    parts.push(`${name} ${model} (${describeRouting(tier.routing)})${note}`);
+  }
+  return `AI tiers from ${input.source.kind}: ${parts.join('; ')}`;
 }

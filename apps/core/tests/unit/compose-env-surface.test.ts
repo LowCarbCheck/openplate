@@ -44,6 +44,11 @@ const SOURCES: readonly { path: string; language: SourceLanguage }[] = [
   { path: join(CORE_ROOT, 'src/config.ts'), language: 'typescript' },
   { path: join(CORE_ROOT, 'src/main.ts'), language: 'typescript' },
   { path: join(CORE_ROOT, 'src/version.ts'), language: 'typescript' },
+  // The tier file and the routing settings are read here, not in config.ts:
+  // `AI_TIERS_FILE`, `UPSTREAM_ZDR` and `UPSTREAM_PROVIDER_ONLY` stay visible
+  // to this scan only while these two files are listed.
+  { path: join(CORE_ROOT, 'src/ai/model-tiers.ts'), language: 'typescript' },
+  { path: join(CORE_ROOT, 'src/ai/openrouter-routing.ts'), language: 'typescript' },
 ];
 
 /**
@@ -175,7 +180,18 @@ describe('the scan finds what openplate-core reads', () => {
   it('finds a name for every way config.ts, main.ts and version.ts read one', () => {
     // One name per read form: env.X, a helper called with (env, 'X'), a
     // `const X_VARIABLES` list, a `const X_VARIABLE`, main.ts, version.ts.
-    for (const name of ['HOST', 'PORT', 'VAPID_SUBJECT', 'MEMBER_INVITE_TRIAL', 'MIGRATIONS_DIR', 'SERVICE_VERSION']) {
+    for (const name of [
+      'HOST',
+      'PORT',
+      'VAPID_SUBJECT',
+      'MEMBER_INVITE_TRIAL',
+      'MIGRATIONS_DIR',
+      'SERVICE_VERSION',
+      // Read in `ai/model-tiers.ts` and `ai/openrouter-routing.ts`, not in config.ts.
+      'AI_TIERS_FILE',
+      'UPSTREAM_ZDR',
+      'UPSTREAM_PROVIDER_ONLY',
+    ]) {
       assert.ok(SCANNED.has(name), `the scan missed ${name}`);
     }
     assert.ok(REQUIRED.length >= 50, `only ${REQUIRED.length} names to forward, the scan is broken`);
