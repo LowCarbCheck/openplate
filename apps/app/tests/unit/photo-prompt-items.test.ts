@@ -16,16 +16,28 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
-import { buildPlateIdentificationSystemPrompt } from '../../app/services/vision/prompt';
+import {
+  buildPlateIdentificationSystemPrompt,
+  buildPlateIdentificationUserPrompt,
+  buildTextIntakeSystemPrompt,
+} from '../../app/services/vision/prompt';
 
 const SPLIT_RULE =
-  '- List every food you can tell apart as its own item. Rice, chicken and a salad on one plate are three items; a breakfast of eggs, bacon, toast and beans is four. Merge only a sauce or dressing into the dish it is on, or the parts of one product that cannot be told apart, such as a burger, a soup, a casserole or a sandwich. Never name a whole plate or meal by one dish name when its parts can be seen: "sushi platter", "full breakfast" and "dinner plate" are wrong, so list what is on them. List up to 12 items.';
+  '- List every food you can tell apart as its own item. Rice, chicken and a salad on one plate are three items; a breakfast of eggs, bacon, toast and beans is four. Apart from garnishes and sauces (above), merge only a single dish eaten as one, such as a burger or a sandwich. Never name a whole plate or meal by one dish name when its parts can be seen: "sushi platter", "full breakfast" and "dinner plate" are wrong, so list what is on them. List up to 12 items.';
 
 const NAMING_RULE =
-  '- Name each item in plain language (e.g. "grilled chicken breast", not "protein"; a green salad with tomato is one item, "mixed salad", not one item per leaf or vegetable in it; a salad and a separate bowl of soup are two items).';
+  '- Name each item in plain language (e.g. "grilled chicken breast", not "protein"; name a green salad with tomato as one item, such as "mixed salad", not one item per leaf or vegetable in it; a salad and a separate bowl of soup are two items).';
 
 const CONFIDENCE_RULE =
-  '- Rate your confidence in the identification as "high", "medium", or "low". "high" means the food is unambiguous, and for a packaged or branded product only when its package or printed panel is legible in the photo. "medium" means the kind of food is clear but the specific product, recipe or ingredients are not. "low" means a guess. A packaged or branded product with no legible panel is "medium" at most.';
+  '- Rate your confidence in the identification as "high", "medium", or "low". "high" means the food is unambiguous, and for a packaged or branded product only when its printed nutrition panel is legible in the photo. "medium" means the kind of food is clear but the specific product, recipe or ingredients are not. "low" means a guess. A packaged or branded product with no legible panel is "medium" at most.';
+
+/** The text prompt's rubric: vague food is medium, a brand without a stated panel is medium at most. */
+const TEXT_CONFIDENCE_RULE =
+  '- Rate your confidence in the identification as "high", "medium", or "low". A food named plainly ("banana") is "high". A vague food ("a bar", "some cheese") is "medium". A named brand without a nutrition panel the person stated is "medium" at most. A legible nutrition panel the person stated is "high". "low" means a guess.';
+
+/** The text rubric as it read before: a vague food was "low". */
+const OLD_TEXT_CONFIDENCE_RULE =
+  '- Rate your confidence in the identification as "high", "medium", or "low". A food named plainly ("banana") is high. A vague or ambiguous one ("a bar", "some cheese") is low.';
 
 const BRAND_RULE =
   "- NEVER invent a brand or recall a product's figures. A packaged or branded product whose nutrition panel you cannot read is an estimate like any other food: log the generic food, keep \"brand\" null, and estimate the generic food's macros rather than reporting a brand's numbers from memory. A brand's real figures come from its printed panel, never from recall.";
@@ -63,6 +75,7 @@ function findItemRuleProblems(prompt: string): string[] {
   if (!prompt.includes(NAMING_RULE)) problems.push('has no salad naming rule');
   if (!prompt.includes(CONFIDENCE_RULE)) problems.push('has no confidence rubric');
   if (!prompt.includes(BRAND_RULE)) problems.push('has no brand rule');
+  if (prompt.includes('package or printed panel')) problems.push('still lets a package alone make a product high');
   return problems;
 }
 
@@ -108,6 +121,22 @@ describe('the photo prompt names every separate food', () => {
     ]);
   });
 
+  it('control: the old package-or-panel wording is caught on its own', () => {
+    const prompt = buildPlateIdentificationSystemPrompt('en');
+    const planted = prompt.replace('its printed nutrition panel is legible', 'its package or printed panel is legible');
+    assert.notEqual(planted, prompt, 'the plant must change the prompt');
+    assert.deepEqual(findItemRuleProblems(planted), [
+      'has no confidence rubric',
+      'still lets a package alone make a product high',
+    ]);
+  });
+
+  it('asks for every food in the photo, not the foods worth logging', () => {
+    const user = buildPlateIdentificationUserPrompt();
+    assert.ok(user.startsWith('Identify every food in the attached photo'));
+    assert.ok(!user.includes('worth logging'));
+  });
+
   it('control: only the old consolidation bullet put back is still caught', () => {
     const prompt = buildPlateIdentificationSystemPrompt('en');
     const oneOldBullet = `${prompt}\n${OLD_CONSOLIDATION_RULE}`;
@@ -125,5 +154,23 @@ describe('the photo prompt names every separate food', () => {
     );
     const missing = UNCHANGED_LINES.filter((line) => !prompt.includes(line));
     assert.deepEqual(missing, ['A missed flag is worse than an extra one']);
+  });
+});
+
+describe("the text prompt rates confidence with the photo prompt's rubric", () => {
+  for (const language of SUPPORTED_LANGUAGES) {
+    it(`calls a vague food medium and caps a brand without a stated panel at medium (${language})`, () => {
+      const prompt = buildTextIntakeSystemPrompt(language);
+      assert.ok(prompt.includes(TEXT_CONFIDENCE_RULE));
+      assert.ok(!prompt.includes(OLD_TEXT_CONFIDENCE_RULE));
+    });
+  }
+
+  it('control: the check goes red on the prompt with the old text rubric put back', () => {
+    const prompt = buildTextIntakeSystemPrompt('en');
+    const old = prompt.replace(TEXT_CONFIDENCE_RULE, OLD_TEXT_CONFIDENCE_RULE);
+    assert.notEqual(old, prompt, 'the plant must change the prompt');
+    assert.ok(!old.includes(TEXT_CONFIDENCE_RULE));
+    assert.ok(old.includes(OLD_TEXT_CONFIDENCE_RULE));
   });
 });

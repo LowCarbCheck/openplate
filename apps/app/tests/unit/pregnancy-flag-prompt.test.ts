@@ -9,17 +9,29 @@
  * that a sauce, a spread or a filling flags the whole dish.
  *
  * The photo prompt and the text prompt carry the same pregnancy line, word for
- * word. Every claim below is a pure function of the prompt string, so the same
- * check runs on a copy with the v2 line put back, and that control must go red.
+ * word, from ONE exported constant. The constant cannot prove its own wording
+ * (a prompt that includes it is true by construction), so the phrases below are
+ * pinned as literals: they are what the A/B runs and the v4 review asked for.
+ * Every claim is a pure function of the prompt string, so the same check runs on
+ * a copy with the v2 line put back, and that control must go red.
+ *
+ * v4 (2026-10-06) widened the line and never narrowed it: raw egg covers every
+ * mayonnaise unless a sealed jar is clear, alcohol covers dishes whose alcohol
+ * is not cooked off, and raw meat no longer excuses a cooked foie gras or a
+ * pink burger. M219 says when unsure, flag it.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
-import { buildPlateIdentificationSystemPrompt, buildTextIntakeSystemPrompt } from '../../app/services/vision/prompt';
+import {
+  PREGNANCY_FLAG_LINE,
+  buildPlateIdentificationSystemPrompt,
+  buildTextIntakeSystemPrompt,
+} from '../../app/services/vision/prompt';
 
-const PREGNANCY_LINE =
-  '  - "pregnancy": every category from this list the food falls into: "raw-dairy" (unpasteurised milk and anything made from it, such as raw milk, cheese made from raw milk, lait cru or Rohmilch, and unpasteurised cream or yoghurt), "soft-cheese" (mould-ripened or blue soft cheese, such as brie, camembert, chevre with a white rind and other cheeses with a similar rind, gorgonzola, roquefort, danish blue and other soft blue cheeses, and soft washed-rind cheese such as Limburger or Munster), "raw-meat" (raw or undercooked meat, cured raw meat, pate, for example rare or pink steak or lamb, carpaccio, tartare, Mett, salami, chorizo, prosciutto, Parma or Serrano ham, Mettwurst, Teewurst and other cured or air-dried raw meat, meat or liver pate and liver spreads, and foie gras unless fully cooked), "raw-egg" (raw or lightly cooked egg and dishes made with it, such as runny or soft-boiled egg, homemade mayonnaise, aioli or hollandaise, tiramisu, chocolate mousse and raw cake or cookie dough), "raw-fish" (raw fish or shellfish, such as sushi or sashimi with raw fish, poke, ceviche, fish tartare, gravlax and other cured raw fish, and raw oysters), "smoked-fish" (cold-smoked fish, such as smoked salmon, lox and cold-smoked trout), "high-mercury-fish" (shark, swordfish, marlin, king mackerel, bigeye tuna, and tuna generally, meaning tuna in any form, including tuna steak, canned tuna, tuna salad, tuna sauce and tuna in sushi or on pizza), "liver-retinol" (liver, liver products, such as liver of any animal, liver sausage or Leberwurst, liver pate, liver dumplings, foie gras and cod liver oil), "alcohol" (beer, wine, cider, spirits, cocktails and liqueurs, and desserts soaked in spirits or liqueur, such as rum baba), "caffeine" (coffee, strong tea, energy drinks, such as espresso and other coffee drinks, black or green tea, matcha, cola and mate), "raw-sprouts" (raw sprouted seeds and beans, such as bean sprouts, alfalfa, radish or broccoli sprouts, also when added raw to a salad, a sandwich or a bowl). Use no other word. A dish is flagged for EVERY ingredient it contains, including sauces, spreads and fillings: a sauce made with tuna makes the dish "high-mercury-fish", and pate on toast is both "raw-meat" and "liver-retinol"; go through the categories for every item before you answer.\n';
+/** The line both prompts carry, as the builders write it: the shared constant and its newline. */
+const PREGNANCY_LINE = `${PREGNANCY_FLAG_LINE}\n`;
 
 /** The line both prompts shipped in v2, word for word, newline included. */
 const V2_PREGNANCY_LINE =
@@ -27,15 +39,21 @@ const V2_PREGNANCY_LINE =
 
 /** The foods the A/B test caught a weak model missing, each with the words that now carry it. */
 const NAMED_FOODS = [
-  'meat or liver pate and liver spreads',
+  'meat or liver pate and liver spreads, and foie gras)',
   'liver pate, liver dumplings, foie gras',
-  'foie gras unless fully cooked',
+  'a pink burger or other pink minced meat',
+  'mayonnaise, aioli or hollandaise unless it clearly comes from a sealed jar or bottle, carbonara, Caesar dressing, zabaglione, eggnog',
+  'dishes with alcohol that is not cooked off, such as cheese fondue, liqueur chocolates, tiramisu or a wine sauce added at the end',
+  'alcohol-free beer and wine count too',
   'tuna in any form, including tuna steak, canned tuna, tuna salad, tuna sauce',
   'brie, camembert, chevre with a white rind',
   'a sauce made with tuna makes the dish "high-mercury-fish"',
   'pate on toast is both "raw-meat" and "liver-retinol"',
   'go through the categories for every item before you answer.',
 ];
+
+/** Wording that narrowed a flag in v3. A prompt must never say it again. */
+const NARROWING_PHRASES = ['homemade mayonnaise', 'unless fully cooked'];
 
 /** The two prompts, each with the flag lines this change must leave exactly as they were. */
 const PROMPTS = [
@@ -68,9 +86,12 @@ const PROMPTS = [
 function findPregnancyLineProblems(prompt: string): string[] {
   const problems: string[] = [];
   if (prompt.includes(V2_PREGNANCY_LINE)) problems.push('still has the v2 pregnancy line');
-  if (!prompt.includes(PREGNANCY_LINE)) problems.push('has no v3 pregnancy line');
+  if (!prompt.includes(PREGNANCY_LINE)) problems.push('has no current pregnancy line');
   for (const food of NAMED_FOODS) {
     if (!prompt.includes(food)) problems.push(`does not say: ${food}`);
+  }
+  for (const phrase of NARROWING_PHRASES) {
+    if (prompt.includes(phrase)) problems.push(`narrows a flag with: ${phrase}`);
   }
   return problems;
 }
@@ -90,7 +111,7 @@ function restoreV2PregnancyLine(prompt: string): string {
 describe('both prompts name the foods behind each pregnancy flag', () => {
   for (const { name, build, unchangedLines } of PROMPTS) {
     for (const language of SUPPORTED_LANGUAGES) {
-      it(`the ${name} prompt carries the v3 pregnancy line and the ingredient rule (${language})`, () => {
+      it(`the ${name} prompt carries the pregnancy line and the ingredient rule (${language})`, () => {
         assert.deepEqual(findPregnancyLineProblems(build(language)), []);
       });
 
@@ -108,7 +129,7 @@ describe('both prompts name the foods behind each pregnancy flag', () => {
       const oldPrompt = restoreV2PregnancyLine(build('en'));
       assert.deepEqual(findPregnancyLineProblems(oldPrompt), [
         'still has the v2 pregnancy line',
-        'has no v3 pregnancy line',
+        'has no current pregnancy line',
         ...NAMED_FOODS.map((food) => `does not say: ${food}`),
       ]);
     });
@@ -124,10 +145,31 @@ describe('both prompts name the foods behind each pregnancy flag', () => {
     });
   }
 
+  it('both prompts include the shared constant exactly once and it carries every named food', () => {
+    for (const { build } of PROMPTS) {
+      assert.equal(build('en').split(PREGNANCY_FLAG_LINE).length, 2);
+    }
+    for (const food of NAMED_FOODS) assert.ok(PREGNANCY_FLAG_LINE.includes(food), `the constant lacks: ${food}`);
+  });
+
+  it('control: a v3 narrowing put back into either prompt is reported', () => {
+    for (const { build } of PROMPTS) {
+      const narrowed = build('en').replace(
+        'and foie gras), "raw-egg"',
+        'and foie gras unless fully cooked), "raw-egg"',
+      );
+      assert.notEqual(narrowed, build('en'), 'the plant must change the prompt');
+      assert.ok(findPregnancyLineProblems(narrowed).includes('narrows a flag with: unless fully cooked'));
+      const homemade = build('en').replace('soft-boiled egg, mayonnaise,', 'soft-boiled egg, homemade mayonnaise,');
+      assert.notEqual(homemade, build('en'), 'the plant must change the prompt');
+      assert.ok(findPregnancyLineProblems(homemade).includes('narrows a flag with: homemade mayonnaise'));
+    }
+  });
+
   it('the photo and text prompts share one pregnancy line, so a drift in one goes red', () => {
     const photo = buildPlateIdentificationSystemPrompt('en');
     const driftedText = buildTextIntakeSystemPrompt('en').replace('and cod liver oil)', 'and fish oil)');
     assert.deepEqual(findPregnancyLineProblems(photo), []);
-    assert.deepEqual(findPregnancyLineProblems(driftedText), ['has no v3 pregnancy line']);
+    assert.deepEqual(findPregnancyLineProblems(driftedText), ['has no current pregnancy line']);
   });
 });
