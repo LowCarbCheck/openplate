@@ -6,7 +6,18 @@ An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI pla
 
 **By default, there are no accounts.** There is no sign-up, no login, and no password. Open the app and start logging. Your diary lives in IndexedDB in your browser on your device. The app server has no database. An operator can run a managed instance instead, with `INSTANCE_MODE=managed`. There, an administrator invites people, each person gets an account and signs in, and accounts carry a shared AI allowance. Device sync is optional on either setup. A separate service handles it. The diary is encrypted on the device before upload. Whoever runs the core server keeps a backup key to reset forgotten passwords, and that key lets them read the diary.
 
-Find guides, screenshots, and full documentation on [openplate.de](https://openplate.de), or see the repository [Documentation](#documentation) section.
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="apps/app/public/landing/en/diary-mobile-light.webp" alt="The openplate diary: net carbs, calories, protein, fat and fiber against daily goals" width="250"><br><sub><b>Diary</b>: Track daily net carbs, calories, protein, fat, and fiber against your goals.</sub></td>
+    <td align="center" width="50%"><img src="apps/app/public/landing/en/overview-mobile-light.webp" alt="The openplate overview: today so far, with a field to add food" width="250"><br><sub><b>Overview</b>: Review today so far, with one tap to add food.</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><img src="apps/app/public/landing/en/scan-mobile-light.webp" alt="The openplate scan screen: photograph a plate and connect an AI provider" width="250"><br><sub><b>Scan</b>: Photograph a plate. Your own AI provider estimates the carbs.</sub></td>
+    <td align="center" width="50%"><img src="apps/app/public/landing/en/goals-mobile-light.webp" alt="The openplate goals screen: choose an eating style and a daily carb limit" width="250"><br><sub><b>Goals</b>: Choose an eating style and a daily carb limit.</sub></td>
+  </tr>
+</table>
+
+Find guides and full documentation on [openplate.de](https://openplate.de), or see the repository [Documentation](#documentation) section.
 
 ## Quickstart
 
