@@ -74,7 +74,7 @@ def _run_judge(
     """The merge call.
 
     Two deliberate differences from a vision call (M138 judge hardening):
-      * temperature defaults to 0 — merging is bookkeeping, and the measured
+      * temperature defaults to 0: merging is bookkeeping, and the measured
         failure mode was variance (a real item kept on one run, dropped on the
         next), so sampling diversity is pure downside here.
       * the response_format carries the bounded judge schema, which makes the

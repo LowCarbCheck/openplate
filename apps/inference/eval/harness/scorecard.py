@@ -303,13 +303,13 @@ def render_portion_macro(portion_macro: dict, keys: list[str]) -> list[str]:
     lines = ["## Portion + macro error (auto-computed)", ""]
     if not with_grams and not with_kcal:
         lines += [
-            f"portion/macro: **unscorable** — gold has no gram ranges "
+            f"portion/macro: **unscorable**: gold has no gram ranges "
             f"({with_grams}/{total} covered) and no kcal ranges ({with_kcal}/{total} covered).",
             "",
             "Weighed-gram ground truth is the missing input, not the metric: add `gram_ranges`",
             "(per gold item, `[min, max]` grams) and `kcal_range` (`[min, max]` per plate) to",
             "`gold/gold_labels.json` and both families populate automatically here. Grams must",
-            "come from a scale — a gram range guessed off a photo would make portion error",
+            "come from a scale: a gram range guessed off a photo would make portion error",
             "measure the labeller, not the model.",
             "",
         ]
@@ -382,7 +382,7 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         lines.append(f"- fan-out override: {summary['fan_out_override']}")
     failures = summary.get("failures") or []
     if failures:
-        lines.append(f"- **failures: {len(failures)}** — {json.dumps(failures)}")
+        lines.append(f"- **failures: {len(failures)}**: {json.dumps(failures)}")
 
     lines += [
         "",
@@ -393,7 +393,7 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         *render_portion_macro(portion_macro_metrics(results, gold, keys), keys),
         "## Scoring instructions (human / reviewing agent)",
         "",
-        "Semantic matching is NOT automated — fuzzy matching lies exactly where it matters",
+        "Semantic matching is NOT automated: fuzzy matching lies exactly where it matters",
         '("Greek salad" legitimately covering three gold rows; "sashimi" for nigiri hiding a',
         "rice miss). For each image below:",
         "",
@@ -406,7 +406,7 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         f"6. Count **{stats_lib.OVER_DECOMPOSED_MARKER}** answers in the dedicated row: one per",
         "   composite dish the approach split into its parts (a stew reported as five",
         f"   ingredients). Writing `{stats_lib.OVER_DECOMPOSED_MARKER}` inside a gold-item cell",
-        "   counts too. It is a named error class, not a recall bonus — mark the gold rows `Y`",
+        "   counts too. It is a named error class, not a recall bonus. Mark the gold rows `Y`",
         "   if the parts do cover them, and record the split here so it is counted.",
         "7. When a gold item is covered only by a reported item that ALSO covers another gold core",
         f"   item (a merge, the opposite of a split), write `Y {granularity_lib.MERGED_MARKER}` in its cell.",
@@ -430,7 +430,7 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         total_core += len(core)
         meal = entry.get("meal", "(no gold entry)")
 
-        lines += [f"### {image_id} — {meal}", ""]
+        lines += [f"### {image_id}, {meal}", ""]
 
         for key in keys:
             result = results[image_id].get(key)
@@ -448,7 +448,7 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         lines.append("")
 
         if not core:
-            lines += ["_No gold entry for this image — add one to `gold/gold_labels.json`._", ""]
+            lines += ["_No gold entry for this image: add one to `gold/gold_labels.json`._", ""]
             continue
 
         lines += ["| gold core item | " + " | ".join(keys) + " | notes |",
@@ -521,7 +521,7 @@ def render_filled_report(worksheet: dict, resamples: int) -> list[str]:
         lines.append(
             f"| {approach} | {ci['images']} | {ci['items']} | "
             f"{stats_lib.fmt_pct(ci['point'])} ({hits}/{ci['items']}) | "
-            f"[{stats_lib.fmt_pct(ci['lo'])} – {stats_lib.fmt_pct(ci['hi'])}] | "
+            f"[{stats_lib.fmt_pct(ci['lo'])} to {stats_lib.fmt_pct(ci['hi'])}] | "
             f"{worksheet['hallucinations'].get(approach, 0)} | "
             f"{worksheet['over_decomposed'].get(approach, 0)} |"
         )
@@ -571,21 +571,21 @@ def compare_filled(path_a: Path, path_b: Path, resamples: int) -> int:
     (name_a, pairs_a, ci_a), (name_b, pairs_b, ci_b) = results
     verdict, why = stats_lib.compare_verdict(name_a, ci_a, name_b, ci_b)
 
-    print(f"A: {name_a} — {stats_lib.fmt_ci(ci_a)} over {ci_a['images']} plates / {ci_a['items']} items")
-    print(f"B: {name_b} — {stats_lib.fmt_ci(ci_b)} over {ci_b['images']} plates / {ci_b['items']} items")
+    print(f"A: {name_a}, {stats_lib.fmt_ci(ci_a)} over {ci_a['images']} plates / {ci_a['items']} items")
+    print(f"B: {name_b}, {stats_lib.fmt_ci(ci_b)} over {ci_b['images']} plates / {ci_b['items']} items")
     print()
-    print(f"VERDICT: {verdict} — {why}")
+    print(f"VERDICT: {verdict}, {why}")
 
     diff = stats_lib.bootstrap_diff_ci(pairs_a, pairs_b, resamples=resamples)
     if diff is None:
         print(
-            "paired test: skipped — the two worksheets do not cover the same number of plates."
+            "paired test: skipped: the two worksheets do not cover the same number of plates."
         )
         return 0
     excludes_zero = diff["lo"] > 0 or diff["hi"] < 0
     print(
         f"paired difference (A − B): {stats_lib.fmt_pct(diff['point'])} "
-        f"[{stats_lib.fmt_pct(diff['lo'])} – {stats_lib.fmt_pct(diff['hi'])}] — "
+        f"[{stats_lib.fmt_pct(diff['lo'])} to {stats_lib.fmt_pct(diff['hi'])}], "
         + ("excludes 0" if excludes_zero else "includes 0")
     )
     if excludes_zero and verdict == "UNDECIDED":
