@@ -332,6 +332,35 @@ when OpenRouter could not be reached (no verdict). `--file <path>` checks a cand
 file instead of the shipped one. Run it before every model switch, against the edited
 file, and once a week.
 
+A pinned slug in `only` matches an OpenRouter endpoint tag by whole segments. `google-vertex`
+matches every region and tier of that provider. `google-vertex/eu` matches only the EU
+endpoint, and a `google-vertex/global` row never stands in for it, not for the existence
+check, not for the ZDR list and not for the price. A `flex` or `priority` row is never the
+price.
+
+**Which host the check asks (for Bay).** OpenRouter's EU host lists different endpoints
+from the global host: the same model is `<provider>/eu` on `https://eu.openrouter.ai/api/v1`
+and `<provider>/global` on `https://openrouter.ai/api/v1`. Ask the host the instance really
+uses. Pass it as `--host <base url>`, or set the env variable `AI_TIERS_CHECK_HOST` (read
+only when the flag is absent; the flag wins). With neither, the global host is asked. Bay
+passes its `UPSTREAM_BASE_URL` here. Only those two hosts are accepted. Any other host is
+refused with exit 1 before a request is made. Both calls, the endpoint list and the ZDR
+list, go to the chosen host.
+
+```bash
+pnpm ai-tiers:check-live --host https://eu.openrouter.ai/api/v1
+AI_TIERS_CHECK_HOST=https://eu.openrouter.ai/api/v1 pnpm ai-tiers:check-live --file /path/to/ai-tiers.json
+```
+
+**Bay compares the host with the pin suffix.** The check does it too, so a mismatch is
+visible in the output:
+
+- A pin that ends in `/eu` on the global host is a FAIL: "an /eu pin on a non-EU host".
+- On the EU host, every standard endpoint of the pinned provider must end in `/eu`. A
+  non-EU tag listed there is a FAIL, because the EU host must never list one.
+- On the EU host, a pin without a `/eu` suffix is a WARN, not a failure. It passes today,
+  but nothing in the pin keeps the call in the EU.
+
 **The allowance is per account, per UTC day, and it defaults to zero.** A new
 invite hands out no AI at all unless you say otherwise, so an operator who
 mints an ordinary invitation has not given away their provider key by accident:

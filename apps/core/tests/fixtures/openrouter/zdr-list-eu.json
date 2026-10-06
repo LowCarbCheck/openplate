@@ -1,0 +1,37 @@
+{
+  "recorded": "2026-10-06, GET https://eu.openrouter.ai/api/v1/endpoints/zdr, no key; trimmed from 82 rows to the google-vertex/eu rows of two flash lite models plus one unrelated row",
+  "data": [
+    {
+      "name": "Google | google/gemini-3.5-flash-lite-20260721",
+      "model_id": "google/gemini-3.5-flash-lite",
+      "provider_name": "Google",
+      "tag": "google-vertex/eu",
+      "pricing": {
+        "prompt": "0.00000033",
+        "completion": "0.00000275",
+        "audio": "0.00000033"
+      }
+    },
+    {
+      "name": "Google | google/gemini-3.1-flash-lite-20260507",
+      "model_id": "google/gemini-3.1-flash-lite",
+      "provider_name": "Google",
+      "tag": "google-vertex/eu",
+      "pricing": {
+        "prompt": "0.000000275",
+        "completion": "0.00000165",
+        "audio": "0.00000055"
+      }
+    },
+    {
+      "name": "Mistral | mistralai/mistral-nemo",
+      "model_id": "mistralai/mistral-nemo",
+      "provider_name": "Mistral",
+      "tag": "mistral/eu",
+      "pricing": {
+        "prompt": "0.00000015",
+        "completion": "0.00000015"
+      }
+    }
+  ]
+}
