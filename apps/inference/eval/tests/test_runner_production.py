@@ -165,5 +165,109 @@ class FakedRun(unittest.TestCase):
         self.assertEqual(len(recipe.bodies), 1)
 
 
+class RetryErrors(unittest.TestCase):
+    """`--retry-errors` re-runs what failed in transit and nothing else; the summary counts every `error` record."""
+
+    def test_which_records_are_retried(self):
+        retry = [
+            {"kind": "production", "http_status": 429, "error": "HTTP 429: slow"},
+            {"kind": "production", "http_status": 500, "error": "HTTP 500"},
+            {"kind": "production", "http_status": 503, "error": "HTTP 503"},
+            {"kind": "production", "http_status": None, "error": "transport: ConnectionResetError: reset"},
+            {"error": "the call raised"},
+            {"foods": [], "raw_ok": False, "error": "call failed: HTTP 500"},
+        ]
+        keep = [
+            {"kind": "production", "http_status": 200, "schema_valid": True, "error": None},
+            {"kind": "production", "http_status": 200, "schema_valid": False, "error": None},
+            {"kind": "production", "http_status": 200, "schema_valid": False, "error": "API error in a 200 body: {}"},
+            {"kind": "production", "http_status": 400, "error": "HTTP 400: bad schema"},
+            {"kind": "production", "http_status": 404, "error": "HTTP 404"},
+            {"foods": [{"name": "egg"}], "raw_ok": True},
+            "not a record",
+        ]
+        for record in retry:
+            self.assertTrue(runner.needs_retry(record), record)
+        for record in keep:
+            self.assertFalse(runner.needs_retry(record), record)
+
+    def test_drop_retryable_keeps_everything_outside_the_scope(self):
+        results = {
+            "03": {"production": {"kind": "production", "http_status": 500, "error": "HTTP 500"}, "other": {"kind": "production", "http_status": 200}},
+            "04": {"production": {"kind": "production", "http_status": 429, "error": "HTTP 429"}},
+        }
+        failures = [{"image_id": "03", "approach": "production", "error": "x"}, {"image_id": "04", "approach": "production", "error": "y"}]
+        kept, kept_failures, dropped = runner.drop_retryable(results, failures, lambda image_id, key: image_id == "03")
+        self.assertEqual(dropped, [("03", "production")])
+        self.assertEqual(sorted(kept), ["03", "04"])
+        self.assertEqual(list(kept["03"]), ["other"])
+        self.assertEqual(kept_failures, [failures[1]])
+        # control: without a scope both failed records go
+        _, _, dropped_all = runner.drop_retryable(results, failures)
+        self.assertEqual(sorted(dropped_all), [("03", "production"), ("04", "production")])
+
+    def test_the_summary_counts_a_record_with_an_error_even_when_nothing_raised(self):
+        results = {
+            "03": {"production": {"kind": "production", "http_status": 400, "error": "HTTP 400: bad"}},
+            "04": {"production": {"kind": "production", "http_status": 200, "error": None}},
+        }
+        merged = runner.collect_failures(results, [])
+        self.assertEqual([(f["image_id"], f["approach"]) for f in merged], [("03", "production")])
+        # control: a failure the runner already listed is not counted twice
+        again = runner.collect_failures(results, [{"image_id": "03", "approach": "production", "error": "HTTP 400: bad"}])
+        self.assertEqual(len(again), 1)
+        self.assertEqual(runner.collect_failures({"04": results["04"]}, []), [])
+
+    def go(self, directory: Path, client: FakeClient, extra: list[str] | None = None) -> tuple[int | None, str]:
+        argv = ["--config", str(EVAL_ROOT / "configs/eu-cell-38-newprompt.json"), "--only", "03", "--out", str(directory), "--min-avail-mb", "0"]
+        with mock.patch.object(providers, "build_clients", lambda *a, **k: {"openrouter_global": client}), mock.patch.object(
+            providers, "preflight", lambda _c: None
+        ):
+            return run_main(argv + (extra or []))
+
+    def test_a_run_of_http_errors_reports_failures_and_retry_errors_runs_only_those_again(self):
+        directory = Path(tempfile.mkdtemp(prefix="retry-"))
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        broken = FakeClient(status=500, envelope={"error": {"message": "upstream"}})
+        code, text = self.go(directory, broken)
+        self.assertEqual(code, 1, text[-400:])
+        self.assertIn("Failures: 1", text)
+        summary = json.loads((directory / "results.json").read_text(encoding="utf-8"))["_summary"]
+        self.assertEqual([(f["image_id"], f["approach"]) for f in summary["failures"]], [("03", "production")])
+
+        # a plain resume skips the failed record and calls nothing
+        silent = FakeClient(valid_plate_answer())
+        code, text = self.go(directory, silent)
+        self.assertEqual(len(silent.bodies), 0)
+        self.assertIn("already done, skipping", text)
+        self.assertEqual(code, 1)
+
+        # --retry-errors calls it again, keeps the new answer, and the failure is gone
+        healed = FakeClient(valid_plate_answer())
+        code, text = self.go(directory, healed, ["--retry-errors"])
+        self.assertEqual(len(healed.bodies), 1, text[-600:])
+        self.assertIn("retry-errors: 1 failed record(s) will run again", text)
+        self.assertEqual(code, 0, text[-400:])
+        results = json.loads((directory / "results.json").read_text(encoding="utf-8"))
+        self.assertEqual(results["03"]["production"]["http_status"], 200)
+        self.assertEqual(results["_summary"]["failures"], [])
+
+        # control: once healed, the flag has nothing to run
+        again = FakeClient(valid_plate_answer())
+        self.go(directory, again, ["--retry-errors"])
+        self.assertEqual(len(again.bodies), 0)
+
+    def test_retry_errors_leaves_a_400_alone(self):
+        directory = Path(tempfile.mkdtemp(prefix="retry400-"))
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        self.go(directory, FakeClient(status=400, envelope={"error": {"message": "schema not supported"}}))
+        client = FakeClient(valid_plate_answer())
+        code, text = self.go(directory, client, ["--retry-errors"])
+        self.assertIn("retry-errors: 0 failed record(s) will run again", text)  # the flag ran and chose nothing
+        self.assertEqual(len(client.bodies), 0)
+        record = json.loads((directory / "results.json").read_text(encoding="utf-8"))["03"]["production"]
+        self.assertEqual(record["http_status"], 400)
+
+
 if __name__ == "__main__":
     unittest.main()

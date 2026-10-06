@@ -37,6 +37,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from . import providers
 from . import schema as plate_schema
 from . import schema_validate
 from .contract import PHOTO_TASKS, RECIPE_TASK, TEXT_TASKS, Contract, ContractError
@@ -318,6 +319,20 @@ def _number(value) -> float | int | None:
     return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
+def _call_cost(usage: dict, model_cfg: dict) -> tuple[float | None, str | None]:
+    """(cost in USD, where it came from). `usage.cost` from the provider wins. When it is missing, the config's
+    price table (tokens times price per million) stands in and the source says so. With neither a reported cost
+    nor token counts plus a price, the cost is None, never zero: an unknown cost must not read as a free call."""
+    reported = _number(usage.get("cost"))
+    if reported is not None:
+        return reported, "usage"
+    prompt, completion = _number(usage.get("prompt_tokens")), _number(usage.get("completion_tokens"))
+    priced = model_cfg.get("price_per_mtok_in") is not None or model_cfg.get("price_per_mtok_out") is not None
+    if prompt is None and completion is None or not priced:
+        return None, None
+    return providers.compute_cost_usd(model_cfg, {"prompt_tokens": prompt or 0, "completion_tokens": completion or 0}), "price_table"
+
+
 def grade_content(content: str | None, schema: dict) -> dict:
     """Parse and validate an answer. `schema_valid` demands strict JSON: that is what strict mode promises."""
     if not content:
@@ -370,7 +385,7 @@ def record_call(
     usage = usage if isinstance(usage, dict) else {}
     details = usage.get("completion_tokens_details")
     reasoning_tokens = details.get("reasoning_tokens") if isinstance(details, dict) else None
-    cost = _number(usage.get("cost"))
+    cost, cost_source = _call_cost(usage, model_cfg)
 
     api_error = (envelope or {}).get("error") if envelope else None
     error = None
@@ -393,7 +408,10 @@ def record_call(
         "base_url": base_url,
         "http_status": raw.status,
         "attempts": raw.attempts,
+        # The last attempt only. `total_latency_ms` is what a person waits: every attempt and every backoff sleep.
         "latency_ms": raw.latency_ms,
+        "total_latency_ms": raw.total_latency_ms if raw.total_latency_ms is not None else raw.latency_ms,
+        "attempt_latencies_ms": list(raw.attempt_latencies_ms or [raw.latency_ms]),
         "raw_content": content,
         "finish_reason": finish_reason,
         "parse": graded["parse"],
@@ -403,7 +421,7 @@ def record_call(
         "prompt_tokens": _number(usage.get("prompt_tokens")),
         "completion_tokens": _number(usage.get("completion_tokens")),
         "reasoning_tokens": _number(reasoning_tokens),
-        "usage_cost_usd": cost,
+        "usage_cost_usd": _number(usage.get("cost")),
         "provider": (envelope or {}).get("provider") if envelope else None,
         "model_returned": (envelope or {}).get("model") if envelope else None,
         "request": {
@@ -415,6 +433,7 @@ def record_call(
         # Keys the scorecard and the summary already read, so a production result scores like any other.
         "raw_ok": graded["schema_valid"],
         "cost_usd": cost,
+        "cost_source": cost_source,
         "foods": (answer or {}).get("foods", []) if task_key in PLATE_TASKS and isinstance(answer, dict) else [],
         "notes": (answer or {}).get("notes") if isinstance(answer, dict) else None,
         "answer": answer,

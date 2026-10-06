@@ -17,23 +17,26 @@ rather than an error.
 from __future__ import annotations
 
 import base64
+import email.utils
+import http.client
 import io
 import json
 import mimetypes
 import os
-import socket
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import schema as plate_schema
 
 DEFAULT_TIMEOUT_SECONDS = 120
-DEFAULT_MAX_RETRIES = 3
+DEFAULT_MAX_RETRIES = 4
+#: A `Retry-After` header longer than this is cut to it, so one odd header cannot hang a run for an hour.
+MAX_RETRY_AFTER_SECONDS = 120.0
 DEFAULT_RETRY_BACKOFF_BASE_SECONDS = 2.0
 
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "0.0.0.0"}
@@ -57,6 +60,10 @@ class RawResponse:
     approaches. A measurement of the production request has to RECORD a 400 or a 404, not abort on it, so the
     `production` approach goes through `post_raw` instead. `status` is None when no HTTP answer arrived at all
     (DNS, TLS, a timeout), and `transport_error` then says why.
+
+    `latency_ms` is the LAST attempt only. `total_latency_ms` covers every attempt and every backoff sleep, which
+    is what a person waits for; `attempt_latencies_ms` lists each attempt. A caller that builds a response by
+    hand may leave them out, and a reader then falls back to `latency_ms`.
     """
 
     status: int | None
@@ -64,6 +71,8 @@ class RawResponse:
     latency_ms: float
     attempts: int
     transport_error: str | None = None
+    total_latency_ms: float | None = None
+    attempt_latencies_ms: list = field(default_factory=list)
 
 
 _RESIZE_UNAVAILABLE_WARNED = False
@@ -147,6 +156,35 @@ def build_text_messages(system_prompt: str, user_text: str) -> list:
     ]
 
 
+def parse_retry_after(headers) -> float | None:
+    """Seconds a `Retry-After` header asks for (a number, or an HTTP date), cut to MAX_RETRY_AFTER_SECONDS.
+
+    None when the header is missing or unreadable, so the caller keeps its own backoff."""
+    value = headers.get("Retry-After") if headers is not None else None
+    if not value:
+        return None
+    value = str(value).strip()
+    try:
+        seconds = float(value)
+    except ValueError:
+        try:
+            when = email.utils.parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return None
+        seconds = when.timestamp() - time.time()
+    if seconds != seconds:  # NaN
+        return None
+    return min(max(seconds, 0.0), MAX_RETRY_AFTER_SECONDS)
+
+
+def _read_error_body(error: urllib.error.HTTPError) -> str:
+    """The body of an HTTP error, or "" when the connection dies while reading it (the status still counts)."""
+    try:
+        return error.read().decode("utf-8", errors="replace")
+    except (OSError, http.client.HTTPException):
+        return ""
+
+
 class ChatClient:
     """OpenAI-compatible /chat/completions client.
 
@@ -156,7 +194,7 @@ class ChatClient:
       api_key_required   default True when api_key_env is set
       headers            extra request headers (OpenRouter attribution etc.)
       timeout_seconds    default 120
-      max_retries        default 3
+      max_retries        default 4
       retry_backoff_base_seconds  default 2.0
       no_proxy           force proxy bypass (auto-true for loopback hosts)
     """
@@ -217,6 +255,11 @@ class ChatClient:
 
     # -- transport --------------------------------------------------------
 
+    def _backoff_seconds(self, attempt: int, retry_after: float | None = None) -> float:
+        """Exponential backoff, raised to the server's `Retry-After` when it asks for longer."""
+        backoff = self.retry_backoff_base_seconds * (2**attempt)
+        return max(backoff, retry_after) if retry_after is not None else backoff
+
     def post(self, payload: dict) -> dict:
         """POST with retry on 429/5xx and transient network errors."""
         data = json.dumps(payload).encode("utf-8")
@@ -230,18 +273,21 @@ class ChatClient:
                 with self._opener.open(req, timeout=self.timeout_seconds) as resp:
                     return json.loads(resp.read())
             except urllib.error.HTTPError as e:
-                body_text = e.read().decode("utf-8", errors="replace")[:800]
+                body_text = _read_error_body(e)[:800]
                 if e.code == 429 or e.code >= 500:
                     last_error = RuntimeError(f"HTTP {e.code}: {body_text}")
                     if attempt < self.max_retries:
-                        time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                        retry_after = parse_retry_after(e.headers) if e.code == 429 else None
+                        time.sleep(self._backoff_seconds(attempt, retry_after))
                         continue
                     raise last_error
                 raise ProviderHttpError(e.code, body_text) from e
-            except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+            except (OSError, http.client.HTTPException) as e:
+                # URLError, timeouts, ConnectionResetError, RemoteDisconnected (a reset and a bad status line at
+                # once), IncompleteRead and the rest of the transport family all land here.
                 last_error = e
                 if attempt < self.max_retries:
-                    time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                    time.sleep(self._backoff_seconds(attempt))
                     continue
                 raise
 
@@ -251,47 +297,64 @@ class ChatClient:
     def post_raw(self, payload: dict) -> RawResponse:
         """POST and report what came back, whatever the status. Retries 429/5xx and transport errors like `post`.
 
-        Never raises for an HTTP error status and never logs the request headers, so the bearer token cannot
-        reach a result file through here.
+        Never raises for an HTTP error status or a transport error and never logs the request headers, so the
+        bearer token cannot reach a result file through here. A 429 waits for its `Retry-After` header when that
+        is longer than the backoff. The result carries the last attempt's latency, the total wall time of all
+        attempts and sleeps, and each attempt's latency.
         """
         data = json.dumps(payload).encode("utf-8")
+        started_all = time.monotonic()
+        attempt_latencies: list[float] = []
         last = RawResponse(status=None, body_text="", latency_ms=0.0, attempts=0, transport_error="no attempt made")
+
+        def finish(response: RawResponse) -> RawResponse:
+            response.total_latency_ms = (time.monotonic() - started_all) * 1000
+            response.attempt_latencies_ms = list(attempt_latencies)
+            return response
+
         for attempt in range(self.max_retries + 1):
             req = urllib.request.Request(self.url, data=data, headers=self._headers, method="POST")
             started = time.monotonic()
             try:
                 with self._opener.open(req, timeout=self.timeout_seconds) as resp:
                     body = resp.read().decode("utf-8", errors="replace")
-                    return RawResponse(
-                        status=resp.status,
+                    status = resp.status
+                attempt_latencies.append((time.monotonic() - started) * 1000)
+                return finish(
+                    RawResponse(
+                        status=status,
                         body_text=body,
-                        latency_ms=(time.monotonic() - started) * 1000,
+                        latency_ms=attempt_latencies[-1],
                         attempts=attempt + 1,
                     )
+                )
             except urllib.error.HTTPError as e:
+                attempt_latencies.append((time.monotonic() - started) * 1000)
                 last = RawResponse(
                     status=e.code,
-                    body_text=e.read().decode("utf-8", errors="replace"),
-                    latency_ms=(time.monotonic() - started) * 1000,
+                    body_text=_read_error_body(e),
+                    latency_ms=attempt_latencies[-1],
                     attempts=attempt + 1,
                 )
                 if (e.code == 429 or e.code >= 500) and attempt < self.max_retries:
-                    time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                    retry_after = parse_retry_after(e.headers) if e.code == 429 else None
+                    time.sleep(self._backoff_seconds(attempt, retry_after))
                     continue
-                return last
-            except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+                return finish(last)
+            except (OSError, http.client.HTTPException) as e:
+                attempt_latencies.append((time.monotonic() - started) * 1000)
                 last = RawResponse(
                     status=None,
                     body_text="",
-                    latency_ms=(time.monotonic() - started) * 1000,
+                    latency_ms=attempt_latencies[-1],
                     attempts=attempt + 1,
                     transport_error=f"{type(e).__name__}: {e}",
                 )
                 if attempt < self.max_retries:
-                    time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                    time.sleep(self._backoff_seconds(attempt))
                     continue
-                return last
-        return last
+                return finish(last)
+        return finish(last)
 
     @staticmethod
     def build_payload(
